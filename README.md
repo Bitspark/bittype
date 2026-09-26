@@ -41,3 +41,8 @@ representation belong to Bitlink's binding.
 - [Working here as an agent](AGENTS.md).
 - [The contract theory](https://github.com/Bitspark/bittheory): contracts,
   realizations, instances, and generators as functions with contracts of their own.
+
+## Source layout
+
+Read [LAYOUT.md](LAYOUT.md) for the component-first, two-letter language
+directory convention and this repository's adoption notes.
