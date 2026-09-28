@@ -17,10 +17,14 @@
       "serverSha256": "daa4897472d8388cd33bae662cd1607c09e4ae804caa179d2b7518a274cf5c88",
       "runId": "run_727b1126-6e4d-44a9-9996-16f72909a29a",
       "submittedAt": "2026-09-28T01:29:05Z",
-      "state": null,
+      "state": "completed",
       "failureCode": null,
-      "resultSha256": null,
-      "verify": null
+      "resultSha256": "658366944a41bc77344fd73df7f22f0023fb0c4d31bb712fb45356ef4f32e4ab",
+      "verify": {
+        "exit": 0,
+        "verified": true,
+        "failed": 0
+      }
     }
   ]
 }
