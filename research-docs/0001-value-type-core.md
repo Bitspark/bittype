@@ -2,7 +2,9 @@
 
 **ID:** 0001
 **Date:** 28 September 2026
-**Status:** reviewed
+**Status:** submitted
+**Run-ID:** run_727b1126-6e4d-44a9-9996-16f72909a29a
+**Document-ID:** doc_a89555cd-e8c1-4fb1-981b-68a17d0bfe8d
 **Reviewed:** https://github.com/Bitspark/bittype/issues/1#issuecomment-5861714323
 **Owner:** the coding agent working bittype #1 for the project lead
 **Issue:** https://github.com/Bitspark/bittype/issues/1 (coordinated under https://github.com/Bitspark/bittype/issues/5)
