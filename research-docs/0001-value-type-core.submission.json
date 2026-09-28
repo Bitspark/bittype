@@ -1,0 +1,26 @@
+{
+  "doc": "research-docs/0001-value-type-core.md",
+  "attempts": [
+    {
+      "attempt": 1,
+      "idempotencyKey": "bittype-research-0001-4cdd54c0-9d93-4c9a-b5a6-b83187860112",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0001-value-type-core",
+      "submittedPath": "research-docs/0001-value-type-core.submitted.md",
+      "docSha256": "daa4897472d8388cd33bae662cd1607c09e4ae804caa179d2b7518a274cf5c88",
+      "docBytes": 45684,
+      "codeRevision": "ee6725a3fe70d722e915ac3b4ceb919116531a4c",
+      "cliBuild": "nightfall 0.1.0 (d279c281ece2, bundle 377e22f6d35c) built 2026-09-28T01:24:38.138Z",
+      "preparedAt": "2026-09-28T01:28:41Z",
+      "documentId": null,
+      "serverSha256": null,
+      "runId": null,
+      "submittedAt": null,
+      "state": null,
+      "failureCode": null,
+      "resultSha256": null,
+      "verify": null
+    }
+  ]
+}
