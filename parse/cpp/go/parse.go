@@ -19,6 +19,23 @@ type parser struct{ *parseutil.Parser[s.Language] }
 var vocabulary = concrete.Vocabulary[s.Language]{Layout: s.ConcreteLayout, Token: s.ConcreteToken, Whitespace: s.ConcreteWhitespace, Comment: s.ConcreteComment}
 
 func Parse(input text.Input) (cst.CST[s.Language], error) {
+	if len(input.Text) > lex.MaxBytes {
+		return cst.CST[s.Language]{}, &text.Diagnostic{Code: text.LimitExceeded, Message: "input exceeds 4 MiB"}
+	}
+	// C++ removes line continuations before recognizing comments. Reject that
+	// preprocessing form instead of exposing a continued comment as declarations.
+	for i := 0; i < len(input.Text); i++ {
+		if input.Text[i] != '\\' {
+			continue
+		}
+		j := i + 1
+		for j < len(input.Text) && (input.Text[j] == ' ' || input.Text[j] == '\t') {
+			j++
+		}
+		if j < len(input.Text) && (input.Text[j] == '\r' || input.Text[j] == '\n') {
+			return cst.CST[s.Language]{}, &text.Diagnostic{Code: text.Unsupported, Message: "C++ line splicing is unsupported", Span: &ast.Span{Source: input.SourceID, Start: uint64(i), End: uint64(j + 1)}}
+		}
+	}
 	base, err := parseutil.New[s.Language](input, lex.Options{Punctuation: []string{"...", "::", "&&", "->"}})
 	if err != nil {
 		return cst.CST[s.Language]{}, err

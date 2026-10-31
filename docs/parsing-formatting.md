@@ -196,7 +196,8 @@ Some deliberate boundaries deserve explicit mention:
   name resolution or prove what a shadowing declaration denotes.
 - C++: the listed declarations and declarators. Function bodies, non-type
   template arguments, arbitrary preprocessing, constructors and expression
-  initializers remain unsupported. Qualified member-function-pointer signatures
+  initializers remain unsupported. Backslash-newline splicing is rejected even
+  inside comments, before it could change declaration meaning. Qualified member-function-pointer signatures
   are rejected because FunctionType has no method CV/ref fields.
 
 `Cell<T>`, `Function<T>`, `Stream<T>` and other library names are ordinary native

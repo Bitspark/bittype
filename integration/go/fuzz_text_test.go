@@ -50,6 +50,8 @@ func FuzzNativeText(f *testing.F) {
 	})
 }
 func TestDeepSyntaxAndNativeNames(t *testing.T) {
+	reject(t, tsprovider.Provider{}, []string{"//  @ts-ignore\ntype X = string;", "//\t@ts-ignore\ntype X = string;", "/* @ts-ignore */ type X = string;"})
+	reject(t, cppprovider.Provider{}, []string{"// continued \\\nusing X = int;\n", "// continued \\\r\nusing X = int;\r\n", "// continued \\ \t\nusing X = int;\n"})
 	reject(t, tsprovider.Provider{}, []string{"type string = number;", "interface any {}", "type X<number> = number;"})
 	reject(t, rustprovider.Provider{}, []string{`type X = extern "\u{_43}" fn();`})
 	reject(t, rustprovider.Provider{}, []string{"enum X { _ }", "trait X { fn _(); }", "trait X { type _; }", "type X<_> = u8;", "type X<'static> = &'static u8;", "type X<'_> = &'_ u8;", "type X = &'fn u8;"})

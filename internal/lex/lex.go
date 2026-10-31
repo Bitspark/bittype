@@ -17,6 +17,8 @@ type Token struct {
 type Options struct {
 	LeadingDotNumbers bool
 	Space             func(rune) bool
+	LineTerminator    func(rune) bool
+	RejectComment     func(string) bool
 	Punctuation       []string
 	NestedComments    bool
 	Lifetimes         bool
@@ -47,6 +49,10 @@ func Scan(input text.Input, options Options) ([]Token, error) {
 		space = func(r rune) bool { return r == ' ' || (r >= '\t' && r <= '\r') }
 	}
 	var out []Token
+	lineTerminator := options.LineTerminator
+	if lineTerminator == nil {
+		lineTerminator = func(r rune) bool { return r == '\r' || r == '\n' }
+	}
 	for i := 0; i < len(s); {
 		start := i
 		class := "punctuation"
@@ -64,8 +70,12 @@ func Scan(input text.Input, options Options) ([]Token, error) {
 			}
 		case strings.HasPrefix(s[i:], "//"):
 			class = "comment"
-			for i < len(s) && s[i] != '\n' && s[i] != '\r' {
-				i++
+			for i < len(s) {
+				r, n := utf8.DecodeRuneInString(s[i:])
+				if lineTerminator(r) {
+					break
+				}
+				i += n
 			}
 			for _, directive := range options.Directives {
 				if strings.HasPrefix(s[start:i], directive) {
@@ -170,6 +180,9 @@ func Scan(input text.Input, options Options) ([]Token, error) {
 					break
 				}
 			}
+		}
+		if class == "comment" && options.RejectComment != nil && options.RejectComment(s[start:i]) {
+			return bad(text.Unsupported, start, i, "directive comment is outside the supported syntax")
 		}
 		out = append(out, Token{class, s[start:i], start, i})
 		if len(out) > MaxTokens {

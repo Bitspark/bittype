@@ -33,7 +33,7 @@ func decimalKey(s string) bool {
 var vocabulary = concrete.Vocabulary[s.Language]{Layout: s.ConcreteLayout, Token: s.ConcreteToken, Whitespace: s.ConcreteWhitespace, Comment: s.ConcreteComment}
 
 func Parse(input text.Input) (cst.CST[s.Language], error) {
-	base, err := parseutil.New[s.Language](input, lex.Options{Space: lit.Space, LeadingDotNumbers: true, Punctuation: []string{"...", "=>"}, Directives: []string{"///", "// @ts-", "//@ts-"}})
+	base, err := parseutil.New[s.Language](input, lex.Options{Space: lit.Space, LineTerminator: lit.LineTerminator, RejectComment: lit.Directive, LeadingDotNumbers: true, Punctuation: []string{"...", "=>"}})
 	if err != nil {
 		return cst.CST[s.Language]{}, err
 	}
@@ -69,7 +69,7 @@ func (p *parser) semi() {
 	if p.Pos > 0 {
 		start = p.Tokens[p.Pos-1].End
 	}
-	if !strings.ContainsAny(p.Input.Text[start:p.Token().Start], "\r\n") {
+	if !strings.ContainsAny(p.Input.Text[start:p.Token().Start], "\r\n\u2028\u2029") {
 		p.Fail(text.SyntaxError, "expected semicolon or line break")
 	}
 }

@@ -24,7 +24,9 @@ func budget[L any](tree ast.AST[L]) error {
 		*left -= count
 		return true
 	}
-	bad := func() error { return &text.Diagnostic{Code: text.LimitExceeded, Message: "AST storage exceeds resource limit"} }
+	bad := func() error {
+		return &text.Diagnostic{Code: text.LimitExceeded, Message: "AST storage exceeds resource limit"}
+	}
 	if !take(&bytes, len(tree.ID)) {
 		return bad()
 	}

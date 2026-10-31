@@ -171,6 +171,27 @@ func TestConcreteSourceTrivia(t *testing.T) {
 		})
 	}
 }
+
+func TestTypeScriptUnicodeLineBoundaries(t *testing.T) {
+	p := tsprovider.Provider{}
+	for _, separator := range []string{"\u2028", "\u2029"} {
+		source := "// comment" + separator + "type X = string" + separator + "type Y = number"
+		parsed, err := p.Parse(text.Input{SourceID: "lines", TreeID: "lines", Text: source})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(parsed.Abstract.Nodes[parsed.Abstract.Root-1].Children) != 2 {
+			t.Fatal("comment swallowed native declarations")
+		}
+		original, err := p.Print(parsed)
+		if err != nil || original != source {
+			t.Fatal("Unicode line separators were not retained")
+		}
+		if got := formatted(t, p, parsed.Abstract); got != "type X = string;\n\ntype Y = number;\n" {
+			t.Fatalf("lost declarations: %q", got)
+		}
+	}
+}
 func TestProviderIdentity(t *testing.T) {
 	for _, p := range []language.LanguageProvider{tsprovider.Provider{}, goprovider.Provider{}, rustprovider.Provider{}, cppprovider.Provider{}} {
 		if p.ID() == "" || p.Name() == "" {

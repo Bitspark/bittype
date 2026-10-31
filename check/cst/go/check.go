@@ -27,7 +27,9 @@ func Check[L any](tree cst.CST[L]) error {
 		*left -= count
 		return true
 	}
-	limit := func() error { return &text.Diagnostic{Code: text.LimitExceeded, Message: "concrete storage exceeds resource limit"} }
+	limit := func() error {
+		return &text.Diagnostic{Code: text.LimitExceeded, Message: "concrete storage exceeds resource limit"}
+	}
 	// Preflight before UTF-8 scanning or the printer allocates expanded output.
 	for _, n := range tree.Nodes {
 		if !take(&bytes, len(n.Kind)) || !take(&entries, len(n.Children)) || !take(&entries, len(n.Syntax)) || !take(&entries, len(n.Origin.Spans)) || !take(&entries, len(n.Origin.Nodes)) {
