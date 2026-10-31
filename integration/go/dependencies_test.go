@@ -20,20 +20,20 @@ func TestFoundationDependencies(t *testing.T) {
 		t.Fatal(err)
 	}
 	allowed := map[string]map[string]bool{
-		modulePath + "/ast/go": {},
+		modulePath + "/ast/go":      {},
 		modulePath + "/pipeline/go": {},
 		modulePath + "/language/go": {},
 	}
 	for _, name := range []string{"typescript", "golang", "rust", "cpp"} {
-		allowed[modulePath + "/syntax/" + name + "/go"] = map[string]bool{
-			modulePath + "/ast/go": true,
+		allowed[modulePath+"/syntax/"+name+"/go"] = map[string]bool{
+			modulePath + "/ast/go":      true,
 			modulePath + "/language/go": true,
 		}
 	}
 	type packageInfo struct {
 		ImportPath string
-		Standard bool
-		Imports []string
+		Standard   bool
+		Imports    []string
 	}
 	var packages []packageInfo
 	standard := map[string]bool{}

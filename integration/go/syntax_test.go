@@ -16,8 +16,8 @@ func TestLanguageIdentityInterface(t *testing.T) {
 	// These calls exercise only the common interface, as a future registry would.
 	cases := []struct {
 		provider language.Language
-		id language.ID
-		name string
+		id       language.ID
+		name     string
 	}{
 		{typescript.Language{}, "typescript", "TypeScript"},
 		{golang.Language{}, "go", "Go"},

@@ -13,7 +13,7 @@ var _ language.Language = syntax.Language{}
 
 // Page<T> { items: T[] }, Person, PeoplePage = Page<Person>, Reader<T> { read(): T }.
 var example = syntax.AST{
-	ID: "typescript-example",
+	ID:   "typescript-example",
 	Root: 1,
 	Nodes: []syntax.Node{
 		// 1

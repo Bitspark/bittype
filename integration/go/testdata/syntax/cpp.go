@@ -14,7 +14,7 @@ var _ language.Language = syntax.Language{}
 // namespace example: template<class T> Page with std::vector<T> items,
 // Person, PeoplePage = Page<Person>, and an abstract Reader<T> declaration.
 var example = syntax.AST{
-	ID: "cpp-example",
+	ID:   "cpp-example",
 	Root: 1,
 	Nodes: []syntax.Node{
 		// 1

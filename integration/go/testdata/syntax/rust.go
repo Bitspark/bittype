@@ -14,7 +14,7 @@ var _ language.Language = syntax.Language{}
 // Page<T> { items: Vec<T> }, Person, PeoplePage = Page<Person>,
 // and trait Reader<T> { fn read(&self) -> T; }. Vec and String use the prelude.
 var example = syntax.AST{
-	ID: "rust-example",
+	ID:   "rust-example",
 	Root: 1,
 	Nodes: []syntax.Node{
 		// 1

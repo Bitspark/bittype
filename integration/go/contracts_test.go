@@ -77,8 +77,8 @@ func consumerDiagnostics(t *testing.T, packages contractImporter, name string) [
 	var diagnostics []error
 	config := types.Config{
 		GoVersion: "go1.27",
-		Importer: packages,
-		Error: func(err error) { diagnostics = append(diagnostics, err) },
+		Importer:  packages,
+		Error:     func(err error) { diagnostics = append(diagnostics, err) },
 	}
 	_, err = config.Check("example.invalid/consumer", positions, []*goast.File{file}, nil)
 	if err != nil && len(diagnostics) == 0 {

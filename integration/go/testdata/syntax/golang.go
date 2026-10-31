@@ -14,7 +14,7 @@ var _ language.Language = syntax.Language{}
 // Page[T any] struct { Items []T }, Person, PeoplePage = Page[Person],
 // and Reader[T any] interface { Read() T }. The two T binders stay distinct.
 var example = syntax.AST{
-	ID: "go-example",
+	ID:   "go-example",
 	Root: 1,
 	Nodes: []syntax.Node{
 		// 1
