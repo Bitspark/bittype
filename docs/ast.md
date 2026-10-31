@@ -1,8 +1,10 @@
 # Generic AST carrier
 
 **Status, 31 October 2026:** the Go data types described here are implemented.
-Language grammars, validation, traversal and builders are not implemented.
-The canonical type language remains the [model proposal](model.md).
+The [four target syntax vocabularies](syntax.md) use these carriers.
+Grammar checking, validation, traversal and builders are not implemented.
+The canonical type language remains the [model proposal](model.md), without
+a canonical AST implementation.
 
 ## Language parameter
 
@@ -21,12 +23,15 @@ const Declaration ast.Kind[ExampleLanguage] = "declaration"
 var tree ast.AST[ExampleLanguage]
 ```
 
-The marker needs no methods, registration or core change. Two distinct named
+The generic carrier requires no marker methods, registration or core change.
+The target packages additionally implement the separate language identity
+interface for future agnostic registration, as [documented here](syntax.md).
+Two distinct named
 marker types produce distinct instantiated AST, node and kind types. A type
 alias to an existing marker does not create another language. Converting or
 rebuilding nodes explicitly is still possible; this is not a security boundary.
 
-The core contains no canonical, TypeScript, Go or Rust kinds. Later language
+The core contains no canonical, TypeScript, Go, Rust or C++ kinds. Later language
 packages will provide typed builders, views and grammar checks over these
 carriers. A target language may describe native type syntax such as a function
 signature without introducing a privileged behavioral contract in the core.
@@ -110,8 +115,9 @@ and reachable storage as read-only and allocate independent mutable outputs.
 Copying an AST struct alone does not copy its slices. There is no implemented
 freeze operation, allocator, resolver or immutable builder.
 
-Adding another language requires its own marker, grammar and stages, without
-editing `ast` or `pipeline`. Adding an ordinary declaration such as
+Adding another language requires its own marker, vocabulary and identity
+provider, with grammar checks and stages added when needed, without editing
+`ast`, `pipeline` or the shared identity interface. Adding a declaration such as
 `Page<T>` requires neither a new language nor a new core kind. The canonical
 grammar will express its declaration, generic binder, references and application
 using the [proposed model](model.md).

@@ -1,17 +1,20 @@
 # Working here as an agent
 
 Read [CHARTER.md](CHARTER.md), [docs/model.md](docs/model.md),
-[docs/ast.md](docs/ast.md), [docs/generation.md](docs/generation.md) and
+[docs/ast.md](docs/ast.md), [docs/syntax.md](docs/syntax.md),
+[docs/generation.md](docs/generation.md) and
 [LAYOUT.md](LAYOUT.md) before changing this tree.
 
 ## Current scope
 
-The owner selected canonical definitions as input and TypeScript, Go and Rust
+The owner selected canonical definitions as input and TypeScript, Go, Rust and C++
 types as outputs. The model document is a proposal; distinguish proposed rules,
 implemented behavior, published revisions and delivered consumer uptake.
-The current implementation slice contains generic AST data types and a typed
-pipeline contract only. Generators and formatters have not been authorized
-for this slice and must not be added as stubs or implementations.
+The current implementation slice adds the four target AST vocabularies, tests
+and docs on the generic carrier, plus an agnostic language identity interface
+and provider ID/Name methods. The owner explicitly deferred the canonical AST.
+Do not add generators, formatters, parsers, builders or grammar checkers, even
+as stubs. Registry implementation and pipeline execution are also deferred.
 
 - Keep the model independent of Wire, storage formats and target languages.
 - Function, Stream, Cell and future behavioral contracts are library-owned.
@@ -25,9 +28,16 @@ for this slice and must not be added as stubs or implementations.
 - Implement the generation toolchain in Go, in component-owned packages inside
   the initial root Go module. Keep AST transformation and source formatting
   separate. Do not use source-string generation as the intermediate AST.
-- The generic AST and pipeline packages must not import each other, language
-  grammars, generators, formatters or contract libraries. Composition belongs
-  to an explicit application root, not a global discovery or default registry.
+- The generic AST, pipeline and language identity packages must not import each
+  other, concrete languages, generators, formatters or contract libraries.
+  Each syntax package depends only on the AST and language identity contracts
+  plus standard-library utilities; no syntax package imports another.
+- Owner correction, 31 October 2026: a central agnostic language AST registry
+  is intended. The former no-language-registry statement is superseded. Its
+  future implementation accepts the common interface, not hardcoded language
+  imports or a name switch. Providers are selected at application composition.
+  Do not confuse language registration with privileged Function/Stream/Cell
+  bindings or automatic default registration.
 - Use the current model proposal as the working document. Prior research and
   Nightseam are evidence to inspect, not specifications to copy or restore as
   competing active documents.
