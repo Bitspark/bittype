@@ -5,9 +5,11 @@ Go, Rust and C++.
 
 **Current status, 31 October 2026:** generic AST/CST carriers, typed pipeline
 contracts, native syntax vocabularies, parsers, formatters, checks and a shared
-printer are implemented in Go. Specialized providers extend the common
-LanguageProvider identity interface. The canonical model remains a proposal;
-the canonical AST, generators, registry and package releases remain deferred.
+printer are implemented in Go. The syntax engine registers languages and
+ASTTransformer implementations, plans routes and composes existing text stages.
+Specialized text providers extend LanguageProvider. The canonical model remains
+a proposal; canonical AST, actual language mappings and package releases remain
+deferred. The engine starts empty and has no built-in languages or mappings.
 
 The native pipeline separates source parsing, concrete layout and printing:
 
@@ -31,7 +33,9 @@ application-value validation or Wire dependencies.
 - [Target syntax](docs/syntax.md): native vocabulary and supported type subsets.
 - [Parsing and formatting](docs/parsing-formatting.md): CST model, providers,
   ownership, round trips and qualification.
-- [Generation design](docs/generation.md): planned AST-to-AST pipeline.
+- [Syntax engine](docs/engine.md): registration, typed boundaries, path finding,
+  execution and text-stage composition.
+- [Generation design](docs/generation.md): AST-to-AST pipeline and future mappings.
 - [Charter](CHARTER.md), [contributor instructions](AGENTS.md) and
   [source layout](LAYOUT.md): ownership, delivery and package boundaries.
 

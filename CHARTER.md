@@ -22,8 +22,8 @@ bittype owns:
 The generic AST, pipeline and language identity interface are independent
 packages inside the initial root Go module. None imports another foundation,
 concrete language, generator, formatter or contract library. CST depends on AST. Syntax packages
-depend on the AST/CST carriers and identity interface. A future central language registry
-will accept that interface without knowing concrete providers; the application
+depend on the AST/CST carriers and identity interface. The central syntax engine
+accepts explicit registration without knowing concrete providers; the application
 root selects providers and composes stages. The shared infrastructure does not
 know the names or semantics of particular library contracts.
 
@@ -35,8 +35,10 @@ AST-to-CST formatters, syntax checks and the shared CST printer are implemented.
 The [native text design](docs/parsing-formatting.md) defines their ownership and
 qualification limits. Specialized providers all extend LanguageProvider.
 
-The canonical AST, AST-to-AST generators, registry, public builders and pipeline
-executor remain deferred. Native parsing does not make a target language the
+The ASTTransformer boundary and syntax engine now provide checked heterogeneous
+registration, route planning/execution and native text composition. The canonical
+AST, actual AST-to-AST mappings, public builders and application CLI remain
+deferred. Native parsing does not make a target language the
 canonical authority. The [generation design](docs/generation.md) remains separate.
 
 This scope excludes application-value validators, serialization, Wire adapters,

@@ -78,6 +78,9 @@ jobs:
       - name: Vet Go packages
         if: success() || (failure() && steps.formatting.outcome == 'failure')
         run: go vet ./...
+      - name: Check syntax engine concurrency
+        if: success() || (failure() && steps.formatting.outcome == 'failure')
+        run: go test -race -count=1 -run '^TestEngineConcurrent' ./integration/go
       - name: Fuzz native text boundaries
         if: success() || (failure() && steps.formatting.outcome == 'failure')
         env:
@@ -94,7 +97,7 @@ jobs:
       - name: Record passing revision
         shell: bash
         run: |
-          echo "PASS $EXPECTED_REVISION: Go 1.27.3 formatting, contract/dependency tests, vet and native-text fuzzing." >> "$GITHUB_STEP_SUMMARY"
+          echo "PASS $EXPECTED_REVISION: Go 1.27.3 formatting, contract/dependency tests, vet, syntax engine race check and native-text fuzzing." >> "$GITHUB_STEP_SUMMARY"
 
   native:
     runs-on: ubuntu-latest

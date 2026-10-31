@@ -1,7 +1,7 @@
 // Package language defines language identity for syntax providers.
 //
-// It contains no language list or concrete syntax imports. A future agnostic
-// registry can accept LanguageProvider implementations supplied by its composition root.
+// It contains no language list or concrete syntax imports. The agnostic engine
+// accepts explicitly configured providers supplied by its composition root.
 // No registry or automatic registration is implemented here.
 package language
 
@@ -11,8 +11,9 @@ package language
 type ID string
 
 // LanguageProvider identifies a syntax provider without depending on its concrete type.
-// Implementations must have a usable zero value and return stable, nonempty
-// metadata without IO or registration side effects. Name is for display only.
+// Configured instances return stable, nonempty metadata without IO or registration
+// side effects. Name is for display only. Native marker providers have usable
+// zero values; configured registration descriptors require explicit construction.
 //
 // This interface intentionally supplies no AST construction, validation, parsing,
 // transformation or formatting operations. It does not erase or convert AST[L].

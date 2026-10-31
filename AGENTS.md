@@ -12,8 +12,9 @@ types as outputs. The canonical model remains a proposal. The current native-tex
 slice implements parsers, AST-to-CST formatters, syntax checks and a generic
 CST-to-text printer. Read the [concrete syntax design](docs/parsing-formatting.md).
 
-- Canonical AST, generators, public builders, registry implementation and pipeline
-  execution remain deferred. Do not introduce runtime adapters, callable behavior,
+- Canonical AST, actual language transformers, public builders and application
+  CLI remain deferred. The syntax engine and ASTTransformer boundary are now
+  implemented; read [docs/engine.md](docs/engine.md). Do not introduce runtime adapters, callable behavior,
   application-value validators, serialization or networking.
 - Function, Stream, Cell and future behavioral contracts remain library-owned.
   Never add their names as core kinds, switches, imports, registrations,
@@ -27,9 +28,16 @@ CST-to-text printer. Read the [concrete syntax design](docs/parsing-formatting.m
 - AST, pipeline and language identity remain independent. CST depends on AST.
   Syntax depends on AST/CST carriers and identity, never on another language
   or parser/formatter. Native stages own their grammar and spelling.
-- LanguageProvider supplies ID and Name. Every specialized provider embeds it.
-  Future registration stays explicit and agnostic, with no known-language list,
+- LanguageProvider supplies ID and Name for configured language providers.
+  Transformers identify two endpoints through FromID/ToID. Registration stays
+  explicit and agnostic, with no known-language list,
   name switch or automatic registration. No compatibility identity alias.
+- Registry profiles are explicit caller-owned compatibility promises. Check
+  identity, profile and actual Go marker at dynamic boundaries; no AST[any]
+  conversion, structural fingerprint or inferred contract identity.
+- Keep route planning separate from semantic applicability. Reject ambiguous
+  shortest routes and unsupported inputs; never silently retry a weaker mapping.
+  Inputs and output envelopes own snapshots. Call plugins outside registry locks.
 - ASTView is a borrowed read-only view. A formatter owns a deep AST snapshot in
   its output CST. Parsers retain all admitted source bytes; whole-input rejection,
   bounded resources and errors without partial output are required.
