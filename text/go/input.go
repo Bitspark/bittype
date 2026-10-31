@@ -6,7 +6,6 @@ import "github.com/Bitspark/bittype/ast/go"
 // Input IDs are caller-owned opaque addresses, not paths to open or hashes.
 type Input struct {
 	SourceID ast.SourceID
-	TreeID ast.TreeID
-	Text string
+	TreeID   ast.TreeID
+	Text     string
 }
-

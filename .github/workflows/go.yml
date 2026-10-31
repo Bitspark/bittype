@@ -73,8 +73,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: Check public contracts and production dependencies
+        if: success() || (failure() && steps.formatting.outcome == 'failure')
         run: go test -count=1 -v ./...
       - name: Vet Go packages
+        if: success() || (failure() && steps.formatting.outcome == 'failure')
         run: go vet ./...
       - name: Record passing revision
         shell: bash

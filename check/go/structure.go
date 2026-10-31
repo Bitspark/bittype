@@ -16,21 +16,37 @@ func Structure[L any](tree ast.AST[L]) error {
 	if tree.ID == "" || tree.Root == 0 || int(tree.Root) > len(tree.Nodes) {
 		return bad(tree.Root, "nonempty tree ID and valid root are required")
 	}
-	if len(tree.Nodes) > MaxNodes { return &text.Diagnostic{Code: text.LimitExceeded, Message: "too many AST nodes"} }
+	if len(tree.Nodes) > MaxNodes {
+		return &text.Diagnostic{Code: text.LimitExceeded, Message: "too many AST nodes"}
+	}
 	seen := make([]bool, len(tree.Nodes))
-	type entry struct { id ast.NodeID; depth int }
+	type entry struct {
+		id    ast.NodeID
+		depth int
+	}
 	stack := []entry{{tree.Root, 0}}
 	for len(stack) > 0 {
-		e := stack[len(stack)-1]; stack = stack[:len(stack)-1]
-		if e.id == 0 || int(e.id) > len(tree.Nodes) { return bad(e.id, "child address outside arena") }
-		if e.depth > MaxDepth { return &text.Diagnostic{Code: text.LimitExceeded, Message: "AST nesting exceeds limit"} }
-		if seen[e.id-1] { return bad(e.id, "containment cycle or multiple parents") }
+		e := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if e.id == 0 || int(e.id) > len(tree.Nodes) {
+			return bad(e.id, "child address outside arena")
+		}
+		if e.depth > MaxDepth {
+			return &text.Diagnostic{Code: text.LimitExceeded, Message: "AST nesting exceeds limit"}
+		}
+		if seen[e.id-1] {
+			return bad(e.id, "containment cycle or multiple parents")
+		}
 		seen[e.id-1] = true
 		n := tree.Nodes[e.id-1]
-		if n.Kind == "" { return bad(e.id, "empty node kind") }
+		if n.Kind == "" {
+			return bad(e.id, "empty node kind")
+		}
 		attrs := map[string]bool{}
 		for _, a := range n.Attributes {
-			if a.Name == "" || attrs[a.Name] { return bad(e.id, "empty or duplicate attribute: " + a.Name) }
+			if a.Name == "" || attrs[a.Name] {
+				return bad(e.id, "empty or duplicate attribute: "+a.Name)
+			}
 			attrs[a.Name] = true
 		}
 		refs := map[string]bool{}
@@ -42,19 +58,26 @@ func Structure[L any](tree ast.AST[L]) error {
 			refs[r.Role] = true
 		}
 		for _, s := range n.Origin.Spans {
-			if s.Source == "" || s.Start > s.End { return bad(e.id, "invalid source span") }
+			if s.Source == "" || s.Start > s.End {
+				return bad(e.id, "invalid source span")
+			}
 		}
 		for _, r := range n.Origin.Nodes {
-			if r.Tree == "" || r.Node == 0 { return bad(e.id, "invalid origin node address") }
+			if r.Tree == "" || r.Node == 0 {
+				return bad(e.id, "invalid origin node address")
+			}
 		}
 		for _, child := range n.Children {
-			if child.Role == "" { return bad(e.id, "empty child role") }
-			stack = append(stack, entry{child.Node, e.depth+1})
+			if child.Role == "" {
+				return bad(e.id, "empty child role")
+			}
+			stack = append(stack, entry{child.Node, e.depth + 1})
 		}
 	}
 	for i, ok := range seen {
-		if !ok { return bad(ast.NodeID(i+1), fmt.Sprintf("unreachable node %d", i+1)) }
+		if !ok {
+			return bad(ast.NodeID(i+1), fmt.Sprintf("unreachable node %d", i+1))
+		}
 	}
 	return nil
 }
-

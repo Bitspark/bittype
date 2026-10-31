@@ -7,4 +7,3 @@ type View[L any] interface {
 }
 
 func (tree AST[L]) ASTView() AST[L] { return tree }
-

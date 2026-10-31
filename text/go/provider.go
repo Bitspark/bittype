@@ -29,4 +29,3 @@ type Provider[L any] interface {
 	CheckerProvider[L]
 	PrinterProvider[L]
 }
-

@@ -8,20 +8,20 @@ import (
 type Code string
 
 const (
-	SyntaxError Code = "syntax"
-	Unsupported Code = "unsupported"
-	InvalidAST Code = "invalid-ast"
-	InvalidCST Code = "invalid-cst"
+	SyntaxError   Code = "syntax"
+	Unsupported   Code = "unsupported"
+	InvalidAST    Code = "invalid-ast"
+	InvalidCST    Code = "invalid-cst"
 	LimitExceeded Code = "limit"
 )
 
 // Diagnostic is returned through error. Span offsets are half-open UTF-8 bytes;
 // Node is optional when no abstract node has been built.
 type Diagnostic struct {
-	Code Code
+	Code    Code
 	Message string
-	Span *ast.Span
-	Node *ast.NodeRef
+	Span    *ast.Span
+	Node    *ast.NodeRef
 }
 
 func (d *Diagnostic) Error() string {
@@ -42,4 +42,3 @@ func AtNode[L any](tree ast.AST[L], id ast.NodeID, message string) error {
 	}
 	return d
 }
-

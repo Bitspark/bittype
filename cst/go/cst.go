@@ -11,19 +11,18 @@ type Kind[L any] string
 // Kind belongs to the language. Leaves include punctuation, comments and spaces.
 // Syntax addresses zero or more nodes of this CST's stored abstract view.
 type Node[L any] struct {
-	Kind Kind[L]
-	Text *string
+	Kind     Kind[L]
+	Text     *string
 	Children []NodeID
-	Syntax []ast.NodeID
-	Origin ast.Origin
+	Syntax   []ast.NodeID
+	Origin   ast.Origin
 }
 
 // CST owns both arenas. Stage inputs and borrowed views must not be mutated.
 type CST[L any] struct {
 	Abstract ast.AST[L]
-	Root NodeID
-	Nodes []Node[L]
+	Root     NodeID
+	Nodes    []Node[L]
 }
 
 func (tree CST[L]) ASTView() ast.AST[L] { return tree.Abstract }
-
