@@ -1,35 +1,43 @@
 # Working here as an agent
 
-Read the [charter](CHARTER.md), Bitwire's
-[decision 0010](https://github.com/Bitspark/bitwire/blob/main/docs/decisions/0010-bitwire-holds-the-contract-and-bitruntime-implements-it.md)
-and the [contract theory](https://github.com/Bitspark/bittheory) before changing
-this tree.
+Read [CHARTER.md](CHARTER.md), [docs/model.md](docs/model.md) and
+[LAYOUT.md](LAYOUT.md) before changing this tree.
 
-- Keep the language wire-independent. Paths, profiles and message representation
-  are Bitlink's. Test each declaration with: "would it make sense, unchanged, with a
-  different adapter and no Bitwire?"
-- Depend on nothing else in the project. The generation kernel module may not
-  import the declaration language.
-- Keep these distinct:
-  - declaration identity;
-  - profile revision;
-  - generated-code compatibility;
-  - behavior the declaration does not represent.
+## Current scope
 
-  A digest names declared content, not behavior.
-- Hold every identity library to the shared canonicalization vectors. Two
-  implementations of one encoding in one language are a defect.
-- This is a new language, designed rather than migrated. Nightseam's language and
-  the family design are evidence to examine, not specifications to copy.
-- After the initial bootstrap, use a branch or worktree and a pull request.
-  Squash a green change onto `main`.
-- Do not add private checkout dependencies, local orchestration state or
-  credentials.
+The owner selected canonical definitions as input and TypeScript, Go and Rust
+types as outputs. The model document is a proposal; distinguish proposed rules,
+implemented behavior, published revisions and delivered consumer uptake.
 
-## Repository layout
+- Keep the model independent of Wire, storage formats and target languages.
+- Function, Stream, Cell and future behavioral contracts are library-owned.
+  Do not add their names as core kinds, switches, imports, registrations,
+  fingerprints or hidden defaults.
+- Preserve declaration origins, generic slots and applications. Equal-looking
+  structures do not authorize substituting one library contract for another.
+- This milestone generates types only. Do not add adapters, callable behavior,
+  runtime value validators, serialization or networking.
+- Do not turn TypeScript declarations into the authoritative input again.
+- A general generation kernel, if needed, stays in a separate module and does
+  not import the declaration language or contract libraries.
+- Use the current model proposal as the working document. Prior research and
+  Nightseam are evidence to inspect, not specifications to copy or restore as
+  competing active documents.
+- Settle normalization and identity content before fixing an encoding. Preserve
+  the distinction between declaration identity, value shape, generated-code
+  compatibility and behavior.
 
-Use component-first source paths with two-letter language directories:
-`<component>/<lang>/` and `cmd/<command>/<lang>/`. Read [LAYOUT.md](LAYOUT.md)
-for the shared codes, current paths and migration boundaries. Apply it to new
-components and ports; an existing path moves only with its imports, manifests,
-tests and tooling. Preserve the repository's ownership and release rules.
+## Delivery
+
+Use a task branch or worktree and a pull request. Squash a green change onto
+`main`; keep the designated primary checkout on `main`.
+
+For documentation, check relative Markdown links, JSON example syntax and
+`git diff --check`, including staged additions. The documentation workflow runs
+these checks on the exact committed revision on a GitHub runner. Portable
+compilation and later language checks also run on the shared build service or
+GitHub runners, using the maintained repository gate when one exists.
+
+Keep historical commits, research evidence, license notices and unrelated work.
+Do not add private checkout dependencies, local coordination state or credentials.
+Repository names are lowercase; the company name is Bitspark.
