@@ -80,16 +80,29 @@ func TestEngineProductionDependencies(t *testing.T) {
 	command := exec.Command("go", "list", "-deps", "-json", "./engine/go", "./transform/go")
 	command.Dir = "../.."
 	output, err := command.Output()
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	allowed := map[string]bool{}
 	for _, path := range []string{"ast/go", "cst/go", "language/go", "pipeline/go", "text/go", "check/go", "check/cst/go", "internal/tree", "transform/go", "engine/go"} {
 		allowed[modulePath+"/"+path] = true
 	}
 	decoder := json.NewDecoder(bytes.NewReader(output))
 	for {
-		var pkg struct { ImportPath string; Standard bool }
-		if err := decoder.Decode(&pkg); err == io.EOF { break } else if err != nil { t.Fatal(err) }
-		if !pkg.Standard && !allowed[pkg.ImportPath] { t.Fatalf("syntax frame imports concrete or external dependency %s", pkg.ImportPath) }
-		if strings.Contains(pkg.ImportPath, "/syntax/") { t.Fatalf("syntax registry knows %s", pkg.ImportPath) }
+		var pkg struct {
+			ImportPath string
+			Standard   bool
+		}
+		if err := decoder.Decode(&pkg); err == io.EOF {
+			break
+		} else if err != nil {
+			t.Fatal(err)
+		}
+		if !pkg.Standard && !allowed[pkg.ImportPath] {
+			t.Fatalf("syntax frame imports concrete or external dependency %s", pkg.ImportPath)
+		}
+		if strings.Contains(pkg.ImportPath, "/syntax/") {
+			t.Fatalf("syntax registry knows %s", pkg.ImportPath)
+		}
 	}
 }

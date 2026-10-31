@@ -146,7 +146,7 @@ remains unchanged and does not import the language identity interface.
 The owner clarified on 31 October that a central agnostic language AST registry
 will exist. The earlier no-language-registry direction is superseded. The
 implemented syntax engine accepts configured descriptors and native providers
-through that interface, without a concrete language import, switch or builtin
+through typed registration adapters, without a concrete language import, switch or builtin
 list. Application composition owns the selected provider instances.
 
 Identity methods do not discover packages, initialize resources or register
