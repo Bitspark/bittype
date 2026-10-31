@@ -18,3 +18,4 @@ type Forms<'a> = (&'a mut [u8], *mut u8, [u8; 3], (), unsafe extern "C" fn(i32) 
 type Diverge = fn() -> !;
 type Absolute = ::std::string::String;
 type NamedFn = fn(value: i32);
+type EscapedABI = extern "\u{43}" fn();

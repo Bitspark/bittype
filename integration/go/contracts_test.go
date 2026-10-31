@@ -21,7 +21,9 @@ func (packages contractImporter) Import(path string) (*types.Package, error) {
 	if result, ok := packages[path]; ok {
 		return result, nil
 	}
-	if !strings.HasPrefix(path, modulePath+"/") { return importer.Default().Import(path) }
+	if !strings.HasPrefix(path, modulePath+"/") {
+		return importer.Default().Import(path)
+	}
 	return nil, fmt.Errorf("unexpected dependency in public contract fixture: %s", path)
 }
 

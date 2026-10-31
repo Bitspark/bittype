@@ -15,7 +15,8 @@ type Token struct {
 	Start, End  int
 }
 type Options struct {
-	Space func(rune) bool
+	LeadingDotNumbers bool
+	Space           func(rune) bool
 	Punctuation     []string
 	NestedComments  bool
 	Lifetimes       bool
@@ -42,7 +43,9 @@ func Scan(input text.Input, options Options) ([]Token, error) {
 	}
 	s := input.Text
 	space := options.Space
-	if space == nil { space = func(r rune) bool { return r == ' ' || (r >= '\t' && r <= '\r') } }
+	if space == nil {
+		space = func(r rune) bool { return r == ' ' || (r >= '\t' && r <= '\r') }
+	}
 	var out []Token
 	for i := 0; i < len(s); {
 		start := i
@@ -144,7 +147,7 @@ func Scan(input text.Input, options Options) ([]Token, error) {
 				}
 				i += n
 			}
-		case r >= '0' && r <= '9':
+		case r >= '0' && r <= '9' || (options.LeadingDotNumbers && r == '.' && i+1 < len(s) && s[i+1] >= '0' && s[i+1] <= '9'):
 			class = "number"
 			i += size
 			for i < len(s) {

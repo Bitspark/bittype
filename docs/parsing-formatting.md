@@ -231,7 +231,8 @@ The maintained GitHub workflows run against exact committed revisions. Tests
 cover source retention, independent AST-to-CST-to-text expectations, formatting
 stability, typed provider identity/separation, malformed arenas, unsupported
 syntax and resource bounds. Native compiler checks use pinned toolchains on
-remote runners. Workstation use is limited to source editing, Git and coordination.
+remote runners: Go 1.27.3, TypeScript 5.9.3 (ES2020), Rust 1.90.0 (edition 2024),
+and GCC 14.2.0 (C++20). Workstation use is limited to source editing, Git and coordination.
 
 The canonical model remains a proposal. No canonical AST, AST-to-AST generator,
 registry, binding implementation or package release is introduced here.

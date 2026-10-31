@@ -30,7 +30,9 @@ func Parse(input text.Input) (cst.CST[s.Language], error) {
 	}
 	root := p.AddSpan(s.KindFile, 0, len(input.Text), nil, children...)
 	t := p.Compact(root)
-	if p.Err != nil { return cst.CST[s.Language]{}, p.Err }
+	if p.Err != nil {
+		return cst.CST[s.Language]{}, p.Err
+	}
 	if err := check.Check(t); err != nil {
 		return cst.CST[s.Language]{}, err
 	}
@@ -415,7 +417,9 @@ func (p *parser) typ() ast.NodeID {
 		p.Want(")")
 		if len(children) == 1 && !comma {
 			id := children[0].Node
-			if p.Err != nil || id == 0 { return 0 }
+			if p.Err != nil || id == 0 {
+				return 0
+			}
 			p.Tree.Nodes[id-1].Origin.Spans = []ast.Span{{Source: p.Input.SourceID, Start: uint64(start), End: uint64(p.Tokens[p.Pos-1].End)}}
 			return id
 		}

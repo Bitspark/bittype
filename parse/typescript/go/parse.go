@@ -1,7 +1,6 @@
 package typescriptparse
 
 import (
-	"strconv"
 	"github.com/Bitspark/bittype/ast/go"
 	check "github.com/Bitspark/bittype/check/typescript/go"
 	"github.com/Bitspark/bittype/cst/go"
@@ -12,14 +11,21 @@ import (
 	lit "github.com/Bitspark/bittype/internal/typescript"
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
 	"github.com/Bitspark/bittype/text/go"
+	"strconv"
 	"strings"
 )
 
 type parser struct{ *parseutil.Parser[s.Language] }
 
 func decimalKey(s string) bool {
-	if len(s) == 0 || (len(s) > 1 && s[0] == '0') { return false }
-	for _, c := range s { if c < '0' || c > '9' { return false } }
+	if len(s) == 0 || (len(s) > 1 && s[0] == '0') {
+		return false
+	}
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
 	value, err := strconv.ParseUint(s, 10, 64)
 	return err == nil && value <= 9007199254740991
 }
@@ -27,7 +33,7 @@ func decimalKey(s string) bool {
 var vocabulary = concrete.Vocabulary[s.Language]{Layout: s.ConcreteLayout, Token: s.ConcreteToken, Whitespace: s.ConcreteWhitespace, Comment: s.ConcreteComment}
 
 func Parse(input text.Input) (cst.CST[s.Language], error) {
-	base, err := parseutil.New[s.Language](input, lex.Options{Space: lit.Space, Punctuation: []string{"...", "=>"}, Directives: []string{"///", "// @ts-", "//@ts-"}})
+	base, err := parseutil.New[s.Language](input, lex.Options{Space: lit.Space, LeadingDotNumbers: true, Punctuation: []string{"...", "=>"}, Directives: []string{"///", "// @ts-", "//@ts-"}})
 	if err != nil {
 		return cst.CST[s.Language]{}, err
 	}
@@ -47,7 +53,9 @@ func Parse(input text.Input) (cst.CST[s.Language], error) {
 	}
 	root := p.AddSpan(s.KindSourceFile, 0, len(input.Text), nil, children...)
 	tree := p.Compact(root)
-	if p.Err != nil { return cst.CST[s.Language]{}, p.Err }
+	if p.Err != nil {
+		return cst.CST[s.Language]{}, p.Err
+	}
 	if err := check.Check(tree); err != nil {
 		return cst.CST[s.Language]{}, err
 	}
@@ -239,7 +247,9 @@ func (p *parser) members() []ast.Child {
 				name = p.Take().Text
 				// Only canonical decimal keys are admitted; other spellings need
 				// JavaScript ToPropertyKey semantics before becoming property text.
-				if !decimalKey(name) { p.Fail(text.Unsupported, "numeric property keys must be canonical decimal integers") }
+				if !decimalKey(name) {
+					p.Fail(text.Unsupported, "numeric property keys must be canonical decimal integers")
+				}
 			} else {
 				name = p.Ident()
 			}

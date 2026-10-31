@@ -39,7 +39,9 @@ func Parse(input text.Input) (cst.CST[s.Language], error) {
 	}
 	root := p.AddSpan(s.KindTranslationUnit, 0, len(input.Text), nil, children...)
 	t := p.Compact(root)
-	if p.Err != nil { return cst.CST[s.Language]{}, p.Err }
+	if p.Err != nil {
+		return cst.CST[s.Language]{}, p.Err
+	}
 	if err := check.Check(t); err != nil {
 		return cst.CST[s.Language]{}, err
 	}
@@ -108,7 +110,9 @@ func (p *parser) templates() []ast.Child {
 		if !p.Eat(",") {
 			break
 		}
-		if p.Peek() == ">" { p.Fail(text.SyntaxError, "trailing comma in template parameters") }
+		if p.Peek() == ">" {
+			p.Fail(text.SyntaxError, "trailing comma in template parameters")
+		}
 	}
 	p.Want(">")
 	if len(out) == 0 {
@@ -330,7 +334,9 @@ func (p *parser) named() ast.NodeID {
 				if !p.Eat(",") {
 					break
 				}
-				if p.Peek() == ">" { p.Fail(text.SyntaxError, "trailing comma in template arguments") }
+				if p.Peek() == ">" {
+					p.Fail(text.SyntaxError, "trailing comma in template arguments")
+				}
 			}
 			p.Want(">")
 			if len(args) == 0 {

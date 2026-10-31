@@ -79,13 +79,22 @@ jobs:
         if: success() || (failure() && steps.formatting.outcome == 'failure')
         run: go vet ./...
       - name: Fuzz native text boundaries
+        if: success() || (failure() && steps.formatting.outcome == 'failure')
         env:
           GOMAXPROCS: '2'
         run: go test -run='^$' -fuzz=FuzzNativeText -fuzztime=20s ./integration/go
+      - name: Save failing fuzz cases
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: native-fuzz-corpus
+          path: integration/go/testdata/fuzz/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Record passing revision
         shell: bash
         run: |
-          echo "PASS $EXPECTED_REVISION: Go 1.27.3 formatting, contract/dependency tests and vet." >> "$GITHUB_STEP_SUMMARY"
+          echo "PASS $EXPECTED_REVISION: Go 1.27.3 formatting, contract/dependency tests, vet and native-text fuzzing." >> "$GITHUB_STEP_SUMMARY"
 
   native:
     runs-on: ubuntu-latest
