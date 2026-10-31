@@ -4,7 +4,7 @@ struct Person { int id; };
 template<typename T, class U = T>
 struct Page { std::vector<T> items; U extra; };
 using People = Page<Person>;
-enum class Mode : unsigned int { Read = 1, Write = 2, Minus = -1 };
+enum class Mode : int { Read = 1, Write = 2, Minus = -1 };
 enum Plain : int;
 struct Base { virtual ~Base() noexcept = 0; };
 template<class T> class Reader : public virtual Base {

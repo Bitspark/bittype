@@ -130,9 +130,16 @@ func (p *Parser[L]) End() error {
 // publish resolved references; each retained subtree gets independent ownership.
 func (p *Parser[L]) Compact(root ast.NodeID) ast.AST[L] {
 	out := ast.AST[L]{ID: p.Tree.ID}
+	depth := 0
 	var copyNode func(ast.NodeID) ast.NodeID
 	copyNode = func(id ast.NodeID) ast.NodeID {
-		if id == 0 {
+		if id == 0 || p.Err != nil {
+			return 0
+		}
+		depth++
+		defer func() { depth-- }()
+		if depth > check.MaxDepth {
+			p.Fail(text.LimitExceeded, "abstract nesting exceeds limit")
 			return 0
 		}
 		n := p.Tree.Nodes[id-1]

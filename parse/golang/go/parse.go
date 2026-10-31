@@ -73,6 +73,7 @@ func Parse(input text.Input) (cst.CST[s.Language], error) {
 	}
 	root := p.AddSpan(s.KindFile, 0, len(input.Text), tr.Attrs("package", file.Name.Name), append(imports, decls...)...)
 	t := p.Compact(root)
+	if p.Err != nil { return cst.CST[s.Language]{}, p.Err }
 	if err := check.Check(t); err != nil {
 		return cst.CST[s.Language]{}, err
 	}

@@ -26,8 +26,9 @@ func Format(view ast.View[s.Language]) (cst.CST[s.Language], error) {
 	return concrete.Build(t, f.file(t.Root))
 }
 func (f formatter) file(id ast.NodeID) doc {
-	parts := []doc{f.T("package"), f.Space(), f.T(f.Attr(id, "package")), f.Line("\t", 0)}
-	for _, imp := range f.Children(id, "import") {
+	parts := []doc{f.T("package"), f.Space(), f.T(f.Attr(id, "package"))}
+	for i, imp := range f.Children(id, "import") {
+		if i == 0 { parts = append(parts, f.Line("\t", 0)) }
 		parts = append(parts, f.Line("\t", 0), f.T("import"), f.Space())
 		if alias := f.Attr(imp, "alias"); alias != "" {
 			parts = append(parts, f.T(alias), f.Space())
