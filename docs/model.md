@@ -5,14 +5,14 @@ implementation or published language revision. The generic AST and pipeline
 foundation is implemented separately; see [the generation design](generation.md).
 
 The owner selected bittype as the home for canonical type definitions and type
-generation for TypeScript, Go and Rust. The first milestone is types only.
+generation for TypeScript, Go, Rust and C++. The first milestone is types only.
 The [charter](../CHARTER.md) records that boundary; this document proposes the
 model, authoring form and implementation stages.
 
 ## 1. Direction and scope
 
 A versioned, language-independent definition is the authoritative input.
-TypeScript, Go and Rust are generated representations of that definition:
+TypeScript, Go, Rust and C++ are intended generated representations of that definition:
 
 ```text
 JSON source -> checked canonical AST -> target-language AST -> native type source
@@ -48,7 +48,7 @@ only a bare name or flattened structural body. A parameter reference points to
 its lexical binder. An application retains its constructor and resolved
 arguments, as well as any normalized view needed by a consumer.
 
-The resolved canonical AST is the common input to all three AST-to-AST generators.
+The planned canonical AST is the common input to all four AST-to-AST generators.
 Their spelling and memory-layout choices do not rewrite its semantics.
 Each target AST is then printed by its own formatter, independently of the
 canonical model. The toolchain implementation language is Go.
@@ -276,6 +276,9 @@ for Function, Stream, Cell or another behavioral contract.
 ## 8. Native type generation
 
 All backends consume the same checked model and explicit target configuration.
+The following initial representation proposals cover TypeScript, Go and Rust.
+C++ has now been added as a target AST vocabulary; its canonical representation
+mapping remains to be specified. This slice adds no canonical AST or generator.
 
 | Canonical form | TypeScript | Go | Rust |
 | --- | --- | --- | --- |
@@ -338,9 +341,11 @@ The following are forbidden:
 
 ## 10. Implementation stages and evidence
 
-This document specifies the model proposal. The initial Go foundation contains
-only [generic AST data types](ast.md) and a [typed stage contract](generation.md).
-It does not implement a language grammar, frontend, generator or formatter.
+This document specifies the model proposal. The Go foundation contains
+[generic AST data types](ast.md), a [typed stage contract](generation.md) and
+[four target vocabularies with language identity](syntax.md). The canonical AST
+is explicitly deferred. No parser, builder, grammar checker, generator or
+formatter is implemented.
 
 1. **Specify the model and fixtures.** Resolve the outstanding syntax and
    normalization choices below. Write language-neutral valid/invalid examples,
@@ -349,8 +354,8 @@ It does not implement a language grammar, frontend, generator or formatter.
    check binders, applications and recursion, and produce the shared model with
    useful source diagnostics. Reject duplicate JSON object keys before an object
    map can discard them, unknown semantic forms and incomplete inputs.
-3. **Implement all three AST-to-AST generators.** Use the same fixtures and
-   canonical AST to produce TypeScript, Go and Rust ASTs. Add only the support
+3. **Implement all four AST-to-AST generators.** Use the same fixtures and
+   canonical AST to produce TypeScript, Go, Rust and C++ ASTs. Add only the support
    data declarations their representations need. Do not add adapters or runtime
    validators, and do not emit source strings from these transformations.
 4. **Implement independent formatters.** Each formatter consumes its target AST
@@ -389,4 +394,4 @@ not an undocumented permissive fallback.
 
 The proposal does not close the historical language-design issue or qualify a
 released canonical encoding. It supplies the current reviewable model and
-scoped path to the three type generators.
+scoped path to the four type generators.

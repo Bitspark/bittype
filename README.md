@@ -1,18 +1,20 @@
 # bittype
 
 A language-independent type model and native type generation for TypeScript,
-Go and Rust.
+Go, Rust and C++.
 
-**Current status, 31 October 2026:** generic AST data types and a typed pipeline
-contract are implemented in Go. The canonical language is still a proposal.
-There are no language grammars, parsers, generators, formatters or published
-type packages yet.
+**Current status, 31 October 2026:** generic AST data types, a typed pipeline
+contract, and TypeScript, Go, Rust and C++ AST vocabularies are implemented in Go.
+Each target supplies identity methods through a common language interface for
+a future agnostic registry. The canonical AST and registry remain deferred.
+There are no parsers, builders, grammar checkers, generators, formatters or
+published type packages yet.
 
 The intended pipeline is canonical input to canonical AST, target-language AST,
 then source text. Generators and formatters are separate Go components.
-TypeScript is an output language, alongside Go and Rust. The present slice
-provides only the shared AST and stage declarations, without transformation or
-formatting implementations.
+TypeScript is an output language, alongside Go, Rust and C++. The present slice
+provides target syntax declarations and language identity metadata without
+transformation or formatting implementations.
 
 Function, Stream, Cell and future behavioral contracts remain library-owned.
 This milestone adds no adapters, callable implementations, serialization,
@@ -24,6 +26,8 @@ validation of application values or Wire dependencies.
   representations, limitations and implementation stages.
 - [Generic AST](docs/ast.md): implemented data types, language separation,
   addressing, provenance and limits.
+- [Target syntax](docs/syntax.md): the four native AST vocabularies, language
+  identity interface, future registration and current limits.
 - [Generation design](docs/generation.md): target layout, stage contract,
   composition strategy, dependencies and remaining work.
 - [Charter](CHARTER.md): current ownership and delivery boundary.

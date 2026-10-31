@@ -28,7 +28,9 @@ func (packages contractImporter) Import(path string) (*types.Package, error) {
 func loadContracts(t *testing.T) contractImporter {
 	t.Helper()
 	packages := contractImporter{}
-	for _, name := range []string{"ast", "pipeline"} {
+	for _, name := range []string{
+		"ast", "pipeline", "language", "syntax/typescript", "syntax/golang", "syntax/rust", "syntax/cpp",
+	} {
 		dir := filepath.Join("..", "..", name, "go")
 		entries, err := os.ReadDir(dir)
 		if err != nil {
@@ -59,14 +61,30 @@ func loadContracts(t *testing.T) contractImporter {
 
 func checkConsumer(t *testing.T, packages contractImporter, name string) error {
 	t.Helper()
+	if diagnostics := consumerDiagnostics(t, packages, name); len(diagnostics) != 0 {
+		return diagnostics[0]
+	}
+	return nil
+}
+
+func consumerDiagnostics(t *testing.T, packages contractImporter, name string) []error {
+	t.Helper()
 	positions := token.NewFileSet()
 	file, err := parser.ParseFile(positions, filepath.Join("testdata", name+".go"), nil, parser.AllErrors)
 	if err != nil {
 		t.Fatal(err)
 	}
-	config := types.Config{GoVersion: "go1.27", Importer: packages}
+	var diagnostics []error
+	config := types.Config{
+		GoVersion: "go1.27",
+		Importer:  packages,
+		Error:     func(err error) { diagnostics = append(diagnostics, err) },
+	}
 	_, err = config.Check("example.invalid/consumer", positions, []*goast.File{file}, nil)
-	return err
+	if err != nil && len(diagnostics) == 0 {
+		diagnostics = append(diagnostics, err)
+	}
+	return diagnostics
 }
 
 func TestIndependentLanguageConsumer(t *testing.T) {

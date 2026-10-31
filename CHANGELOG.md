@@ -4,12 +4,20 @@
 
 ### 31 October 2026
 
+- Add TypeScript, Go, Rust and C++ AST vocabularies over the unchanged generic
+  carrier, with independent target consumers and language-separation checks.
+- Add an agnostic language identity interface and provider ID/Name methods
+  for the owner's intended central registry. Registry implementation remains
+  deferred; no canonical AST, parser, builder or grammar checker is added.
+- Document node shapes, native syntax limits and the updated dependency/layout
+  boundary in [docs/syntax.md](docs/syntax.md). Generators and formatters remain
+  unimplemented.
 - Document the Go AST-to-AST generation pipeline, target layout, composition
   strategy and dependency boundaries in [docs/generation.md](docs/generation.md).
 - Add generic AST carriers, language-owned node kinds, containment/reference
   links and provenance, plus the independent typed `Stage[I, O]` contract.
 - Add remote Go formatting, type-separation and dependency tests, and vet.
-  No language grammars, generators, formatters or stage executors are included.
+  That initial foundation included no language vocabularies or stage executors.
 - Add the proposed canonical value-type model and a types-only implementation
   plan for TypeScript, Go and Rust in [docs/model.md](docs/model.md).
 - Replace stale bootstrap guidance in the README, charter and contributor

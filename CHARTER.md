@@ -12,29 +12,35 @@ bittype owns:
 - The language-independent value-type model, its source syntax, declarations,
   generic slots, applications, imports and resolution rules.
 - Parsing and checking declarations, including scope and recursive type rules.
-- Native type generation for TypeScript, Go and Rust.
+- Native type generation for TypeScript, Go, Rust and C++.
+- Native AST vocabularies and an agnostic language identity/registration
+  boundary, independent of particular language providers.
 - The specification of canonical declaration encoding and its independent
   vectors, once identity and normalization rules have been settled.
 - Small data types needed to represent presence and nullness in generated code.
 
-The generic AST and pipeline are independent packages inside the initial root
-Go module. Neither imports a language grammar, generator, formatter or contract
-library; the pipeline also does not import the AST package. The application
-root will compose explicit stages and targets. The shared infrastructure does
-not know the names or semantics of particular library contracts.
+The generic AST, pipeline and language identity interface are independent
+packages inside the initial root Go module. None imports another foundation,
+concrete language, generator, formatter or contract library. Syntax packages
+depend on the AST and identity interface. A future central language registry
+will accept that interface without knowing concrete providers; the application
+root selects providers and composes stages. The shared infrastructure does not
+know the names or semantics of particular library contracts.
 
 ## Current delivery boundary
 
 The proposed model is documented in docs/model.md. The present implementation
-contains only language-parameterized AST data declarations and a typed pipeline
-stage contract in Go. No language grammar, parser, generator, formatter,
-composition executor or command is implemented.
+contains generic AST data declarations, a typed pipeline stage contract and
+four target-language AST vocabularies in Go. A shared language identity interface
+and the providers' ID/Name methods prepare for later registration. No canonical
+AST, registry, parser, builder, grammar checker, generator, formatter, composition
+executor or command is implemented.
 
 The [generation design](docs/generation.md) specifies the target file layout,
 composition and dependencies. Later stages will implement the canonical
-frontend, three AST-to-AST type generators and separate target formatters.
+frontend, four AST-to-AST type generators and separate target formatters.
 All those components will be implemented in Go; emitted types target
-TypeScript, Go and Rust.
+TypeScript, Go, Rust and C++.
 
 This scope does not include application-value validators, descriptors for a
 particular validator, serialization, Wire adapters, RPC, streaming, callable

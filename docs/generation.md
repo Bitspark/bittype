@@ -1,9 +1,11 @@
 # AST generation and pipeline design
 
 **Direction: 31 October 2026.** Generators and formatters will be implemented
-in Go. The present slice implements only the generic AST data types and typed
-stage contract. No parser, language grammar, generator, formatter, composition
-executor or command is implemented.
+in Go. The present slice implements the generic AST, typed stage contract,
+language identity interface and four target AST vocabularies. The canonical AST
+and central agnostic language registry remain deferred. No parser, builder,
+grammar checker, generator, formatter, composition executor or command is
+implemented.
 
 The canonical model remains a [proposal](model.md). Its syntax and semantic
 decisions must be settled before a language implementation claims conformance.
@@ -17,6 +19,7 @@ canonical source
          -> AST[TypeScript] -> TypeScript source
          -> AST[Go]         -> Go source
          -> AST[Rust]       -> Rust source
+         -> AST[C++]        -> C++ source
 ```
 
 Each generator transforms a checked canonical AST into a target-language AST.
@@ -45,7 +48,7 @@ separate packages; separate modules are unnecessary for this initial foundation.
 The final path component denotes the implementation language, not the target.
 For example, `syntax/rust/go` is Go code describing Rust syntax.
 
-Only the entries marked **present** exist in the initial implementation.
+Only the entries marked **present** exist in the current implementation.
 Other paths are the target layout, not placeholder packages.
 
 ```text
@@ -56,36 +59,68 @@ ast/go/
 pipeline/go/
   stage.go                                  present: typed contract
   compose.go                                planned: typed composition
+language/go/
+  language.go                               present: identity interface
+  registry.go                               planned: agnostic registry
 syntax/
   canonical/go/{nodes,grammar,builders}.go   planned
-  typescript/go/{nodes,grammar,builders}.go  planned
-  golang/go/{nodes,grammar,builders}.go      planned
-  rust/go/{nodes,grammar,builders}.go        planned
+  typescript/go/nodes.go                     present
+  golang/go/nodes.go                         present
+  rust/go/nodes.go                           present
+  cpp/go/nodes.go                            present
+  {typescript,golang,rust,cpp}/go/
+    grammar.go, builders.go                  planned
 frontend/canonical/go/
   parse.go, resolve.go, check.go             planned
 generate/
   typescript/go/{generate,types,names,imports}.go
   golang/go/{generate,types,names,imports}.go
-  rust/go/{generate,types,names,imports}.go   all planned
+  rust/go/{generate,types,names,imports}.go
+  cpp/go/{generate,types,names,imports}.go    all planned
 format/
   typescript/go/format.go                    planned
   golang/go/{format,stdast}.go               planned
   rust/go/format.go                          planned
+  cpp/go/format.go                           planned
 cmd/bittype/go/
   main.go, compose.go, files.go              planned
 integration/go/
-  contracts_test.go, dependencies_test.go    present
+  contracts_test.go, dependencies_test.go,
+  syntax_test.go                            present
   testdata/*.go                             present: API type-check fixtures
+  testdata/syntax/*.go                       present: target/extension fixtures
 testdata/
   canonical/, target-asts/, source-text/     planned: language fixtures
 docs/
-  model.md, ast.md, generation.md            present
+  model.md, ast.md, syntax.md, generation.md present
 ```
 
-The target grammars cover the syntax needed for native type declarations.
+The [target vocabularies](syntax.md) cover a native type-declaration subset.
 They are not full programming-language parsers. A concrete unsupported type
 case should identify a missing grammatical form; it must not lead to a raw
-code-string escape hatch.
+code-string escape hatch. Their node shapes are documented, but no grammar
+checker or builder implements those rules yet.
+
+## Language identity and registration
+
+Each target package supplies a zero-value `Language` implementing
+`language.Language`, with stable `ID() language.ID` and `Name() string`
+methods. It also supplies aliases over `ast.AST[Language]`,
+`ast.Node[Language]` and `ast.Kind[Language]`. The carrier and stage APIs
+remain unchanged and do not import the language identity interface.
+
+The owner clarified on 31 October that a central agnostic language AST registry
+will exist. The earlier no-language-registry direction is superseded. Its
+implementation is deferred; the present interface is the common contract that
+registered providers will implement. The registry must accept providers
+through that interface, without a concrete language import, switch or builtin
+list. Application composition owns the selected provider instances.
+
+Identity methods do not discover packages, initialize resources or register
+anything. A shared ID is not proof of equal Go marker types, syntax versions or
+grammar compatibility. The identity interface neither erases `AST[L]` nor
+implements construction, checking or transformations. See [the syntax
+contract](syntax.md) for the IDs, provider contract and extension example.
 
 ## Typed stage contract
 
@@ -96,8 +131,8 @@ type Stage[I, O any] func(I) (O, error)
 ```
 
 A generator will satisfy a stage from one AST type to another; a formatter
-will satisfy a stage from a target AST to source text. For example, after the
-language markers exist, the type relationships are:
+will satisfy a stage from a target AST to source text. The planned relationships
+are shown below; target markers exist, but the Canonical marker does not yet:
 
 ```text
 Stage[AST[Canonical], AST[TypeScript]]
@@ -140,32 +175,38 @@ Arrows in the table mean a direct package dependency is allowed:
 | --- | --- |
 | Generic AST | Standard library only; currently no imports |
 | Generic pipeline | Standard library only; currently no imports, including no AST dependency |
-| Each syntax package | Generic AST |
+| Language identity interface | Standard library only; currently no imports |
+| Future language registry | The language identity contract in its package; no concrete syntax imports |
+| Each syntax package | Generic AST, language identity interface |
 | Canonical frontend | Canonical syntax, generic AST |
 | Each generator | Canonical syntax, its own target syntax, generic AST; pipeline only when exposing a stage |
 | Each formatter | Its own target syntax, generic AST; pipeline only when exposing a stage |
-| Application composition root | Explicitly selected frontend, generators, formatters and pipeline |
+| Application composition root | Explicitly selected language providers, registry, frontend, generators, formatters and pipeline |
 | Integration tests | The APIs under test and native compiler/checker tooling |
 
 Standard-library utilities are permitted in every layer. There are no external
 Go module dependencies in this slice and no dependencies on another Bitspark
-implementation repository. The AST and pipeline packages do not import each
-other. Syntax packages do not import generators or formatters. A formatter does
-not import the canonical grammar or its generator.
+implementation repository. The AST, pipeline and language identity packages do
+not import each other or concrete syntax packages. Syntax packages do not import
+one another, generators or formatters. A formatter does not import the canonical
+grammar or its generator.
 
 The planned Go formatter can adapt its language AST to the standard
 [`go/ast`](https://pkg.go.dev/go/ast) representation and use
 [`go/format`](https://pkg.go.dev/go/format).
 That adaptation belongs to the Go formatter, not to the generic AST.
-TypeScript and Rust printers are Go implementations too; Node and Rust tooling
-are needed for later output qualification, not as generation-time dependencies.
+TypeScript, Rust and C++ printers are Go implementations too. Their native
+toolchains are needed for later output qualification, not as generation-time
+dependencies.
 
-No global backend discovery, hidden default registrations or contract catalogue
-is introduced. The generic AST and pipeline must never acquire Function,
-Stream, Cell, Wire or runtime imports, name switches, special kinds or structural
-fingerprint matching. Adding an ordinary library contract must not change these
-foundations. Later library-owned realizations require a separate scoped design;
-this slice supplies no binding extension registry.
+The intended language registry is distinct from a behavioral contract catalogue.
+No registry implementation, automatic discovery or hidden default registration
+is introduced now. The generic AST, pipeline, language identity interface and
+future registry must never acquire Function, Stream, Cell, Wire or runtime
+imports, special kinds, semantic name switches or structural fingerprint matching.
+Native function-signature syntax remains language-owned. Later library-owned
+realizations require a separate scoped design; this slice supplies no binding
+extension registry.
 
 ## Evidence and next increments
 
@@ -175,19 +216,22 @@ exact committed revision on a GitHub runner: formatting, tests and vet.
 [Documentation checks](../.github/workflows/docs.yml) also run remotely.
 No compilation or formatting workload is run on the workstation.
 
-Public API fixtures establish that an independent consumer can declare a
-language without central registration and that incompatible language/stage
-types are rejected. A production dependency-closure check guards the empty
-foundation dependency boundary. There are no grammar or generation correctness
-claims yet.
+Public API fixtures establish that an independent consumer can supply a
+language identity implementation without changing the foundation, and that
+incompatible language/stage types are rejected. Four authored target examples
+include open/applied pagination and native reader signatures. Tests exercise
+metadata through the common interface and enforce the production dependency
+boundary. There are no target grammar, native compiler, registry-operation or
+generation correctness claims yet.
 
 Subsequent, separately authorized increments are:
 
-1. Specify the canonical grammar and independent semantic fixtures.
-2. Implement language-owned AST vocabularies, checks and builders.
-3. Implement the canonical frontend and AST-to-AST generators.
+1. Specify and implement the canonical AST and independent semantic fixtures.
+2. Implement the agnostic language registry with explicit registration policy.
+3. Implement language-owned checks and builders, then the canonical frontend
+   and AST-to-AST generators.
 4. Implement independent target formatters and application composition.
-5. Compile the generated TypeScript, Go and Rust examples with pinned native
+5. Compile the generated TypeScript, Go, Rust and C++ examples with pinned native
    toolchains on shared workers or GitHub runners.
 
 Generator tests will compare target ASTs. Formatter tests will accept

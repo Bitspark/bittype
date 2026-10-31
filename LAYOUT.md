@@ -21,12 +21,17 @@ Root workspace manifests and CI configuration may stay at their normal locations
 Do not introduce repository-root language directories or a language-first
 `packages/` tree.
 
-The implemented source packages are `ast/go` and `pipeline/go`, with public
-contract tests in `integration/go`. The [generation design](docs/generation.md)
-records the full target layout for syntax, frontend, generation, formatting
-and application composition. Those later packages do not yet exist.
+The implemented source packages are `ast/go`, `pipeline/go`, `language/go`
+and `syntax/{typescript,golang,rust,cpp}/go`, with public contract tests in
+`integration/go`. The shared language interface prepares for an agnostic
+registry; its implementation is deferred. The [generation design](docs/generation.md)
+records the complete current/planned layout. Canonical syntax, grammar checkers,
+builders, frontend, generation, formatting and application composition do not
+yet exist.
 Do not create empty source directories or present planned packages as delivered.
 
-The generic AST and pipeline remain distinct from language grammars.
+The generic AST, pipeline and language identity contract remain independent
+of concrete syntax packages. Each target package owns its vocabulary and
+implements language identity methods without registration side effects.
 The [charter](CHARTER.md) sets ownership; this layout does not merge those
 responsibilities or require a package or repository per directory.
