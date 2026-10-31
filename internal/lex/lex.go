@@ -15,6 +15,7 @@ type Token struct {
 	Start, End  int
 }
 type Options struct {
+	Space func(rune) bool
 	Punctuation     []string
 	NestedComments  bool
 	Lifetimes       bool
@@ -40,18 +41,20 @@ func Scan(input text.Input, options Options) ([]Token, error) {
 		return bad(text.SyntaxError, 0, len(input.Text), "source must be UTF-8")
 	}
 	s := input.Text
+	space := options.Space
+	if space == nil { space = func(r rune) bool { return r == ' ' || (r >= '\t' && r <= '\r') } }
 	var out []Token
 	for i := 0; i < len(s); {
 		start := i
 		class := "punctuation"
 		r, size := utf8.DecodeRuneInString(s[i:])
 		switch {
-		case unicode.IsSpace(r) || (i == 0 && r == '\ufeff'):
+		case space(r) || (i == 0 && r == '\ufeff'):
 			class = "whitespace"
 			i += size
 			for i < len(s) {
 				r, size = utf8.DecodeRuneInString(s[i:])
-				if !unicode.IsSpace(r) {
+				if !space(r) {
 					break
 				}
 				i += size

@@ -27,7 +27,7 @@ func decimalKey(s string) bool {
 var vocabulary = concrete.Vocabulary[s.Language]{Layout: s.ConcreteLayout, Token: s.ConcreteToken, Whitespace: s.ConcreteWhitespace, Comment: s.ConcreteComment}
 
 func Parse(input text.Input) (cst.CST[s.Language], error) {
-	base, err := parseutil.New[s.Language](input, lex.Options{Punctuation: []string{"...", "=>"}, Directives: []string{"///", "// @ts-", "//@ts-"}})
+	base, err := parseutil.New[s.Language](input, lex.Options{Space: lit.Space, Punctuation: []string{"...", "=>"}, Directives: []string{"///", "// @ts-", "//@ts-"}})
 	if err != nil {
 		return cst.CST[s.Language]{}, err
 	}

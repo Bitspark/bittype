@@ -2,7 +2,8 @@
 
 **Status, 31 October 2026:** the Go data types described here are implemented.
 The [four target syntax vocabularies](syntax.md) use these carriers.
-Grammar checking, validation, traversal and builders are not implemented.
+Structural/native syntax checks live in separate check packages. Public traversal
+and builders remain deferred; see the [native text pipeline](parsing-formatting.md).
 The canonical type language remains the [model proposal](model.md), without
 a canonical AST implementation.
 
@@ -31,9 +32,8 @@ marker types produce distinct instantiated AST, node and kind types. A type
 alias to an existing marker does not create another language. Converting or
 rebuilding nodes explicitly is still possible; this is not a security boundary.
 
-The core contains no canonical, TypeScript, Go, Rust or C++ kinds. Later language
-packages will provide typed builders, views and grammar checks over these
-carriers. A target language may describe native type syntax such as a function
+The core contains no canonical, TypeScript, Go, Rust or C++ kinds. Language packages provide separate syntax checks; public typed builders remain
+deferred. AST and CST expose the common borrowed ast.View interface. A target language may describe native type syntax such as a function
 signature without introducing a privileged behavioral contract in the core.
 Function, Stream and Cell remain ordinary library contracts.
 
@@ -86,8 +86,8 @@ remains syntax; it is not represented by a fabricated resolved node address.
 Later resolution must check that a target exists and has the language, kind
 and declaration role expected by the referencing grammar.
 
-These invariants are requirements for future checking, not guarantees made by
-the exported fields. In particular, a plain `NodeID` cannot prove which
+The separate structural checker enforces these invariants; exported fields do
+not enforce them during construction. In particular, a plain `NodeID` cannot prove which
 arena it came from. The carrier does not establish import authority or
 declaration identity simply by storing an address.
 
@@ -112,8 +112,9 @@ from a declaration's semantic identity and does not establish a trust claim.
 
 These structs and slices are mutable. Pipeline stages must treat their input
 and reachable storage as read-only and allocate independent mutable outputs.
-Copying an AST struct alone does not copy its slices. There is no implemented
-freeze operation, allocator, resolver or immutable builder.
+Copying an AST struct alone does not copy its slices. There is no public
+freeze operation, allocator, resolver or immutable builder. The native formatter
+owns a deep snapshot; ASTView returns a borrowed read-only view.
 
 Adding another language requires its own marker, vocabulary and identity
 provider, with grammar checks and stages added when needed, without editing

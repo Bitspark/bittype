@@ -90,11 +90,18 @@ func (f formatter) decl(id ast.NodeID, level int) doc {
 			parts = append(parts, f.Space(), f.T(":"), f.Space(), f.Join(bases, f.T(","), f.Space()))
 		}
 		parts = append(parts, f.Space(), f.T("{"))
+		defaultAccess := "private"
+		if f.Attr(id, "record-key") == "struct" { defaultAccess = "public" }
+		currentAccess := defaultAccess
 		for _, m := range f.Children(id, "member") {
 			parts = append(parts, f.Line("  ", level+1))
-			if a := f.Attr(m, "access"); a != "" {
+			a := f.Attr(m, "access")
+			explicitAccess := a != ""
+			if a == "" { a = defaultAccess }
+			if explicitAccess || a != currentAccess {
 				parts = append(parts, f.T(a), f.T(":"), f.Line("  ", level+1))
 			}
+			currentAccess = a
 			switch f.Kind(m) {
 			case "field":
 				parts = append(parts, f.Group(m, f.render(f.Child(m, "type"), f.T(f.Attr(m, "name")), true), f.T(";")))

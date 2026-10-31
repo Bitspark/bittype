@@ -57,7 +57,12 @@ func cppFixture()ast.AST[cpp.Language]{
 	array:=f.node("array-type",attr("length","3"),child("element",integer))
 	pointer:=f.node("pointer-type",nil,child("element",array))
 	alias:=f.node("type-alias",attr("name","MatrixPtr"),child("type",pointer))
-	f.tree.Root=f.node("translation-unit",nil,child("declaration",alias));f.tree.ID="independent-cpp";return f.tree
+	visibleType:=f.node("builtin-type",attr("name","int"))
+	visible:=f.node("field",attr("name","visible","access","public"),child("type",visibleType))
+	hiddenType:=f.node("builtin-type",attr("name","int"))
+	hidden:=f.node("field",attr("name","hidden"),child("type",hiddenType))
+	record:=f.node("record",attr("name","AccessFixture","record-key","class"),child("member",visible),child("member",hidden))
+	f.tree.Root=f.node("translation-unit",nil,child("declaration",alias),child("declaration",record));f.tree.ID="independent-cpp";return f.tree
 }
 func formatted[L any](t *testing.T,p text.Provider[L],a ast.AST[L])string{
 	t.Helper();c,err:=p.Format(a);if err!=nil{t.Fatal(err)};result,err:=p.Print(c);if err!=nil{t.Fatal(err)};return result
@@ -67,7 +72,7 @@ func TestIndependentFormatterGoldens(t *testing.T){
 		"typescript":{formatted(t,tsprovider.Provider{},tsFixture()),"export type Strings = (string | null)[];\n"},
 		"go":{formatted(t,goprovider.Provider{},goFixture()),"package fixture\n\ntype Names = []string\n"},
 		"rust":{formatted(t,rustprovider.Provider{},rustFixture()),"pub type Name = &'static str;\n"},
-		"cpp":{formatted(t,cppprovider.Provider{},cppFixture()),"using MatrixPtr = int (*)[3];\n"},
+		"cpp":{formatted(t,cppprovider.Provider{},cppFixture()),"using MatrixPtr = int (*)[3];\n\nclass AccessFixture {\n  public:\n  int visible;\n  private:\n  int hidden;\n};\n"},
 	}
 	for name,tc:=range cases{t.Run(name,func(t *testing.T){if tc.got!=tc.want{t.Fatalf("want %q; got %q",tc.want,tc.got)}})}
 }
@@ -145,5 +150,10 @@ func TestNativeCompilerFixtures(t *testing.T){
 		probe:="#include <type_traits>\n#include \"types.hpp\"\n#include \"independent.hpp\"\nstatic_assert(std::is_same_v<MatrixPtr, int (*)[3]>);\nstatic_assert(std::is_same_v<decltype(api::Shapes::array), int *[3]>);\nstatic_assert(std::is_same_v<decltype(api::Shapes::pointer), int (*)[3]>);\nstatic_assert(std::is_same_v<decltype(api::Shapes::callback), int (*)(double) noexcept>);\nstatic_assert(std::is_same_v<decltype(api::Shapes::member), int api::Person::*>);\n"
 		if err:=os.WriteFile(filepath.Join(dir,"probe.cpp"),[]byte(probe),0600);err!=nil{t.Fatal(err)}
 		command(t,dir,"docker","run","--rm","--network=none","-v",dir+":/work","-w","/work","gcc:14.2.0","g++","-std=c++20","-fsyntax-only","probe.cpp")
+		if err:=os.WriteFile(filepath.Join(dir,"access.cpp"),[]byte("#include \"independent.hpp\"\nusing Hidden = decltype(AccessFixture::hidden);\n"),0600);err!=nil{t.Fatal(err)}
+		cmd:=exec.Command("docker","run","--rm","--network=none","-v",dir+":/work","-w","/work","gcc:14.2.0","g++","-std=c++20","-fsyntax-only","access.cpp")
+		output,err:=cmd.CombinedOutput()
+		if err==nil||!strings.Contains(string(output),"private"){t.Fatalf("expected native private-access rejection: %v\n%s",err,output)}
+		t.Log("Native compiler rejected access to the independently authored default-private member.")
 	})
 }

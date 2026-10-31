@@ -77,6 +77,9 @@ func (p *parser) include() ast.NodeID {
 	if !p.EOF() && !strings.ContainsAny(p.Input.Text[p.Tokens[p.Pos-1].End:p.Token().Start], "\r\n") {
 		p.Fail(text.Unsupported, "unsupported preprocessor directive tail")
 	}
+	if p.Pos > 0 && strings.ContainsAny(p.Input.Text[start:p.Tokens[p.Pos-1].End], "\r\n") {
+		p.Fail(text.Unsupported, "multiline include directives are unsupported")
+	}
 	attrs := tr.Attrs("path", path)
 	if system {
 		attrs = append(attrs, tr.Attrs("system", "true")...)
@@ -105,6 +108,7 @@ func (p *parser) templates() []ast.Child {
 		if !p.Eat(",") {
 			break
 		}
+		if p.Peek() == ">" { p.Fail(text.SyntaxError, "trailing comma in template parameters") }
 	}
 	p.Want(">")
 	if len(out) == 0 {
@@ -326,6 +330,7 @@ func (p *parser) named() ast.NodeID {
 				if !p.Eat(",") {
 					break
 				}
+				if p.Peek() == ">" { p.Fail(text.SyntaxError, "trailing comma in template arguments") }
 			}
 			p.Want(">")
 			if len(args) == 0 {

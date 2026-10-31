@@ -119,6 +119,7 @@ func (p *parser) declarator(named bool) declarator {
 				if !p.Eat(",") {
 					break
 				}
+				if p.Peek() == ")" { p.Fail(text.SyntaxError, "trailing comma in function parameters") }
 			}
 			p.Want(")")
 			if p.Err == nil && len(params) == 1 {

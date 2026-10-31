@@ -4,13 +4,13 @@
 are implemented in Go on the [generic AST](ast.md). Each package supplies
 `Language`, `AST`, `Node`, `Kind`, and constants for kinds, roles and attributes.
 
-The common language identity interface and each provider's `ID()` and `Name()`
-methods are implemented. The canonical AST, registry, parsers, builders,
-grammar checkers, generators and formatters are not implemented.
+The shared LanguageProvider interface, native text providers, parsers,
+AST-to-CST formatters, checks and generic printer are implemented. Canonical AST,
+generators, registry and public builders remain deferred.
+See the [native text design](parsing-formatting.md).
 
-These packages describe a type-declaration subset of each native language.
-They are not complete compiler ASTs and do not enforce a well-formed grammar.
-A Go value of `typescript.AST` can still contain malformed TypeScript syntax.
+The exported carrier fields remain unchecked; the separate language checker
+validates supported type syntax. These are not complete compiler ASTs.
 
 ## Identity and future registration
 
@@ -19,7 +19,7 @@ A Go value of `typescript.AST` can still contain malformed TypeScript syntax.
 ```go
 type ID string
 
-type Language interface {
+type LanguageProvider interface {
     ID() ID
     Name() string
 }
@@ -85,10 +85,11 @@ their actual string values; the packages export their corresponding
 - All nodes can carry the generic `Origin`. Neither origin nor a target address
   proves semantic identity, ownership or compatible behavior.
 
-Only the listed forms and attributes belong to this initial vocabulary.
-Grammar validity, role cardinality, lexical correctness, scoping, layout,
-native restrictions and cross-tree reference resolution are not checked yet.
-Source order is preserved; this slice performs no normalization.
+Only the listed forms and attributes belong to this vocabulary. Separate native
+checkers enforce structure, roles, lexical atoms and supported contextual rules.
+Complete compiler/type checking and cross-tree resolution remain outside them.
+Parsing retains original source; formatting applies the documented
+[normalizations and layout](parsing-formatting.md).
 
 Function-type and method-signature nodes describe native language syntax.
 They contain no executable bodies. They do not give the Function library,
@@ -138,8 +139,10 @@ KeywordType admits `any`, `unknown`, `never`, `void`, `undefined`,
 Literal kinds are `string`, `number`, `bigint`, `boolean` and `null`.
 Their text is one matching native literal (including its string quotes or
 numeric sign), never a template interpolation or arbitrary expression.
-Constraints such as rest position, tuple naming consistency, index-key types
-and operator applicability remain native checking obligations.
+Checks cover rest/optional ordering, tuple naming consistency and direct operator
+applicability. Semantic index-key and imported-type constraints remain compiler
+obligations. Numeric property keys are admitted only as canonical safe decimal
+integers; other spellings need numeric-to-property-text decoding.
 
 Conditional/mapped/inferred/template-literal types, value declarations,
 class bodies, decorators and executable expressions are outside this slice.
@@ -243,6 +246,7 @@ separate nodes, never ordinary first parameters. TraitObjectType represents
 explicit `dyn` bounds. Default generic types belong only where Rust allows
 them, not on method-specific parameters.
 
+Unit structs have no distinct AST form and are rejected.
 Const generics, higher-ranked binders, associated-type argument bindings,
 qualified associated-type projections, generic associated types, `impl Trait`,
 macros, attributes, impl blocks and executable bodies are outside this slice.
@@ -304,8 +308,9 @@ There is no source-string fallback for a difficult declarator.
 Non-type/template-template parameters, parameter packs, specialization,
 constraints/requires expressions, computed array bounds, initializers,
 constructors, operator declarations, macros and function bodies are outside
-this slice. Target compiler baselines and generated layout policies remain
-unqualified until generation/formatting work is undertaken.
+this slice. Qualified member-function-pointer types are rejected because native
+FunctionType has no method CV/ref fields. The maintained native text gates
+provide separately scoped compiler qualification.
 
 ## Evidence and limits
 
@@ -324,10 +329,11 @@ A [separately owned provider](../integration/go/testdata/syntax/extension.go)
 implements the same interface without any central language list.
 The [dependency check](../integration/go/dependencies_test.go) enforces that
 syntax packages depend only on the generic AST and language identity contracts
-plus permitted standard-library utilities. The three foundations do not depend
+plus the generic CST carrier and standard-library utilities. The three foundations do not depend
 on each other or on concrete languages.
 
-These checks run on the maintained remote Go/docs workflows. They establish Go
-API usability and isolation, not target grammar validity, target compiler
-acceptance, semantic equivalence, executable behavior or registry operation.
-The generic carrier and pipeline source files remain unchanged.
+The original contract tests establish Go API usability and isolation. Additional
+native text tests cover checking, retained source and independent AST formatting.
+Native compiler fixtures run separately on remote runners. These claims do not
+establish executable behavior, registry operation or canonical equivalence.
+The pipeline contract is unchanged; AST adds a borrowed view interface.

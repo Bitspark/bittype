@@ -57,7 +57,7 @@ var rules = g.Rules{
 	"array-type":         {Attributes: g.Attributes("length", g.Attr(true, g.Decimal)), Roles: []g.Role{g.One("element", types...)}},
 	"tuple-type":         {Roles: []g.Role{g.Many("element", 0, types...)}},
 	"never-type":         {},
-	"function-type":      {Attributes: g.Attributes("unsafe", g.Attr(false, g.Bool), "abi", g.Attr(false, g.Nonempty)), Roles: []g.Role{g.Many("parameter", 0, "parameter"), g.Opt("result", types...)}},
+	"function-type":      {Attributes: g.Attributes("unsafe", g.Attr(false, g.Bool), "abi", g.Attr(false, native.ABI)), Roles: []g.Role{g.Many("parameter", 0, "parameter"), g.Opt("result", types...)}},
 	"trait-object-type":  {Roles: []g.Role{g.Many("bound", 1, bounds...)}},
 }
 

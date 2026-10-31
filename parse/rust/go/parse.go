@@ -7,10 +7,10 @@ import (
 	"github.com/Bitspark/bittype/internal/concrete"
 	"github.com/Bitspark/bittype/internal/lex"
 	"github.com/Bitspark/bittype/internal/parseutil"
+	native "github.com/Bitspark/bittype/internal/rust"
 	tr "github.com/Bitspark/bittype/internal/tree"
 	s "github.com/Bitspark/bittype/syntax/rust/go"
 	"github.com/Bitspark/bittype/text/go"
-	"strconv"
 	"strings"
 )
 
@@ -19,7 +19,7 @@ type parser struct{ *parseutil.Parser[s.Language] }
 var vocabulary = concrete.Vocabulary[s.Language]{Layout: s.ConcreteLayout, Token: s.ConcreteToken, Whitespace: s.ConcreteWhitespace, Comment: s.ConcreteComment}
 
 func Parse(input text.Input) (cst.CST[s.Language], error) {
-	base, err := parseutil.New[s.Language](input, lex.Options{NestedComments: true, Lifetimes: true, RawIdentifiers: true, Punctuation: []string{"::", "->", "..."}})
+	base, err := parseutil.New[s.Language](input, lex.Options{Space: native.Space, NestedComments: true, Lifetimes: true, RawIdentifiers: true, Punctuation: []string{"::", "->", "..."}})
 	if err != nil {
 		return cst.CST[s.Language]{}, err
 	}
@@ -434,7 +434,7 @@ func (p *parser) typ() ast.NodeID {
 		if p.Eat("extern") {
 			abi := "C"
 			if p.Token().Class == "string" {
-				value, err := strconv.Unquote(p.Take().Text)
+				value, err := native.UnquoteABI(p.Take().Text)
 				if err != nil {
 					p.Fail(text.SyntaxError, "invalid ABI string")
 				}

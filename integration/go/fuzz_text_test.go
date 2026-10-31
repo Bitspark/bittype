@@ -27,8 +27,10 @@ func FuzzNativeText(f *testing.F){
 	})
 }
 func TestDeepSyntaxAndNativeNames(t *testing.T){
+	reject(t,rustprovider.Provider{},[]string{"type X = (impl);","type\u00a0X = u8;","type X = extern \"\\a\" fn();"})
+	reject(t,cppprovider.Provider{},[]string{"template<typename T,> struct X {};","using X = Box<int,>;","struct X { int f(int,); };"})
 	reject(t,rustprovider.Provider{},[]string{"type X = "+strings.Repeat("(",130)+"u8"+strings.Repeat(")",130)+";","struct fn {}","trait if {}","type X = "+strings.Repeat("&",300)+"u8;"})
 	reject(t,tsprovider.Provider{},[]string{"type if = string;","interface X { 1e3: string }","interface X { 0x10: string }","interface X { 9007199254740993: string }","type X = string"+strings.Repeat("[]",400)+";"})
-	reject(t,cppprovider.Provider{},[]string{"struct if {};","using X = int(?);","using X = int("+strings.Repeat("(",150)+"*"+strings.Repeat(")",150)+");"})
+	reject(t,cppprovider.Provider{},[]string{"struct if {};","using if = int;","using X = int(?);","using X = int(auto);","#\ninclude \"x\"\n","#include <x\n>\n","using X = int("+strings.Repeat("(",150)+"*"+strings.Repeat(")",150)+");"})
 	reject(t,goprovider.Provider{},[]string{"package p; type X "+strings.Repeat("[]",300)+"int"})
 }
