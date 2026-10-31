@@ -1,48 +1,28 @@
 # bittype
 
-A wire-independent contract language. Its parts:
+A language-independent type model and native type generation for TypeScript,
+Go and Rust.
 
-- **A value-type core** (records, unions, aliases, generics) that is usable on its
-  own.
-- **Abstract operations and callable signatures** that extend the core without
-  naming any wire protocol.
-- **Tooling:** parsing, resolution and checking; rendering native types per
-  language; canonical declaration identity; small runtime libraries for identity
-  and presence.
-- **The generation kernel**, at first, as a separate module.
+**Current status, 31 October 2026:** design proposal only. There is no parser,
+generator or published type package yet. Start with
+[the proposed model](docs/model.md).
 
-**Status: chartered 26 September 2026 by
-[Bitwire decision 0010](https://github.com/Bitspark/bitwire/blob/main/docs/decisions/0010-bitwire-holds-the-contract-and-bitruntime-implements-it.md);
-no code yet.**
+The current milestone defines value types, generic parameters, imports and
+applications, then generates native type declarations from that canonical input.
+TypeScript is an output language, alongside Go and Rust.
 
-- **The language comes first.** It is a new design, not Nightseam's declaration
-  language carried forward.
-- **Until then**, Nightseam's generator users stay pinned to its frozen v0.6.0.
-
-## Where it sits
-
-```text
-bittype                    depends on nothing else in the project
-bitschema                  what a program validates values against; bittype emits its descriptions
-Bitlink                    maps bittype operations onto the wire (paths, profile) and generates adapters
-bitruntime / Bitwire       the wire contract and its implementation; bittype never names them
-```
-
-The rule that places a declaration here:
-
-> Would it still make sense, unchanged, with a different adapter and no Bitwire?
-
-If it would, it belongs in bittype. Paths, the profile and message
-representation belong to Bitlink's binding.
+Function, Stream, Cell and future behavioral contracts remain library-owned.
+This milestone adds no adapters, callable implementations, serialization,
+validation of application values or Wire dependencies.
 
 ## Read first
 
-- [Charter](CHARTER.md): what this repository owns, promises and is checked by.
-- [Working here as an agent](AGENTS.md).
-- [The contract theory](https://github.com/Bitspark/bittheory): contracts,
-  realizations, instances, and generators as functions with contracts of their own.
+- [Proposed type model](docs/model.md): input format, semantics, target
+  representations, limitations and implementation stages.
+- [Charter](CHARTER.md): current ownership and delivery boundary.
+- [Contributor instructions](AGENTS.md): repository workflow and prohibited
+  coupling.
+- [Source layout](LAYOUT.md): component-first paths for future implementations.
 
-## Source layout
-
-Read [LAYOUT.md](LAYOUT.md) for the component-first, two-letter language
-directory convention and this repository's adoption notes.
+The active documents describe this milestone. Earlier bootstrap plans and
+research remain in Git history; they are not a second current specification.

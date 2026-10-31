@@ -1,71 +1,68 @@
 # Charter
 
-[Bitwire decision 0010](https://github.com/Bitspark/bitwire/blob/main/docs/decisions/0010-bitwire-holds-the-contract-and-bitruntime-implements-it.md)
-requires every new repository to open with answers to four questions. A
-repository owns an independently useful compatibility commitment. A module owns a
-coherent semantic decision.
+**Current direction: 31 October 2026.** The owner selected bittype for canonical
+type definitions and native type generation, starting with types only.
+The detailed [model](docs/model.md) is a proposal, not a published language
+revision or an implementation.
 
-## 1. What decisions does it own?
+## Ownership
 
-- **The contract language:** its syntax and semantics for value types, abstract
-  operations, callable signatures, generics and imports. It covers a contract's
-  shape and the declared behavior the language can state.
-- **Canonical declaration identity:**
-  - the normative canonicalization specification;
-  - its shared vectors;
-  - one library per supported language.
+bittype owns:
 
-  Before an encoding is fixed, an audit settles exactly what it contains.
-- **Native type rendering per language.** This is the theory's type generator:
-  given a contract, it produces a native realization together with the contract
-  it came from.
-- **Runtime support for presence and absence** used by generated types.
-- **The generation kernel's interface**, at first, in a separate module that may
-  not import the declaration language. It moves to its own repository once its
-  interface stabilizes and an independent pipeline needs it.
+- The language-independent value-type model, its source syntax, declarations,
+  generic slots, applications, imports and resolution rules.
+- Parsing and checking declarations, including scope and recursive type rules.
+- Native type generation for TypeScript, Go and Rust.
+- The specification of canonical declaration encoding and its independent
+  vectors, once identity and normalization rules have been settled.
+- Small data types needed to represent presence and nullness in generated code.
 
-It does **not** own:
+A generation kernel, if introduced, is a separate module that orchestrates
+explicit stages and targets. It does not import the declaration language or
+know the names or semantics of particular library contracts.
 
-- mapping operations onto the wire, profiles or adapters, which are Bitlink's;
-- descriptors and validation, which are bitschema's;
-- the runtime, which is bitruntime's;
-- the theory, which is bittheory's.
+## Current delivery boundary
 
-## 2. What does it promise consumers, and how is that versioned?
+The first deliverable is the proposed model in docs/model.md. The subsequent
+implementation stages are its frontend and three native type renderers.
 
-- A published language revision is immutable. A change to what is accepted,
-  rejected or meant is a new revision.
-- The canonical encoding is versioned by name. Any change to identity content is an
-  explicit transition, never a side effect of packaging.
-- Generated output records its language, encoding and generator versions in a
-  generation manifest beside it, not in file headers.
+This scope does not include application-value validators, descriptors for a
+particular validator, serialization, Wire adapters, RPC, streaming, callable
+implementations, consumer migration, package publication or deployment.
 
-Before 1.0 there is no compatibility promise.
+Function, Stream, Cell and future behavioral contracts belong to ordinary
+libraries. Neither their protocols nor their language-specific realizations
+become privileged cases in the general type model, generator or runtime.
+Preserve resolved declaration identities and applications so later consumers
+can select library-owned realizations without matching structural lookalikes.
 
-## 3. What independently written evidence checks the promise?
+bittype has no dependency on another Bitspark implementation repository.
+References to theory or previous designs supply evidence, not runtime
+dependencies. A declaration has the same meaning with a different storage,
+serialization or communication mechanism.
 
-- Canonicalization vectors shared by every language's identity library. Compile-time
-  specialization and run-time generic application must reach the same identity.
-- Tests of the generic-application laws at the semantic level, not only on
-  generated text.
-- Construction-square fixtures that Bitlink uses: instantiating a generic and then
-  adapting it agrees with adapting it and then instantiating.
-- bitschema's description tables: the descriptions bittype emits must equal the
-  ones bitschema validates against, with neither repository importing the other.
-- bittheory's integration checks against released versions.
+## Versioning and evidence
 
-## 4. Which real change becomes easier or safer because it is separate?
+A published language revision fixes its admitted syntax and meaning.
+The proposed `bittype: 1` spelling does not itself publish revision 1.
 
-- The language can evolve, and be used for types without protocols (by storage,
-  UI or command-line generators), without pulling in a wire runtime.
-- Declaration identity gets one implementation per language instead of two
-  diverging ones.
-- Declaring a model stays independent of how it is carried: a model operation is
-  not a network protocol.
+Canonical declaration identity, normalized value shape, generated-code
+compatibility and undeclared behavior remain distinct. A digest does not prove
+behavior or authorize a binding substitution. Specify normalization and identity
+content before assigning a canonical encoding version or publishing digests.
 
-## The first milestone
+A generation manifest records the input revision, target configuration and
+generator version. Once an identity encoding exists, it records that version
+too; no placeholder digest stands in for unresolved declarations.
 
-The language design, starting from its value-type core. BitTree is the first
-generated consumer once bittype, bitschema and Bitlink together produce a working
-slice. That slice must cover absence and null, errors, reverse calls and generic
-identity.
+Independent semantic examples must cover generic scope/application, recursion,
+absence and null, numeric domains and invalid input. Each language's output
+must compile against the same examples. Document native representation limits
+rather than claiming that a compiler enforces every canonical value invariant.
+
+## Historical scope
+
+The September bootstrap described a broader generated-consumer chain.
+The owner has narrowed the current work to the value model and types-only
+generation. Historical commits and research remain evidence; they do not add
+callables, adapters or migration gates to this milestone.

@@ -1,0 +1,90 @@
+name: Documentation
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      EXPECTED_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check committed documentation
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          from urllib.parse import unquote, urlsplit
+
+          root = Path.cwd()
+          revision = subprocess.check_output(
+              ["git", "rev-parse", "HEAD"], text=True
+          ).strip()
+          if revision != os.environ["EXPECTED_REVISION"]:
+              raise SystemExit("Checked-out revision does not match the requested commit")
+          print("Checked revision:", revision, flush=True)
+          subprocess.run(["git", "diff", "--check", "HEAD^", "HEAD"], check=True)
+          paths = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
+          errors = []
+          link_count = 0
+          example_count = 0
+          markdown_count = 0
+
+          def unique_object(pairs):
+              result = {}
+              for key, value in pairs:
+                  if key in result:
+                      raise ValueError("duplicate JSON member: " + key)
+                  result[key] = value
+              return result
+
+          def invalid_constant(value):
+              raise ValueError("invalid JSON constant: " + value)
+
+          for name in paths:
+              if not name.endswith(".md"):
+                  continue
+              markdown_count += 1
+              source = root / name
+              content = source.read_text(encoding="utf-8")
+              for example in re.findall(r"^```json\s*\n(.*?)^```\s*$", content, re.M | re.S):
+                  example_count += 1
+                  try:
+                      json.loads(example, object_pairs_hook=unique_object,
+                                 parse_constant=invalid_constant)
+                  except ValueError as error:
+                      errors.append(f"{name}: invalid JSON example: {error}")
+              prose = re.sub(r"^```[^\n]*\n.*?^```\s*$", "", content, flags=re.M | re.S)
+              for target in re.findall(r"\[[^\]]*\]\(([^)\s]+)\)", prose):
+                  parsed = urlsplit(target)
+                  if parsed.scheme or parsed.netloc or not parsed.path:
+                      continue
+                  link_count += 1
+                  destination = (source.parent / unquote(parsed.path)).resolve()
+                  if not destination.is_relative_to(root) or not destination.exists():
+                      errors.append(f"{name}: missing or out-of-repository local link: {target}")
+          if errors:
+              raise SystemExit("\n".join(errors))
+          summary = (f"PASS {revision}: {markdown_count} Markdown files, "
+                     f"{link_count} local file links, {example_count} JSON examples, "
+                     "committed whitespace check.")
+          print(summary)
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as output:
+              output.write(summary + "\n")
+          PY
