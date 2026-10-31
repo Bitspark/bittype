@@ -78,6 +78,9 @@ jobs:
       - name: Vet Go packages
         if: success() || (failure() && steps.formatting.outcome == 'failure')
         run: go vet ./...
+      - name: Check syntax engine concurrency
+        if: success() || (failure() && steps.formatting.outcome == 'failure')
+        run: go test -race -count=1 -run '^TestEngineConcurrent' ./integration/go
       - name: Fuzz native text boundaries
         if: success() || (failure() && steps.formatting.outcome == 'failure')
         env:
