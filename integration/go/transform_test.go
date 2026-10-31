@@ -1,17 +1,17 @@
 package integration_test
 
 import (
-	"github.com/Bitspark/bittype/trees/representation/go"
 	"errors"
 	"fmt"
+	"github.com/Bitspark/bittype/trees/representation/go"
 	"reflect"
 	"sync"
 	"testing"
 
-	"github.com/Bitspark/bittype/trees/ast/go"
-	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
+	"github.com/Bitspark/bittype/engine/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 // These languages and mappings belong only to independent tests. No production

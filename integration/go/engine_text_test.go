@@ -1,14 +1,13 @@
 package integration_test
 
 import (
-	"github.com/Bitspark/bittype/trees/representation/go"
 	"errors"
+	"github.com/Bitspark/bittype/trees/representation/go"
 	"testing"
 
-	"github.com/Bitspark/bittype/trees/ast/go"
-	"github.com/Bitspark/bittype/trees/cst/go"
-	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/engine/go"
 	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
 	goprovider "github.com/Bitspark/bittype/provider/golang/go"
 	rustprovider "github.com/Bitspark/bittype/provider/rust/go"
@@ -17,7 +16,8 @@ import (
 	golang "github.com/Bitspark/bittype/syntax/golang/go"
 	rust "github.com/Bitspark/bittype/syntax/rust/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 )
 
 func nativeRegistration[L any](t *testing.T, e *engine.Engine, p text.Provider[L], source string) engine.Provider {

@@ -4,8 +4,8 @@
 package rust
 
 import (
-	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 // Language identifies this syntax family and is its distinct Go AST marker.

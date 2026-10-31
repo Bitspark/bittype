@@ -1,11 +1,11 @@
 package representation
 
 import (
-    "github.com/Bitspark/bittype/trees/ast/go"
-    "github.com/Bitspark/bittype/trees/cst/go"
-    cstcheck "github.com/Bitspark/bittype/check/cst/go"
-    "github.com/Bitspark/bittype/internal/tree"
-    "github.com/Bitspark/bittype/contracts/language/go"
+	cstcheck "github.com/Bitspark/bittype/check/cst/go"
+	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/internal/tree"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 )
 
 // CST is a checked concrete snapshot with an already constructed AST view.
@@ -17,7 +17,7 @@ type CST struct {
 
 func (c CST) LanguageID() language.ID { return c.abstract.LanguageID() }
 func (c CST) Profile() string         { return c.abstract.Profile() }
-func (c CST) ASTView() AST  { return c.abstract }
+func (c CST) ASTView() AST            { return c.abstract }
 
 func PackCST[L any](definition Language, input cst.CST[L]) (CST, error) {
 	if err := cstcheck.Check(input); err != nil {
@@ -57,4 +57,3 @@ func cloneConcrete[L any](input cst.CST[L]) cst.CST[L] {
 	}
 	return result
 }
-

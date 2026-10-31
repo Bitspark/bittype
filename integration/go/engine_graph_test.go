@@ -1,13 +1,13 @@
 package integration_test
 
 import (
-	"github.com/Bitspark/bittype/trees/representation/go"
 	"errors"
+	"github.com/Bitspark/bittype/trees/representation/go"
 	"reflect"
 	"testing"
 
-	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/engine/go"
 )
 
 // Exhaustively enumerate small directed graphs and compare the planner with
@@ -33,7 +33,9 @@ func TestEngineGraphAgainstSimplePathOracle(t *testing.T) {
 		for bit, pair := range pairs {
 			if mask&(1<<bit) != 0 {
 				adjacent[pair[0]][pair[1]] = true
-				connect(t, e, &directTransformer{from: ids[pair[0]], to: ids[pair[1]], run: func(representation.AST) (representation.AST, error) { return representation.AST{}, errors.New("oracle only") }})
+				connect(t, e, &directTransformer{from: ids[pair[0]], to: ids[pair[1]], run: func(representation.AST) (representation.AST, error) {
+					return representation.AST{}, errors.New("oracle only")
+				}})
 			}
 		}
 		for from := range ids {

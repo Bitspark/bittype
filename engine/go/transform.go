@@ -1,8 +1,8 @@
 package engine
 
 import (
-	"github.com/Bitspark/bittype/trees/representation/go"
 	"fmt"
+	"github.com/Bitspark/bittype/trees/representation/go"
 
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"

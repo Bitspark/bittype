@@ -3,9 +3,9 @@
 package transform
 
 import (
-"errors"
-"github.com/Bitspark/bittype/contracts/language/go"
-"github.com/Bitspark/bittype/trees/representation/go"
+	"errors"
+	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 var ErrInvalidTransformer = errors.New("invalid AST transformer")

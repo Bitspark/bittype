@@ -1,9 +1,9 @@
 package consumer
 
 import (
-	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 )
 
 type Language struct{}

@@ -1,9 +1,9 @@
 package independent
 
 import (
-	"github.com/Bitspark/bittype/trees/representation/go"
-	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 type First struct{}

@@ -1,13 +1,13 @@
 package golangformat
 
 import (
-	"github.com/Bitspark/bittype/trees/ast/go"
 	check "github.com/Bitspark/bittype/check/golang/go"
-	"github.com/Bitspark/bittype/trees/cst/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/internal/concrete"
 	"github.com/Bitspark/bittype/internal/tree"
 	s "github.com/Bitspark/bittype/syntax/golang/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	"strconv"
 )
 

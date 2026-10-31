@@ -1,8 +1,8 @@
 package consumer
 
 import (
-	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/contracts/pipeline/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 type left struct{}

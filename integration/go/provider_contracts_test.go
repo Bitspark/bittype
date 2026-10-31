@@ -1,10 +1,10 @@
 package integration_test
 
 import (
-	"github.com/Bitspark/bittype/trees/ast/go"
-	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	print "github.com/Bitspark/bittype/print/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	"strings"
 	"testing"
 )

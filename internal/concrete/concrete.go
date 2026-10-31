@@ -1,12 +1,12 @@
 package concrete
 
 import (
-	"github.com/Bitspark/bittype/trees/ast/go"
 	cstcheck "github.com/Bitspark/bittype/check/cst/go"
-	"github.com/Bitspark/bittype/trees/cst/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/internal/lex"
 	"github.com/Bitspark/bittype/internal/tree"
-	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	"sort"
 	"strings"
 )

@@ -1,15 +1,15 @@
 package typescriptformat
 
 import (
-	"github.com/Bitspark/bittype/trees/ast/go"
 	check "github.com/Bitspark/bittype/check/typescript/go"
-	"github.com/Bitspark/bittype/trees/cst/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/internal/concrete"
 	g "github.com/Bitspark/bittype/internal/grammar"
 	"github.com/Bitspark/bittype/internal/tree"
 	lit "github.com/Bitspark/bittype/internal/typescript"
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 )
 
 type doc = concrete.Doc[s.Language]

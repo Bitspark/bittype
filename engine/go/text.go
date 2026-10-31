@@ -1,10 +1,10 @@
 package engine
 
 import (
-    "fmt"
-    "github.com/Bitspark/bittype/contracts/language/go"
-    "github.com/Bitspark/bittype/contracts/text/go"
-    "github.com/Bitspark/bittype/trees/representation/go"
+	"fmt"
+	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 func (e *Engine) textProvider(id language.ID) (Provider, error) {

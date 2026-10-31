@@ -1,9 +1,9 @@
 package engine
 
 import (
-	"github.com/Bitspark/bittype/trees/representation/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 // Provider packages existing typed text capabilities for heterogeneous
@@ -52,8 +52,8 @@ func NewProvider[L any](provider text.Provider[L], profile string) (Provider, er
 	}
 	return result, nil
 }
-func (p Provider) ID() language.ID              { return p.definition.ID() }
-func (p Provider) Name() string                 { return p.definition.Name() }
+func (p Provider) ID() language.ID                   { return p.definition.ID() }
+func (p Provider) Name() string                      { return p.definition.Name() }
 func (p Provider) Language() representation.Language { return p.definition }
 func (p Provider) validate() error {
 	if err := p.definition.Validate(); err != nil {

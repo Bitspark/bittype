@@ -4,9 +4,9 @@
 package engine
 
 import (
-	"github.com/Bitspark/bittype/trees/representation/go"
 	"errors"
 	"fmt"
+	"github.com/Bitspark/bittype/trees/representation/go"
 	"sync"
 
 	"github.com/Bitspark/bittype/contracts/language/go"

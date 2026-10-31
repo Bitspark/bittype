@@ -55,7 +55,7 @@ same dependency level. The package boundaries are:
 | AST, Stage, language identity | Independent foundations; no native syntax or other foundation dependency |
 | CST | Generic AST carrier |
 | Text contracts | AST/CST carriers and language identity |
-| Carrier checks and printer | Generic tree structure; no native grammar or formatting choices |
+| Carrier checks and printer | Generic tree structure and shared diagnostic contracts; no native grammar or formatting choices |
 | Checked representation | Carriers, text checker/identity contracts and generic carrier checks; no engine or transformer dependency |
 | Transformer contract/bridge | Typed stages, checked representations and endpoint identity; no concrete mapping |
 | Engine | Checked representations and shared contracts; no concrete language, provider or mapping |

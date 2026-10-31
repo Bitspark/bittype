@@ -1,11 +1,11 @@
 package integration_test
 
 import (
+	"github.com/Bitspark/bittype/contracts/text/go"
 	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
 	goprovider "github.com/Bitspark/bittype/provider/golang/go"
 	rustprovider "github.com/Bitspark/bittype/provider/rust/go"
 	tsprovider "github.com/Bitspark/bittype/provider/typescript/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
 	"strings"
 	"testing"
 )

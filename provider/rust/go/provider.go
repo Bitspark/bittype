@@ -2,14 +2,14 @@
 package rustprovider
 
 import (
-	"github.com/Bitspark/bittype/trees/ast/go"
 	check "github.com/Bitspark/bittype/check/rust/go"
-	"github.com/Bitspark/bittype/trees/cst/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	format "github.com/Bitspark/bittype/format/rust/go"
 	parse "github.com/Bitspark/bittype/parse/rust/go"
 	print "github.com/Bitspark/bittype/print/go"
 	s "github.com/Bitspark/bittype/syntax/rust/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 )
 
 // Provider has no initialization, discovery or registration side effects.

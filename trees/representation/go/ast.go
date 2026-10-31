@@ -7,17 +7,17 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/check/ast/go"
-	"github.com/Bitspark/bittype/internal/tree"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/internal/tree"
+	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 var (
-	ErrInvalidLanguage    = errors.New("invalid language descriptor")
-	ErrLanguageMismatch   = errors.New("language or profile mismatch")
-	ErrTypeMismatch       = errors.New("AST marker type mismatch")
-	ErrInvalidAST         = errors.New("invalid AST envelope")
+	ErrInvalidLanguage  = errors.New("invalid language descriptor")
+	ErrLanguageMismatch = errors.New("language or profile mismatch")
+	ErrTypeMismatch     = errors.New("AST marker type mismatch")
+	ErrInvalidAST       = errors.New("invalid AST envelope")
 )
 
 // AST is an owned, checked, opaque snapshot. Copying the envelope is safe;

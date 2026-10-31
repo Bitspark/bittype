@@ -2,16 +2,16 @@ package integration_test
 
 import (
 	"errors"
-	"github.com/Bitspark/bittype/trees/ast/go"
 	cstcheck "github.com/Bitspark/bittype/check/cst/go"
-	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
 	goprovider "github.com/Bitspark/bittype/provider/golang/go"
 	rustprovider "github.com/Bitspark/bittype/provider/rust/go"
 	tsprovider "github.com/Bitspark/bittype/provider/typescript/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -101,7 +101,9 @@ func exercise[L any](t *testing.T, p text.Provider[L], directory, extension stri
 	}
 }
 func TestNativeTextRoundTrips(t *testing.T) {
-	for _, fixture := range nativeConformanceCases() { t.Run(fixture.directory, fixture.roundTrips) }
+	for _, fixture := range nativeConformanceCases() {
+		t.Run(fixture.directory, fixture.roundTrips)
+	}
 }
 func reject[L any](t *testing.T, p text.Provider[L], sources []string) {
 	t.Helper()
