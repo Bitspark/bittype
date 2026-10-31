@@ -1,0 +1,82 @@
+name: Go contracts
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      EXPECTED_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Verify exact revision and toolchain
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_REVISION"
+          echo "Checked revision: $EXPECTED_REVISION"
+          go version
+      - name: Check Go formatting without changing source
+        id: formatting
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import difflib
+          import os
+          from pathlib import Path
+          import subprocess
+
+          paths = subprocess.check_output(
+              ["git", "ls-files", "-z", "*.go"]
+          ).decode().split("\0")
+          patches = []
+          for name in filter(None, paths):
+              original = Path(name).read_bytes()
+              formatted = subprocess.run(
+                  ["gofmt"], input=original, capture_output=True, check=True
+              ).stdout
+              if original != formatted:
+                  print("Formatting required:", name, flush=True)
+                  patches.extend(difflib.unified_diff(
+                      original.decode().splitlines(keepends=True),
+                      formatted.decode().splitlines(keepends=True),
+                      fromfile="a/" + name, tofile="b/" + name
+                  ))
+          if patches:
+              patch = Path(os.environ["RUNNER_TEMP"]) / "gofmt.patch"
+              patch.write_text("".join(patches), encoding="utf-8")
+              raise SystemExit("Go formatting check failed; see gofmt-patch artifact")
+          print("All committed Go files are formatted.")
+          PY
+      - name: Save formatting corrections
+        if: failure() && steps.formatting.outcome == 'failure'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: gofmt-patch
+          path: ${{ runner.temp }}/gofmt.patch
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Check public contracts and production dependencies
+        run: go test -count=1 -v ./...
+      - name: Vet Go packages
+        run: go vet ./...
+      - name: Record passing revision
+        shell: bash
+        run: |
+          echo "PASS $EXPECTED_REVISION: Go 1.27.3 formatting, contract/dependency tests and vet." >> "$GITHUB_STEP_SUMMARY"
