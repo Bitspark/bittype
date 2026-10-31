@@ -3,11 +3,11 @@
 **Direction: 31 October 2026.** The toolchain is implemented in Go. Generic AST/CST
 carriers, typed stages, LanguageProvider and four native text pipelines are
 implemented. The [native text design](parsing-formatting.md) owns parser,
-formatter, printer and checking details. Canonical AST, generators, registry,
-public builders and application execution remain deferred. The owner's later
-31 October proposal unifies generation and native-to-canonical migration under
-ASTTransformer and adds a syntax engine with explicit registration and path
-selection. The revised target layout below is a proposal, not an implementation.
+formatter, printer and checking details. The owner's later 31 October direction
+unifies generation and native-to-canonical migration under ASTTransformer. Its
+typed boundary and syntax engine with explicit registration, path finding and
+execution are implemented; see the [engine reference](engine.md). Canonical AST,
+actual language mappings, public builders and application CLI remain deferred.
 
 The canonical model remains a [proposal](model.md). Its syntax and semantic
 decisions must be settled before a language implementation claims conformance.
@@ -66,15 +66,17 @@ pipeline/go/
 language/go/
   language.go                               present: identity interface
 transform/go/
-  ast.go                                    proposed: checked heterogeneous envelope
-  transformer.go                            proposed: ASTTransformer contract
-  adapter.go                                proposed: typed stage registration bridge
+  ast.go                                    present: checked heterogeneous envelope
+  language.go                               present: typed/profile language descriptor
+  transformer.go                            present: ASTTransformer contract
+  adapter.go                                present: typed stage registration bridge
 engine/go/
-  engine.go                                 proposed: syntax engine API
-  registry.go                               proposed: providers and directed edges
-  path.go                                   proposed: route planning and ambiguity checks
-  transform.go                              proposed: TransformTo execution
-  text.go                                   proposed: registered parse/format/print composition
+  engine.go                                 present: syntax engine API
+  registry.go                               present: providers and directed edges
+  path.go                                   present: route planning and ambiguity checks
+  transform.go                              present: TransformTo execution
+  provider.go                               present: typed text-provider adaptation
+  text.go                                   present: registered parse/format/print composition
 syntax/
   canonical/go/{nodes,concrete}.go           planned: canonical vocabulary
   typescript/go/nodes.go                     present
@@ -113,7 +115,9 @@ integration/go/
   syntax_test.go                            present
   *_text_test.go, formatter_fixtures_test.go present: native text/AST qualification
   provider_contracts_test.go                 present
-  transform_test.go, engine_test.go          proposed
+  transform_test.go, engine_text_test.go,    present
+  engine_graph_test.go, engine_contracts_test.go
+  testdata/engine/*.go                       present: public boundary fixtures
   testdata/*.go                             present: API type-check fixtures
   testdata/syntax/*.go                       present: target/extension fixtures
 testdata/
@@ -122,6 +126,7 @@ testdata/
 docs/
   model.md, ast.md, syntax.md, generation.md present
   parsing-formatting.md                     present
+  engine.md                                 present
 ```
 
 The [target vocabularies](syntax.md) cover a native type-declaration subset.
@@ -139,9 +144,8 @@ methods. It also supplies aliases over `ast.AST[Language]`,
 remains unchanged and does not import the language identity interface.
 
 The owner clarified on 31 October that a central agnostic language AST registry
-will exist. The earlier no-language-registry direction is superseded. Its
-implementation is deferred; the present interface is the common contract that
-registered providers will implement. The registry must accept providers
+will exist. The earlier no-language-registry direction is superseded. The
+implemented syntax engine accepts configured descriptors and native providers
 through that interface, without a concrete language import, switch or builtin
 list. Application composition owns the selected provider instances.
 
@@ -191,7 +195,7 @@ It would connect stages only when the intermediate type agrees and propagate
 the first failure. There is no `Then` implementation or stub in this slice.
 Scheduling, caching, cancellation and diagnostic aggregation are also deferred.
 
-## Proposed ASTTransformer and syntax engine
+## ASTTransformer and syntax engine
 
 Generation and canonicalization are names for directions of one operation:
 
@@ -201,7 +205,7 @@ AST[TypeScript] -> AST[Canonical]   canonicalization/adoption
 AST[TypeScript] -> AST[Canonical] -> AST[Rust]   composed transformation
 ```
 
-The proposed registry-facing interface is:
+The implemented registry-facing interface is:
 
 ```go
 type ASTTransformer interface {
@@ -213,8 +217,8 @@ type ASTTransformer interface {
 func (e *Engine) TransformTo(input AST, targetID language.ID) (AST, error)
 ```
 
-These are design sketches, not implemented APIs. AST here is the planned
-transform.AST envelope: a language identity plus an opaque, checked native AST
+AST here is the implemented transform.AST envelope: a language identity plus
+an opaque, checked native AST
 payload. It is not ast.AST[any]; different generic instantiations are not
 interchangeable. Typed adapters retain Stage[ast.AST[From], ast.AST[To]] inside
 each implementation and validate the actual payload type and endpoint identities
@@ -292,8 +296,8 @@ Arrows in the table mean a direct package dependency is allowed:
 | Generic AST | Standard library only; currently no imports |
 | Generic pipeline | Standard library only; currently no imports, including no AST dependency |
 | Language identity interface | Standard library only; currently no imports |
-| Proposed syntax engine and registry | Language/provider and transformation contracts; no concrete syntax imports |
-| Proposed transformation boundary | Generic AST, language identity, typed stage contracts; no concrete syntax imports |
+| Syntax engine and registry | Language/provider and transformation contracts, generic CST checks; no concrete syntax imports |
+| Transformation boundary | Generic AST/checks, language identity, typed stage contracts; no concrete syntax imports |
 | Generic CST | Generic AST |
 | Each syntax package | Generic AST/CST, language identity interface |
 | Canonical frontend | Canonical syntax, generic AST |
@@ -314,10 +318,10 @@ Go's parser uses the standard go/parser representation internally. All four
 formatters construct CST directly in Go; no source-print-and-reparse shortcut
 is used. Native compilers are remote test dependencies, not production dependencies.
 
-The intended language registry is distinct from a behavioral contract catalogue.
-No registry implementation, automatic discovery or hidden default registration
-is introduced now. The generic AST, pipeline, language identity interface and
-future registry must never acquire Function, Stream, Cell, Wire or runtime
+The language registry is distinct from a behavioral contract catalogue.
+Registration is explicit; no automatic discovery or hidden default registration
+is introduced. The generic AST, pipeline, language identity interface and
+registry must never acquire Function, Stream, Cell, Wire or runtime
 imports, special kinds, semantic name switches or structural fingerprint matching.
 Native function-signature syntax remains language-owned. Later library-owned
 realizations require a separate scoped design; this slice supplies no binding
@@ -337,14 +341,14 @@ incompatible language/stage types are rejected. Four authored target examples
 include open/applied pagination and native reader signatures. Tests exercise
 metadata through the common interface and enforce the production dependency
 boundary. Native text syntax and compiler fixtures now provide separately scoped evidence.
-Registry operation and canonical generation remain unimplemented.
+The engine's independent tests qualify registration, the typed boundary, graph
+planning and checked execution. Canonical generation remains unimplemented.
 
 Subsequent, separately authorized increments are:
 
 1. Specify and implement the canonical AST and independent semantic fixtures.
-2. Implement the typed transformation boundary and agnostic syntax engine registry.
-3. Implement canonical frontend and canonical-to-native ASTTransformer providers.
-4. Compose and qualify native generation, then add explicitly scoped reverse
+2. Implement canonical frontend and canonical-to-native ASTTransformer providers.
+3. Compose and qualify native generation, then add explicitly scoped reverse
    transformers for migration and qualify multi-step routes.
 
 Native text stages and compiler fixtures are implemented separately; they do not

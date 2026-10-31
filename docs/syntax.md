@@ -6,13 +6,14 @@ are implemented in Go on the [generic AST](ast.md). Each package supplies
 
 The shared LanguageProvider interface, native text providers, parsers,
 AST-to-CST formatters, checks and generic printer are implemented. Canonical AST,
-generators, registry and public builders remain deferred.
+actual language mappings and public builders remain deferred. The syntax engine
+now provides [explicit registration and route execution](engine.md).
 See the [native text design](parsing-formatting.md).
 
 The exported carrier fields remain unchecked; the separate language checker
 validates supported type syntax. These are not complete compiler ASTs.
 
-## Identity and future registration
+## Identity and registration
 
 [language/go](../language/go/language.go) declares the agnostic interface:
 
@@ -39,11 +40,11 @@ toolchain versions, schema versions or structural fingerprints.
 
 **Owner correction, 31 October 2026:** there will be a central, agnostic language
 AST registry. The earlier statement that there would be no language registry
-is superseded. Its implementation remains a later increment. This interface
-lets the application supply providers to that registry without the registry
-importing concrete syntax packages. Duplicate-key handling and other registry
-operations must be explicit when implemented; there are no hidden defaults or
-automatic init-time registrations now.
+is superseded. The syntax engine implements it through typed/profile descriptors
+and explicit native-provider adaptation, without concrete syntax imports.
+Duplicate keys and directed edges are rejected. Configured descriptors require
+construction; the native markers above keep usable zero values. There are no
+hidden defaults or automatic init-time registrations.
 
 Each provider's `Language` is also a distinct named Go marker:
 
@@ -94,7 +95,7 @@ Parsing retains original source; formatting applies the documented
 Function-type and method-signature nodes describe native language syntax.
 They contain no executable bodies. They do not give the Function library,
 Stream, Cell or another behavioral contract a privileged kind in the generic
-AST, identity interface, pipeline or future registry.
+AST, identity interface, pipeline or registry.
 
 ## TypeScript
 

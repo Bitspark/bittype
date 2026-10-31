@@ -349,7 +349,8 @@ This document specifies the model proposal. The Go foundation contains
 [four target vocabularies with language identity](syntax.md). The canonical AST
 is explicitly deferred. Native parsers, syntax checks, AST-to-CST formatters and
 the shared CST printer are implemented separately. Canonical parsing/checking,
-AST-to-AST transformations, public builders and the syntax engine remain planned.
+actual AST-to-AST mappings and public builders remain planned. The syntax engine
+and typed transformation frame are implemented separately; see [engine.md](engine.md).
 
 1. **Specify the model and fixtures.** Resolve the outstanding syntax and
    normalization choices below. Write language-neutral valid/invalid examples,

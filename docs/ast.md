@@ -26,7 +26,7 @@ var tree ast.AST[ExampleLanguage]
 
 The generic carrier requires no marker methods, registration or core change.
 The target packages additionally implement the separate language identity
-interface for future agnostic registration, as [documented here](syntax.md).
+interface for agnostic registration, as [documented here](syntax.md).
 Two distinct named
 marker types produce distinct instantiated AST, node and kind types. A type
 alias to an existing marker does not create another language. Converting or

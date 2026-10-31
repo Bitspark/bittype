@@ -2,8 +2,9 @@
 
 **Direction: 31 October 2026.** The owner requested native TypeScript, Go, Rust
 and C++ parsers, formatters, checks and tests, then selected a shared CST alongside
-the AST. The canonical AST, generators, runtime adapters and registry remain
-deferred.
+the AST. The canonical AST, actual language transformers and runtime adapters
+remain deferred. The subsequent [syntax engine](engine.md) supplies registration,
+route execution and composition of these native text stages.
 
 ## Pipeline
 
@@ -133,7 +134,7 @@ package supplies its specialized provider; each `provider/<language>/go` package
 explicitly composes all four, using the generic printer. ID/Name come from the
 native marker, not duplicate strings.
 
-No provider registers itself. A future registry will accept shared contracts
+No provider registers itself. The syntax engine accepts shared contracts
 without concrete imports or a name switch. Heterogeneous AST type erasure belongs
 in an explicit registry adapter, not the generic AST/CST. Equal ID strings do not
 establish equal Go marker types or compatible grammars.
@@ -152,8 +153,9 @@ formatted, err := p.Format(parsed)
 output, err := p.Print(formatted) // newly selected layout
 ```
 
-These signatures fit the existing typed pipeline Stage contract. No execution
-engine, filesystem IO, dependency retrieval or implicit package discovery is added.
+These signatures fit the existing typed pipeline Stage contract. The engine
+adapts them explicitly; filesystem IO, dependency retrieval and implicit package
+discovery remain outside these stages.
 
 ## Checks and admitted syntax
 
@@ -242,4 +244,5 @@ remote runners: Go 1.27.3, TypeScript 5.9.3 (ES2020), Rust 1.90.0 (edition 2024)
 and GCC 14.2.0 (C++20). Workstation use is limited to source editing, Git and coordination.
 
 The canonical model remains a proposal. No canonical AST, AST-to-AST generator,
-registry, binding implementation or package release is introduced here.
+binding implementation or package release is introduced here. Registration is
+implemented by the separately described engine.

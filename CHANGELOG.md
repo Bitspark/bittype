@@ -4,6 +4,15 @@
 
 ### 31 October 2026
 
+- Implement ASTTransformer, typed adapters and owned AST/CST registration
+  envelopes with explicit language profiles and marker checks.
+- Implement an empty-by-default syntax engine with explicit provider/edge
+  registration, unique shortest paths, explicit routes, checked execution and
+  existing native text composition. Add independent graph-oracle, ownership,
+  negative public API and concurrent-registry tests, including a remote race gate.
+- Keep canonical AST and actual language mappings deferred; record the delivered
+  frame in [docs/engine.md](docs/engine.md).
+
 - Add the generic CST and borrowed AST-view interface. Native parsers retain
   source tokens/trivia, formatters construct CST directly, and the shared printer
   emits supplied leaves without knowing languages or formatting conventions.
@@ -11,16 +20,16 @@
   checks, with independent AST goldens, source round trips, malformed-input
   regressions, fuzzing and remote native compiler qualification.
 - Replace the identity interface with LanguageProvider (ID/Name), embedded by
-  every specialized text provider; compose providers explicitly. No alias,
-  registry implementation, canonical AST or generator is added.
+  every specialized text provider; compose providers explicitly. That native-text
+  slice added no alias, registry, canonical AST or generator.
 - Document the pipeline and ownership in
   [docs/parsing-formatting.md](docs/parsing-formatting.md).
 
 - Add TypeScript, Go, Rust and C++ AST vocabularies over the unchanged generic
   carrier, with independent target consumers and language-separation checks.
 - Add an agnostic language identity interface and provider ID/Name methods
-  for the owner's intended central registry. Registry implementation remains
-  deferred; that earlier slice added no canonical AST or native text stages.
+  for the owner's intended central registry. That earlier slice added no
+  registry, canonical AST or native text stages.
 - Document node shapes, native syntax limits and the updated dependency/layout
   boundary in [docs/syntax.md](docs/syntax.md). Generators remain unimplemented;
   native formatting is delivered by the later text slice above.

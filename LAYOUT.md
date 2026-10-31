@@ -26,11 +26,12 @@ contracts, four native syntax packages and their parse/check/format/provider
 packages, plus the shared printer. Private helpers live under internal/.
 The [native text design](docs/parsing-formatting.md) records their layout and
 dependencies; the [generation design](docs/generation.md) separates them from
-future canonical generation. Its revised proposal uses transform/go for the
+future canonical generation. The implemented frame uses transform/go for the
 ASTTransformer contract and typed adapters, engine/go for the agnostic registry
-and route execution, and transform/<from>-to-<to>/go for each directed mapping.
-Canonical AST, transformers, public builders, engine/registry and application
-executor remain deferred. The document marks all planned paths separately.
+and route execution. Future transform/<from>-to-<to>/go packages own each directed
+mapping. Canonical AST, actual transformers, public builders and application CLI
+remain deferred. The [engine reference](docs/engine.md) records the public API;
+the generation document marks all planned paths separately.
 Do not create empty source directories or present planned packages as delivered.
 
 The generic AST, pipeline and language identity contract remain independent
