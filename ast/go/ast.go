@@ -4,8 +4,8 @@
 // A language package supplies its own named marker type, kinds and grammar;
 // this package contains no language catalogue or grammar implementation.
 //
-// These are data types, not checked trees. Structural and grammatical
-// validation, allocation, traversal and immutable builders are not implemented.
+// These are data types, not checked trees. Structural and grammatical checks
+// live in separate packages; the carrier performs no validation or allocation.
 package ast
 
 // TreeID identifies a particular AST within a set of inputs and outputs.

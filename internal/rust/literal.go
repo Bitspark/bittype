@@ -64,7 +64,7 @@ func UnquoteABI(s string) (string, error) {
 			for i < len(body) && body[i] != '}' {
 				i++
 			}
-			if i == len(body) {
+			if i == len(body) || start == i || body[start] == '_' {
 				return bad()
 			}
 			digits := strings.ReplaceAll(body[start:i], "_", "")

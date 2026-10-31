@@ -22,4 +22,5 @@ type Access = Page<Person>["items"];
 type Mix = Person & { "unusual-key"?: E; optional?(): void };
 type Primitives = any | unknown | never | void | undefined | boolean | number | bigint | string | symbol | object;
 type Fractions = .5 | -.25 | 1e3 | 0x10;
+interface KeywordProperties { string: string; any: number; }
 interface Derived extends Page<Person> { extra: string; }

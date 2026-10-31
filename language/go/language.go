@@ -1,7 +1,7 @@
 // Package language defines language identity for syntax providers.
 //
 // It contains no language list or concrete syntax imports. A future agnostic
-// registry can accept Language implementations supplied by its composition root.
+// registry can accept LanguageProvider implementations supplied by its composition root.
 // No registry or automatic registration is implemented here.
 package language
 

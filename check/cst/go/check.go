@@ -17,7 +17,35 @@ func Check[L any](tree cst.CST[L]) error {
 		return bad("invalid concrete root")
 	}
 	if len(tree.Nodes) > check.MaxNodes {
-		return bad("too many concrete nodes")
+		return &text.Diagnostic{Code: text.LimitExceeded, Message: "too many concrete nodes"}
+	}
+	bytes, entries := check.MaxTextBytes, check.MaxEntries
+	take := func(left *int, count int) bool {
+		if count > *left {
+			return false
+		}
+		*left -= count
+		return true
+	}
+	limit := func() error { return &text.Diagnostic{Code: text.LimitExceeded, Message: "concrete storage exceeds resource limit"} }
+	// Preflight before UTF-8 scanning or the printer allocates expanded output.
+	for _, n := range tree.Nodes {
+		if !take(&bytes, len(n.Kind)) || !take(&entries, len(n.Children)) || !take(&entries, len(n.Syntax)) || !take(&entries, len(n.Origin.Spans)) || !take(&entries, len(n.Origin.Nodes)) {
+			return limit()
+		}
+		if n.Text != nil && !take(&bytes, len(*n.Text)) {
+			return limit()
+		}
+		for _, s := range n.Origin.Spans {
+			if !take(&bytes, len(s.Source)) {
+				return limit()
+			}
+		}
+		for _, r := range n.Origin.Nodes {
+			if !take(&bytes, len(r.Tree)) {
+				return limit()
+			}
+		}
 	}
 	seen := make([]bool, len(tree.Nodes))
 	type entry struct {
@@ -35,7 +63,7 @@ func Check[L any](tree cst.CST[L]) error {
 			return bad("concrete cycle or multiple parents")
 		}
 		if e.depth > check.MaxDepth+2 {
-			return bad("concrete nesting exceeds limit")
+			return &text.Diagnostic{Code: text.LimitExceeded, Message: "concrete nesting exceeds limit"}
 		}
 		seen[e.id-1] = true
 		n := tree.Nodes[e.id-1]

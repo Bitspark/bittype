@@ -209,3 +209,27 @@ func TestParserResourceLimit(t *testing.T) {
 		t.Fatalf("expected input limit: %v", err)
 	}
 }
+
+func TestAggregateTextBudget(t *testing.T) {
+	// Distinct leaves reuse one small allocation; expanded output must never be built.
+	p := tsprovider.Provider{}
+	chunk := strings.Repeat("x", 1024)
+	c := cst.CST[tsMarker]{Abstract: tsFixture(), Root: 1, Nodes: []cst.Node[tsMarker]{{Kind: "layout"}}}
+	for i := 0; i < 17000; i++ {
+		c.Nodes = append(c.Nodes, cst.Node[tsMarker]{Kind: "token", Text: &chunk})
+		c.Nodes[0].Children = append(c.Nodes[0].Children, cst.NodeID(len(c.Nodes)))
+	}
+	output, err := p.Print(c)
+	var d *text.Diagnostic
+	if output != "" || !errors.As(err, &d) || d.Code != text.LimitExceeded {
+		t.Fatalf("expected aggregate concrete limit without output: %v", err)
+	}
+	a := tsFixture()
+	for i := 0; i < 17000; i++ {
+		a.Nodes[0].Attributes = append(a.Nodes[0].Attributes, ast.Attribute{Name: "name", Text: chunk})
+	}
+	formatted, err := p.Format(a)
+	if len(formatted.Nodes) != 0 || !errors.As(err, &d) || d.Code != text.LimitExceeded {
+		t.Fatalf("expected aggregate AST limit without output: %v", err)
+	}
+}

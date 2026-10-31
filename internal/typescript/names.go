@@ -13,3 +13,16 @@ func init() {
 	}
 }
 func Identifier(v string) bool { return g.Identifier(strings.ReplaceAll(v, "$", "_")) && !reserved[v] }
+
+// TypeName excludes predefined type words in binding and unqualified use positions.
+// Property names and qualified segments follow their own native rules.
+func TypeName(v string) bool {
+	if !Identifier(v) {
+		return false
+	}
+	switch v {
+	case "any", "unknown", "never", "number", "bigint", "boolean", "string", "symbol", "void", "object", "undefined":
+		return false
+	}
+	return true
+}

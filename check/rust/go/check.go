@@ -34,19 +34,19 @@ var rules = g.Rules{
 	"struct":             {Attributes: named(), Roles: with(prefix(), g.Many("field", 0, "field"))},
 	"tuple-struct":       {Attributes: named(), Roles: with(prefix(), g.Many("field", 0, "tuple-field"))},
 	"enum":               {Attributes: named(), Roles: with(prefix(), g.Many("variant", 0, "unit-variant", "tuple-variant", "record-variant"))},
-	"unit-variant":       {Attributes: g.Attributes("name", g.Attr(true, identifier))},
-	"tuple-variant":      {Attributes: g.Attributes("name", g.Attr(true, identifier)), Roles: []g.Role{g.Many("field", 0, "tuple-field")}},
-	"record-variant":     {Attributes: g.Attributes("name", g.Attr(true, identifier)), Roles: []g.Role{g.Many("field", 0, "field")}},
+	"unit-variant":       {Attributes: g.Attributes("name", g.Attr(true, native.Declaration))},
+	"tuple-variant":      {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("field", 0, "tuple-field")}},
+	"record-variant":     {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("field", 0, "field")}},
 	"field":              {Attributes: named(), Roles: []g.Role{g.One("type", types...)}},
 	"tuple-field":        {Attributes: g.Attributes("visibility", g.Attr(false, visibility)), Roles: []g.Role{g.One("type", types...)}},
 	"trait":              {Attributes: named(), Roles: []g.Role{g.Many("generic-parameter", 0, generics...), g.Many("bound", 0, bounds...), g.Many("where", 0, "where-predicate"), g.Many("member", 0, "method-signature", "associated-type")}},
-	"associated-type":    {Attributes: g.Attributes("name", g.Attr(true, identifier)), Roles: []g.Role{g.Many("bound", 0, bounds...)}},
-	"method-signature":   {Attributes: g.Attributes("name", g.Attr(true, identifier)), Roles: with(prefix(), g.Opt("receiver", "receiver"), g.Many("parameter", 0, "parameter"), g.Opt("result", types...))},
+	"associated-type":    {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("bound", 0, bounds...)}},
+	"method-signature":   {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: with(prefix(), g.Opt("receiver", "receiver"), g.Many("parameter", 0, "parameter"), g.Opt("result", types...))},
 	"receiver":           {Attributes: g.Attributes("receiver-form", g.Attr(true, g.Set("value", "shared", "mutable"))), Roles: []g.Role{g.Opt("lifetime", "lifetime-reference")}},
 	"parameter":          {Attributes: g.Attributes("name", g.Attr(false, identifier)), Roles: []g.Role{g.One("type", types...)}},
-	"type-parameter":     {Attributes: g.Attributes("name", g.Attr(true, identifier)), Roles: []g.Role{g.Many("bound", 0, bounds...), g.Opt("default", types...)}},
-	"lifetime-parameter": {Attributes: g.Attributes("name", g.Attr(true, g.Identifier)), Roles: []g.Role{g.Many("bound", 0, "lifetime-reference")}},
-	"lifetime-reference": {Attributes: g.Attributes("name", g.Attr(true, g.Identifier)), Reference: true},
+	"type-parameter":     {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("bound", 0, bounds...), g.Opt("default", types...)}},
+	"lifetime-parameter": {Attributes: g.Attributes("name", g.Attr(true, native.LifetimeParameter)), Roles: []g.Role{g.Many("bound", 0, "lifetime-reference")}},
+	"lifetime-reference": {Attributes: g.Attributes("name", g.Attr(true, native.LifetimeReference)), Reference: true},
 	"where-predicate":    {Roles: []g.Role{g.One("subject", append(types, "lifetime-reference")...), g.Many("bound", 1, bounds...)}},
 	"path-type":          {Attributes: g.Attributes("absolute", g.Attr(false, g.Bool)), Roles: []g.Role{g.Many("segment", 1, "path-segment")}},
 	"path-segment":       {Attributes: g.Attributes("name", g.Attr(true, native.PathSegment)), Roles: []g.Role{g.Many("argument", 0, append(types, "lifetime-reference")...)}, Reference: true},
@@ -70,6 +70,15 @@ func Check(view ast.View[s.Language]) error {
 	for i, n := range t.Nodes {
 		id := ast.NodeID(i + 1)
 		bad := func(m string) error { return text.AtNode(t, id, m) }
+		for _, child := range n.Children {
+			if v.Kind(child.Node) != "path-type" || child.Role == "bound" || n.Kind == s.KindUse {
+				continue
+			}
+			segments := v.Children(child.Node, "segment")
+			if !v.Flag(child.Node, "absolute") && len(segments) == 1 && len(v.Children(segments[0], "argument")) == 0 && primitive(v.Attr(segments[0], "name")) {
+				return text.AtNode(t, child.Node, "bare primitive spelling requires primitive-type in a type expression")
+			}
+		}
 		seenType := false
 		for _, p := range v.Children(id, "generic-parameter") {
 			if v.Kind(p) == "type-parameter" {

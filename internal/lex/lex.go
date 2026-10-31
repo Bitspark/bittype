@@ -16,13 +16,13 @@ type Token struct {
 }
 type Options struct {
 	LeadingDotNumbers bool
-	Space           func(rune) bool
-	Punctuation     []string
-	NestedComments  bool
-	Lifetimes       bool
-	RawIdentifiers  bool
-	BacktickStrings bool
-	Directives      []string
+	Space             func(rune) bool
+	Punctuation       []string
+	NestedComments    bool
+	Lifetimes         bool
+	RawIdentifiers    bool
+	BacktickStrings   bool
+	Directives        []string
 }
 
 const MaxBytes = 4 << 20

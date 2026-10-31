@@ -172,10 +172,13 @@ establish that imported names exist, satisfy constraints or have compatible
 visibility/layout. Native compiler fixtures provide separate evidence for the
 qualified examples, not a proof for every external program.
 
-The current source limit is 4 MiB, lexical/arena limits are 200,000 elements, and
-nesting limits are explicit resource bounds. Violations return diagnostics rather
-than usable partial output. Diagnostics can identify source spans or abstract
-node addresses.
+The current source limit is 4 MiB and lexical/arena limits are 200,000 elements.
+Each abstract/concrete arena has a 16 MiB aggregate string budget and a 1,600,000
+entry budget for its child/attribute/reference/origin lists. Repeated string
+references count per occurrence, before validation scans or printing allocate
+expanded output. Nesting limits are also explicit resource bounds. Violations
+return diagnostics rather than usable partial output. Diagnostics can identify
+source spans or abstract node addresses.
 
 Some deliberate boundaries deserve explicit mention:
 
@@ -188,6 +191,9 @@ Some deliberate boundaries deserve explicit mention:
   (`struct X;`) are rejected because the current AST distinguishes named-field
   and tuple structs but has no unit-struct form. Const generics, macros,
   attributes, implementations and higher-ranked types remain unsupported.
+  Bare primitive spellings in type-expression positions use PrimitiveType;
+  qualified paths remain PathType. This lexical distinction does not perform
+  name resolution or prove what a shadowing declaration denotes.
 - C++: the listed declarations and declarators. Function bodies, non-type
   template arguments, arbitrary preprocessing, constructors and expression
   initializers remain unsupported. Qualified member-function-pointer signatures

@@ -19,3 +19,4 @@ type Diverge = fn() -> !;
 type Absolute = ::std::string::String;
 type NamedFn = fn(value: i32);
 type EscapedABI = extern "\u{43}" fn();
+type UnderscoredABI = extern "\u{4_3_}" fn();

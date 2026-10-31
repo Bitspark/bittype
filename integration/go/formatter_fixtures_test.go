@@ -173,6 +173,31 @@ func TestMalformedASTs(t *testing.T) {
 	invalidAST(t, rustprovider.Provider{}, rustFixture)
 	invalidAST(t, cppprovider.Provider{}, cppFixture)
 }
+
+func TestPrimitiveSyntaxPositions(t *testing.T) {
+	a := tsFixture()
+	a.Nodes[0].Kind = ts.KindTypeReference
+	if err := (tsprovider.Provider{}).Check(a); err == nil {
+		t.Fatal("keyword spelling accepted as unqualified reference")
+	}
+	f := fixture[rust.Language]{}
+	segment := f.node("path-segment", attr("name", "u8"))
+	path := f.node("path-type", nil, child("segment", segment))
+	alias := f.node("type-alias", attr("name", "X"), child("type", path))
+	f.tree.ID = "primitive-position"
+	f.tree.Root = f.node("file", nil, child("item", alias))
+	if err := (rustprovider.Provider{}).Check(f.tree); err == nil {
+		t.Fatal("primitive spelling accepted as an unqualified type path")
+	}
+	for _, source := range []string{"type X = NS.string;", "interface X { string: string; }"} {
+		if _, err := (tsprovider.Provider{}).Parse(text.Input{SourceID: "native-name", TreeID: "native-name", Text: source}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := (rustprovider.Provider{}).Parse(text.Input{SourceID: "native-path", TreeID: "native-path", Text: "type X = u8::Associated;"}); err != nil {
+		t.Fatal(err)
+	}
+}
 func nativeFiles[L any](t *testing.T, p text.Provider[L], language, ext string, independent ast.AST[L]) string {
 	t.Helper()
 	directory := t.TempDir()

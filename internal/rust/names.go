@@ -20,6 +20,10 @@ func Identifier(v string) bool {
 	return g.Identifier(v) && !reserved[v]
 }
 func Declaration(v string) bool { return v != "_" && Identifier(v) }
+func LifetimeParameter(v string) bool { return v != "_" && g.Identifier(v) && !reserved[v] }
+func LifetimeReference(v string) bool {
+	return v == "static" || v == "_" || LifetimeParameter(v)
+}
 func PathSegment(v string) bool {
 	return v == "self" || v == "Self" || v == "super" || v == "crate" || Identifier(v)
 }

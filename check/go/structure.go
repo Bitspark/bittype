@@ -10,6 +10,56 @@ import (
 // MaxDepth bounds recursive consumers; it is a resource limit, not a type rule.
 const MaxDepth = 256
 const MaxNodes = 200000
+const MaxTextBytes = 16 << 20
+const MaxEntries = MaxNodes * 8
+
+// budget counts aggregate storage before consumers scan or copy text. Repeated
+// references to the same backing string still count once per occurrence.
+func budget[L any](tree ast.AST[L]) error {
+	bytes, entries := MaxTextBytes, MaxEntries
+	take := func(left *int, count int) bool {
+		if count > *left {
+			return false
+		}
+		*left -= count
+		return true
+	}
+	bad := func() error { return &text.Diagnostic{Code: text.LimitExceeded, Message: "AST storage exceeds resource limit"} }
+	if !take(&bytes, len(tree.ID)) {
+		return bad()
+	}
+	for _, n := range tree.Nodes {
+		if !take(&bytes, len(n.Kind)) || !take(&entries, len(n.Attributes)) || !take(&entries, len(n.Children)) || !take(&entries, len(n.References)) || !take(&entries, len(n.Origin.Spans)) || !take(&entries, len(n.Origin.Nodes)) {
+			return bad()
+		}
+		for _, a := range n.Attributes {
+			if !take(&bytes, len(a.Name)) || !take(&bytes, len(a.Text)) {
+				return bad()
+			}
+		}
+		for _, c := range n.Children {
+			if !take(&bytes, len(c.Role)) {
+				return bad()
+			}
+		}
+		for _, r := range n.References {
+			if !take(&bytes, len(r.Role)) || !take(&bytes, len(r.Target.Tree)) {
+				return bad()
+			}
+		}
+		for _, s := range n.Origin.Spans {
+			if !take(&bytes, len(s.Source)) {
+				return bad()
+			}
+		}
+		for _, r := range n.Origin.Nodes {
+			if !take(&bytes, len(r.Tree)) {
+				return bad()
+			}
+		}
+	}
+	return nil
+}
 
 func Structure[L any](tree ast.AST[L]) error {
 	bad := func(id ast.NodeID, message string) error { return text.AtNode(tree, id, message) }
@@ -18,6 +68,9 @@ func Structure[L any](tree ast.AST[L]) error {
 	}
 	if len(tree.Nodes) > MaxNodes {
 		return &text.Diagnostic{Code: text.LimitExceeded, Message: "too many AST nodes"}
+	}
+	if err := budget(tree); err != nil {
+		return err
 	}
 	seen := make([]bool, len(tree.Nodes))
 	type entry struct {
