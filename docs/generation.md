@@ -104,7 +104,7 @@ checker or builder implements those rules yet.
 ## Language identity and registration
 
 Each target package supplies a zero-value `Language` implementing
-`language.Language`, with stable `ID() language.ID` and `Name() string`
+`language.LanguageProvider`, with stable `ID() language.ID` and `Name() string`
 methods. It also supplies aliases over `ast.AST[Language]`,
 `ast.Node[Language]` and `ast.Kind[Language]`. The carrier and stage APIs
 remain unchanged and do not import the language identity interface.

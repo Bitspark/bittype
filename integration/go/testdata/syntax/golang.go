@@ -9,7 +9,7 @@ import (
 	syntax "github.com/Bitspark/bittype/syntax/golang/go"
 )
 
-var _ language.Language = syntax.Language{}
+var _ language.LanguageProvider = syntax.Language{}
 
 // Page[T any] struct { Items []T }, Person, PeoplePage = Page[Person],
 // and Reader[T any] interface { Read() T }. The two T binders stay distinct.

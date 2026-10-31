@@ -9,7 +9,7 @@ import (
 	syntax "github.com/Bitspark/bittype/syntax/rust/go"
 )
 
-var _ language.Language = syntax.Language{}
+var _ language.LanguageProvider = syntax.Language{}
 
 // Page<T> { items: Vec<T> }, Person, PeoplePage = Page<Person>,
 // and trait Reader<T> { fn read(&self) -> T; }. Vec and String use the prelude.
