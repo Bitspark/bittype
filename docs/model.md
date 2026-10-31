@@ -1,7 +1,8 @@
 # Proposed canonical type model
 
-**Date:** 31 October 2026. **Status:** proposal for review; no implementation or
-published language revision.
+**Date:** 31 October 2026. **Status:** proposal for review; no canonical language
+implementation or published language revision. The generic AST and pipeline
+foundation is implemented separately; see [the generation design](generation.md).
 
 The owner selected bittype as the home for canonical type definitions and type
 generation for TypeScript, Go and Rust. The first milestone is types only.
@@ -14,7 +15,7 @@ A versioned, language-independent definition is the authoritative input.
 TypeScript, Go and Rust are generated representations of that definition:
 
 ```text
-JSON source -> resolved type model -> target representation -> native types
+JSON source -> checked canonical AST -> target-language AST -> native type source
 ```
 
 JSON is the initial syntax for authoring definitions. It does not make JSON the
@@ -47,8 +48,10 @@ only a bare name or flattened structural body. A parameter reference points to
 its lexical binder. An application retains its constructor and resolved
 arguments, as well as any normalized view needed by a consumer.
 
-The resolved graph is the common input to all three native type renderers.
+The resolved canonical AST is the common input to all three AST-to-AST generators.
 Their spelling and memory-layout choices do not rewrite its semantics.
+Each target AST is then printed by its own formatter, independently of the
+canonical model. The toolchain implementation language is Go.
 
 ## 3. Initial value-type vocabulary
 
@@ -335,8 +338,9 @@ The following are forbidden:
 
 ## 10. Implementation stages and evidence
 
-This document is the first deliverable. No source implementation is included
-with it.
+This document specifies the model proposal. The initial Go foundation contains
+only [generic AST data types](ast.md) and a [typed stage contract](generation.md).
+It does not implement a language grammar, frontend, generator or formatter.
 
 1. **Specify the model and fixtures.** Resolve the outstanding syntax and
    normalization choices below. Write language-neutral valid/invalid examples,
@@ -345,10 +349,14 @@ with it.
    check binders, applications and recursion, and produce the shared model with
    useful source diagnostics. Reject duplicate JSON object keys before an object
    map can discard them, unknown semantic forms and incomplete inputs.
-3. **Implement all three type renderers.** Use the same fixtures and model for
-   TypeScript, Go and Rust. Add only the support data types their representations
-   need. Do not add adapters or runtime validators.
-4. **Qualify the representations.** Compile generated declarations and native
+3. **Implement all three AST-to-AST generators.** Use the same fixtures and
+   canonical AST to produce TypeScript, Go and Rust ASTs. Add only the support
+   data declarations their representations need. Do not add adapters or runtime
+   validators, and do not emit source strings from these transformations.
+4. **Implement independent formatters.** Each formatter consumes its target AST
+   and emits native type source. It does not depend on canonical input or make
+   semantic representation choices. Compose the stages at the application root.
+5. **Qualify the representations.** Compile generated declarations and native
    use examples with pinned toolchains on shared build workers or GitHub
    runners. Compare intended value distinctions, not merely generated strings.
 
@@ -371,8 +379,8 @@ behavior, value validation, transport compatibility or a deployed consumer.
   independent vectors follow those decisions.
 - Each backend's detailed representation contract, especially Go variants,
   presence/null data types and nested nullable generic applications.
-- The generator implementation language, package boundaries and supported
-  target-toolchain versions.
+- Supported target-toolchain versions. The Go host language and component
+  boundaries are selected in the [generation design](generation.md).
 
 Refinements and arbitrary predicates, extensible records and variants,
 inheritance, nominal wrappers, higher-kinded parameters and generic inference

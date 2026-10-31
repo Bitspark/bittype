@@ -3,26 +3,30 @@
 Use component-first, language-second source paths:
 
 ```text
-<component>/<lang>/...
-cmd/<command>/<lang>/...
+<component>/<implementation-language>/...
+cmd/<command>/<implementation-language>/...
 ```
 
 Language-neutral specifications and examples belong under `docs/` and, once
 implemented, a shared fixture directory. The current model proposal is
 [docs/model.md](docs/model.md).
 
-Use `ts`, `go` and `rs` for this milestone's three target languages. The
-language a generator is implemented in is independent of the languages it emits.
+The toolchain is implemented in Go. The trailing `go` directory identifies
+that implementation language. Target names belong to components: for example,
+`syntax/rust/go` contains Go code for Rust syntax, not Rust source.
+There is one root Go module, with independently owned component packages.
 
 Source, native tests and package metadata belong with the owning implementation.
 Root workspace manifests and CI configuration may stay at their normal locations.
 Do not introduce repository-root language directories or a language-first
 `packages/` tree.
 
-Choose components from their responsibilities, such as the model frontend,
-native type rendering or presence data types. Do not create empty source
-directories or imply that any implementation already exists.
+The implemented source packages are `ast/go` and `pipeline/go`, with public
+contract tests in `integration/go`. The [generation design](docs/generation.md)
+records the full target layout for syntax, frontend, generation, formatting
+and application composition. Those later packages do not yet exist.
+Do not create empty source directories or present planned packages as delivered.
 
-A generation kernel, if introduced, remains distinct from the declaration model.
+The generic AST and pipeline remain distinct from language grammars.
 The [charter](CHARTER.md) sets ownership; this layout does not merge those
 responsibilities or require a package or repository per directory.

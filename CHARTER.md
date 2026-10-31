@@ -17,14 +17,24 @@ bittype owns:
   vectors, once identity and normalization rules have been settled.
 - Small data types needed to represent presence and nullness in generated code.
 
-A generation kernel, if introduced, is a separate module that orchestrates
-explicit stages and targets. It does not import the declaration language or
-know the names or semantics of particular library contracts.
+The generic AST and pipeline are independent packages inside the initial root
+Go module. Neither imports a language grammar, generator, formatter or contract
+library; the pipeline also does not import the AST package. The application
+root will compose explicit stages and targets. The shared infrastructure does
+not know the names or semantics of particular library contracts.
 
 ## Current delivery boundary
 
-The first deliverable is the proposed model in docs/model.md. The subsequent
-implementation stages are its frontend and three native type renderers.
+The proposed model is documented in docs/model.md. The present implementation
+contains only language-parameterized AST data declarations and a typed pipeline
+stage contract in Go. No language grammar, parser, generator, formatter,
+composition executor or command is implemented.
+
+The [generation design](docs/generation.md) specifies the target file layout,
+composition and dependencies. Later stages will implement the canonical
+frontend, three AST-to-AST type generators and separate target formatters.
+All those components will be implemented in Go; emitted types target
+TypeScript, Go and Rust.
 
 This scope does not include application-value validators, descriptors for a
 particular validator, serialization, Wire adapters, RPC, streaming, callable
