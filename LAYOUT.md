@@ -21,13 +21,16 @@ Root workspace manifests and CI configuration may stay at their normal locations
 Do not introduce repository-root language directories or a language-first
 `packages/` tree.
 
-The implemented source packages are `ast/go`, `pipeline/go`, `language/go`
-and `syntax/{typescript,golang,rust,cpp}/go`, with public contract tests in
-`integration/go`. The shared language interface prepares for an agnostic
-registry; its implementation is deferred. The [generation design](docs/generation.md)
-records the complete current/planned layout. Canonical syntax, grammar checkers,
-builders, frontend, generation, formatting and application composition do not
-yet exist.
+Implemented packages include AST/CST carriers, typed pipeline and provider
+contracts, four native syntax packages and their parse/check/format/provider
+packages, plus the shared printer. Private helpers live under internal/.
+The [native text design](docs/parsing-formatting.md) records their layout and
+dependencies; the [generation design](docs/generation.md) separates them from
+future canonical generation. Its revised proposal uses transform/go for the
+ASTTransformer contract and typed adapters, engine/go for the agnostic registry
+and route execution, and transform/<from>-to-<to>/go for each directed mapping.
+Canonical AST, transformers, public builders, engine/registry and application
+executor remain deferred. The document marks all planned paths separately.
 Do not create empty source directories or present planned packages as delivered.
 
 The generic AST, pipeline and language identity contract remain independent

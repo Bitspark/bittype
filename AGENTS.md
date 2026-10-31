@@ -8,42 +8,39 @@ Read [CHARTER.md](CHARTER.md), [docs/model.md](docs/model.md),
 ## Current scope
 
 The owner selected canonical definitions as input and TypeScript, Go, Rust and C++
-types as outputs. The model document is a proposal; distinguish proposed rules,
-implemented behavior, published revisions and delivered consumer uptake.
-The current implementation slice adds the four target AST vocabularies, tests
-and docs on the generic carrier, plus an agnostic language identity interface
-and provider ID/Name methods. The owner explicitly deferred the canonical AST.
-Do not add generators, formatters, parsers, builders or grammar checkers, even
-as stubs. Registry implementation and pipeline execution are also deferred.
+types as outputs. The canonical model remains a proposal. The current native-text
+slice implements parsers, AST-to-CST formatters, syntax checks and a generic
+CST-to-text printer. Read the [concrete syntax design](docs/parsing-formatting.md).
 
-- Keep the model independent of Wire, storage formats and target languages.
-- Function, Stream, Cell and future behavioral contracts are library-owned.
-  Do not add their names as core kinds, switches, imports, registrations,
+- Canonical AST, generators, public builders, registry implementation and pipeline
+  execution remain deferred. Do not introduce runtime adapters, callable behavior,
+  application-value validators, serialization or networking.
+- Function, Stream, Cell and future behavioral contracts remain library-owned.
+  Never add their names as core kinds, switches, imports, registrations,
   fingerprints or hidden defaults.
-- Preserve declaration origins, generic slots and applications. Equal-looking
-  structures do not authorize substituting one library contract for another.
-- This milestone generates types only. Do not add adapters, callable behavior,
-  runtime value validators, serialization or networking.
-- Do not turn TypeScript declarations into the authoritative input again.
-- Implement the generation toolchain in Go, in component-owned packages inside
-  the initial root Go module. Keep AST transformation and source formatting
-  separate. Do not use source-string generation as the intermediate AST.
-- The generic AST, pipeline and language identity packages must not import each
-  other, concrete languages, generators, formatters or contract libraries.
-  Each syntax package depends only on the AST and language identity contracts
-  plus standard-library utilities; no syntax package imports another.
-- Owner correction, 31 October 2026: a central agnostic language AST registry
-  is intended. The former no-language-registry statement is superseded. Its
-  future implementation accepts the common interface, not hardcoded language
-  imports or a name switch. Providers are selected at application composition.
-  Do not confuse language registration with privileged Function/Stream/Cell
-  bindings or automatic default registration.
-- Use the current model proposal as the working document. Prior research and
-  Nightseam are evidence to inspect, not specifications to copy or restore as
-  competing active documents.
-- Settle normalization and identity content before fixing an encoding. Preserve
-  the distinction between declaration identity, value shape, generated-code
-  compatibility and behavior.
+- Preserve generic binders/applications, declaration references and origins.
+  Equal-looking syntax does not authorize substituting library contracts.
+- Do not make TypeScript extraction the authoritative canonical input.
+- Implement the toolchain in Go in component-owned packages in the root module.
+  Formatters construct CST tokens/trivia; only the printer emits source text.
+  Do not print source and reparse it as an intermediate AST/CST.
+- AST, pipeline and language identity remain independent. CST depends on AST.
+  Syntax depends on AST/CST carriers and identity, never on another language
+  or parser/formatter. Native stages own their grammar and spelling.
+- LanguageProvider supplies ID and Name. Every specialized provider embeds it.
+  Future registration stays explicit and agnostic, with no known-language list,
+  name switch or automatic registration. No compatibility identity alias.
+- ASTView is a borrowed read-only view. A formatter owns a deep AST snapshot in
+  its output CST. Parsers retain all admitted source bytes; whole-input rejection,
+  bounded resources and errors without partial output are required.
+- The printer checks carrier structure only. It never interprets language kinds,
+  chooses layout, escapes tokens, or resolves imports.
+- Syntax checks are not complete compiler/type checking. Unsupported constructs
+  fail explicitly; no raw-source escape node or skipped executable body.
+- Native compiler qualification and source/AST round trips are separate evidence.
+  Text cannot recreate external resolved identities or original provenance.
+- Keep prior research and Nightseam as evidence, not competing specifications.
+  Settle canonical normalization/identity before fixing an encoding.
 
 ## Delivery
 

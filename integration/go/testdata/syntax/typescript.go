@@ -9,7 +9,7 @@ import (
 	syntax "github.com/Bitspark/bittype/syntax/typescript/go"
 )
 
-var _ language.Language = syntax.Language{}
+var _ language.LanguageProvider = syntax.Language{}
 
 // Page<T> { items: T[] }, Person, PeoplePage = Page<Person>, Reader<T> { read(): T }.
 var example = syntax.AST{

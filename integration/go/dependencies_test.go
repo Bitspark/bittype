@@ -21,12 +21,14 @@ func TestFoundationDependencies(t *testing.T) {
 	}
 	allowed := map[string]map[string]bool{
 		modulePath + "/ast/go":      {},
+		modulePath + "/cst/go":      {modulePath + "/ast/go": true},
 		modulePath + "/pipeline/go": {},
 		modulePath + "/language/go": {},
 	}
 	for _, name := range []string{"typescript", "golang", "rust", "cpp"} {
 		allowed[modulePath+"/syntax/"+name+"/go"] = map[string]bool{
 			modulePath + "/ast/go":      true,
+			modulePath + "/cst/go":      true,
 			modulePath + "/language/go": true,
 		}
 	}

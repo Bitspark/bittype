@@ -21,41 +21,29 @@ bittype owns:
 
 The generic AST, pipeline and language identity interface are independent
 packages inside the initial root Go module. None imports another foundation,
-concrete language, generator, formatter or contract library. Syntax packages
-depend on the AST and identity interface. A future central language registry
+concrete language, generator, formatter or contract library. CST depends on AST. Syntax packages
+depend on the AST/CST carriers and identity interface. A future central language registry
 will accept that interface without knowing concrete providers; the application
 root selects providers and composes stages. The shared infrastructure does not
 know the names or semantics of particular library contracts.
 
 ## Current delivery boundary
 
-The proposed model is documented in docs/model.md. The present implementation
-contains generic AST data declarations, a typed pipeline stage contract and
-four target-language AST vocabularies in Go. A shared language identity interface
-and the providers' ID/Name methods prepare for later registration. No canonical
-AST, registry, parser, builder, grammar checker, generator, formatter, composition
-executor or command is implemented.
+The [canonical model](docs/model.md) remains a proposal. Generic AST/CST carriers,
+typed views and pipeline contracts, four native type vocabularies, native parsers,
+AST-to-CST formatters, syntax checks and the shared CST printer are implemented.
+The [native text design](docs/parsing-formatting.md) defines their ownership and
+qualification limits. Specialized providers all extend LanguageProvider.
 
-The [generation design](docs/generation.md) specifies the target file layout,
-composition and dependencies. Later stages will implement the canonical
-frontend, four AST-to-AST type generators and separate target formatters.
-All those components will be implemented in Go; emitted types target
-TypeScript, Go, Rust and C++.
+The canonical AST, AST-to-AST generators, registry, public builders and pipeline
+executor remain deferred. Native parsing does not make a target language the
+canonical authority. The [generation design](docs/generation.md) remains separate.
 
-This scope does not include application-value validators, descriptors for a
-particular validator, serialization, Wire adapters, RPC, streaming, callable
-implementations, consumer migration, package publication or deployment.
-
-Function, Stream, Cell and future behavioral contracts belong to ordinary
-libraries. Neither their protocols nor their language-specific realizations
-become privileged cases in the general type model, generator or runtime.
-Preserve resolved declaration identities and applications so later consumers
-can select library-owned realizations without matching structural lookalikes.
-
-bittype has no dependency on another Bitspark implementation repository.
-References to theory or previous designs supply evidence, not runtime
-dependencies. A declaration has the same meaning with a different storage,
-serialization or communication mechanism.
+This scope excludes application-value validators, serialization, Wire adapters,
+RPC/streaming implementations, consumer migration and package publication.
+Function, Stream, Cell and future behavioral contracts remain ordinary library
+declarations with no privileged cases in shared infrastructure. There are no
+production dependencies on other Bitspark implementation repositories.
 
 ## Versioning and evidence
 

@@ -3,6 +3,7 @@ package integration_test
 import (
 	"fmt"
 	goast "go/ast"
+	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
@@ -20,6 +21,9 @@ func (packages contractImporter) Import(path string) (*types.Package, error) {
 	if result, ok := packages[path]; ok {
 		return result, nil
 	}
+	if !strings.HasPrefix(path, modulePath+"/") {
+		return importer.Default().Import(path)
+	}
 	return nil, fmt.Errorf("unexpected dependency in public contract fixture: %s", path)
 }
 
@@ -29,7 +33,7 @@ func loadContracts(t *testing.T) contractImporter {
 	t.Helper()
 	packages := contractImporter{}
 	for _, name := range []string{
-		"ast", "pipeline", "language", "syntax/typescript", "syntax/golang", "syntax/rust", "syntax/cpp",
+		"ast", "cst", "pipeline", "language", "text", "syntax/typescript", "syntax/golang", "syntax/rust", "syntax/cpp",
 	} {
 		dir := filepath.Join("..", "..", name, "go")
 		entries, err := os.ReadDir(dir)

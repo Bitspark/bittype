@@ -15,7 +15,7 @@ A versioned, language-independent definition is the authoritative input.
 TypeScript, Go, Rust and C++ are intended generated representations of that definition:
 
 ```text
-JSON source -> checked canonical AST -> target-language AST -> native type source
+JSON source -> checked canonical AST -> target-language AST -> native CST -> source
 ```
 
 JSON is the initial syntax for authoring definitions. It does not make JSON the
@@ -50,8 +50,11 @@ arguments, as well as any normalized view needed by a consumer.
 
 The planned canonical AST is the common input to all four AST-to-AST generators.
 Their spelling and memory-layout choices do not rewrite its semantics.
-Each target AST is then printed by its own formatter, independently of the
-canonical model. The toolchain implementation language is Go.
+Each target AST is formatted into a native CST, then printed by the shared
+printer, independently of the canonical model. The toolchain implementation
+language is Go. The [transformation proposal](generation.md) uses one
+ASTTransformer contract for both generation and explicit native-to-canonical
+adoption; reverse mappings cannot infer semantic information absent from source.
 
 ## 3. Initial value-type vocabulary
 
@@ -344,8 +347,9 @@ The following are forbidden:
 This document specifies the model proposal. The Go foundation contains
 [generic AST data types](ast.md), a [typed stage contract](generation.md) and
 [four target vocabularies with language identity](syntax.md). The canonical AST
-is explicitly deferred. No parser, builder, grammar checker, generator or
-formatter is implemented.
+is explicitly deferred. Native parsers, syntax checks, AST-to-CST formatters and
+the shared CST printer are implemented separately. Canonical parsing/checking,
+AST-to-AST transformations, public builders and the syntax engine remain planned.
 
 1. **Specify the model and fixtures.** Resolve the outstanding syntax and
    normalization choices below. Write language-neutral valid/invalid examples,
@@ -358,9 +362,10 @@ formatter is implemented.
    canonical AST to produce TypeScript, Go, Rust and C++ ASTs. Add only the support
    data declarations their representations need. Do not add adapters or runtime
    validators, and do not emit source strings from these transformations.
-4. **Implement independent formatters.** Each formatter consumes its target AST
-   and emits native type source. It does not depend on canonical input or make
-   semantic representation choices. Compose the stages at the application root.
+4. **Compose the native text stages.** The implemented native formatters consume
+   their target AST and construct CST; the printer emits source. They do not
+   depend on canonical input or make semantic representation choices. Compose
+   these stages with the selected AST transformations at the application root.
 5. **Qualify the representations.** Compile generated declarations and native
    use examples with pinned toolchains on shared build workers or GitHub
    runners. Compare intended value distinctions, not merely generated strings.
