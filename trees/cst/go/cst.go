@@ -2,7 +2,7 @@
 // It knows no language grammar, token spelling or formatting convention.
 package cst
 
-import "github.com/Bitspark/bittype/ast/go"
+import "github.com/Bitspark/bittype/trees/ast/go"
 
 type NodeID uint32
 type Kind[L any] string

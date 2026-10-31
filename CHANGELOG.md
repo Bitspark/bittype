@@ -4,6 +4,15 @@
 
 ### 31 October 2026
 
+- Adopt the stage-first hierarchy: trees/{ast,cst,representation},
+  contracts/{language,pipeline,text,transform} and uniform native stage paths.
+  Move generic AST checks to check/ast. Remove superseded public paths and the
+  engine's moved CST exports rather than retaining compatibility aliases.
+- Consolidate checked AST/CST snapshots and descriptors in representation;
+  preserve sealed payloads and construction-time marker checks across the split.
+- Discover the complete native stage matrix in tests, enforce per-package
+  production dependencies, and share provider conformance/round-trip/fuzz cases.
+
 - Implement ASTTransformer, typed adapters and owned AST/CST registration
   envelopes with explicit language profiles and marker checks.
 - Implement an empty-by-default syntax engine with explicit provider/edge

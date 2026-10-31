@@ -2,14 +2,14 @@
 package typescriptprovider
 
 import (
-	"github.com/Bitspark/bittype/ast/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 	check "github.com/Bitspark/bittype/check/typescript/go"
-	"github.com/Bitspark/bittype/cst/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	format "github.com/Bitspark/bittype/format/typescript/go"
 	parse "github.com/Bitspark/bittype/parse/typescript/go"
 	print "github.com/Bitspark/bittype/print/go"
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 )
 
 // Provider has no initialization, discovery or registration side effects.

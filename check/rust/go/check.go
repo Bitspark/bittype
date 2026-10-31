@@ -1,12 +1,12 @@
 package rustcheck
 
 import (
-	"github.com/Bitspark/bittype/ast/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 	g "github.com/Bitspark/bittype/internal/grammar"
 	native "github.com/Bitspark/bittype/internal/rust"
 	"github.com/Bitspark/bittype/internal/tree"
 	s "github.com/Bitspark/bittype/syntax/rust/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 )
 
 func identifier(v string) bool { return native.Identifier(v) }

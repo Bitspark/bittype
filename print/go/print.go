@@ -4,7 +4,7 @@ package print
 
 import (
 	cstcheck "github.com/Bitspark/bittype/check/cst/go"
-	"github.com/Bitspark/bittype/cst/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	"strings"
 )
 

@@ -1,10 +1,10 @@
 package cppparse
 
 import (
-	"github.com/Bitspark/bittype/ast/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 	tr "github.com/Bitspark/bittype/internal/tree"
 	s "github.com/Bitspark/bittype/syntax/cpp/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 )
 
 type qualifier struct {

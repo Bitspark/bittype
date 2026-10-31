@@ -4,12 +4,13 @@
 package engine
 
 import (
+	"github.com/Bitspark/bittype/trees/representation/go"
 	"errors"
 	"fmt"
 	"sync"
 
-	"github.com/Bitspark/bittype/language/go"
-	"github.com/Bitspark/bittype/transform/go"
+	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/transform/go"
 )
 
 var (
@@ -34,7 +35,7 @@ type Engine struct {
 	edges     map[language.ID]map[language.ID]edge
 }
 type registration struct {
-	language transform.Language
+	language representation.Language
 	text     *Provider
 }
 type edge struct {

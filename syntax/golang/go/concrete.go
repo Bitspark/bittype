@@ -1,6 +1,6 @@
 package golang
 
-import "github.com/Bitspark/bittype/cst/go"
+import "github.com/Bitspark/bittype/trees/cst/go"
 
 // Concrete kinds are owned by this language. The shared printer never
 // interprets their spelling. Grammar containers use the native rule names.

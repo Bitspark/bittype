@@ -1,13 +1,13 @@
 package independent
 
 import (
-	"github.com/Bitspark/bittype/ast/go"
-	"github.com/Bitspark/bittype/transform/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 type First struct{}
 type Second struct{}
 
-func Wrong(definition transform.Language) {
-	_, _ = transform.Pack[First](definition, ast.AST[Second]{})
+func Wrong(definition representation.Language) {
+	_, _ = representation.Pack[First](definition, ast.AST[Second]{})
 }

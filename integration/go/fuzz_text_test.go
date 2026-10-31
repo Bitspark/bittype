@@ -5,7 +5,7 @@ import (
 	goprovider "github.com/Bitspark/bittype/provider/golang/go"
 	rustprovider "github.com/Bitspark/bittype/provider/rust/go"
 	tsprovider "github.com/Bitspark/bittype/provider/typescript/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"strings"
 	"testing"
 )
@@ -33,20 +33,12 @@ func FuzzNativeText(f *testing.F) {
 	f.Add(uint8(2), "type X<'a> = &'a str;")
 	f.Add(uint8(3), "struct X { int (*p)[3]; };")
 	f.Add(uint8(3), "using X = int(?);")
+	cases := nativeConformanceCases()
 	f.Fuzz(func(t *testing.T, which uint8, source string) {
 		if len(source) > 65536 {
 			t.Skip()
 		}
-		switch which % 4 {
-		case 0:
-			fuzzOne(t, tsprovider.Provider{}, source)
-		case 1:
-			fuzzOne(t, goprovider.Provider{}, source)
-		case 2:
-			fuzzOne(t, rustprovider.Provider{}, source)
-		case 3:
-			fuzzOne(t, cppprovider.Provider{}, source)
-		}
+		cases[int(which)%len(cases)].fuzz(t, source)
 	})
 }
 func TestDeepSyntaxAndNativeNames(t *testing.T) {

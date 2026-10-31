@@ -3,9 +3,9 @@ package grammar
 
 import (
 	"fmt"
-	"github.com/Bitspark/bittype/ast/go"
-	"github.com/Bitspark/bittype/check/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/check/ast/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"regexp"
 	"strings"
 	"unicode"

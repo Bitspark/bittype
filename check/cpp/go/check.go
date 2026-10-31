@@ -1,12 +1,12 @@
 package cppcheck
 
 import (
-	"github.com/Bitspark/bittype/ast/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 	native "github.com/Bitspark/bittype/internal/cpp"
 	g "github.com/Bitspark/bittype/internal/grammar"
 	"github.com/Bitspark/bittype/internal/tree"
 	s "github.com/Bitspark/bittype/syntax/cpp/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"strings"
 )
 

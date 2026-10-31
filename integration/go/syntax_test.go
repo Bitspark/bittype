@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Bitspark/bittype/language/go"
+	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/syntax/cpp/go"
 	"github.com/Bitspark/bittype/syntax/golang/go"
 	"github.com/Bitspark/bittype/syntax/rust/go"

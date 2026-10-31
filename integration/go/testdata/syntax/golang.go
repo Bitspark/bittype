@@ -3,9 +3,9 @@
 package consumer
 
 import (
-	"github.com/Bitspark/bittype/ast/go"
-	"github.com/Bitspark/bittype/language/go"
-	"github.com/Bitspark/bittype/pipeline/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/pipeline/go"
 	syntax "github.com/Bitspark/bittype/syntax/golang/go"
 )
 

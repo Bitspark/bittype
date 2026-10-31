@@ -1,16 +1,16 @@
 package typescriptparse
 
 import (
-	"github.com/Bitspark/bittype/ast/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 	check "github.com/Bitspark/bittype/check/typescript/go"
-	"github.com/Bitspark/bittype/cst/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/internal/concrete"
 	"github.com/Bitspark/bittype/internal/lex"
 	"github.com/Bitspark/bittype/internal/parseutil"
 	tr "github.com/Bitspark/bittype/internal/tree"
 	lit "github.com/Bitspark/bittype/internal/typescript"
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"strconv"
 	"strings"
 )

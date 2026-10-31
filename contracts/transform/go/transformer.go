@@ -1,6 +1,14 @@
+// Package transform defines directed AST transformations and their typed bridge.
+// Concrete mappings belong to separate transforms/<source>-to-<target> packages.
 package transform
 
-import "github.com/Bitspark/bittype/language/go"
+import (
+"errors"
+"github.com/Bitspark/bittype/contracts/language/go"
+"github.com/Bitspark/bittype/trees/representation/go"
+)
+
+var ErrInvalidTransformer = errors.New("invalid AST transformer")
 
 // ASTTransformer is a directed, potentially partial AST mapping. Endpoint IDs
 // are stable. Implementations return an error for unsupported input, preserve
@@ -9,7 +17,7 @@ import "github.com/Bitspark/bittype/language/go"
 type ASTTransformer interface {
 	FromID() language.ID
 	ToID() language.ID
-	Transform(AST) (AST, error)
+	Transform(representation.AST) (representation.AST, error)
 }
 
 // DescribedTransformer additionally advertises typed/profile endpoints so a
@@ -17,6 +25,6 @@ type ASTTransformer interface {
 // are still checked against registered endpoints at every execution boundary.
 type DescribedTransformer interface {
 	ASTTransformer
-	FromLanguage() Language
-	ToLanguage() Language
+	FromLanguage() representation.Language
+	ToLanguage() representation.Language
 }

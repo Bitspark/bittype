@@ -4,7 +4,7 @@ import (
 	goformat "github.com/Bitspark/bittype/format/golang/go"
 	goparse "github.com/Bitspark/bittype/parse/golang/go"
 	printer "github.com/Bitspark/bittype/print/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"testing"
 )
 

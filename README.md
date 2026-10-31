@@ -11,6 +11,11 @@ Specialized text providers extend LanguageProvider. The canonical model remains
 a proposal; canonical AST, actual language mappings and package releases remain
 deferred. The engine starts empty and has no built-in languages or mappings.
 
+The [stage-first layout](LAYOUT.md) groups shared tree representations under
+trees and public interfaces under contracts. Every native language implements
+the same syntax/parse/check/format/provider matrix, enforced by architecture and
+shared conformance tests. The engine contains no built-in language catalogue.
+
 The native pipeline separates source parsing, concrete layout and printing:
 
     text -> Parser -> CST[L]

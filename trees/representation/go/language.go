@@ -1,12 +1,12 @@
-package transform
+package representation
 
 import (
 	"fmt"
 	"reflect"
 	"strings"
 
-	"github.com/Bitspark/bittype/language/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 )
 
 // Language binds an identity and explicit syntax/profile revision to a Go marker
@@ -43,6 +43,13 @@ func (l Language) Validate() error {
 func (l Language) Compatible(other Language) bool {
 	return l.Validate() == nil && other.Validate() == nil && l.id == other.id && l.profile == other.profile && l.marker == other.marker
 }
+
+// CheckMarker validates a descriptor against a typed stage's actual Go marker.
+// It exposes no payload or unchecked construction path.
+func CheckMarker[L any](definition Language) error {
+	return definition.acceptMarker(reflect.TypeFor[L]())
+}
+
 func (l Language) acceptMarker(marker reflect.Type) error {
 	if err := l.Validate(); err != nil {
 		return err

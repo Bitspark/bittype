@@ -1,9 +1,9 @@
 package text
 
 import (
-	"github.com/Bitspark/bittype/ast/go"
-	"github.com/Bitspark/bittype/cst/go"
-	"github.com/Bitspark/bittype/language/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
+	"github.com/Bitspark/bittype/contracts/language/go"
 )
 
 // Every specialized provider extends the common identity contract.

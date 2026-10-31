@@ -3,8 +3,8 @@
 package lex
 
 import (
-	"github.com/Bitspark/bittype/ast/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"strings"
 	"unicode"
 	"unicode/utf8"

@@ -2,7 +2,7 @@ package text
 
 import (
 	"fmt"
-	"github.com/Bitspark/bittype/ast/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 type Code string
