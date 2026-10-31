@@ -4,8 +4,8 @@
 package golang
 
 import (
-	"github.com/Bitspark/bittype/ast/go"
-	"github.com/Bitspark/bittype/language/go"
+	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 // Language identifies this syntax family and is its distinct Go AST marker.

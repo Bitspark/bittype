@@ -19,6 +19,11 @@ bittype owns:
   vectors, once identity and normalization rules have been settled.
 - Small data types needed to represent presence and nullness in generated code.
 
+The owner's 31 October structure decision selects the stage-first matrix in
+[LAYOUT.md](LAYOUT.md). Shared trees, shared contracts and the engine have distinct
+homes; all native languages follow the same stage structure. Conformance and
+dependency checks enforce the uniformity without production language discovery.
+
 The generic AST, pipeline and language identity interface are independent
 packages inside the initial root Go module. None imports another foundation,
 concrete language, generator, formatter or contract library. CST depends on AST. Syntax packages

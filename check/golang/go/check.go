@@ -1,11 +1,11 @@
 package golangcheck
 
 import (
-	"github.com/Bitspark/bittype/ast/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	g "github.com/Bitspark/bittype/internal/grammar"
 	"github.com/Bitspark/bittype/internal/tree"
 	s "github.com/Bitspark/bittype/syntax/golang/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 	"go/token"
 )
 

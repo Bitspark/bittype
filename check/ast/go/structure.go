@@ -3,8 +3,8 @@ package check
 
 import (
 	"fmt"
-	"github.com/Bitspark/bittype/ast/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 // MaxDepth bounds recursive consumers; it is a resource limit, not a type rule.

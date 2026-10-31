@@ -47,87 +47,49 @@ implementations, adapters and transport behavior are outside this milestone.
 
 ## Go layout
 
-There is one root Go module, `github.com/Bitspark/bittype`. Components are
-separate packages; separate modules are unnecessary for this initial foundation.
-The final path component denotes the implementation language, not the target.
-For example, `syntax/rust/go` is Go code describing Rust syntax.
-
-Only the entries marked **present** exist in the current implementation.
-Other paths are the target layout, not placeholder packages.
+There is one root Go module, `github.com/Bitspark/bittype`. The owner selected a
+stage-first matrix to make every language follow the same structure. The
+[repository layout](../LAYOUT.md) is the authoritative current hierarchy and
+dependency policy. The final `go` component denotes implementation language.
 
 ```text
-go.mod                                      present
-ast/go/
-  ast.go, node.go, origin.go, view.go        present: carrier and borrowed view
-  walk.go                                   planned: generic traversal
-pipeline/go/
-  stage.go                                  present: typed contract
-  compose.go                                planned: typed composition
-language/go/
-  language.go                               present: identity interface
-transform/go/
-  ast.go                                    present: checked heterogeneous envelope
-  language.go                               present: typed/profile language descriptor
-  transformer.go                            present: ASTTransformer contract
-  adapter.go                                present: typed stage registration bridge
-engine/go/
-  engine.go                                 present: syntax engine API
-  registry.go                               present: providers and directed edges
-  path.go                                   present: route planning and ambiguity checks
-  transform.go                              present: TransformTo execution
-  provider.go                               present: typed text-provider adaptation
-  text.go                                   present: registered parse/format/print composition
-syntax/
-  canonical/go/{nodes,concrete}.go           planned: canonical vocabulary
-  typescript/go/nodes.go                     present
-  golang/go/nodes.go                         present
-  rust/go/nodes.go                           present
-  cpp/go/nodes.go                            present
-  {typescript,golang,rust,cpp}/go/
-    concrete.go                             present: native concrete kinds
-    builders.go                             planned
-parse/canonical/go/parse.go                  planned: canonical text to CST
-resolve/canonical/go/resolve.go              planned: references and generic binders
-check/canonical/go/check.go                  planned: canonical semantics
-format/canonical/go/format.go                planned: canonical AST to CST
-provider/canonical/go/provider.go            planned: explicit capability composition
-transform/
-  canonical-to-typescript/go/                planned: transform, types, names, imports
-  canonical-to-golang/go/                    planned
-  canonical-to-rust/go/                      planned
-  canonical-to-cpp/go/                       planned
-  typescript-to-canonical/go/                proposed: partial migration mapping
-  golang-to-canonical/go/                    proposed
-  rust-to-canonical/go/                      proposed
-  cpp-to-canonical/go/                       proposed
-cst/go/cst.go                              present
-text/go/{input,diagnostic,provider}.go       present
-check/go/, check/cst/go/                     present
-check/{typescript,golang,rust,cpp}/go/        present
-parse/{typescript,golang,rust,cpp}/go/        present
-format/{typescript,golang,rust,cpp}/go/       present: AST view to CST
-print/go/print.go                           present: CST to text
-provider/{typescript,golang,rust,cpp}/go/     present
-cmd/bittype/go/
-  main.go, compose.go, files.go              planned
-integration/go/
-  contracts_test.go, dependencies_test.go,
-  syntax_test.go                            present
-  *_text_test.go, formatter_fixtures_test.go present: native text/AST qualification
-  provider_contracts_test.go                 present
-  transform_test.go, engine_text_test.go,    present
-  engine_graph_test.go, engine_contracts_test.go
-  testdata/engine/*.go                       present: public boundary fixtures
-  testdata/*.go                             present: API type-check fixtures
-  testdata/syntax/*.go                       present: target/extension fixtures
-testdata/
-  text/{typescript,golang,rust,cpp}/valid/   present: native source fixtures
-  canonical/, transforms/                   planned: semantic/adoption fixtures
-docs/
-  model.md, ast.md, syntax.md, generation.md present
-  parsing-formatting.md                     present
-  engine.md                                 present
+trees/ast/go/                            present: carrier and borrowed view
+trees/cst/go/                            present: concrete carrier
+trees/representation/go/                 present: checked AST/CST and descriptors
+contracts/language/go/                   present: identity interface
+contracts/pipeline/go/                   present: typed Stage
+contracts/text/go/                       present: input, diagnostics, providers
+contracts/transform/go/                  present: ASTTransformer and typed bridge
+engine/go/                               present: registry, planning, execution
+syntax/<language>/go/                    present for all four native languages
+parse/<language>/go/                     present: source to CST
+check/<language>/go/                     present: native syntax checks
+format/<language>/go/                    present: AST view to CST
+provider/<language>/go/                  present: explicit capability composition
+check/{ast,cst}/go/                      present: carrier checks
+print/go/                                present: CST to text
+integration/go/                          present: contracts, conformance, architecture,
+                                                 graph, ownership and compiler checks
+testdata/text/<language>/valid/          present: native source fixtures
+
+syntax/canonical/go/                    planned: canonical vocabulary
+parse/canonical/go/                     planned: canonical source to CST
+resolve/canonical/go/                   planned: references and generic binders
+check/canonical/go/                     planned: canonical semantics
+format/canonical/go/                    planned: canonical AST to CST
+provider/canonical/go/                  planned: capability composition
+transforms/canonical-to-<native>/go/     planned: directed native generation
+transforms/<native>-to-canonical/go/     proposed: partial migration mapping
+cmd/bittype/go/                          planned: application composition and IO
+testdata/{canonical,transforms}/         planned: semantic/adoption fixtures
 ```
+
+The native directory names are typescript, golang, rust and cpp. Planned paths
+are not placeholder packages. Public builders, generic traversal and a typed
+Stage composition helper remain deferred. Package-level tests belong beside
+their implementation; independent consumer fixtures and composition qualification
+remain under integration. Language coverage is discovered and checked in tests,
+never installed as a known-language list in the engine.
 
 The [target vocabularies](syntax.md) cover a native type-declaration subset.
 They are not full programming-language parsers. A concrete unsupported type
@@ -157,7 +119,7 @@ contract](syntax.md) for the IDs, provider contract and extension example.
 
 ## Typed stage contract
 
-The [pipeline package](../pipeline/go/stage.go) defines:
+The [pipeline package](../contracts/pipeline/go/stage.go) defines:
 
 ```go
 type Stage[I, O any] func(I) (O, error)
@@ -217,7 +179,7 @@ type ASTTransformer interface {
 func (e *Engine) TransformTo(input AST, targetID language.ID) (AST, error)
 ```
 
-AST here is the implemented transform.AST envelope: a language identity plus
+AST here is the implemented representation.AST envelope: a language identity plus
 an opaque, checked native AST
 payload. It is not ast.AST[any]; different generic instantiations are not
 interchangeable. Typed adapters retain Stage[ast.AST[From], ast.AST[To]] inside

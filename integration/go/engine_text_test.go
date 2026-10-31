@@ -2,12 +2,12 @@ package integration_test
 
 import (
 	"errors"
+	"github.com/Bitspark/bittype/trees/representation/go"
 	"testing"
 
-	"github.com/Bitspark/bittype/ast/go"
-	"github.com/Bitspark/bittype/cst/go"
+	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/engine/go"
-	"github.com/Bitspark/bittype/language/go"
 	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
 	goprovider "github.com/Bitspark/bittype/provider/golang/go"
 	rustprovider "github.com/Bitspark/bittype/provider/rust/go"
@@ -16,8 +16,8 @@ import (
 	golang "github.com/Bitspark/bittype/syntax/golang/go"
 	rust "github.com/Bitspark/bittype/syntax/rust/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
-	"github.com/Bitspark/bittype/text/go"
-	"github.com/Bitspark/bittype/transform/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 )
 
 func nativeRegistration[L any](t *testing.T, e *engine.Engine, p text.Provider[L], source string) engine.Provider {
@@ -51,7 +51,7 @@ func nativeRegistration[L any](t *testing.T, e *engine.Engine, p text.Provider[L
 	if err := e.Check(parsed.ASTView()); err != nil {
 		t.Fatal(err)
 	}
-	plain, err := engine.UnpackCST[L](registered.Language(), parsed)
+	plain, err := representation.UnpackCST[L](registered.Language(), parsed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +133,7 @@ func TestEngineConcreteSnapshotsAndPartialErrors(t *testing.T) {
 	if err != nil || output != "page" {
 		t.Fatal("provider retained concrete output storage")
 	}
-	unpacked, err := engine.UnpackCST[amber](adapted.Language(), parsed)
+	unpacked, err := representation.UnpackCST[amber](adapted.Language(), parsed)
 	if err != nil || unpacked.Nodes[0].Origin.Spans[0].Source != "text" || unpacked.Nodes[0].Origin.Nodes[0].Tree != "earlier" || unpacked.Nodes[0].Syntax[0] != 1 {
 		t.Fatal("concrete metadata aliases provider")
 	}
@@ -154,7 +154,7 @@ func TestEngineConcreteSnapshotsAndPartialErrors(t *testing.T) {
 	if c, err := e.Parse(adapted.ID(), text.Input{}); err == nil || c.LanguageID() != "" {
 		t.Fatal("invalid concrete parse accepted")
 	}
-	if _, err := engine.UnpackCST[blue](adapted.Language(), parsed); !errors.Is(err, transform.ErrTypeMismatch) {
+	if _, err := representation.UnpackCST[blue](adapted.Language(), parsed); !errors.Is(err, representation.ErrTypeMismatch) {
 		t.Fatal(err)
 	}
 }
@@ -173,7 +173,7 @@ func TestEngineASTOnlyCapabilitiesAndProfiles(t *testing.T) {
 		t.Fatal("zero provider accepted")
 	}
 	var nilProvider *fakeText[amber]
-	if _, err := engine.NewProvider[amber](nilProvider, "v1"); !errors.Is(err, transform.ErrInvalidLanguage) {
+	if _, err := engine.NewProvider[amber](nilProvider, "v1"); !errors.Is(err, representation.ErrInvalidLanguage) {
 		t.Fatal(err)
 	}
 	p, err := engine.NewProvider[ts.Language](tsprovider.Provider{}, "v1")
@@ -191,17 +191,17 @@ func TestEngineASTOnlyCapabilitiesAndProfiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	foreign, err := engine.PackCST(other.Language(), typedCST)
+	foreign, err := representation.PackCST(other.Language(), typedCST)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.Print(foreign); !errors.Is(err, transform.ErrLanguageMismatch) {
+	if _, err := e.Print(foreign); !errors.Is(err, representation.ErrLanguageMismatch) {
 		t.Fatal(err)
 	}
-	if _, err := e.Format(foreign.ASTView()); !errors.Is(err, transform.ErrLanguageMismatch) {
+	if _, err := e.Format(foreign.ASTView()); !errors.Is(err, representation.ErrLanguageMismatch) {
 		t.Fatal(err)
 	}
-	if _, err := e.Print(engine.CST{}); !errors.Is(err, engine.ErrUnknownLanguage) {
+	if _, err := e.Print(representation.CST{}); !errors.Is(err, engine.ErrUnknownLanguage) {
 		t.Fatal(err)
 	}
 }

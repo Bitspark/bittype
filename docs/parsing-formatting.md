@@ -29,9 +29,9 @@ formatting does not print Go source and reparse it into a CST.
 
 ## Carriers and ownership
 
-[AST views](../ast/go/view.go) expose an already constructed AST through the
+[AST views](../trees/ast/go/view.go) expose an already constructed AST through the
 language-parameterized `ast.View[L]` interface. The existing AST struct implements
-it, as does the [CST carrier](../cst/go/cst.go).
+it, as does the [CST carrier](../trees/cst/go/cst.go).
 
 A CST owns its abstract arena, concrete arena and concrete root. Each concrete
 node has a language-owned `Kind[L]`, optional leaf text, ordered children,
@@ -95,7 +95,7 @@ applications remain explicit, without specialization or alias expansion.
 
 ## Provider contracts
 
-[LanguageProvider](../language/go/language.go) is the shared base:
+[LanguageProvider](../contracts/language/go/language.go) is the shared base:
 
 ```go
 type LanguageProvider interface {
@@ -108,7 +108,7 @@ The former `language.Language` interface has been replaced without an alias.
 Native marker types remain named `Language`; those are Go type parameters for
 the native AST/CST and implement the shared identity contract.
 
-[Specialized interfaces](../text/go/provider.go) all embed the base interface:
+[Specialized interfaces](../contracts/text/go/provider.go) all embed the base interface:
 
 ```go
 type ParserProvider[L any] interface {
@@ -136,7 +136,8 @@ native marker, not duplicate strings.
 
 No provider registers itself. The syntax engine accepts shared contracts
 without concrete imports or a name switch. Heterogeneous AST type erasure belongs
-in an explicit registry adapter, not the generic AST/CST. Equal ID strings do not
+in trees/representation, consumed by explicit engine adapters. The typed generic
+AST/CST carriers remain independent. Equal ID strings do not
 establish equal Go marker types or compatible grammars.
 
 For example:
@@ -208,11 +209,15 @@ foundations.
 
 ## Layout and dependencies
 
+The [stage-first repository layout](../LAYOUT.md) defines the uniform native
+matrix and directed dependency rules. Shared provider conformance, round-trip
+and fuzz cases cover every language discovered in the stage directories.
+
 ```text
-ast/go/view.go                         AST-view interface
-cst/go/cst.go                          concrete carrier and stored AST view
-text/go/{input,diagnostic,provider}.go shared text/provider contracts
-check/go/structure.go                  abstract carrier checks
+trees/ast/go/view.go                         AST-view interface
+trees/cst/go/cst.go                          concrete carrier and stored AST view
+contracts/text/go/{input,diagnostic,provider}.go shared text/provider contracts
+check/ast/go/structure.go                  abstract carrier checks
 check/cst/go/check.go                  concrete carrier checks
 check/<language>/go/                   native syntax checks
 parse/<language>/go/                   text -> CST

@@ -1,6 +1,6 @@
 package tree
 
-import "github.com/Bitspark/bittype/ast/go"
+import "github.com/Bitspark/bittype/trees/ast/go"
 
 func Attrs(pairs ...string) []ast.Attribute {
 	var out []ast.Attribute

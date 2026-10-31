@@ -1,24 +1,23 @@
-// Package transform bridges typed AST stages into an explicitly registered graph.
-// It contains no language vocabulary or concrete transformer.
-package transform
+// Package representation owns checked, heterogeneous AST and CST snapshots.
+// It contains no language vocabulary, transformer or registry.
+package representation
 
 import (
 	"errors"
 	"fmt"
 	"reflect"
 
-	"github.com/Bitspark/bittype/ast/go"
-	"github.com/Bitspark/bittype/check/go"
+	"github.com/Bitspark/bittype/check/ast/go"
+	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/internal/tree"
-	"github.com/Bitspark/bittype/language/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 var (
-	ErrInvalidLanguage    = errors.New("invalid language descriptor")
-	ErrLanguageMismatch   = errors.New("language or profile mismatch")
-	ErrTypeMismatch       = errors.New("AST marker type mismatch")
-	ErrInvalidAST         = errors.New("invalid AST envelope")
-	ErrInvalidTransformer = errors.New("invalid AST transformer")
+	ErrInvalidLanguage  = errors.New("invalid language descriptor")
+	ErrLanguageMismatch = errors.New("language or profile mismatch")
+	ErrTypeMismatch     = errors.New("AST marker type mismatch")
+	ErrInvalidAST       = errors.New("invalid AST envelope")
 )
 
 // AST is an owned, checked, opaque snapshot. Copying the envelope is safe;

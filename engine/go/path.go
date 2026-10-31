@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/Bitspark/bittype/language/go"
+	"github.com/Bitspark/bittype/contracts/language/go"
 )
 
 // Plan is an immutable route, not a claim that an input's semantics can be

@@ -1,8 +1,8 @@
 package consumer
 
 import (
-	"github.com/Bitspark/bittype/ast/go"
-	"github.com/Bitspark/bittype/pipeline/go"
+	"github.com/Bitspark/bittype/contracts/pipeline/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 // These named markers are owned by a consumer unknown to both foundations.

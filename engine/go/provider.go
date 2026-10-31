@@ -1,46 +1,46 @@
 package engine
 
 import (
-	"github.com/Bitspark/bittype/language/go"
-	"github.com/Bitspark/bittype/text/go"
-	"github.com/Bitspark/bittype/transform/go"
+	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 // Provider packages existing typed text capabilities for heterogeneous
 // registration. No parser, formatter, checker or printer is implemented here.
 type Provider struct {
-	definition transform.Language
-	parse      func(text.Input) (CST, error)
-	format     func(transform.AST) (CST, error)
-	print      func(CST) (string, error)
+	definition representation.Language
+	parse      func(text.Input) (representation.CST, error)
+	format     func(representation.AST) (representation.CST, error)
+	print      func(representation.CST) (string, error)
 }
 
 func NewProvider[L any](provider text.Provider[L], profile string) (Provider, error) {
-	definition, err := transform.NewLanguage[L](provider, profile)
+	definition, err := representation.NewLanguage[L](provider, profile)
 	if err != nil {
 		return Provider{}, err
 	}
 	result := Provider{definition: definition}
-	result.parse = func(input text.Input) (CST, error) {
+	result.parse = func(input text.Input) (representation.CST, error) {
 		parsed, err := provider.Parse(input)
 		if err != nil {
-			return CST{}, err
+			return representation.CST{}, err
 		}
-		return PackCST(definition, parsed)
+		return representation.PackCST(definition, parsed)
 	}
-	result.format = func(input transform.AST) (CST, error) {
-		abstract, err := transform.Unpack[L](definition, input)
+	result.format = func(input representation.AST) (representation.CST, error) {
+		abstract, err := representation.Unpack[L](definition, input)
 		if err != nil {
-			return CST{}, err
+			return representation.CST{}, err
 		}
 		formatted, err := provider.Format(abstract)
 		if err != nil {
-			return CST{}, err
+			return representation.CST{}, err
 		}
-		return PackCST(definition, formatted)
+		return representation.PackCST(definition, formatted)
 	}
-	result.print = func(input CST) (string, error) {
-		concrete, err := UnpackCST[L](definition, input)
+	result.print = func(input representation.CST) (string, error) {
+		concrete, err := representation.UnpackCST[L](definition, input)
 		if err != nil {
 			return "", err
 		}
@@ -52,9 +52,9 @@ func NewProvider[L any](provider text.Provider[L], profile string) (Provider, er
 	}
 	return result, nil
 }
-func (p Provider) ID() language.ID              { return p.definition.ID() }
-func (p Provider) Name() string                 { return p.definition.Name() }
-func (p Provider) Language() transform.Language { return p.definition }
+func (p Provider) ID() language.ID                   { return p.definition.ID() }
+func (p Provider) Name() string                      { return p.definition.Name() }
+func (p Provider) Language() representation.Language { return p.definition }
 func (p Provider) validate() error {
 	if err := p.definition.Validate(); err != nil {
 		return err

@@ -14,7 +14,8 @@ CST-to-text printer. Read the [concrete syntax design](docs/parsing-formatting.m
 
 - Canonical AST, actual language transformers, public builders and application
   CLI remain deferred. The syntax engine and ASTTransformer boundary are now
-  implemented; read [docs/engine.md](docs/engine.md). Do not introduce runtime adapters, callable behavior,
+  implemented; read [docs/engine.md](docs/engine.md). Do not introduce runtime
+  adapters, callable behavior,
   application-value validators, serialization or networking.
 - Function, Stream, Cell and future behavioral contracts remain library-owned.
   Never add their names as core kinds, switches, imports, registrations,
@@ -22,6 +23,14 @@ CST-to-text printer. Read the [concrete syntax design](docs/parsing-formatting.m
 - Preserve generic binders/applications, declaration references and origins.
   Equal-looking syntax does not authorize substituting library contracts.
 - Do not make TypeScript extraction the authoritative canonical input.
+- Follow the stage-first hierarchy in LAYOUT.md. Shared trees live under trees,
+  shared contracts under contracts; native implementations use the same
+  syntax/parse/check/format/provider language matrix. Do not add compatibility
+  aliases or a language-first packages tree. Keep the root Go module.
+- Add every language to the shared conformance fixtures; architecture checks
+  discover stage directories and enforce complete coverage and directed imports.
+  Keep package tests with their implementation and cross-package qualification
+  under integration. Private helpers must obey the same ownership boundaries.
 - Implement the toolchain in Go in component-owned packages in the root module.
   Formatters construct CST tokens/trivia; only the printer emits source text.
   Do not print source and reparse it as an intermediate AST/CST.

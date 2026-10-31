@@ -1,16 +1,16 @@
 package cppparse
 
 import (
-	"github.com/Bitspark/bittype/ast/go"
 	check "github.com/Bitspark/bittype/check/cpp/go"
-	"github.com/Bitspark/bittype/cst/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/internal/concrete"
 	native "github.com/Bitspark/bittype/internal/cpp"
 	"github.com/Bitspark/bittype/internal/lex"
 	"github.com/Bitspark/bittype/internal/parseutil"
 	tr "github.com/Bitspark/bittype/internal/tree"
 	s "github.com/Bitspark/bittype/syntax/cpp/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	"strings"
 )
 

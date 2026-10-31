@@ -9,10 +9,11 @@ providers and future transformer implementations.
 
 | Package | Responsibility |
 | --- | --- |
-| [transform/go](../transform/go/transformer.go) | ASTTransformer, checked AST envelopes, language descriptors and typed adapters |
+| [trees/representation/go](../trees/representation/go/ast.go) | Checked AST/CST envelopes and language/profile descriptors |
+| [contracts/transform/go](../contracts/transform/go/transformer.go) | ASTTransformer and typed stage registration bridge |
 | [engine/go](../engine/go/engine.go) | Registration, route planning/execution and text-stage composition |
-| [language/go](../language/go/language.go) | Shared ID/Name identity contract |
-| [pipeline/go](../pipeline/go/stage.go) | Independent typed Stage function contract |
+| [contracts/language/go](../contracts/language/go/language.go) | Shared ID/Name identity contract |
+| [contracts/pipeline/go](../contracts/pipeline/go/stage.go) | Independent typed Stage function contract |
 | Existing native providers | Language-specific parsing, checking, formatting and printing |
 
 The engine, transformation boundary and their production dependencies import no
@@ -25,7 +26,7 @@ registration. Function, Stream and Cell remain ordinary library references.
 The existing ast.AST[L] and cst.CST[L] carriers remain unchanged. L separates
 Go types. A dynamic registry needs an opaque envelope, not ast.AST[any].
 
-NewLanguage[L](checker, profile) creates a transform.Language descriptor from a
+representation.NewLanguage[L](checker, profile) creates a Language descriptor from a
 text.CheckerProvider[L]. It captures ID and Name, the actual Go marker type, the
 explicit profile string and the checker. Configured descriptors implement
 LanguageProvider; their zero values are invalid. Native marker providers still
@@ -63,7 +64,7 @@ The public interface is:
 type ASTTransformer interface {
     FromID() language.ID
     ToID() language.ID
-    Transform(AST) (AST, error)
+    Transform(representation.AST) (representation.AST, error)
 }
 ```
 
@@ -78,7 +79,8 @@ NewTransformer[F, T](from, to, stage) adapts:
 pipeline.Stage[ast.AST[F], ast.AST[T]]
 ```
 
-It checks the actual marker types at construction, checks input, passes the
+The bridge uses representation.CheckMarker to check actual marker types at
+construction, without access to payloads or unchecked constructors. It checks input, passes the
 stage an owned typed AST, and packs its result against the destination
 descriptor. A nil stage is an error. The adapter returns zero output whenever
 the stage fails, even if the stage also supplied a partial AST.
@@ -156,11 +158,11 @@ NewProvider adapts existing implementations; it creates no new native grammar.
 The engine offers:
 
 ```go
-Parse(languageID, text.Input) (CST, error)
-Check(transform.AST) error
-Format(transform.AST) (CST, error)
-Print(CST) (string, error)
-Render(transform.AST) (string, error)
+Parse(languageID, text.Input) (representation.CST, error)
+Check(representation.AST) error
+Format(representation.AST) (representation.CST, error)
+Print(representation.CST) (string, error)
+Render(representation.AST) (string, error)
 ```
 
 Render is Format followed by Print. These methods select the registered provider
@@ -168,8 +170,9 @@ by the envelope's language ID. An AST-only registration returns
 ErrMissingCapability for text operations. Unregistered languages return
 ErrUnknownLanguage.
 
-The engine CST envelope exposes ASTView() transform.AST without another
-conversion provider. PackCST and UnpackCST bridge typed concrete trees, validating
+The representation.CST envelope exposes ASTView() representation.AST without
+another conversion provider. representation.PackCST and representation.UnpackCST
+bridge typed concrete trees, validating
 and copying abstract/concrete arenas, leaf pointers, links and metadata.
 A parser or formatter error discards its returned CST. A printer error discards
 its returned text. Providers remain responsible for their grammar, concrete
@@ -224,6 +227,11 @@ The maintained GitHub gate runs these tests, vet and a race-detector check for
 concurrent registry operations, alongside existing native compiler and fuzz
 checks. Documentation checks run on the same exact committed revision.
 Workloads run remotely.
+
+The [stage-first hierarchy](../LAYOUT.md) keeps checked tree representations
+independent of transformer contracts and the engine. Shared conformance tests
+and discovered stage/dependency checks enforce this boundary. The moved APIs
+have no aliases at the former package paths.
 
 The [canonical model](model.md), its frontend and actual language transformers
 remain the next semantic increment. Public builders, a generic Stage composition

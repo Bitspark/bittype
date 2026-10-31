@@ -1,13 +1,13 @@
 package rustformat
 
 import (
-	"github.com/Bitspark/bittype/ast/go"
 	check "github.com/Bitspark/bittype/check/rust/go"
-	"github.com/Bitspark/bittype/cst/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/internal/concrete"
 	"github.com/Bitspark/bittype/internal/tree"
 	s "github.com/Bitspark/bittype/syntax/rust/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	"strconv"
 )
 

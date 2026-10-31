@@ -2,9 +2,9 @@
 package cstcheck
 
 import (
-	"github.com/Bitspark/bittype/check/go"
-	"github.com/Bitspark/bittype/cst/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/check/ast/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	"unicode/utf8"
 )
 

@@ -15,7 +15,7 @@ validates supported type syntax. These are not complete compiler ASTs.
 
 ## Identity and registration
 
-[language/go](../language/go/language.go) declares the agnostic interface:
+[contracts/language/go](../contracts/language/go/language.go) declares the agnostic interface:
 
 ```go
 type ID string
@@ -328,7 +328,7 @@ the common interface, type-check those consumers, reject mixed target ASTs,
 and check every pair of public marker/AST/node/kind types for non-assignability.
 A [separately owned provider](../integration/go/testdata/syntax/extension.go)
 implements the same interface without any central language list.
-The [dependency check](../integration/go/dependencies_test.go) enforces that
+The [architecture checks](../integration/go/architecture_test.go) enforce that
 syntax packages depend only on the generic AST and language identity contracts
 plus the generic CST carrier and standard-library utilities. The three foundations do not depend
 on each other or on concrete languages.

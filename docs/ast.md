@@ -10,7 +10,7 @@ a canonical AST implementation.
 ## Language parameter
 
 The shared package is
-`github.com/Bitspark/bittype/ast/go`, imported as `ast`.
+`github.com/Bitspark/bittype/trees/ast/go`, imported as `ast`.
 It defines `AST[L]`, `Node[L]` and `Kind[L]`. A language package supplies
 a distinct named Go type for `L` and owns its node vocabulary.
 
@@ -32,6 +32,11 @@ marker types produce distinct instantiated AST, node and kind types. A type
 alias to an existing marker does not create another language. Converting or
 rebuilding nodes explicitly is still possible; this is not a security boundary.
 
+The typed carriers live under trees/ast and trees/cst. Checked heterogeneous
+snapshots and language descriptors live separately under trees/representation;
+they do not move grammar or registration into these carriers. The stage-first
+[layout](../LAYOUT.md) records the dependency boundaries.
+
 The core contains no canonical, TypeScript, Go, Rust or C++ kinds. Language packages provide separate syntax checks; public typed builders remain
 deferred. AST and CST expose the common borrowed ast.View interface. A target language may describe native type syntax such as a function
 signature without introducing a privileged behavioral contract in the core.
@@ -39,7 +44,7 @@ Function, Stream and Cell remain ordinary library contracts.
 
 ## Storage and links
 
-The [public declarations](../ast/go/ast.go) use a flat node arena:
+The [public declarations](../trees/ast/go/ast.go) use a flat node arena:
 
 ```go
 type AST[L any] struct {
@@ -59,7 +64,7 @@ The zero AST is an empty carrier, not a checked empty language module.
 The `uint32` index limits one carrier's capacity; it does not limit the
 canonical language's value domains.
 
-A [node](../ast/go/node.go) has:
+A [node](../trees/ast/go/node.go) has:
 
 | Field | Purpose |
 | --- | --- |
@@ -93,7 +98,7 @@ declaration identity simply by storing an address.
 
 ## Provenance
 
-[Origin metadata](../ast/go/origin.go) can contain multiple source spans and
+[Origin metadata](../trees/ast/go/origin.go) can contain multiple source spans and
 multiple contributing node references. This supports a target declaration
 derived from several canonical nodes, or several target nodes derived from
 one canonical declaration.

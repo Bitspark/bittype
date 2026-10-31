@@ -2,16 +2,16 @@ package integration_test
 
 import (
 	"errors"
-	"github.com/Bitspark/bittype/ast/go"
 	cstcheck "github.com/Bitspark/bittype/check/cst/go"
-	"github.com/Bitspark/bittype/cst/go"
-	"github.com/Bitspark/bittype/language/go"
+	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
 	goprovider "github.com/Bitspark/bittype/provider/golang/go"
 	rustprovider "github.com/Bitspark/bittype/provider/rust/go"
 	tsprovider "github.com/Bitspark/bittype/provider/typescript/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
-	"github.com/Bitspark/bittype/text/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -101,10 +101,9 @@ func exercise[L any](t *testing.T, p text.Provider[L], directory, extension stri
 	}
 }
 func TestNativeTextRoundTrips(t *testing.T) {
-	t.Run("typescript", func(t *testing.T) { exercise(t, tsprovider.Provider{}, "typescript", "ts") })
-	t.Run("go", func(t *testing.T) { exercise(t, goprovider.Provider{}, "golang", "go") })
-	t.Run("rust", func(t *testing.T) { exercise(t, rustprovider.Provider{}, "rust", "rs") })
-	t.Run("cpp", func(t *testing.T) { exercise(t, cppprovider.Provider{}, "cpp", "hpp") })
+	for _, fixture := range nativeConformanceCases() {
+		t.Run(fixture.directory, fixture.roundTrips)
+	}
 }
 func reject[L any](t *testing.T, p text.Provider[L], sources []string) {
 	t.Helper()
