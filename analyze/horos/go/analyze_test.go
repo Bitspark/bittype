@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"reflect"
 	"slices"
+	"strconv"
 	"testing"
 
 	analyze "github.com/Bitspark/bittype/analyze/horos/go"
@@ -276,6 +277,22 @@ func TestCurrentSyntaxSitesSurviveArenaReorderingAndHistoricalOrigins(t *testing
 	for _, expression := range model.Data().Expressions {
 		if expression.At.Site.Tree != tree.ID { t.Fatal("expression did not refer to captured syntax") }
 	}
+}
+
+func TestModuleMemberReorderingPreservesTheCurrentSemanticGraph(t *testing.T) {
+	var definitions [][2]value
+	for i := 0; i < 64; i++ {
+		definitions = append(definitions, entry("Type"+strconv.Itoa(i), definition(h("exact", integer(int64(i))))))
+	}
+	tree, err := resolve.Resolve(module("example.members", mapping(), definitions...), nil, "reordered-members")
+	if err != nil { t.Fatal(err) }
+	expected := requireModel(t, run(t, tree, nil)).Data()
+	moduleID := find(tree, s.KindModule, "example.members")
+	slices.Reverse(tree.Nodes[moduleID-1].Children)
+	before := clone(tree)
+	actual := requireModel(t, run(t, tree, nil)).Data()
+	if !reflect.DeepEqual(expected, actual) { t.Fatal("module map member order changed semantic identity, meaning, or current sites") }
+	if !reflect.DeepEqual(before, tree) { t.Fatal("analysis sorted the caller's syntax") }
 }
 
 func requireFailure(t *testing.T, result analysis.Result, status analysis.Completion, verdict analysis.Verdict, code, subject string) {

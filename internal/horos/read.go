@@ -302,14 +302,24 @@ func (d *Decoded) correspond(expected s.AST) error {
 		for _, attribute := range want.Attributes { if gotReader.attr(gotID, attribute.Name) != attribute.Text { return bad() } }
 		mapping[wantID] = gotID
 		contexts[wantID] = context
+		type memberKey struct { role, name string }
+		var members map[memberKey]ast.Child
+		if want.Kind == s.KindModule {
+			members = make(map[memberKey]ast.Child, len(got.Children))
+			for _, candidate := range got.Children {
+				name := s.AttributeName
+				if candidate.Role == s.RoleImport { name = s.AttributeAlias }
+				members[memberKey{candidate.Role, gotReader.attr(candidate.Node, name)}] = candidate
+			}
+		}
 		for i, child := range want.Children {
 			actual := got.Children[i]
 			if want.Kind == s.KindModule {
 				name := s.AttributeName
 				if child.Role == s.RoleImport { name = s.AttributeAlias }
-				for _, candidate := range got.Children {
-					if candidate.Role == child.Role && gotReader.attr(candidate.Node, name) == wantReader.attr(child.Node, name) { actual = candidate; break }
-				}
+				var found bool
+				actual, found = members[memberKey{child.Role, wantReader.attr(child.Node, name)}]
+				if !found { return bad() }
 			}
 			if child.Role != actual.Role { return bad() }
 			if err := walk(child.Node, actual.Node, context); err != nil { return err }
