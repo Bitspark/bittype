@@ -40,6 +40,9 @@ application-value validation or Wire dependencies.
 ## Read first
 
 - [Horos canonical input](docs/model.md): ownership, declarations and native representation plan.
+- [Hydrated type proposal](docs/hydrated-types.md): exact proposed Wire input,
+  library-owned Function/Cell/Stream composition and future projection boundaries;
+  documentation only.
 - [Horos AST](docs/horos.md): model projection, binding references, checking and registration.
 - [Semantic facts](docs/semantics.md): immutable entities, terms, occurrences and dependencies.
 - [Analysis capability](docs/analysis.md): request capture, explicit registration,

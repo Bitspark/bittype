@@ -26,6 +26,12 @@ identities, bindings, expressions, applications and dependencies. The
 supplies another canonical value-type algebra nor makes native meaning equivalent
 to Horos. Horos supplies the first production analyzer.
 
+The [hydrated type proposal](hydrated-types.md) documents a future explicit
+Horos revision for the existing native Wire leaf. Function, Stream and Cell
+compose from that primitive in ordinary libraries. It includes the exact Wire
+format and tooling boundaries; it is not implemented and does not widen the
+ground model or current declaration revision described below.
+
 Horos 0.6.0 implements ground descriptors and value checking, without a public
 dependency on the older proof-integration packages. Newer Go source implements
 the declaration layer; bittype pins that public revision and implements its

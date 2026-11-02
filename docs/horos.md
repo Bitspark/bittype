@@ -5,6 +5,11 @@ Horos declaration revision 1, not a readable source grammar or native generator.
 The authoritative value format and binding rules are in
 [horos's declaration specification](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
 
+The separate [hydrated type proposal](hydrated-types.md) covers a possible
+revision-2 Wire message type and library compositions. The frontend documented
+here remains revision 1; none of the proposed hydrated AST/analysis support is
+implemented by this provider.
+
 ## API and ownership
 
 - [syntax/horos/go](../syntax/horos/go/nodes.go) defines `Language`, `AST`, `Node`,
