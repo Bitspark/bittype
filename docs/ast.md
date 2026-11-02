@@ -4,11 +4,11 @@
 The [four target syntax vocabularies](syntax.md) use these carriers.
 Structural/native syntax checks live in separate check packages. Public traversal
 and builders remain deferred; see the [native text pipeline](parsing-formatting.md).
-The canonical type language remains the [model proposal](model.md), without
-a canonical AST implementation.
+The canonical input uses the [Horos declaration model](model.md), with a separate
+[AST-only Horos frontend](horos.md) implemented on 2 November.
 
 The 2 November ownership update selects Horos's declaration model as that input.
-Its future AST is an ordinary language-specific projection, without new core
+Its AST is an ordinary language-specific projection, without new core
 carrier kinds or a dependency from Horos to bittype.
 
 ## Language parameter

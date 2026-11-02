@@ -5,8 +5,9 @@ are implemented in Go on the [generic AST](ast.md). Each package supplies
 `Language`, `AST`, `Node`, `Kind`, and constants for kinds, roles and attributes.
 
 The shared LanguageProvider interface, native text providers, parsers,
-AST-to-CST formatters, checks and generic printer are implemented. Canonical AST,
-actual language mappings and public builders remain deferred. The syntax engine
+AST-to-CST formatters, checks and generic printer are implemented. The
+[Horos AST-only profile](horos.md) adds canonical declarations; readable Horos
+syntax, actual language mappings and public builders remain deferred. The syntax engine
 now provides [explicit registration and route execution](engine.md).
 See the [native text design](parsing-formatting.md).
 
@@ -32,6 +33,7 @@ type LanguageProvider interface {
 | [golang.Language](../syntax/golang/go/nodes.go) | `go` | Go |
 | [rust.Language](../syntax/rust/go/nodes.go) | `rust` | Rust |
 | [cpp.Language](../syntax/cpp/go/nodes.go) | `cpp` | C++ |
+| [horos.Language](../syntax/horos/go/nodes.go) | `horos` | Horos (AST-only) |
 
 The zero-value providers implement this interface. The methods return fixed
 metadata and perform no IO, discovery or registration. IDs are exact,

@@ -5,6 +5,10 @@ AST transformations. It implements no canonical AST and no TypeScript, Go, Rust
 or C++ mapping. Applications explicitly register the existing native text
 providers and future transformer implementations.
 
+The 2 November [Horos AST-only frontend](horos.md) uses the existing language
+registration interface without engine changes. It advertises checking only;
+native generators and readable Horos syntax remain unimplemented.
+
 ## Public components
 
 | Package | Responsibility |

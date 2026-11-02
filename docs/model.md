@@ -1,29 +1,30 @@
 # Horos canonical types and bittype generation
 
-**2 November 2026. Status: ownership direction accepted; declaration format and
+**2 November 2026. Status: Go declaration model and Horos AST implemented;
 native mappings proposed, not implemented.** This replaces the 31 October
 proposal for an independent bittype value-type language. The generic AST/CST,
-native text stages and syntax engine already exist; this update changes docs only.
+native text stages and syntax engine already exist. See the [Horos frontend](horos.md).
 
 ## Ownership and canonical input
 
 | Component | Responsibility |
 | --- | --- |
 | ontos | Values, structural identity, data embeddings and canonical encoding |
-| horos | Data descriptors/conformance; proposed module, generic and application semantics |
+| horos | Data descriptors/conformance; module, generic and application semantics |
 | bittype | Source syntax, AST/CST projections, frontend tooling, language transformations and source generation |
 | Contract libraries | Function, Stream, Cell and future behavioral declarations and realizations |
 
 The semantic authority is the [horos descriptor specification](https://github.com/Bitspark/horos/blob/v0.6.0/docs/spec/horos.md)
-and the new [canonical declaration proposal](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
+and the [canonical declaration specification](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
 The latter specifies exact value grammar, immutable imports, indexed binders,
 substitution and identity. Bittype must not maintain a competing record,
 collection, union or generic-substitution specification.
 
 Horos 0.6.0 implements ground descriptors and value checking, without a public
-dependency on the older proof-integration packages. It does not yet implement
-the declaration layer. Bittype does not yet implement its frontend or any
-Horos-to-native transformation. No package release or migration is implied.
+dependency on the older proof-integration packages. Newer Go source implements
+the declaration layer; bittype pins that public revision and implements its
+AST projection/checker. Neither implements a Horos-to-native transformation yet.
+No package release or migration is implied.
 
 A declaration document is an ontos module value, encoded with ontos-codec-v1:
 
@@ -108,8 +109,8 @@ alone emits text.
 
 The [generation design](generation.md) and [layout](../LAYOUT.md) retain the
 stage-first matrix. Planned canonical paths use `horos`, replacing the earlier
-proposed `canonical` name. No directories, interfaces or dependencies are added
-by this documentation change.
+proposed `canonical` name. The AST-only stages are implemented; readable syntax
+and directed transformations remain future work.
 
 ## Native representation profiles
 
@@ -146,9 +147,9 @@ Dependency direction is bittype's Horos tooling -> horos -> ontos. Horos must
 not import bittype. Generic trees, contracts, engine and printer remain unaware
 of concrete semantic dependencies. Native syntax and formatters stay independent
 of Horos; its frontend and relevant transformers consume the semantic model.
-The current no-external-dependencies check remains true for current code. Future
-implementation must add a narrow dependency allowance and qualification, not
-weaken the generic-package boundary globally.
+Architecture tests allow the model dependency only in the Horos frontend and
+classify its transitive packages. They retain the generic-package boundary and
+the independence of native text stages.
 
 Horos specifies document identity and pins. Bittype preserves them alongside
 declaration/binder references. AST addresses and source spans are tooling
@@ -169,13 +170,18 @@ Forbidden:
 - Adapters, RPC/streaming behavior, value validators or codecs in this types-only
   generation milestone.
 
-## Next implementation scope and evidence
+## Implementation status and next scope
 
-No implementation is authorized by this document alone. Proposed stages are:
+The owner authorized the first two stages on 2 November; they are implemented:
 
 1. Qualify Horos declaration grammar, pins, resolution, slots and specialization
    with independently authored semantic vectors.
-2. Add the Horos AST/frontend in bittype, preserving origins and located errors.
+2. Add the AST-only Horos frontend in bittype, preserving origins, explicit
+   binding references and located AST errors. Horos model errors retain their
+   module/declaration/path context; no source location is invented.
+
+The remaining stages are proposals, outside this change:
+
 3. Implement four Horos-to-native ASTTransformer providers. First qualify open
    and applied pagination, then expand the supported subset explicitly.
 4. Compose existing formatters/printer and compile generated declarations and
