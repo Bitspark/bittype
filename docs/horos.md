@@ -113,8 +113,10 @@ checked before the AST is decoded. Horos's default declaration budgets apply
 when recovering a model; analysis can accept an explicitly supplied bounded
 resolver configuration. Both boundaries return empty output on failure; a model
 accepted under custom larger limits is re-admitted under the fixed Horos defaults
-before projection, so successful projection cannot bypass the checker's canonical
-budgets. Canonical and AST depth are distinct; tests qualify their boundary.
+before projection, so successful projection respects `resolve.Model`'s fixed
+canonical budgets. The syntax checker has separate AST budgets; analysis can
+select explicit resolver limits. Canonical and AST depth are distinct, and tests
+qualify their boundary.
 
 ## Analysis profile and generic queries
 
@@ -143,7 +145,8 @@ obligations receive Unsupported / Undetermined.
 
 `LimitsSetting()` names provider-owned JSON configuration containing
 `[MaxDepth, MaxNodes, MaxBytes, MaxModules]`. All four limits are required; absence
-uses Horos defaults. Invalid configuration is an API error. The kernel copies and
+uses Horos defaults. This profile requires positive limits with depth at most 512.
+Invalid configuration is an API error before source decoding. The kernel copies and
 bounds these bytes without interpreting them. Semantic graph budgets are separate.
 
 The graph preserves module/declaration/parameter identity, current input sites,
