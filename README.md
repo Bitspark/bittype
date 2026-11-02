@@ -52,6 +52,9 @@ the agnostic kernel acquires no Wire semantics. That provider is not implemented
 - [Template lifting and native representations](docs/type-representations.md):
   explicit lifting rules, generic pagination and library-owned type recipes
   configured for TypeScript, Go, Rust and C++; documentation only.
+- [Runtime values and hydration](docs/runtime-values.md): type descriptions versus
+  native instances, existing Wire/runtime carriers and future typed/dynamic
+  adapters; documentation only, with pinned implementation evidence.
 - [Horos AST](docs/horos.md): model projection, binding references, checking and registration.
 - [Semantic facts](docs/semantics.md): immutable entities, terms, occurrences and dependencies.
 - [Resolution capability](docs/resolution.md): shared snapshots, explicit prerequisites

@@ -32,6 +32,13 @@ concrete transformer per language pair. Function, Cell and Stream are resolved
 module declarations, never individual engine registrations. This adds no
 implementation or change to ASTTransformer.
 
+The [runtime value boundary](runtime-values.md) is distinct from this static
+pipeline. Runtime adapters would convert existing hydrated values to/from a
+compiled native T; hydration itself already belongs to bitruntime. A target AST
+describes source, not a live application value. Future executable adapter
+generation requires its own syntax/profile qualification and does not follow
+from the current types-only ASTs or a dynamically received type description.
+
 ## Target pipeline
 
 ```text
