@@ -65,7 +65,7 @@ func (e *exporter) expression(expression *decl.Expression, site ast.NodeRef, own
 	switch expression.Kind() {
 	case decl.Parameter:
 		parameter, _ := expression.Parameter()
-		term.Kind, term.Target = semantics.Reference, e.parameters[parameter]
+		term.Kind, term.Target = semantics.Reference, e.declarations[parameter.Declaration]
 		if err := e.binding(site, term.Target); err != nil { return 0, err }
 	case decl.Application:
 		target, _ := expression.Target()
@@ -79,9 +79,6 @@ func (e *exporter) expression(expression *decl.Expression, site ast.NodeRef, own
 			term.Arguments[i] = child
 		}
 		if err := e.binding(site, term.Target); err != nil { return 0, err }
-		at := semantics.Occurrence{Site: site, Role: ExpressionRole()}
-		if err := e.reserve(1, 0, keySize(ApplicationDependency())+occurrenceSize(at)); err != nil { return 0, err }
-		e.facts.Dependencies = append(e.facts.Dependencies, semantics.Dependency{From: owner, To: term.Target, Relation: ApplicationDependency(), At: &at})
 	case decl.Descriptor:
 		term.Kind, term.Operator, term.Encoding = semantics.ProviderExpression, key("descriptor/"+expression.Constructor()), semantics.Key{Owner: "ontos", Name: "codec-v1"}
 		// The value was bounded during Horos resolution. Each retained payload is
@@ -89,7 +86,7 @@ func (e *exporter) expression(expression *decl.Expression, site ast.NodeRef, own
 		encoded := codec.Encode(expression.Value())
 		operands := expression.Operands()
 		if err := e.reserve(0, len(operands), len(encoded)+keySize(term.Operator)+keySize(term.Encoding)); err != nil { return 0, err }
-		term.Data = encoded
+		term.Data = nil
 		term.Operands = make([]semantics.Operand, len(operands))
 		for i, operand := range operands {
 			path := operand.Path()

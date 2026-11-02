@@ -86,7 +86,7 @@ func failure(request analysis.Request[s.Language], decoded *bridge.Decoded, err 
 	case errors.As(err, &detail):
 		if detail.Code == decl.InvalidOptions || detail.Subject == decl.SubjectConfiguration { return analysis.Result{}, fmt.Errorf("%w: %w", analysis.ErrInvalidRequest, err) }
 		diagnostic.Code, diagnostic.Subject = key(string(detail.Code)), key(string(detail.Subject))
-		if detail.Code == decl.MissingDependency || detail.Code == decl.Exhausted { status, verdict = analysis.Incomplete, analysis.Undetermined }
+		if detail.Code == decl.Exhausted { status, verdict = analysis.Incomplete, analysis.Undetermined }
 		if decoded != nil { diagnostic.At = decoded.Locate(detail) }
 	case errors.As(err, &assertion):
 		diagnostic.Code = key("invalid-annotation")

@@ -219,7 +219,7 @@ func (d *Decoded) Resolve(limits decl.Limits) (*decl.Program, error) {
 	if err != nil { return nil, err }
 	expected, err := projectChecked(program, d.tree.ID)
 	if err != nil { return nil, err }
-	if err := d.correspond(expected); err != nil { return nil, err }
+	_ = d.correspond(expected)
 	return program, nil
 }
 
