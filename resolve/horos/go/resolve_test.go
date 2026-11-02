@@ -213,6 +213,25 @@ func TestModelAcceptsAbsentBindingAnnotations(t *testing.T) {
 	if !reflect.DeepEqual(tree, before) { t.Fatal("resolution wrote annotations into borrowed syntax") }
 }
 
+type changingView struct {
+	first, second s.AST
+	calls int
+}
+
+func (v *changingView) ASTView() s.AST {
+	v.calls++
+	if v.calls == 1 { return v.first }
+	return v.second
+}
+
+func TestModelCapturesAnExternalViewOnce(t *testing.T) {
+	valid := fixture(t)
+	view := &changingView{first: valid, second: s.AST{}}
+	if model, err := resolve.Model(view); err != nil || model == nil || view.calls != 1 { t.Fatalf("changed view reached reconstruction: calls=%d, error=%v", view.calls, err) }
+	view = &changingView{first: s.AST{}, second: valid}
+	if model, err := resolve.Model(view); err == nil || model != nil || view.calls != 1 { t.Fatalf("invalid first capture was replaced: calls=%d, error=%v", view.calls, err) }
+}
+
 func TestInvalidASTsFailWithoutRepair(t *testing.T) {
 	cases := map[string]func(s.AST){
 		"wrong parameter binding": func(a s.AST) {
