@@ -5,7 +5,6 @@ package check
 import (
 	"reflect"
 	"slices"
-	"strings"
 
 	structure "github.com/Bitspark/bittype/check/ast/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
@@ -27,12 +26,22 @@ func identifier(value string) bool {
 }
 
 func moduleName(value string) bool {
-	for _, part := range strings.Split(value, ".") {
-		if !identifier(part) {
+	first := true
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		if c == '.' {
+			if first {
+				return false
+			}
+			first = true
+			continue
+		}
+		if !(c == '_' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || !first && c >= '0' && c <= '9') {
 			return false
 		}
+		first = false
 	}
-	return true
+	return !first
 }
 
 func hexadecimal(value string) bool {
