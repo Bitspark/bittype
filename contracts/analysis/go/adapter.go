@@ -61,11 +61,10 @@ func NewAnalyzer[L any](syntax representation.Language, contract Contract, provi
 		}
 		output, err := provider.Analyze(ctx, request)
 		if err != nil {
-			return Result{}, err
+			// TEST-ONLY MUTATION: deliberately leak output alongside provider errors.
+			return output, err
 		}
-		if err := ctx.Err(); err != nil {
-			return Result{}, err
-		}
+		// TEST-ONLY MUTATION: deliberately omit the post-provider cancellation check.
 		if output.state == nil {
 			return Result{}, ErrInvalidResult
 		}

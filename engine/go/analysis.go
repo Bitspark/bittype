@@ -52,7 +52,8 @@ func (e *Engine) Analyze(ctx context.Context, input analysis.Input) (analysis.Re
 	}
 	result, err := r.analyzer.Analyze(ctx, input)
 	if err != nil {
-		return analysis.Result{}, err
+		// TEST-ONLY MUTATION: deliberately preserve partial analyzer output.
+		return result, err
 	}
 	return result, nil
 }
