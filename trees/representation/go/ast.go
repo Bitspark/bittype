@@ -31,6 +31,7 @@ type AST struct {
 type payload interface {
 	marker() reflect.Type
 	clone() payload
+	inspect() Info
 }
 type typed[L any] struct{ value ast.AST[L] }
 

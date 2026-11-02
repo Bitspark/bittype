@@ -88,6 +88,7 @@ type Setting struct {
 type Limits struct {
 	MaxInputs int
 	MaxInputNodes int
+	MaxInputEntries int
 	MaxInputBytes int
 	MaxRequested int
 	MaxConfigurationEntries int
@@ -99,14 +100,14 @@ type Limits struct {
 
 func DefaultLimits() Limits {
 	return Limits{
-		MaxInputs: 256, MaxInputNodes: 200000, MaxInputBytes: 16 << 20,
+		MaxInputs: 256, MaxInputNodes: 200000, MaxInputEntries: 1600000, MaxInputBytes: 16 << 20,
 		MaxRequested: 256, MaxConfigurationEntries: 256, MaxConfigurationBytes: 1 << 20,
 		MaxDiagnostics: 256, MaxDiagnosticBytes: 1 << 20, Model: semantics.DefaultLimits(),
 	}
 }
 
 func (l Limits) Valid() bool {
-	return l.MaxInputs > 0 && l.MaxInputNodes > 0 && l.MaxInputBytes > 0 &&
+	return l.MaxInputs > 0 && l.MaxInputNodes > 0 && l.MaxInputEntries > 0 && l.MaxInputBytes > 0 &&
 		l.MaxRequested > 0 && l.MaxConfigurationEntries > 0 && l.MaxConfigurationBytes > 0 &&
 		l.MaxDiagnostics > 0 && l.MaxDiagnosticBytes > 0 && l.Model.Valid()
 }

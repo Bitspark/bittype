@@ -44,6 +44,7 @@ func NewAnalyzer[L any](syntax representation.Language, contract Contract, provi
 		if err := ctx.Err(); err != nil { return Result{}, err }
 		request, err := captureRequest[L](ctx, syntax, contract, input)
 		if err != nil { return Result{}, err }
+		if err := ctx.Err(); err != nil { return Result{}, err }
 		output, err := provider.Analyze(ctx, request)
 		if err != nil { return Result{}, err }
 		if err := ctx.Err(); err != nil { return Result{}, err }
@@ -102,35 +103,25 @@ func captureRequest[L any](ctx context.Context, syntax representation.Language, 
 	}
 	c.requested = slices.Clone(requested)
 	c.configuration = cloneSettings(input.Configuration)
+	nodes, entries, inputBytes := limits.MaxInputNodes, limits.MaxInputEntries, limits.MaxInputBytes
+	// Read bounded envelope metadata before any checker or AST copy. Tree IDs
+	// establish only a catalogue within this invocation, never persistent identity.
+	for _, envelope := range input.Trees {
+		if err := ctx.Err(); err != nil { return Request[L]{}, err }
+		info, err := envelope.Inspect()
+		if err != nil { return Request[L]{}, err }
+		if _, found := c.catalogue[info.ID]; found { return bad("duplicate input tree ID") }
+		if !take(&nodes, info.Nodes) || !take(&entries, info.Entries) || !take(&inputBytes, info.TextBytes) { return Request[L]{}, ErrLimit }
+		c.catalogue[info.ID] = ast.NodeID(info.Nodes)
+	}
+	if !c.contains(c.entry) { return bad("entry is outside captured inputs") }
 	state := &requestState[L]{capture: c, inputs: make([]ast.AST[L], 0, len(input.Trees))}
-	nodes, inputBytes := limits.MaxInputNodes, limits.MaxInputBytes
 	for _, envelope := range input.Trees {
 		if err := ctx.Err(); err != nil { return Request[L]{}, err }
 		if err := syntax.Check(envelope); err != nil { return Request[L]{}, err }
 		value, err := representation.Unpack[L](syntax, envelope)
 		if err != nil { return Request[L]{}, err }
-		if _, found := c.catalogue[value.ID]; found { return bad("duplicate input tree ID") }
-		if !take(&nodes, len(value.Nodes)) || !boundTree(value, &inputBytes) { return Request[L]{}, ErrLimit }
-		c.catalogue[value.ID] = ast.NodeID(len(value.Nodes))
 		state.inputs = append(state.inputs, value)
 	}
-	if !c.contains(c.entry) { return bad("entry is outside captured inputs") }
 	return Request[L]{state: state}, nil
-}
-
-func boundTree[L any](input ast.AST[L], bytes *int) bool {
-	if !take(bytes, len(input.ID)) { return false }
-	for _, node := range input.Nodes {
-		if !take(bytes, len(node.Kind)) { return false }
-		for _, attribute := range node.Attributes {
-			if !take(bytes, len(attribute.Name)) || !take(bytes, len(attribute.Text)) { return false }
-		}
-		for _, child := range node.Children { if !take(bytes, len(child.Role)) { return false } }
-		for _, reference := range node.References {
-			if !take(bytes, len(reference.Role)) || !take(bytes, len(reference.Target.Tree)) { return false }
-		}
-		for _, span := range node.Origin.Spans { if !take(bytes, len(span.Source)) { return false } }
-		for _, origin := range node.Origin.Nodes { if !take(bytes, len(origin.Tree)) { return false } }
-	}
-	return true
 }
