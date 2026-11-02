@@ -12,9 +12,9 @@ builders and application CLI remain deferred.
 
 Horos owns the data model and [declaration semantics](model.md).
 Bittype implements the [AST-only projection](horos.md); native transformations
-remain future work. The [semantic analysis capability](analysis.md) now adapts
-Horos's checked model to shared facts. It adds no text parser or ASTTransformer
-implementation.
+remain future work. [Resolution](resolution.md) exports Horos's checked model
+to shared facts; [analysis](analysis.md) consumes that evidence explicitly.
+It adds no text parser or ASTTransformer implementation.
 
 The [contract-type proposal](hydrated-types.md) separately adds Wire typing in
 a Bittype-owned provider above the data-only Horos model. Its future path is
@@ -78,7 +78,9 @@ contracts/language/go/                   present: identity interface
 contracts/pipeline/go/                   present: typed Stage
 contracts/text/go/                       present: input, diagnostics, providers
 contracts/transform/go/                  present: ASTTransformer and typed bridge
-contracts/analysis/go/                   present: semantic request/publication SPI
+contracts/semantic/go/                   present: shared capture/publication
+contracts/resolution/go/                 present: resolver SPI
+contracts/analysis/go/                   present: analysis with explicit resolution input
 semantics/go/                            present: immutable shared semantic facts
 engine/go/                               present: registry, planning, execution
 syntax/<language>/go/                    present for all four native languages

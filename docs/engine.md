@@ -6,8 +6,8 @@ or C++ mapping. Applications explicitly register the existing native text
 providers and future transformer implementations.
 
 The 2 November [Horos AST-only frontend](horos.md) uses the language registration
-interface for syntax checking and separately registers the optional
-[semantic analysis capability](analysis.md). Native generators and readable Horos
+interface for syntax checking and independently registers
+[resolution](resolution.md) and [semantic analysis](analysis.md). Native generators and readable Horos
 syntax remain unimplemented.
 
 ## Public components
@@ -110,8 +110,11 @@ Engine's zero value is usable; New is a convenience constructor. Both start empt
 - NewProvider[L](textProvider, profile) packages a full existing text.Provider[L].
   RegisterProvider installs its descriptor and text capabilities atomically.
 - RegisterTransformer installs one directed edge between registered languages.
+- RegisterResolver installs an optional resolution capability; Capture and Resolve
+  produce an explicit input snapshot and resolution result.
 - RegisterAnalyzer installs an optional semantic analysis capability for an
-  existing compatible language; Analyze captures inputs and returns its reports
+  existing compatible language; Analyze consumes a snapshot and any declared
+  resolution result and returns its reports
   and optional shared model. See the [analysis contract](analysis.md).
 - Language(id) looks up a descriptor; Languages returns a sorted independent list.
 
@@ -243,8 +246,9 @@ have no aliases at the former package paths.
 
 The [Horos AST frontend](horos.md) is implemented; actual language transformers
 remain deferred. The [agnostic semantic model](semantics.md) and separate
-[analysis-provider SPI](analysis.md) are implemented. Check admits syntax;
-Analyze returns reports and optional shared facts through explicit registration.
+[resolution SPI](resolution.md) and [analysis SPI](analysis.md) are implemented.
+Capture admits a shared syntax snapshot; Resolve and Analyze return reports and
+optional shared facts through independent explicit registrations.
 Public builders, a generic Stage composition helper and an
 application CLI also remain deferred; none is needed to register and execute a
 correctly implemented ASTTransformer through this frame.

@@ -11,7 +11,13 @@ import (
 	"testing"
 )
 
-func TestAnalysisIndependentPublicContracts(t *testing.T) {
+func TestAnalysisIndependentPublicContracts(t *testing.T) { testSemanticPublicContracts(t, "analysis") }
+func TestResolutionIndependentPublicContracts(t *testing.T) {
+	testSemanticPublicContracts(t, "resolution")
+}
+
+func testSemanticPublicContracts(t *testing.T, stage string) {
+	t.Helper()
 	imports := &engineImporter{standard: importer.Default(), packages: make(map[string]*types.Package)}
 	cases := []struct{ name, want string }{
 		{"consumer", ""},
@@ -23,12 +29,12 @@ func TestAnalysisIndependentPublicContracts(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			positions := token.NewFileSet()
-			file, err := parser.ParseFile(positions, filepath.Join("testdata", "analysis", tc.name+".go"), nil, parser.AllErrors)
+			file, err := parser.ParseFile(positions, filepath.Join("testdata", stage, tc.name+".go"), nil, parser.AllErrors)
 			if err != nil {
 				t.Fatal(err)
 			}
 			config := types.Config{GoVersion: "go1.27", Importer: imports}
-			_, err = config.Check("example.invalid/analysis-consumer/"+tc.name, positions, []*goast.File{file}, nil)
+			_, err = config.Check("example.invalid/"+stage+"-consumer/"+tc.name, positions, []*goast.File{file}, nil)
 			if tc.want == "" {
 				if err != nil {
 					t.Fatal(err)

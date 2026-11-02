@@ -11,6 +11,7 @@ import (
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 )
 
@@ -39,6 +40,7 @@ type registration struct {
 	language representation.Language
 	text     *Provider
 	analyzer *analysis.Analyzer
+	resolver *resolution.Resolver
 }
 type edge struct {
 	from, to    language.ID

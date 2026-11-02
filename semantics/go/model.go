@@ -196,6 +196,19 @@ func bound(d Data, l Limits) error {
 // Bounds are checked before copying. Only term containment must be acyclic;
 // entity references and labeled dependency edges may form cycles.
 func New(data Data, limits Limits, contains func(ast.NodeRef) bool) (Model, error) {
+	return newModel(data, limits, contains, true)
+}
+
+// CheckLimits re-admits sealed storage without copying or changing its identity.
+func (m Model) CheckLimits(limits Limits) error {
+	if !m.Valid() {
+		return ErrInvalid
+	}
+	_, err := newModel(*m.state, limits, func(ast.NodeRef) bool { return true }, false)
+	return err
+}
+
+func newModel(data Data, limits Limits, contains func(ast.NodeRef) bool, copyStorage bool) (Model, error) {
 	if !limits.Valid() {
 		return Model{}, fmt.Errorf("%w: invalid limits", ErrInvalid)
 	}
@@ -337,7 +350,10 @@ func New(data Data, limits Limits, contains func(ast.NodeRef) bool) (Model, erro
 			return Model{}, err
 		}
 	}
-	owned := clone(data)
+	owned := data
+	if copyStorage {
+		owned = clone(data)
+	}
 	return Model{state: &owned}, nil
 }
 

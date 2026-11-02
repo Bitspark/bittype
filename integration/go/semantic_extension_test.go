@@ -9,6 +9,7 @@ import (
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -25,21 +26,21 @@ func extensionKey(name string) semantics.Key {
 }
 
 func extensionContract() analysis.Contract {
-	return analysis.Contract{
+	return analysis.Contract{Semantic: semantic.Contract{
 		Profile: "foreign-declarations-v1",
-		Obligations: []analysis.Obligation{
+		Obligations: []semantic.Obligation{
 			{Key: extensionKey("validity"), Domain: extensionKey("entry")},
 			{Key: extensionKey("bindings"), Domain: extensionKey("entry")},
 			{Key: extensionKey("applications"), Domain: extensionKey("entry")},
 			{Key: extensionKey("dependencies"), Domain: extensionKey("entry")},
 		},
-		ModelRequirements: []analysis.Requirement{
-			{Obligation: extensionKey("validity"), Verdict: analysis.Holds},
-			{Obligation: extensionKey("bindings"), Verdict: analysis.Undetermined},
-			{Obligation: extensionKey("applications"), Verdict: analysis.Undetermined},
-			{Obligation: extensionKey("dependencies"), Verdict: analysis.Undetermined},
+		ModelRequirements: []semantic.Requirement{
+			{Obligation: extensionKey("validity"), Verdict: semantic.Holds},
+			{Obligation: extensionKey("bindings"), Verdict: semantic.Undetermined},
+			{Obligation: extensionKey("applications"), Verdict: semantic.Undetermined},
+			{Obligation: extensionKey("dependencies"), Verdict: semantic.Undetermined},
 		},
-	}
+	}}
 }
 
 func extensionTree() ast.AST[extensionLanguage] {
@@ -166,29 +167,29 @@ func (extensionProvider) Check(view ast.View[extensionLanguage]) error {
 	return nil
 }
 
-func (p extensionProvider) Analyze(ctx context.Context, request analysis.Request[extensionLanguage]) (analysis.Result, error) {
+func (p extensionProvider) Analyze(ctx context.Context, request analysis.Request[extensionLanguage]) (semantic.Result, error) {
 	if err := ctx.Err(); err != nil {
-		return analysis.Result{}, err
+		return semantic.Result{}, err
 	}
 	inputs := request.Inputs()
 	if len(inputs) != 1 {
-		return analysis.Result{}, errors.New("fixture expects one input")
+		return semantic.Result{}, errors.New("fixture expects one input")
 	}
 	facts := extensionFacts(inputs[0])
-	publication := analysis.Publication{Facts: &facts}
+	publication := semantic.Publication{Facts: &facts}
 	known := make(map[semantics.Key]bool)
-	for _, requirement := range extensionContract().ModelRequirements {
+	for _, requirement := range extensionContract().Semantic.ModelRequirements {
 		known[requirement.Obligation] = true
-		report := analysis.Report{Obligation: requirement.Obligation, Status: analysis.Complete, Verdict: requirement.Verdict}
+		report := semantic.Report{Obligation: requirement.Obligation, Status: semantic.Complete, Verdict: requirement.Verdict}
 		if p.incomplete {
-			report.Status, report.Verdict = analysis.Incomplete, analysis.Undetermined
+			report.Status, report.Verdict = semantic.Incomplete, semantic.Undetermined
 			publication.Facts = nil
 		}
 		publication.Reports = append(publication.Reports, report)
 	}
 	for _, key := range request.Requested() {
 		if !known[key] {
-			publication.Reports = append(publication.Reports, analysis.Report{Obligation: key, Status: analysis.Unsupported})
+			publication.Reports = append(publication.Reports, semantic.Report{Obligation: key, Status: semantic.Unsupported})
 		}
 	}
 	if p.badSite != nil {
@@ -197,7 +198,7 @@ func (p extensionProvider) Analyze(ctx context.Context, request analysis.Request
 	return request.Publish(publication)
 }
 
-func extensionKernel(t *testing.T, provider extensionProvider, tree ast.AST[extensionLanguage]) (*engine.Engine, analysis.Input) {
+func extensionKernel(t *testing.T, provider extensionProvider, tree ast.AST[extensionLanguage]) (*engine.Engine, analysisCase) {
 	t.Helper()
 	syntax, err := representation.NewLanguage[extensionLanguage](provider, "fixture-syntax-v1")
 	if err != nil {
@@ -218,7 +219,7 @@ func extensionKernel(t *testing.T, provider extensionProvider, tree ast.AST[exte
 	if err := kernel.RegisterAnalyzer(analyzer); err != nil {
 		t.Fatal(err)
 	}
-	return kernel, analysis.Input{Entry: ast.NodeRef{Tree: tree.ID, Node: tree.Root}, Trees: []representation.AST{envelope}}
+	return kernel, analysisCase{Entry: ast.NodeRef{Tree: tree.ID, Node: tree.Root}, Trees: []representation.AST{envelope}}
 }
 
 type semanticQueryResult struct {
@@ -229,10 +230,10 @@ type semanticQueryResult struct {
 
 // This consumer depends only on shared result/model contracts. It never opens a
 // language AST, decodes an opaque payload, or invokes a concrete provider.
-func consumeSemanticFacts(result analysis.Result, reference, expression semantics.Occurrence, owner semantics.EntityID, relation semantics.Key, required []analysis.Requirement) (semanticQueryResult, error) {
+func consumeSemanticFacts(result semantic.Result, reference, expression semantics.Occurrence, owner semantics.EntityID, relation semantics.Key, required []semantic.Requirement) (semanticQueryResult, error) {
 	for _, requirement := range required {
 		report, found := result.Report(requirement.Obligation)
-		if !found || report.Status != analysis.Complete || report.Verdict != requirement.Verdict {
+		if !found || report.Status != semantic.Complete || report.Verdict != requirement.Verdict {
 			return semanticQueryResult{}, fmt.Errorf("required facts were not established: %v", requirement.Obligation)
 		}
 	}
@@ -258,13 +259,13 @@ func consumeSemanticFacts(result analysis.Result, reference, expression semantic
 func TestSemanticForeignProviderAndGenericConsumer(t *testing.T) {
 	tree := extensionTree()
 	kernel, input := extensionKernel(t, extensionProvider{}, tree)
-	result, err := kernel.Analyze(context.Background(), input)
+	result, err := analyzeCase(kernel, context.Background(), input)
 	if err != nil || !result.Valid() || !result.HasModel() {
 		t.Fatalf("foreign analysis: %v", err)
 	}
 	queried, err := consumeSemanticFacts(result,
 		extensionOccurrence(tree.ID, 11, "use", 0), extensionOccurrence(tree.ID, 11, "expression", 0),
-		5, extensionKey("direct"), extensionContract().ModelRequirements)
+		5, extensionKey("direct"), extensionContract().Semantic.ModelRequirements)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -317,13 +318,13 @@ func TestSemanticForeignProviderAndGenericConsumer(t *testing.T) {
 
 func TestSemanticConsumerRequiresCoverage(t *testing.T) {
 	kernel, input := extensionKernel(t, extensionProvider{incomplete: true}, extensionTree())
-	result, err := kernel.Analyze(context.Background(), input)
+	result, err := analyzeCase(kernel, context.Background(), input)
 	if err != nil || !result.Valid() || result.HasModel() {
 		t.Fatalf("incomplete result boundary: %v", err)
 	}
 	_, err = consumeSemanticFacts(result,
 		extensionOccurrence("foreign-input", 11, "use", 0), extensionOccurrence("foreign-input", 11, "expression", 0),
-		5, extensionKey("direct"), extensionContract().ModelRequirements)
+		5, extensionKey("direct"), extensionContract().Semantic.ModelRequirements)
 	if err == nil {
 		t.Fatal("nil Go error was mistaken for established semantic coverage")
 	}
@@ -333,8 +334,8 @@ func TestSemanticForeignProviderCannotPublishHistoricalOrZeroSites(t *testing.T)
 	for _, site := range []ast.NodeRef{{Tree: "historical-input", Node: 77}, {Tree: "foreign-input", Node: 0}} {
 		t.Run(fmt.Sprintf("%s-%d", site.Tree, site.Node), func(t *testing.T) {
 			kernel, input := extensionKernel(t, extensionProvider{badSite: &site}, extensionTree())
-			result, err := kernel.Analyze(context.Background(), input)
-			if !errors.Is(err, analysis.ErrInvalidResult) || result.Valid() || result.HasModel() {
+			result, err := analyzeCase(kernel, context.Background(), input)
+			if !errors.Is(err, semantic.ErrInvalidResult) || result.Valid() || result.HasModel() {
 				t.Fatalf("non-current site became semantic provenance: %#v, %v", site, err)
 			}
 		})

@@ -19,24 +19,31 @@ language's kinds, profile or meaning. The additional provider is not implemented
   Resolve delegates semantics to Horos, then projects its checked model. Model
   checks the borrowed AST and returns a Horos program for inspection or explicit
   `Specialize(declarationID, groundArguments)`. No lookup performs network/file IO.
+  The registered resolver uses [ResolveReferences](../resolve/horos/go/resolver.go)
+  to export shared semantic facts. It verifies supplied semantic annotations
+  against authoritative resolution and never repairs them implicitly.
 - [check/horos/go](../check/horos/go/check.go) admits AST syntax: kinds, roles,
   cardinalities and lexical spellings. Unresolved or semantically invalid names
-  can reach analysis. Check does not resolve bindings or validate module pins.
-- [analyze/horos/go](../analyze/horos/go/analyze.go) adapts Horos's authoritative
-  resolution to [shared semantic facts and reports](analysis.md). It verifies
-  supplied semantic annotations and never repairs them implicitly.
+  can reach resolution. Check does not resolve bindings or validate module pins.
+- [analyze/horos/go](../analyze/horos/go/analyze.go) consumes the explicit resolver
+  result, reusing its model and adapting its evidence to
+  [shared semantic facts and reports](analysis.md).
 - [provider/horos/go](../provider/horos/go/provider.go) implements
-  `text.CheckerProvider[horos.Language]` and `analysis.Provider[horos.Language]`,
+  `text.CheckerProvider[horos.Language]`, `resolution.ResolverProvider[horos.Language]`
+  and `analysis.Provider[horos.Language]`,
   with ID `horos` and name `Horos`.
   Applications explicitly register it through `representation.NewLanguage` and
   `Engine.RegisterLanguage`, using profile `horos-declarations-1/ast-2`.
-  Semantic analysis requires an additional `analysis.NewAnalyzer` and
-  `Engine.RegisterAnalyzer`; implementing the interface installs nothing.
+  Resolution requires `resolution.NewResolver` and `Engine.RegisterResolver`.
+  Analysis additionally requires `analysis.NewAnalyzer` and
+  `Engine.RegisterAnalyzer`, and consumes the explicit resolution result.
+  See [shared composition](resolution.md); implementing interfaces installs nothing.
 
-Only the Horos resolver, analyzer and their private bridge depend on Horos/Ontos.
+Only the Horos resolver and its private bridge directly import Horos/Ontos.
+The analyzer consumes the resolver contract and shared evidence.
 The model dependency is pinned to a public immutable Go module revision in go.mod;
 there is no local replacement or vendored private checkout. Generic infrastructure
-and the four native text stages are unchanged and model-independent. The engine
+and the four native text stages remain independent of the external model. The engine
 can hold this AST without registering any transformer. Parse and Render report
 missing text capabilities for this provider.
 
@@ -50,10 +57,10 @@ must use Model or the analysis capability.
 One Program tree supplies the entry module and dependency pool. Projection of a
 checked Program emits its complete resolved import closure, ordered by module
 digest; imports/declarations retain Horos's canonical map order. Parameters,
-arguments and descriptor operands retain their specified order. Analysis selects
+arguments and descriptor operands retain their specified order. Resolution selects
 the Program root as its explicit entry; its required root reference selects the
 entry module. Other entry kinds or multiple trees are unsupported request forms
-in this first analysis profile.
+in this first resolution profile.
 
 | Kind | Attributes | Children | References |
 | --- | --- | --- | --- |
@@ -82,9 +89,9 @@ changes with them; attribute/reference storage order is immaterial. Containment
 order remains canonical in checked projections. Origins are retained as tooling
 metadata but do not affect module pins.
 
-Explicit semantic analysis reconstructs canonical module values, asks Horos to
+Explicit reference resolution reconstructs canonical module values, asks Horos to
 resolve them, and compares the authoritative syntax and supplied binding edges
-with the analyzed AST closure.
+with the supplied AST closure. Analysis consumes this established evidence.
 This checks one declared AST profile; it never fingerprints a shape to choose a
 behavioral library. Invalid UTF-8 attributes are rejected before text embedding.
 It does not reinterpret literal data as declarations or silently normalize an AST.
@@ -115,17 +122,17 @@ source location is invented or copied from historical origins.
 Projection checks generic AST node, depth, entry and text budgets while creating
 nodes, including hexadecimal growth before copying atoms. Generic structure is
 checked before the AST is decoded. Horos's default declaration budgets apply
-when recovering a model; analysis can accept an explicitly supplied bounded
-resolver configuration. Both boundaries return empty output on failure; a model
+when recovering a model through the canonical-value helper; registered resolution
+can accept an explicitly supplied bounded configuration. Both boundaries return empty output on failure; a model
 accepted under custom larger limits is re-admitted under the fixed Horos defaults
 before projection, so successful projection respects `resolve.Model`'s fixed
-canonical budgets. The syntax checker has separate AST budgets; analysis can
+canonical budgets. The syntax checker has separate AST budgets; resolution can
 select explicit resolver limits. Canonical and AST depth are distinct, and tests
 qualify their boundary.
 
 ## Analysis profile and generic queries
 
-`analyze.Contract()` advertises `horos-declarations-1/analysis-1`. Its domain is
+`analyze.Contract()` advertises `horos-declarations-1/analysis-2`. Its domain is
 the selected entry and transitive pinned module closure, not every unused value
 in the supplied pool. Unused pool modules contribute no established semantic
 facts; their binding annotations are outside this analyzed domain. Every supplied
@@ -139,16 +146,20 @@ module still has its document-pin assertion checked during decoding.
 | applications | Complete / Undetermined; references, effective applications and provider expressions exported |
 | application-dependencies | Complete / Undetermined; every declaration application, including nested arguments, exported |
 
-All five reports are model publication requirements. A semantic rejection or
+The resolver adds a sixth obligation, reference-resolution, requiring Complete /
+Holds for its model. Its profile is horos-declarations-1/resolution-1. Analysis
+requires that resolver evidence and preserves these five reports. All five
+reports are analysis model publication requirements. A semantic rejection or
 missing dependency publishes diagnostics without a partial graph. Missing context
 and resolver exhaustion are Incomplete / Undetermined. A contradictory context
 can reject the submitted program/context obligation without asserting that the
 entry source itself is malformed; diagnostics identify the subject. Export
-exhaustion after successful resolution preserves Complete / Holds validity but
+exhaustion after successful resolution preserves Complete / Holds reference
+resolution and validity but
 leaves graph enumeration incomplete and publishes no model. Unknown requested
 obligations receive Unsupported / Undetermined.
 
-`LimitsSetting()` names provider-owned JSON configuration containing
+`resolve.LimitsSetting()` names provider-owned JSON configuration containing
 `[MaxDepth, MaxNodes, MaxBytes, MaxModules]`. All four limits are required; absence
 uses Horos defaults. This profile requires positive limits with depth at most 512.
 Invalid configuration is an API error before source decoding. The kernel copies and

@@ -17,7 +17,12 @@ slice implements parsers, AST-to-CST formatters, syntax checks and a generic
 CST-to-text printer. Read the [concrete syntax design](docs/parsing-formatting.md).
 
 The [agnostic semantic model](docs/semantics.md), [analysis SPI](docs/analysis.md)
-and Horos analyzer are implemented. Keep semantic rules provider-owned.
+and [resolver SPI](docs/resolution.md) are implemented, with Horos providers.
+Keep semantic rules provider-owned. Shared snapshots, requests/results and reports
+live in contracts/semantic/go; no aliases remain at the old analysis paths.
+Resolution and analysis are independently registered. Analysis consumes an explicit
+compatible receipt; never invoke a hidden resolver or bypass snapshot identity.
+Keep the [provider matrix](docs/providers.md) synchronized with capability tests.
 Syntax admission must accept unresolved names; analysis publishes request-bound,
 immutable facts with explicit completion, verdict and model availability.
 Only Horos implements production semantics; native analysis remains deferred.

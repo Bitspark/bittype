@@ -9,9 +9,10 @@ printer are implemented in Go. The syntax engine registers languages and
 ASTTransformer implementations, plans routes and composes existing text stages.
 Specialized providers extend LanguageProvider. Horos's Go declaration model now
 supplies module resolution, generic binding and ground specialization. Bittype
-implements its [AST-only frontend](docs/horos.md) and semantic analyzer, preserving
-those bindings in the [shared semantic graph](docs/semantics.md). The engine's
-optional analysis capability reports validity, coverage and model availability.
+implements its [AST-only frontend](docs/horos.md), resolver and semantic analyzer.
+The engine captures syntax once and invokes each capability explicitly. Horos
+analysis reuses the resolver's [shared semantic graph](docs/semantics.md), with
+separate reports for validity, coverage and model availability.
 Readable Horos syntax, native mappings and package releases remain deferred.
 The engine starts empty and has no built-in languages or mappings.
 
@@ -50,6 +51,9 @@ the agnostic kernel acquires no Wire semantics. That provider is not implemented
   documentation only.
 - [Horos AST](docs/horos.md): model projection, binding references, checking and registration.
 - [Semantic facts](docs/semantics.md): immutable entities, terms, occurrences and dependencies.
+- [Resolution capability](docs/resolution.md): shared snapshots, explicit prerequisites
+  and immutable model reuse.
+- [Provider matrix](docs/providers.md): implemented capabilities by language.
 - [Analysis capability](docs/analysis.md): request capture, explicit registration,
   completion/verdict reports and publication requirements.
 - [Generic AST](docs/ast.md): carriers, typed views, addressing and provenance.
