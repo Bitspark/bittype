@@ -505,7 +505,7 @@ func TestMissingPinnedDependencyIsIncomplete(t *testing.T) {
 }
 
 func TestDuplicateDeclarationsIdentifySourceOrSuppliedContext(t *testing.T) {
-	for _, test := range []struct { declaration, module, code, subject string }{
+	for _, test := range []struct{ declaration, module, code, subject string }{
 		{"Outer", "example.people", "invalid-source", "source"},
 		{"Page", "example.pagination", "invalid-context", "context"},
 	} {
@@ -515,7 +515,9 @@ func TestDuplicateDeclarationsIdentifySourceOrSuppliedContext(t *testing.T) {
 			result := run(t, tree, nil)
 			requireFailure(t, result, analysis.Complete, analysis.Rejected, test.code, test.subject)
 			site := result.Diagnostics()[0].At
-			if site == nil || site.Tree != tree.ID || site.Node != find(tree, s.KindModule, test.module) { t.Fatal("duplicate declaration failure lost its defining module site") }
+			if site == nil || site.Tree != tree.ID || site.Node != find(tree, s.KindModule, test.module) {
+				t.Fatal("duplicate declaration failure lost its defining module site")
+			}
 		})
 	}
 }
@@ -638,7 +640,9 @@ func TestInvalidConfigurationPrecedesMalformedSourceDecoding(t *testing.T) {
 	analyzer, input := analyzer(t, tree)
 	input.Configuration = []analysis.Setting{{Key: analyze.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}}
 	result, err := analyzer.Analyze(context.Background(), input)
-	if !errors.Is(err, analysis.ErrInvalidRequest) || result.Valid() { t.Fatalf("invalid configuration was mistaken for source rejection: %v", err) }
+	if !errors.Is(err, analysis.ErrInvalidRequest) || result.Valid() {
+		t.Fatalf("invalid configuration was mistaken for source rejection: %v", err)
+	}
 }
 
 func TestUnknownObligationIsUnsupportedAndDoesNotInventFacts(t *testing.T) {
