@@ -29,6 +29,11 @@ and the four native text stages are unchanged and model-independent. The engine
 can hold this AST without registering any transformer. Parse and Render report
 missing text capabilities for this provider.
 
+Semantic analysis currently reaches Horos through these language-specific APIs
+and the Check implementation. The [agnostic semantic model proposal](semantics.md)
+describes a future shared result and analysis-provider boundary. It does not
+change this implemented frontend or claim that the shared SPI exists.
+
 ## Vocabulary and bindings
 
 One tree contains the complete resolved import closure. Modules are ordered by

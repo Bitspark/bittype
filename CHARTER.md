@@ -17,6 +17,9 @@ bittype owns:
 - Native AST vocabularies and an agnostic language identity/registration
   boundary, independent of particular language providers.
 - Native representation profiles and independent generation/round-trip fixtures.
+- The proposed [agnostic semantic model](docs/semantics.md) and analysis-provider
+  boundary; language providers retain their semantic rules. This is documented
+  design, not an implemented shared package or SPI.
 - Small data types needed to represent presence and nullness in generated code.
 
 Horos owns descriptors, conformance and module/generic/application

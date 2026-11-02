@@ -11,6 +11,10 @@ The 2 November ownership update selects Horos's declaration model as that input.
 Its AST is an ordinary language-specific projection, without new core
 carrier kinds or a dependency from Horos to bittype.
 
+The [semantic model proposal](semantics.md) describes a separate graph of
+established bindings, meanings and judgments tied to AST snapshots. It is not
+implemented and does not change this carrier or make AST references authoritative.
+
 ## Language parameter
 
 The shared package is

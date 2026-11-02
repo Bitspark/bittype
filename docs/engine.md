@@ -237,7 +237,9 @@ independent of transformer contracts and the engine. Shared conformance tests
 and discovered stage/dependency checks enforce this boundary. The moved APIs
 have no aliases at the former package paths.
 
-The [canonical model](model.md), its frontend and actual language transformers
-remain the next semantic increment. Public builders, a generic Stage composition
-helper and an application CLI are also deferred; none is needed to register and
-execute a correctly implemented ASTTransformer through this frame.
+The [Horos AST frontend](horos.md) is implemented; actual language transformers
+remain deferred. The [agnostic semantic model](semantics.md) and a separate
+analysis-provider SPI are documented proposals. Current Check calls do not expose
+that shared result. Public builders, a generic Stage composition helper and an
+application CLI also remain deferred; none is needed to register and execute a
+correctly implemented ASTTransformer through this frame.

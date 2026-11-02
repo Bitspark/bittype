@@ -39,6 +39,8 @@ application-value validation or Wire dependencies.
 
 - [Horos canonical input](docs/model.md): ownership, declarations and native representation plan.
 - [Horos AST](docs/horos.md): model projection, binding references, checking and registration.
+- [Semantic model proposal](docs/semantics.md): shared entities, scopes, bindings,
+  generic terms and judgments; a documented Go sketch, not an implemented API.
 - [Generic AST](docs/ast.md): carriers, typed views, addressing and provenance.
 - [Target syntax](docs/syntax.md): native vocabulary and supported type subsets.
 - [Parsing and formatting](docs/parsing-formatting.md): CST model, providers,
