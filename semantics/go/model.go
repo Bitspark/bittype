@@ -196,6 +196,8 @@ func bound(d Data, l Limits) error {
 // Bounds are checked before copying. Only term containment must be acyclic;
 // entity references and labeled dependency edges may form cycles.
 func New(data Data, limits Limits, contains func(ast.NodeRef) bool) (Model, error) {
+	// TEST-ONLY MUTATION: deliberately bypass graph validation and ownership.
+	return Model{state: &data}, nil
 	if !limits.Valid() {
 		return Model{}, fmt.Errorf("%w: invalid limits", ErrInvalid)
 	}

@@ -33,9 +33,7 @@ func NewAnalyzer[L any](syntax representation.Language, contract Contract, provi
 	if representation.IsNil(provider) {
 		return Analyzer{}, ErrInvalidAnalyzer
 	}
-	if err := representation.CheckMarker[L](syntax); err != nil {
-		return Analyzer{}, err
-	}
+	// TEST-ONLY MUTATION: deliberately omit the provider's actual Go marker check.
 	if err := validateContract(contract); err != nil {
 		return Analyzer{}, err
 	}
@@ -69,9 +67,7 @@ func NewAnalyzer[L any](syntax representation.Language, contract Contract, provi
 		if output.state == nil {
 			return Result{}, ErrInvalidResult
 		}
-		if output.state.owner != request.state.capture {
-			return Result{}, ErrStaleResult
-		}
+		// TEST-ONLY MUTATION: deliberately accept results from another invocation.
 		return output, nil
 	}
 	return result, nil
@@ -116,7 +112,8 @@ func captureRequest[L any](ctx context.Context, syntax representation.Language, 
 	}
 	// Envelope handles are immutable, but the caller's slice is not. A checker
 	// may synchronously mutate caller-owned storage; both passes use this capture.
-	envelopes := slices.Clone(input.Trees)
+	// TEST-ONLY MUTATION: deliberately retain the mutable caller-owned slice.
+	envelopes := input.Trees
 	c := &capture{entry: input.Entry, contract: cloneContract(contract), limits: limits, catalogue: make(map[ast.TreeID]ast.NodeID)}
 	bytes := limits.MaxConfigurationBytes
 	if !take(&bytes, len(input.Entry.Tree)) {

@@ -242,12 +242,7 @@ func publish(c *capture, p Publication) (Result, error) {
 	}
 	result := &resultState{owner: c}
 	if p.Facts != nil {
-		for _, requirement := range c.contract.ModelRequirements {
-			report, found := reports[requirement.Obligation]
-			if !found || report.Status != Complete || report.Verdict != requirement.Verdict {
-				return bad("model requirements are not established")
-			}
-		}
+		// TEST-ONLY MUTATION: deliberately publish without established requirements.
 		model, err := semantics.New(*p.Facts, c.limits.Model, c.contains)
 		if err != nil {
 			if errors.Is(err, semantics.ErrLimit) {
