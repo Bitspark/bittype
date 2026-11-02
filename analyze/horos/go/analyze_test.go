@@ -13,8 +13,8 @@ import (
 
 	analyze "github.com/Bitspark/bittype/analyze/horos/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
- "github.com/Bitspark/bittype/contracts/resolution/go"
- "github.com/Bitspark/bittype/contracts/semantic/go"
+	"github.com/Bitspark/bittype/contracts/resolution/go"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/horos/go"
 	"github.com/Bitspark/bittype/semantics/go"
@@ -172,38 +172,51 @@ func clone(tree s.AST) s.AST {
 }
 
 type horosCase struct {
- Entry ast.NodeRef
- Trees []representation.AST
- Requested []semantics.Key
- Configuration []semantic.Setting
- Limits semantic.Limits
+	Entry         ast.NodeRef
+	Trees         []representation.AST
+	Requested     []semantics.Key
+	Configuration []semantic.Setting
+	Limits        semantic.Limits
 }
-func analyzer(t *testing.T, tree s.AST) (representation.Language, horosCase) {
- t.Helper()
- language, err := representation.NewLanguage[s.Language](provider.Provider{}, s.Profile)
- if err != nil { t.Fatal(err) }
- envelope, err := representation.Pack(language, tree)
- if err != nil { t.Fatalf("syntax must reach analysis: %v", err) }
- return language, horosCase{Entry: ast.NodeRef{Tree: tree.ID, Node: tree.Root}, Trees: []representation.AST{envelope}}
+
+func horosInput(t *testing.T, tree s.AST) (representation.Language, horosCase) {
+	t.Helper()
+	language, err := representation.NewLanguage[s.Language](provider.Provider{}, s.Profile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	envelope, err := representation.Pack(language, tree)
+	if err != nil {
+		t.Fatalf("syntax must reach analysis: %v", err)
+	}
+	return language, horosCase{Entry: ast.NodeRef{Tree: tree.ID, Node: tree.Root}, Trees: []representation.AST{envelope}}
 }
-func runHorosCase(language representation.Language, ctx context.Context, input horosCase) (semantic.Result,error) {
- source,err := semantic.Capture(ctx,language,semantic.Input{Entry:input.Entry,Trees:input.Trees,Limits:input.Limits})
- if err != nil { return semantic.Result{},err }
- resolver,err := resolution.NewResolver[s.Language](language,resolve.Contract(),provider.Provider{})
- if err != nil { return semantic.Result{},err }
- resolved,err := resolver.Resolve(ctx,source,semantic.Options{Requested:input.Requested,Configuration:input.Configuration,Limits:input.Limits})
- if err != nil { return semantic.Result{},err }
- analyzer,err := analysis.NewAnalyzer[s.Language](language,analyze.ContractWithResolutionConfiguration(input.Configuration),provider.Provider{})
- if err != nil { return semantic.Result{},err }
- return analyzer.Analyze(ctx,analysis.Input{Snapshot:source,Resolution:&resolved,Options:semantic.Options{Requested:input.Requested,Limits:input.Limits}})
+func runHorosCase(language representation.Language, ctx context.Context, input horosCase) (semantic.Result, error) {
+	source, err := semantic.Capture(ctx, language, semantic.Input{Entry: input.Entry, Trees: input.Trees, Limits: input.Limits})
+	if err != nil {
+		return semantic.Result{}, err
+	}
+	resolver, err := resolution.NewResolver[s.Language](language, resolve.Contract(), provider.Provider{})
+	if err != nil {
+		return semantic.Result{}, err
+	}
+	resolved, err := resolver.Resolve(ctx, source, semantic.Options{Requested: input.Requested, Configuration: input.Configuration, Limits: input.Limits})
+	if err != nil {
+		return semantic.Result{}, err
+	}
+	analyzer, err := analysis.NewAnalyzer[s.Language](language, analyze.ContractWithResolutionConfiguration(input.Configuration), provider.Provider{})
+	if err != nil {
+		return semantic.Result{}, err
+	}
+	return analyzer.Analyze(ctx, analysis.Input{Snapshot: source, Resolution: &resolved, Options: semantic.Options{Requested: input.Requested, Limits: input.Limits}})
 }
 func run(t *testing.T, tree s.AST, modify func(*horosCase)) semantic.Result {
 	t.Helper()
-	analyzer, input := analyzer(t, tree)
+	syntax, input := horosInput(t, tree)
 	if modify != nil {
 		modify(&input)
 	}
-	result, err := runHorosCase(analyzer, context.Background(), input)
+	result, err := runHorosCase(syntax, context.Background(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,6 +225,27 @@ func run(t *testing.T, tree s.AST, modify func(*horosCase)) semantic.Result {
 	}
 	return result
 }
+func runResolution(t *testing.T, tree s.AST, modify func(*horosCase)) semantic.Result {
+	t.Helper()
+	syntax, input := horosInput(t, tree)
+	if modify != nil {
+		modify(&input)
+	}
+	snapshot, err := semantic.Capture(context.Background(), syntax, semantic.Input{Entry: input.Entry, Trees: input.Trees, Limits: input.Limits})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolver, err := resolution.NewResolver[s.Language](syntax, resolve.Contract(), provider.Provider{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := resolver.Resolve(context.Background(), snapshot, semantic.Options{Configuration: input.Configuration, Limits: input.Limits})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return result
+}
+
 func requireReport(t *testing.T, result semantic.Result, key semantics.Key, status semantic.Completion, verdict semantic.Verdict) {
 	t.Helper()
 	report, found := result.Report(key)
@@ -470,6 +504,12 @@ func TestUnresolvedSourceAndContextHaveDistinctReports(t *testing.T) {
 			setAttribute(&tree.Nodes[find(tree, s.KindModule, "example.people")-1], s.AttributePin, pin(t, root).String())
 			result := run(t, tree, nil)
 			requireFailure(t, result, semantic.Complete, semantic.Rejected, test.code, test.subject)
+			resolved := runResolution(t, tree, nil)
+			status, verdict := semantic.Incomplete, semantic.Undetermined
+			if test.code == "unknown-declaration" || test.code == "unknown-import" {
+				status, verdict = semantic.Complete, semantic.Rejected
+			}
+			requireReport(t, resolved, resolve.ReferenceResolution(), status, verdict)
 			if result.Diagnostics()[0].At == nil {
 				t.Fatal("located failure lost its current syntax site")
 			}
@@ -511,6 +551,7 @@ func TestMissingPinnedDependencyIsIncomplete(t *testing.T) {
 	tree.Nodes[tree.Root-1].Children = []ast.Child{{Role: s.RoleModule, Node: root}}
 	result := run(t, compact(tree), nil)
 	requireFailure(t, result, semantic.Incomplete, semantic.Undetermined, "missing-dependency", "context")
+	requireReport(t, runResolution(t, compact(tree), nil), resolve.ReferenceResolution(), semantic.Incomplete, semantic.Undetermined)
 	if result.Diagnostics()[0].At == nil {
 		t.Fatal("missing dependency diagnostic lost its import site")
 	}
@@ -526,6 +567,12 @@ func TestDuplicateDeclarationsIdentifySourceOrSuppliedContext(t *testing.T) {
 			setAttribute(&tree.Nodes[find(tree, s.KindDeclaration, test.declaration)-1], s.AttributeName, "Person")
 			result := run(t, tree, nil)
 			requireFailure(t, result, semantic.Complete, semantic.Rejected, test.code, test.subject)
+			resolved := runResolution(t, tree, nil)
+			status, verdict := semantic.Incomplete, semantic.Undetermined
+			if test.code == "unknown-declaration" || test.code == "unknown-import" {
+				status, verdict = semantic.Complete, semantic.Rejected
+			}
+			requireReport(t, resolved, resolve.ReferenceResolution(), status, verdict)
 			site := result.Diagnostics()[0].At
 			if site == nil || site.Tree != tree.ID || site.Node != find(tree, s.KindModule, test.module) {
 				t.Fatal("duplicate declaration failure lost its defining module site")
@@ -593,6 +640,21 @@ func TestPresentAnnotationsAndTypePositionsAreCheckedWithoutRepair(t *testing.T)
 	})
 }
 
+func TestHorosResolutionReportsSurviveExportExhaustion(t *testing.T) {
+	tree := fixture(t)
+	for _, modify := range []func(*horosCase){nil, func(input *horosCase) {
+		input.Limits = semantic.DefaultLimits()
+		input.Limits.Model.MaxRecords = 1
+	}} {
+		resolved := runResolution(t, tree, modify)
+		requireReport(t, resolved, resolve.ReferenceResolution(), semantic.Complete, semantic.Holds)
+		requireReport(t, resolved, resolve.Validity(), semantic.Complete, semantic.Holds)
+		if (modify == nil) != resolved.HasModel() {
+			t.Fatal("resolution verdict conflated with export availability")
+		}
+	}
+}
+
 func TestResolverAndExportBudgetsAreIndependent(t *testing.T) {
 	tree := fixture(t)
 	result := run(t, tree, func(input *horosCase) {
@@ -616,7 +678,7 @@ func TestInvalidConfigurationEntryAndCancellationReturnNoResult(t *testing.T) {
 	if result, err := analyze.Analyze(context.Background(), analysis.Request[s.Language]{}); !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
 		t.Fatalf("zero request: %v", err)
 	}
-	analyzer, input := analyzer(t, fixture(t))
+	syntax, input := horosInput(t, fixture(t))
 	for _, settings := range [][]semantic.Setting{
 		{{Key: resolve.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}},
 		{{Key: resolve.LimitsSetting(), Value: []byte("[513,100000,16777216,256]")}},
@@ -629,19 +691,19 @@ func TestInvalidConfigurationEntryAndCancellationReturnNoResult(t *testing.T) {
 	} {
 		request := input
 		request.Configuration = settings
-		result, err := runHorosCase(analyzer, context.Background(), request)
+		result, err := runHorosCase(syntax, context.Background(), request)
 		if !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
 			t.Fatalf("invalid configuration returned a publication: %v", err)
 		}
 	}
 	wrongEntry := input
 	wrongEntry.Entry.Node = find(fixture(t), s.KindDeclaration, "Outer")
-	if result, err := runHorosCase(analyzer, context.Background(), wrongEntry); !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
+	if result, err := runHorosCase(syntax, context.Background(), wrongEntry); !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
 		t.Fatalf("wrong entry: %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if result, err := runHorosCase(analyzer, ctx, input); !errors.Is(err, context.Canceled) || result.Valid() {
+	if result, err := runHorosCase(syntax, ctx, input); !errors.Is(err, context.Canceled) || result.Valid() {
 		t.Fatalf("cancelled analysis published: %v", err)
 	}
 }
@@ -649,9 +711,9 @@ func TestInvalidConfigurationEntryAndCancellationReturnNoResult(t *testing.T) {
 func TestInvalidConfigurationPrecedesMalformedSourceDecoding(t *testing.T) {
 	tree := fixture(t)
 	setAttribute(&tree.Nodes[find(tree, s.KindDeclaration, "Outer")-1], s.AttributeName, "Person")
-	analyzer, input := analyzer(t, tree)
+	syntax, input := horosInput(t, tree)
 	input.Configuration = []semantic.Setting{{Key: resolve.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}}
-	result, err := runHorosCase(analyzer, context.Background(), input)
+	result, err := runHorosCase(syntax, context.Background(), input)
 	if !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
 		t.Fatalf("invalid configuration was mistaken for source rejection: %v", err)
 	}

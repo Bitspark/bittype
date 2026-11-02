@@ -151,7 +151,8 @@ missing dependency publishes diagnostics without a partial graph. Missing contex
 and resolver exhaustion are Incomplete / Undetermined. A contradictory context
 can reject the submitted program/context obligation without asserting that the
 entry source itself is malformed; diagnostics identify the subject. Export
-exhaustion after successful resolution preserves Complete / Holds validity but
+exhaustion after successful resolution preserves Complete / Holds reference
+resolution and validity but
 leaves graph enumeration incomplete and publishes no model. Unknown requested
 obligations receive Unsupported / Undetermined.
 

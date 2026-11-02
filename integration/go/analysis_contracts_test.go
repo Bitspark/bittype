@@ -11,11 +11,13 @@ import (
 	"testing"
 )
 
-func TestAnalysisIndependentPublicContracts(t *testing.T) { testSemanticPublicContracts(t,"analysis") }
-func TestResolutionIndependentPublicContracts(t *testing.T) { testSemanticPublicContracts(t,"resolution") }
+func TestAnalysisIndependentPublicContracts(t *testing.T) { testSemanticPublicContracts(t, "analysis") }
+func TestResolutionIndependentPublicContracts(t *testing.T) {
+	testSemanticPublicContracts(t, "resolution")
+}
 
 func testSemanticPublicContracts(t *testing.T, stage string) {
- t.Helper()
+	t.Helper()
 	imports := &engineImporter{standard: importer.Default(), packages: make(map[string]*types.Package)}
 	cases := []struct{ name, want string }{
 		{"consumer", ""},

@@ -10,8 +10,8 @@ import (
 	"sync"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
-	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 )
 

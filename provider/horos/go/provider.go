@@ -9,9 +9,9 @@ import (
 	check "github.com/Bitspark/bittype/check/horos/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
-	resolve "github.com/Bitspark/bittype/resolve/horos/go"
- "github.com/Bitspark/bittype/contracts/semantic/go"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
+	resolve "github.com/Bitspark/bittype/resolve/horos/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 )

@@ -3,9 +3,9 @@ package consumer
 import (
 	"context"
 
-	"github.com/Bitspark/bittype/contracts/resolution/go"
- "github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/resolution/go"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -30,7 +30,7 @@ func Compose() (*engine.Engine, error) {
 		return nil, err
 	}
 	key := semantics.Key{Owner: "consumer", Name: "valid"}
-	contract := resolution.Contract{Bindings:key, Semantic: semantic.Contract{Profile: "facts-v1", Obligations: []semantic.Obligation{{Key: key, Domain: semantics.Key{Owner: "consumer", Name: "entry"}}}, ModelRequirements: []semantic.Requirement{{Obligation:key,Verdict:semantic.Holds}}}}
+	contract := resolution.Contract{Bindings: key, Semantic: semantic.Contract{Profile: "facts-v1", Obligations: []semantic.Obligation{{Key: key, Domain: semantics.Key{Owner: "consumer", Name: "entry"}}}, ModelRequirements: []semantic.Requirement{{Obligation: key, Verdict: semantic.Holds}}}}
 	resolver, err := resolution.NewResolver[Language](syntax, contract, Provider{})
 	if err != nil {
 		return nil, err

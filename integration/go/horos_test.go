@@ -9,7 +9,7 @@ import (
 	analyze "github.com/Bitspark/bittype/analyze/horos/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
- "github.com/Bitspark/bittype/contracts/semantic/go"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/engine/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
@@ -86,7 +86,9 @@ func qualifyHoros(t *testing.T) {
 		t.Fatal(err)
 	}
 	snapshot, err := registry.Capture(context.Background(), semantic.Input{Entry: ast.NodeRef{Tree: "consumer", Node: tree.Root}, Trees: []representation.AST{envelope}})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	input := analysis.Input{Snapshot: snapshot}
 	if _, err := registry.Analyze(context.Background(), input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatalf("syntax registration silently installs an analyzer: %v", err)
@@ -98,12 +100,20 @@ func qualifyHoros(t *testing.T) {
 	if err := registry.RegisterAnalyzer(analyzer); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := registry.Resolve(context.Background(), snapshot, semantic.Options{}); !errors.Is(err, engine.ErrMissingCapability) { t.Fatal(err) }
+	if _, err := registry.Resolve(context.Background(), snapshot, semantic.Options{}); !errors.Is(err, engine.ErrMissingCapability) {
+		t.Fatal(err)
+	}
 	resolver, err := resolution.NewResolver[h.Language](definition, resolve.Contract(), provider)
-	if err != nil { t.Fatal(err) }
-	if err := registry.RegisterResolver(resolver); err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := registry.RegisterResolver(resolver); err != nil {
+		t.Fatal(err)
+	}
 	resolved, err := registry.Resolve(context.Background(), snapshot, semantic.Options{})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	input.Resolution = &resolved
 	result, err := registry.Analyze(context.Background(), input)
 	if err != nil || !result.HasModel() {
@@ -122,7 +132,9 @@ func qualifyHoros(t *testing.T) {
 	qualifyHorosFacts(t, result)
 	resolvedModel, _ := resolved.Model()
 	analyzedModel, _ := result.Model()
-	if resolvedModel != analyzedModel { t.Fatal("analysis rebuilt the resolved model instead of reusing it") }
+	if resolvedModel != analyzedModel {
+		t.Fatal("analysis rebuilt the resolved model instead of reusing it")
+	}
 	output, err := registry.TransformTo(envelope, provider.ID())
 	if err != nil {
 		t.Fatal(err)

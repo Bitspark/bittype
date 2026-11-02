@@ -12,8 +12,8 @@ builders and application CLI remain deferred.
 
 Horos owns the data model and [declaration semantics](model.md).
 Bittype implements the [AST-only projection](horos.md); native transformations
-remain future work. The [semantic analysis capability](analysis.md) now adapts
-Horos's checked model to shared facts. It adds no text parser or ASTTransformer
+remain future work. [Resolution](resolution.md) exports Horos's checked model
+to shared facts; [analysis](analysis.md) consumes that evidence explicitly. It adds no text parser or ASTTransformer
 implementation.
 
 The [contract-type proposal](hydrated-types.md) separately adds Wire typing in

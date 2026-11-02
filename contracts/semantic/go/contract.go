@@ -17,10 +17,10 @@ import (
 
 var (
 	ErrInvalidOperation = errors.New("invalid semantic operation")
-	ErrInvalidRequest  = errors.New("invalid semantic request")
-	ErrInvalidResult   = errors.New("invalid semantic result")
-	ErrStaleResult     = errors.New("semantic result belongs to another invocation")
-	ErrLimit           = errors.New("semantic resource limit")
+	ErrInvalidRequest   = errors.New("invalid semantic request")
+	ErrInvalidResult    = errors.New("invalid semantic result")
+	ErrStaleResult      = errors.New("semantic result belongs to another invocation")
+	ErrLimit            = errors.New("semantic resource limit")
 )
 
 // Obligation names an assertion or enumeration and its provider-defined domain. The domain is
@@ -120,9 +120,9 @@ func (l Limits) Valid() bool {
 // before calling an operation. Every tree must match the syntax descriptor.
 // Callers must not mutate construction storage concurrently with capture.
 type Input struct {
-	Entry         ast.NodeRef
-	Trees         []representation.AST
-	Limits        Limits
+	Entry  ast.NodeRef
+	Trees  []representation.AST
+	Limits Limits
 }
 
 // Options are captured separately for each invocation on an immutable Snapshot.
@@ -147,12 +147,12 @@ func (i Input) LanguageID() language.ID {
 // copies it during the callback, before returning an immutable Result. Producers
 // must not mutate these records concurrently with publication.
 type Publication struct {
-	Facts       *semantics.Data
+	Facts *semantics.Data
 	// ReuseModelFrom must be an admitted dependency of this invocation. It is
 	// mutually exclusive with Facts; the model retains its original identity.
 	ReuseModelFrom *Result
-	Reports     []Report
-	Diagnostics []Diagnostic
+	Reports        []Report
+	Diagnostics    []Diagnostic
 }
 
 func (c Contract) Clone() Contract {

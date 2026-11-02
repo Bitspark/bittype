@@ -201,7 +201,9 @@ func New(data Data, limits Limits, contains func(ast.NodeRef) bool) (Model, erro
 
 // CheckLimits re-admits sealed storage without copying or changing its identity.
 func (m Model) CheckLimits(limits Limits) error {
-	if !m.Valid() { return ErrInvalid }
+	if !m.Valid() {
+		return ErrInvalid
+	}
 	_, err := newModel(*m.state, limits, func(ast.NodeRef) bool { return true }, false)
 	return err
 }
@@ -349,7 +351,9 @@ func newModel(data Data, limits Limits, contains func(ast.NodeRef) bool, copySto
 		}
 	}
 	owned := data
-	if copyStorage { owned = clone(data) }
+	if copyStorage {
+		owned = clone(data)
+	}
 	return Model{state: &owned}, nil
 }
 

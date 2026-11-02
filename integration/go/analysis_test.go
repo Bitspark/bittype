@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
- "github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -120,7 +120,9 @@ func TestAnalysisRegistrationBoundaries(t *testing.T) {
 	}
 	for _, alter := range []func(*analysis.Contract){
 		func(c *analysis.Contract) { c.Semantic.Profile = " " },
-		func(c *analysis.Contract) { c.Semantic.Obligations = append(c.Semantic.Obligations, c.Semantic.Obligations[0]) },
+		func(c *analysis.Contract) {
+			c.Semantic.Obligations = append(c.Semantic.Obligations, c.Semantic.Obligations[0])
+		},
 		func(c *analysis.Contract) { c.Semantic.ModelRequirements[0].Obligation = analysisKey("absent") },
 	} {
 		contract := analysisContract()

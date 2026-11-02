@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
- "github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	bridge "github.com/Bitspark/bittype/internal/horos"
 	"github.com/Bitspark/bittype/semantics/go"
@@ -86,7 +86,9 @@ func reports(request semantic.Request[s.Language], status semantic.Completion, v
 		r := semantic.Report{Obligation: obligation.Key, Status: semantic.Incomplete}
 		if complete {
 			r.Status = semantic.Complete
- if obligation.Key == ReferenceResolution() { r.Verdict = semantic.Holds }
+		}
+		if obligation.Key == ReferenceResolution() && status == semantic.Complete && verdict == semantic.Holds {
+			r.Status, r.Verdict = semantic.Complete, semantic.Holds
 		}
 		if obligation.Key == Validity() {
 			r.Status, r.Verdict = status, verdict
@@ -140,8 +142,14 @@ func failure(request semantic.Request[s.Language], decoded *bridge.Decoded, err 
 		return semantic.Result{}, err
 	}
 	coverage := reports(request, status, verdict, false)
- if detail != nil && (detail.Code == decl.UnknownImport || detail.Code == decl.UnknownDeclaration) { for i := range coverage { if coverage[i].Obligation == ReferenceResolution() { coverage[i].Status, coverage[i].Verdict = semantic.Complete, semantic.Rejected } } }
- return request.Publish(semantic.Publication{Reports: coverage, Diagnostics: []semantic.Diagnostic{diagnostic}})
+	if detail != nil && (detail.Code == decl.UnknownImport || detail.Code == decl.UnknownDeclaration) {
+		for i := range coverage {
+			if coverage[i].Obligation == ReferenceResolution() {
+				coverage[i].Status, coverage[i].Verdict = semantic.Complete, semantic.Rejected
+			}
+		}
+	}
+	return request.Publish(semantic.Publication{Reports: coverage, Diagnostics: []semantic.Diagnostic{diagnostic}})
 }
 
 // ResolveReferences requires one Program tree and its root as the explicit entry. The

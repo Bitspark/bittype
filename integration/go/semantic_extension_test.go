@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
- "github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -178,7 +178,7 @@ func (p extensionProvider) Analyze(ctx context.Context, request analysis.Request
 	facts := extensionFacts(inputs[0])
 	publication := semantic.Publication{Facts: &facts}
 	known := make(map[semantics.Key]bool)
-	for _, requirement := range extensionContract().ModelRequirements {
+	for _, requirement := range extensionContract().Semantic.ModelRequirements {
 		known[requirement.Obligation] = true
 		report := semantic.Report{Obligation: requirement.Obligation, Status: semantic.Complete, Verdict: requirement.Verdict}
 		if p.incomplete {
@@ -265,7 +265,7 @@ func TestSemanticForeignProviderAndGenericConsumer(t *testing.T) {
 	}
 	queried, err := consumeSemanticFacts(result,
 		extensionOccurrence(tree.ID, 11, "use", 0), extensionOccurrence(tree.ID, 11, "expression", 0),
-		5, extensionKey("direct"), extensionContract().ModelRequirements)
+		5, extensionKey("direct"), extensionContract().Semantic.ModelRequirements)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -324,7 +324,7 @@ func TestSemanticConsumerRequiresCoverage(t *testing.T) {
 	}
 	_, err = consumeSemanticFacts(result,
 		extensionOccurrence("foreign-input", 11, "use", 0), extensionOccurrence("foreign-input", 11, "expression", 0),
-		5, extensionKey("direct"), extensionContract().ModelRequirements)
+		5, extensionKey("direct"), extensionContract().Semantic.ModelRequirements)
 	if err == nil {
 		t.Fatal("nil Go error was mistaken for established semantic coverage")
 	}

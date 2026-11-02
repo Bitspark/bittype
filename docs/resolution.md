@@ -134,7 +134,8 @@ Unknown imports/declarations can reject reference resolution. Other semantic
 failures retain their own validity diagnostics and may leave reference resolution
 incomplete. They are not automatically evidence of an unbound name. Missing
 dependencies and resource exhaustion remain incomplete outcomes, not rejected
-types. Export exhaustion preserves established program validity without a model.
+types. Export exhaustion preserves established reference resolution and program validity
+without a model.
 
 The analyzer consumes that explicit result, preserves the five original analysis
 reports and reuses the same model without repeating authoritative resolution.

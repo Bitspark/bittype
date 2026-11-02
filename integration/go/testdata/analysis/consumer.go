@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
- "github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/trees/ast/go"

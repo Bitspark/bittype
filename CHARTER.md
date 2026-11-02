@@ -19,7 +19,9 @@ bittype owns:
 - Native representation profiles and independent generation/round-trip fixtures.
 - The [agnostic semantic model](docs/semantics.md) and implemented
   [analysis-provider boundary](docs/analysis.md); language providers retain their
-  semantic rules. Horos supplies the first production analyzer.
+  semantic rules. The separate [resolver contract](docs/resolution.md) uses the
+  same semantic infrastructure. Horos supplies the first production resolver and
+  analyzer; analysis consumes an explicit receipt and can reuse its sealed model.
 - Small data types needed to represent presence and nullness in generated code.
 - The proposed [contract-language layer](docs/hydrated-types.md) above Horos:
   explicit ground data embeddings, Wire message types and mixed compositions.
@@ -108,8 +110,3 @@ The September bootstrap described a broader generated-consumer chain.
 The owner has narrowed the current work to Horos-owned definitions and types-only
 generation. Historical evidence does not add
 callables, adapters or migration gates to this milestone.
-
-The [resolution contract](docs/resolution.md) and [provider matrix](docs/providers.md)
-cover independent ResolverProvider registration, shared semantic snapshots and
-explicit analysis dependencies. Shared records live in contracts/semantic/go;
-old analysis-owned records have no compatibility aliases.

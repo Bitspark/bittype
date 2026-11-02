@@ -3,9 +3,9 @@ package wrongmarker
 import (
 	"context"
 
-	"github.com/Bitspark/bittype/contracts/resolution/go"
- "github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/resolution/go"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 )
 
 type A struct{}
