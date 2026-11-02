@@ -153,6 +153,7 @@ func (r reader) module(id ast.NodeID) (core.Value, error) {
 type ValidationError struct {
 	Site ast.NodeRef
 	Context bool
+	Annotation bool
 	Message string
 }
 
@@ -174,6 +175,10 @@ type Decoded struct {
 func (d *Decoded) site(id ast.NodeID) ast.NodeRef { return ast.NodeRef{Tree: d.tree.ID, Node: id} }
 func (d *Decoded) assertion(id ast.NodeID, context bool, message string) error {
 	return &ValidationError{Site: d.site(id), Context: context, Message: message}
+}
+
+func (d *Decoded) annotation(id ast.NodeID, context bool, message string) error {
+	return &ValidationError{Site: d.site(id), Context: context, Annotation: true, Message: message}
 }
 
 // Decode reconstructs values from syntax already admitted by the public stage.
@@ -285,15 +290,18 @@ func (d *Decoded) Locate(detail *decl.Error) *ast.NodeRef {
 
 func (d *Decoded) correspond(expected s.AST) error {
 	mapping := map[ast.NodeID]ast.NodeID{expected.Root: d.tree.Root}
+	contexts := map[ast.NodeID]bool{}
+	rootModule := d.tree.Nodes[d.tree.Root-1].References[0].Target.Node
 	wantReader := reader{tree: expected}
 	gotReader := reader{tree: d.tree}
-	var walk func(ast.NodeID, ast.NodeID) error
-	walk = func(wantID, gotID ast.NodeID) error {
+	var walk func(ast.NodeID, ast.NodeID, bool) error
+	walk = func(wantID, gotID ast.NodeID, context bool) error {
 		want, got := expected.Nodes[wantID-1], d.tree.Nodes[gotID-1]
-		bad := func() error { return d.assertion(gotID, false, "Horos syntax does not match checked declaration positions") }
+		bad := func() error { return d.annotation(gotID, context, "Horos syntax does not match checked declaration positions") }
 		if want.Kind != got.Kind || len(want.Attributes) != len(got.Attributes) || len(want.Children) != len(got.Children) { return bad() }
 		for _, attribute := range want.Attributes { if gotReader.attr(gotID, attribute.Name) != attribute.Text { return bad() } }
 		mapping[wantID] = gotID
+		contexts[wantID] = context
 		for i, child := range want.Children {
 			actual := got.Children[i]
 			if want.Kind == s.KindModule {
@@ -304,7 +312,7 @@ func (d *Decoded) correspond(expected s.AST) error {
 				}
 			}
 			if child.Role != actual.Role { return bad() }
-			if err := walk(child.Node, actual.Node); err != nil { return err }
+			if err := walk(child.Node, actual.Node, context); err != nil { return err }
 		}
 		return nil
 	}
@@ -314,7 +322,7 @@ func (d *Decoded) correspond(expected s.AST) error {
 		copy(pin[:], bytes)
 		actual := d.modules[pin]
 		if actual == 0 { return fmt.Errorf("%w: resolved module has no source", ErrInvalid) }
-		if err := walk(child.Node, actual); err != nil { return err }
+		if err := walk(child.Node, actual, actual != rootModule); err != nil { return err }
 	}
 	for wantID, gotID := range mapping {
 		want := expected.Nodes[wantID-1]
@@ -323,7 +331,7 @@ func (d *Decoded) correspond(expected s.AST) error {
 			for _, reference := range want.References {
 				if reference.Role == actual.Role && actual.Target.Tree == d.tree.ID && actual.Target.Node == mapping[reference.Target.Node] { found = true; break }
 			}
-			if !found { return d.assertion(gotID, false, "incorrect declaration, import or parameter annotation") }
+			if !found { return d.annotation(gotID, contexts[wantID], "incorrect declaration, import or parameter annotation") }
 		}
 	}
 	return nil

@@ -90,7 +90,10 @@ func failure(request analysis.Request[s.Language], decoded *bridge.Decoded, err 
 		if decoded != nil { diagnostic.At = decoded.Locate(detail) }
 	case errors.As(err, &assertion):
 		diagnostic.Code = key("invalid-annotation")
-		if assertion.Context { diagnostic.Code, diagnostic.Subject = key("invalid-context"), key("context") }
+		if assertion.Context {
+			diagnostic.Subject = key("context")
+			if !assertion.Annotation { diagnostic.Code = key("invalid-context") }
+		}
 		site := assertion.Site
 		diagnostic.At = &site
 	case errors.As(err, &syntax):

@@ -357,6 +357,28 @@ func TestPresentAnnotationsAndTypePositionsAreCheckedWithoutRepair(t *testing.T)
 		requireFailure(t, result, analysis.Complete, analysis.Rejected, "invalid-annotation", "source")
 		if !reflect.DeepEqual(tree, before) { t.Fatal("incorrect annotation was repaired") }
 	})
+	t.Run("incorrect dependency annotation", func(t *testing.T) {
+		tree := fixture(t)
+		page := find(tree, s.KindDeclaration, "Page")
+		var parameter ast.NodeID
+		for _, child := range tree.Nodes[page-1].Children {
+			if child.Role == s.RoleParameter { parameter = child.Node }
+		}
+		var use ast.NodeID
+		for i, node := range tree.Nodes {
+			if node.Kind != s.KindParameter { continue }
+			for j, reference := range node.References {
+				if reference.Role == s.RoleTarget && reference.Target.Node == parameter {
+					use = ast.NodeID(i + 1)
+					tree.Nodes[i].References[j].Target.Node = find(tree, s.KindDeclaration, "Outer")
+				}
+			}
+		}
+		if use == 0 { t.Fatal("fixture has no imported parameter use") }
+		result := run(t, tree, nil)
+		requireFailure(t, result, analysis.Complete, analysis.Rejected, "invalid-annotation", "context")
+		if result.Diagnostics()[0].At == nil || result.Diagnostics()[0].At.Node != use { t.Fatal("dependency annotation failure lost its own syntax site") }
+	})
 	t.Run("literal represented as a type", func(t *testing.T) {
 		root := module("example.literal", mapping(), entry("Literal", definition(h("exact", param(0)), "T")))
 		tree, err := resolve.Resolve(root, nil, "literal-position")
