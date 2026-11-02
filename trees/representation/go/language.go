@@ -19,7 +19,7 @@ type Language struct {
 	check         func(payload) error
 }
 
-func NewLanguage[L any](provider text.CheckerProvider[L], profile string) (Language, error) {
+func NewLanguage[L any](provider text.Checker[L], profile string) (Language, error) {
 	if IsNil(provider) {
 		return Language{}, ErrInvalidLanguage
 	}
@@ -81,4 +81,4 @@ func (l Language) Check(input AST) error {
 	return l.check(input.payload.clone())
 }
 
-var _ language.LanguageProvider = Language{}
+var _ language.Provider = Language{}

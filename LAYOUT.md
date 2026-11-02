@@ -14,7 +14,7 @@ trees/
   cst/go/                 generic concrete tree and stored AST view
   representation/go/      checked AST/CST snapshots and language/profile descriptors
 contracts/
-  language/go/            LanguageProvider identity
+  language/go/            language.Provider identity
   pipeline/go/            typed Stage contract
   text/go/                input, diagnostics and specialized provider contracts
   transform/go/           ASTTransformer contract and typed registration bridge

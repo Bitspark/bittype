@@ -12,7 +12,7 @@ type Language struct{}
 func (Language) ID() language.ID { return "horos" }
 func (Language) Name() string    { return "Horos" }
 
-var _ language.LanguageProvider = Language{}
+var _ language.Provider = Language{}
 
 type AST = ast.AST[Language]
 type Node = ast.Node[Language]

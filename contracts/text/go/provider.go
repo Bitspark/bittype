@@ -7,25 +7,25 @@ import (
 )
 
 // Every specialized provider extends the common identity contract.
-type ParserProvider[L any] interface {
-	language.LanguageProvider
+type Parser[L any] interface {
+	language.Provider
 	Parse(Input) (cst.CST[L], error)
 }
-type FormatterProvider[L any] interface {
-	language.LanguageProvider
+type Formatter[L any] interface {
+	language.Provider
 	Format(ast.View[L]) (cst.CST[L], error)
 }
-type CheckerProvider[L any] interface {
-	language.LanguageProvider
+type Checker[L any] interface {
+	language.Provider
 	Check(ast.View[L]) error
 }
-type PrinterProvider[L any] interface {
-	language.LanguageProvider
+type Printer[L any] interface {
+	language.Provider
 	Print(cst.CST[L]) (string, error)
 }
 type Provider[L any] interface {
-	ParserProvider[L]
-	FormatterProvider[L]
-	CheckerProvider[L]
-	PrinterProvider[L]
+	Parser[L]
+	Formatter[L]
+	Checker[L]
+	Printer[L]
 }

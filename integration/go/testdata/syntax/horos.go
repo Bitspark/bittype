@@ -6,7 +6,7 @@ import (
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
-var _ language.LanguageProvider = h.Language{}
+var _ language.Provider = h.Language{}
 var _ ast.View[h.Language] = h.AST{}
 var slot = h.Node{
 	Kind:       h.KindParameter,

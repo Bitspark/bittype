@@ -11,8 +11,8 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-type ResolverProvider[L any] interface {
-	language.LanguageProvider
+type Provider[L any] interface {
+	language.Provider
 	Resolve(context.Context, semantic.Request[L]) (semantic.Result, error)
 }
 
@@ -67,7 +67,7 @@ type Resolver struct {
 	bindings  semantics.Key
 }
 
-func NewResolver[L any](syntax representation.Language, contract Contract, provider ResolverProvider[L]) (Resolver, error) {
+func NewResolver[L any](syntax representation.Language, contract Contract, provider Provider[L]) (Resolver, error) {
 	if err := contract.Validate(); err != nil {
 		return Resolver{}, err
 	}

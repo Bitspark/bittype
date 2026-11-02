@@ -63,7 +63,11 @@ documentation proposal.
 - AST, pipeline and language identity remain independent. CST depends on AST.
   Syntax depends on AST/CST carriers and identity, never on another language
   or parser/formatter. Native stages own their grammar and spelling.
-- LanguageProvider supplies ID and Name for configured language providers.
+- language.Provider supplies ID and Name for configured language providers.
+  Name capability interfaces through their package: resolution.Provider,
+  analysis.Provider and text.Provider. Individual text capabilities use
+  text.Parser, text.Formatter, text.Checker and text.Printer. Avoid redundant
+  package prefixes or Provider suffixes; retain no superseded interface aliases.
   Transformers identify two endpoints through FromID/ToID. Registration stays
   explicit and agnostic, with no known-language list,
   name switch or automatic registration. No compatibility identity alias.

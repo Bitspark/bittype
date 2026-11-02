@@ -65,4 +65,4 @@ func (p Provider) validate() error {
 	return nil
 }
 
-var _ language.LanguageProvider = Provider{}
+var _ language.Provider = Provider{}

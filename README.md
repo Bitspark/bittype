@@ -7,7 +7,7 @@ C++, using horos as the canonical data type model.
 contracts, native syntax vocabularies, parsers, formatters, checks and a shared
 printer are implemented in Go. The syntax engine registers languages and
 ASTTransformer implementations, plans routes and composes existing text stages.
-Specialized providers extend LanguageProvider. Horos's Go declaration model now
+Specialized providers extend language.Provider. Horos's Go declaration model now
 supplies module resolution, generic binding and ground specialization. Bittype
 implements its [AST-only frontend](docs/horos.md), resolver and semantic analyzer.
 The engine captures syntax once and invokes each capability explicitly. Horos

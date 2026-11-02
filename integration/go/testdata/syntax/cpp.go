@@ -9,7 +9,7 @@ import (
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
-var _ language.LanguageProvider = syntax.Language{}
+var _ language.Provider = syntax.Language{}
 
 // namespace example: template<class T> Page with std::vector<T> items,
 // Person, PeoplePage = Page<Person>, and an abstract Reader<T> declaration.

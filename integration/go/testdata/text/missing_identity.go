@@ -12,4 +12,4 @@ type MissingName struct{}
 func (MissingName) ID() language.ID                             { return "missing" }
 func (MissingName) Parse(text.Input) (cst.CST[Language], error) { return cst.CST[Language]{}, nil }
 
-var _ text.ParserProvider[Language] = MissingName{}
+var _ text.Parser[Language] = MissingName{}

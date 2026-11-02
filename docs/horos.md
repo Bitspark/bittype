@@ -29,7 +29,7 @@ language's kinds, profile or meaning. The additional provider is not implemented
   result, reusing its model and adapting its evidence to
   [shared semantic facts and reports](analysis.md).
 - [provider/horos/go](../provider/horos/go/provider.go) implements
-  `text.CheckerProvider[horos.Language]`, `resolution.ResolverProvider[horos.Language]`
+  `text.Checker[horos.Language]`, `resolution.Provider[horos.Language]`
   and `analysis.Provider[horos.Language]`,
   with ID `horos` and name `Horos`.
   Applications explicitly register it through `representation.NewLanguage` and

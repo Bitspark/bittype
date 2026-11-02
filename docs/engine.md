@@ -32,9 +32,9 @@ The existing ast.AST[L] and cst.CST[L] carriers remain unchanged. L separates
 Go types. A dynamic registry needs an opaque envelope, not ast.AST[any].
 
 representation.NewLanguage[L](checker, profile) creates a Language descriptor from a
-text.CheckerProvider[L]. It captures ID and Name, the actual Go marker type, the
+text.Checker[L]. It captures ID and Name, the actual Go marker type, the
 explicit profile string and the checker. Configured descriptors implement
-LanguageProvider; their zero values are invalid. Native marker providers still
+language.Provider; their zero values are invalid. Native marker providers still
 have usable zero values. Empty metadata and typed nil providers are rejected.
 
 A profile names the admitted syntax/representation revision chosen by the

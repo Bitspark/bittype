@@ -9,7 +9,7 @@ import (
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
-var _ language.LanguageProvider = syntax.Language{}
+var _ language.Provider = syntax.Language{}
 
 // Page<T> { items: T[] }, Person, PeoplePage = Page<Person>, Reader<T> { read(): T }.
 var example = syntax.AST{

@@ -25,8 +25,8 @@ belong to the selected provider. Function, Stream and Cell remain library-owned.
 ## Resolver contract
 
 ```go
-type ResolverProvider[L any] interface {
-    language.LanguageProvider
+type Provider[L any] interface {
+    language.Provider
     Resolve(context.Context, semantic.Request[L]) (semantic.Result, error)
 }
 
@@ -119,7 +119,7 @@ copy truth reports automatically or weaken stale-result protection.
 
 ## Horos composition
 
-The Horos provider implements syntax checking, ResolverProvider and analysis.Provider.
+The Horos provider implements syntax checking, resolution.Provider and analysis.Provider.
 Its profiles are `horos-declarations-1/ast-2`,
 `horos-declarations-1/resolution-1` and `horos-declarations-1/analysis-2`.
 Analysis revision 1 is replaced without a compatibility path.

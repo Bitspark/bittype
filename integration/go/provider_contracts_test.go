@@ -27,7 +27,7 @@ type unfamiliarLanguage struct{}
 func (unfamiliarLanguage) ID() language.ID { return "unfamiliar" }
 func (unfamiliarLanguage) Name() string    { return "Unfamiliar" }
 func TestPrinterNeedsNoKnownLanguage(t *testing.T) {
-	var _ language.LanguageProvider = unfamiliarLanguage{}
+	var _ language.Provider = unfamiliarLanguage{}
 	value := "hello"
 	space := "\r\n"
 	concrete := cst.CST[unfamiliarLanguage]{

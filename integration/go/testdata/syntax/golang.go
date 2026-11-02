@@ -9,7 +9,7 @@ import (
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
-var _ language.LanguageProvider = syntax.Language{}
+var _ language.Provider = syntax.Language{}
 
 // Page[T any] struct { Items []T }, Person, PeoplePage = Page[Person],
 // and Reader[T any] interface { Read() T }. The two T binders stay distinct.

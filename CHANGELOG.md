@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### 2 November 2026
+
+- Standardize the public provider interfaces as `language.Provider`,
+  `resolution.Provider`, `analysis.Provider` and `text.Provider`. Individual
+  text capabilities are `text.Parser`, `text.Formatter`, `text.Checker` and
+  `text.Printer`. Update all current consumers, fixtures and documentation;
+  remove the previous interface names without compatibility aliases.
+
 ### 31 October 2026
 
 - Adopt the stage-first hierarchy: trees/{ast,cst,representation},

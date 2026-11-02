@@ -22,7 +22,7 @@ func (Provider) Resolve(_ context.Context, request semantic.Request[Language]) (
 	return request.Publish(semantic.Publication{Reports: []semantic.Report{{Obligation: semantics.Key{Owner: "consumer", Name: "valid"}, Status: semantic.Complete, Verdict: semantic.Holds}}})
 }
 
-var _ resolution.ResolverProvider[Language] = Provider{}
+var _ resolution.Provider[Language] = Provider{}
 
 func Compose() (*engine.Engine, error) {
 	syntax, err := representation.NewLanguage[Language](Provider{}, "syntax-v1")

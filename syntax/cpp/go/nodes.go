@@ -17,7 +17,7 @@ func (Language) ID() language.ID { return "cpp" }
 // Name is the human-readable language name, not a registration key.
 func (Language) Name() string { return "C++" }
 
-var _ language.LanguageProvider = Language{}
+var _ language.Provider = Language{}
 
 // AST is the existing generic carrier specialized for this language.
 type AST = ast.AST[Language]

@@ -10,14 +10,14 @@ package language
 // equal IDs do not establish Go type identity or grammar compatibility.
 type ID string
 
-// LanguageProvider identifies a syntax provider without depending on its concrete type.
+// Provider identifies a syntax provider without depending on its concrete type.
 // Configured instances return stable, nonempty metadata without IO or registration
 // side effects. Name is for display only. Native marker providers have usable
 // zero values; configured registration descriptors require explicit construction.
 //
 // This interface intentionally supplies no AST construction, validation, parsing,
 // transformation or formatting operations. It does not erase or convert AST[L].
-type LanguageProvider interface {
+type Provider interface {
 	ID() ID
 	Name() string
 }

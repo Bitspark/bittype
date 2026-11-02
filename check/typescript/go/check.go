@@ -144,4 +144,4 @@ type Provider struct{ s.Language }
 
 func (Provider) Check(view ast.View[s.Language]) error { return Check(view) }
 
-var _ text.CheckerProvider[s.Language] = Provider{}
+var _ text.Checker[s.Language] = Provider{}
