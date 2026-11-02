@@ -121,7 +121,8 @@ budgets. Canonical and AST depth are distinct; tests qualify their boundary.
 `analyze.Contract()` advertises `horos-declarations-1/analysis-1`. Its domain is
 the selected entry and transitive pinned module closure, not every unused value
 in the supplied pool. Unused pool modules contribute no established semantic
-facts; their annotations are outside this analyzed domain.
+facts; their binding annotations are outside this analyzed domain. Every supplied
+module still has its document-pin assertion checked during decoding.
 
 | Obligation | Successful report |
 | --- | --- |

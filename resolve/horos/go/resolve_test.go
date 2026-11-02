@@ -205,31 +205,43 @@ func TestExactLiteralIsOpaque(t *testing.T) {
 func TestModelAcceptsAbsentBindingAnnotations(t *testing.T) {
 	tree := fixture(t)
 	for i := range tree.Nodes {
-		if tree.Nodes[i].Kind != s.KindProgram { tree.Nodes[i].References = nil }
+		if tree.Nodes[i].Kind != s.KindProgram {
+			tree.Nodes[i].References = nil
+		}
 	}
 	before := clone(tree)
 	model, err := resolve.Model(tree)
-	if err != nil || model == nil { t.Fatalf("unannotated syntax did not resolve: %v", err) }
-	if !reflect.DeepEqual(tree, before) { t.Fatal("resolution wrote annotations into borrowed syntax") }
+	if err != nil || model == nil {
+		t.Fatalf("unannotated syntax did not resolve: %v", err)
+	}
+	if !reflect.DeepEqual(tree, before) {
+		t.Fatal("resolution wrote annotations into borrowed syntax")
+	}
 }
 
 type changingView struct {
 	first, second s.AST
-	calls int
+	calls         int
 }
 
 func (v *changingView) ASTView() s.AST {
 	v.calls++
-	if v.calls == 1 { return v.first }
+	if v.calls == 1 {
+		return v.first
+	}
 	return v.second
 }
 
 func TestModelCapturesAnExternalViewOnce(t *testing.T) {
 	valid := fixture(t)
 	view := &changingView{first: valid, second: s.AST{}}
-	if model, err := resolve.Model(view); err != nil || model == nil || view.calls != 1 { t.Fatalf("changed view reached reconstruction: calls=%d, error=%v", view.calls, err) }
+	if model, err := resolve.Model(view); err != nil || model == nil || view.calls != 1 {
+		t.Fatalf("changed view reached reconstruction: calls=%d, error=%v", view.calls, err)
+	}
 	view = &changingView{first: s.AST{}, second: valid}
-	if model, err := resolve.Model(view); err == nil || model != nil || view.calls != 1 { t.Fatalf("invalid first capture was replaced: calls=%d, error=%v", view.calls, err) }
+	if model, err := resolve.Model(view); err == nil || model != nil || view.calls != 1 {
+		t.Fatalf("invalid first capture was replaced: calls=%d, error=%v", view.calls, err)
+	}
 }
 
 func TestInvalidASTsFailWithoutRepair(t *testing.T) {

@@ -28,15 +28,21 @@ func Project(program *decl.Program, treeID ast.TreeID) (s.AST, error) {
 // Model checks the AST and recovers the Horos model for inspection or explicit
 // ground specialization. It does not repair bindings or mutate the borrowed AST.
 func Model(view ast.View[s.Language]) (*decl.Program, error) {
-	if view == nil { return nil, check.Check(view) }
+	if view == nil {
+		return nil, check.Check(view)
+	}
 	value := reflect.ValueOf(view)
 	switch value.Kind() {
 	case reflect.Pointer, reflect.Map, reflect.Slice, reflect.Interface, reflect.Func, reflect.Chan:
-		if value.IsNil() { return nil, check.Check(view) }
+		if value.IsNil() {
+			return nil, check.Check(view)
+		}
 	}
 	// ASTView is an arbitrary implementation. Capture once so validation and
 	// reconstruction cannot observe different arenas from successive calls.
 	tree := view.ASTView()
-	if err := check.Check(tree); err != nil { return nil, err }
+	if err := check.Check(tree); err != nil {
+		return nil, err
+	}
 	return bridge.Read(tree)
 }

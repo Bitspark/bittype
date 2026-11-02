@@ -562,15 +562,21 @@ func TestAnalysisCheckerCannotReplacePreflightedInputs(t *testing.T) {
 	var replacement representation.AST
 	armed := false
 	d, err := representation.NewLanguage[amber](testChecker[amber]{id: "analysis-language", visit: func(value ast.AST[amber]) error {
-		if armed && value.ID == "input" { caller.Trees[1] = replacement }
+		if armed && value.ID == "input" {
+			caller.Trees[1] = replacement
+		}
 		return nil
 	}}, "test-v1")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	caller = analysisFixture[amber](t, d)
 	dependency := exampleTree[amber]()
 	dependency.ID, dependency.Nodes[1].References = "dependency", nil
 	second, err := representation.Pack(d, dependency)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	caller.Trees = append(caller.Trees, second)
 	oversized := ast.AST[amber]{ID: "replacement", Root: 1, Nodes: []ast.Node[amber]{{Kind: "document"}}}
 	for range 8 {
@@ -578,7 +584,9 @@ func TestAnalysisCheckerCannotReplacePreflightedInputs(t *testing.T) {
 		oversized.Nodes[0].Children = append(oversized.Nodes[0].Children, ast.Child{Role: "declaration", Node: ast.NodeID(len(oversized.Nodes))})
 	}
 	replacement, err = representation.Pack(d, oversized)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	caller.Limits = analysis.DefaultLimits()
 	caller.Limits.MaxInputNodes = 6 // exactly the two original three-node trees
 	analyzer := analysisAnalyzer[amber](t, d, func(_ context.Context, request analysis.Request[amber]) (analysis.Result, error) {
@@ -591,7 +599,11 @@ func TestAnalysisCheckerCannotReplacePreflightedInputs(t *testing.T) {
 	})
 	armed = true
 	result, err := analyzer.Analyze(context.Background(), caller)
-	if err != nil || !result.HasModel() { t.Fatalf("captured input collection changed: %v", err) }
+	if err != nil || !result.HasModel() {
+		t.Fatalf("captured input collection changed: %v", err)
+	}
 	changed, err := caller.Trees[1].Inspect()
-	if err != nil || changed.ID != "replacement" { t.Fatal("checker mutation control did not execute") }
+	if err != nil || changed.ID != "replacement" {
+		t.Fatal("checker mutation control did not execute")
+	}
 }
