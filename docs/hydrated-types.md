@@ -126,7 +126,7 @@ The generic AST and semantic model already have carriers for this proposal:
 
 The syntax and analysis profile identifiers must distinguish the new domain from
 the current `horos-declarations-1/ast-2` and
-`horos-declarations-1/analysis-1`. The exact identifiers are assigned with a
+`horos-declarations-1/analysis-2`. The exact identifiers are assigned with a
 qualified implementation, not silently reused. An engine instance currently
 fixes one syntax profile per language ID; registering the new profile must obey
 that existing rule rather than introduce negotiation or implicit conversions.

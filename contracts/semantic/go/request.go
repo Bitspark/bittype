@@ -1,4 +1,4 @@
-package analysis
+package semantic
 
 import (
 	"errors"
@@ -14,8 +14,9 @@ import (
 // capture is also the invocation identity. It is private, nonempty storage;
 // equal entry addresses in different captures do not establish compatibility.
 type capture struct {
-	entry         ast.NodeRef
-	catalogue     map[ast.TreeID]ast.NodeID
+	source        *snapshotState
+	operation     semantics.Key
+	dependencies  []Dependency
 	contract      Contract
 	requested     []semantics.Key
 	configuration []Setting
@@ -23,7 +24,7 @@ type capture struct {
 }
 
 func (c *capture) contains(site ast.NodeRef) bool {
-	return site.Tree != "" && site.Node > 0 && site.Node <= c.catalogue[site.Tree]
+	return site.Tree != "" && site.Node > 0 && site.Node <= c.source.catalogue[site.Tree]
 }
 
 type requestState[L any] struct {
@@ -39,7 +40,7 @@ func (r Request[L]) Entry() ast.NodeRef {
 	if r.state == nil {
 		return ast.NodeRef{}
 	}
-	return r.state.capture.entry
+	return r.state.capture.source.entry
 }
 
 func (r Request[L]) Inputs() []ast.AST[L] {
@@ -71,7 +72,7 @@ func (r Request[L]) Contract() Contract {
 	if r.state == nil {
 		return Contract{}
 	}
-	return cloneContract(r.state.capture.contract)
+	return r.state.capture.contract.Clone()
 }
 
 func (r Request[L]) Limits() Limits {
@@ -115,13 +116,13 @@ func (r Result) Entry() ast.NodeRef {
 	if r.state == nil {
 		return ast.NodeRef{}
 	}
-	return r.state.owner.entry
+	return r.state.owner.source.entry
 }
 func (r Result) Contract() Contract {
 	if r.state == nil {
 		return Contract{}
 	}
-	return cloneContract(r.state.owner.contract)
+	return r.state.owner.contract.Clone()
 }
 func (r Result) Requested() []semantics.Key {
 	if r.state == nil {
@@ -187,6 +188,9 @@ func publish(c *capture, p Publication) (Result, error) {
 	bad := func(reason string) (Result, error) {
 		return Result{}, fmt.Errorf("%w: %s", ErrInvalidResult, reason)
 	}
+	if p.Facts != nil && p.ReuseModelFrom != nil {
+		return bad("new facts and reused model are mutually exclusive")
+	}
 	known := make(map[semantics.Key]bool, len(c.contract.Obligations))
 	allowed := make(map[semantics.Key]bool)
 	for _, obligation := range c.contract.Obligations {
@@ -241,14 +245,33 @@ func publish(c *capture, p Publication) (Result, error) {
 		}
 	}
 	result := &resultState{owner: c}
-	if p.Facts != nil {
+	if p.Facts != nil || p.ReuseModelFrom != nil {
+		for _, dependency := range c.dependencies {
+			if !dependency.reportsEstablished() {
+				return bad("dependency requirements are not established")
+			}
+		}
 		for _, requirement := range c.contract.ModelRequirements {
 			report, found := reports[requirement.Obligation]
 			if !found || report.Status != Complete || report.Verdict != requirement.Verdict {
 				return bad("model requirements are not established")
 			}
 		}
-		model, err := semantics.New(*p.Facts, c.limits.Model, c.contains)
+		var model semantics.Model
+		var err error
+		if p.ReuseModelFrom != nil {
+			admitted := false
+			for _, dependency := range c.dependencies {
+				admitted = admitted || dependency.Result.state == p.ReuseModelFrom.state
+			}
+			if !admitted || !p.ReuseModelFrom.HasModel() {
+				return bad("model is not an admitted dependency")
+			}
+			model = p.ReuseModelFrom.state.model
+			err = model.CheckLimits(c.limits.Model)
+		} else {
+			model, err = semantics.New(*p.Facts, c.limits.Model, c.contains)
+		}
 		if err != nil {
 			if errors.Is(err, semantics.ErrLimit) {
 				return Result{}, fmt.Errorf("%w: %w", ErrLimit, err)

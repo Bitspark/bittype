@@ -95,3 +95,8 @@ The September bootstrap described a broader generated-consumer chain.
 The owner has narrowed the current work to Horos-owned definitions and types-only
 generation. Historical evidence does not add
 callables, adapters or migration gates to this milestone.
+
+The [resolution contract](docs/resolution.md) and [provider matrix](docs/providers.md)
+cover independent ResolverProvider registration, shared semantic snapshots and
+explicit analysis dependencies. Shared records live in contracts/semantic/go;
+old analysis-owned records have no compatibility aliases.

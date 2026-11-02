@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
+ "github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/semantics/go"
@@ -22,23 +23,23 @@ func analysisKey(name string) semantics.Key {
 }
 
 func analysisContract() analysis.Contract {
-	return analysis.Contract{
+	return analysis.Contract{Semantic: semantic.Contract{
 		Profile: "independent-facts-v1",
-		Obligations: []analysis.Obligation{
+		Obligations: []semantic.Obligation{
 			{Key: analysisKey("validity"), Domain: analysisKey("entry-program")},
 			{Key: analysisKey("bindings"), Domain: analysisKey("entry-closure")},
 		},
-		ModelRequirements: []analysis.Requirement{
-			{Obligation: analysisKey("validity"), Verdict: analysis.Holds},
-			{Obligation: analysisKey("bindings"), Verdict: analysis.Undetermined},
+		ModelRequirements: []semantic.Requirement{
+			{Obligation: analysisKey("validity"), Verdict: semantic.Holds},
+			{Obligation: analysisKey("bindings"), Verdict: semantic.Undetermined},
 		},
-	}
+	}}
 }
 
-func analysisReports() []analysis.Report {
-	return []analysis.Report{
-		{Obligation: analysisKey("validity"), Status: analysis.Complete, Verdict: analysis.Holds},
-		{Obligation: analysisKey("bindings"), Status: analysis.Complete},
+func analysisReports() []semantic.Report {
+	return []semantic.Report{
+		{Obligation: analysisKey("validity"), Status: semantic.Complete, Verdict: semantic.Holds},
+		{Obligation: analysisKey("bindings"), Status: semantic.Complete},
 	}
 }
 
@@ -61,20 +62,20 @@ func analysisFacts() semantics.Data {
 
 type analysisChecker[L any] struct {
 	id  language.ID
-	run func(context.Context, analysis.Request[L]) (analysis.Result, error)
+	run func(context.Context, analysis.Request[L]) (semantic.Result, error)
 }
 
 func (p analysisChecker[L]) ID() language.ID { return p.id }
 func (p analysisChecker[L]) Name() string    { return "independent " + string(p.id) }
-func (p analysisChecker[L]) Analyze(ctx context.Context, request analysis.Request[L]) (analysis.Result, error) {
+func (p analysisChecker[L]) Analyze(ctx context.Context, request analysis.Request[L]) (semantic.Result, error) {
 	if p.run != nil {
 		return p.run(ctx, request)
 	}
 	data := analysisFacts()
-	return request.Publish(analysis.Publication{Facts: &data, Reports: analysisReports()})
+	return request.Publish(semantic.Publication{Facts: &data, Reports: analysisReports()})
 }
 
-func analysisFixture[L any](t *testing.T, definition representation.Language) analysis.Input {
+func analysisFixture[L any](t *testing.T, definition representation.Language) analysisCase {
 	t.Helper()
 	tree := exampleTree[L]()
 	tree.Nodes[1].References = nil // the old fixture's external library is not supplied
@@ -82,10 +83,10 @@ func analysisFixture[L any](t *testing.T, definition representation.Language) an
 	if err != nil {
 		t.Fatal(err)
 	}
-	return analysis.Input{Entry: ast.NodeRef{Tree: tree.ID, Node: tree.Root}, Trees: []representation.AST{envelope}}
+	return analysisCase{Entry: ast.NodeRef{Tree: tree.ID, Node: tree.Root}, Trees: []representation.AST{envelope}}
 }
 
-func analysisAnalyzer[L any](t *testing.T, definition representation.Language, run func(context.Context, analysis.Request[L]) (analysis.Result, error)) analysis.Analyzer {
+func analysisAnalyzer[L any](t *testing.T, definition representation.Language, run func(context.Context, analysis.Request[L]) (semantic.Result, error)) analysis.Analyzer {
 	t.Helper()
 	analyzer, err := analysis.NewAnalyzer[L](definition, analysisContract(), analysisChecker[L]{id: definition.ID(), run: run})
 	if err != nil {
@@ -94,7 +95,7 @@ func analysisAnalyzer[L any](t *testing.T, definition representation.Language, r
 	return analyzer
 }
 
-func analysisEngine(t *testing.T, run func(context.Context, analysis.Request[amber]) (analysis.Result, error)) (*engine.Engine, analysis.Input) {
+func analysisEngine(t *testing.T, run func(context.Context, analysis.Request[amber]) (semantic.Result, error)) (*engine.Engine, analysisCase) {
 	t.Helper()
 	definition := definition[amber](t, "analysis-language")
 	kernel := engine.New()
@@ -111,20 +112,20 @@ func TestAnalysisRegistrationBoundaries(t *testing.T) {
 		t.Fatal(err)
 	}
 	var nilProvider *analysisChecker[amber]
-	if _, err := analysis.NewAnalyzer[amber](a, analysisContract(), nilProvider); !errors.Is(err, analysis.ErrInvalidAnalyzer) {
+	if _, err := analysis.NewAnalyzer[amber](a, analysisContract(), nilProvider); !errors.Is(err, semantic.ErrInvalidOperation) {
 		t.Fatal(err)
 	}
-	if _, err := analysis.NewAnalyzer[amber](a, analysisContract(), analysisChecker[amber]{id: "wrong"}); !errors.Is(err, analysis.ErrInvalidAnalyzer) {
+	if _, err := analysis.NewAnalyzer[amber](a, analysisContract(), analysisChecker[amber]{id: "wrong"}); !errors.Is(err, semantic.ErrInvalidOperation) {
 		t.Fatal(err)
 	}
 	for _, alter := range []func(*analysis.Contract){
-		func(c *analysis.Contract) { c.Profile = " " },
-		func(c *analysis.Contract) { c.Obligations = append(c.Obligations, c.Obligations[0]) },
-		func(c *analysis.Contract) { c.ModelRequirements[0].Obligation = analysisKey("absent") },
+		func(c *analysis.Contract) { c.Semantic.Profile = " " },
+		func(c *analysis.Contract) { c.Semantic.Obligations = append(c.Semantic.Obligations, c.Semantic.Obligations[0]) },
+		func(c *analysis.Contract) { c.Semantic.ModelRequirements[0].Obligation = analysisKey("absent") },
 	} {
 		contract := analysisContract()
 		alter(&contract)
-		if _, err := analysis.NewAnalyzer[amber](a, contract, analysisChecker[amber]{id: a.ID()}); !errors.Is(err, analysis.ErrInvalidAnalyzer) {
+		if _, err := analysis.NewAnalyzer[amber](a, contract, analysisChecker[amber]{id: a.ID()}); !errors.Is(err, semantic.ErrInvalidOperation) {
 			t.Fatal(err)
 		}
 	}
@@ -134,7 +135,7 @@ func TestAnalysisRegistrationBoundaries(t *testing.T) {
 		t.Fatal(err)
 	}
 	register(t, kernel, a)
-	if err := kernel.RegisterAnalyzer(analysis.Analyzer{}); !errors.Is(err, analysis.ErrInvalidAnalyzer) {
+	if err := kernel.RegisterAnalyzer(analysis.Analyzer{}); !errors.Is(err, semantic.ErrInvalidOperation) {
 		t.Fatal(err)
 	}
 	wrongMarker := definition[blue](t, a.ID())
@@ -154,12 +155,12 @@ func TestAnalysisRegistrationBoundaries(t *testing.T) {
 	if err := kernel.RegisterAnalyzer(good); !errors.Is(err, engine.ErrDuplicateAnalyzer) {
 		t.Fatal(err)
 	}
-	for name, input := range map[string]analysis.Input{
+	for name, input := range map[string]analysisCase{
 		"marker":  analysisFixture[blue](t, wrongMarker),
 		"profile": analysisFixture[amber](t, wrongProfile),
 	} {
 		t.Run(name, func(t *testing.T) {
-			result, err := kernel.Analyze(context.Background(), input)
+			result, err := analyzeCase(kernel, context.Background(), input)
 			if err == nil || result.Valid() {
 				t.Fatalf("wrong input boundary admitted: %v", err)
 			}
@@ -171,25 +172,25 @@ func TestAnalysisMissingCapability(t *testing.T) {
 	kernel := engine.New()
 	a := definition[amber](t, "unfamiliar")
 	input := analysisFixture[amber](t, a)
-	if _, err := kernel.Analyze(context.Background(), input); !errors.Is(err, engine.ErrUnknownLanguage) {
+	if _, err := analyzeCase(kernel, context.Background(), input); !errors.Is(err, engine.ErrUnknownLanguage) {
 		t.Fatal(err)
 	}
 	register(t, kernel, a)
-	if _, err := kernel.Analyze(context.Background(), input); !errors.Is(err, engine.ErrMissingCapability) {
+	if _, err := analyzeCase(kernel, context.Background(), input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	if _, err := kernel.Analyze(nil, input); !errors.Is(err, analysis.ErrInvalidRequest) {
+	if _, err := analyzeCase(kernel, nil, input); !errors.Is(err, semantic.ErrInvalidRequest) {
 		t.Fatal(err)
 	}
-	if _, err := kernel.Analyze(context.Background(), analysis.Input{}); !errors.Is(err, analysis.ErrInvalidRequest) {
+	if _, err := analyzeCase(kernel, context.Background(), analysisCase{}); !errors.Is(err, semantic.ErrInvalidRequest) {
 		t.Fatal(err)
 	}
 }
 
 func TestAnalysisRejectsForeignRequestResult(t *testing.T) {
-	changes := map[string]func(*testing.T, *analysis.Input){
-		"identical": func(*testing.T, *analysis.Input) {},
-		"syntax": func(t *testing.T, input *analysis.Input) {
+	changes := map[string]func(*testing.T, *analysisCase){
+		"identical": func(*testing.T, *analysisCase) {},
+		"syntax": func(t *testing.T, input *analysisCase) {
 			d := definition[amber](t, "analysis-language")
 			tree, err := representation.Unpack[amber](d, input.Trees[0])
 			if err != nil {
@@ -201,14 +202,14 @@ func TestAnalysisRejectsForeignRequestResult(t *testing.T) {
 				t.Fatal(err)
 			}
 		},
-		"configuration": func(_ *testing.T, input *analysis.Input) {
-			input.Configuration = []analysis.Setting{{Key: analysisKey("mode"), Value: []byte("changed")}}
+		"configuration": func(_ *testing.T, input *analysisCase) {
+			input.Configuration = []semantic.Setting{{Key: analysisKey("mode"), Value: []byte("changed")}}
 		},
-		"limits": func(_ *testing.T, input *analysis.Input) {
-			input.Limits = analysis.DefaultLimits()
+		"limits": func(_ *testing.T, input *analysisCase) {
+			input.Limits = semantic.DefaultLimits()
 			input.Limits.MaxDiagnostics--
 		},
-		"dependency": func(t *testing.T, input *analysis.Input) {
+		"dependency": func(t *testing.T, input *analysisCase) {
 			d := definition[amber](t, "analysis-language")
 			tree := exampleTree[amber]()
 			tree.ID, tree.Nodes[1].References = "dependency", nil
@@ -221,22 +222,22 @@ func TestAnalysisRejectsForeignRequestResult(t *testing.T) {
 	}
 	for name, change := range changes {
 		t.Run(name, func(t *testing.T) {
-			var retained analysis.Result
-			kernel, input := analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (analysis.Result, error) {
+			var retained semantic.Result
+			kernel, input := analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (semantic.Result, error) {
 				if retained.Valid() {
 					return retained, nil
 				}
 				data := analysisFacts()
 				var err error
-				retained, err = request.Publish(analysis.Publication{Facts: &data, Reports: analysisReports()})
+				retained, err = request.Publish(semantic.Publication{Facts: &data, Reports: analysisReports()})
 				return retained, err
 			})
-			if _, err := kernel.Analyze(context.Background(), input); err != nil {
+			if _, err := analyzeCase(kernel, context.Background(), input); err != nil {
 				t.Fatal(err)
 			}
 			change(t, &input)
-			result, err := kernel.Analyze(context.Background(), input)
-			if !errors.Is(err, analysis.ErrStaleResult) || result.Valid() {
+			result, err := analyzeCase(kernel, context.Background(), input)
+			if !errors.Is(err, semantic.ErrStaleResult) || result.Valid() {
 				t.Fatalf("stale result accepted: %v", err)
 			}
 		})
@@ -245,13 +246,13 @@ func TestAnalysisRejectsForeignRequestResult(t *testing.T) {
 
 func TestAnalysisOwnershipAndPublication(t *testing.T) {
 	want := analysisFacts()
-	kernel, input := analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (analysis.Result, error) {
+	kernel, input := analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (semantic.Result, error) {
 		copies := request.Inputs()
 		copies[0].Nodes[1].Attributes[0].Text = "mutated input"
 		copies[0].Nodes[0].Children[0].Node = 99
 		copies[0].Nodes[1].Origin.Nodes[0].Tree = "changed history"
 		if got := request.Inputs()[0]; got.Nodes[1].Attributes[0].Text != "Page" || got.Nodes[0].Children[0].Node != 2 || got.Nodes[1].Origin.Nodes[0].Tree != "earlier" {
-			return analysis.Result{}, errors.New("request inputs alias accessor")
+			return semantic.Result{}, errors.New("request inputs alias accessor")
 		}
 		configuration := request.Configuration()
 		configuration[0].Value[0] = 'X'
@@ -260,23 +261,23 @@ func TestAnalysisOwnershipAndPublication(t *testing.T) {
 		contract := request.Contract()
 		contract.Obligations[0].Domain = analysisKey("mutated")
 		if string(request.Configuration()[0].Value) != "original" || request.Requested()[0] != analysisKey("validity") || request.Contract().Obligations[0].Domain != analysisKey("entry-program") {
-			return analysis.Result{}, errors.New("captured metadata aliases accessor")
+			return semantic.Result{}, errors.New("captured metadata aliases accessor")
 		}
 		data, reports := analysisFacts(), analysisReports()
 		site := ast.NodeRef{Tree: "input", Node: 2}
-		diagnostics := []analysis.Diagnostic{{Code: analysisKey("note"), Subject: analysisKey("entry-program"), Message: "original", At: &site}}
-		result, err := request.Publish(analysis.Publication{Facts: &data, Reports: reports, Diagnostics: diagnostics})
+		diagnostics := []semantic.Diagnostic{{Code: analysisKey("note"), Subject: analysisKey("entry-program"), Message: "original", At: &site}}
+		result, err := request.Publish(semantic.Publication{Facts: &data, Reports: reports, Diagnostics: diagnostics})
 		data.Entities[0].Parameters[0].Sort = analysisKey("mutated")
 		data.Terms[1].Data[0] = 4
 		data.Terms[1].Operands[0].Locator[0] = 7
 		data.Dependencies[0].At.Site.Node = 99
-		reports[0].Verdict = analysis.Rejected
+		reports[0].Verdict = semantic.Rejected
 		diagnostics[0].Message = "mutated diagnostic"
 		site.Node = 99
 		return result, err
 	})
-	input.Configuration = []analysis.Setting{{Key: analysisKey("mode"), Value: []byte("original")}}
-	result, err := kernel.Analyze(context.Background(), input)
+	input.Configuration = []semantic.Setting{{Key: analysisKey("mode"), Value: []byte("original")}}
+	result, err := analyzeCase(kernel, context.Background(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,18 +285,18 @@ func TestAnalysisOwnershipAndPublication(t *testing.T) {
 	if !present || !reflect.DeepEqual(model.Data(), want) {
 		t.Fatal("publication aliases provider graph")
 	}
-	if result.Reports()[0].Verdict != analysis.Holds || result.Diagnostics()[0].Message != "original" || result.Diagnostics()[0].At.Node != 2 {
+	if result.Reports()[0].Verdict != semantic.Holds || result.Diagnostics()[0].Message != "original" || result.Diagnostics()[0].At.Node != 2 {
 		t.Fatal("publication aliases provider metadata")
 	}
 	input.Configuration[0].Value[0] = 'Y'
 	result.Configuration()[0].Value[0] = 'Z'
-	result.Reports()[0].Verdict = analysis.Rejected
+	result.Reports()[0].Verdict = semantic.Rejected
 	result.Diagnostics()[0].At.Node = 99
 	result.Contract().Obligations[0].Domain = analysisKey("changed")
 	extracted := model.Data()
 	extracted.Terms[1].Data[0] = 9
 	extracted.Entities[0].Declarations[0].Node = 99
-	if !reflect.DeepEqual(model.Data(), want) || string(result.Configuration()[0].Value) != "original" || result.Reports()[0].Verdict != analysis.Holds || result.Diagnostics()[0].At.Node != 2 || result.Contract().Obligations[0].Domain != analysisKey("entry-program") {
+	if !reflect.DeepEqual(model.Data(), want) || string(result.Configuration()[0].Value) != "original" || result.Reports()[0].Verdict != semantic.Holds || result.Diagnostics()[0].At.Node != 2 || result.Contract().Obligations[0].Domain != analysisKey("entry-program") {
 		t.Fatal("result accessor exposes private storage")
 	}
 }
@@ -303,63 +304,63 @@ func TestAnalysisOwnershipAndPublication(t *testing.T) {
 func TestAnalysisFailureDiscardsOutput(t *testing.T) {
 	sentinel := errors.New("provider infrastructure failure")
 	calls := 0
-	kernel, input := analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (analysis.Result, error) {
+	kernel, input := analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (semantic.Result, error) {
 		calls++
 		data := analysisFacts()
-		result, err := request.Publish(analysis.Publication{Facts: &data, Reports: analysisReports()})
+		result, err := request.Publish(semantic.Publication{Facts: &data, Reports: analysisReports()})
 		if err != nil {
-			return analysis.Result{}, err
+			return semantic.Result{}, err
 		}
 		return result, sentinel
 	})
-	result, err := kernel.Analyze(context.Background(), input)
+	result, err := analyzeCase(kernel, context.Background(), input)
 	if !errors.Is(err, sentinel) || result.Valid() || calls != 1 {
 		t.Fatalf("output escaped failure or callback retried: %v", err)
 	}
-	kernel, input = analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (analysis.Result, error) {
+	kernel, input = analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (semantic.Result, error) {
 		reports := analysisReports()
-		reports[0].Verdict = analysis.Rejected
-		reports[1].Status = analysis.Incomplete
-		return request.Publish(analysis.Publication{Reports: reports, Diagnostics: []analysis.Diagnostic{{Code: analysisKey("invalid-declaration"), Subject: analysisKey("entry-program"), Message: "definite counterexample"}}})
+		reports[0].Verdict = semantic.Rejected
+		reports[1].Status = semantic.Incomplete
+		return request.Publish(semantic.Publication{Reports: reports, Diagnostics: []semantic.Diagnostic{{Code: analysisKey("invalid-declaration"), Subject: analysisKey("entry-program"), Message: "definite counterexample"}}})
 	})
-	result, err = kernel.Analyze(context.Background(), input)
+	result, err = analyzeCase(kernel, context.Background(), input)
 	if err != nil || !result.Valid() || result.HasModel() {
 		t.Fatalf("semantic rejection lost: %v", err)
 	}
 	validity, found := result.Report(analysisKey("validity"))
 	bindings, _ := result.Report(analysisKey("bindings"))
-	if !found || validity.Status != analysis.Complete || validity.Verdict != analysis.Rejected || bindings.Status != analysis.Incomplete {
+	if !found || validity.Status != semantic.Complete || validity.Verdict != semantic.Rejected || bindings.Status != semantic.Incomplete {
 		t.Fatal("completion became validity or complete enumeration")
 	}
 }
 
 func TestAnalysisRejectsInvalidPublications(t *testing.T) {
-	cases := map[string]func(*analysis.Publication){
-		"missing-report":            func(p *analysis.Publication) { p.Reports = p.Reports[:1] },
-		"duplicate-report":          func(p *analysis.Publication) { p.Reports[1] = p.Reports[0] },
-		"unreported":                func(p *analysis.Publication) { p.Reports[1].Status = analysis.Unreported },
-		"unknown-status":            func(p *analysis.Publication) { p.Reports[1].Status = 99 },
-		"unsupported-holds":         func(p *analysis.Publication) { p.Reports[0].Status = analysis.Unsupported },
-		"missing-model-requirement": func(p *analysis.Publication) { p.Reports[0].Verdict = analysis.Rejected },
-		"historical-only-site": func(p *analysis.Publication) {
+	cases := map[string]func(*semantic.Publication){
+		"missing-report":            func(p *semantic.Publication) { p.Reports = p.Reports[:1] },
+		"duplicate-report":          func(p *semantic.Publication) { p.Reports[1] = p.Reports[0] },
+		"unreported":                func(p *semantic.Publication) { p.Reports[1].Status = semantic.Unreported },
+		"unknown-status":            func(p *semantic.Publication) { p.Reports[1].Status = 99 },
+		"unsupported-holds":         func(p *semantic.Publication) { p.Reports[0].Status = semantic.Unsupported },
+		"missing-model-requirement": func(p *semantic.Publication) { p.Reports[0].Verdict = semantic.Rejected },
+		"historical-only-site": func(p *semantic.Publication) {
 			p.Facts.Entities[0].Declarations[0] = ast.NodeRef{Tree: "earlier", Node: 4}
 		},
-		"dangling-entity": func(p *analysis.Publication) { p.Facts.Bindings[0].Target = 99 },
-		"zero-node":       func(p *analysis.Publication) { p.Facts.Entities[0].Declarations[0].Node = 0 },
-		"diagnostic-site": func(p *analysis.Publication) {
-			p.Diagnostics = []analysis.Diagnostic{{Code: analysisKey("note"), Subject: analysisKey("entry"), At: &ast.NodeRef{Tree: "input", Node: 99}}}
+		"dangling-entity": func(p *semantic.Publication) { p.Facts.Bindings[0].Target = 99 },
+		"zero-node":       func(p *semantic.Publication) { p.Facts.Entities[0].Declarations[0].Node = 0 },
+		"diagnostic-site": func(p *semantic.Publication) {
+			p.Diagnostics = []semantic.Diagnostic{{Code: analysisKey("note"), Subject: analysisKey("entry"), At: &ast.NodeRef{Tree: "input", Node: 99}}}
 		},
 	}
 	for name, alter := range cases {
 		t.Run(name, func(t *testing.T) {
-			kernel, input := analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (analysis.Result, error) {
+			kernel, input := analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (semantic.Result, error) {
 				data := analysisFacts()
-				publication := analysis.Publication{Facts: &data, Reports: analysisReports()}
+				publication := semantic.Publication{Facts: &data, Reports: analysisReports()}
 				alter(&publication)
 				return request.Publish(publication)
 			})
-			result, err := kernel.Analyze(context.Background(), input)
-			if !errors.Is(err, analysis.ErrInvalidResult) || result.Valid() {
+			result, err := analyzeCase(kernel, context.Background(), input)
+			if !errors.Is(err, semantic.ErrInvalidResult) || result.Valid() {
 				t.Fatalf("invalid result accepted: %v", err)
 			}
 		})
@@ -367,51 +368,51 @@ func TestAnalysisRejectsInvalidPublications(t *testing.T) {
 }
 
 func TestAnalysisCaptureAndOutputLimits(t *testing.T) {
-	cases := map[string]func(*analysis.Input){
-		"duplicate-tree": func(input *analysis.Input) { input.Trees = append(input.Trees, input.Trees[0]) },
-		"zero-entry":     func(input *analysis.Input) { input.Entry.Node = 0 },
-		"unknown-entry":  func(input *analysis.Input) { input.Entry.Tree = "absent" },
-		"duplicate-request": func(input *analysis.Input) {
+	cases := map[string]func(*analysisCase){
+		"duplicate-tree": func(input *analysisCase) { input.Trees = append(input.Trees, input.Trees[0]) },
+		"zero-entry":     func(input *analysisCase) { input.Entry.Node = 0 },
+		"unknown-entry":  func(input *analysisCase) { input.Entry.Tree = "absent" },
+		"duplicate-request": func(input *analysisCase) {
 			input.Requested = []semantics.Key{analysisKey("validity"), analysisKey("validity")}
 		},
-		"duplicate-configuration": func(input *analysis.Input) {
-			input.Configuration = []analysis.Setting{{Key: analysisKey("mode")}, {Key: analysisKey("mode")}}
+		"duplicate-configuration": func(input *analysisCase) {
+			input.Configuration = []semantic.Setting{{Key: analysisKey("mode")}, {Key: analysisKey("mode")}}
 		},
-		"partial-limits": func(input *analysis.Input) { input.Limits.MaxInputNodes = 1 },
+		"partial-limits": func(input *analysisCase) { input.Limits.MaxInputNodes = 1 },
 	}
 	for name, alter := range cases {
 		t.Run(name, func(t *testing.T) {
 			calls := 0
-			kernel, input := analysisEngine(t, func(context.Context, analysis.Request[amber]) (analysis.Result, error) {
+			kernel, input := analysisEngine(t, func(context.Context, analysis.Request[amber]) (semantic.Result, error) {
 				calls++
-				return analysis.Result{}, nil
+				return semantic.Result{}, nil
 			})
 			alter(&input)
-			result, err := kernel.Analyze(context.Background(), input)
-			if !errors.Is(err, analysis.ErrInvalidRequest) || result.Valid() || calls != 0 {
+			result, err := analyzeCase(kernel, context.Background(), input)
+			if !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() || calls != 0 {
 				t.Fatalf("invalid input reached provider: %v", err)
 			}
 		})
 	}
-	for name, alter := range map[string]func(*analysis.Limits){
-		"nodes":          func(l *analysis.Limits) { l.MaxInputNodes = 2 },
-		"entries":        func(l *analysis.Limits) { l.MaxInputEntries = 1 },
-		"input-bytes":    func(l *analysis.Limits) { l.MaxInputBytes = 1 },
-		"metadata-bytes": func(l *analysis.Limits) { l.MaxConfigurationBytes = 1 },
-		"model-bytes":    func(l *analysis.Limits) { l.Model.MaxBytes = 1 },
+	for name, alter := range map[string]func(*semantic.Limits){
+		"nodes":          func(l *semantic.Limits) { l.MaxInputNodes = 2 },
+		"entries":        func(l *semantic.Limits) { l.MaxInputEntries = 1 },
+		"input-bytes":    func(l *semantic.Limits) { l.MaxInputBytes = 1 },
+		"metadata-bytes": func(l *semantic.Limits) { l.MaxConfigurationBytes = 1 },
+		"model-bytes":    func(l *semantic.Limits) { l.Model.MaxBytes = 1 },
 	} {
 		t.Run(name, func(t *testing.T) {
 			kernel, input := analysisEngine(t, nil)
-			input.Limits = analysis.DefaultLimits()
+			input.Limits = semantic.DefaultLimits()
 			alter(&input.Limits)
-			result, err := kernel.Analyze(context.Background(), input)
-			if !errors.Is(err, analysis.ErrLimit) || result.Valid() {
+			result, err := analyzeCase(kernel, context.Background(), input)
+			if !errors.Is(err, semantic.ErrLimit) || result.Valid() {
 				t.Fatalf("resource limit accepted or became a semantic rejection: %v", err)
 			}
 		})
 	}
 	var zero analysis.Request[amber]
-	if result, err := zero.Publish(analysis.Publication{}); !errors.Is(err, analysis.ErrInvalidRequest) || result.Valid() {
+	if result, err := zero.Publish(semantic.Publication{}); !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
 		t.Fatal(err)
 	}
 }
@@ -436,40 +437,40 @@ func TestAnalysisBudgetsPrecedeCheckerAndCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 	analyzer := analysisAnalyzer[amber](t, d, nil)
-	for _, alter := range []func(*analysis.Limits){
-		func(l *analysis.Limits) { l.MaxInputNodes = 2 },
-		func(l *analysis.Limits) { l.MaxInputEntries = 5 },
-		func(l *analysis.Limits) { l.MaxInputBytes = 78 },
+	for _, alter := range []func(*semantic.Limits){
+		func(l *semantic.Limits) { l.MaxInputNodes = 2 },
+		func(l *semantic.Limits) { l.MaxInputEntries = 5 },
+		func(l *semantic.Limits) { l.MaxInputBytes = 78 },
 	} {
-		input.Limits = analysis.DefaultLimits()
+		input.Limits = semantic.DefaultLimits()
 		alter(&input.Limits)
-		if result, err := analyzer.Analyze(context.Background(), input); !errors.Is(err, analysis.ErrLimit) || result.Valid() || checks != 0 {
+		if result, err := runAnalyzerCase(analyzer, context.Background(), input); !errors.Is(err, semantic.ErrLimit) || result.Valid() || checks != 0 {
 			t.Fatalf("budget checked after callback/copy boundary: %v (%d callbacks)", err, checks)
 		}
 	}
-	input.Limits = analysis.DefaultLimits()
-	if result, err := analyzer.Analyze(context.Background(), input); err != nil || !result.HasModel() || checks != 1 {
+	input.Limits = semantic.DefaultLimits()
+	if result, err := runAnalyzerCase(analyzer, context.Background(), input); err != nil || !result.HasModel() || checks != 1 {
 		t.Fatalf("valid request did not execute checker: %v", err)
 	}
 }
 
 func TestAnalysisUnknownObligationsAndAdditionalCoverage(t *testing.T) {
 	unknown := analysisKey("future-relation")
-	kernel, input := analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (analysis.Result, error) {
+	kernel, input := analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (semantic.Result, error) {
 		data := analysisFacts()
-		reports := append(analysisReports(), analysis.Report{Obligation: unknown, Status: analysis.Unsupported})
-		return request.Publish(analysis.Publication{Facts: &data, Reports: reports})
+		reports := append(analysisReports(), semantic.Report{Obligation: unknown, Status: semantic.Unsupported})
+		return request.Publish(semantic.Publication{Facts: &data, Reports: reports})
 	})
 	input.Requested = []semantics.Key{unknown}
-	result, err := kernel.Analyze(context.Background(), input)
+	result, err := analyzeCase(kernel, context.Background(), input)
 	if err != nil || !result.HasModel() {
 		t.Fatalf("supported graph with unsupported extra obligation: %v", err)
 	}
 	report, ok := result.Report(unknown)
-	if !ok || report.Status != analysis.Unsupported || report.Verdict != analysis.Undetermined {
+	if !ok || report.Status != semantic.Unsupported || report.Verdict != semantic.Undetermined {
 		t.Fatal("unsupported obligation became a verdict")
 	}
-	if _, err := kernel.Analyze(context.Background(), analysis.Input{Entry: input.Entry, Trees: input.Trees}); !errors.Is(err, analysis.ErrInvalidResult) {
+	if _, err := analyzeCase(kernel, context.Background(), analysisCase{Entry: input.Entry, Trees: input.Trees}); !errors.Is(err, semantic.ErrInvalidResult) {
 		t.Fatalf("unrequested unknown report was accepted: %v", err)
 	}
 }
@@ -478,22 +479,22 @@ func TestAnalysisCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	calls := 0
-	kernel, input := analysisEngine(t, func(context.Context, analysis.Request[amber]) (analysis.Result, error) {
+	kernel, input := analysisEngine(t, func(context.Context, analysis.Request[amber]) (semantic.Result, error) {
 		calls++
-		return analysis.Result{}, nil
+		return semantic.Result{}, nil
 	})
-	if result, err := kernel.Analyze(ctx, input); !errors.Is(err, context.Canceled) || result.Valid() || calls != 0 {
+	if result, err := analyzeCase(kernel, ctx, input); !errors.Is(err, context.Canceled) || result.Valid() || calls != 0 {
 		t.Fatal(err)
 	}
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
-	kernel, input = analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (analysis.Result, error) {
+	kernel, input = analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (semantic.Result, error) {
 		data := analysisFacts()
-		result, err := request.Publish(analysis.Publication{Facts: &data, Reports: analysisReports()})
+		result, err := request.Publish(semantic.Publication{Facts: &data, Reports: analysisReports()})
 		cancel()
 		return result, err
 	})
-	if result, err := kernel.Analyze(ctx, input); !errors.Is(err, context.Canceled) || result.Valid() {
+	if result, err := analyzeCase(kernel, ctx, input); !errors.Is(err, context.Canceled) || result.Valid() {
 		t.Fatalf("cancelled output escaped: %v", err)
 	}
 }
@@ -503,13 +504,13 @@ func TestEngineConcurrentAnalysisAndReentry(t *testing.T) {
 	d := definition[amber](t, "analysis-language")
 	register(t, kernel, d)
 	input := analysisFixture[amber](t, d)
-	analyzer := analysisAnalyzer[amber](t, d, func(_ context.Context, request analysis.Request[amber]) (analysis.Result, error) {
+	analyzer := analysisAnalyzer[amber](t, d, func(_ context.Context, request analysis.Request[amber]) (semantic.Result, error) {
 		_ = kernel.Languages()
 		if _, ok := kernel.Language(d.ID()); !ok {
-			return analysis.Result{}, errors.New("reentrant registry read lost language")
+			return semantic.Result{}, errors.New("reentrant registry read lost language")
 		}
 		data := analysisFacts()
-		return request.Publish(analysis.Publication{Facts: &data, Reports: analysisReports()})
+		return request.Publish(semantic.Publication{Facts: &data, Reports: analysisReports()})
 	})
 	if err := kernel.RegisterAnalyzer(analyzer); err != nil {
 		t.Fatal(err)
@@ -529,7 +530,7 @@ func TestEngineConcurrentAnalysisAndReentry(t *testing.T) {
 				return
 			}
 			for range 3 {
-				result, err := kernel.Analyze(context.Background(), input)
+				result, err := analyzeCase(kernel, context.Background(), input)
 				if err != nil {
 					failures <- err
 					return
@@ -558,7 +559,7 @@ func TestEngineConcurrentAnalysisAndReentry(t *testing.T) {
 }
 
 func TestAnalysisCheckerCannotReplacePreflightedInputs(t *testing.T) {
-	var caller analysis.Input
+	var caller analysisCase
 	var replacement representation.AST
 	armed := false
 	d, err := representation.NewLanguage[amber](testChecker[amber]{id: "analysis-language", visit: func(value ast.AST[amber]) error {
@@ -587,18 +588,18 @@ func TestAnalysisCheckerCannotReplacePreflightedInputs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	caller.Limits = analysis.DefaultLimits()
+	caller.Limits = semantic.DefaultLimits()
 	caller.Limits.MaxInputNodes = 6 // exactly the two original three-node trees
-	analyzer := analysisAnalyzer[amber](t, d, func(_ context.Context, request analysis.Request[amber]) (analysis.Result, error) {
+	analyzer := analysisAnalyzer[amber](t, d, func(_ context.Context, request analysis.Request[amber]) (semantic.Result, error) {
 		inputs := request.Inputs()
 		if len(inputs) != 2 || inputs[1].ID != "dependency" || len(inputs[1].Nodes) != 3 {
-			return analysis.Result{}, errors.New("checker replaced an input after catalogue/budget preflight")
+			return semantic.Result{}, errors.New("checker replaced an input after catalogue/budget preflight")
 		}
 		data := analysisFacts()
-		return request.Publish(analysis.Publication{Facts: &data, Reports: analysisReports()})
+		return request.Publish(semantic.Publication{Facts: &data, Reports: analysisReports()})
 	})
 	armed = true
-	result, err := analyzer.Analyze(context.Background(), caller)
+	result, err := runAnalyzerCase(analyzer, context.Background(), caller)
 	if err != nil || !result.HasModel() {
 		t.Fatalf("captured input collection changed: %v", err)
 	}

@@ -13,6 +13,8 @@ import (
 
 	analyze "github.com/Bitspark/bittype/analyze/horos/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
+ "github.com/Bitspark/bittype/contracts/resolution/go"
+ "github.com/Bitspark/bittype/contracts/semantic/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/horos/go"
 	"github.com/Bitspark/bittype/semantics/go"
@@ -169,29 +171,39 @@ func clone(tree s.AST) s.AST {
 	return result
 }
 
-func analyzer(t *testing.T, tree s.AST) (analysis.Analyzer, analysis.Input) {
-	t.Helper()
-	language, err := representation.NewLanguage[s.Language](provider.Provider{}, s.Profile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	envelope, err := representation.Pack(language, tree)
-	if err != nil {
-		t.Fatalf("syntax must reach analysis: %v", err)
-	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](language, analyze.Contract(), provider.Provider{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return analyzer, analysis.Input{Entry: ast.NodeRef{Tree: tree.ID, Node: tree.Root}, Trees: []representation.AST{envelope}}
+type horosCase struct {
+ Entry ast.NodeRef
+ Trees []representation.AST
+ Requested []semantics.Key
+ Configuration []semantic.Setting
+ Limits semantic.Limits
 }
-func run(t *testing.T, tree s.AST, modify func(*analysis.Input)) analysis.Result {
+func analyzer(t *testing.T, tree s.AST) (representation.Language, horosCase) {
+ t.Helper()
+ language, err := representation.NewLanguage[s.Language](provider.Provider{}, s.Profile)
+ if err != nil { t.Fatal(err) }
+ envelope, err := representation.Pack(language, tree)
+ if err != nil { t.Fatalf("syntax must reach analysis: %v", err) }
+ return language, horosCase{Entry: ast.NodeRef{Tree: tree.ID, Node: tree.Root}, Trees: []representation.AST{envelope}}
+}
+func runHorosCase(language representation.Language, ctx context.Context, input horosCase) (semantic.Result,error) {
+ source,err := semantic.Capture(ctx,language,semantic.Input{Entry:input.Entry,Trees:input.Trees,Limits:input.Limits})
+ if err != nil { return semantic.Result{},err }
+ resolver,err := resolution.NewResolver[s.Language](language,resolve.Contract(),provider.Provider{})
+ if err != nil { return semantic.Result{},err }
+ resolved,err := resolver.Resolve(ctx,source,semantic.Options{Requested:input.Requested,Configuration:input.Configuration,Limits:input.Limits})
+ if err != nil { return semantic.Result{},err }
+ analyzer,err := analysis.NewAnalyzer[s.Language](language,analyze.ContractWithResolutionConfiguration(input.Configuration),provider.Provider{})
+ if err != nil { return semantic.Result{},err }
+ return analyzer.Analyze(ctx,analysis.Input{Snapshot:source,Resolution:&resolved,Options:semantic.Options{Requested:input.Requested,Limits:input.Limits}})
+}
+func run(t *testing.T, tree s.AST, modify func(*horosCase)) semantic.Result {
 	t.Helper()
 	analyzer, input := analyzer(t, tree)
 	if modify != nil {
 		modify(&input)
 	}
-	result, err := analyzer.Analyze(context.Background(), input)
+	result, err := runHorosCase(analyzer, context.Background(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,25 +212,25 @@ func run(t *testing.T, tree s.AST, modify func(*analysis.Input)) analysis.Result
 	}
 	return result
 }
-func requireReport(t *testing.T, result analysis.Result, key semantics.Key, status analysis.Completion, verdict analysis.Verdict) {
+func requireReport(t *testing.T, result semantic.Result, key semantics.Key, status semantic.Completion, verdict semantic.Verdict) {
 	t.Helper()
 	report, found := result.Report(key)
 	if !found || report.Status != status || report.Verdict != verdict {
 		t.Fatalf("report %v: %+v, found=%v", key, report, found)
 	}
 }
-func requireModel(t *testing.T, result analysis.Result) semantics.Model {
+func requireModel(t *testing.T, result semantic.Result) semantics.Model {
 	t.Helper()
 	model, ok := result.Model()
 	if !ok {
 		t.Fatalf("missing semantic model: %+v", result.Diagnostics())
 	}
-	for _, obligation := range analyze.Contract().Obligations {
-		verdict := analysis.Undetermined
-		if obligation.Key == analyze.Validity() {
-			verdict = analysis.Holds
+	for _, obligation := range analyze.Contract().Semantic.Obligations {
+		verdict := semantic.Undetermined
+		if obligation.Key == resolve.Validity() {
+			verdict = semantic.Holds
 		}
-		requireReport(t, result, obligation.Key, analysis.Complete, verdict)
+		requireReport(t, result, obligation.Key, semantic.Complete, verdict)
 	}
 	return model
 }
@@ -285,7 +297,7 @@ func TestPaginationBindingsPreserveCallerScopeAndDistinctParameters(t *testing.T
 	if bindings, ok := model.ParameterBindings(peopleBody.Arguments[0]); !ok || len(bindings) != 0 {
 		t.Fatal("zero-argument application must retain application status")
 	}
-	deps := model.DependenciesFrom(peopleID, analyze.ApplicationDependency())
+	deps := model.DependenciesFrom(peopleID, resolve.ApplicationDependency())
 	targets := map[semantics.EntityID]bool{}
 	for _, dep := range deps {
 		targets[dep.To] = true
@@ -301,7 +313,7 @@ func TestPaginationBindingsPreserveCallerScopeAndDistinctParameters(t *testing.T
 			t.Fatal("published occurrence binding is not queryable")
 		}
 		at := binding.At
-		at.Role = analyze.ExpressionRole()
+		at.Role = resolve.ExpressionRole()
 		if _, ok := model.TermAt(at); !ok {
 			t.Fatal("binding lost its occurrence-to-term association")
 		}
@@ -412,14 +424,14 @@ func TestModuleMemberReorderingPreservesTheCurrentSemanticGraph(t *testing.T) {
 	}
 }
 
-func requireFailure(t *testing.T, result analysis.Result, status analysis.Completion, verdict analysis.Verdict, code, subject string) {
+func requireFailure(t *testing.T, result semantic.Result, status semantic.Completion, verdict semantic.Verdict, code, subject string) {
 	t.Helper()
 	if result.HasModel() {
 		t.Fatal("failed or incomplete analysis published a model")
 	}
-	requireReport(t, result, analyze.Validity(), status, verdict)
-	for _, key := range []semantics.Key{analyze.Indexing(), analyze.Bindings(), analyze.Applications(), analyze.Dependencies()} {
-		requireReport(t, result, key, analysis.Incomplete, analysis.Undetermined)
+	requireReport(t, result, resolve.Validity(), status, verdict)
+	for _, key := range []semantics.Key{resolve.Indexing(), resolve.Bindings(), resolve.Applications(), resolve.Dependencies()} {
+		requireReport(t, result, key, semantic.Incomplete, semantic.Undetermined)
 	}
 	diagnostics := result.Diagnostics()
 	if len(diagnostics) != 1 || diagnostics[0].Code != (semantics.Key{Owner: "horos", Name: code}) || diagnostics[0].Subject != (semantics.Key{Owner: "horos", Name: subject}) {
@@ -457,7 +469,7 @@ func TestUnresolvedSourceAndContextHaveDistinctReports(t *testing.T) {
 			root, _ := pagination(t, test.options)
 			setAttribute(&tree.Nodes[find(tree, s.KindModule, "example.people")-1], s.AttributePin, pin(t, root).String())
 			result := run(t, tree, nil)
-			requireFailure(t, result, analysis.Complete, analysis.Rejected, test.code, test.subject)
+			requireFailure(t, result, semantic.Complete, semantic.Rejected, test.code, test.subject)
 			if result.Diagnostics()[0].At == nil {
 				t.Fatal("located failure lost its current syntax site")
 			}
@@ -498,7 +510,7 @@ func TestMissingPinnedDependencyIsIncomplete(t *testing.T) {
 	root := find(tree, s.KindModule, "example.people")
 	tree.Nodes[tree.Root-1].Children = []ast.Child{{Role: s.RoleModule, Node: root}}
 	result := run(t, compact(tree), nil)
-	requireFailure(t, result, analysis.Incomplete, analysis.Undetermined, "missing-dependency", "context")
+	requireFailure(t, result, semantic.Incomplete, semantic.Undetermined, "missing-dependency", "context")
 	if result.Diagnostics()[0].At == nil {
 		t.Fatal("missing dependency diagnostic lost its import site")
 	}
@@ -513,7 +525,7 @@ func TestDuplicateDeclarationsIdentifySourceOrSuppliedContext(t *testing.T) {
 			tree := fixture(t)
 			setAttribute(&tree.Nodes[find(tree, s.KindDeclaration, test.declaration)-1], s.AttributeName, "Person")
 			result := run(t, tree, nil)
-			requireFailure(t, result, analysis.Complete, analysis.Rejected, test.code, test.subject)
+			requireFailure(t, result, semantic.Complete, semantic.Rejected, test.code, test.subject)
 			site := result.Diagnostics()[0].At
 			if site == nil || site.Tree != tree.ID || site.Node != find(tree, s.KindModule, test.module) {
 				t.Fatal("duplicate declaration failure lost its defining module site")
@@ -533,7 +545,7 @@ func TestPresentAnnotationsAndTypePositionsAreCheckedWithoutRepair(t *testing.T)
 		}
 		before := clone(tree)
 		result := run(t, tree, nil)
-		requireFailure(t, result, analysis.Complete, analysis.Rejected, "invalid-annotation", "source")
+		requireFailure(t, result, semantic.Complete, semantic.Rejected, "invalid-annotation", "source")
 		if !reflect.DeepEqual(tree, before) {
 			t.Fatal("incorrect annotation was repaired")
 		}
@@ -563,7 +575,7 @@ func TestPresentAnnotationsAndTypePositionsAreCheckedWithoutRepair(t *testing.T)
 			t.Fatal("fixture has no imported parameter use")
 		}
 		result := run(t, tree, nil)
-		requireFailure(t, result, analysis.Complete, analysis.Rejected, "invalid-annotation", "context")
+		requireFailure(t, result, semantic.Complete, semantic.Rejected, "invalid-annotation", "context")
 		if result.Diagnostics()[0].At == nil || result.Diagnostics()[0].At.Node != use {
 			t.Fatal("dependency annotation failure lost its own syntax site")
 		}
@@ -577,59 +589,59 @@ func TestPresentAnnotationsAndTypePositionsAreCheckedWithoutRepair(t *testing.T)
 		literal := tree.Nodes[body(tree, find(tree, s.KindDeclaration, "Literal"))-1].Children[0].Node
 		tree.Nodes[literal-1] = s.Node{Kind: s.KindParameter, Attributes: []ast.Attribute{{Name: s.AttributeIndex, Text: "0"}}}
 		result := run(t, compact(tree), nil)
-		requireFailure(t, result, analysis.Complete, analysis.Rejected, "invalid-annotation", "source")
+		requireFailure(t, result, semantic.Complete, semantic.Rejected, "invalid-annotation", "source")
 	})
 }
 
 func TestResolverAndExportBudgetsAreIndependent(t *testing.T) {
 	tree := fixture(t)
-	result := run(t, tree, func(input *analysis.Input) {
-		input.Configuration = []analysis.Setting{{Key: analyze.LimitsSetting(), Value: []byte("[256,1,16777216,256]")}}
+	result := run(t, tree, func(input *horosCase) {
+		input.Configuration = []semantic.Setting{{Key: resolve.LimitsSetting(), Value: []byte("[256,1,16777216,256]")}}
 	})
-	requireFailure(t, result, analysis.Incomplete, analysis.Undetermined, "exhausted", "request")
-	result = run(t, tree, func(input *analysis.Input) {
-		input.Limits = analysis.DefaultLimits()
+	requireFailure(t, result, semantic.Incomplete, semantic.Undetermined, "exhausted", "request")
+	result = run(t, tree, func(input *horosCase) {
+		input.Limits = semantic.DefaultLimits()
 		input.Limits.Model.MaxRecords = 1
 	})
-	requireFailure(t, result, analysis.Complete, analysis.Holds, "export-exhausted", "request")
+	requireFailure(t, result, semantic.Complete, semantic.Holds, "export-exhausted", "request")
 	if result.Limits().Model.MaxRecords != 1 {
 		t.Fatal("result lost its export budget")
 	}
 }
 
 func TestInvalidConfigurationEntryAndCancellationReturnNoResult(t *testing.T) {
-	if result, err := analyze.Analyze(nil, analysis.Request[s.Language]{}); !errors.Is(err, analysis.ErrInvalidRequest) || result.Valid() {
+	if result, err := analyze.Analyze(nil, analysis.Request[s.Language]{}); !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
 		t.Fatalf("nil context: %v", err)
 	}
-	if result, err := analyze.Analyze(context.Background(), analysis.Request[s.Language]{}); !errors.Is(err, analysis.ErrInvalidRequest) || result.Valid() {
+	if result, err := analyze.Analyze(context.Background(), analysis.Request[s.Language]{}); !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
 		t.Fatalf("zero request: %v", err)
 	}
 	analyzer, input := analyzer(t, fixture(t))
-	for _, settings := range [][]analysis.Setting{
-		{{Key: analyze.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}},
-		{{Key: analyze.LimitsSetting(), Value: []byte("[513,100000,16777216,256]")}},
-		{{Key: analyze.LimitsSetting(), Value: []byte("[256,0,16777216,256]")}},
-		{{Key: analyze.LimitsSetting(), Value: []byte("[256,100000,0,256]")}},
-		{{Key: analyze.LimitsSetting(), Value: []byte("[256,100000,16777216,0]")}},
-		{{Key: analyze.LimitsSetting(), Value: []byte("[256,1]")}},
-		{{Key: analyze.LimitsSetting(), Value: []byte("[256,100000,16777216,256] true")}},
+	for _, settings := range [][]semantic.Setting{
+		{{Key: resolve.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}},
+		{{Key: resolve.LimitsSetting(), Value: []byte("[513,100000,16777216,256]")}},
+		{{Key: resolve.LimitsSetting(), Value: []byte("[256,0,16777216,256]")}},
+		{{Key: resolve.LimitsSetting(), Value: []byte("[256,100000,0,256]")}},
+		{{Key: resolve.LimitsSetting(), Value: []byte("[256,100000,16777216,0]")}},
+		{{Key: resolve.LimitsSetting(), Value: []byte("[256,1]")}},
+		{{Key: resolve.LimitsSetting(), Value: []byte("[256,100000,16777216,256] true")}},
 		{{Key: semantics.Key{Owner: "other", Name: "configuration"}, Value: []byte("[]")}},
 	} {
 		request := input
 		request.Configuration = settings
-		result, err := analyzer.Analyze(context.Background(), request)
-		if !errors.Is(err, analysis.ErrInvalidRequest) || result.Valid() {
+		result, err := runHorosCase(analyzer, context.Background(), request)
+		if !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
 			t.Fatalf("invalid configuration returned a publication: %v", err)
 		}
 	}
 	wrongEntry := input
 	wrongEntry.Entry.Node = find(fixture(t), s.KindDeclaration, "Outer")
-	if result, err := analyzer.Analyze(context.Background(), wrongEntry); !errors.Is(err, analysis.ErrInvalidRequest) || result.Valid() {
+	if result, err := runHorosCase(analyzer, context.Background(), wrongEntry); !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
 		t.Fatalf("wrong entry: %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if result, err := analyzer.Analyze(ctx, input); !errors.Is(err, context.Canceled) || result.Valid() {
+	if result, err := runHorosCase(analyzer, ctx, input); !errors.Is(err, context.Canceled) || result.Valid() {
 		t.Fatalf("cancelled analysis published: %v", err)
 	}
 }
@@ -638,18 +650,18 @@ func TestInvalidConfigurationPrecedesMalformedSourceDecoding(t *testing.T) {
 	tree := fixture(t)
 	setAttribute(&tree.Nodes[find(tree, s.KindDeclaration, "Outer")-1], s.AttributeName, "Person")
 	analyzer, input := analyzer(t, tree)
-	input.Configuration = []analysis.Setting{{Key: analyze.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}}
-	result, err := analyzer.Analyze(context.Background(), input)
-	if !errors.Is(err, analysis.ErrInvalidRequest) || result.Valid() {
+	input.Configuration = []semantic.Setting{{Key: resolve.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}}
+	result, err := runHorosCase(analyzer, context.Background(), input)
+	if !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
 		t.Fatalf("invalid configuration was mistaken for source rejection: %v", err)
 	}
 }
 
 func TestUnknownObligationIsUnsupportedAndDoesNotInventFacts(t *testing.T) {
 	unknown := semantics.Key{Owner: "consumer", Name: "layout-equivalence"}
-	result := run(t, fixture(t), func(input *analysis.Input) { input.Requested = []semantics.Key{unknown} })
+	result := run(t, fixture(t), func(input *horosCase) { input.Requested = []semantics.Key{unknown} })
 	requireModel(t, result)
-	requireReport(t, result, unknown, analysis.Unsupported, analysis.Undetermined)
+	requireReport(t, result, unknown, semantic.Unsupported, semantic.Undetermined)
 }
 
 func TestUnusedPoolAnnotationsDoNotEstablishFacts(t *testing.T) {
@@ -695,7 +707,7 @@ func TestUnknownDescriptorConstructorReachesAuthoritativeAnalysis(t *testing.T) 
 	changed := module("example.future", mapping(), entry("Future", definition(h("future-constructor", atom("int")))))
 	setAttribute(&tree.Nodes[find(tree, s.KindModule, "example.future")-1], s.AttributePin, pin(t, changed).String())
 	result := run(t, tree, nil)
-	requireFailure(t, result, analysis.Complete, analysis.Rejected, "invalid", "source")
+	requireFailure(t, result, semantic.Complete, semantic.Rejected, "invalid", "source")
 	if result.Diagnostics()[0].At == nil || result.Diagnostics()[0].At.Node != id {
 		t.Fatal("unknown constructor did not retain its direct syntax location")
 	}

@@ -1,5 +1,5 @@
 package privateresult
 
-import "github.com/Bitspark/bittype/contracts/analysis/go"
+import "github.com/Bitspark/bittype/contracts/semantic/go"
 
-var forged = analysis.Result{state: nil}
+var forged = semantic.Result{state: nil}

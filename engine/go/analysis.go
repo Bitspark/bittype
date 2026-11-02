@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
@@ -39,20 +40,20 @@ func (e *Engine) RegisterAnalyzer(analyzer analysis.Analyzer) error {
 // Analyze selects an explicit analyzer by the input language. lookup releases
 // the registry lock before admission checks or provider callbacks. Expected
 // semantic rejection is a Result; non-nil errors always discard all output.
-func (e *Engine) Analyze(ctx context.Context, input analysis.Input) (analysis.Result, error) {
-	if ctx == nil || len(input.Trees) == 0 {
-		return analysis.Result{}, analysis.ErrInvalidRequest
+func (e *Engine) Analyze(ctx context.Context, input analysis.Input) (semantic.Result, error) {
+	if ctx == nil || !input.Snapshot.Valid() {
+		return semantic.Result{}, semantic.ErrInvalidRequest
 	}
-	r, err := e.lookup(input.LanguageID())
+	r, err := e.lookup(input.Snapshot.LanguageID())
 	if err != nil {
-		return analysis.Result{}, err
+		return semantic.Result{}, err
 	}
 	if r.analyzer == nil {
-		return analysis.Result{}, fmt.Errorf("%w: semantic analysis for %s", ErrMissingCapability, input.LanguageID())
+		return semantic.Result{}, fmt.Errorf("%w: semantic analysis for %s", ErrMissingCapability, input.Snapshot.LanguageID())
 	}
 	result, err := r.analyzer.Analyze(ctx, input)
 	if err != nil {
-		return analysis.Result{}, err
+		return semantic.Result{}, err
 	}
 	return result, nil
 }

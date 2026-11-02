@@ -69,7 +69,9 @@ contracts/language/go/                   present: identity interface
 contracts/pipeline/go/                   present: typed Stage
 contracts/text/go/                       present: input, diagnostics, providers
 contracts/transform/go/                  present: ASTTransformer and typed bridge
-contracts/analysis/go/                   present: semantic request/publication SPI
+contracts/semantic/go/                   present: shared capture/publication
+contracts/resolution/go/                 present: resolver SPI
+contracts/analysis/go/                   present: analysis with explicit resolution input
 semantics/go/                            present: immutable shared semantic facts
 engine/go/                               present: registry, planning, execution
 syntax/<language>/go/                    present for all four native languages

@@ -18,7 +18,9 @@ contracts/
   pipeline/go/            typed Stage contract
   text/go/                input, diagnostics and specialized provider contracts
   transform/go/           ASTTransformer contract and typed registration bridge
-  analysis/go/            typed semantic analysis, capture, reports and publication
+  semantic/go/            common snapshots, requests, reports and publication
+  resolution/go/          resolver capability and dependency contract
+  analysis/go/            analysis capability and explicit resolution input
 semantics/go/             immutable provider-owned semantic facts and graph checks
 engine/go/                explicit registration, planning and execution
 syntax/<language>/go/     native abstract/concrete vocabulary and identity
@@ -64,7 +66,9 @@ same dependency level. The package boundaries are:
 | Checked representation | Carriers, text checker/identity contracts and generic carrier checks; no engine or transformer dependency |
 | Transformer contract/bridge | Typed stages, checked representations and endpoint identity; no concrete mapping |
 | Semantic facts | Generic AST addresses; graph integrity and owned storage, no language rules |
-| Analysis contract/bridge | Semantic facts, checked representations and identity; capture/publication, no concrete analyzer |
+| Shared semantic contract/bridge | Semantic facts, checked representations and identity; capture/publication, no concrete provider |
+| Resolution contract/bridge | Shared semantic contract and identity; binding coverage and typed invocation |
+| Analysis contract/bridge | Shared semantic and resolution contracts; explicit dependency composition |
 | Engine | Checked representations and shared contracts; no concrete language, provider or mapping |
 | Native syntax | Carriers and identity; no implementation stage or other language |
 | Native checker | Own syntax, shared checking mechanics and own lexical helpers |
@@ -72,7 +76,8 @@ same dependency level. The package boundaries are:
 | Native provider | Own syntax and stages plus the shared printer; composition only |
 | Horos syntax | Generic AST and identity; no semantic-model imports |
 | Horos checker | Own syntax and generic structural/grammar checks; no semantic resolution |
-| Horos resolver/analyzer | Own syntax, private projection/correspondence helper, Horos Go model and Ontos values/codec |
+| Horos resolver | Own syntax, private projection/correspondence helper, Horos Go model and Ontos values/codec |
+| Horos analyzer | Own syntax, Horos resolver contract and shared semantic evidence; no direct external model imports |
 | Horos provider | Own syntax/checker/analyzer and shared contracts; composition, no text stages |
 
 The checked AST/CST and language descriptors share one home in
@@ -146,3 +151,6 @@ Cell or another library declaration does not add a stage, language or core kind.
 See the [charter](CHARTER.md), [engine API](docs/engine.md),
 [native text design](docs/parsing-formatting.md) and
 [future transformation plan](docs/generation.md).
+
+The [provider matrix](docs/providers.md) records implemented capabilities.
+[Resolution composition](docs/resolution.md) defines snapshot identity and explicit model reuse.

@@ -110,8 +110,11 @@ Engine's zero value is usable; New is a convenience constructor. Both start empt
 - NewProvider[L](textProvider, profile) packages a full existing text.Provider[L].
   RegisterProvider installs its descriptor and text capabilities atomically.
 - RegisterTransformer installs one directed edge between registered languages.
+- RegisterResolver installs an optional resolution capability; Capture and Resolve
+  produce an explicit input snapshot and resolution result.
 - RegisterAnalyzer installs an optional semantic analysis capability for an
-  existing compatible language; Analyze captures inputs and returns its reports
+  existing compatible language; Analyze consumes a snapshot and any declared
+  resolution result and returns its reports
   and optional shared model. See the [analysis contract](analysis.md).
 - Language(id) looks up a descriptor; Languages returns a sorted independent list.
 

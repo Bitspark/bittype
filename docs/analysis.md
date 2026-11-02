@@ -32,7 +32,7 @@ from an established binding, or missing dependency context from invalid source.
 | Dependency | A provider-labeled directed edge between entities | PeoplePage applies Page and also applies Person as its argument |
 | Obligation | A named analysis task for which the caller can request a report | Decide program validity, or enumerate application bindings |
 | Domain | The part of the supplied context covered by an obligation | The selected Horos entry module and every pinned module transitively imported from it |
-| Analysis profile | A versioned contract defining obligations, domains, vocabulary and requirements for a model | `horos-declarations-1/analysis-1` |
+| Analysis profile | A versioned contract defining obligations, domains, vocabulary and requirements for a model | `horos-declarations-1/analysis-2` |
 | Report | An obligation's completion status and, where applicable, its truth verdict | Validity is Complete / Holds; a completed binding enumeration is Complete / Undetermined |
 | Model | The immutable graph of established facts, available when its publication requirements are met | Queryable entities, terms, occurrences and application dependencies |
 
@@ -55,7 +55,9 @@ language: `analyze/horos/go` is Go code implementing analysis for Horos.
 | --- | --- |
 | [trees/ast/go](../trees/ast/go/ast.go) and [trees/representation/go](../trees/representation/go/ast.go) | Generic syntax storage, current node addresses and checked snapshots |
 | [semantics/go](../semantics/go/model.go) | Shared fact records, graph integrity, immutable storage and generic queries |
-| [contracts/analysis/go](../contracts/analysis/go/contract.go) | Provider interface, captured requests, obligations, reports and result publication |
+| [contracts/semantic/go](../contracts/semantic/go/contract.go) | Shared capture, requests, reports and publication |
+| [contracts/resolution/go](../contracts/resolution/go/provider.go) | Independent resolution capability and requirements |
+| [contracts/analysis/go](../contracts/analysis/go/provider.go) | Analysis capability and explicit resolution dependency |
 | [engine/go](../engine/go/analysis.go) | Explicit registration and selection of a compatible analyzer |
 | [syntax/horos/go](../syntax/horos/go/nodes.go) and [check/horos/go](../check/horos/go/check.go) | Horos AST vocabulary and syntax admission |
 | [resolve/horos/go](../resolve/horos/go/resolve.go) | Explicit canonical-value resolution, checked AST projection and recovery of the owning Horos model |
@@ -64,8 +66,8 @@ language: `analyze/horos/go` is Go code implementing analysis for Horos.
 | [provider/horos/go](../provider/horos/go/provider.go) | Compose Horos checking and analysis capabilities for explicit application registration |
 | External horos and ontos packages | Horos owns declaration/type rules; Ontos owns values and encoding |
 
-The engine depends on shared contracts and representations. The analysis contract
-depends on the shared semantic model. Neither imports a concrete language. Only
+The engine depends on shared contracts and representations. The specialized contracts
+depend on shared semantic infrastructure and the semantic model. Neither imports a concrete language. Only
 the Horos resolver, analyzer and private bridge consume the external Horos/Ontos
 model. The application chooses the concrete provider and connects these layers.
 
@@ -106,13 +108,14 @@ may be absent. Packing does not prove that the names resolve or the pins agree.
 from canonical module values; analysis can also admit structurally valid ASTs
 whose bindings have not yet been established.
 
-For this profile, `analysis.Input.Trees` contains one Program envelope and `Entry`
-addresses its Program root. An empty `Requested` list requests all five advertised
-obligations. Dependencies are supplied in the Program; the engine fetches nothing.
+For this profile, `semantic.Input.Trees` contains one Program envelope and `Entry`
+addresses its Program root. Capture produces the shared snapshot. Empty Requested
+options select every obligation advertised by that operation. Dependencies are
+supplied in the Program; the engine fetches nothing.
 
 ### 2. Establish meaning through the owning provider
 
-`Engine.Analyze` selects the registered Horos analyzer and captures the request.
+`Engine.Resolve` selects the registered Horos resolver for the captured snapshot.
 The adapter reconstructs canonical module values, delegates resolution to Horos,
 and verifies any supplied semantic annotations against that result.
 
@@ -125,7 +128,7 @@ closure, excluding unused pool modules.
 
 ### 3. Export facts without expanding the generic
 
-The adapter publishes separate entities for the two modules, Page, Page's T,
+The resolver publishes separate entities for the two modules, Page, Page's T,
 Person and PeoplePage. The significant term links can be read as follows;
 the notation labels records, rather than specifying a serialization:
 
@@ -151,6 +154,8 @@ and runtime behavior are separate operations.
 
 ### 4. Read coverage before using the model
 
+The application supplies the resolution result and the same snapshot to Analyze.
+Horos analysis consumes that evidence and reuses its model without resolving again.
 On success, `program-validity` reports Complete / Holds. The other four reports
 are Complete / Undetermined: they enumerate declarations, occurrence bindings,
 expressions/applications and application dependencies, without asserting a truth
@@ -174,8 +179,8 @@ error and no usable result; they do not use the table's diagnostic-result path.
 ### 5. Query the published facts
 
 At the current Page application node, the Horos profile exposes two occurrences:
-`pageTarget` uses `analyze.TargetRole()` and `pageExpression` uses
-`analyze.ExpressionRole()`, both with ordinal 0. The following query arguments
+`pageTarget` uses `resolve.TargetRole()` and `pageExpression` uses
+`resolve.ExpressionRole()`, both with ordinal 0. The following query arguments
 are symbolic labels for actual occurrences and IDs in this result:
 
 | Consumer question | Generic model query | Answer for this example |
@@ -183,7 +188,7 @@ are symbolic labels for actual occurrences and IDs in this result:
 | Which declaration does this use denote? | `Resolve(pageTarget)` | Page's entity ID |
 | Which expression was established here? | `TermAt(pageExpression)` | The term ID of the Page application shown above |
 | What fills each generic slot? | `ParameterBindings(pageApplicationTermID)` | One pair: Page.T's entity ID and the Person application's term ID |
-| Which declarations does PeoplePage apply? | `DependenciesFrom(peoplePageID, analyze.ApplicationDependency())` | Edges to Page and Person, each with its current application occurrence |
+| Which declarations does PeoplePage apply? | `DependenciesFrom(peoplePageID, resolve.ApplicationDependency())` | Edges to Page and Person, each with its current application occurrence |
 
 `Entity(id)` and `Term(id)` inspect the referenced records. Consumers can also
 enumerate the established occurrences in `Model.Data()` instead of constructing
@@ -201,11 +206,13 @@ exercises registration and shared queries through the public API.
 ```text
 application selects syntax descriptor and analyzer
     -> RegisterLanguage / RegisterProvider
-    -> RegisterAnalyzer
+    -> RegisterResolver / RegisterAnalyzer (independent capabilities)
 
-syntax envelope + explicit entry, inputs, options, requested obligations
-    -> Engine.Analyze
-    -> typed request capture
+syntax envelopes + explicit entry and dependency inputs
+    -> Engine.Capture -> immutable Snapshot
+    -> Engine.Resolve(snapshot, options) -> resolution Result
+    -> Engine.Analyze(snapshot, resolution Result, options)
+    -> fresh typed invocation on the same Snapshot
     -> language provider's Analyze
     -> Request.Publish(facts, reports, diagnostics)
     -> immutable request-bound Result
@@ -219,7 +226,7 @@ analysis neither installs a transformer nor routes through a canonical language.
 ```go
 type Provider[L any] interface {
     language.LanguageProvider
-    Analyze(context.Context, Request[L]) (Result, error)
+    Analyze(context.Context, Request[L]) (semantic.Result, error)
 }
 ```
 
@@ -235,15 +242,22 @@ sandbox callbacks, recover arbitrary panics or certify semantic claims.
 
 ## Request and snapshot
 
-`analysis.Input` supplies:
+`semantic.Input` supplies Entry, Trees and capture Limits to Engine.Capture.
+`semantic.Options` supplies Requested obligation keys, Configuration and invocation
+Limits. Empty Requested selects all advertised obligations; entirely zero limits
+select defaults. `analysis.Input` then supplies:
 
 | Field | Meaning |
 | --- | --- |
-| Entry | An existing node in the captured tree collection; provider defines admitted entry kinds |
-| Trees | Syntax envelopes with distinct tree IDs and the same language/profile/marker |
-| Requested | Provider-owned obligation keys; empty requests all advertised obligations |
-| Configuration | Owned keys and bounded uninterpreted bytes, decoded only by the provider |
-| Limits | Capture/publication budgets; entirely zero selects defaults, partial invalid values fail |
+| Snapshot | An immutable captured input collection admitted by its syntax descriptor |
+| Options | This analysis invocation's requested obligations, configuration and limits |
+| Resolution | Optional explicit dependency receipt, required when declared by the analyzer |
+
+The [resolution contract](resolution.md) defines profile/configuration matching,
+exact snapshot identity and model reuse. `analysis.Contract.Semantic` contains the
+analysis profile and model requirements; its optional Resolution requirement
+specifies prerequisite reports. Matching tree IDs never substitutes for the same
+snapshot. Each invocation still has fresh private identity.
 
 No step fetches imports, reads files or consults an ambient package environment.
 The application supplies all dependency context explicitly. Configuration and
@@ -280,7 +294,7 @@ Each requested obligation must have exactly one report:
 
 Zero-valued Unreported is never accepted as a report. Unknown requested keys must
 be Unsupported. Additional reports may establish advertised model requirements.
-`Contract.ModelRequirements` lists the exact Complete/verdict pairs that a facts
+`semantic.Contract.ModelRequirements` lists the exact Complete/verdict pairs that a facts
 publication must establish. Missing or contrary reports prevent publication.
 
 Consumers distinguish three questions: did the analysis complete, what verdict
@@ -296,7 +310,7 @@ result with no graph; infrastructure failures remain Go errors.
 
 ## Horos profile
 
-The [Horos analyzer](horos.md) adapts Horos's checked declaration Program. It
+The [Horos resolver and analyzer](horos.md) compose through shared evidence. Resolution
 publishes only a completely resolved graph for its selected entry and reachable
 pinned dependency closure. It distinguishes source rejection, missing context,
 contradicted context, invalid configuration and resource exhaustion using Horos's
@@ -316,6 +330,8 @@ same authoritative path.
 Native semantic analyzers, scope lookup, relation queries, partial checked graphs
 and incremental caches remain deferred. A separate test-only unknown-language
 provider qualifies the generic contract without adding a production native checker.
+
+See the [provider matrix](providers.md) for the independently registered capabilities.
 
 ## Limits and evidence
 

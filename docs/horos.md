@@ -22,18 +22,22 @@ implemented by this provider.
 - [check/horos/go](../check/horos/go/check.go) admits AST syntax: kinds, roles,
   cardinalities and lexical spellings. Unresolved or semantically invalid names
   can reach analysis. Check does not resolve bindings or validate module pins.
-- [analyze/horos/go](../analyze/horos/go/analyze.go) adapts Horos's authoritative
-  resolution to [shared semantic facts and reports](analysis.md). It verifies
+- [analyze/horos/go](../analyze/horos/go/analyze.go) consumes the explicit resolver result, reusing its model and
+  adapting its evidence to [shared semantic facts and reports](analysis.md). It verifies
   supplied semantic annotations and never repairs them implicitly.
 - [provider/horos/go](../provider/horos/go/provider.go) implements
-  `text.CheckerProvider[horos.Language]` and `analysis.Provider[horos.Language]`,
+  `text.CheckerProvider[horos.Language]`, `resolution.ResolverProvider[horos.Language]`
+  and `analysis.Provider[horos.Language]`,
   with ID `horos` and name `Horos`.
   Applications explicitly register it through `representation.NewLanguage` and
   `Engine.RegisterLanguage`, using profile `horos-declarations-1/ast-2`.
-  Semantic analysis requires an additional `analysis.NewAnalyzer` and
-  `Engine.RegisterAnalyzer`; implementing the interface installs nothing.
+  Resolution requires `resolution.NewResolver` and `Engine.RegisterResolver`.
+  Analysis additionally requires `analysis.NewAnalyzer` and
+  `Engine.RegisterAnalyzer`, and consumes the explicit resolution result.
+  See [shared composition](resolution.md); implementing interfaces installs nothing.
 
-Only the Horos resolver, analyzer and their private bridge depend on Horos/Ontos.
+Only the Horos resolver and its private bridge directly import Horos/Ontos.
+The analyzer consumes the resolver contract and shared evidence.
 The model dependency is pinned to a public immutable Go module revision in go.mod;
 there is no local replacement or vendored private checkout. Generic infrastructure
 and the four native text stages are unchanged and model-independent. The engine
@@ -125,7 +129,7 @@ qualify their boundary.
 
 ## Analysis profile and generic queries
 
-`analyze.Contract()` advertises `horos-declarations-1/analysis-1`. Its domain is
+`analyze.Contract()` advertises `horos-declarations-1/analysis-2`. Its domain is
 the selected entry and transitive pinned module closure, not every unused value
 in the supplied pool. Unused pool modules contribute no established semantic
 facts; their binding annotations are outside this analyzed domain. Every supplied
@@ -139,7 +143,10 @@ module still has its document-pin assertion checked during decoding.
 | applications | Complete / Undetermined; references, effective applications and provider expressions exported |
 | application-dependencies | Complete / Undetermined; every declaration application, including nested arguments, exported |
 
-All five reports are model publication requirements. A semantic rejection or
+The resolver adds a sixth obligation, reference-resolution, requiring Complete /
+Holds for its model. Its profile is horos-declarations-1/resolution-1. Analysis
+requires that resolver evidence and preserves these five reports. All five
+reports are analysis model publication requirements. A semantic rejection or
 missing dependency publishes diagnostics without a partial graph. Missing context
 and resolver exhaustion are Incomplete / Undetermined. A contradictory context
 can reject the submitted program/context obligation without asserting that the
@@ -148,7 +155,7 @@ exhaustion after successful resolution preserves Complete / Holds validity but
 leaves graph enumeration incomplete and publishes no model. Unknown requested
 obligations receive Unsupported / Undetermined.
 
-`LimitsSetting()` names provider-owned JSON configuration containing
+`resolve.LimitsSetting()` names provider-owned JSON configuration containing
 `[MaxDepth, MaxNodes, MaxBytes, MaxModules]`. All four limits are required; absence
 uses Horos defaults. This profile requires positive limits with depth at most 512.
 Invalid configuration is an API error before source decoding. The kernel copies and

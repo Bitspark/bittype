@@ -58,3 +58,8 @@ application-value validation or Wire dependencies.
   [source layout](LAYOUT.md): ownership, delivery and package boundaries.
 
 Historical research remains in Git history, not as competing active specifications.
+
+The [resolution contract](docs/resolution.md) and [provider matrix](docs/providers.md)
+cover independent ResolverProvider registration, shared semantic snapshots and
+explicit analysis dependencies. Shared records live in contracts/semantic/go;
+old analysis-owned records have no compatibility aliases.

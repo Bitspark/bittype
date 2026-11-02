@@ -1,6 +1,6 @@
-// Package analysis defines explicit, typed semantic-analysis capabilities.
-// It owns request/result publication, never a language's semantic rules.
-package analysis
+// Package semantic owns captured inputs and bounded semantic publication.
+// Language rules and operation-specific guarantees belong to providers.
+package semantic
 
 import (
 	"errors"
@@ -16,14 +16,14 @@ import (
 )
 
 var (
-	ErrInvalidAnalyzer = errors.New("invalid semantic analyzer")
-	ErrInvalidRequest  = errors.New("invalid analysis request")
-	ErrInvalidResult   = errors.New("invalid analysis result")
-	ErrStaleResult     = errors.New("analysis result belongs to another request")
-	ErrLimit           = errors.New("analysis resource limit")
+	ErrInvalidOperation = errors.New("invalid semantic operation")
+	ErrInvalidRequest  = errors.New("invalid semantic request")
+	ErrInvalidResult   = errors.New("invalid semantic result")
+	ErrStaleResult     = errors.New("semantic result belongs to another invocation")
+	ErrLimit           = errors.New("semantic resource limit")
 )
 
-// Obligation names an analysis and its provider-defined domain. The domain is
+// Obligation names an assertion or enumeration and its provider-defined domain. The domain is
 // interpreted relative to the captured entry and inputs, not fetched by the core.
 type Obligation struct {
 	Key    semantics.Key
@@ -83,8 +83,12 @@ type Setting struct {
 	Value []byte
 }
 
-// Limits bound captures and publication. A wholly zero value in Input selects
-// DefaultLimits; partly specified or otherwise invalid limits are rejected.
+// Limits bound capture, invocation and publication. Zero Input/Options limits
+// select defaults; partly specified or otherwise invalid limits are rejected.
+// MaxRequested counts requested keys plus all dependency report requirements.
+// MaxConfigurationEntries counts all own and dependency settings together.
+// MaxConfigurationBytes bounds all requested keys, settings, dependency operation
+// keys/profiles and dependency report keys together, before copying metadata.
 type Limits struct {
 	MaxInputs               int
 	MaxInputNodes           int
@@ -112,20 +116,26 @@ func (l Limits) Valid() bool {
 		l.MaxDiagnostics > 0 && l.MaxDiagnosticBytes > 0 && l.Model.Valid()
 }
 
-// Input is caller construction storage. Analyze captures its storage before
-// calling a provider. Callers must not mutate it concurrently with capture.
-// Every tree must match the analyzer's syntax descriptor. Empty Requested selects
-// all advertised obligations; unknown requested keys receive Unsupported reports.
+// Input is caller construction storage. Capture admits its immutable envelopes
+// before calling an operation. Every tree must match the syntax descriptor.
+// Callers must not mutate construction storage concurrently with capture.
 type Input struct {
 	Entry         ast.NodeRef
 	Trees         []representation.AST
+	Limits        Limits
+}
+
+// Options are captured separately for each invocation on an immutable Snapshot.
+// Empty Requested selects all advertised obligations; unknown keys receive
+// Unsupported reports. Callers must not mutate options during invocation.
+type Options struct {
 	Requested     []semantics.Key
 	Configuration []Setting
 	Limits        Limits
 }
 
-// LanguageID selects the envelope's registered language. Analyze still checks
-// every input's ID, profile and actual Go marker before invoking the provider.
+// LanguageID selects the envelope's registered language. Capture checks every
+// input's ID, profile and actual Go marker before admitting the snapshot.
 func (i Input) LanguageID() language.ID {
 	if len(i.Trees) == 0 {
 		return ""
@@ -138,20 +148,23 @@ func (i Input) LanguageID() language.ID {
 // must not mutate these records concurrently with publication.
 type Publication struct {
 	Facts       *semantics.Data
+	// ReuseModelFrom must be an admitted dependency of this invocation. It is
+	// mutually exclusive with Facts; the model retains its original identity.
+	ReuseModelFrom *Result
 	Reports     []Report
 	Diagnostics []Diagnostic
 }
 
-func cloneContract(c Contract) Contract {
+func (c Contract) Clone() Contract {
 	c.Obligations = slices.Clone(c.Obligations)
 	c.ModelRequirements = slices.Clone(c.ModelRequirements)
 	return c
 }
 
-func validateContract(c Contract) error {
-	bad := func(reason string) error { return fmt.Errorf("%w: %s", ErrInvalidAnalyzer, reason) }
+func (c Contract) Validate() error {
+	bad := func(reason string) error { return fmt.Errorf("%w: %s", ErrInvalidOperation, reason) }
 	if strings.TrimSpace(c.Profile) == "" || !utf8.ValidString(c.Profile) || len(c.Obligations) == 0 || len(c.Obligations) > 256 || len(c.ModelRequirements) > 256 {
-		return bad("invalid analysis contract")
+		return bad("invalid semantic contract")
 	}
 	bytes := 1 << 20
 	if !take(&bytes, len(c.Profile)) {
