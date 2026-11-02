@@ -271,8 +271,9 @@ and consuming composition, not the generator core, runtime, Wire or hydration.
 ## 5. Provider, pipeline and dependencies
 
 The contract language must have its own Go language marker, language ID and
-qualified syntax/analysis profiles, distinct from `horos` and its implemented
-`horos-declarations-1/ast-2` and `horos-declarations-1/analysis-1` profiles.
+qualified syntax/resolution/analysis profiles, distinct from `horos` and its
+implemented `horos-declarations-1/ast-2`, `horos-declarations-1/resolution-1`
+and `horos-declarations-1/analysis-2` profiles.
 Exact registered identifiers are assigned with implementation. An engine instance
 registers the chosen providers explicitly; no name switch or default is added.
 
