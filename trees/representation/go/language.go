@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
 )
 
 // Language binds an identity and explicit syntax/profile revision to a Go marker
@@ -19,7 +19,7 @@ type Language struct {
 	check         func(payload) error
 }
 
-func NewLanguage[L any](provider text.Checker[L], profile string) (Language, error) {
+func NewLanguage[L any](provider check.Provider[L], profile string) (Language, error) {
 	if IsNil(provider) {
 		return Language{}, ErrInvalidLanguage
 	}

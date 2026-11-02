@@ -126,11 +126,12 @@ func TestProductionArchitecture(t *testing.T) {
 		"trees/cst/go":            {"trees/ast/go"},
 		"contracts/language/go":   {},
 		"contracts/pipeline/go":   {},
-		"contracts/text/go":       {"trees/ast/go", "trees/cst/go", "contracts/language/go"},
+		"contracts/check/go":      {"trees/ast/go", "contracts/language/go"},
+		"contracts/text/go":       {"trees/ast/go", "trees/cst/go", "contracts/language/go", "contracts/check/go"},
 		"check/ast/go":            {"trees/ast/go", "contracts/text/go"},
 		"check/cst/go":            {"trees/ast/go", "trees/cst/go", "check/ast/go", "contracts/text/go"},
 		"print/go":                {"trees/cst/go", "check/cst/go"},
-		"trees/representation/go": {"trees/ast/go", "trees/cst/go", "contracts/language/go", "contracts/text/go", "check/ast/go", "check/cst/go", "internal/tree"},
+		"trees/representation/go": {"trees/ast/go", "trees/cst/go", "contracts/language/go", "contracts/check/go", "check/ast/go", "check/cst/go", "internal/tree"},
 		"contracts/transform/go":  {"trees/ast/go", "trees/representation/go", "contracts/language/go", "contracts/pipeline/go"},
 		"contracts/semantic/go":   {"trees/ast/go", "trees/representation/go", "contracts/language/go", "semantics/go", "internal/tree"},
 		"contracts/resolution/go": {"trees/representation/go", "contracts/language/go", "contracts/semantic/go", "semantics/go"},
@@ -151,6 +152,9 @@ func TestProductionArchitecture(t *testing.T) {
 		for _, stage := range []string{"check", "parse", "format"} {
 			allowed := append([]string{}, base...)
 			allowed = append(allowed, "check/ast/go", "internal/tree", "internal/grammar", helper)
+			if stage == "check" {
+				allowed = append(allowed, "contracts/check/go")
+			}
 			if stage != "check" {
 				allowed = append(allowed, checker, "internal/concrete")
 			}
@@ -169,7 +173,7 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["resolve/horos/go"] = []string{"trees/ast/go", "syntax/horos/go", "check/horos/go", "internal/horos", "contracts/semantic/go", "contracts/resolution/go", "contracts/text/go", "semantics/go"}
 	rules["check/horos/go"] = []string{"trees/ast/go", "check/ast/go", "contracts/text/go", "syntax/horos/go", "internal/grammar"}
 	rules["analyze/horos/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go", "syntax/horos/go", "resolve/horos/go"}
-	rules["provider/horos/go"] = []string{"trees/ast/go", "contracts/text/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "syntax/horos/go", "check/horos/go", "analyze/horos/go", "resolve/horos/go"}
+	rules["provider/horos/go"] = []string{"trees/ast/go", "contracts/check/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "syntax/horos/go", "check/horos/go", "analyze/horos/go", "resolve/horos/go"}
 	for path, p := range packages {
 		if p.Standard || path == modulePath+"/integration/go" {
 			continue

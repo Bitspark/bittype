@@ -1,6 +1,7 @@
 package golangcheck
 
 import (
+	checkcontract "github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	g "github.com/Bitspark/bittype/internal/grammar"
 	"github.com/Bitspark/bittype/internal/tree"
@@ -83,4 +84,4 @@ type Provider struct{ s.Language }
 
 func (Provider) Check(v ast.View[s.Language]) error { return Check(v) }
 
-var _ text.Checker[s.Language] = Provider{}
+var _ checkcontract.Provider[s.Language] = Provider{}

@@ -97,7 +97,8 @@ trees/cst/go/                            present: concrete carrier
 trees/representation/go/                 present: checked AST/CST and descriptors
 contracts/language/go/                   present: identity interface
 contracts/pipeline/go/                   present: typed Stage
-contracts/text/go/                       present: input, diagnostics, providers
+contracts/check/go/                      present: independent AST syntax admission
+contracts/text/go/                       present: input, diagnostics, text composition
 contracts/transform/go/                  present: ASTTransformer and typed bridge
 contracts/semantic/go/                   present: shared capture/publication
 contracts/resolution/go/                 present: resolver SPI

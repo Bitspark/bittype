@@ -18,6 +18,7 @@ syntax remain unimplemented.
 | [contracts/transform/go](../contracts/transform/go/transformer.go) | ASTTransformer and typed stage registration bridge |
 | [engine/go](../engine/go/engine.go) | Registration, route planning/execution and text-stage composition |
 | [contracts/language/go](../contracts/language/go/language.go) | Shared ID/Name identity contract |
+| [contracts/check/go](../contracts/check/go/provider.go) | Independent AST syntax-admission contract |
 | [contracts/pipeline/go](../contracts/pipeline/go/stage.go) | Independent typed Stage function contract |
 | Existing native providers | Language-specific parsing, checking, formatting and printing |
 
@@ -32,10 +33,15 @@ The existing ast.AST[L] and cst.CST[L] carriers remain unchanged. L separates
 Go types. A dynamic registry needs an opaque envelope, not ast.AST[any].
 
 representation.NewLanguage[L](checker, profile) creates a Language descriptor from a
-text.Checker[L]. It captures ID and Name, the actual Go marker type, the
+check.Provider[L]. It captures ID and Name, the actual Go marker type, the
 explicit profile string and the checker. Configured descriptors implement
 language.Provider; their zero values are invalid. Native marker providers still
 have usable zero values. Empty metadata and typed nil providers are rejected.
+
+The checker needs only AST views and language identity. It requires no parser,
+formatter or printer. A combined text.Provider also satisfies this contract;
+AST-only providers can implement it independently. Resolution and analysis
+remain separate registered capabilities.
 
 A profile names the admitted syntax/representation revision chosen by the
 application, such as native-types-v1. It is not a generated fingerprint,

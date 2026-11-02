@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"github.com/Bitspark/bittype/contracts/analysis/go"
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	cpp "github.com/Bitspark/bittype/provider/cpp/go"
@@ -20,7 +21,7 @@ func TestDocumentedProviderMatrix(t *testing.T) {
 	providerCapabilities(t, cpp.Provider{}, true, false)
 }
 
-func providerCapabilities[L any](t *testing.T, p text.Checker[L], nativeText, semantic bool) {
+func providerCapabilities[L any](t *testing.T, p check.Provider[L], nativeText, semantic bool) {
 	t.Helper()
 	t.Run(string(p.ID()), func(t *testing.T) {
 		if p.ID() == "" || p.Name() == "" {

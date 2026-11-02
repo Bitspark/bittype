@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### 3 November 2026
+
+- Move AST syntax admission to `check.Provider` in `contracts/check/go`,
+  independent of text and CST contracts. `representation.NewLanguage` accepts
+  this interface; `text.Provider` composes it with parsing, formatting and
+  printing. Update Horos and native providers, independent consumers, dependency
+  checks and the provider matrix. Remove `text.Checker` without an alias.
+
 ### 2 November 2026
 
 - Standardize the public provider interfaces as `language.Provider`,
