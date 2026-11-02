@@ -8,7 +8,10 @@ Read [CHARTER.md](CHARTER.md), [docs/model.md](docs/model.md),
 ## Current scope
 
 The owner selected canonical definitions as input and TypeScript, Go, Rust and C++
-types as outputs. The canonical model remains a proposal. The current native-text
+types as outputs. Horos owns data descriptors and proposed canonical
+module/generic/application semantics; bittype owns syntax, AST/CST tooling and
+transformations. The declaration integration remains a proposal. Do not revive
+the superseded independent bittype value-type algebra. The current native-text
 slice implements parsers, AST-to-CST formatters, syntax checks and a generic
 CST-to-text printer. Read the [concrete syntax design](docs/parsing-formatting.md).
 
@@ -57,7 +60,8 @@ CST-to-text printer. Read the [concrete syntax design](docs/parsing-formatting.m
 - Native compiler qualification and source/AST round trips are separate evidence.
   Text cannot recreate external resolved identities or original provenance.
 - Keep prior research and Nightseam as evidence, not competing specifications.
-  Settle canonical normalization/identity before fixing an encoding.
+  Use Horos's declaration proposal for normalization/identity and encoding;
+  do not infer semantic equivalence or behavioral ownership from document pins.
 
 ## Delivery
 

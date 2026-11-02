@@ -1,23 +1,29 @@
 # Charter
 
-**Current direction: 31 October 2026.** The owner selected bittype for canonical
-type definitions and native type generation, starting with types only.
-The detailed [model](docs/model.md) is a proposal, not a published language
-revision or an implementation.
+**Current direction: 2 November 2026.** The owner selected horos for canonical
+data type semantics and bittype for syntax/tooling and native type generation,
+starting with types only. The [model boundary](docs/model.md) replaces the earlier
+independent bittype type-language proposal. The declaration format remains a
+proposal, not a published language revision or an implementation.
 
 ## Ownership
 
 bittype owns:
 
-- The language-independent value-type model, its source syntax, declarations,
-  generic slots, applications, imports and resolution rules.
-- Parsing and checking declarations, including scope and recursive type rules.
+- Readable source syntax and AST/CST projections of horos declarations.
+- Frontend parsing, resolution tooling and located diagnostics implementing
+  horos's declaration/binding rules, without a second semantic specification.
 - Native type generation for TypeScript, Go, Rust and C++.
 - Native AST vocabularies and an agnostic language identity/registration
   boundary, independent of particular language providers.
-- The specification of canonical declaration encoding and its independent
-  vectors, once identity and normalization rules have been settled.
+- Native representation profiles and independent generation/round-trip fixtures.
 - Small data types needed to represent presence and nullness in generated code.
+
+Horos owns descriptors, conformance and the proposed module/generic/application
+semantics, declaration encoding and semantic vectors. Ontos owns values,
+structural identity and encoding. Horos does not depend on bittype; only the
+Horos-specific frontend and relevant transformers in bittype will consume its
+model. Generic foundations and native text stages remain independent.
 
 The owner's 31 October structure decision selects the stage-first matrix in
 [LAYOUT.md](LAYOUT.md). Shared trees, shared contracts and the engine have distinct
@@ -34,7 +40,7 @@ know the names or semantics of particular library contracts.
 
 ## Current delivery boundary
 
-The [canonical model](docs/model.md) remains a proposal. Generic AST/CST carriers,
+The [Horos declaration integration](docs/model.md) remains a proposal. Generic AST/CST carriers,
 typed views and pipeline contracts, four native type vocabularies, native parsers,
 AST-to-CST formatters, syntax checks and the shared CST printer are implemented.
 The [native text design](docs/parsing-formatting.md) defines their ownership and
@@ -49,18 +55,23 @@ canonical authority. The [generation design](docs/generation.md) remains separat
 This scope excludes application-value validators, serialization, Wire adapters,
 RPC/streaming implementations, consumer migration and package publication.
 Function, Stream, Cell and future behavioral contracts remain ordinary library
-declarations with no privileged cases in shared infrastructure. There are no
-production dependencies on other Bitspark implementation repositories.
+declarations with no privileged cases in shared infrastructure. There are currently
+no production dependencies on other Bitspark implementation repositories. Future
+Horos integration must narrowly extend the relevant dependency checks without
+adding model imports to generic carriers, contracts, engine or printer.
 
 ## Versioning and evidence
 
 A published language revision fixes its admitted syntax and meaning.
-The proposed `bittype: 1` spelling does not itself publish revision 1.
+The earlier `bittype: 1` proposal is superseded. Horos's proposed declaration
+revision does not make those documents accepted by its released checker.
 
 Canonical declaration identity, normalized value shape, generated-code
 compatibility and undeclared behavior remain distinct. A digest does not prove
 behavior or authorize a binding substitution. Specify normalization and identity
-content before assigning a canonical encoding version or publishing digests.
+content before implementing an encoding or publishing digests. Horos's proposal
+specifies document pins separately from semantic equivalence; bittype consumes
+that specification rather than inventing one.
 
 A generation manifest records the input revision, target configuration and
 generator version. Once an identity encoding exists, it records that version
@@ -74,6 +85,6 @@ rather than claiming that a compiler enforces every canonical value invariant.
 ## Historical scope
 
 The September bootstrap described a broader generated-consumer chain.
-The owner has narrowed the current work to the value model and types-only
-generation. Historical commits and research remain evidence; they do not add
+The owner has narrowed the current work to Horos-owned definitions and types-only
+generation. This update is documentation only. Historical evidence does not add
 callables, adapters or migration gates to this milestone.

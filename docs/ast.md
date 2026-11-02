@@ -7,6 +7,10 @@ and builders remain deferred; see the [native text pipeline](parsing-formatting.
 The canonical type language remains the [model proposal](model.md), without
 a canonical AST implementation.
 
+The 2 November ownership update selects Horos's declaration model as that input.
+Its future AST is an ordinary language-specific projection, without new core
+carrier kinds or a dependency from Horos to bittype.
+
 ## Language parameter
 
 The shared package is
