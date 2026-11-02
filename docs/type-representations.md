@@ -68,7 +68,9 @@ is not opportunistically collapsed into Data:
 | Labelled compound | `C("compound", A(label), L(E)...)`; preserve the label as literal data. |
 | Typed list | `C("list-of", L(element))`. |
 | Closed record | `C("record", A("closed"), fields...)`; preserve each literal field name, required/optional presence and translated field type. Keys remain ground canonical text. |
-| Union | `C("union", L(E)...)`; preserve the alternatives and their order. Do not select a behavioral binding by inspecting the branches. |
+| Union with at least two alternatives | `C("union", L(E)...)`; preserve the alternatives and their order. Do not select a behavioral binding by inspecting the branches. |
+| Union with one alternative | L(the alternative), retaining the source union as provenance; the contract union constructor requires at least two alternatives. |
+| Empty union | `Data(H("union"))`, preserving the empty ground type without introducing an upper bottom constructor. |
 | Any other subtree that can independently specialize to a closed, well-formed Horos descriptor G | `Data(G)`. Retain source references in provenance; do not inspect literal contents or widen G's domain. |
 | Any other subtree | Reject with a located unsupported-lift diagnostic. Do not erase constraints, substitute a top type or invent an upper constructor. |
 
@@ -102,6 +104,10 @@ reachable declaration once, grouped by its source module; imports in the output
 refer to the corresponding derived contract modules. Preserve parameter order,
 names and source declaration/application origins. Reject missing imports, cycles
 or output naming conflicts before publishing any usable result.
+
+Validate all original module imports under Horos's rules before selecting that
+output closure, including imports unused by the selected roots. Pruning generated
+output is not permission to skip the source language's resolution obligations.
 
 The build supplies output module names and records its selected roots, source
 module pins, lifting profile/version and target naming choices. Derived modules
