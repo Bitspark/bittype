@@ -37,11 +37,16 @@ Function, Stream, Cell and future behavioral contracts remain library-owned.
 This milestone adds no runtime adapters, callable implementations, serialization,
 application-value validation or Wire dependencies.
 
+Ontos and Horos stay data-only. The [contract-type proposal](docs/hydrated-types.md)
+places Wire and mixed data/capability types in a separate Bittype language
+provider above Horos. Existing bitwire/bitruntime hydration remains above Horos;
+the agnostic kernel acquires no Wire semantics. That provider is not implemented.
+
 ## Read first
 
 - [Horos canonical input](docs/model.md): ownership, declarations and native representation plan.
-- [Hydrated type proposal](docs/hydrated-types.md): exact proposed Wire input,
-  library-owned Function/Cell/Stream composition and future projection boundaries;
+- [Contract types above Horos](docs/hydrated-types.md): exact proposed Wire input,
+  explicit data boundary, library-owned Function/Cell/Stream composition and future provider;
   documentation only.
 - [Horos AST](docs/horos.md): model projection, binding references, checking and registration.
 - [Semantic facts](docs/semantics.md): immutable entities, terms, occurrences and dependencies.

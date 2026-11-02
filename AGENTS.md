@@ -9,8 +9,8 @@ Read [CHARTER.md](CHARTER.md), [docs/model.md](docs/model.md),
 
 The owner selected canonical definitions as input and TypeScript, Go, Rust and C++
 types as outputs. Horos owns data descriptors and canonical
-module/generic/application semantics; bittype owns syntax, AST/CST tooling and
-transformations. The Go declaration model and AST-only Horos frontend are implemented;
+module/generic/application semantics for data declarations; bittype owns syntax,
+AST/CST tooling and transformations. The Go declaration model and AST-only Horos frontend are implemented;
 read [docs/horos.md](docs/horos.md). Do not revive
 the superseded independent bittype value-type algebra. The current native-text
 slice implements parsers, AST-to-CST formatters, syntax checks and a generic
@@ -21,6 +21,15 @@ and Horos analyzer are implemented. Keep semantic rules provider-owned.
 Syntax admission must accept unresolved names; analysis publishes request-bound,
 immutable facts with explicit completion, verdict and model availability.
 Only Horos implements production semantics; native analysis remains deferred.
+
+The owner's later 2 November [boundary correction](docs/hydrated-types.md) keeps
+Ontos and Horos data-only. A separate proposed Bittype contract-language provider
+owns Wire typing and mixed data/capability compositions. Hydration stays above
+Horos in the existing bitwire/bitruntime layers. Do not add a Horos Wire kind,
+widen Horos generics or teach the agnostic kernel this concrete type language.
+The contract provider, its distinct identity/profile and its narrow ground-model
+dependency allowance are unimplemented. No implementation is authorized by this
+documentation proposal.
 
 - Readable Horos syntax, actual language transformers, public builders and application
   CLI remain deferred. The syntax engine and ASTTransformer boundary are now

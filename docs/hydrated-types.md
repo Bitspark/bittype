@@ -1,87 +1,239 @@
-# Hydrated Horos types and library composition
+# Contract types above the Horos data model
 
-**2 November 2026. Proposal only; no implementation.** The owner requested a
-native Wire atomic type in the canonical model, with Function, Stream and Cell
-declared by ordinary libraries. Horos owns the proposed exact format and meaning;
-bittype owns its future AST/semantic projections and native transformations.
-The current [Horos frontend](horos.md), ground declaration revision 1, native
-text tooling and agnostic engine remain unchanged.
+**Owner decision, 2 November 2026: Ontos and Horos stay data-only; Bittype adds
+the Wire type; hydration stays above Horos.** The type language below is a
+proposal, with no implementation. It replaces the earlier proposal to put
+`horos/wire` in Horos declaration revision 2. That format was never implemented
+and is not retained as an alias or migration input.
 
-## The missing type boundary
+The current [Horos frontend](horos.md), declaration revision 1, native text
+stages and agnostic engine remain unchanged. This document specifies a separate
+Bittype-owned contract-language layer; it does not revive the superseded
+independent Bittype data-type algebra.
 
-Bitwire already defines a value domain containing opaque sending capabilities:
+## 1. Ownership and value domains
+
+| Component | Responsibility |
+| --- | --- |
+| Deixis | Generic tree structure over opaque contents |
+| Ontos | Ground data values, structural identity and encoding |
+| Horos | Data descriptors, data declarations, generic binding and conformance |
+| Bittype contract-language provider | Wire message types and composition of data types with capability types |
+| Bittype agnostic kernel | Generic AST/CST, semantic facts, registration and transformations without concrete type semantics |
+| Bitwire / bitruntime | Capability contracts and hydration realization above Horos |
+| Contract libraries | Function, Stream, Cell declarations, native representations and behavioral laws |
+
+[Deixis permits opaque capability slots](https://github.com/Bitspark/deixis/blob/e0b0410d6f76d795992cc0a5792c507a19ef05ee/docs/SLOTS.md)
+without requiring them to be portable data. The
+[Ontos core](https://github.com/Bitspark/ontos/blob/a3f1d081f2e82f1e0ec39688c4060b5606b16c63/docs/spec/ontos-core.md)
+instead defines finite, immutable, context-free ground values. Horos retains
+[that data-only boundary](https://github.com/Bitspark/horos/blob/main/docs/spec/hydrated-types.md).
 
 ```text
 GroundValue   = ByteAtom | Tuple(GroundValue*)
 HydratedValue = ByteAtom | HydratedTuple(HydratedValue*) | Wire
 ```
 
-Horos currently classifies the first domain. The [Horos hydrated type proposal](https://github.com/Bitspark/horos/blob/main/docs/spec/hydrated-types.md)
-specifies declaration revision 2 for the second. A Wire is atomic in the sense
-of a live leaf; it is not an ontos byte atom. No new reference encoding or
-hydration mechanism is required. Native Wire recognition and lifetime remain
-with the [existing bitwire contract](https://github.com/Bitspark/bitwire/blob/e2d2d641744a49f1d8098b6ea5f2724454d72b96/docs/wire/hydrated-native.md)
-and its runtime realization.
+The second domain already belongs to the
+[Bitwire hydrated contract](https://github.com/Bitspark/bitwire/blob/e2d2d641744a49f1d8098b6ea5f2724454d72b96/docs/wire/hydrated-native.md)
+and its runtime realization. Ground values embed unchanged. A Wire is an opaque
+live sending capability, not an Ontos atom or an arbitrary object with a send
+method. Hydration conveys recognized capabilities through exports and proxies.
+Bittype describes these values; it does not hydrate them or implement a new
+reference protocol. Receiving, closure and resource lifetime remain runtime and
+endpoint-owner concerns.
 
-Type descriptions, modules and their pins remain ground ontos data. They describe
-capabilities without containing any. Loading/analyzing a schema must not import
-a live runtime, create/export endpoints or perform sends.
+Every type description below is itself ground Ontos data. It contains syntax,
+not a live endpoint. That makes it encodable, not a Horos descriptor: the
+language interpreting the encoded description still matters. Loading or
+analyzing it performs no sends, exports, binding or endpoint allocation.
 
-## Exact canonical input
+## 2. Exact proposed Wire expression and ground embedding
 
-The proposed primitive has exactly one child type expression, its message type:
+Use the ground value abbreviations `A`, `T`, `I`, `L`, `M`, `H` and `Pin` from
+[Horos's notation](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md#1-representation-and-notation).
+They construct raw UTF-8 atoms, canonical text/integers/lists/maps, Horos tags
+and exact SHA-256 document pins. Add one Bittype-owned syntax abbreviation:
 
 ```text
-H("wire", E) = Tuple(Atom(UTF8("horos/wire")), E)
+C(tag, arguments...) = Tuple(Atom(UTF8("bittype/contract/" + tag)), arguments...)
+
+Wire(E) = C("wire", E)
+        = Tuple(Atom(UTF8("bittype/contract/wire")), E)
+Data(G) = C("data", G)
 ```
 
-It conveys sending authority only. There are no core operation names, reply
-policies or Function/Stream/Cell discriminators. Using the existing Horos value
-abbreviations, its ordinary generic library declaration is:
+These are proposed exact value equations, not implemented builders or a readable
+source grammar. Wire takes exactly one type operand E, at tuple path `[1]`,
+declaring its message type. It conveys sending authority only. There is no
+implicit message type, direction flag, result slot or behavioral-contract name.
+
+G must be a complete, well-formed, closed Horos ground descriptor. `Data(G)`
+admits only ground values conforming to G. The Bittype provider delegates G's
+meaning to Horos; no second scalar, refinement, equality or ground collection
+model is introduced. In particular:
+
+- `Data(H("any"))` excludes every value containing a Wire.
+- `Data(H("not", G))` takes the complement within ground Ontos values only.
+- `Data(H("exact", value))` keeps the entire literal ground and opaque to
+  contract-parameter substitution, even if it resembles a Wire expression.
+
+G is a separate language boundary. A contract parameter or application cannot
+be inserted into its descriptor positions and handed to Horos as a descriptor.
+Existing Horos declaration tooling can specialize data applications to G; an
+AST transformation must retain the original declaration, arguments and origins
+alongside that result. A future direct import bridge is separate scoped work.
+
+## 3. Structural composition and generic declarations
+
+The initial proposed contract expression grammar is deliberately bounded:
 
 ```text
-WireLibrary = D("module", I(2), T("example.wire"), M{}, M{
-  "Wire": D("type", L(T("M")),
-    H("wire", D("param", I(0))))
+E = C("data", G)
+  | C("wire", E)
+  | C("tuple", E...)
+  | C("compound", A(label), E...)
+  | C("list-of", E)
+  | C("record", A("closed"), C("field", T(name), A(presence), E)...)
+  | C("union", E, E, ...)
+  | C("param", I(index))
+  | C("apply", target, L(E...))
+
+target = C("local", T(name)) | C("imported", T(alias), T(name))
+presence = "req" | "opt"
+```
+
+Tuple and compound accept zero or more children, list-of exactly one, and union
+at least two alternatives. Records accept zero or more distinct named fields;
+the mode is explicitly closed. The provider owns these lifted structural forms.
+They reuse the existing tuple, labelled compound, list and text-keyed map
+layouts, allowing hydrated children where Horos permits only data:
+
+```text
+tuple(v0, ...)       = HydratedTuple(v0, ...)
+compound(label, ...) = HydratedTuple(A(label), ...)
+list(v0, ...)        = HydratedTuple(A("list"), v0, ...)
+record(k0: v0, ...)  = HydratedTuple(A("map"), HydratedTuple(T(k0), v0), ...)
+```
+
+Record keys remain ground canonical text, unique and ordered by their Ontos
+codec bytes; required/optional membership follows the Horos record convention.
+Only their field values are lifted. Union admits values of any listed branch.
+A tuple with no live leaf retains the ordinary ground representation. This is
+an explicit Bittype interpretation above Horos, not live values inserted into
+Ontos containers or a widened Horos checker. Wire equality, ordering, hashing
+and serialization are not introduced.
+
+Other ground forms, including maps, sets, open records, complements and guarded
+recursion, remain available inside Data(G) with their unchanged Horos meaning.
+They are not implicitly lifted. This first contract proposal adds no hydrated
+top/complement, live map keys/set elements, recursive named application or
+session-type recursion. Unsupported lifts must report that limitation. Wire
+message operands are schema children, but a live Wire remains a value leaf;
+schema traversal never follows a receiver or performs interaction.
+
+Proposed contract modules have their own tag and revision:
+
+```text
+C("module", I(1), T(moduleName), importsMap, declarationsMap)
+C("import", T(moduleName), Pin(importedContractModule))
+C("type", L(T(parameterName), ...), E)
+```
+
+Imports and declarations use canonical text-keyed maps. This proposal adopts
+the existing [Horos declaration conventions](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md)
+for identifier spelling, exact document pins, ordered unique parameter names,
+zero-based lexical slots, local/imported targets, explicit argument arity and
+acyclic import/application graphs. Bittype owns their interpretation for these
+contract modules. All imported modules in this initial envelope are contract
+modules; a Horos module cannot be relabelled or imported through this form.
+The envelope is not Horos revision 1 or 2, and current tools accept none of it.
+
+Each parameter ranges over contract expressions E. Substitution visits only
+the declared contract-type positions; it never scans arbitrary Ontos literals
+or the contents of Data(G) for matching tags. Resolution preserves declaration
+identity, lexical binding and each application even when specialization could
+produce equal shapes. Specialization retains the contract-language profile and
+Data boundaries; absence of a Wire tag does not authorize conversion to Horos.
+
+### Pagination and lifting
+
+Horos's `Page<Person>` is still a data application and can be specialized to G
+and embedded with Data(G). Its T slot cannot accept `Wire<Message>`.
+
+A Bittype-owned lifting transformer could reuse the Page template by mapping
+its record/list structure into the contract forms above and preserving its T
+binder. Conceptually, its separately identified result would be:
+
+```text
+LiftedPage<T> = record closed {
+  items: list-of(T)
+  next?: Data(scalar(utf8-text))
+}
+```
+
+Then `LiftedPage<Wire<Message>>` is meaningful in the upper language. Users
+need not hand-author the expansion. Such a transformer must explicitly declare
+the supported forms, input and output profiles, preserve the source declaration
+and provenance, and identify the result as a lifted declaration, not the original
+Horos declaration with different semantics. Its exact import/lifting encoding
+and implementation are deferred; there is no automatic fallback or blanket
+reinterpretation of all Horos constructors. This example is explanatory notation.
+
+## 4. Library-owned Function, Cell and Stream
+
+These complete proposed module equations illustrate composition. They specify
+no deployed package or protocol compatibility. The abbreviated applications are:
+
+```text
+P(i)                 = C("param", I(i))
+Use(alias, name, ...) = C("apply", C("imported", T(alias), T(name)), L(...))
+Local(name, ...)      = C("apply", C("local", T(name)), L(...))
+
+WireLibrary = C("module", I(1), T("example.wire"), M{}, M{
+  "Wire": C("type", L(T("M")), C("wire", P(0)))
+})
+
+FunctionLibrary = C("module", I(1), T("example.contracts.function"), M{
+  "wire": C("import", T("example.wire"), Pin(WireLibrary))
+}, M{
+  "Unit": C("type", L(), Data(H("tuple"))),
+  "Function": C("type", L(T("A"), T("B")),
+    Use("wire", "Wire", C("tuple", P(0), Use("wire", "Wire", P(1)))))
+})
+
+CellLibrary = C("module", I(1), T("example.contracts.cell"), M{
+  "fn": C("import", T("example.contracts.function"), Pin(FunctionLibrary))
+}, M{
+  "Cell": C("type", L(T("T")), C("record", A("closed"),
+    C("field", T("get"), A("req"),
+      Use("fn", "Function", Use("fn", "Unit"), P(0))),
+    C("field", T("set"), A("req"),
+      Use("fn", "Function", P(0), Use("fn", "Unit")))))
+})
+
+StreamLibrary = C("module", I(1), T("example.contracts.stream"), M{
+  "fn": C("import", T("example.contracts.function"), Pin(FunctionLibrary))
+}, M{
+  "Step": C("type", L(T("T")),
+    C("union", C("compound", A("item"), P(0)), C("compound", A("end")))),
+  "Stream": C("type", L(T("T")), C("record", A("closed"),
+    C("field", T("next"), A("req"),
+      Use("fn", "Function", Use("fn", "Unit"), Local("Step", P(0)))),
+    C("field", T("cancel"), A("req"),
+      Use("fn", "Function", Use("fn", "Unit"), Use("fn", "Unit")))))
 })
 ```
 
-`D` prefixes declaration tags with `horos/decl/`; `H` prefixes type tags with
-`horos/`; `I`, `T`, `L` and `M` are canonical integer, text, list and text-keyed
-map embeddings. `A` in the full specification is a raw UTF-8 atom. These are
-exact value equations, not implemented authoring functions or a readable parser.
-The [owning specification](https://github.com/Bitspark/horos/blob/main/docs/spec/hydrated-types.md#2-exact-wire-type-format)
-defines arity, operands, domain selection and the full library module values.
-
-Revision 2 is explicit. The proposal initially admits only revision-2 imports;
-there is no implicit widening of a revision-1 dependency or fallback for an
-unknown constructor. A specialized expression retains its hydrated profile even
-if it is simply `any()` or a complement with no Wire tag. Bittype must not feed
-such an expression into the current ground checker and report the narrower
-answer as equivalent. Current source accepts neither this module revision nor
-this new constructor.
-
-## How the libraries compose
-
-The following is explanatory shorthand for the exact pinned module equations in
-Horos's proposal. It is not an additional canonical format or an implemented
-bittype source grammar:
+Each Pin is the exact 32-byte SHA-256 atom of the preceding expanded module's
+canonical Ontos bytes, not a placeholder string or version lookup. Module names
+are illustrative library identities, never built-in registrations. Their meaning
+in explanatory notation is:
 
 ```text
-// example.wire
-Wire<M> = primitive wire(M)
-
-// example.contracts.function imports the exact example.wire module
-Unit = tuple()
+Unit = Data(tuple())
 Function<A,B> = Wire<tuple(A, Wire<B>)>
-
-// example.contracts.cell imports the exact Function module
-Cell<T> = record closed {
-  get: Function<Unit,T>
-  set: Function<T,Unit>
-}
-
-// example.contracts.stream imports the exact Function module
+Cell<T> = record closed { get: Function<Unit,T>, set: Function<T,Unit> }
 Step<T> = union(compound("item", T), compound("end"))
 Stream<T> = record closed {
   next: Function<Unit,Step<T>>
@@ -89,129 +241,90 @@ Stream<T> = record closed {
 }
 ```
 
-Function is a success-only illustrative request/reply representation: each
-request contains A and a fresh reply Wire for B. Cell composes two Functions;
-this Stream is a pull composition with next/cancel Functions. The libraries
-retain ordinary module/declaration identities and indexed binders. These examples
-do not replace current service contracts or establish deployed compatibility.
+Function is an illustrative success-only request/reply representation. Its
+library owns fresh reply endpoints, matching, one-reply discipline, failure,
+completion and resource management. Unit is a bare empty tuple, not an implicit
+native void. Cell's library owns state and mutation guarantees. The pull Stream
+library owns demand, order, concurrent-next policy and terminal/cancellation
+races. These behaviors are not consequences of the type shapes. Production
+bindings need their own full protocols and qualification.
 
-The declaration describes representation. Function's implementation owns reply
-matching, failure/completion rules and resource management; Cell owns its state
-and mutation guarantees; Stream owns demand, ordering and terminal/cancellation
-behavior. Those laws must be specified and tested in the libraries. A generic
-record composition does not derive them. Unit denotes a bare empty tuple; a
-native `void`, callback or iterator surface requires an explicit library mapping.
+A future generator preserves resolved library identity through imports, aliases
+and applications. Custom native surfaces or adapters are selected explicitly
+through that identity; matching an expanded shape or a name such as Cell cannot
+select a binding. Library binding metadata and executable adapters remain outside
+this task. Adding another contract changes the library and consuming composition,
+not the generator core, runtime, Wire or hydration.
 
-A future generator follows imports and generic applications, preserving identities
-through aliases and nested uses. If a library selects a custom native surface or
-adapter, its binding association must identify the resolved declaration, not a
-bare name or an expanded shape. Consumers explicitly select these library-owned
-exports. The exact adapter metadata/API and executable bindings remain outside
-this documentation task and the current types-only implementation milestone.
+## 5. Provider, pipeline and dependencies
 
-## Projection through the agnostic kernel
+The contract language must have its own Go language marker, language ID and
+qualified syntax/analysis profiles, distinct from `horos` and its implemented
+`horos-declarations-1/ast-2` and `horos-declarations-1/analysis-1` profiles.
+Exact registered identifiers are assigned with implementation. An engine instance
+registers the chosen providers explicitly; no name switch or default is added.
 
-The generic AST and semantic model already have carriers for this proposal:
+The [stage-first layout](../LAYOUT.md) applies. Proposed paths use `contract`
+as the stage-directory name, not a new generic kernel package:
 
-| Layer | Proposed treatment |
+| Proposed component | Responsibility |
 | --- | --- |
-| Horos authoritative model | Recognize revision 2, the Wire message-type position and the hydrated profile's semantics |
-| Horos AST vocabulary | Reuse a Descriptor node with constructor attribute `wire` and one operand; keep ordinary declarations, parameters and applications |
-| Horos projection/resolution | Obtain the message operand at tuple path `[1]` from Horos's authoritative expression model; preserve input profile and binding identities |
-| Shared semantic facts | Reuse ProviderExpression with exact encoded schema bytes and the located message operand; use existing Reference/Application terms for generic arguments |
-| Analysis provider | Report validity, coverage and model availability for the selected declaration profile; supply facts without inspecting a live capability |
-| Engine and registration | Explicitly register the matching Horos syntax descriptor/analyzer; no automatic provider, named contract lookup or new generic core kind |
-| Future target transformer | Produce the selected native type AST using preserved declarations and explicit library representation choices |
-| Existing formatter/printer | Consume the target language AST/CST through their existing contracts |
+| `syntax/contract/go` | Contract-language vocabulary and identity on the existing AST carrier |
+| `check/contract/go` | Syntax-only admission; unresolved names can reach analysis |
+| `resolve/contract/go`, `internal/contract` | Module/binder resolution, explicit ground embeddings and declared operand positions |
+| `analyze/contract/go` | Provider-owned semantics adapted to shared immutable facts and reports |
+| `provider/contract/go` | Explicit AST-only capability composition |
+| `transforms/contract-to-<native>/go` | Future native type AST mappings with explicit representation profiles |
+| `transforms/horos-to-contract/go` | Future, separately qualified data embedding or structural lifting |
 
-The syntax and analysis profile identifiers must distinguish the new domain from
-the current `horos-declarations-1/ast-2` and
-`horos-declarations-1/analysis-1`. The exact identifiers are assigned with a
-qualified implementation, not silently reused. An engine instance currently
-fixes one syntax profile per language ID; registering the new profile must obey
-that existing rule rather than introduce negotiation or implicit conversions.
+These are proposed paths only; no packages or APIs are added now. Existing
+`syntax/horos`, `resolve/horos`, `check/horos`, `analyze/horos` and
+`provider/horos` remain data-only. Horos-to-native mappings remain independently
+useful for data generation; a capability layer is not a mandatory detour.
 
-No new universal semantic term kind or generic core Wire interpretation follows
-from this proposal. The Horos provider retains the primitive's meaning in its
-owned vocabulary. The agnostic kernel validates graph integrity and publication;
-it does not decode the schema payload or decide what a Wire message means.
-Providers and transformers consume authoritative operand information instead of
-copying a second Horos constructor switch.
+The generic semantic model can carry provider-owned expressions with located
+operands and ordinary Reference/Application facts. The contract provider owns
+the Wire message operand and preserves each Data boundary; the kernel checks
+graph integrity, storage and publication without decoding those semantics.
+No universal semantic Wire term, structural fingerprint or core import follows.
 
-For `Cell<Person>`, the application binds Cell's T to the caller's Person. The
-get member applies Function to Unit and that bound Person; set reverses those
-argument positions. Function's body applies the imported Wire declaration to
-its request tuple, whose reply position applies Wire to its B. The same graph
-queries can inspect each binding without erasing the named declarations or
-automatically expanding them. A field or alias called `Cell` alone establishes
-none of these identities.
+The contract resolver/analyzer may delegate ground semantics to Horos through
+reviewed, narrowly qualified package dependencies. Current architecture checks
+permit those external model dependencies only in the Horos frontend; the future
+provider needs its own explicit allowance and tested capability profile.
+Generic trees, `contracts/*`, semantic facts, engine, printer and native text
+stages remain independent of Horos, Wire and behavioral libraries. The existing
+`contracts/` directory contains agnostic SPIs, not this proposed language.
 
-## Structure, behavior and ground identity
+Static tooling has no dependency on a live runtime. Behavioral library
+implementations use existing Wire/hydration; consumers compose selected libraries.
+The dependency never points from Horos to Bittype or from hydration to Function,
+Stream or Cell. Existing formatters/printer consume future target ASTs normally.
 
-Recognizing a live Wire proves only that it is a sending capability admitted by
-the runtime. `Wire<Text>` additionally declares a message contract; observing
-the leaf cannot prove that the remote receiver follows it. Typed bindings can
-check actual messages at their boundaries. Neither a semantic analysis Holds
-report nor a local shape match establishes remote execution, one reply,
-cancellation or protocol equivalence. No variance or assignability is inferred.
+## 6. Qualification and forbidden shortcuts
 
-Horos's proposed profile specifies which structural constructors lift. Tuples,
-lists, record fields and map values can contain Wires. Map keys and set elements
-remain ordered ground data; exact literals remain ground; open record extras
-range over the selected hydrated domain. Do not use existing ground container
-objects to smuggle live leaves into ontos. Descriptions remain serializable,
-while values containing Wires have no newly invented structural equality or
-content hash. Recursion cannot capture an outside rec/ref binder through a Wire
-message boundary; message expressions may use generic parameters or their own
-closed, guarded recursion. The owning specification supplies the exact rules.
+This task changes documentation only. Current Horos APIs and the Bittype Horos
+provider reject the proposed contract format. No generator, runtime binding,
+parser, validator, production dependency, conformance vector or release is added.
 
-These distinctions matter for native generation too: a target type that can
-store a capability does not prove that its code implements a library's protocol.
-The native representation profile must state its limits. Current native ASTs,
-text round trips and compiler tests establish none of these future mappings.
+Before implementation is claimed, independent fixtures must establish exact
+namespace/revision/arity checks, ground Data boundaries, generic/literal scope,
+resolved library identity, profile-preserving specialization, supported lifting
+and separate syntax/semantic outcomes. Include wire-free `any`/complement cases
+to prove that domain selection is not inferred by searching for a Wire tag.
+The data-only Page and its explicitly lifted counterpart require separate
+identity and meaning checks. Native compilation and runtime protocol tests are
+separate evidence, not substitutes for those checks.
 
-## Repository layout and dependency direction
+Recognizing a Wire proves only runtime-admitted sending capability. `Wire<E>`
+declares a message contract; observing the leaf cannot prove that a remote
+receiver follows E. Future bindings may validate actual messages. Analysis
+reports cannot establish remote execution, one reply, cancellation, variance or
+protocol equivalence. Type analysis itself must never send, bind or export.
 
-This proposal preserves the [stage-first matrix](../LAYOUT.md):
-
-| Existing package | Future responsibility, when implemented |
-| --- | --- |
-| `syntax/horos/go` | Describe the qualified new AST profile using existing carrier vocabulary |
-| `check/horos/go` | Admit that syntax profile, preserving the syntax/semantic distinction |
-| `resolve/horos/go` and `internal/horos` | Project/adapt authoritative revision-2 declarations and operands |
-| `analyze/horos/go` | Publish the new profile's checked facts and reports |
-| `provider/horos/go` | Explicit composition of the qualified capabilities |
-| `trees/*`, `semantics/go`, `contracts/*`, `engine/go` | Remain independent of concrete Wire and contract-library semantics |
-
-Future `transforms/horos-to-<native>/go` mappings retain their planned location.
-Library-specific native types and adapters belong in their owning libraries;
-consuming composition imports them. No placeholder package, production
-dependency or generator implementation is introduced now. The generic kernel
-must not depend on bitwire, bitruntime or the Function/Stream/Cell libraries.
-
-The dependency direction is: application composition -> chosen transformers and
-contract libraries; Horos frontend -> Horos's schema model; behavioral library
-implementation -> existing Wire/hydration. Loading a schema model need not load
-the implementation of the live capability it describes.
-
-Forbidden are core Function/Stream/Cell kinds, name switches, built-in imports,
-default registrations, behavior chosen from structural fingerprints, generated
-central dispatch tables, or a new reference/export engine. Teaching the
-Horos-specific frontend its one new primitive is not permission to teach the
-general kernel behavioral contracts. Adding another contract after this boundary
-is qualified changes the library and its consumers, not the generic core.
-
-## Qualification before implementation claims
-
-Future qualification must independently test exact canonical Wire/module forms,
-revision mismatch, generic/alias identity, located message operands, literal
-boundaries, profile-preserving specialization and separate syntax/semantic
-outcomes. It must include wire-free expressions whose meaning depends on domain,
-ground-only map/set positions and closed recursion boundaries. Input capture and
-analysis must never send, export or construct live endpoints.
-
-Cross-package tests must keep generic infrastructure independent of concrete
-semantic packages. Native mapping/compilation, runtime capability recognition,
-message validation and Function/Cell/Stream behavior each require their own
-evidence. This documentation change supplies no new executable implementation,
-test vectors, parser, generator, runtime adapter or package release.
+Forbidden: adding Wire to Horos or the agnostic kernel; silently reinterpreting
+ground descriptors or generic arguments; embedding live handles in Ontos data;
+core Function/Stream/Cell kinds, imports, switches or registrations; behavior
+chosen by structural fingerprints, including generated central dispatch tables;
+and a replacement hydration/export engine. The new ownership boundary belongs
+in a concrete language provider, not in those general layers.

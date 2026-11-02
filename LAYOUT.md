@@ -143,6 +143,18 @@ generic carriers, engine or production registration catalogue: there is no such
 catalogue. Applications choose their registrations. Adding Function, Stream,
 Cell or another library declaration does not add a stage, language or core kind.
 
+The separate [contract-type proposal](docs/hydrated-types.md) places Wire and
+mixed data/capability types above Horos in a new concrete language provider.
+Its proposed stage paths are `syntax/contract/go`, `check/contract/go`,
+`resolve/contract/go`, `analyze/contract/go`, `provider/contract/go` and private
+`internal/contract` helpers. They do not belong under the agnostic `contracts/`
+SPI directory. Future mappings use `transforms/contract-to-<native>/go` and an
+explicitly qualified `transforms/horos-to-contract/go` embedding/lifting bridge.
+These paths are proposals, not created packages or an extension of `horos`.
+The provider requires a separate identity/profile and reviewed narrow Horos/Ontos
+dependency allowance; the current architecture checks remain unchanged. Native
+text stages, generic infrastructure and Horos's data semantics stay independent.
+
 See the [charter](CHARTER.md), [engine API](docs/engine.md),
 [native text design](docs/parsing-formatting.md) and
 [future transformation plan](docs/generation.md).
