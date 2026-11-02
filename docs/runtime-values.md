@@ -89,6 +89,11 @@ structs, cyclic objects or any value implementing a Send method. The runtime
 owns capability recognition. A ground Wire cannot become a HydratedWire by a
 type cast; their message domains differ.
 
+`Wire<E>` in the proposed contract language describes a message contract. The
+existing Go `wire.HydratedWire` interface is not parameterized by E. A future
+selected native view can expose typed sending by composing E's value adapter;
+the hydrator itself does not load E or check a library's message protocol.
+
 A Wire grants sending only. An Endpoint owns receiving and closure. Send success
 means local admission, not a remote operation result or delivery acknowledgement.
 In particular, hydrated Send does not implement Function invocation or matching.
@@ -261,7 +266,8 @@ value does not prove conformance, liveness or behavioral compatibility.
 
 ## 6. Generation and runtime remain separate composition layers
 
-The user's proposed `adapterToGo(bittype): gotype` has two distinct meanings:
+An expression such as `adapterToGo(bittype): gotype` must distinguish these
+three operations and the kind of input each receives:
 
 ```text
 Type generation:
