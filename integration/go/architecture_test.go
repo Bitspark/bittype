@@ -48,7 +48,7 @@ func productionPackages(t *testing.T) map[string]productionPackage {
 func stageLanguages(t *testing.T) []string {
 	t.Helper()
 	names := map[string]bool{}
-	for _, stage := range nativeStages {
+	for _, stage := range append(slices.Clone(nativeStages), "resolve") {
 		entries, err := os.ReadDir(filepath.Join("../..", stage))
 		if err != nil {
 			t.Fatal(err)
@@ -78,21 +78,35 @@ func TestLanguageStageMatrix(t *testing.T) {
 		t.Fatal("no language implementations")
 	}
 	qualified := map[string]bool{}
+	profiles := map[string][]string{}
 	for _, fixture := range nativeConformanceCases() {
 		if qualified[fixture.directory] {
 			t.Fatalf("duplicate conformance fixture: %s", fixture.directory)
 		}
 		qualified[fixture.directory] = true
+		profiles[fixture.directory] = nativeStages
+	}
+	for _, fixture := range astOnlyConformanceCases() {
+		if qualified[fixture.directory] || fixture.qualify == nil {
+			t.Fatalf("duplicate or unqualified AST-only fixture: %s", fixture.directory)
+		}
+		qualified[fixture.directory] = true
+		profiles[fixture.directory] = []string{"syntax", "resolve", "check", "provider"}
 	}
 	for _, name := range languages {
-		for _, stage := range nativeStages {
+		for _, stage := range profiles[name] {
 			path := modulePath + "/" + stage + "/" + name + "/go"
 			if p, ok := packages[path]; !ok || len(p.GoFiles) == 0 {
 				t.Errorf("missing implemented stage %s", path)
 			}
 		}
+		for _, stage := range append(slices.Clone(nativeStages), "resolve") {
+			if _, ok := packages[modulePath+"/"+stage+"/"+name+"/go"]; ok && !slices.Contains(profiles[name], stage) {
+				t.Errorf("%s has an unqualified capability stage: %s", name, stage)
+			}
+		}
 		if !qualified[name] {
-			t.Errorf("%s is missing shared provider conformance/round-trip/fuzz coverage", name)
+			t.Errorf("%s is missing a tested native-text or AST-only capability profile", name)
 		}
 		delete(qualified, name)
 	}
@@ -145,12 +159,20 @@ func TestProductionArchitecture(t *testing.T) {
 		// Language-specific lexical helpers cannot depend on stages or another language.
 		rules[helper] = []string{"trees/ast/go", "contracts/text/go", "internal/grammar", "internal/lex", "internal/tree"}
 	}
+	// Horos has an explicit AST-only capability profile. Its helpers implement
+	// model projection/checking, not a hidden semantic dependency in other stages.
+	rules["internal/horos"] = []string{"trees/ast/go", "check/ast/go", "contracts/text/go", "syntax/horos/go"}
+	rules["resolve/horos/go"] = []string{"trees/ast/go", "syntax/horos/go", "internal/horos"}
+	rules["check/horos/go"] = []string{"trees/ast/go", "syntax/horos/go", "internal/horos"}
+	rules["provider/horos/go"] = []string{"trees/ast/go", "contracts/text/go", "syntax/horos/go", "check/horos/go"}
 	for path, p := range packages {
 		if p.Standard || path == modulePath+"/integration/go" {
 			continue
 		}
 		if !strings.HasPrefix(path, modulePath+"/") {
-			t.Errorf("external production dependency: %s", path)
+			if !slices.Contains(horosModelDependencies, path) {
+				t.Errorf("unclassified external production dependency: %s", path)
+			}
 			continue
 		}
 		relative := strings.TrimPrefix(path, modulePath+"/")
@@ -163,9 +185,27 @@ func TestProductionArchitecture(t *testing.T) {
 			if dep, ok := packages[dependency]; ok && dep.Standard {
 				continue
 			}
+			if slices.Contains(horosExternalImports[relative], dependency) {
+				continue
+			}
 			if !strings.HasPrefix(dependency, modulePath+"/") || !slices.Contains(allowed, strings.TrimPrefix(dependency, modulePath+"/")) {
 				t.Errorf("%s must not import %s", relative, dependency)
 			}
 		}
 	}
+}
+
+// Only the Horos frontend consumes the semantic model. A global exemption for
+// external modules would let model dependencies leak into generic infrastructure.
+var horosModelDependencies = []string{
+	"github.com/Bitspark/horos/core/go",
+	"github.com/Bitspark/horos/core/go/declarations",
+	"github.com/bitspark/ontos/core/go",
+	"github.com/bitspark/ontos/data/go",
+	"github.com/bitspark/ontos/codec/go",
+}
+
+var horosExternalImports = map[string][]string{
+	"internal/horos":   {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
+	"resolve/horos/go": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
 }

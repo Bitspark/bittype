@@ -8,14 +8,15 @@ Read [CHARTER.md](CHARTER.md), [docs/model.md](docs/model.md),
 ## Current scope
 
 The owner selected canonical definitions as input and TypeScript, Go, Rust and C++
-types as outputs. Horos owns data descriptors and proposed canonical
+types as outputs. Horos owns data descriptors and canonical
 module/generic/application semantics; bittype owns syntax, AST/CST tooling and
-transformations. The declaration integration remains a proposal. Do not revive
+transformations. The Go declaration model and AST-only Horos frontend are implemented;
+read [docs/horos.md](docs/horos.md). Do not revive
 the superseded independent bittype value-type algebra. The current native-text
 slice implements parsers, AST-to-CST formatters, syntax checks and a generic
 CST-to-text printer. Read the [concrete syntax design](docs/parsing-formatting.md).
 
-- Canonical AST, actual language transformers, public builders and application
+- Readable Horos syntax, actual language transformers, public builders and application
   CLI remain deferred. The syntax engine and ASTTransformer boundary are now
   implemented; read [docs/engine.md](docs/engine.md). Do not introduce runtime
   adapters, callable behavior,
@@ -30,7 +31,8 @@ CST-to-text printer. Read the [concrete syntax design](docs/parsing-formatting.m
   shared contracts under contracts; native implementations use the same
   syntax/parse/check/format/provider language matrix. Do not add compatibility
   aliases or a language-first packages tree. Keep the root Go module.
-- Add every language to the shared conformance fixtures; architecture checks
+- Add every language to the shared conformance fixtures; AST-only providers
+  require an explicit tested capability profile. Architecture checks
   discover stage directories and enforce complete coverage and directed imports.
   Keep package tests with their implementation and cross-package qualification
   under integration. Private helpers must obey the same ownership boundaries.
@@ -60,8 +62,11 @@ CST-to-text printer. Read the [concrete syntax design](docs/parsing-formatting.m
 - Native compiler qualification and source/AST round trips are separate evidence.
   Text cannot recreate external resolved identities or original provenance.
 - Keep prior research and Nightseam as evidence, not competing specifications.
-  Use Horos's declaration proposal for normalization/identity and encoding;
+  Use Horos's declaration specification for normalization/identity and encoding;
   do not infer semantic equivalence or behavioral ownership from document pins.
+- Only the Horos frontend consumes the external Horos/Ontos model dependencies.
+  Preserve the narrow package import allowances; generic infrastructure and
+  native stages must remain independent of these semantic packages.
 
 ## Delivery
 

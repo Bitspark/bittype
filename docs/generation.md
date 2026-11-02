@@ -6,12 +6,13 @@ implemented. The [native text design](parsing-formatting.md) owns parser,
 formatter, printer and checking details. The owner's later 31 October direction
 unifies generation and native-to-canonical migration under ASTTransformer. Its
 typed boundary and syntax engine with explicit registration, path finding and
-execution are implemented; see the [engine reference](engine.md). Canonical AST,
-actual language mappings, public builders and application CLI remain deferred.
+execution are implemented; see the [engine reference](engine.md). The Horos AST
+is now implemented; readable Horos syntax, actual language mappings, public
+builders and application CLI remain deferred.
 
-Horos owns the data model and [proposed declaration semantics](model.md).
-Bittype owns their syntax/tooling projection and native transformations. This
-documentation update introduces no canonical AST, parser or transformer.
+Horos owns the data model and [declaration semantics](model.md).
+Bittype implements the [AST-only projection](horos.md); native transformations
+remain future work. This change adds no text parser or ASTTransformer implementation.
 
 ## Target pipeline
 
@@ -37,7 +38,7 @@ leaves. The formatter does not resolve
 canonical declarations or decide how a canonical nullable field should be
 represented. Those choices must already be explicit in the target AST.
 
-The future Horos frontend supplies syntax, AST projection and located errors,
+The Horos frontend supplies AST projection/checking and located AST errors,
 using Horos-owned resolution, binding and specialization rules. A readable
 authoring syntax can add text -> CST[Horos] with its AST view; the canonical
 document value format does not claim that source syntax already exists.
@@ -76,12 +77,12 @@ integration/go/                          present: contracts, conformance, archit
                                                  graph, ownership and compiler checks
 testdata/text/<language>/valid/          present: native source fixtures
 
-syntax/horos/go/                        planned: Horos declaration AST projection
+syntax/horos/go/                        present: Horos declaration AST projection
 parse/horos/go/                         proposed: future readable source to CST
-resolve/horos/go/                       planned: Horos references and binders
-check/horos/go/                         planned: frontend checks using Horos rules
+resolve/horos/go/                       present: Horos references and binders
+check/horos/go/                         present: frontend checks using Horos rules
 format/horos/go/                        proposed: future readable Horos CST
-provider/horos/go/                      planned: explicit capability composition
+provider/horos/go/                      present: AST-only capability composition
 transforms/horos-to-<native>/go/         planned: directed native generation
 transforms/<native>-to-horos/go/         proposed: partial migration mapping
 cmd/bittype/go/                          planned: application composition and IO
@@ -134,7 +135,7 @@ type Stage[I, O any] func(I) (O, error)
 
 A generator will satisfy a stage from one AST type to another; a formatter
 satisfies a stage from a target AST view to CST, and a printer from CST to text. The planned relationships
-are shown below; target markers exist, but the Horos marker does not yet:
+are shown below; all language markers exist, but the Horos-to-native stage does not:
 
 ```text
 Stage[AST[Horos], AST[TypeScript]]
@@ -276,10 +277,9 @@ Arrows in the table mean a direct package dependency is allowed:
 | Application composition root | Explicitly selected language providers, engine, frontend, transformers and pipeline |
 | Integration tests | The APIs under test and native compiler/checker tooling |
 
-Standard-library utilities are permitted in every layer. There are no external
-Go module dependencies in this slice and no dependencies on another Bitspark
-implementation repository. Future Horos integration narrowly permits its frontend
-and relevant transforms to consume the model, with updated architecture tests;
+Standard-library utilities are permitted in every layer. The Horos frontend
+consumes the public Horos Go declaration model and Ontos values through narrowly
+qualified package dependencies. Future transforms need their own explicit rules;
 Horos must not depend on bittype. This does not permit model imports in generic
 trees, contracts, engine or printer. The AST, pipeline and language identity packages do
 not import each other or concrete syntax packages. Syntax packages do not import
@@ -316,11 +316,11 @@ boundary. Native text syntax and compiler fixtures now provide separately scoped
 The engine's independent tests qualify registration, the typed boundary, graph
 planning and checked execution. Canonical generation remains unimplemented.
 
-Subsequent, separately authorized increments are:
+Delivery status and subsequent increments:
 
-1. Qualify the Horos declaration proposal and independent semantic fixtures;
-   then implement its AST projection under separate implementation authorization.
-2. Implement the Horos frontend and Horos-to-native ASTTransformer providers,
+1. Completed: qualify the Horos declaration model and independent semantic fixtures;
+   implement its AST projection/checker and AST-only registration.
+2. Next: implement Horos-to-native ASTTransformer providers,
    preserving open generics and qualifying imported pagination first.
 3. Compose and qualify native generation, then add explicitly scoped reverse
    transformers for migration and qualify multi-step routes.

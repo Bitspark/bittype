@@ -20,6 +20,7 @@ contracts/
   transform/go/           ASTTransformer contract and typed registration bridge
 engine/go/                explicit registration, planning and execution
 syntax/<language>/go/     native abstract/concrete vocabulary and identity
+resolve/horos/go/         canonical module values to checked Horos AST/model
 parse/<language>/go/      source text to CST
 check/<language>/go/      native syntax checking
 format/<language>/go/     AST view to CST
@@ -34,8 +35,9 @@ testdata/text/<language>/valid/
 docs/
 ```
 
-The implemented language directories are `typescript`, `golang`, `rust` and
-`cpp`. The final `go` directory denotes implementation language, not target:
+The native text language directories are `typescript`, `golang`, `rust` and
+`cpp`; `horos` implements the AST-only syntax/resolve/check/provider profile.
+The final `go` directory denotes implementation language, not target:
 `syntax/rust/go` is Go code describing Rust syntax. `ast` and `cst` in the check
 stage are reserved generic-carrier components, not native language names.
 
@@ -63,6 +65,9 @@ same dependency level. The package boundaries are:
 | Native checker | Own syntax, shared checking mechanics and own lexical helpers |
 | Native parser/formatter | Own syntax/checker and appropriate shared mechanics; neither imports the other |
 | Native provider | Own syntax and stages plus the shared printer; composition only |
+| Horos syntax | Generic AST and identity; no semantic-model imports |
+| Horos resolver/checker | Own syntax, private projection helper, Horos Go model and Ontos values |
+| Horos provider | Own syntax/checker and shared checker contract; no text stages |
 
 The checked AST/CST and language descriptors share one home in
 `trees/representation/go`. `contracts/transform/go` owns ASTTransformer and
@@ -78,23 +83,26 @@ language or a stage. This keeps the rule enforceable through indirect imports.
 ## Enforced consistency
 
 The [architecture checks](integration/go/architecture_test.go) discover the
-union of native directories across all five stages and require every language
-to have an implemented package in each stage. Generic carrier check directories
+union of language directories across syntax/parse/check/format/provider/resolve
+and require each language to have every stage in its tested capability profile.
+The four native languages retain all five native text stages; Horos requires
+syntax/resolve/check/provider and must not acquire unqualified text stages.
+Generic carrier check directories
 are excluded explicitly. An orphan parser and an incomplete syntax package both
 fail. The checks also classify every production package and enforce its directed
-dependencies, including private helpers and the absence of external dependencies.
-
-Those are current-code checks. The proposed Horos integration will need a narrow
-dependency allowance for its frontend and relevant transforms. Generic carriers,
+dependencies, including private helpers and narrow external-model allowances
+only for the Horos frontend. Generic carriers,
 contracts, engine and printer must remain independent of Horos/ontos, and native
 syntax/text stages must remain independent of the canonical frontend.
 
-The [shared conformance suite](integration/go/conformance_test.go) must cover
-every discovered language. It checks stable identity, matching AST/CST checker
+The [native conformance suite](integration/go/conformance_test.go) covers
+every native language. It checks stable identity, matching AST/CST checker
 views, formatter snapshot ownership and metadata, whole-input rejection, located
 parse errors and empty output on failure. The same test-only fixture table feeds
 source round trips and fuzzing. Tests never register a production default.
 Independent compiler fixtures remain a separate required qualification.
+The [AST-only suite](integration/go/horos_test.go) separately checks Horos identity,
+registration, checking, snapshot ownership, specialization and absent text capabilities.
 
 Existing public consumer/negative type-check cases, unfamiliar-language tests,
 route oracle, concurrency checks and compiler gates remain required. Directory
@@ -102,11 +110,12 @@ consistency does not prove grammar or mapping correctness.
 
 ## Future components
 
-The [Horos declaration integration](docs/model.md) remains a proposal. It will
-use `syntax/horos/go`, `check/horos/go`, `provider/horos/go` and
-`resolve/horos/go`. Readable syntax, when specified, adds `parse/horos/go` and
+The [Horos declaration integration](docs/horos.md) implements
+`syntax/horos/go`, `check/horos/go`, `provider/horos/go` and
+`resolve/horos/go`, with private projection/checking in `internal/horos`.
+Readable syntax, when specified, adds `parse/horos/go` and
 `format/horos/go` under the same stage matrix. These replace the former proposed
-`canonical` paths; no implementation or compatibility alias exists to retain.
+`canonical` paths; there are no compatibility aliases.
 
 Directed mappings will live under `transforms/horos-to-<native>/go`; later partial
 reverse mappings under `transforms/<native>-to-horos/go`. Application composition

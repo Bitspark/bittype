@@ -7,15 +7,18 @@ C++, using horos as the canonical data type model.
 contracts, native syntax vocabularies, parsers, formatters, checks and a shared
 printer are implemented in Go. The syntax engine registers languages and
 ASTTransformer implementations, plans routes and composes existing text stages.
-Specialized text providers extend LanguageProvider. Horos owns data descriptors
-and proposed canonical declaration semantics; its bittype frontend/AST,
-actual language mappings and package releases remain
-deferred. The engine starts empty and has no built-in languages or mappings.
+Specialized providers extend LanguageProvider. Horos's Go declaration model now
+supplies module resolution, generic binding and ground specialization. Bittype
+implements its [AST-only frontend](docs/horos.md), preserving those bindings.
+Readable Horos syntax, native mappings and package releases remain deferred.
+The engine starts empty and has no built-in languages or mappings.
 
 The [stage-first layout](LAYOUT.md) groups shared tree representations under
 trees and public interfaces under contracts. Every native language implements
 the same syntax/parse/check/format/provider matrix, enforced by architecture and
 shared conformance tests. The engine contains no built-in language catalogue.
+Horos has a separately qualified syntax/resolve/check/provider capability profile;
+it does not advertise text stages that are not implemented.
 
 The native pipeline separates source parsing, concrete layout and printing:
 
@@ -34,7 +37,8 @@ application-value validation or Wire dependencies.
 
 ## Read first
 
-- [Horos canonical input](docs/model.md): ownership, declaration proposal and native representation plan.
+- [Horos canonical input](docs/model.md): ownership, declarations and native representation plan.
+- [Horos AST](docs/horos.md): model projection, binding references, checking and registration.
 - [Generic AST](docs/ast.md): carriers, typed views, addressing and provenance.
 - [Target syntax](docs/syntax.md): native vocabulary and supported type subsets.
 - [Parsing and formatting](docs/parsing-formatting.md): CST model, providers,

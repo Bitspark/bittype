@@ -8,6 +8,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/syntax/cpp/go"
 	"github.com/Bitspark/bittype/syntax/golang/go"
+	"github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/syntax/rust/go"
 	"github.com/Bitspark/bittype/syntax/typescript/go"
 )
@@ -23,6 +24,7 @@ func TestLanguageIdentityInterface(t *testing.T) {
 		{golang.Language{}, "go", "Go"},
 		{rust.Language{}, "rust", "Rust"},
 		{cpp.Language{}, "cpp", "C++"},
+		{horos.Language{}, "horos", "Horos"},
 	}
 	seen := map[language.ID]bool{}
 	for _, test := range cases {
@@ -43,7 +45,7 @@ func TestLanguageIdentityInterface(t *testing.T) {
 
 func TestSyntaxConsumers(t *testing.T) {
 	packages := loadContracts(t)
-	for _, name := range []string{"typescript", "golang", "rust", "cpp", "extension"} {
+	for _, name := range []string{"typescript", "golang", "rust", "cpp", "horos", "extension"} {
 		t.Run(name, func(t *testing.T) {
 			if err := checkConsumer(t, packages, "syntax/"+name); err != nil {
 				t.Fatal(err)
@@ -54,7 +56,7 @@ func TestSyntaxConsumers(t *testing.T) {
 
 func TestTargetLanguageTypesRemainDistinct(t *testing.T) {
 	packages := loadContracts(t)
-	languages := []string{"typescript", "golang", "rust", "cpp"}
+	languages := []string{"typescript", "golang", "rust", "cpp", "horos"}
 	for _, from := range languages {
 		for _, to := range languages {
 			if from == to {
