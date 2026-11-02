@@ -60,16 +60,16 @@ language: `analyze/horos/go` is Go code implementing analysis for Horos.
 | [contracts/analysis/go](../contracts/analysis/go/provider.go) | Analysis capability and explicit resolution dependency |
 | [engine/go](../engine/go/analysis.go) | Explicit registration and selection of a compatible analyzer |
 | [syntax/horos/go](../syntax/horos/go/nodes.go) and [check/horos/go](../check/horos/go/check.go) | Horos AST vocabulary and syntax admission |
-| [resolve/horos/go](../resolve/horos/go/resolve.go) | Explicit canonical-value resolution, checked AST projection and recovery of the owning Horos model |
-| [analyze/horos/go](../analyze/horos/go/analyze.go) | Adapt authoritative Horos resolution to shared facts, coverage reports and diagnostics |
-| [internal/horos](../internal/horos) | Private decoding and correspondence between current AST sites and the authoritative model, shared by resolver and analyzer |
-| [provider/horos/go](../provider/horos/go/provider.go) | Compose Horos checking and analysis capabilities for explicit application registration |
+| [resolve/horos/go](../resolve/horos/go/resolver.go) | Registered resolution, authoritative fact export and explicit canonical-value helpers |
+| [analyze/horos/go](../analyze/horos/go/analyze.go) | Consume explicit resolution evidence and reuse its immutable model |
+| [internal/horos](../internal/horos) | Private decoding and correspondence between current AST sites and the authoritative model, used by the resolver |
+| [provider/horos/go](../provider/horos/go/provider.go) | Compose Horos checking, resolution and analysis capabilities for explicit application registration |
 | External horos and ontos packages | Horos owns declaration/type rules; Ontos owns values and encoding |
 
 The engine depends on shared contracts and representations. The specialized contracts
 depend on shared semantic infrastructure and the semantic model. Neither imports a concrete language. Only
-the Horos resolver, analyzer and private bridge consume the external Horos/Ontos
-model. The application chooses the concrete provider and connects these layers.
+the Horos resolver and private bridge directly consume the external Horos/Ontos
+model. The analyzer consumes their shared semantic evidence. The application chooses the concrete provider and connects these layers.
 
 The kernel checks that a published graph is well formed and belongs to the current
 request. The provider is responsible for whether its semantic claims are true.
@@ -204,7 +204,7 @@ exercises registration and shared queries through the public API.
 ## Composition
 
 ```text
-application selects syntax descriptor and analyzer
+application selects syntax descriptor, resolver and analyzer
     -> RegisterLanguage / RegisterProvider
     -> RegisterResolver / RegisterAnalyzer (independent capabilities)
 
@@ -214,7 +214,7 @@ syntax envelopes + explicit entry and dependency inputs
     -> Engine.Analyze(snapshot, resolution Result, options)
     -> fresh typed invocation on the same Snapshot
     -> language provider's Analyze
-    -> Request.Publish(facts, reports, diagnostics)
+    -> Request.Publish(reused model, reports, diagnostics)
     -> immutable request-bound Result
 ```
 
@@ -335,15 +335,16 @@ See the [provider matrix](providers.md) for the independently registered capabil
 
 ## Limits and evidence
 
-Capture bounds inputs, nodes, metadata entries, bytes and configuration before
-provider invocation. Publication bounds diagnostics and semantic records, links,
+Capture bounds input trees, nodes, metadata entries and bytes before syntax
+callbacks. Each invocation bounds its requested keys, configuration and dependency
+metadata together before provider invocation. Publication bounds diagnostics and semantic records, links,
 payload bytes and containment depth. Horos resolver limits and semantic export
 limits are separate: successful resolution does not authorize unbounded export.
 Exhaustion cannot masquerade as an empty valid model or a rejected type.
 
 The maintained remote gates exercise existing text/native compiler checks
 alongside new semantic model, registration, ownership, request identity, coverage,
-Horos pagination and foreign-provider tests. The
+Horos pagination and foreign-provider tests. The earlier
 [consultation delivery record](../research-docs/0002-semantic-analysis-kernel.md)
-records exact revisions and validation evidence; the frozen expert input and raw
+records the original semantic slice, not the subsequent resolver split; its frozen expert input and raw
 advice remain separate from the implemented specification.

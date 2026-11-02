@@ -221,4 +221,3 @@ func (r Request[L]) Dependency(index int) (Result, bool) {
 
 func (r Result) Operation() semantics.Key { if !r.Valid() { return semantics.Key{} }; return r.state.owner.operation }
 func (r Result) Snapshot() Snapshot { if !r.Valid() { return Snapshot{} }; return Snapshot{state: r.state.owner.source} }
-

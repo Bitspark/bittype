@@ -1,4 +1,4 @@
-// Package resolve adapts Horos declaration semantics to shared analysis facts.
+// Package resolve adapts Horos declaration semantics to shared semantic facts.
 // It resolves no names itself and never interprets descriptor constructors.
 package resolve
 
@@ -72,7 +72,7 @@ func configuredLimits(settings []semantic.Setting) (decl.Limits, error) {
 		return decl.Limits{}, fmt.Errorf("%w: trailing Horos configuration", semantic.ErrInvalidRequest)
 	}
 	// Configuration is a request precondition, even when source decoding will
-	// also fail. These are the fixed analysis profile's resource-option bounds.
+	// also fail. These are the fixed resolution profile's resource-option bounds.
 	if values[0] <= 0 || values[0] > 512 || values[1] <= 0 || values[2] <= 0 || values[3] <= 0 {
 		return decl.Limits{}, fmt.Errorf("%w: invalid Horos resource limits", semantic.ErrInvalidRequest)
 	}
@@ -155,11 +155,11 @@ func ResolveReferences(ctx context.Context, request semantic.Request[s.Language]
 		return semantic.Result{}, err
 	}
 	if request.Contract().Profile != Profile {
-		return semantic.Result{}, fmt.Errorf("%w: unsupported Horos analysis profile", semantic.ErrInvalidRequest)
+		return semantic.Result{}, fmt.Errorf("%w: unsupported Horos resolution profile", semantic.ErrInvalidRequest)
 	}
 	inputs := request.Inputs()
 	if len(inputs) != 1 || request.Entry() != (ast.NodeRef{Tree: inputs[0].ID, Node: inputs[0].Root}) {
-		return semantic.Result{}, fmt.Errorf("%w: Horos analysis requires one Program and its root entry", semantic.ErrInvalidRequest)
+		return semantic.Result{}, fmt.Errorf("%w: Horos resolution requires one Program and its root entry", semantic.ErrInvalidRequest)
 	}
 	limits, err := configuredLimits(request.Configuration())
 	if err != nil {

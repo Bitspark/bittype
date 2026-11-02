@@ -54,10 +54,10 @@ must use Model or the analysis capability.
 One Program tree supplies the entry module and dependency pool. Projection of a
 checked Program emits its complete resolved import closure, ordered by module
 digest; imports/declarations retain Horos's canonical map order. Parameters,
-arguments and descriptor operands retain their specified order. Analysis selects
+arguments and descriptor operands retain their specified order. Resolution selects
 the Program root as its explicit entry; its required root reference selects the
 entry module. Other entry kinds or multiple trees are unsupported request forms
-in this first analysis profile.
+in this first resolution profile.
 
 | Kind | Attributes | Children | References |
 | --- | --- | --- | --- |
@@ -86,9 +86,9 @@ changes with them; attribute/reference storage order is immaterial. Containment
 order remains canonical in checked projections. Origins are retained as tooling
 metadata but do not affect module pins.
 
-Explicit semantic analysis reconstructs canonical module values, asks Horos to
+Explicit reference resolution reconstructs canonical module values, asks Horos to
 resolve them, and compares the authoritative syntax and supplied binding edges
-with the analyzed AST closure.
+with the supplied AST closure. Analysis consumes this established evidence.
 This checks one declared AST profile; it never fingerprints a shape to choose a
 behavioral library. Invalid UTF-8 attributes are rejected before text embedding.
 It does not reinterpret literal data as declarations or silently normalize an AST.
@@ -119,11 +119,11 @@ source location is invented or copied from historical origins.
 Projection checks generic AST node, depth, entry and text budgets while creating
 nodes, including hexadecimal growth before copying atoms. Generic structure is
 checked before the AST is decoded. Horos's default declaration budgets apply
-when recovering a model; analysis can accept an explicitly supplied bounded
-resolver configuration. Both boundaries return empty output on failure; a model
+when recovering a model through the canonical-value helper; registered resolution
+can accept an explicitly supplied bounded configuration. Both boundaries return empty output on failure; a model
 accepted under custom larger limits is re-admitted under the fixed Horos defaults
 before projection, so successful projection respects `resolve.Model`'s fixed
-canonical budgets. The syntax checker has separate AST budgets; analysis can
+canonical budgets. The syntax checker has separate AST budgets; resolution can
 select explicit resolver limits. Canonical and AST depth are distinct, and tests
 qualify their boundary.
 

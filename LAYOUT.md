@@ -24,10 +24,10 @@ contracts/
 semantics/go/             immutable provider-owned semantic facts and graph checks
 engine/go/                explicit registration, planning and execution
 syntax/<language>/go/     native abstract/concrete vocabulary and identity
-resolve/horos/go/         canonical module values to checked Horos AST/model
+resolve/horos/go/         Horos resolution, fact export and canonical-value helpers
 parse/<language>/go/      source text to CST
 check/<language>/go/      language syntax checking
-analyze/horos/go/         Horos semantics adapted to shared facts and reports
+analyze/horos/go/         consume resolution evidence and reuse its model
 format/<language>/go/     AST view to CST
 provider/<language>/go/   explicit composition of the language's stages
 check/ast/go/             generic abstract carrier checks
@@ -78,7 +78,7 @@ same dependency level. The package boundaries are:
 | Horos checker | Own syntax and generic structural/grammar checks; no semantic resolution |
 | Horos resolver | Own syntax, private projection/correspondence helper, Horos Go model and Ontos values/codec |
 | Horos analyzer | Own syntax, Horos resolver contract and shared semantic evidence; no direct external model imports |
-| Horos provider | Own syntax/checker/analyzer and shared contracts; composition, no text stages |
+| Horos provider | Own syntax/checker/resolver/analyzer and shared contracts; composition, no text stages |
 
 The checked AST/CST and language descriptors share one home in
 `trees/representation/go`. `contracts/transform/go` owns ASTTransformer and
