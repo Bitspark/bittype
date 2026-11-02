@@ -99,15 +99,25 @@ For example:
 
 ### Derived modules and identity
 
-The selected roots determine a transitive declaration closure. Translate each
-reachable declaration once, grouped by its source module; imports in the output
-refer to the corresponding derived contract modules. Preserve parameter order,
-names and source declaration/application origins. Reject missing imports, cycles
-or output naming conflicts before publishing any usable result.
+The selected roots determine a derived dependency closure: follow applications
+retained by the ordered lift rules, and stop at each Data(G) boundary. Translate
+each declaration in that closure once, grouped by its source module; imports in
+the output refer to the corresponding derived contract modules. Dependencies
+consumed wholly inside a ground descriptor remain validated source/provenance
+dependencies and need no derived declaration. Preserve parameter order, names
+and source declaration/application origins. Reject missing imports, cycles or
+output naming conflicts before publishing any usable result.
 
 Validate all original module imports under Horos's rules before selecting that
 output closure, including imports unused by the selected roots. Pruning generated
 output is not permission to skip the source language's resolution obligations.
+
+For example, let `Other<T> = not(T)` and `Root = not(Other<Person>)`. Root's
+closed body embeds as Data(G); it does not require lifting Other's unsupported
+open complement. Selecting Other itself as a lifting root fails. Likewise,
+`Alias = Other<Person>` retains a top-level application under the ordered rules
+and requires the unsupported lift; the caller can instead explicitly select
+closed data embedding for Alias. These outcomes do not depend on traversal order.
 
 The build supplies output module names and records its selected roots, source
 module pins, lifting profile/version and target naming choices. Derived modules
@@ -263,8 +273,10 @@ The initial selection unit is an open declaration, not a runtime application
 value or shape. For an application `Function<A,B>`, look up the resolved
 Function declaration once, translate A and B, then instantiate the selected
 native recipe in its defined parameter order. Aliases retain their own origins
-and the resolved target; the resolver's explicit alias relation authorizes
-following a target recipe. An independently declared lookalike does not.
+and resolved targets. Following a target recipe uses provider-established
+reference/application facts; for Horos, an alias-like declaration has a resolved
+application body, not a new general alias-relation fact. An independently
+declared lookalike does not acquire that target's recipe.
 
 Missing required custom recipes, unsupported targets/arguments, incompatible
 profiles and conflicting recipes for one source/target selection are errors.
@@ -391,6 +403,8 @@ Future fixtures must establish:
   Unsupported parameterized forms fail; closed forms stay explicitly ground.
 - Root/dependency selection and canonical encoding give reproducible derived
   modules. Changing the source pin/profile cannot silently reuse old output.
+  Embedded-only dependencies remain source dependencies without forcing an
+  unsupported generic declaration into the derived closure.
 - An unfamiliar library contract uses ordinary declarations and optional
   recipes without a core source, dependency, registry or bootstrap change.
 - Recipe selection survives aliases/applications, distinguishes unrelated
