@@ -3,7 +3,11 @@
 package provider
 
 import (
+	"context"
+
+	analyze "github.com/Bitspark/bittype/analyze/horos/go"
 	check "github.com/Bitspark/bittype/check/horos/go"
+	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -12,5 +16,9 @@ import (
 type Provider struct{ s.Language }
 
 func (Provider) Check(view ast.View[s.Language]) error { return check.Check(view) }
+func (Provider) Analyze(ctx context.Context, request analysis.Request[s.Language]) (analysis.Result, error) {
+	return analyze.Analyze(ctx, request)
+}
 
 var _ text.CheckerProvider[s.Language] = Provider{}
+var _ analysis.Provider[s.Language] = Provider{}

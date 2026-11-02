@@ -113,7 +113,7 @@ func Project(program *decl.Program, treeID ast.TreeID) (s.AST, error) {
 	// profile must admit the same closure under the defaults used by Read.
 	modules := program.Modules()
 	if len(modules) > decl.DefaultLimits().MaxModules {
-		return s.AST{}, &decl.Error{Code: decl.Exhausted, Message: "module closure exceeds AST profile's Horos limits"}
+		return s.AST{}, &decl.Error{Code: decl.Exhausted, Subject: decl.SubjectRequest, Message: "module closure exceeds AST profile's Horos limits"}
 	}
 	dependencies := make([]core.Value, 0, len(modules)-1)
 	for _, module := range modules {
@@ -133,7 +133,8 @@ func Resolve(root core.Value, dependencies []core.Value, treeID ast.TreeID) (s.A
 	return projectChecked(program, treeID)
 }
 
-// Only default-admitted programs reach this projection, including Read's model.
+// Callers supply a fully checked Program. Projection has the fixed syntax
+// profile's storage bounds independently of the resolver's selected limits.
 func projectChecked(program *decl.Program, treeID ast.TreeID) (s.AST, error) {
 	if treeID == "" {
 		return s.AST{}, ErrInvalid

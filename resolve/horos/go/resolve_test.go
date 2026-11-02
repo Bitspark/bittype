@@ -202,6 +202,17 @@ func TestExactLiteralIsOpaque(t *testing.T) {
 	}
 }
 
+func TestModelAcceptsAbsentBindingAnnotations(t *testing.T) {
+	tree := fixture(t)
+	for i := range tree.Nodes {
+		if tree.Nodes[i].Kind != s.KindProgram { tree.Nodes[i].References = nil }
+	}
+	before := clone(tree)
+	model, err := resolve.Model(tree)
+	if err != nil || model == nil { t.Fatalf("unannotated syntax did not resolve: %v", err) }
+	if !reflect.DeepEqual(tree, before) { t.Fatal("resolution wrote annotations into borrowed syntax") }
+}
+
 func TestInvalidASTsFailWithoutRepair(t *testing.T) {
 	cases := map[string]func(s.AST){
 		"wrong parameter binding": func(a s.AST) {
@@ -212,7 +223,6 @@ func TestInvalidASTsFailWithoutRepair(t *testing.T) {
 			i := find(a, s.KindApplication, "Page")
 			a.Nodes[i-1].References[0].Target.Node = find(a, s.KindDeclaration, "PeoplePage")
 		},
-		"missing binding":  func(a s.AST) { i := find(a, s.KindParameter, ""); a.Nodes[i-1].References = nil },
 		"external binding": func(a s.AST) { i := find(a, s.KindParameter, ""); a.Nodes[i-1].References[0].Target.Tree = "external" },
 		"wrong module pin": func(a s.AST) {
 			i := find(a, s.KindModule, "")
