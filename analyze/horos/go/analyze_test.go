@@ -605,6 +605,10 @@ func TestInvalidConfigurationEntryAndCancellationReturnNoResult(t *testing.T) {
 	analyzer, input := analyzer(t, fixture(t))
 	for _, settings := range [][]analysis.Setting{
 		{{Key: analyze.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}},
+		{{Key: analyze.LimitsSetting(), Value: []byte("[513,100000,16777216,256]")}},
+		{{Key: analyze.LimitsSetting(), Value: []byte("[256,0,16777216,256]")}},
+		{{Key: analyze.LimitsSetting(), Value: []byte("[256,100000,0,256]")}},
+		{{Key: analyze.LimitsSetting(), Value: []byte("[256,100000,16777216,0]")}},
 		{{Key: analyze.LimitsSetting(), Value: []byte("[256,1]")}},
 		{{Key: analyze.LimitsSetting(), Value: []byte("[256,100000,16777216,256] true")}},
 		{{Key: semantics.Key{Owner: "other", Name: "configuration"}, Value: []byte("[]")}},
@@ -626,6 +630,15 @@ func TestInvalidConfigurationEntryAndCancellationReturnNoResult(t *testing.T) {
 	if result, err := analyzer.Analyze(ctx, input); !errors.Is(err, context.Canceled) || result.Valid() {
 		t.Fatalf("cancelled analysis published: %v", err)
 	}
+}
+
+func TestInvalidConfigurationPrecedesMalformedSourceDecoding(t *testing.T) {
+	tree := fixture(t)
+	setAttribute(&tree.Nodes[find(tree, s.KindDeclaration, "Outer")-1], s.AttributeName, "Person")
+	analyzer, input := analyzer(t, tree)
+	input.Configuration = []analysis.Setting{{Key: analyze.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}}
+	result, err := analyzer.Analyze(context.Background(), input)
+	if !errors.Is(err, analysis.ErrInvalidRequest) || result.Valid() { t.Fatalf("invalid configuration was mistaken for source rejection: %v", err) }
 }
 
 func TestUnknownObligationIsUnsupportedAndDoesNotInventFacts(t *testing.T) {

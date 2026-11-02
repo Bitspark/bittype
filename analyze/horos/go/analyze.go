@@ -32,7 +32,8 @@ func ExpressionRole() semantics.Key        { return key("expression") }
 func ApplicationDependency() semantics.Key { return key("declaration-application") }
 
 // LimitsSetting contains a JSON array [depth,nodes,bytes,modules]. All four
-// positive limits are required. Its absence selects Horos's fixed defaults.
+// positive limits are required; depth must not exceed 512. Its absence selects
+// Horos's fixed defaults.
 // This bounds authoritative resolution separately from shared graph publication.
 func LimitsSetting() semantics.Key { return key("declaration-limits-json-1") }
 
@@ -66,6 +67,11 @@ func configuredLimits(settings []analysis.Setting) (decl.Limits, error) {
 	var trailing any
 	if err := decoder.Decode(&trailing); err != io.EOF {
 		return decl.Limits{}, fmt.Errorf("%w: trailing Horos configuration", analysis.ErrInvalidRequest)
+	}
+	// Configuration is a request precondition, even when source decoding will
+	// also fail. These are the fixed analysis profile's resource-option bounds.
+	if values[0] <= 0 || values[0] > 512 || values[1] <= 0 || values[2] <= 0 || values[3] <= 0 {
+		return decl.Limits{}, fmt.Errorf("%w: invalid Horos resource limits", analysis.ErrInvalidRequest)
 	}
 	return decl.Limits{MaxDepth: values[0], MaxNodes: values[1], MaxBytes: values[2], MaxModules: values[3]}, nil
 }
