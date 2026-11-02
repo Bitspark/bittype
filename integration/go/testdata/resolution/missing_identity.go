@@ -13,4 +13,4 @@ func (Provider) Resolve(context.Context, semantic.Request[Language]) (semantic.R
 	return semantic.Result{}, nil
 }
 
-var _ resolution.ResolverProvider[Language] = Provider{}
+var _ resolution.Provider[Language] = Provider{}

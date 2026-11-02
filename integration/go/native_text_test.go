@@ -192,7 +192,7 @@ func TestTypeScriptUnicodeLineBoundaries(t *testing.T) {
 	}
 }
 func TestProviderIdentity(t *testing.T) {
-	for _, p := range []language.LanguageProvider{tsprovider.Provider{}, goprovider.Provider{}, rustprovider.Provider{}, cppprovider.Provider{}} {
+	for _, p := range []language.Provider{tsprovider.Provider{}, goprovider.Provider{}, rustprovider.Provider{}, cppprovider.Provider{}} {
 		if p.ID() == "" || p.Name() == "" {
 			t.Fatal("missing provider identity")
 		}

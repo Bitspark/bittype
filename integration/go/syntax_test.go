@@ -16,7 +16,7 @@ import (
 func TestLanguageIdentityInterface(t *testing.T) {
 	// These calls exercise only the common interface, as a future registry would.
 	cases := []struct {
-		provider language.LanguageProvider
+		provider language.Provider
 		id       language.ID
 		name     string
 	}{

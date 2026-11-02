@@ -20,7 +20,7 @@ func (Independent) Format(ast.View[Language]) (cst.CST[Language], error) {
 func (Independent) Check(ast.View[Language]) error          { return nil }
 func (Independent) Print(cst.CST[Language]) (string, error) { return "", nil }
 
-var _ language.LanguageProvider = Independent{}
+var _ language.Provider = Independent{}
 var _ text.Provider[Language] = Independent{}
 var _ ast.View[Language] = ast.AST[Language]{}
 var _ ast.View[Language] = cst.CST[Language]{}

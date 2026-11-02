@@ -167,4 +167,4 @@ type Provider struct{ s.Language }
 
 func (Provider) Format(view ast.View[s.Language]) (cst.CST[s.Language], error) { return Format(view) }
 
-var _ text.FormatterProvider[s.Language] = Provider{}
+var _ text.Formatter[s.Language] = Provider{}

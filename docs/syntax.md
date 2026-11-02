@@ -4,7 +4,7 @@
 are implemented in Go on the [generic AST](ast.md). Each package supplies
 `Language`, `AST`, `Node`, `Kind`, and constants for kinds, roles and attributes.
 
-The shared LanguageProvider interface, native text providers, parsers,
+The shared language.Provider interface, native text providers, parsers,
 AST-to-CST formatters, checks and generic printer are implemented. The
 [Horos AST-only profile](horos.md) adds canonical declarations; readable Horos
 syntax, actual language mappings and public builders remain deferred. The syntax engine
@@ -21,7 +21,7 @@ validates supported type syntax. These are not complete compiler ASTs.
 ```go
 type ID string
 
-type LanguageProvider interface {
+type Provider interface {
     ID() ID
     Name() string
 }

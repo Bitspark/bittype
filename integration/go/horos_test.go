@@ -46,10 +46,10 @@ func qualifyHoros(t *testing.T) {
 	if provider.ID() != "horos" || provider.Name() != "Horos" {
 		t.Fatal("unstable Horos identity")
 	}
-	if _, ok := any(provider).(text.ParserProvider[h.Language]); ok {
+	if _, ok := any(provider).(text.Parser[h.Language]); ok {
 		t.Fatal("AST-only provider advertises parsing")
 	}
-	if _, ok := any(provider).(text.FormatterProvider[h.Language]); ok {
+	if _, ok := any(provider).(text.Formatter[h.Language]); ok {
 		t.Fatal("AST-only provider advertises formatting")
 	}
 	// Independent consumer: a generic list and its explicit text specialization.

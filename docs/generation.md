@@ -1,7 +1,7 @@
 # AST transformation and pipeline design
 
 **Updated: 2 November 2026.** The toolchain is implemented in Go. Generic AST/CST
-carriers, typed stages, LanguageProvider and four native text pipelines are
+carriers, typed stages, language.Provider and four native text pipelines are
 implemented. The [native text design](parsing-formatting.md) owns parser,
 formatter, printer and checking details. The owner's later 31 October direction
 unifies generation and native-to-canonical migration under ASTTransformer. Its
@@ -126,7 +126,7 @@ deferred.
 ## Language identity and registration
 
 Each target package supplies a zero-value `Language` implementing
-`language.LanguageProvider`, with stable `ID() language.ID` and `Name() string`
+`language.Provider`, with stable `ID() language.ID` and `Name() string`
 methods. It also supplies aliases over `ast.AST[Language]`,
 `ast.Node[Language]` and `ast.Kind[Language]`. The carrier now exposes ASTView; the stage API
 remains unchanged and does not import the language identity interface.
@@ -216,7 +216,7 @@ wrapped; transformation does not preserve concrete source spelling.
 This registration adapter only bridges typed AST calls; it generates no
 application, service or runtime bindings.
 
-LanguageProvider still identifies a single language. A transformer relates two
+language.Provider still identifies a single language. A transformer relates two
 languages, so it identifies its endpoints with FromID/ToID rather than pretending
 to have one language ID. The engine registers language capabilities and directed
 transformer edges explicitly. Application composition supplies every instance.

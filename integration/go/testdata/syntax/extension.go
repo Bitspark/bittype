@@ -11,7 +11,7 @@ type ExampleLanguage struct{}
 func (ExampleLanguage) ID() language.ID { return "example.external" }
 func (ExampleLanguage) Name() string    { return "External example" }
 
-var provider language.LanguageProvider = ExampleLanguage{}
+var provider language.Provider = ExampleLanguage{}
 var tree ast.AST[ExampleLanguage]
 var node ast.Node[ExampleLanguage]
 

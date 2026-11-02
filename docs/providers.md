@@ -5,15 +5,21 @@ by the language provider; / means unavailable. Applications register capabilitie
 explicitly. Native support covers the documented type-declaration subset, not
 complete programming languages.
 
+Provider interfaces use their package to identify the role: `language.Provider`,
+`resolution.Provider`, `analysis.Provider` and `text.Provider`. The individual
+text capabilities are `text.Parser`, `text.Formatter`, `text.Checker` and
+`text.Printer`; each embeds `language.Provider`. The combined `text.Provider`
+embeds all four. Superseded interface names have no compatibility aliases.
+
 | Provider / capability | Horos | TypeScript | Go | Rust | C++ |
 | --- | :---: | :---: | :---: | :---: | :---: |
-| LanguageProvider: ID and Name | X | X | X | X | X |
-| CheckerProvider: syntax checking | X | X | X | X | X |
-| ParserProvider: text to CST | / | X | X | X | X |
-| FormatterProvider: AST to CST | / | X | X | X | X |
-| PrinterProvider: CST to text | / | X | X | X | X |
+| language.Provider: ID and Name | X | X | X | X | X |
+| text.Checker: syntax checking | X | X | X | X | X |
+| text.Parser: text to CST | / | X | X | X | X |
+| text.Formatter: AST to CST | / | X | X | X | X |
+| text.Printer: CST to text | / | X | X | X | X |
 | text.Provider: combined text capabilities | / | X | X | X | X |
-| resolution.ResolverProvider: reference resolution | X | / | / | / | / |
+| resolution.Provider: reference resolution | X | / | / | / | / |
 | analysis.Provider: semantic analysis | X | / | / | / | / |
 
 The native printer providers delegate to the same generic printer. Horos remains

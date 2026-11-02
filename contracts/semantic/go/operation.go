@@ -228,7 +228,7 @@ type Operation struct {
 	run      func(context.Context, Snapshot, Options, []Dependency) (Result, error)
 }
 
-func NewOperation[L any](syntax representation.Language, contract Contract, kind semantics.Key, provider language.LanguageProvider, run func(context.Context, Request[L]) (Result, error)) (Operation, error) {
+func NewOperation[L any](syntax representation.Language, contract Contract, kind semantics.Key, provider language.Provider, run func(context.Context, Request[L]) (Result, error)) (Operation, error) {
 	if representation.IsNil(provider) || run == nil || !kind.Valid() {
 		return Operation{}, ErrInvalidOperation
 	}

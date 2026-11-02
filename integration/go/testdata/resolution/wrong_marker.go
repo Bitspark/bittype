@@ -18,4 +18,4 @@ func (Provider) Resolve(context.Context, semantic.Request[A]) (semantic.Result, 
 	return semantic.Result{}, nil
 }
 
-var _ resolution.ResolverProvider[B] = Provider{}
+var _ resolution.Provider[B] = Provider{}

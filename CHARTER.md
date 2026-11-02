@@ -61,7 +61,7 @@ Generic AST/CST carriers,
 typed views and pipeline contracts, four native type vocabularies, native parsers,
 AST-to-CST formatters, syntax checks and the shared CST printer are implemented.
 The [native text design](docs/parsing-formatting.md) defines their ownership and
-qualification limits. Specialized providers all extend LanguageProvider.
+qualification limits. Specialized providers all extend language.Provider.
 
 The ASTTransformer boundary and syntax engine now provide checked heterogeneous
 registration, route planning/execution and native text composition. The canonical

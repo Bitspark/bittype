@@ -225,7 +225,7 @@ analysis neither installs a transformer nor routes through a canonical language.
 
 ```go
 type Provider[L any] interface {
-    language.LanguageProvider
+    language.Provider
     Analyze(context.Context, Request[L]) (semantic.Result, error)
 }
 ```

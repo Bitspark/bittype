@@ -206,4 +206,4 @@ func TestEngineASTOnlyCapabilitiesAndProfiles(t *testing.T) {
 	}
 }
 
-var _ language.LanguageProvider = engine.Provider{}
+var _ language.Provider = engine.Provider{}

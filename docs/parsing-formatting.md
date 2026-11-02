@@ -96,10 +96,10 @@ applications remain explicit, without specialization or alias expansion.
 
 ## Provider contracts
 
-[LanguageProvider](../contracts/language/go/language.go) is the shared base:
+[language.Provider](../contracts/language/go/language.go) is the shared base:
 
 ```go
-type LanguageProvider interface {
+type Provider interface {
     ID() ID
     Name() string
 }
@@ -112,20 +112,20 @@ the native AST/CST and implement the shared identity contract.
 [Specialized interfaces](../contracts/text/go/provider.go) all embed the base interface:
 
 ```go
-type ParserProvider[L any] interface {
-    language.LanguageProvider
+type Parser[L any] interface {
+    language.Provider
     Parse(Input) (cst.CST[L], error)
 }
-type FormatterProvider[L any] interface {
-    language.LanguageProvider
+type Formatter[L any] interface {
+    language.Provider
     Format(ast.View[L]) (cst.CST[L], error)
 }
-type CheckerProvider[L any] interface {
-    language.LanguageProvider
+type Checker[L any] interface {
+    language.Provider
     Check(ast.View[L]) error
 }
-type PrinterProvider[L any] interface {
-    language.LanguageProvider
+type Printer[L any] interface {
+    language.Provider
     Print(cst.CST[L]) (string, error)
 }
 ```

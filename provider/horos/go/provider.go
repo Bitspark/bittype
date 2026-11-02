@@ -23,11 +23,11 @@ func (Provider) Analyze(ctx context.Context, request analysis.Request[s.Language
 	return analyze.Analyze(ctx, request)
 }
 
-var _ text.CheckerProvider[s.Language] = Provider{}
+var _ text.Checker[s.Language] = Provider{}
 var _ analysis.Provider[s.Language] = Provider{}
 
 func (Provider) Resolve(ctx context.Context, request semantic.Request[s.Language]) (semantic.Result, error) {
 	return resolve.ResolveReferences(ctx, request)
 }
 
-var _ resolution.ResolverProvider[s.Language] = Provider{}
+var _ resolution.Provider[s.Language] = Provider{}

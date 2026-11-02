@@ -451,4 +451,4 @@ type Provider struct{ s.Language }
 
 func (Provider) Parse(input text.Input) (cst.CST[s.Language], error) { return Parse(input) }
 
-var _ text.ParserProvider[s.Language] = Provider{}
+var _ text.Parser[s.Language] = Provider{}

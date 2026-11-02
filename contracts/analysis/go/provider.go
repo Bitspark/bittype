@@ -27,7 +27,7 @@ type Request[L any] struct{ semantic.Request[L] }
 func (r Request[L]) Resolution() (semantic.Result, bool) { return r.Dependency(0) }
 
 type Provider[L any] interface {
-	language.LanguageProvider
+	language.Provider
 	Analyze(context.Context, Request[L]) (semantic.Result, error)
 }
 
