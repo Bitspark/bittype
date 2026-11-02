@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/Bitspark/bittype/contracts/text/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
@@ -42,11 +43,17 @@ func (r reader) value(id ast.NodeID) (core.Value, error) {
 		}
 		return core.NewAtom(bytes), nil
 	case s.KindParameter:
-		index, ok := new(big.Int).SetString(r.attr(id, s.AttributeIndex), 10)
-		if !ok || index.Sign() < 0 {
+		spelling := r.attr(id, s.AttributeIndex)
+		// Horos's declaration slot is a Go int. Bound the decimal work before
+		// conversion; even a 64-bit int needs fewer than twenty decimal digits.
+		if len(spelling) > 20 {
 			return nil, r.bad(id, "invalid parameter index")
 		}
-		return tagged("horos/decl/", "param", data.EncodeInt(index)), nil
+		index, err := strconv.Atoi(spelling)
+		if err != nil || index < 0 {
+			return nil, r.bad(id, "invalid parameter index")
+		}
+		return tagged("horos/decl/", "param", data.EncodeInt(big.NewInt(int64(index)))), nil
 	case s.KindTuple, s.KindDescriptor, s.KindApplication:
 		values := make([]core.Value, len(n.Children))
 		for i, child := range n.Children {
