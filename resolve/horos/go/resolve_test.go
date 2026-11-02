@@ -346,7 +346,43 @@ func TestProjectionCountsReferenceTextAndDepth(t *testing.T) {
 		t.Fatal(err)
 	}
 	tree, err = resolve.Project(deep, "deep")
-	if len(tree.Nodes) != 0 || !errors.As(err, &diagnostic) || diagnostic.Code != text.LimitExceeded {
-		t.Fatalf("AST depth admission: %v", err)
+	var modelError *decl.Error
+	if len(tree.Nodes) != 0 || !errors.As(err, &modelError) || modelError.Code != decl.Exhausted {
+		t.Fatalf("canonical depth admission: %v", err)
+	}
+}
+
+func TestProjectionAndCheckerShareCanonicalLimits(t *testing.T) {
+	// Canonical module wrappers and AST wrappers have different depths. Near
+	// this seam an AST can fit even when its canonical module exceeds defaults.
+	for wrappers := 249; wrappers <= 253; wrappers++ {
+		var literal value = atom("leaf")
+		for i := 0; i < wrappers; i++ {
+			literal = core.NewTuple(literal)
+		}
+		root := module("example.seam", mapping(), entry("Seam", definition(h("exact", literal))))
+		limits := decl.DefaultLimits()
+		limits.MaxDepth = 512
+		custom, err := decl.ResolveWithLimits(root, nil, limits)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, admission := decl.Resolve(root, nil)
+		tree, err := resolve.Project(custom, "seam")
+		if admission != nil {
+			if err == nil || len(tree.Nodes) != 0 {
+				t.Fatalf("%d wrappers: Project admitted what Model cannot check", wrappers)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatalf("%d wrappers: unexpected projection failure: %v", wrappers, err)
+		}
+		if err := check.Check(tree); err != nil {
+			t.Fatalf("%d wrappers: projected AST fails its own profile: %v", wrappers, err)
+		}
+		if _, err := resolve.Model(tree); err != nil {
+			t.Fatalf("%d wrappers: projected AST has no checked model: %v", wrappers, err)
+		}
 	}
 }

@@ -13,14 +13,11 @@ import (
 // Resolve retains the root's complete pinned import closure in one AST.
 // treeID is a tooling address, separate from the canonical module pins.
 func Resolve(root core.Value, dependencies []core.Value, treeID ast.TreeID) (s.AST, error) {
-	program, err := decl.Resolve(root, dependencies)
-	if err != nil {
-		return s.AST{}, err
-	}
-	return Project(program, treeID)
+	return bridge.Resolve(root, dependencies, treeID)
 }
 
 // Project projects a checked model without specializing its open declarations.
+// Custom-limit models are re-admitted under this profile's fixed Horos defaults.
 func Project(program *decl.Program, treeID ast.TreeID) (s.AST, error) {
 	return bridge.Project(program, treeID)
 }

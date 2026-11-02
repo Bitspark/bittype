@@ -212,7 +212,7 @@ func Read(view ast.View[s.Language]) (*decl.Program, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInvalid, err)
 	}
-	expected, err := Project(program, tree.ID)
+	expected, err := projectChecked(program, tree.ID)
 	if err != nil {
 		return nil, err
 	}

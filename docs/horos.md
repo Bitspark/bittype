@@ -92,7 +92,9 @@ Projection checks generic AST node, depth, entry and text budgets while creating
 nodes, including hexadecimal growth before copying atoms. Generic structure is
 checked before the AST is decoded. Horos's default declaration budgets also apply
 when recovering a model. Both boundaries return empty output on failure; a model
-accepted under custom larger limits can still exceed this AST profile's limits.
+accepted under custom larger limits is re-admitted under the fixed Horos defaults
+before projection, so successful projection cannot bypass the checker's canonical
+budgets. Canonical and AST depth are distinct; tests qualify their boundary.
 
 Remote tests cover canonical value round trips, imported and nested pagination,
 specialization, wrong/missing references, invalid pins/indices/UTF-8, literal

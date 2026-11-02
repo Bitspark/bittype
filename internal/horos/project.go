@@ -105,7 +105,37 @@ func Project(program *decl.Program, treeID ast.TreeID) (s.AST, error) {
 	if program == nil || treeID == "" {
 		return s.AST{}, ErrInvalid
 	}
-	if _, ok := program.Module(program.Root()); !ok {
+	root, ok := program.Module(program.Root())
+	if !ok {
+		return s.AST{}, ErrInvalid
+	}
+	// A Program may have been admitted with custom Horos limits. This fixed AST
+	// profile must admit the same closure under the defaults used by Read.
+	modules := program.Modules()
+	if len(modules) > decl.DefaultLimits().MaxModules {
+		return s.AST{}, &decl.Error{Code: decl.Exhausted, Message: "module closure exceeds AST profile's Horos limits"}
+	}
+	dependencies := make([]core.Value, 0, len(modules)-1)
+	for _, module := range modules {
+		if module.Pin() != program.Root() {
+			dependencies = append(dependencies, module.Value())
+		}
+	}
+	return Resolve(root.Value(), dependencies, treeID)
+}
+
+// Resolve admits canonical values directly with the profile's Horos limits.
+func Resolve(root core.Value, dependencies []core.Value, treeID ast.TreeID) (s.AST, error) {
+	program, err := decl.Resolve(root, dependencies)
+	if err != nil {
+		return s.AST{}, err
+	}
+	return projectChecked(program, treeID)
+}
+
+// Only default-admitted programs reach this projection, including Read's model.
+func projectChecked(program *decl.Program, treeID ast.TreeID) (s.AST, error) {
+	if treeID == "" {
 		return s.AST{}, ErrInvalid
 	}
 	p := &projector{
