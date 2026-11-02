@@ -19,12 +19,15 @@ language's kinds, profile or meaning. The additional provider is not implemented
   Resolve delegates semantics to Horos, then projects its checked model. Model
   checks the borrowed AST and returns a Horos program for inspection or explicit
   `Specialize(declarationID, groundArguments)`. No lookup performs network/file IO.
+  The registered resolver uses [ResolveReferences](../resolve/horos/go/resolver.go)
+  to export shared semantic facts. It verifies supplied semantic annotations
+  against authoritative resolution and never repairs them implicitly.
 - [check/horos/go](../check/horos/go/check.go) admits AST syntax: kinds, roles,
   cardinalities and lexical spellings. Unresolved or semantically invalid names
-  can reach analysis. Check does not resolve bindings or validate module pins.
-- [analyze/horos/go](../analyze/horos/go/analyze.go) consumes the explicit resolver result, reusing its model and
-  adapting its evidence to [shared semantic facts and reports](analysis.md). It verifies
-  supplied semantic annotations and never repairs them implicitly.
+  can reach resolution. Check does not resolve bindings or validate module pins.
+- [analyze/horos/go](../analyze/horos/go/analyze.go) consumes the explicit resolver
+  result, reusing its model and adapting its evidence to
+  [shared semantic facts and reports](analysis.md).
 - [provider/horos/go](../provider/horos/go/provider.go) implements
   `text.CheckerProvider[horos.Language]`, `resolution.ResolverProvider[horos.Language]`
   and `analysis.Provider[horos.Language]`,
@@ -40,7 +43,7 @@ Only the Horos resolver and its private bridge directly import Horos/Ontos.
 The analyzer consumes the resolver contract and shared evidence.
 The model dependency is pinned to a public immutable Go module revision in go.mod;
 there is no local replacement or vendored private checkout. Generic infrastructure
-and the four native text stages are unchanged and model-independent. The engine
+and the four native text stages remain independent of the external model. The engine
 can hold this AST without registering any transformer. Parse and Render report
 missing text capabilities for this provider.
 

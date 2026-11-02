@@ -44,8 +44,8 @@ exhaustion or an unmet prerequisite yields Incomplete / Undetermined. Unknown
 requested obligations receive Unsupported / Undetermined. The generic kernel
 validates publication integrity; coverage remains a trusted provider claim.
 
-Publishing a model requires Complete / Holds for Bindings and every additional
-model requirement. Initially failed resolution returns diagnostics and reports
+Publishing a model requires Complete / Holds for Bindings, plus each additional
+required Complete/verdict pair. Initially failed resolution returns diagnostics and reports
 without a partial model. Entities and bindings can exist without expression
 terms; the independent binding-only test provider demonstrates this. A provider
 may perform and advertise additional semantic work when its language requires it.
@@ -79,7 +79,8 @@ bounds inputs before syntax callbacks, retains the original immutable envelopes,
 and performs no file/network lookup. Invocation bounds are checked again before
 typed inputs are copied. MaxConfigurationBytes is one aggregate budget for
 requested keys, own settings, dependency operation/profile identifiers, dependency
-settings and report requirements. Entry/report counts are likewise aggregate.
+settings and report requirements. MaxConfigurationEntries counts all settings;
+MaxRequested counts requested keys plus all dependency report requirements.
 Every dependency is bounded before copying any dependency metadata. Operations
 call providers outside registry locks.
 
@@ -134,8 +135,8 @@ Unknown imports/declarations can reject reference resolution. Other semantic
 failures retain their own validity diagnostics and may leave reference resolution
 incomplete. They are not automatically evidence of an unbound name. Missing
 dependencies and resource exhaustion remain incomplete outcomes, not rejected
-types. Export exhaustion preserves established reference resolution and program validity
-without a model.
+types. Export exhaustion preserves established reference resolution and program
+validity without a model.
 
 The analyzer consumes that explicit result, preserves the five original analysis
 reports and reuses the same model without repeating authoritative resolution.
