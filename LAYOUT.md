@@ -84,6 +84,11 @@ are excluded explicitly. An orphan parser and an incomplete syntax package both
 fail. The checks also classify every production package and enforce its directed
 dependencies, including private helpers and the absence of external dependencies.
 
+Those are current-code checks. The proposed Horos integration will need a narrow
+dependency allowance for its frontend and relevant transforms. Generic carriers,
+contracts, engine and printer must remain independent of Horos/ontos, and native
+syntax/text stages must remain independent of the canonical frontend.
+
 The [shared conformance suite](integration/go/conformance_test.go) must cover
 every discovered language. It checks stable identity, matching AST/CST checker
 views, formatter snapshot ownership and metadata, whole-input rejection, located
@@ -97,12 +102,20 @@ consistency does not prove grammar or mapping correctness.
 
 ## Future components
 
-The [canonical model](docs/model.md) remains a proposal. Its implementation will
-use the same `syntax`, `parse`, `check`, `format` and `provider` paths, with explicit
-resolution under `resolve/canonical/go` when implemented. Directed mappings will
-live under `transforms/<source>-to-<target>/go`; application composition and IO
-will live under `cmd/bittype/go`. Their dependency rules and qualification will
-be added with those implementations, not through empty packages now.
+The [Horos declaration integration](docs/model.md) remains a proposal. It will
+use `syntax/horos/go`, `check/horos/go`, `provider/horos/go` and
+`resolve/horos/go`. Readable syntax, when specified, adds `parse/horos/go` and
+`format/horos/go` under the same stage matrix. These replace the former proposed
+`canonical` paths; no implementation or compatibility alias exists to retain.
+
+Directed mappings will live under `transforms/horos-to-<native>/go`; later partial
+reverse mappings under `transforms/<native>-to-horos/go`. Application composition
+and IO remain under `cmd/bittype/go`. Horos owns the declaration semantics and
+encoding; these packages supply tooling projections and native representations.
+Dependency rules and qualification will accompany implementation, with no empty
+packages created now. The complete language-stage gate will accompany a complete
+readable frontend; an initial AST-only provider must have an explicit separately
+tested capability profile rather than pretending missing text stages exist.
 
 Adding a native language supplies the five stages, any private lexical helpers,
 conformance fixtures and compiler qualification. It requires no change to the

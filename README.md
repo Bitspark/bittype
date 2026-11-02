@@ -1,14 +1,15 @@
 # bittype
 
-A language-independent type model and native type generation for TypeScript,
-Go, Rust and C++.
+Syntax infrastructure and native type generation for TypeScript, Go, Rust and
+C++, using horos as the canonical data type model.
 
-**Current status, 31 October 2026:** generic AST/CST carriers, typed pipeline
+**Current status, 2 November 2026:** generic AST/CST carriers, typed pipeline
 contracts, native syntax vocabularies, parsers, formatters, checks and a shared
 printer are implemented in Go. The syntax engine registers languages and
 ASTTransformer implementations, plans routes and composes existing text stages.
-Specialized text providers extend LanguageProvider. The canonical model remains
-a proposal; canonical AST, actual language mappings and package releases remain
+Specialized text providers extend LanguageProvider. Horos owns data descriptors
+and proposed canonical declaration semantics; its bittype frontend/AST,
+actual language mappings and package releases remain
 deferred. The engine starts empty and has no built-in languages or mappings.
 
 The [stage-first layout](LAYOUT.md) groups shared tree representations under
@@ -33,7 +34,7 @@ application-value validation or Wire dependencies.
 
 ## Read first
 
-- [Proposed type model](docs/model.md): canonical input proposal and semantics.
+- [Horos canonical input](docs/model.md): ownership, declaration proposal and native representation plan.
 - [Generic AST](docs/ast.md): carriers, typed views, addressing and provenance.
 - [Target syntax](docs/syntax.md): native vocabulary and supported type subsets.
 - [Parsing and formatting](docs/parsing-formatting.md): CST model, providers,

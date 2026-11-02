@@ -1,6 +1,6 @@
 # AST transformation and pipeline design
 
-**Direction: 31 October 2026.** The toolchain is implemented in Go. Generic AST/CST
+**Updated: 2 November 2026.** The toolchain is implemented in Go. Generic AST/CST
 carriers, typed stages, LanguageProvider and four native text pipelines are
 implemented. The [native text design](parsing-formatting.md) owns parser,
 formatter, printer and checking details. The owner's later 31 October direction
@@ -9,15 +9,16 @@ typed boundary and syntax engine with explicit registration, path finding and
 execution are implemented; see the [engine reference](engine.md). Canonical AST,
 actual language mappings, public builders and application CLI remain deferred.
 
-The canonical model remains a [proposal](model.md). Its syntax and semantic
-decisions must be settled before a language implementation claims conformance.
+Horos owns the data model and [proposed declaration semantics](model.md).
+Bittype owns their syntax/tooling projection and native transformations. This
+documentation update introduces no canonical AST, parser or transformer.
 
 ## Target pipeline
 
 ```text
-canonical source
-    -> parse, resolve and check once
-    -> AST[Canonical]
+canonical Horos module values
+    -> resolve and check once using Horos declaration semantics
+    -> AST[Horos]
          -> AST[TypeScript] -> CST[TypeScript] -> TypeScript source
          -> AST[Go]         -> CST[Go]         -> Go source
          -> AST[Rust]       -> CST[Rust]       -> Rust source
@@ -36,10 +37,13 @@ leaves. The formatter does not resolve
 canonical declarations or decide how a canonical nullable field should be
 represented. Those choices must already be explicit in the target AST.
 
-Canonical parsing, resolution and semantic checking belong to the future
-canonical frontend. Native parsers are separate text-to-CST stages. File IO, dependency retrieval, configuration and output paths belong
-to the application. A formatter is usable with a target AST built by another
-producer, without a canonical input or generator dependency.
+The future Horos frontend supplies syntax, AST projection and located errors,
+using Horos-owned resolution, binding and specialization rules. A readable
+authoring syntax can add text -> CST[Horos] with its AST view; the canonical
+document value format does not claim that source syntax already exists.
+Native parsers remain separate text-to-CST stages. File IO, dependency retrieval,
+configuration and output paths belong to the application. A formatter is usable
+with a target AST from another producer, without a canonical input dependency.
 
 The output scope is native types and interfaces, including generic declarations
 and applications. Executable bodies, value validators, serialization, callable
@@ -72,20 +76,23 @@ integration/go/                          present: contracts, conformance, archit
                                                  graph, ownership and compiler checks
 testdata/text/<language>/valid/          present: native source fixtures
 
-syntax/canonical/go/                    planned: canonical vocabulary
-parse/canonical/go/                     planned: canonical source to CST
-resolve/canonical/go/                   planned: references and generic binders
-check/canonical/go/                     planned: canonical semantics
-format/canonical/go/                    planned: canonical AST to CST
-provider/canonical/go/                  planned: capability composition
-transforms/canonical-to-<native>/go/     planned: directed native generation
-transforms/<native>-to-canonical/go/     proposed: partial migration mapping
+syntax/horos/go/                        planned: Horos declaration AST projection
+parse/horos/go/                         proposed: future readable source to CST
+resolve/horos/go/                       planned: Horos references and binders
+check/horos/go/                         planned: frontend checks using Horos rules
+format/horos/go/                        proposed: future readable Horos CST
+provider/horos/go/                      planned: explicit capability composition
+transforms/horos-to-<native>/go/         planned: directed native generation
+transforms/<native>-to-horos/go/         proposed: partial migration mapping
 cmd/bittype/go/                          planned: application composition and IO
-testdata/{canonical,transforms}/         planned: semantic/adoption fixtures
+testdata/{horos,transforms}/             planned: semantic/adoption fixtures
 ```
 
-The native directory names are typescript, golang, rust and cpp. Planned paths
-are not placeholder packages. Public builders, generic traversal and a typed
+The native directory names are typescript, golang, rust and cpp. Horos replaces
+the earlier proposed canonical directory name; no implementation aliases are
+needed. Planned paths are not placeholder packages. An AST-only first provider
+needs explicit capability checks before the complete readable language-stage
+matrix applies. Public builders, generic traversal and a typed
 Stage composition helper remain deferred. Package-level tests belong beside
 their implementation; independent consumer fixtures and composition qualification
 remain under integration. Language coverage is discovered and checked in tests,
@@ -127,10 +134,10 @@ type Stage[I, O any] func(I) (O, error)
 
 A generator will satisfy a stage from one AST type to another; a formatter
 satisfies a stage from a target AST view to CST, and a printer from CST to text. The planned relationships
-are shown below; target markers exist, but the Canonical marker does not yet:
+are shown below; target markers exist, but the Horos marker does not yet:
 
 ```text
-Stage[AST[Canonical], AST[TypeScript]]
+Stage[AST[Horos], AST[TypeScript]]
 Stage[ast.View[TypeScript], CST[TypeScript]]
 Stage[CST[TypeScript], string]
 ```
@@ -162,9 +169,9 @@ Scheduling, caching, cancellation and diagnostic aggregation are also deferred.
 Generation and canonicalization are names for directions of one operation:
 
 ```text
-AST[Canonical] -> AST[TypeScript]    generation
-AST[TypeScript] -> AST[Canonical]   canonicalization/adoption
-AST[TypeScript] -> AST[Canonical] -> AST[Rust]   composed transformation
+AST[Horos] -> AST[TypeScript]        generation
+AST[TypeScript] -> AST[Horos]       canonicalization/adoption
+AST[TypeScript] -> AST[Horos] -> AST[Rust]       composed transformation
 ```
 
 The implemented registry-facing interface is:
@@ -194,7 +201,7 @@ LanguageProvider still identifies a single language. A transformer relates two
 languages, so it identifies its endpoints with FromID/ToID rather than pretending
 to have one language ID. The engine registers language capabilities and directed
 transformer edges explicitly. Application composition supplies every instance.
-Canonical is an ordinary language provider; the engine has no built-in canonical
+Horos is an ordinary language provider; the engine has no built-in canonical
 name or route. Adding a language or transformation changes its implementation
 and application registration, not engine source.
 
@@ -262,8 +269,8 @@ Arrows in the table mean a direct package dependency is allowed:
 | Transformation boundary | Generic AST/checks, language identity, typed stage contracts; no concrete syntax imports |
 | Generic CST | Generic AST |
 | Each syntax package | Generic AST/CST, language identity interface |
-| Canonical frontend | Canonical syntax, generic AST |
-| Each transformer | Its source and destination syntax/checkers, generic AST; pipeline and transformation contracts |
+| Horos frontend | Own syntax, generic AST, Horos declaration semantics and Ontos document representation |
+| Each transformer | Source/destination syntax/checkers, generic AST, pipeline/transform contracts; Horos model when relevant |
 | Each formatter | Own syntax/checker, AST/CST carriers, private concrete construction |
 | Shared printer | Generic CST/checks only; no concrete language imports |
 | Application composition root | Explicitly selected language providers, engine, frontend, transformers and pipeline |
@@ -271,7 +278,10 @@ Arrows in the table mean a direct package dependency is allowed:
 
 Standard-library utilities are permitted in every layer. There are no external
 Go module dependencies in this slice and no dependencies on another Bitspark
-implementation repository. The AST, pipeline and language identity packages do
+implementation repository. Future Horos integration narrowly permits its frontend
+and relevant transforms to consume the model, with updated architecture tests;
+Horos must not depend on bittype. This does not permit model imports in generic
+trees, contracts, engine or printer. The AST, pipeline and language identity packages do
 not import each other or concrete syntax packages. Syntax packages do not import
 one another, generators or formatters. A formatter does not import the canonical
 grammar or its generator.
@@ -308,8 +318,10 @@ planning and checked execution. Canonical generation remains unimplemented.
 
 Subsequent, separately authorized increments are:
 
-1. Specify and implement the canonical AST and independent semantic fixtures.
-2. Implement canonical frontend and canonical-to-native ASTTransformer providers.
+1. Qualify the Horos declaration proposal and independent semantic fixtures;
+   then implement its AST projection under separate implementation authorization.
+2. Implement the Horos frontend and Horos-to-native ASTTransformer providers,
+   preserving open generics and qualifying imported pagination first.
 3. Compose and qualify native generation, then add explicitly scoped reverse
    transformers for migration and qualify multi-step routes.
 

@@ -1,403 +1,191 @@
-# Proposed canonical type model
+# Horos canonical types and bittype generation
 
-**Date:** 31 October 2026. **Status:** proposal for review; no canonical language
-implementation or published language revision. The generic AST and pipeline
-foundation is implemented separately; see [the generation design](generation.md).
+**2 November 2026. Status: ownership direction accepted; declaration format and
+native mappings proposed, not implemented.** This replaces the 31 October
+proposal for an independent bittype value-type language. The generic AST/CST,
+native text stages and syntax engine already exist; this update changes docs only.
 
-The owner selected bittype as the home for canonical type definitions and type
-generation for TypeScript, Go, Rust and C++. The first milestone is types only.
-The [charter](../CHARTER.md) records that boundary; this document proposes the
-model, authoring form and implementation stages.
+## Ownership and canonical input
 
-## 1. Direction and scope
+| Component | Responsibility |
+| --- | --- |
+| ontos | Values, structural identity, data embeddings and canonical encoding |
+| horos | Data descriptors/conformance; proposed module, generic and application semantics |
+| bittype | Source syntax, AST/CST projections, frontend tooling, language transformations and source generation |
+| Contract libraries | Function, Stream, Cell and future behavioral declarations and realizations |
 
-A versioned, language-independent definition is the authoritative input.
-TypeScript, Go, Rust and C++ are intended generated representations of that definition:
+The semantic authority is the [horos descriptor specification](https://github.com/Bitspark/horos/blob/v0.6.0/docs/spec/horos.md)
+and the new [canonical declaration proposal](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
+The latter specifies exact value grammar, immutable imports, indexed binders,
+substitution and identity. Bittype must not maintain a competing record,
+collection, union or generic-substitution specification.
+
+Horos 0.6.0 implements ground descriptors and value checking, without a public
+dependency on the older proof-integration packages. It does not yet implement
+the declaration layer. Bittype does not yet implement its frontend or any
+Horos-to-native transformation. No package release or migration is implied.
+
+A declaration document is an ontos module value, encoded with ontos-codec-v1:
 
 ```text
-JSON source -> checked canonical AST -> target-language AST -> native CST -> source
+Tuple(Atom(UTF8("horos/decl/module")),
+      int(1), text(moduleName), importsMap, declarationsMap)
 ```
 
-JSON is the initial syntax for authoring definitions. It does not make JSON the
-value model or prescribe a serialization format for instances. A byte sequence,
-for example, is a byte sequence even though its type is declared in a JSON file.
+The maps have canonical text keys. Imports pin module bytes with SHA-256;
+declarations contain ordered parameter names and type expressions. Parameter
+occurrences store zero-based slot indices. Applications contain an explicit
+local/imported target and an ordered list of every type argument. Horos owns
+the arities, name grammar, literal boundaries and resolution rules.
 
-This milestone covers data shapes, declarations, imports, generic parameters and
-applications. Output consists of native type declarations, any necessary support
-data types for presence/nullness, and a generation manifest.
+Existing horos descriptors are reused, allowing declaration expressions only
+in child-descriptor positions. A parameter-shaped tuple inside an `exact`
+literal remains data. `rec`/`ref` remain recursion syntax, not generic slots.
 
-It does not include adapter generation, callable or stream implementations,
-application-value validators, serialization, Wire protocols, service operation
-tables, package publication or consumer migration. Checking a type declaration
-is different from validating an application value.
+Readable source notation is a future bittype frontend concern. The exact value
+format does not imply an implemented text parser. Horos's value equations are
+not JavaScript builders or executable input. Source spans, comments and native
+naming preferences remain tooling metadata outside the canonical module value.
 
-## 2. Model layers
+The old `bittype: 1` JSON proposal and its independent `string`, `bytes`, `i64`,
+`u64`, `f64`, variant and nullable algebra are superseded. Source conveniences
+need an explicit Horos meaning; they cannot create new canonical value domains.
 
-| Layer | Contents |
-| --- | --- |
-| Module | Language revision, logical module name, imports and named declarations |
-| Declaration | Name, ordered generic parameter list and a type expression |
-| Type expression | A primitive, structural composition, parameter, reference or application |
+## Pagination first
 
-Documentation and target-specific naming are separate metadata. They do not
-alter a type's value meaning. Source locations accompany diagnostics but are
-not part of that meaning.
+The complete value equations are in
+[horos's pagination example](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md#5-complete-pagination-example).
+Their readable meaning is:
 
-A resolved reference retains its declaring module and declaration, rather than
-only a bare name or flattened structural body. A parameter reference points to
-its lexical binder. An application retains its constructor and resolved
-arguments, as well as any normalized view needed by a consumer.
-
-The planned canonical AST is the common input to all four AST-to-AST generators.
-Their spelling and memory-layout choices do not rewrite its semantics.
-Each target AST is formatted into a native CST, then printed by the shared
-printer, independently of the canonical model. The toolchain implementation
-language is Go. The [transformation proposal](generation.md) uses one
-ASTTransformer contract for both generation and explicit native-to-canonical
-adoption; reverse mappings cannot infer semantic information absent from source.
-
-## 3. Initial value-type vocabulary
-
-| Form | Proposed source expression | Meaning |
-| --- | --- | --- |
-| Primitive | `"string"` | One precisely specified scalar domain |
-| Record | `{"record": {"name": {"type": "string"}}}` | A closed set of named fields |
-| Variant | `{"variant": {"ok": "string", "none": {"record": {}}}}` | Exactly one named alternative with its payload |
-| List | `{"list": "string"}` | A finite ordered sequence of one element type |
-| Tuple | `{"tuple": ["string", "i64"]}` | A fixed ordered sequence of potentially different types |
-| Map | `{"map": "string"}` | A finite unordered map from string keys to values of one type |
-| Nullable | `{"nullable": "string"}` | A value of the underlying type or explicit null |
-| Reference | `{"ref": "Person"}` | A nongeneric local or imported declaration |
-| Parameter | `{"parameter": "T"}` | A slot bound by the current declaration |
-| Application | `{"apply": "Page", "with": {"T": {"ref": "Person"}}}` | A generic declaration with all arguments explicitly supplied |
-
-Only primitive names are bare strings in type-expression positions. Parameters
-and declarations have explicit forms, so name resolution does not guess which
-sort a string denotes. An expression selects exactly one form.
-
-The primitive proposal is:
-
-| Name | Value domain | Initial native representation |
-| --- | --- | --- |
-| `boolean` | True or false | TypeScript `boolean`; Go and Rust `bool` |
-| `string` | Finite Unicode scalar sequences; no implicit Unicode normalization | TypeScript/Go strings; Rust `String` |
-| `bytes` | Finite sequences of octets | `Uint8Array`, `[]byte`, `Vec<u8>` |
-| `i64` | Integers from -2^63 through 2^63-1 | `bigint`, `int64`, `i64` |
-| `u64` | Integers from 0 through 2^64-1 | `bigint`, `uint64`, `u64` |
-| `f64` | Finite IEEE 754 binary64 values; no NaN or infinities | `number`, `float64`, `f64` |
-| `null` | The single explicit null value | Target-specific null data representation |
-
-There is no platform-sized integer or unspecified `number` primitive. TypeScript
-must not approximate a 64-bit integer with `number`. Native strings and numeric
-types may admit values outside these domains; types-only generation does not
-claim to check those values at runtime. The treatment of signed floating zero
-in equality and canonical encoding must be fixed before the language is frozen.
-
-A record's field names and a variant's alternative labels carry meaning.
-Their source order does not. Tuple positions, list order and declaration
-parameter order do carry meaning. Map keys are unique strings; map iteration
-order is not part of its value.
-
-Records are closed in this first proposal. Undeclared fields do not become
-semantic members merely because a native value can store them. Variants are
-closed and have at least one alternative. Their payload can be any admitted
-value type, including a scalar, record, collection or another variant.
-
-A variant label is not the name of a serialized discriminator property.
-Properties such as `tag`, `kind` and `value` belong to a selected representation;
-they are not additional fields in the canonical variant.
-
-### Derived types
-
-- Unit is the empty record.
-- An enum is a variant whose alternatives all carry unit.
-- An alias is a declaration whose body refers to another type. An alias adds
-  no value-level wrapper merely by naming the type.
-- `Page<T>`, `Result<T, E>` and a labelled `Option<T>` are ordinary declarations
-  composed from the vocabulary above. They are not additional core kinds.
-- A labelled `Option<Option<T>>` preserves its nested alternatives. It is not
-  automatically the same type as nullable `T`.
-
-Dates, timestamps, application identifiers and other semantic value domains
-need explicit library definitions or a later refinement proposal. They must not
-be silently approximated by a primitive with a different meaning.
-
-## 4. Proposed authoring form
-
-This complete example is proposed bittype syntax, not an existing parser API:
-
-```json
-{
-  "bittype": 1,
-  "module": "example.people",
-  "types": {
-    "Person": {
-      "type": {
-        "record": {
-          "name": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "Page": {
-      "parameters": ["T"],
-      "type": {
-        "record": {
-          "items": {
-            "type": {
-              "list": {"parameter": "T"}
-            }
-          },
-          "next": {
-            "type": {"nullable": "string"},
-            "optional": true
-          }
-        }
-      }
-    },
-    "PeoplePage": {
-      "type": {
-        "apply": "Page",
-        "with": {
-          "T": {"ref": "Person"}
-        }
-      }
-    }
+```text
+module example.pagination
+  Page<T> = closed record {
+    items: list-of(T)
+    next?: scalar(utf8-text)
   }
-}
+
+module example.people
+  import pagination = exact pinned example.pagination module
+  Person = closed record { name: scalar(utf8-text) }
+  PeoplePage = pagination.Page<Person>
 ```
 
-Omitted `parameters` means an empty list. Omitted `optional` means false.
-The parser normalizes those defaults into the checked model. Missing `type`
-is an error; it never means an unrestricted value.
+This display is explanatory, not a frozen source grammar. `Page` is an ordinary
+generic declaration. Its required items are an ontos list; optional next admits
+text, not null. No pagination operation, cursor protocol or transport is implied.
 
-`Page` remains an open generic declaration. `PeoplePage` is its application
-to `Person`. Consumers do not author an expanded page interface or a separate
-runtime description of its item type.
+Native generation preserves open `Page<T>` and applied `Page<Person>` in target
+syntax. Separately, Horos specialization can produce a ground descriptor for
+value checking. Users do not author that expanded description, and generation
+does not require monomorphization as its only input.
 
-An `imports` member will associate local import names with immutable module
-references. An imported declaration is addressed through that import, for
-example `{"ref": "people.Person"}`. Dependency resolution must pin and verify
-the actual input content; a mutable package label alone is insufficient.
-The release-manifest and import-pin spelling remains to be specified before
-the parser's input format is frozen.
+Keep the imported Page declaration, the caller's Person binding, the named
+PeoplePage alias and parameter origins. Same-spelled names in different modules
+or declarations do not share a binding. The first declaration revision rejects
+cyclic import/application graphs; existing guarded `rec`/`ref` descriptions
+remain available. Recursive named applications are deferred. Do not add a
+productivity rule that rejects a well-formed but uninhabited Horos type.
 
-## 5. Presence and null
+## Frontend and pipeline
 
-Presence belongs to a field. Nullability belongs to its value type.
+```text
+canonical Horos module values
+    -> resolve/check using Horos declaration semantics
+    -> AST[Horos]
+         -> AST[TypeScript] -> CST[TypeScript] -> source
+         -> AST[Go]         -> CST[Go]         -> source
+         -> AST[Rust]       -> CST[Rust]       -> source
+         -> AST[C++]        -> CST[C++]        -> source
+```
 
-| Field | Absent | Present null | Present non-null value of T |
-| --- | --- | --- | --- |
-| Required T | Invalid | Invalid unless T already admits null | Valid |
-| Optional T | Valid | Invalid unless T already admits null | Valid |
-| Required nullable T | Invalid | Valid | Valid |
-| Optional nullable T | Valid | Valid | Valid |
+A future readable frontend adds text -> CST[Horos] and its AST view, using the
+same model. Native parsers continue to serve independent native inputs.
+`AST[Horos]` is an ordinary language-specific use of the generic carrier. Its
+provider and transformers are explicitly registered by the application; the
+engine has no canonical preference or knowledge of descriptor constructors.
+Transformers produce target ASTs, formatters construct CST, and the printer
+alone emits text.
 
-The example's `next` therefore has three states: absent, present null, and
-present string. The empty string is a present string. Empty bytes, lists and
-maps likewise do not imply absence.
+The [generation design](generation.md) and [layout](../LAYOUT.md) retain the
+stage-first matrix. Planned canonical paths use `horos`, replacing the earlier
+proposed `canonical` name. No directories, interfaces or dependencies are added
+by this documentation change.
 
-Nullable adds the null value; applying it again introduces no new semantic
-state. Alias resolution and generic substitution must respect that rule.
-A backend must not accidentally make nested native wrappers introduce extra
-canonical null states. This is distinct from explicit labelled optional
-variants, whose nesting remains observable.
+## Native representation profiles
 
-For TypeScript, the proposed field projections are `field: T`,
-`field?: T`, `field: T | null` and `field?: T | null`. They require
-`strictNullChecks` and
-[`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig/exactOptionalPropertyTypes.html);
-explicit `undefined` is not an extra canonical field state.
+Horos classifies ontos values. Native types are selected representations of
+those values; compilation does not prove conformance. Each transformer must
+declare its supported subset, toolchain/configuration and representation limits.
 
-## 6. Generics, references and recursion
+| Horos case | Required mapping decision |
+| --- | --- |
+| `scalar(int)` | Arbitrary-width domain; no silent JS number or bounded machine integer |
+| `scalar(utf8-text)` | Native string representation and its admissible-value limits |
+| `list-of(T)` | Native sequence preserving the selected T representation and binding |
+| Closed/open record | Field membership and native enforcement/extra-field limits |
+| Optional field | Absence distinct from a present value |
+| `exact(null())` and unions containing it | Explicit null distinct from absence |
+| Unions, intersections, complements, exact values, refinements | Specified representation or unsupported-input diagnostic; no silent widening |
+| Guarded recursion | Explicit native indirection/layout, without changing descriptor meaning |
+| Named generics/applications | Open native parameters, declaration identity and arguments |
 
-The initial generic mechanism is first-order: parameters stand for value types.
-A constructor such as `Page` is not itself a value type or a higher-kinded
-argument. Open declarations are allowed; each application supplies every named
-parameter exactly once. Missing, extra and unbound arguments are errors.
+For pagination, propose a generic interface/record in TypeScript, generic struct
+in Go/Rust/C++, a sequence for items and presence representation for next. Exact
+support types, imports and compiler settings must accompany the transformers;
+this document introduces no runtime or arbitrary-precision library dependency.
 
-Parameter names are lexical binders. Renaming a binder and its uses preserves
-the value-type family. Substitution must avoid capture across declarations and
-imports. Resolution converts named arguments to the declaration's ordered slots
-without losing their source locations or declaration origins.
+The example's next has two admitted states: absent or present text. An optional
+union of text and `exact(null())` would have three. No new nullable constructor
+or wrapper-normalization semantics are introduced. Current scalar tags are int,
+utf8-text and bool; decimal has no scalar recognizer. A scalar extension requires
+a concrete Horos model case and is unnecessary for the first pagination example.
 
-The implementation must demonstrate:
+## Dependencies, identity and forbidden shortcuts
 
-- A separately rendered open generic and its concrete application describe the
-  same applied value shape as capture-avoiding substitution.
-- Nested applications preserve their argument types and declaration origins.
-- Two imports using the same local parameter spelling do not capture each other.
-- Unknown references and unresolved dependencies produce diagnostics rather
-  than an `any`, `unknown`, empty record or placeholder identity fallback.
+Dependency direction is bittype's Horos tooling -> horos -> ontos. Horos must
+not import bittype. Generic trees, contracts, engine and printer remain unaware
+of concrete semantic dependencies. Native syntax and formatters stay independent
+of Horos; its frontend and relevant transformers consume the semantic model.
+The current no-external-dependencies check remains true for current code. Future
+implementation must add a narrow dependency allowance and qualification, not
+weaken the generic-package boundary globally.
 
-Recursive types describe finite values. A tree with a possibly empty list of
-children, an optional next node, or a variant with a terminating alternative
-can have finite instances. A required self-reference with no terminating case
-is rejected. Direct alias cycles are also rejected.
+Horos specifies document identity and pins. Bittype preserves them alongside
+declaration/binder references. AST addresses and source spans are tooling
+addresses/provenance, not module pins, ownership or authority proofs.
 
-The first revision should admit regular recursive generics whose recursive
-references preserve the recursive group's parameter vector. Expansions that
-continually grow their arguments, such as a recursive application from `F<T>`
-to `F<List<T>>`, are outside the initial finite-description model.
+Function, Stream and Cell remain library-owned. This phase adds no live contract
+semantics, adapters or binding registry. Native function/method-signature nodes
+remain language syntax; they do not privilege a particular Function library.
 
-Mutually recursive declarations belong in one module initially; module imports
-are acyclic. Host-language cyclic objects are not automatically canonical values.
+Forbidden:
 
-Pointer or `Box` insertion is a native layout choice. It must not prohibit a
-valid canonical recursive type merely because inline storage would be infinite.
-Go's [recursive struct rules](https://go.dev/ref/spec#Struct_types) illustrate
-the distinction between the value model and a target layout.
+- Contract kinds, name switches, builtin imports or registrations in the general
+  generator, carrier, engine, Wire, runtime or hydration.
+- Structural fingerprints selecting behavioral ownership or bindings, including
+  fingerprints hidden in a generated central dispatch table.
+- Losing origins through expansion and guessing the owning library from shape.
+- A competing data type algebra or native extraction as canonical authority.
+- Adapters, RPC/streaming behavior, value validators or codecs in this types-only
+  generation milestone.
 
-## 7. Declaration identity and canonical form
+## Next implementation scope and evidence
 
-Here, canonical means the authoritative, checked model from which native
-representations are derived. It does not mean that a hash encoding has already
-been chosen or published.
+No implementation is authorized by this document alone. Proposed stages are:
 
-Keep three observations separate:
+1. Qualify Horos declaration grammar, pins, resolution, slots and specialization
+   with independently authored semantic vectors.
+2. Add the Horos AST/frontend in bittype, preserving origins and located errors.
+3. Implement four Horos-to-native ASTTransformer providers. First qualify open
+   and applied pagination, then expand the supported subset explicitly.
+4. Compose existing formatters/printer and compile generated declarations and
+   use examples with pinned toolchains on shared workers or GitHub runners.
+5. Later add partial native-to-Horos migration transformers. Missing native
+   semantics cannot be reconstructed automatically.
 
-1. Which declaration an import or application refers to.
-2. Which value shape results from resolving and applying that declaration.
-3. Whether a behavioral contract or native binding is compatible with another.
-
-An alias can add no value-level wrapper while its origin remains available to
-tools. Two differently owned declarations can have the same value shape.
-That fact does not authorize substituting their future library-owned bindings.
-
-Defaults, binders, aliases, nullable composition, map ordering and recursive
-graphs need specified normalization rules. A later canonical encoding must
-state exactly which of those views it encodes, what names it retains and what
-equivalence it promises. Sorting source JSON alone does not settle recursive
-graph identity or behavioral compatibility.
-
-Documentation, source locations and native spelling belong outside value
-meaning. Preserve them separately for diagnostics and generated-code provenance.
-Do not erase declaration origins to manufacture a universal structural identity
-for Function, Stream, Cell or another behavioral contract.
-
-## 8. Native type generation
-
-All backends consume the same checked model and explicit target configuration.
-The following initial representation proposals cover TypeScript, Go and Rust.
-C++ has now been added as a target AST vocabulary; its canonical representation
-mapping remains to be specified. This slice adds no canonical AST or generator.
-
-| Canonical form | TypeScript | Go | Rust |
-| --- | --- | --- | --- |
-| Record | Interface or object type | Struct | Struct |
-| Variant | Discriminated union | Tagged struct representation | Enum |
-| List of T | `Array<T>` | `[]T` | `Vec<T>` |
-| Tuple | Tuple type | Struct with positional fields | Tuple |
-| String-keyed map | String-keyed record/map type | `map[string]T` | String-keyed map type |
-| Signed 64-bit integer | `bigint` | `int64` | `i64` |
-| Generic page | `Page<T>` | `Page[T]` | `Page<T>` |
-| Optional nullable string field | `next?: string | null` | `Presence[Nullable[string]]` | `Option<Option<String>>` |
-
-The Go support names are illustrative data types, not existing APIs.
-The concrete optional-nullable string row preserves all three states.
-General nested-nullable applications still require the normalization rule in
-section 5; the row is not permission to add a wrapper for every source alias.
-
-Rust's [payload-carrying enums](https://doc.rust-lang.org/reference/types/enum.html)
-naturally represent variants. Go needs an explicit tag and payload layout.
-In this types-only milestone, that layout can admit inconsistent combinations;
-generated declarations alone do not enforce every canonical invariant.
-
-Likewise, TypeScript structural typing does not prove exact closed records,
-native numeric types can exceed a declared domain, and native strings may need
-additional checks to meet the Unicode domain. Record these limitations in the
-target contract. Do not describe a compilation pass as application-value
-validation, or silently widen the canonical model to match a native limitation.
-
-Target rules must cover identifier escaping, collisions, anonymous type naming,
-recursive indirection, presence and null representations, and generic aliases.
-Output naming choices are deterministic and kept outside value semantics.
-
-A generation manifest records the input and generator revisions, target
-configuration and supported language/toolchain version. Generated files do not
-import the generator, a TypeScript compiler, Wire, bitruntime or a default
-contract library.
-
-## 9. Library ownership
-
-Function, Stream, Cell and future behavioral contracts remain ordinary libraries.
-Their behavior, protocols, adapters and special native realizations belong to
-those libraries. This milestone implements none of them.
-
-The core vocabulary above describes value construction. A library's declaration
-uses references and applications through the same machinery as any other
-declaration. The checked graph retains those associations so a later, separately
-scoped consumer can select library-owned realizations explicitly.
-
-The following are forbidden:
-
-- Core `function`, `stream`, `cell` or other contract-specific kinds.
-- Core name switches, hardcoded library imports, default registrations or a
-  central catalogue that must change when a library is added.
-- Inferring library ownership or protocol compatibility from matching shapes
-  or a universal structural fingerprint.
-- Erasing imports, aliases or generic applications in a way that loses the
-  declaration needed to select its library-owned realization.
-- Substituting TypeScript extraction for canonical input.
-- Adding adapter, RPC, stream or Cell behavior under this types-only milestone.
-
-## 10. Implementation stages and evidence
-
-This document specifies the model proposal. The Go foundation contains
-[generic AST data types](ast.md), a [typed stage contract](generation.md) and
-[four target vocabularies with language identity](syntax.md). The canonical AST
-is explicitly deferred. Native parsers, syntax checks, AST-to-CST formatters and
-the shared CST printer are implemented separately. Canonical parsing/checking,
-actual AST-to-AST mappings and public builders remain planned. The syntax engine
-and typed transformation frame are implemented separately; see [engine.md](engine.md).
-
-1. **Specify the model and fixtures.** Resolve the outstanding syntax and
-   normalization choices below. Write language-neutral valid/invalid examples,
-   including the expected resolved structures and substitution results.
-2. **Implement one frontend.** Parse strictly, resolve imports and declarations,
-   check binders, applications and recursion, and produce the shared model with
-   useful source diagnostics. Reject duplicate JSON object keys before an object
-   map can discard them, unknown semantic forms and incomplete inputs.
-3. **Implement all four AST-to-AST generators.** Use the same fixtures and
-   canonical AST to produce TypeScript, Go, Rust and C++ ASTs. Add only the support
-   data declarations their representations need. Do not add adapters or runtime
-   validators, and do not emit source strings from these transformations.
-4. **Compose the native text stages.** The implemented native formatters consume
-   their target AST and construct CST; the printer emits source. They do not
-   depend on canonical input or make semantic representation choices. Compose
-   these stages with the selected AST transformations at the application root.
-5. **Qualify the representations.** Compile generated declarations and native
-   use examples with pinned toolchains on shared build workers or GitHub
-   runners. Compare intended value distinctions, not merely generated strings.
-
-Acceptance examples include open and applied pagination; nested generics;
-same-spelled parameters in separate scopes; scalar and record variant payloads;
-tuple and map values; recursive trees; all presence/null cases; integer
-boundaries; nullable normalization after application; and invalid references,
-duplicates, arity and recursion.
-
-A successful types-only result establishes checked declarations and compilable
-native representations with documented limits. It does not establish lawful
-behavior, value validation, transport compatibility or a deployed consumer.
-
-## 11. Decisions still needed before freezing revision 1
-
-- The immutable import and release-manifest syntax, identifier grammar and
-  target naming/collision rules.
-- Exact normalization and identity content, including recursive graph rules,
-  signed floating zero and unused generic parameters. A hash format and its
-  independent vectors follow those decisions.
-- Each backend's detailed representation contract, especially Go variants,
-  presence/null data types and nested nullable generic applications.
-- Supported target-toolchain versions. The Go host language and component
-  boundaries are selected in the [generation design](generation.md).
-
-Refinements and arbitrary predicates, extensible records and variants,
-inheritance, nominal wrappers, higher-kinded parameters and generic inference
-are outside this initial proposal. They require a concrete semantic extension,
-not an undocumented permissive fallback.
-
-The proposal does not close the historical language-design issue or qualify a
-released canonical encoding. It supplies the current reviewable model and
-scoped path to the four type generators.
+Acceptance cases include imported pagination, nested applications, same-spelled
+parameters/names in separate scopes, parameter-shaped literal data, absence/null,
+bad imports, duplicate names, invalid arity/slots and recursive applications
+outside the admitted revision. Exhaustion must not look like successful checking.
+Generator tests inspect ASTs and origins; independent formatter fixtures remain
+separate. Compiler success does not prove value conformance or transport behavior.
