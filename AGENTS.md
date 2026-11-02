@@ -16,6 +16,11 @@ the superseded independent bittype value-type algebra. The current native-text
 slice implements parsers, AST-to-CST formatters, syntax checks and a generic
 CST-to-text printer. Read the [concrete syntax design](docs/parsing-formatting.md).
 
+The [agnostic semantic model](docs/semantics.md) is a documented proposal for
+shared analysis facts. Its Go sketch and future analysis SPI are not implemented.
+Keep semantic rules provider-owned; do not treat this proposal as a replacement
+for Horos's canonical data semantics or as authorization for implementation.
+
 - Readable Horos syntax, actual language transformers, public builders and application
   CLI remain deferred. The syntax engine and ASTTransformer boundary are now
   implemented; read [docs/engine.md](docs/engine.md). Do not introduce runtime

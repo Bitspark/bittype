@@ -110,6 +110,11 @@ consistency does not prove grammar or mapping correctness.
 
 ## Future components
 
+The [agnostic semantic model](docs/semantics.md) proposes shared analysis facts
+and a separate provider boundary. No semantic model package, analysis SPI or
+analyzer stage is implemented by that document. Future placement must preserve
+the shared representation/contracts separation and the stage-first matrix.
+
 The [Horos declaration integration](docs/horos.md) implements
 `syntax/horos/go`, `check/horos/go`, `provider/horos/go` and
 `resolve/horos/go`, with private projection/checking in `internal/horos`.
