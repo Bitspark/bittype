@@ -2,6 +2,7 @@ package horosbridge
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -194,6 +195,14 @@ func Decode(view ast.View[s.Language], limits decl.Limits) (*Decoded, error) {
 	for _, child := range tree.Nodes[tree.Root-1].Children {
 		value, err := r.module(child.Node)
 		if err != nil {
+			var syntax *text.Diagnostic
+			if child.Node != root && errors.As(err, &syntax) && syntax.Code != text.LimitExceeded {
+				id := child.Node
+				if syntax.Node != nil {
+					id = syntax.Node.Node
+				}
+				return nil, d.assertion(id, true, err.Error())
+			}
 			return nil, err
 		}
 		pin, err := decl.PinWithLimits(value, limits)

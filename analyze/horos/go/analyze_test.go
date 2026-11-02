@@ -504,6 +504,22 @@ func TestMissingPinnedDependencyIsIncomplete(t *testing.T) {
 	}
 }
 
+func TestDuplicateDeclarationsIdentifySourceOrSuppliedContext(t *testing.T) {
+	for _, test := range []struct { declaration, module, code, subject string }{
+		{"Outer", "example.people", "invalid-source", "source"},
+		{"Page", "example.pagination", "invalid-context", "context"},
+	} {
+		t.Run(test.subject, func(t *testing.T) {
+			tree := fixture(t)
+			setAttribute(&tree.Nodes[find(tree, s.KindDeclaration, test.declaration)-1], s.AttributeName, "Person")
+			result := run(t, tree, nil)
+			requireFailure(t, result, analysis.Complete, analysis.Rejected, test.code, test.subject)
+			site := result.Diagnostics()[0].At
+			if site == nil || site.Tree != tree.ID || site.Node != find(tree, s.KindModule, test.module) { t.Fatal("duplicate declaration failure lost its defining module site") }
+		})
+	}
+}
+
 func TestPresentAnnotationsAndTypePositionsAreCheckedWithoutRepair(t *testing.T) {
 	t.Run("incorrect present target", func(t *testing.T) {
 		tree := fixture(t)
