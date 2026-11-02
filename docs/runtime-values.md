@@ -105,14 +105,16 @@ runtime composition rather than by a type description:
 
 | Operation | Use and ownership |
 | --- | --- |
-| `hydrated.NewEndpoint(limit)` | Create an owned local endpoint with a bounded detached queue. |
+| `hydrated.NewEndpoint(limit)` | Create an owned local endpoint with a bounded delivery queue. |
 | `endpoint.Receive(handler)` | Attach its one receiver; the handler receives a hydrated value and composition-established ReceivedContext. The returned detach operation is separate from closing the endpoint. |
 | `endpoint.Wire()` | Obtain the sending face. Convey this capability, not receiving or closure authority. |
 | `hydrated.NewTuple(...)` | Capture value children and project owned endpoints to sending faces. Wholly ground tuples remain ordinary Ontos tuples. Construction sends nothing. |
 | `target.Send(value)` | Send through a local face or imported proxy. Actual arguments/results remain the owning library's protocol. |
+| `endpoint.Close()` | End the owned endpoint and withdraw its exports; a borrowed sending face does not grant this operation. |
 | `hydrated.NewScope(...)` | Establish a participant's hydration state over the supplied addressed sender and namespace; runtime/network composition supplies routing. |
 | `scope.Expose(endpoint)` / `scope.Connect(reference)` | Bootstrap a known exported endpoint and obtain its sending proxy. These are composition operations, not calls each domain adapter makes. |
 | `scope.Deliver(path, frame, context)` | Route an incoming addressed ground frame through the scope to its exported endpoint, decoding the hydrated body first. |
+| `scope.Close()` | End this scope's exports and references without closing domain endpoints. Composition owns the scope lifetime separately from endpoint/adapter lifetimes. |
 
 Application composition or a library's explicit lifetime owner retains and
 closes the endpoints it creates. A request/reply library may put a reply sending
