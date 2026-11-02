@@ -16,7 +16,8 @@ trees/
 contracts/
   language/go/            language.Provider identity
   pipeline/go/            typed Stage contract
-  text/go/                input, diagnostics and specialized provider contracts
+  check/go/               independent AST syntax-admission provider contract
+  text/go/                input, diagnostics and composed text provider contracts
   transform/go/           ASTTransformer contract and typed registration bridge
   semantic/go/            common snapshots, requests, reports and publication
   resolution/go/          resolver capability and dependency contract
@@ -61,9 +62,10 @@ same dependency level. The package boundaries are:
 | --- | --- |
 | AST, Stage, language identity | Independent foundations; no native syntax or other foundation dependency |
 | CST | Generic AST carrier |
-| Text contracts | AST/CST carriers and language identity |
+| Check contract | AST views and language identity; no text or CST dependency |
+| Text contracts | AST/CST carriers, language identity and the independent check contract |
 | Carrier checks and printer | Generic tree structure and shared diagnostic contracts; no native grammar or formatting choices |
-| Checked representation | Carriers, text checker/identity contracts and generic carrier checks; no engine or transformer dependency |
+| Checked representation | Carriers, check/identity contracts and generic carrier checks; no engine or transformer dependency |
 | Transformer contract/bridge | Typed stages, checked representations and endpoint identity; no concrete mapping |
 | Semantic facts | Generic AST addresses; graph integrity and owned storage, no language rules |
 | Shared semantic contract/bridge | Semantic facts, checked representations and identity; capture/publication, no concrete provider |

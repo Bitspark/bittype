@@ -109,9 +109,22 @@ The former `language.Language` interface has been replaced without an alias.
 Native marker types remain named `Language`; those are Go type parameters for
 the native AST/CST and implement the shared identity contract.
 
-[Specialized interfaces](../contracts/text/go/provider.go) all embed the base interface:
+The [checker contract](../contracts/check/go/provider.go) is independent of text
+and CST. It admits AST structure and supported language syntax through a borrowed
+view; success establishes neither reference resolution nor semantic validity:
 
 ```go
+// package check
+type Provider[L any] interface {
+    language.Provider
+    Check(ast.View[L]) error
+}
+```
+
+The [text interfaces](../contracts/text/go/provider.go) also embed language identity:
+
+```go
+// package text
 type Parser[L any] interface {
     language.Provider
     Parse(Input) (cst.CST[L], error)
@@ -120,20 +133,24 @@ type Formatter[L any] interface {
     language.Provider
     Format(ast.View[L]) (cst.CST[L], error)
 }
-type Checker[L any] interface {
-    language.Provider
-    Check(ast.View[L]) error
-}
 type Printer[L any] interface {
     language.Provider
     Print(cst.CST[L]) (string, error)
 }
+type Provider[L any] interface {
+    Parser[L]
+    Formatter[L]
+    check.Provider[L]
+    Printer[L]
+}
 ```
 
-`text.Provider[L]` combines these capabilities. Each parser, formatter and checker
-package supplies its specialized provider; each `provider/<language>/go` package
-explicitly composes all four, using the generic printer. ID/Name come from the
-native marker, not duplicate strings.
+`text.Provider[L]` combines the three text capabilities with the independent
+checker. Each native parser, formatter and checker package supplies its
+specialized provider; each native `provider/<language>/go` package explicitly
+composes all four, using the generic printer. Horos exposes `check.Provider`
+without any text capability. `representation.NewLanguage` accepts that checker
+contract directly. ID/Name come from the language marker, not duplicate strings.
 
 No provider registers itself. The syntax engine accepts shared contracts
 without concrete imports or a name switch. Heterogeneous AST type erasure belongs
@@ -217,6 +234,7 @@ and fuzz cases cover every language discovered in the stage directories.
 ```text
 trees/ast/go/view.go                         AST-view interface
 trees/cst/go/cst.go                          concrete carrier and stored AST view
+contracts/check/go/provider.go             independent AST syntax admission
 contracts/text/go/{input,diagnostic,provider}.go shared text/provider contracts
 check/ast/go/structure.go                  abstract carrier checks
 check/cst/go/check.go                  concrete carrier checks
