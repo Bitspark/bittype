@@ -1,12 +1,200 @@
 # Semantic analysis capability
 
-**2 November 2026. Implemented in Go source.** Analysis is an optional capability
-beside syntax checking, text stages and AST transformation. Applications register
-it explicitly; the engine starts empty and imports no concrete analyzer.
+**2 November 2026. Implemented in Go source.** Semantic analysis establishes what
+syntax means in its supplied context. For `pagination.Page<Person>`, it can
+establish which declarations Page and Person denote, whether the application has
+the right number of arguments, and how Person binds to Page's parameter.
 
-The [semantic graph](semantics.md) contains shared facts. The public SPI is in
-[contracts/analysis/go](../contracts/analysis/go/contract.go); registration and
-selection are in [engine/go/analysis.go](../engine/go/analysis.go).
+Bittype provides the common request, result and fact representation. Each language
+provider supplies the rules that establish those facts. The engine selects an
+explicitly registered provider; it starts empty and imports no concrete analyzer.
+Horos is the first production analyzer. TypeScript, Go, Rust and C++ currently
+have syntax tooling, without semantic analyzers.
+
+This guide connects the concepts, package boundaries and a pagination example.
+The [semantic model reference](semantics.md) specifies the fact records and their
+invariants; the [Horos reference](horos.md) specifies that provider's vocabulary
+and coverage. The [repository layout](../LAYOUT.md) is the full dependency policy.
+
+## Concepts
+
+There are three kinds of information: the syntax supplied by the caller, facts
+established by the provider, and reports describing what the provider completed.
+Keeping them separate lets a caller distinguish an unresolved name in an AST
+from an established binding, or missing dependency context from invalid source.
+
+| Concept | Meaning in this API | Pagination example |
+| --- | --- | --- |
+| Syntax envelope | An owned AST snapshot admitted by a language's syntax checker | A Program tree containing the people module and its supplied pagination dependency |
+| Entity | The identity of a module, declaration, parameter or provider-owned intrinsic | Page, Page's T, Person and PeoplePage are distinct entities |
+| Term | An established expression: a Reference, Application or ProviderExpression | Applying Page to Person is an Application; using Page's T is a Reference |
+| Occurrence and binding | A current AST node address plus a role and ordinal, and its established target entity | The target occurrence of `pagination.Page<Person>` binds to the imported Page declaration |
+| Dependency | A provider-labeled directed edge between entities | PeoplePage applies Page and also applies Person as its argument |
+| Obligation | A named analysis task for which the caller can request a report | Decide program validity, or enumerate application bindings |
+| Domain | The part of the supplied context covered by an obligation | The selected Horos entry module and every pinned module transitively imported from it |
+| Analysis profile | A versioned contract defining obligations, domains, vocabulary and requirements for a model | `horos-declarations-1/analysis-1` |
+| Report | An obligation's completion status and, where applicable, its truth verdict | Validity is Complete / Holds; a completed binding enumeration is Complete / Undetermined |
+| Model | The immutable graph of established facts, available when its publication requirements are met | Queryable entities, terms, occurrences and application dependencies |
+
+Entity and term IDs belong to one model. Names are display metadata, so two
+parameters both named T remain distinct. An occurrence uses a current tree/node
+address; historical source origins are separate metadata. Provider vocabulary
+uses `semantics.Key{Owner, Name}`: the kernel stores and compares these keys
+without inventing their meaning.
+
+A syntax profile specifies admitted AST forms. An analysis profile specifies
+what the analyzer establishes about those forms. Neither profile is inferred
+from a structure's shape or from a declaration name.
+
+## Ownership and package layout
+
+The layout follows processing stages. The final `go` denotes implementation
+language: `analyze/horos/go` is Go code implementing analysis for Horos.
+
+| Layer and package | Responsibility |
+| --- | --- |
+| [trees/ast/go](../trees/ast/go/ast.go) and [trees/representation/go](../trees/representation/go/ast.go) | Generic syntax storage, current node addresses and checked snapshots |
+| [semantics/go](../semantics/go/model.go) | Shared fact records, graph integrity, immutable storage and generic queries |
+| [contracts/analysis/go](../contracts/analysis/go/contract.go) | Provider interface, captured requests, obligations, reports and result publication |
+| [engine/go](../engine/go/analysis.go) | Explicit registration and selection of a compatible analyzer |
+| [syntax/horos/go](../syntax/horos/go/nodes.go) and [check/horos/go](../check/horos/go/check.go) | Horos AST vocabulary and syntax admission |
+| [resolve/horos/go](../resolve/horos/go/resolve.go) | Explicit canonical-value resolution, checked AST projection and recovery of the owning Horos model |
+| [analyze/horos/go](../analyze/horos/go/analyze.go) | Adapt authoritative Horos resolution to shared facts, coverage reports and diagnostics |
+| [internal/horos](../internal/horos) | Private decoding and correspondence between current AST sites and the authoritative model, shared by resolver and analyzer |
+| [provider/horos/go](../provider/horos/go/provider.go) | Compose Horos checking and analysis capabilities for explicit application registration |
+| External horos and ontos packages | Horos owns declaration/type rules; Ontos owns values and encoding |
+
+The engine depends on shared contracts and representations. The analysis contract
+depends on the shared semantic model. Neither imports a concrete language. Only
+the Horos resolver, analyzer and private bridge consume the external Horos/Ontos
+model. The application chooses the concrete provider and connects these layers.
+
+The kernel checks that a published graph is well formed and belongs to the current
+request. The provider is responsible for whether its semantic claims are true.
+Generic facts do not supply universal rules for lookup, assignability or type
+equivalence. Another language's analyzer can use the same API with different
+rules. Function, Stream and Cell remain ordinary library declarations; their
+names and behavior do not become kernel kinds or dispatch cases.
+
+## Pagination: from input to queries
+
+### 1. Supply the AST and its context
+
+The [canonical pagination example](model.md#pagination-first) has this meaning:
+
+```text
+module example.pagination
+  Page<T> = closed record { items: list-of(T), next?: scalar(utf8-text) }
+
+module example.people
+  import pagination = exact pinned example.pagination module
+  Person = closed record { name: scalar(utf8-text) }
+  PeoplePage = pagination.Page<Person>
+```
+
+This is explanatory notation, not implemented Horos source syntax. The analyzer
+receives an AST, not this text. Its Program node contains both modules and has a
+root reference selecting `example.people`. Within the tree, Page has a parameter
+declaration; its body's parameter use stores slot 0. PeoplePage's body is an
+imported Application of Page whose argument is a local, zero-argument Application
+of Person. Descriptor nodes retain record/list structure and their operands.
+
+The application packs this tree with the Horos syntax descriptor. Syntax checking
+admits its node kinds, spelling and structure; optional semantic target annotations
+may be absent. Packing does not prove that the names resolve or the pins agree.
+`resolve.Resolve` is an existing way to obtain an already resolved AST projection
+from canonical module values; analysis can also admit structurally valid ASTs
+whose bindings have not yet been established.
+
+For this profile, `analysis.Input.Trees` contains one Program envelope and `Entry`
+addresses its Program root. An empty `Requested` list requests all five advertised
+obligations. Dependencies are supplied in the Program; the engine fetches nothing.
+
+### 2. Establish meaning through the owning provider
+
+`Engine.Analyze` selects the registered Horos analyzer and captures the request.
+The adapter reconstructs canonical module values, delegates resolution to Horos,
+and verifies any supplied semantic annotations against that result.
+
+Horos checks module pins, imports, declaration lookup, parameter slots and
+application arity under its declaration rules. Page resolves in the imported
+pagination module; Person resolves in the caller's people module. A same-spelled
+Person in the pagination module cannot capture that argument. All supplied module
+pin assertions are checked; semantic facts cover the entry's reachable import
+closure, excluding unused pool modules.
+
+### 3. Export facts without expanding the generic
+
+The adapter publishes separate entities for the two modules, Page, Page's T,
+Person and PeoplePage. The significant term links can be read as follows;
+the notation labels records, rather than specifying a serialization:
+
+```text
+PeoplePage.Body -> Application(target: Page,
+                              arguments: [Application(target: Person, arguments: [])])
+Page.Parameters -> [Page.T]
+Page.Body       -> ProviderExpression(record descriptor, located operands ...)
+items operand  -> ProviderExpression(list-of descriptor,
+                                    operand: Reference(target: Page.T))
+```
+
+The record/list meanings stay owned by Horos. ProviderExpression retains exact
+encoded descriptor bytes and the operand locations supplied by Horos's model;
+the kernel does not decode records or search literal bytes for possible bindings.
+
+`ParameterBindings` pairs Page's parameter list with the application's arguments:
+Page.T binds to the zero-argument Person application. The open Page declaration
+is preserved. In `Outer<T> = Page<T>`, Page.T instead binds to a Reference to
+Outer's distinct T entity. Analysis does not expand these declarations. Explicit
+Horos `Specialize` can separately produce a ground descriptor; native generation
+and runtime behavior are separate operations.
+
+### 4. Read coverage before using the model
+
+On success, `program-validity` reports Complete / Holds. The other four reports
+are Complete / Undetermined: they enumerate declarations, occurrence bindings,
+expressions/applications and application dependencies, without asserting a truth
+verdict. All five are requirements for publishing this profile's model.
+
+Expected outcomes differ even when the call returns a nil Go error:
+
+| Situation | Validity report | Enumeration reports | Model |
+| --- | --- | --- | --- |
+| Valid pagination input, sufficient resources | Complete / Holds | Complete / Undetermined | Available |
+| Page receives the wrong number of arguments | Complete / Rejected | Incomplete / Undetermined | Absent |
+| The pinned pagination dependency is missing, or resolution exhausts its budget | Incomplete / Undetermined | Incomplete / Undetermined | Absent |
+| Resolution and annotation checks succeed, but graph export exhausts its budget | Complete / Holds | Incomplete / Undetermined | Absent |
+
+Inspect `Result.Reports()` or `Result.Report(key)`, read `Result.Diagnostics()`
+for the reason and subject, and check the boolean returned by `Result.Model()`
+before querying facts. `Result.Valid()` establishes successful publication, not
+source validity. API errors such as invalid configuration return a non-nil Go
+error and no usable result; they do not use the table's diagnostic-result path.
+
+### 5. Query the published facts
+
+At the current Page application node, the Horos profile exposes two occurrences:
+`pageTarget` uses `analyze.TargetRole()` and `pageExpression` uses
+`analyze.ExpressionRole()`, both with ordinal 0. The following query arguments
+are symbolic labels for actual occurrences and IDs in this result:
+
+| Consumer question | Generic model query | Answer for this example |
+| --- | --- | --- |
+| Which declaration does this use denote? | `Resolve(pageTarget)` | Page's entity ID |
+| Which expression was established here? | `TermAt(pageExpression)` | The term ID of the Page application shown above |
+| What fills each generic slot? | `ParameterBindings(pageApplicationTermID)` | One pair: Page.T's entity ID and the Person application's term ID |
+| Which declarations does PeoplePage apply? | `DependenciesFrom(peoplePageID, analyze.ApplicationDependency())` | Edges to Page and Person, each with its current application occurrence |
+
+`Entity(id)` and `Term(id)` inspect the referenced records. Consumers can also
+enumerate the established occurrences in `Model.Data()` instead of constructing
+provider-specific occurrences. A failed lookup means no recorded answer at that
+occurrence; it does not establish that the source is invalid. Application
+dependencies are explicit edges, not an inferred import or runtime-effect graph.
+
+These queries need no external Horos model import and do not mutate the AST or
+model. The [pagination analyzer tests](../analyze/horos/go/analyze_test.go) qualify
+bindings, caller scope and reports; the [independent consumer](../integration/go/horos_test.go)
+exercises registration and shared queries through the public API.
 
 ## Composition
 
