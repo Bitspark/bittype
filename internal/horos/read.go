@@ -151,25 +151,27 @@ func (r reader) module(id ast.NodeID) (core.Value, error) {
 // ValidationError locates a frontend assertion that disagrees with authoritative
 // resolution. Context distinguishes document-pin assertions from source syntax.
 type ValidationError struct {
-	Site ast.NodeRef
-	Context bool
+	Site       ast.NodeRef
+	Context    bool
 	Annotation bool
-	Message string
+	Message    string
 }
 
-func (e *ValidationError) Error() string { return fmt.Sprintf("%s#%d: %s", e.Site.Tree, e.Site.Node, e.Message) }
+func (e *ValidationError) Error() string {
+	return fmt.Sprintf("%s#%d: %s", e.Site.Tree, e.Site.Node, e.Message)
+}
 func (e *ValidationError) Unwrap() error { return ErrInvalid }
 
 // Decoded retains the source correspondence, not a partially checked Program.
 // It is private frontend state consumed synchronously by explicit resolution.
 type Decoded struct {
-	tree s.AST
-	root core.Value
+	tree         s.AST
+	root         core.Value
 	dependencies []core.Value
-	modules map[decl.Digest]ast.NodeID
+	modules      map[decl.Digest]ast.NodeID
 	declarations map[decl.DeclarationID]ast.NodeID
-	parameters map[decl.ParameterID]ast.NodeID
-	imports map[importID]ast.NodeID
+	parameters   map[decl.ParameterID]ast.NodeID
+	imports      map[importID]ast.NodeID
 }
 
 func (d *Decoded) site(id ast.NodeID) ast.NodeRef { return ast.NodeRef{Tree: d.tree.ID, Node: id} }
@@ -191,11 +193,19 @@ func Decode(view ast.View[s.Language], limits decl.Limits) (*Decoded, error) {
 	root := tree.Nodes[tree.Root-1].References[0].Target.Node
 	for _, child := range tree.Nodes[tree.Root-1].Children {
 		value, err := r.module(child.Node)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 		pin, err := decl.PinWithLimits(value, limits)
-		if err != nil { return nil, err }
-		if r.attr(child.Node, s.AttributePin) != pin.String() { return nil, d.assertion(child.Node, true, "module pin does not match its declaration bytes") }
-		if d.modules[pin] != 0 { return nil, d.assertion(child.Node, true, "duplicate module document in input") }
+		if err != nil {
+			return nil, err
+		}
+		if r.attr(child.Node, s.AttributePin) != pin.String() {
+			return nil, d.assertion(child.Node, true, "module pin does not match its declaration bytes")
+		}
+		if d.modules[pin] != 0 {
+			return nil, d.assertion(child.Node, true, "duplicate module document in input")
+		}
 		d.modules[pin] = child.Node
 		for _, member := range r.node(child.Node).Children {
 			if member.Role == s.RoleImport {
@@ -212,7 +222,11 @@ func Decode(view ast.View[s.Language], limits decl.Limits) (*Decoded, error) {
 				}
 			}
 		}
-		if child.Node == root { d.root = value } else { d.dependencies = append(d.dependencies, value) }
+		if child.Node == root {
+			d.root = value
+		} else {
+			d.dependencies = append(d.dependencies, value)
+		}
 	}
 	return d, nil
 }
@@ -221,33 +235,51 @@ func Decode(view ast.View[s.Language], limits decl.Limits) (*Decoded, error) {
 // and every type/literal position agrees with Horos's authoritative projection.
 func (d *Decoded) Resolve(limits decl.Limits) (*decl.Program, error) {
 	program, err := decl.ResolveWithLimits(d.root, d.dependencies, limits)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	expected, err := projectChecked(program, d.tree.ID)
-	if err != nil { return nil, err }
-	if err := d.correspond(expected); err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
+	if err := d.correspond(expected); err != nil {
+		return nil, err
+	}
 	return program, nil
 }
 
 // Read is an explicitly semantic convenience API. Pack/Check no longer calls it.
 func Read(view ast.View[s.Language]) (*decl.Program, error) {
 	d, err := Decode(view, decl.DefaultLimits())
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return d.Resolve(decl.DefaultLimits())
 }
 
-func (d *Decoded) DeclarationSite(id decl.DeclarationID) ast.NodeRef { return d.site(d.declarations[id]) }
+func (d *Decoded) DeclarationSite(id decl.DeclarationID) ast.NodeRef {
+	return d.site(d.declarations[id])
+}
 func (d *Decoded) ParameterSite(id decl.ParameterID) ast.NodeRef { return d.site(d.parameters[id]) }
-func (d *Decoded) ModuleSite(id decl.Digest) ast.NodeRef { return d.site(d.modules[id]) }
+func (d *Decoded) ModuleSite(id decl.Digest) ast.NodeRef         { return d.site(d.modules[id]) }
 func (d *Decoded) BodySite(id decl.DeclarationID) ast.NodeRef {
 	node := d.declarations[id]
-	if node != 0 { for _, child := range d.tree.Nodes[node-1].Children { if child.Role == s.RoleBody { return d.site(child.Node) } } }
+	if node != 0 {
+		for _, child := range d.tree.Nodes[node-1].Children {
+			if child.Role == s.RoleBody {
+				return d.site(child.Node)
+			}
+		}
+	}
 	return ast.NodeRef{}
 }
 
 // OperandSite follows a canonical tuple path through the existing AST encoding.
 // It interprets only declaration syntax framing, never descriptor constructors.
 func (d *Decoded) OperandSite(site ast.NodeRef, path []int) ast.NodeRef {
-	if site.Tree != d.tree.ID || site.Node == 0 || int(site.Node) > len(d.tree.Nodes) { return ast.NodeRef{} }
+	if site.Tree != d.tree.ID || site.Node == 0 || int(site.Node) > len(d.tree.Nodes) {
+		return ast.NodeRef{}
+	}
 	for len(path) > 0 {
 		node := d.tree.Nodes[site.Node-1]
 		index := path[0]
@@ -256,35 +288,47 @@ func (d *Decoded) OperandSite(site ast.NodeRef, path []int) ast.NodeRef {
 		case s.KindDescriptor:
 			index-- // descriptor tag has no separate AST node
 		case s.KindApplication:
-			if index != 2 || len(path) == 0 { return ast.NodeRef{} }
+			if index != 2 || len(path) == 0 {
+				return ast.NodeRef{}
+			}
 			index, path = path[0]-1, path[1:] // encoded argument list tag
 		case s.KindTuple:
 		default:
 			return ast.NodeRef{}
 		}
-		if index < 0 || index >= len(node.Children) { return ast.NodeRef{} }
+		if index < 0 || index >= len(node.Children) {
+			return ast.NodeRef{}
+		}
 		site.Node = node.Children[index].Node
 	}
 	return site
 }
 
 func (d *Decoded) ArgumentSite(site ast.NodeRef, index int) ast.NodeRef {
-	return d.OperandSite(site, []int{2, index+1})
+	return d.OperandSite(site, []int{2, index + 1})
 }
 
 func (d *Decoded) Locate(detail *decl.Error) *ast.NodeRef {
-	if detail == nil { return nil }
+	if detail == nil {
+		return nil
+	}
 	var site ast.NodeRef
 	if detail.Declaration != "" {
 		id := decl.DeclarationID{Module: detail.Module, Name: detail.Declaration}
 		site = d.BodySite(id)
-		if len(detail.Path) > 0 { if exact := d.OperandSite(site, detail.Path); exact.Node != 0 { site = exact } }
+		if len(detail.Path) > 0 {
+			if exact := d.OperandSite(site, detail.Path); exact.Node != 0 {
+				site = exact
+			}
+		}
 	} else if detail.ImportAlias != "" {
 		site = d.site(d.imports[importID{module: detail.Module, alias: detail.ImportAlias}])
 	} else {
 		site = d.ModuleSite(detail.Module)
 	}
-	if site.Node == 0 { return nil }
+	if site.Node == 0 {
+		return nil
+	}
 	return &site
 }
 
@@ -297,18 +341,28 @@ func (d *Decoded) correspond(expected s.AST) error {
 	var walk func(ast.NodeID, ast.NodeID, bool) error
 	walk = func(wantID, gotID ast.NodeID, context bool) error {
 		want, got := expected.Nodes[wantID-1], d.tree.Nodes[gotID-1]
-		bad := func() error { return d.annotation(gotID, context, "Horos syntax does not match checked declaration positions") }
-		if want.Kind != got.Kind || len(want.Attributes) != len(got.Attributes) || len(want.Children) != len(got.Children) { return bad() }
-		for _, attribute := range want.Attributes { if gotReader.attr(gotID, attribute.Name) != attribute.Text { return bad() } }
+		bad := func() error {
+			return d.annotation(gotID, context, "Horos syntax does not match checked declaration positions")
+		}
+		if want.Kind != got.Kind || len(want.Attributes) != len(got.Attributes) || len(want.Children) != len(got.Children) {
+			return bad()
+		}
+		for _, attribute := range want.Attributes {
+			if gotReader.attr(gotID, attribute.Name) != attribute.Text {
+				return bad()
+			}
+		}
 		mapping[wantID] = gotID
 		contexts[wantID] = context
-		type memberKey struct { role, name string }
+		type memberKey struct{ role, name string }
 		var members map[memberKey]ast.Child
 		if want.Kind == s.KindModule {
 			members = make(map[memberKey]ast.Child, len(got.Children))
 			for _, candidate := range got.Children {
 				name := s.AttributeName
-				if candidate.Role == s.RoleImport { name = s.AttributeAlias }
+				if candidate.Role == s.RoleImport {
+					name = s.AttributeAlias
+				}
 				members[memberKey{candidate.Role, gotReader.attr(candidate.Node, name)}] = candidate
 			}
 		}
@@ -316,13 +370,21 @@ func (d *Decoded) correspond(expected s.AST) error {
 			actual := got.Children[i]
 			if want.Kind == s.KindModule {
 				name := s.AttributeName
-				if child.Role == s.RoleImport { name = s.AttributeAlias }
+				if child.Role == s.RoleImport {
+					name = s.AttributeAlias
+				}
 				var found bool
 				actual, found = members[memberKey{child.Role, wantReader.attr(child.Node, name)}]
-				if !found { return bad() }
+				if !found {
+					return bad()
+				}
 			}
-			if child.Role != actual.Role { return bad() }
-			if err := walk(child.Node, actual.Node, context); err != nil { return err }
+			if child.Role != actual.Role {
+				return bad()
+			}
+			if err := walk(child.Node, actual.Node, context); err != nil {
+				return err
+			}
 		}
 		return nil
 	}
@@ -331,17 +393,26 @@ func (d *Decoded) correspond(expected s.AST) error {
 		var pin decl.Digest
 		copy(pin[:], bytes)
 		actual := d.modules[pin]
-		if actual == 0 { return fmt.Errorf("%w: resolved module has no source", ErrInvalid) }
-		if err := walk(child.Node, actual, actual != rootModule); err != nil { return err }
+		if actual == 0 {
+			return fmt.Errorf("%w: resolved module has no source", ErrInvalid)
+		}
+		if err := walk(child.Node, actual, actual != rootModule); err != nil {
+			return err
+		}
 	}
 	for wantID, gotID := range mapping {
 		want := expected.Nodes[wantID-1]
 		for _, actual := range d.tree.Nodes[gotID-1].References {
 			found := false
 			for _, reference := range want.References {
-				if reference.Role == actual.Role && actual.Target.Tree == d.tree.ID && actual.Target.Node == mapping[reference.Target.Node] { found = true; break }
+				if reference.Role == actual.Role && actual.Target.Tree == d.tree.ID && actual.Target.Node == mapping[reference.Target.Node] {
+					found = true
+					break
+				}
 			}
-			if !found { return d.annotation(gotID, contexts[wantID], "incorrect declaration, import or parameter annotation") }
+			if !found {
+				return d.annotation(gotID, contexts[wantID], "incorrect declaration, import or parameter annotation")
+			}
 		}
 	}
 	return nil
