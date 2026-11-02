@@ -7,10 +7,10 @@ import "github.com/Bitspark/bittype/trees/ast/go"
 // Entries counts attributes, containment/reference edges and origin entries.
 // TextBytes counts their textual storage, including names, roles and tree IDs.
 type Info struct {
-	ID ast.TreeID
-	Root ast.NodeID
-	Nodes int
-	Entries int
+	ID        ast.TreeID
+	Root      ast.NodeID
+	Nodes     int
+	Entries   int
 	TextBytes int
 }
 
@@ -30,11 +30,21 @@ func (p typed[L]) inspect() Info {
 	for _, node := range input.Nodes {
 		result.TextBytes += len(node.Kind)
 		result.Entries += len(node.Attributes) + len(node.Children) + len(node.References) + len(node.Origin.Spans) + len(node.Origin.Nodes)
-		for _, attribute := range node.Attributes { result.TextBytes += len(attribute.Name) + len(attribute.Text) }
-		for _, child := range node.Children { result.TextBytes += len(child.Role) }
-		for _, reference := range node.References { result.TextBytes += len(reference.Role) + len(reference.Target.Tree) }
-		for _, span := range node.Origin.Spans { result.TextBytes += len(span.Source) }
-		for _, origin := range node.Origin.Nodes { result.TextBytes += len(origin.Tree) }
+		for _, attribute := range node.Attributes {
+			result.TextBytes += len(attribute.Name) + len(attribute.Text)
+		}
+		for _, child := range node.Children {
+			result.TextBytes += len(child.Role)
+		}
+		for _, reference := range node.References {
+			result.TextBytes += len(reference.Role) + len(reference.Target.Tree)
+		}
+		for _, span := range node.Origin.Spans {
+			result.TextBytes += len(span.Source)
+		}
+		for _, origin := range node.Origin.Nodes {
+			result.TextBytes += len(origin.Tree)
+		}
 	}
 	return result
 }

@@ -7,4 +7,5 @@ import (
 
 type A struct{}
 type B struct{}
+
 func Mix(request analysis.Request[A]) ast.AST[B] { return request.Inputs()[0] }

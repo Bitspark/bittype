@@ -152,12 +152,12 @@ func extensionFacts(tree ast.AST[extensionLanguage]) semantics.Data {
 }
 
 type extensionProvider struct {
-	badSite *ast.NodeRef
+	badSite    *ast.NodeRef
 	incomplete bool
 }
 
 func (extensionProvider) ID() language.ID { return "foreign-semantic-fixture" }
-func (extensionProvider) Name() string { return "Foreign semantic fixture" }
+func (extensionProvider) Name() string    { return "Foreign semantic fixture" }
 func (extensionProvider) Check(view ast.View[extensionLanguage]) error {
 	tree := view.ASTView()
 	if tree.Root != 1 || len(tree.Nodes) != 18 || tree.Nodes[0].Kind != "document" {
@@ -167,9 +167,13 @@ func (extensionProvider) Check(view ast.View[extensionLanguage]) error {
 }
 
 func (p extensionProvider) Analyze(ctx context.Context, request analysis.Request[extensionLanguage]) (analysis.Result, error) {
-	if err := ctx.Err(); err != nil { return analysis.Result{}, err }
+	if err := ctx.Err(); err != nil {
+		return analysis.Result{}, err
+	}
 	inputs := request.Inputs()
-	if len(inputs) != 1 { return analysis.Result{}, errors.New("fixture expects one input") }
+	if len(inputs) != 1 {
+		return analysis.Result{}, errors.New("fixture expects one input")
+	}
 	facts := extensionFacts(inputs[0])
 	publication := analysis.Publication{Facts: &facts}
 	known := make(map[semantics.Key]bool)
@@ -183,29 +187,43 @@ func (p extensionProvider) Analyze(ctx context.Context, request analysis.Request
 		publication.Reports = append(publication.Reports, report)
 	}
 	for _, key := range request.Requested() {
-		if !known[key] { publication.Reports = append(publication.Reports, analysis.Report{Obligation: key, Status: analysis.Unsupported}) }
+		if !known[key] {
+			publication.Reports = append(publication.Reports, analysis.Report{Obligation: key, Status: analysis.Unsupported})
+		}
 	}
-	if p.badSite != nil { facts.Entities[0].Declarations[0] = *p.badSite }
+	if p.badSite != nil {
+		facts.Entities[0].Declarations[0] = *p.badSite
+	}
 	return request.Publish(publication)
 }
 
 func extensionKernel(t *testing.T, provider extensionProvider, tree ast.AST[extensionLanguage]) (*engine.Engine, analysis.Input) {
 	t.Helper()
 	syntax, err := representation.NewLanguage[extensionLanguage](provider, "fixture-syntax-v1")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	envelope, err := representation.Pack(syntax, tree)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	analyzer, err := analysis.NewAnalyzer[extensionLanguage](syntax, extensionContract(), provider)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	kernel := engine.New()
-	if err := kernel.RegisterLanguage(syntax); err != nil { t.Fatal(err) }
-	if err := kernel.RegisterAnalyzer(analyzer); err != nil { t.Fatal(err) }
+	if err := kernel.RegisterLanguage(syntax); err != nil {
+		t.Fatal(err)
+	}
+	if err := kernel.RegisterAnalyzer(analyzer); err != nil {
+		t.Fatal(err)
+	}
 	return kernel, analysis.Input{Entry: ast.NodeRef{Tree: tree.ID, Node: tree.Root}, Trees: []representation.AST{envelope}}
 }
 
 type semanticQueryResult struct {
-	Target semantics.EntityID
-	Bindings []semantics.ArgumentBinding
+	Target       semantics.EntityID
+	Bindings     []semantics.ArgumentBinding
 	Dependencies []semantics.Dependency
 }
 
@@ -219,13 +237,21 @@ func consumeSemanticFacts(result analysis.Result, reference, expression semantic
 		}
 	}
 	model, ok := result.Model()
-	if !ok { return semanticQueryResult{}, errors.New("required model is absent") }
+	if !ok {
+		return semanticQueryResult{}, errors.New("required model is absent")
+	}
 	target, ok := model.Resolve(reference)
-	if !ok { return semanticQueryResult{}, errors.New("reference was not bound") }
+	if !ok {
+		return semanticQueryResult{}, errors.New("reference was not bound")
+	}
 	term, ok := model.TermAt(expression)
-	if !ok { return semanticQueryResult{}, errors.New("expression meaning is absent") }
+	if !ok {
+		return semanticQueryResult{}, errors.New("expression meaning is absent")
+	}
 	bindings, ok := model.ParameterBindings(term)
-	if !ok { return semanticQueryResult{}, errors.New("expression is not an application") }
+	if !ok {
+		return semanticQueryResult{}, errors.New("expression is not an application")
+	}
 	return semanticQueryResult{Target: target, Bindings: bindings, Dependencies: model.DependenciesFrom(owner, relation)}, nil
 }
 
@@ -233,11 +259,15 @@ func TestSemanticForeignProviderAndGenericConsumer(t *testing.T) {
 	tree := extensionTree()
 	kernel, input := extensionKernel(t, extensionProvider{}, tree)
 	result, err := kernel.Analyze(context.Background(), input)
-	if err != nil || !result.Valid() || !result.HasModel() { t.Fatalf("foreign analysis: %v", err) }
+	if err != nil || !result.Valid() || !result.HasModel() {
+		t.Fatalf("foreign analysis: %v", err)
+	}
 	queried, err := consumeSemanticFacts(result,
 		extensionOccurrence(tree.ID, 11, "use", 0), extensionOccurrence(tree.ID, 11, "expression", 0),
 		5, extensionKey("direct"), extensionContract().ModelRequirements)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	wantBindings := []semantics.ArgumentBinding{{Parameter: 2, Argument: 13}, {Parameter: 3, Argument: 7}, {Parameter: 4, Argument: 5}}
 	if queried.Target != 1 || !reflect.DeepEqual(queried.Bindings, wantBindings) || len(queried.Dependencies) != 2 || queried.Dependencies[0].To != 1 || queried.Dependencies[1].To != 8 {
 		t.Fatalf("four agnostic queries lost facts: %#v", queried)
@@ -245,36 +275,58 @@ func TestSemanticForeignProviderAndGenericConsumer(t *testing.T) {
 	model, _ := result.Model()
 	alias, _ := model.Entity(5)
 	defined, _ := model.Entity(6)
-	if alias.Name != defined.Name || alias.Kind == defined.Kind { t.Fatal("same display names collapsed alias and defined entities") }
+	if alias.Name != defined.Name || alias.Kind == defined.Kind {
+		t.Fatal("same display names collapsed alias and defined entities")
+	}
 	for i, sort := range []string{"lifetime", "type", "constant"} {
 		generic, _ := model.Entity(1)
-		if generic.Parameters[i].Sort != extensionKey(sort) { t.Fatalf("parameter sort %s was narrowed", sort) }
+		if generic.Parameters[i].Sort != extensionKey(sort) {
+			t.Fatalf("parameter sort %s was narrowed", sort)
+		}
 	}
 	firstT, _ := model.Resolve(extensionOccurrence(tree.ID, 13, "use", 1))
 	otherT, _ := model.Resolve(extensionOccurrence(tree.ID, 14, "body-use", 0))
-	if firstT != 3 || otherT != 12 || firstT == otherT { t.Fatal("same-spelled binders were merged") }
+	if firstT != 3 || otherT != 12 || firstT == otherT {
+		t.Fatal("same-spelled binders were merged")
+	}
 	builtin, _ := model.Entity(8)
-	if len(builtin.Declarations) != 0 { t.Fatal("builtin acquired a fabricated source declaration") }
+	if len(builtin.Declarations) != 0 {
+		t.Fatal("builtin acquired a fabricated source declaration")
+	}
 	three, _ := model.Term(10)
 	four, _ := model.Term(11)
-	if three.Operator != four.Operator || string(three.Data) != "3" || string(four.Data) != "4" { t.Fatal("literal array lengths collapsed") }
-	if edges := model.DependenciesFrom(7, extensionKey("direct")); len(edges) != 1 || edges[0].To != 7 { t.Fatal("entity recursion was rejected or erased") }
-	if bindings, ok := model.ParameterBindings(14); !ok || len(bindings) != 0 { t.Fatal("zero-argument application lost its form") }
-	if _, ok := model.ParameterBindings(15); ok { t.Fatal("unapplied generic reference acquired a binding") }
+	if three.Operator != four.Operator || string(three.Data) != "3" || string(four.Data) != "4" {
+		t.Fatal("literal array lengths collapsed")
+	}
+	if edges := model.DependenciesFrom(7, extensionKey("direct")); len(edges) != 1 || edges[0].To != 7 {
+		t.Fatal("entity recursion was rejected or erased")
+	}
+	if bindings, ok := model.ParameterBindings(14); !ok || len(bindings) != 0 {
+		t.Fatal("zero-argument application lost its form")
+	}
+	if _, ok := model.ParameterBindings(15); ok {
+		t.Fatal("unapplied generic reference acquired a binding")
+	}
 	for i, name := range []string{"Cell", "Function", "Stream"} {
 		entity, ok := model.Entity(semantics.EntityID(13 + i))
-		if !ok || entity.Name != name || entity.Kind != extensionKey("defined") { t.Fatalf("library name %s acquired special treatment", name) }
+		if !ok || entity.Name != name || entity.Kind != extensionKey("defined") {
+			t.Fatalf("library name %s acquired special treatment", name)
+		}
 	}
 }
 
 func TestSemanticConsumerRequiresCoverage(t *testing.T) {
 	kernel, input := extensionKernel(t, extensionProvider{incomplete: true}, extensionTree())
 	result, err := kernel.Analyze(context.Background(), input)
-	if err != nil || !result.Valid() || result.HasModel() { t.Fatalf("incomplete result boundary: %v", err) }
+	if err != nil || !result.Valid() || result.HasModel() {
+		t.Fatalf("incomplete result boundary: %v", err)
+	}
 	_, err = consumeSemanticFacts(result,
 		extensionOccurrence("foreign-input", 11, "use", 0), extensionOccurrence("foreign-input", 11, "expression", 0),
 		5, extensionKey("direct"), extensionContract().ModelRequirements)
-	if err == nil { t.Fatal("nil Go error was mistaken for established semantic coverage") }
+	if err == nil {
+		t.Fatal("nil Go error was mistaken for established semantic coverage")
+	}
 }
 
 func TestSemanticForeignProviderCannotPublishHistoricalOrZeroSites(t *testing.T) {

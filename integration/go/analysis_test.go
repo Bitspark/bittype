@@ -17,7 +17,9 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-func analysisKey(name string) semantics.Key { return semantics.Key{Owner: "independent-analysis", Name: name} }
+func analysisKey(name string) semantics.Key {
+	return semantics.Key{Owner: "independent-analysis", Name: name}
+}
 
 func analysisContract() analysis.Contract {
 	return analysis.Contract{
@@ -51,21 +53,23 @@ func analysisFacts() semantics.Data {
 			{Kind: semantics.Reference, Target: 2},
 			{Kind: semantics.ProviderExpression, Operator: analysisKey("array"), Encoding: analysisKey("array-v1"), Data: []byte{3}, Operands: []semantics.Operand{{Locator: []uint32{1}, Term: 1}}},
 		},
-		Bindings: []semantics.Binding{{At: at, Target: 2}},
-		Expressions: []semantics.Expression{{At: at, Term: 1}},
+		Bindings:     []semantics.Binding{{At: at, Target: 2}},
+		Expressions:  []semantics.Expression{{At: at, Term: 1}},
 		Dependencies: []semantics.Dependency{{From: 1, To: 1, Relation: analysisKey("recursive-reference"), At: &at}},
 	}
 }
 
 type analysisChecker[L any] struct {
-	id language.ID
+	id  language.ID
 	run func(context.Context, analysis.Request[L]) (analysis.Result, error)
 }
 
 func (p analysisChecker[L]) ID() language.ID { return p.id }
-func (p analysisChecker[L]) Name() string { return "independent " + string(p.id) }
+func (p analysisChecker[L]) Name() string    { return "independent " + string(p.id) }
 func (p analysisChecker[L]) Analyze(ctx context.Context, request analysis.Request[L]) (analysis.Result, error) {
-	if p.run != nil { return p.run(ctx, request) }
+	if p.run != nil {
+		return p.run(ctx, request)
+	}
 	data := analysisFacts()
 	return request.Publish(analysis.Publication{Facts: &data, Reports: analysisReports()})
 }
@@ -75,14 +79,18 @@ func analysisFixture[L any](t *testing.T, definition representation.Language) an
 	tree := exampleTree[L]()
 	tree.Nodes[1].References = nil // the old fixture's external library is not supplied
 	envelope, err := representation.Pack(definition, tree)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	return analysis.Input{Entry: ast.NodeRef{Tree: tree.ID, Node: tree.Root}, Trees: []representation.AST{envelope}}
 }
 
 func analysisAnalyzer[L any](t *testing.T, definition representation.Language, run func(context.Context, analysis.Request[L]) (analysis.Result, error)) analysis.Analyzer {
 	t.Helper()
 	analyzer, err := analysis.NewAnalyzer[L](definition, analysisContract(), analysisChecker[L]{id: definition.ID(), run: run})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	return analyzer
 }
 
@@ -91,16 +99,24 @@ func analysisEngine(t *testing.T, run func(context.Context, analysis.Request[amb
 	definition := definition[amber](t, "analysis-language")
 	kernel := engine.New()
 	register(t, kernel, definition)
-	if err := kernel.RegisterAnalyzer(analysisAnalyzer[amber](t, definition, run)); err != nil { t.Fatal(err) }
+	if err := kernel.RegisterAnalyzer(analysisAnalyzer[amber](t, definition, run)); err != nil {
+		t.Fatal(err)
+	}
 	return kernel, analysisFixture[amber](t, definition)
 }
 
 func TestAnalysisRegistrationBoundaries(t *testing.T) {
 	a := definition[amber](t, "analysis-language")
-	if _, err := analysis.NewAnalyzer[blue](a, analysisContract(), analysisChecker[blue]{id: a.ID()}); !errors.Is(err, representation.ErrTypeMismatch) { t.Fatal(err) }
+	if _, err := analysis.NewAnalyzer[blue](a, analysisContract(), analysisChecker[blue]{id: a.ID()}); !errors.Is(err, representation.ErrTypeMismatch) {
+		t.Fatal(err)
+	}
 	var nilProvider *analysisChecker[amber]
-	if _, err := analysis.NewAnalyzer[amber](a, analysisContract(), nilProvider); !errors.Is(err, analysis.ErrInvalidAnalyzer) { t.Fatal(err) }
-	if _, err := analysis.NewAnalyzer[amber](a, analysisContract(), analysisChecker[amber]{id: "wrong"}); !errors.Is(err, analysis.ErrInvalidAnalyzer) { t.Fatal(err) }
+	if _, err := analysis.NewAnalyzer[amber](a, analysisContract(), nilProvider); !errors.Is(err, analysis.ErrInvalidAnalyzer) {
+		t.Fatal(err)
+	}
+	if _, err := analysis.NewAnalyzer[amber](a, analysisContract(), analysisChecker[amber]{id: "wrong"}); !errors.Is(err, analysis.ErrInvalidAnalyzer) {
+		t.Fatal(err)
+	}
 	for _, alter := range []func(*analysis.Contract){
 		func(c *analysis.Contract) { c.Profile = " " },
 		func(c *analysis.Contract) { c.Obligations = append(c.Obligations, c.Obligations[0]) },
@@ -108,27 +124,45 @@ func TestAnalysisRegistrationBoundaries(t *testing.T) {
 	} {
 		contract := analysisContract()
 		alter(&contract)
-		if _, err := analysis.NewAnalyzer[amber](a, contract, analysisChecker[amber]{id: a.ID()}); !errors.Is(err, analysis.ErrInvalidAnalyzer) { t.Fatal(err) }
+		if _, err := analysis.NewAnalyzer[amber](a, contract, analysisChecker[amber]{id: a.ID()}); !errors.Is(err, analysis.ErrInvalidAnalyzer) {
+			t.Fatal(err)
+		}
 	}
 	kernel := engine.New()
 	good := analysisAnalyzer[amber](t, a, nil)
-	if err := kernel.RegisterAnalyzer(good); !errors.Is(err, engine.ErrUnknownLanguage) { t.Fatal(err) }
+	if err := kernel.RegisterAnalyzer(good); !errors.Is(err, engine.ErrUnknownLanguage) {
+		t.Fatal(err)
+	}
 	register(t, kernel, a)
-	if err := kernel.RegisterAnalyzer(analysis.Analyzer{}); !errors.Is(err, analysis.ErrInvalidAnalyzer) { t.Fatal(err) }
+	if err := kernel.RegisterAnalyzer(analysis.Analyzer{}); !errors.Is(err, analysis.ErrInvalidAnalyzer) {
+		t.Fatal(err)
+	}
 	wrongMarker := definition[blue](t, a.ID())
-	if err := kernel.RegisterAnalyzer(analysisAnalyzer[blue](t, wrongMarker, nil)); !errors.Is(err, representation.ErrLanguageMismatch) { t.Fatalf("same ID cast marker: %v", err) }
+	if err := kernel.RegisterAnalyzer(analysisAnalyzer[blue](t, wrongMarker, nil)); !errors.Is(err, representation.ErrLanguageMismatch) {
+		t.Fatalf("same ID cast marker: %v", err)
+	}
 	wrongProfile, err := representation.NewLanguage[amber](testChecker[amber]{id: a.ID()}, "another-syntax-profile")
-	if err != nil { t.Fatal(err) }
-	if err := kernel.RegisterAnalyzer(analysisAnalyzer[amber](t, wrongProfile, nil)); !errors.Is(err, representation.ErrLanguageMismatch) { t.Fatalf("syntax profile ignored: %v", err) }
-	if err := kernel.RegisterAnalyzer(good); err != nil { t.Fatal(err) }
-	if err := kernel.RegisterAnalyzer(good); !errors.Is(err, engine.ErrDuplicateAnalyzer) { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := kernel.RegisterAnalyzer(analysisAnalyzer[amber](t, wrongProfile, nil)); !errors.Is(err, representation.ErrLanguageMismatch) {
+		t.Fatalf("syntax profile ignored: %v", err)
+	}
+	if err := kernel.RegisterAnalyzer(good); err != nil {
+		t.Fatal(err)
+	}
+	if err := kernel.RegisterAnalyzer(good); !errors.Is(err, engine.ErrDuplicateAnalyzer) {
+		t.Fatal(err)
+	}
 	for name, input := range map[string]analysis.Input{
-		"marker": analysisFixture[blue](t, wrongMarker),
+		"marker":  analysisFixture[blue](t, wrongMarker),
 		"profile": analysisFixture[amber](t, wrongProfile),
 	} {
 		t.Run(name, func(t *testing.T) {
 			result, err := kernel.Analyze(context.Background(), input)
-			if err == nil || result.Valid() { t.Fatalf("wrong input boundary admitted: %v", err) }
+			if err == nil || result.Valid() {
+				t.Fatalf("wrong input boundary admitted: %v", err)
+			}
 		})
 	}
 }
@@ -137,11 +171,19 @@ func TestAnalysisMissingCapability(t *testing.T) {
 	kernel := engine.New()
 	a := definition[amber](t, "unfamiliar")
 	input := analysisFixture[amber](t, a)
-	if _, err := kernel.Analyze(context.Background(), input); !errors.Is(err, engine.ErrUnknownLanguage) { t.Fatal(err) }
+	if _, err := kernel.Analyze(context.Background(), input); !errors.Is(err, engine.ErrUnknownLanguage) {
+		t.Fatal(err)
+	}
 	register(t, kernel, a)
-	if _, err := kernel.Analyze(context.Background(), input); !errors.Is(err, engine.ErrMissingCapability) { t.Fatal(err) }
-	if _, err := kernel.Analyze(nil, input); !errors.Is(err, analysis.ErrInvalidRequest) { t.Fatal(err) }
-	if _, err := kernel.Analyze(context.Background(), analysis.Input{}); !errors.Is(err, analysis.ErrInvalidRequest) { t.Fatal(err) }
+	if _, err := kernel.Analyze(context.Background(), input); !errors.Is(err, engine.ErrMissingCapability) {
+		t.Fatal(err)
+	}
+	if _, err := kernel.Analyze(nil, input); !errors.Is(err, analysis.ErrInvalidRequest) {
+		t.Fatal(err)
+	}
+	if _, err := kernel.Analyze(context.Background(), analysis.Input{}); !errors.Is(err, analysis.ErrInvalidRequest) {
+		t.Fatal(err)
+	}
 }
 
 func TestAnalysisRejectsForeignRequestResult(t *testing.T) {
@@ -150,19 +192,30 @@ func TestAnalysisRejectsForeignRequestResult(t *testing.T) {
 		"syntax": func(t *testing.T, input *analysis.Input) {
 			d := definition[amber](t, "analysis-language")
 			tree, err := representation.Unpack[amber](d, input.Trees[0])
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			tree.Nodes[1].Attributes[0].Text = "Changed"
 			input.Trees[0], err = representation.Pack(d, tree)
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 		},
-		"configuration": func(_ *testing.T, input *analysis.Input) { input.Configuration = []analysis.Setting{{Key: analysisKey("mode"), Value: []byte("changed")}} },
-		"limits": func(_ *testing.T, input *analysis.Input) { input.Limits = analysis.DefaultLimits(); input.Limits.MaxDiagnostics-- },
+		"configuration": func(_ *testing.T, input *analysis.Input) {
+			input.Configuration = []analysis.Setting{{Key: analysisKey("mode"), Value: []byte("changed")}}
+		},
+		"limits": func(_ *testing.T, input *analysis.Input) {
+			input.Limits = analysis.DefaultLimits()
+			input.Limits.MaxDiagnostics--
+		},
 		"dependency": func(t *testing.T, input *analysis.Input) {
 			d := definition[amber](t, "analysis-language")
 			tree := exampleTree[amber]()
 			tree.ID, tree.Nodes[1].References = "dependency", nil
 			dependency, err := representation.Pack(d, tree)
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			input.Trees = append(input.Trees, dependency)
 		},
 	}
@@ -170,16 +223,22 @@ func TestAnalysisRejectsForeignRequestResult(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			var retained analysis.Result
 			kernel, input := analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (analysis.Result, error) {
-				if retained.Valid() { return retained, nil }
+				if retained.Valid() {
+					return retained, nil
+				}
 				data := analysisFacts()
 				var err error
 				retained, err = request.Publish(analysis.Publication{Facts: &data, Reports: analysisReports()})
 				return retained, err
 			})
-			if _, err := kernel.Analyze(context.Background(), input); err != nil { t.Fatal(err) }
+			if _, err := kernel.Analyze(context.Background(), input); err != nil {
+				t.Fatal(err)
+			}
 			change(t, &input)
 			result, err := kernel.Analyze(context.Background(), input)
-			if !errors.Is(err, analysis.ErrStaleResult) || result.Valid() { t.Fatalf("stale result accepted: %v", err) }
+			if !errors.Is(err, analysis.ErrStaleResult) || result.Valid() {
+				t.Fatalf("stale result accepted: %v", err)
+			}
 		})
 	}
 }
@@ -191,14 +250,18 @@ func TestAnalysisOwnershipAndPublication(t *testing.T) {
 		copies[0].Nodes[1].Attributes[0].Text = "mutated input"
 		copies[0].Nodes[0].Children[0].Node = 99
 		copies[0].Nodes[1].Origin.Nodes[0].Tree = "changed history"
-		if got := request.Inputs()[0]; got.Nodes[1].Attributes[0].Text != "Page" || got.Nodes[0].Children[0].Node != 2 || got.Nodes[1].Origin.Nodes[0].Tree != "earlier" { return analysis.Result{}, errors.New("request inputs alias accessor") }
+		if got := request.Inputs()[0]; got.Nodes[1].Attributes[0].Text != "Page" || got.Nodes[0].Children[0].Node != 2 || got.Nodes[1].Origin.Nodes[0].Tree != "earlier" {
+			return analysis.Result{}, errors.New("request inputs alias accessor")
+		}
 		configuration := request.Configuration()
 		configuration[0].Value[0] = 'X'
 		requested := request.Requested()
 		requested[0] = analysisKey("mutated")
 		contract := request.Contract()
 		contract.Obligations[0].Domain = analysisKey("mutated")
-		if string(request.Configuration()[0].Value) != "original" || request.Requested()[0] != analysisKey("validity") || request.Contract().Obligations[0].Domain != analysisKey("entry-program") { return analysis.Result{}, errors.New("captured metadata aliases accessor") }
+		if string(request.Configuration()[0].Value) != "original" || request.Requested()[0] != analysisKey("validity") || request.Contract().Obligations[0].Domain != analysisKey("entry-program") {
+			return analysis.Result{}, errors.New("captured metadata aliases accessor")
+		}
 		data, reports := analysisFacts(), analysisReports()
 		site := ast.NodeRef{Tree: "input", Node: 2}
 		diagnostics := []analysis.Diagnostic{{Code: analysisKey("note"), Subject: analysisKey("entry-program"), Message: "original", At: &site}}
@@ -214,10 +277,16 @@ func TestAnalysisOwnershipAndPublication(t *testing.T) {
 	})
 	input.Configuration = []analysis.Setting{{Key: analysisKey("mode"), Value: []byte("original")}}
 	result, err := kernel.Analyze(context.Background(), input)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	model, present := result.Model()
-	if !present || !reflect.DeepEqual(model.Data(), want) { t.Fatal("publication aliases provider graph") }
-	if result.Reports()[0].Verdict != analysis.Holds || result.Diagnostics()[0].Message != "original" || result.Diagnostics()[0].At.Node != 2 { t.Fatal("publication aliases provider metadata") }
+	if !present || !reflect.DeepEqual(model.Data(), want) {
+		t.Fatal("publication aliases provider graph")
+	}
+	if result.Reports()[0].Verdict != analysis.Holds || result.Diagnostics()[0].Message != "original" || result.Diagnostics()[0].At.Node != 2 {
+		t.Fatal("publication aliases provider metadata")
+	}
 	input.Configuration[0].Value[0] = 'Y'
 	result.Configuration()[0].Value[0] = 'Z'
 	result.Reports()[0].Verdict = analysis.Rejected
@@ -226,7 +295,9 @@ func TestAnalysisOwnershipAndPublication(t *testing.T) {
 	extracted := model.Data()
 	extracted.Terms[1].Data[0] = 9
 	extracted.Entities[0].Declarations[0].Node = 99
-	if !reflect.DeepEqual(model.Data(), want) || string(result.Configuration()[0].Value) != "original" || result.Reports()[0].Verdict != analysis.Holds || result.Diagnostics()[0].At.Node != 2 || result.Contract().Obligations[0].Domain != analysisKey("entry-program") { t.Fatal("result accessor exposes private storage") }
+	if !reflect.DeepEqual(model.Data(), want) || string(result.Configuration()[0].Value) != "original" || result.Reports()[0].Verdict != analysis.Holds || result.Diagnostics()[0].At.Node != 2 || result.Contract().Obligations[0].Domain != analysisKey("entry-program") {
+		t.Fatal("result accessor exposes private storage")
+	}
 }
 
 func TestAnalysisFailureDiscardsOutput(t *testing.T) {
@@ -236,11 +307,15 @@ func TestAnalysisFailureDiscardsOutput(t *testing.T) {
 		calls++
 		data := analysisFacts()
 		result, err := request.Publish(analysis.Publication{Facts: &data, Reports: analysisReports()})
-		if err != nil { return analysis.Result{}, err }
+		if err != nil {
+			return analysis.Result{}, err
+		}
 		return result, sentinel
 	})
 	result, err := kernel.Analyze(context.Background(), input)
-	if !errors.Is(err, sentinel) || result.Valid() || calls != 1 { t.Fatalf("output escaped failure or callback retried: %v", err) }
+	if !errors.Is(err, sentinel) || result.Valid() || calls != 1 {
+		t.Fatalf("output escaped failure or callback retried: %v", err)
+	}
 	kernel, input = analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (analysis.Result, error) {
 		reports := analysisReports()
 		reports[0].Verdict = analysis.Rejected
@@ -248,24 +323,32 @@ func TestAnalysisFailureDiscardsOutput(t *testing.T) {
 		return request.Publish(analysis.Publication{Reports: reports, Diagnostics: []analysis.Diagnostic{{Code: analysisKey("invalid-declaration"), Subject: analysisKey("entry-program"), Message: "definite counterexample"}}})
 	})
 	result, err = kernel.Analyze(context.Background(), input)
-	if err != nil || !result.Valid() || result.HasModel() { t.Fatalf("semantic rejection lost: %v", err) }
+	if err != nil || !result.Valid() || result.HasModel() {
+		t.Fatalf("semantic rejection lost: %v", err)
+	}
 	validity, found := result.Report(analysisKey("validity"))
 	bindings, _ := result.Report(analysisKey("bindings"))
-	if !found || validity.Status != analysis.Complete || validity.Verdict != analysis.Rejected || bindings.Status != analysis.Incomplete { t.Fatal("completion became validity or complete enumeration") }
+	if !found || validity.Status != analysis.Complete || validity.Verdict != analysis.Rejected || bindings.Status != analysis.Incomplete {
+		t.Fatal("completion became validity or complete enumeration")
+	}
 }
 
 func TestAnalysisRejectsInvalidPublications(t *testing.T) {
 	cases := map[string]func(*analysis.Publication){
-		"missing-report": func(p *analysis.Publication) { p.Reports = p.Reports[:1] },
-		"duplicate-report": func(p *analysis.Publication) { p.Reports[1] = p.Reports[0] },
-		"unreported": func(p *analysis.Publication) { p.Reports[1].Status = analysis.Unreported },
-		"unknown-status": func(p *analysis.Publication) { p.Reports[1].Status = 99 },
-		"unsupported-holds": func(p *analysis.Publication) { p.Reports[0].Status = analysis.Unsupported },
+		"missing-report":            func(p *analysis.Publication) { p.Reports = p.Reports[:1] },
+		"duplicate-report":          func(p *analysis.Publication) { p.Reports[1] = p.Reports[0] },
+		"unreported":                func(p *analysis.Publication) { p.Reports[1].Status = analysis.Unreported },
+		"unknown-status":            func(p *analysis.Publication) { p.Reports[1].Status = 99 },
+		"unsupported-holds":         func(p *analysis.Publication) { p.Reports[0].Status = analysis.Unsupported },
 		"missing-model-requirement": func(p *analysis.Publication) { p.Reports[0].Verdict = analysis.Rejected },
-		"historical-only-site": func(p *analysis.Publication) { p.Facts.Entities[0].Declarations[0] = ast.NodeRef{Tree: "earlier", Node: 4} },
+		"historical-only-site": func(p *analysis.Publication) {
+			p.Facts.Entities[0].Declarations[0] = ast.NodeRef{Tree: "earlier", Node: 4}
+		},
 		"dangling-entity": func(p *analysis.Publication) { p.Facts.Bindings[0].Target = 99 },
-		"zero-node": func(p *analysis.Publication) { p.Facts.Entities[0].Declarations[0].Node = 0 },
-		"diagnostic-site": func(p *analysis.Publication) { p.Diagnostics = []analysis.Diagnostic{{Code: analysisKey("note"), Subject: analysisKey("entry"), At: &ast.NodeRef{Tree: "input", Node: 99}}} },
+		"zero-node":       func(p *analysis.Publication) { p.Facts.Entities[0].Declarations[0].Node = 0 },
+		"diagnostic-site": func(p *analysis.Publication) {
+			p.Diagnostics = []analysis.Diagnostic{{Code: analysisKey("note"), Subject: analysisKey("entry"), At: &ast.NodeRef{Tree: "input", Node: 99}}}
+		},
 	}
 	for name, alter := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -276,7 +359,9 @@ func TestAnalysisRejectsInvalidPublications(t *testing.T) {
 				return request.Publish(publication)
 			})
 			result, err := kernel.Analyze(context.Background(), input)
-			if !errors.Is(err, analysis.ErrInvalidResult) || result.Valid() { t.Fatalf("invalid result accepted: %v", err) }
+			if !errors.Is(err, analysis.ErrInvalidResult) || result.Valid() {
+				t.Fatalf("invalid result accepted: %v", err)
+			}
 		})
 	}
 }
@@ -284,51 +369,72 @@ func TestAnalysisRejectsInvalidPublications(t *testing.T) {
 func TestAnalysisCaptureAndOutputLimits(t *testing.T) {
 	cases := map[string]func(*analysis.Input){
 		"duplicate-tree": func(input *analysis.Input) { input.Trees = append(input.Trees, input.Trees[0]) },
-		"zero-entry": func(input *analysis.Input) { input.Entry.Node = 0 },
-		"unknown-entry": func(input *analysis.Input) { input.Entry.Tree = "absent" },
-		"duplicate-request": func(input *analysis.Input) { input.Requested = []semantics.Key{analysisKey("validity"), analysisKey("validity")} },
-		"duplicate-configuration": func(input *analysis.Input) { input.Configuration = []analysis.Setting{{Key: analysisKey("mode")}, {Key: analysisKey("mode")}} },
+		"zero-entry":     func(input *analysis.Input) { input.Entry.Node = 0 },
+		"unknown-entry":  func(input *analysis.Input) { input.Entry.Tree = "absent" },
+		"duplicate-request": func(input *analysis.Input) {
+			input.Requested = []semantics.Key{analysisKey("validity"), analysisKey("validity")}
+		},
+		"duplicate-configuration": func(input *analysis.Input) {
+			input.Configuration = []analysis.Setting{{Key: analysisKey("mode")}, {Key: analysisKey("mode")}}
+		},
 		"partial-limits": func(input *analysis.Input) { input.Limits.MaxInputNodes = 1 },
 	}
 	for name, alter := range cases {
 		t.Run(name, func(t *testing.T) {
 			calls := 0
-			kernel, input := analysisEngine(t, func(context.Context, analysis.Request[amber]) (analysis.Result, error) { calls++; return analysis.Result{}, nil })
+			kernel, input := analysisEngine(t, func(context.Context, analysis.Request[amber]) (analysis.Result, error) {
+				calls++
+				return analysis.Result{}, nil
+			})
 			alter(&input)
 			result, err := kernel.Analyze(context.Background(), input)
-			if !errors.Is(err, analysis.ErrInvalidRequest) || result.Valid() || calls != 0 { t.Fatalf("invalid input reached provider: %v", err) }
+			if !errors.Is(err, analysis.ErrInvalidRequest) || result.Valid() || calls != 0 {
+				t.Fatalf("invalid input reached provider: %v", err)
+			}
 		})
 	}
 	for name, alter := range map[string]func(*analysis.Limits){
-		"nodes": func(l *analysis.Limits) { l.MaxInputNodes = 2 },
-		"entries": func(l *analysis.Limits) { l.MaxInputEntries = 1 },
-		"input-bytes": func(l *analysis.Limits) { l.MaxInputBytes = 1 },
+		"nodes":          func(l *analysis.Limits) { l.MaxInputNodes = 2 },
+		"entries":        func(l *analysis.Limits) { l.MaxInputEntries = 1 },
+		"input-bytes":    func(l *analysis.Limits) { l.MaxInputBytes = 1 },
 		"metadata-bytes": func(l *analysis.Limits) { l.MaxConfigurationBytes = 1 },
-		"model-bytes": func(l *analysis.Limits) { l.Model.MaxBytes = 1 },
+		"model-bytes":    func(l *analysis.Limits) { l.Model.MaxBytes = 1 },
 	} {
 		t.Run(name, func(t *testing.T) {
 			kernel, input := analysisEngine(t, nil)
 			input.Limits = analysis.DefaultLimits()
 			alter(&input.Limits)
 			result, err := kernel.Analyze(context.Background(), input)
-			if !errors.Is(err, analysis.ErrLimit) || result.Valid() { t.Fatalf("resource limit accepted or became a semantic rejection: %v", err) }
+			if !errors.Is(err, analysis.ErrLimit) || result.Valid() {
+				t.Fatalf("resource limit accepted or became a semantic rejection: %v", err)
+			}
 		})
 	}
 	var zero analysis.Request[amber]
-	if result, err := zero.Publish(analysis.Publication{}); !errors.Is(err, analysis.ErrInvalidRequest) || result.Valid() { t.Fatal(err) }
+	if result, err := zero.Publish(analysis.Publication{}); !errors.Is(err, analysis.ErrInvalidRequest) || result.Valid() {
+		t.Fatal(err)
+	}
 }
 
 func TestAnalysisBudgetsPrecedeCheckerAndCopy(t *testing.T) {
 	checks := 0
 	d, err := representation.NewLanguage[amber](testChecker[amber]{id: "analysis-language", visit: func(ast.AST[amber]) error { checks++; return nil }}, "test-v1")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	input := analysisFixture[amber](t, d)
 	checks = 0
 	info, err := input.Trees[0].Inspect()
-	if err != nil || info.ID != "input" || info.Root != 1 || info.Nodes != 3 || info.Entries != 6 || info.TextBytes != 79 || checks != 0 { t.Fatalf("incorrect or active structural inspection: %+v, %v", info, err) }
+	if err != nil || info.ID != "input" || info.Root != 1 || info.Nodes != 3 || info.Entries != 6 || info.TextBytes != 79 || checks != 0 {
+		t.Fatalf("incorrect or active structural inspection: %+v, %v", info, err)
+	}
 	info.Nodes = 99
-	if fresh, err := input.Trees[0].Inspect(); err != nil || fresh.Nodes != 3 { t.Fatal("structural metadata aliases envelope") }
-	if _, err := (representation.AST{}).Inspect(); !errors.Is(err, representation.ErrInvalidAST) { t.Fatal(err) }
+	if fresh, err := input.Trees[0].Inspect(); err != nil || fresh.Nodes != 3 {
+		t.Fatal("structural metadata aliases envelope")
+	}
+	if _, err := (representation.AST{}).Inspect(); !errors.Is(err, representation.ErrInvalidAST) {
+		t.Fatal(err)
+	}
 	analyzer := analysisAnalyzer[amber](t, d, nil)
 	for _, alter := range []func(*analysis.Limits){
 		func(l *analysis.Limits) { l.MaxInputNodes = 2 },
@@ -337,10 +443,14 @@ func TestAnalysisBudgetsPrecedeCheckerAndCopy(t *testing.T) {
 	} {
 		input.Limits = analysis.DefaultLimits()
 		alter(&input.Limits)
-		if result, err := analyzer.Analyze(context.Background(), input); !errors.Is(err, analysis.ErrLimit) || result.Valid() || checks != 0 { t.Fatalf("budget checked after callback/copy boundary: %v (%d callbacks)", err, checks) }
+		if result, err := analyzer.Analyze(context.Background(), input); !errors.Is(err, analysis.ErrLimit) || result.Valid() || checks != 0 {
+			t.Fatalf("budget checked after callback/copy boundary: %v (%d callbacks)", err, checks)
+		}
 	}
 	input.Limits = analysis.DefaultLimits()
-	if result, err := analyzer.Analyze(context.Background(), input); err != nil || !result.HasModel() || checks != 1 { t.Fatalf("valid request did not execute checker: %v", err) }
+	if result, err := analyzer.Analyze(context.Background(), input); err != nil || !result.HasModel() || checks != 1 {
+		t.Fatalf("valid request did not execute checker: %v", err)
+	}
 }
 
 func TestAnalysisUnknownObligationsAndAdditionalCoverage(t *testing.T) {
@@ -352,18 +462,29 @@ func TestAnalysisUnknownObligationsAndAdditionalCoverage(t *testing.T) {
 	})
 	input.Requested = []semantics.Key{unknown}
 	result, err := kernel.Analyze(context.Background(), input)
-	if err != nil || !result.HasModel() { t.Fatalf("supported graph with unsupported extra obligation: %v", err) }
+	if err != nil || !result.HasModel() {
+		t.Fatalf("supported graph with unsupported extra obligation: %v", err)
+	}
 	report, ok := result.Report(unknown)
-	if !ok || report.Status != analysis.Unsupported || report.Verdict != analysis.Undetermined { t.Fatal("unsupported obligation became a verdict") }
-	if _, err := kernel.Analyze(context.Background(), analysis.Input{Entry: input.Entry, Trees: input.Trees}); !errors.Is(err, analysis.ErrInvalidResult) { t.Fatalf("unrequested unknown report was accepted: %v", err) }
+	if !ok || report.Status != analysis.Unsupported || report.Verdict != analysis.Undetermined {
+		t.Fatal("unsupported obligation became a verdict")
+	}
+	if _, err := kernel.Analyze(context.Background(), analysis.Input{Entry: input.Entry, Trees: input.Trees}); !errors.Is(err, analysis.ErrInvalidResult) {
+		t.Fatalf("unrequested unknown report was accepted: %v", err)
+	}
 }
 
 func TestAnalysisCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	calls := 0
-	kernel, input := analysisEngine(t, func(context.Context, analysis.Request[amber]) (analysis.Result, error) { calls++; return analysis.Result{}, nil })
-	if result, err := kernel.Analyze(ctx, input); !errors.Is(err, context.Canceled) || result.Valid() || calls != 0 { t.Fatal(err) }
+	kernel, input := analysisEngine(t, func(context.Context, analysis.Request[amber]) (analysis.Result, error) {
+		calls++
+		return analysis.Result{}, nil
+	})
+	if result, err := kernel.Analyze(ctx, input); !errors.Is(err, context.Canceled) || result.Valid() || calls != 0 {
+		t.Fatal(err)
+	}
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 	kernel, input = analysisEngine(t, func(_ context.Context, request analysis.Request[amber]) (analysis.Result, error) {
@@ -372,7 +493,9 @@ func TestAnalysisCancellation(t *testing.T) {
 		cancel()
 		return result, err
 	})
-	if result, err := kernel.Analyze(ctx, input); !errors.Is(err, context.Canceled) || result.Valid() { t.Fatalf("cancelled output escaped: %v", err) }
+	if result, err := kernel.Analyze(ctx, input); !errors.Is(err, context.Canceled) || result.Valid() {
+		t.Fatalf("cancelled output escaped: %v", err)
+	}
 }
 
 func TestEngineConcurrentAnalysisAndReentry(t *testing.T) {
@@ -382,11 +505,15 @@ func TestEngineConcurrentAnalysisAndReentry(t *testing.T) {
 	input := analysisFixture[amber](t, d)
 	analyzer := analysisAnalyzer[amber](t, d, func(_ context.Context, request analysis.Request[amber]) (analysis.Result, error) {
 		_ = kernel.Languages()
-		if _, ok := kernel.Language(d.ID()); !ok { return analysis.Result{}, errors.New("reentrant registry read lost language") }
+		if _, ok := kernel.Language(d.ID()); !ok {
+			return analysis.Result{}, errors.New("reentrant registry read lost language")
+		}
 		data := analysisFacts()
 		return request.Publish(analysis.Publication{Facts: &data, Reports: analysisReports()})
 	})
-	if err := kernel.RegisterAnalyzer(analyzer); err != nil { t.Fatal(err) }
+	if err := kernel.RegisterAnalyzer(analyzer); err != nil {
+		t.Fatal(err)
+	}
 	var group sync.WaitGroup
 	failures := make(chan error, 16)
 	for i := 0; i < 8; i++ {
@@ -394,12 +521,23 @@ func TestEngineConcurrentAnalysisAndReentry(t *testing.T) {
 		go func(i int) {
 			defer group.Done()
 			extra, err := representation.NewLanguage[echo](testChecker[echo]{id: language.ID(fmt.Sprintf("analysis-extra-%d", i))}, "test-v1")
-			if err == nil { err = kernel.RegisterLanguage(extra) }
-			if err != nil { failures <- err; return }
+			if err == nil {
+				err = kernel.RegisterLanguage(extra)
+			}
+			if err != nil {
+				failures <- err
+				return
+			}
 			for range 3 {
 				result, err := kernel.Analyze(context.Background(), input)
-				if err != nil { failures <- err; return }
-				if !result.HasModel() { failures <- errors.New("concurrent result lost model"); return }
+				if err != nil {
+					failures <- err
+					return
+				}
+				if !result.HasModel() {
+					failures <- errors.New("concurrent result lost model")
+					return
+				}
 			}
 		}(i)
 	}
@@ -411,6 +549,10 @@ func TestEngineConcurrentAnalysisAndReentry(t *testing.T) {
 		t.Fatal("analysis callbacks held registry lock or failed to complete")
 	}
 	close(failures)
-	for err := range failures { t.Error(err) }
-	if len(kernel.Languages()) != 9 { t.Fatal("concurrent registration lost entries") }
+	for err := range failures {
+		t.Error(err)
+	}
+	if len(kernel.Languages()) != 9 {
+		t.Fatal("concurrent registration lost entries")
+	}
 }

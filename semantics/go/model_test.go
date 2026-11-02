@@ -154,7 +154,7 @@ func TestSemanticModelOwnsEveryMutableIngressAndAccessor(t *testing.T) {
 
 func TestSemanticModelRejectsBrokenGraphs(t *testing.T) {
 	cases := []struct {
-		name string
+		name   string
 		change func(*semantics.Data)
 	}{
 		{"missing entity vocabulary", func(d *semantics.Data) { d.Entities[0].Kind.Owner = "" }},
@@ -162,7 +162,9 @@ func TestSemanticModelRejectsBrokenGraphs(t *testing.T) {
 		{"unknown owner", func(d *semantics.Data) { d.Entities[0].Owner = 99 }},
 		{"self owner", func(d *semantics.Data) { d.Entities[0].Owner = 1 }},
 		{"unknown meaning", func(d *semantics.Data) { d.Entities[0].Body = 99 }},
-		{"duplicate declaration site", func(d *semantics.Data) { d.Entities[0].Declarations = append(d.Entities[0].Declarations, d.Entities[0].Declarations[0]) }},
+		{"duplicate declaration site", func(d *semantics.Data) {
+			d.Entities[0].Declarations = append(d.Entities[0].Declarations, d.Entities[0].Declarations[0])
+		}},
 		{"historical-only declaration site", func(d *semantics.Data) { d.Entities[0].Declarations[0].Tree = "historical" }},
 		{"wrong parameter owner", func(d *semantics.Data) { d.Entities[1].Owner = 4 }},
 		{"parameter without a sort", func(d *semantics.Data) { d.Entities[0].Parameters[0].Sort = semantics.Key{} }},
@@ -223,14 +225,14 @@ func TestSemanticModelRequiresOneBasedCurrentSites(t *testing.T) {
 func TestSemanticModelLimitsAndNoPartialOutput(t *testing.T) {
 	base := semantics.Data{
 		Entities: []semantics.Entity{{Kind: semantics.Key{Owner: "k", Name: "d"}}},
-		Terms: []semantics.Term{{Kind: semantics.Reference, Target: 1}},
+		Terms:    []semantics.Term{{Kind: semantics.Reference, Target: 1}},
 	}
 	exact := semantics.Limits{MaxRecords: 2, MaxEdges: 1, MaxBytes: 2, MaxDepth: 1}
 	if model, err := semantics.New(base, exact, nil); err != nil || !model.Valid() {
 		t.Fatalf("exact record/byte/depth boundary: %v", err)
 	}
 	for _, test := range []struct {
-		name string
+		name   string
 		limits semantics.Limits
 	}{
 		{"records", semantics.Limits{MaxRecords: 1, MaxEdges: 1, MaxBytes: 2, MaxDepth: 1}},
@@ -287,8 +289,8 @@ func TestSemanticModelDAGDepthAndEntityRecursion(t *testing.T) {
 	// Earlier terms are visited first. A later parent reuses a memoized subtree;
 	// checking only newly visited nodes would miss its longer containment path.
 	data := semantics.Data{
-		Entities: []semantics.Entity{{Kind: vocabulary("recursive"), Name: "Node", Body: 4}},
-		Terms: []semantics.Term{{Kind: semantics.Reference, Target: 1}, wrap(1), wrap(2), wrap(1, 3)},
+		Entities:     []semantics.Entity{{Kind: vocabulary("recursive"), Name: "Node", Body: 4}},
+		Terms:        []semantics.Term{{Kind: semantics.Reference, Target: 1}, wrap(1), wrap(2), wrap(1, 3)},
 		Dependencies: []semantics.Dependency{{From: 1, To: 1, Relation: vocabulary("mentions")}},
 	}
 	limits := semantics.DefaultLimits()
@@ -311,10 +313,22 @@ func TestSemanticZeroModelQueriesAreEmpty(t *testing.T) {
 	if model.Valid() || !reflect.DeepEqual(model.Data(), semantics.Data{}) {
 		t.Fatal("zero model became a published graph")
 	}
-	if _, ok := model.Entity(1); ok { t.Fatal("zero model entity") }
-	if _, ok := model.Term(1); ok { t.Fatal("zero model term") }
-	if _, ok := model.Resolve(occurrence(1, "use", 0)); ok { t.Fatal("zero model binding") }
-	if _, ok := model.TermAt(occurrence(1, "expression", 0)); ok { t.Fatal("zero model expression") }
-	if _, ok := model.ParameterBindings(1); ok { t.Fatal("zero model application") }
-	if len(model.DependenciesFrom(1, vocabulary("mentions"))) != 0 { t.Fatal("zero model dependencies") }
+	if _, ok := model.Entity(1); ok {
+		t.Fatal("zero model entity")
+	}
+	if _, ok := model.Term(1); ok {
+		t.Fatal("zero model term")
+	}
+	if _, ok := model.Resolve(occurrence(1, "use", 0)); ok {
+		t.Fatal("zero model binding")
+	}
+	if _, ok := model.TermAt(occurrence(1, "expression", 0)); ok {
+		t.Fatal("zero model expression")
+	}
+	if _, ok := model.ParameterBindings(1); ok {
+		t.Fatal("zero model application")
+	}
+	if len(model.DependenciesFrom(1, vocabulary("mentions"))) != 0 {
+		t.Fatal("zero model dependencies")
+	}
 }

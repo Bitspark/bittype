@@ -24,11 +24,15 @@ func TestAnalysisIndependentPublicContracts(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			positions := token.NewFileSet()
 			file, err := parser.ParseFile(positions, filepath.Join("testdata", "analysis", tc.name+".go"), nil, parser.AllErrors)
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			config := types.Config{GoVersion: "go1.27", Importer: imports}
 			_, err = config.Check("example.invalid/analysis-consumer/"+tc.name, positions, []*goast.File{file}, nil)
 			if tc.want == "" {
-				if err != nil { t.Fatal(err) }
+				if err != nil {
+					t.Fatal(err)
+				}
 			} else if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("want %q: %v", tc.want, err)
 			}

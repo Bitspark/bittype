@@ -17,16 +17,16 @@ import (
 
 var (
 	ErrInvalidAnalyzer = errors.New("invalid semantic analyzer")
-	ErrInvalidRequest = errors.New("invalid analysis request")
-	ErrInvalidResult = errors.New("invalid analysis result")
-	ErrStaleResult = errors.New("analysis result belongs to another request")
-	ErrLimit = errors.New("analysis resource limit")
+	ErrInvalidRequest  = errors.New("invalid analysis request")
+	ErrInvalidResult   = errors.New("invalid analysis result")
+	ErrStaleResult     = errors.New("analysis result belongs to another request")
+	ErrLimit           = errors.New("analysis resource limit")
 )
 
 // Obligation names an analysis and its provider-defined domain. The domain is
 // interpreted relative to the captured entry and inputs, not fetched by the core.
 type Obligation struct {
-	Key semantics.Key
+	Key    semantics.Key
 	Domain semantics.Key
 }
 
@@ -34,12 +34,12 @@ type Obligation struct {
 // published. Undetermined is useful for complete enumerations without a verdict.
 type Requirement struct {
 	Obligation semantics.Key
-	Verdict Verdict
+	Verdict    Verdict
 }
 
 type Contract struct {
-	Profile string
-	Obligations []Obligation
+	Profile           string
+	Obligations       []Obligation
 	ModelRequirements []Requirement
 }
 
@@ -64,38 +64,38 @@ const (
 // Undetermined; a completed validity decision may hold or reject its subject.
 type Report struct {
 	Obligation semantics.Key
-	Status Completion
-	Verdict Verdict
+	Status     Completion
+	Verdict    Verdict
 }
 
 // Diagnostic may name a current input node. Subject and Code are provider-owned
 // vocabulary, allowing input-context failures to differ from source rejection.
 type Diagnostic struct {
-	Code semantics.Key
+	Code    semantics.Key
 	Subject semantics.Key
 	Message string
-	At *ast.NodeRef
+	At      *ast.NodeRef
 }
 
 // Setting is uninterpreted configuration. Its owner defines encoding and meaning.
 type Setting struct {
-	Key semantics.Key
+	Key   semantics.Key
 	Value []byte
 }
 
 // Limits bound captures and publication. A wholly zero value in Input selects
 // DefaultLimits; partly specified or otherwise invalid limits are rejected.
 type Limits struct {
-	MaxInputs int
-	MaxInputNodes int
-	MaxInputEntries int
-	MaxInputBytes int
-	MaxRequested int
+	MaxInputs               int
+	MaxInputNodes           int
+	MaxInputEntries         int
+	MaxInputBytes           int
+	MaxRequested            int
 	MaxConfigurationEntries int
-	MaxConfigurationBytes int
-	MaxDiagnostics int
-	MaxDiagnosticBytes int
-	Model semantics.Limits
+	MaxConfigurationBytes   int
+	MaxDiagnostics          int
+	MaxDiagnosticBytes      int
+	Model                   semantics.Limits
 }
 
 func DefaultLimits() Limits {
@@ -117,11 +117,11 @@ func (l Limits) Valid() bool {
 // Every tree must match the analyzer's syntax descriptor. Empty Requested selects
 // all advertised obligations; unknown requested keys receive Unsupported reports.
 type Input struct {
-	Entry ast.NodeRef
-	Trees []representation.AST
-	Requested []semantics.Key
+	Entry         ast.NodeRef
+	Trees         []representation.AST
+	Requested     []semantics.Key
 	Configuration []Setting
-	Limits Limits
+	Limits        Limits
 }
 
 // LanguageID selects the envelope's registered language. Analyze still checks
@@ -137,8 +137,8 @@ func (i Input) LanguageID() language.ID {
 // copies it during the callback, before returning an immutable Result. Producers
 // must not mutate these records concurrently with publication.
 type Publication struct {
-	Facts *semantics.Data
-	Reports []Report
+	Facts       *semantics.Data
+	Reports     []Report
 	Diagnostics []Diagnostic
 }
 

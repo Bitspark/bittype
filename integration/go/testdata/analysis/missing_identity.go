@@ -7,5 +7,9 @@ import (
 
 type Language struct{}
 type Provider struct{}
-func (Provider) Analyze(context.Context, analysis.Request[Language]) (analysis.Result, error) { return analysis.Result{}, nil }
+
+func (Provider) Analyze(context.Context, analysis.Request[Language]) (analysis.Result, error) {
+	return analysis.Result{}, nil
+}
+
 var _ analysis.Provider[Language] = Provider{}
