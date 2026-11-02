@@ -5,10 +5,10 @@ Horos declaration revision 1, not a readable source grammar or native generator.
 The authoritative value format and binding rules are in
 [horos's declaration specification](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
 
-The separate [hydrated type proposal](hydrated-types.md) covers a possible
-revision-2 Wire message type and library compositions. The frontend documented
-here remains revision 1; none of the proposed hydrated AST/analysis support is
-implemented by this provider.
+The separate [contract-type proposal](hydrated-types.md) places Wire and mixed
+data/capability declarations in a Bittype-owned language provider above Horos.
+This Horos frontend stays data-only with revision 1; it does not acquire that
+language's kinds, profile or meaning. The additional provider is not implemented.
 
 ## API and ownership
 

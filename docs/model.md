@@ -9,16 +9,17 @@ native text stages and syntax engine already exist. See the [Horos frontend](hor
 
 | Component | Responsibility |
 | --- | --- |
-| ontos | Values, structural identity, data embeddings and canonical encoding |
-| horos | Data descriptors/conformance; module, generic and application semantics |
-| bittype | Source syntax, AST/CST projections, frontend tooling, language transformations and source generation |
+| ontos | Ground data values, structural identity, data embeddings and canonical encoding |
+| horos | Data descriptors/conformance; module, generic and application semantics for data declarations |
+| bittype | Source syntax, AST/CST projections, frontend tooling and generation; proposed capability-type layer above Horos |
+| bitwire / bitruntime | Capability contracts and hydration above Horos |
 | Contract libraries | Function, Stream, Cell and future behavioral declarations and realizations |
 
 The semantic authority is the [horos descriptor specification](https://github.com/Bitspark/horos/blob/v0.6.0/docs/spec/horos.md)
 and the [canonical declaration specification](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
 The latter specifies exact value grammar, immutable imports, indexed binders,
-substitution and identity. Bittype must not maintain a competing record,
-collection, union or generic-substitution specification.
+substitution and identity for data declarations. Bittype must not maintain a
+competing interpretation of those Horos data types or their generic substitution.
 
 The separate [agnostic semantic model](semantics.md) implements shared facts:
 identities, bindings, expressions, applications and dependencies. The
@@ -26,11 +27,13 @@ identities, bindings, expressions, applications and dependencies. The
 supplies another canonical value-type algebra nor makes native meaning equivalent
 to Horos. Horos supplies the first production analyzer.
 
-The [hydrated type proposal](hydrated-types.md) documents a future explicit
-Horos revision for the existing native Wire leaf. Function, Stream and Cell
-compose from that primitive in ordinary libraries. It includes the exact Wire
-format and tooling boundaries; it is not implemented and does not widen the
-ground model or current declaration revision described below.
+The [contract-type proposal](hydrated-types.md) puts the Wire type and mixed
+data/capability compositions in a separate Bittype language provider. Ontos and
+Horos stay data-only; hydration stays in the existing Wire/runtime layers above
+Horos. The proposal includes an explicit ground Data embedding, exact Wire
+expression and ordinary library compositions for Function, Stream and Cell.
+It replaces the unimplemented Horos revision-2 proposal, without widening the
+Horos model or adding concrete semantics to the agnostic kernel.
 
 Horos 0.6.0 implements ground descriptors and value checking, without a public
 dependency on the older proof-integration packages. Newer Go source implements
@@ -99,6 +102,12 @@ cyclic import/application graphs; existing guarded `rec`/`ref` descriptions
 remain available. Recursive named applications are deferred. Do not add a
 productivity rule that rejects a well-formed but uninhabited Horos type.
 
+Page's parameter ranges over data types. A Wire cannot be supplied to that
+Horos declaration. A future Bittype lifting transformer may reuse its structure
+over capabilities, preserving provenance and assigning the lifted declaration
+its own identity and profile. It must qualify that interpretation explicitly;
+it cannot silently change the original Page or require a hand-written expansion.
+
 ## Frontend and pipeline
 
 ```text
@@ -162,6 +171,12 @@ of Horos; its frontend and relevant transformers consume the semantic model.
 Architecture tests allow the model dependency only in the Horos frontend and
 classify its transitive packages. They retain the generic-package boundary and
 the independence of native text stages.
+
+A future contract-language provider needs its own narrow dependency allowance
+to delegate Data embeddings to Horos. That is not an allowance for generic
+infrastructure, and the current Horos provider remains unchanged. The separate
+proposal owns its lifted structural meaning; ordinary ground semantics stay
+authoritative in Horos.
 
 Horos specifies document identity and pins. Bittype preserves them alongside
 declaration/binder references. AST addresses and source spans are tooling

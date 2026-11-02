@@ -16,6 +16,15 @@ remain future work. The [semantic analysis capability](analysis.md) now adapts
 Horos's checked model to shared facts. It adds no text parser or ASTTransformer
 implementation.
 
+The [contract-type proposal](hydrated-types.md) separately adds Wire typing in
+a Bittype-owned provider above the data-only Horos model. Its future path is
+`AST[Contract] -> AST[Native] -> CST[Native] -> source`, using the existing
+engine and text stages. Horos data generation remains a direct path. An explicit
+Horos-to-contract transformer could embed data or lift supported templates;
+no route may silently widen their domains. Neither contract provider nor these
+transformers is implemented. Hydration belongs to existing Wire/runtime layers,
+not this static pipeline or Horos.
+
 ## Target pipeline
 
 ```text

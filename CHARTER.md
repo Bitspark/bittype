@@ -21,12 +21,21 @@ bittype owns:
   [analysis-provider boundary](docs/analysis.md); language providers retain their
   semantic rules. Horos supplies the first production analyzer.
 - Small data types needed to represent presence and nullness in generated code.
+- The proposed [contract-language layer](docs/hydrated-types.md) above Horos:
+  explicit ground data embeddings, Wire message types and mixed compositions.
+  This is provider-owned meaning, not an agnostic kernel extension.
 
-Horos owns descriptors, conformance and module/generic/application
-semantics, declaration encoding and semantic vectors. Ontos owns values,
-structural identity and encoding. Horos does not depend on bittype; only the
-Horos-specific frontend and future relevant transformers in bittype consume its
-model. Generic foundations and native text stages remain independent.
+Horos owns data descriptors, conformance and module/generic/application
+semantics for data declarations, their encoding and semantic vectors. Ontos owns
+ground values, structural identity and encoding. Horos does not depend on bittype;
+the current Horos-specific frontend and future qualified providers/transformers
+consume its model. Generic foundations and native text stages remain independent.
+
+**Owner boundary correction, 2 November 2026:** Ontos and Horos stay data-only.
+Wire typing belongs to the proposed Bittype contract-language provider, with
+its own language identity/profile; hydration stays above Horos in the existing
+bitwire/bitruntime layers. Function, Stream and Cell remain ordinary libraries.
+No proposed Horos revision 2 or Horos Wire constructor remains in scope.
 
 The owner's 31 October structure decision selects the stage-first matrix in
 [LAYOUT.md](LAYOUT.md). Shared trees, shared contracts and the engine have distinct
@@ -66,6 +75,10 @@ frontend depends on the Horos Go declaration model and Ontos values. Architectur
 checks enforce that narrow boundary; generic carriers, contracts, engine, printer
 and native text stages have no external Horos/Ontos imports. The engine depends
 on the generic analysis contract, whose graph does not encode language rules.
+
+The contract-language provider and its narrow ground-model dependency allowance
+are future work. Their proposal does not alter these current import checks,
+instantiate a runtime or extend the implemented Horos language profile.
 
 ## Versioning and evidence
 
