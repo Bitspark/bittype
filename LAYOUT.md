@@ -18,11 +18,14 @@ contracts/
   pipeline/go/            typed Stage contract
   text/go/                input, diagnostics and specialized provider contracts
   transform/go/           ASTTransformer contract and typed registration bridge
+  analysis/go/            typed semantic analysis, capture, reports and publication
+semantics/go/             immutable provider-owned semantic facts and graph checks
 engine/go/                explicit registration, planning and execution
 syntax/<language>/go/     native abstract/concrete vocabulary and identity
 resolve/horos/go/         canonical module values to checked Horos AST/model
 parse/<language>/go/      source text to CST
-check/<language>/go/      native syntax checking
+check/<language>/go/      language syntax checking
+analyze/horos/go/         Horos semantics adapted to shared facts and reports
 format/<language>/go/     AST view to CST
 provider/<language>/go/   explicit composition of the language's stages
 check/ast/go/             generic abstract carrier checks
@@ -36,7 +39,7 @@ docs/
 ```
 
 The native text language directories are `typescript`, `golang`, `rust` and
-`cpp`; `horos` implements the AST-only syntax/resolve/check/provider profile.
+`cpp`; `horos` implements the AST-only syntax/resolve/check/analyze/provider profile.
 The final `go` directory denotes implementation language, not target:
 `syntax/rust/go` is Go code describing Rust syntax. `ast` and `cst` in the check
 stage are reserved generic-carrier components, not native language names.
@@ -60,14 +63,17 @@ same dependency level. The package boundaries are:
 | Carrier checks and printer | Generic tree structure and shared diagnostic contracts; no native grammar or formatting choices |
 | Checked representation | Carriers, text checker/identity contracts and generic carrier checks; no engine or transformer dependency |
 | Transformer contract/bridge | Typed stages, checked representations and endpoint identity; no concrete mapping |
+| Semantic facts | Generic AST addresses; graph integrity and owned storage, no language rules |
+| Analysis contract/bridge | Semantic facts, checked representations and identity; capture/publication, no concrete analyzer |
 | Engine | Checked representations and shared contracts; no concrete language, provider or mapping |
 | Native syntax | Carriers and identity; no implementation stage or other language |
 | Native checker | Own syntax, shared checking mechanics and own lexical helpers |
 | Native parser/formatter | Own syntax/checker and appropriate shared mechanics; neither imports the other |
 | Native provider | Own syntax and stages plus the shared printer; composition only |
 | Horos syntax | Generic AST and identity; no semantic-model imports |
-| Horos resolver/checker | Own syntax, private projection helper, Horos Go model and Ontos values |
-| Horos provider | Own syntax/checker and shared checker contract; no text stages |
+| Horos checker | Own syntax and generic structural/grammar checks; no semantic resolution |
+| Horos resolver/analyzer | Own syntax, private projection/correspondence helper, Horos Go model and Ontos values/codec |
+| Horos provider | Own syntax/checker/analyzer and shared contracts; composition, no text stages |
 
 The checked AST/CST and language descriptors share one home in
 `trees/representation/go`. `contracts/transform/go` owns ASTTransformer and
@@ -83,10 +89,10 @@ language or a stage. This keeps the rule enforceable through indirect imports.
 ## Enforced consistency
 
 The [architecture checks](integration/go/architecture_test.go) discover the
-union of language directories across syntax/parse/check/format/provider/resolve
+union of language directories across syntax/parse/check/format/provider/resolve/analyze
 and require each language to have every stage in its tested capability profile.
 The four native languages retain all five native text stages; Horos requires
-syntax/resolve/check/provider and must not acquire unqualified text stages.
+syntax/resolve/check/analyze/provider and must not acquire unqualified text stages.
 Generic carrier check directories
 are excluded explicitly. An orphan parser and an incomplete syntax package both
 fail. The checks also classify every production package and enforce its directed
@@ -110,14 +116,14 @@ consistency does not prove grammar or mapping correctness.
 
 ## Future components
 
-The [agnostic semantic model](docs/semantics.md) proposes shared analysis facts
-and a separate provider boundary. No semantic model package, analysis SPI or
-analyzer stage is implemented by that document. Future placement must preserve
-the shared representation/contracts separation and the stage-first matrix.
+The [agnostic semantic model](docs/semantics.md), [analysis contract](docs/analysis.md)
+and first Horos analyzer are implemented. Additional analyzers use the same
+optional analyze stage with an explicitly tested capability profile. Native
+semantic analysis is not implied by native text tooling.
 
 The [Horos declaration integration](docs/horos.md) implements
-`syntax/horos/go`, `check/horos/go`, `provider/horos/go` and
-`resolve/horos/go`, with private projection/checking in `internal/horos`.
+`syntax/horos/go`, `check/horos/go`, `analyze/horos/go`, `provider/horos/go` and
+`resolve/horos/go`, with private projection/correspondence in `internal/horos`.
 Readable syntax, when specified, adds `parse/horos/go` and
 `format/horos/go` under the same stage matrix. These replace the former proposed
 `canonical` paths; there are no compatibility aliases.

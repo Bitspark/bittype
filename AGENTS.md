@@ -16,10 +16,11 @@ the superseded independent bittype value-type algebra. The current native-text
 slice implements parsers, AST-to-CST formatters, syntax checks and a generic
 CST-to-text printer. Read the [concrete syntax design](docs/parsing-formatting.md).
 
-The [agnostic semantic model](docs/semantics.md) is a documented proposal for
-shared analysis facts. Its Go sketch and future analysis SPI are not implemented.
-Keep semantic rules provider-owned; do not treat this proposal as a replacement
-for Horos's canonical data semantics or as authorization for implementation.
+The [agnostic semantic model](docs/semantics.md), [analysis SPI](docs/analysis.md)
+and Horos analyzer are implemented. Keep semantic rules provider-owned.
+Syntax admission must accept unresolved names; analysis publishes request-bound,
+immutable facts with explicit completion, verdict and model availability.
+Only Horos implements production semantics; native analysis remains deferred.
 
 - Readable Horos syntax, actual language transformers, public builders and application
   CLI remain deferred. The syntax engine and ASTTransformer boundary are now
@@ -34,7 +35,8 @@ for Horos's canonical data semantics or as authorization for implementation.
 - Do not make TypeScript extraction the authoritative canonical input.
 - Follow the stage-first hierarchy in LAYOUT.md. Shared trees live under trees,
   shared contracts under contracts; native implementations use the same
-  syntax/parse/check/format/provider language matrix. Do not add compatibility
+  syntax/parse/check/format/provider language matrix, with explicitly qualified
+  optional resolve/analyze stages. Do not add compatibility
   aliases or a language-first packages tree. Keep the root Go module.
 - Add every language to the shared conformance fixtures; AST-only providers
   require an explicit tested capability profile. Architecture checks

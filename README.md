@@ -9,7 +9,9 @@ printer are implemented in Go. The syntax engine registers languages and
 ASTTransformer implementations, plans routes and composes existing text stages.
 Specialized providers extend LanguageProvider. Horos's Go declaration model now
 supplies module resolution, generic binding and ground specialization. Bittype
-implements its [AST-only frontend](docs/horos.md), preserving those bindings.
+implements its [AST-only frontend](docs/horos.md) and semantic analyzer, preserving
+those bindings in the [shared semantic graph](docs/semantics.md). The engine's
+optional analysis capability reports validity, coverage and model availability.
 Readable Horos syntax, native mappings and package releases remain deferred.
 The engine starts empty and has no built-in languages or mappings.
 
@@ -17,7 +19,7 @@ The [stage-first layout](LAYOUT.md) groups shared tree representations under
 trees and public interfaces under contracts. Every native language implements
 the same syntax/parse/check/format/provider matrix, enforced by architecture and
 shared conformance tests. The engine contains no built-in language catalogue.
-Horos has a separately qualified syntax/resolve/check/provider capability profile;
+Horos has a separately qualified syntax/resolve/check/analyze/provider capability profile;
 it does not advertise text stages that are not implemented.
 
 The native pipeline separates source parsing, concrete layout and printing:
@@ -39,8 +41,9 @@ application-value validation or Wire dependencies.
 
 - [Horos canonical input](docs/model.md): ownership, declarations and native representation plan.
 - [Horos AST](docs/horos.md): model projection, binding references, checking and registration.
-- [Semantic model proposal](docs/semantics.md): shared entities, scopes, bindings,
-  generic terms and judgments; a documented Go sketch, not an implemented API.
+- [Semantic facts](docs/semantics.md): immutable entities, terms, occurrences and dependencies.
+- [Analysis capability](docs/analysis.md): request capture, explicit registration,
+  completion/verdict reports and publication requirements.
 - [Generic AST](docs/ast.md): carriers, typed views, addressing and provenance.
 - [Target syntax](docs/syntax.md): native vocabulary and supported type subsets.
 - [Parsing and formatting](docs/parsing-formatting.md): CST model, providers,

@@ -109,6 +109,9 @@ Engine's zero value is usable; New is a convenience constructor. Both start empt
 - NewProvider[L](textProvider, profile) packages a full existing text.Provider[L].
   RegisterProvider installs its descriptor and text capabilities atomically.
 - RegisterTransformer installs one directed edge between registered languages.
+- RegisterAnalyzer installs an optional semantic analysis capability for an
+  existing compatible language; Analyze captures inputs and returns its reports
+  and optional shared model. See the [analysis contract](analysis.md).
 - Language(id) looks up a descriptor; Languages returns a sorted independent list.
 
 Language keys are exact and case-sensitive. Duplicate keys or directed edges
@@ -238,8 +241,9 @@ and discovered stage/dependency checks enforce this boundary. The moved APIs
 have no aliases at the former package paths.
 
 The [Horos AST frontend](horos.md) is implemented; actual language transformers
-remain deferred. The [agnostic semantic model](semantics.md) and a separate
-analysis-provider SPI are documented proposals. Current Check calls do not expose
-that shared result. Public builders, a generic Stage composition helper and an
+remain deferred. The [agnostic semantic model](semantics.md) and separate
+[analysis-provider SPI](analysis.md) are implemented. Check admits syntax;
+Analyze returns reports and optional shared facts through explicit registration.
+Public builders, a generic Stage composition helper and an
 application CLI also remain deferred; none is needed to register and execute a
 correctly implemented ASTTransformer through this frame.

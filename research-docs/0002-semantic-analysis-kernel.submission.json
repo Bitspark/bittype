@@ -1,0 +1,29 @@
+{
+  "researchId": "0002",
+  "attempts": [
+    {
+      "number": 1,
+      "idempotencyKey": "bittype-research-0002-dafc9914-e0e3-456d-8447-0441e6e88fda",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0002-semantic-analysis-kernel",
+      "submittedPath": "research-docs/0002-semantic-analysis-kernel.submitted.md",
+      "sha256": "b031cb1fdd2b0076870446106b02a280ba40bbf6bfe34eeef4bef71e215d1c27",
+      "byteSize": 32563,
+      "codeRevision": "45f7c2782d7f77b9574dae1a9893ee81b2bba427",
+      "horosRevision": "097496351b70336462c659e3deabea833e294b85",
+      "cliBuild": "nightfall 0.1.0 (e2640b38009d, bundle ef085ca51a5d) built 2026-10-18T03:14:36.183Z",
+      "preparedAt": "2026-11-02T13:48:50.4371114Z",
+      "state": "completed",
+      "documentId": "doc_e667d0e2-7926-4302-8252-ac6670b1af61",
+      "serverSha256": "b031cb1fdd2b0076870446106b02a280ba40bbf6bfe34eeef4bef71e215d1c27",
+      "uploadedAt": "2026-11-02T13:50:02.1809568Z",
+      "runId": "run_a409da7b-a708-41bc-bba3-bd0b011d33ff",
+      "submittedAt": "2026-11-02T13:51:14.6995029Z",
+      "resultSha256": "3db0578f23ab525eee3daa9c2debe6ff68704d2baf5e9f71847621c0bd5252e1",
+      "resultByteSize": 36235,
+      "verifyExitCode": 0,
+      "verifiedAt": "2026-11-02T14:14:34.5054436Z"
+    }
+  ]
+}

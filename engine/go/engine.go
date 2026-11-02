@@ -9,6 +9,7 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 	"sync"
 
+	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 )
@@ -20,7 +21,7 @@ var (
 	ErrNoPath               = errors.New("no transformation path")
 	ErrAmbiguousPath        = errors.New("multiple shortest transformation paths")
 	ErrInvalidRoute         = errors.New("invalid transformation route")
-	ErrMissingCapability    = errors.New("language has no registered text capability")
+	ErrMissingCapability    = errors.New("language has no registered capability")
 	ErrInvalidProvider      = errors.New("invalid text provider")
 )
 
@@ -37,6 +38,7 @@ type Engine struct {
 type registration struct {
 	language representation.Language
 	text     *Provider
+	analyzer *analysis.Analyzer
 }
 type edge struct {
 	from, to    language.ID

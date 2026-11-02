@@ -20,10 +20,11 @@ The latter specifies exact value grammar, immutable imports, indexed binders,
 substitution and identity. Bittype must not maintain a competing record,
 collection, union or generic-substitution specification.
 
-The separate [agnostic semantic model proposal](semantics.md) describes shared
-analysis facts across languages: identities, scopes, bindings, generic terms and
-judgments. It does not supply another canonical value-type algebra or make native
-meaning equivalent to Horos. Its shared model and provider SPI remain unimplemented.
+The separate [agnostic semantic model](semantics.md) implements shared facts:
+identities, bindings, expressions, applications and dependencies. The
+[analysis SPI](analysis.md) reports coverage and validity explicitly. Neither
+supplies another canonical value-type algebra nor makes native meaning equivalent
+to Horos. Horos supplies the first production analyzer.
 
 Horos 0.6.0 implements ground descriptors and value checking, without a public
 dependency on the older proof-integration packages. Newer Go source implements

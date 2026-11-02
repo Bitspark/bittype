@@ -48,7 +48,7 @@ func productionPackages(t *testing.T) map[string]productionPackage {
 func stageLanguages(t *testing.T) []string {
 	t.Helper()
 	names := map[string]bool{}
-	for _, stage := range append(slices.Clone(nativeStages), "resolve") {
+	for _, stage := range append(slices.Clone(nativeStages), "resolve", "analyze") {
 		entries, err := os.ReadDir(filepath.Join("../..", stage))
 		if err != nil {
 			t.Fatal(err)
@@ -91,7 +91,7 @@ func TestLanguageStageMatrix(t *testing.T) {
 			t.Fatalf("duplicate or unqualified AST-only fixture: %s", fixture.directory)
 		}
 		qualified[fixture.directory] = true
-		profiles[fixture.directory] = []string{"syntax", "resolve", "check", "provider"}
+		profiles[fixture.directory] = []string{"syntax", "resolve", "check", "analyze", "provider"}
 	}
 	for _, name := range languages {
 		for _, stage := range profiles[name] {
@@ -100,7 +100,7 @@ func TestLanguageStageMatrix(t *testing.T) {
 				t.Errorf("missing implemented stage %s", path)
 			}
 		}
-		for _, stage := range append(slices.Clone(nativeStages), "resolve") {
+		for _, stage := range append(slices.Clone(nativeStages), "resolve", "analyze") {
 			if _, ok := packages[modulePath+"/"+stage+"/"+name+"/go"]; ok && !slices.Contains(profiles[name], stage) {
 				t.Errorf("%s has an unqualified capability stage: %s", name, stage)
 			}
@@ -122,6 +122,7 @@ func TestProductionArchitecture(t *testing.T) {
 	languages := stageLanguages(t)
 	rules := map[string][]string{
 		"trees/ast/go":            {},
+		"semantics/go":            {"trees/ast/go"},
 		"trees/cst/go":            {"trees/ast/go"},
 		"contracts/language/go":   {},
 		"contracts/pipeline/go":   {},
@@ -131,7 +132,8 @@ func TestProductionArchitecture(t *testing.T) {
 		"print/go":                {"trees/cst/go", "check/cst/go"},
 		"trees/representation/go": {"trees/ast/go", "trees/cst/go", "contracts/language/go", "contracts/text/go", "check/ast/go", "check/cst/go", "internal/tree"},
 		"contracts/transform/go":  {"trees/ast/go", "trees/representation/go", "contracts/language/go", "contracts/pipeline/go"},
-		"engine/go":               {"trees/representation/go", "contracts/language/go", "contracts/text/go", "contracts/transform/go"},
+		"contracts/analysis/go":   {"trees/ast/go", "trees/representation/go", "contracts/language/go", "semantics/go", "internal/tree"},
+		"engine/go":               {"trees/representation/go", "contracts/language/go", "contracts/text/go", "contracts/transform/go", "contracts/analysis/go"},
 		"internal/tree":           {"trees/ast/go"},
 		"internal/grammar":        {"trees/ast/go", "check/ast/go", "contracts/text/go"},
 		"internal/lex":            {"trees/ast/go", "contracts/text/go"},
@@ -162,9 +164,10 @@ func TestProductionArchitecture(t *testing.T) {
 	// Horos has an explicit AST-only capability profile. Its helpers implement
 	// model projection/checking, not a hidden semantic dependency in other stages.
 	rules["internal/horos"] = []string{"trees/ast/go", "check/ast/go", "contracts/text/go", "syntax/horos/go"}
-	rules["resolve/horos/go"] = []string{"trees/ast/go", "syntax/horos/go", "internal/horos"}
-	rules["check/horos/go"] = []string{"trees/ast/go", "syntax/horos/go", "internal/horos"}
-	rules["provider/horos/go"] = []string{"trees/ast/go", "contracts/text/go", "syntax/horos/go", "check/horos/go"}
+	rules["resolve/horos/go"] = []string{"trees/ast/go", "syntax/horos/go", "check/horos/go", "internal/horos"}
+	rules["check/horos/go"] = []string{"trees/ast/go", "check/ast/go", "contracts/text/go", "syntax/horos/go", "internal/grammar"}
+	rules["analyze/horos/go"] = []string{"trees/ast/go", "contracts/analysis/go", "contracts/text/go", "semantics/go", "syntax/horos/go", "internal/horos"}
+	rules["provider/horos/go"] = []string{"trees/ast/go", "contracts/text/go", "contracts/analysis/go", "syntax/horos/go", "check/horos/go", "analyze/horos/go"}
 	for path, p := range packages {
 		if p.Standard || path == modulePath+"/integration/go" {
 			continue
@@ -208,4 +211,5 @@ var horosModelDependencies = []string{
 var horosExternalImports = map[string][]string{
 	"internal/horos":   {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"resolve/horos/go": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
+	"analyze/horos/go": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/codec/go"},
 }

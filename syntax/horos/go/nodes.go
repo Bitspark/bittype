@@ -18,8 +18,9 @@ type AST = ast.AST[Language]
 type Node = ast.Node[Language]
 type Kind = ast.Kind[Language]
 
-// Profile identifies this AST-only projection of declaration revision 1.
-const Profile = "horos-declarations-1/ast-1"
+// Profile admits declaration syntax before resolution. Binding annotations are
+// optional assertions; the separate analyzer establishes or rejects them.
+const Profile = "horos-declarations-1/ast-2"
 
 const (
 	KindProgram       Kind = "program"

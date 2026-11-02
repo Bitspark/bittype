@@ -17,9 +17,9 @@ bittype owns:
 - Native AST vocabularies and an agnostic language identity/registration
   boundary, independent of particular language providers.
 - Native representation profiles and independent generation/round-trip fixtures.
-- The proposed [agnostic semantic model](docs/semantics.md) and analysis-provider
-  boundary; language providers retain their semantic rules. This is documented
-  design, not an implemented shared package or SPI.
+- The [agnostic semantic model](docs/semantics.md) and implemented
+  [analysis-provider boundary](docs/analysis.md); language providers retain their
+  semantic rules. Horos supplies the first production analyzer.
 - Small data types needed to represent presence and nullness in generated code.
 
 Horos owns descriptors, conformance and module/generic/application
@@ -44,7 +44,8 @@ know the names or semantics of particular library contracts.
 ## Current delivery boundary
 
 The [Horos declaration integration](docs/horos.md) implements checked canonical
-module values to AST, an AST checker and an explicitly registered AST-only provider.
+module values to AST, syntax admission, an optional semantic analyzer and an
+explicitly registered AST-only provider.
 Generic AST/CST carriers,
 typed views and pipeline contracts, four native type vocabularies, native parsers,
 AST-to-CST formatters, syntax checks and the shared CST printer are implemented.
@@ -63,7 +64,8 @@ Function, Stream, Cell and future behavioral contracts remain ordinary library
 declarations with no privileged cases in shared infrastructure. Only the Horos
 frontend depends on the Horos Go declaration model and Ontos values. Architecture
 checks enforce that narrow boundary; generic carriers, contracts, engine, printer
-and native text stages have no semantic-model imports.
+and native text stages have no external Horos/Ontos imports. The engine depends
+on the generic analysis contract, whose graph does not encode language rules.
 
 ## Versioning and evidence
 

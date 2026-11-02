@@ -12,13 +12,15 @@ builders and application CLI remain deferred.
 
 Horos owns the data model and [declaration semantics](model.md).
 Bittype implements the [AST-only projection](horos.md); native transformations
-remain future work. This change adds no text parser or ASTTransformer implementation.
+remain future work. The [semantic analysis capability](analysis.md) now adapts
+Horos's checked model to shared facts. It adds no text parser or ASTTransformer
+implementation.
 
 ## Target pipeline
 
 ```text
 canonical Horos module values
-    -> resolve and check once using Horos declaration semantics
+    -> resolve and check using Horos declaration semantics
     -> AST[Horos]
          -> AST[TypeScript] -> CST[TypeScript] -> TypeScript source
          -> AST[Go]         -> CST[Go]         -> Go source
@@ -27,7 +29,9 @@ canonical Horos module values
 ```
 
 Canonical-to-native is one direction of AST transformation. Each such transformer
-transforms a checked canonical AST into a target-language AST.
+transforms a semantically validated canonical input into a target-language AST.
+An admitted syntax envelope alone is insufficient: a transformer must explicitly
+require the semantic obligations it needs through the analyzer or owning resolver.
 It chooses native type representations, names, imports, generic syntax and
 recursive indirection according to an explicit target configuration.
 It does not emit source strings.
@@ -65,6 +69,8 @@ contracts/language/go/                   present: identity interface
 contracts/pipeline/go/                   present: typed Stage
 contracts/text/go/                       present: input, diagnostics, providers
 contracts/transform/go/                  present: ASTTransformer and typed bridge
+contracts/analysis/go/                   present: semantic request/publication SPI
+semantics/go/                            present: immutable shared semantic facts
 engine/go/                               present: registry, planning, execution
 syntax/<language>/go/                    present for all four native languages
 parse/<language>/go/                     present: source to CST
@@ -80,7 +86,8 @@ testdata/text/<language>/valid/          present: native source fixtures
 syntax/horos/go/                        present: Horos declaration AST projection
 parse/horos/go/                         proposed: future readable source to CST
 resolve/horos/go/                       present: Horos references and binders
-check/horos/go/                         present: frontend checks using Horos rules
+check/horos/go/                         present: syntax-only AST admission
+analyze/horos/go/                       present: Horos semantics to shared facts
 format/horos/go/                        proposed: future readable Horos CST
 provider/horos/go/                      present: AST-only capability composition
 transforms/horos-to-<native>/go/         planned: directed native generation
@@ -266,7 +273,8 @@ Arrows in the table mean a direct package dependency is allowed:
 | Generic AST | Standard library only; currently no imports |
 | Generic pipeline | Standard library only; currently no imports, including no AST dependency |
 | Language identity interface | Standard library only; currently no imports |
-| Syntax engine and registry | Language/provider and transformation contracts, generic CST checks; no concrete syntax imports |
+| Syntax engine and registry | Language/provider, transformation and analysis contracts; no concrete syntax imports |
+| Semantic facts and analysis | Generic AST addresses, checked representations and identity; no language rules |
 | Transformation boundary | Generic AST/checks, language identity, typed stage contracts; no concrete syntax imports |
 | Generic CST | Generic AST |
 | Each syntax package | Generic AST/CST, language identity interface |
@@ -280,7 +288,7 @@ Arrows in the table mean a direct package dependency is allowed:
 Standard-library utilities are permitted in every layer. The Horos frontend
 consumes the public Horos Go declaration model and Ontos values through narrowly
 qualified package dependencies. Future transforms need their own explicit rules;
-Horos must not depend on bittype. This does not permit model imports in generic
+Horos must not depend on bittype. This does not permit external Horos/Ontos imports in generic
 trees, contracts, engine or printer. The AST, pipeline and language identity packages do
 not import each other or concrete syntax packages. Syntax packages do not import
 one another, generators or formatters. A formatter does not import the canonical
