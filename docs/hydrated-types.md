@@ -48,6 +48,12 @@ Bittype describes these values; it does not hydrate them or implement a new
 reference protocol. Receiving, closure and resource lifetime remain runtime and
 endpoint-owner concerns.
 
+The [runtime value boundary](runtime-values.md) distinguishes these live
+instances from type-description ASTs, explains the existing Go Wire/Endpoint/Scope
+operations and places future native-value adapters above hydration. The existing
+hydrated carrier supplies the common instance domain; no duplicate Bittype value
+algebra or runtime implementation is introduced.
+
 Every type description below is itself ground Ontos data. It contains syntax,
 not a live endpoint. That makes it encodable, not a Horos descriptor: the
 language interpreting the encoded description still matters. Loading or

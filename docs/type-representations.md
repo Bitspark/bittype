@@ -12,6 +12,12 @@ transformers and representation configuration below are not implemented.
 Examples describe the intended design, not executable configuration or new APIs.
 No runtime adapter, validator, callable implementation or transport is added.
 
+The separate [runtime value explanation](runtime-values.md) connects this static
+design to existing Wire/hydration. Native type recipes describe declarations;
+future value adapters convert actual hydrated instances to and from native T.
+That page also separates compiled typed adapters from dynamic descriptions and
+marks the runtime-binding API as unimplemented.
+
 ## 1. Three separate inputs
 
 | Input | Owner and purpose |
