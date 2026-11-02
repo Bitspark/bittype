@@ -114,6 +114,9 @@ func captureRequest[L any](ctx context.Context, syntax representation.Language, 
 	if len(input.Trees) > limits.MaxInputs || len(input.Requested) > limits.MaxRequested || len(input.Configuration) > limits.MaxConfigurationEntries {
 		return Request[L]{}, ErrLimit
 	}
+	// Envelope handles are immutable, but the caller's slice is not. A checker
+	// may synchronously mutate caller-owned storage; both passes use this capture.
+	envelopes := slices.Clone(input.Trees)
 	c := &capture{entry: input.Entry, contract: cloneContract(contract), limits: limits, catalogue: make(map[ast.TreeID]ast.NodeID)}
 	bytes := limits.MaxConfigurationBytes
 	if !take(&bytes, len(input.Entry.Tree)) {
@@ -154,7 +157,7 @@ func captureRequest[L any](ctx context.Context, syntax representation.Language, 
 	nodes, entries, inputBytes := limits.MaxInputNodes, limits.MaxInputEntries, limits.MaxInputBytes
 	// Read bounded envelope metadata before any checker or AST copy. Tree IDs
 	// establish only a catalogue within this invocation, never persistent identity.
-	for _, envelope := range input.Trees {
+	for _, envelope := range envelopes {
 		if err := ctx.Err(); err != nil {
 			return Request[L]{}, err
 		}
@@ -173,8 +176,8 @@ func captureRequest[L any](ctx context.Context, syntax representation.Language, 
 	if !c.contains(c.entry) {
 		return bad("entry is outside captured inputs")
 	}
-	state := &requestState[L]{capture: c, inputs: make([]ast.AST[L], 0, len(input.Trees))}
-	for _, envelope := range input.Trees {
+	state := &requestState[L]{capture: c, inputs: make([]ast.AST[L], 0, len(envelopes))}
+	for _, envelope := range envelopes {
 		if err := ctx.Err(); err != nil {
 			return Request[L]{}, err
 		}
