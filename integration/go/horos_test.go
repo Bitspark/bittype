@@ -1,15 +1,20 @@
 package integration_test
 
 import (
+	"context"
 	"errors"
 	"math/big"
 	"testing"
 
+	analyze "github.com/Bitspark/bittype/analyze/horos/go"
+	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/engine/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/horos/go"
+	"github.com/Bitspark/bittype/semantics/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	core "github.com/bitspark/ontos/core/go"
@@ -78,6 +83,32 @@ func qualifyHoros(t *testing.T) {
 	if err := registry.RegisterLanguage(definition); err != nil {
 		t.Fatal(err)
 	}
+	input := analysis.Input{Entry: ast.NodeRef{Tree: "consumer", Node: tree.Root}, Trees: []representation.AST{envelope}}
+	if _, err := registry.Analyze(context.Background(), input); !errors.Is(err, engine.ErrMissingCapability) {
+		t.Fatalf("syntax registration silently installs an analyzer: %v", err)
+	}
+	analyzer, err := analysis.NewAnalyzer[h.Language](definition, analyze.Contract(), provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := registry.RegisterAnalyzer(analyzer); err != nil {
+		t.Fatal(err)
+	}
+	result, err := registry.Analyze(context.Background(), input)
+	if err != nil || !result.HasModel() {
+		t.Fatalf("explicitly registered Horos analysis: %v", err)
+	}
+	for _, obligation := range analyze.Contract().Obligations {
+		report, found := result.Report(obligation.Key)
+		want := analysis.Undetermined
+		if obligation.Key == analyze.Validity() {
+			want = analysis.Holds
+		}
+		if !found || report.Status != analysis.Complete || report.Verdict != want {
+			t.Fatalf("Horos obligation not established: %+v", report)
+		}
+	}
+	qualifyHorosFacts(t, result)
 	output, err := registry.TransformTo(envelope, provider.ID())
 	if err != nil {
 		t.Fatal(err)
@@ -103,5 +134,59 @@ func qualifyHoros(t *testing.T) {
 	}
 	if _, err := registry.Render(envelope); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatalf("AST-only render: %v", err)
+	}
+}
+
+// This consumer uses shared semantic types and queries only. Horos-specific
+// decoding, specialization and AST node vocabulary are unnecessary here.
+func qualifyHorosFacts(t *testing.T, result analysis.Result) {
+	t.Helper()
+	model, ok := result.Model()
+	if !ok {
+		t.Fatal("no semantic model")
+	}
+	facts := model.Data()
+	var page, applied semantics.EntityID
+	for i, entity := range facts.Entities {
+		switch entity.Name {
+		case "Page":
+			page = semantics.EntityID(i + 1)
+		case "TextPage":
+			applied = semantics.EntityID(i + 1)
+		}
+	}
+	pageEntity, hasPage := model.Entity(page)
+	appliedEntity, hasApplied := model.Entity(applied)
+	if !hasPage || !hasApplied || len(pageEntity.Parameters) != 1 {
+		t.Fatal("declarations or parameter identity lost")
+	}
+	term, exists := model.Term(appliedEntity.Body)
+	bindings, bound := model.ParameterBindings(appliedEntity.Body)
+	if !exists || term.Kind != semantics.Application || term.Target != page || !bound || len(bindings) != 1 || bindings[0].Parameter != pageEntity.Parameters[0].Entity || bindings[0].Argument != term.Arguments[0] {
+		t.Fatal("generic parameter bindings do not preserve the declared application")
+	}
+	if len(facts.Bindings) == 0 || len(facts.Expressions) == 0 {
+		t.Fatal("missing occurrence facts")
+	}
+	for _, binding := range facts.Bindings {
+		if target, found := model.Resolve(binding.At); !found || target != binding.Target {
+			t.Fatal("occurrence target query disagrees with exported binding")
+		}
+	}
+	for _, expression := range facts.Expressions {
+		if meaning, found := model.TermAt(expression.At); !found || meaning != expression.Term {
+			t.Fatal("expression query disagrees with exported term")
+		}
+	}
+	foundDependency := false
+	for _, dependency := range facts.Dependencies {
+		if dependency.From == applied && dependency.To == page {
+			for _, queried := range model.DependenciesFrom(applied, dependency.Relation) {
+				foundDependency = foundDependency || queried.To == page
+			}
+		}
+	}
+	if !foundDependency {
+		t.Fatal("application dependency was not exported")
 	}
 }
