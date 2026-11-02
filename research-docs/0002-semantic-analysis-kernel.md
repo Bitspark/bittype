@@ -2,11 +2,12 @@
 
 **ID:** 0002
 **Date:** 2 November 2026
-**Status:** submitted
+**Status:** delivering
 **Owner:** codex-api-retirement-audit
 **Issue:** https://github.com/Bitspark/bittype/issues/16
 **Reviewed:** https://github.com/Bitspark/bittype/issues/16#issuecomment-6578794456
 **Run-ID:** run_a409da7b-a708-41bc-bba3-bd0b011d33ff
+**Graded:** https://github.com/Bitspark/bittype/issues/16#issuecomment-6579476918
 
 ## Question
 
@@ -677,3 +678,54 @@ Considered options:
    concrete triggers, including whether a small native analyzer is needed now.
 5. What important assumption or architectural opportunity have we missed, and
    how would you revise this proposal if starting from these constraints?
+
+## Applied
+
+Evaluation by codex-api-retirement-audit on 2 November 2026, assisted by independent
+kernel, Horos and native-generality investigations. Evaluated source remains
+bittype45f7c2782d7f77b9574dae1a9893ee81b2bba427 and
+horos097496351b70336462c659e3deabea833e294b85. Attempt1 answered frozen input
+SHA256 b031cb1fdd2b0076870446106b02a280ba40bbf6bfe34eeef4bef71e215d1c27 in
+run_a409da7b-a708-41bc-bba3-bd0b011d33ff. Stored advice SHA256
+3db0578f23ab525eee3daa9c2debe6ff68704d2baf5e9f71847621c0bd5252e1 was verified
+byte-identical by consult verify (exit0, completed). The living brief differed
+from its frozen input only in lifecycle/run headers before this evaluation.
+The raw advice and submitted snapshot remain unchanged.
+
+The owner's four consumer queries determine this increment. Accepted implementation
+rows below are planned, not delivered; exact remote failing/passing test evidence
+will replace planned validation before the status becomes applied. Root owns
+integration for every accepted row; bounded implementation delegates do not own
+the consultation lifecycle.
+
+| # | Recommendation | Verdict | Action | Owner | Link | Validation |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Share established facts with provider-owned vocabulary, separate entity bodies and parameter ownership | HOLDS | Implement entities with provider kind, owner, sites, ordered parameters and Body; preserve snapshot-local identities | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Generic and Horos identity/ownership tests; same-spelled entities stay distinct |
+| 2 | Explicit reference, application and provider-expression terms | HOLDS | Use three structural variants; preserve zero-argument applications; effective positional arguments only | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Reference versus zero-argument application and pagination tests |
+| 3 | Derive parameter bindings from ordered parameters and effective arguments | HOLDS | Provide a binding view; omit independently mutable substitution maps | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Arity/parameter ownership rejection; caller-versus-callee binder tests |
+| 4 | Preserve provider bytes and identified semantic operands | HOLDS | Horos encodes Expression.Value with Ontos codec-v1 and exports exact operand paths; generic core only bounds/copies bytes | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Scalar/exact/record metadata and opaque-literal tests fail under payload loss |
+| 5 | Export role-qualified entity bindings, occurrence terms and direct dependency facts | HOLDS | Add explicit occurrence and dependency records with provider keys; define Horos application-dependency enumeration precisely | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Generic-only consumer performs all four queries; nested Page/Person dependencies |
+| 6 | Keep admitted syntax, captured requests and published results separately immutable | HOLDS | Capture entry/input catalogue/profile/limits; reject duplicate TreeIDs and mismatched markers/profiles; validate current sites | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Wrong marker/profile, duplicate tree, foreign/historical-only site tests |
+| 7 | Bind published results to a fresh request identity | HOLDS | Private request/result handles; reject returning a previous invocation result, even with identical TreeIDs | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Stale-result regression with changed content, options and dependencies |
+| 8 | Copy builder inputs before publication and expose owned results | NEEDS ADAPTATION | Use request.Publish as one atomic bounded construction boundary inside the callback rather than add a broad incremental builder API; it copies all inputs before returning and carries the request token | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Retained producer/accessor mutation tests; document no concurrent ingress mutation |
+| 9 | Validate graph integrity and bounded acyclic term containment, while permitting entity/dependency cycles | HOLDS | Enforce references, parameter consistency, budgets and term DAG; no universal type, scope or declaration-cycle rule | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Dangling/invalid terms rejected; recursive non-Horos entity fixture accepted |
+| 10 | Opaque typed analyzer adapter, explicit optional registration and callbacks outside locks | HOLDS | Keep text providers unchanged; attach one analyzer to compatible registered language; snapshot before callback | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Independent registration and bounded reentry tests plus race lane |
+| 11 | Non-nil Go error means no usable result | HOLDS | Discard any accompanying result; cancellation checked before invocation and publication | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Sentinel output-plus-error and cancellation tests |
+| 12 | Migrate Horos admission to syntax-only checking and revise profile | HOLDS | New ast-2 profile; absent optional semantic annotations allowed; supplied annotations checked by analysis without repair; keep Model explicitly semantic | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Unknown-name admission fails on old Check and passes new Check; analysis rejects; wrong annotation tests |
+| 13 | Add Horos-owned unresolved traversal if syntax construction needs it | DEFERRED | Current task accepts existing ASTs. Their kinds already distinguish type/literal positions; decoding followed by authoritative resolution/reprojection checks them. Trigger: a raw value-to-unresolved-AST or readable frontend needs type positions before resolution | codex-api-retirement-audit | — | No duplicate constructor switch; malformed literal-position tests |
+| 14 | Reuse all-or-nothing Horos resolution and never export validation any skeletons | HOLDS | Decode, resolve, allocate identities, project expressions, verify annotations, then publish complete model only | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Failed resolve/export yields no model; open declarations and guarded recursion remain intact |
+| 15 | Separate completion, verdict and model availability; report every requested obligation | HOLDS | Explicit reports over submitted entry/context and fixed closure enumeration; unsupported and incomplete do not imply rejection | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Early rejection, unsupported obligation, omitted report and exporter exhaustion tests |
+| 16 | Structured Horos failure distinctions at owning sites | NEEDS ADAPTATION | Extend Horos codes/subjects and import context; remove ambiguous Resolution categorization. Missing required digest in an unlabelled pool is incomplete, even if unrelated values were supplied; only explicit contradictory pin/name assertions are rejected | codex-api-retirement-audit | [Horos issue11](https://github.com/Bitspark/horos/issues/11) | Baseline missing-module versus unknown-name classification fails; focused Horos tests and six maintained lanes |
+| 17 | Map diagnostics to current input without fabricated origins | HOLDS | Use checked decoding/projection indexes; retain unlocated/module-level diagnostics where exact source is unavailable | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Existing/current/unknown site cases; no historical origin substituted as current location |
+| 18 | Enforce cancellation and resource semantics honestly | NEEDS ADAPTATION | Pre/post cancellation checks and bounded synchronous Horos work; no claim of prompt preemption. Resolver/export exhaustion yields incomplete reports, not rejected validity | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Cancellation, resolver budget and exporter budget tests |
+| 19 | Qualify with an independent non-Horos provider; no second production analyzer required | HOLDS | Fixture uses unknown marker/vocabulary, aliases, source-less builtins, non-type sorts, literals, operators and entity recursion; revise earlier native-qualification wording | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Independent consumer/negative type checks and generic-only query fixture; no claim of native semantic support |
+| 20 | Preserve stage-first import/capability enforcement and maintained exact-source gates | HOLDS | Extend architecture/conformance discovery for optional analysis; keep Horos dependencies confined to its frontend; update docs and consumers cleanly | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Architecture, all native fixtures, race, fuzz, docs and independent delivery review |
+| 21 | AST node zero may be valid | STALE / INVALID | Source explicitly defines one-based AST node IDs and zero names no node (trees/ast/go/ast.go and check/ast/go/structure.go). Preserve this invariant; optional sites use explicit absence | codex-api-retirement-audit | — | Reject zero NodeRef; positive one-based control |
+| 22 | Export generic scopes/lookup explanations and common members later | DEFERRED | Trigger: an accepted consumer query requires visibility navigation, resolution explanations or cross-language field/optionality inspection | codex-api-retirement-audit | — | First model promises only the four specified queries |
+| 23 | Conditional judgments and structured assumptions | DEFERRED | Trigger: a supported analysis produces structured premises and a consumer can inspect/discharge them | codex-api-retirement-audit | — | First API exposes no usable conditional proof |
+| 24 | Written/inferred/default arguments, packs and higher kinds | DEFERRED | Trigger: a supported provider must distinguish written arguments from effective bindings | codex-api-retirement-audit | — | First application contract requires full effective positional arguments |
+| 25 | Partial checked graphs | DEFERRED | Trigger: an owning provider supplies sound partial facts with precise obligation coverage | codex-api-retirement-audit | — | Failed Horos attempts never publish partial models |
+| 26 | Real native semantic analyzers and relation solvers | DEFERRED | Trigger: a consumer requires actual native semantic answers, or an unresolved SPI decision cannot be settled by the independent provider fixture | codex-api-retirement-audit | — | No Go/TS/Rust/C++ semantic correctness claim |
+| 27 | Persistent identity, caching and copying optimization | DEFERRED | Trigger: measured reuse or copying cost justifies it and an explicit context/equivalence contract is accepted | codex-api-retirement-audit | — | Request identity remains ephemeral; no semantic hashes |
+| 28 | Cross-language normalization and semantic equivalence | DEFERRED | Trigger: a scoped transformer/provider defines and qualifies its preservation/relation guarantees | codex-api-retirement-audit | — | No implicit analysis routing through Horos |
+| 29 | Keep Function, Stream and Cell ordinary library declarations | HOLDS | No names, builtins, switches, imports, registrations or fingerprints for behavioral ownership in generic packages | codex-api-retirement-audit | [PR17](https://github.com/Bitspark/bittype/pull/17) | Architecture and unknown-contract/entity fixtures |
