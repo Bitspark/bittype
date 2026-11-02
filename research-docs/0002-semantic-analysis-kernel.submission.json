@@ -1,0 +1,20 @@
+{
+  "researchId": "0002",
+  "attempts": [
+    {
+      "number": 1,
+      "idempotencyKey": "bittype-research-0002-dafc9914-e0e3-456d-8447-0441e6e88fda",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0002-semantic-analysis-kernel",
+      "submittedPath": "research-docs/0002-semantic-analysis-kernel.submitted.md",
+      "sha256": "b031cb1fdd2b0076870446106b02a280ba40bbf6bfe34eeef4bef71e215d1c27",
+      "byteSize": 32563,
+      "codeRevision": "45f7c2782d7f77b9574dae1a9893ee81b2bba427",
+      "horosRevision": "097496351b70336462c659e3deabea833e294b85",
+      "cliBuild": "nightfall 0.1.0 (e2640b38009d, bundle ef085ca51a5d) built 2026-10-18T03:14:36.183Z",
+      "preparedAt": "2026-11-02T13:48:50.4371114Z",
+      "state": "prepared"
+    }
+  ]
+}
