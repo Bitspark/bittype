@@ -49,6 +49,9 @@ the agnostic kernel acquires no Wire semantics. That provider is not implemented
 - [Contract types above Horos](docs/hydrated-types.md): exact proposed Wire input,
   explicit data boundary, library-owned Function/Cell/Stream composition and future provider;
   documentation only.
+- [Template lifting and native representations](docs/type-representations.md):
+  explicit lifting rules, generic pagination and library-owned type recipes
+  configured for TypeScript, Go, Rust and C++; documentation only.
 - [Horos AST](docs/horos.md): model projection, binding references, checking and registration.
 - [Semantic facts](docs/semantics.md): immutable entities, terms, occurrences and dependencies.
 - [Resolution capability](docs/resolution.md): shared snapshots, explicit prerequisites

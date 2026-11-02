@@ -35,6 +35,14 @@ expression and ordinary library compositions for Function, Stream and Cell.
 It replaces the unimplemented Horos revision-2 proposal, without widening the
 Horos model or adding concrete semantics to the agnostic kernel.
 
+The 3 November [lifting and native representation proposal](type-representations.md)
+defines the supported structural translation, distinct derived identities and
+per-language recipe configuration. It reuses an authored Page template while
+keeping Horos applications data-only. Type generation preserves open generics;
+optional native representations belong to libraries and are selected explicitly
+by the consuming build. No lifting, native transformer or runtime binding is
+implemented by that documentation.
+
 Horos 0.6.0 implements ground descriptors and value checking, without a public
 dependency on the older proof-integration packages. Newer Go source implements
 the declaration layer; bittype pins that public revision and implements its

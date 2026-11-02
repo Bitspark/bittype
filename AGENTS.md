@@ -36,6 +36,15 @@ The contract provider, its distinct identity/profile and its narrow ground-model
 dependency allowance are unimplemented. No implementation is authorized by this
 documentation proposal.
 
+The 3 November [lifting and native representation design](docs/type-representations.md)
+is also documentation-only. Use explicit partial lifting with distinct derived
+identities and preserved binders/applications; never widen a Horos data slot or
+infer a lift from route availability. Libraries own optional native type recipes,
+selected by exact declaration identity in consuming build configuration. Concrete
+transformers consume them uniformly; no contract-specific engine registrations,
+named-library imports in general transformers or raw-source recipes. Missing or
+conflicting required representations fail rather than selecting a weaker fallback.
+
 - Readable Horos syntax, actual language transformers, public builders and application
   CLI remain deferred. The syntax engine and ASTTransformer boundary are now
   implemented; read [docs/engine.md](docs/engine.md). Do not introduce runtime

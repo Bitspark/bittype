@@ -11,6 +11,11 @@ stages and agnostic engine remain unchanged. This document specifies a separate
 Bittype-owned contract-language layer; it does not revive the superseded
 independent Bittype data-type algebra.
 
+The owner's 3 November follow-up is specified in
+[template lifting and native representations](type-representations.md): partial
+lifting rules, generic pagination generation and library-owned target recipes
+for TypeScript, Go, Rust and C++. Those are also documentation proposals only.
+
 ## 1. Ownership and value domains
 
 | Component | Responsibility |
@@ -161,24 +166,29 @@ Data boundaries; absence of a Wire tag does not authorize conversion to Horos.
 Horos's `Page<Person>` is still a data application and can be specialized to G
 and embedded with Data(G). Its T slot cannot accept `Wire<Message>`.
 
-A Bittype-owned lifting transformer could reuse the Page template by mapping
-its record/list structure into the contract forms above and preserving its T
-binder. Conceptually, its separately identified result would be:
+A Bittype-owned lifting transformer can be designed to reuse the Page template
+by mapping its record/list structure into the contract forms above and preserving
+its T binder. The [bounded lifting rules](type-representations.md#structural-lifting-rules)
+specify this proposed transformation. Conceptually, its separately identified
+result is:
 
 ```text
-LiftedPage<T> = record closed {
+Page<T> = record closed {
   items: list-of(T)
   next?: Data(scalar(utf8-text))
 }
 ```
 
-Then `LiftedPage<Wire<Message>>` is meaningful in the upper language. Users
-need not hand-author the expansion. Such a transformer must explicitly declare
-the supported forms, input and output profiles, preserve the source declaration
-and provenance, and identify the result as a lifted declaration, not the original
-Horos declaration with different semantics. Its exact import/lifting encoding
-and implementation are deferred; there is no automatic fallback or blanket
-reinterpretation of all Horos constructors. This example is explanatory notation.
+Here Page names the derived contract declaration, so `Page<Wire<Message>>` is
+meaningful in the upper language. Users do not hand-author another Page, and a
+`LiftedPage` spelling is not required. The transform records the supported forms,
+input/output profiles, original declaration and provenance. Derived contract
+modules have their own identities and exact import pins; they are not the
+original Horos declarations with widened semantics. The build selects lifting
+explicitly, with no fallback or blanket reinterpretation of Horos constructors.
+Configuration syntax and implementation remain deferred; this is explanatory
+notation. Native generation can retain this generic and compose its arguments
+through the [selected target representations](type-representations.md#3-pagination-through-the-type-pipeline).
 
 ## 4. Library-owned Function, Cell and Stream
 
@@ -250,11 +260,13 @@ races. These behaviors are not consequences of the type shapes. Production
 bindings need their own full protocols and qualification.
 
 A future generator preserves resolved library identity through imports, aliases
-and applications. Custom native surfaces or adapters are selected explicitly
-through that identity; matching an expanded shape or a name such as Cell cannot
-select a binding. Library binding metadata and executable adapters remain outside
-this task. Adding another contract changes the library and consuming composition,
-not the generator core, runtime, Wire or hydration.
+and applications. The [native representation proposal](type-representations.md#4-ordinary-libraries-and-optional-native-representations)
+specifies library-owned type recipes selected by exact identity and configured
+on the concrete language transformers. Ordinary structural compositions need no
+custom recipe. Matching an expanded shape or a name such as Cell cannot select
+a representation or binding. Type recipes are separate from future executable
+adapters; neither is implemented. Adding another contract changes the library
+and consuming composition, not the generator core, runtime, Wire or hydration.
 
 ## 5. Provider, pipeline and dependencies
 

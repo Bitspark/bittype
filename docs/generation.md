@@ -1,6 +1,6 @@
 # AST transformation and pipeline design
 
-**Updated: 2 November 2026.** The toolchain is implemented in Go. Generic AST/CST
+**Updated: 3 November 2026.** The toolchain is implemented in Go. Generic AST/CST
 carriers, typed stages, language.Provider and four native text pipelines are
 implemented. The [native text design](parsing-formatting.md) owns parser,
 formatter, printer and checking details. The owner's later 31 October direction
@@ -24,6 +24,13 @@ Horos-to-contract transformer could embed data or lift supported templates;
 no route may silently widen their domains. Neither contract provider nor these
 transformers is implemented. Hydration belongs to existing Wire/runtime layers,
 not this static pipeline or Horos.
+
+The [lifting and native representation design](type-representations.md) now
+specifies the proposed partial template translation and per-language library
+recipes. The consuming build explicitly selects the lift and configures one
+concrete transformer per language pair. Function, Cell and Stream are resolved
+module declarations, never individual engine registrations. This adds no
+implementation or change to ASTTransformer.
 
 ## Target pipeline
 
@@ -62,6 +69,13 @@ with a target AST from another producer, without a canonical input dependency.
 The output scope is native types and interfaces, including generic declarations
 and applications. Executable bodies, value validators, serialization, callable
 implementations, adapters and transport behavior are outside this milestone.
+
+Native type generation preserves open generics; ground specialization is not
+required first. Library-owned representation recipes may select an external
+native type or construct type-only target AST nodes. Their exact source
+declaration, target profile, generic argument mapping and locked dependencies
+are explicit configuration. Page can therefore compose a Cell type without a
+Cell-specific generator case. See the [four-language configuration](type-representations.md#5-configuration-for-typescript-go-rust-and-c).
 
 ## Go layout
 
@@ -315,8 +329,11 @@ is introduced. The generic AST, pipeline, language identity interface and
 registry must never acquire Function, Stream, Cell, Wire or runtime
 imports, special kinds, semantic name switches or structural fingerprint matching.
 Native function-signature syntax remains language-owned. Later library-owned
-realizations require a separate scoped design; this slice supplies no binding
-extension registry.
+runtime realizations require separate scoped work; this slice supplies no
+binding extension registry. The proposed native type recipes are static inputs
+to concrete transformers, selected by consuming applications. Those transformers
+depend on uniform recipe contracts, not named contract libraries. Recipe
+selection is independent of language registration and module resolution.
 
 ## Evidence and next increments
 

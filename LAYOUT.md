@@ -160,6 +160,15 @@ The provider requires a separate identity/profile and reviewed narrow Horos/Onto
 dependency allowance; the current architecture checks remain unchanged. Native
 text stages, generic infrastructure and Horos's data semantics stay independent.
 
+The [lifting and native representation design](docs/type-representations.md)
+places partial template lifting in that Horos-to-contract transformer, and
+uniform native recipe consumption in the concrete native transformers. Each
+contract library owns its optional recipes and type artifacts outside bittype;
+the consuming application selects them. Adding Cell or another ordinary contract
+adds no bittype stage, engine edge per contract or central registration entry.
+These are proposed responsibilities, with no new packages or implemented recipe
+SPI. The existing ASTTransformer boundary remains unchanged.
+
 See the [charter](CHARTER.md), [engine API](docs/engine.md),
 [native text design](docs/parsing-formatting.md) and
 [future transformation plan](docs/generation.md).
