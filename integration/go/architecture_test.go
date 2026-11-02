@@ -122,6 +122,7 @@ func TestProductionArchitecture(t *testing.T) {
 	languages := stageLanguages(t)
 	rules := map[string][]string{
 		"trees/ast/go":            {},
+		"semantics/go":            {"trees/ast/go"},
 		"trees/cst/go":            {"trees/ast/go"},
 		"contracts/language/go":   {},
 		"contracts/pipeline/go":   {},
