@@ -229,7 +229,9 @@ func equivalent(expected, actual s.AST) error {
 	var walk func(ast.NodeID, ast.NodeID) error
 	walk = func(wantID, gotID ast.NodeID) error {
 		want, got := expected.Nodes[wantID-1], actual.Nodes[gotID-1]
-		bad := func() error { return text.AtNode(actual, gotID, "Horos syntax or binding does not match checked declarations") }
+		bad := func() error {
+			return text.AtNode(actual, gotID, "Horos syntax or binding does not match checked declarations")
+		}
 		if want.Kind != got.Kind || len(want.Attributes) != len(got.Attributes) || len(want.Children) != len(got.Children) || len(want.References) != len(got.References) {
 			return bad()
 		}

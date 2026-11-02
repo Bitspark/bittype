@@ -206,6 +206,6 @@ var horosModelDependencies = []string{
 }
 
 var horosExternalImports = map[string][]string{
-	"internal/horos": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
+	"internal/horos":   {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"resolve/horos/go": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
 }

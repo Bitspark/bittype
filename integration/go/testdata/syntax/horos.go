@@ -9,7 +9,7 @@ import (
 var _ language.LanguageProvider = h.Language{}
 var _ ast.View[h.Language] = h.AST{}
 var slot = h.Node{
-	Kind: h.KindParameter,
-	Attributes: []ast.Attribute{{Name:h.AttributeIndex,Text:"0"}},
-	References: []ast.Reference{{Role:h.RoleTarget,Target:ast.NodeRef{Tree:"pagination",Node:3}}},
+	Kind:       h.KindParameter,
+	Attributes: []ast.Attribute{{Name: h.AttributeIndex, Text: "0"}},
+	References: []ast.Reference{{Role: h.RoleTarget, Target: ast.NodeRef{Tree: "pagination", Node: 3}}},
 }

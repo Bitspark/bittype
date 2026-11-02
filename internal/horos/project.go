@@ -109,7 +109,7 @@ func Project(program *decl.Program, treeID ast.TreeID) (s.AST, error) {
 		return s.AST{}, ErrInvalid
 	}
 	p := &projector{
-		tree: s.AST{ID: treeID},
+		tree:    s.AST{ID: treeID},
 		modules: make(map[decl.Digest]ast.NodeID), declarations: make(map[decl.DeclarationID]ast.NodeID),
 		parameters: make(map[decl.ParameterID]ast.NodeID), imports: make(map[importID]ast.NodeID),
 	}
@@ -234,7 +234,7 @@ func (p *projector) expression(expression *decl.Expression, module decl.Digest, 
 
 type slot struct {
 	expression *decl.Expression
-	children map[int]*slot
+	children   map[int]*slot
 }
 
 func (p *projector) fragment(value core.Value, position *slot, module decl.Digest, depth int) ast.NodeID {
