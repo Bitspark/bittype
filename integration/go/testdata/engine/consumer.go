@@ -1,6 +1,7 @@
 package independent
 
 import (
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
@@ -15,6 +16,8 @@ type checker[L any] struct{ id language.ID }
 func (c checker[L]) ID() language.ID         { return c.id }
 func (c checker[L]) Name() string            { return string(c.id) }
 func (c checker[L]) Check(ast.View[L]) error { return nil }
+
+var _ check.Provider[First] = checker[First]{}
 
 func Compose(stage func(ast.AST[First]) (ast.AST[Second], error), input ast.AST[First]) (representation.AST, error) {
 	first, err := representation.NewLanguage[First](checker[First]{"external-first"}, "v1")

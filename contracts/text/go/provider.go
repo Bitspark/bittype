@@ -1,6 +1,7 @@
 package text
 
 import (
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/cst/go"
@@ -15,10 +16,6 @@ type Formatter[L any] interface {
 	language.Provider
 	Format(ast.View[L]) (cst.CST[L], error)
 }
-type Checker[L any] interface {
-	language.Provider
-	Check(ast.View[L]) error
-}
 type Printer[L any] interface {
 	language.Provider
 	Print(cst.CST[L]) (string, error)
@@ -26,6 +23,6 @@ type Printer[L any] interface {
 type Provider[L any] interface {
 	Parser[L]
 	Formatter[L]
-	Checker[L]
+	check.Provider[L]
 	Printer[L]
 }

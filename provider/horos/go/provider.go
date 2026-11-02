@@ -8,9 +8,9 @@ import (
 	analyze "github.com/Bitspark/bittype/analyze/horos/go"
 	check "github.com/Bitspark/bittype/check/horos/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
+	checkcontract "github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
 	resolve "github.com/Bitspark/bittype/resolve/horos/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -23,7 +23,7 @@ func (Provider) Analyze(ctx context.Context, request analysis.Request[s.Language
 	return analyze.Analyze(ctx, request)
 }
 
-var _ text.Checker[s.Language] = Provider{}
+var _ checkcontract.Provider[s.Language] = Provider{}
 var _ analysis.Provider[s.Language] = Provider{}
 
 func (Provider) Resolve(ctx context.Context, request semantic.Request[s.Language]) (semantic.Result, error) {
