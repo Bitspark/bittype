@@ -1,4 +1,4 @@
-package horosbridge
+package horosmodel
 
 import (
 	"encoding/hex"
@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/Bitspark/bittype/contracts/text/go"
-	s "github.com/Bitspark/bittype/syntax/horos/go"
+	s "github.com/Bitspark/bittype/internal/declsyntax"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	core "github.com/bitspark/ontos/core/go"
@@ -19,10 +19,10 @@ func tagged(prefix, name string, args ...core.Value) core.Value {
 	return core.NewTuple(append([]core.Value{core.NewAtom([]byte(prefix + name))}, args...)...)
 }
 
-type reader struct{ tree s.AST }
+type reader[L any] struct { tree ast.AST[L]; declarationPrefix, descriptorPrefix string }
 
-func (r reader) node(id ast.NodeID) s.Node { return r.tree.Nodes[id-1] }
-func (r reader) attr(id ast.NodeID, name string) string {
+func (r reader[L]) node(id ast.NodeID) ast.Node[L] { return r.tree.Nodes[id-1] }
+func (r reader[L]) attr(id ast.NodeID, name string) string {
 	for _, attribute := range r.node(id).Attributes {
 		if attribute.Name == name {
 			return attribute.Text
@@ -30,10 +30,10 @@ func (r reader) attr(id ast.NodeID, name string) string {
 	}
 	return ""
 }
-func (r reader) bad(id ast.NodeID, message string) error {
+func (r reader[L]) bad(id ast.NodeID, message string) error {
 	return text.AtNode(r.tree, id, message)
 }
-func (r reader) value(id ast.NodeID) (core.Value, error) {
+func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 	n := r.node(id)
 	switch n.Kind {
 	case s.KindAtom:
@@ -53,7 +53,7 @@ func (r reader) value(id ast.NodeID) (core.Value, error) {
 		if err != nil || index < 0 {
 			return nil, r.bad(id, "invalid parameter index")
 		}
-		return tagged("horos/decl/", "param", data.EncodeInt(big.NewInt(int64(index)))), nil
+		return tagged(r.declarationPrefix, "param", data.EncodeInt(big.NewInt(int64(index)))), nil
 	case s.KindTuple, s.KindDescriptor, s.KindApplication:
 		values := make([]core.Value, len(n.Children))
 		for i, child := range n.Children {
@@ -67,24 +67,24 @@ func (r reader) value(id ast.NodeID) (core.Value, error) {
 			return core.NewTuple(values...), nil
 		}
 		if n.Kind == s.KindDescriptor {
-			return tagged("horos/", r.attr(id, s.AttributeConstructor), values...), nil
+			return tagged(r.descriptorPrefix, r.attr(id, s.AttributeConstructor), values...), nil
 		}
 		var target core.Value
 		switch r.attr(id, s.AttributeScope) {
 		case "local":
-			target = tagged("horos/decl/", "local", data.MustEncodeText(r.attr(id, s.AttributeName)))
+			target = tagged(r.declarationPrefix, "local", data.MustEncodeText(r.attr(id, s.AttributeName)))
 		case "imported":
-			target = tagged("horos/decl/", "imported", data.MustEncodeText(r.attr(id, s.AttributeAlias)), data.MustEncodeText(r.attr(id, s.AttributeName)))
+			target = tagged(r.declarationPrefix, "imported", data.MustEncodeText(r.attr(id, s.AttributeAlias)), data.MustEncodeText(r.attr(id, s.AttributeName)))
 		default:
 			return nil, r.bad(id, "invalid application scope")
 		}
-		return tagged("horos/decl/", "apply", target, data.EncodeList(values)), nil
+		return tagged(r.declarationPrefix, "apply", target, data.EncodeList(values)), nil
 	default:
 		return nil, r.bad(id, "expected a descriptor expression or value fragment")
 	}
 }
 
-func (r reader) declaration(id ast.NodeID) (core.Value, error) {
+func (r reader[L]) declaration(id ast.NodeID) (core.Value, error) {
 	if r.node(id).Kind != s.KindDeclaration {
 		return nil, r.bad(id, "expected declaration")
 	}
@@ -113,10 +113,10 @@ func (r reader) declaration(id ast.NodeID) (core.Value, error) {
 	if body == nil {
 		return nil, r.bad(id, "missing declaration body")
 	}
-	return tagged("horos/decl/", "type", data.EncodeList(parameters), body), nil
+	return tagged(r.declarationPrefix, "type", data.EncodeList(parameters), body), nil
 }
 
-func (r reader) module(id ast.NodeID) (core.Value, error) {
+func (r reader[L]) module(id ast.NodeID) (core.Value, error) {
 	if r.node(id).Kind != s.KindModule {
 		return nil, r.bad(id, "expected module")
 	}
@@ -131,7 +131,7 @@ func (r reader) module(id ast.NodeID) (core.Value, error) {
 			if err != nil {
 				return nil, r.bad(child.Node, "invalid import pin")
 			}
-			imported := tagged("horos/decl/", "import",
+			imported := tagged(r.declarationPrefix, "import",
 				data.MustEncodeText(r.attr(child.Node, s.AttributeName)), core.NewAtom(bytes))
 			imports = append(imports, [2]core.Value{data.MustEncodeText(r.attr(child.Node, s.AttributeAlias)), imported})
 		case s.RoleDeclaration:
@@ -152,7 +152,7 @@ func (r reader) module(id ast.NodeID) (core.Value, error) {
 	if err != nil {
 		return nil, r.bad(id, "duplicate or malformed declarations")
 	}
-	return tagged("horos/decl/", "module", data.EncodeInt(big.NewInt(1)),
+	return tagged(r.declarationPrefix, "module", data.EncodeInt(big.NewInt(1)),
 		data.MustEncodeText(r.attr(id, s.AttributeName)), importsValue, declarationsValue), nil
 }
 
@@ -172,8 +172,9 @@ func (e *ValidationError) Unwrap() error { return ErrInvalid }
 
 // Decoded retains the source correspondence, not a partially checked Program.
 // It is private frontend state consumed synchronously by explicit resolution.
-type Decoded struct {
-	tree         s.AST
+type Decoded[L any] struct {
+ frontend Frontend[L]
+	tree         ast.AST[L]
 	root         core.Value
 	dependencies []core.Value
 	modules      map[decl.Digest]ast.NodeID
@@ -182,22 +183,22 @@ type Decoded struct {
 	imports      map[importID]ast.NodeID
 }
 
-func (d *Decoded) site(id ast.NodeID) ast.NodeRef { return ast.NodeRef{Tree: d.tree.ID, Node: id} }
-func (d *Decoded) assertion(id ast.NodeID, context bool, message string) error {
+func (d *Decoded[L]) site(id ast.NodeID) ast.NodeRef { return ast.NodeRef{Tree: d.tree.ID, Node: id} }
+func (d *Decoded[L]) assertion(id ast.NodeID, context bool, message string) error {
 	return &ValidationError{Site: d.site(id), Context: context, Message: message}
 }
 
-func (d *Decoded) annotation(id ast.NodeID, context bool, message string) error {
+func (d *Decoded[L]) annotation(id ast.NodeID, context bool, message string) error {
 	return &ValidationError{Site: d.site(id), Context: context, Annotation: true, Message: message}
 }
 
 // Decode reconstructs values from syntax already admitted by the public stage.
 // Horos computes every module pin under the selected limits. No descriptor
 // positions are guessed; this private bridge never calls a stage provider.
-func Decode(view ast.View[s.Language], limits decl.Limits) (*Decoded, error) {
+func (f Frontend[L]) Decode(view ast.View[L], limits decl.Limits) (*Decoded[L], error) {
 	tree := view.ASTView()
-	r := reader{tree: tree}
-	d := &Decoded{tree: tree, modules: make(map[decl.Digest]ast.NodeID), declarations: make(map[decl.DeclarationID]ast.NodeID), parameters: make(map[decl.ParameterID]ast.NodeID), imports: make(map[importID]ast.NodeID)}
+	r := reader[L]{tree: tree, declarationPrefix: f.DeclarationPrefix, descriptorPrefix: f.DescriptorPrefix}
+	d := &Decoded[L]{frontend: f,tree: tree, modules: make(map[decl.Digest]ast.NodeID), declarations: make(map[decl.DeclarationID]ast.NodeID), parameters: make(map[decl.ParameterID]ast.NodeID), imports: make(map[importID]ast.NodeID)}
 	root := tree.Nodes[tree.Root-1].References[0].Target.Node
 	for _, child := range tree.Nodes[tree.Root-1].Children {
 		value, err := r.module(child.Node)
@@ -212,7 +213,7 @@ func Decode(view ast.View[s.Language], limits decl.Limits) (*Decoded, error) {
 			}
 			return nil, err
 		}
-		pin, err := decl.PinWithLimits(value, limits)
+		pin, err := f.PinModel(value, limits)
 		if err != nil {
 			return nil, err
 		}
@@ -249,12 +250,12 @@ func Decode(view ast.View[s.Language], limits decl.Limits) (*Decoded, error) {
 
 // Resolve returns a complete checked model only after every present annotation
 // and every type/literal position agrees with Horos's authoritative projection.
-func (d *Decoded) Resolve(limits decl.Limits) (*decl.Program, error) {
-	program, err := decl.ResolveWithLimits(d.root, d.dependencies, limits)
+func (d *Decoded[L]) Resolve(limits decl.Limits) (Program, error) {
+	program, err := d.frontend.ResolveModel(d.root, d.dependencies, limits)
 	if err != nil {
 		return nil, err
 	}
-	expected, err := projectChecked(program, d.tree.ID)
+	expected, err := projectChecked[L](program, d.tree.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -265,20 +266,20 @@ func (d *Decoded) Resolve(limits decl.Limits) (*decl.Program, error) {
 }
 
 // Read is an explicitly semantic convenience API. Pack/Check no longer calls it.
-func Read(view ast.View[s.Language]) (*decl.Program, error) {
-	d, err := Decode(view, decl.DefaultLimits())
+func (f Frontend[L]) Read(view ast.View[L]) (Program, error) {
+	d, err := f.Decode(view, decl.DefaultLimits())
 	if err != nil {
 		return nil, err
 	}
 	return d.Resolve(decl.DefaultLimits())
 }
 
-func (d *Decoded) DeclarationSite(id decl.DeclarationID) ast.NodeRef {
+func (d *Decoded[L]) DeclarationSite(id decl.DeclarationID) ast.NodeRef {
 	return d.site(d.declarations[id])
 }
-func (d *Decoded) ParameterSite(id decl.ParameterID) ast.NodeRef { return d.site(d.parameters[id]) }
-func (d *Decoded) ModuleSite(id decl.Digest) ast.NodeRef         { return d.site(d.modules[id]) }
-func (d *Decoded) BodySite(id decl.DeclarationID) ast.NodeRef {
+func (d *Decoded[L]) ParameterSite(id decl.ParameterID) ast.NodeRef { return d.site(d.parameters[id]) }
+func (d *Decoded[L]) ModuleSite(id decl.Digest) ast.NodeRef         { return d.site(d.modules[id]) }
+func (d *Decoded[L]) BodySite(id decl.DeclarationID) ast.NodeRef {
 	node := d.declarations[id]
 	if node != 0 {
 		for _, child := range d.tree.Nodes[node-1].Children {
@@ -292,7 +293,7 @@ func (d *Decoded) BodySite(id decl.DeclarationID) ast.NodeRef {
 
 // OperandSite follows a canonical tuple path through the existing AST encoding.
 // It interprets only declaration syntax framing, never descriptor constructors.
-func (d *Decoded) OperandSite(site ast.NodeRef, path []int) ast.NodeRef {
+func (d *Decoded[L]) OperandSite(site ast.NodeRef, path []int) ast.NodeRef {
 	if site.Tree != d.tree.ID || site.Node == 0 || int(site.Node) > len(d.tree.Nodes) {
 		return ast.NodeRef{}
 	}
@@ -320,11 +321,11 @@ func (d *Decoded) OperandSite(site ast.NodeRef, path []int) ast.NodeRef {
 	return site
 }
 
-func (d *Decoded) ArgumentSite(site ast.NodeRef, index int) ast.NodeRef {
+func (d *Decoded[L]) ArgumentSite(site ast.NodeRef, index int) ast.NodeRef {
 	return d.OperandSite(site, []int{2, index + 1})
 }
 
-func (d *Decoded) Locate(detail *decl.Error) *ast.NodeRef {
+func (d *Decoded[L]) Locate(detail *decl.Error) *ast.NodeRef {
 	if detail == nil {
 		return nil
 	}
@@ -348,12 +349,12 @@ func (d *Decoded) Locate(detail *decl.Error) *ast.NodeRef {
 	return &site
 }
 
-func (d *Decoded) correspond(expected s.AST) error {
+func (d *Decoded[L]) correspond(expected ast.AST[L]) error {
 	mapping := map[ast.NodeID]ast.NodeID{expected.Root: d.tree.Root}
 	contexts := map[ast.NodeID]bool{}
 	rootModule := d.tree.Nodes[d.tree.Root-1].References[0].Target.Node
-	wantReader := reader{tree: expected}
-	gotReader := reader{tree: d.tree}
+	wantReader := reader[L]{tree: expected}
+	gotReader := reader[L]{tree: d.tree}
 	var walk func(ast.NodeID, ast.NodeID, bool) error
 	walk = func(wantID, gotID ast.NodeID, context bool) error {
 		want, got := expected.Nodes[wantID-1], d.tree.Nodes[gotID-1]

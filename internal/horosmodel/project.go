@@ -1,6 +1,6 @@
-// Package horosbridge projects the checked Horos model and verifies its AST view.
+// Package horosmodel projects the checked Horos model and verifies its AST view.
 // It is private to this frontend, never a dependency of generic infrastructure.
-package horosbridge
+package horosmodel
 
 import (
 	"encoding/hex"
@@ -9,7 +9,7 @@ import (
 
 	structure "github.com/Bitspark/bittype/check/ast/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
-	s "github.com/Bitspark/bittype/syntax/horos/go"
+	s "github.com/Bitspark/bittype/internal/declsyntax"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	core "github.com/bitspark/ontos/core/go"
@@ -23,8 +23,8 @@ type importID struct {
 	alias  string
 }
 
-type projector struct {
-	tree         s.AST
+type projector[L any] struct {
+	tree         ast.AST[L]
 	modules      map[decl.Digest]ast.NodeID
 	declarations map[decl.DeclarationID]ast.NodeID
 	parameters   map[decl.ParameterID]ast.NodeID
@@ -42,7 +42,7 @@ func attributes(pairs ...string) []ast.Attribute {
 	return result
 }
 
-func (p *projector) add(kind s.Kind, attrs ...string) ast.NodeID {
+func (p *projector[L]) add(kind ast.Kind[L], attrs ...string) ast.NodeID {
 	if p.err != nil {
 		return 0
 	}
@@ -54,18 +54,18 @@ func (p *projector) add(kind s.Kind, attrs ...string) ast.NodeID {
 		p.exhausted()
 		return 0
 	}
-	p.tree.Nodes = append(p.tree.Nodes, s.Node{Kind: kind, Attributes: attributes(attrs...)})
+	p.tree.Nodes = append(p.tree.Nodes, ast.Node[L]{Kind: kind, Attributes: attributes(attrs...)})
 	return ast.NodeID(len(p.tree.Nodes))
 }
 
-func (p *projector) child(parent ast.NodeID, role string, child ast.NodeID) {
+func (p *projector[L]) child(parent ast.NodeID, role string, child ast.NodeID) {
 	if !p.take(len(role), 1) {
 		return
 	}
 	p.tree.Nodes[parent-1].Children = append(p.tree.Nodes[parent-1].Children, ast.Child{Role: role, Node: child})
 }
 
-func (p *projector) reference(node ast.NodeID, role string, target ast.NodeID) {
+func (p *projector[L]) reference(node ast.NodeID, role string, target ast.NodeID) {
 	if !p.take(len(role)+len(p.tree.ID), 1) {
 		return
 	}
@@ -73,13 +73,13 @@ func (p *projector) reference(node ast.NodeID, role string, target ast.NodeID) {
 		ast.Reference{Role: role, Target: ast.NodeRef{Tree: p.tree.ID, Node: target}})
 }
 
-func (p *projector) exhausted() {
+func (p *projector[L]) exhausted() {
 	if p.err == nil {
 		p.err = &text.Diagnostic{Code: text.LimitExceeded, Message: "Horos AST projection exceeds resource limit"}
 	}
 }
 
-func (p *projector) take(bytes, entries int) bool {
+func (p *projector[L]) take(bytes, entries int) bool {
 	if p.err != nil {
 		return false
 	}
@@ -92,7 +92,7 @@ func (p *projector) take(bytes, entries int) bool {
 	return true
 }
 
-func (p *projector) depth(depth int) bool {
+func (p *projector[L]) depth(depth int) bool {
 	if depth > structure.MaxDepth {
 		p.exhausted()
 	}
@@ -101,19 +101,19 @@ func (p *projector) depth(depth int) bool {
 
 // Project keeps module/import/declaration/binder identities in ordinary reference
 // edges. The caller chooses the AST address; it is not a semantic identity.
-func Project(program *decl.Program, treeID ast.TreeID) (s.AST, error) {
+func (f Frontend[L]) Project(program Program, treeID ast.TreeID) (ast.AST[L], error) {
 	if program == nil || treeID == "" {
-		return s.AST{}, ErrInvalid
+		return ast.AST[L]{}, ErrInvalid
 	}
 	root, ok := program.Module(program.Root())
 	if !ok {
-		return s.AST{}, ErrInvalid
+		return ast.AST[L]{}, ErrInvalid
 	}
 	// A Program may have been admitted with custom Horos limits. This fixed AST
 	// profile must admit the same closure under the defaults used by Read.
 	modules := program.Modules()
 	if len(modules) > decl.DefaultLimits().MaxModules {
-		return s.AST{}, &decl.Error{Code: decl.Exhausted, Subject: decl.SubjectRequest, Message: "module closure exceeds AST profile's Horos limits"}
+		return ast.AST[L]{}, &decl.Error{Code: decl.Exhausted, Subject: decl.SubjectRequest, Message: "module closure exceeds AST profile's Horos limits"}
 	}
 	dependencies := make([]core.Value, 0, len(modules)-1)
 	for _, module := range modules {
@@ -121,31 +121,31 @@ func Project(program *decl.Program, treeID ast.TreeID) (s.AST, error) {
 			dependencies = append(dependencies, module.Value())
 		}
 	}
-	return Resolve(root.Value(), dependencies, treeID)
+	return f.Resolve(root.Value(), dependencies, treeID)
 }
 
 // Resolve admits canonical values directly with the profile's Horos limits.
-func Resolve(root core.Value, dependencies []core.Value, treeID ast.TreeID) (s.AST, error) {
-	program, err := decl.Resolve(root, dependencies)
+func (f Frontend[L]) Resolve(root core.Value, dependencies []core.Value, treeID ast.TreeID) (ast.AST[L], error) {
+	program, err := f.ResolveModel(root, dependencies, decl.DefaultLimits())
 	if err != nil {
-		return s.AST{}, err
+		return ast.AST[L]{}, err
 	}
-	return projectChecked(program, treeID)
+	return projectChecked[L](program, treeID)
 }
 
 // Callers supply a fully checked Program. Projection has the fixed syntax
 // profile's storage bounds independently of the resolver's selected limits.
-func projectChecked(program *decl.Program, treeID ast.TreeID) (s.AST, error) {
+func projectChecked[L any](program Program, treeID ast.TreeID) (ast.AST[L], error) {
 	if treeID == "" {
-		return s.AST{}, ErrInvalid
+		return ast.AST[L]{}, ErrInvalid
 	}
-	p := &projector{
-		tree:    s.AST{ID: treeID},
+	p := &projector[L]{
+		tree:    ast.AST[L]{ID: treeID},
 		modules: make(map[decl.Digest]ast.NodeID), declarations: make(map[decl.DeclarationID]ast.NodeID),
 		parameters: make(map[decl.ParameterID]ast.NodeID), imports: make(map[importID]ast.NodeID),
 	}
 	if !p.take(len(treeID), 0) {
-		return s.AST{}, p.err
+		return ast.AST[L]{}, p.err
 	}
 	p.tree.Root = p.add(s.KindProgram)
 	modules := program.Modules()
@@ -170,7 +170,7 @@ func projectChecked(program *decl.Program, treeID ast.TreeID) (s.AST, error) {
 			}
 		}
 		if p.err != nil {
-			return s.AST{}, p.err
+			return ast.AST[L]{}, p.err
 		}
 	}
 	p.reference(p.tree.Root, s.RoleRoot, p.modules[program.Root()])
@@ -182,20 +182,20 @@ func projectChecked(program *decl.Program, treeID ast.TreeID) (s.AST, error) {
 			body := p.expression(declaration.Expression(), module.Pin(), 3)
 			p.child(p.declarations[declaration.ID()], s.RoleBody, body)
 			if p.err != nil {
-				return s.AST{}, p.err
+				return ast.AST[L]{}, p.err
 			}
 		}
 	}
 	if p.err != nil {
-		return s.AST{}, p.err
+		return ast.AST[L]{}, p.err
 	}
 	if err := structure.Structure(p.tree); err != nil {
-		return s.AST{}, err
+		return ast.AST[L]{}, err
 	}
 	return p.tree, nil
 }
 
-func (p *projector) expression(expression *decl.Expression, module decl.Digest, depth int) ast.NodeID {
+func (p *projector[L]) expression(expression *decl.Expression, module decl.Digest, depth int) ast.NodeID {
 	if !p.depth(depth) {
 		return 0
 	}
@@ -268,7 +268,7 @@ type slot struct {
 	children   map[int]*slot
 }
 
-func (p *projector) fragment(value core.Value, position *slot, module decl.Digest, depth int) ast.NodeID {
+func (p *projector[L]) fragment(value core.Value, position *slot, module decl.Digest, depth int) ast.NodeID {
 	if !p.depth(depth) {
 		return 0
 	}

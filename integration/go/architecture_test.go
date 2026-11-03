@@ -167,13 +167,15 @@ func TestProductionArchitecture(t *testing.T) {
 		// Language-specific lexical helpers cannot depend on stages or another language.
 		rules[helper] = []string{"trees/ast/go", "contracts/text/go", "internal/grammar", "internal/lex", "internal/tree"}
 	}
-	// Horos has an explicit AST-only capability profile. Its helpers implement
-	// model projection/checking, not a hidden semantic dependency in other stages.
-	rules["internal/horos"] = []string{"trees/ast/go", "check/ast/go", "contracts/text/go", "syntax/horos/go"}
-	rules["resolve/horos/go"] = []string{"trees/ast/go", "syntax/horos/go", "check/horos/go", "internal/horos", "contracts/semantic/go", "contracts/resolution/go", "contracts/text/go", "semantics/go"}
-	rules["check/horos/go"] = []string{"trees/ast/go", "check/ast/go", "contracts/text/go", "syntax/horos/go", "internal/grammar"}
-	rules["analyze/horos/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go", "syntax/horos/go", "resolve/horos/go"}
-	rules["provider/horos/go"] = []string{"trees/ast/go", "contracts/check/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "syntax/horos/go", "check/horos/go", "analyze/horos/go", "resolve/horos/go"}
+	// The two Horos profiles share private mechanics, not a language registry.
+ rules["internal/declsyntax"] = []string{"trees/ast/go", "check/ast/go", "contracts/text/go", "internal/grammar"}
+ rules["internal/horosmodel"] = []string{"trees/ast/go", "check/ast/go", "contracts/text/go", "internal/declsyntax", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"}
+ for _, name := range []string{"horos", "horoswire"} {
+  rules["resolve/"+name+"/go"] = []string{"trees/ast/go", "syntax/"+name+"/go", "check/"+name+"/go", "internal/horosmodel", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"}
+  rules["check/"+name+"/go"] = []string{"trees/ast/go", "syntax/"+name+"/go", "internal/declsyntax"}
+  rules["analyze/"+name+"/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go", "syntax/"+name+"/go", "resolve/"+name+"/go"}
+  rules["provider/"+name+"/go"] = []string{"trees/ast/go", "contracts/check/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "syntax/"+name+"/go", "check/"+name+"/go", "analyze/"+name+"/go", "resolve/"+name+"/go"}
+ }
 	for path, p := range packages {
 		if p.Standard || path == modulePath+"/integration/go" {
 			continue
@@ -209,12 +211,15 @@ func TestProductionArchitecture(t *testing.T) {
 var horosModelDependencies = []string{
 	"github.com/Bitspark/horos/core/go",
 	"github.com/Bitspark/horos/core/go/declarations",
+ "github.com/Bitspark/horos/core/go/internal/declmodel",
+ "github.com/Bitspark/horos/core/go/wire",
 	"github.com/bitspark/ontos/core/go",
 	"github.com/bitspark/ontos/data/go",
 	"github.com/bitspark/ontos/codec/go",
 }
 
 var horosExternalImports = map[string][]string{
-	"internal/horos":   {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
-	"resolve/horos/go": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/codec/go"},
+ "internal/horosmodel": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
+ "resolve/horos/go": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
+ "resolve/horoswire/go": {"github.com/Bitspark/horos/core/go/wire", "github.com/bitspark/ontos/core/go"},
 }

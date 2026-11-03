@@ -32,7 +32,7 @@ func astOnlyConformanceCases() []struct {
 	return []struct {
 		directory string
 		qualify   func(*testing.T)
-	}{{"horos", qualifyHoros}}
+	}{{"horos", qualifyHoros}, {"horoswire", qualifyHorosWire}}
 }
 
 func TestASTOnlyProviders(t *testing.T) {
