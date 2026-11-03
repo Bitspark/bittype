@@ -6,17 +6,18 @@ existing Wire/runtime value boundary. It distinguishes inspected implementation
 from future adapters and dynamic interpretation. It adds no source, dependency,
 runtime interface, generator, binding or release.
 
-Ontos and Horos stay data-only. The proposed Bittype contract language describes
-Wire-containing types above Horos. Existing bitwire contracts and bitruntime
-hydration carry the actual capabilities. Function, Stream and Cell declarations,
-native representations and behavior remain library-owned.
+Ground Ontos and Horos stay data-only. Optional ontos/wire is the proposed mixed
+value profile; optional horos/wire describes its types. Bittype supplies their
+tooling projections. Existing bitwire contracts and bitruntime hydration already
+carry capabilities; alignment with the optional profiles is future work.
+Function, Stream and Cell declarations, representations and behavior remain library-owned.
 
 ## 1. Type descriptions and application values are different inputs
 
 The current generation proposal transforms descriptions:
 
 ```text
-AST[Horos or Contract] -> AST[Go] -> CST[Go] -> Go source
+AST[Horos or HorosWire] -> AST[Go] -> CST[Go] -> Go source
 ```
 
 Both ASTs are ordinary Go values describing types. A description of Page<Person>
@@ -40,10 +41,10 @@ converts an actual instance according to that description and representation.
 | Object being represented | Go representation and status |
 | --- | --- |
 | Horos type declarations | Existing Horos model and `horos.AST`, the alias for `ast.AST[horos.Language]` in Bittype's Horos syntax package. |
-| Contract type declarations containing Wire | Proposed contract-language AST/model; not implemented. |
+| Mixed type declarations containing Wire | Proposed horos/wire model and its Bittype AST projection; not implemented. |
 | Go source describing types | Existing `golang.AST`, the alias for `ast.AST[golang.Language]`. |
 | Ground application data | Existing Ontos Atom/Tuple values through the relevant Go `Value` type. |
-| Application data containing live capabilities | Existing `wire.HydratedValue`, admitted and constructed by a conforming runtime. |
+| Application data containing live capabilities | Existing `wire.HydratedValue`, admitted and constructed by a conforming runtime; future ontos/wire alignment is not yet implemented. |
 | The application's native object | Its compiled Go type T, such as Person, Page[Person] or a selected Cell[Person] representation. |
 
 The [AST carrier](ast.md) and [checked AST envelope](engine.md#identity-profiles-and-storage)
@@ -54,6 +55,34 @@ There is no need for a second universal `bittype.Value` algebra or a Go-value AS
 between the existing hydrated domain and native T. Descriptors can themselves be
 encoded as ground Ontos data, but their being data does not make the described
 instances data-only or perform any capability binding.
+
+### Optional value-profile alignment
+
+The proposed [ontos/wire profile](https://github.com/Bitspark/ontos/blob/main/docs/design/0007-optional-wire-extension.md)
+places the common mixed-value meaning outside Bittype. It is a recognized subset
+of Deixis nodes with byte, tuple and opaque capability cases. An eventual Go
+presentation may parameterize the capability carrier; it must not depend on
+Bitruntime or import Bitwire merely to obtain an interface. Runtime composition
+supplies recognized sending handles and retains authority/lifetime ownership.
+Static type tools need only ground descriptions, not the live value carrier.
+
+The current `wire.HydratedValue` is not already an implementation of that new
+package or an alias for Deixis. Future alignment must establish a law-preserving
+view or conversion, with immutable bytes/children and retained handle aliasing.
+It need not allocate a second tree for every message. A pure traversal of
+`Tuple(w, w)` retains both occurrences of the same handle without sending,
+exporting, cloning or rebinding it. Export identity is still a runtime concern.
+
+Ground recovery succeeds only for admitted wire-free values and uses the existing
+Ontos codec for bytes. Dehydrating a live value instead needs a runtime scope and
+may stage exports; it is not the profile's pure recovery operation. Reference-like
+application data remains data. Neither a profile member nor a Send-shaped object
+alone establishes an exportable capability, remote liveness or message compliance.
+
+Thus a future native adapter may consume the qualified realization of ontos/wire
+while preserving the responsibilities illustrated below. Its exact native API
+must be chosen with runtime integration; the existing interfaces remain the
+source evidence, and the illustrative Adapter sketch is not a new dependency pin.
 
 ## 2. Existing Go Wire and value contracts
 
@@ -89,7 +118,7 @@ structs, cyclic objects or any value implementing a Send method. The runtime
 owns capability recognition. A ground Wire cannot become a HydratedWire by a
 type cast; their message domains differ.
 
-`Wire<E>` in the proposed contract language describes a message contract. The
+`Wire<E>` in the proposed horos/wire profile describes a message contract. The
 existing Go `wire.HydratedWire` interface is not parameterized by E. A future
 selected native view can expose typed sending by composing E's value adapter;
 the hydrator itself does not load E or check a library's message protocol.
@@ -175,7 +204,7 @@ Local delivery can keep values hydrated without serializing a network frame.
 Bitnode can assemble routing/scopes, but is not a requirement for every local
 pair or direct connection. A transit router can forward ground frames without
 interpreting domain values. None of these layers needs Person, Function, Cell or
-Stream semantics, nor a Bittype descriptor to reconstruct generic Wire proxies.
+Stream semantics, nor a Horos/Bittype type descriptor to reconstruct generic Wire proxies.
 
 ## 4. Proposed native value adapters
 
@@ -308,7 +337,7 @@ and Wire/runtime facilities; those lower facilities never import a catalogue of
 Function, Stream, Cell or future contracts. This document adds no bitwire or
 bitruntime dependency to bittype and selects no new runtime package layout.
 
-Current implemented tooling, the unimplemented contract/native transformations,
+Current implemented tooling, the unimplemented optional-profile/native transformations,
 and these future value bindings remain separately qualified work. Adding a
 dynamic descriptor does not authorize changing Horos's data domain, choosing a
 behavioral contract by shape or reviving a second hydration/export protocol.

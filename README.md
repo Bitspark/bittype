@@ -38,17 +38,19 @@ Function, Stream, Cell and future behavioral contracts remain library-owned.
 This milestone adds no runtime adapters, callable implementations, serialization,
 application-value validation or Wire dependencies.
 
-Ontos and Horos stay data-only. The [contract-type proposal](docs/hydrated-types.md)
-places Wire and mixed data/capability types in a separate Bittype language
-provider above Horos. Existing bitwire/bitruntime hydration remains above Horos;
-the agnostic kernel acquires no Wire semantics. That provider is not implemented.
+Ground Ontos and Horos stay data-only. The [optional-extension proposal](docs/hydrated-types.md)
+places the mixed value profile in ontos/wire and its type model in horos/wire.
+Bittype projects those definitions through its existing tooling architecture;
+the agnostic kernel acquires no Wire semantics. The optional profiles and their
+Bittype frontend are not implemented. Existing hydration remains in bitwire/bitruntime.
 
 ## Read first
 
 - [Horos canonical input](docs/model.md): ownership, declarations and native representation plan.
-- [Contract types above Horos](docs/hydrated-types.md): exact proposed Wire input,
-  explicit data boundary, library-owned Function/Cell/Stream composition and future provider;
-  documentation only.
+- [Optional Wire types](docs/hydrated-types.md): ownership, authoritative canonical
+  input, explicit data boundary and future Bittype provider; documentation only.
+- [Concept preservation](docs/wire-extension-preservation.md): retained ideas,
+  superseded proposals and expert-review evidence for the ownership change.
 - [Template lifting and native representations](docs/type-representations.md):
   explicit lifting rules, generic pagination and library-owned type recipes
   configured for TypeScript, Go, Rust and C++; documentation only.

@@ -1,13 +1,13 @@
 # Template lifting and library-owned native type representations
 
 **Owner direction, 3 November 2026. Status: documentation proposal only.**
-This refines the [contract-language proposal](hydrated-types.md) and
-[generation pipeline](generation.md). Ontos and Horos remain data-only. A
-separate Bittype language provider describes Wire and mixed compositions;
-Function, Cell and Stream remain ordinary library declarations.
+This refines the [optional Horos Wire tooling proposal](hydrated-types.md) and
+[generation pipeline](generation.md). Ground Ontos/Horos remain data-only;
+optional ontos/wire owns mixed values and horos/wire owns their type model.
+Bittype consumes that model; Function, Cell and Stream remain ordinary libraries.
 
 The existing ASTTransformer interface and syntax engine need no new operation
-for a named library contract. The contract provider, lifting transformer, native
+for a named library contract. The optional Horos Wire provider, lifting transformer, native
 transformers and representation configuration below are not implemented.
 Examples describe the intended design, not executable configuration or new APIs.
 No runtime adapter, validator, callable implementation or transport is added.
@@ -22,7 +22,7 @@ marks the runtime-binding API as unimplemented.
 
 | Input | Owner and purpose |
 | --- | --- |
-| Canonical declaration modules | Libraries define types, imports, parameters and applications. Horos owns data declarations; contract modules use the separate Bittype language. |
+| Canonical declaration modules | Libraries define types, imports, parameters and applications. Horos owns ground declarations and, separately, the proposed horos/wire profile. |
 | Native representation choices | A library supplies optional target recipes for its declarations; the consuming build selects exact recipes and dependencies. Ordinary structural declarations need no custom recipe. |
 | Runtime bindings | Later library work supplies behavior and conversion where needed. Type generation neither implements nor loads it. |
 
@@ -53,7 +53,7 @@ widen the source declaration or change what Horos accepts.
 
 The consuming build selects embedding or the bounded structural lifting profile
 below, and the declarations to transform. These choices configure a concrete
-`Horos -> Contract` ASTTransformer. Route discovery does not choose a different
+`Horos -> HorosWire` ASTTransformer. Route discovery does not choose a different
 value domain for the caller. If both direct data generation and the lifted route
 are installed, the caller explicitly selects the latter when it wants a lift;
 a failed direct mapping never triggers that route as a fallback.
@@ -61,20 +61,23 @@ a failed direct mapping never triggers that route as a fallback.
 ### Structural lifting rules
 
 Let D be a resolved declaration in a checked Horos module bundle. Let L(E)
-translate an expression in D's lexical environment. `C(...)` and `Data(G)` use
-the [exact proposed contract vocabulary](hydrated-types.md#2-exact-proposed-wire-expression-and-ground-embedding).
+translate an expression in D's lexical environment. `W(...)` and `Data(G)` use
+[Horos's exact optional vocabulary](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md#2-canonical-expression-format).
+The following is a tooling summary of the
+[Horos-owned lifting rules](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md#4-explicit-embedding-and-partial-template-lifting),
+not a second semantic authority.
 The following rules apply in order, so a closed application or structural node
 is not opportunistically collapsed into Data:
 
 | Horos input | Contract output and obligation |
 | --- | --- |
-| Parameter at slot i | `C("param", I(i))`, bound to the corresponding parameter of the derived declaration; retain the source binder as provenance. |
+| Parameter at slot i | `W("param", I(i))`, bound to the corresponding parameter of the derived declaration; retain the source binder as provenance. |
 | Application of resolved declaration D to arguments A | Application of the derived declaration L(D) to L(A), preserving argument order, arity, lexical scope and the original application. Follow the exact pinned target, never a same-spelled name. |
-| Tuple | `C("tuple", L(E)...)`; retain the ordered elements, including an empty tuple. |
-| Labelled compound | `C("compound", A(label), L(E)...)`; preserve the label as literal data. |
-| Typed list | `C("list-of", L(element))`. |
-| Closed record | `C("record", A("closed"), fields...)`; preserve each literal field name, required/optional presence and translated field type. Keys remain ground canonical text. |
-| Union with at least two alternatives | `C("union", L(E)...)`; preserve the alternatives and their order. Do not select a behavioral binding by inspecting the branches. |
+| Tuple | `W("tuple", L(E)...)`; retain the ordered elements, including an empty tuple. |
+| Labelled compound | `W("compound", A(label), L(E)...)`; preserve the label as literal data. |
+| Typed list | `W("list-of", L(element))`. |
+| Closed record | `W("record", A("closed"), fields...)`; preserve each literal field name, required/optional presence and translated field type. Keys remain ground canonical text. |
+| Union with at least two alternatives | `W("union", L(E)...)`; preserve the alternatives and their order. Do not select a behavioral binding by inspecting the branches. |
 | Union with one alternative | L(the alternative), retaining the source union as provenance; the contract union constructor requires at least two alternatives. |
 | Empty union | `Data(H("union"))`, preserving the empty ground type without introducing an upper bottom constructor. |
 | Any other subtree that can independently specialize to a closed, well-formed Horos descriptor G | `Data(G)`. Retain source references in provenance; do not inspect literal contents or widen G's domain. |
@@ -127,23 +130,40 @@ closed data embedding for Alias. These outcomes do not depend on traversal order
 
 The build supplies output module names and records its selected roots, source
 module pins, lifting profile/version and target naming choices. Derived modules
-use the contract module envelope and its canonical encoding/import pins from
-[the contract proposal](hydrated-types.md#3-structural-composition-and-generic-declarations).
+use the optional Horos Wire envelope and its canonical encoding/import pins from
+[Horos's module proposal](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md#3-modules-bindings-and-specialization).
 Dependency modules are encoded and pinned before their importers. The output
 module pin plus declaration name identifies the derived declaration; provenance
 records the distinct original Horos identity. A pin is not a behavioral
 fingerprint or a claim of protocol equivalence.
+
+Interpretation and recipe lookup additionally qualify that document/declaration
+with its semantic profile and revision. Ground Horos's existing DeclarationID
+struct need not change; the tooling boundary carries profile identity separately.
+Identical document bytes under an incompatible profile cannot reuse facts or
+recipes. Keep the lifting profile/configuration and source pins in the derivation
+receipt; never substitute those provenance records for the output module's pin.
 
 No second Page is authored and no `LiftedPage` spelling is required. The compiler
 may name the derived declaration Page in its selected output module. Its semantic
 identity remains distinct from the original data declaration even when native
 representations can be shared deliberately.
 
-For admitted templates and data arguments, the lift must preserve the original
-ground layout and membership after binding. Replacing an argument with a
-capability type is meaningful only in the derived contract declaration. This is
-a qualification obligation of this specific lifting profile, not a theorem
-about every Horos constructor or every native representation.
+For admitted templates D and closed ground arguments G, let e be the ground
+embedding into the mixed value domain. The proposed qualification law is:
+
+```text
+meaning(L(D)<Data(G)...>) = { e(v) | v |=ground Specialize(D, G...) }
+```
+
+This is exact ground membership/layout preservation, not equal ASTs, module
+bytes, source/derived identities or native type names. It is an obligation to
+prove for this bounded lift, not an already verified theorem or a claim about
+every Horos constructor. Here `|=ground` is semantic membership, not a bounded
+boolean checker result; resource exhaustion is not semantic non-membership.
+Applications require lexical substitution coherence;
+the derived binder cannot capture the caller's argument. Replacing an argument
+with a capability type is meaningful only in the derived declaration.
 
 ## 3. Pagination through the type pipeline
 
@@ -171,7 +191,7 @@ references, not permission to pass a Cell into a Horos data slot.
 ```text
 AST[Horos] ---------------------------------> AST[Native] -> CST -> source
     |
-    +-- explicit selected lift -> AST[Contract] --+
+    +-- explicit selected lift -> AST[HorosWire] -+
                                                 +-> AST[Native] -> CST -> source
 ```
 
@@ -225,7 +245,7 @@ declare Function over Wire, Cell as get/set functions and a pull Stream as
 next/cancel functions with an ordinary Step union. Their readable forms are:
 
 ```text
-Unit          = Data(empty tuple)
+Unit          = Data(H("tuple"))
 Function<A,B> = Wire<tuple(A, Wire<B>)>
 Cell<T>       = record { get: Function<Unit,T>, set: Function<T,Unit> }
 Step<T>       = compound("item", T) | compound("end")
@@ -338,10 +358,10 @@ The consuming build performs three operations:
 For example, in deliberately schematic Go notation:
 
 ```go
-tsMapping := contractToTypeScript.New(tsProfile, modules, libraries.TypeScriptTypes())
-goMapping := contractToGo.New(goProfile, modules, libraries.GoTypes())
-rustMapping := contractToRust.New(rustProfile, modules, libraries.RustTypes())
-cppMapping := contractToCPP.New(cppProfile, modules, libraries.CPPTypes())
+tsMapping := horosWireToTypeScript.New(tsProfile, modules, libraries.TypeScriptTypes())
+goMapping := horosWireToGo.New(goProfile, modules, libraries.GoTypes())
+rustMapping := horosWireToRust.New(rustProfile, modules, libraries.RustTypes())
+cppMapping := horosWireToCPP.New(cppProfile, modules, libraries.CPPTypes())
 
 engine.RegisterTransformer(tsMapping)
 engine.RegisterTransformer(goMapping)
@@ -375,9 +395,9 @@ The existing [stage-first layout](../LAYOUT.md) remains in force:
 
 | Proposed location/owner | Responsibility |
 | --- | --- |
-| `transforms/horos-to-contract/go` | Explicit closed embedding and the separately selected partial lifting profile; resolved origins and derived modules. |
+| `transforms/horos-to-horoswire/go` | Implement Horos's explicit embedding/partial lifting semantics as AST transformation; preserve origins and derived modules. |
 | `transforms/horos-to-<native>/go` | Direct data type generation, independently useful without capabilities. |
-| `transforms/contract-to-<native>/go` | Structural type lowering and uniformly configured native recipes; no named-contract imports. |
+| `transforms/horoswire-to-<native>/go` | Structural type lowering and uniformly configured native recipes; no named-contract imports. |
 | Each independent contract library | Canonical module, optional target recipes/type artifacts and future runtime bindings. No per-library stage is added to bittype. |
 | Consuming application composition | Pin modules/dependencies, select profiles and recipes, register transformers, arrange output artifacts. |
 

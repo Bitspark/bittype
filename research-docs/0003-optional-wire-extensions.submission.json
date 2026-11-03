@@ -1,0 +1,66 @@
+{
+  "attempts": [
+    {
+      "attempt": 1,
+      "idempotencyKey": "bittype-research-0003-556c453c-5071-4aae-b9cf-b42f087f7a92",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0003-optional-wire-extensions",
+      "submittedPath": "research-docs/0003-optional-wire-extensions.submitted.md",
+      "sha256": "8788291776ab1f3e347a76ba7a13d94553aabd0ad6f41003bf286e3b51fbc3c0",
+      "byteSize": 30595,
+      "codeRevision": "9c868646c09a449c6e682328840434126be1301f",
+      "cliBuild": "nightfall 0.1.0 (e2640b38009d, bundle ef085ca51a5d) built 2026-10-18T03:14:36.183Z",
+      "recordedAt": "2026-11-03T17:41:24.9771273Z",
+      "documentId": "doc_1ad678c3-1fa0-4220-9d39-efc374e4a5ae",
+      "serverSha256": "8788291776ab1f3e347a76ba7a13d94553aabd0ad6f41003bf286e3b51fbc3c0",
+      "runId": "run_38589d6b-89c8-4c4d-8809-1ddd2738aa3c",
+      "submittedAt": "2026-11-03T17:41:48.2862726Z",
+      "captures": [
+        {
+          "resultId": "result_8cb77722-4924-4417-a625-eaf8b6b7de38",
+          "resultSha256": "a1fbb63e7367ccb4aef4cd53535958a0a2c274e1593b85b7d720095feaee009f",
+          "state": "completed",
+          "verificationExitCode": 0,
+          "verifiedAt": "2026-11-03T17:48:45.1816932Z",
+          "retainedPath": "research-docs/0003-optional-wire-extensions.advice.capture-1.md",
+          "completeness": "Incomplete: response stops mid-sentence at section 3.2; not accepted as full expert evaluation",
+          "recovery": "Request fresh capture of the same canonical provider process; no new consultation"
+        },
+        {
+          "resultId": "result_7d867248-3f41-44b7-a19a-d6dc37873571",
+          "resultSha256": "a1fbb63e7367ccb4aef4cd53535958a0a2c274e1593b85b7d720095feaee009f",
+          "verificationExitCode": 0,
+          "state": "completed",
+          "completeness": "Recapture returned identical truncated answer; no full evaluation of questions3-5",
+          "verifiedAt": "2026-11-03T17:52:22.3013257Z"
+        }
+      ],
+      "preservedInputPath": "research-docs/0003-optional-wire-extensions.submitted.attempt-1.md"
+    },
+    {
+      "attempt": 2,
+      "idempotencyKey": "bittype-research-0003-9b392af6-deb5-4d24-87ad-243a673b2ab4",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0003-optional-wire-extensions",
+      "submittedPath": "research-docs/0003-optional-wire-extensions.submitted.md",
+      "sha256": "4d8a070c2984e0e6c6bdc3f06b0e91bb400954b88dc5f2f28323d40ea60dd517",
+      "byteSize": 31304,
+      "codeRevision": "9c868646c09a449c6e682328840434126be1301f",
+      "cliBuild": "nightfall 0.1.0 (e2640b38009d, bundle ef085ca51a5d) built 2026-10-18T03:14:36.183Z",
+      "recordedAt": "2026-11-03T17:52:22.3385758Z",
+      "reason": "Revised input requests a concise complete response; original and recaptured upstream answer end mid-sentence. Same architectural question and reviewed technical brief.",
+      "documentId": "doc_04fefdb0-fc0a-45f6-a4dd-f6c5ef9e7fe4",
+      "serverSha256": "4d8a070c2984e0e6c6bdc3f06b0e91bb400954b88dc5f2f28323d40ea60dd517",
+      "runId": "run_31c1813d-dd34-46a5-9873-105a934581fb",
+      "submittedAt": "2026-11-03T17:52:42.6696902Z",
+      "state": "completed",
+      "resultId": "result_bad078a3-9b5c-4e2c-837d-8d0e9fa7bcb6",
+      "resultSha256": "11d7ba8b0b218bc6e24aaec41a2353fb161bb4a417e0ff27a65c1d0a2a278a72",
+      "verificationExitCode": 0,
+      "verifiedAt": "2026-11-03T17:58:48.4955382Z",
+      "completeness": "Read in full; covers all five questions and ends with complete recommendation"
+    }
+  ]
+}

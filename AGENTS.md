@@ -27,17 +27,18 @@ Syntax admission must accept unresolved names; analysis publishes request-bound,
 immutable facts with explicit completion, verdict and model availability.
 Only Horos implements production semantics; native analysis remains deferred.
 
-The owner's later 2 November [boundary correction](docs/hydrated-types.md) keeps
-Ontos and Horos data-only. A separate proposed Bittype contract-language provider
-owns Wire typing and mixed data/capability compositions. Hydration stays above
-Horos in the existing bitwire/bitruntime layers. Do not add a Horos Wire kind,
-widen Horos generics or teach the agnostic kernel this concrete type language.
-The contract provider, its distinct identity/profile and its narrow ground-model
-dependency allowance are unimplemented. No implementation is authorized by this
-documentation proposal.
+The owner's 3 November [optional-extension decision](docs/hydrated-types.md)
+keeps ground Ontos/Horos data-only. Optional ontos/wire owns the mixed value
+profile; optional horos/wire owns its declarations and lifting semantics.
+Bittype supplies tooling projections, not a competing contract model. Hydration
+stays in existing bitwire/bitruntime layers. Preserve the
+[concept inventory](docs/wire-extension-preservation.md); remove superseded
+proposal aliases rather than interpreting old tags. The optional model and its
+Bittype frontend are unimplemented. No implementation is authorized by this
+documentation proposal, and no ground generic or checker domain is widened.
 
 The 3 November [lifting and native representation design](docs/type-representations.md)
-is also documentation-only. Use explicit partial lifting with distinct derived
+is also documentation-only. Consume Horos's explicit partial lifting with distinct derived
 identities and preserved binders/applications; never widen a Horos data slot or
 infer a lift from route availability. Libraries own optional native type recipes,
 selected by exact declaration identity in consuming build configuration. Concrete
