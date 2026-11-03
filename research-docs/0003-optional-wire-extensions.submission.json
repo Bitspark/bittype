@@ -1,0 +1,17 @@
+{
+  "attempts": [
+    {
+      "attempt": 1,
+      "idempotencyKey": "bittype-research-0003-556c453c-5071-4aae-b9cf-b42f087f7a92",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0003-optional-wire-extensions",
+      "submittedPath": "research-docs/0003-optional-wire-extensions.submitted.md",
+      "sha256": "8788291776ab1f3e347a76ba7a13d94553aabd0ad6f41003bf286e3b51fbc3c0",
+      "byteSize": 30595,
+      "codeRevision": "9c868646c09a449c6e682328840434126be1301f",
+      "cliBuild": "nightfall 0.1.0 (e2640b38009d, bundle ef085ca51a5d) built 2026-10-18T03:14:36.183Z",
+      "recordedAt": "2026-11-03T17:41:24.9771273Z"
+    }
+  ]
+}
