@@ -11,8 +11,8 @@ native text stages and syntax engine already exist. See the [Horos frontend](hor
 | --- | --- |
 | ontos | Ground data values, structural identity, data embeddings and canonical encoding |
 | horos | Data descriptors/conformance; module, generic and application semantics for data declarations |
-| optional ontos/wire | Proposed mixed value profile over Deixis; ground Ontos stays unchanged |
-| optional horos/wire | Proposed mixed declarations, explicit ground embeddings and partial lifting |
+| optional ontos/wire | Implemented Go mixed value profile over Deixis; ground Ontos stays unchanged |
+| optional horos/wire | Implemented static Go mixed declarations, explicit ground embeddings and partial lifting |
 | bittype | Source syntax, AST/CST projections, frontend tooling and generation |
 | bitwire / bitruntime | Capability contracts and hydration above Horos |
 | Contract libraries | Function, Stream, Cell and future behavioral declarations and realizations |
@@ -43,8 +43,8 @@ defines the supported structural translation, distinct derived identities and
 per-language recipe configuration. It reuses an authored Page template while
 keeping Horos applications data-only. Type generation preserves open generics;
 optional native representations belong to libraries and are selected explicitly
-by the consuming build. No lifting, native transformer or runtime binding is
-implemented by that documentation.
+by the consuming build. [Explicit lifting](horoswire.md) is now implemented;
+native transformers, recipe configuration and runtime binding remain proposed.
 
 Horos 0.6.0 implements ground descriptors and value checking, without a public
 dependency on the older proof-integration packages. Newer Go source implements

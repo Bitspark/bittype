@@ -3,7 +3,7 @@
 Syntax infrastructure and native type generation for TypeScript, Go, Rust and
 C++, using horos as the canonical data type model.
 
-**Current status, 2 November 2026:** generic AST/CST carriers, typed pipeline
+**Current status, 4 November 2026:** generic AST/CST carriers, typed pipeline
 contracts, native syntax vocabularies, parsers, formatters, checks and a shared
 printer are implemented in Go. The syntax engine registers languages and
 ASTTransformer implementations, plans routes and composes existing text stages.
@@ -41,19 +41,22 @@ application-value validation or Wire dependencies.
 Ground Ontos and Horos stay data-only. The [optional-extension proposal](docs/hydrated-types.md)
 places the mixed value profile in ontos/wire and its type model in horos/wire.
 Bittype projects those definitions through its existing tooling architecture;
-the agnostic kernel acquires no Wire semantics. The optional profiles and their
-Bittype frontend are not implemented. Existing hydration remains in bitwire/bitruntime.
+the agnostic kernel acquires no Wire semantics. The Go optional profiles,
+[Bittype frontend and explicit partial lift](docs/horoswire.md) are implemented.
+Existing hydration remains in bitwire/bitruntime.
 
 ## Read first
 
 - [Horos canonical input](docs/model.md): ownership, declarations and native representation plan.
 - [Optional Wire types](docs/hydrated-types.md): ownership, authoritative canonical
-  input, explicit data boundary and future Bittype provider; documentation only.
+  input and explicit data boundary. The [frontend guide](docs/horoswire.md)
+  documents implemented APIs and qualification.
 - [Concept preservation](docs/wire-extension-preservation.md): retained ideas,
   superseded proposals and expert-review evidence for the ownership change.
 - [Template lifting and native representations](docs/type-representations.md):
   explicit lifting rules, generic pagination and library-owned type recipes
-  configured for TypeScript, Go, Rust and C++; documentation only.
+  configured for TypeScript, Go, Rust and C++; lifting is implemented, native
+  recipes and generators remain proposed.
 - [Runtime values and hydration](docs/runtime-values.md): type descriptions versus
   native instances, existing Wire/runtime carriers and future typed/dynamic
   adapters; documentation only, with pinned implementation evidence.

@@ -1,9 +1,10 @@
 # Syntax engine and AST transformations
 
 **Implemented, 31 October 2026.** This increment supplies the frame for registered
-AST transformations. It implements no canonical AST and no TypeScript, Go, Rust
-or C++ mapping. Applications explicitly register the existing native text
-providers and future transformer implementations.
+AST transformations. The engine contains no canonical or native mapping rules.
+Applications explicitly register providers and transformers, including the
+[optional Horos lift](horoswire.md#explicit-transformation). No TypeScript, Go,
+Rust or C++ type generator is implemented.
 
 The 2 November [Horos AST-only frontend](horos.md) uses the language registration
 interface for syntax checking and independently registers

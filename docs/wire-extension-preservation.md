@@ -1,10 +1,11 @@
 # Optional Wire extensions: concept preservation
 
-**Owner direction, 3 November 2026. Documentation only.** The owner selected
+**Owner direction, 3 November 2026; implementation qualification, 4 November.** The owner selected
 `ontos/wire` and `horos/wire` as optional extensions, replacing the Bittype-owned
 contract model, then explicitly required preservation of prior concepts and an
 expert consultation. This page makes that preservation reviewable; it is not a
-claim that the proposed extensions, generators or runtime adapters exist.
+claim that native generators or runtime adapters exist. Go optional profiles,
+the Bittype frontend and explicit lifting are now implemented.
 
 ## Decision and authoritative homes
 
@@ -62,7 +63,7 @@ deliberate replacements rather than silently deleting them from current guidance
 
 The Bittype-owned `bittype/contract/*` grammar and planned `contract` language
 directories were never implemented. They are replaced by the Horos-owned optional
-profile and proposed `horoswire` tooling directories. There is no alias accepting
+profile and implemented `horoswire` tooling directories. There is no alias accepting
 old tags, automatic envelope conversion or dual canonical authority.
 
 The older proposal for a Wire constructor in ground Horos revision 2 is also
@@ -106,6 +107,10 @@ Before claiming implementation, independently authored cases must distinguish:
 7. Typed compiled adapters from dynamic descriptions, and borrowed views from
    owned endpoint/scope resources. Binding failures need explicit cleanup laws.
 
-These are future acceptance criteria, not tests claimed to have run for a
-documentation change. The current delivery validates links, examples, consistency,
-the preservation inventory and unchanged source boundaries through repository gates.
+The Go implementation qualifies items 1–5 through structural admission,
+immutable value tests, profile-specific static checks, independently authored
+pagination/lifting cases and request-wide exhaustion tests. Bittype additionally
+qualifies explicit profiles, immutable semantic receipts, source origins and the
+unchanged agnostic dependency boundary. Items 6–7 remain future acceptance
+criteria: native recipes and runtime adapters are not implemented. Remote gates
+validate each delivered revision; research 0003 remains the historical design review.

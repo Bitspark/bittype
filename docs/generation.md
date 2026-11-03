@@ -358,7 +358,8 @@ include open/applied pagination and native reader signatures. Tests exercise
 metadata through the common interface and enforce the production dependency
 boundary. Native text syntax and compiler fixtures now provide separately scoped evidence.
 The engine's independent tests qualify registration, the typed boundary, graph
-planning and checked execution. Canonical generation remains unimplemented.
+planning and checked execution. The explicit [Horos-to-Horos/Wire lift](horoswire.md)
+is implemented. Native type generation remains unimplemented.
 
 Delivery status and subsequent increments:
 

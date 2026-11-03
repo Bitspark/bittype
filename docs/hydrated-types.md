@@ -1,6 +1,6 @@
 # Optional Wire types and Bittype tooling
 
-**Owner decision, 3 November 2026. Status: documentation proposal only.**
+**Owner decision, 3 November 2026. Status: Go profiles, frontend and explicit lifting implemented.**
 Optional `ontos/wire` owns the mixed value profile; optional `horos/wire` owns
 its type/declaration model and lifting semantics. Bittype supplies tooling for
 those definitions. This replaces the unimplemented Bittype-owned contract
@@ -8,7 +8,7 @@ language, including its `bittype/contract/*` syntax and proposed `contract`
 stage directories. There is no compatibility alias or fallback decoder.
 
 Ground Ontos, ground Horos declaration revision 1, the existing Horos frontend
-and the agnostic engine remain unchanged. This does not revive the earlier
+retain their public semantics; the agnostic engine remains unchanged. This does not revive the earlier
 proposal to add Wire to ground Horos revision 2. The
 [preservation map](wire-extension-preservation.md) records where every prior
 concept now belongs, including ideas retained for later implementation.
@@ -19,18 +19,19 @@ concept now belongs, including ideas retained for later implementation.
 | --- | --- |
 | Deixis | Existing generic structure over opaque contents; not an AST or type model |
 | Ground Ontos | Existing immutable data values, structural identity and encoding |
-| Optional ontos/wire | Proposed recognized mixed data/capability value profile over Deixis |
+| Optional ontos/wire | Implemented Go mixed data/capability profile over Deixis |
 | Ground Horos | Existing data descriptors, declarations, binding, specialization and conformance |
-| Optional horos/wire | Proposed mixed types, explicit ground embedding and partial template lifting |
+| Optional horos/wire | Implemented static Go mixed types, explicit ground embedding and partial template lifting |
 | Bittype providers/transformers | Tooling projections of the selected Horos profile and native type representations |
 | Bittype agnostic kernel | Generic trees, semantic facts and explicit registration; no concrete Wire semantics |
 | Bitwire / bitruntime | Existing sending capability contracts and context-dependent hydration |
 | Contract libraries | Function, Stream, Cell declarations, native representations and behavioral laws |
 
-The authoritative proposed boundaries are the
+The authoritative boundaries are the
 [Ontos optional value profile](https://github.com/Bitspark/ontos/blob/main/docs/design/0007-optional-wire-extension.md)
 and [Horos optional type profile](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md).
-These names identify ownership, not packages already available to import.
+The [frontend guide](horoswire.md) identifies implemented Go packages and the
+remaining runtime/native-generation work.
 
 ```text
 GroundValue = ByteAtom | Tuple(GroundValue*)
@@ -150,23 +151,23 @@ edge needs distinct registered endpoint IDs. Exact IDs, profile strings and Go
 marker choices must be qualified with implementation; a different Go marker is
 an isolation choice, not an additional existing engine requirement.
 
-The [stage-first layout](../LAYOUT.md) remains in force. Proposed directory
+The [stage-first layout](../LAYOUT.md) remains in force. Directory
 name `horoswire` denotes the optional Horos frontend, not a new Bittype model:
 
-| Proposed component | Responsibility |
+| Component | Responsibility |
 | --- | --- |
 | `syntax/horoswire/go` | AST projection vocabulary and language identity |
 | `check/horoswire/go` | Syntax-only admission; unresolved names may reach resolution |
-| `resolve/horoswire/go`, `internal/horoswire` | Adapt the authoritative module/binding model with immutable capture and explicit dependencies |
+| `resolve/horoswire/go`, `internal/horosmodel` | Adapt the authoritative module/binding model with immutable capture and explicit dependencies |
 | `analyze/horoswire/go` | Adapt established semantics to shared facts/reports |
 | `provider/horoswire/go` | Explicit AST-only capability composition |
-| `transforms/horos-to-horoswire/go` | Explicit embedding or the selected Horos-owned partial lift |
-| `transforms/horoswire-to-<native>/go` | Native type AST mappings and uniform library recipes |
+| `transforms/horos-to-horoswire/go` | Explicitly selected Horos-owned partial lift (implemented) |
+| `transforms/horoswire-to-<native>/go` | Native type AST mappings and uniform library recipes (future) |
 
-These paths are plans, not created packages. The existing `horos` stages retain
+All listed stages except native mappings now exist. The existing `horos` stages retain
 their ground profiles. Shared `contracts/` contains agnostic SPIs, not canonical
 behavioral declarations. A new frontend requires narrow reviewed model dependency
-allowances and capability tests; this document changes no current import rule.
+allowances and capability tests; these are enforced by the architecture suite.
 
 Provider-owned terms and located operands describe Wire and Data. Generic facts
 retain references/applications, graph integrity and request-bound evidence without
@@ -178,8 +179,7 @@ Finite input is not necessarily bounded enough to process. Admission, resolution
 lifting and generation each need explicit node/depth/byte/module budgets where
 applicable, with exhaustion separate from invalid syntax, semantic non-membership
 and unsupported mappings.
-An incomplete stage publishes no usable partial model or target. These are future
-provider qualifications using existing result dimensions, not new kernel cases.
+An incomplete stage publishes no usable partial model or target. These use existing result dimensions, not new kernel cases.
 
 Static dependencies point from the concrete Bittype frontend to Horos's model
 and ground Ontos document representation. They do not point from Horos to
@@ -189,10 +189,11 @@ no import cycle or default runtime is authorized here.
 
 ## 6. Qualification and forbidden shortcuts
 
-This is documentation only. Existing Horos/Bittype APIs reject the proposed
-optional format. Future fixtures must qualify exact profiles and grammar,
+Ground Horos/Bittype APIs continue to reject the optional format. The separate
+[optional frontend tests](../integration/go/horoswire_test.go) and
+[lifting tests](../transforms/horos-to-horoswire/go/lift_test.go) qualify profiles and grammar,
 operand/literal boundaries, generic scope, identity/provenance, ordered lifting,
-ground-membership/layout preservation and native representation limits. Actual
+and ground-membership/layout preservation. Native representation limits, actual
 runtime alignment and library protocol/lifetime tests are separate evidence.
 
 Forbidden: widening ground `WF`/`Conforms`, Ontos containers or generic slots;

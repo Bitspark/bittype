@@ -67,7 +67,7 @@ qualification limits. Specialized providers all extend language.Provider.
 
 The ASTTransformer boundary and syntax engine now provide checked heterogeneous
 registration, route planning/execution and native text composition. The canonical
-readable source syntax, actual AST-to-AST mappings, public builders and application CLI remain
+readable source syntax, native AST-to-AST mappings, public builders and application CLI remain
 deferred. Native parsing does not make a target language the
 canonical authority. The [generation design](docs/generation.md) remains separate.
 
@@ -112,3 +112,7 @@ The September bootstrap described a broader generated-consumer chain.
 The owner has narrowed the current work to Horos-owned definitions and types-only
 generation. Historical evidence does not add
 callables, adapters or migration gates to this milestone.
+
+The optional [Horos/Wire frontend and explicit ground-to-optional lift](docs/horoswire.md)
+are implemented through the existing stage and transformer interfaces. Canonical
+semantics stay in Horos; no native generator or runtime binding is introduced.

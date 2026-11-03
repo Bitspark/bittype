@@ -6,7 +6,7 @@ existing Wire/runtime value boundary. It distinguishes inspected implementation
 from future adapters and dynamic interpretation. It adds no source, dependency,
 runtime interface, generator, binding or release.
 
-Ground Ontos and Horos stay data-only. Optional ontos/wire is the proposed mixed
+Ground Ontos and Horos stay data-only. Optional ontos/wire is the separate mixed
 value profile; optional horos/wire describes its types. Bittype supplies their
 tooling projections. Existing bitwire contracts and bitruntime hydration already
 carry capabilities; alignment with the optional profiles is future work.
@@ -41,7 +41,7 @@ converts an actual instance according to that description and representation.
 | Object being represented | Go representation and status |
 | --- | --- |
 | Horos type declarations | Existing Horos model and `horos.AST`, the alias for `ast.AST[horos.Language]` in Bittype's Horos syntax package. |
-| Mixed type declarations containing Wire | Proposed horos/wire model and its Bittype AST projection; not implemented. |
+| Mixed type declarations containing Wire | Implemented Go horos/wire model and `horoswire.AST` projection; see [the frontend guide](horoswire.md). |
 | Go source describing types | Existing `golang.AST`, the alias for `ast.AST[golang.Language]`. |
 | Ground application data | Existing Ontos Atom/Tuple values through the relevant Go `Value` type. |
 | Application data containing live capabilities | Existing `wire.HydratedValue`, admitted and constructed by a conforming runtime; future ontos/wire alignment is not yet implemented. |
@@ -337,7 +337,7 @@ and Wire/runtime facilities; those lower facilities never import a catalogue of
 Function, Stream, Cell or future contracts. This document adds no bitwire or
 bitruntime dependency to bittype and selects no new runtime package layout.
 
-Current implemented tooling, the unimplemented optional-profile/native transformations,
+Current implemented tooling and optional-profile lifting, the unimplemented native transformations,
 and these future value bindings remain separately qualified work. Adding a
 dynamic descriptor does not authorize changing Horos's data domain, choosing a
 behavioral contract by shape or reviving a second hydration/export protocol.

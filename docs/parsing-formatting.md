@@ -268,6 +268,6 @@ remote runners: Go 1.27.3, TypeScript 5.9.3 (ES2020), Rust 1.90.0 (edition 2024)
 and GCC 14.2.0 (C++20). Workstation use is limited to source editing, Git and coordination.
 
 The Horos declaration model and [AST-only frontend](horos.md) are implemented
-separately. No Horos text syntax, AST-to-AST generator, binding implementation or
+separately. No Horos text syntax, native AST generator, runtime binding implementation or
 package release is introduced here. Registration is
 implemented by the separately described engine.
