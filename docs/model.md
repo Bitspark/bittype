@@ -11,7 +11,9 @@ native text stages and syntax engine already exist. See the [Horos frontend](hor
 | --- | --- |
 | ontos | Ground data values, structural identity, data embeddings and canonical encoding |
 | horos | Data descriptors/conformance; module, generic and application semantics for data declarations |
-| bittype | Source syntax, AST/CST projections, frontend tooling and generation; proposed capability-type layer above Horos |
+| optional ontos/wire | Proposed mixed value profile over Deixis; ground Ontos stays unchanged |
+| optional horos/wire | Proposed mixed declarations, explicit ground embeddings and partial lifting |
+| bittype | Source syntax, AST/CST projections, frontend tooling and generation |
 | bitwire / bitruntime | Capability contracts and hydration above Horos |
 | Contract libraries | Function, Stream, Cell and future behavioral declarations and realizations |
 
@@ -27,13 +29,14 @@ identities, bindings, expressions, applications and dependencies. The
 supplies another canonical value-type algebra nor makes native meaning equivalent
 to Horos. Horos supplies the first production analyzer.
 
-The [contract-type proposal](hydrated-types.md) puts the Wire type and mixed
-data/capability compositions in a separate Bittype language provider. Ontos and
-Horos stay data-only; hydration stays in the existing Wire/runtime layers above
-Horos. The proposal includes an explicit ground Data embedding, exact Wire
-expression and ordinary library compositions for Function, Stream and Cell.
-It replaces the unimplemented Horos revision-2 proposal, without widening the
-Horos model or adding concrete semantics to the agnostic kernel.
+The 3 November [optional-extension proposal](hydrated-types.md) puts the mixed
+value profile in ontos/wire and its type/declaration model in horos/wire.
+Ground Ontos/Horos remain data-only; hydration stays in existing Wire/runtime
+layers. Bittype projects the optional Horos model instead of owning a second
+contract language. Explicit Data embedding, Wire typing and ordinary library
+Function/Stream/Cell compositions are retained. The
+[preservation map](wire-extension-preservation.md) records the replacement of
+both earlier unimplemented proposals without widening ground APIs.
 
 The 3 November [lifting and native representation proposal](type-representations.md)
 defines the supported structural translation, distinct derived identities and
@@ -180,11 +183,11 @@ Architecture tests allow the model dependency only in the Horos frontend and
 classify its transitive packages. They retain the generic-package boundary and
 the independence of native text stages.
 
-A future contract-language provider needs its own narrow dependency allowance
-to delegate Data embeddings to Horos. That is not an allowance for generic
-infrastructure, and the current Horos provider remains unchanged. The separate
-proposal owns its lifted structural meaning; ordinary ground semantics stay
-authoritative in Horos.
+A future horos/wire frontend needs its own narrow dependency allowance to
+consume that optional model and its ground embeddings. That is not an allowance
+for generic infrastructure; the current Horos provider remains unchanged.
+Horos owns both profiles' distinct semantics, including the selected partial
+lift. Bittype implements tooling transformations without redefining their meaning.
 
 Horos specifies document identity and pins. Bittype preserves them alongside
 declaration/binder references. AST addresses and source spans are tooling

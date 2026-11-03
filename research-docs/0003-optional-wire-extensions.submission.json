@@ -50,7 +50,17 @@
       "codeRevision": "9c868646c09a449c6e682328840434126be1301f",
       "cliBuild": "nightfall 0.1.0 (e2640b38009d, bundle ef085ca51a5d) built 2026-10-18T03:14:36.183Z",
       "recordedAt": "2026-11-03T17:52:22.3385758Z",
-      "reason": "Revised input requests a concise complete response; original and recaptured upstream answer end mid-sentence. Same architectural question and reviewed technical brief."
+      "reason": "Revised input requests a concise complete response; original and recaptured upstream answer end mid-sentence. Same architectural question and reviewed technical brief.",
+      "documentId": "doc_04fefdb0-fc0a-45f6-a4dd-f6c5ef9e7fe4",
+      "serverSha256": "4d8a070c2984e0e6c6bdc3f06b0e91bb400954b88dc5f2f28323d40ea60dd517",
+      "runId": "run_31c1813d-dd34-46a5-9873-105a934581fb",
+      "submittedAt": "2026-11-03T17:52:42.6696902Z",
+      "state": "completed",
+      "resultId": "result_bad078a3-9b5c-4e2c-837d-8d0e9fa7bcb6",
+      "resultSha256": "11d7ba8b0b218bc6e24aaec41a2353fb161bb4a417e0ff27a65c1d0a2a278a72",
+      "verificationExitCode": 0,
+      "verifiedAt": "2026-11-03T17:58:48.4955382Z",
+      "completeness": "Read in full; covers all five questions and ends with complete recommendation"
     }
   ]
 }

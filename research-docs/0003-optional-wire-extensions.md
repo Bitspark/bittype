@@ -2,7 +2,9 @@
 
 **ID:** 0003
 **Date:** 3 November 2026
-**Status:** reviewed
+**Status:** delivering
+**Graded:** https://github.com/Bitspark/bittype/issues/35#issuecomment-6611597047
+**Run-ID:** run_31c1813d-dd34-46a5-9873-105a934581fb
 **Reviewed:** https://github.com/Bitspark/bittype/issues/35#issuecomment-6611112491
 **Owner:** codex-hydrated-type-design
 **Issue:** https://github.com/Bitspark/bittype/issues/35
@@ -562,3 +564,69 @@ work with checkable triggers, rather than being represented as delivered now.
    silently reinterpreting old declarations or creating competing semantic authorities?
 5. What important idea, counterexample or simpler composition have we missed, and
    what concrete future qualification would falsify your recommended design?
+
+## Applied
+
+### Advice provenance and scope of evaluation
+
+The complete response is [raw advice](0003-optional-wire-extensions.advice.md)
+from attempt 2, run `run_31c1813d-dd34-46a5-9873-105a934581fb`, to document
+`doc_04fefdb0-fc0a-45f6-a4dd-f6c5ef9e7fe4`. The frozen
+[submitted bytes](0003-optional-wire-extensions.submitted.md) have SHA-256
+`4d8a070c2984e0e6c6bdc3f06b0e91bb400954b88dc5f2f28323d40ea60dd517`.
+The verified response hash is
+`11d7ba8b0b218bc6e24aaec41a2353fb161bb4a417e0ff27a65c1d0a2a278a72`.
+The service reported completed; `consult verify --output` returned exit 0 with
+byte identity and no warnings. The response covers all five questions and has a
+complete conclusion. The service labels its advisor model **6 Pro**; this is an
+expert-model assessment, not a claim of human review or executed code validation.
+
+Attempt 1's [input](0003-optional-wire-extensions.submitted.attempt-1.md) and
+[partial advice](0003-optional-wire-extensions.advice.capture-1.md) are retained
+unchanged. A supported recapture returned the same truncated answer, ending in
+section 3.2. It is genuine evidence for its actual contents, not evidence for
+missing recommendations. The revised submission adds only the bounded complete
+response requirement; the reviewed technical context and questions are unchanged.
+The [recovery record](0003-optional-wire-extensions.submission.json) retains both
+attempts, all hashes and the first run's two capture result IDs.
+
+Evaluation uses the six source pins in this brief, particularly Ontos
+`a3f1d08`, Horos `14befc6` and Bittype `9c86864`; those remote main revisions were
+reconfirmed before finalizing the documentation. Owners compared the advice to
+actual ground projection, declaration/binder/specialization and registry code.
+Accepted rows below deliver **documentation requirements and ownership** only.
+They do not claim extension/runtime implementation or future conformance tests.
+
+### Recommendation dispositions
+
+Root owner `codex-hydrated-type-design` is responsible for every accepted row;
+bounded Ontos/Horos reviewers supplied source verification and document edits.
+The independent reviewer checks the exact candidate and delivered state.
+
+| # | Recommendation | Verdict | Action | Owner | Link | Validation |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Optional Ontos/Horos ownership; frozen ground cores; dated scope amendments | HOLDS | Amend contribution guidance explicitly; keep Ontos ADR0003 historical body and frozen specs; retire Bittype semantic ownership. | Root | [ontos23](https://github.com/Bitspark/ontos/issues/23), [horos17](https://github.com/Bitspark/horos/issues/17), [bittype35](https://github.com/Bitspark/bittype/issues/35) | Cross-repo consistency review; historical-body comparison; changed paths show docs only. |
+| 2 | Exact mixed payload/leaf/dense-child recognition | HOLDS | Specify closed recognized profile and negative sparse/noncanonical/payload-with-child cases. | Root | [ontos23](https://github.com/Bitspark/ontos/issues/23) | Source comparison with existing Deixis projection; explicit acceptance/refusal inventory. |
+| 3 | Immutable byte/child capture and repeated-handle alias preservation | HOLDS | Require immutable observations, no mutable backing exposure and Tuple(w,w) preservation without invocation/rebinding. | Root | [ontos23](https://github.com/Bitspark/ontos/issues/23) | Review catches absent payload immutability requirement; final page must state bytes, keys, children and handles separately. |
+| 4 | Recovery recognizes exactly embedding image | NEEDS ADAPTATION | Apply the image law to ground recovery, not mixed admission, which also accepts Wire leaves; distinguish wire-free arbitrary Deixis trees. | Root | [ontos23](https://github.com/Bitspark/ontos/issues/23) | Counterexample: a valid Wire leaf is mixed but outside ground embedding image; sparse wire-free node is outside both. |
+| 5 | Ground identity/codec preserved; no generic mixed Eq/hash/portability | HOLDS | Recover ground then use Ontos codec; distinguish handle reference, capability designation and scoped export identity. | Root | [ontos23](https://github.com/Bitspark/ontos/issues/23) | Compare frozen projection/codec laws; no assertion of Deixis-byte equality or live portable encoding. |
+| 6 | Opaque carrier, acyclic dependencies and optimized runtime realization | NEEDS ADAPTATION | Keep core independent of Deixis; optional projection/value extension may depend on it. No Bitwire/Bitruntime interface import in optional value model; static type tools need no live carrier. Treat first response's linear graph as semantic illustration only. | Root | [ontos23](https://github.com/Bitspark/ontos/issues/23), [bittype35](https://github.com/Bitspark/bittype/issues/35) | Existing module boundaries and current runtime mirror remain documented; no dependencies or allocation rewrite added. |
+| 7 | Separate structure, runtime recognition, operational validity and protocol evidence | HOLDS | Document judgments, send-only attenuation, stale-handle limits and current endpoint/scope ownership. | Root | [horos17](https://github.com/Bitspark/horos/issues/17), [bittype35](https://github.com/Bitspark/bittype/issues/35) | Send-shaped foreign object and expired-handle counterexamples; existing runtime source trace. |
+| 8 | Reuse declarations with separate optional profile/envelope; preserve ground APIs | HOLDS | Specify optional W grammar, explicit profile/revision, canonical pins, lexical binding and unchanged ground revision1. No compatibility decoder. | Root | [horos17](https://github.com/Bitspark/horos/issues/17) | Compare current D grammar/resolver and W examples; unknown tags/profiles remain refusal obligations. |
+| 9 | Data(any), complement and exact retain ground meaning | HOLDS | Give ideal membership denotation; Data is closed and opaque; exhaustion is not non-membership. | Root | [horos17](https://github.com/Bitspark/horos/issues/17), [bittype35](https://github.com/Bitspark/bittype/issues/35) | Ground checker and literal operand boundaries; no mixed top/complement implied. |
+| 10 | Ordered position-sensitive partial lift and Other/Root/Alias counterexample | HOLDS | Preserve every rule, branch order, singleton/empty union, full source validation and derived closure stopping at Data; no fallback. | Root | [horos17](https://github.com/Bitspark/horos/issues/17), [bittype35](https://github.com/Bitspark/bittype/issues/35) | Independent preservation review compares old/new tables and checks opposite Root/Alias outcomes. |
+| 11 | Preserve exact binder/target identity during lifting | NEEDS ADAPTATION | Preserve exact source correspondence as provenance; derived declarations/binders receive distinct identities. Resolve arguments in caller scope before binding callee slots. | Root | [horos17](https://github.com/Bitspark/horos/issues/17), [bittype35](https://github.com/Bitspark/bittype/issues/35) | Current DeclarationID/ParameterID and specialization source; distinct derived namespace and shadowing cases. |
+| 12 | Denotational ground preservation and substitution qualification | HOLDS | State exact embedded-membership/layout law and lexical coherence as future proof/fixture obligations, not established theorems. Preserve optional fields, nested apps, literals and recursion counterexamples. | Root | [horos17](https://github.com/Bitspark/horos/issues/17), [bittype35](https://github.com/Bitspark/bittype/issues/35) | Review formulas and explicit limits; empty union denotes no instances, not a bottom value. |
+| 13 | Distinct immutable profile compatibility and document/declaration identity | NEEDS ADAPTATION | Qualify references/recipes with semantic profile separately; keep existing ground DeclarationID(module pin,name) unchanged. Profile fixes domain, interpretation, encoding and recovery conventions; derived receipts retain roots, pins, slot mappings and naming choices. | Root | [horos17](https://github.com/Bitspark/horos/issues/17), [bittype35](https://github.com/Bitspark/bittype/issues/35) | No source struct change; canonical names remain pin-bearing, native naming/origins metadata; no shape equivalence. |
+| 14 | Library-owned native recipes and explicit structural alternative | HOLDS | Retain source/target profile identity, ordered operands, external/type-only AST choices, dependency locks, errors and four-language configuration. | Root | [bittype35](https://github.com/Bitspark/bittype/issues/35) | Preservation ledger and recipe table compared to base; no raw source, implicit lookup, ambiguous or last-writer fallback. |
+| 15 | Separate future adapters, dynamic descriptions and behavior | HOLDS | Preserve lazy bidirectional adapters, explicit lifetimes/cleanup, dynamic/static distinction and type-only syntax limits; keep complete library examples with protocol limitations. | Root | [bittype35](https://github.com/Bitspark/bittype/issues/35), [horos17](https://github.com/Bitspark/horos/issues/17) | Compare prior runtime-values and library equations; no executable generation or native type fabrication claimed. |
+| 16 | Existing AST/CST, semantic SPI and engine stay agnostic | HOLDS | Plan optional frontend stages and distinct engine endpoints using current interfaces, immutable receipts/configuration and explicit registration. | Root | [bittype35](https://github.com/Bitspark/bittype/issues/35) | Current registry self-edge/profile rules and import gates; only documentation paths change. |
+| 17 | Resource budgets and distinct exhaustion outcomes | HOLDS | Require bounded capture/recovery, resolution/lifting/generation and runtime work with node/depth/byte/module limits where applicable; no usable partial output. | Root | [ontos23](https://github.com/Bitspark/ontos/issues/23), [horos17](https://github.com/Bitspark/horos/issues/17), [bittype35](https://github.com/Bitspark/bittype/issues/35) | Independent reviewer identified missing optional-operation bounds; final docs explicitly enumerate them and distinguish invalid/unsupported/exhausted. |
+| 18 | Protocol laws and adversarial falsification cases | HOLDS | Record qualification gates for authority attenuation, stale scope, union emptiness, literal opacity, pinned recipes, adapter assumptions and correct endpoint/scope cleanup. | Root | [ontos23](https://github.com/Bitspark/ontos/issues/23), [horos17](https://github.com/Bitspark/horos/issues/17), [bittype35](https://github.com/Bitspark/bittype/issues/35) | All advice falsifiers map to documented future checks; none reported as executed by this docs task. |
+| 19 | Avoid premature generalized capability framework | HOLDS | Keep the concrete Wire optional profile; require a second concrete extension with demonstrated shared semantics before proposing generalized machinery. | Root | [ontos23](https://github.com/Bitspark/ontos/issues/23), [bittype35](https://github.com/Bitspark/bittype/issues/35) | No generalized registry, placeholder package or new SPI introduced. |
+| 20 | Implement profiles, generators, adapters and conformance suites | DEFERRED | Trigger: a separately authorized implementation change introduces the corresponding optional model, transform or runtime binding; that change must supply the documented laws/negative fixtures and target/runtime qualification before claiming support. | Future component owner | — | No implementation authorized by this request; current diff must contain only documentation/research evidence. |
+
+### Delivery evidence
+
+Exact candidate/remote gate results, independent review and merged revisions will
+be recorded here after validation. This consultation is not yet applied.

@@ -150,20 +150,20 @@ generic carriers, engine or production registration catalogue: there is no such
 catalogue. Applications choose their registrations. Adding Function, Stream,
 Cell or another library declaration does not add a stage, language or core kind.
 
-The separate [contract-type proposal](docs/hydrated-types.md) places Wire and
-mixed data/capability types above Horos in a new concrete language provider.
-Its proposed stage paths are `syntax/contract/go`, `check/contract/go`,
-`resolve/contract/go`, `analyze/contract/go`, `provider/contract/go` and private
-`internal/contract` helpers. They do not belong under the agnostic `contracts/`
-SPI directory. Future mappings use `transforms/contract-to-<native>/go` and an
-explicitly qualified `transforms/horos-to-contract/go` embedding/lifting bridge.
-These paths are proposals, not created packages or an extension of `horos`.
-The provider requires a separate identity/profile and reviewed narrow Horos/Ontos
-dependency allowance; the current architecture checks remain unchanged. Native
-text stages, generic infrastructure and Horos's data semantics stay independent.
+The [optional-extension proposal](docs/hydrated-types.md) places mixed type
+semantics in horos/wire, over ontos/wire values. Bittype's proposed projection
+uses `syntax/horoswire/go`, `check/horoswire/go`, `resolve/horoswire/go`,
+`analyze/horoswire/go`, `provider/horoswire/go` and `internal/horoswire`.
+These replace the unimplemented `contract` paths; no aliases remain planned.
+Shared `contracts/` still contains agnostic SPIs. Future mappings use
+`transforms/horoswire-to-<native>/go` and the explicitly selected
+`transforms/horos-to-horoswire/go` embedding/lifting bridge. No packages are
+created now. Distinct engine endpoint IDs, qualified profiles and narrow model
+dependency allowances need implementation evidence. Current architecture checks,
+native stages and the existing ground Horos frontend remain unchanged.
 
 The [lifting and native representation design](docs/type-representations.md)
-places partial template lifting in that Horos-to-contract transformer, and
+places implementation of Horos's partial lift in that transformer, and
 uniform native recipe consumption in the concrete native transformers. Each
 contract library owns its optional recipes and type artifacts outside bittype;
 the consuming application selects them. Adding Cell or another ordinary contract

@@ -16,14 +16,14 @@ remain future work. [Resolution](resolution.md) exports Horos's checked model
 to shared facts; [analysis](analysis.md) consumes that evidence explicitly.
 It adds no text parser or ASTTransformer implementation.
 
-The [contract-type proposal](hydrated-types.md) separately adds Wire typing in
-a Bittype-owned provider above the data-only Horos model. Its future path is
-`AST[Contract] -> AST[Native] -> CST[Native] -> source`, using the existing
+The [optional-extension proposal](hydrated-types.md) places mixed types in
+horos/wire over the ontos/wire value profile. Bittype's future path is
+`AST[HorosWire] -> AST[Native] -> CST[Native] -> source`, using the existing
 engine and text stages. Horos data generation remains a direct path. An explicit
-Horos-to-contract transformer could embed data or lift supported templates;
-no route may silently widen their domains. Neither contract provider nor these
+Horos-to-HorosWire transformer could embed data or apply Horos's partial lift;
+no route may silently widen domains. Neither optional frontend nor these
 transformers is implemented. Hydration belongs to existing Wire/runtime layers,
-not this static pipeline or Horos.
+not this static pipeline or Horos checking.
 
 The [lifting and native representation design](type-representations.md) now
 specifies the proposed partial template translation and per-language library

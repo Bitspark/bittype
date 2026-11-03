@@ -1,6 +1,6 @@
 # Charter
 
-**Current direction: 2 November 2026.** The owner selected horos for canonical
+**Current direction: 3 November 2026.** The owner selected horos for canonical
 data type semantics and bittype for syntax/tooling and native type generation,
 starting with types only. The [model boundary](docs/model.md) replaces the earlier
 independent bittype type-language proposal. Horos declaration revision 1 and its
@@ -23,9 +23,9 @@ bittype owns:
   same semantic infrastructure. Horos supplies the first production resolver and
   analyzer; analysis consumes an explicit receipt and can reuse its sealed model.
 - Small data types needed to represent presence and nullness in generated code.
-- The proposed [contract-language layer](docs/hydrated-types.md) above Horos:
-  explicit ground data embeddings, Wire message types and mixed compositions.
-  This is provider-owned meaning, not an agnostic kernel extension.
+- Proposed [tooling for optional horos/wire](docs/hydrated-types.md), adapting
+  its canonical declarations and lifting rules to ASTs and shared semantic facts.
+  Bittype does not own that model or its mixed value domain.
 
 Horos owns data descriptors, conformance and module/generic/application
 semantics for data declarations, their encoding and semantic vectors. Ontos owns
@@ -33,11 +33,13 @@ ground values, structural identity and encoding. Horos does not depend on bittyp
 the current Horos-specific frontend and future qualified providers/transformers
 consume its model. Generic foundations and native text stages remain independent.
 
-**Owner boundary correction, 2 November 2026:** Ontos and Horos stay data-only.
-Wire typing belongs to the proposed Bittype contract-language provider, with
-its own language identity/profile; hydration stays above Horos in the existing
-bitwire/bitruntime layers. Function, Stream and Cell remain ordinary libraries.
-No proposed Horos revision 2 or Horos Wire constructor remains in scope.
+**Owner boundary correction, 3 November 2026:** ground Ontos and Horos remain
+data-only. Optional ontos/wire owns a mixed value profile; optional horos/wire
+owns its type model. These proposals replace the Bittype-owned contract model,
+without reviving the earlier ground Horos revision-2 proposal. Hydration stays
+in bitwire/bitruntime; Function, Stream and Cell remain ordinary libraries.
+The [preservation map](docs/wire-extension-preservation.md) records retained
+concepts, explicit supersessions and future qualification obligations.
 
 The owner's 31 October structure decision selects the stage-first matrix in
 [LAYOUT.md](LAYOUT.md). Shared trees, shared contracts and the engine have distinct
@@ -78,7 +80,7 @@ checks enforce that narrow boundary; generic carriers, contracts, engine, printe
 and native text stages have no external Horos/Ontos imports. The engine depends
 on the generic analysis contract, whose graph does not encode language rules.
 
-The contract-language provider and its narrow ground-model dependency allowance
+The optional Horos Wire frontend and its narrow model dependency allowance
 are future work. Their proposal does not alter these current import checks,
 instantiate a runtime or extend the implemented Horos language profile.
 
