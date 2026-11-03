@@ -108,7 +108,7 @@ func TestLanguageAndStageSeparation(t *testing.T) {
 		{"mixed_kinds", []string{"cannot use", "Kind[right]", "Kind[left]"}},
 		{"stage_input", []string{"cannot use", "AST[left]", "AST[right]"}},
 		{"stage_output", []string{"cannot use", "AST[right]", "string"}},
-		{"ground_optional", []string{"cannot use", "optional.AST", "ground.AST"}},
+		{"ground_optional", []string{"cannot use", "horoswire.AST", "horos.AST"}},
 	}
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
