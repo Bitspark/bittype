@@ -103,6 +103,10 @@ registers the returned existing `ASTTransformer`. Registration adds one partial
 language edge, not an edge per library contract. A failed lift returns no usable
 tree, derivation or envelope; it never retries embedding or another route.
 
+Selection entries and bytes are bounded before copying configuration or resolving
+source. Provenance accumulation has its own bounded storage, and the complete
+target AST must also pass the fixed carrier/profile limits before publication.
+
 Horos's separate explicit `Embed` operation remains available for a concrete
 ground specialization. The transformer does not call it as a fallback. For
 example, lifting a closed application of `Other<T> = not(T)` still fails because

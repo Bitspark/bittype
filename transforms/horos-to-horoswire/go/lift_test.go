@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/engine/go"
 	hp "github.com/Bitspark/bittype/provider/horos/go"
 	wp "github.com/Bitspark/bittype/provider/horoswire/go"
@@ -220,5 +221,27 @@ func TestIndependentSelectedRootsAreNeverDropped(t *testing.T) {
 	result, err := lift.Derive(input, options)
 	if !errors.Is(err, lift.ErrOptions) || !reflect.DeepEqual(result, lift.Result{}) {
 		t.Fatalf("independent root was silently dropped: %v", err)
+	}
+}
+
+func TestSelectionRefusalPrecedesCollectionCopies(t *testing.T) {
+	_, options := fixture(t)
+	from, _ := representation.NewLanguage[h.Language](hp.Provider{}, h.Profile)
+	to, _ := representation.NewLanguage[w.Language](wp.Provider{}, w.Profile)
+	options.Roots = make([]ground.DeclarationID, 4096)
+	options.Lift.Limits.MaxNodes = 1
+	allocations := func(count int) float64 {
+		selected := options
+		selected.Roots = options.Roots[:count]
+		return testing.AllocsPerRun(20, func() {
+			transformer, err := lift.NewTransformer(from, to, selected)
+			var detail *text.Diagnostic
+			if transformer != nil || !errors.As(err, &detail) || detail.Code != text.LimitExceeded {
+				t.Fatalf("invalid selection captured: %v", err)
+			}
+		})
+	}
+	if narrow, wide := allocations(2), allocations(4096); wide > narrow {
+		t.Fatalf("rejected selection was copied: %v -> %v", narrow, wide)
 	}
 }

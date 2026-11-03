@@ -42,7 +42,49 @@ type Result struct {
 	Derivation *wire.Derivation
 }
 
+// Selection is a separate bounded input. Check known collection sizes before
+// copying them or invoking model resolution; name bytes are charged by occurrence.
+func selection(options Options) error {
+	l := options.Lift.Limits
+	if options.TreeID == "" || len(options.Roots) == 0 || l.MaxDepth <= 0 || l.MaxDepth > 512 || l.MaxNodes <= 0 || l.MaxBytes <= 0 || l.MaxModules <= 0 {
+		return ErrOptions
+	}
+	entries, bytes := min(l.MaxNodes, structure.MaxEntries), min(l.MaxBytes, structure.MaxTextBytes)
+	take := func(left *int, count int) bool {
+		if count > *left {
+			return false
+		}
+		*left -= count
+		return true
+	}
+	exhausted := func() error {
+		return &text.Diagnostic{Code: text.LimitExceeded, Message: "lift selection exceeds its resource budget"}
+	}
+	if !take(&entries, len(options.Roots)) || !take(&entries, len(options.Lift.ModuleNames)) || !take(&entries, len(options.Lift.DeclarationNames)) || !take(&bytes, len(options.TreeID)) {
+		return exhausted()
+	}
+	for _, root := range options.Roots {
+		if !take(&bytes, len(root.Module)) || !take(&bytes, len(root.Name)) {
+			return exhausted()
+		}
+	}
+	for pin, name := range options.Lift.ModuleNames {
+		if !take(&bytes, len(pin)) || !take(&bytes, len(name)) {
+			return exhausted()
+		}
+	}
+	for id, name := range options.Lift.DeclarationNames {
+		if !take(&bytes, len(id.Module)) || !take(&bytes, len(id.Name)) || !take(&bytes, len(name)) {
+			return exhausted()
+		}
+	}
+	return nil
+}
+
 func Derive(input h.AST, options Options) (Result, error) {
+	if err := selection(options); err != nil {
+		return Result{}, err
+	}
 	if options.TreeID == "" || options.TreeID == input.ID {
 		return Result{}, ErrOptions
 	}
@@ -168,6 +210,9 @@ func Derive(input h.AST, options Options) (Result, error) {
 func NewTransformer(from, to representation.Language, options Options) (transform.ASTTransformer, error) {
 	if from.ID() != (h.Language{}).ID() || from.Profile() != h.Profile || to.ID() != (w.Language{}).ID() || to.Profile() != w.Profile {
 		return nil, ErrOptions
+	}
+	if err := selection(options); err != nil {
+		return nil, err
 	}
 	options.Roots = slices.Clone(options.Roots)
 	options.Lift.ModuleNames = maps.Clone(options.Lift.ModuleNames)
