@@ -19,7 +19,10 @@ func tagged(prefix, name string, args ...core.Value) core.Value {
 	return core.NewTuple(append([]core.Value{core.NewAtom([]byte(prefix + name))}, args...)...)
 }
 
-type reader[L any] struct { tree ast.AST[L]; declarationPrefix, descriptorPrefix string }
+type reader[L any] struct {
+	tree                                ast.AST[L]
+	declarationPrefix, descriptorPrefix string
+}
 
 func (r reader[L]) node(id ast.NodeID) ast.Node[L] { return r.tree.Nodes[id-1] }
 func (r reader[L]) attr(id ast.NodeID, name string) string {
@@ -173,7 +176,7 @@ func (e *ValidationError) Unwrap() error { return ErrInvalid }
 // Decoded retains the source correspondence, not a partially checked Program.
 // It is private frontend state consumed synchronously by explicit resolution.
 type Decoded[L any] struct {
- frontend Frontend[L]
+	frontend     Frontend[L]
 	tree         ast.AST[L]
 	root         core.Value
 	dependencies []core.Value
@@ -198,7 +201,7 @@ func (d *Decoded[L]) annotation(id ast.NodeID, context bool, message string) err
 func (f Frontend[L]) Decode(view ast.View[L], limits decl.Limits) (*Decoded[L], error) {
 	tree := view.ASTView()
 	r := reader[L]{tree: tree, declarationPrefix: f.DeclarationPrefix, descriptorPrefix: f.DescriptorPrefix}
-	d := &Decoded[L]{frontend: f,tree: tree, modules: make(map[decl.Digest]ast.NodeID), declarations: make(map[decl.DeclarationID]ast.NodeID), parameters: make(map[decl.ParameterID]ast.NodeID), imports: make(map[importID]ast.NodeID)}
+	d := &Decoded[L]{frontend: f, tree: tree, modules: make(map[decl.Digest]ast.NodeID), declarations: make(map[decl.DeclarationID]ast.NodeID), parameters: make(map[decl.ParameterID]ast.NodeID), imports: make(map[importID]ast.NodeID)}
 	root := tree.Nodes[tree.Root-1].References[0].Target.Node
 	for _, child := range tree.Nodes[tree.Root-1].Children {
 		value, err := r.module(child.Node)
@@ -223,22 +226,7 @@ func (f Frontend[L]) Decode(view ast.View[L], limits decl.Limits) (*Decoded[L], 
 		if d.modules[pin] != 0 {
 			return nil, d.assertion(child.Node, true, "duplicate module document in input")
 		}
-		d.modules[pin] = child.Node
-		for _, member := range r.node(child.Node).Children {
-			if member.Role == s.RoleImport {
-				d.imports[importID{module: pin, alias: r.attr(member.Node, s.AttributeAlias)}] = member.Node
-				continue
-			}
-			id := decl.DeclarationID{Module: pin, Name: r.attr(member.Node, s.AttributeName)}
-			d.declarations[id] = member.Node
-			index := 0
-			for _, parameter := range r.node(member.Node).Children {
-				if parameter.Role == s.RoleParameter {
-					d.parameters[decl.ParameterID{Declaration: id, Index: index}] = parameter.Node
-					index++
-				}
-			}
-		}
+		d.indexModule(child.Node, pin, r)
 		if child.Node == root {
 			d.root = value
 		} else {

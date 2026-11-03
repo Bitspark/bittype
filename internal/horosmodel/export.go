@@ -11,7 +11,7 @@ import (
 )
 
 type exporter[L any] struct {
- frontend Frontend[L]
+	frontend              Frontend[L]
 	ctx                   context.Context
 	input                 *Decoded[L]
 	facts                 semantics.Data
@@ -147,7 +147,7 @@ func (e *exporter[L]) expression(expression *decl.Expression, site ast.NodeRef, 
 }
 
 func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Program, limits semantics.Limits) (semantics.Data, error) {
-	e := exporter[L]{frontend: f,ctx: ctx, input: input, limits: limits, records: limits.MaxRecords, edges: limits.MaxEdges, bytes: limits.MaxBytes,
+	e := exporter[L]{frontend: f, ctx: ctx, input: input, limits: limits, records: limits.MaxRecords, edges: limits.MaxEdges, bytes: limits.MaxBytes,
 		modules: make(map[decl.Digest]semantics.EntityID), declarations: make(map[decl.DeclarationID]semantics.EntityID), parameters: make(map[decl.ParameterID]semantics.EntityID)}
 	modules := program.Modules()
 	// Allocate identity records before translating any expression. Forward uses

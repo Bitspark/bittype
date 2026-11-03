@@ -44,5 +44,8 @@ func Model(view ast.View[s.Language]) (*decl.Program, error) {
 		return nil, err
 	}
 	program, err := frontend.Read(tree)
- if err != nil { return nil, err }; return program.(*decl.Program), nil
+	if err != nil {
+		return nil, err
+	}
+	return program.(*decl.Program), nil
 }

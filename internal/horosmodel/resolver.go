@@ -18,7 +18,6 @@ import (
 	decl "github.com/Bitspark/horos/core/go/declarations"
 )
 
-
 func (f Frontend[L]) ReferenceResolution() semantics.Key { return f.key("reference-resolution") }
 
 func (f Frontend[L]) key(name string) semantics.Key        { return semantics.Key{Owner: f.Owner, Name: name} }

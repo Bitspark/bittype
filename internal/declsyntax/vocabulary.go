@@ -2,16 +2,16 @@
 package declsyntax
 
 const (
-	KindProgram = "program"
-	KindModule = "module"
-	KindImport = "import"
-	KindDeclaration = "declaration"
+	KindProgram       = "program"
+	KindModule        = "module"
+	KindImport        = "import"
+	KindDeclaration   = "declaration"
 	KindTypeParameter = "type-parameter"
-	KindParameter = "parameter"
-	KindApplication = "application"
-	KindDescriptor = "descriptor"
-	KindAtom = "atom"
-	KindTuple = "tuple"
+	KindParameter     = "parameter"
+	KindApplication   = "application"
+	KindDescriptor    = "descriptor"
+	KindAtom          = "atom"
+	KindTuple         = "tuple"
 )
 
 const (
