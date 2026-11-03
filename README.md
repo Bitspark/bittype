@@ -36,7 +36,7 @@ target ASTs, followed by this formatting/printing pipeline.
 
 Function, Stream, Cell and future behavioral contracts remain library-owned.
 This milestone adds no runtime adapters, callable implementations, serialization,
-application-value validation or Wire dependencies.
+application-value validation or dependencies on bitwire/bitruntime.
 
 Ground Ontos and Horos stay data-only. The [optional-extension proposal](docs/hydrated-types.md)
 places the mixed value profile in ontos/wire and its type model in horos/wire.
