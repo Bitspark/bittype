@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math/big"
 	"reflect"
+	"runtime"
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/text/go"
@@ -230,18 +231,28 @@ func TestSelectionRefusalPrecedesCollectionCopies(t *testing.T) {
 	to, _ := representation.NewLanguage[w.Language](wp.Provider{}, w.Profile)
 	options.Roots = make([]ground.DeclarationID, 4096)
 	options.Lift.Limits.MaxNodes = 1
-	allocations := func(count int) float64 {
+	allocatedBytes := func(count int) uint64 {
 		selected := options
 		selected.Roots = options.Roots[:count]
-		return testing.AllocsPerRun(20, func() {
+		refuse := func() {
 			transformer, err := lift.NewTransformer(from, to, selected)
 			var detail *text.Diagnostic
 			if transformer != nil || !errors.As(err, &detail) || detail.Code != text.LimitExceeded {
 				t.Fatalf("invalid selection captured: %v", err)
 			}
-		})
+		}
+		refuse() // Warm the error path before measuring owned allocations.
+		var before, after runtime.MemStats
+		runtime.ReadMemStats(&before)
+		for i := 0; i < 50; i++ {
+			refuse()
+		}
+		runtime.ReadMemStats(&after)
+		return after.TotalAlloc - before.TotalAlloc
 	}
-	if narrow, wide := allocations(2), allocations(4096); wide > narrow {
+	// Copying the wide roots would allocate over 9 MiB in this bounded loop.
+	// Allow small unrelated runtime bookkeeping without accepting that behavior.
+	if narrow, wide := allocatedBytes(2), allocatedBytes(4096); wide > narrow+(64<<10) {
 		t.Fatalf("rejected selection was copied: %v -> %v", narrow, wide)
 	}
 }
