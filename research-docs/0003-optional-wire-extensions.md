@@ -2,7 +2,7 @@
 
 **ID:** 0003
 **Date:** 3 November 2026
-**Status:** delivering
+**Status:** applied
 **Graded:** https://github.com/Bitspark/bittype/issues/35#issuecomment-6611597047
 **Run-ID:** run_31c1813d-dd34-46a5-9873-105a934581fb
 **Reviewed:** https://github.com/Bitspark/bittype/issues/35#issuecomment-6611112491
@@ -628,5 +628,42 @@ The independent reviewer checks the exact candidate and delivered state.
 
 ### Delivery evidence
 
-Exact candidate/remote gate results, independent review and merged revisions will
-be recorded here after validation. This consultation is not yet applied.
+The documentation was reviewed independently by `codex-hydrated-type-review`
+(session `01a19ddb-e273-7ef1-9192-c6be8a46705f`). Its initial review found missing
+extension-operation resource bounds, ambiguous canonical/native target-name
+wording and ambiguous payload-with-children wording. All were corrected before
+the exact candidate review; no concept-loss or source implementation change was
+found. The 20-row evaluation and frozen/advice hashes were checked independently.
+
+| Repository | Reviewed candidate | Merged main and exact validation |
+| --- | --- | --- |
+| bittype | `84a21c8e636d1d59b7f01dc0ae83f4b9807b2e03`; [docs](https://github.com/Bitspark/bittype/actions/runs/41689863073), [Go/native](https://github.com/Bitspark/bittype/actions/runs/41689863165) passed. | [PR36](https://github.com/Bitspark/bittype/pull/36) merged `1dee5dbb45cd8cf1d632c9151bafca56876c86b5`; [main docs](https://github.com/Bitspark/bittype/actions/runs/41690741558), [main Go/native](https://github.com/Bitspark/bittype/actions/runs/41690741317) passed. |
+| horos | `f79eced7c6769db5903faff644f1c210948edbcd`; [exact dispatch](https://github.com/Bitspark/horos/actions/runs/41689878790) and [PR CI](https://github.com/Bitspark/horos/actions/runs/41689882779) passed all six lanes. | [PR18](https://github.com/Bitspark/horos/pull/18) merged `56da2464962d879225b30dd991d0e9c8b5cb6cd5`; [main CI](https://github.com/Bitspark/horos/actions/runs/41690761746) passed all six lanes. |
+| ontos | `87299ae50c3487d32869be84c3b511952170847f`; [exact dispatch](https://github.com/Bitspark/ontos/actions/runs/41691040503), [PR CI](https://github.com/Bitspark/ontos/actions/runs/41690976001) and [substrate/profile](https://github.com/Bitspark/ontos/actions/runs/41690975995) passed. The exact dispatch includes consumer smoke; both CI runs include fuzz qualification. | [PR24](https://github.com/Bitspark/ontos/pull/24) merged `dbd902087113b3adda8fe27676fcecc082e98db6`; its tree is identical to the independently reviewed and remotely validated candidate. |
+
+The candidate and merged trees match exactly: Bittype
+`7fd9a10a10d56ba115624c18ade3ee962ed21282`, Horos
+`c08aaa0325f92e16473b1938eb728689c2e91e61`, Ontos
+`7661d0af0a89adbe802b790950458cb95fba1e54`. Implementing issues35,17 and23 are
+closed. Every accepted documentation recommendation is delivered and validated;
+this consultation is applied within its agreed documentation-only scope.
+
+The initial Ontos candidate correctly failed its maintained spelling lint and
+public-profile documentation-index check. Only repository-name prose and two
+formula fence labels were corrected; no naming rule or gate was weakened.
+The required index was regenerated on a GitHub runner through the maintained
+Atlas manifest function, not edited manually:
+[export run41690725951](https://github.com/Bitspark/ontos/actions/runs/41690725951),
+source `f64ea767118f97e35e02d78c2968b8a652b13c72`, generator
+`Bitspark/atlas-gate@978f6720e995281ffb890ea4e92293eaaaf47978`.
+The retrieved artifact hash matched
+`1af7d77b9b54cd903b434c8411801216e3f99ce7b0c817b5d81592e407aa01d1`;
+its 13-line diff adds only the new page and its 11 headings. The temporary export
+workflow is not part of any task PR or main tree. Superseded failing-head runs
+were cancelled after their failure evidence was retained; the corrected candidate
+passed all maintained checks anew.
+
+The delivered documentation retains explicit future qualification requirements.
+No optional value/type model, AST frontend, generator, adapter, protocol, runtime,
+dependency or release was implemented. Row20 remains deferred under its stated
+trigger; it is not unfinished work in this documentation-only request.
