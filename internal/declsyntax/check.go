@@ -63,13 +63,13 @@ var rules = g.Rules{
 	"program":        {Roles: []g.Role{g.Many("module", 1, "module")}},
 	"module":         {Attributes: g.Attributes("name", g.Attr(true, moduleName), "pin", g.Attr(true, pin)), Roles: []g.Role{g.Many("import", 0, "import"), g.Many("declaration", 0, "declaration")}},
 	"import":         {Attributes: g.Attributes("alias", g.Attr(true, identifier), "name", g.Attr(true, moduleName), "pin", g.Attr(true, pin))},
-	"declaration":    {Attributes: g.Attributes("name", g.Attr(true, identifier)), Roles: []g.Role{g.Many("parameter", 0, "type-parameter"), g.One("body", expression..)}},
+	"declaration":    {Attributes: g.Attributes("name", g.Attr(true, identifier)), Roles: []g.Role{g.Many("parameter", 0, "type-parameter"), g.One("body", expressions...)}},
 	"type-parameter": {Attributes: g.Attributes("name", g.Attr(true, identifier), "index", g.Attr(true, g.Decimal))},
 	"parameter":      {Attributes: g.Attributes("index", g.Attr(true, g.Decimal))},
-	"application":    {Attributes: g.Attributes("scope", g.Attr(true, g.Set("local", "imported")), "name", g.Attr(true, identifier), "alias", g.Attr(false, identifier)), Roles: []g.Role{g.Many("argument", 0, expression..)}},
-	"descriptor":     {Attributes: g.Attributes("constructor", g.Attr(true, g.Nonempty)), Roles: []g.Role{g.Many("operand", 0, fragment..)}},
+	"application":    {Attributes: g.Attributes("scope", g.Attr(true, g.Set("local", "imported")), "name", g.Attr(true, identifier), "alias", g.Attr(false, identifier)), Roles: []g.Role{g.Many("argument", 0, expressions...)}},
+	"descriptor":     {Attributes: g.Attributes("constructor", g.Attr(true, g.Nonempty)), Roles: []g.Role{g.Many("operand", 0, fragments...)}},
 	"atom":           {Attributes: g.Attributes("hex", g.Attr(true, hexadecimal))},
-	"tuple":          {Roles: []g.Role{g.Many("element", 0, fragment..)}},
+	"tuple":          {Roles: []g.Role{g.Many("element", 0, fragments...)}},
 }
 
 func attribute[L any](node ast.Node[L], name string) string {

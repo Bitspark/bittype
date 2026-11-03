@@ -33,7 +33,7 @@ jobs:
           echo "Checked revision: $EXPECTED_REVISION"
           go version
       - name: Download pinned modules
-        run: go mod download
+        run: go mod download all
       - name: Save dependency checksum corrections
         shell: bash
         run: git diff --binary -- go.mod go.sum > "$RUNNER_TEMP/go-mod.patch"
