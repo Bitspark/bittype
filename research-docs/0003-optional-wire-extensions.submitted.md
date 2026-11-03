@@ -10,6 +10,16 @@
 
 ## Question
 
+**Response requirement for the revised submission:** provide a complete, concise
+answer to all five questions below in at most 1,500 words. Do not repeat the brief
+or write an extended introductory report. Prioritize counterexamples, precise
+amendments and qualification obligations, especially partial lifting, profile-aware
+identity and library-owned native recipes. An earlier genuine response stopped
+mid-sentence during section 3; a fresh capture returned identical bytes, so it
+did not cover these questions completely. The technical brief and its four
+reviews are unchanged; this revision only bounds the response to obtain a
+complete assessment. Do not treat any prior response as available context.
+
 How should optional `ontos/wire` and `horos/wire` extensions own the mixed
 data/capability value domain and its types, while preserving the frozen ground
 models, existing generic/lifting ideas and Bittype's language-agnostic tooling?
