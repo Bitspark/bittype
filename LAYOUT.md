@@ -25,10 +25,10 @@ contracts/
 semantics/go/             immutable provider-owned semantic facts and graph checks
 engine/go/                explicit registration, planning and execution
 syntax/<language>/go/     native abstract/concrete vocabulary and identity
-resolve/horos/go/         Horos resolution, fact export and canonical-value helpers
+resolve/<profile>/go/     Horos profile resolution, fact export and canonical-value helpers
 parse/<language>/go/      source text to CST
 check/<language>/go/      language syntax checking
-analyze/horos/go/         consume resolution evidence and reuse its model
+analyze/<profile>/go/     consume resolution evidence and reuse its model
 format/<language>/go/     AST view to CST
 provider/<language>/go/   explicit composition of the language's stages
 check/ast/go/             generic abstract carrier checks
@@ -42,7 +42,7 @@ docs/
 ```
 
 The native text language directories are `typescript`, `golang`, `rust` and
-`cpp`; `horos` implements the AST-only syntax/resolve/check/analyze/provider profile.
+`cpp`; `horos` and `horoswire` implement the AST-only syntax/resolve/check/analyze/provider profile.
 The final `go` directory denotes implementation language, not target:
 `syntax/rust/go` is Go code describing Rust syntax. `ast` and `cst` in the check
 stage are reserved generic-carrier components, not native language names.
@@ -130,7 +130,7 @@ semantic analysis is not implied by native text tooling.
 
 The [Horos declaration integration](docs/horos.md) implements
 `syntax/horos/go`, `check/horos/go`, `analyze/horos/go`, `provider/horos/go` and
-`resolve/horos/go`, with private projection/correspondence in `internal/horos`.
+`resolve/horos/go`, with private projection/correspondence in `internal/horosmodel`.
 Readable syntax, when specified, adds `parse/horos/go` and
 `format/horos/go` under the same stage matrix. These replace the former proposed
 `canonical` paths; there are no compatibility aliases.
@@ -150,17 +150,21 @@ generic carriers, engine or production registration catalogue: there is no such
 catalogue. Applications choose their registrations. Adding Function, Stream,
 Cell or another library declaration does not add a stage, language or core kind.
 
-The [optional-extension proposal](docs/hydrated-types.md) places mixed type
-semantics in horos/wire, over ontos/wire values. Bittype's proposed projection
-uses `syntax/horoswire/go`, `check/horoswire/go`, `resolve/horoswire/go`,
-`analyze/horoswire/go`, `provider/horoswire/go` and `internal/horoswire`.
-These replace the unimplemented `contract` paths; no aliases remain planned.
-Shared `contracts/` still contains agnostic SPIs. Future mappings use
-`transforms/horoswire-to-<native>/go` and the explicitly selected
-`transforms/horos-to-horoswire/go` embedding/lifting bridge. No packages are
-created now. Distinct engine endpoint IDs, qualified profiles and narrow model
-dependency allowances need implementation evidence. Current architecture checks,
-native stages and the existing ground Horos frontend remain unchanged.
+The [optional extension](docs/hydrated-types.md) places mixed type semantics in
+horos/wire, over ontos/wire values. Its implemented Bittype projection uses
+`syntax/horoswire/go`, `check/horoswire/go`, `resolve/horoswire/go`,
+`analyze/horoswire/go` and `provider/horoswire/go`. The two Horos profiles share
+syntax framing through `internal/declsyntax` and private model projection,
+correspondence and export through `internal/horosmodel`. Each concrete stage
+selects its fixed grammar/profile; there is no profile registry in that helper.
+These replace the unimplemented `contract` paths without aliases.
+
+`transforms/horos-to-horoswire/go` implements explicitly selected partial lifting
+and AST provenance. Model dependency allowances cover only the two frontends,
+the private model helper and this concrete transform. Their capability tests and
+architecture checks enforce distinct endpoints/profiles and keep the engine and
+native stages model-independent. See [implemented API details](docs/horoswire.md).
+Future native mappings use `transforms/horoswire-to-<native>/go`.
 
 The [lifting and native representation design](docs/type-representations.md)
 places implementation of Horos's partial lift in that transformer, and
@@ -168,8 +172,8 @@ uniform native recipe consumption in the concrete native transformers. Each
 contract library owns its optional recipes and type artifacts outside bittype;
 the consuming application selects them. Adding Cell or another ordinary contract
 adds no bittype stage, engine edge per contract or central registration entry.
-These are proposed responsibilities, with no new packages or implemented recipe
-SPI. The existing ASTTransformer boundary remains unchanged.
+Lifting is implemented; native transformers and recipe SPIs remain proposed.
+The existing ASTTransformer boundary is unchanged.
 
 See the [charter](CHARTER.md), [engine API](docs/engine.md),
 [native text design](docs/parsing-formatting.md) and

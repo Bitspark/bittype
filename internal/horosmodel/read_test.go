@@ -1,20 +1,20 @@
-package horosbridge
+package horosmodel
 
 import (
 	"strconv"
 	"strings"
 	"testing"
 
-	s "github.com/Bitspark/bittype/syntax/horos/go"
+	s "github.com/Bitspark/bittype/internal/declsyntax"
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 func TestParameterIndexDecodeHasMachineIntegerWorkBound(t *testing.T) {
 	decode := func(spelling string) (bool, error) {
-		input := s.AST{ID: "index", Root: 1, Nodes: []s.Node{{
+		input := ast.AST[struct{}]{ID: "index", Root: 1, Nodes: []ast.Node[struct{}]{{
 			Kind: s.KindParameter, Attributes: []ast.Attribute{{Name: s.AttributeIndex, Text: spelling}},
 		}}}
-		value, err := (reader{tree: input}).value(1)
+		value, err := (reader[struct{}]{tree: input, declarationPrefix: "horos/decl/", descriptorPrefix: "horos/"}).value(1)
 		return value != nil, err
 	}
 	for _, spelling := range []string{"0", strconv.Itoa(int(^uint(0) >> 1))} {

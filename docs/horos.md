@@ -6,10 +6,12 @@ The authoritative value format and binding rules are in
 [horos's declaration specification](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
 
 The [optional-extension proposal](hydrated-types.md) places the mixed type model
-in horos/wire over ontos/wire values. Bittype will project that optional profile;
+in horos/wire over ontos/wire values. Bittype projects that optional profile;
 it no longer proposes an independently owned contract model. This implemented
 Horos frontend stays data-only with revision 1 and its existing profiles.
-The optional model and additional frontend are not implemented.
+The [additional frontend](horoswire.md) is implemented separately. Private
+projection and binding mechanics are shared in `internal/horosmodel`, and syntax
+framing in `internal/declsyntax`; ground public profiles and semantics are unchanged.
 
 ## API and ownership
 

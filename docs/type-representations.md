@@ -1,15 +1,15 @@
 # Template lifting and library-owned native type representations
 
-**Owner direction, 3 November 2026. Status: documentation proposal only.**
+**Owner direction, 3 November 2026. Status: lifting implemented; native representations proposed.**
 This refines the [optional Horos Wire tooling proposal](hydrated-types.md) and
 [generation pipeline](generation.md). Ground Ontos/Horos remain data-only;
 optional ontos/wire owns mixed values and horos/wire owns their type model.
 Bittype consumes that model; Function, Cell and Stream remain ordinary libraries.
 
 The existing ASTTransformer interface and syntax engine need no new operation
-for a named library contract. The optional Horos Wire provider, lifting transformer, native
-transformers and representation configuration below are not implemented.
-Examples describe the intended design, not executable configuration or new APIs.
+for a named library contract. The optional Horos Wire provider and explicit partial lifting transformer are
+[implemented](horoswire.md). Native transformers and representation configuration
+below remain proposed. Recipe examples are design notation, not executable APIs.
 No runtime adapter, validator, callable implementation or transport is added.
 
 The separate [runtime value explanation](runtime-values.md) connects this static

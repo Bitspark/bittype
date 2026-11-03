@@ -6,7 +6,6 @@ import (
 	"reflect"
 
 	check "github.com/Bitspark/bittype/check/horos/go"
-	bridge "github.com/Bitspark/bittype/internal/horos"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
@@ -16,13 +15,13 @@ import (
 // Resolve retains the root's complete pinned import closure in one AST.
 // treeID is a tooling address, separate from the canonical module pins.
 func Resolve(root core.Value, dependencies []core.Value, treeID ast.TreeID) (s.AST, error) {
-	return bridge.Resolve(root, dependencies, treeID)
+	return frontend.Resolve(root, dependencies, treeID)
 }
 
 // Project projects a checked model without specializing its open declarations.
 // Custom-limit models are re-admitted under this profile's fixed Horos defaults.
 func Project(program *decl.Program, treeID ast.TreeID) (s.AST, error) {
-	return bridge.Project(program, treeID)
+	return frontend.Project(program, treeID)
 }
 
 // Model checks the AST and recovers the Horos model for inspection or explicit
@@ -44,5 +43,9 @@ func Model(view ast.View[s.Language]) (*decl.Program, error) {
 	if err := check.Check(tree); err != nil {
 		return nil, err
 	}
-	return bridge.Read(tree)
+	program, err := frontend.Read(tree)
+	if err != nil {
+		return nil, err
+	}
+	return program.(*decl.Program), nil
 }

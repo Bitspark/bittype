@@ -1,19 +1,19 @@
-package resolve
+package horosmodel
 
 import (
 	"context"
 	"fmt"
 
-	bridge "github.com/Bitspark/bittype/internal/horos"
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	codec "github.com/bitspark/ontos/codec/go"
 )
 
-type exporter struct {
+type exporter[L any] struct {
+	frontend              Frontend[L]
 	ctx                   context.Context
-	input                 *bridge.Decoded
+	input                 *Decoded[L]
 	facts                 semantics.Data
 	modules               map[decl.Digest]semantics.EntityID
 	declarations          map[decl.DeclarationID]semantics.EntityID
@@ -22,7 +22,7 @@ type exporter struct {
 	records, edges, bytes int
 }
 
-func (e *exporter) reserve(records, edges, bytes int) error {
+func (e *exporter[L]) reserve(records, edges, bytes int) error {
 	if err := e.ctx.Err(); err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (e *exporter) reserve(records, edges, bytes int) error {
 func keySize(k semantics.Key) int                { return len(k.Owner) + len(k.Name) }
 func occurrenceSize(at semantics.Occurrence) int { return len(at.Site.Tree) + keySize(at.Role) }
 
-func (e *exporter) entity(kind semantics.Key, name string, owner semantics.EntityID, site ast.NodeRef) (semantics.EntityID, error) {
+func (e *exporter[L]) entity(kind semantics.Key, name string, owner semantics.EntityID, site ast.NodeRef) (semantics.EntityID, error) {
 	if site.Node == 0 {
 		return 0, fmt.Errorf("Horos entity has no current syntax site")
 	}
@@ -49,8 +49,8 @@ func (e *exporter) entity(kind semantics.Key, name string, owner semantics.Entit
 	return semantics.EntityID(len(e.facts.Entities)), nil
 }
 
-func (e *exporter) association(site ast.NodeRef, term semantics.TermID) error {
-	at := semantics.Occurrence{Site: site, Role: ExpressionRole()}
+func (e *exporter[L]) association(site ast.NodeRef, term semantics.TermID) error {
+	at := semantics.Occurrence{Site: site, Role: e.frontend.ExpressionRole()}
 	if err := e.reserve(1, 0, occurrenceSize(at)); err != nil {
 		return err
 	}
@@ -58,8 +58,8 @@ func (e *exporter) association(site ast.NodeRef, term semantics.TermID) error {
 	return nil
 }
 
-func (e *exporter) binding(site ast.NodeRef, target semantics.EntityID) error {
-	at := semantics.Occurrence{Site: site, Role: TargetRole()}
+func (e *exporter[L]) binding(site ast.NodeRef, target semantics.EntityID) error {
+	at := semantics.Occurrence{Site: site, Role: e.frontend.TargetRole()}
 	if err := e.reserve(1, 0, occurrenceSize(at)); err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (e *exporter) binding(site ast.NodeRef, target semantics.EntityID) error {
 	return nil
 }
 
-func (e *exporter) expression(expression *decl.Expression, site ast.NodeRef, owner semantics.EntityID, depth int) (semantics.TermID, error) {
+func (e *exporter[L]) expression(expression *decl.Expression, site ast.NodeRef, owner semantics.EntityID, depth int) (semantics.TermID, error) {
 	if depth > e.limits.MaxDepth {
 		return 0, semantics.ErrLimit
 	}
@@ -105,13 +105,13 @@ func (e *exporter) expression(expression *decl.Expression, site ast.NodeRef, own
 		if err := e.binding(site, term.Target); err != nil {
 			return 0, err
 		}
-		at := semantics.Occurrence{Site: site, Role: ExpressionRole()}
-		if err := e.reserve(1, 0, keySize(ApplicationDependency())+occurrenceSize(at)); err != nil {
+		at := semantics.Occurrence{Site: site, Role: e.frontend.ExpressionRole()}
+		if err := e.reserve(1, 0, keySize(e.frontend.ApplicationDependency())+occurrenceSize(at)); err != nil {
 			return 0, err
 		}
-		e.facts.Dependencies = append(e.facts.Dependencies, semantics.Dependency{From: owner, To: term.Target, Relation: ApplicationDependency(), At: &at})
+		e.facts.Dependencies = append(e.facts.Dependencies, semantics.Dependency{From: owner, To: term.Target, Relation: e.frontend.ApplicationDependency(), At: &at})
 	case decl.Descriptor:
-		term.Kind, term.Operator, term.Encoding = semantics.ProviderExpression, key("descriptor/"+expression.Constructor()), semantics.Key{Owner: "ontos", Name: "codec-v1"}
+		term.Kind, term.Operator, term.Encoding = semantics.ProviderExpression, e.frontend.key("descriptor/"+expression.Constructor()), semantics.Key{Owner: "ontos", Name: "codec-v1"}
 		// The value was bounded during Horos resolution. Each retained payload is
 		// charged before publication; temporary encoding is bounded by input size.
 		encoded := codec.Encode(expression.Value())
@@ -146,32 +146,32 @@ func (e *exporter) expression(expression *decl.Expression, site ast.NodeRef, own
 	return id, nil
 }
 
-func project(ctx context.Context, input *bridge.Decoded, program *decl.Program, limits semantics.Limits) (semantics.Data, error) {
-	e := exporter{ctx: ctx, input: input, limits: limits, records: limits.MaxRecords, edges: limits.MaxEdges, bytes: limits.MaxBytes,
+func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Program, limits semantics.Limits) (semantics.Data, error) {
+	e := exporter[L]{frontend: f, ctx: ctx, input: input, limits: limits, records: limits.MaxRecords, edges: limits.MaxEdges, bytes: limits.MaxBytes,
 		modules: make(map[decl.Digest]semantics.EntityID), declarations: make(map[decl.DeclarationID]semantics.EntityID), parameters: make(map[decl.ParameterID]semantics.EntityID)}
 	modules := program.Modules()
 	// Allocate identity records before translating any expression. Forward uses
 	// and equal display names never select a target by spelling.
 	for _, module := range modules {
-		moduleID, err := e.entity(key("module"), module.Name(), 0, input.ModuleSite(module.Pin()))
+		moduleID, err := e.entity(f.key("module"), module.Name(), 0, input.ModuleSite(module.Pin()))
 		if err != nil {
 			return semantics.Data{}, err
 		}
 		e.modules[module.Pin()] = moduleID
 		for _, declaration := range module.Declarations() {
-			id, err := e.entity(key("declaration"), declaration.ID().Name, moduleID, input.DeclarationSite(declaration.ID()))
+			id, err := e.entity(f.key("declaration"), declaration.ID().Name, moduleID, input.DeclarationSite(declaration.ID()))
 			if err != nil {
 				return semantics.Data{}, err
 			}
 			e.declarations[declaration.ID()] = id
 			for index, name := range declaration.Parameters() {
 				parameter := decl.ParameterID{Declaration: declaration.ID(), Index: index}
-				parameterID, err := e.entity(key("parameter"), name, id, input.ParameterSite(parameter))
+				parameterID, err := e.entity(f.key("parameter"), name, id, input.ParameterSite(parameter))
 				if err != nil {
 					return semantics.Data{}, err
 				}
 				e.parameters[parameter] = parameterID
-				sort := key("type")
+				sort := f.key("type")
 				if err := e.reserve(0, 1, keySize(sort)); err != nil {
 					return semantics.Data{}, err
 				}

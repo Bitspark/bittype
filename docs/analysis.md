@@ -62,7 +62,7 @@ language: `analyze/horos/go` is Go code implementing analysis for Horos.
 | [syntax/horos/go](../syntax/horos/go/nodes.go) and [check/horos/go](../check/horos/go/check.go) | Horos AST vocabulary and syntax admission |
 | [resolve/horos/go](../resolve/horos/go/resolver.go) | Registered resolution, authoritative fact export and explicit canonical-value helpers |
 | [analyze/horos/go](../analyze/horos/go/analyze.go) | Consume explicit resolution evidence and reuse its immutable model |
-| [internal/horos](../internal/horos) | Private decoding and correspondence between current AST sites and the authoritative model, used by the resolver |
+| [internal/horosmodel](../internal/horosmodel) | Private decoding and correspondence between current AST sites and the authoritative model, used by the resolver |
 | [provider/horos/go](../provider/horos/go/provider.go) | Compose Horos checking, resolution and analysis capabilities for explicit application registration |
 | External horos and ontos packages | Horos owns declaration/type rules; Ontos owns values and encoding |
 

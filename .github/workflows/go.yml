@@ -32,6 +32,16 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_REVISION"
           echo "Checked revision: $EXPECTED_REVISION"
           go version
+      - name: Download pinned modules
+        run: go mod download all
+      - name: Save dependency checksum corrections
+        shell: bash
+        run: git diff --binary -- go.mod go.sum > "$RUNNER_TEMP/go-mod.patch"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: go-mod-patch
+          path: ${{ runner.temp }}/go-mod.patch
+          retention-days: 7
       - name: Check Go formatting without changing source
         id: formatting
         shell: bash
@@ -94,6 +104,8 @@ jobs:
           path: integration/go/testdata/fuzz/
           if-no-files-found: ignore
           retention-days: 7
+      - name: Verify committed dependency metadata
+        run: git diff --exit-code -- go.mod go.sum
       - name: Record passing revision
         shell: bash
         run: |
