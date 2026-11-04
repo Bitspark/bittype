@@ -52,10 +52,11 @@ The [pagination profile](semantic-generation.md) implements these directed edges
 Reverse mappings are not implemented. Template lifting remains removed. A
 same-language checked snapshot is not a generation or canonicalization mapping.
 
-The proposed [layout.Provider](layout.md#3-independent-layoutprovider) arranges
-same-language AST collections into files before formatting. It is not implemented
-for any language and is not counted in the current matrix. The same proposal
-describes per-file parsing and the remaining cross-file resolution work.
+The [Syntax and Files proposal](source.md) uses these same parse/format/print roles
+at two levels: Syntax/CST/AST and Files/Source/Semantics. Its generic input/output
+interface sketches and Files-level capabilities are not implemented and are not
+counted in this matrix. There is no separate proposed layout provider. Source
+publication requires established Semantics; per-file parsing alone is insufficient.
 
 See the [checker contract](../contracts/check/go/provider.go),
 [parser contract](../contracts/parse/go/provider.go),

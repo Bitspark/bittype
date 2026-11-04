@@ -185,22 +185,26 @@ application selects them. Adding Cell or another ordinary contract adds no
 bittype stage, engine edge per contract or central registration entry. Recipe
 SPIs remain proposed; the pagination transformers are implemented.
 
-The [source-layout design](docs/layout.md) proposes the following additional
-stage, without adding packages or changing current Go APIs in this documentation
-change:
+The [Syntax and Files design](docs/source.md) replaces the separate layout proposal
+with `Syntax : CST : AST` and `Files : Source : Semantics`. It proposes the
+following carriers/compositions without adding packages or changing Go APIs now:
 
 ```text
-layout/go/                    proposed: shared physical file/unit model
-contracts/layout/go/          proposed: independent layout.Provider and adapter
-layout/<language>/go/         proposed: target-owned source arrangement rules
+files/go/                        proposed: in-memory Files and captured associations
+source/go/                       proposed: Source with its Semantics view and CST units
+parse/files/<language>/go/       proposed: Files-to-Source composition
+format/files/<language>/go/      proposed: Semantics-to-Source realization
+print/files/go/                  proposed: Source-to-Files emission
 ```
 
-It also proposes an ASTSet carrier in trees/representation/go, optional captured
-layout context in contracts/semantic/go, multi-unit transformation output and
-independent layout registration in the engine. Parser, formatter and printer
-remain per-text/per-tree operations. Native type rules stay out of the layout
-carrier; filesystem IO stays in the consuming application. See the proposal for
-exact dependency directions and the Horos multi-file resolver gap.
+It also proposes Semantics[L] as the replacement name/type association for the
+existing graph, an ASTSet carrier, captured Files context, multi-unit transform
+output and the same generic parse/format/print contracts at both levels. Syntax
+implementations keep their paths; the files directory adds a processing dimension
+under a stage, not a language. Engine registrations remain independent. Filesystem
+IO stays in the consuming application. See the proposal for dependency directions,
+the clean future API migration and the Horos multi-file resolver gap. No layout
+carrier/provider package or compatibility alias is proposed.
 
 See the [charter](CHARTER.md), [engine API](docs/engine.md),
 [native text design](docs/parsing-formatting.md) and
