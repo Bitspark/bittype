@@ -30,7 +30,29 @@ var vocabulary = concrete.Vocabulary[s.Language]{Layout: s.ConcreteLayout, Token
 
 type parser struct {
 	*parseutil.Parser[s.Language]
-	parameters map[string]int
+	parameters     map[string]int
+	kindParameters map[string]int
+	groups         []map[string]int
+	ascribed       map[ast.NodeID]bool
+}
+
+func (p *parser) Add(kind s.Kind, start int, attrs []ast.Attribute, children ...ast.Child) ast.NodeID {
+	end := start
+	if p.Pos > 0 {
+		end = p.Tokens[p.Pos-1].End
+	}
+	return p.AddSpan(kind, start, end, attrs, children...)
+}
+
+func (p *parser) AddSpan(kind s.Kind, start, end int, attrs []ast.Attribute, children ...ast.Child) ast.NodeID {
+	if p.Err != nil {
+		return 0
+	}
+	if len(p.Tree.Nodes) >= structure.MaxNodes {
+		p.Fail(text.LimitExceeded, "too many abstract nodes")
+		return 0
+	}
+	return p.Parser.AddSpan(kind, start, end, attrs, children...)
 }
 
 // Parse admits one or more module sections. The first selects the program entry;
@@ -42,7 +64,7 @@ func Parse(ctx context.Context, input parsecontract.Input) (cst.CST[s.Language],
 	if err := ctx.Err(); err != nil {
 		return cst.CST[s.Language]{}, err
 	}
-	base, err := parseutil.New[s.Language](input, lex.Options{BacktickStrings: true})
+	base, err := parseutil.New[s.Language](input, lex.Options{BacktickStrings: true, Punctuation: []string{"->"}})
 	if err != nil {
 		return cst.CST[s.Language]{}, err
 	}
@@ -82,15 +104,19 @@ func Parse(ctx context.Context, input parsecontract.Input) (cst.CST[s.Language],
 
 func (p *parser) name() string {
 	t := p.Take()
-	name := t.Text
+	name, valid := sourceName(t.Text)
+	if !valid {
+		p.Fail(text.SyntaxError, "expected identifier (escape reserved names with backticks)")
+	}
+	return name
+}
+
+func sourceName(name string) (string, bool) {
 	escaped := strings.HasPrefix(name, "`") && strings.HasSuffix(name, "`") && len(name) >= 2
 	if escaped {
 		name = name[1 : len(name)-1]
 	}
-	if !lit.Identifier(name) || (!escaped && lit.Reserved(name)) {
-		p.Fail(text.SyntaxError, "expected identifier (escape reserved names with backticks)")
-	}
-	return name
+	return name, lit.Identifier(name) && (escaped || !lit.Reserved(name))
 }
 
 func (p *parser) moduleName() string {
@@ -139,6 +165,9 @@ func (p *parser) module() ast.NodeID {
 	}
 	for !p.EOF() && p.Peek() != "module" && p.Err == nil {
 		id := p.declaration()
+		if p.Err != nil {
+			return 0
+		}
 		declName := (tr.View[s.Language]{Tree: p.Tree}).Attr(id, s.AttributeName)
 		if declarations[declName] {
 			p.Fail(text.SyntaxError, "duplicate declaration name")
@@ -151,33 +180,43 @@ func (p *parser) module() ast.NodeID {
 
 func (p *parser) declaration() ast.NodeID {
 	start := p.Token().Start
-	p.Want("type")
+	kindDefinition := p.Eat("kind")
+	if !kindDefinition {
+		p.Want("type")
+	}
 	name := p.name()
 	p.parameters = map[string]int{}
+	p.kindParameters = map[string]int{}
+	p.groups = nil
 	var children []ast.Child
 	if p.Eat("<") {
 		for p.Err == nil && !p.EOF() && p.Peek() != ">" {
 			begin := p.Token().Start
 			parameter := p.name()
-			if _, exists := p.parameters[parameter]; exists {
-				p.Fail(text.SyntaxError, "duplicate type parameter")
+			scope := p.parameters
+			if kindDefinition {
+				scope = p.kindParameters
 			}
-			index := len(p.parameters)
-			p.parameters[parameter] = index
-			boundStart := p.Token().Start
-			bound := "type"
-			if p.Eat(":") {
-				boundStart = p.Token().Start
-				switch p.Take().Text {
-				case "Type":
-				case "Data":
-					bound = "data"
-				default:
-					p.Fail(text.SyntaxError, "expected Type or Data bound")
+			if _, exists := scope[parameter]; exists {
+				p.Fail(text.SyntaxError, "duplicate declaration parameter")
+			}
+			index := len(scope)
+			scope[parameter] = index
+			var contract ast.NodeID
+			parameterKind, role := s.KindTypeParameter, s.RoleContract
+			if kindDefinition {
+				parameterKind, role = s.KindKindParameter, s.RoleSort
+				if p.Eat(":") {
+					contract = p.sortExpression()
+				} else {
+					contract = p.properSort(p.Token().Start)
 				}
+			} else if p.Eat(":") {
+				contract = p.kindExpression()
+			} else {
+				contract = p.properTop(p.Token().Start)
 			}
-			b := p.Add(s.KindBound, boundStart, tr.Attrs(s.AttributeName, bound))
-			children = append(children, tr.Child(s.RoleParameter, p.Add(s.KindTypeParameter, begin, tr.Attrs(s.AttributeName, parameter, s.AttributeIndex, strconv.Itoa(index)), tr.Child(s.RoleBound, b))))
+			children = append(children, tr.Child(s.RoleParameter, p.Add(parameterKind, begin, tr.Attrs(s.AttributeName, parameter, s.AttributeIndex, strconv.Itoa(index)), tr.Child(role, contract))))
 			if !p.Eat(",") {
 				break
 			}
@@ -187,10 +226,31 @@ func (p *parser) declaration() ast.NodeID {
 		}
 		p.Want(">")
 	}
+	var result ast.NodeID
+	if kindDefinition {
+		if p.Eat(":") {
+			result = p.sortExpression()
+		} else {
+			result = p.properSort(p.Token().Start)
+		}
+	} else if p.Eat(":") {
+		result = p.kindExpression()
+	} else {
+		result = p.properTop(p.Token().Start)
+	}
+	children = append(children, tr.Child(s.RoleResult, result))
 	p.Want("=")
-	children = append(children, tr.Child(s.RoleBody, p.expr()))
+	declarationKind := s.KindTypeDefinition
+	var body ast.NodeID
+	if kindDefinition {
+		declarationKind = s.KindKindDefinition
+		body = p.kindExpression()
+	} else {
+		body = p.expr()
+	}
+	children = append(children, tr.Child(s.RoleBody, body))
 	p.Want(";")
-	return p.Add(s.KindDeclaration, start, tr.Attrs(s.AttributeName, name), children...)
+	return p.Add(declarationKind, start, tr.Attrs(s.AttributeName, name), children...)
 }
 
 func (p *parser) descriptor(name string, start int, operands ...ast.NodeID) ast.NodeID {
@@ -239,6 +299,22 @@ func (p *parser) arguments() []ast.NodeID {
 }
 
 func (p *parser) primary() ast.NodeID {
+	start := p.Token().Start
+	callee := p.primaryAtom()
+	for p.Err == nil && p.Peek() == "<" {
+		arguments := p.arguments()
+		if len(arguments) == 0 {
+			p.Fail(text.SyntaxError, "empty application argument list; use a reference")
+			return 0
+		}
+		children := []ast.Child{tr.Child(s.RoleCallee, callee)}
+		children = append(children, tr.Children(s.RoleArgument, arguments)...)
+		callee = p.Add(s.KindApplication, start, nil, children...)
+	}
+	return callee
+}
+
+func (p *parser) primaryAtom() ast.NodeID {
 	if p.Err != nil {
 		return 0
 	}
@@ -337,17 +413,10 @@ func (p *parser) primary() ast.NodeID {
 		attrs = tr.Attrs(s.AttributeScope, "imported", s.AttributeAlias, name, s.AttributeName, p.name())
 	} else if !local {
 		if index, ok := p.parameters[name]; ok {
-			if p.Peek() == "<" {
-				p.Fail(text.SyntaxError, "type parameters cannot be applied")
-			}
 			return p.Add(s.KindParameter, start, tr.Attrs(s.AttributeIndex, strconv.Itoa(index)))
 		}
 	}
-	var args []ast.NodeID
-	if p.Peek() == "<" {
-		args = p.arguments()
-	}
-	return p.Add(s.KindApplication, start, attrs, tr.Children(s.RoleArgument, args)...)
+	return p.Add(s.KindReference, start, attrs)
 }
 
 func (p *parser) record() ast.NodeID {

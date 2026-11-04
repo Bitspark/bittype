@@ -36,93 +36,153 @@ func (r reader[L]) attr(id ast.NodeID, name string) string {
 func (r reader[L]) bad(id ast.NodeID, message string) error {
 	return text.AtNode(r.tree, id, message)
 }
+func (r reader[L]) index(id ast.NodeID, name string) (core.Value, error) {
+	spelling := r.attr(id, name)
+	if len(spelling) > 20 { return nil, r.bad(id, "invalid lexical index") }
+	index, err := strconv.Atoi(spelling)
+	if err != nil || index < 0 { return nil, r.bad(id, "invalid lexical index") }
+	return data.EncodeInt(big.NewInt(int64(index))), nil
+}
+
 func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 	n := r.node(id)
-	switch n.Kind {
-	case s.KindAtom:
+	if n.Kind == s.KindAtom {
 		bytes, err := hex.DecodeString(r.attr(id, s.AttributeHex))
-		if err != nil {
-			return nil, r.bad(id, "invalid atom hex")
-		}
+		if err != nil { return nil, r.bad(id, "invalid atom hex") }
 		return core.NewAtom(bytes), nil
-	case s.KindParameter:
-		spelling := r.attr(id, s.AttributeIndex)
-		// Horos's declaration slot is a Go int. Bound the decimal work before
-		// conversion; even a 64-bit int needs fewer than twenty decimal digits.
-		if len(spelling) > 20 {
-			return nil, r.bad(id, "invalid parameter index")
-		}
-		index, err := strconv.Atoi(spelling)
-		if err != nil || index < 0 {
-			return nil, r.bad(id, "invalid parameter index")
-		}
-		return tagged(r.declarationPrefix, "param", data.EncodeInt(big.NewInt(int64(index)))), nil
-	case s.KindTuple, s.KindDescriptor, s.KindApplication:
-		values := make([]core.Value, len(n.Children))
-		for i, child := range n.Children {
-			value, err := r.value(child.Node)
-			if err != nil {
-				return nil, err
-			}
-			values[i] = value
-		}
-		if n.Kind == s.KindTuple {
-			return core.NewTuple(values...), nil
-		}
-		if n.Kind == s.KindDescriptor {
-			return tagged(r.descriptorPrefix, r.attr(id, s.AttributeConstructor), values...), nil
-		}
-		var target core.Value
+	}
+	if n.Kind == s.KindParameter || n.Kind == s.KindKindParameterReference {
+		index, err := r.index(id, s.AttributeIndex)
+		if err != nil { return nil, err }
+		tag := "param"
+		if n.Kind == s.KindKindParameterReference { tag = "kind-param" }
+		return tagged(r.declarationPrefix, tag, index), nil
+	}
+	if n.Kind == s.KindRecursiveVariable {
+		depth, err := r.index(id, s.AttributeDepth)
+		if err != nil { return nil, err }
+		index, err := r.index(id, s.AttributeIndex)
+		if err != nil { return nil, err }
+		return tagged(r.declarationPrefix, "recursive-var", depth, index), nil
+	}
+	if n.Kind == s.KindReference || n.Kind == s.KindKindReference {
+		prefix := ""
+		if n.Kind == s.KindKindReference { prefix = "kind-" }
 		switch r.attr(id, s.AttributeScope) {
 		case "local":
-			target = tagged(r.declarationPrefix, "local", data.MustEncodeText(r.attr(id, s.AttributeName)))
+			return tagged(r.declarationPrefix, prefix+"local", data.MustEncodeText(r.attr(id, s.AttributeName))), nil
 		case "imported":
-			target = tagged(r.declarationPrefix, "imported", data.MustEncodeText(r.attr(id, s.AttributeAlias)), data.MustEncodeText(r.attr(id, s.AttributeName)))
+			return tagged(r.declarationPrefix, prefix+"imported", data.MustEncodeText(r.attr(id, s.AttributeAlias)), data.MustEncodeText(r.attr(id, s.AttributeName))), nil
 		default:
-			return nil, r.bad(id, "invalid application scope")
+			return nil, r.bad(id, "invalid reference scope")
 		}
-		return tagged(r.declarationPrefix, "apply", target, data.EncodeList(values)), nil
+	}
+	// Selector and equation nodes are AST framing, not extra canonical forms.
+	if n.Kind == s.KindNodePattern {
+		var selectors [][2]core.Value
+		var pattern core.Value
+		for _, child := range n.Children {
+			if child.Role == s.RoleSelector {
+				selectors = append(selectors, [2]core.Value{data.MustEncodeText(r.attr(child.Node, s.AttributeName)), data.MustEncodeText(r.attr(child.Node, s.AttributeValue))})
+			} else {
+				value, err := r.value(child.Node)
+				if err != nil { return nil, err }
+				pattern = value
+			}
+		}
+		values, err := data.EncodeMap(selectors)
+		if err != nil { return nil, r.bad(id, "duplicate or malformed selectors") }
+		if pattern == nil { return nil, r.bad(id, "missing child sequence") }
+		return tagged(r.declarationPrefix, "node", data.MustEncodeText(r.attr(id, s.AttributeConstructor)), values, pattern), nil
+	}
+	if n.Kind == s.KindRecursiveKind {
+		var equations []core.Value
+		for _, child := range n.Children {
+			wrapper := r.node(child.Node)
+			if len(wrapper.Children) != 1 { return nil, r.bad(child.Node, "missing recursive equation") }
+			value, err := r.value(wrapper.Children[0].Node)
+			if err != nil { return nil, err }
+			equations = append(equations, value)
+		}
+		entry, err := r.index(id, s.AttributeIndex)
+		if err != nil { return nil, err }
+		return tagged(r.declarationPrefix, "nu", data.EncodeList(equations), entry), nil
+	}
+	values := make([]core.Value, len(n.Children))
+	for i, child := range n.Children {
+		value, err := r.value(child.Node)
+		if err != nil { return nil, err }
+		values[i] = value
+	}
+	switch n.Kind {
+	case s.KindTuple:
+		return core.NewTuple(values...), nil
+	case s.KindDescriptor:
+		return tagged(r.descriptorPrefix, r.attr(id, s.AttributeConstructor), values...), nil
+	case s.KindProperSort:
+		return tagged(r.declarationPrefix, "sort-proper"), nil
+	case s.KindArrowSort, s.KindArrow:
+		if len(values) < 2 { return nil, r.bad(id, "arrow requires inputs and result") }
+		tag := "arrow"
+		if n.Kind == s.KindArrowSort { tag = "sort-arrow" }
+		return tagged(r.declarationPrefix, tag, data.EncodeList(values[:len(values)-1]), values[len(values)-1]), nil
+	case s.KindTop, s.KindBottom:
+		tag := "top"
+		if n.Kind == s.KindBottom { tag = "bottom" }
+		return tagged(r.declarationPrefix, tag, values...), nil
+	case s.KindApplication, s.KindKindApplication:
+		if len(values) < 2 { return nil, r.bad(id, "application requires callee and arguments") }
+		tag := "apply"
+		if n.Kind == s.KindKindApplication { tag = "kind-apply" }
+		return tagged(r.declarationPrefix, tag, values[0], data.EncodeList(values[1:])), nil
+	case s.KindUnion, s.KindIntersection:
+		if len(values) < 3 { return nil, r.bad(id, "kind Boolean form requires sort and operands") }
+		tag := "or"
+		if n.Kind == s.KindIntersection { tag = "and" }
+		return tagged(r.declarationPrefix, tag, values[0], data.EncodeList(values[1:])), nil
+	case s.KindSequenceEpsilon:
+		return tagged(r.declarationPrefix, "epsilon"), nil
+	case s.KindSequenceItem:
+		return tagged(r.declarationPrefix, "item", values...), nil
+	case s.KindSequenceConcat, s.KindSequenceAlternative:
+		tag := "concat"
+		if n.Kind == s.KindSequenceAlternative { tag = "alternative" }
+		return tagged(r.declarationPrefix, tag, data.EncodeList(values)), nil
+	case s.KindSequenceStar:
+		return tagged(r.declarationPrefix, "star", values...), nil
 	default:
-		return nil, r.bad(id, "expected a descriptor expression or value fragment")
+		return nil, r.bad(id, "expected a revision-4 expression or value fragment")
 	}
 }
 
 func (r reader[L]) declaration(id ast.NodeID) (core.Value, error) {
-	if r.node(id).Kind != s.KindDeclaration {
-		return nil, r.bad(id, "expected declaration")
-	}
+	n := r.node(id)
+	tag, parameterTag := "type", "parameter"
+	if n.Kind == s.KindKindDefinition { tag, parameterTag = "kind", "kind-parameter" } else if n.Kind != s.KindTypeDefinition { return nil, r.bad(id, "expected declaration") }
 	var parameters []core.Value
-	var body core.Value
-	for _, child := range r.node(id).Children {
+	var result, body core.Value
+	for _, child := range n.Children {
 		switch child.Role {
 		case s.RoleParameter:
-			if r.node(child.Node).Kind != s.KindTypeParameter {
-				return nil, r.bad(child.Node, "expected parameter declaration")
-			}
 			parameter := r.node(child.Node)
-			if len(parameter.Children) != 1 || parameter.Children[0].Role != s.RoleBound || r.node(parameter.Children[0].Node).Kind != s.KindBound {
-				return nil, r.bad(child.Node, "expected an explicit parameter bound")
-			}
-			bound := r.attr(parameter.Children[0].Node, s.AttributeName)
-			parameters = append(parameters, tagged(r.declarationPrefix, "parameter",
-				data.MustEncodeText(r.attr(child.Node, s.AttributeName)), core.NewAtom([]byte(bound))))
-		case s.RoleBody:
-			if body != nil {
-				return nil, r.bad(id, "duplicate declaration body")
-			}
+			if len(parameter.Children) != 1 { return nil, r.bad(child.Node, "expected an explicit parameter contract") }
+			contract, err := r.value(parameter.Children[0].Node)
+			if err != nil { return nil, err }
+			parameters = append(parameters, tagged(r.declarationPrefix, parameterTag, data.MustEncodeText(r.attr(child.Node, s.AttributeName)), contract))
+		case s.RoleResult:
 			value, err := r.value(child.Node)
-			if err != nil {
-				return nil, err
-			}
+			if err != nil { return nil, err }
+			result = value
+		case s.RoleBody:
+			value, err := r.value(child.Node)
+			if err != nil { return nil, err }
 			body = value
 		default:
 			return nil, r.bad(child.Node, "unknown declaration child role")
 		}
 	}
-	if body == nil {
-		return nil, r.bad(id, "missing declaration body")
-	}
-	return tagged(r.declarationPrefix, "type", data.EncodeList(parameters), body), nil
+	if result == nil || body == nil { return nil, r.bad(id, "missing declaration result or body") }
+	return tagged(r.declarationPrefix, tag, data.EncodeList(parameters), result, body), nil
 }
 
 func (r reader[L]) module(id ast.NodeID) (core.Value, error) {
@@ -161,7 +221,7 @@ func (r reader[L]) module(id ast.NodeID) (core.Value, error) {
 	if err != nil {
 		return nil, r.bad(id, "duplicate or malformed declarations")
 	}
-	return tagged(r.declarationPrefix, "module", data.EncodeInt(big.NewInt(2)),
+	return tagged(r.declarationPrefix, "module", data.EncodeInt(big.NewInt(4)),
 		data.MustEncodeText(r.attr(id, s.AttributeName)), importsValue, declarationsValue), nil
 }
 
@@ -315,87 +375,93 @@ func (d *Decoded[L]) ModuleSite(id decl.Digest) ast.NodeRef {
 	}
 	return part.site(part.modules[id])
 }
-func (d *Decoded[L]) BodySite(id decl.DeclarationID) ast.NodeRef {
-	part := d.partForModule(id.Module)
-	if part == nil {
-		return ast.NodeRef{}
-	}
-	node := part.declarations[id]
-	if node != 0 {
-		for _, child := range part.tree.Nodes[node-1].Children {
-			if child.Role == s.RoleBody {
-				return part.site(child.Node)
-			}
-		}
+func (d *Decoded[L]) childSite(site ast.NodeRef, role string) ast.NodeRef {
+	part := d.partForTree(site.Tree)
+	if part == nil || site.Node == 0 || int(site.Node) > len(part.tree.Nodes) { return ast.NodeRef{} }
+	for _, child := range part.tree.Nodes[site.Node-1].Children {
+		if child.Role == role { return part.site(child.Node) }
 	}
 	return ast.NodeRef{}
 }
+func (d *Decoded[L]) BodySite(id decl.DeclarationID) ast.NodeRef { return d.childSite(d.DeclarationSite(id), s.RoleBody) }
+func (d *Decoded[L]) ResultSite(id decl.DeclarationID) ast.NodeRef { return d.childSite(d.DeclarationSite(id), s.RoleResult) }
+func (d *Decoded[L]) ParameterContractSite(id decl.ParameterID) ast.NodeRef {
+	site := d.ParameterSite(id)
+	if contract := d.childSite(site, s.RoleContract); contract.Node != 0 { return contract }
+	return d.childSite(site, s.RoleSort)
+}
 
-// OperandSite follows a canonical tuple path through the existing AST encoding.
-// It interprets only declaration syntax framing, never descriptor constructors.
+// OperandSite follows canonical framing through an existing tree-qualified AST.
+// It never interprets a descriptor constructor or traverses opaque literals as types.
 func (d *Decoded[L]) OperandSite(site ast.NodeRef, path []int) ast.NodeRef {
-	if len(d.parts) > 0 {
-		part := d.partForTree(site.Tree)
-		if part == nil {
-			return ast.NodeRef{}
-		}
-		return part.OperandSite(site, path)
-	}
-	if site.Tree != d.tree.ID || site.Node == 0 || int(site.Node) > len(d.tree.Nodes) {
-		return ast.NodeRef{}
-	}
+	part := d.partForTree(site.Tree)
+	if part == nil || site.Node == 0 || int(site.Node) > len(part.tree.Nodes) { return ast.NodeRef{} }
 	for len(path) > 0 {
-		node := d.tree.Nodes[site.Node-1]
+		node := part.tree.Nodes[site.Node-1]
 		index := path[0]
 		path = path[1:]
+		listIndex := func() int {
+			if len(path) == 0 || path[0] <= 0 { return -1 }
+			item := path[0]-1
+			path = path[1:]
+			return item
+		}
+		equation := false
 		switch node.Kind {
-		case s.KindDescriptor:
-			index-- // descriptor tag has no separate AST node
-		case s.KindApplication:
-			if index != 2 || len(path) == 0 {
-				return ast.NodeRef{}
-			}
-			index, path = path[0]-1, path[1:] // encoded argument list tag
 		case s.KindTuple:
+		case s.KindDescriptor:
+			index--
+		case s.KindApplication, s.KindKindApplication:
+			if index == 1 { index = 0 } else if index == 2 { item := listIndex(); if item < 0 { return ast.NodeRef{} }; index = item+1 } else { return ast.NodeRef{} }
+		case s.KindArrowSort, s.KindArrow:
+			if index == 1 { index = listIndex(); if index >= len(node.Children)-1 { return ast.NodeRef{} } } else if index == 2 { index = len(node.Children)-1 } else { return ast.NodeRef{} }
+		case s.KindTop, s.KindBottom, s.KindSequenceItem, s.KindSequenceStar:
+			if index != 1 { return ast.NodeRef{} }; index = 0
+		case s.KindUnion, s.KindIntersection:
+			if index == 1 { index = 0 } else if index == 2 { item := listIndex(); if item < 0 { return ast.NodeRef{} }; index = item+1 } else { return ast.NodeRef{} }
+		case s.KindNodePattern:
+			if index != 3 { return ast.NodeRef{} }; index = len(node.Children)-1
+		case s.KindRecursiveKind:
+			if index != 1 { return ast.NodeRef{} }; index = listIndex(); equation = true
+		case s.KindSequenceConcat, s.KindSequenceAlternative:
+			if index != 1 { return ast.NodeRef{} }; index = listIndex()
 		default:
 			return ast.NodeRef{}
 		}
-		if index < 0 || index >= len(node.Children) {
-			return ast.NodeRef{}
-		}
+		if index < 0 || index >= len(node.Children) { return ast.NodeRef{} }
 		site.Node = node.Children[index].Node
+		if equation { site = part.childSite(site, s.RoleBody); if site.Node == 0 { return ast.NodeRef{} } }
 	}
 	return site
 }
-
-func (d *Decoded[L]) ArgumentSite(site ast.NodeRef, index int) ast.NodeRef {
-	return d.OperandSite(site, []int{2, index + 1})
-}
+func (d *Decoded[L]) CalleeSite(site ast.NodeRef) ast.NodeRef { return d.OperandSite(site, []int{1}) }
+func (d *Decoded[L]) ArgumentSite(site ast.NodeRef, index int) ast.NodeRef { return d.OperandSite(site, []int{2, index+1}) }
 
 func (d *Decoded[L]) Locate(detail *decl.Error) *ast.NodeRef {
-	if detail == nil {
-		return nil
-	}
+	if detail == nil { return nil }
 	var site ast.NodeRef
 	if detail.Declaration != "" {
 		id := decl.DeclarationID{Module: detail.Module, Name: detail.Declaration}
-		site = d.BodySite(id)
-		if len(detail.Path) > 0 {
-			if exact := d.OperandSite(site, detail.Path); exact.Node != 0 {
-				site = exact
-			}
+		switch detail.Region {
+		case "body", "kind-body": site = d.BodySite(id)
+		case "result", "result-sort": site = d.ResultSite(id)
+		case "parameter-kind", "kind-parameter-sort": site = d.ParameterContractSite(decl.ParameterID{Declaration: id, Index: detail.ParameterIndex})
+		default: site = d.DeclarationSite(id)
 		}
+		if len(detail.Path) > 0 { if exact := d.OperandSite(site, detail.Path); exact.Node != 0 { site = exact } }
 	} else if detail.ImportAlias != "" {
 		part := d.partForModule(detail.Module)
-		if part != nil {
-			site = part.site(part.imports[importID{module: detail.Module, alias: detail.ImportAlias}])
-		}
-	} else {
-		site = d.ModuleSite(detail.Module)
-	}
-	if site.Node == 0 {
-		return nil
-	}
+		if part != nil { site = part.site(part.imports[importID{module: detail.Module, alias: detail.ImportAlias}]) }
+	} else { site = d.ModuleSite(detail.Module) }
+	if site.Node == 0 { return nil }
+	return &site
+}
+
+func (d *Decoded[L]) CalleeDeclarationSite(detail *decl.Error) *ast.NodeRef {
+	if detail == nil { return nil }
+	var site ast.NodeRef
+	if detail.CalleeParameter.Declaration.Name != "" { site = d.ParameterSite(detail.CalleeParameter) } else if detail.Target.Name != "" { site = d.DeclarationSite(detail.Target) }
+	if site.Node == 0 { return nil }
 	return &site
 }
 
@@ -417,7 +483,11 @@ func (d *Decoded[L]) correspond(expected ast.AST[L]) error {
 		bad := func() error {
 			return part.annotation(gotID, context, "Horos syntax does not match checked declaration positions")
 		}
-		if want.Kind != got.Kind || len(want.Attributes) != len(got.Attributes) || len(want.Children) != len(got.Children) {
+		gotAttributes := len(got.Attributes)
+		if got.Kind == s.KindEquation {
+			for _, attribute := range got.Attributes { if attribute.Name == s.AttributeName { gotAttributes-- } }
+		}
+		if want.Kind != got.Kind || len(want.Attributes) != gotAttributes || len(want.Children) != len(got.Children) {
 			return bad()
 		}
 		for _, attribute := range want.Attributes {
@@ -429,7 +499,7 @@ func (d *Decoded[L]) correspond(expected ast.AST[L]) error {
 		contexts[wantID] = context
 		type memberKey struct{ role, name string }
 		members := map[memberKey]ast.Child{}
-		if want.Kind == s.KindModule {
+		if want.Kind == s.KindModule || want.Kind == s.KindNodePattern {
 			for _, candidate := range got.Children {
 				name := s.AttributeName
 				if candidate.Role == s.RoleImport {
@@ -440,7 +510,7 @@ func (d *Decoded[L]) correspond(expected ast.AST[L]) error {
 		}
 		for i, child := range want.Children {
 			actual := got.Children[i]
-			if want.Kind == s.KindModule {
+			if want.Kind == s.KindModule || want.Kind == s.KindNodePattern {
 				name := s.AttributeName
 				if child.Role == s.RoleImport {
 					name = s.AttributeAlias
@@ -466,6 +536,8 @@ func (d *Decoded[L]) correspond(expected ast.AST[L]) error {
 		copy(pin[:], bytes)
 		actual := d.ModuleSite(pin)
 		if actual.Node == 0 {
+			// The revision's bundled module is authoritative context, not fabricated source.
+			if pin == decl.PreludePin() { continue }
 			return fmt.Errorf("%w: resolved module has no source", ErrInvalid)
 		}
 		if err := walk(child.Node, actual, actual != rootSite); err != nil {

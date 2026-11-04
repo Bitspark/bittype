@@ -64,14 +64,16 @@ func qualifyHoros(t *testing.T) {
 	txt := data.MustEncodeText
 	textType := tuple("horos/scalar", atom("utf8-text"))
 	parameter := tuple("horos/decl/param", data.EncodeInt(big.NewInt(0)))
-	page := tuple("horos/decl/type", data.EncodeList([]core.Value{tuple("horos/decl/parameter", txt("T"), atom("data"))}), tuple("horos/list-of", parameter))
-	applied := tuple("horos/decl/type", data.EncodeList(nil), tuple("horos/decl/apply", tuple("horos/decl/local", txt("Page")), data.EncodeList([]core.Value{textType})))
+	top := tuple("horos/decl/top", tuple("horos/decl/sort-proper"))
+	dataKind := tuple("horos/decl/kind-imported", txt("h"), txt("Data"))
+	page := tuple("horos/decl/type", data.EncodeList([]core.Value{tuple("horos/decl/parameter", txt("T"), dataKind)}), top, tuple("horos/list-of", parameter))
+	applied := tuple("horos/decl/type", data.EncodeList(nil), top, tuple("horos/decl/apply", tuple("horos/decl/local", txt("Page")), data.EncodeList([]core.Value{textType})))
 	declarations, err := data.EncodeMap([][2]core.Value{{txt("Page"), page}, {txt("TextPage"), applied}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	empty, _ := data.EncodeMap(nil)
-	module := tuple("horos/decl/module", data.EncodeInt(big.NewInt(2)), txt("consumer.pagination"), empty, declarations)
+	imports, _ := data.EncodeMap([][2]core.Value{{txt("h"), decl.PreludeImport()}})
+	module := tuple("horos/decl/module", data.EncodeInt(big.NewInt(4)), txt("consumer.pagination"), imports, declarations)
 	tree, err := resolve.Resolve(module, nil, "consumer")
 	if err != nil {
 		t.Fatal(err)
@@ -150,7 +152,7 @@ func qualifyHoros(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	checked, err := representation.Unpack[h.Language](definition, output)
+	checked, err := representation.Unpack[h.Language](definition, output.EntryAST())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,18 +160,20 @@ func qualifyHoros(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	specialized, err := model.Specialize(decl.DeclarationID{Module: model.Root(), Name: "TextPage"}, nil)
+	value, err := model.Value(decl.DeclarationID{Module: model.Root(), Name: "TextPage"})
+	if err != nil { t.Fatal(err) }
+	specialized, err := model.Descriptor(value)
 	if err != nil || !core.Equal(specialized, tuple("horos/list-of", textType)) {
 		t.Fatalf("specialization through registered AST: %v", err)
 	}
 	checked.Nodes[checked.Root-1].Kind = "mutated"
-	if fresh, err := representation.Unpack[h.Language](definition, output); err != nil || fresh.Nodes[fresh.Root-1].Kind != h.KindProgram {
+	if fresh, err := representation.Unpack[h.Language](definition, output.EntryAST()); err != nil || fresh.Nodes[fresh.Root-1].Kind != h.KindProgram {
 		t.Fatal("unpacked AST aliases envelope")
 	}
-	if _, err := registry.Parse(context.Background(), provider.ID(), parse.Input{}); !errors.Is(err, engine.ErrMissingCapability) {
+	if _, err := registry.ParseSyntax(context.Background(), provider.ID(), parse.Input{}); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatalf("unregistered parse: %v", err)
 	}
-	if _, err := registry.Render(context.Background(), envelope); !errors.Is(err, engine.ErrMissingCapability) {
+	if _, err := registry.RenderSyntax(context.Background(), envelope); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatalf("unregistered render: %v", err)
 	}
 }

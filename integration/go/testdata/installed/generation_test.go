@@ -69,7 +69,7 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 	if err = e.RegisterAnalyzer(analyzer); err != nil {
 		t.Fatal(err)
 	}
-	mapper, err := generate.New(from, to, generate.Config{TreeID: "output"})
+	mapper, err := generate.New(from, to, generate.Config{TreeID: "output", Profile: generate.RepresentationProfile})
 	if err != nil {
 		t.Fatal(err)
 	}

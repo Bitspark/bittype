@@ -18,7 +18,7 @@ Read [CHARTER.md](CHARTER.md), [docs/model.md](docs/model.md),
 
 The owner selected canonical definitions as input and TypeScript, Go, Rust and C++
 types as outputs. Horos owns data descriptors and canonical
-module/generic/application semantics with Type/Data bounds; bittype owns syntax,
+module/generic/application semantics with general structural kinds; bittype owns syntax,
 AST/CST tooling and transformations. The Go declaration model and Horos text/semantic frontend are implemented;
 read [docs/horos.md](docs/horos.md). Do not revive
 the superseded independent bittype value-type algebra. The current native-text
@@ -44,9 +44,10 @@ multi-unit output are implemented. Preserve exact capture/receipt association an
 keep native Files semantics unavailable until their providers exist. No aliases.
 
 The owner's 4 November [unified declaration decision](docs/unified-declarations.md)
-supersedes separate Horos and Horos/Wire languages. One Horos revision-2 grammar
-has explicit Type/Data bounds; `Page<T>` is authored once and
-`DataPage<D: Data> = Page<D>` is an ordinary constrained alias. Remove the old
+supersedes separate Horos and Horos/Wire languages. One Horos revision-4 grammar
+has ordinary kind definitions and general contracts; `Page<T>` is authored once and
+`DataPage<D: h.Data> = Page<D>` is an ordinary constrained alias using an explicit
+prelude import. Read [general kinds](docs/kinds.md). Remove the old
 profiles, packages, wrapper syntax and readers without compatibility aliases.
 Ground Ontos/Horos judgments remain data-only; optional Ontos/wire still owns
 mixed *values*. Hydration stays in Bitwire/Bitruntime. Preserve the
@@ -54,6 +55,10 @@ mixed *values*. Hydration stays in Bitwire/Bitruntime. Preserve the
 The one [Horos frontend](docs/horos.md) projects explicit bounds through existing
 provider-owned semantic terms. The agnostic kernel interprets none of them.
 Template lifting remains removed; no second declaration or derived Page exists.
+Do not restore Claim/Interface, DataSummary, a dedicated Data proof path, or
+reserved Type/Data names. Scalar, List, Record, Data and user-defined kinds use
+the same Horos machinery. Kind definitions are compile-time entities, not native
+type exports. Keep semantic sort separate from declaration parameter count.
 
 The [native representation design](docs/type-representations.md) remains proposed.
 Libraries own optional recipes, selected by exact declaration identity in consuming

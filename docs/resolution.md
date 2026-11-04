@@ -125,15 +125,17 @@ copy truth reports automatically or weaken stale-result protection.
 ## Horos composition
 
 The Horos provider implements syntax checking, resolution.Provider and analysis.Provider.
-Its profiles are `horos-declarations-2/ast-1`,
-`horos-declarations-2/resolution-2` and `horos-declarations-2/analysis-2`.
-Analysis revision 1 is replaced without a compatibility path.
+Its profiles are `horos-declarations-4/ast-1`,
+`horos-declarations-4/resolution-1` and `horos-declarations-4/analysis-1`.
+Earlier declaration profiles are removed without a compatibility path.
 
 Horos resolution accepts multiple separate Program trees and an explicit root entry, resolves its
 reachable pinned module closure, verifies supplied annotations and exports exact
 descriptor payloads and operand paths. Alongside `reference-resolution`, it
 advertises the existing validity, declaration-index, occurrence-binding,
-application and dependency evidence. Its owning resolver currently checks the
+application, reference-dependency and type-fact evidence. General kind facts
+separate sort, result sort, declared contract, result contract, checked symbolic
+body and memberships with assumptions. Its owning resolver currently checks the
 whole required program; a resolution-only request does not promise less work.
 
 Unknown imports/declarations can reject reference resolution. Other semantic
@@ -143,15 +145,16 @@ dependencies and resource exhaustion remain incomplete outcomes, not rejected
 types. Export exhaustion preserves established reference resolution and program
 validity without a model.
 
-The analyzer consumes that explicit result, preserves the five original analysis
+The analyzer consumes that explicit result, preserves the advertised analysis
 reports and reuses the same model without repeating authoritative resolution.
 `analyze.ContractWithResolutionConfiguration(settings)` selects exact expected
 resolver settings; `analyze.Contract()` selects the default empty configuration.
 Resolver settings belong to Resolve's Options, not the analyzer's Options.
 
-Pagination retains imported Page, the caller's zero-argument Person application,
+Pagination retains imported Page, the caller's plain Person reference,
 distinct same-spelled binders and opaque literal data. Specialization remains an
-explicit Horos operation. No native analyzer, generator or runtime binding is added.
+explicit Horos operation. Native pagination generation consumes these facts;
+no native semantic analyzer or runtime binding is added.
 
 ## Qualification
 

@@ -1,218 +1,208 @@
-# Horos declaration AST
+# Horos declaration AST and semantics
 
-**Implemented in Go source, 4 November 2026.** One frontend projects
-Horos declaration revision 2. Type/Data bounds restrict generic slots within that
-language; data and capability expressions share one module, declaration and
-binder model. The old Horos/Wire packages and profiles are removed without aliases.
-The authoritative [canonical format](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md)
-lives in Horos. The [readable source grammar](horos-syntax.md) is implemented on this
-same AST. Native generators and runtime bindings remain outside this frontend.
+**Revision 4 implemented in Go source, 4 November 2026.** One Horos frontend
+projects general kind definitions and type definitions, including constructor
+results. It consumes public Horos Go 0.10.1. Horos owns the
+[canonical format](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
+Bittype owns its [readable spelling](horos-syntax.md), AST projection and provider
+composition. The [kind design](kinds.md) supplies the semantic overview.
 
-The [dependency alignment](dependencies.md) and independent installed consumer
-qualify the public module graph. Private projection and binding mechanics live
-in `internal/horosmodel`; syntax framing lives in `internal/declsyntax`.
-The agnostic kernel contains no Type/Data or Wire interpretation.
+## Packages and public helpers
 
-## API and ownership
+- `syntax/horos/go` defines the language marker, AST/CST vocabulary and identity.
+  It depends on generic carriers and identity, not Horos's semantic implementation.
+- `check/horos/go` admits syntax: node forms, roles, cardinalities and lexical
+  spellings. Unresolved names and semantically invalid contracts can reach
+  resolution; syntax admission does not establish membership or module meaning.
+- `resolve/horos/go` delegates meaning to Horos and projects the checked result.
+  Its public helpers remain `Resolve(root, dependencies, treeID)`,
+  `Project(program, treeID)` and `Model(view)`. `Model` is an explicitly semantic
+  single-view convenience, not a generic carrier operation.
+- The registered `ResolveReferences` provider accepts the captured collection and
+  explicit entry. Its private `internal/horosmodel.DecodeCollection` path retains
+  several Program trees and tree-qualified sites. It does not concatenate source
+  or expose a second public model wrapper.
+- `analyze/horos/go` consumes the explicit compatible resolution result and
+  preserves its established typed Semantics and required reports.
+- `parse/horos/go` builds a lossless CST with AST view; `format/horos/go` builds
+  CST directly from an AST view. The shared printer emits leaves. Neither text
+  stage resolves or applies type-level values.
+- `provider/horos/go` composes the independent Syntax, checker, resolver and
+  analyzer capabilities. The language ID remains `horos`, with display name
+  `Horos`. Implementing a capability installs nothing in an engine.
 
-- [syntax/horos/go](../syntax/horos/go/nodes.go) defines `Language`, `AST`, `Node`,
-  `Kind` and the vocabulary. It imports only generic AST/CST and language identity.
-- [resolve/horos/go](../resolve/horos/go/resolve.go) provides
-  `Resolve(root, dependencies, treeID)`, `Project(program, treeID)` and `Model(view)`.
-  Resolve delegates semantics to Horos, then projects its checked model. Model
-  checks the borrowed AST and returns a Horos program for inspection or explicit
-  `Specialize(declarationID, closedArguments)`. No lookup performs network/file IO.
-  The registered resolver uses [ResolveReferences](../resolve/horos/go/resolver.go)
-  to export shared semantic facts. It verifies supplied semantic annotations
-  against authoritative resolution and never repairs them implicitly.
-- [check/horos/go](../check/horos/go/check.go) admits AST syntax: kinds, roles,
-  cardinalities and lexical spellings. Unresolved or semantically invalid names
-  can reach resolution. Check does not resolve bindings or validate module pins.
-- [analyze/horos/go](../analyze/horos/go/analyze.go) consumes the explicit resolver
-  result, reusing its model and adapting its evidence to
-  [shared semantic facts and reports](analysis.md).
-- [parse/horos/go](../parse/horos/go/parse.go) constructs a lossless CST and stored AST
-  from source; [format/horos/go](../format/horos/go/format.go) constructs CST directly
-  from a borrowed AST. Printing delegates to the [generic printer](../print/go/print.go).
-- [provider/horos/go](../provider/horos/go/provider.go) implements
-  `parse.Provider[horos.Language]`, `format.Provider[horos.Language]`,
-  `print.Provider[horos.Language]`, `check.Provider[horos.Language]`,
-  `resolution.Provider[horos.Language]`
-  and `analysis.Provider[horos.Language]`,
-  with ID `horos` and name `Horos`.
-  Applications explicitly register it through `representation.NewLanguage` and
-  `Engine.RegisterLanguage`, using profile `horos-declarations-2/ast-1`.
-  Syntax checking is separately bound with `check.NewChecker[h.Language](definition,
-  provider)` and installed with `Engine.RegisterChecker`. Identity registration
-  alone supplies no syntax or semantic capability.
-  Resolution requires `resolution.NewResolver` and `Engine.RegisterResolver`.
-  Analysis additionally requires `analysis.NewAnalyzer` and
-  `Engine.RegisterAnalyzer`, and consumes the explicit resolution result.
-  See [shared composition](resolution.md); implementing interfaces installs nothing.
+The new profiles are:
 
-Only Horos frontend stages and their private bridge directly import Horos/Ontos.
-Text stages use Ontos for literal embeddings and the bridge for canonical module
-encoding/pins; they do not resolve or specialize types.
-The analyzer consumes the resolver contract and shared evidence.
-The model dependency is pinned to a public immutable Go module revision in go.mod;
-there is no local replacement or vendored private checkout. Generic infrastructure
-and the four native text stages remain independent of the external model. The engine
-can hold this AST without registering any transformer. Parse and Render use the
-explicitly registered text stages; identity registration still installs nothing.
+| Boundary | Profile |
+| --- | --- |
+| AST syntax | `horos-declarations-4/ast-1` |
+| Resolution | `horos-declarations-4/resolution-1` |
+| Analysis | `horos-declarations-4/analysis-1` |
 
-The syntax profile revision is a clean change: no old-profile alias or fallback checker
-remains. `resolve.Model` is still explicitly semantic, while `Pack` and `Check`
-establish only the new syntax profile. Existing callers that require resolution
-must use Model or the analysis capability.
+Applications register the language descriptor and selected check/resolve/analyze
+and Syntax stages explicitly. The existing symmetric role contracts remain
+`parse.Provider[parse.Input, cst.CST[Language]]`,
+`format.Provider[ast.View[Language], cst.CST[Language]]` and
+`print.Provider[cst.CST[Language], string]`, with context passed to each operation.
+[Files composition](source.md) uses the corresponding Files contracts. Old
+profile readers and aliases are removed rather than negotiated implicitly.
 
-## Vocabulary and bindings
+Only the concrete Horos stages, their private model bridge and source-specific
+transformation reader consume Horos/Ontos dependencies. Generic trees, contracts,
+engine and printer, and native Syntax stages, remain independent. Model dependency
+alignment belongs to the [dependency guide](dependencies.md).
 
-One Program tree supplies the entry module and dependency pool. Projection of a
-checked Program emits its complete resolved import closure, ordered by module
-digest; imports/declarations retain Horos's canonical map order. Parameters,
-arguments and descriptor operands retain their specified order. Resolution selects
-the Program root as its explicit entry; its required root reference selects the
-entry module. Other entry kinds or multiple trees are unsupported request forms
-in this first resolution profile.
+## Syntax vocabulary
 
-| Kind | Attributes | Children | References |
-| --- | --- | --- | --- |
-| Program | none | `module*` | `root` to the entry module |
-| Module | `name`, `pin` (lowercase hex) | `import*`, `declaration*` | none |
-| Import | `alias`, expected `name`, `pin` | none | optional `target` module assertion |
-| Declaration | `name` | `parameter*`, one `body` | none |
-| TypeParameter | `name`, canonical decimal `index` | one `bound` | none |
-| Bound | `name` is `type` or `data` | none | none |
-| Parameter | canonical decimal `index` | none | optional `target` TypeParameter assertion |
-| Application | `scope` (`local` or `imported`), `name`, imported `alias` | `argument*` | optional `target` Declaration and imported `import` assertions |
-| Descriptor | Horos `constructor` name without `horos/` prefix | `operand*` | none |
-| Atom | raw bytes as lowercase `hex` | none | none |
-| Tuple | none | `element*` | none |
+The canonical module envelope remains revision, name, imports and declarations,
+with revision 4. There is no schema-digest field. The AST retains Program roots,
+module names/pins, imports, ordered parameters and literal Atom/Tuple fragments.
+Module declarations now distinguish kind and type definitions.
 
-Descriptor operands retain the canonical value layout. Only Horos-designated
-type positions become Parameter, Application or Descriptor nodes. Other positions
-remain Atom/Tuple fragments, including field wrappers and everything inside an
-`exact` literal. The frontend takes these positions from the checked Horos model;
-it has no duplicate descriptor-constructor switch or record semantics.
+| Construct | AST vocabulary and purpose |
+| --- | --- |
+| Type definition | `KindTypeDefinition` (`type-definition`), with parameter children, result kind and body |
+| Kind definition | `KindKindDefinition` (`kind-definition`), with parameter children, result sort and body |
+| Type binder | `KindTypeParameter`, name/index and `RoleContract` kind |
+| Kind binder | `KindKindParameter`, name/index and `RoleSort` sort |
+| Sort | `KindProperSort` or `KindArrowSort` |
+| Top/bottom | `KindTop`, `KindBottom`, explicitly at a sort |
+| Kind binder use/reference/application | `KindKindParameterReference`, `KindKindReference`, `KindKindApplication` |
+| Boolean/constructor kinds | `KindUnion`, `KindIntersection`, `KindArrow` |
+| Structural kind | `KindNodePattern`, with selected metadata and child-sequence pattern |
+| Recursive kind | `KindRecursiveKind`; `RoleEquation` children contain `KindEquation` bodies |
+| Recursive use | `KindRecursiveVariable`, with lexical depth and index |
+| Child sequence | `KindSequenceEpsilon`, `KindSequenceItem`, `KindSequenceConcat`, `KindSequenceAlternative`, `KindSequenceStar` |
+| Type reference | `KindReference`, separate from an application |
+| Type application | `KindApplication`, with `RoleCallee` and one or more `RoleArgument` children |
 
-Supplied binding annotations in the analyzed closure must identify the correct
-module, import, declaration or parameter. No attributes, kinds or roles outside
-this syntax profile are admitted. Optional annotations can be absent; missing
-annotations do not trigger AST mutation. Arena addresses may change if every edge
-changes with them; attribute/reference storage order is immaterial. Containment
-order remains canonical in checked projections. Origins are retained as tooling
-metadata but do not affect module pins.
+Both definition forms retain `RoleParameter`, `RoleResult` and `RoleBody`.
+A recursive group's entry is its `AttributeIndex`; equation indices determine
+canonical slots. Optional equation names support readable output, while lexical
+depth/slot determines binding. The formatter freshens names only when needed to
+preserve that binding.
 
-Explicit reference resolution reconstructs canonical module values, asks Horos to
-resolve them, and compares the authoritative syntax and supplied binding edges
-with the supplied AST closure. Analysis consumes this established evidence.
-This checks one declared AST profile; it never fingerprints a shape to choose a
-behavioral library. Invalid UTF-8 attributes are rejected before text embedding.
-It does not reinterpret literal data as declarations or silently normalize an AST.
+The old generic Declaration/Bound nodes and RoleBound are removed. Type/Data
+names are ordinary references and never choose an AST variant. Primitive top
+and sort syntax supplies the unconstrained proper default. Descriptor operands
+still preserve the exact canonical value layout. Only Horos-designated type
+positions contain type expressions; labels, scalar selectors, field wrappers and
+`exact` payloads retain their literal roles.
 
-## Pagination and specialization
+Parameter uses, local/imported references and expression callees retain separate
+bindings. A constructor-valued declaration may have no declared parameters, so
+its semantic sort cannot be derived from `Entity.Parameters` or AST parameter
+count. Supplied binding annotations assert a target; resolution compares them
+with Horos's established binding and does not repair them by mutating the AST.
 
-The [binding tests](../resolve/horos/go/resolve_test.go) preserve imported Page
-and caller-side Person identities, same-spelled distinct binders and literal
-opacity. Existing data-only fixtures now spell their Data bounds explicitly.
-The [unified bound tests](../analyze/horos/go/bounds_test.go) add:
+## Multi-Program and standard-module behavior
+
+The selected root and its transitive import closure determine the semantic
+domain. Multiple supplied Program trees retain distinct tree-qualified addresses;
+filenames and storage order do not establish visibility. Unrelated supplied
+modules are not silently promoted into the selected closure. The existing Files
+profile keeps its complete supplied-file admission rules.
+
+The exact bundled standard module is identified by public `resolve.PreludePin()`.
+A source module still writes an ordinary import to that identity. When the
+bundled prelude has no supplied AST, authoritative kind entities may be
+source-less. The bridge invents neither AST locations nor a Files relation to a
+nonexistent prelude file. Supplied prelude source corresponds normally.
+`Project` can materialize prelude syntax as part of a standalone projection;
+Files formatting preserves the supplied file set rather than adding that file
+implicitly.
+
+Canonical identity is separate from local entity IDs and AST addresses. Origins
+remain tooling metadata when available; they do not authorize library behavior
+or stand in for semantic bindings. Literal payloads remain opaque throughout
+canonical reconstruction and projection.
+
+## Typed Semantics and provider-owned facts
+
+The existing `Semantics[horos.Language]` and sealed `representation.Semantics`
+envelope remain unchanged. Unpacking requires the language ID, explicit profile
+and actual Go marker. There is no `Semantics[any]` conversion. The generic graph
+stores structured provider terms and multivalued subject relations without
+interpreting Horos kinds.
+
+| Public relation helper | Horos-owned relation name | Meaning |
+| --- | --- | --- |
+| `SortRelation()` | `sort` | Sort of the subject's type-level value |
+| `ResultSortRelation()` | `result-sort` | Result sort of a definition |
+| `DeclaredKindRelation()` | `declared-kind` | The authored kind contract |
+| `ResultKindRelation()` | `result-kind` | The declared result kind |
+| `SymbolicBodyRelation()` | `symbolic-body` | Checked source body retaining binding structure |
+| `MembershipRelation()` | `membership` | An individually established membership with assumptions |
+| `IdentityRelation()` | `canonical-identity` | Canonical declaration/parameter identity |
+
+Each relation has owner `horos`. Entities distinguish `type-definition`,
+`kind-definition`, `type-parameter` and `kind-parameter`. `Entity.Body` retains
+the checked symbolic source body. Kind expressions and sorts remain structured
+provider-owned terms; the kernel acquires no Data, Scalar, List, Record or Wire
+classification rule.
+
+Membership records come from authoritative source semantics and retain exact
+ParameterID assumptions. Missing membership facts assert nothing; several facts
+may concern one subject. Arbitrary later queries do not mutate a captured model.
+There is no principal-kind fact, and completeness does not mean enumeration of
+all true memberships. In particular, a narrower result query must not become an
+unconditional membership on an open body with weaker original assumptions.
+
+Generic queries remain available without importing Horos: `Resolve`, `TermAt`,
+`DirectParameterBindings` and `DependenciesFrom`. DirectParameterBindings pairs
+actual formals only for a direct declaration reference with matching declared
+arity. It does not fabricate parameters for a constructor-valued result or infer
+bindings for an indirect callee. Dependency relations cover named semantic
+references, including unapplied or ignored references, rather than applications
+alone.
+
+## Reports and resource outcomes
+
+Required reports include program validity, declaration enumeration, occurrence
+bindings, applications, reference dependencies and type-fact coverage. The
+resolver also establishes reference resolution. The provider vocabulary uses
+`reference-dependencies` for dependency coverage, `declaration-reference` for an
+edge, and `type-facts` for required fact coverage. Analysis preserves the resolver's
+required reports through its explicit receipt.
+
+Successful validity/reference reports establish Holds. Completed enumeration
+reports describe coverage without asserting a new language proposition. Missing
+context, unproved required obligations and exhausted operations cannot publish
+a usable partial semantic model. Export exhaustion can preserve an earlier
+validity report while leaving graph publication incomplete. Unknown requested
+obligations remain Unsupported rather than silently counted as complete.
+
+`resolve.LimitsSetting()` retains provider-owned configuration for
+`[MaxDepth, MaxNodes, MaxBytes, MaxModules]`. Absence uses Horos defaults; malformed
+configuration is a request/configuration error. The kernel bounds and copies the
+configuration without interpreting it. Canonical, syntax/carrier, graph and
+expanded-output budgets remain distinct. Horos now charges general kind graphs,
+sequence automata, environments and query work through its bounded operations.
+
+## Horos value/query API
+
+The projected Program supplies the general sealed API:
 
 ```text
-Page<T> = list-of(T)
-DataPage<D: Data> = Page<D>
-People = Page<Person>
-Live = Page<Wire<Person>>
+Value(declarationID)                 -> TypeValue
+Proper(closedDescriptor)            -> TypeValue
+Apply(callee, []TypeValue)           -> TypeValue
+CompileKind(moduleDigest, kindExpr) -> KindHandle
+Satisfies(value, kind)               -> Verdict
+Includes(actual, expected)           -> Verdict
+Descriptor(value)                   -> materialized descriptor
+GroundDescriptor(value)             -> admitted ground descriptor
 ```
 
-The [installed consumer](../integration/go/testdata/installed/consumer_test.go)
-uses the full closed record with required items and optional text next. Both
-applications retain the same open Page. Horos Specialize produces a closed type
-expression; DataDescriptor additionally proves data and returns the existing
-Horos descriptor. A mixed result cannot be passed to ground WF/Conforms.
-No specialization mutates the original generic.
+These operations also return errors according to the public Horos API. Verdicts
+are Proven, Refuted and Unproved; Invalid and Exhausted are distinct error
+outcomes. Handles belong to one checked Program. `Apply` may return a constructor;
+`Descriptor` and `GroundDescriptor` require the relevant closed proper form.
+GroundDescriptor additionally establishes ordinary ground-kind membership and
+unchanged ground well-formedness. Specialize/DataDescriptor compatibility wrappers
+are not retained.
 
-`Forward<D: Data> = DataPage<D>` resolves; `Forward<T> = DataPage<T>` is a located
-semantic bound violation even before specialization. Both are valid AST syntax.
-Check validates the bound spelling/cardinality only; Horos supplies the meaning.
-The resolver exports bounds through existing provider-owned semantic terms and
-analysis consumes the same immutable receipt. No new kernel obligation is needed.
-
-## Admission and qualification
-
-Horos owns module-name/pin checking, arity, binding scope, recursion closure,
-application-cycle rejection, symbolic generic bounds and specialization limits. Its errors retain module,
-declaration and tuple-index path context. Structured codes and subjects distinguish
-invalid source, missing dependencies, contradicted context, invalid options and
-exhaustion. AST structure/profile errors are located at current AST nodes; no
-source location is invented or copied from historical origins.
-
-Projection checks generic AST node, depth, entry and text budgets while creating
-nodes, including hexadecimal growth before copying atoms. Generic structure is
-checked before the AST is decoded. Horos's default declaration budgets apply
-when recovering a model through the canonical-value helper; registered resolution
-can accept an explicitly supplied bounded configuration. Both boundaries return empty output on failure; a model
-accepted under custom larger limits is re-admitted under the fixed Horos defaults
-before projection, so successful projection respects `resolve.Model`'s fixed
-canonical budgets. The syntax checker has separate AST budgets; resolution can
-select explicit resolver limits. Canonical and AST depth are distinct, and tests
-qualify their boundary.
-
-## Analysis profile and generic queries
-
-`analyze.Contract()` advertises `horos-declarations-2/analysis-2`. Its domain is
-the selected entry and transitive pinned module closure, not every unused value
-in the supplied pool. Unused pool modules contribute no established semantic
-facts; their binding annotations are outside this analyzed domain. Every supplied
-module still has its document-pin assertion checked during decoding.
-
-| Obligation | Successful report |
-| --- | --- |
-| program-validity | Complete / Holds for the submitted entry and required context |
-| declaration-index | Complete / Undetermined; module, declaration and parameter entities enumerated |
-| occurrence-bindings | Complete / Undetermined; parameter/application targets enumerated |
-| applications | Complete / Undetermined; references, effective applications and provider expressions exported |
-| application-dependencies | Complete / Undetermined; every declaration application, including nested arguments, exported |
-
-The resolver adds a sixth obligation, reference-resolution, requiring Complete /
-Holds for its model. Its profile is horos-declarations-2/resolution-2. Analysis
-requires that resolver evidence and preserves these five reports. All five
-reports are analysis model publication requirements. A semantic rejection or
-missing dependency publishes diagnostics without a partial graph. Missing context
-and resolver exhaustion are Incomplete / Undetermined. A contradictory context
-can reject the submitted program/context obligation without asserting that the
-entry source itself is malformed; diagnostics identify the subject. Export
-exhaustion after successful resolution preserves Complete / Holds reference
-resolution and validity but
-leaves graph enumeration incomplete and publishes no model. Unknown requested
-obligations receive Unsupported / Undetermined.
-
-`resolve.LimitsSetting()` names provider-owned JSON configuration containing
-`[MaxDepth, MaxNodes, MaxBytes, MaxModules]`. All four limits are required; absence
-uses Horos defaults. This profile requires positive limits with depth at most 512.
-Invalid configuration is an API error before source decoding. The kernel copies and
-bounds these bytes without interpreting them. Semantic graph budgets are separate.
-
-The graph preserves module/declaration/parameter identity, current input sites,
-open parameters and zero-argument applications. Descriptor terms contain exact
-Ontos codec-v1 bytes and authoritative operand paths. Parameter bounds are
-provider-owned expression facts: `TermAt(semantics.Occurrence{Site: parameterSite, Role: resolve.BoundRole()})`
-returns the ID of a term with operator `horos/bound/type` or `horos/bound/data`, and the
-codec-v1 bytes of that bound atom. Parameter entities retain sort `horos/type`;
-bounds constrain arguments, not the kind of entity. No shared semantic field or
-subtype rule is added. ProgramValidity includes Horos's symbolic bound checks. Four generic queries need
-no Horos model import: `Resolve`, `TermAt`, `DirectParameterBindings` and
-`DependenciesFrom`. Dependency edges describe declaration applications, not a
-general import, inheritance or runtime-effect graph.
-
-Remote tests cover canonical value round trips, imported and nested pagination,
-specialization, wrong/missing references, invalid pins/indices/UTF-8, literal
-boundaries, address renumbering, provenance, nil views and resource exhaustion.
-Independent integration fixtures qualify explicit engine registration, immutable
-envelopes and independent text-stage registration. The [source grammar](horos-syntax.md)
-adds source and canonical round trips on the same AST. Architecture tests enforce the narrow external
-dependency boundary, and static consumer tests distinguish Horos from every native
-AST marker. Existing native-text/compiler gates remain required.
-
-Native generators, runtime adapters and
-Function/Stream/Cell bindings are outside this change. These contracts retain
-library ownership; none is a special core kind or builtin registration.
+The frontend exports source semantics, not runtime values. Native pagination is
+a separate [representation mapping](semantic-generation.md). Function, Stream
+and Cell remain ordinary libraries; no query result selects their behavior,
+transport, hydration or native representation.

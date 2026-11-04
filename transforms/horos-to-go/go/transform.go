@@ -12,20 +12,27 @@ import (
 	"go/token"
 )
 
+// RepresentationProfile permits kind-constraint erasure for Horos-checked uses.
+const RepresentationProfile = g.RepresentationProfile
+
+// EnforcementProfile requires native kind enforcement and is not implemented.
+const EnforcementProfile = g.EnforcementProfile
+
 type Config struct {
 	TreeID  ast.TreeID
 	Package string
+	Profile string
 }
 
 func New(from, to representation.Language, config Config) (transform.ASTTransformer, error) {
 	if from.ID() != (h.Language{}).ID() || to.ID() != (s.Language{}).ID() {
 		return nil, transform.ErrInvalidTransformer
 	}
-	if from.Profile() != h.Profile || config.TreeID == "" || !g.Identifier(config.Package) || token.Lookup(config.Package).IsKeyword() {
+	if from.Profile() != h.Profile || config.TreeID == "" || !g.KnownProfile(config.Profile) || !g.Identifier(config.Package) || token.Lookup(config.Package).IsKeyword() {
 		return nil, transform.ErrInvalidTransformer
 	}
 	return transform.NewTransformer[h.Language, s.Language](from, to, g.Contract(), func(ctx context.Context, request transform.Request[h.Language]) (ast.Set[s.Language], error) {
-		output, err := g.Generate(ctx, request, config.TreeID, &dialect{pkg: config.Package})
+		output, err := g.Generate(ctx, request, config.TreeID, config.Profile, &dialect{pkg: config.Package})
 		if err != nil {
 			return ast.Set[s.Language]{}, err
 		}

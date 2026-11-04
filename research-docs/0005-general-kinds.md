@@ -2,7 +2,7 @@
 
 **ID:** 0005
 **Date:** 4 November 2026
-**Status:** delivering
+**Status:** implemented
 **Owner:** codex-hydrated-type-design
 **Issue:** https://github.com/Bitspark/bittype/issues/59
 
@@ -47,6 +47,20 @@ have passed. The semantic judgments implemented by Horos remain product behavior
 The implementation belongs in Horos's declaration model and Bittype's Horos
 frontend/native transformation readers. Function, Stream and Cell remain library
 declarations; Wire, runtime and the generic Bittype kernel gain no such cases.
+
+## Delivery
+
+Horos's general-kind replacement is landed in
+[PR31](https://github.com/Bitspark/horos/pull/31) and published as
+[Go 0.10.1](https://github.com/Bitspark/horos/releases/tag/core/go/v0.10.1).
+Bittype's revision-4 frontend, semantic facts and native representation profiles
+consume that public dependency. Constructor reasoning remains deliberately
+incomplete, and the native pagination subset does not expand to higher-order
+native encodings or canonical integers.
+
+The implementation was delivered without running validation workflows under the
+owner's current rule. This status does not claim the skill's usual validated
+`applied` stage. No tests, builds or formatting checks are reported as passed.
 
 ## Question
 

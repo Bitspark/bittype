@@ -59,20 +59,23 @@ func genEntry(name string, value core.Value) [2]core.Value {
 	return [2]core.Value{data.MustEncodeText(name), value}
 }
 func genModule(name string, imports core.Value, entries ...[2]core.Value) core.Value {
-	return genTuple("horos/decl/module", genInt(2), data.MustEncodeText(name), imports, genMap(entries...))
+	return genTuple("horos/decl/module", genInt(4), data.MustEncodeText(name), imports, genMap(entries...))
 }
+func genTop() core.Value { return genTuple("horos/decl/top", genTuple("horos/decl/sort-proper")) }
 func genType(body core.Value, params ...string) core.Value {
 	var p []core.Value
 	for _, name := range params {
-		p = append(p, genTuple("horos/decl/parameter", data.MustEncodeText(name), genAtom("type")))
+		p = append(p, genTuple("horos/decl/parameter", data.MustEncodeText(name), genTop()))
 	}
-	return genTuple("horos/decl/type", data.EncodeList(p), body)
+	return genTuple("horos/decl/type", data.EncodeList(p), genTop(), body)
 }
 func genParam(i int64) core.Value { return genTuple("horos/decl/param", genInt(i)) }
 func genLocal(name string, args ...core.Value) core.Value {
+	if len(args) == 0 { return genTuple("horos/decl/local", data.MustEncodeText(name)) }
 	return genTuple("horos/decl/apply", genTuple("horos/decl/local", data.MustEncodeText(name)), data.EncodeList(args))
 }
 func genImported(alias, name string, args ...core.Value) core.Value {
+	if len(args) == 0 { return genTuple("horos/decl/imported", data.MustEncodeText(alias), data.MustEncodeText(name)) }
 	return genTuple("horos/decl/apply", genTuple("horos/decl/imported", data.MustEncodeText(alias), data.MustEncodeText(name)), data.EncodeList(args))
 }
 func genScalar(name string) core.Value { return genTuple("horos/scalar", genAtom(name)) }
@@ -93,12 +96,12 @@ func genPerson() core.Value {
 	return genRecord(genField("name", false, genScalar("utf8-text")), genField("active", false, genScalar("bool")))
 }
 func paginationModule() core.Value {
-	return genModule("example.pagination", genMap(),
+	return genModule("example.pagination", genMap(genEntry("h", decl.PreludeImport())),
 		genEntry("Page", genType(genPage(), "T")), genEntry("Person", genType(genPerson())),
 		genEntry("PeoplePage", genType(genLocal("Page", genLocal("Person")))),
 		genEntry("NestedPage", genType(genLocal("Page", genLocal("Page", genLocal("Person"))))),
 		genEntry("Other", genType(genTuple("horos/list-of", genParam(0)), "T")),
-		genEntry("DataPage", genTuple("horos/decl/type", data.EncodeList([]core.Value{genTuple("horos/decl/parameter", data.MustEncodeText("D"), genAtom("data"))}), genLocal("Page", genParam(0)))),
+		genEntry("DataPage", genTuple("horos/decl/type", data.EncodeList([]core.Value{genTuple("horos/decl/parameter", data.MustEncodeText("D"), genTuple("horos/decl/kind-imported", data.MustEncodeText("h"), data.MustEncodeText("Data")))}), genTop(), genLocal("Page", genParam(0)))),
 	)
 }
 
@@ -198,16 +201,16 @@ func generated[L any](t *testing.T, e *engine.Engine, from representation.Langua
 	return result
 }
 func tsMapper(f, t representation.Language) (transform.ASTTransformer, error) {
-	return tg.New(f, t, tg.Config{TreeID: "generated-ts"})
+	return tg.New(f, t, tg.Config{TreeID: "generated-ts", Profile: tg.RepresentationProfile})
 }
 func goMapper(f, t representation.Language) (transform.ASTTransformer, error) {
-	return gg.New(f, t, gg.Config{TreeID: "generated-go", Package: "pagination"})
+	return gg.New(f, t, gg.Config{TreeID: "generated-go", Package: "pagination", Profile: gg.RepresentationProfile})
 }
 func rustMapper(f, t representation.Language) (transform.ASTTransformer, error) {
-	return rg.New(f, t, rg.Config{TreeID: "generated-rust"})
+	return rg.New(f, t, rg.Config{TreeID: "generated-rust", Profile: rg.RepresentationProfile})
 }
 func cppMapper(f, t representation.Language) (transform.ASTTransformer, error) {
-	return cg.New(f, t, cg.Config{TreeID: "generated-cpp", Namespace: "pagination"})
+	return cg.New(f, t, cg.Config{TreeID: "generated-cpp", Namespace: "pagination", Profile: cg.RepresentationProfile})
 }
 func mustLanguage[L any](t *testing.T, p language.Provider) representation.Language {
 	t.Helper()
@@ -356,7 +359,7 @@ func TestPaginationRejectsUnsupportedTypes(t *testing.T) {
 
 func TestGenerationRejectsInvalidCanonicalApplications(t *testing.T) {
 	for name, source := range map[string]string{
-		"data-bound": "module invalid; type Page<T> = {items: list<T>;}; type DataPage<D: Data> = Page<D>; type Bad = DataPage<wire<text>>;",
+		"data-bound": "module invalid; import h from horos.kinds pin \"sha256:" + decl.PreludePin().String() + "\"; type Page<T> = {items: list<T>;}; type DataPage<D: h.Data> = Page<D>; type Bad = DataPage<wire<text>>;",
 		"arity":      "module invalid; type Page<T> = {items: list<T>;}; type Bad = Page<text, bool>;",
 		"unbound":    "module invalid; type Bad = Missing<text>;",
 	} {

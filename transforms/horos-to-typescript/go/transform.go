@@ -12,17 +12,26 @@ import (
 	"strconv"
 )
 
-type Config struct{ TreeID ast.TreeID }
+// RepresentationProfile permits kind-constraint erasure for Horos-checked uses.
+const RepresentationProfile = g.RepresentationProfile
+
+// EnforcementProfile requires native kind enforcement and is not implemented.
+const EnforcementProfile = g.EnforcementProfile
+
+type Config struct {
+	TreeID  ast.TreeID
+	Profile string
+}
 
 func New(from, to representation.Language, config Config) (transform.ASTTransformer, error) {
 	if from.ID() != (h.Language{}).ID() || to.ID() != (s.Language{}).ID() {
 		return nil, transform.ErrInvalidTransformer
 	}
-	if from.Profile() != h.Profile || config.TreeID == "" {
+	if from.Profile() != h.Profile || config.TreeID == "" || !g.KnownProfile(config.Profile) {
 		return nil, transform.ErrInvalidTransformer
 	}
 	return transform.NewTransformer[h.Language, s.Language](from, to, g.Contract(), func(ctx context.Context, request transform.Request[h.Language]) (ast.Set[s.Language], error) {
-		output, err := g.Generate(ctx, request, config.TreeID, dialect{})
+		output, err := g.Generate(ctx, request, config.TreeID, config.Profile, dialect{})
 		if err != nil {
 			return ast.Set[s.Language]{}, err
 		}

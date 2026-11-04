@@ -1,233 +1,176 @@
-# Horos canonical types and bittype generation
+# Horos canonical types and Bittype generation
 
-**Updated 4 November 2026. Status: Go declaration model and Horos AST implemented;
-native pagination mappings implemented; broader native representations proposed.** This replaces the 31 October
-proposal for an independent bittype value-type language. The generic AST/CST,
-native text stages and syntax engine already exist. See the [Horos frontend](horos.md).
+**Revision 4 implemented in Go source, 4 November 2026.** This page describes
+general kinds and their Bittype integration using public Horos Go 0.10.1.
+Generic carriers, Syntax/Files composition and native pagination retain their
+existing ownership boundaries.
 
-## Ownership and canonical input
+## Ownership
 
 | Component | Responsibility |
 | --- | --- |
-| ontos | Ground data values, structural identity, data embeddings and canonical encoding |
-| horos | Ground descriptors/conformance; unified modules, Type/Data bounds, binding and specialization |
-| optional ontos/wire | Go/TypeScript mixed value profile and native tuple structure in 0.16.0; ground Ontos stays unchanged |
-| bittype | Source syntax, AST/CST projections, frontend tooling and generation |
-| bitwire / bitruntime | Capability contracts and hydration above Horos |
-| Contract libraries | Function, Stream, Cell and future behavioral declarations and realizations |
+| ontos | Ground values, structural identity, data embeddings and encoding |
+| horos | Ground descriptors/conformance; canonical modules, general kinds, binding, application and ground extraction |
+| optional ontos/wire | Mixed values containing sending capabilities |
+| bittype | Readable syntax, AST/CST projections, semantic providers and native type generation |
+| bitwire / bitruntime | Capability transport and hydration |
+| Contract libraries | Function, Stream, Cell and other behavioral declarations and realizations |
 
-The semantic authority is the [horos descriptor specification](https://github.com/Bitspark/horos/blob/main/docs/spec/horos.md)
-and the [canonical declaration specification](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
-The latter specifies exact value grammar, immutable imports, indexed binders,
-substitution, bounds and declaration identity. Bittype must not maintain a
-competing interpretation of those Horos data types or their generic substitution.
+Horos's [descriptor specification](https://github.com/Bitspark/horos/blob/main/docs/spec/horos.md)
+and [declaration specification](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md)
+own canonical meaning. Bittype consumes that meaning through its
+[Horos frontend](horos.md). Native extraction is not a competing authority.
 
-The separate [agnostic semantic model](semantics.md) implements shared facts:
-identities, bindings, expressions, applications and dependencies. The
-[analysis SPI](analysis.md) reports coverage and validity explicitly. Neither
-supplies another canonical value-type algebra nor makes native meaning equivalent
-to Horos. Horos supplies the first production analyzer.
+The [general-kind design](kinds.md) replaces closed Type/Data bounds and the
+dedicated Data evaluator. Users define, import, parameterize and combine kinds
+through ordinary declarations. `Type`, `Data`, `Scalar`, `List` and `Record` are
+ordinary names, not semantic switches in the checker, engine or generator.
 
-The [unified declaration decision](unified-declarations.md) replaces separate
-Horos and Horos/Wire languages with explicit bounds. One `Page<T>` accepts any
-admitted type; `DataPage<D: Data> = Page<D>` restricts arguments. Ground descriptors
-are used directly, without a schema-level Data wrapper. The
-[preservation map](wire-extension-preservation.md) distinguishes this type-language
-change from unchanged Ontos value profiles and runtime responsibilities.
+The [agnostic graph](semantics.md) retains entities, bindings, applications and
+subject-associated facts. Typed `Semantics[L]` and its sealed envelope preserve
+language/profile/marker identity. They supply storage and association contracts,
+not Horos's kind algebra. [Analysis](analysis.md) consumes explicit resolution
+evidence rather than invoking another resolver.
 
-The [native representation proposal](type-representations.md) keeps optional
-library-owned recipes selected by exact declaration identity. Native generation
-will retain open generics. Specialization remains an independent operation;
-no template lifting or copied module is required.
+## Canonical revision 4
 
-The Go model and one Bittype AST frontend implement revision 2. The
-[dependency alignment](dependencies.md) qualifies public Horos/Ontos modules.
-The first [native pagination transformers](semantic-generation.md) now consume this model. Runtime bindings remain unimplemented.
-
-A declaration document is an ontos module value, encoded with ontos-codec-v1:
+The module envelope remains:
 
 ```text
 Tuple(Atom(UTF8("horos/decl/module")),
-      int(2), text(moduleName), importsMap, declarationsMap)
+      int(4), text(moduleName), importsMap, declarationsMap)
 ```
 
-The maps have canonical text keys. Imports pin module bytes with SHA-256;
-declarations contain ordered `horos/decl/parameter(text(name), atom(bound))`
-parameters and type expressions. The bound atom is exactly `type` or `data`. Parameter
-occurrences store zero-based slot indices. Applications contain an explicit
-local/imported target and an ordered list of every type argument. Horos owns
-the arities, name grammar, literal boundaries and resolution rules.
-
-Existing horos descriptors are reused, allowing declaration expressions only
-in child-descriptor positions. A parameter-shaped tuple inside an `exact`
-literal remains data. `rec`/`ref` remain recursion syntax, not generic slots.
-
-The [readable source grammar](horos-syntax.md) is implemented by bittype. The canonical
-value format remains the authority for identity and semantics. Horos's value equations are
-not JavaScript builders or executable input. Source spans, comments and native
-naming preferences remain tooling metadata outside the canonical module value.
-
-The old `bittype: 1` JSON proposal and its independent `string`, `bytes`, `i64`,
-`u64`, `f64`, variant and nullable algebra are superseded. Source conveniences
-need an explicit Horos meaning; they cannot create new canonical value domains.
-
-## Pagination first
-
-The complete value equations are in
-[horos's pagination example](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md#5-complete-pagination-example).
-Their readable meaning is:
+There is no schema-digest field or separately managed formation artifact.
+Imports retain an expected module name and exact module identity. One declarations
+map contains kind definitions and type definitions. In Horos's notation:
 
 ```text
-module example.pagination
-  Page<T> = closed record {
-    items: list-of(T)
-    next?: scalar(utf8-text)
-  }
-
-  DataPage<D: Data> = Page<D>
-
-module example.people
-  import pagination = exact pinned example.pagination module
-  Person = closed record { name: scalar(utf8-text) }
-  PeoplePage = pagination.Page<Person>
+KindDefinition = D("kind", L(KindParameter, ...), resultSort, kindBody)
+KindParameter  = D("kind-parameter", T(name), sort)
+TypeDefinition = D("type", L(TypeParameter, ...), resultKind, typeBody)
+TypeParameter  = D("parameter", T(name), kind)
 ```
 
-This display is explanatory, not a frozen source grammar. `Page` is an ordinary
-generic declaration. Its required items are an ontos list; optional next admits
-text, not null. No pagination operation, cursor protocol or transport is implied.
+`D` prefixes a tuple with `horos/decl/`; `T` and `L` are text and list embeddings.
+Sorts distinguish proper types from constructor values. Kind expressions provide
+top/bottom, references, applications, unions/intersections, structural node and
+child-sequence patterns, recursive groups and arrow contracts. Horos owns their
+canonical equations and formation rules.
 
-Native generation preserves open `Page<T>` and applied `Page<Person>` in target
-syntax. Separately, Horos specialization can produce a ground descriptor for
-value checking. Users do not author that expanded description, and generation
-does not require monomorphization as its only input.
+The language revision fixes primitive metadata, type-child positions and operand
+contracts. The bundled `horos.kinds` module supplies ordinary definitions used
+by those contracts. Authors explicitly import it to use its names. A local kind
+called `Data` cannot replace the identity selected by a primitive contract.
 
-Keep the imported Page declaration, the caller's Person binding, the named
-PeoplePage alias and parameter origins. Same-spelled names in different modules
-or declarations do not share a binding. The current declaration revision rejects
-cyclic import/application graphs; existing guarded `rec`/`ref` descriptions
-remain available. Recursive named applications are deferred. Do not add a
-productivity rule that rejects a well-formed but uninhabited Horos type.
+Parameters retain ordered binder slots. References preserve their defining
+module; argument closures preserve caller bindings. Applications have expression
+callees and fully supplied, nonempty argument lists. A type definition may return
+a constructor, and a zero-parameter definition may name one. Its result kind must
+express the constructor sort explicitly; parameter-list length does not determine
+that result sort.
 
-Page's Type-bound parameter accepts data or capabilities. DataPage's Data-bound
-parameter restricts its callers. `Page<Cell<Person>>` is valid for an ordinary
-capability-bearing Cell declaration; `DataPage<Cell<Person>>` fails, including
-when the capability is nested in an aggregate. `Forward<T> = DataPage<T>` fails
-symbolically before specialization; `Forward<D: Data>` succeeds. Ignored type
-arguments do not taint a data result, while data arguments do not imply a data
-result: `Wire<Person>` remains a capability type.
+Only designated descriptor type positions admit declaration expressions. An
+`exact` payload remains literal even when it resembles a parameter or kind form.
+Ground `rec`/`ref` keep lexical scope and runtime-value descent. Kind recursion
+has a separate structural descent rule.
 
-`Program.DataDescriptor` requires a data specialization before using WF/Conforms.
-Ground `any`, complement, literals and recursion retain their meanings. The
-complete constructor restrictions and bounded proof rules belong to Horos.
+## Pagination and general constraints
 
-## Frontend and pipeline
+This [readable source](horos-syntax.md) uses an explicit prelude import. Replace
+the placeholder with the supplied module's actual identity:
 
 ```text
-canonical Horos module values
-    -> resolve/check using Horos declaration semantics
-    -> AST[Horos]
-         -> AST[TypeScript] -> CST[TypeScript] -> source
-         -> AST[Go]         -> CST[Go]         -> source
-         -> AST[Rust]       -> CST[Rust]       -> source
-         -> AST[C++]        -> CST[C++]        -> source
+module example.pagination;
+import h from horos.kinds pin "sha256:<actual-64-hex-pin>";
+kind Flat = h.Scalar | h.List<h.Scalar>;
+kind Rows = h.Record<Flat>;
+type Page<T> = { items: list<T>; next?: text; };
+type DataPage<D: h.Data>: h.Data = Page<D>;
+type Person = { name: text; active: bool; };
+type PeoplePage = Page<Person>;
 ```
 
-The readable frontend adds text -> CST[Horos] and its AST view, using the same model. Native parsers continue to serve independent native inputs.
-`AST[Horos]` is an ordinary language-specific use of the generic carrier. Its
-provider and transformers are explicitly registered by the application; the
-engine has no canonical preference or knowledge of descriptor constructors.
-Transformers produce target ASTs, formatters construct CST, and the printer
-alone emits text.
+An omitted type parameter or result annotation elaborates to `top(P)`, not an
+implicit reference to `Type`. Optional fields distinguish absence from a present
+value and do not add null.
 
-The [generation design](generation.md) and [layout](../LAYOUT.md) retain the
-stage-first matrix. Planned canonical paths use `horos`, replacing the earlier
-proposed `canonical` name. The AST, readable syntax and [native pagination mappings](semantic-generation.md)
-are implemented. Broader native representations and reverse mappings remain future work.
+The same retained Page body can establish requested contracts such as
+`h.Data -> h.Data` and `h.Scalar -> Rows`. `Flat -> Rows` does not generally hold:
+a list-valued input makes `items` a nested list. These are general kind queries,
+not a dedicated Data summary or a principal inferred kind.
 
-## Native representation profiles
+For abstract `F: Flat -> Rows` and `T: Flat`, `F<T>` establishes Rows.
+`F: Flat -> Flat` cannot guarantee Rows because it may return text. A wrapper
+`{ value: F<T>; }` establishes `h.Record<Rows>` without thereby establishing Rows.
 
-Horos classifies ontos values. Native types are selected representations of
-those values; compilation does not prove conformance. Each transformer must
-declare its supported subset, toolchain/configuration and representation limits.
+Known constructors retain checked bodies and definition environments. Requested
+arrow contracts must respect original admission before deriving results under
+fresh rigid assumptions. Abstract constructors expose declared guarantees only.
+Every open body and argument is admitted, including ignored arguments. A narrower
+query cannot repair an invalid declaration.
 
-| Horos case | Required mapping decision |
-| --- | --- |
-| `scalar(int)` | Arbitrary-width domain; no silent JS number or bounded machine integer |
-| `scalar(utf8-text)` | Native string representation and its admissible-value limits |
-| `list-of(T)` | Native sequence preserving the selected T representation and binding |
-| Closed/open record | Field membership and native enforcement/extra-field limits |
-| Optional field | Absence distinct from a present value |
-| `exact(null())` and unions containing it | Explicit null distinct from absence |
-| Unions, intersections, complements, exact values, refinements | Specified representation or unsupported-input diagnostic; no silent widening |
-| Guarded recursion | Explicit native indirection/layout, without changing descriptor meaning |
-| Named generics/applications | Open native parameters, declaration identity, bounds and arguments |
-| Type/Data bounds | Preserve source obligations; do not claim a native constraint proves Data without an explicit representation rule |
+## Checked values and ground extraction
 
-For pagination, propose a generic interface/record in TypeScript, generic struct
-in Go/Rust/C++, a sequence for items and presence representation for next. Exact
-support types, imports and compiler settings must accompany the transformers;
-this document introduces no runtime or arbitrary-precision library dependency.
+Horos supplies sealed Program-owned kind handles and type-level values. Ordinary
+membership and inclusion queries establish guarantees without changing declaration
+identity. Application may return a constructor or a proper symbolic value;
+materialization is separate. Foreign or zero handles confer no authority, even
+when another Program contains identical modules.
 
-The example's next has two admitted states: absent or present text. An optional
-union of text and `exact(null())` would have three. No new nullable constructor
-or wrapper-normalization semantics are introduced. Current scalar tags are int,
-utf8-text and bool; decimal has no scalar recognizer. A scalar extension requires
-a concrete Horos model case and is unnecessary for the first pagination example.
+Results distinguish Proven, Refuted, Unproved, Invalid and Exhausted. Missing
+facts assert nothing. Required obligations must be established before publication
+of a checked Program or Bittype semantic model. Exhaustion is incomplete work,
+never nonmembership or permission to substitute a broader type.
 
-## Dependencies, identity and forbidden shortcuts
+Ground extraction requires a closed proper value, membership in the ordinary
+ground kind, materialization and unchanged ground Horos well-formedness. `any`,
+complement, literals and ground recursion retain their data-only meanings. Wire
+remains a declaration-layer capability form. A mixed type does not become a
+ground descriptor merely because it is uninhabited. The old Data-specific
+extraction/proof route is replaced, not retained as a fallback.
 
-Dependency direction is bittype's Horos tooling -> horos -> ontos. Horos must
-not import bittype. Generic trees, contracts, engine and printer remain unaware
-of concrete semantic dependencies. Native syntax and formatters stay independent
-of Horos; its frontend and relevant transformers consume the semantic model.
-Architecture tests allow the model dependency only in the Horos frontend and
-classify its transitive packages. They retain the generic-package boundary and
-the independence of native text stages.
+## Syntax, Files and native output
 
-There is one frontend and one explicit model dependency allowance. Type/Data
-meaning and constructor domains remain Horos-owned, not generic infrastructure.
+```text
+canonical Horos modules -> authoritative Horos resolution
+  -> Horos ASTs + explicit typed Semantics
+  -> target ASTSet -> target CSTs -> native source
+```
 
-Horos specifies document identity and pins. Bittype preserves them alongside
-declaration/binder references. AST addresses and source spans are tooling
-addresses/provenance, not module pins, ownership or authority proofs.
+Readable Syntax parsing supplies CSTs and AST views. The implemented
+[Files composition](source.md) retains multiple Program trees, an explicit entry,
+file organization and exact semantic capture. It does not concatenate text to
+grant visibility. Files formatting establishes new semantic sites and receipts
+for the output collection.
 
-Function, Stream and Cell remain library-owned. This phase adds no live contract
-semantics, adapters or binding registry. Native function/method-signature nodes
-remain language syntax; they do not privilege a particular Function library.
+The [native representation profile](semantic-generation.md) preserves open Page
+and ordinary applications. It represents Horos-admitted uses and explicitly
+permits erasing kind constraints from target declarations. An enforcement request
+needs a specified native encoding; the current enforcement profile returns
+Unsupported. Native compilation does not establish every source constraint for
+arbitrary native instantiations.
 
-Forbidden:
+The subset remains text, bool, lists, named closed records, optionals and ordinary
+proper generic parameters/applications. Kind definitions are compile-time
+declarations. Every exported type definition remains in scope. Canonical integers,
+residual constructor parameters/results/aliases, unused proper parameters, open
+records and unsupported forms produce located diagnostics and no usable output.
+There is no hidden specialization or omission of unsupported declarations.
 
-- Contract kinds, name switches, builtin imports or registrations in the general
-  generator, carrier, engine, Wire, runtime or hydration.
-- Structural fingerprints selecting behavioral ownership or bindings, including
-  fingerprints hidden in a generated central dispatch table.
-- Losing origins through expansion and guessing the owning library from shape.
-- A competing data type algebra or native extraction as canonical authority.
-- Adapters, RPC/streaming behavior, value validators or codecs in this types-only
-  generation milestone.
+## Boundaries
 
-## Implementation status and next scope
+Dependency direction remains Bittype's Horos tooling -> Horos -> Ontos. Generic
+trees, contracts, engine and printer do not import Horos/Ontos. Native syntax and
+formatters remain independent of canonical semantics. Source-owned transformation
+readers consume the established facts.
 
-The owner authorized the first two stages on 2 November; they are implemented:
+Function, Stream and Cell remain ordinary libraries. Membership or equal expanded
+syntax never selects their behavior or native bindings. Optional library-owned
+representation recipes remain separately scoped and selected by exact declaration
+identity. This types-only migration adds no runtime adapters, validators, codecs,
+service implementations, transport or hydration behavior.
 
-1. Qualify Horos declaration grammar, pins, resolution, slots and specialization
-   with independently authored semantic vectors.
-2. Add the AST-only Horos frontend in bittype, preserving origins, explicit
-   binding references and located AST errors. Horos model errors retain their
-   module/declaration/path context; no source location is invented.
-
-The remaining stages are proposals, outside this change:
-
-3. Implement four Horos-to-native ASTTransformer providers. First qualify open
-   and applied pagination, then expand the supported subset explicitly.
-4. Compose existing formatters/printer and compile generated declarations and
-   use examples with pinned toolchains on shared workers or GitHub runners.
-5. Later add partial native-to-Horos migration transformers. Missing native
-   semantics cannot be reconstructed automatically.
-
-Acceptance cases include imported pagination, nested applications, same-spelled
-parameters/names in separate scopes, parameter-shaped literal data, absence/null,
-bad imports, duplicate names, invalid arity/slots and recursive applications
-outside the admitted revision. Exhaustion must not look like successful checking.
-Generator tests inspect ASTs and origins; independent formatter fixtures remain
-separate. Compiler success does not prove value conformance or transport behavior.
+The [unified migration](unified-declarations.md) removes superseded readers,
+Claim/Interface, DataSummary and the dedicated Data evaluator. It retains no
+compatibility language ID, copied Page, template lifting or executable legacy path.

@@ -18,7 +18,7 @@ func TestUnresolvedHorosSyntaxReachesAnalysis(t *testing.T) {
 			tree.Nodes[i].References = nil
 		}
 	}
-	application := find(tree, s.KindApplication, "Page")
+	application := find(tree, s.KindReference, "Page")
 	setAttr(&tree.Nodes[application-1], s.AttributeName, "Missing")
 	definition, err := representation.NewLanguage[s.Language](provider.Provider{}, s.Profile)
 	if err != nil {

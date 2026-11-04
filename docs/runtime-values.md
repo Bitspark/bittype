@@ -8,7 +8,7 @@ runtime interface, generator, binding or release.
 
 Ground Ontos values and Horos conformance stay data-only. Ontos/wire is the
 optional mixed value profile; the unified Horos declaration language describes
-data and capability types with explicit Type/Data bounds. Bittype supplies their
+data and capability types with general kind contracts. Bittype supplies their
 tooling projections. Bitwire 0.7.0 and Bitruntime 0.8.0 now use Ontos 0.16.0's
 shared native mixed value structure in Go and TypeScript.
 Function, Stream and Cell declarations, representations and behavior remain library-owned.
@@ -33,8 +33,9 @@ wire.HydratedValue <-> Page[Person]
 wire.HydratedValue <-> Page[Cell[Person]]
 ```
 
-A Type-bound Page accepts both data and capability types through the same
-identity and selected native representation. `DataPage<D: Data> = Page<D>`
+A Page with an unrestricted proper-type parameter accepts data and capability
+types through the same identity and selected native representation.
+`DataPage<D: h.Data> = Page<D>`, with an explicit ordinary prelude import,
 restricts arguments within that language. [Generic bounds](type-representations.md#2-direct-declarations-and-generic-bounds)
 concern descriptions; a future runtime adapter converts actual instances under
 those descriptions and selected representations. Static acceptance allocates no
@@ -43,7 +44,7 @@ endpoint, establishes no authority and implements no protocol.
 | Object being represented | Go representation and status |
 | --- | --- |
 | Horos type declarations | Existing Horos model and `horos.AST`, the alias for `ast.AST[horos.Language]` in Bittype's Horos syntax package. |
-| Type declarations containing Wire | The same Go Horos model and `horos.AST`, with Type/Data bounds; see [the frontend guide](horos.md). |
+| Type declarations containing Wire | The same Go Horos model and `horos.AST`, with general kind contracts; see [the frontend guide](horos.md). |
 | Go source describing types | Existing `golang.AST`, the alias for `ast.AST[golang.Language]`. |
 | Ground application data | Existing Ontos Atom/Tuple values through the relevant Go `Value` type. |
 | Application data containing live capabilities | `wire.HydratedValue` specializes the Ontos/Wire native value domain; a conforming runtime owns handle admission and construction policy. |

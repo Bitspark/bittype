@@ -13,6 +13,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
+	resolve "github.com/Bitspark/bittype/resolve/horos/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/source/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
@@ -63,7 +64,7 @@ func (p Stages) Capture() (Stages, error) {
 	}
 	// This Files composition requires the fixed Horos semantic contracts. Configured
 	// resource options remain explicit and are captured with the matching receipts.
-	if p.Resolver.Contract().Semantic.Profile != "horos-declarations-2/resolution-2" || p.Analyzer.Contract().Semantic.Profile != "horos-declarations-2/analysis-2" {
+	if p.Resolver.Contract().Semantic.Profile != "horos-declarations-4/resolution-1" || p.Analyzer.Contract().Semantic.Profile != "horos-declarations-4/analysis-1" {
 		return Stages{}, semantic.ErrInvalidOperation
 	}
 	for _, options := range []*semantic.Options{&p.ResolutionOptions, &p.AnalysisOptions} {
@@ -204,6 +205,7 @@ func Organization(units []source.Unit[s.Language]) ([]source.Group, []source.Rel
 				if child.Role == s.RoleImport {
 					to := locations[attr(tree, child.Node, s.AttributePin)]
 					if to == "" {
+						if attr(tree, child.Node, s.AttributePin) == resolve.PreludePin() { continue }
 						return nil, nil, source.ErrInvalid
 					}
 					at := ast.NodeRef{Tree: tree.ID, Node: child.Node}

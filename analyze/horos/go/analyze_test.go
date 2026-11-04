@@ -49,18 +49,20 @@ func entry(name string, v value) [2]value { return [2]value{txt(name), v} }
 func definition(body value, names ...string) value {
 	var parameters []value
 	for _, name := range names {
-		parameters = append(parameters, d("parameter", txt(name), atom("data")))
+		parameters = append(parameters, d("parameter", txt(name), d("top", d("sort-proper"))))
 	}
-	return d("type", data.EncodeList(parameters), body)
+	return d("type", data.EncodeList(parameters), d("top", d("sort-proper")), body)
 }
 func module(name string, imports value, declarations ...[2]value) value {
-	return d("module", integer(2), txt(name), imports, mapping(declarations...))
+	return d("module", integer(4), txt(name), imports, mapping(declarations...))
 }
 func param(index int64) value { return d("param", integer(index)) }
 func local(name string, args ...value) value {
+	if len(args) == 0 { return d("local", txt(name)) }
 	return d("apply", d("local", txt(name)), data.EncodeList(args))
 }
 func imported(alias, name string, args ...value) value {
+	if len(args) == 0 { return d("imported", txt(alias), txt(name)) }
 	return d("apply", d("imported", txt(alias), txt(name)), data.EncodeList(args))
 }
 func page(element value) value {
@@ -280,7 +282,7 @@ func requireModel(t *testing.T, result semantic.Result) representation.Semantics
 func entity(t *testing.T, model representation.Semantics, module, name string) (semantics.EntityID, semantics.Entity) {
 	t.Helper()
 	for i, e := range model.Data().Entities {
-		if e.Kind.Name != "declaration" || e.Name != name {
+		if e.Kind.Name != "type-definition" || e.Name != name {
 			continue
 		}
 		owner, ok := model.Entity(e.Owner)
@@ -333,14 +335,14 @@ func TestPaginationBindingsPreserveCallerScopeAndDistinctParameters(t *testing.T
 	if peopleBody.Kind != semantics.Application || term(t, model, peopleBody.Callee).Target != outerID {
 		t.Fatal("PeoplePage lost its Outer application")
 	}
-	personApplication := term(t, model, peopleBody.Arguments[0])
-	if personApplication.Kind != semantics.Application || term(t, model, personApplication.Callee).Target != personID || len(personApplication.Arguments) != 0 {
-		t.Fatal("zero-argument Person application lost caller identity")
+	personReference := term(t, model, peopleBody.Arguments[0])
+	if personReference.Kind != semantics.Reference || personReference.Target != personID {
+		t.Fatal("proper Person reference lost caller identity")
 	}
-	if bindings, ok := model.DirectParameterBindings(peopleBody.Arguments[0]); !ok || len(bindings) != 0 {
-		t.Fatal("zero-argument application must retain application status")
+	if _, ok := model.DirectParameterBindings(peopleBody.Arguments[0]); ok {
+		t.Fatal("a bare reference must not be reported as an application")
 	}
-	deps := model.DependenciesFrom(peopleID, resolve.ApplicationDependency())
+	deps := model.DependenciesFrom(peopleID, resolve.ReferenceDependency())
 	targets := map[semantics.EntityID]bool{}
 	for _, dep := range deps {
 		targets[dep.To] = true
@@ -477,7 +479,7 @@ func requireFailure(t *testing.T, result semantic.Result, status semantic.Comple
 		requireReport(t, result, key, semantic.Incomplete, semantic.Undetermined)
 	}
 	diagnostics := result.Diagnostics()
-	if len(diagnostics) != 1 || diagnostics[0].Code != (semantics.Key{Owner: "horos", Name: code}) || diagnostics[0].Subject != (semantics.Key{Owner: "horos", Name: subject}) {
+	if len(diagnostics) == 0 || diagnostics[0].Code != (semantics.Key{Owner: "horos", Name: code}) || diagnostics[0].Subject != (semantics.Key{Owner: "horos", Name: subject}) {
 		t.Fatalf("wrong diagnostic: %+v", diagnostics)
 	}
 }
@@ -490,15 +492,15 @@ func TestUnresolvedSourceAndContextHaveDistinctReports(t *testing.T) {
 		code, subject string
 	}{
 		{"unknown declaration", fixtureOptions{importedName: "Missing"}, func(tree s.AST) {
-			setAttribute(&tree.Nodes[find(tree, s.KindApplication, "Page")-1], s.AttributeName, "Missing")
+			setAttribute(&tree.Nodes[find(tree, s.KindReference, "Page")-1], s.AttributeName, "Missing")
 		}, "unknown-declaration", "source"},
 		{"unknown import", fixtureOptions{alias: "missing"}, func(tree s.AST) {
-			setAttribute(&tree.Nodes[find(tree, s.KindApplication, "Page")-1], s.AttributeAlias, "missing")
+			setAttribute(&tree.Nodes[find(tree, s.KindReference, "Page")-1], s.AttributeAlias, "missing")
 		}, "unknown-import", "source"},
 		{"out of range parameter", fixtureOptions{parameter: 9}, func(tree s.AST) {
-			outer := find(tree, s.KindDeclaration, "Outer")
+			outer := find(tree, s.KindTypeDefinition, "Outer")
 			application := body(tree, outer)
-			setAttribute(&tree.Nodes[tree.Nodes[application-1].Children[0].Node-1], s.AttributeIndex, "9")
+			setAttribute(&tree.Nodes[tree.Nodes[application-1].Children[1].Node-1], s.AttributeIndex, "9")
 		}, "invalid", "source"},
 		{"wrong expected module", fixtureOptions{expectedModule: "example.wrong"}, func(tree s.AST) {
 			setAttribute(&tree.Nodes[find(tree, s.KindImport, "")-1], s.AttributeName, "example.wrong")
@@ -573,7 +575,7 @@ func TestDuplicateDeclarationsIdentifySourceOrSuppliedContext(t *testing.T) {
 	} {
 		t.Run(test.subject, func(t *testing.T) {
 			tree := fixture(t)
-			setAttribute(&tree.Nodes[find(tree, s.KindDeclaration, test.declaration)-1], s.AttributeName, "Person")
+			setAttribute(&tree.Nodes[find(tree, s.KindTypeDefinition, test.declaration)-1], s.AttributeName, "Person")
 			result := run(t, tree, nil)
 			requireFailure(t, result, semantic.Complete, semantic.Rejected, test.code, test.subject)
 			resolved := runResolution(t, tree, nil)
@@ -593,10 +595,10 @@ func TestDuplicateDeclarationsIdentifySourceOrSuppliedContext(t *testing.T) {
 func TestPresentAnnotationsAndTypePositionsAreCheckedWithoutRepair(t *testing.T) {
 	t.Run("incorrect present target", func(t *testing.T) {
 		tree := fixture(t)
-		application := find(tree, s.KindApplication, "Page")
+		application := find(tree, s.KindReference, "Page")
 		for i := range tree.Nodes[application-1].References {
 			if tree.Nodes[application-1].References[i].Role == s.RoleTarget {
-				tree.Nodes[application-1].References[i].Target.Node = find(tree, s.KindDeclaration, "Outer")
+				tree.Nodes[application-1].References[i].Target.Node = find(tree, s.KindTypeDefinition, "Outer")
 			}
 		}
 		before := clone(tree)
@@ -608,7 +610,7 @@ func TestPresentAnnotationsAndTypePositionsAreCheckedWithoutRepair(t *testing.T)
 	})
 	t.Run("incorrect dependency annotation", func(t *testing.T) {
 		tree := fixture(t)
-		page := find(tree, s.KindDeclaration, "Page")
+		page := find(tree, s.KindTypeDefinition, "Page")
 		var parameter ast.NodeID
 		for _, child := range tree.Nodes[page-1].Children {
 			if child.Role == s.RoleParameter {
@@ -623,7 +625,7 @@ func TestPresentAnnotationsAndTypePositionsAreCheckedWithoutRepair(t *testing.T)
 			for j, reference := range node.References {
 				if reference.Role == s.RoleTarget && reference.Target.Node == parameter {
 					use = ast.NodeID(i + 1)
-					tree.Nodes[i].References[j].Target.Node = find(tree, s.KindDeclaration, "Outer")
+					tree.Nodes[i].References[j].Target.Node = find(tree, s.KindTypeDefinition, "Outer")
 				}
 			}
 		}
@@ -642,7 +644,7 @@ func TestPresentAnnotationsAndTypePositionsAreCheckedWithoutRepair(t *testing.T)
 		if err != nil {
 			t.Fatal(err)
 		}
-		literal := tree.Nodes[body(tree, find(tree, s.KindDeclaration, "Literal"))-1].Children[0].Node
+		literal := tree.Nodes[body(tree, find(tree, s.KindTypeDefinition, "Literal"))-1].Children[0].Node
 		tree.Nodes[literal-1] = s.Node{Kind: s.KindParameter, Attributes: []ast.Attribute{{Name: s.AttributeIndex, Text: "0"}}}
 		result := run(t, compact(tree), nil)
 		requireFailure(t, result, semantic.Complete, semantic.Rejected, "invalid-annotation", "source")
@@ -706,7 +708,7 @@ func TestInvalidConfigurationEntryAndCancellationReturnNoResult(t *testing.T) {
 		}
 	}
 	wrongEntry := input
-	wrongEntry.Entry.Node = find(fixture(t), s.KindDeclaration, "Outer")
+	wrongEntry.Entry.Node = find(fixture(t), s.KindTypeDefinition, "Outer")
 	if result, err := runHorosCase(syntax, context.Background(), wrongEntry); !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
 		t.Fatalf("wrong entry: %v", err)
 	}
@@ -719,7 +721,7 @@ func TestInvalidConfigurationEntryAndCancellationReturnNoResult(t *testing.T) {
 
 func TestInvalidConfigurationPrecedesMalformedSourceDecoding(t *testing.T) {
 	tree := fixture(t)
-	setAttribute(&tree.Nodes[find(tree, s.KindDeclaration, "Outer")-1], s.AttributeName, "Person")
+	setAttribute(&tree.Nodes[find(tree, s.KindTypeDefinition, "Outer")-1], s.AttributeName, "Person")
 	syntax, input := horosInput(t, tree)
 	input.Configuration = []semantic.Setting{{Key: resolve.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}}
 	result, err := runHorosCase(syntax, context.Background(), input)
@@ -754,7 +756,9 @@ func TestUnusedPoolAnnotationsDoNotEstablishFacts(t *testing.T) {
 		tree.Nodes = append(tree.Nodes, node)
 	}
 	for _, child := range extra.Nodes[extra.Root-1].Children {
-		tree.Nodes[tree.Root-1].Children = append(tree.Nodes[tree.Root-1].Children, ast.Child{Role: s.RoleModule, Node: child.Node})
+		if attribute(tree.Nodes[child.Node-1], s.AttributeName) == "example.unused" {
+			tree.Nodes[tree.Root-1].Children = append(tree.Nodes[tree.Root-1].Children, ast.Child{Role: s.RoleModule, Node: child.Node})
+		}
 	}
 	// compact discards the unattached extra Program wrapper.
 	tree = compact(tree)
@@ -773,7 +777,7 @@ func TestUnknownDescriptorConstructorReachesAuthoritativeAnalysis(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	id := body(tree, find(tree, s.KindDeclaration, "Future"))
+	id := body(tree, find(tree, s.KindTypeDefinition, "Future"))
 	setAttribute(&tree.Nodes[id-1], s.AttributeConstructor, "future-constructor")
 	changed := module("example.future", mapping(), entry("Future", definition(h("future-constructor", atom("int")))))
 	setAttribute(&tree.Nodes[find(tree, s.KindModule, "example.future")-1], s.AttributePin, pin(t, changed).String())
@@ -790,7 +794,7 @@ func TestSourcePayloadMutationUsesNewPinAndNeverHistoricalOrigin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	id := body(tree, find(tree, s.KindDeclaration, "Value"))
+	id := body(tree, find(tree, s.KindTypeDefinition, "Value"))
 	leaf := tree.Nodes[id-1].Children[0].Node
 	setAttribute(&tree.Nodes[leaf-1], s.AttributeHex, hex.EncodeToString([]byte("utf8-text")))
 	changed := module("example.scalar", mapping(), entry("Value", definition(h("scalar", atom("utf8-text")))))

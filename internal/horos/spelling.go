@@ -22,7 +22,7 @@ func Identifier(s string) bool {
 
 func Reserved(s string) bool {
 	switch s {
-	case "module", "import", "from", "pin", "type", "self", "Type", "Data", "open", "any", "atom", "text", "int", "bool", "tuple", "compound", "list", "seq", "set", "map", "union", "and", "not", "wire", "exact", "rec", "ref", "true", "false", "null", "hex":
+	case "module", "import", "from", "pin", "type", "kind", "self", "top", "bottom", "node", "nu", "in", "at", "epsilon", "item", "concat", "alternative", "star", "open", "any", "atom", "text", "int", "bool", "tuple", "compound", "list", "seq", "set", "map", "union", "and", "not", "wire", "exact", "rec", "ref", "true", "false", "null", "hex":
 		return true
 	}
 	return false

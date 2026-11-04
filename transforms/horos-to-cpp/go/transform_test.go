@@ -20,10 +20,10 @@ func TestRejectStandardNamespace(t *testing.T) {
 		t.Fatal(err)
 	}
 	// C++ [namespace.std]/1 does not permit ordinary generated declarations in std.
-	if mapper, err := New(from, to, Config{TreeID: "generated", Namespace: "std"}); !errors.Is(err, transform.ErrInvalidTransformer) || mapper != nil {
+	if mapper, err := New(from, to, Config{TreeID: "generated", Namespace: "std", Profile: RepresentationProfile}); !errors.Is(err, transform.ErrInvalidTransformer) || mapper != nil {
 		t.Fatalf("reserved standard namespace accepted: %v", err)
 	}
-	if _, err := New(from, to, Config{TreeID: "generated", Namespace: "pagination"}); err != nil {
+	if _, err := New(from, to, Config{TreeID: "generated", Namespace: "pagination", Profile: RepresentationProfile}); err != nil {
 		t.Fatal(err)
 	}
 }

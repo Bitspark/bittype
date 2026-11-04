@@ -42,7 +42,9 @@ The [shared semantic model](semantics.md) and [analysis guide](analysis.md) expl
 their results. The existing Horos canonical-value helpers are additional frontend
 entry points, not a substitute for the registered resolution capability.
 
-Horos uses one declaration grammar with explicit Type/Data parameter bounds.
+Horos uses one declaration grammar with [general structural kinds](kinds.md),
+including ordinary parameterized and recursive kind definitions. Kind meanings
+remain Horos-owned; the generic semantic graph carries their facts.
 Wire expressions do not create a second language or registered profile.
 
 ASTTransformer relates two languages and consumes explicit semantic input.

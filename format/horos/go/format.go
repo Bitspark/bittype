@@ -29,8 +29,10 @@ type doc = concrete.Doc[s.Language]
 type formatter struct {
 	tree.View[s.Language]
 	concrete.Builder[s.Language]
-	parameters []string
-	err        error
+	parameters     []string
+	kindParameters []string
+	groups         [][]string
+	err            error
 }
 
 // Format preserves canonical values, including unresolved applications. A
@@ -98,7 +100,7 @@ func Format(ctx context.Context, view ast.View[s.Language]) (cst.CST[s.Language]
 			// contain punctuation and identifiers, and negatives contain a sign.
 			if n.Kind == s.ConcreteToken {
 				spelling := *n.Text
-				if spelling[0] == '-' && len(spelling) > 1 {
+				if spelling[0] == '-' && len(spelling) > 1 && spelling != "->" {
 					tokens++
 				} else if spelling[0] == '`' || spelling[0] == '_' || spelling[0] >= 'a' && spelling[0] <= 'z' || spelling[0] >= 'A' && spelling[0] <= 'Z' {
 					tokens += 2 * (strings.Count(spelling, ".") + strings.Count(spelling, "-"))
@@ -132,6 +134,9 @@ func (f *formatter) module(id ast.NodeID) doc {
 
 func (f *formatter) declaration(id ast.NodeID) doc {
 	f.parameters = nil
+	f.kindParameters = nil
+	f.groups = nil
+	kindDefinition := f.Node(id).Kind == s.KindKindDefinition
 	var parameters []doc
 	seen := map[string]bool{}
 	for i, parameter := range f.Children(id, s.RoleParameter) {
@@ -140,19 +145,45 @@ func (f *formatter) declaration(id ast.NodeID) doc {
 			return f.bad(parameter, "parameters require distinct names and ordered contiguous indices")
 		}
 		seen[name] = true
-		f.parameters = append(f.parameters, name)
-		bound := f.Child(parameter, s.RoleBound)
 		parts := []doc{f.T(lit.Name(name))}
-		if f.Attr(bound, s.AttributeName) == "data" {
-			parts = append(parts, f.T(":"), f.Space(), f.Group(bound, f.T("Data")))
+		if kindDefinition {
+			f.kindParameters = append(f.kindParameters, name)
+			sort := f.Child(parameter, s.RoleSort)
+			if f.Node(sort).Kind != s.KindProperSort {
+				parts = append(parts, f.T(":"), f.Space(), f.sortExpression(sort))
+			}
+		} else {
+			f.parameters = append(f.parameters, name)
+			contract := f.Child(parameter, s.RoleContract)
+			if !f.properTop(contract) {
+				parts = append(parts, f.T(":"), f.Space(), f.kindExpression(contract, 0, 0))
+			}
 		}
 		parameters = append(parameters, f.Group(parameter, parts...))
 	}
-	parts := []doc{f.T("type"), f.Space(), f.T(lit.Name(f.Attr(id, s.AttributeName)))}
+	word := "type"
+	if kindDefinition {
+		word = "kind"
+	}
+	parts := []doc{f.T(word), f.Space(), f.T(lit.Name(f.Attr(id, s.AttributeName)))}
 	if len(parameters) > 0 {
 		parts = append(parts, f.T("<"), f.Join(parameters, f.T(","), f.Space()), f.T(">"))
 	}
-	parts = append(parts, f.Space(), f.T("="), f.Space(), f.typ(f.Child(id, s.RoleBody), 0, 0), f.T(";"))
+	result := f.Child(id, s.RoleResult)
+	if kindDefinition {
+		if f.Node(result).Kind != s.KindProperSort {
+			parts = append(parts, f.T(":"), f.Space(), f.sortExpression(result))
+		}
+	} else if !f.properTop(result) {
+		parts = append(parts, f.T(":"), f.Space(), f.kindExpression(result, 0, 0))
+	}
+	parts = append(parts, f.Space(), f.T("="), f.Space())
+	if kindDefinition {
+		parts = append(parts, f.kindExpression(f.Child(id, s.RoleBody), 0, 0))
+	} else {
+		parts = append(parts, f.typ(f.Child(id, s.RoleBody), 0, 0))
+	}
+	parts = append(parts, f.T(";"))
 	return f.Group(id, parts...)
 }
 
@@ -194,7 +225,7 @@ func (f *formatter) typ(id ast.NodeID, parent, level int) doc {
 			return f.bad(id, "parameter index has no source binder")
 		}
 		result = f.T(lit.Name(f.parameters[index]))
-	case s.KindApplication:
+	case s.KindReference:
 		name := f.Attr(id, s.AttributeName)
 		parts := []doc{}
 		if f.Attr(id, s.AttributeScope) == "imported" {
@@ -211,14 +242,13 @@ func (f *formatter) typ(id ast.NodeID, parent, level int) doc {
 			}
 		}
 		parts = append(parts, f.T(lit.Name(name)))
+		result = f.Seq(parts...)
+	case s.KindApplication:
 		var arguments []doc
 		for _, argument := range f.Children(id, s.RoleArgument) {
 			arguments = append(arguments, f.typ(argument, 0, level))
 		}
-		if len(arguments) > 0 {
-			parts = append(parts, f.T("<"), f.Join(arguments, f.T(","), f.Space()), f.T(">"))
-		}
-		result = f.Seq(parts...)
+		result = f.Seq(f.typ(f.Child(id, s.RoleCallee), 2, level), f.T("<"), f.Join(arguments, f.T(","), f.Space()), f.T(">"))
 	case s.KindDescriptor:
 		name := f.Attr(id, s.AttributeConstructor)
 		operands := f.Children(id, s.RoleOperand)

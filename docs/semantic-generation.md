@@ -1,70 +1,89 @@
 # Semantic native type generation
 
-**Owner direction, 4 November 2026.** Generate native
-types and interfaces from checked Horos declarations. This work adds explicit
-semantic transformation input and pagination mappings for TypeScript, Go, Rust
-and C++. It adds no runtime adapters, validators, serialization or behavior.
+**Revision 4 implemented in Go source, 4 November 2026.** The four native
+pagination mappings consume general kinds through explicit target
+profiles, using public Horos Go 0.10.1. This
+is types/interfaces generation; it adds no runtime adapters, application-value
+validators, serialization or executable behavior.
 
-## Composition
+## Explicit semantic input
 
-Capture an admitted source snapshot once. Resolve it explicitly and analyze it
-with that resolution receipt. Pass the same snapshot and explicit analysis
-result to each selected transformer. The transformer requires the matching
-operation, profile, configuration, completed obligations and available model.
-Equal tree addresses or bytes from another capture are not compatible evidence.
+Capture admitted Horos syntax once, resolve it explicitly, and analyze that exact
+resolution result. Supply the same snapshot and explicit analysis evidence to
+selected transformers. Equal bytes or matching tree addresses from another
+capture do not substitute for that association. Configuration, dependency context,
+operation/profile, required obligations and available typed Semantics are part of
+the input contract.
 
-ASTTransformer retains FromID and ToID. Transform receives context and an input
-containing the captured source and ordered evidence. Its typed adapter admits
-the evidence against the transformer's declared requirements before calling the
-mapping. Receipt admission shares the existing semantic dependency rules.
-There is no hidden resolver or analyzer invocation. Intermediate route outputs
-receive new snapshots; old receipts are never carried across a transformation.
+The existing `Semantics[horos.Language]` graph and sealed representation envelope
+remain in use. The bridge retains multi-Program captures and tree-qualified
+sites. Files organization does not replace canonical module imports. Analysis
+consumes resolution evidence; no mapping invokes a hidden resolver or analyzer.
 
 ```text
-AST[Horos] + explicit resolution/analysis evidence
-  -> AST[TypeScript | Go | Rust | C++]
-  -> existing target formatter -> CST -> existing printer -> source
+Horos AST collection + explicit resolution/analysis evidence
+  -> target ASTSet
+  -> target Syntax formatter -> CST -> Syntax printer -> native source
 ```
 
-The semantic graph supplies declaration and parameter identities, Reference,
-Application and ProviderExpression terms, positional argument bindings, bounds
-and dependencies. The source AST supplies current origins and checked module
-pins. Model-local entity IDs are not persistent module/declaration identities.
-No expanded generic interface, second canonical algebra or shape-based contract
-lookup is introduced.
+`ASTTransformer` retains FromID/ToID and returns `representation.ASTSet`.
+The typed bridge carries a language-specific request and output set; it does not
+convert syntax to `AST[any]` or semantics to `Semantics[any]`. Each engine route
+leg admits its output and creates a new capture. Evidence from an earlier leg is
+not automatically valid for changed syntax. A later semantic leg needs explicit
+resolution/analysis of its own snapshot.
 
-## First mapping profile
+## Representation and enforcement profiles
 
-For example, this readable source encodes ordinary Horos revision-2 declarations:
+Each of `transforms/horos-to-typescript/go`, `transforms/horos-to-go/go`,
+`transforms/horos-to-rust/go` and `transforms/horos-to-cpp/go` exports:
+
+```go
+const RepresentationProfile = "pagination-representation/1"
+const EnforcementProfile = "pagination-enforcement/1"
+```
+
+Their `Config.Profile` is required. `New(from, to, Config)` rejects an empty or
+unknown profile with `transform.ErrInvalidTransformer`. `TreeID` remains explicit;
+Go also takes its package configuration and C++ its namespace configuration.
+The language/profile/marker of both endpoints must match the concrete mapping.
+Applications register languages, checkers and transformer edges themselves.
+
+| Selected profile | Promise and behavior |
+| --- | --- |
+| RepresentationProfile | Native declarations represent uses already admitted by Horos. The profile expressly permits erasing ordinary proper-kind contracts from target parameter declarations. |
+| EnforcementProfile | Native clients would have to be prevented from violating the source constraint. No such target encoding is implemented; Transform returns `text.Unsupported` at the request entry and no output. |
+
+The profile selection is part of the configured mapping, not inferred from a kind
+name. Representation does not advertise arbitrary native instantiations as
+Horos-admitted values. Native strings, records and generic parameters do not
+prove every source invariant. An enforcement request never silently selects
+representation instead.
+
+## Pagination subset
 
 ```text
 module example.pagination;
+import h from horos.kinds pin "sha256:<actual-64-hex-pin>";
 type Page<T> = { items: list<T>; next?: text; };
 type Person = { name: text; active: bool; };
 type PeoplePage = Page<Person>;
 type NestedPage = Page<Page<Person>>;
-type DataPage<D: Data> = Page<D>;
+type DataPage<D: h.Data>: h.Data = Page<D>;
 ```
 
-Resolution gives `Page.T` and `DataPage.D` separate binder identities and each
-application an exact target and positional arguments. Generation reads these
-facts, emits one open generic `Page`, and retains `PeoplePage` as an application
-alias. It does not specialize or copy the `Page` body for each consumer.
+The placeholder denotes the actual ordinary prelude module identity, not literal
+source. Omitted type parameter/result kinds elaborate to `top(P)`. Horos checks
+all source contracts through its general kind model. The generator preserves one
+open Page and ordinary named applications; it does not materialize a separate
+Page body for each caller.
 
-The first profile covers named/imported declarations, generic binders and
-applications, closed records, UTF-8 text, booleans, lists and optional fields.
-Canonical module identity and target package/file placement remain separate.
-Mappings retain declaration/binder links and current source origins. A target
-configuration supplies an output tree ID, a Go package name or a C++ namespace.
-This first profile explicitly bundles the complete checked module closure into
-one source unit. Root declarations use exported native names; imported
-declarations use `M<first-16-hex-of-SHA256(pin-text)>_<Name>`. Collisions fail;
-the hash is only a spelling, never semantic identity. Per-module output/import
-placement is deferred. Generation has no implicit network or filesystem IO.
-The [Syntax and Files design](source.md) implements a multi-unit syntax result
-and symmetric Files parsing, formatting and printing. Source exposes established
-Semantics alongside concrete file organization. The current mappings each return a one-tree ASTSet. They do not establish native
-Semantics; native Files parsing/formatting still require native semantic providers.
+The reader consumes proper-sort facts, checked bodies, named references,
+applications and bindings. It does not inspect the names Type/Data or decode a
+closed claim enum. KindDefinition entities are compile-time declarations and do
+not become native type exports. All exported TypeDefinition entities in the
+selected semantic closure remain in scope, including dependency modules. An
+unsupported type definition is not pruned because a particular root ignores it.
 
 | Horos form | TypeScript | Go | Rust | C++ |
 | --- | --- | --- | --- | --- |
@@ -72,120 +91,104 @@ Semantics; native Files parsing/formatting still require native semantic provide
 | Boolean | boolean | bool | bool | bool |
 | list-of(T) | T[] | []T | Vec<T> | std::vector<T> |
 | Named closed record | interface | struct | struct | struct |
-| Optional field | field?: T | explicit BittypeOptional[T] | Option<T> | std::optional<T> |
-| Type parameter | native parameter | native parameter | native parameter | template parameter |
-| Application | F<T> | F[T] | F<T> | F<T> |
+| Optional field | field?: T | BittypeOptional[T] | Option<T> | std::optional<T> |
+| Proper type parameter | native parameter | native parameter | native parameter | template parameter |
+| Ordinary named application | F<T> | F[T] | F<T> | F<T> |
 
-TypeScript requires strictNullChecks and exactOptionalPropertyTypes. Go's
-presence helper is a generated type declaration with Present and Value fields;
-the value is ignored when absent. Its public name is `BittypeOptional`. No helper methods or runtime implementation
-are generated. Absence is never silently changed into null or a zero value.
+TypeScript uses strictNullChecks and exactOptionalPropertyTypes. Go's generated
+`BittypeOptional` declaration has Present and Value fields; Value is ignored when
+absent. It has no generated methods or runtime implementation. Optional presence
+is not silently replaced by null or a zero value.
 
-Horos checks Type/Data bounds on the source and all canonical applications.
-Native declarations are value representations, not conformance validators.
-Native strings and records do not enforce every Horos invariant, and an
-unconstrained native parameter does not establish the Data bound. The mapping
-profile must explicitly expose that limit rather than advertise native proof.
-Unsupported constructors, target forms and required representation policies
-fail without usable partial output.
+Canonical integers remain Unsupported. The existence of native integer syntax
+does not choose an arbitrary-width representation or dependency. Open records,
+Wire, tuples, sets/maps, unions/intersections, complements, exact/refinement forms
+and ground recursion remain outside this profile. Broader representations need
+an explicit target contract rather than a weaker fallback.
 
-## Subsequent mappings and library ownership
+## Generic and naming limits
 
-Arbitrary integers require arbitrary-width representations (TypeScript bigint,
-Go big integers, Rust BigInt and C++ multiprecision), with dependencies and
-ownership rules declared by the target profile. Atoms and tuples follow as
-separately qualified representations. Sets/maps need structural identity and
-canonical-order rules; unions need qualified sum representations; recursion
-needs target layout/indirection policies. Exact values, refinements,
-intersections and complements must not silently widen to an ordinary carrier.
-These forms are outside the initial pagination implementation.
+The complete exported type closure rejects residual constructor parameters,
+constructor-valued results or aliases, higher-order arguments and computed
+callees. It also rejects unused proper parameters. General Horos support for
+these expressions does not establish a native encoding. A closed application
+that could be reduced does not authorize hidden specialization.
 
-Wire requires an explicitly configured native type representation. Function,
-Stream, Cell and future contracts remain ordinary library declarations. Optional
-library recipes select structured target types by exact source declaration and
-target profile, with explicit argument mapping and locked dependencies. They
-never add a named contract to the engine, carrier, formatter or runtime. Recipe
-SPIs and capability representations remain a later types-only increment; this
-implementation does not pretend missing representations are available.
+Records must be named declarations. Ordinary nested applications such as
+`Page<Page<Person>>` remain supported; anonymous record bodies inside fields or
+arguments are Unsupported. Unsupported cases return source-node diagnostics and
+no usable output.
 
-## Layout and qualification
+Declarations and proper parameters capitalize their initial ASCII letter;
+a leading underscore becomes `Type_`, and `Self` becomes `Self_`. Name collisions,
+parameter shadowing of a declaration and unsupported field spellings fail.
+Go fields also capitalize their initial letter; TypeScript retains property
+names. Rust and C++ reject keyword field names. Names are not guessed from types.
 
-Shared request admission lives in contracts/semantic/go and
-contracts/transform/go. The engine passes explicit input and captures checked
-intermediate outputs. Source-specific reading helpers live in
-internal/horosgen. Concrete mappings live under
-transforms/horos-to-typescript/go, transforms/horos-to-go/go,
-transforms/horos-to-rust/go and transforms/horos-to-cpp/go. Each owns only its
-target syntax construction; the generic kernel has no Horos/Ontos imports.
+Each mapping currently emits a one-tree ASTSet containing the checked type
+closure. Root declarations keep their exported native names. Imported declarations
+use `M<first-16-hex-of-SHA256(pin-text)>_<Name>`, with collisions rejected. This
+product spelling is not semantic identity. The configured output tree ID and Go package
+or C++ namespace remain separate from canonical module identity. This mapping
+performs no implicit filesystem or network IO.
 
-Qualification covers stale/mismatched/incomplete receipts, multiple targets
-sharing one snapshot, route isolation, cancellation, bounded work, empty output
-on failure, imported and nested pagination applications, equal-spelled binders, aliases, names,
-origin links, semantic rejection and unsupported types. Independent consumers
-compile all four generated outputs through maintained hosted gates. AST and
-semantic assertions supplement compilation; compiler success alone does not
-prove Horos value conformance. No native generator runs on the workstation.
+Go reserves `BittypeOptional` for its generated support declaration. C++ references
+use the configured qualified namespace; that namespace cannot be `std` or another
+reserved identifier. A field cannot shadow a C++ template parameter. Standard
+library types are explicitly qualified in Rust and C++.
 
-## Public composition
+## Facts and required evidence
 
-Each concrete mapping exposes `New(from, to, Config)`. The caller explicitly
-registers the endpoint languages, checkers and transformer. The source descriptor
-uses the Horos AST profile; the destination profile is the caller's promise about
-its native checker. The target marker and language ID must match the mapping.
-The engine has no language or constructor catalogue.
+Horos-owned subject facts distinguish semantic sort, declared kind contract,
+result sort/kind, checked symbolic body and individual established memberships.
+The relation keys are provider vocabulary, not interpretation rules in the
+shared graph. Multiple membership facts can concern one subject, and missing
+facts assert nothing. The retained body is not a principal inferred kind.
 
-```go
-resolved, err := engine.Resolve(ctx, snapshot, semantic.Options{})
-// Handle err before continuing.
-analyzed, err := engine.Analyze(ctx, analysis.Input{
-    Snapshot: snapshot, Resolution: &resolved,
-})
-// Handle err before continuing.
-input := transform.Input{
-    Source: snapshot,
-    Evidence: []semantic.Result{analyzed},
-}
-typescriptAST, err := engine.TransformTo(ctx, input, "typescript")
-goAST, err := engine.TransformTo(ctx, input, "go")
-```
+Source membership records retain their actual parameter assumptions. A narrower
+query such as Page preserving a scalar-derived category cannot create an
+unconditional result fact under Page's original unrestricted parameter.
+Arbitrary later Horos queries do not mutate the captured source evidence.
 
-The mapping requires the Horos analysis operation/profile, its complete validity
-and enumeration reports, an available model and empty analysis configuration.
-Resolution configuration is part of the analyzer
-provider contract; the mapping does not resolve or reinterpret it. The adapter checks capture identity and evidence before the mapper runs.
-Syntax-only mappings declare an empty evidence list. Multi-hop routes discard the
-previous evidence and capture the checked intermediate tree. If a later edge
-needs semantics, the caller must execute that leg separately after explicitly
-resolving/analyzing its new snapshot; the engine never runs hidden analysis.
+The mapping requires the current Horos analysis profile, its validity and
+required enumeration reports, an available typed semantic graph, and compatible
+configuration. The adapter admits capture/evidence association before mapping.
+The source-specific reader decodes published terms; it does not rerun Horos
+resolution, query a different Program or restore a Data-summary fallback.
 
-## Profile limits
+The bundled prelude can have authoritative source-less entities when its exact
+standard module identity is absent from the supplied syntax. No native source
+origin is invented for those entities. Supplied prelude syntax corresponds
+normally. The prelude's kind definitions remain compile-time declarations.
 
-Names must fit the documented target syntax. Declarations and generic parameters
-capitalize their initial ASCII letter (`page` becomes `Page`); a leading underscore
-becomes `Type_`, and `Self` becomes `Self_`. Conversion collisions, declaration
-shadowing by generic parameters and unsupported field spellings are errors. Go
-fields also capitalize their initial letter; TypeScript retains property names.
-Rust and C++ reject keyword field names. No member name is guessed from its type.
+## Syntax and Files
 
-Records must be named declarations. Nested applications such as
-`Page<Page<Person>>` are supported; anonymous records inside fields/arguments are
-rejected. Unused generic parameters, recursive declarations, open records and
-constructors outside the table are rejected with source-node diagnostics and no
-output. This is an explicit first subset, not a fallback that drops constraints.
-Name anonymous records before mapping. Phantom/recursive representations and
-per-library recipes need separately specified profiles.
+Target ASTSet is syntax, not Source. The implemented [Syntax and Files
+composition](source.md) keeps typed Semantics, file organization and exact
+receipts separate from syntax output. Native pagination mappings do not establish
+target-language Semantics. Native Files formatting therefore requires a native
+semantic provider; target Syntax formatting and printing remain usable for every
+output tree.
 
-Go alone reserves the generated support name `BittypeOptional`; other mappings
-do not know that support declaration. C++ declaration references use the fully
-qualified configured namespace, so a member named `Person` can still have the
-type `Person`. A field cannot shadow a C++ template parameter.
-The configured C++ namespace must be an unreserved identifier and cannot be `std`.
+Mappings retain real declaration/parameter links and available current source
+origins. Imported definitions are emitted once with dependencies before uses.
+The source reader and bounded target arenas live in `internal/horosgen`; each
+concrete mapping owns target AST construction. Shared contracts, engine and
+printer gain no Horos/Ontos or behavioral-library imports.
 
-The native graph retains separate target nodes for equal-spelled binders and
-references to their actual declarations. Origins point back to current canonical
-AST nodes. Standard-library types are qualified in Rust/C++. Dependencies are
-ordered before uses, and each imported declaration is generated once. The helper
-indexes the admitted semantic graph and decodes descriptor payloads on demand;
-it never calls Horos resolution, specialization or template lifting. Generation
-bounds target nodes to 100,000, recursive traversal depth to 128 and total visits
-to 800,000, with context cancellation. Formatter/carrier budgets still apply.
+Generation keeps the existing limits of 100,000 target nodes, traversal depth
+128 and 800,000 visits, together with context cancellation. Formatter, carrier
+and semantic-input limits still apply. Exhaustion returns no usable output.
+
+## Library and runtime boundaries
+
+Function, Stream, Cell and future contracts remain ordinary library definitions.
+Their kind membership or expanded shape does not select a native binding.
+Optional recipes belong to their owning libraries and consuming configuration,
+selected by exact declaration identity and target profile. Recipe SPIs and richer
+capability representations remain separate work.
+
+This migration preserves types-only output. It does not create serializers,
+application-value validators, executable adapters, protocol implementations or a
+replacement hydration layer. Ground descriptor extraction remains a Horos
+operation, separate from native representation.
