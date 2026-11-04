@@ -19,7 +19,13 @@
       "serverSha256": "e7941dee4413a1becd65bd32e9a256bcaead4b04619949fd7f3565877fad773d",
       "uploadedAt": "2026-11-04T14:39:35.6679455Z",
       "runId": "run_03dd46c7-4356-4db4-92cf-2e2fd3f98645",
-      "submittedAt": "2026-11-04T14:40:02.3396910Z"
+      "submittedAt": "2026-11-04T14:40:02.339691Z",
+      "state": "completed",
+      "resultId": "result_c271f3e8-c587-4c68-96dd-a69e47594189",
+      "resultSha256": "b56af93bfc33b9d46e98c96289b2bea224a27af8a8fbf8631a610828b3f95469",
+      "verificationExitCode": 0,
+      "verifiedAt": "2026-11-04T15:02:52.9101610Z",
+      "completeness": "Read the entire result; it answers all five questions and ends with a complete architectural recommendation. Frozen input hash matches; living drift is status/run metadata only."
     }
   ]
 }
