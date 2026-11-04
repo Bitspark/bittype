@@ -35,7 +35,7 @@ func entries(t *testing.T, pairs ...[2]core.Value) core.Value {
 	return value
 }
 func definition(body core.Value, parameters ...core.Value) core.Value {
-	return d("type", data.EncodeList(parameters), body)
+	return d("type", data.EncodeList(parameters), atom("type"), body)
 }
 func apply(name string, arguments ...core.Value) core.Value {
 	return d("apply", d("local", data.MustEncodeText(name)), data.EncodeList(arguments))
@@ -49,16 +49,16 @@ func TestCanonicalPaginationAndImportedLibraryRoundTrip(t *testing.T) {
 	textType := h("scalar", atom("utf8-text"))
 	slot := d("param", integer(0))
 	pageBody := h("record", atom("closed"), field("items", "req", h("list-of", slot)), field("next", "opt", textType))
-	page := d("module", integer(2), txt("example.pagination"), entries(t), entries(t,
-		[2]core.Value{txt("Page"), definition(pageBody, d("parameter", txt("T"), atom("type")))},
-		[2]core.Value{txt("DataPage"), definition(apply("Page", slot), d("parameter", txt("D"), atom("data")))},
+	page := d("module", integer(3), txt("example.pagination"), entries(t), entries(t,
+		[2]core.Value{txt("Page"), definition(pageBody, d("parameter", txt("T"), d("proper", atom("type"))))},
+		[2]core.Value{txt("DataPage"), definition(apply("Page", slot), d("parameter", txt("D"), d("proper", atom("data"))))},
 	))
 	pagePin, err := decl.Pin(page)
 	if err != nil {
 		t.Fatal(err)
 	}
-	cell := d("module", integer(2), txt("example.cell"), entries(t), entries(t,
-		[2]core.Value{txt("Cell"), definition(h("wire", slot), d("parameter", txt("T"), atom("type")))},
+	cell := d("module", integer(3), txt("example.cell"), entries(t), entries(t,
+		[2]core.Value{txt("Cell"), definition(h("wire", slot), d("parameter", txt("T"), d("proper", atom("type"))))},
 	))
 	cellPin, err := decl.Pin(cell)
 	if err != nil {
@@ -68,8 +68,8 @@ func TestCanonicalPaginationAndImportedLibraryRoundTrip(t *testing.T) {
 		return d("apply", d("imported", txt(alias), txt(name)), data.EncodeList(args))
 	}
 	personBody := h("record", atom("closed"), field("name", "req", textType))
-	person := apply("Person")
-	people := d("module", integer(2), txt("example.people"), entries(t,
+	person := d("local", txt("Person"))
+	people := d("module", integer(3), txt("example.people"), entries(t,
 		[2]core.Value{txt("pages"), d("import", txt("example.pagination"), core.NewAtom(pagePin[:]))},
 		[2]core.Value{txt("cells"), d("import", txt("example.cell"), core.NewAtom(cellPin[:]))},
 	), entries(t,
@@ -140,6 +140,70 @@ func TestCanonicalPaginationAndImportedLibraryRoundTrip(t *testing.T) {
 	}
 }
 
+func TestCanonicalConstructorInterfacesRoundTrip(t *testing.T) {
+	txt := data.MustEncodeText
+	proper := d("proper", atom("type"))
+	dataOnly := d("proper", atom("data"))
+	unary := d("constructor", data.EncodeList([]core.Value{proper}), atom("type"))
+	higher := d("constructor", data.EncodeList([]core.Value{unary, dataOnly}), atom("data"))
+	pair := d("constructor", data.EncodeList([]core.Value{proper, dataOnly}), atom("type"))
+	unaryHigher := d("constructor", data.EncodeList([]core.Value{unary}), atom("type"))
+	slot := func(index int64) core.Value { return d("param", integer(index)) }
+	application := func(indices ...int64) core.Value {
+		var arguments []core.Value
+		for _, index := range indices {
+			arguments = append(arguments, slot(index))
+		}
+		return d("apply", slot(0), data.EncodeList(arguments))
+	}
+	module := d("module", integer(3), txt("example.interfaces"), entries(t), entries(t,
+		[2]core.Value{txt("Apply"), definition(application(1),
+			d("parameter", txt("F"), unary), d("parameter", txt("T"), proper))},
+		[2]core.Value{txt("Higher"), d("type", data.EncodeList([]core.Value{
+			d("parameter", txt("H"), higher), d("parameter", txt("F"), unary), d("parameter", txt("D"), dataOnly),
+		}), atom("data"), application(1, 2))},
+		[2]core.Value{txt("Pair"), definition(application(1, 2),
+			d("parameter", txt("F"), pair), d("parameter", txt("T"), proper), d("parameter", txt("D"), dataOnly))},
+		[2]core.Value{txt("UnaryHigher"), definition(application(1),
+			d("parameter", txt("H"), unaryHigher), d("parameter", txt("F"), unary))},
+	))
+	projected, err := resolve.Resolve(module, nil, "canonical-interfaces")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := provider.Provider{}
+	formatted, err := p.Format(projected)
+	if err != nil {
+		t.Fatal(err)
+	}
+	source, err := p.Print(formatted)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"type Apply<F: Type -> Type, T> = F<T>;",
+		"type Higher<H: ((Type -> Type), Data) -> Data, F: Type -> Type, D: Data>: Data = H<F, D>;",
+		"type Pair<F: (Type, Data) -> Type, T, D: Data> = F<T, D>;",
+		"type UnaryHigher<H: (Type -> Type) -> Type, F: Type -> Type> = H<F>;",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("missing expected interface spelling %q:\n%s", want, source)
+		}
+	}
+	parsed, err := p.Parse(parse.Input{SourceID: "interfaces.horos", TreeID: "interfaces", Text: source})
+	if err != nil {
+		t.Fatal(err)
+	}
+	recovered, err := resolve.Model(parsed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual, ok := recovered.Module(recovered.Root())
+	if !ok || !core.Equal(actual.Value(), module) {
+		t.Fatal("canonical interface trees, result claims or parameter callees changed")
+	}
+}
+
 func TestFormatterRejectsUnspellableASTWithoutPartialOutput(t *testing.T) {
 	p := provider.Provider{}
 	parsed, err := p.Parse(parse.Input{SourceID: "small", TreeID: "small", Text: "module small; type Identity<T> = T;"})
@@ -180,7 +244,7 @@ func TestFormatterRejectsUnspellableASTWithoutPartialOutput(t *testing.T) {
 func TestFormatterBoundsLexicalExpansion(t *testing.T) {
 	// One AST attribute and concrete leaf can expand into more than 200,000
 	// lexical tokens. Counting CST leaves alone would emit unparseable source.
-	module := d("module", integer(2), data.MustEncodeText(strings.Repeat("a.", 100000)+"a"), entries(t), entries(t))
+	module := d("module", integer(3), data.MustEncodeText(strings.Repeat("a.", 100000)+"a"), entries(t), entries(t))
 	tree, err := resolve.Resolve(module, nil, "many-segments")
 	if err != nil {
 		t.Fatal(err)

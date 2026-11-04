@@ -90,7 +90,7 @@ func Format(view ast.View[s.Language]) (cst.CST[s.Language], error) {
 			// contain punctuation and identifiers, and negatives contain a sign.
 			if n.Kind == s.ConcreteToken {
 				spelling := *n.Text
-				if spelling[0] == '-' && len(spelling) > 1 {
+				if spelling[0] == '-' && len(spelling) > 1 && spelling != "->" {
 					tokens++
 				} else if spelling[0] == '`' || spelling[0] == '_' || spelling[0] >= 'a' && spelling[0] <= 'z' || spelling[0] >= 'A' && spelling[0] <= 'Z' {
 					tokens += 2 * (strings.Count(spelling, ".") + strings.Count(spelling, "-"))
@@ -133,10 +133,10 @@ func (f *formatter) declaration(id ast.NodeID) doc {
 		}
 		seen[name] = true
 		f.parameters = append(f.parameters, name)
-		bound := f.Child(parameter, s.RoleBound)
+		contract := f.Child(parameter, s.RoleInterface)
 		parts := []doc{f.T(lit.Name(name))}
-		if f.Attr(bound, s.AttributeName) == "data" {
-			parts = append(parts, f.T(":"), f.Space(), f.Group(bound, f.T("Data")))
+		if f.Attr(contract, s.AttributeName) != "type" {
+			parts = append(parts, f.T(":"), f.Space(), f.interfaceType(contract))
 		}
 		parameters = append(parameters, f.Group(parameter, parts...))
 	}
@@ -144,8 +144,34 @@ func (f *formatter) declaration(id ast.NodeID) doc {
 	if len(parameters) > 0 {
 		parts = append(parts, f.T("<"), f.Join(parameters, f.T(","), f.Space()), f.T(">"))
 	}
+	result := f.Child(id, s.RoleResult)
+	if f.Attr(result, s.AttributeName) != "type" {
+		parts = append(parts, f.T(":"), f.Space(), f.interfaceType(result))
+	}
 	parts = append(parts, f.Space(), f.T("="), f.Space(), f.typ(f.Child(id, s.RoleBody), 0, 0), f.T(";"))
 	return f.Group(id, parts...)
+}
+
+func (f *formatter) interfaceType(id ast.NodeID) doc {
+	switch f.Attr(id, s.AttributeName) {
+	case "type":
+		return f.Group(id, f.T("Type"))
+	case "data":
+		return f.Group(id, f.T("Data"))
+	}
+	var inputs []doc
+	for _, input := range f.Children(id, s.RoleInput) {
+		part := f.interfaceType(input)
+		if f.Attr(input, s.AttributeName) == "constructor" {
+			part = f.Seq(f.T("("), part, f.T(")"))
+		}
+		inputs = append(inputs, part)
+	}
+	domain := f.Join(inputs, f.T(","), f.Space())
+	if len(inputs) > 1 {
+		domain = f.Seq(f.T("("), domain, f.T(")"))
+	}
+	return f.Group(id, domain, f.Space(), f.T("->"), f.Space(), f.interfaceType(f.Child(id, s.RoleResult)))
 }
 
 func (f *formatter) literal(id ast.NodeID) core.Value {
@@ -186,7 +212,7 @@ func (f *formatter) typ(id ast.NodeID, parent, level int) doc {
 			return f.bad(id, "parameter index has no source binder")
 		}
 		result = f.T(lit.Name(f.parameters[index]))
-	case s.KindApplication:
+	case s.KindReference:
 		name := f.Attr(id, s.AttributeName)
 		parts := []doc{}
 		if f.Attr(id, s.AttributeScope) == "imported" {
@@ -203,14 +229,13 @@ func (f *formatter) typ(id ast.NodeID, parent, level int) doc {
 			}
 		}
 		parts = append(parts, f.T(lit.Name(name)))
+		result = f.Seq(parts...)
+	case s.KindApplication:
 		var arguments []doc
 		for _, argument := range f.Children(id, s.RoleArgument) {
 			arguments = append(arguments, f.typ(argument, 0, level))
 		}
-		if len(arguments) > 0 {
-			parts = append(parts, f.T("<"), f.Join(arguments, f.T(","), f.Space()), f.T(">"))
-		}
-		result = f.Seq(parts...)
+		result = f.Seq(f.typ(f.Child(id, s.RoleCallee), 2, level), f.T("<"), f.Join(arguments, f.T(","), f.Space()), f.T(">"))
 	case s.KindDescriptor:
 		name := f.Attr(id, s.AttributeConstructor)
 		operands := f.Children(id, s.RoleOperand)

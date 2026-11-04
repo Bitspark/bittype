@@ -19,17 +19,23 @@ type Node = ast.Node[Language]
 type Kind = ast.Kind[Language]
 
 // Profile admits declaration syntax before resolution. Binding annotations are
-// optional assertions; the separate analyzer establishes or rejects them.
-const Profile = "horos-declarations-2/ast-1"
+// optional assertions; the separate resolver establishes or rejects them.
+const Profile = "horos-declarations-3/ast-1"
 
+// Interface names are type, data or constructor. Proper interfaces are leaves;
+// constructors have nonempty input interfaces followed by a proper result.
+// Declarations always contain a proper result, including an implicit Type claim.
+// References carry names/binding assertions; applications contain a callee and
+// nonempty arguments without duplicating that reference's attributes.
 const (
 	KindProgram       Kind = "program"
 	KindModule        Kind = "module"
 	KindImport        Kind = "import"
 	KindDeclaration   Kind = "declaration"
 	KindTypeParameter Kind = "type-parameter"
-	KindBound         Kind = "bound"
+	KindInterface     Kind = "interface"
 	KindParameter     Kind = "parameter"
+	KindReference     Kind = "reference"
 	KindApplication   Kind = "application"
 	KindDescriptor    Kind = "descriptor"
 	KindAtom          Kind = "atom"
@@ -51,8 +57,11 @@ const (
 	RoleImport      = "import"
 	RoleDeclaration = "declaration"
 	RoleParameter   = "parameter"
-	RoleBound       = "bound"
+	RoleInterface   = "interface"
+	RoleInput       = "input"
+	RoleResult      = "result"
 	RoleBody        = "body"
+	RoleCallee      = "callee"
 	RoleArgument    = "argument"
 	RoleOperand     = "operand"
 	RoleElement     = "element"

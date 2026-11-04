@@ -7,6 +7,7 @@ import (
 
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/internal/tree"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/horos/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
@@ -139,13 +140,19 @@ func TestSourceTriviaAndSpans(t *testing.T) {
 	}
 }
 
-func TestSyntaxDoesNotResolveOrCheckBounds(t *testing.T) {
+func TestSyntaxDoesNotResolveOrCheckInterfaces(t *testing.T) {
 	for _, body := range []string{
 		"type Missing = Unknown<text>;",
 		"type Page<D: Data> = list<D>; type Invalid<T> = Page<T>;",
 		"type Invalid = map<wire<text>, text>;",
 		"type Invalid = scalarTypo;",
 		"type Invalid = atom-len(-1, 2);",
+		"type Invalid<T> = T<text>;",
+		"type Page<T> = list<T>; type Invalid = Page;",
+		"type Id<T> = T; type Invalid = Id<text><int>;",
+		"type Invalid<F: Type -> Type> = wire<F>;",
+		"type Invalid<T>: Data = wire<T>;",
+		"type Invalid<F: Data -> Data> = F<wire<text>>;",
 	} {
 		t.Run(body, func(t *testing.T) {
 			tree := roundTrip(t, "module invalid.semantics; "+body)
@@ -155,6 +162,80 @@ func TestSyntaxDoesNotResolveOrCheckBounds(t *testing.T) {
 		})
 	}
 	roundTrip(t, `module missing.context; import pages from example.pagination pin "sha256:`+strings.Repeat("AB", 32)+`"; type People = pages.Page<text>;`)
+	roundTrip(t, `module missing.constructors; import pages from example.pagination pin "sha256:`+strings.Repeat("AB", 32)+`"; type Apply<F: Type -> Type, T> = F<T>; type People = Apply<pages.Page, pages.Person>;`)
+}
+
+func TestConstructorInterfacesAndReferences(t *testing.T) {
+	source := `module examples.kinds;
+type Page<T> = { items: list<T>; next?: text; };
+type Person = { name: text; };
+type Apply<F: Type -> Type, T> = F<T>;
+type WrappedPage = Apply<Page, Person>;
+type Compose<F: Type -> Type, G: Type -> Type, T> = F<G<T>>;
+type Nested = Compose<Page, Page, Person>;
+type DataWrapped<F: Data -> Data, D: Data>: Data = { value: F<D>; };
+type DataPerson = DataWrapped<Page, Person>;
+type Higher<H: ((Type -> Type), Data) -> Data, F: Type -> Type, D: Data>: Data = H<F, D>;
+type UnaryHigher<H: (Type -> Type) -> Type, F: Type -> Type> = H<F>;
+type Opaque = exact(tuple(#"horos/decl/constructor", tuple(#"horos/decl/proper", #"data"), tuple(#"horos/decl/apply", tuple(#"horos/decl/local", "Page"))));
+`
+	parsed := roundTrip(t, source)
+	if _, err := resolve.Model(parsed); err != nil {
+		t.Fatal(err)
+	}
+	v := tree.View[s.Language]{Tree: parsed}
+	declarations := map[string]ast.NodeID{}
+	for i, node := range parsed.Nodes {
+		if node.Kind == s.KindDeclaration {
+			id := ast.NodeID(i + 1)
+			declarations[v.Attr(id, s.AttributeName)] = id
+		}
+	}
+	apply := declarations["Apply"]
+	body := v.Child(apply, s.RoleBody)
+	callee := v.Child(body, s.RoleCallee)
+	arguments := v.Children(body, s.RoleArgument)
+	if v.Node(body).Kind != s.KindApplication || len(v.Node(body).Attributes) != 0 || v.Node(callee).Kind != s.KindParameter || v.Attr(callee, s.AttributeIndex) != "0" || len(arguments) != 1 || v.Node(arguments[0]).Kind != s.KindParameter || v.Attr(arguments[0], s.AttributeIndex) != "1" {
+		t.Fatal("constructor application lost its lexical callee or argument")
+	}
+	named := v.Child(declarations["WrappedPage"], s.RoleBody)
+	if v.Node(v.Child(named, s.RoleCallee)).Kind != s.KindReference || v.Attr(v.Child(named, s.RoleCallee), s.AttributeName) != "Apply" {
+		t.Fatal("named callee was not retained as a reference")
+	}
+	namedArguments := v.Children(named, s.RoleArgument)
+	if len(namedArguments) != 2 {
+		t.Fatal("named application lost its ordered arguments")
+	}
+	for i, argument := range namedArguments {
+		if v.Node(argument).Kind != s.KindReference || v.Attr(argument, s.AttributeName) != []string{"Page", "Person"}[i] {
+			t.Fatal("unapplied constructor or proper declaration reference changed")
+		}
+	}
+	parameters := v.Children(apply, s.RoleParameter)
+	contract := v.Child(parameters[0], s.RoleInterface)
+	if v.Attr(contract, s.AttributeName) != "constructor" || len(v.Children(contract, s.RoleInput)) != 1 || v.Attr(v.Child(contract, s.RoleResult), s.AttributeName) != "type" {
+		t.Fatal("unary constructor interface changed")
+	}
+	if v.Attr(v.Child(parameters[1], s.RoleInterface), s.AttributeName) != "type" || v.Attr(v.Child(apply, s.RoleResult), s.AttributeName) != "type" {
+		t.Fatal("default proper interfaces were not explicit")
+	}
+	higher := declarations["Higher"]
+	contract = v.Child(v.Children(higher, s.RoleParameter)[0], s.RoleInterface)
+	inputs := v.Children(contract, s.RoleInput)
+	if len(inputs) != 2 || v.Attr(inputs[0], s.AttributeName) != "constructor" || v.Attr(inputs[1], s.AttributeName) != "data" || v.Attr(v.Child(contract, s.RoleResult), s.AttributeName) != "data" || v.Attr(v.Child(higher, s.RoleResult), s.AttributeName) != "data" {
+		t.Fatal("nested n-ary interface or declared Data result changed")
+	}
+}
+
+func TestArbitraryCalleesRemainSyntax(t *testing.T) {
+	for _, body := range []string{
+		"Missing<text><int>", "(Missing | Other)<text>", "(Missing & Other)<text>",
+		"text<int>", "list<text><int>", "{ value: text; }<int>",
+	} {
+		t.Run(body, func(t *testing.T) {
+			roundTrip(t, "module invalid.callees; type Invalid = "+body+";")
+		})
+	}
 }
 
 func TestRejectWholeInput(t *testing.T) {
@@ -166,11 +247,18 @@ func TestRejectWholeInput(t *testing.T) {
 		"module x; type X = { foo: text };", "module x; type X = exact(T);", "module x; type X = exact(1.2);",
 		"module x; type X = exact(01);", "module x; type X = exact(-0);", "module x; type X = exact(1e3);",
 		`module x; type X = exact("\xFF");`, `module x; type X = exact("\uD800");`, `module x; type X = atom-exact(#hex"f");`,
-		"module x; type X<T> = T<text>;", "module x; type text = int;", "module x; type X = 'text';",
+		"module x; type X = Missing<>;", "module x; type text = int;", "module x; type X = 'text';",
+		"module x; type X<F: () -> Type> = text;", "module x; type X<F: (Type, Data)> = text;",
+		"module x; type X<F: Type -> Type -> Type> = text;", "module x; type X<F: Type -> (Data -> Type)> = text;",
+		"module x; type X<F: (Type,) -> Type> = text;", "module x; type X<F: Type - > Type> = text;",
+		"module x; type X<F: K -> Type> = text;", "module x; type X<F: forall K> = text;",
+		"module x; type X: Type -> Type = text;", "module x; type X: (Type -> Type) = text;",
+		"module x; type X: Nope = text;",
 		"module x; type X = text; type X = int;", "module x; import a from x pin \"sha256:nope\";",
 		"module x; type X = text; import a from x pin \"sha256:" + strings.Repeat("0", 64) + "\";",
 		"module x; /* unterminated", "module x; type X = exact(" + strings.Repeat("1", 4097) + ");",
 		"module x; type X = " + strings.Repeat("list<", 300) + "text" + strings.Repeat(">", 300) + ";",
+		"module x; type X<F: " + strings.Repeat("(", 300) + "Type" + strings.Repeat(") -> Type", 300) + "> = text;",
 		"module x;" + strings.Repeat(" ", 4<<20), "module x;\xff",
 	}
 	p := provider.Provider{}
@@ -190,6 +278,7 @@ func FuzzSourceRoundTrip(f *testing.F) {
 	f.Add("module pagination; type Page<T> = { items: list<T>; next?: text; };")
 	f.Add("module x; type X = (text | int) | union<text>;")
 	f.Add(`module x; type X = exact(tuple(#"horos/decl/param", 0, #hex"ff"));`)
+	f.Add("module x; type X<F: ((Type -> Type), Data) -> Data, G: Type -> Type, D: Data>: Data = F<G, D>;")
 	f.Fuzz(func(t *testing.T, source string) {
 		if len(source) > 65536 {
 			t.Skip()

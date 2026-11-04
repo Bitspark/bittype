@@ -57,17 +57,18 @@ func hexadecimal(value string) bool {
 
 func pin(value string) bool { return len(value) == 64 && hexadecimal(value) }
 
-var expressions = []string{"descriptor", "parameter", "application"}
-var fragments = []string{"descriptor", "parameter", "application", "atom", "tuple"}
+var expressions = []string{"descriptor", "parameter", "reference", "application"}
+var fragments = []string{"descriptor", "parameter", "reference", "application", "atom", "tuple"}
 var rules = g.Rules{
 	"program":        {Roles: []g.Role{g.Many("module", 1, "module")}},
 	"module":         {Attributes: g.Attributes("name", g.Attr(true, moduleName), "pin", g.Attr(true, pin)), Roles: []g.Role{g.Many("import", 0, "import"), g.Many("declaration", 0, "declaration")}},
 	"import":         {Attributes: g.Attributes("alias", g.Attr(true, identifier), "name", g.Attr(true, moduleName), "pin", g.Attr(true, pin))},
-	"declaration":    {Attributes: g.Attributes("name", g.Attr(true, identifier)), Roles: []g.Role{g.Many("parameter", 0, "type-parameter"), g.One("body", expressions...)}},
-	"type-parameter": {Attributes: g.Attributes("name", g.Attr(true, identifier), "index", g.Attr(true, g.Decimal)), Roles: []g.Role{g.One("bound", "bound")}},
-	"bound":          {Attributes: g.Attributes("name", g.Attr(true, g.Set("type", "data")))},
+	"declaration":    {Attributes: g.Attributes("name", g.Attr(true, identifier)), Roles: []g.Role{g.Many("parameter", 0, "type-parameter"), g.One("result", "interface"), g.One("body", expressions...)}},
+	"type-parameter": {Attributes: g.Attributes("name", g.Attr(true, identifier), "index", g.Attr(true, g.Decimal)), Roles: []g.Role{g.One("interface", "interface")}},
+	"interface":      {Attributes: g.Attributes("name", g.Attr(true, g.Set("type", "data", "constructor"))), Roles: []g.Role{g.Many("input", 0, "interface"), g.Opt("result", "interface")}},
 	"parameter":      {Attributes: g.Attributes("index", g.Attr(true, g.Decimal))},
-	"application":    {Attributes: g.Attributes("scope", g.Attr(true, g.Set("local", "imported")), "name", g.Attr(true, identifier), "alias", g.Attr(false, identifier)), Roles: []g.Role{g.Many("argument", 0, expressions...)}},
+	"reference":      {Attributes: g.Attributes("scope", g.Attr(true, g.Set("local", "imported")), "name", g.Attr(true, identifier), "alias", g.Attr(false, identifier))},
+	"application":    {Roles: []g.Role{g.One("callee", expressions...), g.Many("argument", 1, expressions...)}},
 	"descriptor":     {Attributes: g.Attributes("constructor", g.Attr(true, g.Nonempty)), Roles: []g.Role{g.Many("operand", 0, fragments...)}},
 	"atom":           {Attributes: g.Attributes("hex", g.Attr(true, hexadecimal))},
 	"tuple":          {Roles: []g.Role{g.Many("element", 0, fragments...)}},
@@ -110,10 +111,24 @@ func Check[L any](view ast.View[L]) error {
 	rootTarget := ast.NodeID(0)
 	for i, node := range tree.Nodes {
 		id := ast.NodeID(i + 1)
-		if node.Kind == KindApplication {
+		if node.Kind == KindInterface {
+			if attribute(node, AttributeName) == "constructor" {
+				if len(node.Children) < 2 || node.Children[len(node.Children)-1].Role != RoleResult {
+					return text.AtNode(tree, id, "constructor interface requires inputs and a proper result")
+				}
+			} else if len(node.Children) != 0 {
+				return text.AtNode(tree, id, "proper interface cannot contain inputs or a result")
+			}
+		}
+		for _, child := range node.Children {
+			if child.Role == RoleResult && attribute(tree.Nodes[child.Node-1], AttributeName) == "constructor" {
+				return text.AtNode(tree, child.Node, "result interface must be Type or Data")
+			}
+		}
+		if node.Kind == KindReference {
 			imported := attribute(node, AttributeScope) == "imported"
 			if imported != (attribute(node, AttributeAlias) != "") {
-				return text.AtNode(tree, id, "only imported applications require an alias")
+				return text.AtNode(tree, id, "only imported references require an alias")
 			}
 		}
 		for _, ref := range node.References {
@@ -126,7 +141,7 @@ func Check[L any](view ast.View[L]) error {
 				}
 			case KindImport, KindParameter:
 				allowed = ref.Role == RoleTarget
-			case KindApplication:
+			case KindReference:
 				allowed = ref.Role == RoleTarget || (ref.Role == RoleImport && attribute(node, AttributeScope) == "imported")
 			}
 			if !allowed {

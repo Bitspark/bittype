@@ -34,7 +34,7 @@ type parser struct {
 // Parse admits one or more module sections. The first selects the program entry;
 // subsequent sections explicitly supply dependency documents. No IO is done.
 func Parse(input parsecontract.Input) (cst.CST[s.Language], error) {
-	base, err := parseutil.New[s.Language](input, lex.Options{BacktickStrings: true})
+	base, err := parseutil.New[s.Language](input, lex.Options{BacktickStrings: true, Punctuation: []string{"->"}})
 	if err != nil {
 		return cst.CST[s.Language]{}, err
 	}
@@ -156,20 +156,13 @@ func (p *parser) declaration() ast.NodeID {
 			}
 			index := len(p.parameters)
 			p.parameters[parameter] = index
-			boundStart := p.Token().Start
-			bound := "type"
+			var contract ast.NodeID
 			if p.Eat(":") {
-				boundStart = p.Token().Start
-				switch p.Take().Text {
-				case "Type":
-				case "Data":
-					bound = "data"
-				default:
-					p.Fail(text.SyntaxError, "expected Type or Data bound")
-				}
+				contract = p.interfaceType()
+			} else {
+				contract = p.Add(s.KindInterface, p.Token().Start, tr.Attrs(s.AttributeName, "type"))
 			}
-			b := p.Add(s.KindBound, boundStart, tr.Attrs(s.AttributeName, bound))
-			children = append(children, tr.Child(s.RoleParameter, p.Add(s.KindTypeParameter, begin, tr.Attrs(s.AttributeName, parameter, s.AttributeIndex, strconv.Itoa(index)), tr.Child(s.RoleBound, b))))
+			children = append(children, tr.Child(s.RoleParameter, p.Add(s.KindTypeParameter, begin, tr.Attrs(s.AttributeName, parameter, s.AttributeIndex, strconv.Itoa(index)), tr.Child(s.RoleInterface, contract))))
 			if !p.Eat(",") {
 				break
 			}
@@ -179,10 +172,64 @@ func (p *parser) declaration() ast.NodeID {
 		}
 		p.Want(">")
 	}
+	var result ast.NodeID
+	if p.Eat(":") {
+		result = p.properInterface()
+	} else {
+		result = p.Add(s.KindInterface, p.Token().Start, tr.Attrs(s.AttributeName, "type"))
+	}
+	children = append(children, tr.Child(s.RoleResult, result))
 	p.Want("=")
 	children = append(children, tr.Child(s.RoleBody, p.expr()))
 	p.Want(";")
 	return p.Add(s.KindDeclaration, start, tr.Attrs(s.AttributeName, name), children...)
+}
+
+func (p *parser) properInterface() ast.NodeID {
+	start := p.Token().Start
+	name := "type"
+	switch p.Take().Text {
+	case "Type":
+	case "Data":
+		name = "data"
+	default:
+		p.Fail(text.SyntaxError, "expected Type or Data interface")
+	}
+	return p.Add(s.KindInterface, start, tr.Attrs(s.AttributeName, name))
+}
+
+// Interface arrows have nonempty, n-ary inputs and a proper result. Parentheses
+// delimit a constructor used as an input; arrows are never curried implicitly.
+func (p *parser) interfaceType() ast.NodeID {
+	if !p.Enter() {
+		return 0
+	}
+	defer p.Leave()
+	start := p.Token().Start
+	var inputs []ast.NodeID
+	if p.Eat("(") {
+		inputs = append(inputs, p.interfaceType())
+		for p.Err == nil && p.Eat(",") {
+			inputs = append(inputs, p.interfaceType())
+		}
+		p.Want(")")
+		if !p.Eat("->") {
+			if len(inputs) != 1 {
+				p.Fail(text.SyntaxError, "multiple interface inputs require an arrow result")
+			}
+			return inputs[0]
+		}
+	} else {
+		input := p.properInterface()
+		if !p.Eat("->") {
+			return input
+		}
+		inputs = append(inputs, input)
+	}
+	result := p.properInterface()
+	children := tr.Children(s.RoleInput, inputs)
+	children = append(children, tr.Child(s.RoleResult, result))
+	return p.Add(s.KindInterface, start, tr.Attrs(s.AttributeName, "constructor"), children...)
 }
 
 func (p *parser) descriptor(name string, start int, operands ...ast.NodeID) ast.NodeID {
@@ -231,6 +278,22 @@ func (p *parser) arguments() []ast.NodeID {
 }
 
 func (p *parser) primary() ast.NodeID {
+	start := p.Token().Start
+	callee := p.primaryAtom()
+	for p.Err == nil && p.Peek() == "<" {
+		arguments := p.arguments()
+		if len(arguments) == 0 {
+			p.Fail(text.SyntaxError, "empty application argument list; use a reference")
+			return 0
+		}
+		children := []ast.Child{tr.Child(s.RoleCallee, callee)}
+		children = append(children, tr.Children(s.RoleArgument, arguments)...)
+		callee = p.Add(s.KindApplication, start, nil, children...)
+	}
+	return callee
+}
+
+func (p *parser) primaryAtom() ast.NodeID {
 	if p.Err != nil {
 		return 0
 	}
@@ -329,17 +392,10 @@ func (p *parser) primary() ast.NodeID {
 		attrs = tr.Attrs(s.AttributeScope, "imported", s.AttributeAlias, name, s.AttributeName, p.name())
 	} else if !local {
 		if index, ok := p.parameters[name]; ok {
-			if p.Peek() == "<" {
-				p.Fail(text.SyntaxError, "type parameters cannot be applied")
-			}
 			return p.Add(s.KindParameter, start, tr.Attrs(s.AttributeIndex, strconv.Itoa(index)))
 		}
 	}
-	var args []ast.NodeID
-	if p.Peek() == "<" {
-		args = p.arguments()
-	}
-	return p.Add(s.KindApplication, start, attrs, tr.Children(s.RoleArgument, args)...)
+	return p.Add(s.KindReference, start, attrs)
 }
 
 func (p *parser) record() ast.NodeID {
