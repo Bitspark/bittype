@@ -40,8 +40,8 @@ shared diagnostics only.
 
 <!-- generated:providers:end -->
 
-The Syntax printer providers delegate to the same generic CST printer.
-Files printing likewise has one generic implementation in `print/files/go`,
+The generic CST printer emits stored Syntax. Files printing has a reusable
+implementation in `print/files/go`,
 composed with the selected language's identity and Syntax printer. It consumes an
 existing `Source[L]` and does not depend on a resolver or analyzer. Horos now
 implements the [documented source syntax](horos-syntax.md). Its checker still
@@ -63,7 +63,9 @@ remain Horos-owned; the generic semantic graph carries their facts.
 Wire expressions do not create a second language or registered profile.
 
 ASTTransformer relates two languages and consumes explicit semantic input.
-The [pagination profile](semantic-generation.md) implements these directed edges:
+The following table derives direct edges from their implemented factories.
+The [pagination profile](semantic-generation.md) explains the native representation
+scope and its semantic requirements.
 
 <!-- generated:transformers:begin -->
 
@@ -80,19 +82,19 @@ The [pagination profile](semantic-generation.md) implements these directed edges
 Transformer cells show direct implemented edges, not paths inferred by the engine.
 They do not imply support for every representation profile or every input type.
 
-Reverse mappings are not implemented. Template lifting remains removed. A
-same-language checked snapshot is not a generation or canonicalization mapping.
+Reverse and same-language cells require actual transformer implementations; a
+checked snapshot alone is not a generation or canonicalization mapping.
 
 The [Syntax and Files design](source.md) is implemented: the same generic role
 interfaces serve Syntax/CST/AST and Files/Source/Semantics. Methods take a context.
 The engine registers Syntax and Files capabilities independently. Horos Files
 compositions are constructed explicitly with `provider/horos.NewFilesParser`,
 `NewFilesFormatter` and `NewFilesPrinter`; they do not install engine capabilities.
-The missing native semantic providers limit the shipped native Files parsing and
-formatting compositions. They do not limit Files printing: the generic printer
-can serve any admitted language Source when explicitly configured with its Syntax
-printer. The matrix describes each capability independently, not whether a complete
-Files pipeline is currently available for that language.
+Files parsing and formatting compositions require their language's semantic
+collaborators. Missing collaborators do not disable Files printing: the generic
+printer can serve an existing admitted Source when configured with its Syntax
+printer. The matrix describes each capability independently, not whether a
+complete Files pipeline is currently available for that language.
 
 See the [checker contract](../contracts/check/go/provider.go),
 [parser contract](../contracts/parse/go/provider.go),
