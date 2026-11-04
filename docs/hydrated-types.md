@@ -19,7 +19,7 @@ concept now belongs, including ideas retained for later implementation.
 | --- | --- |
 | Deixis | Existing generic structure over opaque contents; not an AST or type model |
 | Ground Ontos | Existing immutable data values, structural identity and encoding |
-| Optional ontos/wire | Implemented Go mixed data/capability profile over Deixis |
+| Optional ontos/wire | Go/TypeScript mixed data/capability profile and shared native tuple structure, released in 0.16.0 |
 | Ground Horos | Existing data descriptors, declarations, binding, specialization and conformance |
 | Optional horos/wire | Implemented static Go mixed types, explicit ground embedding and partial template lifting |
 | Bittype providers/transformers | Tooling projections of the selected Horos profile and native type representations |
@@ -46,12 +46,13 @@ receiver, closure authority or arbitrary object with a Send method. Wire-free
 values project to ground only after mixed-profile admission. This introduces
 neither a total pure live-to-ground codec nor universal Wire equality or hashes.
 
-Bitwire's inspected hydrated domain already has the same conceptual atom/tuple/
-capability shape. Alignment with `ontos/wire` is future qualification, not an
-implemented type alias or a requirement to copy every runtime value into a
-second heap of Deixis nodes. Runtime admission of a capability remains distinct
-from structural profile admission. See [runtime values](runtime-values.md) for
-the actual current Go types, exports, proxies and lifetime ownership.
+Bitwire 0.7.0 specializes the shared native `ontos/wire` model for its sending
+contract. Bitruntime 0.8.0 uses its immutable tuple factory with runtime-owned
+handle recognition; sends do not copy every value into a second heap of Deixis
+nodes. Runtime admission of a capability remains distinct from structural
+profile admission. See [runtime values](runtime-values.md) for the actual current
+Go types, exports, proxies and lifetime ownership. The static frontends use Horos
+0.7.0 and ground Ontos 0.16.0; Bittype does not import the live carrier or runtime.
 
 Every type description is itself ground data. Describing a Wire does not create
 one, and loading, resolving or analyzing a description performs no sends,

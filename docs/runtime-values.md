@@ -1,6 +1,6 @@
 # Type generation, runtime values and hydration
 
-**Owner direction, 3 November 2026. Status: documentation only.** This page
+**Owner direction, 3 November 2026; source alignment updated 4 November.** This page
 connects the [static representation proposal](type-representations.md) to the
 existing Wire/runtime value boundary. It distinguishes inspected implementation
 from future adapters and dynamic interpretation. It adds no source, dependency,
@@ -8,8 +8,8 @@ runtime interface, generator, binding or release.
 
 Ground Ontos and Horos stay data-only. Optional ontos/wire is the separate mixed
 value profile; optional horos/wire describes its types. Bittype supplies their
-tooling projections. Existing bitwire contracts and bitruntime hydration already
-carry capabilities; alignment with the optional profiles is future work.
+tooling projections. Bitwire 0.7.0 and Bitruntime 0.8.0 now use Ontos 0.16.0's
+shared native mixed value structure in Go and TypeScript.
 Function, Stream and Cell declarations, representations and behavior remain library-owned.
 
 ## 1. Type descriptions and application values are different inputs
@@ -44,7 +44,7 @@ converts an actual instance according to that description and representation.
 | Mixed type declarations containing Wire | Implemented Go horos/wire model and `horoswire.AST` projection; see [the frontend guide](horoswire.md). |
 | Go source describing types | Existing `golang.AST`, the alias for `ast.AST[golang.Language]`. |
 | Ground application data | Existing Ontos Atom/Tuple values through the relevant Go `Value` type. |
-| Application data containing live capabilities | Existing `wire.HydratedValue`, admitted and constructed by a conforming runtime; future ontos/wire alignment is not yet implemented. |
+| Application data containing live capabilities | `wire.HydratedValue` specializes the Ontos/Wire native value domain; a conforming runtime owns handle admission and construction policy. |
 | The application's native object | Its compiled Go type T, such as Person, Page[Person] or a selected Cell[Person] representation. |
 
 The [AST carrier](ast.md) and [checked AST envelope](engine.md#identity-profiles-and-storage)
@@ -58,18 +58,19 @@ instances data-only or perform any capability binding.
 
 ### Optional value-profile alignment
 
-The proposed [ontos/wire profile](https://github.com/Bitspark/ontos/blob/main/docs/design/0007-optional-wire-extension.md)
+The [ontos/wire profile](https://github.com/Bitspark/ontos/blob/v0.16.0/docs/design/0007-optional-wire-extension.md)
 places the common mixed-value meaning outside Bittype. It is a recognized subset
-of Deixis nodes with byte, tuple and opaque capability cases. An eventual Go
-presentation may parameterize the capability carrier; it must not depend on
+of Deixis nodes with byte, tuple and opaque capability cases. Its Go and
+TypeScript native realizations parameterize the opaque capability carrier without depending on
 Bitruntime or import Bitwire merely to obtain an interface. Runtime composition
 supplies recognized sending handles and retains authority/lifetime ownership.
 Static type tools need only ground descriptions, not the live value carrier.
 
-The current `wire.HydratedValue` is not already an implementation of that new
-package or an alias for Deixis. Future alignment must establish a law-preserving
-view or conversion, with immutable bytes/children and retained handle aliasing.
-It need not allocate a second tree for every message. A pure traversal of
+Bitwire's hydrated value types now use that shared native realization. Bitruntime
+uses Ontos/Wire's immutable tuple capture with its own handle-recognition policy.
+Explicit Deixis conversion has separate bounds; it is not inserted into sending.
+The native path preserves ground collapse, immutable children and handle aliasing
+without allocating a second tree for every message. A pure traversal of
 `Tuple(w, w)` retains both occurrences of the same handle without sending,
 exporting, cloning or rebinding it. Export identity is still a runtime concern.
 
@@ -86,13 +87,13 @@ source evidence, and the illustrative Adapter sketch is not a new dependency pin
 
 ## 2. Existing Go Wire and value contracts
 
-The following evidence is pinned source inspection, not a fresh deployment or
-package-release verification:
+The following references identify the released source. They establish no service
+deployment or Horos live mixed-value validation:
 
 | Inspected source | Relevant implementation |
 | --- | --- |
-| bitwire `e2d2d641744a49f1d8098b6ea5f2724454d72b96` | [Ground Wire](https://github.com/Bitspark/bitwire/blob/e2d2d641744a49f1d8098b6ea5f2724454d72b96/wire/go/wire.go), [hydrated Go contracts](https://github.com/Bitspark/bitwire/blob/e2d2d641744a49f1d8098b6ea5f2724454d72b96/wire/go/hydrated.go), [pure hydrated codec](https://github.com/Bitspark/bitwire/blob/e2d2d641744a49f1d8098b6ea5f2724454d72b96/wire/go/hydrated_codec.go). |
-| bitruntime `64dbe709f2f002781a5010b08a6650c7eeb129df` | [Go endpoints, scopes, exports and proxies](https://github.com/Bitspark/bitruntime/blob/64dbe709f2f002781a5010b08a6650c7eeb129df/hydrated/go/hydrated.go) and [runtime/component evidence](https://github.com/Bitspark/bitruntime/blob/64dbe709f2f002781a5010b08a6650c7eeb129df/hydrated/README.md). |
+| bitwire 0.7.0 | [Ground Wire](https://github.com/Bitspark/bitwire/blob/v0.7.0/wire/go/wire.go), [hydrated Go contracts](https://github.com/Bitspark/bitwire/blob/v0.7.0/wire/go/hydrated.go), [pure hydrated codec](https://github.com/Bitspark/bitwire/blob/v0.7.0/wire/go/hydrated_codec.go). |
+| bitruntime 0.8.0 | [Go endpoints, scopes, exports and proxies](https://github.com/Bitspark/bitruntime/blob/v0.8.0/hydrated/go/hydrated.go) and [shared native migration](https://github.com/Bitspark/bitruntime/blob/v0.8.0/docs/ONTOS-WIRE.md). |
 
 With `ontos` used as the import alias, the existing interfaces distinguish:
 
@@ -106,12 +107,11 @@ type HydratedWire interface {
 }
 ```
 
-In this bitwire revision, the ground Go type is supplied by its pinned
-`github.com/Bitspark/bitwire/ontos/go/core` consumer package. This notation does
-not assert Go type identity with another package's presentation of Ontos; an
-integration must use the actual selected dependency types.
+The ground Go type comes directly from `github.com/bitspark/ontos/core/go` at
+0.16.0. The old Bitwire mirror package and TypeScript ground reexports are removed;
+consumers import public Ontos directly. No compatibility alias is provided.
 
-Go currently declares `type HydratedValue = any`, but its admissible domain is
+Go declares `type HydratedValue = ontoswire.NativeValue`, whose carrier is `any`, but its admissible domain is
 restricted to ground Ontos atoms/tuples, finite immutable hydrated tuples and
 runtime-recognized hydrated Wires. It is not permission to send arbitrary Go
 structs, cyclic objects or any value implementing a Send method. The runtime
