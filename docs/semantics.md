@@ -6,6 +6,12 @@ providers. The separate [analysis contract](analysis.md) captures a request,
 reports coverage and publishes an immutable result. Horos supplies the first
 production analyzer; the four native languages still supply syntax tooling only.
 
+The later [Syntax and Files proposal](source.md) names the abstract representation
+Semantics and the concrete representation Source, matching AST and CST. It proposes
+Semantics[L] as a future replacement for the current Model type, not a second fact
+graph. This reference still describes the implemented API; no rename or alias is
+implemented by the proposal.
+
 The owner requested this boundary after the initial minimal Go sketch. The
 [reviewed expert consultation](../research-docs/0002-semantic-analysis-kernel.md)
 records how the sketch was narrowed for implementation. This model has no scope

@@ -27,6 +27,14 @@ Syntax admission must accept unresolved names; analysis publishes request-bound,
 immutable facts with explicit completion, verdict and model availability.
 Only Horos implements production semantics; native analysis remains deferred.
 
+The owner's 4 November [Syntax and Files symmetry](docs/source.md) replaces the
+separate layout proposal: `Syntax : CST : AST` and `Files : Source : Semantics`.
+Use parse/format/print roles at both levels; do not revive a layout.Model,
+layout.Provider or combined Source provider. The Go carriers, generalized role
+interfaces, Files compositions and multi-unit output in that document are proposals
+only. Preserve the distinction from implemented interfaces until their authorized
+clean migration; do not publish compatibility aliases or claim native semantics.
+
 The owner's 4 November [unified declaration decision](docs/unified-declarations.md)
 supersedes separate Horos and Horos/Wire languages. One Horos revision-2 grammar
 has explicit Type/Data bounds; `Page<T>` is authored once and

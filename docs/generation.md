@@ -67,9 +67,11 @@ using Horos-owned resolution, binding and specialization rules. The
 view; canonical document identity is still defined by Horos.
 Native parsers remain separate text-to-CST stages. File IO, dependency retrieval,
 configuration and the destination root belong to the application. The proposed
-[source-layout stage](layout.md) models relative paths and source-unit organization
-and finalizes language imports before formatting. Its multi-unit transform result
-and layout.Provider are not implemented yet. A formatter is usable
+[Files pipeline](source.md) realizes established Semantics as Source, including
+file organization and per-unit CSTs, then prints Files. It mirrors Syntax's
+AST-to-CST-to-text pipeline. These carriers, the paired stage contracts and
+multi-unit transformation output remain proposed. Native target semantics must
+be established before the full Files pipeline can be used. A Syntax formatter is usable
 with a target AST from another producer, without a canonical input dependency.
 
 The output scope is native types and interfaces, including generic declarations
