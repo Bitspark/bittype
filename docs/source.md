@@ -2,8 +2,8 @@
 
 **4 November 2026. Owner-selected symmetry; proposed Go APIs only.** This replaces
 the separate file-layout proposal. No carrier, provider, registration or generator
-implementation is added by this documentation change. Historical proposals remain
-in Git history, not as a second active design or compatibility path.
+implementation is added by this documentation change. The previous proposal is
+removed; there is no second active design or compatibility path.
 
 ## 1. One structure at two levels
 
@@ -455,12 +455,12 @@ it is not an automatic shortcut.
 The generic kernel only checks correspondence integrity and provenance, not the
 truth of language-specific equivalence claims.
 
-Do not copy an old analysis receipt onto moved syntax. New current references
-point into the new units; Origin.Nodes/Spans can retain old contributors as
-history. New output source IDs are distinct from old source-span identities.
-No output byte positions are fabricated before the syntax formatter/printer has
-established the corresponding text. Files formatting chooses source organization;
-Syntax formatting chooses concrete spelling. Both operate without filesystem IO.
+Do not copy an old analysis receipt onto moved syntax. Current references must
+point into the new units. No output byte positions are fabricated before the
+syntax formatter/printer has established the corresponding text. Files formatting
+chooses source organization; Syntax formatting chooses concrete spelling. Both
+operate without filesystem IO. This design requires no historical provenance
+archive or retention workflow.
 
 For pagination, a TypeScript Source may put Page in pagination.ts and Person /
 PeoplePage in people.ts with the configured type import. A Go Source may put the
@@ -526,7 +526,7 @@ invocation. No file is silently dropped or transformed alone to fake a project.
 File-relative imports require explicit matching input context when their meaning
 is checked; an unlocated fragment cannot claim a complete Source.
 
-## 8. Packages, migration and qualification
+## 8. Packages and migration
 
 The stage-first hierarchy remains. The planned additions/changes are:
 
@@ -575,17 +575,10 @@ Files compositions. Current Model references are not compatibility APIs added by
 this proposal; they describe today's unmodified implementation. The superseded
 layout proposal's packages are not created, renamed into aliases or registered.
 
-Required tests include Parse-to-Format and Format-to-Format receipt retention,
-exact capture/provenance and report association, same-ID changed-unit rejection,
-stale invocation results, producer/accessor mutation isolation, marker/profile
-mismatches, bounded whole-output
-publication, cancellation, callback locking, unfamiliar-language extension,
-independent stage registration, cross-tree remapping, paths/collisions, cycle and
-visibility policies, missing/conflicting pinned dependencies, and no partial
-Source on incomplete semantics. Pagination must cover imported/nested applications,
-open generics, bounds, distinct same-spelled binders, and unchanged canonical
-identity after permitted physical reorganization. Shared native compiler and
-installed-consumer gates remain required when implementation begins.
+The owner’s later 4 November standing rule adds no backup, checksum, validation,
+review or provenance workflow as an implicit task or delivery prerequisite. This
+proposal defines the requested parsing, semantic-analysis and representation
+behavior; it does not establish an additional delivery-gate checklist.
 
 ## 9. Current versus proposed
 
