@@ -52,7 +52,7 @@ handle recognition; sends do not copy every value into a second heap of Deixis
 nodes. Runtime admission of a capability remains distinct from structural
 profile admission. See [runtime values](runtime-values.md) for the actual current
 Go types, exports, proxies and lifetime ownership. The static frontends use Horos
-0.7.0 and ground Ontos 0.16.0; Bittype does not import the live carrier or runtime.
+0.8.0 and ground Ontos 0.16.0; Bittype does not import the live carrier or runtime.
 
 Every type description is itself ground data. Describing a Wire does not create
 one, and loading, resolving or analyzing a description performs no sends,

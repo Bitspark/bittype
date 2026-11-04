@@ -17,8 +17,8 @@ native text stages and syntax engine already exist. See the [Horos frontend](hor
 | bitwire / bitruntime | Capability contracts and hydration above Horos |
 | Contract libraries | Function, Stream, Cell and future behavioral declarations and realizations |
 
-The semantic authority is the [horos descriptor specification](https://github.com/Bitspark/horos/blob/v0.7.0/docs/spec/horos.md)
-and the [canonical declaration specification](https://github.com/Bitspark/horos/blob/v0.7.0/docs/spec/declarations.md).
+The semantic authority is the [horos descriptor specification](https://github.com/Bitspark/horos/blob/v0.8.0/docs/spec/horos.md)
+and the [canonical declaration specification](https://github.com/Bitspark/horos/blob/v0.8.0/docs/spec/declarations.md).
 The latter specifies exact value grammar, immutable imports, indexed binders,
 substitution and identity for data declarations. Bittype must not maintain a
 competing interpretation of those Horos data types or their generic substitution.
@@ -45,7 +45,7 @@ Type generation preserves open generics. The consuming build selects recipes
 by exact declaration identity. Template lifting and its transformer were removed
 on 4 November 2026; native transformers and runtime bindings remain proposed.
 
-Horos 0.7.0 implements ground descriptors and value checking and includes both
+Horos 0.8.0 implements ground descriptors and value checking and includes both
 Go declaration profiles, without a public dependency on older proof-integration
 packages. Bittype pins that release and Ontos 0.16.0 and implements their AST
 projections/checkers. The [dependency alignment](dependencies.md) is a clean
