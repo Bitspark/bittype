@@ -227,6 +227,16 @@ type Opaque = exact(tuple(#"horos/decl/constructor", tuple(#"horos/decl/proper",
 	}
 }
 
+func TestDeepNaryInterfacesRoundTrip(t *testing.T) {
+	// S0 = Type; S(n+1) = (Sn, Type) -> Type. Grouping each constructor
+	// input again would double parser nesting in otherwise small output.
+	contract := "Type"
+	for i := 0; i < 65; i++ {
+		contract = "(" + contract + ", Type) -> Type"
+	}
+	roundTrip(t, "module deep; type X<F: "+contract+"> = text;")
+}
+
 func TestArbitraryCalleesRemainSyntax(t *testing.T) {
 	for _, body := range []string{
 		"Missing<text><int>", "(Missing | Other)<text>", "(Missing & Other)<text>",

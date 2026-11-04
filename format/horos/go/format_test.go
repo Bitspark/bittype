@@ -182,7 +182,7 @@ func TestCanonicalConstructorInterfacesRoundTrip(t *testing.T) {
 	}
 	for _, want := range []string{
 		"type Apply<F: Type -> Type, T> = F<T>;",
-		"type Higher<H: ((Type -> Type), Data) -> Data, F: Type -> Type, D: Data>: Data = H<F, D>;",
+		"type Higher<H: (Type -> Type, Data) -> Data, F: Type -> Type, D: Data>: Data = H<F, D>;",
 		"type Pair<F: (Type, Data) -> Type, T, D: Data> = F<T, D>;",
 		"type UnaryHigher<H: (Type -> Type) -> Type, F: Type -> Type> = H<F>;",
 	} {

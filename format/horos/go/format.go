@@ -160,9 +160,12 @@ func (f *formatter) interfaceType(id ast.NodeID) doc {
 		return f.Group(id, f.T("Data"))
 	}
 	var inputs []doc
-	for _, input := range f.Children(id, s.RoleInput) {
+	inputNodes := f.Children(id, s.RoleInput)
+	for _, input := range inputNodes {
 		part := f.interfaceType(input)
-		if f.Attr(input, s.AttributeName) == "constructor" {
+		// N-ary domain commas already delimit nested interfaces. Extra
+		// grouping would consume parser depth without adding AST depth.
+		if len(inputNodes) == 1 && f.Attr(input, s.AttributeName) == "constructor" {
 			part = f.Seq(f.T("("), part, f.T(")"))
 		}
 		inputs = append(inputs, part)
