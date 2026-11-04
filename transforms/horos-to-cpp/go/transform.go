@@ -24,7 +24,7 @@ func New(from, to representation.Language, config Config) (transform.ASTTransfor
 	if from.ID() != (h.Language{}).ID() || to.ID() != (s.Language{}).ID() {
 		return nil, transform.ErrInvalidTransformer
 	}
-	if from.Profile() != h.Profile || config.TreeID == "" || !g.Identifier(config.Namespace) || !native.Identifier(config.Namespace) || strings.HasPrefix(config.Namespace, "_") {
+	if from.Profile() != h.Profile || config.TreeID == "" || !g.Identifier(config.Namespace) || !native.Identifier(config.Namespace) || strings.HasPrefix(config.Namespace, "_") || config.Namespace == "std" {
 		return nil, transform.ErrInvalidTransformer
 	}
 	return transform.NewTransformer[h.Language, s.Language](from, to, g.Contract(), func(ctx context.Context, request transform.Request[h.Language]) (s.AST, error) {

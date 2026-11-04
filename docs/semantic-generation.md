@@ -175,6 +175,7 @@ Go alone reserves the generated support name `BittypeOptional`; other mappings
 do not know that support declaration. C++ declaration references use the fully
 qualified configured namespace, so a member named `Person` can still have the
 type `Person`. A field cannot shadow a C++ template parameter.
+The configured C++ namespace must be an unreserved identifier and cannot be `std`.
 
 The native graph retains separate target nodes for equal-spelled binders and
 references to their actual declarations. Origins point back to current canonical
