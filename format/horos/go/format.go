@@ -165,7 +165,7 @@ func (f *formatter) interfaceType(id ast.NodeID) doc {
 		part := f.interfaceType(input)
 		// N-ary domain commas already delimit nested interfaces. Extra
 		// grouping would consume parser depth without adding AST depth.
-		if len(inputNodes) == 1 && f.Attr(input, s.AttributeName) == "constructor" {
+		if f.Attr(input, s.AttributeName) == "constructor" {
 			part = f.Seq(f.T("("), part, f.T(")"))
 		}
 		inputs = append(inputs, part)

@@ -530,13 +530,6 @@ func (m Model) DirectParameterBindings(id TermID) ([]ArgumentBinding, bool) {
 		return nil, false
 	}
 	entity := m.state.Entities[callee.Target-1]
-	if entity.Owner != 0 {
-		for _, parameter := range m.state.Entities[entity.Owner-1].Parameters {
-			if parameter.Entity == callee.Target {
-				return nil, false
-			}
-		}
-	}
 	parameters := entity.Parameters
 	if len(parameters) != len(term.Arguments) {
 		return nil, false
