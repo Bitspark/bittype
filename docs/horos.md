@@ -187,8 +187,8 @@ bounds these bytes without interpreting them. Semantic graph budgets are separat
 The graph preserves module/declaration/parameter identity, current input sites,
 open parameters and zero-argument applications. Descriptor terms contain exact
 Ontos codec-v1 bytes and authoritative operand paths. Parameter bounds are
-provider-owned expression facts: `TermAt(parameterSite, resolve.BoundRole())`
-returns a term with operator `horos/bound/type` or `horos/bound/data`, and the
+provider-owned expression facts: `TermAt(semantics.Occurrence{Site: parameterSite, Role: resolve.BoundRole()})`
+returns the ID of a term with operator `horos/bound/type` or `horos/bound/data`, and the
 codec-v1 bytes of that bound atom. Parameter entities retain sort `horos/type`;
 bounds constrain arguments, not the kind of entity. No shared semantic field or
 subtype rule is added. ProgramValidity includes Horos's symbolic bound checks. Four generic queries need

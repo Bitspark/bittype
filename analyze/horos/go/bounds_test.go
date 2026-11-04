@@ -55,19 +55,13 @@ func TestUnifiedPaginationBoundsSurviveASTAndSemanticExport(t *testing.T) {
 	model := requireModel(t, run(t, tree, nil))
 	for _, wanted := range []struct{ name, bound string }{{"T", "type"}, {"D", "data"}, {"Forwarded", "data"}} {
 		site := ast.NodeRef{Tree: tree.ID, Node: find(tree, s.KindTypeParameter, wanted.name)}
-		found := false
-		for _, expression := range model.Data().Expressions {
-			if expression.At.Site != site || expression.At.Role != resolve.BoundRole() {
-				continue
-			}
-			fact := term(t, model, expression.Term)
-			if fact.Kind != semantics.ProviderExpression || fact.Operator != (semantics.Key{Owner: "horos", Name: "bound/" + wanted.bound}) || string(fact.Data) != string(codec.Encode(atom(wanted.bound))) {
-				t.Fatal("parameter bound lost its provider-owned meaning")
-			}
-			found = true
-		}
-		if !found {
+		termID, ok := model.TermAt(semantics.Occurrence{Site: site, Role: resolve.BoundRole()})
+		if !ok {
 			t.Fatalf("missing bound for %s", wanted.name)
+		}
+		fact := term(t, model, termID)
+		if fact.Kind != semantics.ProviderExpression || fact.Operator != (semantics.Key{Owner: "horos", Name: "bound/" + wanted.bound}) || string(fact.Data) != string(codec.Encode(atom(wanted.bound))) {
+			t.Fatal("parameter bound lost its provider-owned meaning")
 		}
 	}
 	_, alias := entity(t, model, "unified.pagination", "DataPage")

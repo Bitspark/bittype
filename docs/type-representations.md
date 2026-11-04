@@ -231,10 +231,10 @@ The consuming build performs three operations:
 For example, in deliberately schematic Go notation:
 
 ```go
-tsMapping := horosWireToTypeScript.New(tsProfile, modules, libraries.TypeScriptTypes())
-goMapping := horosWireToGo.New(goProfile, modules, libraries.GoTypes())
-rustMapping := horosWireToRust.New(rustProfile, modules, libraries.RustTypes())
-cppMapping := horosWireToCPP.New(cppProfile, modules, libraries.CPPTypes())
+tsMapping := horosToTypeScript.New(tsProfile, modules, libraries.TypeScriptTypes())
+goMapping := horosToGo.New(goProfile, modules, libraries.GoTypes())
+rustMapping := horosToRust.New(rustProfile, modules, libraries.RustTypes())
+cppMapping := horosToCPP.New(cppProfile, modules, libraries.CPPTypes())
 
 engine.RegisterTransformer(tsMapping)
 engine.RegisterTransformer(goMapping)

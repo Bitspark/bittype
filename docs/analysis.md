@@ -322,6 +322,13 @@ pinned dependency closure. It distinguishes source rejection, missing context,
 contradicted context, invalid configuration and resource exhaustion using Horos's
 structured error codes and subjects, never diagnostic message matching.
 
+The unified Horos profile exports Type/Data bounds as provider-owned terms at
+parameter sites under `resolve.BoundRole()`. Parameters retain the `horos/type`
+sort; a bound restricts arguments rather than introducing a new entity kind.
+Program validity includes Horos's symbolic bound checks on open declarations.
+A syntactically valid `Forward<T> = DataPage<T>` can therefore be rejected before
+specialization. Shared semantic carriers do not interpret these bound rules.
+
 An unlabelled dependency pool containing Q when import P is required is missing P;
 it does not prove that Q was supplied as P. A present explicit assertion
 contradicting the resolved pin/name or binding is a different failure.

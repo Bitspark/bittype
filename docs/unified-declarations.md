@@ -1,6 +1,6 @@
 # Unified Horos frontend
 
-**Owner decision, 4 November 2026. Implemented in the candidate; final public dependency qualification is pending.**
+**Owner decision, 4 November 2026. Implemented with public Horos 0.9.0; exact-source gates and installed-consumer checks qualify delivery.**
 The [Horos revision-2 work](https://github.com/Bitspark/horos/issues/27) replaces
 both prior declaration profiles with one module language and explicit Type/Data
 bounds. This work migrates Bittype and maintained consumers; it implements no
@@ -26,6 +26,11 @@ canonical documents after migration; preserve literal payloads and original
 generic source. Replace the two columns in the provider matrix with one Horos
 column and tighten architecture dependency allowances to that frontend.
 
+The maintained platform checkout inventory found no additional direct declaration
+API users outside Horos and Bittype. This migration covers the concrete frontend,
+canonical fixtures, provider/architecture tests and isolated installed consumer.
+Ground-only descriptor consumers have no declaration-format rewrite to perform.
+
 The installed-consumer gate must use a verified public Horos release and Ontos
 0.16.0, without local replace directives. Required validation includes contract
 and architecture checks, syntax/semantics/receipt tests, bounds and pagination,
@@ -34,5 +39,5 @@ runners and accept receipts only for the exact committed source.
 
 The independent template-lifting removal and Horos 0.8.0 dependency delivery
 are complete. This change starts from verified Bittype main 972fefe82ccb and
-Horos main 690bbe54e1c8. Publish/consume the next breaking Horos version, with
-no compatibility readers, old namespace aliases or executable archives.
+Horos main 690bbe54e1c8. It now consumes Horos 0.9.0 from source e2896317a1f4,
+with no compatibility readers, old namespace aliases or executable archives.

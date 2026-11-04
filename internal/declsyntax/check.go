@@ -1,5 +1,5 @@
-// Package check admits Horos declaration syntax without resolving its name
-// Semantic rules and the truth of optional binding annotations belong to analysi
+// Package declsyntax admits Horos declaration syntax without resolving names.
+// Semantic rules and the truth of binding annotations belong to resolution.
 package declsyntax
 
 import (

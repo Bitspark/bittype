@@ -168,7 +168,7 @@ func TestProductionArchitecture(t *testing.T) {
 		// Language-specific lexical helpers cannot depend on stages or another language.
 		rules[helper] = []string{"trees/ast/go", "contracts/text/go", "internal/grammar", "internal/lex", "internal/tree"}
 	}
-	// The two Horos profiles share private mechanics, not a language registry.
+	// The Horos frontend uses private mechanics, not a language registry.
 	rules["internal/declsyntax"] = []string{"trees/ast/go", "check/ast/go", "contracts/text/go", "internal/grammar"}
 	rules["internal/horosmodel"] = []string{"trees/ast/go", "check/ast/go", "contracts/text/go", "internal/declsyntax", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"}
 	for _, name := range []string{"horos"} {

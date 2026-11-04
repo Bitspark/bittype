@@ -1,9 +1,9 @@
 # Public model dependencies
 
-The unified declaration candidate consumes Horos revision 2 and Ontos 0.16.0.
-During hosted qualification it pins the public Horos source pseudo-version
-`v0.8.1-0.20261104111101-afdbd4056032`. Delivery will replace that development
-pin with the verified public Horos 0.9.0 release and rerun the complete gates.
+Bittype pins public `github.com/Bitspark/horos/core/go v0.9.0` and
+`github.com/bitspark/ontos v0.16.0`. Horos's module tag and anonymous Go proxy
+identify source `e2896317a1f4b080cf0c4e8e46234d6ad680d141`; checksums come from
+the public Go checksum database. The development pseudo-version is removed.
 There are no local replacements, private module paths or compatibility aliases.
 
 Horos 0.9.0 removes the separate Wire declaration package and introduces explicit
