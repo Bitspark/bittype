@@ -1,9 +1,10 @@
 # Language provider matrix
 
-**4 November 2026. Current implemented source.** X means implemented and exposed
-by the language provider; / means unavailable. Applications register capabilities
-explicitly. Native support covers the documented type-declaration subset, not
-complete programming languages.
+**4 November 2026. Current implemented source.** X means implemented and available
+for that language, including through a generic implementation; / means unavailable.
+Applications compose and register capabilities explicitly. Availability of a stage
+does not require every preceding stage to be available. Native support covers the
+documented type-declaration subset, not complete programming languages.
 
 Provider interfaces use their package to identify the role: `parse.Provider`,
 `check.Provider`, `format.Provider`, `print.Provider`, `resolution.Provider` and
@@ -26,9 +27,12 @@ shared diagnostics only.
 | analysis.Provider: semantic analysis | X | / | / | / | / |
 | parse.Provider[parse.FilesRequest[L], source.Source[L]]: Files parsing | X | / | / | / | / |
 | format.Provider[format.FilesRequest[L], source.Source[L]]: Files formatting | X | / | / | / | / |
-| print.Provider[source.Source[L], files.Files]: Files printing | X | / | / | / | / |
+| print.Provider[source.Source[L], files.Files]: Files printing | X | X | X | X | X |
 
-All five printer providers delegate to the same generic printer. Horos now
+All five Syntax printer providers delegate to the same generic CST printer.
+Files printing likewise has one generic implementation in `print/files/go`,
+composed with the selected language's identity and Syntax printer. It consumes an
+existing `Source[L]` and does not depend on a resolver or analyzer. Horos now
 implements the [documented source syntax](horos-syntax.md). Its checker still
 requires no parser, formatter or printer.
 Each stage interface uses language identity and its own typed input/output.
@@ -62,9 +66,11 @@ interfaces serve Syntax/CST/AST and Files/Source/Semantics. Methods take a conte
 The engine registers Syntax and Files capabilities independently. Horos Files
 compositions are constructed explicitly with `provider/horos.NewFilesParser`,
 `NewFilesFormatter` and `NewFilesPrinter`; they do not install engine capabilities.
-Native semantic providers are still required before native Source can be published.
-The generic Files printer can serve any admitted language Source when explicitly
-configured; that does not supply the missing native semantics.
+The missing native semantic providers limit the shipped native Files parsing and
+formatting compositions. They do not limit Files printing: the generic printer
+can serve any admitted language Source when explicitly configured with its Syntax
+printer. The matrix describes each capability independently, not whether a complete
+Files pipeline is currently available for that language.
 
 See the [checker contract](../contracts/check/go/provider.go),
 [parser contract](../contracts/parse/go/provider.go),
