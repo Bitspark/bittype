@@ -168,10 +168,10 @@ func TestProductionArchitecture(t *testing.T) {
 		// Language-specific lexical helpers cannot depend on stages or another language.
 		rules[helper] = []string{"trees/ast/go", "contracts/text/go", "internal/grammar", "internal/lex", "internal/tree"}
 	}
-	// The two Horos profiles share private mechanics, not a language registry.
+	// The Horos frontend uses private mechanics, not a language registry.
 	rules["internal/declsyntax"] = []string{"trees/ast/go", "check/ast/go", "contracts/text/go", "internal/grammar"}
 	rules["internal/horosmodel"] = []string{"trees/ast/go", "check/ast/go", "contracts/text/go", "internal/declsyntax", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"}
-	for _, name := range []string{"horos", "horoswire"} {
+	for _, name := range []string{"horos"} {
 		rules["resolve/"+name+"/go"] = []string{"trees/ast/go", "syntax/" + name + "/go", "check/" + name + "/go", "internal/horosmodel", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"}
 		rules["check/"+name+"/go"] = []string{"trees/ast/go", "syntax/" + name + "/go", "internal/declsyntax"}
 		rules["analyze/"+name+"/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go", "syntax/" + name + "/go", "resolve/" + name + "/go"}
@@ -213,14 +213,12 @@ var horosModelDependencies = []string{
 	"github.com/Bitspark/horos/core/go",
 	"github.com/Bitspark/horos/core/go/declarations",
 	"github.com/Bitspark/horos/core/go/internal/declmodel",
-	"github.com/Bitspark/horos/core/go/wire",
 	"github.com/bitspark/ontos/core/go",
 	"github.com/bitspark/ontos/data/go",
 	"github.com/bitspark/ontos/codec/go",
 }
 
 var horosExternalImports = map[string][]string{
-	"internal/horosmodel":  {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
-	"resolve/horos/go":     {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
-	"resolve/horoswire/go": {"github.com/Bitspark/horos/core/go/wire", "github.com/bitspark/ontos/core/go"},
+	"internal/horosmodel": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
+	"resolve/horos/go":    {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
 }

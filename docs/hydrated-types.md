@@ -1,37 +1,27 @@
-# Optional Wire types and Bittype tooling
+# Unified Horos types and value domains
 
-**Owner decision, 3 November 2026. Status: Go profiles and direct declaration frontends implemented.**
-Optional `ontos/wire` owns the mixed value profile; optional `horos/wire` owns
-its type/declaration model. Bittype supplies tooling for
-those definitions. This replaces the unimplemented Bittype-owned contract
-language, including its `bittype/contract/*` syntax and proposed `contract`
-stage directories. There is no compatibility alias or fallback decoder.
-
-Ground Ontos, ground Horos declaration revision 1, the existing Horos frontend
-retain their public semantics; the agnostic engine remains unchanged. This does not revive the earlier
-proposal to add Wire to ground Horos revision 2. The
-[preservation map](wire-extension-preservation.md) records where every prior
-concept now belongs, including ideas retained for later implementation.
+**Owner decision, 4 November 2026.** One Horos declaration language describes
+data and capability types, with explicit Type/Data generic bounds. The former
+Horos/Wire frontend, package and profiles are removed without aliases. Ontos/wire
+remains an optional *value* model. This distinction does not require a second
+declaration language or copied Page definition.
 
 ## 1. Ownership and value domains
 
-| Component | Responsibility and status |
+| Component | Responsibility |
 | --- | --- |
-| Deixis | Existing generic structure over opaque contents; not an AST or type model |
-| Ground Ontos | Existing immutable data values, structural identity and encoding |
-| Optional ontos/wire | Go/TypeScript mixed data/capability profile and shared native tuple structure, released in 0.16.0 |
-| Ground Horos | Existing data descriptors, declarations, binding, specialization and conformance |
-| Optional horos/wire | Implemented static Go mixed types and explicit closed ground embedding |
-| Bittype providers/transformers | Tooling projections of the selected Horos profile and native type representations |
-| Bittype agnostic kernel | Generic trees, semantic facts and explicit registration; no concrete Wire semantics |
-| Bitwire / bitruntime | Existing sending capability contracts and context-dependent hydration |
-| Contract libraries | Function, Stream, Cell declarations, native representations and behavioral laws |
+| Deixis | Generic structure over opaque contents |
+| Ontos core | Ground data values, structural identity and encoding |
+| Ontos/wire | Mixed value structure and exact ground embedding/recovery |
+| Horos | Ground conformance; unified declarations, bounds, resolution and specialization |
+| Bittype concrete frontend | Project authoritative Horos syntax and semantic facts |
+| Bittype agnostic kernel | Generic trees, facts, stage contracts and registration |
+| Bitwire / bitruntime | Sending capability contracts and hydration |
+| Contract libraries | Function, Stream, Cell types, representations and behavior |
 
-The authoritative boundaries are the
-[Ontos optional value profile](https://github.com/Bitspark/ontos/blob/main/docs/design/0007-optional-wire-extension.md)
-and [Horos optional type profile](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md).
-The [frontend guide](horoswire.md) identifies implemented Go packages and the
-remaining runtime/native-generation work.
+The [Horos frontend guide](horos.md) documents implemented APIs. The
+[preservation map](wire-extension-preservation.md) records retained concepts and
+superseded proposals; native generators and runtime bindings remain future work.
 
 ```text
 GroundValue = ByteAtom | Tuple(GroundValue*)
@@ -51,67 +41,58 @@ contract. Bitruntime 0.8.0 uses its immutable tuple factory with runtime-owned
 handle recognition; sends do not copy every value into a second heap of Deixis
 nodes. Runtime admission of a capability remains distinct from structural
 profile admission. See [runtime values](runtime-values.md) for the actual current
-Go types, exports, proxies and lifetime ownership. The static frontends use Horos
-0.8.0 and ground Ontos 0.16.0; Bittype does not import the live carrier or runtime.
+Go types, exports, proxies and lifetime ownership. The static frontend uses Horos
+revision 2 and ground Ontos 0.16.0; Bittype does not import the live carrier or runtime.
 
 Every type description is itself ground data. Describing a Wire does not create
 one, and loading, resolving or analyzing a description performs no sends,
 endpoint allocation, capability binding or export. Static tooling needs no live runtime.
 
-## 2. Canonical format belongs to Horos
+## 2. Canonical syntax and generic bounds
 
-[Horos's Wire type proposal](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md#2-canonical-expression-format)
-owns the exact value grammar. Its separate `horos/wire/*` envelope and profile
-identify mixed declarations; the ground `horos/decl/*` revision remains separate.
-The central distinction is:
+[Horos revision 2](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md)
+owns the only declaration grammar: D("module", I(2), ...), explicit
+D("parameter", T(name), A("type" or "data")), indexed slots and applications.
+`H("wire", E)` describes a sending capability. A ground descriptor G appears
+directly; there is no schema-level Data wrapper. Type descriptions remain data
+regardless of what their instances would contain.
+
+Tuple, compound, list-of, closed record and union admit either domain. Their
+operands determine whether the result is data. Wire never becomes Data merely
+because its messages are data. Other constructors retain the Data restrictions
+specified by Horos; any and complement keep their data universe. Literal payloads
+remain opaque. No mixed equality, key semantics or recursive capability law is
+inferred from the shared syntax.
+
+## 3. Pagination in one language
 
 ```text
-Data(G)  -- closed, well-formed ground Horos descriptor G
-Wire(E)  -- sending capability with declared message type E
+Page<T> = record closed { items: list-of(T), next?: scalar(utf8-text) }
+DataPage<D: Data> = Page<D>
+Person = record closed { name: scalar(utf8-text) }
 ```
 
-`Data(any)` excludes values containing a Wire. Complements inside Data remain
-ground complements. Exact literals are opaque even when they resemble parameter,
-application or Wire syntax. No open upper parameter may be inserted into G.
-Wire's schema message operand is traversed as syntax; a live Wire remains a
-value leaf, so traversal never follows the receiver.
+Page<Person>, DataPage<Person> and DataPage<Page<Person>> establish data results.
+Page<Cell<Person>> uses the same Page identity but can contain capabilities;
+DataPage<Cell<Person>> fails if that ordinary library Cell contains a Wire.
+Forward<T> = DataPage<T> fails symbolically; Forward<D: Data> succeeds. Phantom
+parameters do not contaminate a data result. Actual parameter use and target
+bounds matter, not names or shape fingerprints.
 
-The optional profile also owns bounded tuple/compound/list/closed-record/union
-composition, parameters and applications. Ground layout and literal record keys
-are preserved; new live map keys, set elements, mixed top/complement or recursive
-named applications are not implicitly introduced. Closed unsupported ground
-forms remain available through Data. These are Horos rules consumed by a
-frontend, not a second semantic specification in Bittype.
-
-Modules preserve exact import pins, ordered lexical slots, explicit arity,
-caller-side argument binding and source declaration identity. A profile remains
-explicit even if its expressions contain no Wire. Specialization is separate
-from generic native generation; it must not erase the original open declaration
-or use equal expanded shapes to substitute a different library.
-
-## 3. Direct declarations, ground embedding and pagination
-
-Author `Page<T>` directly in the optional profile when it must accept both data
-and capability types. The same declaration can be applied to `Data(Person)` or
-`Cell<Data(Person)>`; it keeps the same binder and canonical identity. Ground
-Horos parameters remain data-only. The [canonical pagination example](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md#4-direct-authoring-and-ground-embedding)
-shows the complete directly authored module and its applications.
-
-A ground `Page<Person>` can separately be specialized and embedded as `Data(G)`.
-That operation creates no optional generic or derived module. The owner removed
-template lifting and its Bittype transformer on 4 November 2026, including
-compatibility paths. Future native generation consumes either source profile
-directly and preserves open generics. The [representation design](type-representations.md)
-retains library-owned native configuration and the separate runtime boundary.
+The [complete canonical pagination input](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md#5-complete-pagination-example)
+retains pins, caller bindings and ordered slots. Specialize produces closed type
+expressions without mutating generics. DataDescriptor additionally requires data
+before ground WF/Conforms. Template lifting, closed schema embedding and
+cross-profile transforms are removed; Ontos value embedding is unchanged.
 
 ## 4. Library-owned Function, Cell and Stream
 
 The complete canonical module equations now live with
-[Horos's proposed format](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md#5-library-owned-function-cell-and-stream).
+[Horos's canonical examples](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md#2-library-owned-function-cell-and-stream).
 In explanatory notation, with H constructing a ground Horos descriptor:
 
 ```text
-Unit = Data(H("tuple"))
+Unit = H("tuple")
 Function<A,B> = Wire<tuple(A, Wire<B>)>
 Cell<T> = record closed { get: Function<Unit,T>, set: Function<T,Unit> }
 Step<T> = compound("item", T) | compound("end")
@@ -138,61 +119,36 @@ case. [Type recipes](type-representations.md) and future
 
 ## 5. Provider, pipeline and dependencies
 
-Bittype will project the optional Horos profile through the existing AST and
-semantic SPIs. The current engine fixes one syntax profile per language ID and
-rejects same-ID transformation edges. Consequently, an explicit ground-to-mixed
-edge needs distinct registered endpoint IDs. Exact IDs, profile strings and Go
-marker choices must be qualified with implementation; a different Go marker is
-an isolation choice, not an additional existing engine requirement.
+The stage-first layout contains one syntax/check/resolve/analyze/provider Horos
+family. `internal/horosmodel` adapts authoritative modules, bindings and bounds;
+`internal/declsyntax` shares private syntax mechanics. Generic contracts are
+unchanged. Check validates bound syntax; resolution establishes its semantics;
+analysis consumes explicit compatible evidence and the same immutable graph.
 
-The [stage-first layout](../LAYOUT.md) remains in force. Directory
-name `horoswire` denotes the optional Horos frontend, not a new Bittype model:
+Bound facts are provider-owned terms located at parameter sites, queried using
+resolve.BoundRole(). The kernel stores their identities and bytes without
+interpreting Type, Data or Wire. Future native mappings use
+`transforms/horos-to-<native>/go`; none is implemented. No concrete type introduces
+an engine case, built-in registration or runtime dependency.
 
-| Component | Responsibility |
-| --- | --- |
-| `syntax/horoswire/go` | AST projection vocabulary and language identity |
-| `check/horoswire/go` | Syntax-only admission; unresolved names may reach resolution |
-| `resolve/horoswire/go`, `internal/horosmodel` | Adapt the authoritative module/binding model with immutable capture and explicit dependencies |
-| `analyze/horoswire/go` | Adapt established semantics to shared facts/reports |
-| `provider/horoswire/go` | Explicit AST-only capability composition |
-| `transforms/horoswire-to-<native>/go` | Native type AST mappings and uniform library recipes (future) |
-
-All listed stages except native mappings now exist. The existing `horos` stages retain
-their ground profiles. Shared `contracts/` contains agnostic SPIs, not canonical
-behavioral declarations. A new frontend requires narrow reviewed model dependency
-allowances and capability tests; these are enforced by the architecture suite.
-
-Provider-owned terms and located operands describe Wire and Data. Generic facts
-retain references/applications, graph integrity and request-bound evidence without
-decoding their meaning. Keep syntax admission, semantic validity, completion and
-model availability separate. Ground conformance, mixed structure checks, runtime
-capability recognition and remote behavioral compliance are different judgments.
-
-Finite input is not necessarily bounded enough to process. Admission, resolution,
-specialization and generation each need explicit node/depth/byte/module budgets where
-applicable, with exhaustion separate from invalid syntax, semantic non-membership
-and unsupported mappings.
-An incomplete stage publishes no usable partial model or target. These use existing result dimensions, not new kernel cases.
-
-Static dependencies point from the concrete Bittype frontend to Horos's model
-and ground Ontos document representation. They do not point from Horos to
-Bittype, or from type tools to a live runtime. The eventual runtime realization
-of the optional value profile needs its own bounded interface/dependency design;
-no import cycle or default runtime is authorized here.
+Finite inputs still need bounded admission, resolution, symbolic checking and
+specialization. Exhaustion is an incomplete request, not semantic rejection or
+usable partial output. Source/context attribution and exact operand locations
+remain separate from historical provenance.
 
 ## 6. Qualification and forbidden shortcuts
 
-Ground Horos/Bittype APIs continue to reject the optional format. The separate
-[optional frontend tests](../integration/go/horoswire_test.go) and
-[installed-consumer tests](../integration/go/testdata/installed/consumer_test.go)
-qualify profiles and grammar, operand/literal boundaries, generic scope, identity
-and direct data/capability pagination. Native representation limits, actual
-runtime alignment and library protocol/lifetime tests are separate evidence.
+The [AST/semantic bound tests](../analyze/horos/go/bounds_test.go), existing
+[binding tests](../resolve/horos/go/resolve_test.go) and independently installed
+[pagination consumer](../integration/go/testdata/installed/consumer_test.go)
+qualify one language, explicit bounds, unchanged binder identity and data/mixed
+specialization. Horos additionally tests library-owned Function/Cell composition,
+phantom arguments, bounded proofs and retired-input rejection. Ground conformance,
+mixed structural admission, runtime recognition, authority and protocol behavior
+remain different judgments with separate evidence.
 
-Forbidden: widening ground `WF`/`Conforms`, Ontos containers or generic slots;
-guessing a profile from the absence of Wire; compatibility aliases for superseded
-proposal tags; core Function/Stream/Cell names, imports, switches, registries or
-shape fingerprints; a new Bittype application-value algebra; pure serialization
-of live handles; and a replacement hydration/export engine. Relocating a model
-does not itself eliminate duplicate implementations: future work must demonstrate
-the selected realization and its preservation laws.
+Forbidden: old-profile aliases/readers, widening ground any or values, guessing
+behavior from library names/structure, core Function/Stream/Cell switches or
+imports, a new Bittype application-value algebra, pure serialization of live
+handles, or a replacement hydration/export engine. There are no generators or
+runtime bindings in this change.

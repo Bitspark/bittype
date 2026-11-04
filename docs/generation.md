@@ -16,14 +16,12 @@ remain future work. [Resolution](resolution.md) exports Horos's checked model
 to shared facts; [analysis](analysis.md) consumes that evidence explicitly.
 It adds no text parser or ASTTransformer implementation.
 
-The [optional-extension design](hydrated-types.md) places mixed types in
-horos/wire over the ontos/wire value profile. Bittype's future path is
-`AST[HorosWire] -> AST[Native] -> CST[Native] -> source`, using the existing
-engine and text stages. Horos data generation remains a direct path. The
-[optional frontend](horoswire.md) is implemented; native transformers remain
-deferred. Author optional declarations directly. Template lifting and its
-Horos-to-HorosWire transformer were removed on 4 November 2026. Hydration belongs
-to existing Wire/runtime layers, separately from type generation and checking.
+The [unified declaration design](hydrated-types.md) has one future path:
+`AST[Horos] -> AST[Native] -> CST[Native] -> source`. Explicit Type/Data bounds
+preserve restrictions within that language. The [frontend](horos.md) is
+implemented; native transformers remain deferred. There is no cross-profile
+transformer, template lifting or second Page. Hydration remains separate in the
+existing Wire/runtime layers.
 
 The [native representation design](type-representations.md) specifies proposed
 per-language library recipes. The consuming build configures one concrete

@@ -40,12 +40,12 @@ func entry(name string, v value) [2]value { return [2]value{txt(name), v} }
 func definition(body value, names ...string) value {
 	var parameters []value
 	for _, name := range names {
-		parameters = append(parameters, txt(name))
+		parameters = append(parameters, d("parameter", txt(name), atom("data")))
 	}
 	return d("type", data.EncodeList(parameters), body)
 }
 func module(name string, imports value, declarations ...[2]value) value {
-	return d("module", integer(1), txt(name), imports, mapping(declarations...))
+	return d("module", integer(2), txt(name), imports, mapping(declarations...))
 }
 func param(i int64) value { return d("param", integer(i)) }
 func local(name string, args ...value) value {

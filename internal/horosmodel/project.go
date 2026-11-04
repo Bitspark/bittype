@@ -163,10 +163,12 @@ func projectChecked[L any](program Program, treeID ast.TreeID) (ast.AST[L], erro
 			d := p.add(s.KindDeclaration, s.AttributeName, declaration.ID().Name)
 			p.declarations[declaration.ID()] = d
 			p.child(m, s.RoleDeclaration, d)
-			for index, name := range declaration.Parameters() {
-				parameter := p.add(s.KindTypeParameter, s.AttributeName, name, s.AttributeIndex, strconv.Itoa(index))
+			for index, slot := range declaration.Parameters() {
+				parameter := p.add(s.KindTypeParameter, s.AttributeName, slot.Name, s.AttributeIndex, strconv.Itoa(index))
 				p.parameters[decl.ParameterID{Declaration: declaration.ID(), Index: index}] = parameter
 				p.child(d, s.RoleParameter, parameter)
+				bound := p.add(s.KindBound, s.AttributeName, string(slot.Bound))
+				p.child(parameter, s.RoleBound, bound)
 			}
 		}
 		if p.err != nil {

@@ -1,7 +1,7 @@
 # bittype
 
 Syntax infrastructure and native type generation for TypeScript, Go, Rust and
-C++, using horos as the canonical data type model.
+C++, using horos as the canonical type model.
 
 **Current status, 4 November 2026:** generic AST/CST carriers, typed pipeline
 contracts, native syntax vocabularies, parsers, formatters, checks and a shared
@@ -10,13 +10,13 @@ ASTTransformer implementations, plans routes and composes existing text stages.
 Specialized providers extend language.Provider. The engine registers parsing,
 checking, formatting and printing independently; identity registration installs
 no capability. See the [engine composition API](docs/engine.md#registration). Horos's Go declaration model now
-supplies module resolution, generic binding and ground specialization. Bittype
+supplies module resolution, generic binding, Type/Data bounds and specialization. Bittype
 implements its [AST-only frontend](docs/horos.md), resolver and semantic analyzer.
 The engine captures syntax once and invokes each capability explicitly. Horos
 analysis reuses the resolver's [shared semantic graph](docs/semantics.md), with
 separate reports for validity, coverage and model availability.
 Readable Horos syntax, native mappings and package releases remain deferred.
-The concrete Horos frontends use public Horos 0.8.0 and Ontos 0.16.0. Consumers
+The concrete Horos frontend uses public Horos 0.9.0 and Ontos 0.16.0. Consumers
 must upgrade together; no older dependency path or compatibility shim remains.
 See the [dependency alignment and consumer checks](docs/dependencies.md).
 The engine starts empty and has no built-in languages or mappings.
@@ -43,19 +43,19 @@ Function, Stream, Cell and future behavioral contracts remain library-owned.
 This milestone adds no runtime adapters, callable implementations, serialization,
 application-value validation or dependencies on bitwire/bitruntime.
 
-Ground Ontos and Horos stay data-only. The [optional-extension proposal](docs/hydrated-types.md)
-places the mixed value profile in ontos/wire and its type model in horos/wire.
-Bittype projects those definitions through its existing tooling architecture;
-the agnostic kernel acquires no Wire semantics. The Go optional profiles and
-[Bittype frontend](docs/horoswire.md) are implemented. Optional generics are
-authored directly; template lifting and its transformer have been removed.
-Existing hydration remains in bitwire/bitruntime.
+Horos has one [declaration language](docs/model.md) with explicit Type/Data
+bounds. `Page<T>` accepts data or capability types; `DataPage<D: Data> = Page<D>`
+restricts arguments without a second language or copied template. The old
+Horos/Wire frontend and profiles are removed without aliases. Ground Ontos values,
+Horos ground checks and `any` remain data-only. Ontos/wire owns mixed values;
+existing hydration remains in Bitwire/Bitruntime. The agnostic kernel does not
+interpret these concrete type semantics.
 
 ## Read first
 
 - [Horos canonical input](docs/model.md): ownership, declarations and native representation plan.
-- [Optional Wire types](docs/hydrated-types.md): ownership, authoritative canonical
-  input and explicit data boundary. The [frontend guide](docs/horoswire.md)
+- [Type and value domains](docs/hydrated-types.md): ownership, authoritative canonical
+  input and explicit data boundary. The [frontend guide](docs/horos.md)
   documents implemented APIs and qualification.
 - [Concept preservation](docs/wire-extension-preservation.md): retained ideas,
   superseded proposals and expert-review evidence for the ownership change.

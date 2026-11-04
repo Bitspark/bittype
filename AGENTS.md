@@ -9,7 +9,7 @@ Read [CHARTER.md](CHARTER.md), [docs/model.md](docs/model.md),
 
 The owner selected canonical definitions as input and TypeScript, Go, Rust and C++
 types as outputs. Horos owns data descriptors and canonical
-module/generic/application semantics for data declarations; bittype owns syntax,
+module/generic/application semantics with Type/Data bounds; bittype owns syntax,
 AST/CST tooling and transformations. The Go declaration model and AST-only Horos frontend are implemented;
 read [docs/horos.md](docs/horos.md). Do not revive
 the superseded independent bittype value-type algebra. The current native-text
@@ -27,21 +27,18 @@ Syntax admission must accept unresolved names; analysis publishes request-bound,
 immutable facts with explicit completion, verdict and model availability.
 Only Horos implements production semantics; native analysis remains deferred.
 
-The owner's 3 November [optional-extension decision](docs/hydrated-types.md)
-keeps ground Ontos/Horos data-only. Optional ontos/wire owns the mixed value
-profile; optional horos/wire owns its type and declaration semantics.
-Bittype supplies tooling projections, not a competing contract model. Hydration
-stays in existing bitwire/bitruntime layers. Preserve the
-[concept inventory](docs/wire-extension-preservation.md); remove superseded
-proposal aliases rather than interpreting old tags. The optional Go model and its
-Bittype frontend are implemented; read [the frontend guide](docs/horoswire.md).
-No ground generic or checker domain is widened.
+The owner's 4 November [unified declaration decision](docs/unified-declarations.md)
+supersedes separate Horos and Horos/Wire languages. One Horos revision-2 grammar
+has explicit Type/Data bounds; `Page<T>` is authored once and
+`DataPage<D: Data> = Page<D>` is an ordinary constrained alias. Remove the old
+profiles, packages, wrapper syntax and readers without compatibility aliases.
+Ground Ontos/Horos judgments remain data-only; optional Ontos/wire still owns
+mixed *values*. Hydration stays in Bitwire/Bitruntime. Preserve the
+[concept inventory](docs/wire-extension-preservation.md) and library ownership.
+The one [Horos frontend](docs/horos.md) projects explicit bounds through existing
+provider-owned semantic terms. The agnostic kernel interprets none of them.
+Template lifting remains removed; no second declaration or derived Page exists.
 
-The owner's 4 November removal direction supersedes template lifting: author
-generics directly in the profile that owns their intended parameter domain.
-Remove the Horos lifting API, Bittype transformer and exclusive metadata/helpers
-entirely; never retain aliases, fallback transforms or a duplicate derived Page.
-Closed Data embedding and ordinary generic specialization remain independent.
 The [native representation design](docs/type-representations.md) remains proposed.
 Libraries own optional recipes, selected by exact declaration identity in consuming
 build configuration. Concrete transformers consume them uniformly; no

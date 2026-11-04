@@ -1,4 +1,4 @@
-// Package horosmodel shares tooling mechanics between explicit Horos profiles.
+// Package horosmodel adapts the unified Horos declaration model.
 // It is not part of the agnostic kernel. It has no profile registry, constructor
 // dispatch, default frontend or behavioral contract knowledge.
 package horosmodel

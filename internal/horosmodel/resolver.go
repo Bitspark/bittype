@@ -28,6 +28,7 @@ func (f Frontend[L]) Applications() semantics.Key          { return f.key("appli
 func (f Frontend[L]) Dependencies() semantics.Key          { return f.key("application-dependencies") }
 func (f Frontend[L]) TargetRole() semantics.Key            { return f.key("target") }
 func (f Frontend[L]) ExpressionRole() semantics.Key        { return f.key("expression") }
+func (f Frontend[L]) BoundRole() semantics.Key             { return f.key("parameter-bound") }
 func (f Frontend[L]) ApplicationDependency() semantics.Key { return f.key("declaration-application") }
 
 // LimitsSetting contains a JSON array [depth,nodes,bytes,modules]. All four

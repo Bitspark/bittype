@@ -1,5 +1,20 @@
 # Changelog
 
+## Unified Horos declarations — 4 November 2026
+
+- Replace separate Horos and Horos/Wire frontends with one revision-2 Horos AST
+  and provider family. Remove old packages/profiles without compatibility aliases.
+- Preserve explicit Type/Data parameter bounds in syntax and provider-owned
+  semantic terms. Check spelling structurally; resolve/analysis delegate meaning
+  to Horos and retain shared immutable evidence.
+- Pin verified public Horos 0.9.0 with Ontos 0.16.0, removing the development
+  pseudo-version and retaining the no-replacement installed-consumer gate.
+- Migrate canonical fixtures and the independently installed pagination consumer;
+  qualify one Page, DataPage aliases, data/mixed specialization and open forwarding.
+- Update the provider matrix and ownership/model guides. No generators or runtime
+  bindings are introduced; the agnostic kernel and native language stages are unchanged.
+
+
 ## Unreleased
 
 ### 4 November 2026

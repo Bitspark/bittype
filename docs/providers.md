@@ -15,18 +15,18 @@ Source input belongs to `parse.Input`. `text.Provider` and the engine's combined
 provider registration are removed without compatibility aliases; `text` contains
 shared diagnostics only.
 
-| Provider / capability | Horos | Horos/Wire | TypeScript | Go | Rust | C++ |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| language.Provider: ID and Name | X | X | X | X | X | X |
-| check.Provider: AST syntax checking | X | X | X | X | X | X |
-| parse.Provider: text to CST | / | / | X | X | X | X |
-| format.Provider: AST to CST | / | / | X | X | X | X |
-| print.Provider: CST to text | / | / | X | X | X | X |
-| resolution.Provider: reference resolution | X | X | / | / | / | / |
-| analysis.Provider: semantic analysis | X | X | / | / | / | / |
+| Provider / capability | Horos | TypeScript | Go | Rust | C++ |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| language.Provider: ID and Name | X | X | X | X | X |
+| check.Provider: AST syntax checking | X | X | X | X | X |
+| parse.Provider: text to CST | / | X | X | X | X |
+| format.Provider: AST to CST | / | X | X | X | X |
+| print.Provider: CST to text | / | X | X | X | X |
+| resolution.Provider: reference resolution | X | / | / | / | / |
+| analysis.Provider: semantic analysis | X | / | / | / | / |
 
-The native printer providers delegate to the same generic printer. Both Horos
-profiles remain AST-only: their checkers require no parser, formatter or printer.
+The native printer providers delegate to the same generic printer. The single Horos
+frontend remains AST-only: its checker requires no parser, formatter or printer.
 Each stage interface uses language identity and its own typed input/output.
 Configured adapters bind those interfaces to representation envelopes. Syntax admission
 checks structure and supported syntax; success does not establish reference
@@ -37,6 +37,9 @@ independently. Parser-only and formatter/printer-only engines are supported. Hor
 The [shared semantic model](semantics.md) and [analysis guide](analysis.md) explain
 their results. The existing Horos canonical-value helpers are additional frontend
 entry points, not a substitute for the registered resolution capability.
+
+Horos uses one declaration grammar with explicit Type/Data parameter bounds.
+Wire expressions do not create a second language or registered profile.
 
 ASTTransformer relates two languages. No production mapping is implemented;
 template lifting and its transformer were removed. Native mappings remain
@@ -50,6 +53,5 @@ See the [checker contract](../contracts/check/go/provider.go),
 [formatter contract](../contracts/format/go/provider.go),
 [printer contract](../contracts/print/go/provider.go),
 [shared diagnostics](../contracts/text/go/diagnostic.go),
-[Horos composition](../provider/horos/go/provider.go),
-[Horos/Wire composition](../provider/horoswire/go/provider.go) and
+[Horos composition](../provider/horos/go/provider.go) and
 [enforced repository layout](../LAYOUT.md).

@@ -99,7 +99,13 @@ func (r reader[L]) declaration(id ast.NodeID) (core.Value, error) {
 			if r.node(child.Node).Kind != s.KindTypeParameter {
 				return nil, r.bad(child.Node, "expected parameter declaration")
 			}
-			parameters = append(parameters, data.MustEncodeText(r.attr(child.Node, s.AttributeName)))
+			parameter := r.node(child.Node)
+			if len(parameter.Children) != 1 || parameter.Children[0].Role != s.RoleBound || r.node(parameter.Children[0].Node).Kind != s.KindBound {
+				return nil, r.bad(child.Node, "expected an explicit parameter bound")
+			}
+			bound := r.attr(parameter.Children[0].Node, s.AttributeName)
+			parameters = append(parameters, tagged(r.declarationPrefix, "parameter",
+				data.MustEncodeText(r.attr(child.Node, s.AttributeName)), core.NewAtom([]byte(bound))))
 		case s.RoleBody:
 			if body != nil {
 				return nil, r.bad(id, "duplicate declaration body")
@@ -155,7 +161,7 @@ func (r reader[L]) module(id ast.NodeID) (core.Value, error) {
 	if err != nil {
 		return nil, r.bad(id, "duplicate or malformed declarations")
 	}
-	return tagged(r.declarationPrefix, "module", data.EncodeInt(big.NewInt(1)),
+	return tagged(r.declarationPrefix, "module", data.EncodeInt(big.NewInt(2)),
 		data.MustEncodeText(r.attr(id, s.AttributeName)), importsValue, declarationsValue), nil
 }
 
