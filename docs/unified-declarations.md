@@ -1,43 +1,82 @@
 # Unified Horos frontend
 
-**Owner decision, 4 November 2026. Implemented with public Horos 0.9.0; exact-source gates and installed-consumer checks qualify delivery.**
-The [Horos revision-2 work](https://github.com/Bitspark/horos/issues/27) replaces
-both prior declaration profiles with one module language and explicit Type/Data
-bounds. This work migrates Bittype and maintained consumers; it implements no
-native generator or runtime binding.
+**Owner decisions, 4 November 2026. Revision 4 implemented in Go source.**
+Horos has one declaration language for data and capability types. The replacement
+uses [general structural kinds](kinds.md), with ordinary named/parameterized
+definitions, unions/intersections, structural patterns, guarded recursive groups
+and constructor contracts. Bittype consumes public Horos Go 0.10.1.
 
-Keep syntax/horos, check/horos, resolve/horos, analyze/horos and provider/horos.
-Delete the horoswire families and superseded profiles without aliases. The one
-Horos marker uses new syntax/resolution/analysis profiles for the new contract.
-Syntax admission remains independent of semantic resolution. Parameter bounds
-are source facts on Horos AST nodes and provider-owned semantic terms; the
-agnostic engine does not interpret them. Analysis consumes explicit resolution
-receipts through the existing shared semantic infrastructure.
+## One language and one authority
 
-Page<T> is authored once with an unconstrained Type slot. DataPage<D: Data> is an
-ordinary constrained alias. DataPage<Person> succeeds; Page<Cell<Person>> also
-succeeds when Cell is an ordinary capability-bearing library declaration;
-DataPage<Cell<Person>> fails. Bound forwarding, nested applications, imported
-definitions and preserved caller scopes must be tested. A bound cannot be
-inferred from a library name or merely from the presence of data arguments.
+Horos owns the [canonical grammar](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md),
+membership, inclusion, application and ground extraction. Bittype owns
+`syntax/horos`, `parse/horos`, `check/horos`, `resolve/horos`, `analyze/horos`,
+`format/horos` and `provider/horos`, with their private bridge. The language ID
+stays `horos`; its syntax and semantic profiles advance together.
 
-Migrate old ground slots to explicit Data and old mixed slots to Type. Repin
-canonical documents after migration; preserve literal payloads and original
-generic source. Replace the two columns in the provider matrix with one Horos
-column and tighten architecture dependency allowances to that frontend.
+Revision 4 retains the existing module envelope and ordinary imports. One
+declarations map contains kind and type definitions. There is no schema-digest
+field, separate formation artifact or parallel Horos/Wire language. Ground-only
+consumers retain their existing ground API meanings.
 
-The maintained platform checkout inventory found no additional direct declaration
-API users outside Horos and Bittype. This migration covers the concrete frontend,
-canonical fixtures, provider/architecture tests and isolated installed consumer.
-Ground-only descriptor consumers have no declaration-format rewrite to perform.
+`Type` and `Data` are ordinary definitions in the explicitly imported
+`horos.kinds` prelude. Primitive sorts/top/bottom do not inspect those names.
+Flat, Rows and Tree use the same machinery without checker or generator changes.
+Primitive operand contracts bind to ordinary prelude declaration identities;
+a same-spelled local definition cannot change them.
 
-The installed-consumer gate must use a verified public Horos release and Ontos
-0.16.0, without local replace directives. Required validation includes contract
-and architecture checks, syntax/semantics/receipt tests, bounds and pagination,
-race, fuzz, native compiler fixtures and docs. Run portable checks on hosted
-runners and accept receipts only for the exact committed source.
+## Generics and results
 
-The independent template-lifting removal and Horos 0.8.0 dependency delivery
-are complete. This change starts from verified Bittype main 972fefe82ccb and
-Horos main 690bbe54e1c8. It now consumes Horos 0.9.0 from source e2896317a1f4,
-with no compatibility readers, old namespace aliases or executable archives.
+One `Page<T>` accepts admitted proper types. `DataPage<D: h.Data>` is an ordinary
+constrained definition using that Page, where `h` is a prelude import. The known
+Page body can establish requested guarantees through general kind queries. It is
+not copied or lifted for each use.
+
+Type definitions may return constructor values. Their result kind must have the
+corresponding sort; omission means `top(P)`, not inferred higher-order shape.
+Applications retain an expression callee, argument order, definition scope and
+caller bindings. Open bodies and ignored arguments remain subject to original
+contracts. Kind definitions have sort-annotated parameters and ordinary imports.
+
+Checked symbolic values, declared contracts and individual membership results
+replace Claim/Interface and DataSummary. No principal kind or enumeration of all
+true memberships is promised. Ground extraction requires a closed proper value,
+membership in the ordinary ground kind, materialization and unchanged ground
+well-formedness.
+
+## Bittype composition
+
+Syntax admission stays separate from semantic resolution. The resolver asks Horos
+to establish meaning and exports provider-owned terms through typed
+`Semantics[horos.Language]`. Analysis consumes its explicit receipt. The shared
+graph and engine learn no Data, Scalar, Record, List or Wire kind rules.
+
+The implemented [Syntax and Files composition](source.md) remains intact:
+multiple Program trees share an explicit captured entry and supplied module pool.
+File paths do not confer visibility. Files formatting establishes a new capture
+and semantic association for its output rather than reusing receipts from changed
+syntax.
+
+The four [native pagination mappings](semantic-generation.md) use explicit
+representation or enforcement profiles. Representation permits documented kind
+constraint erasure for Horos-admitted uses. Enforcement returns Unsupported until
+a target encoding exists. Kind definitions do not become native type exports;
+unsupported exported type definitions are never silently omitted.
+
+## Clean replacement
+
+Migrate canonical documents to revision 4, replace bound/interface fields with
+ordinary kind expressions, add result kinds and preserve explicit bindings.
+Authors using prelude names add ordinary imports. Rewritten module identities
+flow through normal imports; literal payloads retain their exact values.
+
+Remove superseded readers, the closed Type/Data proof route, schema Data wrappers
+and compatibility aliases. The earlier separate Horos/Wire packages and template
+lifting remain removed. Historical research does not define a second executable
+language.
+
+Ground Ontos/Horos, optional Ontos/wire values and Bitwire/Bitruntime hydration
+retain their boundaries. Function, Stream, Cell and future contracts remain
+library-owned. This migration changes no endpoint ownership, runtime behavior or
+transport contract. The [preservation map](wire-extension-preservation.md) records
+those distinctions.

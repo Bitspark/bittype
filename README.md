@@ -10,7 +10,7 @@ ASTTransformer implementations, plans routes and composes existing text stages.
 Specialized providers extend language.Provider. The engine registers parsing,
 checking, formatting and printing independently; identity registration installs
 no capability. See the [engine composition API](docs/engine.md#registration). Horos's Go declaration model now
-supplies module resolution, generic binding, Type/Data bounds and specialization. Bittype
+supplies module resolution, generic binding, general structural kinds and specialization. Bittype
 implements its [text and semantic frontend](docs/horos.md), resolver and semantic analyzer.
 The engine captures syntax once and invokes each capability explicitly. Horos
 analysis reuses the resolver's [shared semantic graph](docs/semantics.md), with
@@ -22,9 +22,9 @@ The [Syntax and Files design](docs/source.md) specifies the symmetry
 `Syntax : CST : AST` and `Files : Source : Semantics`. Typed carriers, symmetric parse/format/print interfaces, multi-unit transformations
 and the Horos Files composition are implemented. Native Files semantics remain deferred.
 Package releases remain deferred.
-The concrete Horos frontend uses public Horos 0.9.0 and Ontos 0.16.0. Consumers
+The concrete Horos frontend uses the Horos Go module pinned in go.mod and Ontos 0.16.0. Consumers
 must upgrade together; no older dependency path or compatibility shim remains.
-See the [dependency alignment and consumer checks](docs/dependencies.md).
+See the [dependency alignment](docs/dependencies.md).
 The engine starts empty and has no built-in languages or mappings.
 
 The [stage-first layout](LAYOUT.md) groups shared tree representations under
@@ -48,8 +48,9 @@ Function, Stream, Cell and future behavioral contracts remain library-owned.
 This milestone adds no runtime adapters, callable implementations, serialization,
 application-value validation or dependencies on bitwire/bitruntime.
 
-Horos has one [declaration language](docs/model.md) with explicit Type/Data
-bounds. `Page<T>` accepts data or capability types; `DataPage<D: Data> = Page<D>`
+Horos has one [declaration language](docs/model.md) with [general kinds](docs/kinds.md).
+`Type`, `Data`, `Scalar`, `List<K>` and `Record<K>` are ordinary prelude definitions.
+`Page<T>` accepts data or capability types; `DataPage<D: h.Data> = Page<D>`
 restricts arguments without a second language or copied template. The old
 Horos/Wire frontend and profiles are removed without aliases. Ground Ontos values,
 Horos ground checks and `any` remain data-only. Ontos/wire owns mixed values;
@@ -59,6 +60,8 @@ interpret these concrete type semantics.
 ## Read first
 
 - [Horos canonical input](docs/model.md): ownership, declarations and native representation plan.
+- [General kinds](docs/kinds.md): structural families, ordinary Data, constructor
+  contracts and the semantic/native generation boundary.
 - [Type and value domains](docs/hydrated-types.md): ownership, authoritative canonical
   input and explicit data boundary. The [frontend guide](docs/horos.md)
   documents implemented APIs and qualification.

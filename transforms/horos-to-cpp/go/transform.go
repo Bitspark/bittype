@@ -15,20 +15,27 @@ import (
 	"strings"
 )
 
+// RepresentationProfile permits kind-constraint erasure for Horos-checked uses.
+const RepresentationProfile = g.RepresentationProfile
+
+// EnforcementProfile requires native kind enforcement and is not implemented.
+const EnforcementProfile = g.EnforcementProfile
+
 type Config struct {
 	TreeID    ast.TreeID
 	Namespace string
+	Profile   string
 }
 
 func New(from, to representation.Language, config Config) (transform.ASTTransformer, error) {
 	if from.ID() != (h.Language{}).ID() || to.ID() != (s.Language{}).ID() {
 		return nil, transform.ErrInvalidTransformer
 	}
-	if from.Profile() != h.Profile || config.TreeID == "" || !g.Identifier(config.Namespace) || !native.Identifier(config.Namespace) || strings.HasPrefix(config.Namespace, "_") || config.Namespace == "std" {
+	if from.Profile() != h.Profile || config.TreeID == "" || !g.KnownProfile(config.Profile) || !g.Identifier(config.Namespace) || !native.Identifier(config.Namespace) || strings.HasPrefix(config.Namespace, "_") || config.Namespace == "std" {
 		return nil, transform.ErrInvalidTransformer
 	}
 	return transform.NewTransformer[h.Language, s.Language](from, to, g.Contract(), func(ctx context.Context, request transform.Request[h.Language]) (ast.Set[s.Language], error) {
-		output, err := g.Generate(ctx, request, config.TreeID, dialect{namespace: config.Namespace})
+		output, err := g.Generate(ctx, request, config.TreeID, config.Profile, dialect{namespace: config.Namespace})
 		if err != nil {
 			return ast.Set[s.Language]{}, err
 		}

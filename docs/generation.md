@@ -16,7 +16,7 @@ to shared facts; [analysis](analysis.md) consumes that evidence explicitly.
 Text stages are documented in [Horos source syntax](horos-syntax.md).
 
 The [unified declaration design](hydrated-types.md) has one generation path:
-`AST[Horos] -> AST[Native] -> CST[Native] -> source`. Explicit Type/Data bounds
+`AST[Horos] -> AST[Native] -> CST[Native] -> source`. General kind contracts
 preserve restrictions within that language. The [frontend](horos.md) is
 implemented; native transformers cover the explicit pagination subset. There is no cross-profile
 transformer, template lifting or second Page. Hydration remains separate in the

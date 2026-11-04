@@ -1,71 +1,190 @@
 # Readable Horos declarations
 
-**Owner direction, 4 November 2026.** Bittype implements this source spelling of
-Horos revision 2 through `parse.Provider`, `format.Provider` and `print.Provider`.
-The [Horos frontend](horos.md) retains the existing AST and semantic providers.
-This is syntax for the existing canonical model, not a second type algebra.
-Horos owns [descriptor meaning](https://github.com/Bitspark/horos/blob/v0.9.0/docs/spec/horos.md)
-and [declarations, bounds and specialization](https://github.com/Bitspark/horos/blob/v0.9.0/docs/spec/declarations.md).
+**Revision-4 grammar implemented in Go source, 4 November 2026.**
+Bittype supplies readable spelling for Horos's canonical general-kind language.
+The [frontend](horos.md) owns its AST projection and stage composition;
+[Horos](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md)
+owns canonical meaning. This page does not claim that the migration or public
+package delivery is complete.
 
-## Pagination
-
-A `.horos` document normally contains one module:
+## Modules and ordinary prelude imports
 
 ```text
 module example.pagination;
+import h from horos.kinds pin "sha256:<actual-64-hex-pin>";
 
-type Page<T> = {
-    items: list<T>;
-    next?: text;
-};
-
-type DataPage<D: Data> = Page<D>;
-```
-
-`T` defaults to bound `Type`; `<T: Type>` spells the same canonical parameter.
-`Data` restricts an argument to a data-only type. Both bounds are explicit atoms
-in the canonical value. The body of Page is one closed record, with required
-items and an optional next field. Optional means absent or present; it does not
-add null to the field's type. `DataPage` applies the same Page declaration.
-
-```text
-module example.people;
-
-type Person = { name: text; age?: int; };
+kind Flat = h.Scalar | h.List<h.Scalar>;
+kind Rows = h.Record<Flat>;
 type Page<T> = { items: list<T>; next?: text; };
+type DataPage<D: h.Data>: h.Data = Page<D>;
+type Person = { name: text; active: bool; };
 type PeoplePage = Page<Person>;
 ```
 
-This source parses without specializing Page. Explicit resolution establishes
-the applications; the existing Horos model can then specialize PeoplePage.
-Neither source parsing nor formatting invokes that semantic operation.
+The placeholder is explanatory, not valid source. A real import contains exactly
+64 hexadecimal digits after `sha256:` and an expected module name. Formatting
+uses lowercase. The prelude uses this ordinary import form; there is no schema
+header, implicit import or privileged binding for `Type` or `Data`.
 
-## Modules, imports and names
+An omitted type parameter annotation or result kind elaborates to `top(P)`.
+It does not refer to a name `Type`. Kind-definition parameters and result sorts
+default to `P`. These defaults are syntax elaboration, not kind inference.
+All canonical fields remain explicit.
+
+Imports precede declarations. One declaration namespace contains both `kind` and
+`type` definitions; reference categories are determined by their expression
+context. Every definition is exported. Parameter names are distinct within their
+own binder. Names use `[A-Za-z_][A-Za-z0-9_]*`; module names are dot-separated
+segments. `Type` and `Data` follow these ordinary naming rules. Backticks escape
+reserved identifiers, not arbitrary text; record fields may use quoted Unicode
+names. Import aliases and declaration names remain separate namespaces.
+
+A bare name denotes the current binder when present, otherwise a local reference.
+`self.Name` forces a local definition reference; `alias.Name` selects an imported
+one. Parsing retains unresolved names and performs no network or filesystem IO.
+Resolution determines visibility, declaration category and semantics.
+
+A Syntax document may contain several `module name;` sections. The first section
+selects the entry and later sections supply module values. They do not imply
+imports or visibility. Each module retains its own identity; there is no bundle
+identity. The [Files composition](source.md) also supports separate Program trees
+without concatenating their source text.
+
+## Definition forms and sorts
 
 ```text
-module example.people;
-import pages from example.pagination pin "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-import cells from example.cell pin "sha256:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
-
-type Person = { name: text; };
-type PeoplePage = pages.Page<Person>;
-type EditablePeoplePage = pages.Page<cells.Cell<Person>>;
-type StoredPeoplePage = pages.DataPage<Person>;
+kind Name<K: S, ...>: S = K;
+type Name<T: K, ...>: K = E;
 ```
 
-The example digests are illustrative, not published module identities. Actual
-imports contain exactly 64 hexadecimal digits after `sha256:`. Formatting uses
-lowercase. The alias, expected module name and digest all become canonical data.
-Parsing does no file or network IO and requires no dependency to be present.
-Imports precede declarations within each module. Every declaration is exported.
-Duplicate import aliases, declaration names and parameter names are rejected.
+Here `S` denotes a sort, `K` a kind expression and `E` a type-level expression.
+The metavariable letters are not source identifiers with special meaning.
 
-Names use `[A-Za-z_][A-Za-z0-9_]*`; module names contain dot-separated segments.
-Backticks escape reserved identifiers, not arbitrary text: `` `type` `` is a
-name, but `` `some-name` `` is not. Fields may use quoted Unicode text as names.
-Declaration and import-alias namespaces are separate. A bare name is a local
-zero-argument application; `alias.Name<...>` is imported. Generic arguments are
-ordered. Parameter uses bind to the current declaration's ordered slots.
+Sorts have the spelling:
+
+```text
+P
+P -> P
+(P, P) -> P
+(P -> P) -> P
+P -> (P -> P)
+```
+
+`P` is the proper-type sort. An arrow sort has a nonempty ordered input list and
+one result sort, which can itself be an arrow. Arrows associate to the right.
+`(P, P) -> P` is a two-input constructor sort, not a curried unary sort.
+
+Kind arguments and type arguments occupy different levels. A parameterized kind
+definition consumes kinds with its declared sorts. A type definition consumes
+type-level values satisfying its parameter kinds. Named kind applications are
+exactly saturated; a bare kind reference names a zero-parameter kind definition.
+Empty parameter and application lists are rejected.
+
+## Kind expressions
+
+| Source form | Meaning |
+| --- | --- |
+| `top(S)`, `bottom(S)` | All or no type-level values at sort S |
+| `K`, `self.K`, `h.K` | A kind parameter or ordinary local/imported kind reference |
+| `h.List<K>` | Saturated application of a named kind definition |
+| `A \| B` | Kind union at one sort |
+| `A & B` | Kind intersection at one sort |
+| `A -> B`, `(A, B) -> C` | Unary or n-ary constructor contract |
+| `node("form", selectors, Q)` | Primitive shape, metadata constraints and full child-sequence pattern |
+| `nu { X = K; Y = K; } in X` | Guarded simultaneous recursive proper-kind group and selected entry |
+| `(A \| B) at S` | Explicit sort on that Boolean kind expression |
+
+Kind application binds most tightly, then `&`, then `|`, then right-associative
+`->`. Parentheses preserve explicit grouping. A Boolean expression defaults to
+sort `P`. An `at` annotation applies only to that Boolean node: it does not
+propagate into nested Boolean nodes or infer sorts from names. For a Boolean
+combination of constructor contracts, state its sort explicitly:
+
+```text
+kind Joint: P -> P =
+    ((h.Scalar -> h.Scalar) & (h.Data -> h.Data)) at (P -> P);
+```
+
+A kind union is an alternative guarantee; an intersection requires all its
+members. In particular, an abstract constructor satisfying a union of arrows
+cannot be treated as satisfying both arrows. The [kind model](kinds.md) defines
+application admission and result reasoning. Public kind negation, arbitrary
+predicate callbacks and subtree-equality constraints are outside this revision.
+
+### Structural patterns
+
+```text
+kind Text = node("scalar", {"selector": "utf8-text"}, epsilon);
+kind List<K> = node("list-of", {}, item(K));
+kind ClosedRecord<K> = node("record", {"mode": "closed"}, star(item(K)));
+kind Pair<A, B> = node("tuple", {}, concat(item(A), item(B)));
+```
+
+Selector keys and values are strings. An omitted selector is a wildcard, not a
+request to invent metadata. The initial selectors are `selector` on `scalar`
+(`int`, `utf8-text`, `bool`) and `mode` on `record` (`open`, `closed`). Horos owns
+which selectors apply to each primitive form. Other descriptor metadata remains
+preserved and subject to its existing admission rules.
+
+Child-sequence patterns are:
+
+```text
+Q = epsilon
+  | item(K)
+  | concat(Q, Q, ...)
+  | alternative(Q, Q, ...)
+  | star(Q)
+```
+
+`concat` and `alternative` require at least two patterns. `item` contains a proper
+kind. A node pattern matches the entire ordered list of observed type children.
+`star` admits arbitrary finite repetition, never an infinite tuple or record.
+An open record exposes an implicit `any` child for additional fields, along with
+all named fields, including optional ones. Labels and presence markers remain
+descriptor metadata; a uniform field-kind query does not introduce row variables
+or predicates over labels.
+
+### Recursive kinds
+
+```text
+kind Tree = nu {
+    X = h.Scalar | h.List<X> | h.Record<X>;
+} in X;
+```
+
+Every group name is in scope throughout the group. Inner recursive groups shadow
+outer names. Canonical recursive references use lexical group depth and slot;
+formatting freshens names when needed to preserve those references. The group
+and its entry have proper sort.
+
+Recursive kinds use greatest fixed points. Every recursive cycle must cross a
+node's type-child descent. Boolean operators and references alone are not guards.
+Named kind-definition dependencies remain acyclic, and parameters stay fixed
+within a recursive group. Ground descriptor `rec`/`ref` has a separate lexical
+and runtime-value descent rule; kind syntax does not replace it.
+
+## Type-level references and constructor results
+
+```text
+type ListType<T> = list<T>;
+type Alias: top(P) -> top(P) = ListType;
+type Later<F: top(P) -> top(P)>: top(P) -> top(P) = F;
+type Texts = Later<Alias><text>;
+```
+
+`Alias` has no declared parameters but denotes a constructor. `Later` returns
+one. Each postfix application supplies one complete, nonempty argument list to
+its callee value; parameter references and earlier application results can be
+callees. Partial application and type-level lambdas remain outside this revision.
+
+`type Alias = ListType;` does not infer a constructor result: its omitted result
+kind is `top(P)` and resolution rejects the mismatch. Empty application syntax
+such as `Person<>` is rejected. A zero-parameter proper definition is used by
+reference, `Person`. Descriptor forms such as `tuple<>` and `union<>` retain their
+own empty-operand meanings and are not empty declaration applications.
+
+Kinds and type definitions can share spellings only through normal scopes, not
+through duplicate declarations in the same namespace. For example:
 
 ```text
 type T = text;
@@ -74,49 +193,34 @@ type `list`<`text`> = `text`;
 type Escaped = `list`<text>;
 ```
 
-`self.Name` forces a local declaration application when a parameter shadows it.
-A parameter cannot be applied as a constructor. Generic declarations cannot
-have empty parameter lists, defaults, value parameters or higher-kinded slots.
-An application may spell an explicit empty argument list; formatting omits it.
-There are no function bodies or executable expressions.
+There are no executable function bodies, value parameters or inferred missing
+higher-order annotations.
 
-An existing Horos AST Program can contain several supplied modules. To preserve
-that Program without inventing another carrier, a source document can concatenate
-module sections, each beginning `module name;`. The first section selects the
-entry; later sections supply dependency documents. They do not create imports
-or grant visibility. Formatter output puts the selected entry first and keeps
-the other supplied sections. No module is silently dropped, fetched or inlined.
-Each module has its own canonical pin; there is no extra bundle digest.
-
-## Type expressions
+## Type descriptors
 
 | Source | Canonical descriptor |
 | --- | --- |
-| `any`, `atom` | `any()`, `atom()` |
+| `any`, `atom` | Ground `any()`, `atom()` |
 | `text`, `int`, `bool` | `scalar(utf8-text)`, `scalar(int)`, `scalar(bool)` |
-| `tuple<A, B>` | `tuple(A, B)`; `tuple<>` is the empty tuple type |
-| `compound(#"item", A, B)` | labelled compound with literal Atom label |
+| `tuple<A, B>` | `tuple(A, B)` |
+| `compound(#"item", A, B)` | Compound with literal Atom label |
 | `list<T>` | `list-of(T)`, the Ontos list embedding |
-| `seq<D>` | `seq(D)`, an arbitrary-length bare tuple |
-| `set<D>` | `set-of(D)` |
-| `map<K, V>` | `map-of(K, V)` |
-| `{ name: A; next?: B; }` | closed record, required/optional fields in authored order |
-| `open { name: A; }` | open record |
-| `A \| B` or `union<A, B>` | `union(A, B)` |
-| `A & B` or `and<A, B>` | `and(A, B)` |
-| `not<D>` | complement within the data domain |
-| `wire<T>` | capability carrying messages of type T |
-| `rec(#"tree", E)` | guarded recursive data descriptor |
-| `ref(#"tree")` | recursion reference, distinct from a declaration application |
+| `seq<D>`, `set<D>`, `map<K, V>` | Bare sequence, embedded set, embedded map |
+| `{ name: A; next?: B; }` | Closed record with required/optional fields |
+| `open { name: A; }` | Open record |
+| `A \| B` or `union<A, B>` | Type union descriptor |
+| `A & B` or `and<A, B>` | Type intersection descriptor |
+| `not<D>` | Complement in the ground data domain |
+| `wire<T>` | Sending-capability type with message type T |
+| `rec(#"tree", E)`, `ref(#"tree")` | Ground recursive descriptor and lexical reference |
 
-`&` binds more tightly than `|`. Parentheses group expressions. A chain such as
-`A | B | C` has three operands; `(A | B) | C` retains a nested union. Formatting
-preserves this distinction with parentheses, including equal-precedence nesting.
-`union<>`, `union<A>`, `and<>` and `and<A>` preserve empty and singleton forms.
-No operand sorting, deduplication, union flattening or semantic normalization is
-performed. Record-field order also remains part of the canonical document.
+In type-expression context `&` binds more tightly than `|`. A chain has several
+operands, while parentheses preserve nested union/intersection structure.
+`union<>`, `union<A>`, `and<>` and `and<A>` retain empty/singleton forms. No
+sorting, deduplication or semantic flattening occurs. Record-field order remains
+part of the canonical module value.
 
-Literal-operand constructors retain their explicit spellings:
+Literal-operand forms retain their spelling:
 
 ```text
 type SmallBlob = atom-len(0, 4096);
@@ -126,120 +230,89 @@ type ShortName = text & text-len(1, 80) & text-non-blank();
 type Key = key-grammar();
 type UUID = lowercase-uuid();
 type NullableText = text | exact(null);
-type Tree<D: Data> = rec(#"tree", {
+type Tree<D: h.Data> = rec(#"tree", {
     value: D;
     children: list<ref(#"tree")>;
 });
 ```
 
-The parser enforces the spelling and arity of these forms. Horos semantics checks
-their operand domains, length ranges, recursion guards, generic arity and bounds.
-For example, `map<wire<text>, text>` and `atom-len(-1, 2)` parse but fail semantic
-validation. Open-record fields, seq/set/map operands, intersection/complement and
-recursion retain their existing Data restrictions. `any` continues to mean ground
-data, while bound Type also admits capability-containing types.
-
-Function, Stream and Cell are ordinary declarations used through imports and
-applications. They have no special parser kind, formatter rule or engine entry.
-The text stages include no native generators or runtime bindings. Separate
-[semantic pagination transformers](semantic-generation.md) consume their admitted ASTs.
+The last example assumes the ordinary `h` prelude import. Horos establishes
+primitive operand contracts using ordinary kinds. Existing seq/set/map,
+open-record, intersection/complement and recursion restrictions remain in place;
+no reserved Data flag decides them. `any` still describes ground data, whereas
+`top(P)` admits all proper type descriptions, including mixed ones. Parsing and
+formatting do not perform membership, inclusion or specialization.
 
 ## Literal values
 
-Literal operands are Ontos data, not type expressions:
-
-| Source | Value |
+| Source | Ontos value |
 | --- | --- |
-| `"hello"` | canonical Ontos text embedding |
-| `#"hello"` | Atom containing the UTF-8 bytes |
-| `#hex"00ff"` | Atom containing arbitrary bytes |
-| `123`, `-123` | canonical arbitrary-width integer embedding |
-| `true`, `false`, `null` | existing boolean/null embeddings |
-| `tuple(v1, v2)` | raw Tuple; `tuple()` is empty |
-| `set(v1, v2)` | canonical set embedding; duplicate members rejected |
+| `"hello"` | Text embedding |
+| `#"hello"` | Atom containing UTF-8 bytes |
+| `#hex"00ff"` | Arbitrary-byte atom |
+| `123`, `-123` | Arbitrary-width integer embedding |
+| `true`, `false`, `null` | Existing boolean/null embeddings |
+| `tuple(v1, v2)` | Raw Tuple; `tuple()` is empty |
+| `set(v1, v2)` | Canonical set embedding; duplicate values rejected |
 
-Atoms and tuples can represent every ground Ontos value, including embeddings
-without dedicated sugar. Literal tuple syntax uses parentheses; tuple type syntax
-uses angle brackets. There are no implicit type literals outside `exact(...)`.
-There is no decimal scalar added by this notation. Canonical sets use Ontos's
-existing ordering, so their source member order does not affect their value.
+Literal tuples use parentheses; tuple types use angle brackets. Literal atoms
+and tuples can represent all ground Ontos values. There are no implicit type
+literals outside literal-operand positions. No decimal scalar is introduced.
 
-Strings are double-quoted Unicode, with Go-style `\a`, `\b`, `\f`, `\n`, `\r`,
-`\t`, `\v`, `\\`, `\"`, `\uNNNN` and `\UNNNNNNNN` escapes. Escapes must denote
-valid Unicode scalar values; byte/octal escapes and surrogate values are rejected.
-Use hexadecimal atoms for non-UTF-8 bytes. Integers are decimal without leading
-zeroes, a plus sign, negative zero, separators or exponents. This frontend limits
-one integer token to 4096 digits; the model's integer domain is unchanged.
+Strings use double quotes and Go-style `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`,
+`\\`, `\"`, `\uNNNN` and `\UNNNNNNNN` escapes for Unicode scalar values.
+Byte/octal escapes and surrogate values are rejected; use hexadecimal atoms for
+non-UTF-8 bytes. Integer spelling is decimal without leading zeros, plus signs,
+negative zero, separators or exponents, with at most 4096 digits per token.
 
 ```text
 type Literal<T> = exact(tuple(#"horos/decl/param", 0));
 ```
 
-The tuple inside exact remains literal data. It does not capture T or become a
-parameter use. Formatters recognize canonical data embeddings only to choose
-readable literal spellings; other values retain their raw atom/tuple structure.
+The tuple is literal and does not capture T. The same opacity applies to tuples
+resembling kind, application or recursive-variable forms.
 
 ## Grammar outline
 
 ```text
-document    = module-section+
-module-section = "module" module-name ";" import* declaration*
-import      = "import" name "from" module-name "pin" string ";"
-declaration = "type" name [ "<" parameter ("," parameter)* [","] ">" ] "=" E ";"
-parameter   = name [ ":" ("Type" | "Data") ]
-E           = intersection ("|" intersection)*
-intersection = primary ("&" primary)*
-primary     = application | parameter-use | "(" E ")" | constructor
-application = (name | "self." name | name "." name) [ "<" [E ("," E)* [","]] ">" ]
-record      = ["open"] "{" (field-name ["?"] ":" E ";")* "}"
+document        = module-section+
+module-section  = "module" module-name ";" import* definition*
+import          = "import" name "from" module-name "pin" string ";"
+definition      = kind-definition | type-definition
+kind-definition = "kind" name ["<" kind-parameters ">"] [":" S] "=" K ";"
+type-definition = "type" name ["<" type-parameters ">"] [":" K] "=" E ";"
+kind-parameter  = name [":" S]
+type-parameter  = name [":" K]
+S               = "P" | "(" S ")" | S "->" S | "(" S "," S ... ")" "->" S
+K               = kind-reference/application | top/bottom | kind-Boolean
+                | kind-arrow | node-pattern | recursive-group | "(" K ")"
+recursive-group = "nu" "{" (name "=" K ";")+ "}" "in" name
+E               = type-Boolean | type-primary ("<" E ("," E)* [","] ">")*
 ```
 
-Constructor forms and literal positions are the tables above. Comma-delimited
-angle-bracket lists and literal tuples/sets admit a trailing comma; fixed-arity
-parenthesized constructor calls do not. Compound accepts its literal label and
-zero or more type arguments, without a trailing comma. Semicolons are required.
-Whitespace, a leading UTF-8 BOM, `//` line comments and non-nesting `/* */` block
-comments are admitted. Comments are trivia, never directives or canonical data.
+This outline uses the precedence and arity rules above. Parameter lists are
+nonempty. Type/kind argument and parameter lists, and selector maps, admit
+trailing commas. Arrow domains and child-sequence pattern argument lists do not.
+Fixed parenthesized descriptor calls retain their specific arities. Semicolons are
+required. Whitespace, a leading UTF-8 BOM, line comments and non-nesting block
+comments remain trivia, not directives or canonical data.
 
-## Pipeline, ownership and limits
+## Pipeline and limits
 
-```text
-parse/horos/go:   text -> CST[Horos], with stored AST view and exact module pins
-format/horos/go:  AST view[Horos] -> freshly constructed CST[Horos]
-print/go:        CST[L] -> supplied leaf text
-```
+Syntax parsing constructs a lossless CST and AST view. Formatting constructs CST
+from an AST view directly; the generic printer emits supplied leaves. The
+provider composes independently registered Syntax/check/resolution/analysis
+capabilities. [Files parsing and formatting](source.md) compose these stages over
+several Program trees without creating a second language.
 
-`provider/horos/go` composes these stages and the existing checker/resolver/analyzer.
-Each capability is independently registered. No engine, shared contract or Wire
-change is needed. The [provider matrix](providers.md) records availability.
-The private canonical bridge reuses existing module encoding and Horos Pin;
-hashing a document is not semantic validation. Source ASTs carry no invented
-resolved target annotations. Resolution retains its explicit evidence contract.
+Direct parsing/printing retains original source, comments, BOM and line endings.
+Formatting uses four-space indentation and LF, removes source trivia and preserves
+canonical values. Default annotations may be omitted only when they elaborate to
+the same canonical sort/kind. Recursive names can change while their canonical
+lexical references remain fixed. A freshly parsed formatted document requires
+new resolution; source text does not recreate old node IDs or receipts.
 
-`Print(Parse(source)) == source`, including comments, BOM and CRLF. Formatting
-chooses four-space indentation and LF, drops source trivia, emits Type bounds
-implicitly and preserves the canonical module values and pins. Module/import/
-declaration map order is semantically immaterial; parameter, field and operand
-order is not. `Parse(Print(Format(ast)))` cannot recreate original node IDs,
-provenance or resolution receipts. The formatter's stored AST snapshot retains
-that metadata, but callers must resolve the freshly parsed input explicitly.
-
-Formatting constructs token/trivia nodes directly. It never emits source and
-reparses it. The generic printer checks only carrier structure and knows no Horos
-constructor. Unknown descriptor spellings, unrepresentable binder indices and
-incorrect module-pin assertions fail formatting with no partial output.
-
-Source is bounded to 4 MiB and 200,000 lexical tokens. Syntax nesting and AST/CST
-storage obey existing carrier budgets; canonical module hashing obeys Horos's
-default value budgets. All failures return empty output with diagnostics.
-These are resource limits, not new canonical type semantics.
-
-## Qualification
-
-[Parser tests](../parse/horos/go/parse_test.go) cover the complete constructor
-vocabulary, lexical rejection, comments/CRLF/BOM, nested operators, literal opacity,
-limits and fuzzed source round trips. [Formatter tests](../format/horos/go/format_test.go)
-start from independently authored canonical pagination and Cell modules, preserve
-their exact closure pins, recover the model, specialize Page/DataPage and retain
-the capability/data distinction. Engine and installed-consumer tests qualify the
-public stages. Existing native compiler checks remain unchanged.
+Source is bounded to 4 MiB and 200,000 lexical tokens. Syntax/AST/CST and canonical
+operations retain their separate limits. Failures return no usable partial
+output. Function, Stream and Cell remain ordinary declarations with no parser or engine
+special cases.

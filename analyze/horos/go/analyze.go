@@ -12,7 +12,7 @@ import (
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 )
 
-const Profile = "horos-declarations-2/analysis-2"
+const Profile = "horos-declarations-4/analysis-1"
 
 func Contract() analysis.Contract { return ContractWithResolutionConfiguration(nil) }
 

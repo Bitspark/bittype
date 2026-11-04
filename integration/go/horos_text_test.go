@@ -15,6 +15,7 @@ import (
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
+	decl "github.com/Bitspark/horos/core/go/declarations"
 )
 
 func TestHorosSourceThroughIndependentEngineStages(t *testing.T) {
@@ -25,7 +26,7 @@ func TestHorosSourceThroughIndependentEngineStages(t *testing.T) {
 	}
 	e := engine.New()
 	registerNativeStages(t, e, definition, p)
-	source := "// pagination\r\nmodule example.pagination;\r\ntype Page<T> = { items: list<T>; next?: text; };\r\ntype DataPage<D: Data> = Page<D>;\r\ntype People = DataPage<text>;\r\n"
+	source := "// pagination\r\nmodule example.pagination;\r\nimport h from horos.kinds pin \"sha256:" + decl.PreludePin().String() + "\";\r\ntype Page<T> = { items: list<T>; next?: text; };\r\ntype DataPage<D: h.Data> = Page<D>;\r\ntype People = DataPage<text>;\r\n"
 	parsed, err := e.ParseSyntax(context.Background(), p.ID(), parse.Input{SourceID: "page.horos", TreeID: "page", Text: source})
 	if err != nil {
 		t.Fatal(err)

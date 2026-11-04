@@ -25,7 +25,7 @@ func Project(program *decl.Program, treeID ast.TreeID) (s.AST, error) {
 }
 
 // Model checks the AST and recovers the Horos model for inspection or explicit
-// ground specialization. It does not repair bindings or mutate the borrowed AST.
+// explicit sealed-value and kind queries. It does not repair bindings or mutate the borrowed AST.
 func Model(view ast.View[s.Language]) (*decl.Program, error) {
 	if view == nil {
 		return nil, check.Check(view)

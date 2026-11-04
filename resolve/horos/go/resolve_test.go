@@ -40,15 +40,16 @@ func entry(name string, v value) [2]value { return [2]value{txt(name), v} }
 func definition(body value, names ...string) value {
 	var parameters []value
 	for _, name := range names {
-		parameters = append(parameters, d("parameter", txt(name), atom("data")))
+		parameters = append(parameters, d("parameter", txt(name), d("top", d("sort-proper"))))
 	}
-	return d("type", data.EncodeList(parameters), body)
+	return d("type", data.EncodeList(parameters), d("top", d("sort-proper")), body)
 }
 func module(name string, imports value, declarations ...[2]value) value {
-	return d("module", integer(2), txt(name), imports, mapping(declarations...))
+	return d("module", integer(4), txt(name), imports, mapping(declarations...))
 }
 func param(i int64) value { return d("param", integer(i)) }
 func local(name string, args ...value) value {
+	if len(args) == 0 { return d("local", txt(name)) }
 	return d("apply", d("local", txt(name)), data.EncodeList(args))
 }
 func page(element value) value {
@@ -119,18 +120,24 @@ func target(node s.Node, role string) ast.NodeID {
 	return 0
 }
 
+func materialize(program *decl.Program, id decl.DeclarationID) (core.Value, error) {
+	value, err := program.Value(id)
+	if err != nil { return nil, err }
+	return program.Descriptor(value)
+}
+
 func TestPaginationBindingsAndSpecialization(t *testing.T) {
 	tree := fixture(t)
 	if err := check.Check(tree); err != nil {
 		t.Fatal(err)
 	}
-	pageID := find(tree, s.KindDeclaration, "Page")
+	pageID := find(tree, s.KindTypeDefinition, "Page")
 	parameter := find(tree, s.KindTypeParameter, "T")
 	use := find(tree, s.KindParameter, "")
 	if target(tree.Nodes[use-1], s.RoleTarget) != parameter {
 		t.Fatal("slot lost its binder")
 	}
-	application := find(tree, s.KindApplication, "Page")
+	application := find(tree, s.KindReference, "Page")
 	if target(tree.Nodes[application-1], s.RoleTarget) != pageID || target(tree.Nodes[application-1], s.RoleImport) == 0 {
 		t.Fatal("imported application lost declaration/import identity")
 	}
@@ -143,7 +150,7 @@ func TestPaginationBindingsAndSpecialization(t *testing.T) {
 	if !core.Equal(stored.Value(), root) {
 		t.Fatal("canonical value changed during AST round trip")
 	}
-	result, err := model.Specialize(decl.DeclarationID{Module: model.Root(), Name: "PeoplePage"}, nil)
+	result, err := materialize(model, decl.DeclarationID{Module: model.Root(), Name: "PeoplePage"})
 	if err != nil || !core.Equal(result, page(person())) {
 		t.Fatalf("caller binding or specialization changed: %v", err)
 	}
@@ -165,7 +172,7 @@ func TestNestedGenericBinding(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := model.Specialize(decl.DeclarationID{Module: model.Root(), Name: "Applied"}, nil)
+	result, err := materialize(model, decl.DeclarationID{Module: model.Root(), Name: "Applied"})
 	if err != nil || !core.Equal(result, page(page(person()))) {
 		t.Fatalf("nested binding: %v", err)
 	}
@@ -196,7 +203,7 @@ func TestExactLiteralIsOpaque(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := model.Specialize(decl.DeclarationID{Module: model.Root(), Name: "Literal"}, nil)
+	result, err := materialize(model, decl.DeclarationID{Module: model.Root(), Name: "Literal"})
 	if err != nil || !core.Equal(result, literal) {
 		t.Fatalf("literal changed: %v", err)
 	}
@@ -248,11 +255,11 @@ func TestInvalidASTsFailWithoutRepair(t *testing.T) {
 	cases := map[string]func(s.AST){
 		"wrong parameter binding": func(a s.AST) {
 			i := find(a, s.KindParameter, "")
-			a.Nodes[i-1].References[0].Target.Node = find(a, s.KindDeclaration, "Page")
+			a.Nodes[i-1].References[0].Target.Node = find(a, s.KindTypeDefinition, "Page")
 		},
 		"wrong application binding": func(a s.AST) {
-			i := find(a, s.KindApplication, "Page")
-			a.Nodes[i-1].References[0].Target.Node = find(a, s.KindDeclaration, "PeoplePage")
+			i := find(a, s.KindReference, "Page")
+			a.Nodes[i-1].References[0].Target.Node = find(a, s.KindTypeDefinition, "PeoplePage")
 		},
 		"external binding": func(a s.AST) { i := find(a, s.KindParameter, ""); a.Nodes[i-1].References[0].Target.Tree = "external" },
 		"wrong module pin": func(a s.AST) {

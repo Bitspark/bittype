@@ -36,10 +36,14 @@ func entries(t *testing.T, pairs ...[2]core.Value) core.Value {
 	return value
 }
 func definition(body core.Value, parameters ...core.Value) core.Value {
-	return d("type", data.EncodeList(parameters), body)
+	return d("type", data.EncodeList(parameters), d("top", d("sort-proper")), body)
 }
 func apply(name string, arguments ...core.Value) core.Value {
-	return d("apply", d("local", data.MustEncodeText(name)), data.EncodeList(arguments))
+	callee := d("local", data.MustEncodeText(name))
+	if len(arguments) == 0 {
+		return callee
+	}
+	return d("apply", callee, data.EncodeList(arguments))
 }
 func field(name, presence string, typ core.Value) core.Value {
 	return h("field", data.MustEncodeText(name), atom(presence), typ)
@@ -50,16 +54,19 @@ func TestCanonicalPaginationAndImportedLibraryRoundTrip(t *testing.T) {
 	textType := h("scalar", atom("utf8-text"))
 	slot := d("param", integer(0))
 	pageBody := h("record", atom("closed"), field("items", "req", h("list-of", slot)), field("next", "opt", textType))
-	page := d("module", integer(2), txt("example.pagination"), entries(t), entries(t,
-		[2]core.Value{txt("Page"), definition(pageBody, d("parameter", txt("T"), atom("type")))},
-		[2]core.Value{txt("DataPage"), definition(apply("Page", slot), d("parameter", txt("D"), atom("data")))},
+	proper := d("top", d("sort-proper"))
+	page := d("module", integer(4), txt("example.pagination"), entries(t,
+		[2]core.Value{txt("h"), decl.PreludeImport()},
+	), entries(t,
+		[2]core.Value{txt("Page"), definition(pageBody, d("parameter", txt("T"), proper))},
+		[2]core.Value{txt("DataPage"), definition(apply("Page", slot), d("parameter", txt("D"), d("kind-imported", txt("h"), txt("Data"))))},
 	))
 	pagePin, err := decl.Pin(page)
 	if err != nil {
 		t.Fatal(err)
 	}
-	cell := d("module", integer(2), txt("example.cell"), entries(t), entries(t,
-		[2]core.Value{txt("Cell"), definition(h("wire", slot), d("parameter", txt("T"), atom("type")))},
+	cell := d("module", integer(4), txt("example.cell"), entries(t), entries(t,
+		[2]core.Value{txt("Cell"), definition(h("wire", slot), d("parameter", txt("T"), proper))},
 	))
 	cellPin, err := decl.Pin(cell)
 	if err != nil {
@@ -70,7 +77,7 @@ func TestCanonicalPaginationAndImportedLibraryRoundTrip(t *testing.T) {
 	}
 	personBody := h("record", atom("closed"), field("name", "req", textType))
 	person := apply("Person")
-	people := d("module", integer(2), txt("example.people"), entries(t,
+	people := d("module", integer(4), txt("example.people"), entries(t,
 		[2]core.Value{txt("pages"), d("import", txt("example.pagination"), core.NewAtom(pagePin[:]))},
 		[2]core.Value{txt("cells"), d("import", txt("example.cell"), core.NewAtom(cellPin[:]))},
 	), entries(t,
@@ -127,16 +134,24 @@ func TestCanonicalPaginationAndImportedLibraryRoundTrip(t *testing.T) {
 	}
 	want := h("record", atom("closed"), field("items", "req", h("list-of", personBody)), field("next", "opt", textType))
 	for _, name := range []string{"PeoplePage", "StoredPeople"} {
-		value, err := recovered.DataDescriptor(decl.DeclarationID{Module: recovered.Root(), Name: name}, nil)
+		typ, err := recovered.Value(decl.DeclarationID{Module: recovered.Root(), Name: name})
+		if err != nil {
+			t.Fatal(err)
+		}
+		value, err := recovered.GroundDescriptor(typ)
 		if err != nil || !core.Equal(value, want) {
 			t.Fatalf("%s specialization changed: %v", name, err)
 		}
 	}
-	if _, err := recovered.DataDescriptor(decl.DeclarationID{Module: recovered.Root(), Name: "EditablePeople"}, nil); err == nil {
+	editable, err := recovered.Value(decl.DeclarationID{Module: recovered.Root(), Name: "EditablePeople"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := recovered.GroundDescriptor(editable); err == nil {
 		t.Fatal("Cell capability was silently made data")
 	}
 	// Optional fields and closed record structure survive, not merely a list alias.
-	if !strings.Contains(source, "next?: text;") || !strings.Contains(source, "DataPage<D: Data> = Page<D>") {
+	if !strings.Contains(source, "next?: text;") || !strings.Contains(source, "DataPage<D: h.Data> = Page<D>") {
 		t.Fatal("pagination syntax lost")
 	}
 }
@@ -181,7 +196,7 @@ func TestFormatterRejectsUnspellableASTWithoutPartialOutput(t *testing.T) {
 func TestFormatterBoundsLexicalExpansion(t *testing.T) {
 	// One AST attribute and concrete leaf can expand into more than 200,000
 	// lexical tokens. Counting CST leaves alone would emit unparseable source.
-	module := d("module", integer(2), data.MustEncodeText(strings.Repeat("a.", 100000)+"a"), entries(t), entries(t))
+	module := d("module", integer(4), data.MustEncodeText(strings.Repeat("a.", 100000)+"a"), entries(t), entries(t))
 	tree, err := resolve.Resolve(module, nil, "many-segments")
 	if err != nil {
 		t.Fatal(err)

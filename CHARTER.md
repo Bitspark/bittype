@@ -3,7 +3,7 @@
 **Current direction: 4 November 2026.** The owner selected horos for canonical
 data type semantics and bittype for syntax/tooling and native type generation,
 starting with types only. The [model boundary](docs/model.md) replaces the earlier
-independent bittype type-language proposal. Horos declaration revision 2 and its
+independent bittype type-language proposal. Horos declaration revision 4 and its
 bittype AST projection are implemented in Go source; no package release is implied.
 
 ## Ownership
@@ -24,11 +24,11 @@ bittype owns:
   analyzer; analysis consumes an explicit receipt and can reuse its sealed model.
 - Small data types needed to represent presence and nullness in generated code.
 - Implemented [unified Horos tooling](docs/horos.md), adapting canonical
-  Type/Data bounds to ASTs and shared semantic facts. Bittype does not own the
+  general kind contracts to ASTs and shared semantic facts. Bittype does not own the
   canonical type model or the mixed value domain.
 
 Horos owns data descriptors, conformance and module/generic/application
-semantics with Type/Data bounds, their encoding and semantic vectors. Ontos owns
+semantics with general structural kinds, their encoding and semantic judgments. Ontos owns
 ground values, structural identity and encoding. Horos does not depend on bittype;
 the current Horos-specific frontend and future qualified providers/transformers
 consume its model. Generic foundations and native text stages remain independent.
@@ -40,6 +40,12 @@ profiles and Data schema wrappers are removed, without aliases. Hydration stays
 in Bitwire/Bitruntime, and Function, Stream and Cell remain ordinary libraries.
 The [preservation map](docs/wire-extension-preservation.md) records the retained
 concepts and clean migration; no runtime behavior follows from type validity.
+
+The [general kind model](docs/kinds.md) replaces special Type/Data claims and
+dedicated Data proofs. Scalar, List, Record and recursive Data are ordinary kind
+definitions. Bittype's kernel carries provider-owned facts without interpreting
+them. Native representation profiles distinguish representing Horos-admitted
+uses from enforcing source constraints on arbitrary native callers.
 
 The owner's 31 October structure decision selects the stage-first matrix in
 [LAYOUT.md](LAYOUT.md). Shared trees, shared contracts and the engine have distinct
@@ -67,7 +73,7 @@ The [native text design](docs/parsing-formatting.md) defines their ownership and
 qualification limits. Specialized providers all extend language.Provider.
 
 The ASTTransformer boundary and syntax engine now provide checked heterogeneous
-registration, route planning/execution and native text composition. Native AST-to-AST mappings, public builders and application CLI remain deferred. Native parsing does not make a target language the
+registration, route planning/execution and native text composition. Pagination AST-to-AST mappings are implemented; public builders and application CLI remain deferred. Native parsing does not make a target language the
 canonical authority. The [generation design](docs/generation.md) remains separate.
 
 This scope excludes application-value validators, serialization, Wire adapters,

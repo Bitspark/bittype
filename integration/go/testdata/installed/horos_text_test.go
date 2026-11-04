@@ -14,7 +14,7 @@ import (
 
 func TestInstalledHorosTextPagination(t *testing.T) {
 	p := provider.Provider{}
-	source := "module installed.source; type Page<T> = { items: list<T>; next?: text; }; type DataPage<D: Data> = Page<D>; type People = DataPage<text>;"
+	source := "module installed.source; import h from horos.kinds pin \"sha256:" + decl.PreludePin().String() + "\"; type Page<T> = { items: list<T>; next?: text; }; type DataPage<D: h.Data> = Page<D>; type People = DataPage<text>;"
 	parsed, err := (parser.Provider{}).Parse(context.Background(), parse.Input{SourceID: "installed.horos", TreeID: "installed", Text: source})
 	if err != nil {
 		t.Fatal(err)
@@ -27,7 +27,9 @@ func TestInstalledHorosTextPagination(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := model.DataDescriptor(decl.DeclarationID{Module: model.Root(), Name: "People"}, nil); err != nil {
+	value, err := model.Value(decl.DeclarationID{Module: model.Root(), Name: "People"})
+	if err != nil { t.Fatal(err) }
+	if _, err := model.GroundDescriptor(value); err != nil {
 		t.Fatal(err)
 	}
 	formatted, err := (formatter.Provider{}).Format(context.Background(), parsed)

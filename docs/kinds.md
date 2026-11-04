@@ -1,6 +1,6 @@
 # General structural kinds
 
-**Implementation in progress.** This is the accepted replacement for the closed
+**Implemented in Go source.** This replaces the closed
 Type/Data bound system. Horos owns the canonical definitions and their meaning;
 Bittype projects them into syntax and provider-owned semantic facts. The
 [research decision](../research-docs/0005-general-kinds.md) explains the expert
@@ -48,7 +48,7 @@ Type and kind expressions occupy different levels:
 Kinds have finite simple sorts:
 
 ```text
-Sort = proper | (Sort, ...) -> Sort
+Sort = P | (Sort, ...) -> Sort
 ```
 
 The proper sort is the domain of types. An arrow sort is the domain of
@@ -65,14 +65,18 @@ types. A constructor sort can itself return a constructor sort. The sort of a
 declaration's value is independent of how many parameters that declaration has:
 
 ```text
-Alias : Type => Type = Page
-Pick<F: Type => Type> : Type => Type = F
+Alias : Type -> Type = Page
+Pick<F: Type -> Type> : Type -> Type = F
 Pick<Page><text>
 ```
 
 `Alias` has no parameters and denotes a constructor. Each application supplies
 one complete, nonempty parameter list. Partial applications and type-level
 lambdas are outside this language revision.
+
+`top(P -> P)` contains every constructor of that sort. The stronger contract
+`top(P) -> top(P)` promises admission and a proper result for every proper input.
+The two expressions must not be conflated.
 
 ## The canonical vocabulary
 
@@ -107,8 +111,8 @@ alternatives and finite repetition. A node pattern matches the entire ordered
 sequence of type children. Repetition admits arbitrarily long finite sequences,
 never infinitely many children.
 
-The initial metadata selectors are `scalar.selector` (`int`, `utf8-text`,
-`bool`) and `record.mode` (`open`, `closed`). Other primitive metadata remains
+The scalar form's selector key is `"selector"` (`int`, `utf8-text`, `bool`);
+the record form's key is `"mode"` (`open`, `closed`). Other primitive metadata remains
 part of the admitted descriptor, but this kind language supplies no arbitrary
 predicates over it. There are no callback predicates, subtree-equality tests or
 unrestricted refinements hidden behind node selectors.
@@ -169,7 +173,7 @@ Wire field prevents Data membership just as a required Wire field does.
 
 ## Generic bodies and constructor contracts
 
-A constructor contract `A => B` promises that arguments in kind `A` are admitted
+A constructor contract `A -> B` promises that arguments in kind `A` are admitted
 and results belong to `B`. It makes no promise about other arguments. Its domain
 is contravariant and result covariant when establishing a compatible contract.
 
@@ -191,24 +195,24 @@ Page<T> = closed record {
 The same retained body can establish:
 
 ```text
-Page : Data => Data
-Page : Scalar => Rows
-Page : K => Record<List<K> | Text>
+Page : Data -> Data
+Page : Scalar -> Rows
+Page : K -> Record<List<K> | Text>
 ```
 
 The last line describes a query for each particular suitable kind `K`, not a
-universally quantified constructor contract. `Page : Flat => Rows` does not
+universally quantified constructor contract. `Page : Flat -> Rows` does not
 generally hold: substituting `list-of(text)` makes the items field a nested list.
 
-Abstract constructors expose their declared guarantees. For `F : Flat => Rows`
+Abstract constructors expose their declared guarantees. For `F : Flat -> Rows`
 and `T : Flat`, `F<T>` has a Rows guarantee. Wrapping it in a record yields
 `Record<Rows>`, which is different from Rows.
 
 Intersections and unions of arrows remain distinct:
 
 ```text
-(A => B) & (A => C)     applied to A guarantees B & C
-(A => B) | (A => C)     applied to A guarantees B | C
+(A -> B) & (A -> C)     applied to A guarantees B & C
+(A -> B) | (A -> C)     applied to A guarantees B | C
 ```
 
 Every possible callee alternative must admit the argument. Intersect promises
@@ -278,7 +282,7 @@ The Horos provider publishes these separately:
 - Completion of the required obligations.
 
 There may be several membership facts for one subject. Missing facts assert
-nothing. A narrower query proving `Page : Scalar => Rows` must not attach an
+nothing. A narrower query proving `Page : Scalar -> Rows` must not attach an
 unconditional Rows fact to the body under its original unrestricted parameter.
 Completion never means enumeration of every true membership.
 

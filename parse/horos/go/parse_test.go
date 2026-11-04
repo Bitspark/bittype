@@ -2,6 +2,7 @@ package horosparse_test
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"strings"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	resolve "github.com/Bitspark/bittype/resolve/horos/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
+	decl "github.com/Bitspark/horos/core/go/declarations"
 )
 
 func pins(tree s.AST) []string {
@@ -72,7 +74,11 @@ func roundTrip(t *testing.T, source string) s.AST {
 }
 
 func TestCompleteSourceVocabulary(t *testing.T) {
+	prelude := decl.PreludePin()
 	source := `module examples.vocabulary;
+import h from horos.kinds pin "sha256:` + hex.EncodeToString(prelude[:]) + `";
+kind Type = top(P);
+kind Data = h.Data;
 type Anything = any;
 type Blob = atom;
 type Ready = atom-exact(#"ready");
@@ -140,10 +146,12 @@ func TestSourceTriviaAndSpans(t *testing.T) {
 	}
 }
 
-func TestSyntaxDoesNotResolveOrCheckBounds(t *testing.T) {
+func TestSyntaxDoesNotResolveOrCheckContracts(t *testing.T) {
 	for _, body := range []string{
 		"type Missing = Unknown<text>;",
-		"type Page<D: Data> = list<D>; type Invalid<T> = Page<T>;",
+		`kind Data = node("scalar", {}, epsilon); type Page<D: Data> = list<D>; type Invalid<T> = Page<T>;`,
+		"type X<T: Nope> = T;",
+		"type X<T> = T<text>;",
 		"type Invalid = map<wire<text>, text>;",
 		"type Invalid = scalarTypo;",
 		"type Invalid = atom-len(-1, 2);",
@@ -161,13 +169,13 @@ func TestSyntaxDoesNotResolveOrCheckBounds(t *testing.T) {
 func TestRejectWholeInput(t *testing.T) {
 	cases := []string{
 		"", "type X = text;", "module x", "module x; garbage", "module x; type X = text; junk",
-		"module x; type X<> = text;", "module x; type X<T,T> = T;", "module x; type X<T: Nope> = T;",
+		"module x; type X<> = text;", "module x; type X<T,T> = T;",
 		"module x; type X = list<>;", "module x; type X = map<text>;", "module x; type X = wire<text,int>;",
 		"module x; type X = exact-(1);", "module x; type X = text-len-(1, 2);",
 		"module x; type X = { foo: text };", "module x; type X = exact(T);", "module x; type X = exact(1.2);",
 		"module x; type X = exact(01);", "module x; type X = exact(-0);", "module x; type X = exact(1e3);",
 		`module x; type X = exact("\xFF");`, `module x; type X = exact("\uD800");`, `module x; type X = atom-exact(#hex"f");`,
-		"module x; type X<T> = T<text>;", "module x; type text = int;", "module x; type X = 'text';",
+		"module x; type text = int;", "module x; type X = 'text';",
 		"module x; type X = text; type X = int;", "module x; import a from x pin \"sha256:nope\";",
 		"module x; type X = text; import a from x pin \"sha256:" + strings.Repeat("0", 64) + "\";",
 		"module x; /* unterminated", "module x; type X = exact(" + strings.Repeat("1", 4097) + ");",
