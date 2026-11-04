@@ -153,12 +153,12 @@ Readable syntax now implements `parse/horos/go` and
 `format/horos/go` under the same stage matrix. These replace the former proposed
 `canonical` paths; there are no compatibility aliases.
 
-Directed mappings will live under `transforms/horos-to-<native>/go`; later partial
-reverse mappings under `transforms/<native>-to-horos/go`. Application composition
-and IO remain under `cmd/bittype/go`. Horos owns the declaration semantics and
+Directed pagination mappings live under `transforms/horos-to-<native>/go`; later
+partial reverse mappings would use `transforms/<native>-to-horos/go`. Application
+composition and IO are proposed under `cmd/bittype/go`. Horos owns the declaration semantics and
 encoding; these packages supply tooling projections and native representations.
-Dependency rules and qualification will accompany implementation, with no empty
-packages created now. All five current languages have qualified text stages;
+New dependency rules and qualification accompany further implementation, with no
+empty packages created now. All five current languages have qualified text stages;
 new AST-only providers still require an explicit tested capability profile.
 
 Adding a native language supplies the five stages, any private lexical helpers,
@@ -174,17 +174,33 @@ syntax/check/resolve/analyze/provider. Private syntax framing remains in
 Bounds are explicit syntax and provider-owned semantic facts, not kernel kinds.
 
 Model dependency allowances cover only this frontend and its private bridge.
-Architecture checks preserve the agnostic and native-stage boundaries. Future
-native mappings use `transforms/horos-to-<native>/go`; none is implemented yet.
+Architecture checks preserve the agnostic and native-stage boundaries. Native
+pagination mappings use `transforms/horos-to-<native>/go`.
 Template lifting and its exclusive dependency allowances remain removed.
 
 The [native representation design](docs/type-representations.md) places uniform
 recipe consumption in concrete native transformers. Each contract library owns
 its optional recipes and type artifacts outside bittype; the consuming
 application selects them. Adding Cell or another ordinary contract adds no
-bittype stage, engine edge per contract or central registration entry. Native
-transformers and recipe SPIs remain proposed. The ASTTransformer boundary is
-unchanged.
+bittype stage, engine edge per contract or central registration entry. Recipe
+SPIs remain proposed; the pagination transformers are implemented.
+
+The [source-layout design](docs/layout.md) proposes the following additional
+stage, without adding packages or changing current Go APIs in this documentation
+change:
+
+```text
+layout/go/                    proposed: shared physical file/unit model
+contracts/layout/go/          proposed: independent layout.Provider and adapter
+layout/<language>/go/         proposed: target-owned source arrangement rules
+```
+
+It also proposes an ASTSet carrier in trees/representation/go, optional captured
+layout context in contracts/semantic/go, multi-unit transformation output and
+independent layout registration in the engine. Parser, formatter and printer
+remain per-text/per-tree operations. Native type rules stay out of the layout
+carrier; filesystem IO stays in the consuming application. See the proposal for
+exact dependency directions and the Horos multi-file resolver gap.
 
 See the [charter](CHARTER.md), [engine API](docs/engine.md),
 [native text design](docs/parsing-formatting.md) and
