@@ -715,8 +715,9 @@ Horos [PR 30](https://github.com/Bitspark/horos/pull/30) landed source
 `6acaa7019476d54bc8ef38c3c3c62bd7c376f2c4`. All six candidate lanes passed in
 [CI 41859992681](https://github.com/Bitspark/horos/actions/runs/41859992681).
 The [independent review record](https://github.com/Bitspark/horos/pull/30#issuecomment-6635044693)
-records scope and adaptations. Exact-main qualification and the aligned public
-0.10.0 release remain pending here.
+records scope and adaptations. All six lanes also passed on that exact main
+revision in [CI 41860921097](https://github.com/Bitspark/horos/actions/runs/41860921097).
+The aligned public 0.10.0 release remains pending here.
 
 Bittype candidate `f5256ed` passed documentation and the full Go/native workflow:
 [docs 41860252132](https://github.com/Bitspark/bittype/actions/runs/41860252132),
@@ -742,3 +743,20 @@ expansion. Comparing only `DataDescriptor` would have checked the final ground
 classifier without falsifying an incorrect symbolic summary. Its updated tests
 and separate aggregate-interface/environment work-and-byte fixtures passed in
 the final candidate gate above.
+
+Release rehearsals [41861838881](https://github.com/Bitspark/horos/actions/runs/41861838881)
+and [41863836444](https://github.com/Bitspark/horos/actions/runs/41863836444)
+produced installed-consumer receipts and candidate archives for the exact main
+source and tree above. Both npm archive SHA-256
+`0e276466e8a9a7d11658d96d0514b3468377b40eea3b631f07086cec5922a031`
+and crate SHA-256
+`bbb944ffa8aee7a7160e070ba68e23cd838126c4f1e94159350b92599113431b`
+match their receipts. GitHub currently reports the runs and jobs as queued even
+though runner logs show completed artifact uploads and cleanup. The first run's
+cancellation was refused as already completed/not in progress, while its rerun
+was refused as already running. The second rehearsal reproduces the status
+inconsistency. No release tags or publication have been attempted: the existing
+release gate requires a successful rehearsal conclusion. This is a pending
+external delivery condition, not a failed source test or a passing release gate.
+The temporary public candidate dependency remains until publication and final
+installed-consumer qualification can finish.

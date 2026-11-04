@@ -22,6 +22,14 @@ asks for that certificate. The checker does not solve whether every possible
 inhabitant of an arbitrary descriptor happens to be data through emptiness or
 other semantic equivalences.
 
+Calling Data the union of finer data-only categories is reasonable at this
+classification level. The current language does not introduce scalar, record or
+list as separate named subkinds, or provide general kind-union syntax. Those are
+descriptor forms. Their data guarantees follow from composition, so a new named
+data type belongs to Data without extending a central list of kinds. A list type
+such as `list<Person>` may have kind Data; a constructor accepting an element
+type instead has an arrow interface such as `Data -> Data`.
+
 The implementation exposes three views of this one model:
 
 | View | What it establishes |
