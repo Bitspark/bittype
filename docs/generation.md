@@ -7,19 +7,18 @@ formatter, printer and checking details. The owner's later 31 October direction
 unifies generation and native-to-canonical migration under ASTTransformer. Its
 typed boundary and syntax engine with explicit registration, path finding and
 execution are implemented; see the [engine reference](engine.md). The Horos AST
-and readable Horos syntax are now implemented; actual language mappings, public
-builders and application CLI remain deferred.
+and readable Horos syntax are implemented. The first [semantic native mappings](semantic-generation.md)
+cover pagination; public builders and application CLI remain deferred.
 
 Horos owns the data model and [declaration semantics](model.md).
-Bittype implements the [Horos projection](horos.md); native transformations
-remain future work. [Resolution](resolution.md) exports Horos's checked model
+Bittype implements the [Horos projection](horos.md) and the first types-only native transformations. [Resolution](resolution.md) exports Horos's checked model
 to shared facts; [analysis](analysis.md) consumes that evidence explicitly.
-Text stages are documented in [Horos source syntax](horos-syntax.md); no ASTTransformer implementation is added.
+Text stages are documented in [Horos source syntax](horos-syntax.md).
 
-The [unified declaration design](hydrated-types.md) has one future path:
+The [unified declaration design](hydrated-types.md) has one generation path:
 `AST[Horos] -> AST[Native] -> CST[Native] -> source`. Explicit Type/Data bounds
 preserve restrictions within that language. The [frontend](horos.md) is
-implemented; native transformers remain deferred. There is no cross-profile
+implemented; native transformers cover the explicit pagination subset. There is no cross-profile
 transformer, template lifting or second Page. Hydration remains separate in the
 existing Wire/runtime layers.
 
@@ -123,7 +122,7 @@ check/horos/go/                         present: syntax-only AST admission
 analyze/horos/go/                       present: Horos semantics to shared facts
 format/horos/go/                        present: readable Horos CST
 provider/horos/go/                      present: text and semantic capability composition
-transforms/horos-to-<native>/go/         planned: directed native generation
+transforms/horos-to-<native>/go/         present: directed pagination generation
 transforms/<native>-to-horos/go/         proposed: partial migration mapping
 cmd/bittype/go/                          planned: application composition and IO
 testdata/{horos,transforms}/             planned: semantic/adoption fixtures
@@ -205,7 +204,7 @@ func Then[A, B, C any](first Stage[A, B], next Stage[B, C]) Stage[A, C]
 
 It would connect stages only when the intermediate type agrees and propagate
 the first failure. There is no `Then` implementation or stub in this slice.
-Scheduling, caching, cancellation and diagnostic aggregation are also deferred.
+Scheduling, caching and diagnostic aggregation remain deferred. Semantic transformation requests carry context cancellation.
 
 ## ASTTransformer and syntax engine
 
@@ -223,17 +222,17 @@ The implemented registry-facing interface is:
 type ASTTransformer interface {
     FromID() language.ID
     ToID() language.ID
-    Transform(AST) (AST, error)
+    Transform(context.Context, transform.Input) (representation.AST, error)
 }
 
-func (e *Engine) TransformTo(input AST, targetID language.ID) (AST, error)
+func (e *Engine) TransformTo(ctx context.Context, input transform.Input, targetID language.ID) (representation.AST, error)
 ```
 
-AST here is the implemented representation.AST envelope: a language identity plus
+Output uses the implemented representation.AST envelope: a language identity plus
 an opaque, structurally checked native AST
 payload. It is not ast.AST[any]; different generic instantiations are not
-interchangeable. Typed adapters retain Stage[ast.AST[From], ast.AST[To]] inside
-each implementation and validate the actual payload type and endpoint identities
+interchangeable. Typed adapters invoke functions from transform.Request[From] to ast.AST[To],
+admit explicit semantic evidence, and validate the actual payload type and endpoint identities
 at the dynamic boundary. No generic AST kind, language switch or reflective
 syntax conversion is needed. CST input can supply its existing AST view when
 wrapped; transformation does not preserve concrete source spelling.
@@ -360,23 +359,22 @@ include open/applied pagination and native reader signatures. Tests exercise
 metadata through the common interface and enforce the production dependency
 boundary. Native text syntax and compiler fixtures now provide separately scoped evidence.
 The engine's independent tests qualify registration, the typed boundary, graph
-planning and checked execution. There is no production ASTTransformer implementation
-yet; native type generation is the next mapping to implement.
+planning and checked execution. The production Horos-to-native pagination maps
+consume explicit semantic evidence and retain open generics.
 
 Delivery status and subsequent increments:
 
 1. Completed: qualify the Horos declaration model and independent semantic fixtures;
    implement its AST projection/checker and AST-only registration.
-2. Next: implement Horos-to-native ASTTransformer providers,
-   preserving open generics and qualifying imported pagination first.
-3. Compose and qualify native generation, then add explicitly scoped reverse
-   transformers for migration and qualify multi-step routes.
+2. Completed: implement explicit semantic transformation input and four native
+   pagination maps, including imported declarations and generic applications.
+3. Next: qualify additional native representation profiles and library-owned
+   recipes. Add reverse transformers for migration as separately scoped work.
 
 Native text stages and compiler fixtures are implemented separately; they do not
-depend on these future increments.
+depend on the transformation implementations.
 
-Generator tests will compare target ASTs. Formatter tests will accept
-independently authored target ASTs. End-to-end tests will compile and use the
-same semantic examples, including open/applied pagination and presence/null
-distinctions. Compiler success alone will not prove all canonical value
-invariants.
+Generator tests inspect target ASTs, binder references and source origins.
+Formatter tests accept independently authored target ASTs. End-to-end tests
+compile and use open/applied pagination and optional-field presence in all four
+languages. Compiler success alone does not prove all canonical value invariants.

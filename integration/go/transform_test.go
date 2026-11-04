@@ -1,8 +1,10 @@
 package integration_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 	"reflect"
 	"sync"
@@ -74,7 +76,9 @@ func mapExample[F, T any](input ast.AST[F]) (ast.AST[T], error) {
 }
 func bind[F, T any](t *testing.T, from, to representation.Language) transform.ASTTransformer {
 	t.Helper()
-	result, err := transform.NewTransformer[F, T](from, to, mapExample[F, T])
+	result, err := transform.NewTransformer[F, T](from, to, transform.Contract{}, func(_ context.Context, request transform.Request[F]) (ast.AST[T], error) {
+		return mapExample[F, T](request.Source())
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +136,7 @@ func TestTransformerSnapshotsAndIdentity(t *testing.T) {
 		t.Fatalf("unpacking exposes private storage: %v", err)
 	}
 	stage := bind[amber, blue](t, a, b)
-	result, err := stage.Transform(envelope)
+	result, err := stage.Transform(context.Background(), captureForTransform[amber](t, a, envelope))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +159,9 @@ func TestTransformerSnapshotsAndIdentity(t *testing.T) {
 	if _, err := representation.Unpack[amber](otherProfile, envelope); !errors.Is(err, representation.ErrLanguageMismatch) {
 		t.Fatal(err)
 	}
-	if _, err := transform.NewTransformer[blue, amber](a, b, mapExample[blue, amber]); !errors.Is(err, representation.ErrTypeMismatch) {
+	if _, err := transform.NewTransformer[blue, amber](a, b, transform.Contract{}, func(_ context.Context, request transform.Request[blue]) (ast.AST[amber], error) {
+		return mapExample[blue, amber](request.Source())
+	}); !errors.Is(err, representation.ErrTypeMismatch) {
 		t.Fatal(err)
 	}
 }
@@ -172,7 +178,7 @@ func TestTransformerRejectsInvalidBoundaries(t *testing.T) {
 	if _, err := representation.NewLanguage[amber](testChecker[amber]{id: "x"}, " "); !errors.Is(err, representation.ErrInvalidLanguage) {
 		t.Fatal(err)
 	}
-	if _, err := transform.NewTransformer[amber, blue](a, b, nil); !errors.Is(err, transform.ErrInvalidTransformer) {
+	if _, err := transform.NewTransformer[amber, blue](a, b, transform.Contract{}, nil); !errors.Is(err, transform.ErrInvalidTransformer) {
 		t.Fatal(err)
 	}
 	var view *ast.AST[amber]
@@ -202,15 +208,17 @@ func TestTransformerRejectsInvalidBoundaries(t *testing.T) {
 	}
 	input := packed[amber](t, a)
 	failed := errors.New("unsupported declaration")
-	stage, err := transform.NewTransformer[amber, blue](a, b, func(ast.AST[amber]) (ast.AST[blue], error) { return exampleTree[blue](), failed })
+	stage, err := transform.NewTransformer[amber, blue](a, b, transform.Contract{}, func(context.Context, transform.Request[amber]) (ast.AST[blue], error) {
+		return exampleTree[blue](), failed
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	output, err := stage.Transform(input)
+	output, err := stage.Transform(context.Background(), captureForTransform[amber](t, a, input))
 	if !errors.Is(err, failed) || output.LanguageID() != "" {
 		t.Fatal("partial transformer output")
 	}
-	stage, err = transform.NewTransformer[amber, blue](a, b, func(ast.AST[amber]) (ast.AST[blue], error) {
+	stage, err = transform.NewTransformer[amber, blue](a, b, transform.Contract{}, func(context.Context, transform.Request[amber]) (ast.AST[blue], error) {
 		result := exampleTree[blue]()
 		result.Root = 99
 		return result, nil
@@ -218,7 +226,7 @@ func TestTransformerRejectsInvalidBoundaries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if output, err := stage.Transform(input); err == nil || output.LanguageID() != "" {
+	if output, err := stage.Transform(context.Background(), captureForTransform[amber](t, a, input)); err == nil || output.LanguageID() != "" {
 		t.Fatal("invalid stage output accepted")
 	}
 }
@@ -239,7 +247,8 @@ func TestTransformerCallbacksCannotMutateEnvelopes(t *testing.T) {
 		t.Fatal(err)
 	}
 	var retained ast.AST[blue]
-	adapter, err := transform.NewTransformer[amber, blue](a, b, func(source ast.AST[amber]) (ast.AST[blue], error) {
+	adapter, err := transform.NewTransformer[amber, blue](a, b, transform.Contract{}, func(_ context.Context, request transform.Request[amber]) (ast.AST[blue], error) {
+		source := request.Source()
 		source.Nodes[1].Attributes[0].Text = "stage mutation"
 		retained, _ = mapExample[amber, blue](source)
 		return retained, nil
@@ -247,7 +256,7 @@ func TestTransformerCallbacksCannotMutateEnvelopes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := adapter.Transform(input)
+	result, err := adapter.Transform(context.Background(), captureForTransform[amber](t, a, input))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -266,8 +275,12 @@ type directTransformer struct {
 
 func (d *directTransformer) FromID() language.ID { return d.from }
 func (d *directTransformer) ToID() language.ID   { return d.to }
-func (d *directTransformer) Transform(input representation.AST) (representation.AST, error) {
-	return d.run(input)
+func (d *directTransformer) Transform(_ context.Context, input transform.Input) (representation.AST, error) {
+	source, err := input.Source.EntryTree()
+	if err != nil {
+		return representation.AST{}, err
+	}
+	return d.run(source)
 }
 
 func TestEngineRegistration(t *testing.T) {
@@ -334,7 +347,7 @@ func TestEngineRoutesAndExecution(t *testing.T) {
 		t.Fatal("plan storage escaped")
 	}
 	input := packed[amber](t, a)
-	output, err := e.Execute(input, plan)
+	output, err := e.Execute(context.Background(), captureForTransform[amber](t, a, input), plan)
 	if err != nil || output.LanguageID() != "dusk" {
 		t.Fatalf("execution: %v", err)
 	}
@@ -355,13 +368,13 @@ func TestEngineRoutesAndExecution(t *testing.T) {
 	if _, err := e.PlanVia(); !errors.Is(err, engine.ErrInvalidRoute) {
 		t.Fatal(err)
 	}
-	if _, err := e.Execute(input, engine.Plan{}); !errors.Is(err, engine.ErrInvalidRoute) {
+	if _, err := e.Execute(context.Background(), captureForTransform[amber](t, a, input), engine.Plan{}); !errors.Is(err, engine.ErrInvalidRoute) {
 		t.Fatal(err)
 	}
 	if _, err := e.PlanVia("amber", "dusk"); !errors.Is(err, engine.ErrNoPath) {
 		t.Fatal(err)
 	}
-	identity, err := e.TransformTo(input, "amber")
+	identity, err := e.TransformTo(context.Background(), captureForTransform[amber](t, a, input), "amber")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,7 +390,7 @@ func TestEngineRoutesAndExecution(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.Execute(input, explicit); err != nil {
+	if _, err := e.Execute(context.Background(), captureForTransform[amber](t, a, input), explicit); err != nil {
 		t.Fatal(err)
 	}
 	connect(t, e, bind[amber, dusk](t, a, d))
@@ -386,7 +399,7 @@ func TestEngineRoutesAndExecution(t *testing.T) {
 		t.Fatal("direct route was not preferred")
 	}
 	// Previously inspected explicit plans remain valid after additive registration.
-	if _, err := e.Execute(input, plan); err != nil {
+	if _, err := e.Execute(context.Background(), captureForTransform[amber](t, a, input), plan); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -416,27 +429,27 @@ func TestEngineChecksCustomTransformersAndDoesNotFallback(t *testing.T) {
 	calls := 0
 	edge := &directTransformer{from: "a", to: "b", run: func(representation.AST) (representation.AST, error) { calls++; return good, rejected }}
 	connect(t, e, edge, bind[amber, coral](t, a, c), bind[coral, blue](t, c, b))
-	output, err := e.TransformTo(input, "b")
+	output, err := e.TransformTo(context.Background(), captureForTransform[amber](t, a, input), "b")
 	var step *engine.StepError
 	if !errors.Is(err, rejected) || !errors.As(err, &step) || step.Index != 0 || step.From != "a" || step.To != "b" || output.LanguageID() != "" || calls != 1 {
 		t.Fatalf("failure boundary: %v", err)
 	}
 	edge.run = func(representation.AST) (representation.AST, error) { return wrong, nil }
-	if _, err := e.TransformTo(input, "b"); !errors.Is(err, representation.ErrLanguageMismatch) {
+	if _, err := e.TransformTo(context.Background(), captureForTransform[amber](t, a, input), "b"); !errors.Is(err, representation.ErrLanguageMismatch) {
 		t.Fatal(err)
 	}
 	edge.run = func(representation.AST) (representation.AST, error) { return representation.AST{}, nil }
-	if _, err := e.TransformTo(input, "b"); !errors.Is(err, representation.ErrInvalidAST) {
+	if _, err := e.TransformTo(context.Background(), captureForTransform[amber](t, a, input), "b"); !errors.Is(err, representation.ErrInvalidAST) {
 		t.Fatal(err)
 	}
 	sameID := definition[coral](t, "b")
 	wrong = packed[coral](t, sameID)
 	edge.run = func(representation.AST) (representation.AST, error) { return wrong, nil }
-	if _, err := e.TransformTo(input, "b"); !errors.Is(err, representation.ErrTypeMismatch) {
+	if _, err := e.TransformTo(context.Background(), captureForTransform[amber](t, a, input), "b"); !errors.Is(err, representation.ErrTypeMismatch) {
 		t.Fatal(err)
 	}
 	edge.to = "changed"
-	if _, err := e.TransformTo(input, "b"); !errors.Is(err, transform.ErrInvalidTransformer) {
+	if _, err := e.TransformTo(context.Background(), captureForTransform[amber](t, a, input), "b"); !errors.Is(err, transform.ErrInvalidTransformer) {
 		t.Fatal(err)
 	}
 	foreign := engine.New()
@@ -446,7 +459,7 @@ func TestEngineChecksCustomTransformersAndDoesNotFallback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := foreign.Execute(input, foreignPlan); !errors.Is(err, representation.ErrTypeMismatch) {
+	if _, err := foreign.Execute(context.Background(), captureForTransform[amber](t, a, input), foreignPlan); !errors.Is(err, representation.ErrTypeMismatch) {
 		t.Fatal(err)
 	}
 }
@@ -481,7 +494,7 @@ func TestEngineConcurrentRegistrationAndReentry(t *testing.T) {
 				return
 			}
 			for j := 0; j < 5; j++ {
-				if _, err := e.TransformTo(input, "b"); err != nil {
+				if _, err := e.TransformTo(context.Background(), captureForTransform[amber](t, a, input), "b"); err != nil {
 					failures <- err
 					return
 				}
@@ -496,4 +509,23 @@ func TestEngineConcurrentRegistrationAndReentry(t *testing.T) {
 	if len(e.Languages()) != 18 {
 		t.Fatal("lost registrations")
 	}
+}
+
+// Construct a test-owned admitted snapshot independently from the registry under
+// test, so route preflight and endpoint checks remain independently exercised.
+func captureForTransform[L any](t *testing.T, definition representation.Language, input representation.AST) transform.Input {
+	t.Helper()
+	checker, err := check.NewChecker[L](definition, testChecker[L]{id: definition.ID(), visit: func(ast.AST[L]) error { return nil }})
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, err := input.Inspect()
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := semantic.Capture(context.Background(), checker, semantic.Input{Entry: ast.NodeRef{Tree: info.ID, Node: info.Root}, Trees: []representation.AST{input}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return transform.Input{Source: snapshot}
 }

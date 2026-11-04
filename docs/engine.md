@@ -82,7 +82,7 @@ The public interface is:
 type ASTTransformer interface {
     FromID() language.ID
     ToID() language.ID
-    Transform(representation.AST) (representation.AST, error)
+    Transform(context.Context, transform.Input) (representation.AST, error)
 }
 ```
 
@@ -91,15 +91,16 @@ partial semantic operation. An unsupported construct or missing migration
 decision returns an error; successful syntax checking alone does not prove a
 mapping's semantic equivalence.
 
-NewTransformer[F, T](from, to, stage) adapts:
+NewTransformer[F, T](from, to, contract, stage) adapts:
 
 ```go
-pipeline.Stage[ast.AST[F], ast.AST[T]]
+func(context.Context, transform.Request[F]) (ast.AST[T], error)
 ```
 
 The bridge uses representation.CheckMarker to check actual marker types at
 construction, without access to payloads or unchecked constructors. It verifies
-input identity, passes the stage an owned typed AST, and structurally packs its
+input identity and explicitly supplied semantic evidence, passes the stage an
+owned typed request, and structurally packs its
 result against the destination descriptor. The standalone bridge does not invoke
 syntax checkers; engine execution checks every endpoint explicitly. A nil stage is an error. The adapter returns zero output whenever
 the stage fails, even if the stage also supplied a partial AST.
@@ -177,10 +178,10 @@ that every language and edge exists and that no language is repeated. It can
 select a longer route. Plan.Languages returns a copy, and FromID/ToID expose its
 endpoints. The zero plan is invalid.
 
-Execute(input, plan) revalidates the route in the executing engine. Plans are
+Execute(ctx, input, plan) revalidates the route in the executing engine. Plans are
 route values, not permissions or opaque bindings to the engine that planned
 them. Registered profiles and actual input/output types are checked again.
-TransformTo(input, targetID) is planning followed by execution.
+TransformTo(ctx, input, targetID) is planning followed by execution.
 
 Execution first requires registered checkers for every language in the route,
 including intermediate endpoints, before invoking any provider or edge. A missing
@@ -297,3 +298,22 @@ optional shared facts through independent explicit registrations.
 Public builders, a generic Stage composition helper and an
 application CLI also remain deferred; none is needed to register and execute a
 correctly implemented ASTTransformer through this frame.
+
+## Explicit semantic transformation input
+
+`transform.Input` contains a captured `semantic.Snapshot` and an ordered slice of
+`semantic.Result`. A transformer contract declares evidence requirements: exact
+operation, profile and configuration, completed report verdicts, and whether an
+available model is required. The typed adapter admits them using shared semantic
+dependency checks before invoking its callback. Equal source text captured again
+is not the same snapshot. Requirements are owned copies and metadata is bounded.
+
+`transform.Request[L]` exposes owned source syntax, the entry address, captured
+input envelopes and admitted evidence. The generic bridge interprets no provider
+terms. Concrete maps own semantic applicability and located unsupported errors.
+Cancellation before/after the callback returns no output.
+
+Intermediate route outputs are syntax-checked and captured afresh; source
+receipts are discarded. A later semantic edge cannot consume evidence about an
+earlier tree. Execute the legs explicitly when intermediate analysis is needed.
+See [semantic generation](semantic-generation.md) for the first production maps.

@@ -1,7 +1,7 @@
 # Horos canonical types and bittype generation
 
 **Updated 4 November 2026. Status: Go declaration model and Horos AST implemented;
-native mappings proposed, not implemented.** This replaces the 31 October
+native pagination mappings implemented; broader native representations proposed.** This replaces the 31 October
 proposal for an independent bittype value-type language. The generic AST/CST,
 native text stages and syntax engine already exist. See the [Horos frontend](horos.md).
 
@@ -42,7 +42,7 @@ no template lifting or copied module is required.
 
 The Go model and one Bittype AST frontend implement revision 2. The
 [dependency alignment](dependencies.md) qualifies public Horos/Ontos modules.
-No native transformer or runtime binding is implemented by this change.
+The first [native pagination transformers](semantic-generation.md) now consume this model. Runtime bindings remain unimplemented.
 
 A declaration document is an ontos module value, encoded with ontos-codec-v1:
 
@@ -141,8 +141,8 @@ alone emits text.
 
 The [generation design](generation.md) and [layout](../LAYOUT.md) retain the
 stage-first matrix. Planned canonical paths use `horos`, replacing the earlier
-proposed `canonical` name. The AST and readable syntax stages are implemented; native mappings
-and directed transformations remain future work.
+proposed `canonical` name. The AST, readable syntax and [native pagination mappings](semantic-generation.md)
+are implemented. Broader native representations and reverse mappings remain future work.
 
 ## Native representation profiles
 

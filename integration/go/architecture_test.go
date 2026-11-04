@@ -135,11 +135,11 @@ func TestProductionArchitecture(t *testing.T) {
 		"check/cst/go":            {"trees/ast/go", "trees/cst/go", "check/ast/go", "contracts/text/go"},
 		"print/go":                {"trees/cst/go", "check/cst/go"},
 		"trees/representation/go": {"trees/ast/go", "trees/cst/go", "contracts/language/go", "check/ast/go", "check/cst/go", "internal/tree"},
-		"contracts/transform/go":  {"trees/ast/go", "trees/representation/go", "contracts/language/go", "contracts/pipeline/go"},
+		"contracts/transform/go":  {"trees/ast/go", "trees/representation/go", "contracts/language/go", "contracts/semantic/go", "internal/tree"},
 		"contracts/semantic/go":   {"contracts/check/go", "trees/ast/go", "trees/representation/go", "contracts/language/go", "semantics/go", "internal/tree"},
 		"contracts/resolution/go": {"trees/representation/go", "contracts/language/go", "contracts/semantic/go", "semantics/go"},
 		"contracts/analysis/go":   {"trees/representation/go", "contracts/language/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"},
-		"engine/go":               {"trees/representation/go", "contracts/language/go", "contracts/parse/go", "contracts/check/go", "contracts/format/go", "contracts/print/go", "contracts/transform/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go"},
+		"engine/go":               {"trees/ast/go", "trees/representation/go", "contracts/language/go", "contracts/parse/go", "contracts/check/go", "contracts/format/go", "contracts/print/go", "contracts/transform/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go"},
 		"internal/tree":           {"trees/ast/go"},
 		"internal/grammar":        {"trees/ast/go", "check/ast/go", "contracts/text/go"},
 		"internal/lex":            {"trees/ast/go", "contracts/parse/go", "contracts/text/go"},
@@ -179,6 +179,10 @@ func TestProductionArchitecture(t *testing.T) {
 		for _, stage := range []string{"parse", "format"} {
 			rules[stage+"/"+name+"/go"] = append(rules[stage+"/"+name+"/go"], "internal/horosmodel", "internal/lex")
 		}
+	}
+	rules["internal/horosgen"] = []string{"analyze/horos/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/text/go", "contracts/transform/go", "resolve/horos/go", "semantics/go", "syntax/horos/go", "trees/ast/go"}
+	for target, syntax := range map[string]string{"typescript": "typescript", "go": "golang", "rust": "rust", "cpp": "cpp"} {
+		rules["transforms/horos-to-"+target+"/go"] = []string{"contracts/transform/go", "contracts/text/go", "internal/horosgen", "internal/" + syntax, "syntax/horos/go", "syntax/" + syntax + "/go", "trees/ast/go", "trees/representation/go"}
 	}
 	for path, p := range packages {
 		if p.Standard || path == modulePath+"/integration/go" {
@@ -222,6 +226,7 @@ var horosModelDependencies = []string{
 }
 
 var horosExternalImports = map[string][]string{
+	"internal/horosgen":   {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 	"parse/horos/go":      {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"format/horos/go":     {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"internal/horosmodel": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},

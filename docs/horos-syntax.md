@@ -141,7 +141,8 @@ data, while bound Type also admits capability-containing types.
 
 Function, Stream and Cell are ordinary declarations used through imports and
 applications. They have no special parser kind, formatter rule or engine entry.
-The implementation includes no native generators or runtime bindings.
+The text stages include no native generators or runtime bindings. Separate
+[semantic pagination transformers](semantic-generation.md) consume their admitted ASTs.
 
 ## Literal values
 

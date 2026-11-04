@@ -1,8 +1,10 @@
 package independent
 
 import (
+	"context"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -49,7 +51,7 @@ func Compose(stage func(ast.AST[First]) (ast.AST[Second], error), input ast.AST[
 	if err := e.RegisterChecker(secondChecker); err != nil {
 		return representation.AST{}, err
 	}
-	transformer, err := transform.NewTransformer[First, Second](first, second, stage)
+	transformer, err := transform.NewTransformer[First, Second](first, second, transform.Contract{}, func(_ context.Context, r transform.Request[First]) (ast.AST[Second], error) { return stage(r.Source()) })
 	if err != nil {
 		return representation.AST{}, err
 	}
@@ -60,5 +62,9 @@ func Compose(stage func(ast.AST[First]) (ast.AST[Second], error), input ast.AST[
 	if err != nil {
 		return representation.AST{}, err
 	}
-	return e.TransformTo(packed, second.ID())
+	snapshot, err := e.Capture(context.Background(), semantic.Input{Entry: ast.NodeRef{Tree: input.ID, Node: input.Root}, Trees: []representation.AST{packed}})
+	if err != nil {
+		return representation.AST{}, err
+	}
+	return e.TransformTo(context.Background(), transform.Input{Source: snapshot}, second.ID())
 }

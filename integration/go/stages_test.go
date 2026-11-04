@@ -75,7 +75,7 @@ func TestEngineIndependentStages(t *testing.T) {
 	if _, err := e.Print(parsed); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	if _, err := e.TransformTo(parsed.ASTView(), d.ID()); !errors.Is(err, engine.ErrMissingCapability) {
+	if _, err := e.TransformTo(context.Background(), captureForTransform[amber](t, d, parsed.ASTView()), d.ID()); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal("zero-hop admission skipped", err)
 	}
 	if _, err := e.Capture(context.Background(), semantic.Input{Trees: []representation.AST{parsed.ASTView()}}); !errors.Is(err, engine.ErrMissingCapability) {
@@ -328,7 +328,7 @@ func TestEnginePreflightsEveryRouteChecker(t *testing.T) {
 	if err != nil {
 		t.Fatal("planning should require connectivity only", err)
 	}
-	if _, err := e.Execute(input, plan); !errors.Is(err, engine.ErrMissingCapability) || checks != 0 || edges != 0 {
+	if _, err := e.Execute(context.Background(), captureForTransform[amber](t, a, input), plan); !errors.Is(err, engine.ErrMissingCapability) || checks != 0 || edges != 0 {
 		t.Fatal("missing intermediate checker discovered after callbacks", err)
 	}
 	middle, err := check.NewChecker[blue](b, testChecker[blue]{id: b.ID()})
@@ -339,13 +339,13 @@ func TestEnginePreflightsEveryRouteChecker(t *testing.T) {
 		t.Fatal(err)
 	}
 	var step *engine.StepError
-	if output, err := e.Execute(input, plan); !errors.As(err, &step) || step.Index != 0 || output.LanguageID() != "" || checks != 1 || edges != 1 {
+	if output, err := e.Execute(context.Background(), captureForTransform[amber](t, a, input), plan); !errors.As(err, &step) || step.Index != 0 || output.LanguageID() != "" || checks != 1 || edges != 1 {
 		t.Fatal("intermediate syntax was not checked", err)
 	}
 	if snapshot, err := semantic.Capture(context.Background(), middle, semantic.Input{Entry: ast.NodeRef{Tree: wrong.ID, Node: wrong.Root}, Trees: []representation.AST{invalid}}); err == nil || snapshot.Valid() {
 		t.Fatal("semantic snapshot admitted invalid syntax", err)
 	}
-	if _, err := e.TransformTo(invalid, b.ID()); err == nil {
+	if _, err := e.TransformTo(context.Background(), captureForTransform[blue](t, b, invalid), b.ID()); err == nil {
 		t.Fatal("zero-hop syntax was not checked")
 	}
 }

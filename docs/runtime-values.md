@@ -339,7 +339,7 @@ and Wire/runtime facilities; those lower facilities never import a catalogue of
 Function, Stream, Cell or future contracts. This document adds no bitwire or
 bitruntime dependency to bittype and selects no new runtime package layout.
 
-Current unified declaration tooling, the unimplemented native transformations,
+Current unified declaration tooling, the types-only pagination transformations,
 and these future value bindings remain separately qualified work. Adding a
 dynamic descriptor does not authorize changing Horos's data domain, choosing a
 behavioral contract by shape or reviving a second hydration/export protocol.
