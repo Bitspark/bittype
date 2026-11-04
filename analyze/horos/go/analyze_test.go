@@ -13,6 +13,7 @@ import (
 
 	analyze "github.com/Bitspark/bittype/analyze/horos/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
@@ -187,12 +188,16 @@ func horosInput(t *testing.T, tree s.AST) (representation.Language, horosCase) {
 	}
 	envelope, err := representation.Pack(language, tree)
 	if err != nil {
-		t.Fatalf("syntax must reach analysis: %v", err)
+		t.Fatalf("carrier must reach syntax admission: %v", err)
 	}
 	return language, horosCase{Entry: ast.NodeRef{Tree: tree.ID, Node: tree.Root}, Trees: []representation.AST{envelope}}
 }
 func runHorosCase(language representation.Language, ctx context.Context, input horosCase) (semantic.Result, error) {
-	source, err := semantic.Capture(ctx, language, semantic.Input{Entry: input.Entry, Trees: input.Trees, Limits: input.Limits})
+	checker, err := check.NewChecker[s.Language](language, provider.Provider{})
+	if err != nil {
+		return semantic.Result{}, err
+	}
+	source, err := semantic.Capture(ctx, checker, semantic.Input{Entry: input.Entry, Trees: input.Trees, Limits: input.Limits})
 	if err != nil {
 		return semantic.Result{}, err
 	}
@@ -231,7 +236,11 @@ func runResolution(t *testing.T, tree s.AST, modify func(*horosCase)) semantic.R
 	if modify != nil {
 		modify(&input)
 	}
-	snapshot, err := semantic.Capture(context.Background(), syntax, semantic.Input{Entry: input.Entry, Trees: input.Trees, Limits: input.Limits})
+	checker, err := check.NewChecker[s.Language](syntax, provider.Provider{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := semantic.Capture(context.Background(), checker, semantic.Input{Entry: input.Entry, Trees: input.Trees, Limits: input.Limits})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -445,6 +445,11 @@ func TestAnalysisBudgetsPrecedeCheckerAndCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 	analyzer := analysisAnalyzer[amber](t, d, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if result, err := runAnalyzerCase(analyzer, checker, ctx, input); !errors.Is(err, context.Canceled) || result.Valid() || checks != 0 {
+		t.Fatal("cancellation checked after syntax callback", err)
+	}
 	for _, alter := range []func(*semantic.Limits){
 		func(l *semantic.Limits) { l.MaxInputNodes = 2 },
 		func(l *semantic.Limits) { l.MaxInputEntries = 5 },

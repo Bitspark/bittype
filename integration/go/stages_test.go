@@ -342,6 +342,9 @@ func TestEnginePreflightsEveryRouteChecker(t *testing.T) {
 	if output, err := e.Execute(input, plan); !errors.As(err, &step) || step.Index != 0 || output.LanguageID() != "" || checks != 1 || edges != 1 {
 		t.Fatal("intermediate syntax was not checked", err)
 	}
+	if snapshot, err := semantic.Capture(context.Background(), middle, semantic.Input{Entry: ast.NodeRef{Tree: wrong.ID, Node: wrong.Root}, Trees: []representation.AST{invalid}}); err == nil || snapshot.Valid() {
+		t.Fatal("semantic snapshot admitted invalid syntax", err)
+	}
 	if _, err := e.TransformTo(invalid, b.ID()); err == nil {
 		t.Fatal("zero-hop syntax was not checked")
 	}

@@ -3,6 +3,7 @@ package resolve_test
 import (
 	"testing"
 
+	"github.com/Bitspark/bittype/contracts/check/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/horos/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
@@ -23,7 +24,15 @@ func TestUnresolvedHorosSyntaxReachesAnalysis(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := representation.Pack(definition, tree); err != nil {
+	envelope, err := representation.Pack(definition, tree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checker, err := check.NewChecker[s.Language](definition, provider.Provider{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := checker.Check(envelope); err != nil {
 		t.Fatalf("unresolved syntax must reach explicit analysis: %v", err)
 	}
 	if model, err := resolve.Model(tree); err == nil || model != nil {
