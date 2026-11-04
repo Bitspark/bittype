@@ -15,7 +15,12 @@
       "preparationRevision": "a395098a8602312e096d16d4a6ab63cc6fb9e955",
       "cliBuild": "nightfall 0.1.0 (e2640b38009d, bundle ef085ca51a5d) built 2026-10-18T03:14:36.183Z",
       "recordedAt": "2026-11-04T16:34:39.7474652Z",
-      "review": "https://github.com/Bitspark/bittype/issues/59#issuecomment-6636131079"
+      "review": "https://github.com/Bitspark/bittype/issues/59#issuecomment-6636131079",
+      "documentId": "doc_6ebe045b-e833-46fa-a7af-fa5777d15f1a",
+      "serverSha256": "7aed1ea27f780651d50d0d09c026d9967c57b0b46852a7a90c16aac30b8ebe27",
+      "uploadedAt": "2026-11-04T16:35:09.7550616Z",
+      "runId": "run_0edf63ea-d8c6-4ee5-9c8c-7f3f0b32f591",
+      "submittedAt": "2026-11-04T16:35:39.3106060Z"
     }
   ]
 }
