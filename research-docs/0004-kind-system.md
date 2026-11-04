@@ -2,7 +2,7 @@
 
 **ID:** 0004
 **Date:** 4 November 2026
-**Status:** advised
+**Status:** evaluated
 **Owner:** codex-hydrated-type-design
 **Issue:** https://github.com/Bitspark/bittype/issues/55
 **Reviewed:** https://github.com/Bitspark/bittype/issues/55#issuecomment-6633472636
@@ -653,3 +653,55 @@ Primary-source precedents consulted, with the useful content stated here:
    architectural alternative have we missed? What would you change in the
    framing, and which independent tests would most strongly falsify a flawed
    implementation before it becomes the canonical format?
+
+## Applied
+
+Evaluation uses attempt 1, run `run_03dd46c7-4356-4db4-92cf-2e2fd3f98645`,
+and the frozen submitted SHA-256
+`e7941dee4413a1becd65bd32e9a256bcaead4b04619949fd7f3565877fad773d`.
+Nightfall verification exited 0 for completed result
+`result_c271f3e8-c587-4c68-96dd-a69e47594189`; the advice SHA-256 is
+`b56af93bfc33b9d46e98c96289b2bea224a27af8a8fbf8631a610828b3f95469`.
+The submitted snapshot and raw advice remain immutable.
+
+Three independent evaluations checked Horos
+`e2896317a1f4b080cf0c4e8e46234d6ad680d141` and Bittype
+`1672ed4c07ed19c1b1a4fd60ec06bd8788d753e5`. Bittype's source is unchanged
+from the submitted `c143440` baseline; the intervening change documents source
+layout only. No evaluated recommendation has a stale premise. The table below
+records implementation commitments, not completed validation. All compilation,
+formatting and tests use the maintained GitHub-hosted gates.
+
+| # | Recommendation | Verdict | Action | Owner | Link | Validation |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Finite n-ary higher-order kinds with fully applied constructors | HOLDS | Implement recursively nested constructor inputs; bodies and applications return proper types. | Horos lane / research owner | [horos#29](https://github.com/Bitspark/horos/issues/29) | Nested constructor parameters, exact arity, proper-type-position negatives. |
+| 2 | Separate interface admission, erased kind shape and Data evidence | HOLDS | Store interfaces once, derive shape kinds; replace bound-only authority. Type is neither a value descriptor nor ground `any`. | Horos lane | [horos#29](https://github.com/Bitspark/horos/issues/29) | Type/Data separation and Wire/empty-union compositional cases. |
+| 3 | Contravariant inputs and covariant result guarantees | HOLDS | Compare finite structural interfaces with exact shape; never infer native variance or descriptor subtyping. | Horos lane | [horos#29](https://github.com/Bitspark/horos/issues/29) | Nested polarity and OnlyData admission counterexamples. |
+| 4 | Known declarations can establish stronger result guarantees | HOLDS | Check original admission first, then evaluate under fresh rigid expected inputs. Abstract parameters use only their declared interface. | Horos lane | [horos#29](https://github.com/Bitspark/horos/issues/29) | Page, Ignore and Send against Type/Data interfaces; invalid open bodies remain rejected. |
+| 5 | Symbolic Data summaries retain higher-order applications | NEEDS ADAPTATION | Use typed expression environments and distinct rigid identities. Preserve true, failed compositional certificate, residual Need/Probe and exhaustion as different outcomes. A Probe retains constructor and argument closures. | Horos lane | [horos#29](https://github.com/Bitspark/horos/issues/29) | Wrapped and Compose preserve Page/Ignore/Send precision; constructor-binding order permutations. |
+| 6 | Validate all arguments and open definitions before simplification | HOLDS | Unused arguments and permanently non-Data results never bypass checking. | Horos lane | [horos#29](https://github.com/Bitspark/horos/issues/29) | Ignored invalid proper/constructor arguments, Bad versus Good forwarding, malformed Wire operands. |
+| 7 | Canonical revision 3 with interfaces, result claims, references and callee expressions | HOLDS | Cleanly replace revision 2. Zero-parameter declarations use references; canonical empty application is rejected. Preserve opaque literals and exact document identity. | Horos and frontend lanes | [horos#29](https://github.com/Bitspark/horos/issues/29), [bittype#57](https://github.com/Bitspark/bittype/pull/57) | Revision rejection, canonical/text round trips, updated pins, literal opacity and imported binders. |
+| 8 | Dependencies include every named semantic reference | HOLDS | Check cycles before body semantics, including unapplied and ignored constructor references. Replace misleading application-only dependency vocabulary. | Horos and frontend lanes | [horos#29](https://github.com/Bitspark/horos/issues/29), [bittype#57](https://github.com/Bitspark/bittype/pull/57) | IgnoreF/Loop cycle, dependency closure and definition-versus-caller scope. |
+| 9 | Typed specialization arguments and checked constructor handles | NEEDS ADAPTATION | Accept closed proper descriptors and sealed named-constructor handles from the same checked Program. Reject zero, foreign and forged handles; no implicit cross-Program trust. | Horos lane | [horos#29](https://github.com/Bitspark/horos/issues/29) | Public API consumer tests, wrong arity/shape, same-digest foreign Program rejection and no partial outputs. |
+| 10 | Environment-sensitive caching and aggregate resource bounds | NEEDS ADAPTATION | Keep operation-local evaluation caches keyed by exact bindings/interfaces. Charge interface traversal, environments, probes and cache growth to aggregate semantic work; separately bound raw admission and expanded output occurrences. | Horos lane | [horos#29](https://github.com/Bitspark/horos/issues/29) | Budget boundaries, order independence, concurrent reads, small shared DAG with oversized expansion. |
+| 11 | Preserve recursion closure independently of Data | HOLDS | A Data-preserving constructor is not a guard. Preserve argument closure and final expanded-descriptor checks. | Horos lane | [horos#29](https://github.com/Bitspark/horos/issues/29) | Identity versus guarding constructor, capture attempts and recursive ground regressions. |
+| 12 | Independent semantic qualification | HOLDS | Add a separately authored bounded eager expander/Data oracle for a small acyclic fragment, plus open-body negative judgments. Never derive expected results from production summaries. | Horos lane / independent reviewer | [horos#29](https://github.com/Bitspark/horos/issues/29) | Oracle agreement and deliberate counterexamples on the exact hosted revision. |
+| 13 | Generic Application has a callee term | HOLDS | Target is Reference-only; Application owns Callee and Arguments. Remove entity-arity assumptions and include Callee in containment/budgets/copying. | Generic model lane | [bittype#57](https://github.com/Bitspark/bittype/pull/57) | Foreign-provider arbitrary callees, zero-argument structure, dangling links and callee cycles. |
+| 14 | Keep generic binding inspection safe and partial | NEEDS ADAPTATION | Replace ParameterBindings with DirectParameterBindings: pair real formals only for a direct declaration Reference with matching arity. No synthetic parameters or alias. | Generic model lane | [bittype#57](https://github.com/Bitspark/bittype/pull/57) | Parameter-headed/mismatched applications return false without panic; direct pairs retain identity. |
+| 15 | Generic subject-associated structured facts | NEEDS ADAPTATION | Add Entity/Term Subject and Fact relation/value links. Reject exact duplicate triples; allow multiple values per relation. Kernel validates storage/links, not fact meaning. Keep Sort only as a coarse provider-owned category. | Generic model lane | [bittype#57](https://github.com/Bitspark/bittype/pull/57) | Invalid subjects, mutation isolation, multiple values, duplicate triples and exact storage budgets. |
+| 16 | Horos projects authoritative kinds, interfaces and summaries | HOLDS | Bridge reads checked Horos APIs and exports structured provider terms; no second checker in Bittype. Add result claims, interface syntax and callee origins. | Frontend lane | [bittype#57](https://github.com/Bitspark/bittype/pull/57) | Public facts match checked canonical program; parameter-callee diagnostics retain binder and argument path. |
+| 17 | Explicit publication completeness and exact receipts | NEEDS ADAPTATION | Revise syntax/resolution/analysis profiles together; add a type-facts enumeration obligation. Analyzer copies resolver obligations. Preserve exact snapshots and configuration identity. | Frontend lane | [bittype#57](https://github.com/Bitspark/bittype/pull/57) | Missing facts prevent publication; stale profile/snapshot/receipt rejection and complete coverage. |
+| 18 | Preserve pagination and explicitly reject residual higher kinds | HOLDS | Update native readers for callee References and zero-parameter declaration References. Preserve one open Page and aliases in all four targets. Check the complete closure; no pruning or hidden reduction. | Native preservation lane / research owner | [bittype#57](https://github.com/Bitspark/bittype/pull/57) | Four exact native outputs and compiler checks; located Unsupported with empty output for residual constructors. |
+| 19 | Keep ground, transport, hydration and library ownership unchanged | HOLDS | No ground vocabulary or runtime changes, no Function/Stream/Cell knowledge in core, no old language/profile aliases or lifting. Re-pin the public Horos dependency. | Research owner | [horos#29](https://github.com/Bitspark/horos/issues/29), [bittype#57](https://github.com/Bitspark/bittype/pull/57) | Full ground conformance gate, import/architecture tests and independently installed public consumer. |
+| 20 | Partial applications, constructor-valued results, bare constructor aliases and source lambdas | DEFERRED | Trigger: an accepted declaration must construct or return a constructor and cannot express it through named saturated declarations. Explicit rejection is part of rows 1/7 now. | Research owner | — | Current rejection tests; future binding/normalization qualification required. |
+| 21 | Quantified kind variables | DEFERRED | Trigger: one accepted declaration must abstract over several shape kinds, beyond nested fixed constructor inputs. | Research owner | — | No accidental kind-polymorphic acceptance now. |
+| 22 | Intersections or conditional contracts for abstract constructors | DEFERRED | Trigger: an abstract F must both admit arbitrary Type inputs and guarantee Data for Data inputs. Known Page precision alone does not require this feature. | Research owner | — | Document current interface boundary and abstract-versus-known cases. |
+| 23 | C++ template-template, Rust marker/GAT or TypeScript native encodings | DEFERRED | Trigger: a consumer selects an explicit representation profile with complete target AST/check/parse/format and native compiler qualification. | Research owner | — | Current emitters reject residual higher kinds atomically. |
+| 24 | Explicit constructor-binding/residualization transformation | DEFERRED | Trigger: a native consumer needs it with named roots, bindings and output identity policy. Engine currently rejects same-language transformer registration; resolve invocation explicitly without fake language IDs or restored lifting. | Research owner | — | Future output must be a fresh checked document and receipt; existing snapshot rule remains in force. |
+
+The implementation deliberately distinguishes a failed compositional Data
+certificate from a proof that a non-data inhabitant exists. It performs no
+emptiness solver, descriptor subtyping, beta/eta equivalence or runtime behavior.
+The public spelling and API details below will be recorded with the implemented
+specification and validated fixtures; the frozen advice is evidence, not a second
+normative format.
