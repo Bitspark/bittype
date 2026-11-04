@@ -25,18 +25,18 @@ shared diagnostics only.
 
 <!-- generated:providers:begin -->
 
-| Provider / capability | Horos | TypeScript | Go | Rust | C++ |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| language.Provider: ID and Name | X | X | X | X | X |
-| check.Provider: AST syntax checking | X | X | X | X | X |
-| parse.Provider[parse.Input, cst.CST[L]]: Syntax parsing | X | X | X | X | X |
-| format.Provider[ast.View[L], cst.CST[L]]: Syntax formatting | X | X | X | X | X |
-| print.Provider[cst.CST[L], string]: Syntax printing | X | X | X | X | X |
-| resolution.Provider: reference resolution | X | / | / | / | / |
-| analysis.Provider: semantic analysis | X | / | / | / | / |
-| parse.Provider[parse.FilesRequest[L], source.Source[L]]: Files parsing | X | / | / | / | / |
-| format.Provider[format.FilesRequest[L], source.Source[L]]: Files formatting | X | / | / | / | / |
-| print.Provider[source.Source[L], files.Files]: Files printing | X | X | X | X | X |
+| Level | Provider | C++ | Go | Horos | Rust | TypeScript |
+| --- | --- | :---: | :---: | :---: | :---: | :---: |
+| — | `analysis.Provider[L]` | / | / | [Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/horos/go/analyze.go#L36) | / | / |
+| — | `language.Provider` | [Language](https://github.com/Bitspark/bittype/blob/main/syntax/cpp/go/nodes.go#L12) | [Language](https://github.com/Bitspark/bittype/blob/main/syntax/golang/go/nodes.go#L12) | [Language](https://github.com/Bitspark/bittype/blob/main/syntax/horos/go/nodes.go#L10) | [Language](https://github.com/Bitspark/bittype/blob/main/syntax/rust/go/nodes.go#L12) | [Language](https://github.com/Bitspark/bittype/blob/main/syntax/typescript/go/nodes.go#L12) |
+| — | `resolution.Provider[L]` | / | / | [ResolveReferences](https://github.com/Bitspark/bittype/blob/main/resolve/horos/go/resolver.go#L45) | / | / |
+| Syntax | `check.Provider[L]` | [Check](https://github.com/Bitspark/bittype/blob/main/check/cpp/go/check.go#L55) | [Check](https://github.com/Bitspark/bittype/blob/main/check/golang/go/check.go#L43) | [Check](https://github.com/Bitspark/bittype/blob/main/check/horos/go/check.go#L10) | [Check](https://github.com/Bitspark/bittype/blob/main/check/rust/go/check.go#L65) | [Check](https://github.com/Bitspark/bittype/blob/main/check/typescript/go/check.go#L47) |
+| Syntax | `format.Provider[ast.View[L], cst.CST[L]]` | [Format](https://github.com/Bitspark/bittype/blob/main/format/cpp/go/format.go#L22) | [Format](https://github.com/Bitspark/bittype/blob/main/format/golang/go/format.go#L22) | [Format](https://github.com/Bitspark/bittype/blob/main/format/horos/go/format.go#L41) | [Format](https://github.com/Bitspark/bittype/blob/main/format/rust/go/format.go#L22) | [Format](https://github.com/Bitspark/bittype/blob/main/format/typescript/go/format.go#L23) |
+| Syntax | `parse.Provider[parse.Input, cst.CST[L]]` | [Parse](https://github.com/Bitspark/bittype/blob/main/parse/cpp/go/parse.go#L24) | [Parse](https://github.com/Bitspark/bittype/blob/main/parse/golang/go/parse.go#L25) | [Parse](https://github.com/Bitspark/bittype/blob/main/parse/horos/go/parse.go#L60) | [Parse](https://github.com/Bitspark/bittype/blob/main/parse/rust/go/parse.go#L24) | [Parse](https://github.com/Bitspark/bittype/blob/main/parse/typescript/go/parse.go#L38) |
+| Syntax | `print.Provider[cst.CST[L], string]` | [Print](https://github.com/Bitspark/bittype/blob/main/print/go/print.go#L13) | [Print](https://github.com/Bitspark/bittype/blob/main/print/go/print.go#L13) | [Print](https://github.com/Bitspark/bittype/blob/main/print/go/print.go#L13) | [Print](https://github.com/Bitspark/bittype/blob/main/print/go/print.go#L13) | [Print](https://github.com/Bitspark/bittype/blob/main/print/go/print.go#L13) |
+| Files | `format.Provider[format.FilesRequest[L], source.Source[L]]` | / | / | [Format](https://github.com/Bitspark/bittype/blob/main/format/files/horos/go/format.go#L52) | / | / |
+| Files | `parse.Provider[parse.FilesRequest[L], source.Source[L]]` | / | / | [Parse](https://github.com/Bitspark/bittype/blob/main/parse/files/horos/go/parse.go#L47) | / | / |
+| Files | `print.Provider[source.Source[L], files.Files]` | [Print](https://github.com/Bitspark/bittype/blob/main/print/files/go/print.go#L28) | [Print](https://github.com/Bitspark/bittype/blob/main/print/files/go/print.go#L28) | [Print](https://github.com/Bitspark/bittype/blob/main/print/files/go/print.go#L28) | [Print](https://github.com/Bitspark/bittype/blob/main/print/files/go/print.go#L28) | [Print](https://github.com/Bitspark/bittype/blob/main/print/files/go/print.go#L28) |
 
 <!-- generated:providers:end -->
 
@@ -67,9 +67,13 @@ The [pagination profile](semantic-generation.md) implements these directed edges
 
 <!-- generated:transformers:begin -->
 
-| Source | TypeScript | Go | Rust | C++ |
-| --- | :---: | :---: | :---: | :---: |
-| Horos (admitted analysis) | X | X | X | X |
+| Source → target | C++ | Go | Horos | Rust | TypeScript |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| C++ | / | / | / | / | / |
+| Go | / | / | / | / | / |
+| Horos | [New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-cpp/go/transform.go#L30) | [New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-go/go/transform.go#L27) | / | [New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-rust/go/transform.go#L27) | [New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-typescript/go/transform.go#L26) |
+| Rust | / | / | / | / | / |
+| TypeScript | / | / | / | / | / |
 
 <!-- generated:transformers:end -->
 
