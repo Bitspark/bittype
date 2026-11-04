@@ -3,12 +3,24 @@
 package transform
 
 import (
+	"context"
 	"errors"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 var ErrInvalidTransformer = errors.New("invalid AST transformer")
+
+// Input supplies captured syntax and ordered receipts explicitly. Callers must
+// not mutate Evidence during invocation. No provider runs implicitly.
+type Input struct {
+	Source semantic.Snapshot
+	Evidence []semantic.Result
+}
+
+// Contract declares exactly the evidence required by a typed mapping.
+type Contract struct { Evidence []semantic.EvidenceRequirement }
 
 // ASTTransformer is a directed, potentially partial AST mapping. Endpoint IDs
 // are stable. Implementations return an error for unsupported input, preserve
@@ -17,7 +29,7 @@ var ErrInvalidTransformer = errors.New("invalid AST transformer")
 type ASTTransformer interface {
 	FromID() language.ID
 	ToID() language.ID
-	Transform(representation.AST) (representation.AST, error)
+	Transform(context.Context, Input) (representation.AST, error)
 }
 
 // DescribedTransformer additionally advertises typed/profile endpoints so a

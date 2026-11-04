@@ -1,6 +1,9 @@
 package consumer_test
 
 import (
+"github.com/Bitspark/bittype/contracts/transform/go"
+"github.com/Bitspark/bittype/contracts/semantic/go"
+"context"
 	"errors"
 	nativecheck "github.com/Bitspark/bittype/check/typescript/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
@@ -87,7 +90,11 @@ func TestIndependentNativeStages(t *testing.T) {
 	if err := e.RegisterChecker(checker); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.TransformTo(parsed.ASTView(), definition.ID()); err != nil {
+	info, err := parsed.ASTView().Inspect()
+if err != nil { t.Fatal(err) }
+snapshot, err := e.Capture(context.Background(), semantic.Input{Entry: ast.NodeRef{Tree: info.ID, Node: info.Root}, Trees: []representation.AST{parsed.ASTView()}})
+if err != nil { t.Fatal(err) }
+if _, err := e.TransformTo(context.Background(), transform.Input{Source: snapshot}, definition.ID()); err != nil {
 		t.Fatal(err)
 	}
 }

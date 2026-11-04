@@ -13,6 +13,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
+"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/horos/go"
@@ -144,7 +145,7 @@ func qualifyHoros(t *testing.T) {
 	if resolvedModel != analyzedModel {
 		t.Fatal("analysis rebuilt the resolved model instead of reusing it")
 	}
-	output, err := registry.TransformTo(envelope, provider.ID())
+	output, err := registry.TransformTo(context.Background(), transform.Input{Source: input.Snapshot}, provider.ID())
 	if err != nil {
 		t.Fatal(err)
 	}
