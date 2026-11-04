@@ -9,6 +9,17 @@ on:
       - go.sum
       - docs/providers.md
       - .github/workflows/provider-matrices.yml
+  # Merged PRs still regenerate documentation when their commit says [skip ci].
+  # This event never checks out or executes an unmerged PR head.
+  pull_request_target:
+    types: [closed]
+    branches: [main]
+    paths:
+      - '**/*.go'
+      - go.mod
+      - go.sum
+      - docs/providers.md
+      - .github/workflows/provider-matrices.yml
   workflow_dispatch:
 
 permissions:
@@ -20,6 +31,7 @@ concurrency:
 
 jobs:
   update:
+    if: github.event_name != 'pull_request_target' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

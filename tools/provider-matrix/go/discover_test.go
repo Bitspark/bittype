@@ -132,7 +132,7 @@ func TestGenericFilesPrintingUsesConstructorCollaborators(t *testing.T) {
 	}
 }
 
-func TestGenericDependencyCycleDoesNotCreateAvailability(t *testing.T) {
+func TestMissingSyntaxPrinterDoesNotCreateFilesPrinting(t *testing.T) {
 	p := fixture(t)
 	// Remove the concrete syntax printer; the generic printer must not seed itself.
 	delete(p.packages, p.module+"/provider/ember/go")
