@@ -102,7 +102,29 @@ type Shadow<T> = tuple<T, self.T>;
 type ` + "`list`" + `<` + "`text`" + `> = ` + "`text`" + `;
 type Escaped = ` + "`list`" + `<text>;
 `
-	roundTrip(t, source)
+	tree := roundTrip(t, source)
+	model, err := resolve.Model(tree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	projected, err := resolve.Project(model, "projected-vocabulary")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := provider.Provider{}
+	formatted, err := p.Format(projected)
+	if err != nil {
+		t.Fatal(err)
+	}
+	output, err := p.Print(formatted)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reparsed := roundTrip(t, output)
+	recovered, err := resolve.Model(reparsed)
+	if err != nil || recovered.Root() != model.Root() {
+		t.Fatalf("canonical constructor vocabulary changed: %v", err)
+	}
 }
 
 func TestSourceTriviaAndSpans(t *testing.T) {
@@ -140,6 +162,7 @@ func TestRejectWholeInput(t *testing.T) {
 		"", "type X = text;", "module x", "module x; garbage", "module x; type X = text; junk",
 		"module x; type X<> = text;", "module x; type X<T,T> = T;", "module x; type X<T: Nope> = T;",
 		"module x; type X = list<>;", "module x; type X = map<text>;", "module x; type X = wire<text,int>;",
+		"module x; type X = exact-(1);", "module x; type X = text-len-(1, 2);",
 		"module x; type X = { foo: text };", "module x; type X = exact(T);", "module x; type X = exact(1.2);",
 		"module x; type X = exact(01);", "module x; type X = exact(-0);", "module x; type X = exact(1e3);",
 		`module x; type X = exact("\xFF");`, `module x; type X = exact("\uD800");`, `module x; type X = atom-exact(#hex"f");`,

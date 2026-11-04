@@ -290,11 +290,11 @@ func (p *parser) primary() ast.NodeID {
 		}
 		return p.descriptor(word, start, args...)
 	case "exact", "atom-exact", "atom-in", "atom-len", "text-len", "key-grammar", "text-non-blank", "lowercase-uuid", "compound", "rec", "ref":
-		for range strings.Split(word, "-") {
-			p.Take()
-			if p.Peek() == "-" {
-				p.Take()
+		for i, part := range strings.Split(word, "-") {
+			if i > 0 {
+				p.Want("-")
 			}
+			p.Want(part)
 		}
 		p.Want("(")
 		var args []ast.NodeID
@@ -481,3 +481,10 @@ func (p *parser) fragment(value core.Value, start int) ast.NodeID {
 	}
 	return id
 }
+
+// Provider supplies parsing independently of the composed Horos provider.
+type Provider struct{ s.Language }
+
+func (Provider) Parse(input parsecontract.Input) (cst.CST[s.Language], error) { return Parse(input) }
+
+var _ parsecontract.Provider[s.Language] = Provider{}

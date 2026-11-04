@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/parse/go"
+	formatter "github.com/Bitspark/bittype/format/horos/go"
+	parser "github.com/Bitspark/bittype/parse/horos/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/horos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
@@ -12,7 +14,7 @@ import (
 func TestInstalledHorosTextPagination(t *testing.T) {
 	p := provider.Provider{}
 	source := "module installed.source; type Page<T> = { items: list<T>; next?: text; }; type DataPage<D: Data> = Page<D>; type People = DataPage<text>;"
-	parsed, err := p.Parse(parse.Input{SourceID: "installed.horos", TreeID: "installed", Text: source})
+	parsed, err := (parser.Provider{}).Parse(parse.Input{SourceID: "installed.horos", TreeID: "installed", Text: source})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,7 +29,7 @@ func TestInstalledHorosTextPagination(t *testing.T) {
 	if _, err := model.DataDescriptor(decl.DeclarationID{Module: model.Root(), Name: "People"}, nil); err != nil {
 		t.Fatal(err)
 	}
-	formatted, err := p.Format(parsed)
+	formatted, err := (formatter.Provider{}).Format(parsed)
 	if err != nil {
 		t.Fatal(err)
 	}

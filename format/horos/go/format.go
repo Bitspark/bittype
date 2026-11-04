@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	check "github.com/Bitspark/bittype/check/horos/go"
+	formatcontract "github.com/Bitspark/bittype/contracts/format/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/internal/concrete"
 	lit "github.com/Bitspark/bittype/internal/horos"
@@ -408,3 +409,10 @@ func (f *formatter) value(value core.Value) doc {
 	}
 	return f.call("tuple", parts)
 }
+
+// Provider supplies formatting independently of the composed Horos provider.
+type Provider struct{ s.Language }
+
+func (Provider) Format(view ast.View[s.Language]) (cst.CST[s.Language], error) { return Format(view) }
+
+var _ formatcontract.Provider[s.Language] = Provider{}
