@@ -1,28 +1,17 @@
+// Package text composes text capabilities and supplies shared diagnostics.
 package text
 
 import (
 	"github.com/Bitspark/bittype/contracts/check/go"
-	"github.com/Bitspark/bittype/contracts/language/go"
-	"github.com/Bitspark/bittype/trees/ast/go"
-	"github.com/Bitspark/bittype/trees/cst/go"
+	"github.com/Bitspark/bittype/contracts/format/go"
+	"github.com/Bitspark/bittype/contracts/parse/go"
+	"github.com/Bitspark/bittype/contracts/print/go"
 )
 
-// Every specialized provider extends the common identity contract.
-type Parser[L any] interface {
-	language.Provider
-	Parse(Input) (cst.CST[L], error)
-}
-type Formatter[L any] interface {
-	language.Provider
-	Format(ast.View[L]) (cst.CST[L], error)
-}
-type Printer[L any] interface {
-	language.Provider
-	Print(cst.CST[L]) (string, error)
-}
+// Provider composes independently usable stage contracts for native text tooling.
 type Provider[L any] interface {
-	Parser[L]
-	Formatter[L]
+	parse.Provider[L]
+	format.Provider[L]
 	check.Provider[L]
-	Printer[L]
+	print.Provider[L]
 }

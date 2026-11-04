@@ -4,6 +4,7 @@ import (
 	"errors"
 	cstcheck "github.com/Bitspark/bittype/check/cst/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
 	goprovider "github.com/Bitspark/bittype/provider/golang/go"
@@ -58,7 +59,7 @@ func exercise[L any](t *testing.T, p text.Provider[L], directory, extension stri
 				t.Fatal(err)
 			}
 			source := string(bytes)
-			input := text.Input{SourceID: "fixture", TreeID: "parsed", Text: source}
+			input := parse.Input{SourceID: "fixture", TreeID: "parsed", Text: source}
 			parsed, err := p.Parse(input)
 			if err != nil {
 				t.Fatal(err)
@@ -81,7 +82,7 @@ func exercise[L any](t *testing.T, p text.Provider[L], directory, extension stri
 			if err != nil {
 				t.Fatal(err)
 			}
-			reparsed, err := p.Parse(text.Input{SourceID: "formatted", TreeID: "reparsed", Text: output})
+			reparsed, err := p.Parse(parse.Input{SourceID: "formatted", TreeID: "reparsed", Text: output})
 			if err != nil {
 				t.Fatalf("%v\n%s", err, output)
 			}
@@ -109,7 +110,7 @@ func reject[L any](t *testing.T, p text.Provider[L], sources []string) {
 	t.Helper()
 	for _, source := range sources {
 		t.Run(source, func(t *testing.T) {
-			c, err := p.Parse(text.Input{SourceID: "bad", TreeID: "bad-tree", Text: source})
+			c, err := p.Parse(parse.Input{SourceID: "bad", TreeID: "bad-tree", Text: source})
 			var d *text.Diagnostic
 			if err == nil || !errors.As(err, &d) || len(c.Nodes) != 0 {
 				t.Fatalf("expected located error and no partial CST, got %v", err)
@@ -126,9 +127,9 @@ func TestUnsupportedAndMalformedSources(t *testing.T) {
 func TestConcreteSourceTrivia(t *testing.T) {
 	cases := []struct {
 		name, source string
-		run          func(text.Input) (string, error)
+		run          func(parse.Input) (string, error)
 	}{
-		{"typescript", "\ufeff// comment\r\ntype Café = 'é';\r\n\t", func(i text.Input) (string, error) {
+		{"typescript", "\ufeff// comment\r\ntype Café = 'é';\r\n\t", func(i parse.Input) (string, error) {
 			p := tsprovider.Provider{}
 			c, e := p.Parse(i)
 			if e != nil {
@@ -136,7 +137,7 @@ func TestConcreteSourceTrivia(t *testing.T) {
 			}
 			return p.Print(c)
 		}},
-		{"go", "\ufeffpackage p\r\n// comment\r\ntype Café string\r\n", func(i text.Input) (string, error) {
+		{"go", "\ufeffpackage p\r\n// comment\r\ntype Café string\r\n", func(i parse.Input) (string, error) {
 			p := goprovider.Provider{}
 			c, e := p.Parse(i)
 			if e != nil {
@@ -144,7 +145,7 @@ func TestConcreteSourceTrivia(t *testing.T) {
 			}
 			return p.Print(c)
 		}},
-		{"rust", "/* one /* two */ three */\r\ntype Ref<'a> = &'a str; // end\r\n", func(i text.Input) (string, error) {
+		{"rust", "/* one /* two */ three */\r\ntype Ref<'a> = &'a str; // end\r\n", func(i parse.Input) (string, error) {
 			p := rustprovider.Provider{}
 			c, e := p.Parse(i)
 			if e != nil {
@@ -152,7 +153,7 @@ func TestConcreteSourceTrivia(t *testing.T) {
 			}
 			return p.Print(c)
 		}},
-		{"cpp", "// comment\r\nusing X = int;\r\n\t", func(i text.Input) (string, error) {
+		{"cpp", "// comment\r\nusing X = int;\r\n\t", func(i parse.Input) (string, error) {
 			p := cppprovider.Provider{}
 			c, e := p.Parse(i)
 			if e != nil {
@@ -163,7 +164,7 @@ func TestConcreteSourceTrivia(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := tc.run(text.Input{SourceID: "trivia", TreeID: "trivia-tree", Text: tc.source})
+			got, err := tc.run(parse.Input{SourceID: "trivia", TreeID: "trivia-tree", Text: tc.source})
 			if err != nil || got != tc.source {
 				t.Fatalf("%v: %q", err, got)
 			}
@@ -175,7 +176,7 @@ func TestTypeScriptUnicodeLineBoundaries(t *testing.T) {
 	p := tsprovider.Provider{}
 	for _, separator := range []string{"\u2028", "\u2029"} {
 		source := "// comment" + separator + "type X = string" + separator + "type Y = number"
-		parsed, err := p.Parse(text.Input{SourceID: "lines", TreeID: "lines", Text: source})
+		parsed, err := p.Parse(parse.Input{SourceID: "lines", TreeID: "lines", Text: source})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -200,7 +201,7 @@ func TestProviderIdentity(t *testing.T) {
 }
 func TestMalformedConcreteTree(t *testing.T) {
 	p := tsprovider.Provider{}
-	parsed, err := p.Parse(text.Input{SourceID: "good", TreeID: "tree", Text: "type X = string;"})
+	parsed, err := p.Parse(parse.Input{SourceID: "good", TreeID: "tree", Text: "type X = string;"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +224,7 @@ func TestMalformedConcreteTree(t *testing.T) {
 }
 func TestParserResourceLimit(t *testing.T) {
 	p := tsprovider.Provider{}
-	_, err := p.Parse(text.Input{SourceID: "large", TreeID: "large-tree", Text: strings.Repeat(" ", (4<<20)+1)})
+	_, err := p.Parse(parse.Input{SourceID: "large", TreeID: "large-tree", Text: strings.Repeat(" ", (4<<20)+1)})
 	var d *text.Diagnostic
 	if !errors.As(err, &d) || d.Code != text.LimitExceeded {
 		t.Fatalf("expected input limit: %v", err)

@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
 	goprovider "github.com/Bitspark/bittype/provider/golang/go"
@@ -190,11 +191,11 @@ func TestPrimitiveSyntaxPositions(t *testing.T) {
 		t.Fatal("primitive spelling accepted as an unqualified type path")
 	}
 	for _, source := range []string{"type X = NS.string;", "interface X { string: string; }"} {
-		if _, err := (tsprovider.Provider{}).Parse(text.Input{SourceID: "native-name", TreeID: "native-name", Text: source}); err != nil {
+		if _, err := (tsprovider.Provider{}).Parse(parse.Input{SourceID: "native-name", TreeID: "native-name", Text: source}); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if _, err := (rustprovider.Provider{}).Parse(text.Input{SourceID: "native-path", TreeID: "native-path", Text: "type X = u8::Associated;"}); err != nil {
+	if _, err := (rustprovider.Provider{}).Parse(parse.Input{SourceID: "native-path", TreeID: "native-path", Text: "type X = u8::Associated;"}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -210,7 +211,7 @@ func nativeFiles[L any](t *testing.T, p text.Provider[L], language, ext string, 
 		if err != nil {
 			t.Fatal(err)
 		}
-		c, err := p.Parse(text.Input{SourceID: "native-input", TreeID: "native-tree", Text: string(bytes)})
+		c, err := p.Parse(parse.Input{SourceID: "native-input", TreeID: "native-tree", Text: string(bytes)})
 		if err != nil {
 			t.Fatal(err)
 		}

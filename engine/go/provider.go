@@ -2,6 +2,7 @@ package engine
 
 import (
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
@@ -10,7 +11,7 @@ import (
 // registration. No parser, formatter, checker or printer is implemented here.
 type Provider struct {
 	definition representation.Language
-	parse      func(text.Input) (representation.CST, error)
+	parse      func(parse.Input) (representation.CST, error)
 	format     func(representation.AST) (representation.CST, error)
 	print      func(representation.CST) (string, error)
 }
@@ -21,7 +22,7 @@ func NewProvider[L any](provider text.Provider[L], profile string) (Provider, er
 		return Provider{}, err
 	}
 	result := Provider{definition: definition}
-	result.parse = func(input text.Input) (representation.CST, error) {
+	result.parse = func(input parse.Input) (representation.CST, error) {
 		parsed, err := provider.Parse(input)
 		if err != nil {
 			return representation.CST{}, err

@@ -1,5 +1,4 @@
-// Package text defines in-memory native text boundaries and diagnostics.
-package text
+package parse
 
 import "github.com/Bitspark/bittype/trees/ast/go"
 

@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/pipeline/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -11,9 +12,9 @@ import (
 type Language struct{}
 type Independent struct{}
 
-func (Independent) ID() language.ID                             { return "independent-language" }
-func (Independent) Name() string                                { return "Independent language" }
-func (Independent) Parse(text.Input) (cst.CST[Language], error) { return cst.CST[Language]{}, nil }
+func (Independent) ID() language.ID                              { return "independent-language" }
+func (Independent) Name() string                                 { return "Independent language" }
+func (Independent) Parse(parse.Input) (cst.CST[Language], error) { return cst.CST[Language]{}, nil }
 func (Independent) Format(ast.View[Language]) (cst.CST[Language], error) {
 	return cst.CST[Language]{}, nil
 }
@@ -24,6 +25,6 @@ var _ language.Provider = Independent{}
 var _ text.Provider[Language] = Independent{}
 var _ ast.View[Language] = ast.AST[Language]{}
 var _ ast.View[Language] = cst.CST[Language]{}
-var _ pipeline.Stage[text.Input, cst.CST[Language]] = Independent{}.Parse
+var _ pipeline.Stage[parse.Input, cst.CST[Language]] = Independent{}.Parse
 var _ pipeline.Stage[ast.View[Language], cst.CST[Language]] = Independent{}.Format
 var _ pipeline.Stage[cst.CST[Language], string] = Independent{}.Print

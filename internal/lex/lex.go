@@ -3,6 +3,7 @@
 package lex
 
 import (
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"strings"
@@ -30,7 +31,7 @@ type Options struct {
 const MaxBytes = 4 << 20
 const MaxTokens = 200000
 
-func Scan(input text.Input, options Options) ([]Token, error) {
+func Scan(input parse.Input, options Options) ([]Token, error) {
 	bad := func(code text.Code, at, end int, message string) ([]Token, error) {
 		return nil, &text.Diagnostic{Code: code, Message: message, Span: &ast.Span{Source: input.SourceID, Start: uint64(at), End: uint64(end)}}
 	}

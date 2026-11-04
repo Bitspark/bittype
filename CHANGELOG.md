@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### 4 November 2026
+
+- Move parsing, formatting and printing contracts to `parse.Provider`,
+  `format.Provider` and `print.Provider`; move source input to `parse.Input`.
+  `text.Provider` composes these independent contracts with `check.Provider`.
+  Update consumers, independent positive/negative fixtures, dependency checks,
+  documentation and the six-language provider matrix. Remove the old names
+  without compatibility aliases.
+
 ### 3 November 2026
 
 - Move AST syntax admission to `check.Provider` in `contracts/check/go`,

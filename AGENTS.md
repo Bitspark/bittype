@@ -75,11 +75,13 @@ conflicting required representations fail rather than selecting a weaker fallbac
   Syntax depends on AST/CST carriers and identity, never on another language
   or parser/formatter. Native stages own their grammar and spelling.
 - language.Provider supplies ID and Name for configured language providers.
-  Name capability interfaces through their package: check.Provider,
-  resolution.Provider, analysis.Provider and text.Provider. Syntax admission
-  depends only on AST views and language identity. The text capabilities use
-  text.Parser, text.Formatter and text.Printer; text.Provider composes these
-  with check.Provider. AST-only providers need no text capability. Avoid redundant
+  Name capability interfaces through their package: parse.Provider,
+  check.Provider, format.Provider, print.Provider, resolution.Provider and
+  analysis.Provider. Each stage contract is independent of text composition;
+  parse.Input owns source input. text.Provider composes parse.Provider,
+  check.Provider, format.Provider and print.Provider. Syntax admission depends
+  only on AST views and language identity. AST-only providers need no text
+  capability. Avoid redundant
   package prefixes or Provider suffixes; retain no superseded interface aliases.
   Transformers identify two endpoints through FromID/ToID. Registration stays
   explicit and agnostic, with no known-language list,

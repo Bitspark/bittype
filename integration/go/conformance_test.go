@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/internal/tree"
 	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
@@ -53,7 +54,7 @@ func providerConformance[L any](t *testing.T, provider text.Provider[L], source 
 	if id == "" || name == "" {
 		t.Fatal("empty provider identity")
 	}
-	input := text.Input{SourceID: "conformance", TreeID: "conformance-tree", Text: source}
+	input := parse.Input{SourceID: "conformance", TreeID: "conformance-tree", Text: source}
 	parsed, err := provider.Parse(input)
 	if err != nil {
 		t.Fatal(err)

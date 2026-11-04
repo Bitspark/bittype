@@ -121,36 +121,64 @@ type Provider[L any] interface {
 }
 ```
 
-The [text interfaces](../contracts/text/go/provider.go) also embed language identity:
+The three other stage contracts also embed language identity and remain
+independent of text composition. [Parsing](../contracts/parse/go/provider.go)
+owns [source input](../contracts/parse/go/input.go):
 
 ```go
-// package text
-type Parser[L any] interface {
+// package parse
+type Input struct {
+    SourceID ast.SourceID
+    TreeID   ast.TreeID
+    Text     string
+}
+type Provider[L any] interface {
     language.Provider
     Parse(Input) (cst.CST[L], error)
 }
-type Formatter[L any] interface {
+```
+
+IDs remain caller-owned opaque addresses; parsing does not open paths or fetch
+dependencies. [Formatting](../contracts/format/go/provider.go) consumes an AST view:
+
+```go
+// package format
+type Provider[L any] interface {
     language.Provider
     Format(ast.View[L]) (cst.CST[L], error)
 }
-type Printer[L any] interface {
+```
+
+[Printing](../contracts/print/go/provider.go) consumes a concrete tree:
+
+```go
+// package print
+type Provider[L any] interface {
     language.Provider
     Print(cst.CST[L]) (string, error)
 }
+```
+
+The [text package](../contracts/text/go/provider.go) composes those capabilities:
+
+```go
+// package text
 type Provider[L any] interface {
-    Parser[L]
-    Formatter[L]
+    parse.Provider[L]
+    format.Provider[L]
     check.Provider[L]
-    Printer[L]
+    print.Provider[L]
 }
 ```
 
 `text.Provider[L]` combines the three text capabilities with the independent
 checker. Each native parser, formatter and checker package supplies its
 specialized provider; each native `provider/<language>/go` package explicitly
-composes all four, using the generic printer. Horos exposes `check.Provider`
+composes all four, using the generic printer implementation in `print/go`.
+The separate `contracts/print/go` package owns the interface. Horos exposes `check.Provider`
 without any text capability. `representation.NewLanguage` accepts that checker
 contract directly. ID/Name come from the language marker, not duplicate strings.
+The old text stage interfaces and input type have no compatibility aliases.
 
 No provider registers itself. The syntax engine accepts shared contracts
 without concrete imports or a name switch. Heterogeneous AST type erasure belongs
@@ -162,7 +190,7 @@ For example:
 
 ```go
 p := typescriptprovider.Provider{}
-parsed, err := p.Parse(text.Input{
+parsed, err := p.Parse(parse.Input{
     SourceID: "input", TreeID: "tree",
     Text: "type Names = string[];",
 })
@@ -234,8 +262,11 @@ and fuzz cases cover every language discovered in the stage directories.
 ```text
 trees/ast/go/view.go                         AST-view interface
 trees/cst/go/cst.go                          concrete carrier and stored AST view
+contracts/parse/go/{input,provider}.go      source input and parser contract
 contracts/check/go/provider.go             independent AST syntax admission
-contracts/text/go/{input,diagnostic,provider}.go shared text/provider contracts
+contracts/format/go/provider.go            formatter contract
+contracts/print/go/provider.go             printer contract
+contracts/text/go/{diagnostic,provider}.go  shared diagnostics and stage composition
 check/ast/go/structure.go                  abstract carrier checks
 check/cst/go/check.go                  concrete carrier checks
 check/<language>/go/                   native syntax checks

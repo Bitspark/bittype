@@ -9,9 +9,10 @@ import (
 	analyze "github.com/Bitspark/bittype/analyze/horoswire/go"
 	check "github.com/Bitspark/bittype/check/horoswire/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
+	"github.com/Bitspark/bittype/contracts/format/go"
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/engine/go"
 	groundProvider "github.com/Bitspark/bittype/provider/horos/go"
 	provider "github.com/Bitspark/bittype/provider/horoswire/go"
@@ -110,10 +111,10 @@ func qualifyHorosWire(t *testing.T) {
 	if p.ID() != "horoswire" || p.Name() != "Horos/Wire" {
 		t.Fatal("unstable optional identity")
 	}
-	if _, ok := any(p).(text.Parser[s.Language]); ok {
+	if _, ok := any(p).(parse.Provider[s.Language]); ok {
 		t.Fatal("optional provider claims text parsing")
 	}
-	if _, ok := any(p).(text.Formatter[s.Language]); ok {
+	if _, ok := any(p).(format.Provider[s.Language]); ok {
 		t.Fatal("optional provider claims text formatting")
 	}
 	module := wireFixture(t)

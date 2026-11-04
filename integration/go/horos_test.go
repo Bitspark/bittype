@@ -8,9 +8,10 @@ import (
 
 	analyze "github.com/Bitspark/bittype/analyze/horos/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
+	"github.com/Bitspark/bittype/contracts/format/go"
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/engine/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/horos/go"
@@ -46,10 +47,10 @@ func qualifyHoros(t *testing.T) {
 	if provider.ID() != "horos" || provider.Name() != "Horos" {
 		t.Fatal("unstable Horos identity")
 	}
-	if _, ok := any(provider).(text.Parser[h.Language]); ok {
+	if _, ok := any(provider).(parse.Provider[h.Language]); ok {
 		t.Fatal("AST-only provider advertises parsing")
 	}
-	if _, ok := any(provider).(text.Formatter[h.Language]); ok {
+	if _, ok := any(provider).(format.Provider[h.Language]); ok {
 		t.Fatal("AST-only provider advertises formatting")
 	}
 	// Independent consumer: a generic list and its explicit text specialization.
@@ -155,7 +156,7 @@ func qualifyHoros(t *testing.T) {
 	if fresh, err := representation.Unpack[h.Language](definition, output); err != nil || fresh.Nodes[fresh.Root-1].Kind != h.KindProgram {
 		t.Fatal("unpacked AST aliases envelope")
 	}
-	if _, err := registry.Parse(provider.ID(), text.Input{}); !errors.Is(err, engine.ErrMissingCapability) {
+	if _, err := registry.Parse(provider.ID(), parse.Input{}); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatalf("AST-only parse: %v", err)
 	}
 	if _, err := registry.Render(envelope); !errors.Is(err, engine.ErrMissingCapability) {
