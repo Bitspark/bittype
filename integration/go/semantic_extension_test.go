@@ -28,7 +28,7 @@ func extensionKey(name string) semantics.Key {
 
 func extensionContract() analysis.Contract {
 	return analysis.Contract{Semantic: semantic.Contract{
-		Profile: "foreign-declarations-v1",
+		Profile: "foreign-declarations-v2",
 		Obligations: []semantic.Obligation{
 			{Key: extensionKey("validity"), Domain: extensionKey("entry")},
 			{Key: extensionKey("bindings"), Domain: extensionKey("entry")},
@@ -116,7 +116,7 @@ func extensionFacts(tree ast.AST[extensionLanguage]) semantics.Data {
 		{Kind: semantics.Reference, Target: 3},
 		{Kind: semantics.Reference, Target: 4},
 		providerTerm("natural", "ascii-natural-v1", []byte("3")),
-		{Kind: semantics.Application, Target: 1, Arguments: []semantics.TermID{13, 7, 5}},
+		{Kind: semantics.Application, Callee: 15, Arguments: []semantics.TermID{13, 7, 5}},
 		{Kind: semantics.Reference, Target: 8},
 		providerTerm("mutable-pointer", "opaque-v1", nil, semantics.Operand{Locator: []uint32{0}, Term: 9}),
 		{Kind: semantics.Reference, Target: 7},
@@ -124,8 +124,13 @@ func extensionFacts(tree ast.AST[extensionLanguage]) semantics.Data {
 		providerTerm("array", "element-and-length-v1", []byte(extensionAttribute(tree, 10, "length")), semantics.Operand{Locator: []uint32{0}, Term: 7}),
 		{Kind: semantics.Reference, Target: 12},
 		providerTerm("lifetime-static", "opaque-v1", []byte("static")),
-		{Kind: semantics.Application, Target: 8},
+		{Kind: semantics.Application, Callee: 7},
 		{Kind: semantics.Reference, Target: 1},
+		providerTerm("native-signature", "parameter-slots-v1", []byte("lifetime,type,constant"), semantics.Operand{Locator: []uint32{0}, Term: 2}, semantics.Operand{Locator: []uint32{1}, Term: 3}, semantics.Operand{Locator: []uint32{2}, Term: 4}),
+		providerTerm("select-template", "opaque-v1", nil, semantics.Operand{Locator: []uint32{0}, Term: 15}),
+		{Kind: semantics.Application, Callee: 17, Arguments: []semantics.TermID{5}},
+		{Kind: semantics.Application, Callee: 18, Arguments: []semantics.TermID{7}},
+		{Kind: semantics.Application, Callee: 3, Arguments: []semantics.TermID{5}},
 	}
 	use := extensionOccurrence(tree.ID, 11, "use", 0)
 	return semantics.Data{
@@ -149,6 +154,13 @@ func extensionFacts(tree ast.AST[extensionLanguage]) semantics.Data {
 			{From: 7, To: 7, Relation: extensionKey("direct")},
 			{From: 9, To: 8, Relation: extensionKey("direct")},
 			{From: 10, To: 8, Relation: extensionKey("direct")},
+		},
+		Facts: []semantics.Fact{
+			{Subject: semantics.Subject{Entity: 1}, Relation: extensionKey("signature"), Term: 16},
+			{Subject: semantics.Subject{Term: 6}, Relation: extensionKey("selected-non-type-argument"), Term: 13},
+			{Subject: semantics.Subject{Term: 6}, Relation: extensionKey("selected-non-type-argument"), Term: 5},
+			{Subject: semantics.Subject{Entity: 8}, Relation: extensionKey("intrinsic-representation"), Term: 7},
+			{Subject: semantics.Subject{Term: 19}, Relation: extensionKey("evaluation-plan"), Term: 17},
 		},
 	}
 }
@@ -257,9 +269,9 @@ func consumeSemanticFacts(result semantic.Result, reference, expression semantic
 	if !ok {
 		return semanticQueryResult{}, errors.New("expression meaning is absent")
 	}
-	bindings, ok := model.ParameterBindings(term)
+	bindings, ok := model.DirectParameterBindings(term)
 	if !ok {
-		return semanticQueryResult{}, errors.New("expression is not an application")
+		return semanticQueryResult{}, errors.New("expression has no direct parameter binding view")
 	}
 	return semanticQueryResult{Target: target, Bindings: bindings, Dependencies: model.DependenciesFrom(owner, relation)}, nil
 }
@@ -310,10 +322,10 @@ func TestSemanticForeignProviderAndGenericConsumer(t *testing.T) {
 	if edges := model.DependenciesFrom(7, extensionKey("direct")); len(edges) != 1 || edges[0].To != 7 {
 		t.Fatal("entity recursion was rejected or erased")
 	}
-	if bindings, ok := model.ParameterBindings(14); !ok || len(bindings) != 0 {
+	if bindings, ok := model.DirectParameterBindings(14); !ok || len(bindings) != 0 {
 		t.Fatal("zero-argument application lost its form")
 	}
-	if _, ok := model.ParameterBindings(15); ok {
+	if _, ok := model.DirectParameterBindings(15); ok {
 		t.Fatal("unapplied generic reference acquired a binding")
 	}
 	for i, name := range []string{"Cell", "Function", "Stream"} {
@@ -321,6 +333,44 @@ func TestSemanticForeignProviderAndGenericConsumer(t *testing.T) {
 		if !ok || entity.Name != name || entity.Kind != extensionKey("defined") {
 			t.Fatalf("library name %s acquired special treatment", name)
 		}
+	}
+}
+
+func TestSemanticForeignProviderPreservesComputedCalleesAndSubjectFacts(t *testing.T) {
+	kernel, input := extensionKernel(t, extensionProvider{}, extensionTree())
+	result, err := analyzeCase(kernel, context.Background(), input)
+	if err != nil || !result.Valid() || !result.HasModel() {
+		t.Fatalf("foreign computed application publication: %v", err)
+	}
+	model, _ := result.Model()
+	for id, callee := range map[semantics.TermID]semantics.TermID{18: 17, 19: 18, 20: 3} {
+		term, ok := model.Term(id)
+		if !ok || term.Kind != semantics.Application || term.Target != 0 || term.Callee != callee {
+			t.Fatalf("callee term identity changed at %d: %#v", id, term)
+		}
+		if bindings, ok := model.DirectParameterBindings(id); ok || bindings != nil {
+			t.Fatalf("foreign computed or parameter callee acquired direct formals: %#v", bindings)
+		}
+	}
+	parameter, _ := model.Entity(3)
+	if parameter.Owner != 1 || len(parameter.Parameters) != 0 {
+		t.Fatal("applicable parameter lost its lexical identity or acquired fabricated formals")
+	}
+	if got := model.Facts(semantics.Subject{Entity: 1}, extensionKey("signature")); !reflect.DeepEqual(got, []semantics.TermID{16}) {
+		t.Fatalf("entity signature association missing: %v", got)
+	}
+	signature, _ := model.Term(16)
+	if signature.Operator != extensionKey("native-signature") || string(signature.Data) != "lifetime,type,constant" || len(signature.Operands) != 3 || signature.Operands[1].Term != 3 {
+		t.Fatalf("provider signature structure changed: %#v", signature)
+	}
+	if got := model.Facts(semantics.Subject{Term: 6}, extensionKey("selected-non-type-argument")); !reflect.DeepEqual(got, []semantics.TermID{13, 5}) {
+		t.Fatalf("provider multi-valued relation was narrowed: %v", got)
+	}
+	if got := model.Facts(semantics.Subject{Entity: 8}, extensionKey("intrinsic-representation")); !reflect.DeepEqual(got, []semantics.TermID{7}) {
+		t.Fatalf("intrinsic fact acquired a source-site requirement: %v", got)
+	}
+	if got := model.Facts(semantics.Subject{Term: 19}, extensionKey("evaluation-plan")); !reflect.DeepEqual(got, []semantics.TermID{17}) {
+		t.Fatalf("computed application fact lost term identity: %v", got)
 	}
 }
 

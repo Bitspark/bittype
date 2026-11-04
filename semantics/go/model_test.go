@@ -40,8 +40,8 @@ func exampleData() semantics.Data {
 			{Kind: semantics.Reference, Target: 2},
 			{Kind: semantics.ProviderExpression, Operator: vocabulary("sequence"), Encoding: vocabulary("opaque-v1"), Data: []byte{'A', 0, 255}, Operands: []semantics.Operand{{Locator: []uint32{7, 0}, Term: 1}}},
 			{Kind: semantics.Reference, Target: 3},
-			{Kind: semantics.Application, Target: 1, Arguments: []semantics.TermID{3}},
-			{Kind: semantics.Application, Target: 3},
+			{Kind: semantics.Application, Callee: 6, Arguments: []semantics.TermID{3}},
+			{Kind: semantics.Application, Callee: 3},
 			{Kind: semantics.Reference, Target: 1},
 		},
 		Bindings: []semantics.Binding{
@@ -52,6 +52,13 @@ func exampleData() semantics.Data {
 		Dependencies: []semantics.Dependency{
 			{From: 4, To: 1, Relation: vocabulary("mentions"), At: &use},
 			{From: 4, To: 3, Relation: vocabulary("argument")},
+		},
+		Facts: []semantics.Fact{
+			{Subject: semantics.Subject{Entity: 1}, Relation: vocabulary("representation"), Term: 2},
+			{Subject: semantics.Subject{Entity: 1}, Relation: vocabulary("representation"), Term: 6},
+			{Subject: semantics.Subject{Term: 4}, Relation: vocabulary("result"), Term: 3},
+			{Subject: semantics.Subject{Entity: 4}, Relation: vocabulary("result"), Term: 6},
+			{Subject: semantics.Subject{Entity: 3}, Relation: vocabulary("intrinsic"), Term: 3},
 		},
 	}
 }
@@ -80,15 +87,15 @@ func TestSemanticModelQueriesPreserveIdentity(t *testing.T) {
 	if !ok || id != 4 {
 		t.Fatalf("application expression: %d, %v", id, ok)
 	}
-	bindings, ok := model.ParameterBindings(id)
+	bindings, ok := model.DirectParameterBindings(id)
 	want := []semantics.ArgumentBinding{{Parameter: 2, Argument: 3}}
 	if !ok || !reflect.DeepEqual(bindings, want) {
 		t.Fatalf("effective generic binding: %#v, %v", bindings, ok)
 	}
-	if zero, ok := model.ParameterBindings(5); !ok || len(zero) != 0 {
+	if zero, ok := model.DirectParameterBindings(5); !ok || len(zero) != 0 {
 		t.Fatalf("zero-argument application lost its application form: %#v, %v", zero, ok)
 	}
-	if _, ok := model.ParameterBindings(6); ok {
+	if _, ok := model.DirectParameterBindings(6); ok {
 		t.Fatal("reference to an open declaration became an application")
 	}
 	dependencies := model.DependenciesFrom(4, vocabulary("mentions"))
@@ -106,6 +113,18 @@ func TestSemanticModelQueriesPreserveIdentity(t *testing.T) {
 	if !reflect.DeepEqual(term.Data, []byte{'A', 0, 255}) || !reflect.DeepEqual(term.Operands[0].Locator, []uint32{7, 0}) {
 		t.Fatal("provider payload or operand locator was interpreted or normalized")
 	}
+	if got := model.Facts(semantics.Subject{Entity: 1}, vocabulary("representation")); !reflect.DeepEqual(got, []semantics.TermID{2, 6}) {
+		t.Fatalf("multi-valued relation lost provider order: %v", got)
+	}
+	if got := model.Facts(semantics.Subject{Term: 4}, vocabulary("result")); !reflect.DeepEqual(got, []semantics.TermID{3}) {
+		t.Fatalf("term subject confused with same-numbered entity: %v", got)
+	}
+	if got := model.Facts(semantics.Subject{Entity: 3}, vocabulary("intrinsic")); !reflect.DeepEqual(got, []semantics.TermID{3}) {
+		t.Fatalf("source-less subject needs no invented syntax: %v", got)
+	}
+	if got := model.Facts(semantics.Subject{Entity: 1}, vocabulary("unknown")); len(got) != 0 {
+		t.Fatal("unrecorded relation acquired a fact")
+	}
 }
 
 func mutateGraph(data semantics.Data) {
@@ -117,10 +136,14 @@ func mutateGraph(data semantics.Data) {
 	data.Terms[1].Operands[0].Locator[0] = 99
 	data.Terms[1].Operands[0].Term = 99
 	data.Terms[3].Arguments[0] = 99
+	data.Terms[3].Callee = 99
 	data.Bindings[0].Target = 99
 	data.Expressions[0].Term = 99
 	data.Dependencies[0].To = 99
 	data.Dependencies[0].At.Site.Node = 99
+	data.Facts[0].Subject = semantics.Subject{Term: 99}
+	data.Facts[0].Relation.Name = "changed"
+	data.Facts[0].Term = 99
 }
 
 func TestSemanticModelOwnsEveryMutableIngressAndAccessor(t *testing.T) {
@@ -141,11 +164,14 @@ func TestSemanticModelOwnsEveryMutableIngressAndAccessor(t *testing.T) {
 	term.Operands[0].Term = 88
 	application, _ := model.Term(4)
 	application.Arguments[0] = 88
+	application.Callee = 88
 	dependencies := model.DependenciesFrom(4, vocabulary("mentions"))
 	dependencies[0].To = 88
 	dependencies[0].At.Site.Node = 88
-	bindings, _ := model.ParameterBindings(4)
+	bindings, _ := model.DirectParameterBindings(4)
 	bindings[0].Argument = 88
+	facts := model.Facts(semantics.Subject{Entity: 1}, vocabulary("representation"))
+	facts[0] = 88
 	copyOfModel := model
 	if !reflect.DeepEqual(copyOfModel.Data(), expected) {
 		t.Fatal("accessor or copied model handle exposed private mutable storage")
@@ -171,10 +197,18 @@ func TestSemanticModelRejectsBrokenGraphs(t *testing.T) {
 		{"unknown term variant", func(d *semantics.Data) { d.Terms[0].Kind = 0 }},
 		{"unknown reference target", func(d *semantics.Data) { d.Terms[0].Target = 99 }},
 		{"reference with arguments", func(d *semantics.Data) { d.Terms[0].Arguments = []semantics.TermID{3} }},
+		{"reference with callee", func(d *semantics.Data) { d.Terms[0].Callee = 3 }},
 		{"reference with opaque payload", func(d *semantics.Data) { d.Terms[0].Data = []byte{1} }},
-		{"application missing effective argument", func(d *semantics.Data) { d.Terms[3].Arguments = nil }},
+		{"application with entity target", func(d *semantics.Data) { d.Terms[3].Target = 1 }},
+		{"application missing callee", func(d *semantics.Data) { d.Terms[3].Callee = 0 }},
+		{"application unknown callee", func(d *semantics.Data) { d.Terms[3].Callee = 99 }},
+		{"application with opaque payload", func(d *semantics.Data) { d.Terms[3].Data = []byte{1} }},
+		{"application with provider operator", func(d *semantics.Data) { d.Terms[3].Operator = vocabulary("call") }},
+		{"application with provider encoding", func(d *semantics.Data) { d.Terms[3].Encoding = vocabulary("opaque") }},
+		{"application with provider operands", func(d *semantics.Data) { d.Terms[3].Operands = []semantics.Operand{{Term: 3}} }},
 		{"application unknown argument", func(d *semantics.Data) { d.Terms[3].Arguments[0] = 99 }},
 		{"provider term with entity target", func(d *semantics.Data) { d.Terms[1].Target = 1 }},
+		{"provider term with callee", func(d *semantics.Data) { d.Terms[1].Callee = 3 }},
 		{"provider term without encoding", func(d *semantics.Data) { d.Terms[1].Encoding = semantics.Key{} }},
 		{"provider term without operator", func(d *semantics.Data) { d.Terms[1].Operator = semantics.Key{} }},
 		{"provider term unknown operand", func(d *semantics.Data) { d.Terms[1].Operands[0].Term = 99 }},
@@ -188,6 +222,14 @@ func TestSemanticModelRejectsBrokenGraphs(t *testing.T) {
 		{"unknown dependency target", func(d *semantics.Data) { d.Dependencies[0].To = 99 }},
 		{"dependency without relation", func(d *semantics.Data) { d.Dependencies[0].Relation = semantics.Key{} }},
 		{"dependency with unadmitted occurrence", func(d *semantics.Data) { d.Dependencies[0].At.Site.Tree = "historical" }},
+		{"fact without subject", func(d *semantics.Data) { d.Facts[0].Subject = semantics.Subject{} }},
+		{"fact with both subject variants", func(d *semantics.Data) { d.Facts[0].Subject.Term = 2 }},
+		{"fact with unknown entity subject", func(d *semantics.Data) { d.Facts[0].Subject.Entity = 99 }},
+		{"fact with unknown term subject", func(d *semantics.Data) { d.Facts[2].Subject.Term = 99 }},
+		{"fact without relation", func(d *semantics.Data) { d.Facts[0].Relation = semantics.Key{} }},
+		{"fact without value", func(d *semantics.Data) { d.Facts[0].Term = 0 }},
+		{"fact with unknown value", func(d *semantics.Data) { d.Facts[0].Term = 99 }},
+		{"duplicate fact triple", func(d *semantics.Data) { d.Facts = append(d.Facts, d.Facts[0]) }},
 	}
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
@@ -325,10 +367,13 @@ func TestSemanticZeroModelQueriesAreEmpty(t *testing.T) {
 	if _, ok := model.TermAt(occurrence(1, "expression", 0)); ok {
 		t.Fatal("zero model expression")
 	}
-	if _, ok := model.ParameterBindings(1); ok {
+	if _, ok := model.DirectParameterBindings(1); ok {
 		t.Fatal("zero model application")
 	}
 	if len(model.DependenciesFrom(1, vocabulary("mentions"))) != 0 {
 		t.Fatal("zero model dependencies")
+	}
+	if len(model.Facts(semantics.Subject{Entity: 1}, vocabulary("representation"))) != 0 {
+		t.Fatal("zero model facts")
 	}
 }

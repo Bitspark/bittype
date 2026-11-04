@@ -54,10 +54,17 @@ func analysisFacts() semantics.Data {
 		Terms: []semantics.Term{
 			{Kind: semantics.Reference, Target: 2},
 			{Kind: semantics.ProviderExpression, Operator: analysisKey("array"), Encoding: analysisKey("array-v1"), Data: []byte{3}, Operands: []semantics.Operand{{Locator: []uint32{1}, Term: 1}}},
+			{Kind: semantics.Reference, Target: 1},
+			{Kind: semantics.Application, Callee: 3, Arguments: []semantics.TermID{1}},
 		},
 		Bindings:     []semantics.Binding{{At: at, Target: 2}},
 		Expressions:  []semantics.Expression{{At: at, Term: 1}},
 		Dependencies: []semantics.Dependency{{From: 1, To: 1, Relation: analysisKey("recursive-reference"), At: &at}},
+		Facts: []semantics.Fact{
+			{Subject: semantics.Subject{Entity: 1}, Relation: analysisKey("representation"), Term: 2},
+			{Subject: semantics.Subject{Term: 4}, Relation: analysisKey("result"), Term: 2},
+			{Subject: semantics.Subject{Term: 4}, Relation: analysisKey("free-binder"), Term: 1},
+		},
 	}
 }
 
@@ -273,6 +280,10 @@ func TestAnalysisOwnershipAndPublication(t *testing.T) {
 		data.Entities[0].Parameters[0].Sort = analysisKey("mutated")
 		data.Terms[1].Data[0] = 4
 		data.Terms[1].Operands[0].Locator[0] = 7
+		data.Terms[3].Callee = 1
+		data.Facts[0].Subject = semantics.Subject{Term: 1}
+		data.Facts[0].Relation = analysisKey("mutated")
+		data.Facts[0].Term = 1
 		data.Dependencies[0].At.Site.Node = 99
 		reports[0].Verdict = semantic.Rejected
 		diagnostics[0].Message = "mutated diagnostic"
@@ -299,6 +310,9 @@ func TestAnalysisOwnershipAndPublication(t *testing.T) {
 	extracted := model.Data()
 	extracted.Terms[1].Data[0] = 9
 	extracted.Entities[0].Declarations[0].Node = 99
+	extracted.Terms[3].Callee = 1
+	extracted.Facts[0].Term = 1
+	model.Facts(semantics.Subject{Entity: 1}, analysisKey("representation"))[0] = 1
 	if !reflect.DeepEqual(model.Data(), want) || string(result.Configuration()[0].Value) != "original" || result.Reports()[0].Verdict != semantic.Holds || result.Diagnostics()[0].At.Node != 2 || result.Contract().Obligations[0].Domain != analysisKey("entry-program") {
 		t.Fatal("result accessor exposes private storage")
 	}
@@ -348,8 +362,15 @@ func TestAnalysisRejectsInvalidPublications(t *testing.T) {
 		"historical-only-site": func(p *semantic.Publication) {
 			p.Facts.Entities[0].Declarations[0] = ast.NodeRef{Tree: "earlier", Node: 4}
 		},
-		"dangling-entity": func(p *semantic.Publication) { p.Facts.Bindings[0].Target = 99 },
-		"zero-node":       func(p *semantic.Publication) { p.Facts.Entities[0].Declarations[0].Node = 0 },
+		"dangling-entity":       func(p *semantic.Publication) { p.Facts.Bindings[0].Target = 99 },
+		"dangling-callee":       func(p *semantic.Publication) { p.Facts.Terms[3].Callee = 99 },
+		"callee-cycle":          func(p *semantic.Publication) { p.Facts.Terms[3].Callee = 4 },
+		"fact-no-subject":       func(p *semantic.Publication) { p.Facts.Facts[0].Subject = semantics.Subject{} },
+		"fact-two-subjects":     func(p *semantic.Publication) { p.Facts.Facts[0].Subject.Term = 1 },
+		"fact-dangling-subject": func(p *semantic.Publication) { p.Facts.Facts[0].Subject.Entity = 99 },
+		"fact-dangling-term":    func(p *semantic.Publication) { p.Facts.Facts[0].Term = 99 },
+		"duplicate-fact":        func(p *semantic.Publication) { p.Facts.Facts = append(p.Facts.Facts, p.Facts.Facts[0]) },
+		"zero-node":             func(p *semantic.Publication) { p.Facts.Entities[0].Declarations[0].Node = 0 },
 		"diagnostic-site": func(p *semantic.Publication) {
 			p.Diagnostics = []semantic.Diagnostic{{Code: analysisKey("note"), Subject: analysisKey("entry"), At: &ast.NodeRef{Tree: "input", Node: 99}}}
 		},

@@ -36,6 +36,8 @@ type Entity struct {
 	Body         TermID
 }
 
+// Parameter retains a real binder and its coarse provider-owned sort. Sort is
+// not a structured kind; providers may associate richer facts with the entity.
 type Parameter struct {
 	Entity EntityID
 	Sort   Key
@@ -51,10 +53,13 @@ const (
 
 // Term has exactly one variant. Application arguments are effective positional
 // arguments, not a mixture of written, inferred, defaulted or packed arguments.
+// Reference owns Target; Application owns Callee and Arguments. Applicability,
+// arity and saturation belong to the provider, not graph admission.
 // A provider expression's encoding defines its bytes and operand locators.
 type Term struct {
 	Kind      TermKind
 	Target    EntityID
+	Callee    TermID
 	Arguments []TermID
 	Operator  Key
 	Encoding  Key
@@ -92,6 +97,22 @@ type Dependency struct {
 	At       *Occurrence
 }
 
+// Subject selects exactly one model-local entity or term. A subject needs no
+// fabricated syntax site; current occurrence associations remain separate.
+type Subject struct {
+	Entity EntityID
+	Term   TermID
+}
+
+// Fact associates a subject with a provider-owned fact term. A relation may have
+// several values; its meaning and cardinality belong to the provider. Fact links
+// are associations, not term containment or evidence of semantic equality.
+type Fact struct {
+	Subject  Subject
+	Relation Key
+	Term     TermID
+}
+
 // Data is construction storage. New bounds, validates and copies it before
 // publication. The producer must not mutate it concurrently with New.
 type Data struct {
@@ -100,6 +121,7 @@ type Data struct {
 	Bindings     []Binding
 	Expressions  []Expression
 	Dependencies []Dependency
+	Facts        []Fact
 }
 
 type Limits struct {
@@ -142,7 +164,7 @@ func (b *budget) occurrence(o Occurrence) bool { return b.site(o.Site) && b.key(
 
 func bound(d Data, l Limits) error {
 	b := budget{records: l.MaxRecords, edges: l.MaxEdges, bytes: l.MaxBytes}
-	for _, count := range []int{len(d.Entities), len(d.Terms), len(d.Bindings), len(d.Expressions), len(d.Dependencies)} {
+	for _, count := range []int{len(d.Entities), len(d.Terms), len(d.Bindings), len(d.Expressions), len(d.Dependencies), len(d.Facts)} {
 		if !take(&b.records, count) {
 			return ErrLimit
 		}
@@ -166,6 +188,9 @@ func bound(d Data, l Limits) error {
 		if !b.key(term.Operator) || !b.key(term.Encoding) || !take(&b.bytes, len(term.Data)) || !take(&b.edges, len(term.Arguments)) || !take(&b.edges, len(term.Operands)) {
 			return ErrLimit
 		}
+		if term.Callee != 0 && !take(&b.edges, 1) {
+			return ErrLimit
+		}
 		for _, operand := range term.Operands {
 			if !take(&b.edges, len(operand.Locator)) {
 				return ErrLimit
@@ -187,6 +212,11 @@ func bound(d Data, l Limits) error {
 			return ErrLimit
 		}
 	}
+	for _, fact := range d.Facts {
+		if !b.key(fact.Relation) || !take(&b.edges, 2) {
+			return ErrLimit
+		}
+	}
 	return nil
 }
 
@@ -194,7 +224,7 @@ func bound(d Data, l Limits) error {
 // in the captured input catalogue; historical origins are not that catalogue.
 // The callback must not perform IO or mutate input. Nil admits no source sites.
 // Bounds are checked before copying. Only term containment must be acyclic;
-// entity references and labeled dependency edges may form cycles.
+// entity references, labeled dependencies and subject facts may form cycles.
 func New(data Data, limits Limits, contains func(ast.NodeRef) bool) (Model, error) {
 	return newModel(data, limits, contains, true)
 }
@@ -244,15 +274,13 @@ func newModel(data Data, limits Limits, contains func(ast.NodeRef) bool, copySto
 	}
 	for _, term := range data.Terms {
 		switch term.Kind {
-		case Reference, Application:
-			if !validEntity(term.Target) || term.Operator != (Key{}) || term.Encoding != (Key{}) || len(term.Data) != 0 || len(term.Operands) != 0 {
-				return bad("invalid reference/application fields")
+		case Reference:
+			if !validEntity(term.Target) || term.Callee != 0 || len(term.Arguments) != 0 || term.Operator != (Key{}) || term.Encoding != (Key{}) || len(term.Data) != 0 || len(term.Operands) != 0 {
+				return bad("invalid reference fields")
 			}
-			if term.Kind == Reference && len(term.Arguments) != 0 {
-				return bad("reference has arguments")
-			}
-			if term.Kind == Application && len(term.Arguments) != len(data.Entities[term.Target-1].Parameters) {
-				return bad("application arity does not match effective parameters")
+		case Application:
+			if term.Target != 0 || !validTerm(term.Callee) || term.Operator != (Key{}) || term.Encoding != (Key{}) || len(term.Data) != 0 || len(term.Operands) != 0 {
+				return bad("invalid application fields")
 			}
 			for _, argument := range term.Arguments {
 				if !validTerm(argument) {
@@ -260,7 +288,7 @@ func newModel(data Data, limits Limits, contains func(ast.NodeRef) bool, copySto
 				}
 			}
 		case ProviderExpression:
-			if term.Target != 0 || len(term.Arguments) != 0 || !term.Operator.Valid() || !term.Encoding.Valid() {
+			if term.Target != 0 || term.Callee != 0 || len(term.Arguments) != 0 || !term.Operator.Valid() || !term.Encoding.Valid() {
 				return bad("invalid provider expression fields")
 			}
 			locations := make(map[string]bool)
@@ -302,6 +330,16 @@ func newModel(data Data, limits Limits, contains func(ast.NodeRef) bool, copySto
 			return bad("invalid dependency")
 		}
 	}
+	validSubject := func(subject Subject) bool {
+		return subject.Term == 0 && validEntity(subject.Entity) || subject.Entity == 0 && validTerm(subject.Term)
+	}
+	facts := make(map[Fact]bool)
+	for _, fact := range data.Facts {
+		if !validSubject(fact.Subject) || !fact.Relation.Valid() || !validTerm(fact.Term) || facts[fact] {
+			return bad("invalid or duplicate subject fact")
+		}
+		facts[fact] = true
+	}
 	// Memoized heights enforce the longest containment path, including DAG joins.
 	state := make([]uint8, len(data.Terms))
 	height := make([]int, len(data.Terms))
@@ -331,6 +369,11 @@ func newModel(data Data, limits Limits, contains func(ast.NodeRef) bool, copySto
 				maximum = h + 1
 			}
 			return nil
+		}
+		if callee := data.Terms[index].Callee; callee != 0 {
+			if err := child(callee); err != nil {
+				return 0, err
+			}
 		}
 		for _, argument := range data.Terms[index].Arguments {
 			if err := child(argument); err != nil {
@@ -382,7 +425,7 @@ func copyDependency(d Dependency) Dependency {
 }
 
 func clone(data Data) Data {
-	result := Data{Entities: slices.Clone(data.Entities), Terms: slices.Clone(data.Terms), Bindings: slices.Clone(data.Bindings), Expressions: slices.Clone(data.Expressions), Dependencies: slices.Clone(data.Dependencies)}
+	result := Data{Entities: slices.Clone(data.Entities), Terms: slices.Clone(data.Terms), Bindings: slices.Clone(data.Bindings), Expressions: slices.Clone(data.Expressions), Dependencies: slices.Clone(data.Dependencies), Facts: slices.Clone(data.Facts)}
 	for i := range result.Entities {
 		result.Entities[i] = copyEntity(result.Entities[i])
 	}
@@ -455,9 +498,26 @@ type ArgumentBinding struct {
 	Argument  TermID
 }
 
-// ParameterBindings derives the sole positional binding view. A zero-argument
-// application returns an empty successful view; a reference is not an application.
-func (m Model) ParameterBindings(id TermID) ([]ArgumentBinding, bool) {
+// Facts returns the matching fact terms in provider order. Absence is not a
+// negative judgment; the provider's reports determine established coverage.
+func (m Model) Facts(subject Subject, relation Key) []TermID {
+	var result []TermID
+	if m.Valid() {
+		for _, fact := range m.state.Facts {
+			if fact.Subject == subject && fact.Relation == relation {
+				result = append(result, fact.Term)
+			}
+		}
+	}
+	return result
+}
+
+// DirectParameterBindings pairs the real parameters of a direct Reference
+// callee with an equally sized argument list. Parameter-headed applications,
+// other callees and arity mismatches have no such view. This structural query
+// does not establish applicability.
+// A direct zero-parameter application returns an empty successful view.
+func (m Model) DirectParameterBindings(id TermID) ([]ArgumentBinding, bool) {
 	if !m.Valid() || id == 0 || uint64(id) > uint64(len(m.state.Terms)) {
 		return nil, false
 	}
@@ -465,7 +525,22 @@ func (m Model) ParameterBindings(id TermID) ([]ArgumentBinding, bool) {
 	if term.Kind != Application {
 		return nil, false
 	}
-	parameters := m.state.Entities[term.Target-1].Parameters
+	callee := m.state.Terms[term.Callee-1]
+	if callee.Kind != Reference {
+		return nil, false
+	}
+	entity := m.state.Entities[callee.Target-1]
+	if entity.Owner != 0 {
+		for _, parameter := range m.state.Entities[entity.Owner-1].Parameters {
+			if parameter.Entity == callee.Target {
+				return nil, false
+			}
+		}
+	}
+	parameters := entity.Parameters
+	if len(parameters) != len(term.Arguments) {
+		return nil, false
+	}
 	result := make([]ArgumentBinding, len(parameters))
 	for i, parameter := range parameters {
 		result[i] = ArgumentBinding{Parameter: parameter.Entity, Argument: term.Arguments[i]}
