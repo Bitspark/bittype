@@ -142,23 +142,53 @@ type Relation struct {
     At   *ast.NodeRef
 }
 
-type Source[L any] struct {
-    Abstract  semantics.Semantics[L]
-    Entry     ast.NodeRef
+// Sealed by the current Files operation's publisher; zero value is invalid.
+type Source[L any] struct { state *state[L] }
+
+// Construction input, never itself an admitted Source.
+type Publication[L any] struct {
+    Snapshot  semantic.Snapshot
+    Analysis  semantic.Result
     Units     []Unit[L]
     Groups    []Group
     Relations []Relation
 }
 
+func (Source[L]) Entry() ast.NodeRef
+func (Source[L]) Units() []Unit[L]
+func (Source[L]) Groups() []Group
+func (Source[L]) Relations() []Relation
+func (Source[L]) Snapshot() semantic.Snapshot
+func (Source[L]) Evidence() semantic.Result
 func (Source[L]) SemanticsView() semantics.Semantics[L]
 ```
 
-The view accessor returns `Abstract`; it performs no resolution, analysis or
-formatting. Both Semantics and Source implement the same `semantics.View[L]`,
-just as AST and CST implement `ast.View[L]`. The raw Source record, like a raw
-CST record, is construction storage, not proof of validity. Stage boundaries
-admit, bound and snapshot it before use. The contained abstract graph is immutable;
-mutable unit/CST slices are deeply copied at those boundaries.
+The view accessor returns the graph from the retained Analysis result; it performs
+no resolution, analysis or formatting. Both Semantics and Source implement
+`semantics.View[L]`, just as AST and CST implement `ast.View[L]`. Publication is
+untrusted construction storage, like a raw CST record. Source is its sealed
+admitted value: the graph, successful receipt and exact capture are retained
+together. Unit/CST and organization accessors return deep copies; evidence and
+snapshot accessors return immutable handles. SemanticsView alone does not prove
+this association.
+
+Publication uses the existing semantic evidence admission against Snapshot and
+the configured language/profile/report requirements. Analysis must belong to
+that exact snapshot and establish the required graph. Every unit's full AST must
+match the captured AST, not just tree/node IDs; its ID/path/SourceID must match
+captured Files context, with complete one-to-one unit coverage. Concrete text must
+correspond to the captured file contents under the selected Syntax printer.
+CST/AST consistency remains a language-owned admission obligation, not a semantic
+claim inferred by a generic structural checker. Groups/relations and entry must
+agree with this same captured context.
+
+The publisher derives the graph from Analysis instead of accepting an independent
+replacement. It atomically bounds, checks and copies construction storage. There
+is no public unchecked Source constructor or mutable Abstract field. Changing a
+path, AST, CST or grouping requires a new publication with appropriate capture
+and evidence; later mutation cannot change the Source. Each Files invocation has
+a fresh private publication identity, and its adapter rejects Source values
+returned from an earlier invocation.
 
 Each unit is one independently parsed/printed file and owns its CST, whose AST
 view supplies the tree ID. There is no duplicate tree-ID field or mutable
@@ -208,8 +238,8 @@ supported instantiations are:
 
 | Role | Syntax | Files |
 | --- | --- | --- |
-| parse.Provider | `[parse.Input, cst.CST[L]]` | `[parse.FilesInput, source.Source[L]]` |
-| format.Provider | `[ast.View[L], cst.CST[L]]` | `[format.FilesInput[L], source.Source[L]]` |
+| parse.Provider | `[parse.Input, cst.CST[L]]` | `[parse.FilesRequest[L], source.Source[L]]` |
+| format.Provider | `[ast.View[L], cst.CST[L]]` | `[format.FilesRequest[L], source.Source[L]]` |
 | print.Provider | `[cst.CST[L], string]` | `[source.Source[L], files.Files]` |
 
 `parse.Input` remains the existing SourceID/TreeID/Text record. Files-level request
@@ -227,20 +257,63 @@ type FilesInput struct {
 // contracts/format/go
 type FilesInput[L any] struct {
     Abstract      semantics.Semantics[L]
+    Snapshot      semantic.Snapshot
     Evidence      semantic.Result
     Configuration []semantic.Setting
     Limits        FilesLimits
 }
 ```
 
+Each stage owns a captured request supplied to its provider:
+
+```go
+// contracts/parse/go
+type FilesRequest[L any] struct { state *requestState[L] }
+func (FilesRequest[L]) Input() FilesInput
+func (FilesRequest[L]) Publish(source.Publication[L]) (source.Source[L], error)
+
+// contracts/format/go
+type FilesRequest[L any] struct { state *requestState[L] }
+func (FilesRequest[L]) Input() FilesInput[L]
+func (FilesRequest[L]) Publish(source.Publication[L]) (source.Source[L], error)
+```
+
+The application supplies construction Inputs to configured adapters. The adapters
+capture them and create FilesRequest; Input accessors return copies. Providers
+use their request's Publish method and cannot construct another invocation's
+private identity. Parse publication must match captured input Files, entry and
+configuration. Format publication retains fresh output capture/evidence and must
+establish the configured preservation obligations against its admitted input.
+Both callbacks return only a Source issued by their own request. Syntax's existing
+snapshot rules continue to apply.
+
 The entry file is explicit. Its language profile defines the syntax entry within
 that file, including selecting a Horos module when there are multiple sections.
 Requested configuration supplies that selection; no provider chooses the first
 alphabetical file as an implicit program root. The formatter's Evidence must
-establish the required analysis profile/reports for exactly Abstract, including
+establish the required analysis profile/reports for exactly Snapshot and Abstract, including
 its language and graph identity. Equal bytes, entity numbers or names do not
 establish that association. The provider declares the requirements it needs;
 missing/incompatible/incomplete evidence fails before formatting.
+
+Parse-to-Format therefore carries the whole established result:
+
+```go
+parsed, err := filesParser.Parse(ctx, parse.FilesInput{ /* supplied files */ })
+// Handle err. filesParser is the adapter that constructs FilesRequest.
+formatted, err := filesFormatter.Format(ctx, format.FilesInput[L]{
+    Abstract: parsed.SemanticsView(),
+    Snapshot: parsed.Snapshot(),
+    Evidence: parsed.Evidence(),
+    Configuration: organization,
+})
+// Handle err before Files Print. The adapter supplies a new FilesRequest.
+```
+
+No caller must re-analyze just to recover evidence discarded by parsing. The same
+composition works with a formatted Source: its accessors return its output
+capture/receipt, never those of the preceding Source. A graph-only value does not
+satisfy Files formatting's evidence requirements.
 
 `FilesLimits` is a stage-owned record whose implementation must bound files,
 total text/path bytes, CST/AST nodes, links, graph records, depth and total work,
@@ -375,8 +448,10 @@ Preserve the meanings/identities under a checked entity/term correspondence;
 numeric graph IDs are not persistent identities. The default qualification path
 uses the explicitly supplied resolver and analyzer to establish facts for the
 new captured units and checks the provider's declared preservation obligations.
-That result becomes Source.Abstract. A future direct publication path needs an
-equally explicit, tested correspondence contract; it is not an automatic shortcut.
+That fresh capture and successful result are retained in the newly published
+Source, whose SemanticsView exposes the result's graph. A future direct
+publication path needs an equally explicit, tested correspondence contract;
+it is not an automatic shortcut.
 The generic kernel only checks correspondence integrity and provenance, not the
 truth of language-specific equivalence claims.
 
@@ -457,9 +532,9 @@ The stage-first hierarchy remains. The planned additions/changes are:
 
 ```text
 files/go/                       new: Files, IDs/paths, captured input associations
-source/go/                      new: Source, units, organization and abstract view
+source/go/                      new: sealed Source, publication records, evidence/view
 semantics/go/                   revise: Semantics[L] and View[L], existing fact graph
-trees/representation/go/        extend: ASTSet and typed Source/Semantics envelopes
+trees/representation/go/        extend: ASTSet and typed Semantics admission; no Source import
 contracts/{parse,format,print}/go/ revise: the same generic role contracts
 contracts/semantic/go/          extend: immutable Files context and typed graph admission
 contracts/transform/go/         revise: collection output
@@ -483,9 +558,12 @@ language or allowing arbitrary dependency directions.
 
 Files depends on AST addresses only for the input associations. Semantics remains
 provider-owned facts with no Files or concrete-language dependency. Source depends
-on Files, CST/AST and Semantics, not the engine or provider implementations. Shared
-semantic capture may depend on Files context, never Source; this avoids a cycle
-while parsing Source. The role contracts/adapters depend on typed carriers and
+on Files, CST/AST, Semantics and the shared semantic capture/result contract needed
+to retain evidence, not the engine or concrete providers. Shared semantic capture
+may depend on Files context, never Source; representation also must not import
+Source. Source is its own sealed typed envelope, so no reverse Source-envelope
+import is required there. This keeps the dependency graph acyclic.
+The role contracts/adapters depend on typed carriers and
 the shared evidence boundary, not a concrete language. Concrete Files providers
 compose their language's explicitly supplied syntax/resolution/analysis stages.
 The engine remains language-agnostic, with no contract-library name switches.
@@ -497,8 +575,10 @@ Files compositions. Current Model references are not compatibility APIs added by
 this proposal; they describe today's unmodified implementation. The superseded
 layout proposal's packages are not created, renamed into aliases or registered.
 
-Required tests include exact capture/provenance and report association, stale or
-mutated graph/source rejection, marker/profile mismatches, bounded whole-output
+Required tests include Parse-to-Format and Format-to-Format receipt retention,
+exact capture/provenance and report association, same-ID changed-unit rejection,
+stale invocation results, producer/accessor mutation isolation, marker/profile
+mismatches, bounded whole-output
 publication, cancellation, callback locking, unfamiliar-language extension,
 independent stage registration, cross-tree remapping, paths/collisions, cycle and
 visibility policies, missing/conflicting pinned dependencies, and no partial
