@@ -66,7 +66,10 @@ using Horos-owned resolution, binding and specialization rules. The
 [readable authoring syntax](horos-syntax.md) adds text -> CST[Horos] with its AST
 view; canonical document identity is still defined by Horos.
 Native parsers remain separate text-to-CST stages. File IO, dependency retrieval,
-configuration and output paths belong to the application. A formatter is usable
+configuration and the destination root belong to the application. The proposed
+[source-layout stage](layout.md) models relative paths and source-unit organization
+and finalizes language imports before formatting. Its multi-unit transform result
+and layout.Provider are not implemented yet. A formatter is usable
 with a target AST from another producer, without a canonical input dependency.
 
 The output scope is native types and interfaces, including generic declarations
@@ -97,7 +100,7 @@ contracts/parse/go/                      present: source input and parsing contr
 contracts/check/go/                      present: independent AST syntax admission
 contracts/format/go/                     present: AST-to-CST contract
 contracts/print/go/                      present: CST-to-text contract
-contracts/text/go/                       present: diagnostics and stage composition
+contracts/text/go/                       present: shared diagnostics only
 contracts/transform/go/                  present: ASTTransformer and typed bridge
 contracts/semantic/go/                   present: shared capture/publication
 contracts/resolution/go/                 present: resolver SPI

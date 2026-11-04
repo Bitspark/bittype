@@ -18,6 +18,9 @@ separate reports for validity, coverage and model availability.
 The [readable Horos syntax](docs/horos-syntax.md) and its text stages are implemented.
 The first [semantic pagination mappings](docs/semantic-generation.md) generate
 TypeScript, Go, Rust and C++ type ASTs from explicitly supplied Horos analysis.
+The [source-layout proposal](docs/layout.md) specifies physical file organization,
+multi-unit transformation output and per-file parsing of a source base. Its Go
+model and independent layout.Provider are documented but not implemented.
 Package releases remain deferred.
 The concrete Horos frontend uses public Horos 0.9.0 and Ontos 0.16.0. Consumers
 must upgrade together; no older dependency path or compatibility shim remains.
@@ -82,6 +85,8 @@ interpret these concrete type semantics.
 - [Syntax engine](docs/engine.md): registration, typed boundaries, path finding,
   execution and text-stage composition.
 - [Generation design](docs/generation.md): AST-to-AST pipeline and future mappings.
+- [Source layout](docs/layout.md): proposed Go model, layout.Provider, multi-unit
+  transformations and whole-source-base parsing.
 - [Charter](CHARTER.md), [contributor instructions](AGENTS.md) and
   [source layout](LAYOUT.md): ownership, delivery and package boundaries.
 

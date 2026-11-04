@@ -6,6 +6,12 @@ the AST. The [Horos frontend](horos.md) now implements its [source grammar](horo
 through these same interfaces. The first [semantic pagination transformers](semantic-generation.md) now produce native ASTs; runtime adapters remain deferred.
 The subsequent [syntax engine](engine.md) supplies registration,
 route execution and composition of these native text stages.
+The [source-layout proposal](layout.md#6-parsing-a-whole-source-base) explains
+whole-source-base orchestration: the application reads and captures selected
+files, calls the parser once per text, then supplies all relevant trees and file
+context to resolution. No parser opens files or concatenates a project into one
+text. Multi-file Horos resolution remains proposed; native semantic providers
+remain unimplemented.
 
 ## Pipeline
 
