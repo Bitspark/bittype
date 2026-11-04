@@ -16,7 +16,9 @@ import (
 // Provider has no initialization, discovery or registration side effects.
 type Provider struct{ s.Language }
 
-func (Provider) Parse(input parsecontract.Input) (cst.CST[s.Language], error) { return parse.Parse(input) }
+func (Provider) Parse(input parsecontract.Input) (cst.CST[s.Language], error) {
+	return parse.Parse(input)
+}
 func (Provider) Format(view ast.View[s.Language]) (cst.CST[s.Language], error) {
 	return format.Format(view)
 }

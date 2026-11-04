@@ -12,7 +12,7 @@ import (
 type Language struct{}
 type MissingName struct{}
 
-func (MissingName) ID() language.ID                             { return "missing" }
+func (MissingName) ID() language.ID                              { return "missing" }
 func (MissingName) Parse(parse.Input) (cst.CST[Language], error) { return cst.CST[Language]{}, nil }
 
 var _ parse.Provider[Language] = MissingName{}

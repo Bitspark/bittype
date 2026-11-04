@@ -97,7 +97,7 @@ type fakeText[L any] struct {
 	print  func(cst.CST[L]) (string, error)
 }
 
-func (p fakeText[L]) Parse(input parse.Input) (cst.CST[L], error)   { return p.parse(input) }
+func (p fakeText[L]) Parse(input parse.Input) (cst.CST[L], error)  { return p.parse(input) }
 func (p fakeText[L]) Format(input ast.View[L]) (cst.CST[L], error) { return p.format(input) }
 func (p fakeText[L]) Print(input cst.CST[L]) (string, error)       { return p.print(input) }
 func exampleConcrete[L any](leaf *string) cst.CST[L] {

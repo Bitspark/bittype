@@ -3,10 +3,10 @@ package integration_test
 import (
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
-	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/format/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/print/go"
+	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	cpp "github.com/Bitspark/bittype/provider/cpp/go"
 	golang "github.com/Bitspark/bittype/provider/golang/go"

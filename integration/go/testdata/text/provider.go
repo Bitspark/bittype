@@ -2,8 +2,8 @@ package consumer
 
 import (
 	"github.com/Bitspark/bittype/contracts/language/go"
-	"github.com/Bitspark/bittype/contracts/pipeline/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
+	"github.com/Bitspark/bittype/contracts/pipeline/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/cst/go"
@@ -12,8 +12,8 @@ import (
 type Language struct{}
 type Independent struct{}
 
-func (Independent) ID() language.ID                             { return "independent-language" }
-func (Independent) Name() string                                { return "Independent language" }
+func (Independent) ID() language.ID                              { return "independent-language" }
+func (Independent) Name() string                                 { return "Independent language" }
 func (Independent) Parse(parse.Input) (cst.CST[Language], error) { return cst.CST[Language]{}, nil }
 func (Independent) Format(ast.View[Language]) (cst.CST[Language], error) {
 	return cst.CST[Language]{}, nil
