@@ -1,6 +1,7 @@
 package consumer
 
 import (
+	"context"
 	"github.com/Bitspark/bittype/contracts/pipeline/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
@@ -46,12 +47,12 @@ var output = ast.AST[outputLanguage]{
 
 // Assignability witnesses only: these variables are not invoked.
 // A function with the exact signature can satisfy the stage contract.
-var generate func(ast.AST[inputLanguage]) (ast.AST[outputLanguage], error)
+var generate func(context.Context, ast.AST[inputLanguage]) (ast.AST[outputLanguage], error)
 var generator pipeline.Stage[ast.AST[inputLanguage], ast.AST[outputLanguage]] = generate
 
-var format func(ast.AST[outputLanguage]) (string, error)
+var format func(context.Context, ast.AST[outputLanguage]) (string, error)
 var formatter pipeline.Stage[ast.AST[outputLanguage], string] = format
 
 // The generic pipeline is also usable without ASTs or language markers.
-var parse func([]byte) (int, error)
+var parse func(context.Context, []byte) (int, error)
 var unrelated pipeline.Stage[[]byte, int] = parse

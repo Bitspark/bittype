@@ -24,17 +24,19 @@ import (
 
 type Provider struct{ s.Language }
 
-func (Provider) Parse(input parsecontract.Input) (cst.CST[s.Language], error) {
-	return parse.Parse(input)
+func (Provider) Parse(ctx context.Context, input parsecontract.Input) (cst.CST[s.Language], error) {
+	return parse.Parse(ctx, input)
 }
-func (Provider) Format(view ast.View[s.Language]) (cst.CST[s.Language], error) {
-	return format.Format(view)
+func (Provider) Format(ctx context.Context, view ast.View[s.Language]) (cst.CST[s.Language], error) {
+	return format.Format(ctx, view)
 }
-func (Provider) Print(tree cst.CST[s.Language]) (string, error) { return print.Print(tree) }
+func (Provider) Print(ctx context.Context, tree cst.CST[s.Language]) (string, error) {
+	return print.Print(ctx, tree)
+}
 
-var _ parsecontract.Provider[s.Language] = Provider{}
-var _ formatcontract.Provider[s.Language] = Provider{}
-var _ printcontract.Provider[s.Language] = Provider{}
+var _ parsecontract.Provider[parsecontract.Input, cst.CST[s.Language]] = Provider{}
+var _ formatcontract.Provider[ast.View[s.Language], cst.CST[s.Language]] = Provider{}
+var _ printcontract.Provider[cst.CST[s.Language], string] = Provider{}
 
 func (Provider) Check(view ast.View[s.Language]) error { return check.Check(view) }
 func (Provider) Analyze(ctx context.Context, request analysis.Request[s.Language]) (semantic.Result, error) {

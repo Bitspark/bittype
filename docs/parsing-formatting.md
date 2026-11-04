@@ -6,11 +6,11 @@ the AST. The [Horos frontend](horos.md) now implements its [source grammar](horo
 through these same interfaces. The first [semantic pagination transformers](semantic-generation.md) now produce native ASTs; runtime adapters remain deferred.
 The subsequent [syntax engine](engine.md) supplies registration,
 route execution and composition of these native text stages.
-The [Syntax and Files proposal](source.md) applies parse, format and print at both
+The [Syntax and Files design](source.md) applies parse, format and print at both
 levels: Syntax/CST/AST and Files/Source/Semantics. Files parsing explicitly
 composes per-file Syntax parsing with resolution/analysis and publishes Source
 only with established Semantics. No parser opens files or concatenates a project
-into one text. The Files stages and multi-file Horos resolution remain proposed;
+into one text. The Files stages and multi-file Horos resolution are implemented;
 native semantic providers remain unimplemented.
 
 ## Pipeline
@@ -138,9 +138,9 @@ type Input struct {
     TreeID   ast.TreeID
     Text     string
 }
-type Provider[L any] interface {
+type Provider[I, O any] interface {
     language.Provider
-    Parse(Input) (cst.CST[L], error)
+    Parse(context.Context, I) (O, error)
 }
 ```
 
@@ -149,9 +149,9 @@ dependencies. [Formatting](../contracts/format/go/provider.go) consumes an AST v
 
 ```go
 // package format
-type Provider[L any] interface {
+type Provider[I, O any] interface {
     language.Provider
-    Format(ast.View[L]) (cst.CST[L], error)
+    Format(context.Context, I) (O, error)
 }
 ```
 
@@ -159,11 +159,15 @@ type Provider[L any] interface {
 
 ```go
 // package print
-type Provider[L any] interface {
+type Provider[I, O any] interface {
     language.Provider
-    Print(cst.CST[L]) (string, error)
+    Print(context.Context, I) (O, error)
 }
 ```
+
+Syntax uses parse.Provider[parse.Input, cst.CST[L]],
+format.Provider[ast.View[L], cst.CST[L]] and print.Provider[cst.CST[L], string].
+Files uses the same roles with the captured requests described in [Source](source.md).
 
 Each native parser, formatter and checker package supplies its specialized
 provider. Each native `provider/<language>/go` implementation offers all four
@@ -173,8 +177,8 @@ separate implementations for each capability.
 
 The engine first registers identity/profile metadata from
 `representation.NewLanguage[L](language.Provider, profile)`. It then independently
-registers adapters made by `parse.NewParser`, `check.NewChecker`,
-`format.NewFormatter` and `print.NewPrinter`. Each adapter captures the same
+registers adapters made by `parse.NewSyntaxParser`, `check.NewChecker`,
+`format.NewSyntaxFormatter` and `print.NewSyntaxPrinter`. Each adapter captures the same
 ID/profile/Go-marker contract and owns its boundary snapshots. Registration of
 one stage never installs any other stage; additional stages can be attached later.
 
@@ -198,14 +202,14 @@ For example:
 
 ```go
 p := typescriptprovider.Provider{}
-parsed, err := p.Parse(parse.Input{
+parsed, err := p.Parse(ctx, parse.Input{
     SourceID: "input", TreeID: "tree",
     Text: "type Names = string[];",
 })
 // Handle err before using parsed.
-original, err := p.Print(parsed)  // original concrete spelling
-formatted, err := p.Format(parsed)
-output, err := p.Print(formatted) // newly selected layout
+original, err := p.Print(ctx, parsed)  // original concrete spelling
+formatted, err := p.Format(ctx, parsed)
+output, err := p.Print(ctx, formatted) // newly selected layout
 ```
 
 These signatures fit the existing typed pipeline Stage contract. The engine

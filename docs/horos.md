@@ -159,7 +159,7 @@ qualify their boundary.
 
 ## Analysis profile and generic queries
 
-`analyze.Contract()` advertises `horos-declarations-2/analysis-1`. Its domain is
+`analyze.Contract()` advertises `horos-declarations-2/analysis-2`. Its domain is
 the selected entry and transitive pinned module closure, not every unused value
 in the supplied pool. Unused pool modules contribute no established semantic
 facts; their binding annotations are outside this analyzed domain. Every supplied
@@ -174,7 +174,7 @@ module still has its document-pin assertion checked during decoding.
 | application-dependencies | Complete / Undetermined; every declaration application, including nested arguments, exported |
 
 The resolver adds a sixth obligation, reference-resolution, requiring Complete /
-Holds for its model. Its profile is horos-declarations-2/resolution-1. Analysis
+Holds for its model. Its profile is horos-declarations-2/resolution-2. Analysis
 requires that resolver evidence and preserves these five reports. All five
 reports are analysis model publication requirements. A semantic rejection or
 missing dependency publishes diagnostics without a partial graph. Missing context
@@ -200,7 +200,7 @@ returns the ID of a term with operator `horos/bound/type` or `horos/bound/data`,
 codec-v1 bytes of that bound atom. Parameter entities retain sort `horos/type`;
 bounds constrain arguments, not the kind of entity. No shared semantic field or
 subtype rule is added. ProgramValidity includes Horos's symbolic bound checks. Four generic queries need
-no Horos model import: `Resolve`, `TermAt`, `ParameterBindings` and
+no Horos model import: `Resolve`, `TermAt`, `DirectParameterBindings` and
 `DependenciesFrom`. Dependency edges describe declaration applications, not a
 general import, inheritance or runtime-effect graph.
 

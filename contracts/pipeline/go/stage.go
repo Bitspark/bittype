@@ -4,6 +4,8 @@
 // Execution, composition, scheduling and discovery are not implemented here.
 package pipeline
 
+import "context"
+
 // Stage is the contract of a transformation from I to O.
 //
 // A stage must treat its input and reachable storage as read-only and own any
@@ -13,4 +15,4 @@ package pipeline
 //
 // The nil value denotes no configured stage and must not be invoked.
 // No default stage, registry, cancellation policy or hidden IO is installed.
-type Stage[I, O any] func(I) (O, error)
+type Stage[I, O any] func(context.Context, I) (O, error)

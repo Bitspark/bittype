@@ -1,6 +1,8 @@
 package cppparse
 
 import (
+	"context"
+	"errors"
 	check "github.com/Bitspark/bittype/check/cpp/go"
 	parsecontract "github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
@@ -19,7 +21,13 @@ type parser struct{ *parseutil.Parser[s.Language] }
 
 var vocabulary = concrete.Vocabulary[s.Language]{Layout: s.ConcreteLayout, Token: s.ConcreteToken, Whitespace: s.ConcreteWhitespace, Comment: s.ConcreteComment}
 
-func Parse(input parsecontract.Input) (cst.CST[s.Language], error) {
+func Parse(ctx context.Context, input parsecontract.Input) (cst.CST[s.Language], error) {
+	if ctx == nil {
+		return cst.CST[s.Language]{}, errors.New("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return cst.CST[s.Language]{}, err
+	}
 	if len(input.Text) > lex.MaxBytes {
 		return cst.CST[s.Language]{}, &text.Diagnostic{Code: text.LimitExceeded, Message: "input exceeds 4 MiB"}
 	}
@@ -429,6 +437,8 @@ func (p *parser) typeID() ast.NodeID {
 
 type Provider struct{ s.Language }
 
-func (Provider) Parse(input parsecontract.Input) (cst.CST[s.Language], error) { return Parse(input) }
+func (Provider) Parse(ctx context.Context, input parsecontract.Input) (cst.CST[s.Language], error) {
+	return Parse(ctx, input)
+}
 
-var _ parsecontract.Provider[s.Language] = Provider{}
+var _ parsecontract.Provider[parsecontract.Input, cst.CST[s.Language]] = Provider{}

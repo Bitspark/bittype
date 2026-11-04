@@ -1,6 +1,7 @@
 package horosparse_test
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -28,37 +29,37 @@ func pins(tree s.AST) []string {
 func roundTrip(t *testing.T, source string) s.AST {
 	t.Helper()
 	p := provider.Provider{}
-	parsed, err := p.Parse(parse.Input{SourceID: "input.horos", TreeID: "input", Text: source})
+	parsed, err := p.Parse(context.Background(), parse.Input{SourceID: "input.horos", TreeID: "input", Text: source})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := p.Check(parsed); err != nil {
 		t.Fatal(err)
 	}
-	printed, err := p.Print(parsed)
+	printed, err := p.Print(context.Background(), parsed)
 	if err != nil || printed != source {
 		t.Fatalf("lossless source round trip: %v\n%q", err, printed)
 	}
-	formatted, err := p.Format(parsed)
+	formatted, err := p.Format(context.Background(), parsed)
 	if err != nil {
 		t.Fatal(err)
 	}
-	output, err := p.Print(formatted)
+	output, err := p.Print(context.Background(), formatted)
 	if err != nil {
 		t.Fatal(err)
 	}
-	reparsed, err := p.Parse(parse.Input{SourceID: "formatted.horos", TreeID: "formatted", Text: output})
+	reparsed, err := p.Parse(context.Background(), parse.Input{SourceID: "formatted.horos", TreeID: "formatted", Text: output})
 	if err != nil {
 		t.Fatalf("formatter produced invalid source: %v\n%s", err, output)
 	}
 	if strings.Join(pins(parsed.Abstract), ",") != strings.Join(pins(reparsed.Abstract), ",") {
 		t.Fatalf("canonical document changed:\n%s", output)
 	}
-	again, err := p.Format(reparsed)
+	again, err := p.Format(context.Background(), reparsed)
 	if err != nil {
 		t.Fatal(err)
 	}
-	stable, err := p.Print(again)
+	stable, err := p.Print(context.Background(), again)
 	if err != nil || stable != output {
 		t.Fatalf("formatting is not idempotent: %v", err)
 	}
@@ -112,11 +113,11 @@ type Escaped = ` + "`list`" + `<text>;
 		t.Fatal(err)
 	}
 	p := provider.Provider{}
-	formatted, err := p.Format(projected)
+	formatted, err := p.Format(context.Background(), projected)
 	if err != nil {
 		t.Fatal(err)
 	}
-	output, err := p.Print(formatted)
+	output, err := p.Print(context.Background(), formatted)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +176,7 @@ func TestRejectWholeInput(t *testing.T) {
 	}
 	p := provider.Provider{}
 	for i, source := range cases {
-		out, err := p.Parse(parse.Input{SourceID: "bad.horos", TreeID: "bad", Text: source})
+		out, err := p.Parse(context.Background(), parse.Input{SourceID: "bad.horos", TreeID: "bad", Text: source})
 		var diagnostic *text.Diagnostic
 		if err == nil || !errors.As(err, &diagnostic) || len(out.Nodes) != 0 || len(out.Abstract.Nodes) != 0 {
 			t.Fatalf("case %d: expected located failure without partial output: %v", i, err)
@@ -195,7 +196,7 @@ func FuzzSourceRoundTrip(f *testing.F) {
 			t.Skip()
 		}
 		p := provider.Provider{}
-		parsed, err := p.Parse(parse.Input{SourceID: "fuzz", TreeID: "fuzz", Text: source})
+		parsed, err := p.Parse(context.Background(), parse.Input{SourceID: "fuzz", TreeID: "fuzz", Text: source})
 		if err != nil {
 			if len(parsed.Nodes) != 0 || len(parsed.Abstract.Nodes) != 0 {
 				t.Fatal("partial parse result")

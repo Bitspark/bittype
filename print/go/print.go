@@ -3,18 +3,29 @@
 package print
 
 import (
+	"context"
+	"errors"
 	cstcheck "github.com/Bitspark/bittype/check/cst/go"
 	"github.com/Bitspark/bittype/trees/cst/go"
 	"strings"
 )
 
-func Print[L any](tree cst.CST[L]) (string, error) {
+func Print[L any](ctx context.Context, tree cst.CST[L]) (string, error) {
+	if ctx == nil {
+		return "", errors.New("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	if err := cstcheck.Check(tree); err != nil {
 		return "", err
 	}
 	var result strings.Builder
 	stack := []cst.NodeID{tree.Root}
 	for len(stack) > 0 {
+		if err := ctx.Err(); err != nil {
+			return "", err
+		}
 		id := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 		n := tree.Nodes[id-1]

@@ -1,14 +1,12 @@
-// Package format defines AST-to-CST providers.
+// Package format defines the format role at the Syntax and Files levels.
 package format
 
 import (
+	"context"
 	"github.com/Bitspark/bittype/contracts/language/go"
-	"github.com/Bitspark/bittype/trees/ast/go"
-	"github.com/Bitspark/bittype/trees/cst/go"
 )
 
-// Provider constructs a concrete tree from a borrowed, read-only AST view.
-type Provider[L any] interface {
+type Provider[I, O any] interface {
 	language.Provider
-	Format(ast.View[L]) (cst.CST[L], error)
+	Format(context.Context, I) (O, error)
 }

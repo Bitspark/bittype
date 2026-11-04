@@ -23,7 +23,9 @@ import (
 
 type Parser struct{ ts.Language }
 
-func (Parser) Parse(input parse.Input) (cst.CST[ts.Language], error) { return nativeparse.Parse(input) }
+func (Parser) Parse(ctx context.Context, input parse.Input) (cst.CST[ts.Language], error) {
+	return nativeparse.Parse(context.Background(), input)
+}
 
 type Checker struct{ ts.Language }
 
@@ -31,20 +33,22 @@ func (Checker) Check(input ast.View[ts.Language]) error { return nativecheck.Che
 
 type Formatter struct{ ts.Language }
 
-func (Formatter) Format(input ast.View[ts.Language]) (cst.CST[ts.Language], error) {
-	return nativeformat.Format(input)
+func (Formatter) Format(ctx context.Context, input ast.View[ts.Language]) (cst.CST[ts.Language], error) {
+	return nativeformat.Format(context.Background(), input)
 }
 
 type Printer struct{ ts.Language }
 
-func (Printer) Print(input cst.CST[ts.Language]) (string, error) { return nativeprint.Print(input) }
+func (Printer) Print(ctx context.Context, input cst.CST[ts.Language]) (string, error) {
+	return nativeprint.Print(context.Background(), input)
+}
 
 func TestIndependentNativeStages(t *testing.T) {
 	definition, err := representation.NewLanguage[ts.Language](ts.Language{}, "native-types-v1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	parser, err := parse.NewParser[ts.Language](definition, Parser{})
+	parser, err := parse.NewSyntaxParser[ts.Language](definition, Parser{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,11 +56,11 @@ func TestIndependentNativeStages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	formatter, err := format.NewFormatter[ts.Language](definition, Formatter{})
+	formatter, err := format.NewSyntaxFormatter[ts.Language](definition, Formatter{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	printer, err := print.NewPrinter[ts.Language](definition, Printer{})
+	printer, err := print.NewSyntaxPrinter[ts.Language](definition, Printer{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,27 +68,27 @@ func TestIndependentNativeStages(t *testing.T) {
 	if err := e.RegisterLanguage(definition); err != nil {
 		t.Fatal(err)
 	}
-	if err := e.RegisterParser(parser); err != nil {
+	if err := e.RegisterSyntaxParser(parser); err != nil {
 		t.Fatal(err)
 	}
 	source := "// owned by consumer\ntype Page<T> = T[];\n"
-	parsed, err := e.Parse(definition.ID(), parse.Input{SourceID: "independent", TreeID: "independent", Text: source})
+	parsed, err := e.ParseSyntax(context.Background(), definition.ID(), parse.Input{SourceID: "independent", TreeID: "independent", Text: source})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := e.Check(parsed.ASTView()); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	if err := e.RegisterPrinter(printer); err != nil {
+	if err := e.RegisterSyntaxPrinter(printer); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := e.Print(parsed); err != nil || got != source {
+	if got, err := e.PrintSyntax(context.Background(), parsed); err != nil || got != source {
 		t.Fatal(got, err)
 	}
-	if err := e.RegisterFormatter(formatter); err != nil {
+	if err := e.RegisterSyntaxFormatter(formatter); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.Render(parsed.ASTView()); err != nil {
+	if _, err := e.RenderSyntax(context.Background(), parsed.ASTView()); err != nil {
 		t.Fatal(err)
 	}
 	if err := e.RegisterChecker(checker); err != nil {

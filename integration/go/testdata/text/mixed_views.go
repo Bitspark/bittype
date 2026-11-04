@@ -12,10 +12,10 @@ import (
 
 var _ ast.View[ts.Language] = cst.CST[rust.Language]{}
 
-var parser parse.Provider[ts.Language]
-var formatter format.Provider[ts.Language]
-var printer print.Provider[ts.Language]
+var parser parse.Provider[parse.Input, cst.CST[ts.Language]]
+var formatter format.Provider[ast.View[ts.Language], cst.CST[ts.Language]]
+var printer print.Provider[cst.CST[ts.Language], string]
 
-var _ parse.Provider[rust.Language] = parser
-var _ format.Provider[rust.Language] = formatter
-var _ print.Provider[rust.Language] = printer
+var _ parse.Provider[parse.Input, cst.CST[rust.Language]] = parser
+var _ format.Provider[ast.View[rust.Language], cst.CST[rust.Language]] = formatter
+var _ print.Provider[cst.CST[rust.Language], string] = printer

@@ -32,9 +32,9 @@ from an established binding, or missing dependency context from invalid source.
 | Dependency | A provider-labeled directed edge between entities | PeoplePage applies Page and also applies Person as its argument |
 | Obligation | A named analysis task for which the caller can request a report | Decide program validity, or enumerate application bindings |
 | Domain | The part of the supplied context covered by an obligation | The selected Horos entry module and every pinned module transitively imported from it |
-| Analysis profile | A versioned contract defining obligations, domains, vocabulary and requirements for a model | `horos-declarations-2/analysis-1` |
+| Analysis profile | A versioned contract defining obligations, domains, vocabulary and requirements for a model | `horos-declarations-2/analysis-2` |
 | Report | An obligation's completion status and, where applicable, its truth verdict | Validity is Complete / Holds; a completed binding enumeration is Complete / Undetermined |
-| Model | The immutable graph of established facts, available when its publication requirements are met | Queryable entities, terms, occurrences and application dependencies |
+| Semantics | The immutable graph of established facts, available when its publication requirements are met | Queryable entities, terms, occurrences and application dependencies |
 
 Entity and term IDs belong to one model. Names are display metadata, so two
 parameters both named T remain distinct. An occurrence uses a current tree/node
@@ -110,10 +110,10 @@ proves that the names resolve or the pins agree.
 from canonical module values; analysis can also admit structurally valid ASTs
 whose bindings have not yet been established.
 
-For this profile, `semantic.Input.Trees` contains one Program envelope and `Entry`
-addresses its Program root. Capture produces the shared snapshot. Empty Requested
+For this profile, `semantic.Input.Trees` contains one or more separate Program envelopes. `Entry`
+addresses the selected Program root. Capture produces the shared snapshot. Empty Requested
 options select every obligation advertised by that operation. Dependencies are
-supplied in the Program; the engine fetches nothing.
+supplied as whole modules in the Program trees; the engine fetches nothing.
 
 ### 2. Establish meaning through the owning provider
 
@@ -147,7 +147,7 @@ The record/list meanings stay owned by Horos. ProviderExpression retains exact
 encoded descriptor bytes and the operand locations supplied by Horos's model;
 the kernel does not decode records or search literal bytes for possible bindings.
 
-`ParameterBindings` pairs Page's parameter list with the application's arguments:
+`DirectParameterBindings` pairs Page's parameter list with the application's arguments:
 Page.T binds to the zero-argument Person application. The open Page declaration
 is preserved. In `Outer<T> = Page<T>`, Page.T instead binds to a Reference to
 Outer's distinct T entity. Analysis does not expand these declarations. Explicit
@@ -165,7 +165,7 @@ verdict. All five are requirements for publishing this profile's model.
 
 Expected outcomes differ even when the call returns a nil Go error:
 
-| Situation | Validity report | Enumeration reports | Model |
+| Situation | Validity report | Enumeration reports | Semantics |
 | --- | --- | --- | --- |
 | Valid pagination input, sufficient resources | Complete / Holds | Complete / Undetermined | Available |
 | Page receives the wrong number of arguments | Complete / Rejected | Incomplete / Undetermined | Absent |
@@ -173,7 +173,7 @@ Expected outcomes differ even when the call returns a nil Go error:
 | Resolution and annotation checks succeed, but graph export exhausts its budget | Complete / Holds | Incomplete / Undetermined | Absent |
 
 Inspect `Result.Reports()` or `Result.Report(key)`, read `Result.Diagnostics()`
-for the reason and subject, and check the boolean returned by `Result.Model()`
+for the reason and subject, and check the boolean returned by `Result.Semantics()`
 before querying facts. `Result.Valid()` establishes successful publication, not
 source validity. API errors such as invalid configuration return a non-nil Go
 error and no usable result; they do not use the table's diagnostic-result path.
@@ -189,11 +189,11 @@ are symbolic labels for actual occurrences and IDs in this result:
 | --- | --- | --- |
 | Which declaration does this use denote? | `Resolve(pageTarget)` | Page's entity ID |
 | Which expression was established here? | `TermAt(pageExpression)` | The term ID of the Page application shown above |
-| What fills each generic slot? | `ParameterBindings(pageApplicationTermID)` | One pair: Page.T's entity ID and the Person application's term ID |
+| What fills each generic slot? | `DirectParameterBindings(pageApplicationTermID)` | One pair: Page.T's entity ID and the Person application's term ID |
 | Which declarations does PeoplePage apply? | `DependenciesFrom(peoplePageID, resolve.ApplicationDependency())` | Edges to Page and Person, each with its current application occurrence |
 
 `Entity(id)` and `Term(id)` inspect the referenced records. Consumers can also
-enumerate the established occurrences in `Model.Data()` instead of constructing
+enumerate the established occurrences in `Semantics.Data()` instead of constructing
 provider-specific occurrences. A failed lookup means no recorded answer at that
 occurrence; it does not establish that the source is invalid. Application
 dependencies are explicit edges, not an inferred import or runtime-effect graph.
@@ -300,7 +300,7 @@ Each requested obligation must have exactly one report:
 
 Zero-valued Unreported is never accepted as a report. Unknown requested keys must
 be Unsupported. Additional reports may establish advertised model requirements.
-`semantic.Contract.ModelRequirements` lists the exact Complete/verdict pairs that a facts
+`semantic.Contract.SemanticsRequirements` lists the exact Complete/verdict pairs that a facts
 publication must establish. Missing or contrary reports prevent publication.
 
 Consumers distinguish three questions: did the analysis complete, what verdict
@@ -309,7 +309,7 @@ was established, and is a model available? `nil` error does not mean Holds.
 
 `Request.Publish` atomically validates coverage, current diagnostic sites and
 graph integrity, then copies and seals output before the callback returns.
-`Result` and its `semantics.Model` expose no mutable stored slices or maps.
+`Result` and its `semantics.Semantics[L]` expose no mutable stored slices or maps.
 Non-nil Go errors discard all output, including a result returned alongside the
 error. Expected source rejection or missing context is normally a diagnostic
 result with no graph; infrastructure failures remain Go errors.

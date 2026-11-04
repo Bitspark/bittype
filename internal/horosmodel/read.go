@@ -183,6 +183,7 @@ func (e *ValidationError) Unwrap() error { return ErrInvalid }
 // It is private frontend state consumed synchronously by explicit resolution.
 type Decoded[L any] struct {
 	frontend     Frontend[L]
+	parts        []*Decoded[L]
 	tree         ast.AST[L]
 	root         core.Value
 	dependencies []core.Value
@@ -268,17 +269,62 @@ func (f Frontend[L]) Read(view ast.View[L]) (Program, error) {
 	return d.Resolve(decl.DefaultLimits())
 }
 
-func (d *Decoded[L]) DeclarationSite(id decl.DeclarationID) ast.NodeRef {
-	return d.site(d.declarations[id])
+func (d *Decoded[L]) partForModule(pin decl.Digest) *Decoded[L] {
+	if len(d.parts) == 0 {
+		return d
+	}
+	for _, part := range d.parts {
+		if part.modules[pin] != 0 {
+			return part
+		}
+	}
+	return nil
 }
-func (d *Decoded[L]) ParameterSite(id decl.ParameterID) ast.NodeRef { return d.site(d.parameters[id]) }
-func (d *Decoded[L]) ModuleSite(id decl.Digest) ast.NodeRef         { return d.site(d.modules[id]) }
+func (d *Decoded[L]) partForTree(id ast.TreeID) *Decoded[L] {
+	if len(d.parts) == 0 {
+		if d.tree.ID == id {
+			return d
+		}
+		return nil
+	}
+	for _, part := range d.parts {
+		if part.tree.ID == id {
+			return part
+		}
+	}
+	return nil
+}
+func (d *Decoded[L]) DeclarationSite(id decl.DeclarationID) ast.NodeRef {
+	part := d.partForModule(id.Module)
+	if part == nil {
+		return ast.NodeRef{}
+	}
+	return part.site(part.declarations[id])
+}
+func (d *Decoded[L]) ParameterSite(id decl.ParameterID) ast.NodeRef {
+	part := d.partForModule(id.Declaration.Module)
+	if part == nil {
+		return ast.NodeRef{}
+	}
+	return part.site(part.parameters[id])
+}
+func (d *Decoded[L]) ModuleSite(id decl.Digest) ast.NodeRef {
+	part := d.partForModule(id)
+	if part == nil {
+		return ast.NodeRef{}
+	}
+	return part.site(part.modules[id])
+}
 func (d *Decoded[L]) BodySite(id decl.DeclarationID) ast.NodeRef {
-	node := d.declarations[id]
+	part := d.partForModule(id.Module)
+	if part == nil {
+		return ast.NodeRef{}
+	}
+	node := part.declarations[id]
 	if node != 0 {
-		for _, child := range d.tree.Nodes[node-1].Children {
+		for _, child := range part.tree.Nodes[node-1].Children {
 			if child.Role == s.RoleBody {
-				return d.site(child.Node)
+				return part.site(child.Node)
 			}
 		}
 	}
@@ -288,6 +334,13 @@ func (d *Decoded[L]) BodySite(id decl.DeclarationID) ast.NodeRef {
 // OperandSite follows a canonical tuple path through the existing AST encoding.
 // It interprets only declaration syntax framing, never descriptor constructors.
 func (d *Decoded[L]) OperandSite(site ast.NodeRef, path []int) ast.NodeRef {
+	if len(d.parts) > 0 {
+		part := d.partForTree(site.Tree)
+		if part == nil {
+			return ast.NodeRef{}
+		}
+		return part.OperandSite(site, path)
+	}
 	if site.Tree != d.tree.ID || site.Node == 0 || int(site.Node) > len(d.tree.Nodes) {
 		return ast.NodeRef{}
 	}
@@ -333,7 +386,10 @@ func (d *Decoded[L]) Locate(detail *decl.Error) *ast.NodeRef {
 			}
 		}
 	} else if detail.ImportAlias != "" {
-		site = d.site(d.imports[importID{module: detail.Module, alias: detail.ImportAlias}])
+		part := d.partForModule(detail.Module)
+		if part != nil {
+			site = part.site(part.imports[importID{module: detail.Module, alias: detail.ImportAlias}])
+		}
 	} else {
 		site = d.ModuleSite(detail.Module)
 	}
@@ -343,17 +399,23 @@ func (d *Decoded[L]) Locate(detail *decl.Error) *ast.NodeRef {
 	return &site
 }
 
+// correspond maps canonical positions to tree-qualified sites. Files stay separate.
 func (d *Decoded[L]) correspond(expected ast.AST[L]) error {
-	mapping := map[ast.NodeID]ast.NodeID{expected.Root: d.tree.Root}
+	mapping := map[ast.NodeID]ast.NodeRef{expected.Root: {Tree: d.tree.ID, Node: d.tree.Root}}
 	contexts := map[ast.NodeID]bool{}
-	rootModule := d.tree.Nodes[d.tree.Root-1].References[0].Target.Node
+	rootSite := d.site(d.tree.Nodes[d.tree.Root-1].References[0].Target.Node)
 	wantReader := reader[L]{tree: expected}
-	gotReader := reader[L]{tree: d.tree}
-	var walk func(ast.NodeID, ast.NodeID, bool) error
-	walk = func(wantID, gotID ast.NodeID, context bool) error {
-		want, got := expected.Nodes[wantID-1], d.tree.Nodes[gotID-1]
+	var walk func(ast.NodeID, ast.NodeRef, bool) error
+	walk = func(wantID ast.NodeID, gotSite ast.NodeRef, context bool) error {
+		part := d.partForTree(gotSite.Tree)
+		if part == nil {
+			return ErrInvalid
+		}
+		gotID := gotSite.Node
+		want, got := expected.Nodes[wantID-1], part.tree.Nodes[gotID-1]
+		gotReader := reader[L]{tree: part.tree}
 		bad := func() error {
-			return d.annotation(gotID, context, "Horos syntax does not match checked declaration positions")
+			return part.annotation(gotID, context, "Horos syntax does not match checked declaration positions")
 		}
 		if want.Kind != got.Kind || len(want.Attributes) != len(got.Attributes) || len(want.Children) != len(got.Children) {
 			return bad()
@@ -363,12 +425,11 @@ func (d *Decoded[L]) correspond(expected ast.AST[L]) error {
 				return bad()
 			}
 		}
-		mapping[wantID] = gotID
+		mapping[wantID] = gotSite
 		contexts[wantID] = context
 		type memberKey struct{ role, name string }
-		var members map[memberKey]ast.Child
+		members := map[memberKey]ast.Child{}
 		if want.Kind == s.KindModule {
-			members = make(map[memberKey]ast.Child, len(got.Children))
 			for _, candidate := range got.Children {
 				name := s.AttributeName
 				if candidate.Role == s.RoleImport {
@@ -393,7 +454,7 @@ func (d *Decoded[L]) correspond(expected ast.AST[L]) error {
 			if child.Role != actual.Role {
 				return bad()
 			}
-			if err := walk(child.Node, actual.Node, context); err != nil {
+			if err := walk(child.Node, part.site(actual.Node), context); err != nil {
 				return err
 			}
 		}
@@ -403,28 +464,67 @@ func (d *Decoded[L]) correspond(expected ast.AST[L]) error {
 		bytes, _ := hex.DecodeString(wantReader.attr(child.Node, s.AttributePin))
 		var pin decl.Digest
 		copy(pin[:], bytes)
-		actual := d.modules[pin]
-		if actual == 0 {
+		actual := d.ModuleSite(pin)
+		if actual.Node == 0 {
 			return fmt.Errorf("%w: resolved module has no source", ErrInvalid)
 		}
-		if err := walk(child.Node, actual, actual != rootModule); err != nil {
+		if err := walk(child.Node, actual, actual != rootSite); err != nil {
 			return err
 		}
 	}
-	for wantID, gotID := range mapping {
-		want := expected.Nodes[wantID-1]
-		for _, actual := range d.tree.Nodes[gotID-1].References {
+	for wantID, gotSite := range mapping {
+		part := d.partForTree(gotSite.Tree)
+		for _, actual := range part.tree.Nodes[gotSite.Node-1].References {
 			found := false
-			for _, reference := range want.References {
-				if reference.Role == actual.Role && actual.Target.Tree == d.tree.ID && actual.Target.Node == mapping[reference.Target.Node] {
+			for _, reference := range expected.Nodes[wantID-1].References {
+				if reference.Role == actual.Role && actual.Target == mapping[reference.Target.Node] {
 					found = true
 					break
 				}
 			}
 			if !found {
-				return d.annotation(gotID, contexts[wantID], "incorrect declaration, import or parameter annotation")
+				return part.annotation(gotSite.Node, contexts[wantID], "incorrect declaration, import or parameter annotation")
 			}
 		}
 	}
 	return nil
+}
+
+// DecodeCollection pools canonical module documents, never concatenated syntax.
+func (f Frontend[L]) DecodeCollection(inputs []ast.AST[L], entry ast.NodeRef, limits decl.Limits) (*Decoded[L], error) {
+	if len(inputs) == 0 {
+		return nil, ErrInvalid
+	}
+	combined := &Decoded[L]{frontend: f}
+	pins := map[decl.Digest]bool{}
+	for _, input := range inputs {
+		part, err := f.Decode(input, limits)
+		if err != nil {
+			return nil, err
+		}
+		if entry.Tree == input.ID {
+			if entry.Node != input.Root {
+				return nil, ErrInvalid
+			}
+			combined.tree = input
+			combined.root = part.root
+		}
+		for pin, node := range part.modules {
+			if pins[pin] {
+				return nil, part.assertion(node, true, "duplicate module document across input files")
+			}
+			pins[pin] = true
+		}
+		combined.parts = append(combined.parts, part)
+	}
+	if combined.root == nil {
+		return nil, ErrInvalid
+	}
+	for _, part := range combined.parts {
+		if part.tree.ID != entry.Tree {
+			combined.dependencies = append(combined.dependencies, part.root)
+		}
+		combined.dependencies = append(combined.dependencies, part.dependencies...)
+	}
+	return combined, nil
 }

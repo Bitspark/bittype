@@ -2,7 +2,9 @@
 package horosformat
 
 import (
+	"context"
 	"encoding/hex"
+	"errors"
 	"reflect"
 	"strconv"
 	"strings"
@@ -34,7 +36,13 @@ type formatter struct {
 // Format preserves canonical values, including unresolved applications. A
 // multi-module Program is emitted as sections with its selected entry first.
 // Formatting does not resolve imports, specialize generics or repair assertions.
-func Format(view ast.View[s.Language]) (cst.CST[s.Language], error) {
+func Format(ctx context.Context, view ast.View[s.Language]) (cst.CST[s.Language], error) {
+	if ctx == nil {
+		return cst.CST[s.Language]{}, errors.New("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return cst.CST[s.Language]{}, err
+	}
 	if view == nil {
 		return cst.CST[s.Language]{}, check.Check(view)
 	}
@@ -425,6 +433,8 @@ func (f *formatter) value(value core.Value) doc {
 // Provider supplies formatting independently of the composed Horos provider.
 type Provider struct{ s.Language }
 
-func (Provider) Format(view ast.View[s.Language]) (cst.CST[s.Language], error) { return Format(view) }
+func (Provider) Format(ctx context.Context, view ast.View[s.Language]) (cst.CST[s.Language], error) {
+	return Format(ctx, view)
+}
 
-var _ formatcontract.Provider[s.Language] = Provider{}
+var _ formatcontract.Provider[ast.View[s.Language], cst.CST[s.Language]] = Provider{}

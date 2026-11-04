@@ -6,11 +6,10 @@ providers. The separate [analysis contract](analysis.md) captures a request,
 reports coverage and publishes an immutable result. Horos supplies the first
 production analyzer; the four native languages still supply syntax tooling only.
 
-The later [Syntax and Files proposal](source.md) names the abstract representation
-Semantics and the concrete representation Source, matching AST and CST. It proposes
-Semantics[L] as a future replacement for the current Model type, not a second fact
-graph. This reference still describes the implemented API; no rename or alias is
-implemented by the proposal.
+The [Syntax and Files design](source.md) uses typed `Semantics[L]` as the abstract
+representation and sealed Source as its concrete realization. This replaces the
+old Model API without aliases. Dynamic results retain an actual language marker
+in `representation.Semantics`; `UnpackSemantics[L]` returns the typed graph.
 
 The owner requested this boundary after the initial minimal Go sketch. The
 [reviewed expert consultation](../research-docs/0002-semantic-analysis-kernel.md)
@@ -35,8 +34,8 @@ Canonicalization remains an explicit, potentially partial AST transformation.
 
 ## Representation
 
-The public construction records are plain Go data. `semantics.New` validates,
-bounds and copies them into a `Model` with private storage. Analysis providers
+The public construction records are plain Go data. `semantics.New[L]` validates,
+bounds and copies them into a `Semantics[L]` with private storage. Analysis providers
 normally publish them through `Request.Publish`, which also checks request
 provenance and model requirements.
 
@@ -61,7 +60,8 @@ type Parameter struct {
 
 type Term struct {
     Kind      TermKind // Reference, Application or ProviderExpression
-    Target    EntityID
+    Target    EntityID // Reference only
+    Callee    TermID   // Application only
     Arguments []TermID
     Operator  Key
     Encoding  Key
@@ -90,14 +90,16 @@ The three term variants are disjoint:
 | Variant | Stored meaning |
 | --- | --- |
 | Reference | A target entity, including an open parameter or intrinsic |
-| Application | A target entity and its complete ordered effective arguments |
+| Application | A callee term and its complete ordered effective arguments |
 | ProviderExpression | An operator key, encoding key, exact copied bytes and located semantic operands |
 
-An unapplied reference and a zero-argument application are distinct. Application
-arity must equal the target entity's parameter count. `ParameterBindings` pairs
-that parameter list with the argument list; no second substitution map can drift
-from the application. A provider must make any defaults explicit before export.
-Parameter sorts are keys, so the carrier does not assume that every slot is a type.
+An unapplied reference and a zero-argument application are distinct. The callee
+is a term, allowing direct, parameter, computed and higher-order callees. Graph
+admission checks containment and addresses, not language applicability or arity.
+`DirectParameterBindings` pairs effective arguments with declared parameters only
+when the callee is a direct Reference with matching arity; otherwise it returns
+no binding view. Providers own all application rules. Parameter sorts remain
+provider-owned keys; the carrier assumes no universal kind system.
 
 Provider expressions retain information that references/applications cannot
 express: exact literals, refinements, or native operators. Encoding and operator
@@ -120,6 +122,8 @@ type Occurrence struct {
 }
 type Binding struct { At Occurrence; Target EntityID }
 type Expression struct { At Occurrence; Term TermID }
+type Subject struct { Entity EntityID; Term TermID } // exactly one nonzero
+type Fact struct { Subject Subject; Relation Key; Term TermID }
 type Dependency struct {
     From, To EntityID
     Relation Key
@@ -133,6 +137,10 @@ set. `TermAt` returns an established term association. Absence is no recorded
 answer; it does not prove a failed lookup. A dependency is an explicit directed,
 labeled declaration edge. Consumers do not infer dependencies by guessing from
 payloads or syntax shape.
+
+`Data.Facts` stores multivalued provider-owned relations on entities or terms.
+`Facts(subject, relation)` retrieves all recorded terms; no unique meaning,
+application evaluation or structural-kind rule is imposed by the kernel.
 
 Provider keys are owned vocabulary, not executable discovery or registration.
 Consumers can inspect the graph generically and interpret particular keys only
@@ -162,7 +170,7 @@ generate runtime behavior.
 
 ## Publication invariants
 
-`Model` accessors return copied mutable records, including nested byte arrays,
+`Semantics[L]` accessors return copied mutable records, including nested byte arrays,
 operand locators and optional occurrence pointers. Producer mutation after
 publication and caller mutation of an accessor result cannot change the model.
 Producers must not mutate construction storage concurrently with capture.
@@ -173,13 +181,13 @@ Term containment through arguments and operands must be a DAG. Entity references
 and declaration dependencies may cycle; the core imposes no universal semantic
 recursion prohibition. A provider may impose its own language's stricter rules.
 
-`Model.Valid()` establishes a constructed graph, not a language-valid program.
+`Semantics[L].Valid()` establishes a constructed graph, not a language-valid program.
 Consumers must inspect the enclosing analysis reports and model availability.
 The [analysis contract](analysis.md) makes these separate questions explicit.
 
 ## Qualification and remaining scope
 
-[Model tests](../semantics/go/model_test.go) qualify identity, ownership, malformed
+[Semantics tests](../semantics/go/model_test.go) qualify identity, ownership, malformed
 graphs, current provenance, exact bounds and DAG depth. An independently authored
 [foreign-provider fixture](../integration/go/semantic_extension_test.go) exercises
 the same API with unfamiliar keys, non-type parameters, aliases, source-less

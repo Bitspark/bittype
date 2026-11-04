@@ -14,7 +14,6 @@ import (
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/semantics/go"
-	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 )
 
@@ -46,7 +45,7 @@ func (f Frontend[L]) Contract() resolution.Contract {
 		if k == f.Validity() || k == f.ReferenceResolution() {
 			verdict = semantic.Holds
 		}
-		contract.ModelRequirements = append(contract.ModelRequirements, semantic.Requirement{Obligation: k, Verdict: verdict})
+		contract.SemanticsRequirements = append(contract.SemanticsRequirements, semantic.Requirement{Obligation: k, Verdict: verdict})
 	}
 	return resolution.Contract{Semantic: contract, Bindings: f.ReferenceResolution()}
 }
@@ -149,9 +148,8 @@ func (f Frontend[L]) failure(request semantic.Request[L], decoded *Decoded[L], e
 	return request.Publish(semantic.Publication{Reports: coverage, Diagnostics: []semantic.Diagnostic{diagnostic}})
 }
 
-// ResolveReferences requires one Program tree and its root as the explicit entry. The
-// structural root reference selects the module whose reachable closure is checked.
-// Missing annotations are allowed; present ones are assertions, never repaired.
+// ResolveReferences resolves the explicit entry Program against all supplied
+// Program trees. Sites remain qualified by their original tree throughout.
 func (f Frontend[L]) ResolveReferences(ctx context.Context, request semantic.Request[L]) (semantic.Result, error) {
 	if ctx == nil {
 		return semantic.Result{}, semantic.ErrInvalidRequest
@@ -163,14 +161,20 @@ func (f Frontend[L]) ResolveReferences(ctx context.Context, request semantic.Req
 		return semantic.Result{}, fmt.Errorf("%w: unsupported Horos resolution profile", semantic.ErrInvalidRequest)
 	}
 	inputs := request.Inputs()
-	if len(inputs) != 1 || request.Entry() != (ast.NodeRef{Tree: inputs[0].ID, Node: inputs[0].Root}) {
-		return semantic.Result{}, fmt.Errorf("%w: Horos resolution requires one Program and its root entry", semantic.ErrInvalidRequest)
+	entryFound := false
+	for _, input := range inputs {
+		if input.ID == request.Entry().Tree && input.Root == request.Entry().Node {
+			entryFound = true
+		}
+	}
+	if !entryFound {
+		return semantic.Result{}, fmt.Errorf("%w: Horos resolution requires Programs and an explicit root entry", semantic.ErrInvalidRequest)
 	}
 	limits, err := f.configuredLimits(request.Configuration())
 	if err != nil {
 		return semantic.Result{}, err
 	}
-	decoded, err := f.Decode(inputs[0], limits)
+	decoded, err := f.DecodeCollection(inputs, request.Entry(), limits)
 	if err != nil {
 		return f.failure(request, nil, err)
 	}
@@ -181,7 +185,7 @@ func (f Frontend[L]) ResolveReferences(ctx context.Context, request semantic.Req
 	if err != nil {
 		return f.failure(request, decoded, err)
 	}
-	facts, err := f.project(ctx, decoded, program, request.Limits().Model)
+	facts, err := f.project(ctx, decoded, program, request.Limits().Semantics)
 	if err != nil {
 		if !errors.Is(err, semantics.ErrLimit) {
 			return semantic.Result{}, err

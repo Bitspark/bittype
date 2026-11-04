@@ -12,6 +12,8 @@ import (
 	horos "github.com/Bitspark/bittype/provider/horos/go"
 	rust "github.com/Bitspark/bittype/provider/rust/go"
 	typescript "github.com/Bitspark/bittype/provider/typescript/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	"testing"
 )
 
@@ -29,9 +31,9 @@ func providerCapabilities[L any](t *testing.T, p check.Provider[L], textStages, 
 		if p.ID() == "" || p.Name() == "" {
 			t.Fatal("missing language identity")
 		}
-		_, parser := any(p).(parse.Provider[L])
-		_, formatter := any(p).(format.Provider[L])
-		_, printer := any(p).(print.Provider[L])
+		_, parser := any(p).(parse.Provider[parse.Input, cst.CST[L]])
+		_, formatter := any(p).(format.Provider[ast.View[L], cst.CST[L]])
+		_, printer := any(p).(print.Provider[cst.CST[L], string])
 		_, resolver := any(p).(resolution.Provider[L])
 		_, analyzer := any(p).(analysis.Provider[L])
 		if parser != textStages || formatter != textStages || printer != textStages || resolver != semantic || analyzer != semantic {

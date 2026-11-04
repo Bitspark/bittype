@@ -1,6 +1,8 @@
 package golangparse
 
 import (
+	"context"
+	"errors"
 	check "github.com/Bitspark/bittype/check/golang/go"
 	parsecontract "github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
@@ -20,7 +22,13 @@ import (
 
 var vocabulary = concrete.Vocabulary[s.Language]{Layout: s.ConcreteLayout, Token: s.ConcreteToken, Whitespace: s.ConcreteWhitespace, Comment: s.ConcreteComment}
 
-func Parse(input parsecontract.Input) (cst.CST[s.Language], error) {
+func Parse(ctx context.Context, input parsecontract.Input) (cst.CST[s.Language], error) {
+	if ctx == nil {
+		return cst.CST[s.Language]{}, errors.New("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return cst.CST[s.Language]{}, err
+	}
 	p, err := parseutil.New[s.Language](input, lex.Options{BacktickStrings: true, Punctuation: []string{"...", "<-"}, Directives: []string{"//go:", "// +build", "//line "}})
 	if err != nil {
 		return cst.CST[s.Language]{}, err
@@ -268,6 +276,8 @@ func (c *converter) typ(expr stdast.Expr) ast.NodeID {
 
 type Provider struct{ s.Language }
 
-func (Provider) Parse(input parsecontract.Input) (cst.CST[s.Language], error) { return Parse(input) }
+func (Provider) Parse(ctx context.Context, input parsecontract.Input) (cst.CST[s.Language], error) {
+	return Parse(ctx, input)
+}
 
-var _ parsecontract.Provider[s.Language] = Provider{}
+var _ parsecontract.Provider[parsecontract.Input, cst.CST[s.Language]] = Provider{}

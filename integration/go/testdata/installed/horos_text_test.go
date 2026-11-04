@@ -1,6 +1,7 @@
 package consumer_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/parse/go"
@@ -14,11 +15,11 @@ import (
 func TestInstalledHorosTextPagination(t *testing.T) {
 	p := provider.Provider{}
 	source := "module installed.source; type Page<T> = { items: list<T>; next?: text; }; type DataPage<D: Data> = Page<D>; type People = DataPage<text>;"
-	parsed, err := (parser.Provider{}).Parse(parse.Input{SourceID: "installed.horos", TreeID: "installed", Text: source})
+	parsed, err := (parser.Provider{}).Parse(context.Background(), parse.Input{SourceID: "installed.horos", TreeID: "installed", Text: source})
 	if err != nil {
 		t.Fatal(err)
 	}
-	printed, err := p.Print(parsed)
+	printed, err := p.Print(context.Background(), parsed)
 	if err != nil || printed != source {
 		t.Fatalf("source round trip: %v", err)
 	}
@@ -29,15 +30,15 @@ func TestInstalledHorosTextPagination(t *testing.T) {
 	if _, err := model.DataDescriptor(decl.DeclarationID{Module: model.Root(), Name: "People"}, nil); err != nil {
 		t.Fatal(err)
 	}
-	formatted, err := (formatter.Provider{}).Format(parsed)
+	formatted, err := (formatter.Provider{}).Format(context.Background(), parsed)
 	if err != nil {
 		t.Fatal(err)
 	}
-	output, err := p.Print(formatted)
+	output, err := p.Print(context.Background(), formatted)
 	if err != nil {
 		t.Fatal(err)
 	}
-	reparsed, err := p.Parse(parse.Input{SourceID: "output.horos", TreeID: "output", Text: output})
+	reparsed, err := p.Parse(context.Background(), parse.Input{SourceID: "output.horos", TreeID: "output", Text: output})
 	if err != nil {
 		t.Fatal(err)
 	}

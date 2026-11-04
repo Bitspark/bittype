@@ -1,13 +1,12 @@
-// Package print defines CST-to-text providers.
+// Package print defines the print role at the Syntax and Files levels.
 package print
 
 import (
+	"context"
 	"github.com/Bitspark/bittype/contracts/language/go"
-	"github.com/Bitspark/bittype/trees/cst/go"
 )
 
-// Provider emits source text from a concrete tree.
-type Provider[L any] interface {
+type Provider[I, O any] interface {
 	language.Provider
-	Print(cst.CST[L]) (string, error)
+	Print(context.Context, I) (O, error)
 }

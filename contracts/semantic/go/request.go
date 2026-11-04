@@ -9,6 +9,7 @@ import (
 	"github.com/Bitspark/bittype/internal/tree"
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 // capture is also the invocation identity. It is private, nonempty storage;
@@ -89,28 +90,28 @@ func (r Request[L]) Publish(publication Publication) (Result, error) {
 	if r.state == nil {
 		return Result{}, ErrInvalidRequest
 	}
-	return publish(r.state.capture, publication)
+	return publish[L](r.state.capture, publication)
 }
 
 type resultState struct {
-	owner       *capture
-	model       semantics.Model
-	hasModel    bool
-	reports     []Report
-	diagnostics []Diagnostic
+	owner        *capture
+	graph        representation.Semantics
+	hasSemantics bool
+	reports      []Report
+	diagnostics  []Diagnostic
 }
 
 // Result is an immutable request-bound publication. A valid result can contain
 // diagnostics and reports without a model. Valid does not mean semantic validity.
 type Result struct{ state *resultState }
 
-func (r Result) Valid() bool    { return r.state != nil }
-func (r Result) HasModel() bool { return r.state != nil && r.state.hasModel }
-func (r Result) Model() (semantics.Model, bool) {
-	if !r.HasModel() {
-		return semantics.Model{}, false
+func (r Result) Valid() bool        { return r.state != nil }
+func (r Result) HasSemantics() bool { return r.state != nil && r.state.hasSemantics }
+func (r Result) Semantics() (representation.Semantics, bool) {
+	if !r.HasSemantics() {
+		return representation.Semantics{}, false
 	}
-	return r.state.model, true
+	return r.state.graph, true
 }
 func (r Result) Entry() ast.NodeRef {
 	if r.state == nil {
@@ -184,11 +185,11 @@ func cloneDiagnostics(input []Diagnostic) []Diagnostic {
 	return result
 }
 
-func publish(c *capture, p Publication) (Result, error) {
+func publish[L any](c *capture, p Publication) (Result, error) {
 	bad := func(reason string) (Result, error) {
 		return Result{}, fmt.Errorf("%w: %s", ErrInvalidResult, reason)
 	}
-	if p.Facts != nil && p.ReuseModelFrom != nil {
+	if p.Facts != nil && p.ReuseSemanticsFrom != nil {
 		return bad("new facts and reused model are mutually exclusive")
 	}
 	known := make(map[semantics.Key]bool, len(c.contract.Obligations))
@@ -245,32 +246,36 @@ func publish(c *capture, p Publication) (Result, error) {
 		}
 	}
 	result := &resultState{owner: c}
-	if p.Facts != nil || p.ReuseModelFrom != nil {
+	if p.Facts != nil || p.ReuseSemanticsFrom != nil {
 		for _, dependency := range c.dependencies {
 			if !dependency.reportsEstablished() {
 				return bad("dependency requirements are not established")
 			}
 		}
-		for _, requirement := range c.contract.ModelRequirements {
+		for _, requirement := range c.contract.SemanticsRequirements {
 			report, found := reports[requirement.Obligation]
 			if !found || report.Status != Complete || report.Verdict != requirement.Verdict {
 				return bad("model requirements are not established")
 			}
 		}
-		var model semantics.Model
+		var model representation.Semantics
 		var err error
-		if p.ReuseModelFrom != nil {
+		if p.ReuseSemanticsFrom != nil {
 			admitted := false
 			for _, dependency := range c.dependencies {
-				admitted = admitted || dependency.Result.state == p.ReuseModelFrom.state
+				admitted = admitted || dependency.Result.state == p.ReuseSemanticsFrom.state
 			}
-			if !admitted || !p.ReuseModelFrom.HasModel() {
+			if !admitted || !p.ReuseSemanticsFrom.HasSemantics() {
 				return bad("model is not an admitted dependency")
 			}
-			model = p.ReuseModelFrom.state.model
-			err = model.CheckLimits(c.limits.Model)
+			model = p.ReuseSemanticsFrom.state.graph
+			err = model.CheckLimits(c.limits.Semantics)
 		} else {
-			model, err = semantics.New(*p.Facts, c.limits.Model, c.contains)
+			var graph semantics.Semantics[L]
+			graph, err = semantics.New[L](*p.Facts, c.limits.Semantics, c.contains)
+			if err == nil {
+				model, err = representation.PackSemantics(c.source.syntax, graph)
+			}
 		}
 		if err != nil {
 			if errors.Is(err, semantics.ErrLimit) {
@@ -278,7 +283,7 @@ func publish(c *capture, p Publication) (Result, error) {
 			}
 			return Result{}, fmt.Errorf("%w: %w", ErrInvalidResult, err)
 		}
-		result.model, result.hasModel = model, true
+		result.graph, result.hasSemantics = model, true
 	}
 	result.reports = slices.Clone(p.Reports)
 	result.diagnostics = cloneDiagnostics(p.Diagnostics)

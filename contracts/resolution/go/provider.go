@@ -33,7 +33,7 @@ func (c Contract) Validate() error {
 	if !c.Bindings.Valid() {
 		return semantic.ErrInvalidOperation
 	}
-	for _, requirement := range c.Semantic.ModelRequirements {
+	for _, requirement := range c.Semantic.SemanticsRequirements {
 		if requirement.Obligation == c.Bindings && requirement.Verdict == semantic.Holds {
 			return nil
 		}

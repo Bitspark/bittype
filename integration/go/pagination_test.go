@@ -188,7 +188,7 @@ func generated[L any](t *testing.T, e *engine.Engine, from representation.Langua
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := representation.Unpack[L](to, out)
+	result, err := representation.Unpack[L](to, out.EntryAST())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -227,10 +227,10 @@ type paginationOutput struct {
 
 func paginationOutputs(t *testing.T, module core.Value, deps ...core.Value) paginationOutput {
 	e, from, input := generationInput(t, module, deps...)
-	model, _ := input.Evidence[0].Model()
+	model, _ := input.Evidence[0].Semantics()
 	before := model.Data()
 	out := paginationOutput{generated(t, e, from, input, tp.Provider{}, tsMapper), generated(t, e, from, input, gp.Provider{}, goMapper), generated(t, e, from, input, rp.Provider{}, rustMapper), generated(t, e, from, input, cp.Provider{}, cppMapper)}
-	after, _ := input.Evidence[0].Model()
+	after, _ := input.Evidence[0].Semantics()
 	if model != after || !reflect.DeepEqual(before, after.Data()) {
 		t.Fatal("mapping changed established semantic evidence")
 	}
@@ -361,12 +361,12 @@ func TestGenerationRejectsInvalidCanonicalApplications(t *testing.T) {
 		"unbound":    "module invalid; type Bad = Missing<text>;",
 	} {
 		t.Run(name, func(t *testing.T) {
-			parsed, err := (hp.Provider{}).Parse(parse.Input{SourceID: "invalid.horos", TreeID: "canonical", Text: source})
+			parsed, err := (hp.Provider{}).Parse(context.Background(), parse.Input{SourceID: "invalid.horos", TreeID: "canonical", Text: source})
 			if err != nil {
 				t.Fatal(err)
 			}
 			_, from, input := generationSource(t, parsed.Abstract)
-			if input.Evidence[0].HasModel() {
+			if input.Evidence[0].HasSemantics() {
 				t.Fatal("invalid canonical application published a model")
 			}
 			mapper, err := tsMapper(from, mustLanguage[ts.Language](t, ts.Language{}))
@@ -388,12 +388,12 @@ func TestGenerationNameCollisionsAndPhantomSlots(t *testing.T) {
 		"unused":       "module collision; type Phantom<T> = text;",
 	} {
 		t.Run(name, func(t *testing.T) {
-			parsed, err := (hp.Provider{}).Parse(parse.Input{SourceID: "names.horos", TreeID: "canonical", Text: source})
+			parsed, err := (hp.Provider{}).Parse(context.Background(), parse.Input{SourceID: "names.horos", TreeID: "canonical", Text: source})
 			if err != nil {
 				t.Fatal(err)
 			}
 			_, from, input := generationSource(t, parsed.Abstract)
-			if !input.Evidence[0].HasModel() {
+			if !input.Evidence[0].HasSemantics() {
 				t.Fatal("fixture must be semantically valid")
 			}
 			mapper, err := tsMapper(from, mustLanguage[ts.Language](t, ts.Language{}))

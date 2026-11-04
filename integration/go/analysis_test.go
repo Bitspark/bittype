@@ -30,7 +30,7 @@ func analysisContract() analysis.Contract {
 			{Key: analysisKey("validity"), Domain: analysisKey("entry-program")},
 			{Key: analysisKey("bindings"), Domain: analysisKey("entry-closure")},
 		},
-		ModelRequirements: []semantic.Requirement{
+		SemanticsRequirements: []semantic.Requirement{
 			{Obligation: analysisKey("validity"), Verdict: semantic.Holds},
 			{Obligation: analysisKey("bindings"), Verdict: semantic.Undetermined},
 		},
@@ -54,10 +54,17 @@ func analysisFacts() semantics.Data {
 		Terms: []semantics.Term{
 			{Kind: semantics.Reference, Target: 2},
 			{Kind: semantics.ProviderExpression, Operator: analysisKey("array"), Encoding: analysisKey("array-v1"), Data: []byte{3}, Operands: []semantics.Operand{{Locator: []uint32{1}, Term: 1}}},
+			{Kind: semantics.Reference, Target: 1},
+			{Kind: semantics.Application, Callee: 3, Arguments: []semantics.TermID{1}},
 		},
 		Bindings:     []semantics.Binding{{At: at, Target: 2}},
 		Expressions:  []semantics.Expression{{At: at, Term: 1}},
 		Dependencies: []semantics.Dependency{{From: 1, To: 1, Relation: analysisKey("recursive-reference"), At: &at}},
+		Facts: []semantics.Fact{
+			{Subject: semantics.Subject{Entity: 1}, Relation: analysisKey("representation"), Term: 2},
+			{Subject: semantics.Subject{Term: 4}, Relation: analysisKey("result"), Term: 2},
+			{Subject: semantics.Subject{Term: 4}, Relation: analysisKey("free-binder"), Term: 1},
+		},
 	}
 }
 
@@ -124,7 +131,7 @@ func TestAnalysisRegistrationBoundaries(t *testing.T) {
 		func(c *analysis.Contract) {
 			c.Semantic.Obligations = append(c.Semantic.Obligations, c.Semantic.Obligations[0])
 		},
-		func(c *analysis.Contract) { c.Semantic.ModelRequirements[0].Obligation = analysisKey("absent") },
+		func(c *analysis.Contract) { c.Semantic.SemanticsRequirements[0].Obligation = analysisKey("absent") },
 	} {
 		contract := analysisContract()
 		alter(&contract)
@@ -273,6 +280,10 @@ func TestAnalysisOwnershipAndPublication(t *testing.T) {
 		data.Entities[0].Parameters[0].Sort = analysisKey("mutated")
 		data.Terms[1].Data[0] = 4
 		data.Terms[1].Operands[0].Locator[0] = 7
+		data.Terms[3].Callee = 1
+		data.Facts[0].Subject = semantics.Subject{Term: 1}
+		data.Facts[0].Relation = analysisKey("mutated")
+		data.Facts[0].Term = 1
 		data.Dependencies[0].At.Site.Node = 99
 		reports[0].Verdict = semantic.Rejected
 		diagnostics[0].Message = "mutated diagnostic"
@@ -284,7 +295,7 @@ func TestAnalysisOwnershipAndPublication(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	model, present := result.Model()
+	model, present := result.Semantics()
 	if !present || !reflect.DeepEqual(model.Data(), want) {
 		t.Fatal("publication aliases provider graph")
 	}
@@ -299,6 +310,9 @@ func TestAnalysisOwnershipAndPublication(t *testing.T) {
 	extracted := model.Data()
 	extracted.Terms[1].Data[0] = 9
 	extracted.Entities[0].Declarations[0].Node = 99
+	extracted.Terms[3].Callee = 1
+	extracted.Facts[0].Term = 1
+	model.Facts(semantics.Subject{Entity: 1}, analysisKey("representation"))[0] = 1
 	if !reflect.DeepEqual(model.Data(), want) || string(result.Configuration()[0].Value) != "original" || result.Reports()[0].Verdict != semantic.Holds || result.Diagnostics()[0].At.Node != 2 || result.Contract().Obligations[0].Domain != analysisKey("entry-program") {
 		t.Fatal("result accessor exposes private storage")
 	}
@@ -327,7 +341,7 @@ func TestAnalysisFailureDiscardsOutput(t *testing.T) {
 		return request.Publish(semantic.Publication{Reports: reports, Diagnostics: []semantic.Diagnostic{{Code: analysisKey("invalid-declaration"), Subject: analysisKey("entry-program"), Message: "definite counterexample"}}})
 	})
 	result, err = analyzeCase(kernel, context.Background(), input)
-	if err != nil || !result.Valid() || result.HasModel() {
+	if err != nil || !result.Valid() || result.HasSemantics() {
 		t.Fatalf("semantic rejection lost: %v", err)
 	}
 	validity, found := result.Report(analysisKey("validity"))
@@ -348,8 +362,15 @@ func TestAnalysisRejectsInvalidPublications(t *testing.T) {
 		"historical-only-site": func(p *semantic.Publication) {
 			p.Facts.Entities[0].Declarations[0] = ast.NodeRef{Tree: "earlier", Node: 4}
 		},
-		"dangling-entity": func(p *semantic.Publication) { p.Facts.Bindings[0].Target = 99 },
-		"zero-node":       func(p *semantic.Publication) { p.Facts.Entities[0].Declarations[0].Node = 0 },
+		"dangling-entity":       func(p *semantic.Publication) { p.Facts.Bindings[0].Target = 99 },
+		"dangling-callee":       func(p *semantic.Publication) { p.Facts.Terms[3].Callee = 99 },
+		"callee-cycle":          func(p *semantic.Publication) { p.Facts.Terms[3].Callee = 4 },
+		"fact-no-subject":       func(p *semantic.Publication) { p.Facts.Facts[0].Subject = semantics.Subject{} },
+		"fact-two-subjects":     func(p *semantic.Publication) { p.Facts.Facts[0].Subject.Term = 1 },
+		"fact-dangling-subject": func(p *semantic.Publication) { p.Facts.Facts[0].Subject.Entity = 99 },
+		"fact-dangling-term":    func(p *semantic.Publication) { p.Facts.Facts[0].Term = 99 },
+		"duplicate-fact":        func(p *semantic.Publication) { p.Facts.Facts = append(p.Facts.Facts, p.Facts.Facts[0]) },
+		"zero-node":             func(p *semantic.Publication) { p.Facts.Entities[0].Declarations[0].Node = 0 },
 		"diagnostic-site": func(p *semantic.Publication) {
 			p.Diagnostics = []semantic.Diagnostic{{Code: analysisKey("note"), Subject: analysisKey("entry"), At: &ast.NodeRef{Tree: "input", Node: 99}}}
 		},
@@ -402,7 +423,7 @@ func TestAnalysisCaptureAndOutputLimits(t *testing.T) {
 		"entries":        func(l *semantic.Limits) { l.MaxInputEntries = 1 },
 		"input-bytes":    func(l *semantic.Limits) { l.MaxInputBytes = 1 },
 		"metadata-bytes": func(l *semantic.Limits) { l.MaxConfigurationBytes = 1 },
-		"model-bytes":    func(l *semantic.Limits) { l.Model.MaxBytes = 1 },
+		"model-bytes":    func(l *semantic.Limits) { l.Semantics.MaxBytes = 1 },
 	} {
 		t.Run(name, func(t *testing.T) {
 			kernel, input := analysisEngine(t, nil)
@@ -462,7 +483,7 @@ func TestAnalysisBudgetsPrecedeCheckerAndCopy(t *testing.T) {
 		}
 	}
 	input.Limits = semantic.DefaultLimits()
-	if result, err := runAnalyzerCase(analyzer, checker, context.Background(), input); err != nil || !result.HasModel() || checks != 1 {
+	if result, err := runAnalyzerCase(analyzer, checker, context.Background(), input); err != nil || !result.HasSemantics() || checks != 1 {
 		t.Fatalf("valid request did not execute checker: %v", err)
 	}
 }
@@ -476,7 +497,7 @@ func TestAnalysisUnknownObligationsAndAdditionalCoverage(t *testing.T) {
 	})
 	input.Requested = []semantics.Key{unknown}
 	result, err := analyzeCase(kernel, context.Background(), input)
-	if err != nil || !result.HasModel() {
+	if err != nil || !result.HasSemantics() {
 		t.Fatalf("supported graph with unsupported extra obligation: %v", err)
 	}
 	report, ok := result.Report(unknown)
@@ -548,7 +569,7 @@ func TestEngineConcurrentAnalysisAndReentry(t *testing.T) {
 					failures <- err
 					return
 				}
-				if !result.HasModel() {
+				if !result.HasSemantics() {
 					failures <- errors.New("concurrent result lost model")
 					return
 				}
@@ -618,7 +639,7 @@ func TestAnalysisCheckerCannotReplacePreflightedInputs(t *testing.T) {
 	})
 	armed = true
 	result, err := runAnalyzerCase(analyzer, checker, context.Background(), caller)
-	if err != nil || !result.HasModel() {
+	if err != nil || !result.HasSemantics() {
 		t.Fatalf("captured input collection changed: %v", err)
 	}
 	changed, err := caller.Trees[1].Inspect()

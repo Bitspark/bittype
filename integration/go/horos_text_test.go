@@ -26,19 +26,19 @@ func TestHorosSourceThroughIndependentEngineStages(t *testing.T) {
 	e := engine.New()
 	registerNativeStages(t, e, definition, p)
 	source := "// pagination\r\nmodule example.pagination;\r\ntype Page<T> = { items: list<T>; next?: text; };\r\ntype DataPage<D: Data> = Page<D>;\r\ntype People = DataPage<text>;\r\n"
-	parsed, err := e.Parse(p.ID(), parse.Input{SourceID: "page.horos", TreeID: "page", Text: source})
+	parsed, err := e.ParseSyntax(context.Background(), p.ID(), parse.Input{SourceID: "page.horos", TreeID: "page", Text: source})
 	if err != nil {
 		t.Fatal(err)
 	}
-	printed, err := e.Print(parsed)
+	printed, err := e.PrintSyntax(context.Background(), parsed)
 	if err != nil || printed != source {
 		t.Fatalf("engine lost trivia: %v", err)
 	}
-	rendered, err := e.Render(parsed.ASTView())
+	rendered, err := e.RenderSyntax(context.Background(), parsed.ASTView())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.Parse(p.ID(), parse.Input{SourceID: "output.horos", TreeID: "output", Text: rendered}); err != nil {
+	if _, err := e.ParseSyntax(context.Background(), p.ID(), parse.Input{SourceID: "output.horos", TreeID: "output", Text: rendered}); err != nil {
 		t.Fatal(err)
 	}
 	tree, err := representation.Unpack[s.Language](definition, parsed.ASTView())
@@ -64,11 +64,11 @@ func TestHorosSourceThroughIndependentEngineStages(t *testing.T) {
 		t.Fatal(err)
 	}
 	resolved, err := e.Resolve(context.Background(), snapshot, semantic.Options{})
-	if err != nil || !resolved.HasModel() {
+	if err != nil || !resolved.HasSemantics() {
 		t.Fatalf("source resolution: %v", err)
 	}
 	analyzed, err := e.Analyze(context.Background(), analysis.Input{Snapshot: snapshot, Resolution: &resolved})
-	if err != nil || !analyzed.HasModel() {
+	if err != nil || !analyzed.HasSemantics() {
 		t.Fatalf("source analysis: %v", err)
 	}
 }

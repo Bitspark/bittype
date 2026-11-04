@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	checkcontract "github.com/Bitspark/bittype/contracts/check/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	"math/big"
 	"testing"
 
@@ -49,10 +50,10 @@ func qualifyHoros(t *testing.T) {
 	if provider.ID() != "horos" || provider.Name() != "Horos" {
 		t.Fatal("unstable Horos identity")
 	}
-	if _, ok := any(provider).(parse.Provider[h.Language]); !ok {
+	if _, ok := any(provider).(parse.Provider[parse.Input, cst.CST[h.Language]]); !ok {
 		t.Fatal("Horos provider lacks parsing")
 	}
-	if _, ok := any(provider).(format.Provider[h.Language]); !ok {
+	if _, ok := any(provider).(format.Provider[ast.View[h.Language], cst.CST[h.Language]]); !ok {
 		t.Fatal("Horos provider lacks formatting")
 	}
 	// Independent consumer: a generic list and its explicit text specialization.
@@ -126,7 +127,7 @@ func qualifyHoros(t *testing.T) {
 	}
 	input.Resolution = &resolved
 	result, err := registry.Analyze(context.Background(), input)
-	if err != nil || !result.HasModel() {
+	if err != nil || !result.HasSemantics() {
 		t.Fatalf("explicitly registered Horos analysis: %v", err)
 	}
 	for _, obligation := range analyze.Contract().Semantic.Obligations {
@@ -140,8 +141,8 @@ func qualifyHoros(t *testing.T) {
 		}
 	}
 	qualifyHorosFacts(t, result)
-	resolvedModel, _ := resolved.Model()
-	analyzedModel, _ := result.Model()
+	resolvedModel, _ := resolved.Semantics()
+	analyzedModel, _ := result.Semantics()
 	if resolvedModel != analyzedModel {
 		t.Fatal("analysis rebuilt the resolved model instead of reusing it")
 	}
@@ -165,10 +166,10 @@ func qualifyHoros(t *testing.T) {
 	if fresh, err := representation.Unpack[h.Language](definition, output); err != nil || fresh.Nodes[fresh.Root-1].Kind != h.KindProgram {
 		t.Fatal("unpacked AST aliases envelope")
 	}
-	if _, err := registry.Parse(provider.ID(), parse.Input{}); !errors.Is(err, engine.ErrMissingCapability) {
+	if _, err := registry.Parse(context.Background(), provider.ID(), parse.Input{}); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatalf("unregistered parse: %v", err)
 	}
-	if _, err := registry.Render(envelope); !errors.Is(err, engine.ErrMissingCapability) {
+	if _, err := registry.Render(context.Background(), envelope); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatalf("unregistered render: %v", err)
 	}
 }
@@ -177,7 +178,7 @@ func qualifyHoros(t *testing.T) {
 // decoding, specialization and AST node vocabulary are unnecessary here.
 func qualifyHorosFacts(t *testing.T, result semantic.Result) {
 	t.Helper()
-	model, ok := result.Model()
+	model, ok := result.Semantics()
 	if !ok {
 		t.Fatal("no semantic model")
 	}
@@ -197,8 +198,9 @@ func qualifyHorosFacts(t *testing.T, result semantic.Result) {
 		t.Fatal("declarations or parameter identity lost")
 	}
 	term, exists := model.Term(appliedEntity.Body)
-	bindings, bound := model.ParameterBindings(appliedEntity.Body)
-	if !exists || term.Kind != semantics.Application || term.Target != page || !bound || len(bindings) != 1 || bindings[0].Parameter != pageEntity.Parameters[0].Entity || bindings[0].Argument != term.Arguments[0] {
+	bindings, bound := model.DirectParameterBindings(appliedEntity.Body)
+	callee, _ := model.Term(term.Callee)
+	if !exists || term.Kind != semantics.Application || callee.Target != page || !bound || len(bindings) != 1 || bindings[0].Parameter != pageEntity.Parameters[0].Entity || bindings[0].Argument != term.Arguments[0] {
 		t.Fatal("generic parameter bindings do not preserve the declared application")
 	}
 	if len(facts.Bindings) == 0 || len(facts.Expressions) == 0 {

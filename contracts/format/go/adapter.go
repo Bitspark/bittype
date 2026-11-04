@@ -1,61 +1,67 @@
 package format
 
 import (
+	"context"
 	"errors"
-	"strings"
-
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
+	"strings"
 )
 
 var ErrInvalidFormatter = errors.New("invalid format provider")
 
-// Formatter binds one typed provider to a captured language/profile/marker.
-// It owns boundary snapshots and never installs another capability.
-type Formatter struct {
+type SyntaxFormatter struct {
 	definition representation.Language
-	run        func(representation.AST) (representation.CST, error)
+	run        func(context.Context, representation.AST) (representation.CST, error)
 }
 
-func NewFormatter[L any](definition representation.Language, provider Provider[L]) (Formatter, error) {
+func NewSyntaxFormatter[L any](definition representation.Language, provider Provider[ast.View[L], cst.CST[L]]) (SyntaxFormatter, error) {
 	if representation.IsNil(provider) {
-		return Formatter{}, ErrInvalidFormatter
+		return SyntaxFormatter{}, ErrInvalidFormatter
 	}
 	if err := representation.CheckMarker[L](definition); err != nil {
-		return Formatter{}, err
+		return SyntaxFormatter{}, err
 	}
 	if provider.ID() != definition.ID() || strings.TrimSpace(provider.Name()) == "" {
-		return Formatter{}, ErrInvalidFormatter
+		return SyntaxFormatter{}, ErrInvalidFormatter
 	}
-	result := Formatter{definition: definition}
-	result.run = func(input representation.AST) (representation.CST, error) {
-		abstract, err := representation.Unpack[L](definition, input)
+	result := SyntaxFormatter{definition: definition}
+	result.run = func(ctx context.Context, input representation.AST) (representation.CST, error) {
+		value, err := representation.Unpack[L](definition, input)
 		if err != nil {
 			return representation.CST{}, err
 		}
-		formatted, err := provider.Format(abstract)
+		output, err := provider.Format(ctx, value)
 		if err != nil {
 			return representation.CST{}, err
 		}
-		return representation.PackCST(definition, formatted)
+		if err := ctx.Err(); err != nil {
+			return representation.CST{}, err
+		}
+		return representation.PackCST(definition, output)
 	}
 	return result, nil
 }
-
-func (p Formatter) ID() language.ID                   { return p.definition.ID() }
-func (p Formatter) Name() string                      { return p.definition.Name() }
-func (p Formatter) Language() representation.Language { return p.definition }
-func (p Formatter) Validate() error {
+func (p SyntaxFormatter) ID() language.ID                   { return p.definition.ID() }
+func (p SyntaxFormatter) Name() string                      { return p.definition.Name() }
+func (p SyntaxFormatter) Language() representation.Language { return p.definition }
+func (p SyntaxFormatter) Validate() error {
 	if p.run == nil {
 		return ErrInvalidFormatter
 	}
 	return p.definition.Validate()
 }
-func (p Formatter) Format(input representation.AST) (representation.CST, error) {
+func (p SyntaxFormatter) Format(ctx context.Context, input representation.AST) (representation.CST, error) {
 	if err := p.Validate(); err != nil {
 		return representation.CST{}, err
 	}
-	return p.run(input)
+	if ctx == nil {
+		return representation.CST{}, ErrInvalidFormatter
+	}
+	if err := ctx.Err(); err != nil {
+		return representation.CST{}, err
+	}
+	return p.run(ctx, input)
 }
-
-var _ language.Provider = Formatter{}

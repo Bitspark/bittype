@@ -67,7 +67,7 @@ func TestUnifiedPaginationBoundsSurviveASTAndSemanticExport(t *testing.T) {
 	_, alias := entity(t, model, "unified.pagination", "DataPage")
 	pageID, pageEntity := entity(t, model, "unified.pagination", "Page")
 	application := term(t, model, alias.Body)
-	if application.Kind != semantics.Application || application.Target != pageID || pageEntity.Parameters[0].Sort != (semantics.Key{Owner: "horos", Name: "type"}) {
+	if application.Kind != semantics.Application || term(t, model, application.Callee).Target != pageID || pageEntity.Parameters[0].Sort != (semantics.Key{Owner: "horos", Name: "type"}) {
 		t.Fatal("constrained alias became a second Page or a different parameter sort")
 	}
 }

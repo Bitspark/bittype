@@ -32,7 +32,7 @@ func (r Request[L]) Evidence(index int) (semantic.Result, bool) {
 
 // NewTransformer captures requirements and shares semantic receipt admission.
 // Endpoint syntax admission remains the engine's checker responsibility.
-func NewTransformer[F, T any](from, to representation.Language, contract Contract, stage func(context.Context, Request[F]) (ast.AST[T], error)) (ASTTransformer, error) {
+func NewTransformer[F, T any](from, to representation.Language, contract Contract, stage func(context.Context, Request[F]) (ast.Set[T], error)) (ASTTransformer, error) {
 	if stage == nil {
 		return nil, ErrInvalidTransformer
 	}
@@ -55,38 +55,38 @@ func NewTransformer[F, T any](from, to representation.Language, contract Contrac
 type bound[F, T any] struct {
 	from, to     representation.Language
 	requirements []semantic.EvidenceRequirement
-	stage        func(context.Context, Request[F]) (ast.AST[T], error)
+	stage        func(context.Context, Request[F]) (ast.Set[T], error)
 }
 
 func (b bound[F, T]) FromID() language.ID                   { return b.from.ID() }
 func (b bound[F, T]) ToID() language.ID                     { return b.to.ID() }
 func (b bound[F, T]) FromLanguage() representation.Language { return b.from }
 func (b bound[F, T]) ToLanguage() representation.Language   { return b.to }
-func (b bound[F, T]) Transform(ctx context.Context, input Input) (representation.AST, error) {
+func (b bound[F, T]) Transform(ctx context.Context, input Input) (representation.ASTSet, error) {
 	if ctx == nil {
-		return representation.AST{}, semantic.ErrInvalidRequest
+		return representation.ASTSet{}, semantic.ErrInvalidRequest
 	}
 	if err := ctx.Err(); err != nil {
-		return representation.AST{}, err
+		return representation.ASTSet{}, err
 	}
 	evidence, err := semantic.AdmitEvidence(input.Source, b.requirements, input.Evidence)
 	if err != nil {
-		return representation.AST{}, err
+		return representation.ASTSet{}, err
 	}
 	envelope, err := input.Source.EntryTree()
 	if err != nil {
-		return representation.AST{}, err
+		return representation.ASTSet{}, err
 	}
 	source, err := representation.Unpack[F](b.from, envelope)
 	if err != nil {
-		return representation.AST{}, err
+		return representation.ASTSet{}, err
 	}
 	result, err := b.stage(ctx, Request[F]{source: source, entry: input.Source.Entry(), evidence: evidence, inputs: input.Source.Inputs()})
 	if err != nil {
-		return representation.AST{}, err
+		return representation.ASTSet{}, err
 	}
 	if err := ctx.Err(); err != nil {
-		return representation.AST{}, err
+		return representation.ASTSet{}, err
 	}
-	return representation.Pack(b.to, result)
+	return representation.PackSet(b.to, result)
 }

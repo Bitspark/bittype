@@ -20,17 +20,20 @@ import (
 )
 
 var (
-	ErrUnknownLanguage      = errors.New("language is not registered")
-	ErrDuplicateLanguage    = errors.New("language is already registered")
-	ErrDuplicateTransformer = errors.New("directed transformer is already registered")
-	ErrNoPath               = errors.New("no transformation path")
-	ErrAmbiguousPath        = errors.New("multiple shortest transformation paths")
-	ErrInvalidRoute         = errors.New("invalid transformation route")
-	ErrMissingCapability    = errors.New("language has no registered capability")
-	ErrDuplicateParser      = errors.New("parser is already registered")
-	ErrDuplicateChecker     = errors.New("checker is already registered")
-	ErrDuplicateFormatter   = errors.New("formatter is already registered")
-	ErrDuplicatePrinter     = errors.New("printer is already registered")
+	ErrDuplicateFilesParser     = errors.New("Files parser is already registered")
+	ErrDuplicateFilesFormatter  = errors.New("Files formatter is already registered")
+	ErrDuplicateFilesPrinter    = errors.New("Files printer is already registered")
+	ErrUnknownLanguage          = errors.New("language is not registered")
+	ErrDuplicateLanguage        = errors.New("language is already registered")
+	ErrDuplicateTransformer     = errors.New("directed transformer is already registered")
+	ErrNoPath                   = errors.New("no transformation path")
+	ErrAmbiguousPath            = errors.New("multiple shortest transformation paths")
+	ErrInvalidRoute             = errors.New("invalid transformation route")
+	ErrMissingCapability        = errors.New("language has no registered capability")
+	ErrDuplicateSyntaxParser    = errors.New("parser is already registered")
+	ErrDuplicateChecker         = errors.New("checker is already registered")
+	ErrDuplicateSyntaxFormatter = errors.New("formatter is already registered")
+	ErrDuplicateSyntaxPrinter   = errors.New("printer is already registered")
 )
 
 // Engine supports concurrent registration and operations. Registration is
@@ -44,13 +47,16 @@ type Engine struct {
 	edges     map[language.ID]map[language.ID]edge
 }
 type registration struct {
-	language  representation.Language
-	parser    *parse.Parser
-	checker   *check.Checker
-	formatter *format.Formatter
-	printer   *print.Printer
-	analyzer  *analysis.Analyzer
-	resolver  *resolution.Resolver
+	filesParser    parse.FilesRegistration
+	filesFormatter format.FilesRegistration
+	filesPrinter   print.FilesRegistration
+	language       representation.Language
+	parser         *parse.SyntaxParser
+	checker        *check.Checker
+	formatter      *format.SyntaxFormatter
+	printer        *print.SyntaxPrinter
+	analyzer       *analysis.Analyzer
+	resolver       *resolution.Resolver
 }
 type edge struct {
 	from, to    language.ID

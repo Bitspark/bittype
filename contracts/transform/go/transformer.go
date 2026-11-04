@@ -31,7 +31,7 @@ type Contract struct {
 type ASTTransformer interface {
 	FromID() language.ID
 	ToID() language.ID
-	Transform(context.Context, Input) (representation.AST, error)
+	Transform(context.Context, Input) (representation.ASTSet, error)
 }
 
 // DescribedTransformer additionally advertises typed/profile endpoints so a
