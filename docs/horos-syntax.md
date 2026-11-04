@@ -1,11 +1,12 @@
 # Readable Horos declarations
 
 **Owner direction, 4 November 2026.** Bittype implements this source spelling of
-Horos revision 2 through `parse.Provider`, `format.Provider` and `print.Provider`.
-The [Horos frontend](horos.md) retains the existing AST and semantic providers.
-This is syntax for the existing canonical model, not a second type algebra.
-Horos owns [descriptor meaning](https://github.com/Bitspark/horos/blob/v0.9.0/docs/spec/horos.md)
-and [declarations, bounds and specialization](https://github.com/Bitspark/horos/blob/v0.9.0/docs/spec/declarations.md).
+Horos revision 3 through `parse.Provider`, `format.Provider` and `print.Provider`.
+The [Horos frontend](horos.md) projects constructor interfaces, result claims,
+references and expression callees. This is syntax for the canonical model, not a
+second type algebra. Horos owns [descriptor meaning](https://github.com/Bitspark/horos/blob/main/docs/spec/horos.md)
+and [declarations, kinds and specialization](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
+The [kind guide](kinds.md) explains Data precision and the exact canonical shape.
 
 ## Pagination
 
@@ -22,10 +23,11 @@ type Page<T> = {
 type DataPage<D: Data> = Page<D>;
 ```
 
-`T` defaults to bound `Type`; `<T: Type>` spells the same canonical parameter.
-`Data` restricts an argument to a data-only type. Both bounds are explicit atoms
-in the canonical value. The body of Page is one closed record, with required
-items and an optional next field. Optional means absent or present; it does not
+`T` defaults to the proper interface `Type`; `<T: Type>` spells the same canonical
+parameter. `Data` is the refined kind of proper types with a compositional
+data-only certificate. Canonical parameters store an explicit interface, and
+declarations store an explicit Type or Data result claim. The body of Page is one
+closed record, with required items and an optional next field. Optional means absent or present; it does not
 add null to the field's type. `DataPage` applies the same Page declaration.
 
 ```text
@@ -39,6 +41,31 @@ type PeoplePage = Page<Person>;
 This source parses without specializing Page. Explicit resolution establishes
 the applications; the existing Horos model can then specialize PeoplePage.
 Neither source parsing nor formatting invokes that semantic operation.
+
+## Constructor interfaces and result claims
+
+```text
+type Wrapped<F: Type -> Type, T> = { value: F<T>; };
+type Compose<F: Type -> Type, G: Type -> Type, T> = F<G<T>>;
+type DataWrapped<F: Data -> Data, D: Data>: Data = { value: F<D>; };
+type ApplyPair<F: (Type, Data) -> Data, T, D: Data>: Data = F<T, D>;
+type Higher<H: ((Type -> Type), Data) -> Type, F: Type -> Type, D: Data> = H<F, D>;
+```
+
+An interface is Type, Data, or a nonempty list of input interfaces followed by
+`-> Type` or `-> Data`. Unary input lists may omit parentheses. Inputs may
+themselves be constructor interfaces; results are always proper. Arrows do not
+curry: `(Type, Data) -> Type` takes both arguments at once. A declaration's
+optional `: Type` or `: Data` result claim follows its parameter list and defaults
+to Type. The formatter omits Type defaults and preserves Data and constructor
+annotations.
+
+The parser admits structurally valid expressions even when their kinds are
+wrong: `F<T>` with `F: Type`, a constructor-valued body, or a repeated postfix
+application can reach semantic checking. Horos rejects them as appropriate.
+Malformed interfaces, constructor-result interface syntax and empty named
+application lists fail syntax admission. Partial application and constructor-
+valued declarations are not supported semantics; see [the feature boundary](kinds.md#explicit-deferrals).
 
 ## Modules, imports and names
 
@@ -63,9 +90,11 @@ Duplicate import aliases, declaration names and parameter names are rejected.
 Names use `[A-Za-z_][A-Za-z0-9_]*`; module names contain dot-separated segments.
 Backticks escape reserved identifiers, not arbitrary text: `` `type` `` is a
 name, but `` `some-name` `` is not. Fields may use quoted Unicode text as names.
-Declaration and import-alias namespaces are separate. A bare name is a local
-zero-argument application; `alias.Name<...>` is imported. Generic arguments are
-ordered. Parameter uses bind to the current declaration's ordered slots.
+Declaration and import-alias namespaces are separate. A bare declaration name is
+a Reference; `alias.Name` is an imported Reference. A lexical parameter name is
+a Parameter occurrence. Appending `<...>` constructs an Application with that
+expression as its callee. Generic arguments are ordered. Parameter uses bind to
+the current declaration's ordered slots.
 
 ```text
 type T = text;
@@ -74,10 +103,12 @@ type `list`<`text`> = `text`;
 type Escaped = `list`<text>;
 ```
 
-`self.Name` forces a local declaration application when a parameter shadows it.
-A parameter cannot be applied as a constructor. Generic declarations cannot
-have empty parameter lists, defaults, value parameters or higher-kinded slots.
-An application may spell an explicit empty argument list; formatting omits it.
+`self.Name` forces a local declaration reference when a parameter shadows it.
+A constructor parameter can be applied, and a generic declaration can be passed
+unapplied as a constructor argument. Generic declarations cannot have empty
+parameter lists, defaults or value parameters. `Name<>` is rejected; reference
+the zero-parameter declaration as `Name`. Primitive `tuple<>` and `union<>`
+retain their existing meanings.
 There are no function bodies or executable expressions.
 
 An existing Horos AST Program can contain several supplied modules. To preserve
@@ -133,11 +164,11 @@ type Tree<D: Data> = rec(#"tree", {
 ```
 
 The parser enforces the spelling and arity of these forms. Horos semantics checks
-their operand domains, length ranges, recursion guards, generic arity and bounds.
+their operand domains, length ranges, recursion guards, kinds and interfaces.
 For example, `map<wire<text>, text>` and `atom-len(-1, 2)` parse but fail semantic
 validation. Open-record fields, seq/set/map operands, intersection/complement and
 recursion retain their existing Data restrictions. `any` continues to mean ground
-data, while bound Type also admits capability-containing types.
+data, while kind Type also admits capability-containing types.
 
 Function, Stream and Cell are ordinary declarations used through imports and
 applications. They have no special parser kind, formatter rule or engine entry.
@@ -185,12 +216,17 @@ readable literal spellings; other values retain their raw atom/tuple structure.
 document    = module-section+
 module-section = "module" module-name ";" import* declaration*
 import      = "import" name "from" module-name "pin" string ";"
-declaration = "type" name [ "<" parameter ("," parameter)* [","] ">" ] "=" E ";"
-parameter   = name [ ":" ("Type" | "Data") ]
+declaration = "type" name [ "<" parameter ("," parameter)* [","] ">" ]
+              [ ":" proper ] "=" E ";"
+parameter   = name [ ":" interface ]
+proper      = "Type" | "Data"
+interface   = proper | "(" interface ")" | domain "->" proper
+domain      = proper | "(" interface ("," interface)* ")"
 E           = intersection ("|" intersection)*
 intersection = primary ("&" primary)*
-primary     = application | parameter-use | "(" E ")" | constructor
-application = (name | "self." name | name "." name) [ "<" [E ("," E)* [","]] ">" ]
+primary     = atom ("<" E ("," E)* [","] ">")*
+atom        = reference | parameter-use | "(" E ")" | constructor
+reference   = name | "self." name | name "." name
 record      = ["open"] "{" (field-name ["?"] ":" E ";")* "}"
 ```
 
@@ -217,9 +253,9 @@ hashing a document is not semantic validation. Source ASTs carry no invented
 resolved target annotations. Resolution retains its explicit evidence contract.
 
 `Print(Parse(source)) == source`, including comments, BOM and CRLF. Formatting
-chooses four-space indentation and LF, drops source trivia, emits Type bounds
-implicitly and preserves the canonical module values and pins. Module/import/
-declaration map order is semantically immaterial; parameter, field and operand
+chooses four-space indentation and LF, drops source trivia, emits default Type
+interfaces/results implicitly and preserves the canonical module values and pins.
+Module/import/declaration map order is semantically immaterial; parameter, field and operand
 order is not. `Parse(Print(Format(ast)))` cannot recreate original node IDs,
 provenance or resolution receipts. The formatter's stored AST snapshot retains
 that metadata, but callers must resolve the freshly parsed input explicitly.

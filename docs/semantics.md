@@ -1,6 +1,6 @@
 # Agnostic semantic facts
 
-**2 November 2026. Implemented in Go source.** The
+**4 November 2026. Implemented in Go source.** The
 [semantic model](../semantics/go/model.go) records facts established by language
 providers. The separate [analysis contract](analysis.md) captures a request,
 reports coverage and publishes an immutable result. Horos supplies the first
@@ -10,9 +10,10 @@ The owner requested this boundary after the initial minimal Go sketch. The
 [reviewed expert consultation](../research-docs/0002-semantic-analysis-kernel.md)
 records how the sketch was narrowed for implementation. This model has no scope
 graph, substitution map, universal type algebra or conditional proof system.
-None is required for the current four consumer queries: resolve an occurrence,
-inspect an expression, inspect an application's parameter bindings, and enumerate
-a declaration's dependencies.
+Providers can publish their own structured judgments through generic fact
+associations. Consumers can resolve an occurrence, inspect an expression, inspect
+a direct application's parameter bindings, enumerate dependencies and retrieve
+facts associated with an entity or term.
 
 ## Ownership
 
@@ -55,7 +56,8 @@ type Parameter struct {
 
 type Term struct {
     Kind      TermKind // Reference, Application or ProviderExpression
-    Target    EntityID
+    Target    EntityID // Reference only
+    Callee    TermID   // Application only
     Arguments []TermID
     Operator  Key
     Encoding  Key
@@ -65,6 +67,15 @@ type Term struct {
 type Operand struct {
     Locator []uint32
     Term    TermID
+}
+type Subject struct {
+    Entity EntityID
+    Term   TermID
+}
+type Fact struct {
+    Subject  Subject
+    Relation Key
+    Term     TermID
 }
 ```
 
@@ -84,14 +95,28 @@ The three term variants are disjoint:
 | Variant | Stored meaning |
 | --- | --- |
 | Reference | A target entity, including an open parameter or intrinsic |
-| Application | A target entity and its complete ordered effective arguments |
+| Application | An expression callee and ordered argument terms |
 | ProviderExpression | An operator key, encoding key, exact copied bytes and located semantic operands |
 
-An unapplied reference and a zero-argument application are distinct. Application
-arity must equal the target entity's parameter count. `ParameterBindings` pairs
-that parameter list with the argument list; no second substitution map can drift
-from the application. A provider must make any defaults explicit before export.
-Parameter sorts are keys, so the carrier does not assume that every slot is a type.
+Reference uses only Target; Application uses Callee and Arguments and has no
+Target. An unapplied reference and a zero-argument application are structurally
+distinct. The generic carrier permits empty argument lists and arbitrary callee
+terms; applicability, arity and saturation belong to the provider. Horos revision
+3 requires nonempty, fully supplied applications and direct references for
+zero-parameter declarations.
+
+`DirectParameterBindings(id TermID) ([]ArgumentBinding, bool)` is deliberately
+partial. It pairs actual formals with arguments only when the callee is a direct
+Reference and the target entity's parameter count matches the argument count.
+Each `ArgumentBinding` contains `Parameter EntityID` and `Argument TermID`.
+A direct zero-formal/zero-argument declaration or intrinsic succeeds; computed
+callees and mismatched formal lists return false. A Reference to an actual lexical
+parameter always returns false, including with zero arguments. Actual parameters
+are identified through their owner's Parameters membership, not provider Kind
+names. The query does not synthesize formals or establish semantic applicability.
+The old ParameterBindings name has no compatibility alias. Parameter Sort keys
+remain coarse provider-owned
+categories; they are not a kind calculus.
 
 Provider expressions retain information that references/applications cannot
 express: exact literals, refinements, or native operators. Encoding and operator
@@ -103,6 +128,22 @@ Horos exports canonical encoding of `Expression.Value()` and operands from
 `Expression.Operands()`. Its authoritative walker determines type positions.
 Literal tuples resembling applications remain bytes, not discovered bindings.
 No descriptor-constructor switch is copied into the adapter or kernel.
+
+## Subject-associated facts
+
+`Data.Facts` stores fact records. A Subject selects exactly one existing Entity
+or Term, and the fact links it through a provider-owned Relation to an existing
+term. `Model.Facts(subject, relation) []TermID` returns copied results in input
+order. A relation may have several values for the same subject; only exact
+duplicate subject/relation/term triples reject.
+
+Facts can expose structured kinds, interfaces, conditional evidence or identities
+using ProviderExpression terms and explicit operands. Their names and meaning
+belong to the provider. Facts are associations, not containment edges: self-links
+and cyclic subject-to-value associations are permitted. The kernel validates
+subjects, relation keys, term links, copies and storage budgets without decoding
+the facts or executing a provider. Horos's projection is documented in
+[the frontend guide](horos.md#analysis-profile-and-generic-queries).
 
 ## Occurrences and dependencies
 
@@ -143,9 +184,9 @@ people.PeoplePage = pagination.Page<people.Person>
 ```
 
 Keep distinct entities for both modules, Page, Page's T, Person and PeoplePage.
-PeoplePage's body is an application targeting Page. Its argument is itself the
-checked zero-argument application of Person. The T in Page's list operand is a
-Reference to Page's parameter entity. For `Outer<T> = Page<T>`, the argument
+PeoplePage's body is an Application whose Callee is a Reference to Page. Its
+argument is a Reference to the zero-parameter Person declaration. The T in Page's
+list operand is a Reference to Page's parameter entity. For `Outer<T> = Page<T>`, the argument
 references Outer's T while the application binds Page's T; equal spelling does
 not merge the binders.
 
@@ -162,9 +203,9 @@ publication and caller mutation of an accessor result cannot change the model.
 Producers must not mutate construction storage concurrently with capture.
 
 Validation checks IDs, term variants, unique occurrence associations, parameter
-ownership, effective arity, sites and configured record/edge/byte/depth budgets.
-Term containment through arguments and operands must be a DAG. Entity references
-and declaration dependencies may cycle; the core imposes no universal semantic
+ownership, fact links, sites and configured record/edge/byte/depth budgets.
+Term containment through callees, arguments and operands must be a DAG. Entity
+references and declaration dependencies may cycle; the core imposes no universal semantic
 recursion prohibition. A provider may impose its own language's stricter rules.
 
 `Model.Valid()` establishes a constructed graph, not a language-valid program.
@@ -181,8 +222,9 @@ intrinsics and recursive entities. This proves structural extensibility, not
 production semantics for Go or another native language.
 
 Scopes and namespace lookup await a consumer needing them. Assignability,
-conversion, inference, conditional judgments and partial checked models require
-separate contracts before implementation. No cache key, persistent semantic
+conversion, inference and partial checked models require separate provider
+contracts before implementation. Provider-owned conditional judgments can be
+represented as facts; the kernel supplies no proof rules. No cache key, persistent semantic
 identity, automatic normalization or cross-language equivalence is specified.
 
 Function, Stream, Cell and future contracts remain ordinary library declarations.

@@ -2,13 +2,14 @@
 
 **Updated, 4 November 2026.** The implemented frame supports registered
 AST transformations. The engine contains no canonical or native mapping rules.
-Applications explicitly register providers and transformers. No production
-ASTTransformer or TypeScript, Go, Rust or C++ type generator is implemented.
+Applications explicitly register providers and transformers. The production
+[pagination mappings](semantic-generation.md) generate TypeScript, Go, Rust and
+C++ type ASTs from explicit Horos semantic evidence.
 Template lifting and its concrete transformer were removed on 4 November 2026.
 
 The [Horos frontend](horos.md) registers its syntax checker independently
 from language identity, [resolution](resolution.md) and [semantic analysis](analysis.md).
-Horos text capabilities are independently registered in the same way. Native generators remain unimplemented.
+Horos text capabilities are independently registered in the same way.
 
 ## Public components
 
@@ -290,8 +291,9 @@ independent of transformer contracts and the engine. Shared conformance tests
 and discovered stage/dependency checks enforce this boundary. The moved APIs
 have no aliases at the former package paths.
 
-The [Horos AST frontend](horos.md) is implemented; actual language transformers
-remain deferred. The [agnostic semantic model](semantics.md) and separate
+The [Horos AST frontend](horos.md) and ordinary pagination transformers are
+implemented. Residual higher kinds return Unsupported from those mappings;
+the engine does not reduce or reinterpret them. The [agnostic semantic model](semantics.md) and separate
 [resolution SPI](resolution.md) and [analysis SPI](analysis.md) are implemented.
 Capture admits a shared syntax snapshot; Resolve and Analyze return reports and
 optional shared facts through independent explicit registrations.

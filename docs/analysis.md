@@ -1,6 +1,6 @@
 # Semantic analysis capability
 
-**2 November 2026. Implemented in Go source.** Semantic analysis establishes what
+**4 November 2026. Implemented in Go source.** Semantic analysis establishes what
 syntax means in its supplied context. For `pagination.Page<Person>`, it can
 establish which declarations Page and Person denote, whether the application has
 the right number of arguments, and how Person binds to Page's parameter.
@@ -29,12 +29,13 @@ from an established binding, or missing dependency context from invalid source.
 | Entity | The identity of a module, declaration, parameter or provider-owned intrinsic | Page, Page's T, Person and PeoplePage are distinct entities |
 | Term | An established expression: a Reference, Application or ProviderExpression | Applying Page to Person is an Application; using Page's T is a Reference |
 | Occurrence and binding | A current AST node address plus a role and ordinal, and its established target entity | The target occurrence of `pagination.Page<Person>` binds to the imported Page declaration |
-| Dependency | A provider-labeled directed edge between entities | PeoplePage applies Page and also applies Person as its argument |
+| Dependency | A provider-labeled directed edge between entities | PeoplePage references Page and Person, including its argument reference |
+| Fact | A provider-labeled association from an entity or term to a term | Page's checked constructor interface and conditional Data summary |
 | Obligation | A named analysis task for which the caller can request a report | Decide program validity, or enumerate application bindings |
 | Domain | The part of the supplied context covered by an obligation | The selected Horos entry module and every pinned module transitively imported from it |
-| Analysis profile | A versioned contract defining obligations, domains, vocabulary and requirements for a model | `horos-declarations-2/analysis-1` |
+| Analysis profile | A versioned contract defining obligations, domains, vocabulary and requirements for a model | `horos-declarations-3/analysis-1` |
 | Report | An obligation's completion status and, where applicable, its truth verdict | Validity is Complete / Holds; a completed binding enumeration is Complete / Undetermined |
-| Model | The immutable graph of established facts, available when its publication requirements are met | Queryable entities, terms, occurrences and application dependencies |
+| Model | The immutable graph of established facts, available when its publication requirements are met | Queryable entities, terms, occurrences, associated facts and reference dependencies |
 
 Entity and term IDs belong to one model. Names are display metadata, so two
 parameters both named T remain distinct. An occurrence uses a current tree/node
@@ -98,8 +99,8 @@ This is explanatory notation, not implemented Horos source syntax. The analyzer
 receives an AST, not this text. Its Program node contains both modules and has a
 root reference selecting `example.people`. Within the tree, Page has a parameter
 declaration; its body's parameter use stores slot 0. PeoplePage's body is an
-imported Application of Page whose argument is a local, zero-argument Application
-of Person. Descriptor nodes retain record/list structure and their operands.
+Application with an imported Reference to Page as callee and a local Reference
+to Person as argument. Descriptor nodes retain record/list structure and their operands.
 
 The application packs this tree with the Horos identity/profile descriptor.
 Packing validates generic carrier structure. Capture invokes the independently
@@ -135,8 +136,8 @@ Person and PeoplePage. The significant term links can be read as follows;
 the notation labels records, rather than specifying a serialization:
 
 ```text
-PeoplePage.Body -> Application(target: Page,
-                              arguments: [Application(target: Person, arguments: [])])
+PeoplePage.Body -> Application(callee: Reference(target: Page),
+                              arguments: [Reference(target: Person)])
 Page.Parameters -> [Page.T]
 Page.Body       -> ProviderExpression(record descriptor, located operands ...)
 items operand  -> ProviderExpression(list-of descriptor,
@@ -147,8 +148,9 @@ The record/list meanings stay owned by Horos. ProviderExpression retains exact
 encoded descriptor bytes and the operand locations supplied by Horos's model;
 the kernel does not decode records or search literal bytes for possible bindings.
 
-`ParameterBindings` pairs Page's parameter list with the application's arguments:
-Page.T binds to the zero-argument Person application. The open Page declaration
+`DirectParameterBindings` pairs Page's parameter list with the application's
+arguments because its callee directly references that declaration:
+Page.T binds to the Person reference. The open Page declaration
 is preserved. In `Outer<T> = Page<T>`, Page.T instead binds to a Reference to
 Outer's distinct T entity. Analysis does not expand these declarations. Explicit
 Horos `Specialize` can separately produce a ground descriptor; native generation
@@ -158,10 +160,10 @@ and runtime behavior are separate operations.
 
 The application supplies the resolution result and the same snapshot to Analyze.
 Horos analysis consumes that evidence and reuses its model without resolving again.
-On success, `program-validity` reports Complete / Holds. The other four reports
+On success, `program-validity` reports Complete / Holds. The other five reports
 are Complete / Undetermined: they enumerate declarations, occurrence bindings,
-expressions/applications and application dependencies, without asserting a truth
-verdict. All five are requirements for publishing this profile's model.
+expressions/applications, reference dependencies and type facts, without asserting
+a truth verdict. All six are requirements for publishing this profile's model.
 
 Expected outcomes differ even when the call returns a nil Go error:
 
@@ -180,8 +182,8 @@ error and no usable result; they do not use the table's diagnostic-result path.
 
 ### 5. Query the published facts
 
-At the current Page application node, the Horos profile exposes two occurrences:
-`pageTarget` uses `resolve.TargetRole()` and `pageExpression` uses
+At the current Page callee Reference node, `pageTarget` uses
+`resolve.TargetRole()`; at the enclosing Application, `pageExpression` uses
 `resolve.ExpressionRole()`, both with ordinal 0. The following query arguments
 are symbolic labels for actual occurrences and IDs in this result:
 
@@ -189,14 +191,17 @@ are symbolic labels for actual occurrences and IDs in this result:
 | --- | --- | --- |
 | Which declaration does this use denote? | `Resolve(pageTarget)` | Page's entity ID |
 | Which expression was established here? | `TermAt(pageExpression)` | The term ID of the Page application shown above |
-| What fills each generic slot? | `ParameterBindings(pageApplicationTermID)` | One pair: Page.T's entity ID and the Person application's term ID |
-| Which declarations does PeoplePage apply? | `DependenciesFrom(peoplePageID, resolve.ApplicationDependency())` | Edges to Page and Person, each with its current application occurrence |
+| What fills each direct declaration slot? | `DirectParameterBindings(pageApplicationTermID)` | One pair: Page.T's entity ID and the Person reference's term ID |
+| Which declarations does PeoplePage reference? | `DependenciesFrom(peoplePageID, resolve.ReferenceDependency())` | Edges to Page and Person, each with its current reference occurrence |
+| Which interface is established for Page? | `Facts(semantics.Subject{Entity: pageID}, resolve.InterfaceRelation())` | A provider-owned structured interface term |
 
 `Entity(id)` and `Term(id)` inspect the referenced records. Consumers can also
 enumerate the established occurrences in `Model.Data()` instead of constructing
 provider-specific occurrences. A failed lookup means no recorded answer at that
-occurrence; it does not establish that the source is invalid. Application
-dependencies are explicit edges, not an inferred import or runtime-effect graph.
+occurrence; it does not establish that the source is invalid. Reference
+dependencies include unapplied/ignored constructor arguments; they are explicit
+edges, not an inferred import or runtime-effect graph. Fact relations are
+multi-valued; callers must not assume the carrier enforces one value per key.
 
 These queries need no external Horos model import and do not mutate the AST or
 model. The [pagination analyzer tests](../analyze/horos/go/analyze_test.go) qualify
@@ -322,25 +327,28 @@ pinned dependency closure. It distinguishes source rejection, missing context,
 contradicted context, invalid configuration and resource exhaustion using Horos's
 structured error codes and subjects, never diagnostic message matching.
 
-The unified Horos profile exports Type/Data bounds as provider-owned terms at
-parameter sites under `resolve.BoundRole()`. Parameters retain the `horos/type`
-sort; a bound restricts arguments rather than introducing a new entity kind.
-Program validity includes Horos's symbolic bound checks on open declarations.
+The unified Horos profile exports declared interfaces, erased shape kinds,
+Data summaries/statuses and canonical identities through provider-owned terms
+associated with semantic entities and expressions. Parameter Sort remains a
+coarse provider category; it does not replace the structured interface.
+The required `type-facts` enumeration report prevents publication of an incomplete
+projection. Program validity includes Horos's kind/interface and symbolic Data
+checks on open declarations.
 A syntactically valid `Forward<T> = DataPage<T>` can therefore be rejected before
-specialization. Shared semantic carriers do not interpret these bound rules.
+specialization. Shared semantic carriers do not interpret those rules.
 
 An unlabelled dependency pool containing Q when import P is required is missing P;
 it does not prove that Q was supplied as P. A present explicit assertion
 contradicting the resolved pin/name or binding is a different failure.
 
-The Horos syntax profile is `horos-declarations-2/ast-1`: optional semantic binding
+The Horos syntax profile is `horos-declarations-3/ast-1`: optional semantic binding
 annotations may be absent, while supplied annotations in the analyzed closure
 must agree with analysis. The required entry/root selection is structural.
 Analysis does not repair input or turn stale references into new references
 silently. The explicit `resolve.Model` helper remains semantic and shares the
 same authoritative path.
 
-Native semantic analyzers, scope lookup, relation queries, partial checked graphs
+Native semantic analyzers, scope lookup, universal relation judgments, partial checked graphs
 and incremental caches remain deferred. A separate test-only unknown-language
 provider qualifies the generic contract without adding a production native checker.
 

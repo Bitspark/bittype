@@ -39,7 +39,9 @@ The [shared semantic model](semantics.md) and [analysis guide](analysis.md) expl
 their results. The existing Horos canonical-value helpers are additional frontend
 entry points, not a substitute for the registered resolution capability.
 
-Horos uses one declaration grammar with explicit Type/Data parameter bounds.
+Horos uses one revision-3 declaration grammar with explicit proper/constructor
+interfaces and result claims. Its [kind system](kinds.md) treats Data as a refined
+kind of Type and preserves known-constructor Data summaries.
 Wire expressions do not create a second language or registered profile.
 
 ASTTransformer relates two languages and consumes explicit semantic input.
@@ -48,6 +50,10 @@ The [pagination profile](semantic-generation.md) implements these directed edges
 | Source | TypeScript | Go | Rust | C++ |
 | --- | :---: | :---: | :---: | :---: |
 | Horos (admitted analysis) | X | X | X | X |
+
+These edges implement ordinary pagination. Residual higher-kinded declarations
+are explicitly Unsupported in every target, including C++; constructor syntax in
+Horos does not imply a qualified native representation.
 
 Reverse mappings are not implemented. Template lifting remains removed. A
 same-language checked snapshot is not a generation or canonicalization mapping.

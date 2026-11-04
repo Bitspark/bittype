@@ -9,8 +9,9 @@ Read [CHARTER.md](CHARTER.md), [docs/model.md](docs/model.md),
 
 The owner selected canonical definitions as input and TypeScript, Go, Rust and C++
 types as outputs. Horos owns data descriptors and canonical
-module/generic/application semantics with Type/Data bounds; bittype owns syntax,
-AST/CST tooling and transformations. The Go declaration model and Horos text/semantic frontend are implemented;
+module/generic/application semantics with proper/constructor interfaces and Data
+certificates; bittype owns syntax, AST/CST tooling and transformations.
+The Go declaration model and Horos text/semantic frontend are implemented;
 read [docs/horos.md](docs/horos.md). Do not revive
 the superseded independent bittype value-type algebra. The current native-text
 slice implements parsers, AST-to-CST formatters, syntax checks and a generic
@@ -28,16 +29,27 @@ immutable facts with explicit completion, verdict and model availability.
 Only Horos implements production semantics; native analysis remains deferred.
 
 The owner's 4 November [unified declaration decision](docs/unified-declarations.md)
-supersedes separate Horos and Horos/Wire languages. One Horos revision-2 grammar
-has explicit Type/Data bounds; `Page<T>` is authored once and
+supersedes separate Horos and Horos/Wire languages. One Horos revision-3 grammar
+has explicit interfaces and result claims; read [docs/kinds.md](docs/kinds.md).
+Data is a refined kind/subkind of Type. Erased shape, argument admission and
+result evidence are distinct views; do not describe that erasure as removing
+Data's status as a kind. `Page<T>` is authored once and
 `DataPage<D: Data> = Page<D>` is an ordinary constrained alias. Remove the old
 profiles, packages, wrapper syntax and readers without compatibility aliases.
 Ground Ontos/Horos judgments remain data-only; optional Ontos/wire still owns
 mixed *values*. Hydration stays in Bitwire/Bitruntime. Preserve the
 [concept inventory](docs/wire-extension-preservation.md) and library ownership.
-The one [Horos frontend](docs/horos.md) projects explicit bounds through existing
-provider-owned semantic terms. The agnostic kernel interprets none of them.
+The one [Horos frontend](docs/horos.md) projects interfaces, kinds and Data summaries
+through subject-associated provider-owned facts. The generic graph stores
+Application.Callee and Reference.Target separately; it imposes no semantic arity.
+DirectParameterBindings is only a safe direct-formal query. The agnostic kernel
+interprets none of the Horos facts. Keep type-facts publication coverage and
+syntax/resolution/analysis profiles aligned.
 Template lifting remains removed; no second declaration or derived Page exists.
+Native mappings preserve ordinary pagination and reject residual higher kinds
+with Unsupported and no usable output. Partial applications, constructor-valued
+results, bare constructor aliases, kind polymorphism and native higher-kind
+representations remain explicitly deferred; do not add hidden reduction paths.
 
 The [native representation design](docs/type-representations.md) remains proposed.
 Libraries own optional recipes, selected by exact declaration identity in consuming

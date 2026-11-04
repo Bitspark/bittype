@@ -27,15 +27,16 @@ AST[Horos] + explicit resolution/analysis evidence
 ```
 
 The semantic graph supplies declaration and parameter identities, Reference,
-Application and ProviderExpression terms, positional argument bindings, bounds
-and dependencies. The source AST supplies current origins and checked module
+Application and ProviderExpression terms, safe direct argument bindings,
+structured kinds/interfaces, Data certificates and reference dependencies.
+The source AST supplies current origins and checked module
 pins. Model-local entity IDs are not persistent module/declaration identities.
 No expanded generic interface, second canonical algebra or shape-based contract
 lookup is introduced.
 
 ## First mapping profile
 
-For example, this readable source encodes ordinary Horos revision-2 declarations:
+For example, this readable source encodes ordinary Horos revision-3 declarations:
 
 ```text
 module example.pagination;
@@ -47,7 +48,8 @@ type DataPage<D: Data> = Page<D>;
 ```
 
 Resolution gives `Page.T` and `DataPage.D` separate binder identities and each
-application an exact target and positional arguments. Generation reads these
+application a callee Reference with exact declaration identity and positional
+arguments. Person is a direct Reference, not an empty application. Generation reads these
 facts, emits one open generic `Page`, and retains `PeoplePage` as an application
 alias. It does not specialize or copy the `Page` body for each consumer.
 
@@ -80,13 +82,40 @@ presence helper is a generated type declaration with Present and Value fields;
 the value is ignored when absent. Its public name is `BittypeOptional`. No helper methods or runtime implementation
 are generated. Absence is never silently changed into null or a zero value.
 
-Horos checks Type/Data bounds on the source and all canonical applications.
+Horos checks proper/constructor interfaces and Data obligations on the source
+and all canonical applications.
 Native declarations are value representations, not conformance validators.
 Native strings and records do not enforce every Horos invariant, and an
-unconstrained native parameter does not establish the Data bound. The mapping
+unconstrained native parameter does not establish the Data certificate. The mapping
 profile must explicitly expose that limit rather than advertise native proof.
 Unsupported constructors, target forms and required representation policies
 fail without usable partial output.
+
+## Higher-kind boundary
+
+Horos revision 3 admits [constructor parameters and known-constructor Data
+proofs](kinds.md). The current native profile supports only proper parameters
+and ordinary declaration applications. All four mappings report located
+`Unsupported` diagnostics and return no usable output for residual constructor
+interfaces, constructor values or parameter-headed applications.
+
+This applies to the complete checked exported closure. A closed
+`Wrapped<Page, Person>` does not authorize the mapper to reduce Wrapped silently,
+and an unused higher-kinded declaration is not silently omitted. Existing
+ordinary Page, Person, DataPage and application aliases keep their native shapes.
+Canonical validity and native representability are separate judgments.
+
+| Target | Current higher-kind policy | Deferred representation work |
+| --- | --- | --- |
+| TypeScript | Unsupported | An explicitly selected type-family encoding and qualified mapping |
+| Go | Unsupported | An explicit source constructor-binding transformation, if needed |
+| Rust | Unsupported | Family-marker/GAT traits, projections, bounds and target syntax support |
+| C++ | Unsupported | Nested template-parameter AST/check/parser/formatter support and native matching tests |
+
+There is no universal native any, raw-source escape, implicit specialization,
+runtime adapter or contract-name dispatch. Explicit source residualization is
+also deferred; it would require named roots/bindings, an output identity policy
+and a freshly resolved/analyzed snapshot.
 
 ## Subsequent mappings and library ownership
 

@@ -5,7 +5,7 @@ The [four target syntax vocabularies](syntax.md) use these carriers.
 Structural/native syntax checks live in separate check packages. Public traversal
 and builders remain deferred; see the [native text pipeline](parsing-formatting.md).
 The canonical input uses the [Horos declaration model](model.md), with a separate
-[AST-only Horos frontend](horos.md) implemented on 2 November.
+[Horos text and semantic frontend](horos.md).
 
 The 2 November ownership update selects Horos's declaration model as that input.
 Its AST is an ordinary language-specific projection, without new core
@@ -133,11 +133,11 @@ Adding another language requires its own marker, vocabulary and identity
 provider, with grammar checks and stages added when needed, without editing
 `ast`, `pipeline` or the shared identity interface. Adding a declaration such as
 `Page<T>` requires neither a new language nor a new core kind. The canonical
-grammar will express its declaration, generic binder, references and application
-using the [proposed model](model.md).
+grammar expresses its declaration, generic binder, references and application
+using the [Horos model](model.md).
 
 The current [contract tests](../integration/go/contracts_test.go) type-check
 a separately authored consumer against the actual public declarations. They
 also require the Go checker to reject mixed language ASTs, nodes and kinds,
 and incompatible stage inputs and outputs. These checks prove API separation,
-not validity of a language grammar or correctness of a future generator.
+not validity of a language grammar or correctness of a generator.

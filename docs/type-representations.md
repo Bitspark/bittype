@@ -1,14 +1,16 @@
 # Library-owned native type representations
 
-**Owner direction updated 4 November 2026. Status: direct declaration frontends implemented; native representations proposed.**
+**Owner direction updated 4 November 2026. Status: declaration frontends and ordinary pagination mappings implemented; library recipes proposed.**
 This refines the [unified Horos tooling design](hydrated-types.md) and
 [generation pipeline](generation.md). Ground values/checks remain data-only;
 Ontos/wire owns mixed values and the one Horos language describes their types.
 Bittype consumes that model; Function, Cell and Stream remain ordinary libraries.
 
 The existing ASTTransformer interface and syntax engine need no new operation
-for a named library contract. The unified Horos frontend is [implemented](horos.md). Native transformers and representation configuration
-below remain proposed. Recipe examples are design notation, not executable APIs.
+for a named library contract. The unified Horos frontend is [implemented](horos.md),
+as are the [four pagination mappings](semantic-generation.md). Library recipes
+and the broader representation configuration below remain proposed. Recipe
+examples are design notation, not executable APIs.
 No runtime adapter, validator, callable implementation or transport is added.
 
 The separate [runtime value explanation](runtime-values.md) connects this static
@@ -21,7 +23,7 @@ marks the runtime-binding API as unimplemented.
 
 | Input | Owner and purpose |
 | --- | --- |
-| Canonical declaration modules | Libraries define types, imports, parameters and applications. Horos owns one declaration language with explicit Type/Data bounds. |
+| Canonical declaration modules | Libraries define types, imports, parameters and applications. Horos owns one declaration language with proper/constructor interfaces and Data certificates. |
 | Native representation choices | A library supplies optional target recipes for its declarations; the consuming build selects exact recipes and dependencies. Ordinary structural declarations need no custom recipe. |
 | Runtime bindings | Later library work supplies behavior and conversion where needed. Type generation neither implements nor loads it. |
 
@@ -36,10 +38,11 @@ Providers establish the semantic prerequisites using the existing
 [capture, resolution and analysis boundaries](resolution.md). A syntactically
 admitted AST is insufficient evidence for a semantic transformation.
 
-## 2. Direct declarations and generic bounds
+## 2. Direct declarations and generic interfaces
 
-Author one declaration with explicit Type/Data parameter bounds. Type accepts
-any admitted type; Data restricts its arguments to proven data types. `Page<T>`
+Author one declaration with explicit kind interfaces. Proper Type accepts
+any admitted proper type; its refined kind Data restricts arguments to types with
+a compositional data-only certificate. `Page<T>`
 and `DataPage<D: Data> = Page<D>` express the distinction without separate
 languages, copied templates or a schema-level Data wrapper. Ground descriptors
 occur directly in expressions. Ontos value embedding/recovery is unchanged.
@@ -47,10 +50,13 @@ occur directly in expressions. Ontos value embedding/recovery is unchanged.
 Template lifting, the second frontend and closed schema embedding are removed
 without aliases. Horos Specialize returns a closed expression; DataDescriptor
 requires a data result before ground conformance. Neither erases the authored
-open declaration. Canonical expressions, bounds, pins and lexical binding come
+open declaration. Canonical expressions, interfaces, pins and lexical binding come
 from [Horos](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
 AST addresses and origins record correspondence, not semantic equivalence or
 behavioral authority. Native names and recipe configuration remain separate.
+Constructor inputs are supported by the [canonical kind system](kinds.md).
+The native mappings currently reject residual higher kinds; none of the proposed
+recipes authorizes an implicit constructor encoding or source specialization.
 
 ## 3. Pagination through the type pipeline
 
@@ -69,13 +75,15 @@ EditablePeoplePage = Page<Cell<Person>>
 ```
 
 Both applications select the same Page. Cell is an ordinary pinned library
-declaration. No expanded Page record or second Page module is needed. DataPage imposes an explicit data-only constraint on the same Page. The future route is:
+declaration. No expanded Page record or second Page module is needed. DataPage
+imposes an explicit data-only constraint on the same Page. The implemented
+pagination route is:
 
 ```text
 AST[Horos] -> AST[Native] -> CST[Native] -> source
 ```
 
-The route consumes checked source semantics, including generic bounds. Native generation
+The route consumes checked source semantics, including proper interfaces. Native generation
 retains generic declarations and applications; specialization is not a required
 prepass. Generate Page once per selected module/representation, not a record per
 application. Representative target shapes are:
@@ -87,8 +95,10 @@ application. Representative target shapes are:
 | `rust` | `struct Page<T>` with `items: Vec<T>` and `next: Option<String>` | `Page<cell::Cell<Person>>` |
 | `cpp` | `template<typename T> struct Page` with `std::vector<T>` and `std::optional<std::string>` | `Page<cell::Cell<Person>>` |
 
-These are candidate representations and illustrative symbols, not delivered
-packages. Each native profile specifies container, presence, null, numeric and
+The Page columns describe implemented pagination shapes; the Cell applications
+are proposed representations with illustrative library symbols, not delivered
+packages. Wire/Cell representation requires a separately qualified recipe profile.
+Each native profile specifies container, presence, null, numeric and
 ownership choices. A Go zero value alone cannot distinguish absence from a
 present zero value. Optional text here does not admit null. Mappings must report
 refinements or invariants native types cannot express; unsupported strict mappings
@@ -157,7 +167,7 @@ an implemented Go interface:
 | Source | Exact source language/profile, module pin and declaration identity; ordered canonical type parameters. |
 | Target | Target language ID, syntax/profile compatibility and the selected native representation profile/version. These are distinct from source identity. |
 | Native type | Either an external named generic type or a type-only target AST recipe. No raw source string or executable body. |
-| Arguments | Explicit mapping from resolved source parameter slots to target type operands. Source Type/Data bounds and their native enforcement limits must be explicit. Native constraints, extra parameters or indirections must be declared by the profile. |
+| Arguments | Explicit mapping from resolved source parameter slots to target type operands. Source interfaces, Data obligations and native enforcement limits must be explicit. Native constraints, extra parameters or indirections must be declared by the profile. |
 | Imports and dependencies | Target import/header/crate identity and exported symbol path; exact package artifacts supplied by the consuming dependency lock. |
 | Qualification | Supported applications/constraints and native representation limits. An unsupported argument fails explicitly. |
 
@@ -295,9 +305,9 @@ Future fixtures must establish:
 
 - Data and capability applications use the same authored Page, preserving
   its declaration identity, lexical parameter scope and open generics in all targets.
-- Native mappings preserve Type/Data obligations, imported applications, source
+- Native mappings preserve kind/interface and Data obligations, imported applications, source
   origins, presence and literal opacity. Native erasure never proves a Data
-  bound or ground equivalence.
+  certificate or ground equivalence.
 - The complete pinned module context is checked. Missing imports, inconsistent
   profiles and unsupported target representations produce explicit diagnostics.
 

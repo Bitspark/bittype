@@ -7,7 +7,9 @@ are implemented in Go on the [generic AST](ast.md). Each package supplies
 The shared language.Provider interface, native text providers, parsers,
 AST-to-CST formatters, checks and generic printer are implemented. The
 [Horos profile](horos.md) adds canonical declarations and [readable syntax](horos-syntax.md);
-actual language mappings and public builders remain deferred. The syntax engine
+[ordinary pagination mappings](semantic-generation.md) are implemented and public
+builders remain deferred. Native higher-kind representations remain unsupported.
+The syntax engine
 now provides [explicit registration and route execution](engine.md).
 See the [native text design](parsing-formatting.md).
 

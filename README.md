@@ -10,7 +10,8 @@ ASTTransformer implementations, plans routes and composes existing text stages.
 Specialized providers extend language.Provider. The engine registers parsing,
 checking, formatting and printing independently; identity registration installs
 no capability. See the [engine composition API](docs/engine.md#registration). Horos's Go declaration model now
-supplies module resolution, generic binding, Type/Data bounds and specialization. Bittype
+supplies module resolution, generic binding, [constructor kinds and Data guarantees](docs/kinds.md),
+and specialization. Bittype
 implements its [text and semantic frontend](docs/horos.md), resolver and semantic analyzer.
 The engine captures syntax once and invokes each capability explicitly. Horos
 analysis reuses the resolver's [shared semantic graph](docs/semantics.md), with
@@ -22,9 +23,10 @@ The [source-layout proposal](docs/layout.md) specifies physical file organizatio
 multi-unit transformation output and per-file parsing of a source base. Its Go
 model and independent layout.Provider are documented but not implemented.
 Package releases remain deferred.
-The concrete Horos frontend uses public Horos 0.9.0 and Ontos 0.16.0. Consumers
-must upgrade together; no older dependency path or compatibility shim remains.
-See the [dependency alignment and consumer checks](docs/dependencies.md).
+The concrete frontend targets Horos declaration revision 3 and ground Ontos 0.16.0.
+Consumers must upgrade together; no older declaration reader or compatibility
+shim remains. The exact public dependency revision and validation evidence are
+recorded in [dependency alignment and consumer checks](docs/dependencies.md).
 The engine starts empty and has no built-in languages or mappings.
 
 The [stage-first layout](LAYOUT.md) groups shared tree representations under
@@ -48,17 +50,23 @@ Function, Stream, Cell and future behavioral contracts remain library-owned.
 This milestone adds no runtime adapters, callable implementations, serialization,
 application-value validation or dependencies on bitwire/bitruntime.
 
-Horos has one [declaration language](docs/model.md) with explicit Type/Data
-bounds. `Page<T>` accepts data or capability types; `DataPage<D: Data> = Page<D>`
+Horos has one [declaration language](docs/model.md) with proper and constructor
+interfaces. Data is a refined kind of Type with a compositional data-only
+certificate. `Page<T>` accepts data or capability types; `DataPage<D: Data> = Page<D>`
 restricts arguments without a second language or copied template. The old
 Horos/Wire frontend and profiles are removed without aliases. Ground Ontos values,
 Horos ground checks and `any` remain data-only. Ontos/wire owns mixed values;
 existing hydration remains in Bitwire/Bitruntime. The agnostic kernel does not
 interpret these concrete type semantics.
+Constructor parameters and nested saturated applications preserve known
+declaration precision in Horos. The native pagination mappings explicitly reject
+residual higher kinds; they do not silently specialize or drop declarations.
 
 ## Read first
 
 - [Horos canonical input](docs/model.md): ownership, declarations and native representation plan.
+- [Kinds and Data guarantees](docs/kinds.md): constructor interfaces, revision 3,
+  Page/Wrapped/Compose judgments and explicit native limits.
 - [Type and value domains](docs/hydrated-types.md): ownership, authoritative canonical
   input and explicit data boundary. The [frontend guide](docs/horos.md)
   documents implemented APIs and qualification.
@@ -67,7 +75,7 @@ interpret these concrete type semantics.
 - [Native representations](docs/type-representations.md):
   direct generic pagination and library-owned type recipes configured for
   TypeScript, Go, Rust and C++; native
-  recipes and generators remain proposed.
+  recipes remain proposed; ordinary pagination generation is implemented.
 - [Runtime values and hydration](docs/runtime-values.md): type descriptions versus
   native instances, existing Wire/runtime carriers and future typed/dynamic
   adapters; documentation only, with pinned implementation evidence.

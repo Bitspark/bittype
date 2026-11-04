@@ -3,7 +3,7 @@
 **Current direction: 4 November 2026.** The owner selected horos for canonical
 data type semantics and bittype for syntax/tooling and native type generation,
 starting with types only. The [model boundary](docs/model.md) replaces the earlier
-independent bittype type-language proposal. Horos declaration revision 2 and its
+independent bittype type-language proposal. Horos declaration revision 3 and its
 bittype AST projection are implemented in Go source; no package release is implied.
 
 ## Ownership
@@ -24,17 +24,19 @@ bittype owns:
   analyzer; analysis consumes an explicit receipt and can reuse its sealed model.
 - Small data types needed to represent presence and nullness in generated code.
 - Implemented [unified Horos tooling](docs/horos.md), adapting canonical
-  Type/Data bounds to ASTs and shared semantic facts. Bittype does not own the
-  canonical type model or the mixed value domain.
+  proper/constructor interfaces and Data certificates to ASTs and shared semantic
+  facts. Bittype does not own the canonical type model or the mixed value domain.
 
 Horos owns data descriptors, conformance and module/generic/application
-semantics with Type/Data bounds, their encoding and semantic vectors. Ontos owns
+semantics with kinds/interfaces, their encoding and semantic vectors. Ontos owns
 ground values, structural identity and encoding. Horos does not depend on bittype;
 the current Horos-specific frontend and future qualified providers/transformers
 consume its model. Generic foundations and native text stages remain independent.
 
 **Owner boundary correction, 4 November 2026:** one Horos declaration language
-contains data and capability types, with explicit generic bounds. Ground values
+contains data and capability types, with explicit generic interfaces. Data is a
+refined kind of Type; erased shape and admission/result evidence are separate
+views of the [kind system](docs/kinds.md). Ground values
 and conformance stay data-only; Ontos/wire owns mixed values. Separate Horos/Wire
 profiles and Data schema wrappers are removed, without aliases. Hydration stays
 in Bitwire/Bitruntime, and Function, Stream and Cell remain ordinary libraries.
@@ -67,8 +69,11 @@ The [native text design](docs/parsing-formatting.md) defines their ownership and
 qualification limits. Specialized providers all extend language.Provider.
 
 The ASTTransformer boundary and syntax engine now provide checked heterogeneous
-registration, route planning/execution and native text composition. Native AST-to-AST mappings, public builders and application CLI remain deferred. Native parsing does not make a target language the
-canonical authority. The [generation design](docs/generation.md) remains separate.
+registration, route planning/execution and native text composition. Four
+[native pagination mappings](docs/semantic-generation.md) are implemented;
+public builders and application CLI remain deferred. Native parsing does not make
+a target language the canonical authority. The [generation design](docs/generation.md)
+remains separate.
 
 This scope excludes application-value validators, serialization, Wire adapters,
 RPC/streaming implementations and service migrations. The unified declaration
@@ -88,7 +93,9 @@ import allowances. Removing the second frontend changes no agnostic SPI.
 A published language revision fixes its admitted syntax and meaning.
 The earlier `bittype: 1` proposal is superseded. Horos's declaration revision is
 implemented in Go and versioned with the public Horos distribution. Rust and
-TypeScript retain ground checking; bittype now supplies readable syntax; native generators remain deferred.
+TypeScript retain ground checking; bittype supplies readable syntax and ordinary
+pagination generation. Residual higher kinds are explicitly Unsupported in all
+four native mappings until separately qualified representations exist.
 
 Canonical declaration identity, normalized value shape, generated-code
 compatibility and undeclared behavior remain distinct. A digest does not prove
@@ -115,4 +122,5 @@ callables, adapters or migration gates to this milestone.
 
 The unified [Horos frontend](docs/horos.md) implements the existing stage
 interfaces. Template lifting and separate profiles are removed without aliases.
-Canonical semantics stay in Horos; no native generator or runtime binding is added.
+Canonical semantics stay in Horos. The subsequent pagination generators add
+types-only mappings; runtime bindings remain outside this scope.

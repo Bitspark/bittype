@@ -171,7 +171,10 @@ The [unified declaration model](docs/horos.md) uses one `horos` family under
 syntax/check/resolve/analyze/provider. Private syntax framing remains in
 `internal/declsyntax`; model projection, correspondence and export remain in
 `internal/horosmodel`. No `horoswire` stage or compatibility alias remains.
-Bounds are explicit syntax and provider-owned semantic facts, not kernel kinds.
+Proper/constructor interfaces and result claims are explicit syntax;
+[kinds and Data certificates](docs/kinds.md) are provider-owned semantic facts.
+The generic graph stores expression callees and subject/fact links without
+interpreting Horos kinds or imposing application arity.
 
 Model dependency allowances cover only this frontend and its private bridge.
 Architecture checks preserve the agnostic and native-stage boundaries. Native

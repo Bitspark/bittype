@@ -1,8 +1,8 @@
 # Horos declaration AST
 
 **Implemented in Go source, 4 November 2026.** One frontend projects
-Horos declaration revision 2. Type/Data bounds restrict generic slots within that
-language; data and capability expressions share one module, declaration and
+Horos declaration revision 3. [Kinds and interfaces](kinds.md) admit proper and
+constructor parameters within that language; data and capability expressions share one module, declaration and
 binder model. The old Horos/Wire packages and profiles are removed without aliases.
 The authoritative [canonical format](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md)
 lives in Horos. The [readable source grammar](horos-syntax.md) is implemented on this
@@ -21,7 +21,8 @@ The agnostic kernel contains no Type/Data or Wire interpretation.
   `Resolve(root, dependencies, treeID)`, `Project(program, treeID)` and `Model(view)`.
   Resolve delegates semantics to Horos, then projects its checked model. Model
   checks the borrowed AST and returns a Horos program for inspection or explicit
-  `Specialize(declarationID, closedArguments)`. No lookup performs network/file IO.
+  specialization with typed proper arguments and same-Program constructor handles.
+  No lookup performs network/file IO.
   The registered resolver uses [ResolveReferences](../resolve/horos/go/resolver.go)
   to export shared semantic facts. It verifies supplied semantic annotations
   against authoritative resolution and never repairs them implicitly.
@@ -41,7 +42,7 @@ The agnostic kernel contains no Type/Data or Wire interpretation.
   and `analysis.Provider[horos.Language]`,
   with ID `horos` and name `Horos`.
   Applications explicitly register it through `representation.NewLanguage` and
-  `Engine.RegisterLanguage`, using profile `horos-declarations-2/ast-1`.
+  `Engine.RegisterLanguage`, using profile `horos-declarations-3/ast-1`.
   Syntax checking is separately bound with `check.NewChecker[h.Language](definition,
   provider)` and installed with `Engine.RegisterChecker`. Identity registration
   alone supplies no syntax or semantic capability.
@@ -67,6 +68,9 @@ must use Model or the analysis capability.
 
 ## Vocabulary and bindings
 
+The syntax package's Kind is an AST node tag. Semantic kind shapes and interfaces
+are Horos judgments projected separately; an AST tag does not establish a kind.
+
 One Program tree supplies the entry module and dependency pool. Projection of a
 checked Program emits its complete resolved import closure, ordered by module
 digest; imports/declarations retain Horos's canonical map order. Parameters,
@@ -80,17 +84,18 @@ in this first resolution profile.
 | Program | none | `module*` | `root` to the entry module |
 | Module | `name`, `pin` (lowercase hex) | `import*`, `declaration*` | none |
 | Import | `alias`, expected `name`, `pin` | none | optional `target` module assertion |
-| Declaration | `name` | `parameter*`, one `body` | none |
-| TypeParameter | `name`, canonical decimal `index` | one `bound` | none |
-| Bound | `name` is `type` or `data` | none | none |
+| Declaration | `name` | `parameter*`, one proper `result` interface, one `body` | none |
+| TypeParameter | `name`, canonical decimal `index` | one `interface` | none |
+| Interface | `name` is `type`, `data` or `constructor` | none for proper interfaces; nonempty `input*` and one proper `result` for constructors | none |
 | Parameter | canonical decimal `index` | none | optional `target` TypeParameter assertion |
-| Application | `scope` (`local` or `imported`), `name`, imported `alias` | `argument*` | optional `target` Declaration and imported `import` assertions |
+| Reference | `scope` (`local` or `imported`), `name`, imported `alias` | none | optional `target` Declaration and imported `import` assertions |
+| Application | none | one `callee`, nonempty `argument*` | none |
 | Descriptor | Horos `constructor` name without `horos/` prefix | `operand*` | none |
 | Atom | raw bytes as lowercase `hex` | none | none |
 | Tuple | none | `element*` | none |
 
 Descriptor operands retain the canonical value layout. Only Horos-designated
-type positions become Parameter, Application or Descriptor nodes. Other positions
+type positions become Parameter, Reference, Application or Descriptor nodes. Other positions
 remain Atom/Tuple fragments, including field wrappers and everything inside an
 `exact` literal. The frontend takes these positions from the checked Horos model;
 it has no duplicate descriptor-constructor switch or record semantics.
@@ -114,14 +119,14 @@ It does not reinterpret literal data as declarations or silently normalize an AS
 
 The [binding tests](../resolve/horos/go/resolve_test.go) preserve imported Page
 and caller-side Person identities, same-spelled distinct binders and literal
-opacity. Existing data-only fixtures now spell their Data bounds explicitly.
-The [unified bound tests](../analyze/horos/go/bounds_test.go) add:
+opacity. Data-only fixtures spell their proper Data interfaces explicitly.
+The frontend retains these ordinary applications:
 
 ```text
 Page<T> = list-of(T)
 DataPage<D: Data> = Page<D>
 People = Page<Person>
-Live = Page<Wire<Person>>
+Live = Page<wire<Person>>
 ```
 
 The [installed consumer](../integration/go/testdata/installed/consumer_test.go)
@@ -132,15 +137,19 @@ Horos descriptor. A mixed result cannot be passed to ground WF/Conforms.
 No specialization mutates the original generic.
 
 `Forward<D: Data> = DataPage<D>` resolves; `Forward<T> = DataPage<T>` is a located
-semantic bound violation even before specialization. Both are valid AST syntax.
-Check validates the bound spelling/cardinality only; Horos supplies the meaning.
-The resolver exports bounds through existing provider-owned semantic terms and
-analysis consumes the same immutable receipt. No new kernel obligation is needed.
+semantic interface violation even before specialization. Both are valid AST syntax.
+Check validates interface structure and spelling only; Horos supplies the meaning.
+Constructor interfaces support `Wrapped<F: Type -> Type, T>` and
+`Compose<F: Type -> Type, G: Type -> Type, T>` without losing known Page/Ignore
+result precision. See the [complete judgment table](kinds.md#page-wrapped-and-compose).
+The resolver exports structured provider-owned facts, and analysis consumes the
+same immutable receipt. The required type-facts report records enumeration
+completeness without adding kind semantics to the kernel.
 
 ## Admission and qualification
 
 Horos owns module-name/pin checking, arity, binding scope, recursion closure,
-application-cycle rejection, symbolic generic bounds and specialization limits. Its errors retain module,
+declaration-reference cycle rejection, symbolic interfaces/Data proofs and specialization limits. Its errors retain module,
 declaration and tuple-index path context. Structured codes and subjects distinguish
 invalid source, missing dependencies, contradicted context, invalid options and
 exhaustion. AST structure/profile errors are located at current AST nodes; no
@@ -159,7 +168,7 @@ qualify their boundary.
 
 ## Analysis profile and generic queries
 
-`analyze.Contract()` advertises `horos-declarations-2/analysis-1`. Its domain is
+`analyze.Contract()` advertises `horos-declarations-3/analysis-1`. Its domain is
 the selected entry and transitive pinned module closure, not every unused value
 in the supplied pool. Unused pool modules contribute no established semantic
 facts; their binding annotations are outside this analyzed domain. Every supplied
@@ -169,13 +178,14 @@ module still has its document-pin assertion checked during decoding.
 | --- | --- |
 | program-validity | Complete / Holds for the submitted entry and required context |
 | declaration-index | Complete / Undetermined; module, declaration and parameter entities enumerated |
-| occurrence-bindings | Complete / Undetermined; parameter/application targets enumerated |
+| occurrence-bindings | Complete / Undetermined; parameter/declaration references enumerated |
 | applications | Complete / Undetermined; references, effective applications and provider expressions exported |
-| application-dependencies | Complete / Undetermined; every declaration application, including nested arguments, exported |
+| reference-dependencies | Complete / Undetermined; every named declaration reference, including unapplied and ignored constructor arguments, exported |
+| type-facts | Complete / Undetermined; kinds, interfaces, Data summaries/statuses and canonical identities exported |
 
-The resolver adds a sixth obligation, reference-resolution, requiring Complete /
-Holds for its model. Its profile is horos-declarations-2/resolution-1. Analysis
-requires that resolver evidence and preserves these five reports. All five
+The resolver additionally reports reference-resolution, requiring Complete /
+Holds for its model. Its profile is horos-declarations-3/resolution-1. Analysis
+requires that resolver evidence and preserves these six reports. All six
 reports are analysis model publication requirements. A semantic rejection or
 missing dependency publishes diagnostics without a partial graph. Missing context
 and resolver exhaustion are Incomplete / Undetermined. A contradictory context
@@ -193,16 +203,52 @@ Invalid configuration is an API error before source decoding. The kernel copies 
 bounds these bytes without interpreting them. Semantic graph budgets are separate.
 
 The graph preserves module/declaration/parameter identity, current input sites,
-open parameters and zero-argument applications. Descriptor terms contain exact
-Ontos codec-v1 bytes and authoritative operand paths. Parameter bounds are
-provider-owned expression facts: `TermAt(semantics.Occurrence{Site: parameterSite, Role: resolve.BoundRole()})`
-returns the ID of a term with operator `horos/bound/type` or `horos/bound/data`, and the
-codec-v1 bytes of that bound atom. Parameter entities retain sort `horos/type`;
-bounds constrain arguments, not the kind of entity. No shared semantic field or
-subtype rule is added. ProgramValidity includes Horos's symbolic bound checks. Four generic queries need
-no Horos model import: `Resolve`, `TermAt`, `ParameterBindings` and
-`DependenciesFrom`. Dependency edges describe declaration applications, not a
-general import, inheritance or runtime-effect graph.
+open proper/constructor parameters and declaration references. Descriptor terms contain exact
+Ontos codec-v1 bytes and authoritative operand paths. Declared interfaces and
+result claims replace the former bound-only representation. Application terms have Callee
+and Arguments; their callee Reference carries the declaration Target. Parameter
+callees remain References to the actual parameter entity, not invented
+declarations with synthetic formals.
+
+`Model.Facts(subject, relation)` retrieves provider-owned terms associated with
+an entity or term. Horos relations include `kind`, `interface`, `data-status`,
+`data-summary` and `canonical-identity`, all owned by `horos`. Kind and interface
+terms retain input operands as explicit graph links; Data summaries retain
+conditional parameter/application structure. Canonical identities retain exact
+module/declaration/slot identity separately from model-local IDs. Parameter Sort
+is the coarse key `horos/type` or `horos/constructor`; its meaning remains
+provider-owned. No kernel subkinding rule or Type/Data
+interpretation is added.
+
+The resolver exposes these keys through `KindRelation`, `InterfaceRelation`,
+`DataStatusRelation`, `DataSummaryRelation` and `IdentityRelation`.
+All operators below have Owner `horos` and Encoding `ontos/codec-v1`.
+Payload notation uses raw atoms, the standard text/integer embeddings and tuples.
+
+| Relation | Operator Name | Payload and operand links |
+| --- | --- | --- |
+| kind | `kind/proper`, `kind/constructor` | Empty atom; constructor inputs at `[i]`, with a proper result implicit |
+| interface | `interface/proper`, `interface/constructor` | Atom `type` or `data`; constructor inputs at `[i]` |
+| data-status | `data-status/proven`, `data-status/failed`, `data-status/conditional` | Atom containing the same status; no operands |
+| data-summary | `data-summary/true`, `data-summary/false`, `data-summary/need`, `data-summary/and`, `data-summary/probe` | Empty atom; Need links a parameter Reference at `[0]`, And child summaries at `[i]`, Probe retained checked expression syntax at `[0]` |
+| canonical-identity | `identity/module` | Raw digest atom |
+| canonical-identity | `identity/declaration` | Tuple of raw module digest atom and declaration-name text |
+| canonical-identity | `identity/parameter` | Tuple of raw module digest atom, declaration-name text and zero-based slot integer |
+
+Module entities receive identity facts. Declaration entities receive kind,
+interface, identity and body Data-summary/status facts; parameter entities receive
+kind, interface and identity. Proper expression terms receive kind, interface and
+Data-summary/status facts; constructor expressions have no proper-result Data
+facts. Probe export does not recursively expand that expression's summary or
+invent an AST association. The
+`declaration-reference` dependency relation is exposed by `ReferenceDependency`.
+
+Generic queries need no Horos model import: `Resolve`, `TermAt`,
+`DirectParameterBindings`, `DependenciesFrom` and `Facts`.
+DirectParameterBindings succeeds only for a direct Reference callee with a
+matching actual formal list; it is not a general substitution operation.
+Dependency edges cover all declaration references, not just applications, and
+do not describe runtime effects.
 
 Remote tests cover canonical value round trips, imported and nested pagination,
 specialization, wrong/missing references, invalid pins/indices/UTF-8, literal
@@ -213,6 +259,7 @@ adds source and canonical round trips on the same AST. Architecture tests enforc
 dependency boundary, and static consumer tests distinguish Horos from every native
 AST marker. Existing native-text/compiler gates remain required.
 
-Native generators, runtime adapters and
-Function/Stream/Cell bindings are outside this change. These contracts retain
+The separate [pagination mappings](semantic-generation.md) consume this model
+and explicitly reject residual higher kinds. Runtime adapters and
+Function/Stream/Cell bindings remain outside this frontend. These contracts retain
 library ownership; none is a special core kind or builtin registration.

@@ -16,11 +16,13 @@ to shared facts; [analysis](analysis.md) consumes that evidence explicitly.
 Text stages are documented in [Horos source syntax](horos-syntax.md).
 
 The [unified declaration design](hydrated-types.md) has one generation path:
-`AST[Horos] -> AST[Native] -> CST[Native] -> source`. Explicit Type/Data bounds
-preserve restrictions within that language. The [frontend](horos.md) is
+`AST[Horos] -> AST[Native] -> CST[Native] -> source`. Explicit kind interfaces and
+Data certificates preserve restrictions within that language. The [frontend](horos.md) is
 implemented; native transformers cover the explicit pagination subset. There is no cross-profile
 transformer, template lifting or second Page. Hydration remains separate in the
 existing Wire/runtime layers.
+The [kind-system boundary](kinds.md) admits higher-order constructor inputs in
+Horos; all current native mappings explicitly reject residual higher kinds.
 
 The [native representation design](type-representations.md) specifies proposed
 per-language library recipes. The consuming build configures one concrete
@@ -177,9 +179,11 @@ The [pipeline package](../contracts/pipeline/go/stage.go) defines:
 type Stage[I, O any] func(I) (O, error)
 ```
 
-A generator will satisfy a stage from one AST type to another; a formatter
-satisfies a stage from a target AST view to CST, and a printer from CST to text. The planned relationships
-are shown below; all language markers exist, but the Horos-to-native stage does not:
+A formatter can be composed as a stage from a target AST view to CST, and a
+printer from CST to text. The generic Stage type can also express an AST-to-AST
+function, but production Horos mappings use the richer ASTTransformer input below
+to require captured syntax and explicit semantic evidence. Illustrative typed
+relationships are:
 
 ```text
 Stage[AST[Horos], AST[TypeScript]]
@@ -296,9 +300,9 @@ path that merely reaches the right language ID is not sufficient evidence.
 
 ## Composition and dependencies
 
-The application root will explicitly compose selected concrete stages.
-It resolves input once and passes the resulting canonical AST to independently
-selected target generators. Each formatter receives the corresponding target
+The application root explicitly composes selected concrete stages.
+It captures input, resolves and analyzes it explicitly, and passes that same
+snapshot and evidence to independently selected target generators. Each formatter receives the corresponding target
 AST. Shared inputs remain read-only by contract; outputs have separate storage.
 Whether targets run sequentially or concurrently is an application decision,
 not a requirement imposed by the AST model.
