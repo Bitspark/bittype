@@ -176,7 +176,9 @@ func TestProductionArchitecture(t *testing.T) {
 		rules["check/"+name+"/go"] = []string{"trees/ast/go", "syntax/" + name + "/go", "internal/declsyntax"}
 		rules["analyze/"+name+"/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go", "syntax/" + name + "/go", "resolve/" + name + "/go"}
 		rules["provider/"+name+"/go"] = append(rules["provider/"+name+"/go"], []string{"trees/ast/go", "contracts/check/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "syntax/" + name + "/go", "check/" + name + "/go", "analyze/" + name + "/go", "resolve/" + name + "/go"}...)
-		for _, stage := range []string{"parse", "format"} { rules[stage+"/"+name+"/go"] = append(rules[stage+"/"+name+"/go"], "internal/horosmodel", "internal/lex") }
+		for _, stage := range []string{"parse", "format"} {
+			rules[stage+"/"+name+"/go"] = append(rules[stage+"/"+name+"/go"], "internal/horosmodel", "internal/lex")
+		}
 	}
 	for path, p := range packages {
 		if p.Standard || path == modulePath+"/integration/go" {
@@ -220,8 +222,8 @@ var horosModelDependencies = []string{
 }
 
 var horosExternalImports = map[string][]string{
-	"parse/horos/go": {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
-	"format/horos/go": {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
+	"parse/horos/go":      {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
+	"format/horos/go":     {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"internal/horosmodel": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 	"resolve/horos/go":    {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
 }

@@ -16,7 +16,11 @@ import (
 func pins(tree s.AST) []string {
 	var result []string
 	for _, child := range tree.Nodes[tree.Root-1].Children {
-		for _, attr := range tree.Nodes[child.Node-1].Attributes { if attr.Name == s.AttributePin { result = append(result, attr.Text) } }
+		for _, attr := range tree.Nodes[child.Node-1].Attributes {
+			if attr.Name == s.AttributePin {
+				result = append(result, attr.Text)
+			}
+		}
 	}
 	return result
 }
@@ -25,24 +29,44 @@ func roundTrip(t *testing.T, source string) s.AST {
 	t.Helper()
 	p := provider.Provider{}
 	parsed, err := p.Parse(parse.Input{SourceID: "input.horos", TreeID: "input", Text: source})
-	if err != nil { t.Fatal(err) }
-	if err := p.Check(parsed); err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Check(parsed); err != nil {
+		t.Fatal(err)
+	}
 	printed, err := p.Print(parsed)
-	if err != nil || printed != source { t.Fatalf("lossless source round trip: %v\n%q", err, printed) }
+	if err != nil || printed != source {
+		t.Fatalf("lossless source round trip: %v\n%q", err, printed)
+	}
 	formatted, err := p.Format(parsed)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	output, err := p.Print(formatted)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	reparsed, err := p.Parse(parse.Input{SourceID: "formatted.horos", TreeID: "formatted", Text: output})
-	if err != nil { t.Fatalf("formatter produced invalid source: %v\n%s", err, output) }
-	if strings.Join(pins(parsed.Abstract), ",") != strings.Join(pins(reparsed.Abstract), ",") { t.Fatalf("canonical document changed:\n%s", output) }
+	if err != nil {
+		t.Fatalf("formatter produced invalid source: %v\n%s", err, output)
+	}
+	if strings.Join(pins(parsed.Abstract), ",") != strings.Join(pins(reparsed.Abstract), ",") {
+		t.Fatalf("canonical document changed:\n%s", output)
+	}
 	again, err := p.Format(reparsed)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	stable, err := p.Print(again)
-	if err != nil || stable != output { t.Fatalf("formatting is not idempotent: %v", err) }
+	if err != nil || stable != output {
+		t.Fatalf("formatting is not idempotent: %v", err)
+	}
 	// The formatter owns a complete snapshot rather than aliasing borrowed ASTs.
 	parsed.Abstract.Nodes[0].Kind = "mutation"
-	if formatted.Abstract.Nodes[0].Kind == "mutation" { t.Fatal("formatter aliases input") }
+	if formatted.Abstract.Nodes[0].Kind == "mutation" {
+		t.Fatal("formatter aliases input")
+	}
 	return reparsed.Abstract
 }
 
@@ -86,7 +110,9 @@ func TestSourceTriviaAndSpans(t *testing.T) {
 	tree := roundTrip(t, source)
 	for _, n := range tree.Nodes {
 		for _, span := range n.Origin.Spans {
-			if span.Source != ast.SourceID("formatted.horos") || span.Start > span.End { t.Fatal("invalid source origin") }
+			if span.Source != ast.SourceID("formatted.horos") || span.Start > span.End {
+				t.Fatal("invalid source origin")
+			}
 		}
 	}
 }
@@ -101,7 +127,9 @@ func TestSyntaxDoesNotResolveOrCheckBounds(t *testing.T) {
 	} {
 		t.Run(body, func(t *testing.T) {
 			tree := roundTrip(t, "module invalid.semantics; "+body)
-			if _, err := resolve.Model(tree); err == nil { t.Fatal("semantic invalidity was lost") }
+			if _, err := resolve.Model(tree); err == nil {
+				t.Fatal("semantic invalidity was lost")
+			}
 		})
 	}
 	roundTrip(t, `module missing.context; import pages from example.pagination pin "sha256:`+strings.Repeat("AB", 32)+`"; type People = pages.Page<text>;`)
@@ -117,17 +145,21 @@ func TestRejectWholeInput(t *testing.T) {
 		`module x; type X = exact("\xFF");`, `module x; type X = exact("\uD800");`, `module x; type X = atom-exact(#hex"f");`,
 		"module x; type X<T> = T<text>;", "module x; type text = int;", "module x; type X = 'text';",
 		"module x; type X = text; type X = int;", "module x; import a from x pin \"sha256:nope\";",
-		"module x; type X = text; import a from x pin \"sha256:"+strings.Repeat("0",64)+"\";",
-		"module x; /* unterminated", "module x; type X = exact("+strings.Repeat("1",4097)+");",
-		"module x; type X = "+strings.Repeat("list<",300)+"text"+strings.Repeat(">",300)+";",
-		"module x;"+strings.Repeat(" ",4<<20), "module x;\xff",
+		"module x; type X = text; import a from x pin \"sha256:" + strings.Repeat("0", 64) + "\";",
+		"module x; /* unterminated", "module x; type X = exact(" + strings.Repeat("1", 4097) + ");",
+		"module x; type X = " + strings.Repeat("list<", 300) + "text" + strings.Repeat(">", 300) + ";",
+		"module x;" + strings.Repeat(" ", 4<<20), "module x;\xff",
 	}
 	p := provider.Provider{}
 	for i, source := range cases {
 		out, err := p.Parse(parse.Input{SourceID: "bad.horos", TreeID: "bad", Text: source})
 		var diagnostic *text.Diagnostic
-		if err == nil || !errors.As(err, &diagnostic) || len(out.Nodes) != 0 || len(out.Abstract.Nodes) != 0 { t.Fatalf("case %d: expected located failure without partial output: %v", i, err) }
-		if diagnostic.Span == nil { t.Fatalf("case %d has no location", i) }
+		if err == nil || !errors.As(err, &diagnostic) || len(out.Nodes) != 0 || len(out.Abstract.Nodes) != 0 {
+			t.Fatalf("case %d: expected located failure without partial output: %v", i, err)
+		}
+		if diagnostic.Span == nil {
+			t.Fatalf("case %d has no location", i)
+		}
 	}
 }
 
@@ -136,11 +168,15 @@ func FuzzSourceRoundTrip(f *testing.F) {
 	f.Add("module x; type X = (text | int) | union<text>;")
 	f.Add(`module x; type X = exact(tuple(#"horos/decl/param", 0, #hex"ff"));`)
 	f.Fuzz(func(t *testing.T, source string) {
-		if len(source) > 65536 { t.Skip() }
+		if len(source) > 65536 {
+			t.Skip()
+		}
 		p := provider.Provider{}
 		parsed, err := p.Parse(parse.Input{SourceID: "fuzz", TreeID: "fuzz", Text: source})
 		if err != nil {
-			if len(parsed.Nodes) != 0 || len(parsed.Abstract.Nodes) != 0 { t.Fatal("partial parse result") }
+			if len(parsed.Nodes) != 0 || len(parsed.Abstract.Nodes) != 0 {
+				t.Fatal("partial parse result")
+			}
 			return
 		}
 		roundTrip(t, source)

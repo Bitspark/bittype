@@ -63,9 +63,9 @@ canonical declarations or decide how a canonical nullable field should be
 represented. Those choices must already be explicit in the target AST.
 
 The Horos frontend supplies AST projection/checking and located AST errors,
-using Horos-owned resolution, binding and specialization rules. A readable
-authoring syntax can add text -> CST[Horos] with its AST view; the canonical
-document value format does not claim that source syntax already exists.
+using Horos-owned resolution, binding and specialization rules. The
+[readable authoring syntax](horos-syntax.md) adds text -> CST[Horos] with its AST
+view; canonical document identity is still defined by Horos.
 Native parsers remain separate text-to-CST stages. File IO, dependency retrieval,
 configuration and output paths belong to the application. A formatter is usable
 with a target AST from another producer, without a canonical input dependency.
@@ -131,9 +131,8 @@ testdata/{horos,transforms}/             planned: semantic/adoption fixtures
 
 The native directory names are typescript, golang, rust and cpp. Horos replaces
 the earlier proposed canonical directory name; no implementation aliases are
-needed. Planned paths are not placeholder packages. An AST-only first provider
-needs explicit capability checks before the complete readable language-stage
-matrix applies. Public builders, generic traversal and a typed
+needed. Planned paths are not placeholder packages. The Horos provider now has
+explicitly qualified text and semantic stages in the same language-stage matrix. Public builders, generic traversal and a typed
 Stage composition helper remain deferred. Package-level tests belong beside
 their implementation; independent consumer fixtures and composition qualification
 remain under integration. Language coverage is discovered and checked in tests,

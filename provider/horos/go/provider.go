@@ -24,8 +24,12 @@ import (
 
 type Provider struct{ s.Language }
 
-func (Provider) Parse(input parsecontract.Input) (cst.CST[s.Language], error) { return parse.Parse(input) }
-func (Provider) Format(view ast.View[s.Language]) (cst.CST[s.Language], error) { return format.Format(view) }
+func (Provider) Parse(input parsecontract.Input) (cst.CST[s.Language], error) {
+	return parse.Parse(input)
+}
+func (Provider) Format(view ast.View[s.Language]) (cst.CST[s.Language], error) {
+	return format.Format(view)
+}
 func (Provider) Print(tree cst.CST[s.Language]) (string, error) { return print.Print(tree) }
 
 var _ parsecontract.Provider[s.Language] = Provider{}

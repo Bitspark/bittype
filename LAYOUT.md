@@ -156,9 +156,8 @@ reverse mappings under `transforms/<native>-to-horos/go`. Application compositio
 and IO remain under `cmd/bittype/go`. Horos owns the declaration semantics and
 encoding; these packages supply tooling projections and native representations.
 Dependency rules and qualification will accompany implementation, with no empty
-packages created now. The complete language-stage gate will accompany a complete
-readable frontend; an initial AST-only provider must have an explicit separately
-tested capability profile rather than pretending missing text stages exist.
+packages created now. All five current languages have qualified text stages;
+new AST-only providers still require an explicit tested capability profile.
 
 Adding a native language supplies the five stages, any private lexical helpers,
 conformance fixtures and compiler qualification. It requires no change to the
