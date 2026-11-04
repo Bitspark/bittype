@@ -20,7 +20,7 @@ type Kind = ast.Kind[Language]
 
 // Profile admits declaration syntax before resolution. Binding annotations are
 // optional assertions; the separate analyzer establishes or rejects them.
-const Profile = "horos-declarations-1/ast-2"
+const Profile = "horos-declarations-2/ast-1"
 
 const (
 	KindProgram       Kind = "program"
@@ -28,6 +28,7 @@ const (
 	KindImport        Kind = "import"
 	KindDeclaration   Kind = "declaration"
 	KindTypeParameter Kind = "type-parameter"
+	KindBound         Kind = "bound"
 	KindParameter     Kind = "parameter"
 	KindApplication   Kind = "application"
 	KindDescriptor    Kind = "descriptor"
@@ -50,6 +51,7 @@ const (
 	RoleImport      = "import"
 	RoleDeclaration = "declaration"
 	RoleParameter   = "parameter"
+	RoleBound       = "bound"
 	RoleBody        = "body"
 	RoleArgument    = "argument"
 	RoleOperand     = "operand"

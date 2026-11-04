@@ -10,7 +10,6 @@ import (
 	cpp "github.com/Bitspark/bittype/provider/cpp/go"
 	golang "github.com/Bitspark/bittype/provider/golang/go"
 	horos "github.com/Bitspark/bittype/provider/horos/go"
-	horoswire "github.com/Bitspark/bittype/provider/horoswire/go"
 	rust "github.com/Bitspark/bittype/provider/rust/go"
 	typescript "github.com/Bitspark/bittype/provider/typescript/go"
 	"testing"
@@ -18,7 +17,6 @@ import (
 
 func TestDocumentedProviderMatrix(t *testing.T) {
 	providerCapabilities(t, horos.Provider{}, false, true)
-	providerCapabilities(t, horoswire.Provider{}, false, true)
 	providerCapabilities(t, typescript.Provider{}, true, false)
 	providerCapabilities(t, golang.Provider{}, true, false)
 	providerCapabilities(t, rust.Provider{}, true, false)

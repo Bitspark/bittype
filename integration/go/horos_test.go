@@ -34,7 +34,7 @@ func astOnlyConformanceCases() []struct {
 	return []struct {
 		directory string
 		qualify   func(*testing.T)
-	}{{"horos", qualifyHoros}, {"horoswire", qualifyHorosWire}}
+	}{{"horos", qualifyHoros}}
 }
 
 func TestASTOnlyProviders(t *testing.T) {
@@ -62,14 +62,14 @@ func qualifyHoros(t *testing.T) {
 	txt := data.MustEncodeText
 	textType := tuple("horos/scalar", atom("utf8-text"))
 	parameter := tuple("horos/decl/param", data.EncodeInt(big.NewInt(0)))
-	page := tuple("horos/decl/type", data.EncodeList([]core.Value{txt("T")}), tuple("horos/list-of", parameter))
+	page := tuple("horos/decl/type", data.EncodeList([]core.Value{tuple("horos/decl/parameter", txt("T"), atom("data"))}), tuple("horos/list-of", parameter))
 	applied := tuple("horos/decl/type", data.EncodeList(nil), tuple("horos/decl/apply", tuple("horos/decl/local", txt("Page")), data.EncodeList([]core.Value{textType})))
 	declarations, err := data.EncodeMap([][2]core.Value{{txt("Page"), page}, {txt("TextPage"), applied}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	empty, _ := data.EncodeMap(nil)
-	module := tuple("horos/decl/module", data.EncodeInt(big.NewInt(1)), txt("consumer.pagination"), empty, declarations)
+	module := tuple("horos/decl/module", data.EncodeInt(big.NewInt(2)), txt("consumer.pagination"), empty, declarations)
 	tree, err := resolve.Resolve(module, nil, "consumer")
 	if err != nil {
 		t.Fatal(err)

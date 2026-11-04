@@ -12,7 +12,7 @@ import (
 	core "github.com/bitspark/ontos/core/go"
 )
 
-const Profile = "horos-declarations-1/resolution-1"
+const Profile = "horos-declarations-2/resolution-1"
 
 var frontend = bridge.Frontend[s.Language]{
 	DeclarationPrefix: "horos/decl/", DescriptorPrefix: "horos/", Owner: "horos", ResolutionProfile: Profile,
@@ -30,6 +30,7 @@ func Applications() semantics.Key          { return frontend.Applications() }
 func Dependencies() semantics.Key          { return frontend.Dependencies() }
 func TargetRole() semantics.Key            { return frontend.TargetRole() }
 func ExpressionRole() semantics.Key        { return frontend.ExpressionRole() }
+func BoundRole() semantics.Key             { return frontend.BoundRole() }
 func ApplicationDependency() semantics.Key { return frontend.ApplicationDependency() }
 func LimitsSetting() semantics.Key         { return frontend.LimitsSetting() }
 func Contract() resolution.Contract        { return frontend.Contract() }

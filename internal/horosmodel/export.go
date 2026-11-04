@@ -8,6 +8,7 @@ import (
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	codec "github.com/bitspark/ontos/codec/go"
+	core "github.com/bitspark/ontos/core/go"
 )
 
 type exporter[L any] struct {
@@ -64,6 +65,21 @@ func (e *exporter[L]) binding(site ast.NodeRef, target semantics.EntityID) error
 		return err
 	}
 	e.facts.Bindings = append(e.facts.Bindings, semantics.Binding{At: at, Target: target})
+	return nil
+}
+
+// Bounds are ordinary provider-owned terms associated with their parameter
+// syntax. All parameters still have sort type; the kernel knows no Data rule.
+func (e *exporter[L]) bound(site ast.NodeRef, bound decl.Bound) error {
+	term := semantics.Term{Kind: semantics.ProviderExpression,
+		Operator: e.frontend.key("bound/" + string(bound)), Encoding: semantics.Key{Owner: "ontos", Name: "codec-v1"},
+		Data: codec.Encode(core.NewAtom([]byte(bound)))}
+	at := semantics.Occurrence{Site: site, Role: e.frontend.BoundRole()}
+	if err := e.reserve(2, 0, keySize(term.Operator)+keySize(term.Encoding)+len(term.Data)+occurrenceSize(at)); err != nil {
+		return err
+	}
+	e.facts.Terms = append(e.facts.Terms, term)
+	e.facts.Expressions = append(e.facts.Expressions, semantics.Expression{At: at, Term: semantics.TermID(len(e.facts.Terms))})
 	return nil
 }
 
@@ -164,13 +180,16 @@ func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Pro
 				return semantics.Data{}, err
 			}
 			e.declarations[declaration.ID()] = id
-			for index, name := range declaration.Parameters() {
+			for index, slot := range declaration.Parameters() {
 				parameter := decl.ParameterID{Declaration: declaration.ID(), Index: index}
-				parameterID, err := e.entity(f.key("parameter"), name, id, input.ParameterSite(parameter))
+				parameterID, err := e.entity(f.key("parameter"), slot.Name, id, input.ParameterSite(parameter))
 				if err != nil {
 					return semantics.Data{}, err
 				}
 				e.parameters[parameter] = parameterID
+				if err := e.bound(input.ParameterSite(parameter), slot.Bound); err != nil {
+					return semantics.Data{}, err
+				}
 				sort := f.key("type")
 				if err := e.reserve(0, 1, keySize(sort)); err != nil {
 					return semantics.Data{}, err
