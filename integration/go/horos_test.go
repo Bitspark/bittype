@@ -25,9 +25,9 @@ import (
 	data "github.com/bitspark/ontos/data/go"
 )
 
-// A test-only capability catalogue qualifies every AST-only provider explicitly.
+// A test-only capability catalogue qualifies every semantic provider explicitly.
 // It is not imported by any production registry or language package.
-func astOnlyConformanceCases() []struct {
+func semanticConformanceCases() []struct {
 	directory string
 	qualify   func(*testing.T)
 } {
@@ -37,8 +37,8 @@ func astOnlyConformanceCases() []struct {
 	}{{"horos", qualifyHoros}}
 }
 
-func TestASTOnlyProviders(t *testing.T) {
-	for _, fixture := range astOnlyConformanceCases() {
+func TestSemanticProviders(t *testing.T) {
+	for _, fixture := range semanticConformanceCases() {
 		t.Run(fixture.directory, fixture.qualify)
 	}
 }
@@ -48,11 +48,11 @@ func qualifyHoros(t *testing.T) {
 	if provider.ID() != "horos" || provider.Name() != "Horos" {
 		t.Fatal("unstable Horos identity")
 	}
-	if _, ok := any(provider).(parse.Provider[h.Language]); ok {
-		t.Fatal("AST-only provider advertises parsing")
+	if _, ok := any(provider).(parse.Provider[h.Language]); !ok {
+		t.Fatal("Horos provider lacks parsing")
 	}
-	if _, ok := any(provider).(format.Provider[h.Language]); ok {
-		t.Fatal("AST-only provider advertises formatting")
+	if _, ok := any(provider).(format.Provider[h.Language]); !ok {
+		t.Fatal("Horos provider lacks formatting")
 	}
 	// Independent consumer: a generic list and its explicit text specialization.
 	atom := func(s string) core.Value { return core.NewAtom([]byte(s)) }
@@ -165,10 +165,10 @@ func qualifyHoros(t *testing.T) {
 		t.Fatal("unpacked AST aliases envelope")
 	}
 	if _, err := registry.Parse(provider.ID(), parse.Input{}); !errors.Is(err, engine.ErrMissingCapability) {
-		t.Fatalf("AST-only parse: %v", err)
+		t.Fatalf("unregistered parse: %v", err)
 	}
 	if _, err := registry.Render(envelope); !errors.Is(err, engine.ErrMissingCapability) {
-		t.Fatalf("AST-only render: %v", err)
+		t.Fatalf("unregistered render: %v", err)
 	}
 }
 

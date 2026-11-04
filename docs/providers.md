@@ -19,14 +19,15 @@ shared diagnostics only.
 | --- | :---: | :---: | :---: | :---: | :---: |
 | language.Provider: ID and Name | X | X | X | X | X |
 | check.Provider: AST syntax checking | X | X | X | X | X |
-| parse.Provider: text to CST | / | X | X | X | X |
-| format.Provider: AST to CST | / | X | X | X | X |
-| print.Provider: CST to text | / | X | X | X | X |
+| parse.Provider: text to CST | X | X | X | X | X |
+| format.Provider: AST to CST | X | X | X | X | X |
+| print.Provider: CST to text | X | X | X | X | X |
 | resolution.Provider: reference resolution | X | / | / | / | / |
 | analysis.Provider: semantic analysis | X | / | / | / | / |
 
-The native printer providers delegate to the same generic printer. The single Horos
-frontend remains AST-only: its checker requires no parser, formatter or printer.
+All five printer providers delegate to the same generic printer. Horos now
+implements the [documented source syntax](horos-syntax.md). Its checker still
+requires no parser, formatter or printer.
 Each stage interface uses language identity and its own typed input/output.
 Configured adapters bind those interfaces to representation envelopes. Syntax admission
 checks structure and supported syntax; success does not establish reference

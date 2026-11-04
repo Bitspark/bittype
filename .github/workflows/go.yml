@@ -121,6 +121,11 @@ jobs:
         env:
           GOMAXPROCS: '2'
         run: go test -run='^$' -fuzz=FuzzNativeText -fuzztime=20s ./integration/go
+      - name: Fuzz Horos source boundaries
+        if: success() || (failure() && steps.formatting.outcome == 'failure')
+        env:
+          GOMAXPROCS: '2'
+        run: go test -run='^$' -fuzz=FuzzSourceRoundTrip -fuzztime=20s ./parse/horos/go
       - name: Save failing fuzz cases
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f

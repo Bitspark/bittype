@@ -1,6 +1,6 @@
 # Horos declaration AST
 
-**Implemented in Go source, 4 November 2026.** One AST-only frontend projects
+**Implemented in Go source, 4 November 2026.** One frontend projects
 Horos declaration revision 2. Type/Data bounds restrict generic slots within that
 language; data and capability expressions share one module, declaration and
 binder model. The old Horos/Wire packages and profiles are removed without aliases.
@@ -200,10 +200,11 @@ Remote tests cover canonical value round trips, imported and nested pagination,
 specialization, wrong/missing references, invalid pins/indices/UTF-8, literal
 boundaries, address renumbering, provenance, nil views and resource exhaustion.
 Independent integration fixtures qualify explicit engine registration, immutable
-envelopes and absent text stages. Architecture tests enforce the narrow external
+envelopes and independent text-stage registration. The [source grammar](horos-syntax.md)
+adds source and canonical round trips on the same AST. Architecture tests enforce the narrow external
 dependency boundary, and static consumer tests distinguish Horos from every native
 AST marker. Existing native-text/compiler gates remain required.
 
-Native generators, readable Horos parsers/formatters, runtime adapters and
+Native generators, runtime adapters and
 Function/Stream/Cell bindings are outside this change. These contracts retain
 library ownership; none is a special core kind or builtin registration.

@@ -7,14 +7,14 @@ formatter, printer and checking details. The owner's later 31 October direction
 unifies generation and native-to-canonical migration under ASTTransformer. Its
 typed boundary and syntax engine with explicit registration, path finding and
 execution are implemented; see the [engine reference](engine.md). The Horos AST
-is now implemented; readable Horos syntax, actual language mappings, public
+and readable Horos syntax are now implemented; actual language mappings, public
 builders and application CLI remain deferred.
 
 Horos owns the data model and [declaration semantics](model.md).
-Bittype implements the [AST-only projection](horos.md); native transformations
+Bittype implements the [Horos projection](horos.md); native transformations
 remain future work. [Resolution](resolution.md) exports Horos's checked model
 to shared facts; [analysis](analysis.md) consumes that evidence explicitly.
-It adds no text parser or ASTTransformer implementation.
+Text stages are documented in [Horos source syntax](horos-syntax.md); no ASTTransformer implementation is added.
 
 The [unified declaration design](hydrated-types.md) has one future path:
 `AST[Horos] -> AST[Native] -> CST[Native] -> source`. Explicit Type/Data bounds
@@ -117,12 +117,12 @@ integration/go/                          present: contracts, conformance, archit
 testdata/text/<language>/valid/          present: native source fixtures
 
 syntax/horos/go/                        present: Horos declaration AST projection
-parse/horos/go/                         proposed: future readable source to CST
+parse/horos/go/                         present: readable source to CST
 resolve/horos/go/                       present: Horos references and binders
 check/horos/go/                         present: syntax-only AST admission
 analyze/horos/go/                       present: Horos semantics to shared facts
-format/horos/go/                        proposed: future readable Horos CST
-provider/horos/go/                      present: AST-only capability composition
+format/horos/go/                        present: readable Horos CST
+provider/horos/go/                      present: text and semantic capability composition
 transforms/horos-to-<native>/go/         planned: directed native generation
 transforms/<native>-to-horos/go/         proposed: partial migration mapping
 cmd/bittype/go/                          planned: application composition and IO

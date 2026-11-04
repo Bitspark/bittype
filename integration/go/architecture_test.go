@@ -86,12 +86,12 @@ func TestLanguageStageMatrix(t *testing.T) {
 		qualified[fixture.directory] = true
 		profiles[fixture.directory] = nativeStages
 	}
-	for _, fixture := range astOnlyConformanceCases() {
+	for _, fixture := range semanticConformanceCases() {
 		if qualified[fixture.directory] || fixture.qualify == nil {
-			t.Fatalf("duplicate or unqualified AST-only fixture: %s", fixture.directory)
+			t.Fatalf("duplicate or unqualified semantic/text fixture: %s", fixture.directory)
 		}
 		qualified[fixture.directory] = true
-		profiles[fixture.directory] = []string{"syntax", "resolve", "check", "analyze", "provider"}
+		profiles[fixture.directory] = []string{"syntax", "parse", "resolve", "check", "analyze", "format", "provider"}
 	}
 	for _, name := range languages {
 		for _, stage := range profiles[name] {
@@ -106,7 +106,7 @@ func TestLanguageStageMatrix(t *testing.T) {
 			}
 		}
 		if !qualified[name] {
-			t.Errorf("%s is missing a tested native-text or AST-only capability profile", name)
+			t.Errorf("%s is missing a tested native-text or semantic/text capability profile", name)
 		}
 		delete(qualified, name)
 	}
@@ -175,7 +175,8 @@ func TestProductionArchitecture(t *testing.T) {
 		rules["resolve/"+name+"/go"] = []string{"trees/ast/go", "syntax/" + name + "/go", "check/" + name + "/go", "internal/horosmodel", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"}
 		rules["check/"+name+"/go"] = []string{"trees/ast/go", "syntax/" + name + "/go", "internal/declsyntax"}
 		rules["analyze/"+name+"/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go", "syntax/" + name + "/go", "resolve/" + name + "/go"}
-		rules["provider/"+name+"/go"] = []string{"trees/ast/go", "contracts/check/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "syntax/" + name + "/go", "check/" + name + "/go", "analyze/" + name + "/go", "resolve/" + name + "/go"}
+		rules["provider/"+name+"/go"] = append(rules["provider/"+name+"/go"], []string{"trees/ast/go", "contracts/check/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "syntax/" + name + "/go", "check/" + name + "/go", "analyze/" + name + "/go", "resolve/" + name + "/go"}...)
+		for _, stage := range []string{"parse", "format"} { rules[stage+"/"+name+"/go"] = append(rules[stage+"/"+name+"/go"], "internal/horosmodel", "internal/lex") }
 	}
 	for path, p := range packages {
 		if p.Standard || path == modulePath+"/integration/go" {
@@ -219,6 +220,8 @@ var horosModelDependencies = []string{
 }
 
 var horosExternalImports = map[string][]string{
+	"parse/horos/go": {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
+	"format/horos/go": {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"internal/horosmodel": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 	"resolve/horos/go":    {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
 }

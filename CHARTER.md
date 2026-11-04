@@ -58,7 +58,8 @@ know the names or semantics of particular library contracts.
 
 The [Horos declaration integration](docs/horos.md) implements checked canonical
 module values to AST, syntax admission, an optional semantic analyzer and an
-explicitly registered AST-only provider.
+explicitly registered text and semantic provider. The [Horos source grammar](docs/horos-syntax.md)
+implements parsing, formatting and printing on the same AST.
 Generic AST/CST carriers,
 typed views and pipeline contracts, four native type vocabularies, native parsers,
 AST-to-CST formatters, syntax checks and the shared CST printer are implemented.
@@ -66,9 +67,7 @@ The [native text design](docs/parsing-formatting.md) defines their ownership and
 qualification limits. Specialized providers all extend language.Provider.
 
 The ASTTransformer boundary and syntax engine now provide checked heterogeneous
-registration, route planning/execution and native text composition. The canonical
-readable source syntax, native AST-to-AST mappings, public builders and application CLI remain
-deferred. Native parsing does not make a target language the
+registration, route planning/execution and native text composition. Native AST-to-AST mappings, public builders and application CLI remain deferred. Native parsing does not make a target language the
 canonical authority. The [generation design](docs/generation.md) remains separate.
 
 This scope excludes application-value validators, serialization, Wire adapters,
@@ -89,7 +88,7 @@ import allowances. Removing the second frontend changes no agnostic SPI.
 A published language revision fixes its admitted syntax and meaning.
 The earlier `bittype: 1` proposal is superseded. Horos's declaration revision is
 implemented in Go and versioned with the public Horos distribution. Rust and
-TypeScript retain ground checking; readable syntax and native generators remain deferred.
+TypeScript retain ground checking; bittype now supplies readable syntax; native generators remain deferred.
 
 Canonical declaration identity, normalized value shape, generated-code
 compatibility and undeclared behavior remain distinct. A digest does not prove
