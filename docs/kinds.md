@@ -147,8 +147,9 @@ Declaration identity remains the exact canonical module digest plus declaration
 name; parameter identity adds its ordered slot. Import aliases retain the expected
 module name and immutable pin. A supplied constructor keeps its definition scope.
 All named references contribute dependency edges, including ignored constructor
-arguments. Declaration cycles reject before body checking; ground `rec`/`ref`
-remain separately checked recursion forms.
+arguments. The reader admits expression structure and descriptor skeletons,
+then rejects declaration cycles before checking body interface and Data
+obligations. Ground `rec`/`ref` remain separately checked recursion forms.
 
 Only schema-designated expression positions are traversed. A literal tuple inside
 `exact(...)` that resembles `param`, `apply`, `local` or `constructor` remains

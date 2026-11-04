@@ -706,3 +706,39 @@ emptiness solver, descriptor subtyping, beta/eta equivalence or runtime behavior
 The public spelling and API details below will be recorded with the implemented
 specification and validated fixtures; the frozen advice is evidence, not a second
 normative format.
+
+### Delivery evidence in progress
+
+Horos [PR 30](https://github.com/Bitspark/horos/pull/30) landed source
+`619a10351d33b6aa4d150781eaa4b845b719cd3a`, closing issue 29. Its tree is
+`de197dff81c21f000018357087e529f783edc274`, identical to the reviewed candidate
+`6acaa7019476d54bc8ef38c3c3c62bd7c376f2c4`. All six candidate lanes passed in
+[CI 41859992681](https://github.com/Bitspark/horos/actions/runs/41859992681).
+The [independent review record](https://github.com/Bitspark/horos/pull/30#issuecomment-6635044693)
+records scope and adaptations. Exact-main qualification and the aligned public
+0.10.0 release remain pending here.
+
+Bittype candidate `f5256ed` passed documentation and the full Go/native workflow:
+[docs 41860252132](https://github.com/Bitspark/bittype/actions/runs/41860252132),
+[contracts/native 41860252057](https://github.com/Bitspark/bittype/actions/runs/41860252057).
+This is development qualification against the exact public Horos candidate
+pseudo-version, not final 0.10.0 dependency or integration evidence.
+
+Independent reviews found two concrete boundary defects during implementation:
+an abstract zero-argument callee incorrectly acquired an empty direct-binding
+view, and redundant formatter parentheses made a depth-65 n-ary interface fail
+to reparse. A separate, never-integrated qualification commit `d0805f6`
+restored only those defects. In
+[run 41860482029](https://github.com/Bitspark/bittype/actions/runs/41860482029),
+`TestApplicationAdmissionLeavesApplicabilityToProviders/zero-argument_parameter`
+and `TestDeepNaryInterfacesRoundTrip` failed for their intended reasons. The
+same tests passed with the fixes in `f5256ed` and run 41860252057. This checks
+that the regressions detect the reviewed behavior, rather than merely mirroring
+the implementation. The qualification branch is not part of the delivery.
+
+The Horos eager oracle now compares checked declaration/expression Data statuses
+and known-declaration `Satisfies` against its independent result *before*
+expansion. Comparing only `DataDescriptor` would have checked the final ground
+classifier without falsifying an incorrect symbolic summary. Its updated tests
+and separate aggregate-interface/environment work-and-byte fixtures passed in
+the final candidate gate above.
