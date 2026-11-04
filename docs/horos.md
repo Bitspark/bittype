@@ -7,7 +7,7 @@ The authoritative value format and binding rules are in
 
 The Go module pins public Horos 0.7.0 and Ontos 0.16.0. The
 [installed consumer](dependencies.md) exercises generic specialization and
-optional lifting through those public modules without local replacements.
+directly authored optional pagination through those public modules without local replacements.
 
 The [optional-extension proposal](hydrated-types.md) places the mixed type model
 in horos/wire over ontos/wire values. Bittype projects that optional profile;

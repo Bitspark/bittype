@@ -38,8 +38,8 @@ The [shared semantic model](semantics.md) and [analysis guide](analysis.md) expl
 their results. The existing Horos canonical-value helpers are additional frontend
 entry points, not a substitute for the registered resolution capability.
 
-ASTTransformer relates two languages. The explicit [ground-to-optional partial
-lift](horoswire.md#explicit-transformation) is implemented. Native mappings remain
+ASTTransformer relates two languages. No production mapping is implemented;
+template lifting and its transformer were removed. Native mappings remain
 unimplemented. The same-language checked
 snapshot operation does not establish a generation or canonicalization mapping.
 Actual mappings will need a separate source-by-target matrix.

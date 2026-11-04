@@ -12,7 +12,7 @@ native text stages and syntax engine already exist. See the [Horos frontend](hor
 | ontos | Ground data values, structural identity, data embeddings and canonical encoding |
 | horos | Data descriptors/conformance; module, generic and application semantics for data declarations |
 | optional ontos/wire | Go/TypeScript mixed value profile and native tuple structure in 0.16.0; ground Ontos stays unchanged |
-| optional horos/wire | Implemented static Go mixed declarations, explicit ground embeddings and partial lifting |
+| optional horos/wire | Implemented static Go mixed declarations and explicit closed ground embeddings |
 | bittype | Source syntax, AST/CST projections, frontend tooling and generation |
 | bitwire / bitruntime | Capability contracts and hydration above Horos |
 | Contract libraries | Function, Stream, Cell and future behavioral declarations and realizations |
@@ -38,13 +38,12 @@ Function/Stream/Cell compositions are retained. The
 [preservation map](wire-extension-preservation.md) records the replacement of
 both earlier unimplemented proposals without widening ground APIs.
 
-The 3 November [lifting and native representation proposal](type-representations.md)
-defines the supported structural translation, distinct derived identities and
-per-language recipe configuration. It reuses an authored Page template while
-keeping Horos applications data-only. Type generation preserves open generics;
-optional native representations belong to libraries and are selected explicitly
-by the consuming build. [Explicit lifting](horoswire.md) is now implemented;
-native transformers, recipe configuration and runtime binding remain proposed.
+The [native representation proposal](type-representations.md) specifies
+per-language library recipes. Mixed-capable generics are authored directly in
+horos/wire and support data and capability applications using the same identity.
+Type generation preserves open generics. The consuming build selects recipes
+by exact declaration identity. Template lifting and its transformer were removed
+on 4 November 2026; native transformers and runtime bindings remain proposed.
 
 Horos 0.7.0 implements ground descriptors and value checking and includes both
 Go declaration profiles, without a public dependency on older proof-integration
@@ -114,11 +113,10 @@ cyclic import/application graphs; existing guarded `rec`/`ref` descriptions
 remain available. Recursive named applications are deferred. Do not add a
 productivity rule that rejects a well-formed but uninhabited Horos type.
 
-Page's parameter ranges over data types. A Wire cannot be supplied to that
-Horos declaration. A future Bittype lifting transformer may reuse its structure
-over capabilities, preserving provenance and assigning the lifted declaration
-its own identity and profile. It must qualify that interpretation explicitly;
-it cannot silently change the original Page or require a hand-written expansion.
+Page's parameter here ranges over data types. A Wire cannot be supplied to that
+ground declaration. When a generic must accept capabilities, author it directly
+in horos/wire. That optional Page can accept both Data and Wire expressions
+without a duplicate template or cross-profile transformation.
 
 ## Frontend and pipeline
 
@@ -184,11 +182,10 @@ Architecture tests allow the model dependency only in the Horos frontend and
 classify its transitive packages. They retain the generic-package boundary and
 the independence of native text stages.
 
-A future horos/wire frontend needs its own narrow dependency allowance to
-consume that optional model and its ground embeddings. That is not an allowance
-for generic infrastructure; the current Horos provider remains unchanged.
-Horos owns both profiles' distinct semantics, including the selected partial
-lift. Bittype implements tooling transformations without redefining their meaning.
+The horos/wire frontend has its own narrow dependency allowance to consume the
+optional model and ground embeddings. That is not an allowance for generic
+infrastructure. Horos owns both profiles' distinct semantics; Bittype projects
+them without redefining their meaning.
 
 Horos specifies document identity and pins. Bittype preserves them alongside
 declaration/binder references. AST addresses and source spans are tooling

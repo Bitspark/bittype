@@ -1,14 +1,13 @@
-# Template lifting and library-owned native type representations
+# Library-owned native type representations
 
-**Owner direction, 3 November 2026. Status: lifting implemented; native representations proposed.**
+**Owner direction updated 4 November 2026. Status: direct declaration frontends implemented; native representations proposed.**
 This refines the [optional Horos Wire tooling proposal](hydrated-types.md) and
 [generation pipeline](generation.md). Ground Ontos/Horos remain data-only;
 optional ontos/wire owns mixed values and horos/wire owns their type model.
 Bittype consumes that model; Function, Cell and Stream remain ordinary libraries.
 
 The existing ASTTransformer interface and syntax engine need no new operation
-for a named library contract. The optional Horos Wire provider and explicit partial lifting transformer are
-[implemented](horoswire.md). Native transformers and representation configuration
+for a named library contract. The optional Horos Wire frontend is [implemented](horoswire.md). Native transformers and representation configuration
 below remain proposed. Recipe examples are design notation, not executable APIs.
 No runtime adapter, validator, callable implementation or transport is added.
 
@@ -22,7 +21,7 @@ marks the runtime-binding API as unimplemented.
 
 | Input | Owner and purpose |
 | --- | --- |
-| Canonical declaration modules | Libraries define types, imports, parameters and applications. Horos owns ground declarations and, separately, the proposed horos/wire profile. |
+| Canonical declaration modules | Libraries define types, imports, parameters and applications. Horos owns ground declarations and, separately, the optional horos/wire profile. |
 | Native representation choices | A library supplies optional target recipes for its declarations; the consuming build selects exact recipes and dependencies. Ordinary structural declarations need no custom recipe. |
 | Runtime bindings | Later library work supplies behavior and conversion where needed. Type generation neither implements nor loads it. |
 
@@ -37,168 +36,60 @@ Providers establish the semantic prerequisites using the existing
 [capture, resolution and analysis boundaries](resolution.md). A syntactically
 admitted AST is insufficient evidence for a semantic transformation.
 
-## 2. Embedding and lifting are explicit, different operations
+## 2. Direct declarations and ground embedding
 
-**Embedding** starts with a closed, resolved Horos data expression, specializes
-it to a well-formed ground descriptor G, then produces `Data(G)`. This preserves
-its ground domain. A closed `Page<Person>` can take this path. G contains no
-generic parameter or unresolved application and is opaque to contract
-substitution. The tooling retains the original declarations/applications as
-provenance rather than treating specialization as a replacement identity.
+Choose the profile that owns a declaration's intended parameter domain. Ground
+Horos declarations accept data types. Optional Horos/Wire declarations accept
+both `Data(G)` and capability-bearing expressions. Author a mixed-capable generic
+in that optional profile from the start. Its data and capability applications
+refer to the same module, declaration and binder; there is no derived copy.
 
-**Template lifting** translates a selected Horos declaration into a separately
-identified contract declaration, preserving its parameters. A data slot becomes
-a contract-type slot only in this explicitly derived declaration. This does not
-widen the source declaration or change what Horos accepts.
+Template lifting, its Horos API, derivation metadata and Bittype transformer
+were removed on the owner's 4 November 2026 instruction. There is no
+Horos-to-HorosWire transformation, alias or fallback route. Existing intentionally
+data-only declarations keep their domain.
 
-The consuming build selects embedding or the bounded structural lifting profile
-below, and the declarations to transform. These choices configure a concrete
-`Horos -> HorosWire` ASTTransformer. Route discovery does not choose a different
-value domain for the caller. If both direct data generation and the lifted route
-are installed, the caller explicitly selects the latter when it wants a lift;
-a failed direct mapping never triggers that route as a fallback.
+**Closed embedding** specializes a ground declaration to a closed, well-formed
+descriptor G and produces `Data(G)`. Horos supplies this operation. G contains no
+upper generic slot or unresolved application and remains opaque to optional
+substitution. Embedding creates no declaration and does not convert a live value.
+It is useful when an optional type contains an existing concrete data type.
 
-### Structural lifting rules
-
-Let D be a resolved declaration in a checked Horos module bundle. Let L(E)
-translate an expression in D's lexical environment. `W(...)` and `Data(G)` use
-[Horos's exact optional vocabulary](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md#2-canonical-expression-format).
-The following is a tooling summary of the
-[Horos-owned lifting rules](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md#4-explicit-embedding-and-partial-template-lifting),
-not a second semantic authority.
-The following rules apply in order, so a closed application or structural node
-is not opportunistically collapsed into Data:
-
-| Horos input | Contract output and obligation |
-| --- | --- |
-| Parameter at slot i | `W("param", I(i))`, bound to the corresponding parameter of the derived declaration; retain the source binder as provenance. |
-| Application of resolved declaration D to arguments A | Application of the derived declaration L(D) to L(A), preserving argument order, arity, lexical scope and the original application. Follow the exact pinned target, never a same-spelled name. |
-| Tuple | `W("tuple", L(E)...)`; retain the ordered elements, including an empty tuple. |
-| Labelled compound | `W("compound", A(label), L(E)...)`; preserve the label as literal data. |
-| Typed list | `W("list-of", L(element))`. |
-| Closed record | `W("record", A("closed"), fields...)`; preserve each literal field name, required/optional presence and translated field type. Keys remain ground canonical text. |
-| Union with at least two alternatives | `W("union", L(E)...)`; preserve the alternatives and their order. Do not select a behavioral binding by inspecting the branches. |
-| Union with one alternative | L(the alternative), retaining the source union as provenance; the contract union constructor requires at least two alternatives. |
-| Empty union | `Data(H("union"))`, preserving the empty ground type without introducing an upper bottom constructor. |
-| Any other subtree that can independently specialize to a closed, well-formed Horos descriptor G | `Data(G)`. Retain source references in provenance; do not inspect literal contents or widen G's domain. |
-| Any other subtree | Reject with a located unsupported-lift diagnostic. Do not erase constraints, substitute a top type or invent an upper constructor. |
-
-The structural rules apply even when their children happen to be closed. This
-makes the chosen template translation stable before arguments are substituted.
-Memoize declaration translation by resolved source identity and the selected
-lifting configuration, not by expanded shape. The first profile follows the
-existing acyclic declaration/application restriction; it does not introduce
-recursive named contract applications.
-
-The closed-subtree rule is deliberately narrower than merely seeing no generic
-parameter token. The subtree must have no free generic or recursive variable,
-and all applications it contains must resolve and specialize within Horos.
-For example:
-
-- `any`, scalar types, byte/text refinements and exact literals remain ground
-  inside Data. `Data(any)` never accepts a Wire.
-- A closed complement, set, map, open record or guarded recursive descriptor
-  may stay inside Data with its existing meaning. No live keys, set elements,
-  open-record extras or recursion are introduced.
-- `not(T)`, `set-of(T)` and `rec(...T...)` have no lift in this profile.
-  A closed data specialization may instead be explicitly embedded, but a failed
-  template lift cannot silently change to that operation.
-- An exact literal that resembles `param`, `apply` or `wire` is still an opaque
-  literal. Substitution and lifting visit declared type positions only.
-
-### Derived modules and identity
-
-The selected roots determine a derived dependency closure: follow applications
-retained by the ordered lift rules, and stop at each Data(G) boundary. Translate
-each declaration in that closure once, grouped by its source module; imports in
-the output refer to the corresponding derived contract modules. Dependencies
-consumed wholly inside a ground descriptor remain validated source/provenance
-dependencies and need no derived declaration. Preserve parameter order, names
-and source declaration/application origins. Reject missing imports, cycles or
-output naming conflicts before publishing any usable result.
-
-Validate all original module imports under Horos's rules before selecting that
-output closure, including imports unused by the selected roots. Pruning generated
-output is not permission to skip the source language's resolution obligations.
-
-For example, let `Other<T> = not(T)` and `Root = not(Other<Person>)`. Root's
-closed body embeds as Data(G); it does not require lifting Other's unsupported
-open complement. Selecting Other itself as a lifting root fails. Likewise,
-`Alias = Other<Person>` retains a top-level application under the ordered rules
-and requires the unsupported lift; the caller can instead explicitly select
-closed data embedding for Alias. These outcomes do not depend on traversal order.
-
-The build supplies output module names and records its selected roots, source
-module pins, lifting profile/version and target naming choices. Derived modules
-use the optional Horos Wire envelope and its canonical encoding/import pins from
-[Horos's module proposal](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md#3-modules-bindings-and-specialization).
-Dependency modules are encoded and pinned before their importers. The output
-module pin plus declaration name identifies the derived declaration; provenance
-records the distinct original Horos identity. A pin is not a behavioral
-fingerprint or a claim of protocol equivalence.
-
-Interpretation and recipe lookup additionally qualify that document/declaration
-with its semantic profile and revision. Ground Horos's existing DeclarationID
-struct need not change; the tooling boundary carries profile identity separately.
-Identical document bytes under an incompatible profile cannot reuse facts or
-recipes. Keep the lifting profile/configuration and source pins in the derivation
-receipt; never substitute those provenance records for the output module's pin.
-
-No second Page is authored and no `LiftedPage` spelling is required. The compiler
-may name the derived declaration Page in its selected output module. Its semantic
-identity remains distinct from the original data declaration even when native
-representations can be shared deliberately.
-
-For admitted templates D and closed ground arguments G, let e be the ground
-embedding into the mixed value domain. The proposed qualification law is:
-
-```text
-meaning(L(D)<Data(G)...>) = { e(v) | v |=ground Specialize(D, G...) }
-```
-
-This is exact ground membership/layout preservation, not equal ASTs, module
-bytes, source/derived identities or native type names. It is an obligation to
-prove for this bounded lift, not an already verified theorem or a claim about
-every Horos constructor. Here `|=ground` is semantic membership, not a bounded
-boolean checker result; resource exhaustion is not semantic non-membership.
-Applications require lexical substitution coherence;
-the derived binder cannot capture the caller's argument. Replacing an argument
-with a capability type is meaningful only in the derived declaration.
+Canonical expressions, module pins and lexical binding come from
+[Horos's direct declaration format](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md#4-direct-authoring-and-ground-embedding).
+Profile and revision qualify declaration identities. AST addresses and origins
+record source correspondence; they do not replace canonical pins or prove
+semantic equivalence. Native names and recipe configuration remain separate
+from canonical document identity.
 
 ## 3. Pagination through the type pipeline
 
-These equations are explanatory notation, not a readable source grammar:
+Author this generic once in Horos/Wire. These equations are explanatory notation,
+not a readable source grammar:
 
 ```text
-Horos source:
-  Page<T> = record closed {
-    items: list-of(T)
-    next?: scalar(utf8-text)
-  }
-
-Derived contract declaration:
-  Page<T> = record closed {
-    items: list-of(T)
-    next?: Data(scalar(utf8-text))
-  }
+Page<T> = record closed {
+  items: list-of(T)
+  next?: Data(scalar(utf8-text))
+}
+Person = Data(PersonDescriptor)
+PeoplePage = Page<Person>
+EditablePeoplePage = Page<Cell<Person>>
 ```
 
-Horos's `Page<Person>` stays a data application. The derived Page can be applied
-to an explicitly embedded Person data type or to `Cell<Data(PersonDescriptor)>`.
-Writing `Page<Cell<Person>>` below is shorthand for those resolved upper-layer
-references, not permission to pass a Cell into a Horos data slot.
+Both applications select the same Page. Cell is an ordinary pinned library
+declaration. No expanded Page record or second Page module is needed. A separate
+ground-only application can remain entirely in ground Horos. The future routes are:
 
 ```text
-AST[Horos] ---------------------------------> AST[Native] -> CST -> source
-    |
-    +-- explicit selected lift -> AST[HorosWire] -+
-                                                +-> AST[Native] -> CST -> source
+AST[Horos]     -> AST[Native] -> CST[Native] -> source
+AST[HorosWire] -> AST[Native] -> CST[Native] -> source
 ```
 
-Both native paths retain generic declarations and applications. Generate Page
-once per selected module/representation, not a new record per application.
-Specialization for a ground descriptor is a separate operation; it is not a
-prerequisite for native generic generation. Representative target shapes are:
+Each route consumes the checked semantics of its source profile. Native generation
+retains generic declarations and applications; specialization is not a required
+prepass. Generate Page once per selected module/representation, not a record per
+application. Representative target shapes are:
 
 | Target ID | Page's type declaration | Application containing a Cell |
 | --- | --- | --- |
@@ -210,19 +101,12 @@ prerequisite for native generic generation. Representative target shapes are:
 These are candidate representations and illustrative symbols, not delivered
 packages. Each native profile specifies container, presence, null, numeric and
 ownership choices. A Go zero value alone cannot distinguish absence from a
-present zero value. Optional text in this example does not admit null.
-Mappings must report refinements/invariants that native types cannot express;
-a strict unsupported case is an error, not silent semantic equivalence.
+present zero value. Optional text here does not admit null. Mappings must report
+refinements or invariants native types cannot express; unsupported strict mappings
+fail instead of claiming semantic equivalence.
 
-A library may explicitly nominate the same native generic Page for both the
-Horos and derived contract views when their selected representations agree.
-That association names both source identities and the qualified representation;
-it is not inferred from equal-looking ASTs. Preserve separate semantic metadata
-and later validation/binding choices. Native source alone does not recover them.
-
-The generator of Page only traverses a parameterized record/list. The application
-site supplies the native representation of T. For example, a selected
-TypeScript representation can produce:
+Page's mapping traverses a parameterized record/list. Its application supplies
+the representation of T. A selected TypeScript representation could produce:
 
 ```typescript
 export interface Page<T> {
@@ -234,9 +118,9 @@ export type PeoplePage = Page<Person>;
 export type EditablePeoplePage = Page<Cell<Person>>;
 ```
 
-The imports and Person/Cell declarations are deliberately omitted from this
-small illustration; it is not a standalone compiler fixture. There is no Cell
-case in the pagination transformer.
+Imports and Person/Cell declarations are omitted from this illustration. There
+is no Cell case in the pagination transformer. Native source does not by itself
+recover canonical identities, constraints or later validation/binding choices.
 
 ## 4. Ordinary libraries and optional native representations
 
@@ -347,7 +231,7 @@ error, not permission to print source and parse it back.
 
 The consuming build performs three operations:
 
-1. Supply pinned declarations and any explicitly selected lift results to the
+1. Supply directly authored, pinned declarations to the
    appropriate resolver/provider. Resolve imports, slots and applications.
 2. Construct one concrete native transformer per requested language pair, with
    its target profile, dependency lock and selected library recipes. Capture
@@ -395,7 +279,6 @@ The existing [stage-first layout](../LAYOUT.md) remains in force:
 
 | Proposed location/owner | Responsibility |
 | --- | --- |
-| `transforms/horos-to-horoswire/go` | Implement Horos's explicit embedding/partial lifting semantics as AST transformation; preserve origins and derived modules. |
 | `transforms/horos-to-<native>/go` | Direct data type generation, independently useful without capabilities. |
 | `transforms/horoswire-to-<native>/go` | Structural type lowering and uniformly configured native recipes; no named-contract imports. |
 | Each independent contract library | Canonical module, optional target recipes/type artifacts and future runtime bindings. No per-library stage is added to bittype. |
@@ -422,22 +305,20 @@ and never discover these libraries by name.
 
 Future fixtures must establish:
 
-- Data-only and capability-bearing pagination use one authored template, with
-  distinct original/derived identities and stable open generics in all targets.
-- Lifting preserves supported ground membership/layout, lexical slot scope,
-  nested/imported applications, source origins, presence and literal opacity.
-  Unsupported parameterized forms fail; closed forms stay explicitly ground.
-- Root/dependency selection and canonical encoding give reproducible derived
-  modules. Changing the source pin/profile cannot silently reuse old output.
-  Embedded-only dependencies remain source dependencies without forcing an
-  unsupported generic declaration into the derived closure.
+- Data and capability applications use the same authored optional Page, preserving
+  its declaration identity, lexical parameter scope and open generics in all targets.
+- Direct ground and optional native mappings preserve their own profile domains,
+  imported applications, source origins, presence and literal opacity. Data
+  boundaries remain closed; native erasure never proves ground equivalence.
+- The complete pinned module context is checked. Missing imports, inconsistent
+  profiles and unsupported target representations produce explicit diagnostics.
+
 - An unfamiliar library contract uses ordinary declarations and optional
   recipes without a core source, dependency, registry or bootstrap change.
 - Recipe selection survives aliases/applications, distinguishes unrelated
   lookalikes, and rejects missing/conflicting profiles and target dependencies.
 - One generic Page composes with data, Function, Cell and Stream target types.
-  A library-authorized shared native representation retains separate source
-  identities; native erasure is not evidence of semantic equivalence.
+  Profile-qualified source identity remains explicit even when native types erase it.
 - Target AST checks, formatter/printer composition and native compiler tests
   qualify TypeScript, Go, Rust and C++ against the selected external type
   artifacts. Native precision limits are explicit. No runtime behavior is

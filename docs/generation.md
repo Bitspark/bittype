@@ -19,19 +19,17 @@ It adds no text parser or ASTTransformer implementation.
 The [optional-extension design](hydrated-types.md) places mixed types in
 horos/wire over the ontos/wire value profile. Bittype's future path is
 `AST[HorosWire] -> AST[Native] -> CST[Native] -> source`, using the existing
-engine and text stages. Horos data generation remains a direct path. An explicit
-Horos-to-HorosWire transformer applies Horos's partial lift;
-no route may silently widen domains. The [optional frontend and explicit lifting
-transformer](horoswire.md) are implemented; native transformers remain deferred.
-Hydration belongs to existing Wire/runtime layers,
-not this static pipeline or Horos checking.
+engine and text stages. Horos data generation remains a direct path. The
+[optional frontend](horoswire.md) is implemented; native transformers remain
+deferred. Author optional declarations directly. Template lifting and its
+Horos-to-HorosWire transformer were removed on 4 November 2026. Hydration belongs
+to existing Wire/runtime layers, separately from type generation and checking.
 
-The [lifting and native representation design](type-representations.md) now
-specifies the implemented partial template translation and proposed per-language library
-recipes. The consuming build explicitly selects the lift and configures one
-concrete transformer per language pair. Function, Cell and Stream are resolved
-module declarations, never individual engine registrations. No contract-specific
-change to ASTTransformer is required.
+The [native representation design](type-representations.md) specifies proposed
+per-language library recipes. The consuming build configures one concrete
+transformer per language pair. Function, Cell and Stream are resolved module
+declarations, never individual engine registrations. No contract-specific change
+to ASTTransformer is required.
 
 The [runtime value boundary](runtime-values.md) is distinct from this static
 pipeline. Runtime adapters would convert existing hydrated values to/from a
@@ -365,8 +363,8 @@ include open/applied pagination and native reader signatures. Tests exercise
 metadata through the common interface and enforce the production dependency
 boundary. Native text syntax and compiler fixtures now provide separately scoped evidence.
 The engine's independent tests qualify registration, the typed boundary, graph
-planning and checked execution. The explicit [Horos-to-Horos/Wire lift](horoswire.md)
-is implemented. Native type generation remains unimplemented.
+planning and checked execution. There is no production ASTTransformer implementation
+yet; native type generation is the next mapping to implement.
 
 Delivery status and subsequent increments:
 

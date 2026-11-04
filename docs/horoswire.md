@@ -1,4 +1,4 @@
-# Optional Horos/Wire frontend and lifting
+# Optional Horos/Wire frontend
 
 **Implemented in Go, 4 November 2026.** The optional frontend projects
 [horos/wire revision 1](https://github.com/Bitspark/horos/blob/v0.7.0/docs/spec/wire-types.md).
@@ -15,7 +15,6 @@ Ground Horos retains its existing domain and public profiles.
 | [resolve/horoswire/go](../resolve/horoswire/go/resolver.go) | Authoritative Horos resolution and export into shared semantic facts |
 | [analyze/horoswire/go](../analyze/horoswire/go/analyze.go) | Consume an explicit compatible resolution receipt and reuse its model |
 | [provider/horoswire/go](../provider/horoswire/go/provider.go) | Compose check, resolution and analysis capabilities |
-| [transforms/horos-to-horoswire/go](../transforms/horos-to-horoswire/go/lift.go) | Explicit partial lift, canonical derivation evidence and AST origins |
 | [internal/declsyntax](../internal/declsyntax) | Shared syntax framing; no external model dependencies |
 | [internal/horosmodel](../internal/horosmodel) | Private shared projection, correspondence, resolution and fact-export mechanics |
 
@@ -44,6 +43,11 @@ Rust or TypeScript optional declaration APIs.
 | Analysis profile | `horos-declarations-1/analysis-2` | `horos-wire-1/analysis-1` |
 | Semantic key owner | `horos` | `horos/wire` |
 | Canonical module tag | `horos/decl/module` | `horos/wire/module` |
+
+These are the current implementation's separate profiles and frontend IDs, not
+a claim that data-only constraints inherently require two declaration languages.
+This cleanup preserves those public boundaries and does not introduce generic
+bounds or a consolidated declaration grammar.
 
 Both use the [declaration AST framing](horos.md#vocabulary-and-bindings): Program,
 Module, Import, Declaration, TypeParameter, Parameter, Application, Descriptor,
@@ -75,45 +79,24 @@ not a type rejection. Missing dependencies, invalid source and invalid request
 configuration remain distinct outcomes. Nothing establishes capability authority,
 liveness, remote protocol behavior or instance conformance.
 
-## Explicit transformation
+## Direct optional declarations
 
-The `lift` package's `Derive(input, options)` takes a ground Horos AST. Options
-select exact source declaration identities, the source entry module, a distinct
-output tree address and Horos's `LiftOptions`. It delegates the ordered partial
-mapping to Horos, then projects the derived optional program. The result contains
-the target tree and immutable canonical `Derivation` evidence.
+Author `Page<T> = list-of(T)` directly in horos/wire when T must accept data or
+capabilities. `Resolve` projects that canonical module; `Model` recovers its
+checked optional program. `Program.Specialize` can bind the same Page to
+`Data(Person)` or `Wire(Data(Person))`. The source generic and its identity remain
+unchanged. Imported applications preserve exact targets, argument order, caller
+scope and binder identity. No second Page or generated operation table is needed.
 
-For `Page<T> = list-of(T)`, the output is a distinct optional `Page<T> =
-list-of(T)`. Its slot can be specialized with `Wire(Data(Person))`. An authored
-application `Page<Person>` retains an application to the derived Page and the
-corresponding lifted argument. Parameter order, caller/callee scope, imported
-targets and source identities remain explicit. There is no duplicate authored
-Page definition or operation table.
+Horos's separate `Embed` operation specializes a ground declaration and wraps its
+closed descriptor in Data. It creates no optional declaration and cannot widen
+a ground generic. See [direct authoring and embedding](type-representations.md#2-direct-declarations-and-ground-embedding).
 
-The selected output entry must reach every selected root. A one-AST transformer
-refuses independent roots outside that entry instead of silently dropping them.
-Use separate transformations or Horos's multi-module derivation API for that
-case. Generated module/import/declaration/binder/expression nodes carry direct
-source addresses and copied inherited origins. Canonical pins do not include
-these AST addresses. Closed embedding can prune derived dependencies while the
-Horos derivation retains the original source pins and expression paths.
-
-`NewTransformer(from, to, options)` checks the exact endpoint profiles and captures
-the selection, including copies of roots and naming maps. The caller explicitly
-registers the returned existing `ASTTransformer`. Registration adds one partial
-language edge, not an edge per library contract. A failed lift returns no usable
-tree, derivation or envelope; it never retries embedding or another route.
-
-Selection entries and bytes are bounded before copying configuration or resolving
-source. Provenance accumulation has its own bounded storage, and the complete
-target AST must also pass the fixed carrier/profile limits before publication.
-
-Horos's separate explicit `Embed` operation remains available for a concrete
-ground specialization. The transformer does not call it as a fallback. For
-example, lifting a closed application of `Other<T> = not(T)` still fails because
-the retained generic target has no lift. The closed specialization can instead
-be deliberately embedded through Horos. See the full
-[lifting rules](type-representations.md#2-embedding-and-lifting-are-explicit-different-operations).
+Template lifting and `transforms/horos-to-horoswire/go` were removed completely
+on 4 November 2026, along with derivation-specific indexing and dependency
+allowances. There is no compatibility transformer. The generic ASTTransformer
+contract and engine remain; no production ASTTransformer implementation exists
+yet. The next mappings are source-profile-to-native type generation.
 
 ## Qualification and remaining scope
 
@@ -122,9 +105,11 @@ pagination, generic Function/Stream/Cell and unfamiliar Mailbox declarations,
 profile separation, literal opacity, syntax-only admission, located semantic
 rejection, budget exhaustion and explicit resolution/model reuse. These names
 exist in consumer fixtures, not in production dispatch or registration.
-[Transformation fixtures](../transforms/horos-to-horoswire/go/lift_test.go)
-exercise template/application preservation, distinct identities, copied origins,
-explicit registration, captured configuration and refusal without fallback.
+The [installed-consumer fixture](../integration/go/testdata/installed/consumer_test.go)
+authors ground and optional pagination directly, resolves the public package
+model and specializes the same optional generic with both data and Wire arguments.
+It also verifies that ground generic slots reject Wire arguments.
+
 Existing ground frontend, architecture, native compiler and text tests remain
 required. Compilation and formatting run on the repository's remote gates.
 

@@ -23,8 +23,8 @@ bittype owns:
   same semantic infrastructure. Horos supplies the first production resolver and
   analyzer; analysis consumes an explicit receipt and can reuse its sealed model.
 - Small data types needed to represent presence and nullness in generated code.
-- Proposed [tooling for optional horos/wire](docs/hydrated-types.md), adapting
-  its canonical declarations and lifting rules to ASTs and shared semantic facts.
+- Implemented [tooling for optional horos/wire](docs/hydrated-types.md), adapting
+  its canonical declarations to ASTs and shared semantic facts.
   Bittype does not own that model or its mixed value domain.
 
 Horos owns data descriptors, conformance and module/generic/application
@@ -113,6 +113,7 @@ The owner has narrowed the current work to Horos-owned definitions and types-onl
 generation. Historical evidence does not add
 callables, adapters or migration gates to this milestone.
 
-The optional [Horos/Wire frontend and explicit ground-to-optional lift](docs/horoswire.md)
-are implemented through the existing stage and transformer interfaces. Canonical
+The optional [Horos/Wire frontend](docs/horoswire.md) implements the existing
+stage interfaces. Template lifting and its transformer were removed completely
+on 4 November 2026; optional generics are authored directly. Canonical
 semantics stay in Horos; no native generator or runtime binding is introduced.

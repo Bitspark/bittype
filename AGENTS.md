@@ -29,7 +29,7 @@ Only Horos implements production semantics; native analysis remains deferred.
 
 The owner's 3 November [optional-extension decision](docs/hydrated-types.md)
 keeps ground Ontos/Horos data-only. Optional ontos/wire owns the mixed value
-profile; optional horos/wire owns its declarations and lifting semantics.
+profile; optional horos/wire owns its type and declaration semantics.
 Bittype supplies tooling projections, not a competing contract model. Hydration
 stays in existing bitwire/bitruntime layers. Preserve the
 [concept inventory](docs/wire-extension-preservation.md); remove superseded
@@ -37,15 +37,17 @@ proposal aliases rather than interpreting old tags. The optional Go model and it
 Bittype frontend are implemented; read [the frontend guide](docs/horoswire.md).
 No ground generic or checker domain is widened.
 
-The 3 November [lifting and native representation design](docs/type-representations.md)
-has implemented explicit lifting; native recipes and mappings remain proposed.
-Consume Horos's explicit partial lifting with distinct derived
-identities and preserved binders/applications; never widen a Horos data slot or
-infer a lift from route availability. Libraries own optional native type recipes,
-selected by exact declaration identity in consuming build configuration. Concrete
-transformers consume them uniformly; no contract-specific engine registrations,
-named-library imports in general transformers or raw-source recipes. Missing or
-conflicting required representations fail rather than selecting a weaker fallback.
+The owner's 4 November removal direction supersedes template lifting: author
+generics directly in the profile that owns their intended parameter domain.
+Remove the Horos lifting API, Bittype transformer and exclusive metadata/helpers
+entirely; never retain aliases, fallback transforms or a duplicate derived Page.
+Closed Data embedding and ordinary generic specialization remain independent.
+The [native representation design](docs/type-representations.md) remains proposed.
+Libraries own optional recipes, selected by exact declaration identity in consuming
+build configuration. Concrete transformers consume them uniformly; no
+contract-specific engine registrations, named-library imports in general
+transformers or raw-source recipes. Missing/conflicting required representations
+fail rather than selecting a weaker fallback.
 
 - Readable Horos syntax, native language transformers, public builders and application
   CLI remain deferred. The syntax engine and ASTTransformer boundary are now
@@ -106,8 +108,8 @@ conflicting required representations fail rather than selecting a weaker fallbac
 - Keep prior research and Nightseam as evidence, not competing specifications.
   Use Horos's declaration specification for normalization/identity and encoding;
   do not infer semantic equivalence or behavioral ownership from document pins.
-- Only the two Horos frontends, their private model helpers and explicit lifting
-  transformer consume the external Horos/Ontos model dependencies.
+- Only the two Horos frontends and their private model helpers consume the
+  external Horos/Ontos model dependencies.
   Preserve the narrow package import allowances; generic infrastructure and
   native stages must remain independent of these semantic packages.
 

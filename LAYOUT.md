@@ -173,21 +173,21 @@ correspondence and export through `internal/horosmodel`. Each concrete stage
 selects its fixed grammar/profile; there is no profile registry in that helper.
 These replace the unimplemented `contract` paths without aliases.
 
-`transforms/horos-to-horoswire/go` implements explicitly selected partial lifting
-and AST provenance. Model dependency allowances cover only the two frontends,
-the private model helper and this concrete transform. Their capability tests and
-architecture checks enforce distinct endpoints/profiles and keep the engine and
-native stages model-independent. See [implemented API details](docs/horoswire.md).
-Future native mappings use `transforms/horoswire-to-<native>/go`.
+Model dependency allowances cover only the two frontends and private model
+helpers. Their capability tests and architecture checks enforce distinct
+endpoints/profiles and keep the engine and native stages model-independent.
+See [implemented API details](docs/horoswire.md). Future native mappings use
+`transforms/horos-to-<native>/go` and `transforms/horoswire-to-<native>/go`.
+There is no production transformer currently; the template-lifting package and
+its exclusive dependency allowances were removed completely.
 
-The [lifting and native representation design](docs/type-representations.md)
-places implementation of Horos's partial lift in that transformer, and
-uniform native recipe consumption in the concrete native transformers. Each
-contract library owns its optional recipes and type artifacts outside bittype;
-the consuming application selects them. Adding Cell or another ordinary contract
-adds no bittype stage, engine edge per contract or central registration entry.
-Lifting is implemented; native transformers and recipe SPIs remain proposed.
-The existing ASTTransformer boundary is unchanged.
+The [native representation design](docs/type-representations.md) places uniform
+recipe consumption in concrete native transformers. Each contract library owns
+its optional recipes and type artifacts outside bittype; the consuming
+application selects them. Adding Cell or another ordinary contract adds no
+bittype stage, engine edge per contract or central registration entry. Native
+transformers and recipe SPIs remain proposed. The ASTTransformer boundary is
+unchanged.
 
 See the [charter](CHARTER.md), [engine API](docs/engine.md),
 [native text design](docs/parsing-formatting.md) and
