@@ -31,7 +31,9 @@ Keep semantic rules provider-owned. Shared snapshots, requests/results and repor
 live in contracts/semantic/go; no aliases remain at the old analysis paths.
 Resolution and analysis are independently registered. Analysis consumes an explicit
 compatible receipt; never invoke a hidden resolver or bypass snapshot identity.
-Keep the [provider matrix](docs/providers.md) synchronized with capability tests.
+The [provider matrix](docs/providers.md) is generated from source by
+`tools/provider-matrix/go`; its workflow updates the two marked regions.
+Do not hand-edit cells or add a capability catalogue or runtime registry.
 Syntax admission must accept unresolved names; analysis publishes request-bound,
 immutable facts with explicit completion, verdict and model availability.
 Only Horos implements production semantics; native analysis remains deferred.

@@ -1,10 +1,17 @@
 # Language provider matrix
 
-**4 November 2026. Current implemented source.** X means implemented and available
-for that language, including through a generic implementation; / means unavailable.
+The tables below are generated from implemented Go providers and typed transformer
+factories. A link leads to the implementation's source line; / means unavailable.
 Applications compose and register capabilities explicitly. Availability of a stage
 does not require every preceding stage to be available. Native support covers the
 documented type-declaration subset, not complete programming languages.
+
+The [matrix generator](../tools/provider-matrix/README.md) discovers language
+markers, implemented provider contracts, generic constructor collaborators and
+typed transformer endpoints. The [update workflow](../.github/workflows/provider-matrices.yml)
+regenerates these regions after source changes and automatically lands a docs-only
+pull request when their content changes. Keep explanations outside the generated
+regions; do not edit cells or maintain a separate capability catalogue.
 
 Provider interfaces use their package to identify the role: `parse.Provider`,
 `check.Provider`, `format.Provider`, `print.Provider`, `resolution.Provider` and
@@ -15,6 +22,8 @@ on a combined contract. The engine registers them separately with
 Source input belongs to `parse.Input`. `text.Provider` and the engine's combined
 provider registration are removed without compatibility aliases; `text` contains
 shared diagnostics only.
+
+<!-- generated:providers:begin -->
 
 | Provider / capability | Horos | TypeScript | Go | Rust | C++ |
 | --- | :---: | :---: | :---: | :---: | :---: |
@@ -29,7 +38,9 @@ shared diagnostics only.
 | format.Provider[format.FilesRequest[L], source.Source[L]]: Files formatting | X | / | / | / | / |
 | print.Provider[source.Source[L], files.Files]: Files printing | X | X | X | X | X |
 
-All five Syntax printer providers delegate to the same generic CST printer.
+<!-- generated:providers:end -->
+
+The Syntax printer providers delegate to the same generic CST printer.
 Files printing likewise has one generic implementation in `print/files/go`,
 composed with the selected language's identity and Syntax printer. It consumes an
 existing `Source[L]` and does not depend on a resolver or analyzer. Horos now
@@ -54,9 +65,16 @@ Wire expressions do not create a second language or registered profile.
 ASTTransformer relates two languages and consumes explicit semantic input.
 The [pagination profile](semantic-generation.md) implements these directed edges:
 
+<!-- generated:transformers:begin -->
+
 | Source | TypeScript | Go | Rust | C++ |
 | --- | :---: | :---: | :---: | :---: |
 | Horos (admitted analysis) | X | X | X | X |
+
+<!-- generated:transformers:end -->
+
+Transformer cells show direct implemented edges, not paths inferred by the engine.
+They do not imply support for every representation profile or every input type.
 
 Reverse mappings are not implemented. Template lifting remains removed. A
 same-language checked snapshot is not a generation or canonicalization mapping.
