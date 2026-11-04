@@ -2,9 +2,9 @@
 
 **Updated, 4 November 2026.** The implemented frame supports registered
 AST transformations. The engine contains no canonical or native mapping rules.
-Applications explicitly register providers and transformers, including the
-[optional Horos lift](horoswire.md#explicit-transformation). No TypeScript, Go,
-Rust or C++ type generator is implemented.
+Applications explicitly register providers and transformers. No production
+ASTTransformer or TypeScript, Go, Rust or C++ type generator is implemented.
+Template lifting and its concrete transformer were removed on 4 November 2026.
 
 The [Horos AST-only frontend](horos.md) registers its syntax checker independently
 from language identity, [resolution](resolution.md) and [semantic analysis](analysis.md).

@@ -32,11 +32,12 @@ wire.HydratedValue <-> Page[Person]
 wire.HydratedValue <-> Page[Cell[Person]]
 ```
 
-The second application uses the separately derived contract Page and its chosen
-native representation; it is not a capability argument passed into a Horos data
-declaration. [Template lifting](type-representations.md#2-embedding-and-lifting-are-explicit-different-operations)
-changes the type description under an explicit profile, while a runtime adapter
-converts an actual instance according to that description and representation.
+A Page intended to accept capabilities is authored directly in Horos/Wire;
+both data and capability applications can use that same Page and its selected
+native representation. This does not pass a capability into a ground Horos data
+slot. [Direct authoring and ground embedding](type-representations.md#2-direct-declarations-and-ground-embedding)
+concern descriptions; a runtime adapter converts actual instances according to
+those descriptions and selected representations.
 
 | Object being represented | Go representation and status |
 | --- | --- |
@@ -337,7 +338,7 @@ and Wire/runtime facilities; those lower facilities never import a catalogue of
 Function, Stream, Cell or future contracts. This document adds no bitwire or
 bitruntime dependency to bittype and selects no new runtime package layout.
 
-Current implemented tooling and optional-profile lifting, the unimplemented native transformations,
+Current implemented ground and optional-profile tooling, the unimplemented native transformations,
 and these future value bindings remain separately qualified work. Adding a
 dynamic descriptor does not authorize changing Horos's data domain, choosing a
 behavioral contract by shape or reviving a second hydration/export protocol.

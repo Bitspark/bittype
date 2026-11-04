@@ -5,14 +5,15 @@
 contract model, then explicitly required preservation of prior concepts and an
 expert consultation. This page makes that preservation reviewable; it is not a
 claim that native generators or runtime adapters exist. Go optional profiles,
-the Bittype frontend and explicit lifting are now implemented.
+the Bittype frontends and direct declarations are implemented. Template lifting
+was subsequently removed on the owner's 4 November instruction.
 
 ## Decision and authoritative homes
 
 - [Ontos optional profile](https://github.com/Bitspark/ontos/blob/main/docs/design/0007-optional-wire-extension.md)
   owns mixed values over Deixis, ground embedding and partial recovery.
 - [Horos optional profile](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md)
-  owns mixed type/declaration meaning and partial lifting.
+  owns mixed type/declaration meaning.
 - [Bittype tooling](hydrated-types.md), [native representations](type-representations.md)
   and [runtime boundary](runtime-values.md) explain how those definitions are
   projected, generated and eventually interpreted.
@@ -46,10 +47,10 @@ deliberate replacements rather than silently deleting them from current guidance
 | Modules, exact import pins and declarations | Owned by each explicit Horos profile; exact pins are not semantic equivalence or protocol identities. |
 | Indexed generic slots and ordered arguments | Retained with lexical binding, explicit arity, caller-before-callee substitution and literal opacity. |
 | Open Page<T> and Page<Person> | Ground forms remain; native generation retains generics instead of expanding every application. |
-| Page<Cell<Person>> without an authored duplicate Page | Explicit partial lifting derives a distinct mixed declaration; its binder can accept mixed types. |
-| Ordered partial lifting and unsupported forms | Retained as Horos-owned semantics; Data boundaries and unsupported diagnostics remain explicit. |
-| Full source validation versus derived dependency closure | All source imports validate first; output follows retained applications and stops at Data. Root/Other/Alias counterexample remains in the lifting docs. |
-| Source, derived and recipe identities | Distinct profile-aware identities and provenance; never recover ownership from shape or native erasure. |
+| Page<Cell<Person>> without an authored duplicate Page | Author Page directly in the optional profile; the same binder accepts Data and capability types. |
+| Template lifting | Removed completely on 4 November: no API, transformer, derivation metadata or compatibility path. |
+| Complete declaration context | All supplied module imports validate; ordinary direct declarations retain exact dependencies and closed Data boundaries. |
+| Source and recipe identities | Profile-aware declaration identities and provenance; never recover ownership from shape or native erasure. |
 | Function<A,B>, get/set Cell<T>, next/cancel Stream<T> | Exact illustrative modules move to Horos's optional specification; behavior stays library-owned. |
 | Per-language native recipes and dependency locks | Retained in Bittype's representation design for TypeScript, Go, Rust and C++; no raw source or implicit discovery. |
 | Generic adapter composition | Retained as future runtime work: PageAdapter(CellAdapter(PersonAdapter)), with lazy bidirectional parameter conversion. |
@@ -73,15 +74,19 @@ optional grammar has its own envelope and semantic profile.
 
 Ground-only open forms such as `not(T)`, `set-of(T)` or guarded recursion with
 an open slot are not silently removed or weakened: they remain ground Horos
-concepts. The initial partial lift rejects them, while closed specializations
-can be explicitly embedded. Mixed top/complement, live set/map keys, recursive
-named applications and broader lifting require separately defined laws and
-qualification before they can be admitted. No current syntax promises them.
+concepts. Their closed specializations can be explicitly embedded as Data.
+Mixed top/complement, live set/map keys and recursive named applications require
+separately defined laws and qualification before admission. No current syntax
+promises them. The removed template translation is not a deferred API.
 
-The proposal does not delete current Bitwire/Bitruntime carriers. Their pinned
-behavior is recorded in [runtime values](runtime-values.md). Future alignment
-may use optimized native representations, provided profile laws and runtime
-ownership are demonstrated. Moving ownership alone does not remove duplication.
+Bitwire and Bitruntime now consume the shared Ontos 0.16.0 native mixed structure.
+Their qualified behavior is recorded in [runtime values](runtime-values.md). This
+template-lifting removal changes no transport, hydration or runtime ownership.
+
+The owner's 4 November removal supersedes the lifting recommendations in the
+historical review below. The implementation, exclusive helpers, metadata and
+tests are deleted, rather than moved to an archive or retained as deprecated
+exports. Direct authored optional generics preserve the pagination use case.
 
 ## Review and implementation obligations
 
@@ -98,10 +103,10 @@ Before claiming implementation, independently authored cases must distinguish:
 2. Captured bytes/keys from mutable caller storage, and repeated occurrences of
    the same handle from cloned resources. Structure traversal performs no IO.
 3. Data(any)/ground complement from any hypothetical mixed-domain operations.
-4. Ground-membership/layout preservation after lifting and binding from equality
-   of ASTs, declaration pins or native type names.
-5. Retained applications from closed embedding, including unused-import errors,
-   open unsupported forms, exact literals and caller-side scope.
+4. Closed ground embedding and direct optional generic specialization from
+   equality of ASTs, declaration pins or native type names.
+5. Retained open applications from closed specialization, including unused-import
+   errors, profile domains, exact literals and caller-side scope.
 6. Explicit per-language recipes from lookalikes, implicit fallback and accidental
    registration-order selection. Native compiler success is not protocol proof.
 7. Typed compiled adapters from dynamic descriptions, and borrowed views from
@@ -109,7 +114,7 @@ Before claiming implementation, independently authored cases must distinguish:
 
 The Go implementation qualifies items 1–5 through structural admission,
 immutable value tests, profile-specific static checks, independently authored
-pagination/lifting cases and request-wide exhaustion tests. Bittype additionally
+direct pagination and embedding cases and request-wide exhaustion tests. Bittype additionally
 qualifies explicit profiles, immutable semantic receipts, source origins and the
 unchanged agnostic dependency boundary. Items 6–7 remain future acceptance
 criteria: native recipes and runtime adapters are not implemented. Remote gates

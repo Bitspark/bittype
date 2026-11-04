@@ -4,6 +4,12 @@
 
 ### 4 November 2026
 
+- Remove the Horos-to-HorosWire template-lifting transformer, its tests, exclusive
+  indexing helpers and architecture allowances. Author optional pagination directly
+  and use the same generic with data and Wire arguments. Preserve closed ground
+  embedding and specialization; remove all compatibility paths. Update active
+  design documents and align the public Horos dependency to 0.8.0.
+
 - Remove `text.Provider` and the engine's combined provider API without aliases.
   Register parser, checker, formatter and printer adapters independently against
   language identity/profile metadata, in any order. Pack/PackCST validate generic

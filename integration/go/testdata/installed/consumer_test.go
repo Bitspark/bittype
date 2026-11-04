@@ -19,7 +19,7 @@ func tag(name string, values ...core.Value) core.Value {
 
 // This fixture is copied outside the checkout and imports the exact public
 // Bittype revision, Horos release and Ontos release without replace directives.
-func TestPublicPaginationAndLift(t *testing.T) {
+func TestPublicGroundAndOptionalPagination(t *testing.T) {
 	text := tag("horos/scalar", core.NewAtom([]byte("utf8-text")))
 	parameter := tag("horos/decl/param", data.EncodeInt(big.NewInt(0)))
 	page := tag("horos/decl/type", data.EncodeList([]core.Value{data.MustEncodeText("T")}), tag("horos/list-of", parameter))
@@ -52,28 +52,30 @@ func TestPublicPaginationAndLift(t *testing.T) {
 	if _, err := model.Specialize(id, []core.Value{wireArgument}); err == nil {
 		t.Fatal("ground generic accepted an optional capability type")
 	}
-	lifted, err := wire.Lift(model, []decl.DeclarationID{id}, wire.DefaultLiftOptions())
+	optionalBody := tag("horos/wire/list-of", tag("horos/wire/param", data.EncodeInt(big.NewInt(0))))
+	optionalPage := tag("horos/wire/type", data.EncodeList([]core.Value{data.MustEncodeText("T")}), optionalBody)
+	optionalMembers, err := data.EncodeMap([][2]core.Value{{data.MustEncodeText("Page"), optionalPage}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	root := lifted.Roots()[0]
-	optional, err := lifted.Program(root.Declaration.Module, wire.DefaultLimits())
+	optionalModule := tag("horos/wire/module", data.EncodeInt(big.NewInt(1)), data.MustEncodeText("installed.optional.pagination"), empty, optionalMembers)
+	optionalTree, err := wireResolve.Resolve(optionalModule, nil, "installed-optional")
 	if err != nil {
 		t.Fatal(err)
 	}
-	optionalTree, err := wireResolve.Project(optional, "installed-optional")
+	optional, err := wireResolve.Model(optionalTree)
 	if err != nil {
 		t.Fatal(err)
 	}
-	optional, err = wireResolve.Model(optionalTree)
-	if err != nil {
-		t.Fatal(err)
+	optionalID := wire.DeclarationID{Module: optional.Root(), Name: "Page"}
+	for _, argument := range []core.Value{tag("horos/wire/data", text), wireArgument} {
+		specialized, err = optional.Specialize(optionalID, []core.Value{argument})
+		if err != nil || !core.Equal(specialized, tag("horos/wire/list-of", argument)) {
+			t.Fatalf("direct optional generic binding: %v", err)
+		}
 	}
-	specialized, err = optional.Specialize(root.Declaration, []core.Value{wireArgument})
-	if err != nil || !core.Equal(specialized, tag("horos/wire/list-of", wireArgument)) {
-		t.Fatalf("lifted generic binding: %v", err)
-	}
-	if root.Declaration.Module == id.Module {
-		t.Fatal("explicit lifting reused the ground module identity")
+	declaration, ok := optional.Declaration(optionalID)
+	if !ok || !core.Equal(declaration.Expression().Value(), optionalBody) {
+		t.Fatal("specialization changed the authored optional declaration")
 	}
 }

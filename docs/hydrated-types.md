@@ -1,8 +1,8 @@
 # Optional Wire types and Bittype tooling
 
-**Owner decision, 3 November 2026. Status: Go profiles, frontend and explicit lifting implemented.**
+**Owner decision, 3 November 2026. Status: Go profiles and direct declaration frontends implemented.**
 Optional `ontos/wire` owns the mixed value profile; optional `horos/wire` owns
-its type/declaration model and lifting semantics. Bittype supplies tooling for
+its type/declaration model. Bittype supplies tooling for
 those definitions. This replaces the unimplemented Bittype-owned contract
 language, including its `bittype/contract/*` syntax and proposed `contract`
 stage directories. There is no compatibility alias or fallback decoder.
@@ -21,7 +21,7 @@ concept now belongs, including ideas retained for later implementation.
 | Ground Ontos | Existing immutable data values, structural identity and encoding |
 | Optional ontos/wire | Go/TypeScript mixed data/capability profile and shared native tuple structure, released in 0.16.0 |
 | Ground Horos | Existing data descriptors, declarations, binding, specialization and conformance |
-| Optional horos/wire | Implemented static Go mixed types, explicit ground embedding and partial template lifting |
+| Optional horos/wire | Implemented static Go mixed types and explicit closed ground embedding |
 | Bittype providers/transformers | Tooling projections of the selected Horos profile and native type representations |
 | Bittype agnostic kernel | Generic trees, semantic facts and explicit registration; no concrete Wire semantics |
 | Bitwire / bitruntime | Existing sending capability contracts and context-dependent hydration |
@@ -52,7 +52,7 @@ handle recognition; sends do not copy every value into a second heap of Deixis
 nodes. Runtime admission of a capability remains distinct from structural
 profile admission. See [runtime values](runtime-values.md) for the actual current
 Go types, exports, proxies and lifetime ownership. The static frontends use Horos
-0.7.0 and ground Ontos 0.16.0; Bittype does not import the live carrier or runtime.
+0.8.0 and ground Ontos 0.16.0; Bittype does not import the live carrier or runtime.
 
 Every type description is itself ground data. Describing a Wire does not create
 one, and loading, resolving or analyzing a description performs no sends,
@@ -89,27 +89,20 @@ explicit even if its expressions contain no Wire. Specialization is separate
 from generic native generation; it must not erase the original open declaration
 or use equal expanded shapes to substitute a different library.
 
-## 3. Embedding, lifting and pagination
+## 3. Direct declarations, ground embedding and pagination
 
-Ground `Page<Person>` can be specialized and embedded as `Data(G)`. Template
-lifting instead derives a separately identified mixed declaration, preserving
-the authored Page's parameter and applications. It follows
-[Horos's partial lifting rules](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md#4-explicit-embedding-and-partial-template-lifting);
-Bittype implements the corresponding explicitly selected AST transformation.
+Author `Page<T>` directly in the optional profile when it must accept both data
+and capability types. The same declaration can be applied to `Data(Person)` or
+`Cell<Data(Person)>`; it keeps the same binder and canonical identity. Ground
+Horos parameters remain data-only. The [canonical pagination example](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md#4-direct-authoring-and-ground-embedding)
+shows the complete directly authored module and its applications.
 
-```text
-Ground Page<T>                 Derived mixed Page<T>
-  items: list-of(T)              items: list-of(T)
-  next?: scalar(utf8-text)       next?: Data(scalar(utf8-text))
-```
-
-The derived Page can accept `Cell<Data(PersonDescriptor)>`; the original ground
-Page cannot. No second Page is authored and no `LiftedPage` spelling is required.
-Derived module/declaration identities and provenance remain distinct. The
-[tooling design](type-representations.md) preserves the full ordered rules,
-dependency-closure counterexamples and native representation configuration.
-Route discovery never chooses a different domain or turns a failed lift into
-closed embedding. Direct ground-to-native generation remains independently useful.
+A ground `Page<Person>` can separately be specialized and embedded as `Data(G)`.
+That operation creates no optional generic or derived module. The owner removed
+template lifting and its Bittype transformer on 4 November 2026, including
+compatibility paths. Future native generation consumes either source profile
+directly and preserves open generics. The [representation design](type-representations.md)
+retains library-owned native configuration and the separate runtime boundary.
 
 ## 4. Library-owned Function, Cell and Stream
 
@@ -162,7 +155,6 @@ name `horoswire` denotes the optional Horos frontend, not a new Bittype model:
 | `resolve/horoswire/go`, `internal/horosmodel` | Adapt the authoritative module/binding model with immutable capture and explicit dependencies |
 | `analyze/horoswire/go` | Adapt established semantics to shared facts/reports |
 | `provider/horoswire/go` | Explicit AST-only capability composition |
-| `transforms/horos-to-horoswire/go` | Explicitly selected Horos-owned partial lift (implemented) |
 | `transforms/horoswire-to-<native>/go` | Native type AST mappings and uniform library recipes (future) |
 
 All listed stages except native mappings now exist. The existing `horos` stages retain
@@ -177,7 +169,7 @@ model availability separate. Ground conformance, mixed structure checks, runtime
 capability recognition and remote behavioral compliance are different judgments.
 
 Finite input is not necessarily bounded enough to process. Admission, resolution,
-lifting and generation each need explicit node/depth/byte/module budgets where
+specialization and generation each need explicit node/depth/byte/module budgets where
 applicable, with exhaustion separate from invalid syntax, semantic non-membership
 and unsupported mappings.
 An incomplete stage publishes no usable partial model or target. These use existing result dimensions, not new kernel cases.
@@ -192,9 +184,9 @@ no import cycle or default runtime is authorized here.
 
 Ground Horos/Bittype APIs continue to reject the optional format. The separate
 [optional frontend tests](../integration/go/horoswire_test.go) and
-[lifting tests](../transforms/horos-to-horoswire/go/lift_test.go) qualify profiles and grammar,
-operand/literal boundaries, generic scope, identity/provenance, ordered lifting,
-and ground-membership/layout preservation. Native representation limits, actual
+[installed-consumer tests](../integration/go/testdata/installed/consumer_test.go)
+qualify profiles and grammar, operand/literal boundaries, generic scope, identity
+and direct data/capability pagination. Native representation limits, actual
 runtime alignment and library protocol/lifetime tests are separate evidence.
 
 Forbidden: widening ground `WF`/`Conforms`, Ontos containers or generic slots;

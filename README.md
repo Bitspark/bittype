@@ -16,7 +16,7 @@ The engine captures syntax once and invokes each capability explicitly. Horos
 analysis reuses the resolver's [shared semantic graph](docs/semantics.md), with
 separate reports for validity, coverage and model availability.
 Readable Horos syntax, native mappings and package releases remain deferred.
-The concrete Horos frontends use public Horos 0.7.0 and Ontos 0.16.0. Consumers
+The concrete Horos frontends use public Horos 0.8.0 and Ontos 0.16.0. Consumers
 must upgrade together; no older dependency path or compatibility shim remains.
 See the [dependency alignment and consumer checks](docs/dependencies.md).
 The engine starts empty and has no built-in languages or mappings.
@@ -46,8 +46,9 @@ application-value validation or dependencies on bitwire/bitruntime.
 Ground Ontos and Horos stay data-only. The [optional-extension proposal](docs/hydrated-types.md)
 places the mixed value profile in ontos/wire and its type model in horos/wire.
 Bittype projects those definitions through its existing tooling architecture;
-the agnostic kernel acquires no Wire semantics. The Go optional profiles,
-[Bittype frontend and explicit partial lift](docs/horoswire.md) are implemented.
+the agnostic kernel acquires no Wire semantics. The Go optional profiles and
+[Bittype frontend](docs/horoswire.md) are implemented. Optional generics are
+authored directly; template lifting and its transformer have been removed.
 Existing hydration remains in bitwire/bitruntime.
 
 ## Read first
@@ -58,9 +59,9 @@ Existing hydration remains in bitwire/bitruntime.
   documents implemented APIs and qualification.
 - [Concept preservation](docs/wire-extension-preservation.md): retained ideas,
   superseded proposals and expert-review evidence for the ownership change.
-- [Template lifting and native representations](docs/type-representations.md):
-  explicit lifting rules, generic pagination and library-owned type recipes
-  configured for TypeScript, Go, Rust and C++; lifting is implemented, native
+- [Native representations](docs/type-representations.md):
+  direct generic pagination and library-owned type recipes configured for
+  TypeScript, Go, Rust and C++; native
   recipes and generators remain proposed.
 - [Runtime values and hydration](docs/runtime-values.md): type descriptions versus
   native instances, existing Wire/runtime carriers and future typed/dynamic
