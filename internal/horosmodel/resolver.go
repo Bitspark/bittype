@@ -20,21 +20,21 @@ import (
 
 func (f Frontend[L]) ReferenceResolution() semantics.Key { return f.key("reference-resolution") }
 
-func (f Frontend[L]) key(name string) semantics.Key        { return semantics.Key{Owner: f.Owner, Name: name} }
-func (f Frontend[L]) Validity() semantics.Key              { return f.key("program-validity") }
-func (f Frontend[L]) Indexing() semantics.Key              { return f.key("declaration-index") }
-func (f Frontend[L]) Bindings() semantics.Key              { return f.key("occurrence-bindings") }
-func (f Frontend[L]) Applications() semantics.Key          { return f.key("applications") }
-func (f Frontend[L]) Dependencies() semantics.Key          { return f.key("reference-dependencies") }
-func (f Frontend[L]) TypeFacts() semantics.Key             { return f.key("type-facts") }
-func (f Frontend[L]) TargetRole() semantics.Key            { return f.key("target") }
-func (f Frontend[L]) ExpressionRole() semantics.Key        { return f.key("expression") }
-func (f Frontend[L]) ReferenceDependency() semantics.Key   { return f.key("declaration-reference") }
-func (f Frontend[L]) KindRelation() semantics.Key          { return f.key("kind") }
-func (f Frontend[L]) InterfaceRelation() semantics.Key     { return f.key("interface") }
-func (f Frontend[L]) DataStatusRelation() semantics.Key    { return f.key("data-status") }
-func (f Frontend[L]) DataSummaryRelation() semantics.Key   { return f.key("data-summary") }
-func (f Frontend[L]) IdentityRelation() semantics.Key      { return f.key("canonical-identity") }
+func (f Frontend[L]) key(name string) semantics.Key      { return semantics.Key{Owner: f.Owner, Name: name} }
+func (f Frontend[L]) Validity() semantics.Key            { return f.key("program-validity") }
+func (f Frontend[L]) Indexing() semantics.Key            { return f.key("declaration-index") }
+func (f Frontend[L]) Bindings() semantics.Key            { return f.key("occurrence-bindings") }
+func (f Frontend[L]) Applications() semantics.Key        { return f.key("applications") }
+func (f Frontend[L]) Dependencies() semantics.Key        { return f.key("reference-dependencies") }
+func (f Frontend[L]) TypeFacts() semantics.Key           { return f.key("type-facts") }
+func (f Frontend[L]) TargetRole() semantics.Key          { return f.key("target") }
+func (f Frontend[L]) ExpressionRole() semantics.Key      { return f.key("expression") }
+func (f Frontend[L]) ReferenceDependency() semantics.Key { return f.key("declaration-reference") }
+func (f Frontend[L]) KindRelation() semantics.Key        { return f.key("kind") }
+func (f Frontend[L]) InterfaceRelation() semantics.Key   { return f.key("interface") }
+func (f Frontend[L]) DataStatusRelation() semantics.Key  { return f.key("data-status") }
+func (f Frontend[L]) DataSummaryRelation() semantics.Key { return f.key("data-summary") }
+func (f Frontend[L]) IdentityRelation() semantics.Key    { return f.key("canonical-identity") }
 
 // LimitsSetting contains a JSON array [depth,nodes,bytes,modules]. All four
 // positive limits are required; depth must not exceed 512. Its absence selects

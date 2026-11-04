@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/check/go"
+	parsecontract "github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	parse "github.com/Bitspark/bittype/parse/horos/go"
-	parsecontract "github.com/Bitspark/bittype/contracts/parse/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/horos/go"
 	"github.com/Bitspark/bittype/semantics/go"
@@ -206,7 +206,7 @@ func TestImportedSummarySubstitutionRetainsCallerBindersAndDefinitionScope(t *te
 func TestParameterCalleeFailurePreservesArgumentAndBinderSites(t *testing.T) {
 	for _, test := range []struct {
 		name, source, code string
-		child int
+		child              int
 	}{
 		{"admission", "module example.bad; type Bad<F: Data -> Data> = F<wire<text>>;", "bound-violation", 1},
 		{"shape", "module example.bad; type Bad<F> = F<text>;", "kind-mismatch", 0},

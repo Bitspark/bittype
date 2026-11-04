@@ -409,7 +409,7 @@ func TestPaginationRejectsResidualConstructors(t *testing.T) {
 	}
 	higher := genTypeParameters(apply(genParam(0), genParam(1)), genParameter("F", unary), genParameter("T", proper))
 	for name, module := range map[string]core.Value{
-		"parameter-callee":      genModule("higher", genMap(), genEntry("Apply", higher)),
+		"parameter-callee": genModule("higher", genMap(), genEntry("Apply", higher)),
 		"closed-specialization": genModule("higher", genMap(),
 			genEntry("Apply", higher), genEntry("Page", genType(genPage(), "T")),
 			genEntry("Closed", genType(genLocal("Apply", genLocal("Page"), genScalar("utf8-text"))))),
