@@ -9,6 +9,7 @@ import (
 
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/files/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -16,6 +17,7 @@ import (
 
 type snapshotState struct {
 	syntax    representation.Language
+	files     *files.Context
 	entry     ast.NodeRef
 	trees     []representation.AST
 	catalogue map[ast.TreeID]ast.NodeID
@@ -71,6 +73,11 @@ func boundInputs(trees []representation.AST, limits Limits) (map[ast.TreeID]ast.
 		}
 		catalogue[info.ID] = ast.NodeID(info.Nodes)
 	}
+	for _, tree := range trees {
+		if err := tree.CheckReferences(catalogue); err != nil {
+			return nil, err
+		}
+	}
 	return catalogue, nil
 }
 
@@ -100,6 +107,14 @@ func Capture(ctx context.Context, checker check.Checker, input Input) (Snapshot,
 	if input.Entry.Tree == "" || input.Entry.Node == 0 || input.Entry.Node > catalogue[input.Entry.Tree] {
 		return Snapshot{}, ErrInvalidRequest
 	}
+	var contextFiles *files.Context
+	if input.Files != nil {
+		captured, err := input.Files.Capture(files.Limits{MaxFiles: limits.MaxInputs, MaxBytes: limits.MaxInputBytes, MaxLinks: limits.MaxInputs}, catalogue)
+		if err != nil {
+			return Snapshot{}, err
+		}
+		contextFiles = &captured
+	}
 	for _, tree := range trees {
 		if err := ctx.Err(); err != nil {
 			return Snapshot{}, err
@@ -111,7 +126,8 @@ func Capture(ctx context.Context, checker check.Checker, input Input) (Snapshot,
 	if err := ctx.Err(); err != nil {
 		return Snapshot{}, err
 	}
-	return Snapshot{state: &snapshotState{syntax: checker.Language(), entry: input.Entry, trees: trees, catalogue: catalogue}}, nil
+
+	return Snapshot{state: &snapshotState{syntax: checker.Language(), entry: input.Entry, trees: trees, catalogue: catalogue, files: contextFiles}}, nil
 }
 
 // Dependency is an explicit input receipt and the consumer's exact requirements.
@@ -258,7 +274,7 @@ func NewOperation[L any](syntax representation.Language, contract Contract, kind
 		if err != nil {
 			return Result{}, err
 		}
-		if _, err := boundInputs(source.state.trees, limits); err != nil {
+		if err := source.CheckLimits(limits); err != nil {
 			return Result{}, err
 		}
 		if len(options.Requested) > limits.MaxRequested || len(dependencies) > limits.MaxInputs {
@@ -367,4 +383,59 @@ func (r Result) Snapshot() Snapshot {
 		return Snapshot{}
 	}
 	return Snapshot{state: r.state.owner.source}
+}
+
+// Files returns the captured correspondence; nil means syntax-only input.
+func (s Snapshot) Files() *files.Context {
+	if !s.Valid() || s.state.files == nil {
+		return nil
+	}
+	c := s.state.files.Clone()
+	return &c
+}
+func (s Snapshot) Language() representation.Language {
+	if !s.Valid() {
+		return representation.Language{}
+	}
+	return s.state.syntax
+}
+func (s Snapshot) Same(other Snapshot) bool { return s.Valid() && s.state == other.state }
+func (r Request[L]) Files() *files.Context {
+	if r.state == nil {
+		return nil
+	}
+	return (Snapshot{state: r.state.capture.source}).Files()
+}
+
+// CaptureSettings bounds and copies caller-owned configuration without interpreting it.
+func CaptureSettings(settings []Setting, limits Limits) ([]Setting, error) {
+	normalized, err := normalizedLimits(limits)
+	if err != nil {
+		return nil, err
+	}
+	budget := newMetadataBudget(normalized)
+	if err := validateSettings(settings, &budget); err != nil {
+		return nil, err
+	}
+	return cloneSettings(settings), nil
+}
+
+// CheckLimits bounds all retained input context without running a provider.
+func (s Snapshot) CheckLimits(limits Limits) error {
+	if !s.Valid() {
+		return ErrInvalidRequest
+	}
+	l, err := normalizedLimits(limits)
+	if err != nil {
+		return err
+	}
+	if _, err := boundInputs(s.state.trees, l); err != nil {
+		return err
+	}
+	if s.state.files != nil {
+		if _, err := s.state.files.Capture(files.Limits{MaxFiles: l.MaxInputs, MaxBytes: l.MaxInputBytes, MaxLinks: l.MaxInputs}, s.state.catalogue); err != nil {
+			return err
+		}
+	}
+	return nil
 }

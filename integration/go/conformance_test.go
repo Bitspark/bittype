@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"testing"
@@ -55,7 +56,7 @@ func providerConformance[L any](t *testing.T, provider nativeProvider[L], source
 		t.Fatal("empty provider identity")
 	}
 	input := parse.Input{SourceID: "conformance", TreeID: "conformance-tree", Text: source}
-	parsed, err := provider.Parse(input)
+	parsed, err := provider.Parse(context.Background(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,14 +66,14 @@ func providerConformance[L any](t *testing.T, provider nativeProvider[L], source
 		}
 	}
 	before := tree.Clone(parsed.Abstract)
-	formatted, err := provider.Format(parsed)
+	formatted, err := provider.Format(context.Background(), parsed)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(parsed.Abstract, before) || !reflect.DeepEqual(formatted.Abstract, before) {
 		t.Fatal("formatter changed input or lost AST metadata")
 	}
-	printed, err := provider.Print(formatted)
+	printed, err := provider.Print(context.Background(), formatted)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,12 +81,12 @@ func providerConformance[L any](t *testing.T, provider nativeProvider[L], source
 	if !reflect.DeepEqual(formatted.Abstract, before) {
 		t.Fatal("formatter borrowed mutable input storage")
 	}
-	if again, err := provider.Print(formatted); err != nil || again != printed {
+	if again, err := provider.Print(context.Background(), formatted); err != nil || again != printed {
 		t.Fatal("output changed with caller storage", err)
 	}
 
 	input.Text = source + " @"
-	partial, err := provider.Parse(input)
+	partial, err := provider.Parse(context.Background(), input)
 	var diagnostic *text.Diagnostic
 	if err == nil || !errors.As(err, &diagnostic) || !reflect.DeepEqual(partial, cst.CST[L]{}) {
 		t.Fatalf("whole-input rejection must return a located error and no partial result: %v", err)
@@ -98,12 +99,12 @@ func providerConformance[L any](t *testing.T, provider nativeProvider[L], source
 	if err := provider.Check(invalid); err == nil {
 		t.Fatal("checker accepted an invalid carrier")
 	}
-	partial, err = provider.Format(invalid)
+	partial, err = provider.Format(context.Background(), invalid)
 	if err == nil || !reflect.DeepEqual(partial, cst.CST[L]{}) {
 		t.Fatal("formatter returned partial output on invalid input")
 	}
 	formatted.Root = 0
-	if output, err := provider.Print(formatted); err == nil || output != "" {
+	if output, err := provider.Print(context.Background(), formatted); err == nil || output != "" {
 		t.Fatal("printer returned partial text on invalid input")
 	}
 	if provider.ID() != id || provider.Name() != name {

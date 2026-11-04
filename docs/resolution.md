@@ -108,9 +108,9 @@ declared dependency requirements are unmet. Each operation receives a fresh
 private invocation identity: returning an earlier result fails even when both
 invocations share the same snapshot. Non-nil errors discard all output.
 
-## Model reuse
+## Semantics reuse
 
-`semantic.Publication` accepts either new Facts or ReuseModelFrom, never both.
+`semantic.Publication` accepts either new Facts or ReuseSemanticsFrom, never both.
 The latter must identify an exact admitted dependency receipt with an available
 model. Merely producing another result for the same snapshot is insufficient.
 Publication checks current output requirements, dependency requirements and the
@@ -119,17 +119,17 @@ receiving model budgets before retaining the same immutable model handle.
 The new result belongs to the new invocation. The reused model retains its entity
 and term IDs. New graphs have their own ID spaces even if they share a snapshot;
 there is no automatic merging or correspondence inferred from equal numbers.
-Model accessors continue to return independent mutable copies. Reuse does not
+Semantics accessors continue to return independent mutable copies. Reuse does not
 copy truth reports automatically or weaken stale-result protection.
 
 ## Horos composition
 
 The Horos provider implements syntax checking, resolution.Provider and analysis.Provider.
 Its profiles are `horos-declarations-2/ast-1`,
-`horos-declarations-2/resolution-1` and `horos-declarations-2/analysis-1`.
+`horos-declarations-2/resolution-2` and `horos-declarations-2/analysis-2`.
 Analysis revision 1 is replaced without a compatibility path.
 
-Horos resolution still accepts one Program and its root entry, resolves its
+Horos resolution accepts multiple separate Program trees and an explicit root entry, resolves its
 reachable pinned module closure, verifies supplied annotations and exports exact
 descriptor payloads and operand paths. Alongside `reference-resolution`, it
 advertises the existing validity, declaration-index, occurrence-binding,

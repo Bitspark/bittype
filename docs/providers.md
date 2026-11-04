@@ -10,7 +10,7 @@ Provider interfaces use their package to identify the role: `parse.Provider`,
 `analysis.Provider`. Each embeds `language.Provider` for ID and Name. The
 parse/check/format/print contracts are independently usable, with no dependency
 on a combined contract. The engine registers them separately with
-`RegisterParser`, `RegisterChecker`, `RegisterFormatter` and `RegisterPrinter`.
+`RegisterSyntaxParser`, `RegisterChecker`, `RegisterSyntaxFormatter` and `RegisterSyntaxPrinter`.
 Source input belongs to `parse.Input`. `text.Provider` and the engine's combined
 provider registration are removed without compatibility aliases; `text` contains
 shared diagnostics only.
@@ -19,11 +19,14 @@ shared diagnostics only.
 | --- | :---: | :---: | :---: | :---: | :---: |
 | language.Provider: ID and Name | X | X | X | X | X |
 | check.Provider: AST syntax checking | X | X | X | X | X |
-| parse.Provider: text to CST | X | X | X | X | X |
-| format.Provider: AST to CST | X | X | X | X | X |
-| print.Provider: CST to text | X | X | X | X | X |
+| parse.Provider[parse.Input, cst.CST[L]]: Syntax parsing | X | X | X | X | X |
+| format.Provider[ast.View[L], cst.CST[L]]: Syntax formatting | X | X | X | X | X |
+| print.Provider[cst.CST[L], string]: Syntax printing | X | X | X | X | X |
 | resolution.Provider: reference resolution | X | / | / | / | / |
 | analysis.Provider: semantic analysis | X | / | / | / | / |
+| parse.Provider[parse.FilesRequest[L], source.Source[L]]: Files parsing | X | / | / | / | / |
+| format.Provider[format.FilesRequest[L], source.Source[L]]: Files formatting | X | / | / | / | / |
+| print.Provider[source.Source[L], files.Files]: Files printing | X | / | / | / | / |
 
 All five printer providers delegate to the same generic printer. Horos now
 implements the [documented source syntax](horos-syntax.md). Its checker still
@@ -52,11 +55,14 @@ The [pagination profile](semantic-generation.md) implements these directed edges
 Reverse mappings are not implemented. Template lifting remains removed. A
 same-language checked snapshot is not a generation or canonicalization mapping.
 
-The [Syntax and Files proposal](source.md) uses these same parse/format/print roles
-at two levels: Syntax/CST/AST and Files/Source/Semantics. Its generic input/output
-interface sketches and Files-level capabilities are not implemented and are not
-counted in this matrix. There is no separate proposed layout provider. Source
-publication requires established Semantics; per-file parsing alone is insufficient.
+The [Syntax and Files design](source.md) is implemented: the same generic role
+interfaces serve Syntax/CST/AST and Files/Source/Semantics. Methods take a context.
+The engine registers Syntax and Files capabilities independently. Horos Files
+compositions are constructed explicitly with `provider/horos.NewFilesParser`,
+`NewFilesFormatter` and `NewFilesPrinter`; they do not install engine capabilities.
+Native semantic providers are still required before native Source can be published.
+The generic Files printer can serve any admitted language Source when explicitly
+configured; that does not supply the missing native semantics.
 
 See the [checker contract](../contracts/check/go/provider.go),
 [parser contract](../contracts/parse/go/provider.go),

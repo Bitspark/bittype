@@ -21,12 +21,12 @@ func TestTransformEvidenceAdmission(t *testing.T) {
 		t.Fatal(err)
 	}
 	to := definition[blue](t, "output")
-	requirement := semantic.EvidenceRequirement{Operation: resolution.Kind(), Profile: bindingContract().Semantic.Profile, Configuration: settings, Reports: bindingContract().Semantic.ModelRequirements, Model: true}
+	requirement := semantic.EvidenceRequirement{Operation: resolution.Kind(), Profile: bindingContract().Semantic.Profile, Configuration: settings, Reports: bindingContract().Semantic.SemanticsRequirements, Semantics: true}
 	calls := 0
-	mapper, err := transform.NewTransformer[amber, blue](from, to, transform.Contract{Evidence: []semantic.EvidenceRequirement{requirement}}, func(_ context.Context, r transform.Request[amber]) (ast.AST[blue], error) {
+	mapper, err := transform.NewTransformer[amber, blue](from, to, transform.Contract{Evidence: []semantic.EvidenceRequirement{requirement}}, func(_ context.Context, r transform.Request[amber]) (ast.Set[blue], error) {
 		calls++
 		evidence, ok := r.Evidence(0)
-		if !ok || !evidence.HasModel() {
+		if !ok || !evidence.HasSemantics() {
 			t.Fatal("missing admitted graph")
 		}
 		if _, ok := r.Evidence(1); ok {
@@ -37,7 +37,7 @@ func TestTransformEvidenceAdmission(t *testing.T) {
 		if r.Source().Nodes[0].Kind != "document" {
 			t.Fatal("request source aliases storage")
 		}
-		return mapExample[amber, blue](r.Source())
+		return singleResult(mapExample[amber, blue](r.Source()))
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -78,7 +78,7 @@ func TestTransformEvidenceAdmission(t *testing.T) {
 		t.Fatal("nil context accepted")
 	}
 	// Check wrong operation/profile and undisclosed requirements through the shared admission API.
-	freshRequirement := semantic.EvidenceRequirement{Operation: resolution.Kind(), Profile: bindingContract().Semantic.Profile, Reports: bindingContract().Semantic.ModelRequirements, Model: true}
+	freshRequirement := semantic.EvidenceRequirement{Operation: resolution.Kind(), Profile: bindingContract().Semantic.Profile, Reports: bindingContract().Semantic.SemanticsRequirements, Semantics: true}
 	for name, mutate := range map[string]func(*semantic.EvidenceRequirement){
 		"operation": func(r *semantic.EvidenceRequirement) { r.Operation = analysisKey("other") },
 		"profile":   func(r *semantic.EvidenceRequirement) { r.Profile = "another-profile" },
@@ -112,11 +112,11 @@ func TestTransformRejectsUnestablishedEvidence(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			requirement := semantic.EvidenceRequirement{Operation: resolution.Kind(), Profile: bindingContract().Semantic.Profile, Reports: bindingContract().Semantic.ModelRequirements, Model: true}
+			requirement := semantic.EvidenceRequirement{Operation: resolution.Kind(), Profile: bindingContract().Semantic.Profile, Reports: bindingContract().Semantic.SemanticsRequirements, Semantics: true}
 			called := false
-			mapper, err := transform.NewTransformer[amber, blue](from, definition[blue](t, "output"), transform.Contract{Evidence: []semantic.EvidenceRequirement{requirement}}, func(context.Context, transform.Request[amber]) (ast.AST[blue], error) {
+			mapper, err := transform.NewTransformer[amber, blue](from, definition[blue](t, "output"), transform.Contract{Evidence: []semantic.EvidenceRequirement{requirement}}, func(context.Context, transform.Request[amber]) (ast.Set[blue], error) {
 				called = true
-				return ast.AST[blue]{}, nil
+				return singleResult(ast.AST[blue]{}, nil)
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -139,17 +139,17 @@ func TestTransformRouteDoesNotForwardEvidence(t *testing.T) {
 	middle, last := definition[blue](t, "middle"), definition[coral](t, "last")
 	registerChecked[blue](t, e, middle)
 	registerChecked[coral](t, e, last)
-	contract := transform.Contract{Evidence: []semantic.EvidenceRequirement{{Operation: resolution.Kind(), Profile: bindingContract().Semantic.Profile, Reports: bindingContract().Semantic.ModelRequirements, Model: true}}}
-	first, err := transform.NewTransformer[amber, blue](from, middle, contract, func(_ context.Context, r transform.Request[amber]) (ast.AST[blue], error) {
-		return mapExample[amber, blue](r.Source())
+	contract := transform.Contract{Evidence: []semantic.EvidenceRequirement{{Operation: resolution.Kind(), Profile: bindingContract().Semantic.Profile, Reports: bindingContract().Semantic.SemanticsRequirements, Semantics: true}}}
+	first, err := transform.NewTransformer[amber, blue](from, middle, contract, func(_ context.Context, r transform.Request[amber]) (ast.Set[blue], error) {
+		return singleResult(mapExample[amber, blue](r.Source()))
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	calls := 0
-	second, err := transform.NewTransformer[blue, coral](middle, last, contract, func(_ context.Context, r transform.Request[blue]) (ast.AST[coral], error) {
+	second, err := transform.NewTransformer[blue, coral](middle, last, contract, func(_ context.Context, r transform.Request[blue]) (ast.Set[coral], error) {
 		calls++
-		return mapExample[blue, coral](r.Source())
+		return singleResult(mapExample[blue, coral](r.Source()))
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -164,9 +164,9 @@ func TestTransformRouteDoesNotForwardEvidence(t *testing.T) {
 func TestTransformCancellationAfterCallback(t *testing.T) {
 	a, b := definition[amber](t, "a"), definition[blue](t, "b")
 	ctx, cancel := context.WithCancel(context.Background())
-	stage, err := transform.NewTransformer[amber, blue](a, b, transform.Contract{}, func(_ context.Context, r transform.Request[amber]) (ast.AST[blue], error) {
+	stage, err := transform.NewTransformer[amber, blue](a, b, transform.Contract{}, func(_ context.Context, r transform.Request[amber]) (ast.Set[blue], error) {
 		cancel()
-		return mapExample[amber, blue](r.Source())
+		return singleResult(mapExample[amber, blue](r.Source()))
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -196,7 +196,7 @@ func TestTypedTransformationRetainsInputCollection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	mapper, err := transform.NewTransformer[amber, blue](from, to, transform.Contract{}, func(_ context.Context, r transform.Request[amber]) (ast.AST[blue], error) {
+	mapper, err := transform.NewTransformer[amber, blue](from, to, transform.Contract{}, func(_ context.Context, r transform.Request[amber]) (ast.Set[blue], error) {
 		if r.Source().ID != "second" || r.Entry() != source.Entry() || len(r.Inputs()) != 2 {
 			t.Fatal("entry tree or source collection lost")
 		}
@@ -205,7 +205,7 @@ func TestTypedTransformationRetainsInputCollection(t *testing.T) {
 		if r.Inputs()[0].LanguageID() == "" {
 			t.Fatal("input slice aliases request")
 		}
-		return mapExample[amber, blue](r.Source())
+		return singleResult(mapExample[amber, blue](r.Source()))
 	})
 	if err != nil {
 		t.Fatal(err)

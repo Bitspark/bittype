@@ -1,61 +1,66 @@
 package print
 
 import (
+	"context"
 	"errors"
-	"strings"
-
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
+	"strings"
 )
 
 var ErrInvalidPrinter = errors.New("invalid print provider")
 
-// Printer binds one typed provider to a captured language/profile/marker.
-// It owns boundary snapshots and never installs another capability.
-type Printer struct {
+type SyntaxPrinter struct {
 	definition representation.Language
-	run        func(representation.CST) (string, error)
+	run        func(context.Context, representation.CST) (string, error)
 }
 
-func NewPrinter[L any](definition representation.Language, provider Provider[L]) (Printer, error) {
+func NewSyntaxPrinter[L any](definition representation.Language, provider Provider[cst.CST[L], string]) (SyntaxPrinter, error) {
 	if representation.IsNil(provider) {
-		return Printer{}, ErrInvalidPrinter
+		return SyntaxPrinter{}, ErrInvalidPrinter
 	}
 	if err := representation.CheckMarker[L](definition); err != nil {
-		return Printer{}, err
+		return SyntaxPrinter{}, err
 	}
 	if provider.ID() != definition.ID() || strings.TrimSpace(provider.Name()) == "" {
-		return Printer{}, ErrInvalidPrinter
+		return SyntaxPrinter{}, ErrInvalidPrinter
 	}
-	result := Printer{definition: definition}
-	result.run = func(input representation.CST) (string, error) {
-		concrete, err := representation.UnpackCST[L](definition, input)
+	result := SyntaxPrinter{definition: definition}
+	result.run = func(ctx context.Context, input representation.CST) (string, error) {
+		value, err := representation.UnpackCST[L](definition, input)
 		if err != nil {
 			return "", err
 		}
-		output, err := provider.Print(concrete)
+		output, err := provider.Print(ctx, value)
 		if err != nil {
+			return "", err
+		}
+		if err := ctx.Err(); err != nil {
 			return "", err
 		}
 		return output, nil
 	}
 	return result, nil
 }
-
-func (p Printer) ID() language.ID                   { return p.definition.ID() }
-func (p Printer) Name() string                      { return p.definition.Name() }
-func (p Printer) Language() representation.Language { return p.definition }
-func (p Printer) Validate() error {
+func (p SyntaxPrinter) ID() language.ID                   { return p.definition.ID() }
+func (p SyntaxPrinter) Name() string                      { return p.definition.Name() }
+func (p SyntaxPrinter) Language() representation.Language { return p.definition }
+func (p SyntaxPrinter) Validate() error {
 	if p.run == nil {
 		return ErrInvalidPrinter
 	}
 	return p.definition.Validate()
 }
-func (p Printer) Print(input representation.CST) (string, error) {
+func (p SyntaxPrinter) Print(ctx context.Context, input representation.CST) (string, error) {
 	if err := p.Validate(); err != nil {
 		return "", err
 	}
-	return p.run(input)
+	if ctx == nil {
+		return "", ErrInvalidPrinter
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	return p.run(ctx, input)
 }
-
-var _ language.Provider = Printer{}

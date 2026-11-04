@@ -39,10 +39,9 @@ Only Horos implements production semantics; native analysis remains deferred.
 The owner's 4 November [Syntax and Files symmetry](docs/source.md) replaces the
 separate layout proposal: `Syntax : CST : AST` and `Files : Source : Semantics`.
 Use parse/format/print roles at both levels; do not revive a layout.Model,
-layout.Provider or combined Source provider. The Go carriers, generalized role
-interfaces, Files compositions and multi-unit output in that document are proposals
-only. Preserve the distinction from implemented interfaces until their authorized
-clean migration; do not publish compatibility aliases or claim native semantics.
+layout.Provider or combined Source provider. The typed carriers, generalized role interfaces, Horos Files compositions and
+multi-unit output are implemented. Preserve exact capture/receipt association and
+keep native Files semantics unavailable until their providers exist. No aliases.
 
 The owner's 4 November [unified declaration decision](docs/unified-declarations.md)
 supersedes separate Horos and Horos/Wire languages. One Horos revision-2 grammar
@@ -135,8 +134,7 @@ Use a task branch or worktree and a pull request. Squash the task change onto
 
 Do not add documentation checks, CI waiting, independent review or verification
 records as delivery prerequisites under the owner rule above. Existing workflow
-definitions remain unless their change is in scope. No local Go workloads are
-authorized by this documentation task.
+definitions remain unless their change is in scope. Portable workloads belong on the shared build service.
 
 Keep historical commits, research evidence, license notices and unrelated work.
 Do not add private checkout dependencies, local coordination state or credentials.

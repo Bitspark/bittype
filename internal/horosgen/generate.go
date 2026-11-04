@@ -18,6 +18,7 @@ import (
 	"github.com/Bitspark/bittype/semantics/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
 	"github.com/bitspark/ontos/codec/go"
 	core "github.com/bitspark/ontos/core/go"
 	data "github.com/bitspark/ontos/data/go"
@@ -27,7 +28,7 @@ const MaxNodes = 100000
 const MaxDepth = 128
 
 func Contract() transform.Contract {
-	return transform.Contract{Evidence: []semantic.EvidenceRequirement{{Operation: analysis.Kind(), Profile: analyze.Profile, Reports: analyze.Contract().Semantic.ModelRequirements, Model: true}}}
+	return transform.Contract{Evidence: []semantic.EvidenceRequirement{{Operation: analysis.Kind(), Profile: analyze.Profile, Reports: analyze.Contract().Semantic.SemanticsRequirements, Semantics: true}}}
 }
 
 // Arena allocates target syntax only. Its sticky error prevents partial output.
@@ -154,6 +155,7 @@ type generator[L any] struct {
 	state      map[semantics.EntityID]byte
 	used       map[semantics.EntityID]bool
 	work       int
+	sources    map[ast.TreeID]ast.AST[h.Language]
 }
 
 // Generate bundles the checked program closure into one source unit. Imported
@@ -168,11 +170,19 @@ func Generate[L any](ctx context.Context, request transform.Request[h.Language],
 	if !ok {
 		return fail(semantic.ErrEvidenceUnavailable)
 	}
-	model, ok := evidence.Model()
+	model, ok := evidence.Semantics()
 	if !ok {
 		return fail(semantic.ErrEvidenceUnavailable)
 	}
 	g := generator[L]{arena: Arena[L]{Tree: ast.AST[L]{ID: id}, Ctx: ctx}, dialect: dialect, source: source, facts: model.Data(), sites: map[semantics.TermID]ast.NodeRef{}, bounds: map[ast.NodeRef]semantics.TermID{}, names: map[semantics.EntityID]string{}, targets: map[semantics.EntityID]ast.NodeID{}, parameters: map[semantics.EntityID][]ast.NodeID{}, payloads: map[semantics.TermID]core.Tuple{}, state: map[semantics.EntityID]byte{}, used: map[semantics.EntityID]bool{}}
+	g.sources = map[ast.TreeID]ast.AST[h.Language]{}
+	for _, envelope := range request.Inputs() {
+		input, err := representation.Unpack[h.Language](evidence.Snapshot().Language(), envelope)
+		if err != nil {
+			return fail(err)
+		}
+		g.sources[input.ID] = input
+	}
 	for _, e := range g.facts.Expressions {
 		if e.At.Role == resolve.ExpressionRole() {
 			g.sites[e.Term] = e.At.Site
@@ -254,12 +264,13 @@ func (g *generator[L]) prepare() error {
 			return semantic.ErrInvalidRequest
 		}
 		site := owner.Declarations[0]
-		if site.Tree != g.source.ID || site.Node == 0 || int(site.Node) > len(g.source.Nodes) {
+		input, exists := g.sources[site.Tree]
+		if !exists || site.Node == 0 || int(site.Node) > len(input.Nodes) {
 			return semantic.ErrInvalidRequest
 		}
 		if site != rootModule {
 			var pin string
-			for _, a := range g.source.Nodes[site.Node-1].Attributes {
+			for _, a := range input.Nodes[site.Node-1].Attributes {
 				if a.Name == h.AttributePin {
 					pin = a.Text
 				}
@@ -340,6 +351,12 @@ func (g *generator[L]) visitDeclaration(id semantics.EntityID, depth int) error 
 		}
 		term := g.facts.Terms[id-1]
 		if term.Kind == semantics.Application {
+			callee := g.facts.Terms[term.Callee-1]
+			if callee.Kind == semantics.Reference {
+				term.Target = callee.Target
+			}
+		}
+		if term.Kind == semantics.Application {
 			if g.targets[term.Target] == 0 {
 				return semantic.ErrInvalidRequest
 			}
@@ -371,6 +388,12 @@ func (g *generator[L]) payload(id semantics.TermID) (core.Tuple, error) {
 		return value, nil
 	}
 	term := g.facts.Terms[id-1]
+	if term.Kind == semantics.Application {
+		callee := g.facts.Terms[term.Callee-1]
+		if callee.Kind == semantics.Reference {
+			term.Target = callee.Target
+		}
+	}
 	if term.Encoding != (semantics.Key{Owner: "ontos", Name: "codec-v1"}) {
 		return core.Tuple{}, semantic.ErrInvalidRequest
 	}
@@ -405,6 +428,12 @@ func (g *generator[L]) expression(id semantics.TermID, depth int) (ast.NodeID, e
 		return 0, err
 	}
 	term := g.facts.Terms[id-1]
+	if term.Kind == semantics.Application {
+		callee := g.facts.Terms[term.Callee-1]
+		if callee.Kind == semantics.Reference {
+			term.Target = callee.Target
+		}
+	}
 	origin := g.sites[id]
 	if term.Kind == semantics.Reference || term.Kind == semantics.Application {
 		target := g.targets[term.Target]

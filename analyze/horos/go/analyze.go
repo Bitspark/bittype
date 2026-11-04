@@ -12,22 +12,22 @@ import (
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 )
 
-const Profile = "horos-declarations-2/analysis-1"
+const Profile = "horos-declarations-2/analysis-2"
 
 func Contract() analysis.Contract { return ContractWithResolutionConfiguration(nil) }
 
 func ContractWithResolutionConfiguration(settings []semantic.Setting) analysis.Contract {
 	resolved := resolve.Contract()
-	requirement := resolution.Requirement{Profile: resolved.Semantic.Profile, Configuration: settings, Reports: resolved.Semantic.ModelRequirements}.Clone()
+	requirement := resolution.Requirement{Profile: resolved.Semantic.Profile, Configuration: settings, Reports: resolved.Semantic.SemanticsRequirements}.Clone()
 	contract := semantic.Contract{Profile: Profile}
 	for _, obligation := range resolved.Semantic.Obligations {
 		if obligation.Key != resolved.Bindings {
 			contract.Obligations = append(contract.Obligations, obligation)
 		}
 	}
-	for _, required := range resolved.Semantic.ModelRequirements {
+	for _, required := range resolved.Semantic.SemanticsRequirements {
 		if required.Obligation != resolved.Bindings {
-			contract.ModelRequirements = append(contract.ModelRequirements, required)
+			contract.SemanticsRequirements = append(contract.SemanticsRequirements, required)
 		}
 	}
 	return analysis.Contract{Semantic: contract, Resolution: &requirement}
@@ -62,8 +62,8 @@ func Analyze(ctx context.Context, request analysis.Request[s.Language]) (semanti
 			publication.Reports = append(publication.Reports, semantic.Report{Obligation: key, Status: semantic.Unsupported})
 		}
 	}
-	if resolved.HasModel() {
-		publication.ReuseModelFrom = &resolved
+	if resolved.HasSemantics() {
+		publication.ReuseSemanticsFrom = &resolved
 	}
 	return request.Publish(publication)
 }

@@ -10,13 +10,13 @@ import (
 var ErrEvidenceUnavailable = errors.New("required semantic evidence is not established")
 
 // EvidenceRequirement is a consumer-owned compatibility requirement, not a
-// request to run a provider. Model additionally requires a published graph.
+// request to run a provider. Semantics additionally requires a published graph.
 type EvidenceRequirement struct {
 	Operation     semantics.Key
 	Profile       string
 	Configuration []Setting
 	Reports       []Requirement
-	Model         bool
+	Semantics     bool
 }
 
 func (r EvidenceRequirement) Clone() EvidenceRequirement {
@@ -54,7 +54,7 @@ func AdmitEvidence(source Snapshot, requirements []EvidenceRequirement, results 
 		if err != nil {
 			return nil, err
 		}
-		if !dependency.reportsEstablished() || r.Model && !results[i].HasModel() {
+		if !dependency.reportsEstablished() || r.Semantics && !results[i].HasSemantics() {
 			return nil, ErrEvidenceUnavailable
 		}
 	}
@@ -85,3 +85,16 @@ func (s Snapshot) EntryTree() (representation.AST, error) {
 	}
 	return representation.AST{}, ErrInvalidRequest
 }
+
+// Failure retains semantic reports/diagnostics when a higher-level operation
+// cannot publish an admitted result. It never fabricates a partial Source.
+type Failure struct{ Result Result }
+
+func (e *Failure) Error() string {
+	diagnostics := e.Result.Diagnostics()
+	if len(diagnostics) > 0 {
+		return "semantics unavailable: " + diagnostics[0].Message
+	}
+	return ErrEvidenceUnavailable.Error()
+}
+func (e *Failure) Unwrap() error { return ErrEvidenceUnavailable }

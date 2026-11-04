@@ -1,6 +1,7 @@
 package horosformat_test
 
 import (
+	"context"
 	"errors"
 	"math/big"
 	"slices"
@@ -87,7 +88,7 @@ func TestCanonicalPaginationAndImportedLibraryRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := provider.Provider{}
-	formatted, err := p.Format(projected)
+	formatted, err := p.Format(context.Background(), projected)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,14 +101,14 @@ func TestCanonicalPaginationAndImportedLibraryRoundTrip(t *testing.T) {
 			t.Fatalf("formatter lost snapshot node %d", i+1)
 		}
 	}
-	source, err := p.Print(formatted)
+	source, err := p.Print(context.Background(), formatted)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.HasPrefix(source, "module example.people;") || !strings.Contains(source, "pages.Page<cells.Cell<Person>>") {
 		t.Fatalf("entry or imported application lost:\n%s", source)
 	}
-	parsed, err := p.Parse(parse.Input{SourceID: "bundle.horos", TreeID: "source", Text: source})
+	parsed, err := p.Parse(context.Background(), parse.Input{SourceID: "bundle.horos", TreeID: "source", Text: source})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +143,7 @@ func TestCanonicalPaginationAndImportedLibraryRoundTrip(t *testing.T) {
 
 func TestFormatterRejectsUnspellableASTWithoutPartialOutput(t *testing.T) {
 	p := provider.Provider{}
-	parsed, err := p.Parse(parse.Input{SourceID: "small", TreeID: "small", Text: "module small; type Identity<T> = T;"})
+	parsed, err := p.Parse(context.Background(), parse.Input{SourceID: "small", TreeID: "small", Text: "module small; type Identity<T> = T;"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,14 +165,14 @@ func TestFormatterRejectsUnspellableASTWithoutPartialOutput(t *testing.T) {
 			tree.Nodes[i].Attributes = append([]ast.Attribute(nil), tree.Nodes[i].Attributes...)
 		}
 		change(&tree)
-		out, err := format.Format(tree)
+		out, err := format.Format(context.Background(), tree)
 		if err == nil || len(out.Nodes) != 0 || len(out.Abstract.Nodes) != 0 {
 			t.Fatal("unspellable AST returned partial output")
 		}
 	}
 	var nilTree *s.AST
 	for _, view := range []ast.View[s.Language]{nil, nilTree} {
-		if _, err := format.Format(view); err == nil {
+		if _, err := format.Format(context.Background(), view); err == nil {
 			t.Fatal("nil view admitted")
 		}
 	}
@@ -185,7 +186,7 @@ func TestFormatterBoundsLexicalExpansion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	out, err := format.Format(tree)
+	out, err := format.Format(context.Background(), tree)
 	var diagnostic *text.Diagnostic
 	if !errors.As(err, &diagnostic) || diagnostic.Code != text.LimitExceeded || len(out.Nodes) != 0 || len(out.Abstract.Nodes) != 0 {
 		t.Fatalf("lexical expansion must fail without partial output: %v", err)

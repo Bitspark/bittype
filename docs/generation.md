@@ -66,11 +66,11 @@ using Horos-owned resolution, binding and specialization rules. The
 [readable authoring syntax](horos-syntax.md) adds text -> CST[Horos] with its AST
 view; canonical document identity is still defined by Horos.
 Native parsers remain separate text-to-CST stages. File IO, dependency retrieval,
-configuration and the destination root belong to the application. The proposed
+configuration and the destination root belong to the application. The implemented
 [Files pipeline](source.md) realizes established Semantics as Source, including
 file organization and per-unit CSTs, then prints Files. It mirrors Syntax's
 AST-to-CST-to-text pipeline. These carriers, the paired stage contracts and
-multi-unit transformation output remain proposed. Native target semantics must
+multi-unit transformation output are implemented. Native target semantics must
 be established before the full Files pipeline can be used. A Syntax formatter is usable
 with a target AST from another producer, without a canonical input dependency.
 
@@ -176,7 +176,7 @@ contract](syntax.md) for the IDs, provider contract and extension example.
 The [pipeline package](../contracts/pipeline/go/stage.go) defines:
 
 ```go
-type Stage[I, O any] func(I) (O, error)
+type Stage[I, O any] func(context.Context, I) (O, error)
 ```
 
 A generator will satisfy a stage from one AST type to another; a formatter
@@ -227,10 +227,10 @@ The implemented registry-facing interface is:
 type ASTTransformer interface {
     FromID() language.ID
     ToID() language.ID
-    Transform(context.Context, transform.Input) (representation.AST, error)
+    Transform(context.Context, transform.Input) (representation.ASTSet, error)
 }
 
-func (e *Engine) TransformTo(ctx context.Context, input transform.Input, targetID language.ID) (representation.AST, error)
+func (e *Engine) TransformTo(ctx context.Context, input transform.Input, targetID language.ID) (representation.ASTSet, error)
 ```
 
 Output uses the implemented representation.AST envelope: a language identity plus

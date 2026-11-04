@@ -105,7 +105,13 @@ func (e *exporter[L]) expression(expression *decl.Expression, site ast.NodeRef, 
 		}
 	case decl.Application:
 		target, _ := expression.Target()
-		term.Kind, term.Target = semantics.Application, e.declarations[target]
+		term.Kind = semantics.Application
+		targetEntity := e.declarations[target]
+		if err := e.reserve(1, 1, 0); err != nil {
+			return 0, err
+		}
+		e.facts.Terms = append(e.facts.Terms, semantics.Term{Kind: semantics.Reference, Target: targetEntity})
+		term.Callee = semantics.TermID(len(e.facts.Terms))
 		arguments := expression.Arguments()
 		if err := e.reserve(0, len(arguments), 0); err != nil {
 			return 0, err
@@ -118,14 +124,14 @@ func (e *exporter[L]) expression(expression *decl.Expression, site ast.NodeRef, 
 			}
 			term.Arguments[i] = child
 		}
-		if err := e.binding(site, term.Target); err != nil {
+		if err := e.binding(site, targetEntity); err != nil {
 			return 0, err
 		}
 		at := semantics.Occurrence{Site: site, Role: e.frontend.ExpressionRole()}
 		if err := e.reserve(1, 0, keySize(e.frontend.ApplicationDependency())+occurrenceSize(at)); err != nil {
 			return 0, err
 		}
-		e.facts.Dependencies = append(e.facts.Dependencies, semantics.Dependency{From: owner, To: term.Target, Relation: e.frontend.ApplicationDependency(), At: &at})
+		e.facts.Dependencies = append(e.facts.Dependencies, semantics.Dependency{From: owner, To: targetEntity, Relation: e.frontend.ApplicationDependency(), At: &at})
 	case decl.Descriptor:
 		term.Kind, term.Operator, term.Encoding = semantics.ProviderExpression, e.frontend.key("descriptor/"+expression.Constructor()), semantics.Key{Owner: "ontos", Name: "codec-v1"}
 		// The value was bounded during Horos resolution. Each retained payload is

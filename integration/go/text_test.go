@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"context"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	goformat "github.com/Bitspark/bittype/format/golang/go"
 	goparse "github.com/Bitspark/bittype/parse/golang/go"
@@ -10,31 +11,31 @@ import (
 
 func TestGoConcretePipeline(t *testing.T) {
 	source := "package sample\r\n\r\n// pagination\r\ntype Page[T any] struct { Items []T; Next *string }\r\ntype PeoplePage = Page[string]\r\ntype Reader[T any] interface { Read(key string) (T, error) }\r\n"
-	parsed, err := goparse.Parse(parse.Input{SourceID: "go-input", TreeID: "go-tree", Text: source})
+	parsed, err := goparse.Parse(context.Background(), parse.Input{SourceID: "go-input", TreeID: "go-tree", Text: source})
 	if err != nil {
 		t.Fatal(err)
 	}
-	printed, err := printer.Print(parsed)
+	printed, err := printer.Print(context.Background(), parsed)
 	if err != nil || printed != source {
 		t.Fatalf("lossless print: %v\n%q", err, printed)
 	}
-	formatted, err := goformat.Format(parsed)
+	formatted, err := goformat.Format(context.Background(), parsed)
 	if err != nil {
 		t.Fatal(err)
 	}
-	output, err := printer.Print(formatted)
+	output, err := printer.Print(context.Background(), formatted)
 	if err != nil {
 		t.Fatal(err)
 	}
-	again, err := goparse.Parse(parse.Input{SourceID: "go-output", TreeID: "go-again", Text: output})
+	again, err := goparse.Parse(context.Background(), parse.Input{SourceID: "go-output", TreeID: "go-again", Text: output})
 	if err != nil {
 		t.Fatalf("%v\n%s", err, output)
 	}
-	stable, err := goformat.Format(again)
+	stable, err := goformat.Format(context.Background(), again)
 	if err != nil {
 		t.Fatal(err)
 	}
-	output2, err := printer.Print(stable)
+	output2, err := printer.Print(context.Background(), stable)
 	if err != nil || output2 != output {
 		t.Fatalf("unstable formatting: %v\n%s\n%s", err, output, output2)
 	}

@@ -3,6 +3,7 @@
 package consumer
 
 import (
+	"context"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/pipeline/go"
 	syntax "github.com/Bitspark/bittype/syntax/rust/go"
@@ -69,5 +70,5 @@ var example = syntax.AST{
 var carrier ast.AST[syntax.Language] = example
 
 // Signature witnesses only; no stage is implemented or invoked.
-var operation func(syntax.AST) (syntax.AST, error)
+var operation func(context.Context, syntax.AST) (syntax.AST, error)
 var stage pipeline.Stage[syntax.AST, syntax.AST] = operation

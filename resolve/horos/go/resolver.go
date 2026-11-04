@@ -12,7 +12,7 @@ import (
 	core "github.com/bitspark/ontos/core/go"
 )
 
-const Profile = "horos-declarations-2/resolution-1"
+const Profile = "horos-declarations-2/resolution-2"
 
 var frontend = bridge.Frontend[s.Language]{
 	DeclarationPrefix: "horos/decl/", DescriptorPrefix: "horos/", Owner: "horos", ResolutionProfile: Profile,

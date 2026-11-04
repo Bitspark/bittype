@@ -18,10 +18,9 @@ separate reports for validity, coverage and model availability.
 The [readable Horos syntax](docs/horos-syntax.md) and its text stages are implemented.
 The first [semantic pagination mappings](docs/semantic-generation.md) generate
 TypeScript, Go, Rust and C++ type ASTs from explicitly supplied Horos analysis.
-The [Syntax and Files proposal](docs/source.md) specifies the symmetry
-`Syntax : CST : AST` and `Files : Source : Semantics`. It documents Go carriers,
-parse/format/print at both levels and multi-unit transformations; those revised
-APIs are proposed, not implemented.
+The [Syntax and Files design](docs/source.md) specifies the symmetry
+`Syntax : CST : AST` and `Files : Source : Semantics`. Typed carriers, symmetric parse/format/print interfaces, multi-unit transformations
+and the Horos Files composition are implemented. Native Files semantics remain deferred.
 Package releases remain deferred.
 The concrete Horos frontend uses public Horos 0.9.0 and Ontos 0.16.0. Consumers
 must upgrade together; no older dependency path or compatibility shim remains.
@@ -86,7 +85,7 @@ interpret these concrete type semantics.
 - [Syntax engine](docs/engine.md): registration, typed boundaries, path finding,
   execution and text-stage composition.
 - [Generation design](docs/generation.md): AST-to-AST pipeline and future mappings.
-- [Syntax and Files](docs/source.md): proposed Source/Semantics carriers, symmetric
+- [Syntax and Files](docs/source.md): Source/Semantics carriers, symmetric
   parse/format/print roles, multi-unit transformations and source-base parsing.
 - [Charter](CHARTER.md), [contributor instructions](AGENTS.md) and
   [source layout](LAYOUT.md): ownership, delivery and package boundaries.

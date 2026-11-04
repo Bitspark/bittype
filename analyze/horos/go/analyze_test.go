@@ -262,9 +262,9 @@ func requireReport(t *testing.T, result semantic.Result, key semantics.Key, stat
 		t.Fatalf("report %v: %+v, found=%v", key, report, found)
 	}
 }
-func requireModel(t *testing.T, result semantic.Result) semantics.Model {
+func requireModel(t *testing.T, result semantic.Result) representation.Semantics {
 	t.Helper()
-	model, ok := result.Model()
+	model, ok := result.Semantics()
 	if !ok {
 		t.Fatalf("missing semantic model: %+v", result.Diagnostics())
 	}
@@ -277,7 +277,7 @@ func requireModel(t *testing.T, result semantic.Result) semantics.Model {
 	}
 	return model
 }
-func entity(t *testing.T, model semantics.Model, module, name string) (semantics.EntityID, semantics.Entity) {
+func entity(t *testing.T, model representation.Semantics, module, name string) (semantics.EntityID, semantics.Entity) {
 	t.Helper()
 	for i, e := range model.Data().Entities {
 		if e.Kind.Name != "declaration" || e.Name != name {
@@ -291,7 +291,7 @@ func entity(t *testing.T, model semantics.Model, module, name string) (semantics
 	t.Fatalf("missing declaration %s.%s", module, name)
 	return 0, semantics.Entity{}
 }
-func term(t *testing.T, model semantics.Model, id semantics.TermID) semantics.Term {
+func term(t *testing.T, model representation.Semantics, id semantics.TermID) semantics.Term {
 	t.Helper()
 	term, found := model.Term(id)
 	if !found {
@@ -318,10 +318,10 @@ func TestPaginationBindingsPreserveCallerScopeAndDistinctParameters(t *testing.T
 		t.Fatal("module or generic binder identities collapsed")
 	}
 	outerBody := term(t, model, outer.Body)
-	if outerBody.Kind != semantics.Application || outerBody.Target != pageID {
+	if outerBody.Kind != semantics.Application || term(t, model, outerBody.Callee).Target != pageID {
 		t.Fatal("Outer does not apply imported Page")
 	}
-	bindings, ok := model.ParameterBindings(outer.Body)
+	bindings, ok := model.DirectParameterBindings(outer.Body)
 	if !ok || len(bindings) != 1 || bindings[0].Parameter != page.Parameters[0].Entity {
 		t.Fatal("Page parameter binding missing")
 	}
@@ -330,14 +330,14 @@ func TestPaginationBindingsPreserveCallerScopeAndDistinctParameters(t *testing.T
 		t.Fatal("Page argument captured the callee's T")
 	}
 	peopleBody := term(t, model, people.Body)
-	if peopleBody.Kind != semantics.Application || peopleBody.Target != outerID {
+	if peopleBody.Kind != semantics.Application || term(t, model, peopleBody.Callee).Target != outerID {
 		t.Fatal("PeoplePage lost its Outer application")
 	}
 	personApplication := term(t, model, peopleBody.Arguments[0])
-	if personApplication.Kind != semantics.Application || personApplication.Target != personID || len(personApplication.Arguments) != 0 {
+	if personApplication.Kind != semantics.Application || term(t, model, personApplication.Callee).Target != personID || len(personApplication.Arguments) != 0 {
 		t.Fatal("zero-argument Person application lost caller identity")
 	}
-	if bindings, ok := model.ParameterBindings(peopleBody.Arguments[0]); !ok || len(bindings) != 0 {
+	if bindings, ok := model.DirectParameterBindings(peopleBody.Arguments[0]); !ok || len(bindings) != 0 {
 		t.Fatal("zero-argument application must retain application status")
 	}
 	deps := model.DependenciesFrom(peopleID, resolve.ApplicationDependency())
@@ -469,7 +469,7 @@ func TestModuleMemberReorderingPreservesTheCurrentSemanticGraph(t *testing.T) {
 
 func requireFailure(t *testing.T, result semantic.Result, status semantic.Completion, verdict semantic.Verdict, code, subject string) {
 	t.Helper()
-	if result.HasModel() {
+	if result.HasSemantics() {
 		t.Fatal("failed or incomplete analysis published a model")
 	}
 	requireReport(t, result, resolve.Validity(), status, verdict)
@@ -653,12 +653,12 @@ func TestHorosResolutionReportsSurviveExportExhaustion(t *testing.T) {
 	tree := fixture(t)
 	for _, modify := range []func(*horosCase){nil, func(input *horosCase) {
 		input.Limits = semantic.DefaultLimits()
-		input.Limits.Model.MaxRecords = 1
+		input.Limits.Semantics.MaxRecords = 1
 	}} {
 		resolved := runResolution(t, tree, modify)
 		requireReport(t, resolved, resolve.ReferenceResolution(), semantic.Complete, semantic.Holds)
 		requireReport(t, resolved, resolve.Validity(), semantic.Complete, semantic.Holds)
-		if (modify == nil) != resolved.HasModel() {
+		if (modify == nil) != resolved.HasSemantics() {
 			t.Fatal("resolution verdict conflated with export availability")
 		}
 	}
@@ -672,10 +672,10 @@ func TestResolverAndExportBudgetsAreIndependent(t *testing.T) {
 	requireFailure(t, result, semantic.Incomplete, semantic.Undetermined, "exhausted", "request")
 	result = run(t, tree, func(input *horosCase) {
 		input.Limits = semantic.DefaultLimits()
-		input.Limits.Model.MaxRecords = 1
+		input.Limits.Semantics.MaxRecords = 1
 	})
 	requireFailure(t, result, semantic.Complete, semantic.Holds, "export-exhausted", "request")
-	if result.Limits().Model.MaxRecords != 1 {
+	if result.Limits().Semantics.MaxRecords != 1 {
 		t.Fatal("result lost its export budget")
 	}
 }

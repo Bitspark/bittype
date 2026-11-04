@@ -24,8 +24,12 @@ func New(from, to representation.Language, config Config) (transform.ASTTransfor
 	if from.Profile() != h.Profile || config.TreeID == "" || !g.Identifier(config.Package) || token.Lookup(config.Package).IsKeyword() {
 		return nil, transform.ErrInvalidTransformer
 	}
-	return transform.NewTransformer[h.Language, s.Language](from, to, g.Contract(), func(ctx context.Context, request transform.Request[h.Language]) (s.AST, error) {
-		return g.Generate(ctx, request, config.TreeID, &dialect{pkg: config.Package})
+	return transform.NewTransformer[h.Language, s.Language](from, to, g.Contract(), func(ctx context.Context, request transform.Request[h.Language]) (ast.Set[s.Language], error) {
+		output, err := g.Generate(ctx, request, config.TreeID, &dialect{pkg: config.Package})
+		if err != nil {
+			return ast.Set[s.Language]{}, err
+		}
+		return ast.Set[s.Language]{Entry: ast.NodeRef{Tree: output.ID, Node: output.Root}, Trees: []ast.AST[s.Language]{output}}, nil
 	})
 }
 

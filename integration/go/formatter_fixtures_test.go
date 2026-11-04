@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"context"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
 	goprovider "github.com/Bitspark/bittype/provider/golang/go"
@@ -81,11 +82,11 @@ func cppFixture() ast.AST[cpp.Language] {
 }
 func formatted[L any](t *testing.T, p nativeProvider[L], a ast.AST[L]) string {
 	t.Helper()
-	c, err := p.Format(a)
+	c, err := p.Format(context.Background(), a)
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := p.Print(c)
+	result, err := p.Print(context.Background(), c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,11 +115,11 @@ func TestFormatterSnapshotOwnership(t *testing.T) {
 	a.Nodes[0].Attributes = attr("name", "External")
 	a.Nodes[0].References = []ast.Reference{{Role: "target", Target: ast.NodeRef{Tree: "external", Node: 2}}}
 	p := tsprovider.Provider{}
-	c, err := p.Format(a)
+	c, err := p.Format(context.Background(), a)
 	if err != nil {
 		t.Fatal(err)
 	}
-	before, err := p.Print(c)
+	before, err := p.Print(context.Background(), c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +132,7 @@ func TestFormatterSnapshotOwnership(t *testing.T) {
 	if view.Nodes[0].Attributes[0].Text != "External" || view.Nodes[0].References[0].Target.Node != 2 || view.Nodes[0].Origin.Spans[0].Source != "original" || view.Nodes[0].Origin.Nodes[0].Node != 1 || view.Nodes[view.Root-1].Children[0].Node == 99 {
 		t.Fatal("CST aliases original AST storage")
 	}
-	after, err := p.Print(c)
+	after, err := p.Print(context.Background(), c)
 	if err != nil || after != before {
 		t.Fatal("formatter output changed with input mutation")
 	}
@@ -161,7 +162,7 @@ func invalidAST[L any](t *testing.T, p nativeProvider[L], makeTree func() ast.AS
 		if err := p.Check(a); err == nil {
 			t.Errorf("mutation %d accepted by checker", i)
 		}
-		out, err := p.Format(a)
+		out, err := p.Format(context.Background(), a)
 		if err == nil || len(out.Nodes) > 0 {
 			t.Errorf("mutation %d produced output", i)
 		}
@@ -190,11 +191,11 @@ func TestPrimitiveSyntaxPositions(t *testing.T) {
 		t.Fatal("primitive spelling accepted as an unqualified type path")
 	}
 	for _, source := range []string{"type X = NS.string;", "interface X { string: string; }"} {
-		if _, err := (tsprovider.Provider{}).Parse(parse.Input{SourceID: "native-name", TreeID: "native-name", Text: source}); err != nil {
+		if _, err := (tsprovider.Provider{}).Parse(context.Background(), parse.Input{SourceID: "native-name", TreeID: "native-name", Text: source}); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if _, err := (rustprovider.Provider{}).Parse(parse.Input{SourceID: "native-path", TreeID: "native-path", Text: "type X = u8::Associated;"}); err != nil {
+	if _, err := (rustprovider.Provider{}).Parse(context.Background(), parse.Input{SourceID: "native-path", TreeID: "native-path", Text: "type X = u8::Associated;"}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -210,7 +211,7 @@ func nativeFiles[L any](t *testing.T, p nativeProvider[L], language, ext string,
 		if err != nil {
 			t.Fatal(err)
 		}
-		c, err := p.Parse(parse.Input{SourceID: "native-input", TreeID: "native-tree", Text: string(bytes)})
+		c, err := p.Parse(context.Background(), parse.Input{SourceID: "native-input", TreeID: "native-tree", Text: string(bytes)})
 		if err != nil {
 			t.Fatal(err)
 		}

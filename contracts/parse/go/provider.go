@@ -1,13 +1,12 @@
-// Package parse defines source inputs and text-to-CST providers.
+// Package parse defines the parse role at the Syntax and Files levels.
 package parse
 
 import (
+	"context"
 	"github.com/Bitspark/bittype/contracts/language/go"
-	"github.com/Bitspark/bittype/trees/cst/go"
 )
 
-// Provider parses source text into a concrete tree with its stored AST view.
-type Provider[L any] interface {
+type Provider[I, O any] interface {
 	language.Provider
-	Parse(Input) (cst.CST[L], error)
+	Parse(context.Context, I) (O, error)
 }

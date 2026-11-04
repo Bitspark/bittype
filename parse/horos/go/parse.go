@@ -2,7 +2,9 @@
 package horosparse
 
 import (
+	"context"
 	"encoding/hex"
+	"errors"
 	"math/big"
 	"strconv"
 	"strings"
@@ -33,7 +35,13 @@ type parser struct {
 
 // Parse admits one or more module sections. The first selects the program entry;
 // subsequent sections explicitly supply dependency documents. No IO is done.
-func Parse(input parsecontract.Input) (cst.CST[s.Language], error) {
+func Parse(ctx context.Context, input parsecontract.Input) (cst.CST[s.Language], error) {
+	if ctx == nil {
+		return cst.CST[s.Language]{}, errors.New("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return cst.CST[s.Language]{}, err
+	}
 	base, err := parseutil.New[s.Language](input, lex.Options{BacktickStrings: true})
 	if err != nil {
 		return cst.CST[s.Language]{}, err
@@ -485,6 +493,8 @@ func (p *parser) fragment(value core.Value, start int) ast.NodeID {
 // Provider supplies parsing independently of the composed Horos provider.
 type Provider struct{ s.Language }
 
-func (Provider) Parse(input parsecontract.Input) (cst.CST[s.Language], error) { return Parse(input) }
+func (Provider) Parse(ctx context.Context, input parsecontract.Input) (cst.CST[s.Language], error) {
+	return Parse(ctx, input)
+}
 
-var _ parsecontract.Provider[s.Language] = Provider{}
+var _ parsecontract.Provider[parsecontract.Input, cst.CST[s.Language]] = Provider{}

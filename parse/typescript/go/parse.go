@@ -1,6 +1,8 @@
 package typescriptparse
 
 import (
+	"context"
+	"errors"
 	check "github.com/Bitspark/bittype/check/typescript/go"
 	parsecontract "github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
@@ -33,7 +35,13 @@ func decimalKey(s string) bool {
 
 var vocabulary = concrete.Vocabulary[s.Language]{Layout: s.ConcreteLayout, Token: s.ConcreteToken, Whitespace: s.ConcreteWhitespace, Comment: s.ConcreteComment}
 
-func Parse(input parsecontract.Input) (cst.CST[s.Language], error) {
+func Parse(ctx context.Context, input parsecontract.Input) (cst.CST[s.Language], error) {
+	if ctx == nil {
+		return cst.CST[s.Language]{}, errors.New("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return cst.CST[s.Language]{}, err
+	}
 	base, err := parseutil.New[s.Language](input, lex.Options{Space: lit.Space, LineTerminator: lit.LineTerminator, RejectComment: lit.Directive, LeadingDotNumbers: true, Punctuation: []string{"...", "=>"}})
 	if err != nil {
 		return cst.CST[s.Language]{}, err
@@ -450,6 +458,8 @@ func (p *parser) primary() ast.NodeID {
 
 type Provider struct{ s.Language }
 
-func (Provider) Parse(input parsecontract.Input) (cst.CST[s.Language], error) { return Parse(input) }
+func (Provider) Parse(ctx context.Context, input parsecontract.Input) (cst.CST[s.Language], error) {
+	return Parse(ctx, input)
+}
 
-var _ parsecontract.Provider[s.Language] = Provider{}
+var _ parsecontract.Provider[parsecontract.Input, cst.CST[s.Language]] = Provider{}

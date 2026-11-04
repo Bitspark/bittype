@@ -22,7 +22,7 @@ func bindingKey() semantics.Key {
 }
 func bindingContract() resolution.Contract {
 	key := bindingKey()
-	return resolution.Contract{Bindings: key, Semantic: semantic.Contract{Profile: "bindings-v1", Obligations: []semantic.Obligation{{Key: key, Domain: analysisKey("entry")}}, ModelRequirements: []semantic.Requirement{{Obligation: key, Verdict: semantic.Holds}}}}
+	return resolution.Contract{Bindings: key, Semantic: semantic.Contract{Profile: "bindings-v1", Obligations: []semantic.Obligation{{Key: key, Domain: analysisKey("entry")}}, SemanticsRequirements: []semantic.Requirement{{Obligation: key, Verdict: semantic.Holds}}}}
 }
 func bindingReports() []semantic.Report {
 	return []semantic.Report{{Obligation: bindingKey(), Status: semantic.Complete, Verdict: semantic.Holds}}
@@ -71,7 +71,7 @@ func bindingAnalysis(t *testing.T, d representation.Language, requirement resolu
 			if !ok {
 				return semantic.Result{}, errors.New("missing resolution")
 			}
-			return r.Publish(semantic.Publication{ReuseModelFrom: &dependency, Reports: bindingReports()})
+			return r.Publish(semantic.Publication{ReuseSemanticsFrom: &dependency, Reports: bindingReports()})
 		}
 	}
 	a, err := analysis.NewAnalyzer[amber](d, c, analysisChecker[amber]{id: d.ID(), run: run})
@@ -81,7 +81,7 @@ func bindingAnalysis(t *testing.T, d representation.Language, requirement resolu
 	return a
 }
 func bindingRequirement() resolution.Requirement {
-	return resolution.Requirement{Profile: "bindings-v1", Reports: bindingContract().Semantic.ModelRequirements}
+	return resolution.Requirement{Profile: "bindings-v1", Reports: bindingContract().Semantic.SemanticsRequirements}
 }
 
 func TestResolverIndependentRegistrationAndBindingOnlyModel(t *testing.T) {
@@ -111,7 +111,7 @@ func TestResolverIndependentRegistrationAndBindingOnlyModel(t *testing.T) {
 		t.Fatal(err)
 	}
 	bad := bindingContract()
-	bad.Semantic.ModelRequirements = nil
+	bad.Semantic.SemanticsRequirements = nil
 	if _, err := resolution.NewResolver[amber](d, bad, bindingProvider[amber]{id: d.ID()}); !errors.Is(err, semantic.ErrInvalidOperation) {
 		t.Fatal(err)
 	}
@@ -129,7 +129,7 @@ func TestResolverIndependentRegistrationAndBindingOnlyModel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	model, ok := result.Model()
+	model, ok := result.Semantics()
 	if !ok || len(model.Data().Terms) != 0 {
 		t.Fatal("binding-only provider required expression/type analysis")
 	}
@@ -175,8 +175,8 @@ func TestResolutionCompositionChecksSnapshotProfileConfigurationAndOperation(t *
 	if err != nil {
 		t.Fatal(err)
 	}
-	before, _ := resolved.Model()
-	after, _ := result.Model()
+	before, _ := resolved.Semantics()
+	after, _ := result.Semantics()
 	if before != after {
 		t.Fatal("sealed model identity changed")
 	}
@@ -229,11 +229,11 @@ func TestResolutionReuseRequiresExactAdmittedReceiptAndBounds(t *testing.T) {
 	}
 	for name, run := range map[string]func(context.Context, analysis.Request[amber]) (semantic.Result, error){
 		"unadmitted receipt": func(_ context.Context, request analysis.Request[amber]) (semantic.Result, error) {
-			return request.Publish(semantic.Publication{ReuseModelFrom: &unrelated, Reports: bindingReports()})
+			return request.Publish(semantic.Publication{ReuseSemanticsFrom: &unrelated, Reports: bindingReports()})
 		},
 		"new and reused": func(_ context.Context, request analysis.Request[amber]) (semantic.Result, error) {
 			facts := bindingFacts()
-			return request.Publish(semantic.Publication{Facts: &facts, ReuseModelFrom: &resolved, Reports: bindingReports()})
+			return request.Publish(semantic.Publication{Facts: &facts, ReuseSemanticsFrom: &resolved, Reports: bindingReports()})
 		},
 		"return child result": func(context.Context, analysis.Request[amber]) (semantic.Result, error) { return resolved, nil },
 	} {
@@ -247,7 +247,7 @@ func TestResolutionReuseRequiresExactAdmittedReceiptAndBounds(t *testing.T) {
 	}
 	a := bindingAnalysis(t, d, bindingRequirement(), nil)
 	limits := semantic.DefaultLimits()
-	limits.Model.MaxRecords = 1
+	limits.Semantics.MaxRecords = 1
 	if out, err := a.Analyze(context.Background(), analysis.Input{Snapshot: s, Resolution: &resolved, Options: semantic.Options{Limits: limits}}); !errors.Is(err, semantic.ErrLimit) || out.Valid() {
 		t.Fatalf("reused model bypassed tighter bounds: %v", err)
 	}
@@ -275,7 +275,7 @@ func TestResolutionPrerequisiteFailureCannotPublishAnalysisFacts(t *testing.T) {
 		return request.Publish(semantic.Publication{Reports: dependency.Reports(), Diagnostics: dependency.Diagnostics()})
 	})
 	out, err := a.Analyze(context.Background(), analysis.Input{Snapshot: s, Resolution: &resolved})
-	if err != nil || !out.Valid() || out.HasModel() || len(out.Diagnostics()) != 1 {
+	if err != nil || !out.Valid() || out.HasSemantics() || len(out.Diagnostics()) != 1 {
 		t.Fatalf("normal resolution rejection became an API error: %v", err)
 	}
 }
@@ -302,7 +302,7 @@ func TestResolutionConfigurationAndSnapshotOwnership(t *testing.T) {
 	}
 	input.Trees[0] = representation.AST{}
 	input.Entry.Node = 0
-	if result, err := r.Resolve(context.Background(), snapshot, semantic.Options{}); err != nil || !result.HasModel() {
+	if result, err := r.Resolve(context.Background(), snapshot, semantic.Options{}); err != nil || !result.HasSemantics() {
 		t.Fatal("snapshot retained caller slice", err)
 	}
 }
@@ -362,7 +362,7 @@ func TestEngineConcurrentResolutionAndAnalysis(t *testing.T) {
 				return
 			}
 			out, err := e.Analyze(context.Background(), analysis.Input{Snapshot: s, Resolution: &resolved})
-			if err != nil || !out.HasModel() {
+			if err != nil || !out.HasSemantics() {
 				t.Error(err)
 			}
 		}()

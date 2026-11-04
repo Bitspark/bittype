@@ -2,13 +2,12 @@
 
 **Updated, 4 November 2026.** The implemented frame supports registered
 AST transformations. The engine contains no canonical or native mapping rules.
-Applications explicitly register providers and transformers. No production
-ASTTransformer or TypeScript, Go, Rust or C++ type generator is implemented.
+Applications explicitly register providers and transformers. Horos pagination transformers produce TypeScript, Go, Rust and C++ type AST sets.
 Template lifting and its concrete transformer were removed on 4 November 2026.
 
 The [Horos frontend](horos.md) registers its syntax checker independently
 from language identity, [resolution](resolution.md) and [semantic analysis](analysis.md).
-Horos text capabilities are independently registered in the same way. Native generators remain unimplemented.
+Horos text capabilities are independently registered in the same way. Their native semantic providers remain unimplemented.
 
 ## Public components
 
@@ -82,7 +81,7 @@ The public interface is:
 type ASTTransformer interface {
     FromID() language.ID
     ToID() language.ID
-    Transform(context.Context, transform.Input) (representation.AST, error)
+    Transform(context.Context, transform.Input) (representation.ASTSet, error)
 }
 ```
 
@@ -94,7 +93,7 @@ mapping's semantic equivalence.
 NewTransformer[F, T](from, to, contract, stage) adapts:
 
 ```go
-func(context.Context, transform.Request[F]) (ast.AST[T], error)
+func(context.Context, transform.Request[F]) (ast.Set[T], error)
 ```
 
 The bridge uses representation.CheckMarker to check actual marker types at
@@ -122,14 +121,16 @@ unsupported inputs. Concurrent callers require concurrency-safe providers.
 Engine's zero value is usable; New is a convenience constructor. Both start empty.
 
 - RegisterLanguage installs identity/profile/marker metadata only.
-- RegisterParser accepts `parse.Parser`, constructed with
-  `parse.NewParser[L](definition, parse.Provider[L])`.
+- RegisterSyntaxParser accepts `parse.SyntaxParser`, constructed with
+  `parse.NewSyntaxParser[L](definition, parse.Provider[parse.Input, cst.CST[L]])`.
 - RegisterChecker accepts `check.Checker`, constructed with
   `check.NewChecker[L](definition, check.Provider[L])`.
-- RegisterFormatter accepts `format.Formatter`, constructed with
-  `format.NewFormatter[L](definition, format.Provider[L])`.
-- RegisterPrinter accepts `print.Printer`, constructed with
-  `print.NewPrinter[L](definition, print.Provider[L])`.
+- RegisterSyntaxFormatter accepts `format.SyntaxFormatter`, constructed with
+  `format.NewSyntaxFormatter[L](definition, format.Provider[ast.View[L], cst.CST[L]])`.
+- RegisterSyntaxPrinter accepts `print.SyntaxPrinter`, constructed with
+  `print.NewSyntaxPrinter[L](definition, print.Provider[cst.CST[L], string])`.
+- RegisterFilesParser/Formatter/Printer independently attach the typed Files adapters
+  through their heterogeneous registration bridges; see [Source](source.md).
 - RegisterTransformer installs one directed edge between registered languages.
 - RegisterResolver installs an optional resolution capability; Capture and Resolve
   produce an explicit input snapshot and resolution result.
@@ -203,11 +204,11 @@ Each configured stage adapter wraps an independently selected typed provider.
 The engine offers:
 
 ```go
-Parse(languageID, parse.Input) (representation.CST, error)
+ParseSyntax(context.Context, language.ID, parse.Input) (representation.CST, error)
 Check(representation.AST) error
-Format(representation.AST) (representation.CST, error)
-Print(representation.CST) (string, error)
-Render(representation.AST) (string, error)
+FormatSyntax(context.Context, representation.AST) (representation.CST, error)
+PrintSyntax(context.Context, representation.CST) (string, error)
+RenderSyntax(context.Context, representation.AST) (string, error)
 ```
 
 Parse requires only a parser; Check only a checker; Format only a formatter;
@@ -235,33 +236,34 @@ definition, err := representation.NewLanguage[typescript.Language](
     typescript.Language{}, "native-types-v1",
 )
 if err != nil { return err }
-parser, err := parse.NewParser[typescript.Language](definition, typescriptprovider.Provider{})
+parser, err := parse.NewSyntaxParser[typescript.Language](definition, typescriptprovider.Provider{})
 if err != nil { return err }
-printer, err := print.NewPrinter[typescript.Language](definition, typescriptprovider.Provider{})
+printer, err := print.NewSyntaxPrinter[typescript.Language](definition, typescriptprovider.Provider{})
 if err != nil { return err }
 syntax := engine.New()
 if err := syntax.RegisterLanguage(definition); err != nil { return err }
-if err := syntax.RegisterParser(parser); err != nil { return err }
-if err := syntax.RegisterPrinter(printer); err != nil { return err }
+if err := syntax.RegisterSyntaxParser(parser); err != nil { return err }
+if err := syntax.RegisterSyntaxPrinter(printer); err != nil { return err }
 
-parsed, err := syntax.Parse(definition.ID(), parse.Input{
+parsed, err := syntax.ParseSyntax(ctx, definition.ID(), parse.Input{
     SourceID: "input", TreeID: "input", Text: "type Page<T> = T[];",
 })
 if err != nil { return err }
-original, err := syntax.Print(parsed)
+original, err := syntax.PrintSyntax(ctx, parsed)
 if err != nil { return err }
 _ = original // retained source bytes; Check and Render are not registered
 ```
 
-Register a `format.NewFormatter` adapter to enable Render, and a
+Register a `format.NewSyntaxFormatter` adapter to enable Render, and a
 `check.NewChecker` adapter to enable Check, semantic Capture and checked
 transformation execution. `semantic.Capture(ctx, checker, input)` also accepts an
 explicit configured checker outside an engine. Capture preserves budget,
 cancellation, catalogue and snapshot checks before semantic providers run.
 
-After registering source/destination checkers, destination text stages and an actual mapping, callers can pass
-parsed.ASTView() to TransformTo, then Render the resulting AST. No actual mapping
-or canonical registration is installed by this increment.
+After registering source/destination checkers, destination Syntax stages and a
+mapping, capture the input and supply required receipts in transform.Input.
+TransformTo returns an ASTSet; FormatSyntax/PrintSyntax can emit each selected
+output tree. No canonical registration is installed implicitly.
 
 ## Qualification and remaining work
 
@@ -317,3 +319,12 @@ Intermediate route outputs are syntax-checked and captured afresh; source
 receipts are discarded. A later semantic edge cannot consume evidence about an
 earlier tree. Execute the legs explicitly when intermediate analysis is needed.
 See [semantic generation](semantic-generation.md) for the first production maps.
+
+The [Files design](source.md) is implemented alongside the Syntax operations.
+Both dimensions use context-bearing parse/format/print interfaces. Source retains
+its exact capture and analysis receipt. ASTTransformer output is a complete
+`representation.ASTSet`; typed callbacks return `ast.Set[T]`. Every route leg
+admits and captures all output units and preserves the explicit entry. Receipt
+requirements at subsequent legs are never satisfied by carrying old evidence.
+`EntryAST()` selects the explicit entry for consumers that deliberately want one
+unit; consumers emitting a source set should traverse all `Trees`.

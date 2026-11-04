@@ -61,10 +61,10 @@ one source unit. Root declarations use exported native names; imported
 declarations use `M<first-16-hex-of-SHA256(pin-text)>_<Name>`. Collisions fail;
 the hash is only a spelling, never semantic identity. Per-module output/import
 placement is deferred. Generation has no implicit network or filesystem IO.
-The [Syntax and Files proposal](source.md) specifies a multi-unit syntax result
+The [Syntax and Files design](source.md) implements a multi-unit syntax result
 and symmetric Files parsing, formatting and printing. Source exposes established
-Semantics alongside concrete file organization. The current single-unit mapping
-does not establish native Semantics or implement those proposed Files stages.
+Semantics alongside concrete file organization. The current mappings each return a one-tree ASTSet. They do not establish native
+Semantics; native Files parsing/formatting still require native semantic providers.
 
 | Horos form | TypeScript | Go | Rust | C++ |
 | --- | --- | --- | --- | --- |

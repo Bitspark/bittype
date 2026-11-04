@@ -9,6 +9,8 @@ visible. There is one root Go module, with independently owned packages.
 
 ```text
 go.mod
+files/go/                supplied Files and captured file/tree/source links
+source/go/               sealed Source, organization and retained semantic evidence
 trees/
   ast/go/                 generic AST, nodes, addresses, origins and borrowed view
   cst/go/                 generic concrete tree and stored AST view
@@ -16,23 +18,26 @@ trees/
 contracts/
   language/go/            language.Provider identity
   pipeline/go/            typed Stage contract
-  parse/go/               parse.Input, text-to-CST contract and registration adapter
+  parse/go/               symmetric Syntax/Files parse contracts and adapters
   check/go/               AST syntax-admission contract and registration adapter
-  format/go/              AST-to-CST contract and registration adapter
-  print/go/               CST-to-text contract and registration adapter
+  format/go/              symmetric Syntax/Files format contracts and adapters
+  print/go/               symmetric Syntax/Files print contracts and adapters
   text/go/                shared source and syntax diagnostics only
   transform/go/           ASTTransformer contract and typed registration bridge
   semantic/go/            common snapshots, requests, reports and publication
   resolution/go/          resolver capability and dependency contract
   analysis/go/            analysis capability and explicit resolution input
-semantics/go/             immutable provider-owned semantic facts and graph checks
+semantics/go/             typed immutable Semantics and provider-owned facts
 engine/go/                explicit registration, planning and execution
 syntax/<language>/go/     native abstract/concrete vocabulary and identity
 resolve/<profile>/go/     Horos profile resolution, fact export and canonical-value helpers
 parse/<language>/go/      source text to CST
 check/<language>/go/      language syntax checking
-analyze/<profile>/go/     consume resolution evidence and reuse its model
+analyze/<profile>/go/     consume resolution evidence and reuse its Semantics
 format/<language>/go/     AST view to CST
+parse/files/horos/go/     Files to admitted Source
+format/files/horos/go/    admitted Semantics to Source
+print/files/go/          Source to Files through a selected Syntax printer
 provider/<language>/go/   explicit composition of the language's stages
 check/ast/go/             generic abstract carrier checks
 check/cst/go/             generic concrete carrier checks
@@ -67,16 +72,16 @@ same dependency level. The package boundaries are:
 | --- | --- |
 | AST, Stage, language identity | Independent foundations; no native syntax or other foundation dependency |
 | CST | Generic AST carrier |
-| Parse contract/adapter | Source input, AST/CST carriers, representations and language identity |
+| Parse contract/adapter | Syntax and Files inputs, Source publication, carriers, semantic evidence and identity |
 | Check contract/adapter | AST views, representations and language identity; no concrete grammar or text-stage dependency |
-| Format contract/adapter | AST/CST carriers, representations and language identity |
-| Print contract/adapter | CST carrier, representations and language identity |
+| Format contract/adapter | AST/CST and Source carriers, semantic evidence and identity |
+| Print contract/adapter | CST and Source/Files carriers, representations and identity |
 | Text diagnostics | AST addresses only; no stage contracts |
 | Carrier checks and printer | Generic tree structure and shared diagnostic contracts; no native grammar or formatting choices |
 | Structurally checked representation | Carriers, identity and generic carrier checks; no engine or transformer dependency |
 | Transformer contract/bridge | Typed requests, shared semantic evidence admission, checked representations and endpoint identity; no concrete mapping |
 | Semantic facts | Generic AST addresses; graph integrity and owned storage, no language rules |
-| Shared semantic contract/bridge | Semantic facts, representations, explicit checker and identity; capture/publication, no concrete provider |
+| Shared semantic contract/bridge | Semantic facts, Files context, representations, explicit checker and identity; no Source dependency |
 | Resolution contract/bridge | Shared semantic contract and identity; binding coverage and typed invocation |
 | Analysis contract/bridge | Shared semantic and resolution contracts; explicit dependency composition |
 | Engine | Checked representations and shared contracts; no concrete language, provider or mapping |
@@ -185,32 +190,15 @@ application selects them. Adding Cell or another ordinary contract adds no
 bittype stage, engine edge per contract or central registration entry. Recipe
 SPIs remain proposed; the pagination transformers are implemented.
 
-The [Syntax and Files design](docs/source.md) replaces the separate layout proposal
-with `Syntax : CST : AST` and `Files : Source : Semantics`. It proposes the
-following carriers/compositions without adding packages or changing Go APIs now:
+The [Syntax and Files design](docs/source.md) is implemented with
+`Syntax : CST : AST` and `Files : Source : Semantics`. The additional `files`
+directory inside parse/format is a dimension, not a language. Its implementations
+use the same stage-first paths. Only Horos currently composes Files semantics.
 
-```text
-files/go/                        proposed: in-memory Files and captured associations
-source/go/                       proposed: Source with its Semantics view and CST units
-parse/files/<language>/go/       proposed: Files-to-Source composition
-format/files/<language>/go/      proposed: Semantics-to-Source realization
-print/files/go/                  proposed: Source-to-Files emission
-```
-
-It also proposes Semantics[L] as the replacement name/type association for the
-existing graph, an ASTSet carrier, captured Files context, multi-unit transform
-output and the same generic parse/format/print contracts at both levels. Syntax
-implementations keep their paths; the files directory adds a processing dimension
-under a stage, not a language. Engine registrations remain independent. Filesystem
-IO stays in the consuming application. See the proposal for dependency directions,
-the clean future API migration and the Horos multi-file resolver gap. No layout
-carrier/provider package or compatibility alias is proposed.
-
-See the [charter](CHARTER.md), [engine API](docs/engine.md),
-[native text design](docs/parsing-formatting.md) and
-[future transformation plan](docs/generation.md).
-
-The [provider matrix](docs/providers.md) records implemented capabilities.
-[Resolution composition](docs/resolution.md) defines snapshot identity and explicit model reuse.
-
-The first native transformation profile is documented in [semantic generation](docs/semantic-generation.md). Source-specific transform helpers may read Horos terms and Ontos payloads; this allowance does not extend to the engine, shared contracts or native text stages.
+Files depends on AST addresses. Source retains semantic capture/result handles,
+CSTs and typed Semantics. Shared semantic capture depends on Files but never
+Source, and tree representation must not import Source. The symmetric role
+contracts depend on those carriers; concrete Files compositions depend on explicit
+syntax/check/resolution/analysis contracts. `internal/horosfiles` is private
+composition, not a substitute language registry. Generic infrastructure never
+imports Horos or Ontos. No layout package or combined Source provider is retained.

@@ -76,8 +76,8 @@ func mapExample[F, T any](input ast.AST[F]) (ast.AST[T], error) {
 }
 func bind[F, T any](t *testing.T, from, to representation.Language) transform.ASTTransformer {
 	t.Helper()
-	result, err := transform.NewTransformer[F, T](from, to, transform.Contract{}, func(_ context.Context, request transform.Request[F]) (ast.AST[T], error) {
-		return mapExample[F, T](request.Source())
+	result, err := transform.NewTransformer[F, T](from, to, transform.Contract{}, func(_ context.Context, request transform.Request[F]) (ast.Set[T], error) {
+		return singleResult(mapExample[F, T](request.Source()))
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -140,7 +140,7 @@ func TestTransformerSnapshotsAndIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	output, err := representation.Unpack[blue](b, result)
+	output, err := representation.Unpack[blue](b, result.EntryAST())
 	expected, _ := mapExample[amber, blue](saved)
 	if err != nil || !reflect.DeepEqual(output, expected) {
 		t.Fatalf("metadata lost: %v", err)
@@ -159,8 +159,8 @@ func TestTransformerSnapshotsAndIdentity(t *testing.T) {
 	if _, err := representation.Unpack[amber](otherProfile, envelope); !errors.Is(err, representation.ErrLanguageMismatch) {
 		t.Fatal(err)
 	}
-	if _, err := transform.NewTransformer[blue, amber](a, b, transform.Contract{}, func(_ context.Context, request transform.Request[blue]) (ast.AST[amber], error) {
-		return mapExample[blue, amber](request.Source())
+	if _, err := transform.NewTransformer[blue, amber](a, b, transform.Contract{}, func(_ context.Context, request transform.Request[blue]) (ast.Set[amber], error) {
+		return singleResult(mapExample[blue, amber](request.Source()))
 	}); !errors.Is(err, representation.ErrTypeMismatch) {
 		t.Fatal(err)
 	}
@@ -208,8 +208,8 @@ func TestTransformerRejectsInvalidBoundaries(t *testing.T) {
 	}
 	input := packed[amber](t, a)
 	failed := errors.New("unsupported declaration")
-	stage, err := transform.NewTransformer[amber, blue](a, b, transform.Contract{}, func(context.Context, transform.Request[amber]) (ast.AST[blue], error) {
-		return exampleTree[blue](), failed
+	stage, err := transform.NewTransformer[amber, blue](a, b, transform.Contract{}, func(context.Context, transform.Request[amber]) (ast.Set[blue], error) {
+		return singleResult(exampleTree[blue](), failed)
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -218,10 +218,10 @@ func TestTransformerRejectsInvalidBoundaries(t *testing.T) {
 	if !errors.Is(err, failed) || output.LanguageID() != "" {
 		t.Fatal("partial transformer output")
 	}
-	stage, err = transform.NewTransformer[amber, blue](a, b, transform.Contract{}, func(context.Context, transform.Request[amber]) (ast.AST[blue], error) {
+	stage, err = transform.NewTransformer[amber, blue](a, b, transform.Contract{}, func(context.Context, transform.Request[amber]) (ast.Set[blue], error) {
 		result := exampleTree[blue]()
 		result.Root = 99
-		return result, nil
+		return singleResult(result, nil)
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -247,11 +247,11 @@ func TestTransformerCallbacksCannotMutateEnvelopes(t *testing.T) {
 		t.Fatal(err)
 	}
 	var retained ast.AST[blue]
-	adapter, err := transform.NewTransformer[amber, blue](a, b, transform.Contract{}, func(_ context.Context, request transform.Request[amber]) (ast.AST[blue], error) {
+	adapter, err := transform.NewTransformer[amber, blue](a, b, transform.Contract{}, func(_ context.Context, request transform.Request[amber]) (ast.Set[blue], error) {
 		source := request.Source()
 		source.Nodes[1].Attributes[0].Text = "stage mutation"
 		retained, _ = mapExample[amber, blue](source)
-		return retained, nil
+		return singleResult(retained, nil)
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -262,7 +262,7 @@ func TestTransformerCallbacksCannotMutateEnvelopes(t *testing.T) {
 	}
 	retained.Nodes[1].Attributes[0].Text = "later mutation"
 	original, _ := representation.Unpack[amber](a, input)
-	output, _ := representation.Unpack[blue](b, result)
+	output, _ := representation.Unpack[blue](b, result.EntryAST())
 	if original.Nodes[1].Attributes[0].Text != "Page" || output.Nodes[1].Attributes[0].Text != "stage mutation" {
 		t.Fatal("callback storage escaped")
 	}
@@ -275,12 +275,20 @@ type directTransformer struct {
 
 func (d *directTransformer) FromID() language.ID { return d.from }
 func (d *directTransformer) ToID() language.ID   { return d.to }
-func (d *directTransformer) Transform(_ context.Context, input transform.Input) (representation.AST, error) {
-	source, err := input.Source.EntryTree()
+func (d *directTransformer) Transform(_ context.Context, input transform.Input) (representation.ASTSet, error) {
+	entry, err := input.Source.EntryTree()
 	if err != nil {
-		return representation.AST{}, err
+		return representation.ASTSet{}, err
 	}
-	return d.run(source)
+	output, err := d.run(entry)
+	if err != nil {
+		return representation.ASTSet{}, err
+	}
+	info, err := output.Inspect()
+	if err != nil {
+		return representation.ASTSet{}, err
+	}
+	return representation.ASTSet{Entry: ast.NodeRef{Tree: info.ID, Node: info.Root}, Trees: []representation.AST{output}}, nil
 }
 
 func TestEngineRegistration(t *testing.T) {
@@ -351,7 +359,7 @@ func TestEngineRoutesAndExecution(t *testing.T) {
 	if err != nil || output.LanguageID() != "dusk" {
 		t.Fatalf("execution: %v", err)
 	}
-	got, _ := representation.Unpack[dusk](d, output)
+	got, _ := representation.Unpack[dusk](d, output.EntryAST())
 	want, _ := mapExample[amber, dusk](exampleTree[amber]())
 	if !reflect.DeepEqual(got, want) {
 		t.Fatal("route lost metadata")
@@ -378,7 +386,7 @@ func TestEngineRoutesAndExecution(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	identical, _ := representation.Unpack[amber](a, identity)
+	identical, _ := representation.Unpack[amber](a, identity.EntryAST())
 	if !reflect.DeepEqual(identical, exampleTree[amber]()) {
 		t.Fatal("identity changed syntax")
 	}
@@ -528,4 +536,11 @@ func captureForTransform[L any](t *testing.T, definition representation.Language
 		t.Fatal(err)
 	}
 	return transform.Input{Source: snapshot}
+}
+
+func singleResult[L any](tree ast.AST[L], err error) (ast.Set[L], error) {
+	if err != nil {
+		return ast.Set[L]{}, err
+	}
+	return ast.Set[L]{Entry: ast.NodeRef{Tree: tree.ID, Node: tree.Root}, Trees: []ast.AST[L]{tree}}, nil
 }

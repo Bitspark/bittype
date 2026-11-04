@@ -24,7 +24,7 @@ import (
 
 func TestInstalledSemanticGeneration(t *testing.T) {
 	ctx := context.Background()
-	source, err := (hp.Provider{}).Parse(parse.Input{SourceID: "input.horos", TreeID: "input", Text: "module installed; type Page<T> = { items: list<T>; next?: text; }; type People = Page<text>;"})
+	source, err := (hp.Provider{}).Parse(context.Background(), parse.Input{SourceID: "input.horos", TreeID: "input", Text: "module installed; type Page<T> = { items: list<T>; next?: text; }; type People = Page<text>;"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,15 +96,15 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	typed, err := representation.Unpack[ts.Language](to, output)
+	typed, err := representation.Unpack[ts.Language](to, output.EntryAST())
 	if err != nil {
 		t.Fatal(err)
 	}
-	concrete, err := (tp.Provider{}).Format(typed)
+	concrete, err := (tp.Provider{}).Format(context.Background(), typed)
 	if err != nil {
 		t.Fatal(err)
 	}
-	text, err := (tp.Provider{}).Print(concrete)
+	text, err := (tp.Provider{}).Print(context.Background(), concrete)
 	if err != nil {
 		t.Fatal(err)
 	}

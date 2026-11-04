@@ -32,6 +32,7 @@ type payload interface {
 	marker() reflect.Type
 	clone() payload
 	inspect() Info
+	referencesValid(map[ast.TreeID]ast.NodeID) bool
 }
 type typed[L any] struct{ value ast.AST[L] }
 
@@ -89,4 +90,24 @@ func IsNil(value any) bool {
 		return v.IsNil()
 	}
 	return false
+}
+
+func (p typed[L]) referencesValid(catalogue map[ast.TreeID]ast.NodeID) bool {
+	for _, node := range p.value.Nodes {
+		for _, reference := range node.References {
+			if count, local := catalogue[reference.Target.Tree]; local && (reference.Target.Node == 0 || reference.Target.Node > count) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// CheckReferences checks only addresses into supplied trees. External names and
+// binding meaning remain the resolver's responsibility.
+func (a AST) CheckReferences(catalogue map[ast.TreeID]ast.NodeID) error {
+	if a.payload == nil || !a.payload.referencesValid(catalogue) {
+		return ErrInvalidAST
+	}
+	return nil
 }

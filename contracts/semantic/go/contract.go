@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/files/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -38,9 +39,9 @@ type Requirement struct {
 }
 
 type Contract struct {
-	Profile           string
-	Obligations       []Obligation
-	ModelRequirements []Requirement
+	Profile               string
+	Obligations           []Obligation
+	SemanticsRequirements []Requirement
 }
 
 type Completion uint8
@@ -99,21 +100,21 @@ type Limits struct {
 	MaxConfigurationBytes   int
 	MaxDiagnostics          int
 	MaxDiagnosticBytes      int
-	Model                   semantics.Limits
+	Semantics               semantics.Limits
 }
 
 func DefaultLimits() Limits {
 	return Limits{
 		MaxInputs: 256, MaxInputNodes: 200000, MaxInputEntries: 1600000, MaxInputBytes: 16 << 20,
 		MaxRequested: 256, MaxConfigurationEntries: 256, MaxConfigurationBytes: 1 << 20,
-		MaxDiagnostics: 256, MaxDiagnosticBytes: 1 << 20, Model: semantics.DefaultLimits(),
+		MaxDiagnostics: 256, MaxDiagnosticBytes: 1 << 20, Semantics: semantics.DefaultLimits(),
 	}
 }
 
 func (l Limits) Valid() bool {
 	return l.MaxInputs > 0 && l.MaxInputNodes > 0 && l.MaxInputEntries > 0 && l.MaxInputBytes > 0 &&
 		l.MaxRequested > 0 && l.MaxConfigurationEntries > 0 && l.MaxConfigurationBytes > 0 &&
-		l.MaxDiagnostics > 0 && l.MaxDiagnosticBytes > 0 && l.Model.Valid()
+		l.MaxDiagnostics > 0 && l.MaxDiagnosticBytes > 0 && l.Semantics.Valid()
 }
 
 // Input is caller construction storage. Capture admits its immutable envelopes
@@ -122,6 +123,7 @@ func (l Limits) Valid() bool {
 type Input struct {
 	Entry  ast.NodeRef
 	Trees  []representation.AST
+	Files  *files.Context
 	Limits Limits
 }
 
@@ -148,22 +150,22 @@ func (i Input) LanguageID() language.ID {
 // must not mutate these records concurrently with publication.
 type Publication struct {
 	Facts *semantics.Data
-	// ReuseModelFrom must be an admitted dependency of this invocation. It is
+	// ReuseSemanticsFrom must be an admitted dependency of this invocation. It is
 	// mutually exclusive with Facts; the model retains its original identity.
-	ReuseModelFrom *Result
-	Reports        []Report
-	Diagnostics    []Diagnostic
+	ReuseSemanticsFrom *Result
+	Reports            []Report
+	Diagnostics        []Diagnostic
 }
 
 func (c Contract) Clone() Contract {
 	c.Obligations = slices.Clone(c.Obligations)
-	c.ModelRequirements = slices.Clone(c.ModelRequirements)
+	c.SemanticsRequirements = slices.Clone(c.SemanticsRequirements)
 	return c
 }
 
 func (c Contract) Validate() error {
 	bad := func(reason string) error { return fmt.Errorf("%w: %s", ErrInvalidOperation, reason) }
-	if strings.TrimSpace(c.Profile) == "" || !utf8.ValidString(c.Profile) || len(c.Obligations) == 0 || len(c.Obligations) > 256 || len(c.ModelRequirements) > 256 {
+	if strings.TrimSpace(c.Profile) == "" || !utf8.ValidString(c.Profile) || len(c.Obligations) == 0 || len(c.Obligations) > 256 || len(c.SemanticsRequirements) > 256 {
 		return bad("invalid semantic contract")
 	}
 	bytes := 1 << 20
@@ -178,7 +180,7 @@ func (c Contract) Validate() error {
 		known[obligation.Key] = true
 	}
 	seen := make(map[semantics.Key]bool)
-	for _, requirement := range c.ModelRequirements {
+	for _, requirement := range c.SemanticsRequirements {
 		if !known[requirement.Obligation] || seen[requirement.Obligation] || requirement.Verdict > Rejected {
 			return bad("invalid model requirement")
 		}

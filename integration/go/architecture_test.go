@@ -54,7 +54,7 @@ func stageLanguages(t *testing.T) []string {
 			t.Fatal(err)
 		}
 		for _, entry := range entries {
-			if !entry.IsDir() {
+			if !entry.IsDir() || entry.Name() == "files" {
 				continue
 			}
 			if stage == "check" && (entry.Name() == "ast" || entry.Name() == "cst") {
@@ -184,6 +184,24 @@ func TestProductionArchitecture(t *testing.T) {
 	for target, syntax := range map[string]string{"typescript": "typescript", "go": "golang", "rust": "rust", "cpp": "cpp"} {
 		rules["transforms/horos-to-"+target+"/go"] = []string{"contracts/transform/go", "contracts/text/go", "internal/horosgen", "internal/" + syntax, "syntax/horos/go", "syntax/" + syntax + "/go", "trees/ast/go", "trees/representation/go"}
 	}
+	// The Files dimension has explicit stage paths and a separate sealed carrier.
+	rules["files/go"] = []string{"trees/ast/go"}
+	rules["source/go"] = []string{"contracts/semantic/go", "files/go", "semantics/go", "trees/ast/go", "trees/cst/go", "trees/representation/go"}
+	rules["trees/representation/go"] = append(rules["trees/representation/go"], "semantics/go")
+	rules["contracts/semantic/go"] = append(rules["contracts/semantic/go"], "files/go")
+	for _, stage := range []string{"parse", "format", "print"} {
+		key := "contracts/" + stage + "/go"
+		rules[key] = append(rules[key], "files/go", "source/go", "semantics/go", "contracts/semantic/go")
+	}
+	rules["engine/go"] = append(rules["engine/go"], "files/go", "source/go")
+	rules["print/files/go"] = []string{"contracts/language/go", "contracts/print/go", "files/go", "source/go", "trees/cst/go", "trees/representation/go"}
+	composition := []string{"contracts/analysis/go", "contracts/check/go", "contracts/format/go", "contracts/parse/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go", "files/go", "source/go", "semantics/go", "syntax/horos/go", "trees/ast/go", "trees/cst/go", "trees/representation/go"}
+	rules["internal/horosfiles"] = append(append([]string{}, composition...), "internal/tree")
+	for _, stage := range []string{"parse", "format"} {
+		rules[stage+"/files/horos/go"] = append(append([]string{}, composition...), "internal/horosfiles")
+	}
+	rules["provider/horos/go"] = append(rules["provider/horos/go"], "parse/files/horos/go", "format/files/horos/go", "print/files/go", "trees/representation/go")
+	rules["internal/horosgen"] = append(rules["internal/horosgen"], "trees/representation/go")
 	for path, p := range packages {
 		if p.Standard || path == modulePath+"/integration/go" {
 			continue
@@ -231,4 +249,19 @@ var horosExternalImports = map[string][]string{
 	"format/horos/go":     {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"internal/horosmodel": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 	"resolve/horos/go":    {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
+}
+
+func TestFilesDimensionStageCoverage(t *testing.T) {
+	// Files is a dimension, never a discovered language named "files".
+	for _, stage := range []string{"parse", "format"} {
+		entries, err := os.ReadDir(filepath.Join("../..", stage, "files"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() && entry.Name() != "horos" {
+				t.Fatalf("%s Files semantics lack a documented fixture", entry.Name())
+			}
+		}
+	}
 }

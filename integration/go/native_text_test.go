@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"context"
 	"errors"
 	cstcheck "github.com/Bitspark/bittype/check/cst/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
@@ -60,40 +61,40 @@ func exercise[L any](t *testing.T, p nativeProvider[L], directory, extension str
 			}
 			source := string(bytes)
 			input := parse.Input{SourceID: "fixture", TreeID: "parsed", Text: source}
-			parsed, err := p.Parse(input)
+			parsed, err := p.Parse(context.Background(), input)
 			if err != nil {
 				t.Fatal(err)
 			}
-			printed, err := p.Print(parsed)
+			printed, err := p.Print(context.Background(), parsed)
 			if err != nil || printed != source {
 				t.Fatalf("source retention failed: %v\n%q", err, printed)
 			}
 			if err := p.Check(parsed); err != nil {
 				t.Fatal(err)
 			}
-			concrete, err := p.Format(parsed)
+			concrete, err := p.Format(context.Background(), parsed)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if !reflect.DeepEqual(parsed.Abstract, concrete.Abstract) {
 				t.Fatal("formatter changed AST view or metadata")
 			}
-			output, err := p.Print(concrete)
+			output, err := p.Print(context.Background(), concrete)
 			if err != nil {
 				t.Fatal(err)
 			}
-			reparsed, err := p.Parse(parse.Input{SourceID: "formatted", TreeID: "reparsed", Text: output})
+			reparsed, err := p.Parse(context.Background(), parse.Input{SourceID: "formatted", TreeID: "reparsed", Text: output})
 			if err != nil {
 				t.Fatalf("%v\n%s", err, output)
 			}
 			if !reflect.DeepEqual(shape(parsed.Abstract, parsed.Abstract.Root), shape(reparsed.Abstract, reparsed.Abstract.Root)) {
 				t.Fatalf("AST syntax changed\nBEFORE %#v\nAFTER %#v\n%s", shape(parsed.Abstract, parsed.Abstract.Root), shape(reparsed.Abstract, reparsed.Abstract.Root), output)
 			}
-			second, err := p.Format(reparsed)
+			second, err := p.Format(context.Background(), reparsed)
 			if err != nil {
 				t.Fatal(err)
 			}
-			stable, err := p.Print(second)
+			stable, err := p.Print(context.Background(), second)
 			if err != nil || stable != output {
 				t.Fatalf("formatting unstable: %v\n%s\n%s", err, output, stable)
 			}
@@ -110,7 +111,7 @@ func reject[L any](t *testing.T, p nativeProvider[L], sources []string) {
 	t.Helper()
 	for _, source := range sources {
 		t.Run(source, func(t *testing.T) {
-			c, err := p.Parse(parse.Input{SourceID: "bad", TreeID: "bad-tree", Text: source})
+			c, err := p.Parse(context.Background(), parse.Input{SourceID: "bad", TreeID: "bad-tree", Text: source})
 			var d *text.Diagnostic
 			if err == nil || !errors.As(err, &d) || len(c.Nodes) != 0 {
 				t.Fatalf("expected located error and no partial CST, got %v", err)
@@ -131,35 +132,35 @@ func TestConcreteSourceTrivia(t *testing.T) {
 	}{
 		{"typescript", "\ufeff// comment\r\ntype Café = 'é';\r\n\t", func(i parse.Input) (string, error) {
 			p := tsprovider.Provider{}
-			c, e := p.Parse(i)
+			c, e := p.Parse(context.Background(), i)
 			if e != nil {
 				return "", e
 			}
-			return p.Print(c)
+			return p.Print(context.Background(), c)
 		}},
 		{"go", "\ufeffpackage p\r\n// comment\r\ntype Café string\r\n", func(i parse.Input) (string, error) {
 			p := goprovider.Provider{}
-			c, e := p.Parse(i)
+			c, e := p.Parse(context.Background(), i)
 			if e != nil {
 				return "", e
 			}
-			return p.Print(c)
+			return p.Print(context.Background(), c)
 		}},
 		{"rust", "/* one /* two */ three */\r\ntype Ref<'a> = &'a str; // end\r\n", func(i parse.Input) (string, error) {
 			p := rustprovider.Provider{}
-			c, e := p.Parse(i)
+			c, e := p.Parse(context.Background(), i)
 			if e != nil {
 				return "", e
 			}
-			return p.Print(c)
+			return p.Print(context.Background(), c)
 		}},
 		{"cpp", "// comment\r\nusing X = int;\r\n\t", func(i parse.Input) (string, error) {
 			p := cppprovider.Provider{}
-			c, e := p.Parse(i)
+			c, e := p.Parse(context.Background(), i)
 			if e != nil {
 				return "", e
 			}
-			return p.Print(c)
+			return p.Print(context.Background(), c)
 		}},
 	}
 	for _, tc := range cases {
@@ -176,14 +177,14 @@ func TestTypeScriptUnicodeLineBoundaries(t *testing.T) {
 	p := tsprovider.Provider{}
 	for _, separator := range []string{"\u2028", "\u2029"} {
 		source := "// comment" + separator + "type X = string" + separator + "type Y = number"
-		parsed, err := p.Parse(parse.Input{SourceID: "lines", TreeID: "lines", Text: source})
+		parsed, err := p.Parse(context.Background(), parse.Input{SourceID: "lines", TreeID: "lines", Text: source})
 		if err != nil {
 			t.Fatal(err)
 		}
 		if len(parsed.Abstract.Nodes[parsed.Abstract.Root-1].Children) != 2 {
 			t.Fatal("comment swallowed native declarations")
 		}
-		original, err := p.Print(parsed)
+		original, err := p.Print(context.Background(), parsed)
 		if err != nil || original != source {
 			t.Fatal("Unicode line separators were not retained")
 		}
@@ -201,7 +202,7 @@ func TestProviderIdentity(t *testing.T) {
 }
 func TestMalformedConcreteTree(t *testing.T) {
 	p := tsprovider.Provider{}
-	parsed, err := p.Parse(parse.Input{SourceID: "good", TreeID: "tree", Text: "type X = string;"})
+	parsed, err := p.Parse(context.Background(), parse.Input{SourceID: "good", TreeID: "tree", Text: "type X = string;"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,14 +218,14 @@ func TestMalformedConcreteTree(t *testing.T) {
 		if err := cstcheck.Check(copy); err == nil {
 			t.Fatal("malformed concrete tree accepted")
 		}
-		if output, err := p.Print(copy); err == nil || output != "" {
+		if output, err := p.Print(context.Background(), copy); err == nil || output != "" {
 			t.Fatal("printer returned partial output")
 		}
 	}
 }
 func TestParserResourceLimit(t *testing.T) {
 	p := tsprovider.Provider{}
-	_, err := p.Parse(parse.Input{SourceID: "large", TreeID: "large-tree", Text: strings.Repeat(" ", (4<<20)+1)})
+	_, err := p.Parse(context.Background(), parse.Input{SourceID: "large", TreeID: "large-tree", Text: strings.Repeat(" ", (4<<20)+1)})
 	var d *text.Diagnostic
 	if !errors.As(err, &d) || d.Code != text.LimitExceeded {
 		t.Fatalf("expected input limit: %v", err)
@@ -240,7 +241,7 @@ func TestAggregateTextBudget(t *testing.T) {
 		c.Nodes = append(c.Nodes, cst.Node[tsMarker]{Kind: "token", Text: &chunk})
 		c.Nodes[0].Children = append(c.Nodes[0].Children, cst.NodeID(len(c.Nodes)))
 	}
-	output, err := p.Print(c)
+	output, err := p.Print(context.Background(), c)
 	var d *text.Diagnostic
 	if output != "" || !errors.As(err, &d) || d.Code != text.LimitExceeded {
 		t.Fatalf("expected aggregate concrete limit without output: %v", err)
@@ -249,7 +250,7 @@ func TestAggregateTextBudget(t *testing.T) {
 	for i := 0; i < 17000; i++ {
 		a.Nodes[0].Attributes = append(a.Nodes[0].Attributes, ast.Attribute{Name: "name", Text: chunk})
 	}
-	formatted, err := p.Format(a)
+	formatted, err := p.Format(context.Background(), a)
 	if len(formatted.Nodes) != 0 || !errors.As(err, &d) || d.Code != text.LimitExceeded {
 		t.Fatalf("expected aggregate AST limit without output: %v", err)
 	}

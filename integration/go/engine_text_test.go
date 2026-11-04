@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"context"
 	"errors"
 	"github.com/Bitspark/bittype/trees/representation/go"
 	"testing"
@@ -26,7 +27,7 @@ import (
 func registerNativeStages[L any](t *testing.T, e *engine.Engine, definition representation.Language, p nativeProvider[L]) {
 	t.Helper()
 	register(t, e, definition)
-	parser, err := parse.NewParser[L](definition, p)
+	parser, err := parse.NewSyntaxParser[L](definition, p)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,15 +35,15 @@ func registerNativeStages[L any](t *testing.T, e *engine.Engine, definition repr
 	if err != nil {
 		t.Fatal(err)
 	}
-	formatter, err := format.NewFormatter[L](definition, p)
+	formatter, err := format.NewSyntaxFormatter[L](definition, p)
 	if err != nil {
 		t.Fatal(err)
 	}
-	printer, err := print.NewPrinter[L](definition, p)
+	printer, err := print.NewSyntaxPrinter[L](definition, p)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, err := range []error{e.RegisterParser(parser), e.RegisterChecker(checker), e.RegisterFormatter(formatter), e.RegisterPrinter(printer)} {
+	for _, err := range []error{e.RegisterSyntaxParser(parser), e.RegisterChecker(checker), e.RegisterSyntaxFormatter(formatter), e.RegisterSyntaxPrinter(printer)} {
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -60,19 +61,19 @@ func nativeRegistration[L any](t *testing.T, e *engine.Engine, p nativeProvider[
 	}
 	registerNativeStages(t, e, registered, p)
 	input := parse.Input{SourceID: "engine-native", TreeID: "engine-native", Text: source}
-	parsed, err := e.Parse(p.ID(), input)
+	parsed, err := e.ParseSyntax(context.Background(), p.ID(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
-	original, err := e.Print(parsed)
+	original, err := e.PrintSyntax(context.Background(), parsed)
 	if err != nil || original != source {
 		t.Fatalf("retention: %v", err)
 	}
-	output, err := e.Render(parsed.ASTView())
+	output, err := e.RenderSyntax(context.Background(), parsed.ASTView())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := p.Parse(parse.Input{SourceID: "rendered", TreeID: "rendered", Text: output}); err != nil {
+	if _, err := p.Parse(context.Background(), parse.Input{SourceID: "rendered", TreeID: "rendered", Text: output}); err != nil {
 		t.Fatal(err)
 	}
 	if err := e.Check(parsed.ASTView()); err != nil {
@@ -89,7 +90,7 @@ func nativeRegistration[L any](t *testing.T, e *engine.Engine, p nativeProvider[
 		}
 	}
 	plain.Abstract.Nodes[plain.Abstract.Root-1].Kind = "changed"
-	after, err := e.Print(parsed)
+	after, err := e.PrintSyntax(context.Background(), parsed)
 	if err != nil || after != source {
 		t.Fatal("concrete storage escaped")
 	}
@@ -111,7 +112,7 @@ func TestEngineUsesFourExistingTextProviders(t *testing.T) {
 	if _, err := e.Plan("typescript", "rust"); !errors.Is(err, engine.ErrNoPath) {
 		t.Fatal("invented native transformer", err)
 	}
-	if _, err := e.Parse("missing", parse.Input{}); !errors.Is(err, engine.ErrUnknownLanguage) {
+	if _, err := e.ParseSyntax(context.Background(), "missing", parse.Input{}); !errors.Is(err, engine.ErrUnknownLanguage) {
 		t.Fatal(err)
 	}
 }
@@ -123,9 +124,15 @@ type fakeText[L any] struct {
 	print  func(cst.CST[L]) (string, error)
 }
 
-func (p fakeText[L]) Parse(input parse.Input) (cst.CST[L], error)  { return p.parse(input) }
-func (p fakeText[L]) Format(input ast.View[L]) (cst.CST[L], error) { return p.format(input) }
-func (p fakeText[L]) Print(input cst.CST[L]) (string, error)       { return p.print(input) }
+func (p fakeText[L]) Parse(ctx context.Context, input parse.Input) (cst.CST[L], error) {
+	return p.parse(input)
+}
+func (p fakeText[L]) Format(ctx context.Context, input ast.View[L]) (cst.CST[L], error) {
+	return p.format(input)
+}
+func (p fakeText[L]) Print(ctx context.Context, input cst.CST[L]) (string, error) {
+	return p.print(input)
+}
 func exampleConcrete[L any](leaf *string) cst.CST[L] {
 	return cst.CST[L]{Abstract: exampleTree[L](), Root: 1, Nodes: []cst.Node[L]{{Kind: "leaf", Text: leaf, Syntax: []ast.NodeID{1}, Origin: ast.Origin{Spans: []ast.Span{{Source: "text", Start: 0, End: 4}}, Nodes: []ast.NodeRef{{Tree: "earlier", Node: 1}}}}}}
 }
@@ -146,7 +153,7 @@ func TestEngineConcreteSnapshotsAndPartialErrors(t *testing.T) {
 	}
 	e := engine.New()
 	registerNativeStages(t, e, adapted, p)
-	parsed, err := e.Parse(adapted.ID(), parse.Input{})
+	parsed, err := e.ParseSyntax(context.Background(), adapted.ID(), parse.Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +161,7 @@ func TestEngineConcreteSnapshotsAndPartialErrors(t *testing.T) {
 	raw.Nodes[0].Origin.Spans[0].Source = "mutated"
 	raw.Nodes[0].Origin.Nodes[0].Tree = "mutated"
 	raw.Nodes[0].Syntax[0] = 2
-	output, err := e.Print(parsed)
+	output, err := e.PrintSyntax(context.Background(), parsed)
 	if err != nil || output != "page" {
 		t.Fatal("provider retained concrete output storage")
 	}
@@ -163,20 +170,20 @@ func TestEngineConcreteSnapshotsAndPartialErrors(t *testing.T) {
 		t.Fatal("concrete metadata aliases provider")
 	}
 	parseErr = failure
-	if c, err := e.Parse(adapted.ID(), parse.Input{}); !errors.Is(err, failure) || c.LanguageID() != "" {
+	if c, err := e.ParseSyntax(context.Background(), adapted.ID(), parse.Input{}); !errors.Is(err, failure) || c.LanguageID() != "" {
 		t.Fatal("partial parse output", err)
 	}
 	formatErr = failure
-	if c, err := e.Format(parsed.ASTView()); !errors.Is(err, failure) || c.LanguageID() != "" {
+	if c, err := e.FormatSyntax(context.Background(), parsed.ASTView()); !errors.Is(err, failure) || c.LanguageID() != "" {
 		t.Fatal("partial format output", err)
 	}
 	printErr = failure
-	if output, err := e.Print(parsed); !errors.Is(err, failure) || output != "" {
+	if output, err := e.PrintSyntax(context.Background(), parsed); !errors.Is(err, failure) || output != "" {
 		t.Fatal("partial print output", err)
 	}
 	parseErr = nil
 	raw.Root = 99
-	if c, err := e.Parse(adapted.ID(), parse.Input{}); err == nil || c.LanguageID() != "" {
+	if c, err := e.ParseSyntax(context.Background(), adapted.ID(), parse.Input{}); err == nil || c.LanguageID() != "" {
 		t.Fatal("invalid concrete parse accepted")
 	}
 	if _, err := representation.UnpackCST[blue](adapted, parsed); !errors.Is(err, representation.ErrTypeMismatch) {
@@ -188,13 +195,13 @@ func TestEngineASTOnlyCapabilitiesAndProfiles(t *testing.T) {
 	a := definition[amber](t, "amber")
 	e := engine.New()
 	registerChecked[amber](t, e, a)
-	if _, err := e.Parse("amber", parse.Input{}); !errors.Is(err, engine.ErrMissingCapability) {
+	if _, err := e.ParseSyntax(context.Background(), "amber", parse.Input{}); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	if _, err := e.Render(packed[amber](t, a)); !errors.Is(err, engine.ErrMissingCapability) {
+	if _, err := e.RenderSyntax(context.Background(), packed[amber](t, a)); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	if err := e.RegisterParser(parse.Parser{}); err == nil {
+	if err := e.RegisterSyntaxParser(parse.SyntaxParser{}); err == nil {
 		t.Fatal("zero parser accepted")
 	}
 	var nilProvider *fakeText[amber]
@@ -210,7 +217,7 @@ func TestEngineASTOnlyCapabilitiesAndProfiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	registerNativeStages(t, e, p, tsprovider.Provider{})
-	typedCST, err := (tsprovider.Provider{}).Parse(parse.Input{SourceID: "profile", TreeID: "profile", Text: "type X=string;"})
+	typedCST, err := (tsprovider.Provider{}).Parse(context.Background(), parse.Input{SourceID: "profile", TreeID: "profile", Text: "type X=string;"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,13 +225,13 @@ func TestEngineASTOnlyCapabilitiesAndProfiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.Print(foreign); !errors.Is(err, representation.ErrLanguageMismatch) {
+	if _, err := e.PrintSyntax(context.Background(), foreign); !errors.Is(err, representation.ErrLanguageMismatch) {
 		t.Fatal(err)
 	}
-	if _, err := e.Format(foreign.ASTView()); !errors.Is(err, representation.ErrLanguageMismatch) {
+	if _, err := e.FormatSyntax(context.Background(), foreign.ASTView()); !errors.Is(err, representation.ErrLanguageMismatch) {
 		t.Fatal(err)
 	}
-	if _, err := e.Print(representation.CST{}); !errors.Is(err, engine.ErrUnknownLanguage) {
+	if _, err := e.PrintSyntax(context.Background(), representation.CST{}); !errors.Is(err, engine.ErrUnknownLanguage) {
 		t.Fatal(err)
 	}
 }

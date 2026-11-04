@@ -29,42 +29,42 @@ func (e *Engine) attach(definition representation.Language, install func(*regist
 	return nil
 }
 
-// RegisterParser attaches only this capability; no other stage is inferred.
-func (e *Engine) RegisterParser(provider parse.Parser) error {
+// RegisterSyntaxParser attaches only this capability; no other stage is inferred.
+func (e *Engine) RegisterSyntaxParser(provider parse.SyntaxParser) error {
 	if err := provider.Validate(); err != nil {
 		return err
 	}
 	return e.attach(provider.Language(), func(r *registration) error {
 		if r.parser != nil {
-			return fmt.Errorf("%w: %s", ErrDuplicateParser, provider.ID())
+			return fmt.Errorf("%w: %s", ErrDuplicateSyntaxParser, provider.ID())
 		}
 		r.parser = &provider
 		return nil
 	})
 }
 
-// RegisterFormatter attaches only this capability; no other stage is inferred.
-func (e *Engine) RegisterFormatter(provider format.Formatter) error {
+// RegisterSyntaxFormatter attaches only this capability; no other stage is inferred.
+func (e *Engine) RegisterSyntaxFormatter(provider format.SyntaxFormatter) error {
 	if err := provider.Validate(); err != nil {
 		return err
 	}
 	return e.attach(provider.Language(), func(r *registration) error {
 		if r.formatter != nil {
-			return fmt.Errorf("%w: %s", ErrDuplicateFormatter, provider.ID())
+			return fmt.Errorf("%w: %s", ErrDuplicateSyntaxFormatter, provider.ID())
 		}
 		r.formatter = &provider
 		return nil
 	})
 }
 
-// RegisterPrinter attaches only this capability; no other stage is inferred.
-func (e *Engine) RegisterPrinter(provider print.Printer) error {
+// RegisterSyntaxPrinter attaches only this capability; no other stage is inferred.
+func (e *Engine) RegisterSyntaxPrinter(provider print.SyntaxPrinter) error {
 	if err := provider.Validate(); err != nil {
 		return err
 	}
 	return e.attach(provider.Language(), func(r *registration) error {
 		if r.printer != nil {
-			return fmt.Errorf("%w: %s", ErrDuplicatePrinter, provider.ID())
+			return fmt.Errorf("%w: %s", ErrDuplicateSyntaxPrinter, provider.ID())
 		}
 		r.printer = &provider
 		return nil

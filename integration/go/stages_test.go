@@ -30,21 +30,27 @@ type parserOnly[L any] struct {
 	run func(parse.Input) (cst.CST[L], error)
 }
 
-func (p parserOnly[L]) Parse(input parse.Input) (cst.CST[L], error) { return p.run(input) }
+func (p parserOnly[L]) Parse(ctx context.Context, input parse.Input) (cst.CST[L], error) {
+	return p.run(input)
+}
 
 type formatterOnly[L any] struct {
 	stageIdentity
 	run func(ast.View[L]) (cst.CST[L], error)
 }
 
-func (p formatterOnly[L]) Format(input ast.View[L]) (cst.CST[L], error) { return p.run(input) }
+func (p formatterOnly[L]) Format(ctx context.Context, input ast.View[L]) (cst.CST[L], error) {
+	return p.run(input)
+}
 
 type printerOnly[L any] struct {
 	stageIdentity
 	run func(cst.CST[L]) (string, error)
 }
 
-func (p printerOnly[L]) Print(input cst.CST[L]) (string, error) { return p.run(input) }
+func (p printerOnly[L]) Print(ctx context.Context, input cst.CST[L]) (string, error) {
+	return p.run(input)
+}
 
 func TestEngineIndependentStages(t *testing.T) {
 	identity := stageIdentity{"split"}
@@ -55,24 +61,24 @@ func TestEngineIndependentStages(t *testing.T) {
 	e := engine.New()
 	register(t, e, d)
 	leaf := "page"
-	parser, err := parse.NewParser[amber](d, parserOnly[amber]{identity, func(parse.Input) (cst.CST[amber], error) { return exampleConcrete[amber](&leaf), nil }})
+	parser, err := parse.NewSyntaxParser[amber](d, parserOnly[amber]{identity, func(parse.Input) (cst.CST[amber], error) { return exampleConcrete[amber](&leaf), nil }})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := e.RegisterParser(parser); err != nil {
+	if err := e.RegisterSyntaxParser(parser); err != nil {
 		t.Fatal(err)
 	}
-	parsed, err := e.Parse(d.ID(), parse.Input{})
+	parsed, err := e.ParseSyntax(context.Background(), d.ID(), parse.Input{})
 	if err != nil {
 		t.Fatal("parser-only registration", err)
 	}
 	if err := e.Check(parsed.ASTView()); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	if _, err := e.Format(parsed.ASTView()); !errors.Is(err, engine.ErrMissingCapability) {
+	if _, err := e.FormatSyntax(context.Background(), parsed.ASTView()); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	if _, err := e.Print(parsed); !errors.Is(err, engine.ErrMissingCapability) {
+	if _, err := e.PrintSyntax(context.Background(), parsed); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
 	if _, err := e.TransformTo(context.Background(), captureForTransform[amber](t, d, parsed.ASTView()), d.ID()); !errors.Is(err, engine.ErrMissingCapability) {
@@ -82,24 +88,24 @@ func TestEngineIndependentStages(t *testing.T) {
 		t.Fatal(err)
 	}
 	formats := 0
-	formatter, err := format.NewFormatter[amber](d, formatterOnly[amber]{identity, func(ast.View[amber]) (cst.CST[amber], error) { formats++; return exampleConcrete[amber](&leaf), nil }})
+	formatter, err := format.NewSyntaxFormatter[amber](d, formatterOnly[amber]{identity, func(ast.View[amber]) (cst.CST[amber], error) { formats++; return exampleConcrete[amber](&leaf), nil }})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := e.RegisterFormatter(formatter); err != nil {
+	if err := e.RegisterSyntaxFormatter(formatter); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.Render(parsed.ASTView()); !errors.Is(err, engine.ErrMissingCapability) || formats != 0 {
+	if _, err := e.RenderSyntax(context.Background(), parsed.ASTView()); !errors.Is(err, engine.ErrMissingCapability) || formats != 0 {
 		t.Fatal("render must preflight its printer", err)
 	}
-	printer, err := print.NewPrinter[amber](d, printerOnly[amber]{identity, func(c cst.CST[amber]) (string, error) { return *c.Nodes[0].Text, nil }})
+	printer, err := print.NewSyntaxPrinter[amber](d, printerOnly[amber]{identity, func(c cst.CST[amber]) (string, error) { return *c.Nodes[0].Text, nil }})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := e.RegisterPrinter(printer); err != nil {
+	if err := e.RegisterSyntaxPrinter(printer); err != nil {
 		t.Fatal(err)
 	}
-	if output, err := e.Render(parsed.ASTView()); err != nil || output != "page" || formats != 1 {
+	if output, err := e.RenderSyntax(context.Background(), parsed.ASTView()); err != nil || output != "page" || formats != 1 {
 		t.Fatal("render without a checker", output, err)
 	}
 	checker, err := check.NewChecker[amber](d, testChecker[amber]{id: d.ID()})
@@ -113,35 +119,35 @@ func TestEngineIndependentStages(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, duplicate := range []struct{ got, want error }{
-		{e.RegisterParser(parser), engine.ErrDuplicateParser},
+		{e.RegisterSyntaxParser(parser), engine.ErrDuplicateSyntaxParser},
 		{e.RegisterChecker(checker), engine.ErrDuplicateChecker},
-		{e.RegisterFormatter(formatter), engine.ErrDuplicateFormatter},
-		{e.RegisterPrinter(printer), engine.ErrDuplicatePrinter},
+		{e.RegisterSyntaxFormatter(formatter), engine.ErrDuplicateSyntaxFormatter},
+		{e.RegisterSyntaxPrinter(printer), engine.ErrDuplicateSyntaxPrinter},
 	} {
 		if !errors.Is(duplicate.got, duplicate.want) {
 			t.Fatal(duplicate)
 		}
 	}
-	if _, err := e.Render(parsed.ASTView()); err != nil {
+	if _, err := e.RenderSyntax(context.Background(), parsed.ASTView()); err != nil {
 		t.Fatal("failed duplicate damaged registration", err)
 	}
 
 	// A separate engine can render with neither a parser nor a checker.
 	renderOnly := engine.New()
 	register(t, renderOnly, d)
-	if err := renderOnly.RegisterPrinter(printer); err != nil {
+	if err := renderOnly.RegisterSyntaxPrinter(printer); err != nil {
 		t.Fatal(err)
 	}
-	if output, err := renderOnly.Print(parsed); err != nil || output != "page" {
+	if output, err := renderOnly.PrintSyntax(context.Background(), parsed); err != nil || output != "page" {
 		t.Fatal(output, err)
 	}
-	if err := renderOnly.RegisterFormatter(formatter); err != nil {
+	if err := renderOnly.RegisterSyntaxFormatter(formatter); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := renderOnly.Render(parsed.ASTView()); err != nil {
+	if _, err := renderOnly.RenderSyntax(context.Background(), parsed.ASTView()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := renderOnly.Parse(d.ID(), parse.Input{}); !errors.Is(err, engine.ErrMissingCapability) {
+	if _, err := renderOnly.ParseSyntax(context.Background(), d.ID(), parse.Input{}); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
 	if err := renderOnly.Check(parsed.ASTView()); !errors.Is(err, engine.ErrMissingCapability) {
@@ -156,7 +162,7 @@ func TestEngineIndependentStages(t *testing.T) {
 	if err := checkOnly.Check(parsed.ASTView()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := checkOnly.Render(parsed.ASTView()); !errors.Is(err, engine.ErrMissingCapability) {
+	if _, err := checkOnly.RenderSyntax(context.Background(), parsed.ASTView()); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
 }
@@ -165,7 +171,7 @@ func TestEngineIndependentStages(t *testing.T) {
 func stageRegistrations[L any](t *testing.T, d representation.Language) map[string]func(*engine.Engine) error {
 	t.Helper()
 	identity := stageIdentity{d.ID()}
-	parser, err := parse.NewParser[L](d, parserOnly[L]{stageIdentity: identity})
+	parser, err := parse.NewSyntaxParser[L](d, parserOnly[L]{stageIdentity: identity})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,19 +179,19 @@ func stageRegistrations[L any](t *testing.T, d representation.Language) map[stri
 	if err != nil {
 		t.Fatal(err)
 	}
-	formatter, err := format.NewFormatter[L](d, formatterOnly[L]{stageIdentity: identity})
+	formatter, err := format.NewSyntaxFormatter[L](d, formatterOnly[L]{stageIdentity: identity})
 	if err != nil {
 		t.Fatal(err)
 	}
-	printer, err := print.NewPrinter[L](d, printerOnly[L]{stageIdentity: identity})
+	printer, err := print.NewSyntaxPrinter[L](d, printerOnly[L]{stageIdentity: identity})
 	if err != nil {
 		t.Fatal(err)
 	}
 	return map[string]func(*engine.Engine) error{
-		"parse":  func(e *engine.Engine) error { return e.RegisterParser(parser) },
+		"parse":  func(e *engine.Engine) error { return e.RegisterSyntaxParser(parser) },
 		"check":  func(e *engine.Engine) error { return e.RegisterChecker(checker) },
-		"format": func(e *engine.Engine) error { return e.RegisterFormatter(formatter) },
-		"print":  func(e *engine.Engine) error { return e.RegisterPrinter(printer) },
+		"format": func(e *engine.Engine) error { return e.RegisterSyntaxFormatter(formatter) },
+		"print":  func(e *engine.Engine) error { return e.RegisterSyntaxPrinter(printer) },
 	}
 }
 
@@ -216,48 +222,48 @@ func TestStageRegistrationIdentityAndProfiles(t *testing.T) {
 		})
 	}
 	// Actual Go markers are checked at adapter construction, not only by ID.
-	if _, err := parse.NewParser[blue](d, parserOnly[blue]{stageIdentity: stageIdentity{d.ID()}}); !errors.Is(err, representation.ErrTypeMismatch) {
+	if _, err := parse.NewSyntaxParser[blue](d, parserOnly[blue]{stageIdentity: stageIdentity{d.ID()}}); !errors.Is(err, representation.ErrTypeMismatch) {
 		t.Fatal(err)
 	}
 	if _, err := check.NewChecker[blue](d, testChecker[blue]{id: d.ID()}); !errors.Is(err, representation.ErrTypeMismatch) {
 		t.Fatal(err)
 	}
-	if _, err := format.NewFormatter[blue](d, formatterOnly[blue]{stageIdentity: stageIdentity{d.ID()}}); !errors.Is(err, representation.ErrTypeMismatch) {
+	if _, err := format.NewSyntaxFormatter[blue](d, formatterOnly[blue]{stageIdentity: stageIdentity{d.ID()}}); !errors.Is(err, representation.ErrTypeMismatch) {
 		t.Fatal(err)
 	}
-	if _, err := print.NewPrinter[blue](d, printerOnly[blue]{stageIdentity: stageIdentity{d.ID()}}); !errors.Is(err, representation.ErrTypeMismatch) {
+	if _, err := print.NewSyntaxPrinter[blue](d, printerOnly[blue]{stageIdentity: stageIdentity{d.ID()}}); !errors.Is(err, representation.ErrTypeMismatch) {
 		t.Fatal(err)
 	}
-	if _, err := parse.NewParser[amber](d, parserOnly[amber]{stageIdentity: stageIdentity{"wrong"}}); !errors.Is(err, parse.ErrInvalidParser) {
+	if _, err := parse.NewSyntaxParser[amber](d, parserOnly[amber]{stageIdentity: stageIdentity{"wrong"}}); !errors.Is(err, parse.ErrInvalidParser) {
 		t.Fatal(err)
 	}
 	if _, err := check.NewChecker[amber](d, testChecker[amber]{id: "wrong"}); !errors.Is(err, check.ErrInvalidChecker) {
 		t.Fatal(err)
 	}
-	if _, err := format.NewFormatter[amber](d, formatterOnly[amber]{stageIdentity: stageIdentity{"wrong"}}); !errors.Is(err, format.ErrInvalidFormatter) {
+	if _, err := format.NewSyntaxFormatter[amber](d, formatterOnly[amber]{stageIdentity: stageIdentity{"wrong"}}); !errors.Is(err, format.ErrInvalidFormatter) {
 		t.Fatal(err)
 	}
-	if _, err := print.NewPrinter[amber](d, printerOnly[amber]{stageIdentity: stageIdentity{"wrong"}}); !errors.Is(err, print.ErrInvalidPrinter) {
+	if _, err := print.NewSyntaxPrinter[amber](d, printerOnly[amber]{stageIdentity: stageIdentity{"wrong"}}); !errors.Is(err, print.ErrInvalidPrinter) {
 		t.Fatal(err)
 	}
 	var nilParser *parserOnly[amber]
 	var nilChecker *testChecker[amber]
 	var nilFormatter *formatterOnly[amber]
 	var nilPrinter *printerOnly[amber]
-	if _, err := parse.NewParser[amber](d, nilParser); !errors.Is(err, parse.ErrInvalidParser) {
+	if _, err := parse.NewSyntaxParser[amber](d, nilParser); !errors.Is(err, parse.ErrInvalidParser) {
 		t.Fatal(err)
 	}
 	if _, err := check.NewChecker[amber](d, nilChecker); !errors.Is(err, check.ErrInvalidChecker) {
 		t.Fatal(err)
 	}
-	if _, err := format.NewFormatter[amber](d, nilFormatter); !errors.Is(err, format.ErrInvalidFormatter) {
+	if _, err := format.NewSyntaxFormatter[amber](d, nilFormatter); !errors.Is(err, format.ErrInvalidFormatter) {
 		t.Fatal(err)
 	}
-	if _, err := print.NewPrinter[amber](d, nilPrinter); !errors.Is(err, print.ErrInvalidPrinter) {
+	if _, err := print.NewSyntaxPrinter[amber](d, nilPrinter); !errors.Is(err, print.ErrInvalidPrinter) {
 		t.Fatal(err)
 	}
 	e := engine.New()
-	for _, err := range []error{e.RegisterParser(parse.Parser{}), e.RegisterChecker(check.Checker{}), e.RegisterFormatter(format.Formatter{}), e.RegisterPrinter(print.Printer{})} {
+	for _, err := range []error{e.RegisterSyntaxParser(parse.SyntaxParser{}), e.RegisterChecker(check.Checker{}), e.RegisterSyntaxFormatter(format.SyntaxFormatter{}), e.RegisterSyntaxPrinter(print.SyntaxPrinter{})} {
 		if err == nil {
 			t.Fatal("zero stage accepted")
 		}
@@ -268,18 +274,18 @@ func TestIndependentStageInputSnapshots(t *testing.T) {
 	d := definition[amber](t, "owned")
 	input := packed[amber](t, d)
 	leaf := "page"
-	formatter, err := format.NewFormatter[amber](d, formatterOnly[amber]{stageIdentity{d.ID()}, func(v ast.View[amber]) (cst.CST[amber], error) {
+	formatter, err := format.NewSyntaxFormatter[amber](d, formatterOnly[amber]{stageIdentity{d.ID()}, func(v ast.View[amber]) (cst.CST[amber], error) {
 		v.ASTView().Nodes[1].Attributes[0].Text = "formatter mutation"
 		return exampleConcrete[amber](&leaf), nil
 	}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	concrete, err := formatter.Format(input)
+	concrete, err := formatter.Format(context.Background(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
-	printer, err := print.NewPrinter[amber](d, printerOnly[amber]{stageIdentity{d.ID()}, func(c cst.CST[amber]) (string, error) {
+	printer, err := print.NewSyntaxPrinter[amber](d, printerOnly[amber]{stageIdentity{d.ID()}, func(c cst.CST[amber]) (string, error) {
 		*c.Nodes[0].Text = "printer mutation"
 		c.Abstract.Nodes[1].Attributes[0].Text = "printer mutation"
 		return "printed", nil
@@ -287,7 +293,7 @@ func TestIndependentStageInputSnapshots(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := printer.Print(concrete); err != nil {
+	if _, err := printer.Print(context.Background(), concrete); err != nil {
 		t.Fatal(err)
 	}
 	abstract, _ := representation.Unpack[amber](d, input)
@@ -372,7 +378,7 @@ func TestEngineConcurrentIndependentStages(t *testing.T) {
 		})
 	}
 	identity := stageIdentity{d.ID()}
-	parser, err := parse.NewParser[amber](d, parserOnly[amber]{identity, func(parse.Input) (cst.CST[amber], error) { reenter(); return raw, nil }})
+	parser, err := parse.NewSyntaxParser[amber](d, parserOnly[amber]{identity, func(parse.Input) (cst.CST[amber], error) { reenter(); return raw, nil }})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -380,21 +386,21 @@ func TestEngineConcurrentIndependentStages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	formatter, err := format.NewFormatter[amber](d, formatterOnly[amber]{identity, func(ast.View[amber]) (cst.CST[amber], error) { reenter(); return raw, nil }})
+	formatter, err := format.NewSyntaxFormatter[amber](d, formatterOnly[amber]{identity, func(ast.View[amber]) (cst.CST[amber], error) { reenter(); return raw, nil }})
 	if err != nil {
 		t.Fatal(err)
 	}
-	printer, err := print.NewPrinter[amber](d, printerOnly[amber]{identity, func(cst.CST[amber]) (string, error) { reenter(); return leaf, nil }})
+	printer, err := print.NewSyntaxPrinter[amber](d, printerOnly[amber]{identity, func(cst.CST[amber]) (string, error) { reenter(); return leaf, nil }})
 	if err != nil {
 		t.Fatal(err)
 	}
 	var group sync.WaitGroup
 	for _, run := range []func() error{
 		func() error {
-			if err := e.RegisterParser(parser); err != nil {
+			if err := e.RegisterSyntaxParser(parser); err != nil {
 				return err
 			}
-			_, err := e.Parse(d.ID(), parse.Input{})
+			_, err := e.ParseSyntax(context.Background(), d.ID(), parse.Input{})
 			return err
 		},
 		func() error {
@@ -404,17 +410,17 @@ func TestEngineConcurrentIndependentStages(t *testing.T) {
 			return e.Check(input)
 		},
 		func() error {
-			if err := e.RegisterFormatter(formatter); err != nil {
+			if err := e.RegisterSyntaxFormatter(formatter); err != nil {
 				return err
 			}
-			_, err := e.Format(input)
+			_, err := e.FormatSyntax(context.Background(), input)
 			return err
 		},
 		func() error {
-			if err := e.RegisterPrinter(printer); err != nil {
+			if err := e.RegisterSyntaxPrinter(printer); err != nil {
 				return err
 			}
-			_, err := e.Print(concrete)
+			_, err := e.PrintSyntax(context.Background(), concrete)
 			return err
 		},
 	} {
@@ -433,7 +439,7 @@ func TestEngineConcurrentIndependentStages(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("stage callback held a registry lock")
 	}
-	if output, err := e.Render(input); err != nil || output != "page" {
+	if output, err := e.RenderSyntax(context.Background(), input); err != nil || output != "page" {
 		t.Fatal("concurrent registrations lost a stage", err)
 	}
 }
