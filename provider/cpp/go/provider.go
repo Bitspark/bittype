@@ -3,9 +3,9 @@ package cppprovider
 
 import (
 	check "github.com/Bitspark/bittype/check/cpp/go"
-	parsecontract "github.com/Bitspark/bittype/contracts/parse/go"
 	checkcontract "github.com/Bitspark/bittype/contracts/check/go"
 	formatcontract "github.com/Bitspark/bittype/contracts/format/go"
+	parsecontract "github.com/Bitspark/bittype/contracts/parse/go"
 	printcontract "github.com/Bitspark/bittype/contracts/print/go"
 	format "github.com/Bitspark/bittype/format/cpp/go"
 	parse "github.com/Bitspark/bittype/parse/cpp/go"

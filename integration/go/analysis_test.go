@@ -428,7 +428,9 @@ func TestAnalysisBudgetsPrecedeCheckerAndCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 	checker, err := check.NewChecker[amber](d, provider)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	input := analysisFixture[amber](t, d)
 	checks = 0
 	info, err := input.Trees[0].Inspect()
@@ -575,9 +577,13 @@ func TestAnalysisCheckerCannotReplacePreflightedInputs(t *testing.T) {
 		return nil
 	}}
 	d, err := representation.NewLanguage[amber](provider, "test-v1")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	checker, err := check.NewChecker[amber](d, provider)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	caller = analysisFixture[amber](t, d)
 	dependency := exampleTree[amber]()
 	dependency.ID, dependency.Nodes[1].References = "dependency", nil

@@ -2,8 +2,8 @@ package integration_test
 
 import (
 	"context"
-	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/semantics/go"

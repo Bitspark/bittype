@@ -14,7 +14,7 @@ var ErrInvalidPrinter = errors.New("invalid print provider")
 // It owns boundary snapshots and never installs another capability.
 type Printer struct {
 	definition representation.Language
-	run func(representation.CST) (string, error)
+	run        func(representation.CST) (string, error)
 }
 
 func NewPrinter[L any](definition representation.Language, provider Provider[L]) (Printer, error) {
@@ -42,8 +42,8 @@ func NewPrinter[L any](definition representation.Language, provider Provider[L])
 	return result, nil
 }
 
-func (p Printer) ID() language.ID { return p.definition.ID() }
-func (p Printer) Name() string { return p.definition.Name() }
+func (p Printer) ID() language.ID                   { return p.definition.ID() }
+func (p Printer) Name() string                      { return p.definition.Name() }
 func (p Printer) Language() representation.Language { return p.definition }
 func (p Printer) Validate() error {
 	if p.run == nil {

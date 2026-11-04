@@ -14,7 +14,7 @@ var ErrInvalidFormatter = errors.New("invalid format provider")
 // It owns boundary snapshots and never installs another capability.
 type Formatter struct {
 	definition representation.Language
-	run func(representation.AST) (representation.CST, error)
+	run        func(representation.AST) (representation.CST, error)
 }
 
 func NewFormatter[L any](definition representation.Language, provider Provider[L]) (Formatter, error) {
@@ -42,8 +42,8 @@ func NewFormatter[L any](definition representation.Language, provider Provider[L
 	return result, nil
 }
 
-func (p Formatter) ID() language.ID { return p.definition.ID() }
-func (p Formatter) Name() string { return p.definition.Name() }
+func (p Formatter) ID() language.ID                   { return p.definition.ID() }
+func (p Formatter) Name() string                      { return p.definition.Name() }
 func (p Formatter) Language() representation.Language { return p.definition }
 func (p Formatter) Validate() error {
 	if p.run == nil {

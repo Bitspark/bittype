@@ -15,8 +15,8 @@ const modulePath = "github.com/Bitspark/bittype"
 
 // Check separately authored consumers against actual public declarations.
 func loadContracts(t *testing.T) *engineImporter {
- t.Helper()
- return &engineImporter{standard: importer.Default(), packages: make(map[string]*types.Package)}
+	t.Helper()
+	return &engineImporter{standard: importer.Default(), packages: make(map[string]*types.Package)}
 }
 
 func checkConsumer(t *testing.T, packages types.Importer, name string) error {

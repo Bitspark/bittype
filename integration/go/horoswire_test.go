@@ -1,9 +1,9 @@
 package integration_test
 
 import (
-	checkcontract "github.com/Bitspark/bittype/contracts/check/go"
 	"context"
 	"errors"
+	checkcontract "github.com/Bitspark/bittype/contracts/check/go"
 	"math/big"
 	"testing"
 
@@ -86,9 +86,13 @@ func wireEngine(t *testing.T, tree s.AST) (*engine.Engine, semantic.Snapshot) {
 	if err := registry.RegisterLanguage(definition); err != nil {
 		t.Fatal(err)
 	}
- checker, err := checkcontract.NewChecker[s.Language](definition, p)
- if err != nil { t.Fatal(err) }
- if err := registry.RegisterChecker(checker); err != nil { t.Fatal(err) }
+	checker, err := checkcontract.NewChecker[s.Language](definition, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := registry.RegisterChecker(checker); err != nil {
+		t.Fatal(err)
+	}
 	resolver, err := resolution.NewResolver[s.Language](definition, resolve.Contract(), p)
 	if err != nil {
 		t.Fatal(err)

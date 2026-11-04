@@ -1,11 +1,11 @@
 package consumer
 
 import (
+	"github.com/Bitspark/bittype/contracts/check/go"
+	"github.com/Bitspark/bittype/contracts/format/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/pipeline/go"
-	"github.com/Bitspark/bittype/contracts/check/go"
-	"github.com/Bitspark/bittype/contracts/format/go"
 	"github.com/Bitspark/bittype/contracts/print/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/cst/go"

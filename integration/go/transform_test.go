@@ -89,11 +89,15 @@ func register(t *testing.T, e *engine.Engine, languages ...representation.Langua
 	}
 }
 func registerChecked[L any](t *testing.T, e *engine.Engine, l representation.Language) {
- t.Helper()
- register(t, e, l)
- checker, err := check.NewChecker[L](l, testChecker[L]{id: l.ID()})
- if err != nil { t.Fatal(err) }
- if err := e.RegisterChecker(checker); err != nil { t.Fatal(err) }
+	t.Helper()
+	register(t, e, l)
+	checker, err := check.NewChecker[L](l, testChecker[L]{id: l.ID()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.RegisterChecker(checker); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func connect(t *testing.T, e *engine.Engine, edges ...transform.ASTTransformer) {
@@ -183,10 +187,16 @@ func TestTransformerRejectsInvalidBoundaries(t *testing.T) {
 	wrongGrammar := exampleTree[amber]()
 	wrongGrammar.Nodes[0].Kind = "wrong"
 	unchecked, err := representation.Pack(a, wrongGrammar)
- if err != nil { t.Fatal("carrier packing performed syntax admission", err) }
- syntaxChecker, err := check.NewChecker[amber](a, testChecker[amber]{id: a.ID()})
- if err != nil { t.Fatal(err) }
- if err := syntaxChecker.Check(unchecked); err == nil { t.Fatal("explicit grammar check skipped") }
+	if err != nil {
+		t.Fatal("carrier packing performed syntax admission", err)
+	}
+	syntaxChecker, err := check.NewChecker[amber](a, testChecker[amber]{id: a.ID()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := syntaxChecker.Check(unchecked); err == nil {
+		t.Fatal("explicit grammar check skipped")
+	}
 	if _, err := (representation.AST{}).Snapshot(); !errors.Is(err, representation.ErrInvalidAST) {
 		t.Fatal(err)
 	}
@@ -221,10 +231,14 @@ func TestTransformerCallbacksCannotMutateEnvelopes(t *testing.T) {
 	}
 	b := definition[blue](t, "blue")
 	input := packed[amber](t, a)
- syntaxChecker, err := check.NewChecker[amber](a, checker)
- if err != nil { t.Fatal(err) }
- if err := syntaxChecker.Check(input); err != nil { t.Fatal(err) }
- var retained ast.AST[blue]
+	syntaxChecker, err := check.NewChecker[amber](a, checker)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := syntaxChecker.Check(input); err != nil {
+		t.Fatal(err)
+	}
+	var retained ast.AST[blue]
 	adapter, err := transform.NewTransformer[amber, blue](a, b, func(source ast.AST[amber]) (ast.AST[blue], error) {
 		source.Nodes[1].Attributes[0].Text = "stage mutation"
 		retained, _ = mapExample[amber, blue](source)

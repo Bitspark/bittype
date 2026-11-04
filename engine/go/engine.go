@@ -44,13 +44,13 @@ type Engine struct {
 	edges     map[language.ID]map[language.ID]edge
 }
 type registration struct {
-	language representation.Language
-	parser   *parse.Parser
-	checker  *check.Checker
+	language  representation.Language
+	parser    *parse.Parser
+	checker   *check.Checker
 	formatter *format.Formatter
-	printer  *print.Printer
-	analyzer *analysis.Analyzer
-	resolver *resolution.Resolver
+	printer   *print.Printer
+	analyzer  *analysis.Analyzer
+	resolver  *resolution.Resolver
 }
 type edge struct {
 	from, to    language.ID

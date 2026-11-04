@@ -14,7 +14,7 @@ var ErrInvalidChecker = errors.New("invalid check provider")
 // It owns boundary snapshots and never installs another capability.
 type Checker struct {
 	definition representation.Language
-	run func(representation.AST) error
+	run        func(representation.AST) error
 }
 
 func NewChecker[L any](definition representation.Language, provider Provider[L]) (Checker, error) {
@@ -38,8 +38,8 @@ func NewChecker[L any](definition representation.Language, provider Provider[L])
 	return result, nil
 }
 
-func (p Checker) ID() language.ID { return p.definition.ID() }
-func (p Checker) Name() string { return p.definition.Name() }
+func (p Checker) ID() language.ID                   { return p.definition.ID() }
+func (p Checker) Name() string                      { return p.definition.Name() }
 func (p Checker) Language() representation.Language { return p.definition }
 func (p Checker) Validate() error {
 	if p.run == nil {

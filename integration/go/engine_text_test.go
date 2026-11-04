@@ -7,8 +7,8 @@ import (
 
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/format/go"
-	"github.com/Bitspark/bittype/contracts/print/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
+	"github.com/Bitspark/bittype/contracts/print/go"
 	"github.com/Bitspark/bittype/engine/go"
 	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
 	goprovider "github.com/Bitspark/bittype/provider/golang/go"
@@ -24,19 +24,29 @@ import (
 
 // Convenience for conformance fixtures, not a combined production interface.
 func registerNativeStages[L any](t *testing.T, e *engine.Engine, definition representation.Language, p nativeProvider[L]) {
- t.Helper()
- register(t, e, definition)
- parser, err := parse.NewParser[L](definition, p)
- if err != nil { t.Fatal(err) }
- checker, err := check.NewChecker[L](definition, p)
- if err != nil { t.Fatal(err) }
- formatter, err := format.NewFormatter[L](definition, p)
- if err != nil { t.Fatal(err) }
- printer, err := print.NewPrinter[L](definition, p)
- if err != nil { t.Fatal(err) }
- for _, err := range []error{e.RegisterParser(parser), e.RegisterChecker(checker), e.RegisterFormatter(formatter), e.RegisterPrinter(printer)} {
-  if err != nil { t.Fatal(err) }
- }
+	t.Helper()
+	register(t, e, definition)
+	parser, err := parse.NewParser[L](definition, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checker, err := check.NewChecker[L](definition, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	formatter, err := format.NewFormatter[L](definition, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	printer, err := print.NewPrinter[L](definition, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, err := range []error{e.RegisterParser(parser), e.RegisterChecker(checker), e.RegisterFormatter(formatter), e.RegisterPrinter(printer)} {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 }
 
 func nativeRegistration[L any](t *testing.T, e *engine.Engine, p nativeProvider[L], source string) representation.Language {

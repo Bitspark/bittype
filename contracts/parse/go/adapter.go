@@ -14,7 +14,7 @@ var ErrInvalidParser = errors.New("invalid parse provider")
 // It owns boundary snapshots and never installs another capability.
 type Parser struct {
 	definition representation.Language
-	run func(Input) (representation.CST, error)
+	run        func(Input) (representation.CST, error)
 }
 
 func NewParser[L any](definition representation.Language, provider Provider[L]) (Parser, error) {
@@ -38,8 +38,8 @@ func NewParser[L any](definition representation.Language, provider Provider[L]) 
 	return result, nil
 }
 
-func (p Parser) ID() language.ID { return p.definition.ID() }
-func (p Parser) Name() string { return p.definition.Name() }
+func (p Parser) ID() language.ID                   { return p.definition.ID() }
+func (p Parser) Name() string                      { return p.definition.Name() }
 func (p Parser) Language() representation.Language { return p.definition }
 func (p Parser) Validate() error {
 	if p.run == nil {
