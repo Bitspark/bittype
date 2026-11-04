@@ -127,7 +127,10 @@ func TestProductionArchitecture(t *testing.T) {
 		"contracts/language/go":   {},
 		"contracts/pipeline/go":   {},
 		"contracts/check/go":      {"trees/ast/go", "contracts/language/go"},
-		"contracts/text/go":       {"trees/ast/go", "trees/cst/go", "contracts/language/go", "contracts/check/go"},
+		"contracts/parse/go":      {"trees/ast/go", "trees/cst/go", "contracts/language/go"},
+		"contracts/format/go":     {"trees/ast/go", "trees/cst/go", "contracts/language/go"},
+		"contracts/print/go":      {"trees/cst/go", "contracts/language/go"},
+		"contracts/text/go":       {"trees/ast/go", "contracts/check/go", "contracts/parse/go", "contracts/format/go", "contracts/print/go"},
 		"check/ast/go":            {"trees/ast/go", "contracts/text/go"},
 		"check/cst/go":            {"trees/ast/go", "trees/cst/go", "check/ast/go", "contracts/text/go"},
 		"print/go":                {"trees/cst/go", "check/cst/go"},
@@ -136,12 +139,12 @@ func TestProductionArchitecture(t *testing.T) {
 		"contracts/semantic/go":   {"trees/ast/go", "trees/representation/go", "contracts/language/go", "semantics/go", "internal/tree"},
 		"contracts/resolution/go": {"trees/representation/go", "contracts/language/go", "contracts/semantic/go", "semantics/go"},
 		"contracts/analysis/go":   {"trees/representation/go", "contracts/language/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"},
-		"engine/go":               {"trees/representation/go", "contracts/language/go", "contracts/text/go", "contracts/transform/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go"},
+		"engine/go":               {"trees/representation/go", "contracts/language/go", "contracts/parse/go", "contracts/text/go", "contracts/transform/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go"},
 		"internal/tree":           {"trees/ast/go"},
 		"internal/grammar":        {"trees/ast/go", "check/ast/go", "contracts/text/go"},
-		"internal/lex":            {"trees/ast/go", "contracts/text/go"},
-		"internal/parseutil":      {"trees/ast/go", "check/ast/go", "contracts/text/go", "internal/lex"},
-		"internal/concrete":       {"trees/ast/go", "trees/cst/go", "check/cst/go", "contracts/text/go", "internal/lex", "internal/tree"},
+		"internal/lex":            {"trees/ast/go", "contracts/parse/go", "contracts/text/go"},
+		"internal/parseutil":      {"trees/ast/go", "check/ast/go", "contracts/parse/go", "contracts/text/go", "internal/lex"},
+		"internal/concrete":       {"trees/ast/go", "trees/cst/go", "check/cst/go", "contracts/parse/go", "contracts/text/go", "internal/lex", "internal/tree"},
 	}
 	for _, name := range languages {
 		syntax := "syntax/" + name + "/go"
@@ -152,9 +155,7 @@ func TestProductionArchitecture(t *testing.T) {
 		for _, stage := range []string{"check", "parse", "format"} {
 			allowed := append([]string{}, base...)
 			allowed = append(allowed, "check/ast/go", "internal/tree", "internal/grammar", helper)
-			if stage == "check" {
-				allowed = append(allowed, "contracts/check/go")
-			}
+			allowed = append(allowed, "contracts/"+stage+"/go")
 			if stage != "check" {
 				allowed = append(allowed, checker, "internal/concrete")
 			}
@@ -163,7 +164,7 @@ func TestProductionArchitecture(t *testing.T) {
 			}
 			rules[stage+"/"+name+"/go"] = allowed
 		}
-		rules["provider/"+name+"/go"] = append(append([]string{}, base...), checker, "parse/"+name+"/go", "format/"+name+"/go", "print/go")
+		rules["provider/"+name+"/go"] = append(append([]string{}, base...), "contracts/parse/go", checker, "parse/"+name+"/go", "format/"+name+"/go", "print/go")
 		// Language-specific lexical helpers cannot depend on stages or another language.
 		rules[helper] = []string{"trees/ast/go", "contracts/text/go", "internal/grammar", "internal/lex", "internal/tree"}
 	}

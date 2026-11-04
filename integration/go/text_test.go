@@ -1,7 +1,7 @@
 package integration_test
 
 import (
-	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	goformat "github.com/Bitspark/bittype/format/golang/go"
 	goparse "github.com/Bitspark/bittype/parse/golang/go"
 	printer "github.com/Bitspark/bittype/print/go"
@@ -10,7 +10,7 @@ import (
 
 func TestGoConcretePipeline(t *testing.T) {
 	source := "package sample\r\n\r\n// pagination\r\ntype Page[T any] struct { Items []T; Next *string }\r\ntype PeoplePage = Page[string]\r\ntype Reader[T any] interface { Read(key string) (T, error) }\r\n"
-	parsed, err := goparse.Parse(text.Input{SourceID: "go-input", TreeID: "go-tree", Text: source})
+	parsed, err := goparse.Parse(parse.Input{SourceID: "go-input", TreeID: "go-tree", Text: source})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,7 +26,7 @@ func TestGoConcretePipeline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	again, err := goparse.Parse(text.Input{SourceID: "go-output", TreeID: "go-again", Text: output})
+	again, err := goparse.Parse(parse.Input{SourceID: "go-output", TreeID: "go-again", Text: output})
 	if err != nil {
 		t.Fatalf("%v\n%s", err, output)
 	}

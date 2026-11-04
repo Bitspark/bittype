@@ -33,7 +33,7 @@ func loadContracts(t *testing.T) contractImporter {
 	t.Helper()
 	packages := contractImporter{}
 	for _, name := range []string{
-		"trees/ast", "trees/cst", "contracts/pipeline", "contracts/language", "contracts/check", "contracts/text", "syntax/typescript", "syntax/golang", "syntax/rust", "syntax/cpp", "syntax/horos", "syntax/horoswire",
+		"trees/ast", "trees/cst", "contracts/pipeline", "contracts/language", "contracts/check", "contracts/parse", "contracts/format", "contracts/print", "contracts/text", "syntax/typescript", "syntax/golang", "syntax/rust", "syntax/cpp", "syntax/horos", "syntax/horoswire",
 	} {
 		dir := filepath.Join("..", "..", name, "go")
 		entries, err := os.ReadDir(dir)

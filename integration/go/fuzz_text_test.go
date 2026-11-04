@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
 	goprovider "github.com/Bitspark/bittype/provider/golang/go"
@@ -12,7 +13,7 @@ import (
 
 func fuzzOne[L any](t *testing.T, p text.Provider[L], source string) {
 	t.Helper()
-	parsed, err := p.Parse(text.Input{SourceID: "fuzz", TreeID: "fuzz-tree", Text: source})
+	parsed, err := p.Parse(parse.Input{SourceID: "fuzz", TreeID: "fuzz-tree", Text: source})
 	if err != nil {
 		if len(parsed.Nodes) > 0 {
 			t.Fatal("partial concrete result on error")

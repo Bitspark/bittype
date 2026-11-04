@@ -3,13 +3,14 @@ package parseutil
 import (
 	"fmt"
 	"github.com/Bitspark/bittype/check/ast/go"
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/internal/lex"
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 type Parser[L any] struct {
-	Input      text.Input
+	Input      parse.Input
 	All        []lex.Token
 	Tokens     []lex.Token
 	Pos, Depth int
@@ -17,7 +18,7 @@ type Parser[L any] struct {
 	Err        error
 }
 
-func New[L any](input text.Input, options lex.Options) (*Parser[L], error) {
+func New[L any](input parse.Input, options lex.Options) (*Parser[L], error) {
 	all, err := lex.Scan(input, options)
 	if err != nil {
 		return nil, err

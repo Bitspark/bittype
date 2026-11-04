@@ -20,6 +20,10 @@ syntax remain unimplemented.
 | [engine/go](../engine/go/engine.go) | Registration, route planning/execution and text-stage composition |
 | [contracts/language/go](../contracts/language/go/language.go) | Shared ID/Name identity contract |
 | [contracts/check/go](../contracts/check/go/provider.go) | Independent AST syntax-admission contract |
+| [contracts/parse/go](../contracts/parse/go/provider.go) | Source input and text-to-CST contract |
+| [contracts/format/go](../contracts/format/go/provider.go) | AST-to-CST contract |
+| [contracts/print/go](../contracts/print/go/provider.go) | CST-to-text contract |
+| [contracts/text/go](../contracts/text/go/provider.go) | Composition of the four stage providers |
 | [contracts/pipeline/go](../contracts/pipeline/go/stage.go) | Independent typed Stage function contract |
 | Existing native providers | Language-specific parsing, checking, formatting and printing |
 
@@ -176,7 +180,7 @@ NewProvider adapts existing implementations; it creates no new native grammar.
 The engine offers:
 
 ```go
-Parse(languageID, text.Input) (representation.CST, error)
+Parse(languageID, parse.Input) (representation.CST, error)
 Check(representation.AST) error
 Format(representation.AST) (representation.CST, error)
 Print(representation.CST) (string, error)
@@ -197,7 +201,7 @@ its returned text. Providers remain responsible for their grammar, concrete
 spelling and formatter preservation contracts; structural checks do not prove
 that arbitrary leaf text means the stored abstract view.
 
-For example, with explicit imports of engine, text, the TypeScript syntax
+For example, with explicit imports of engine, the parse contract, the TypeScript syntax
 package and its provider:
 
 ```go
@@ -208,7 +212,7 @@ if err != nil { return err }
 syntax := engine.New()
 if err := syntax.RegisterProvider(provider); err != nil { return err }
 
-parsed, err := syntax.Parse(provider.ID(), text.Input{
+parsed, err := syntax.Parse(provider.ID(), parse.Input{
     SourceID: "input", TreeID: "input", Text: "type Page<T> = T[];",
 })
 if err != nil { return err }

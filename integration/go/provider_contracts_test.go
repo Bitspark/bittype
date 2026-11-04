@@ -14,11 +14,31 @@ func TestIndependentTextProviderContracts(t *testing.T) {
 	if err := checkConsumer(t, packages, "text/provider"); err != nil {
 		t.Fatal(err)
 	}
-	if err := checkConsumer(t, packages, "text/missing_identity"); err == nil || !strings.Contains(err.Error(), "Name") {
-		t.Fatalf("missing Name not rejected: %v", err)
+	if err := checkConsumer(t, packages, "text/stages"); err != nil {
+		t.Fatal(err)
 	}
-	if err := checkConsumer(t, packages, "text/mixed_views"); err == nil {
-		t.Fatal("cross-language AST view accepted")
+	for _, fixture := range []struct{ name, reason string }{
+		{"missing_identity", "Name"},
+		{"mixed_views", "cannot use"},
+	} {
+		diagnostics := consumerDiagnostics(t, packages, "text/"+fixture.name)
+		boundaries := []string{"parse.Provider", "format.Provider", "print.Provider"}
+		if fixture.name == "mixed_views" {
+			boundaries = append(boundaries, "ast.View")
+		}
+		for _, provider := range boundaries {
+			found := false
+			for _, diagnostic := range diagnostics {
+				message := diagnostic.Error()
+				if strings.Contains(message, provider) && strings.Contains(message, fixture.reason) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("%s did not reject %s: %v", provider, fixture.name, diagnostics)
+			}
+		}
 	}
 }
 

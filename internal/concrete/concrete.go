@@ -2,6 +2,7 @@ package concrete
 
 import (
 	cstcheck "github.com/Bitspark/bittype/check/cst/go"
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/internal/lex"
 	"github.com/Bitspark/bittype/internal/tree"
@@ -69,7 +70,7 @@ func Build[L any](abstract ast.AST[L], doc Doc[L]) (cst.CST[L], error) {
 // Parsed groups retained lexical leaves using native source intervals. Several
 // abstract nodes may share one concrete spelling (for example grouped Go fields).
 // All source bytes are retained once; no spelling is synthesized.
-func Parsed[L any](abstract ast.AST[L], input text.Input, tokens []lex.Token, vocab Vocabulary[L]) (cst.CST[L], error) {
+func Parsed[L any](abstract ast.AST[L], input parse.Input, tokens []lex.Token, vocab Vocabulary[L]) (cst.CST[L], error) {
 	type interval struct {
 		start, end int
 		kind       cst.Kind[L]

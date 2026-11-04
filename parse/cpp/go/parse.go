@@ -2,6 +2,7 @@ package cppparse
 
 import (
 	check "github.com/Bitspark/bittype/check/cpp/go"
+	parsecontract "github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/internal/concrete"
 	native "github.com/Bitspark/bittype/internal/cpp"
@@ -18,7 +19,7 @@ type parser struct{ *parseutil.Parser[s.Language] }
 
 var vocabulary = concrete.Vocabulary[s.Language]{Layout: s.ConcreteLayout, Token: s.ConcreteToken, Whitespace: s.ConcreteWhitespace, Comment: s.ConcreteComment}
 
-func Parse(input text.Input) (cst.CST[s.Language], error) {
+func Parse(input parsecontract.Input) (cst.CST[s.Language], error) {
 	if len(input.Text) > lex.MaxBytes {
 		return cst.CST[s.Language]{}, &text.Diagnostic{Code: text.LimitExceeded, Message: "input exceeds 4 MiB"}
 	}
@@ -428,6 +429,6 @@ func (p *parser) typeID() ast.NodeID {
 
 type Provider struct{ s.Language }
 
-func (Provider) Parse(input text.Input) (cst.CST[s.Language], error) { return Parse(input) }
+func (Provider) Parse(input parsecontract.Input) (cst.CST[s.Language], error) { return Parse(input) }
 
-var _ text.Parser[s.Language] = Provider{}
+var _ parsecontract.Provider[s.Language] = Provider{}

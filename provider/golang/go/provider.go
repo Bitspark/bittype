@@ -3,6 +3,7 @@ package golangprovider
 
 import (
 	check "github.com/Bitspark/bittype/check/golang/go"
+	parsecontract "github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	format "github.com/Bitspark/bittype/format/golang/go"
 	parse "github.com/Bitspark/bittype/parse/golang/go"
@@ -15,7 +16,7 @@ import (
 // Provider has no initialization, discovery or registration side effects.
 type Provider struct{ s.Language }
 
-func (Provider) Parse(input text.Input) (cst.CST[s.Language], error) { return parse.Parse(input) }
+func (Provider) Parse(input parsecontract.Input) (cst.CST[s.Language], error) { return parse.Parse(input) }
 func (Provider) Format(view ast.View[s.Language]) (cst.CST[s.Language], error) {
 	return format.Format(view)
 }

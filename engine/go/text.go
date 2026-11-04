@@ -3,7 +3,7 @@ package engine
 import (
 	"fmt"
 	"github.com/Bitspark/bittype/contracts/language/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
@@ -17,7 +17,7 @@ func (e *Engine) textProvider(id language.ID) (Provider, error) {
 	}
 	return *registration.text, nil
 }
-func (e *Engine) Parse(id language.ID, input text.Input) (representation.CST, error) {
+func (e *Engine) Parse(id language.ID, input parse.Input) (representation.CST, error) {
 	provider, err := e.textProvider(id)
 	if err != nil {
 		return representation.CST{}, err

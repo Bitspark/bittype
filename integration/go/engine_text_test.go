@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/engine/go"
 	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
@@ -32,7 +33,7 @@ func nativeRegistration[L any](t *testing.T, e *engine.Engine, p text.Provider[L
 	if err := e.RegisterProvider(registered); err != nil {
 		t.Fatal(err)
 	}
-	input := text.Input{SourceID: "engine-native", TreeID: "engine-native", Text: source}
+	input := parse.Input{SourceID: "engine-native", TreeID: "engine-native", Text: source}
 	parsed, err := e.Parse(p.ID(), input)
 	if err != nil {
 		t.Fatal(err)
@@ -45,7 +46,7 @@ func nativeRegistration[L any](t *testing.T, e *engine.Engine, p text.Provider[L
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := p.Parse(text.Input{SourceID: "rendered", TreeID: "rendered", Text: output}); err != nil {
+	if _, err := p.Parse(parse.Input{SourceID: "rendered", TreeID: "rendered", Text: output}); err != nil {
 		t.Fatal(err)
 	}
 	if err := e.Check(parsed.ASTView()); err != nil {
@@ -84,19 +85,19 @@ func TestEngineUsesFourExistingTextProviders(t *testing.T) {
 	if _, err := e.Plan("typescript", "rust"); !errors.Is(err, engine.ErrNoPath) {
 		t.Fatal("invented native transformer", err)
 	}
-	if _, err := e.Parse("missing", text.Input{}); !errors.Is(err, engine.ErrUnknownLanguage) {
+	if _, err := e.Parse("missing", parse.Input{}); !errors.Is(err, engine.ErrUnknownLanguage) {
 		t.Fatal(err)
 	}
 }
 
 type fakeText[L any] struct {
 	testChecker[L]
-	parse  func(text.Input) (cst.CST[L], error)
+	parse  func(parse.Input) (cst.CST[L], error)
 	format func(ast.View[L]) (cst.CST[L], error)
 	print  func(cst.CST[L]) (string, error)
 }
 
-func (p fakeText[L]) Parse(input text.Input) (cst.CST[L], error)   { return p.parse(input) }
+func (p fakeText[L]) Parse(input parse.Input) (cst.CST[L], error)   { return p.parse(input) }
 func (p fakeText[L]) Format(input ast.View[L]) (cst.CST[L], error) { return p.format(input) }
 func (p fakeText[L]) Print(input cst.CST[L]) (string, error)       { return p.print(input) }
 func exampleConcrete[L any](leaf *string) cst.CST[L] {
@@ -109,7 +110,7 @@ func TestEngineConcreteSnapshotsAndPartialErrors(t *testing.T) {
 	var parseErr, formatErr, printErr error
 	p := fakeText[amber]{
 		testChecker: testChecker[amber]{id: "external-language"},
-		parse:       func(text.Input) (cst.CST[amber], error) { return raw, parseErr },
+		parse:       func(parse.Input) (cst.CST[amber], error) { return raw, parseErr },
 		format:      func(ast.View[amber]) (cst.CST[amber], error) { return raw, formatErr },
 		print:       func(c cst.CST[amber]) (string, error) { return *c.Nodes[0].Text, printErr },
 	}
@@ -121,7 +122,7 @@ func TestEngineConcreteSnapshotsAndPartialErrors(t *testing.T) {
 	if err := e.RegisterProvider(adapted); err != nil {
 		t.Fatal(err)
 	}
-	parsed, err := e.Parse(adapted.ID(), text.Input{})
+	parsed, err := e.Parse(adapted.ID(), parse.Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +139,7 @@ func TestEngineConcreteSnapshotsAndPartialErrors(t *testing.T) {
 		t.Fatal("concrete metadata aliases provider")
 	}
 	parseErr = failure
-	if c, err := e.Parse(adapted.ID(), text.Input{}); !errors.Is(err, failure) || c.LanguageID() != "" {
+	if c, err := e.Parse(adapted.ID(), parse.Input{}); !errors.Is(err, failure) || c.LanguageID() != "" {
 		t.Fatal("partial parse output", err)
 	}
 	formatErr = failure
@@ -151,7 +152,7 @@ func TestEngineConcreteSnapshotsAndPartialErrors(t *testing.T) {
 	}
 	parseErr = nil
 	raw.Root = 99
-	if c, err := e.Parse(adapted.ID(), text.Input{}); err == nil || c.LanguageID() != "" {
+	if c, err := e.Parse(adapted.ID(), parse.Input{}); err == nil || c.LanguageID() != "" {
 		t.Fatal("invalid concrete parse accepted")
 	}
 	if _, err := representation.UnpackCST[blue](adapted.Language(), parsed); !errors.Is(err, representation.ErrTypeMismatch) {
@@ -163,7 +164,7 @@ func TestEngineASTOnlyCapabilitiesAndProfiles(t *testing.T) {
 	a := definition[amber](t, "amber")
 	e := engine.New()
 	register(t, e, a)
-	if _, err := e.Parse("amber", text.Input{}); !errors.Is(err, engine.ErrMissingCapability) {
+	if _, err := e.Parse("amber", parse.Input{}); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
 	if _, err := e.Render(packed[amber](t, a)); !errors.Is(err, engine.ErrMissingCapability) {
@@ -187,7 +188,7 @@ func TestEngineASTOnlyCapabilitiesAndProfiles(t *testing.T) {
 	if err := e.RegisterProvider(p); err != nil {
 		t.Fatal(err)
 	}
-	typedCST, err := (tsprovider.Provider{}).Parse(text.Input{SourceID: "profile", TreeID: "profile", Text: "type X=string;"})
+	typedCST, err := (tsprovider.Provider{}).Parse(parse.Input{SourceID: "profile", TreeID: "profile", Text: "type X=string;"})
 	if err != nil {
 		t.Fatal(err)
 	}
