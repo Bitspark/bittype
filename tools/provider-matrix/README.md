@@ -48,7 +48,12 @@ and `-output` the Markdown file. Authored prose and newline style are preserved.
 ## Automatic updates
 
 [Provider matrices](../../.github/workflows/provider-matrices.yml) runs on GitHub
-after relevant changes land on `main`, or by workflow dispatch. It reads latest
+after relevant changes land on `main`, or by workflow dispatch. A merged-PR event
+also triggers generation when `[skip ci]` suppresses the ordinary push workflow.
+Only merged PRs qualify, and the job always reads `main`, never an unmerged head.
+Direct pushes with skip instructions require explicit workflow dispatch, following
+[GitHub's event behavior](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/skip-workflow-runs).
+It reads latest
 main, generates the tables, and, when they change, creates or updates the bot-owned
 `automation/provider-matrices` branch and pull request, then squash-merges that
 docs-only update. No manual table edit or merge is needed. The job is serialized
