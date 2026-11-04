@@ -1,0 +1,20 @@
+{
+  "attempts": [
+    {
+      "attempt": 1,
+      "idempotencyKey": "bittype-research-0004-206ad8cb-ac72-4d4f-8316-0a6b01398b7f",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0004-kind-system",
+      "submittedPath": "research-docs/0004-kind-system.submitted.md",
+      "sha256": "e7941dee4413a1becd65bd32e9a256bcaead4b04619949fd7f3565877fad773d",
+      "byteSize": 34871,
+      "codeRevision": "c143440bbf703a4ae02add267a5699c2bf7374c9",
+      "horosRevision": "e2896317a1f4b080cf0c4e8e46234d6ad680d141",
+      "preparationRevision": "6440864e315c89df74f7bd16a4ac3e3b7703c3d2",
+      "cliBuild": "nightfall 0.1.0 (e2640b38009d, bundle ef085ca51a5d) built 2026-10-18T03:14:36.183Z",
+      "recordedAt": "2026-11-04T14:39:10.4583856Z",
+      "review": "https://github.com/Bitspark/bittype/issues/55#issuecomment-6633472636"
+    }
+  ]
+}

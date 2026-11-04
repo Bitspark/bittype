@@ -2,9 +2,10 @@
 
 **ID:** 0004
 **Date:** 4 November 2026
-**Status:** draft
+**Status:** reviewed
 **Owner:** codex-hydrated-type-design
 **Issue:** https://github.com/Bitspark/bittype/issues/55
+**Reviewed:** https://github.com/Bitspark/bittype/issues/55#issuecomment-6633472636
 
 ## Question
 
