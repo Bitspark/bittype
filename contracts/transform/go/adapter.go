@@ -2,12 +2,12 @@ package transform
 
 import (
 	"context"
-	"slices"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/internal/tree"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
+	"slices"
 )
 
 // Request supplies an owned typed source and admitted immutable evidence.
@@ -15,11 +15,12 @@ type Request[L any] struct {
 	source   ast.AST[L]
 	entry    ast.NodeRef
 	evidence []semantic.Result
-	inputs []representation.AST
+	inputs   []representation.AST
 }
 
 func (r Request[L]) Source() ast.AST[L] { return tree.Clone(r.source) }
 func (r Request[L]) Entry() ast.NodeRef { return r.entry }
+
 // Inputs retains the complete captured source collection for multi-tree mappings.
 func (r Request[L]) Inputs() []representation.AST { return slices.Clone(r.inputs) }
 func (r Request[L]) Evidence(index int) (semantic.Result, bool) {
