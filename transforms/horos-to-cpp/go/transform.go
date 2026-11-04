@@ -65,9 +65,13 @@ func path(a *g.Arena[s.Language], names []string, args []ast.NodeID, target ast.
 	return a.Add(s.KindNamedType, attrs, o, segments...)
 }
 func (d dialect) Reference(a *g.Arena[s.Language], name string, target ast.NodeID, args []ast.NodeID, o ast.NodeRef) ast.NodeID {
-	if a.Err != nil { return 0 }
-	if a.Tree.Nodes[target-1].Kind == s.KindTypeParameter { return path(a, []string{name}, args, target, o, false) }
-	return path(a, []string{d.namespace,name}, args, target, o, true)
+	if a.Err != nil {
+		return 0
+	}
+	if a.Tree.Nodes[target-1].Kind == s.KindTypeParameter {
+		return path(a, []string{name}, args, target, o, false)
+	}
+	return path(a, []string{d.namespace, name}, args, target, o, true)
 }
 func (dialect) Text(a *g.Arena[s.Language], o ast.NodeRef) ast.NodeID {
 	return path(a, []string{"std", "string"}, nil, 0, o, true)

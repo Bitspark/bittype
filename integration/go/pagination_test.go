@@ -488,12 +488,12 @@ pub fn qualify() -> NestedPage {
 	t.Run("cpp", func(t *testing.T) {
 		dir := t.TempDir()
 		write(dir, "types.hpp", formatted(t, cp.Provider{}, out.cpp))
-        e, from, input := generationInput(t, genModule("shadow",genMap(),genEntry("Person",genType(genPerson())),genEntry("Container",genType(genRecord(genField("Person",false,genLocal("Person")))))))
-        shadow := generated(t,e,from,input,cp.Provider{},cppMapper)
-        shadowDir := t.TempDir()
-        write(shadowDir,"shadow.hpp",formatted(t,cp.Provider{},shadow))
-        write(shadowDir,"shadow.cpp","#include \"shadow.hpp\"\n#include <type_traits>\nstatic_assert(std::is_same_v<decltype(pagination::Container::Person),pagination::Person>);\n")
-        command(t,shadowDir,"docker","run","--rm","--network=none","-v",shadowDir+":/work","-w","/work","gcc:14.2.0","g++","-std=c++20","-fsyntax-only","shadow.cpp")
+		e, from, input := generationInput(t, genModule("shadow", genMap(), genEntry("Person", genType(genPerson())), genEntry("Container", genType(genRecord(genField("Person", false, genLocal("Person")))))))
+		shadow := generated(t, e, from, input, cp.Provider{}, cppMapper)
+		shadowDir := t.TempDir()
+		write(shadowDir, "shadow.hpp", formatted(t, cp.Provider{}, shadow))
+		write(shadowDir, "shadow.cpp", "#include \"shadow.hpp\"\n#include <type_traits>\nstatic_assert(std::is_same_v<decltype(pagination::Container::Person),pagination::Person>);\n")
+		command(t, shadowDir, "docker", "run", "--rm", "--network=none", "-v", shadowDir+":/work", "-w", "/work", "gcc:14.2.0", "g++", "-std=c++20", "-fsyntax-only", "shadow.cpp")
 		write(dir, "consumer.cpp", `#include "types.hpp"
 #include <type_traits>
 static_assert(std::is_same_v<pagination::PeoplePage, pagination::Page<pagination::Person>>);

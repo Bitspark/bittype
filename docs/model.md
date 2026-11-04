@@ -141,8 +141,8 @@ alone emits text.
 
 The [generation design](generation.md) and [layout](../LAYOUT.md) retain the
 stage-first matrix. Planned canonical paths use `horos`, replacing the earlier
-proposed `canonical` name. The AST and readable syntax stages are implemented; native mappings
-and directed transformations remain future work.
+proposed `canonical` name. The AST, readable syntax and [native pagination mappings](semantic-generation.md)
+are implemented. Broader native representations and reverse mappings remain future work.
 
 ## Native representation profiles
 

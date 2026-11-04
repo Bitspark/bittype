@@ -121,7 +121,7 @@ Generic carrier check directories
 are excluded explicitly. An orphan parser and an incomplete syntax package both
 fail. The checks also classify every production package and enforce its directed
 dependencies, including private helpers and narrow external-model allowances
-only for the Horos frontend. Generic carriers,
+only for the Horos frontend and source-owned transformation reader. Generic carriers,
 contracts, engine and printer must remain independent of Horos/ontos, and native
 syntax/text stages must remain independent of the canonical frontend.
 

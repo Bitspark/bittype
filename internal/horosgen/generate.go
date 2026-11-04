@@ -236,7 +236,9 @@ func (g *generator[L]) prepare() error {
 		return semantic.ErrInvalidRequest
 	}
 	occupied := map[string]bool{}
-	for _, name := range g.dialect.ReservedNames() { occupied[name] = true }
+	for _, name := range g.dialect.ReservedNames() {
+		occupied[name] = true
+	}
 	var declarations []semantics.EntityID
 	for i, e := range g.facts.Entities {
 		if e.Kind != (semantics.Key{Owner: "horos", Name: "declaration"}) {

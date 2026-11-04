@@ -359,23 +359,22 @@ include open/applied pagination and native reader signatures. Tests exercise
 metadata through the common interface and enforce the production dependency
 boundary. Native text syntax and compiler fixtures now provide separately scoped evidence.
 The engine's independent tests qualify registration, the typed boundary, graph
-planning and checked execution. There is no production ASTTransformer implementation
-yet; native type generation is the next mapping to implement.
+planning and checked execution. The production Horos-to-native pagination maps
+consume explicit semantic evidence and retain open generics.
 
 Delivery status and subsequent increments:
 
 1. Completed: qualify the Horos declaration model and independent semantic fixtures;
    implement its AST projection/checker and AST-only registration.
-2. Next: implement Horos-to-native ASTTransformer providers,
-   preserving open generics and qualifying imported pagination first.
-3. Compose and qualify native generation, then add explicitly scoped reverse
-   transformers for migration and qualify multi-step routes.
+2. Completed: implement explicit semantic transformation input and four native
+   pagination maps, including imported declarations and generic applications.
+3. Next: qualify additional native representation profiles and library-owned
+   recipes. Add reverse transformers for migration as separately scoped work.
 
 Native text stages and compiler fixtures are implemented separately; they do not
-depend on these future increments.
+depend on the transformation implementations.
 
-Generator tests will compare target ASTs. Formatter tests will accept
-independently authored target ASTs. End-to-end tests will compile and use the
-same semantic examples, including open/applied pagination and presence/null
-distinctions. Compiler success alone will not prove all canonical value
-invariants.
+Generator tests inspect target ASTs, binder references and source origins.
+Formatter tests accept independently authored target ASTs. End-to-end tests
+compile and use open/applied pagination and optional-field presence in all four
+languages. Compiler success alone does not prove all canonical value invariants.
