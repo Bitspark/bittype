@@ -61,6 +61,9 @@ one source unit. Root declarations use exported native names; imported
 declarations use `M<first-16-hex-of-SHA256(pin-text)>_<Name>`. Collisions fail;
 the hash is only a spelling, never semantic identity. Per-module output/import
 placement is deferred. Generation has no implicit network or filesystem IO.
+The [source-layout proposal](layout.md) specifies a multi-unit result and an
+independent target layout stage. It does not change this implemented single-unit
+profile or make physical layout a semantic fact.
 
 | Horos form | TypeScript | Go | Rust | C++ |
 | --- | --- | --- | --- | --- |
