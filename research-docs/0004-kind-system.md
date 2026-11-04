@@ -2,12 +2,23 @@
 
 **ID:** 0004
 **Date:** 4 November 2026
-**Status:** delivering
+**Status:** superseded
 **Owner:** codex-hydrated-type-design
 **Issue:** https://github.com/Bitspark/bittype/issues/55
 **Reviewed:** https://github.com/Bitspark/bittype/issues/55#issuecomment-6633472636
 **Run-ID:** run_03dd46c7-4356-4db4-92cf-2e2fd3f98645
 **Graded:** https://github.com/Bitspark/bittype/issues/55#issuecomment-6634301628
+**Superseded-by:** [Research 0005: general structural kinds](https://github.com/Bitspark/bittype/issues/59)
+
+The owner's later 4 November correction rejects the closed Type/Data interface
+and dedicated Data proof system: scalar, record, list and other structural kinds
+must compose through a general kind model, with Data an ordinary definition.
+Research 0005 replaces that design commitment. This record preserves the prior
+evaluation, implementation and qualification; it does not claim completed
+delivery or approval of the narrower model. Horos revision-3 source has landed,
+but its pending 0.10.0 publication and Bittype PR 57 integration are held for the
+replacement. Useful agnostic infrastructure will be evaluated against the new
+requirements. The frozen submitted bytes and raw advice remain unchanged.
 
 ## Question
 
