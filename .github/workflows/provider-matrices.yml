@@ -1,0 +1,85 @@
+name: Provider matrices
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.go'
+      - go.mod
+      - go.sum
+      - docs/providers.md
+      - .github/workflows/provider-matrices.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-matrices
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Generate tables from implemented providers
+        run: go run ./tools/provider-matrix/go
+      - name: Publish generated documentation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- docs/providers.md; then
+            echo 'No generated documentation changes.'
+            exit 0
+          fi
+          # Only this generated document is staged. No credentials are available
+          # to the generation step or persisted in Git configuration on disk.
+          branch=automation/provider-matrices
+          base=$(git rev-parse HEAD)
+          git switch -c "$branch"
+          git add -- docs/providers.md
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'docs: regenerate provider matrices [skip ci]'
+          head=$(git rev-parse HEAD)
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0=credential.helper
+          export GIT_CONFIG_VALUE_0='!gh auth git-credential'
+          # The branch is exclusively owned by this serialized workflow. Refuse
+          # to overwrite a concurrently changed branch or publish a stale main.
+          git fetch origin main
+          if [ "$(git rev-parse origin/main)" != "$base" ]; then
+            gh workflow run provider-matrices.yml --ref main
+            echo 'Main advanced; a fresh generation was queued.'
+            exit 0
+          fi
+          remote=$(git ls-remote --heads origin "refs/heads/$branch" | cut -f1)
+          git push "--force-with-lease=refs/heads/$branch:$remote" origin "HEAD:refs/heads/$branch"
+          pr=$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number // empty')
+          if [ -z "$pr" ]; then
+            printf '%s\n' 'Regenerate the provider and transformer tables from implemented Go source. Only generated regions in docs/providers.md change.' > "$RUNNER_TEMP/provider-matrices-body.md"
+            gh pr create --head "$branch" --base main --title 'docs: regenerate provider matrices [skip ci]' --body-file "$RUNNER_TEMP/provider-matrices-body.md"
+            pr=$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number')
+          fi
+          merged=$(gh api --method PUT "repos/$GH_REPO/pulls/$pr/merge" -f merge_method=squash -f sha="$head" -f 'commit_title=docs: regenerate provider matrices [skip ci]' --jq .merged)
+          if [ "$merged" != true ]; then
+            echo 'Generated documentation PR was not merged.' >&2
+            exit 1
+          fi
+          git push origin --delete "$branch"

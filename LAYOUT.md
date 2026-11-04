@@ -47,6 +47,7 @@ internal/                shared private checking/parsing/tree mechanics
 transforms/horos-to-<target>/go/  analyzed Horos to native type ASTs
 internal/horosgen/        source-owned semantic reading and bounded target arenas
 integration/go/          independent consumers and cross-package qualification
+tools/provider-matrix/go/ development-only source-derived documentation generation
 testdata/text/<language>/valid/
 docs/
 ```
