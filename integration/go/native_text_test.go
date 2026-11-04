@@ -129,7 +129,7 @@ func TestConcreteSourceTrivia(t *testing.T) {
 		name, source string
 		run          func(parse.Input) (string, error)
 	}{
-		{"typescript", "\ufeff// comment\r\ntype CafÃ© = 'Ã©';\r\n\t", func(i parse.Input) (string, error) {
+		{"typescript", "\ufeff// comment\r\ntype Café = 'é';\r\n\t", func(i parse.Input) (string, error) {
 			p := tsprovider.Provider{}
 			c, e := p.Parse(i)
 			if e != nil {
@@ -137,7 +137,7 @@ func TestConcreteSourceTrivia(t *testing.T) {
 			}
 			return p.Print(c)
 		}},
-		{"go", "\ufeffpackage p\r\n// comment\r\ntype CafÃ© string\r\n", func(i parse.Input) (string, error) {
+		{"go", "\ufeffpackage p\r\n// comment\r\ntype Café string\r\n", func(i parse.Input) (string, error) {
 			p := goprovider.Provider{}
 			c, e := p.Parse(i)
 			if e != nil {
