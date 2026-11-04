@@ -2,12 +2,107 @@
 
 **ID:** 0006
 **Date:** 4 November 2026
-**Status:** submitted
+**Status:** evaluated — design consultation complete; implementation not requested
 **Owner:** codex-hydrated-type-design
 **Scope:** Architectural explanation and recommendation before implementation.
 **Run-ID:** run_c97ae94d-1d80-4ea5-b039-a7835103cc6d
 **Document-ID:** doc_2e194bc2-3e54-47f8-bc08-1dbc58b1371d
 **Consultation key:** bittype-research-0006-f4f86a35-a5df-4149-8fc5-df68af9a314c
+
+## Evaluated recommendation
+
+The [expert advice](0006-prelude-source.advice.md) agrees that the standard kinds
+should be maintained in Horos source. The Go construction was an authoring and
+packaging shortcut, not a requirement of the kind model. Its output already
+uses the ordinary canonical module loader and general kind calculus.
+
+Adopt this design for a subsequent implementation:
+
+```text
+Horos: authoritative horos.kinds.horos
+  -> Bittype: ordinary Horos parser
+  -> Bittype: existing syntax-to-canonical module encoder
+  -> Horos: generated canonical Ontos module asset
+  -> Horos: ordinary Ontos decoding and module admission
+```
+
+The smallest public tool is an ordinary single-module encoder in Bittype. It
+must not know the name `horos.kinds`, invoke semantic resolution, or introduce a
+second parser. A small private helper can expose the existing `reader.module`
+conversion to both the command and `SourcePins`. A separate public Go API is not
+needed until a library caller actually requires it.
+
+Keep the complete maintained source and generated asset together under
+`horos/core/go/declarations/standard/`, with proposed names
+`horos.kinds.horos` and `horos.kinds.ontos`. Horos can embed the asset and retain
+the useful `Prelude`, `PreludePin` and `PreludeImport` accessors. Remove
+`buildPrelude` and the helpers used only to hand-author its definitions. The
+compiled asset is the runtime distribution form; only the Horos source is edited.
+
+There are three separate relationships:
+
+| Relationship | Meaning |
+| --- | --- |
+| Selected formation dependency | Primitive rules use the configured standard module's Data definition. |
+| Explicit source import | A user can refer to names such as h.Data. |
+| Supplied source tree | Tools have actual syntax sites and text locations. |
+
+Selecting the formation dependency remains legitimate language composition. The
+kind evaluator obtains Data's meaning from the ordinary declaration; it does not
+recognize the name. An unrelated local or imported Data cannot replace that
+binding. Changing the selected standard Data definition can affect formation
+even in programs that never explicitly import it. Importing another version of
+the module does not change the resolver's selected formation dependency.
+
+Source authorship does not guarantee source availability in every invocation.
+Retain the three narrow, exact-module-identity accommodations for an absent
+prelude source tree. When callers supply the actual source through ordinary
+Syntax/Files inputs, use its real locations. Generated AST projection must not
+pretend to recover original source offsets. General canonical-only dependencies
+are a separate capability, not a reason to relax all missing-site errors now.
+
+### Bootstrap and update sequence
+
+1. Add the general source-to-canonical command to Bittype against the already
+   available Horos release. Obtain that executable before preparing the new
+   Horos package.
+2. Author the complete standard module in Horos and use that available executable
+   to produce its canonical asset. This is syntax lowering, with no call to
+   `resolve.Model` or admission against the installed prelude.
+3. Replace Go-authored bodies with embedded-asset decoding and ordinary loading.
+   Ship both maintained source and generated asset in the Horos Go module.
+4. Update Bittype's Horos dependency afterward. Downstream Horos builds consume
+   the packaged asset and do not invoke Bittype.
+
+The preparation executable may contain or initialize the older Horos prelude
+because of its existing package dependencies. The relevant boundary is that
+lowering the new module never resolves its definitions through that prelude.
+Using an already available executable also avoids a workspace redirect that
+would build the tool against an incomplete target missing its embedded asset.
+
+### Disposition of the advice
+
+The research owner evaluated the recommendations against the source paths in
+this brief. This is architectural analysis, with no validation/check workflow.
+The following are design dispositions; none claims an implementation change.
+
+| Recommendation | Verdict | Reason and proposed action |
+| --- | --- | --- |
+| Author all standard kind definitions in Horos | HOLDS | Existing kind syntax expresses the complete module. Move all exports, not just the illustrative subset. |
+| Keep primitives and ordinary formation-reference wiring in Horos | HOLDS | The calculus supplies meaning to source definitions; grammar.go selects an ordinary scoped Data reference without a Data-specific evaluator. Preserve that selection. |
+| Add a general single-module encoding command | HOLDS | SourcePins already uses reader.module before resolution. Expose that conversion internally and encode the resulting value; keep the command ignorant of prelude names. |
+| Use a public Go lowering API | DEFERRED | Add it when a concrete library caller needs canonical module values from admitted ASTs; the command alone meets this use case. |
+| Prepare with an available Bittype executable, then package the asset | HOLDS | Keeps runtime dependencies one-way and avoids building the incomplete Horos target to create its own required asset. |
+| Remove authored Go bodies while retaining useful accessors | HOLDS | Prelude/PreludePin/PreludeImport remain ordinary access conveniences; buildPrelude and definition-only helpers are the superseded implementation. |
+| Preserve canonical identity semantics | HOLDS | Existing pins address canonical values. Equivalent kind meaning alone does not imply unchanged module identity; no new identity scheme is needed. |
+| Retain exact-prelude source accommodations for canonical-only use | HOLDS | Changing authoring does not supply a source tree to every session. Keep the absent-source case narrow; supplied source follows ordinary correspondence. |
+| Expose embedded source text for standalone navigation | DEFERRED | Add only when a concrete standalone integration requires navigation without a caller-supplied source file. Reuse the maintained source, with no duplicate literal. |
+| Generalize canonical-only dependencies and source maps | DEFERRED | Generalize dependency inputs when a non-prelude canonical-only dependency is required. Add source-map machinery only for a consumer that cannot obtain needed original locations from supplied source. |
+| Move the parser below Horos, add configurable prelude replacement, or require manual standard-library assembly everywhere | REJECTED for this change | These expand ownership or public configuration without addressing a missing capability in this small source-authoring correction. Reconsider only for a separate concrete requirement. |
+| Document the selected Data's formation role and language coverage limits | HOLDS | A library-defined contract can still be part of the selected language semantics. A portable asset does not implement revision-4 declarations in Rust or TypeScript. |
+
+No production code, package versions or release state changed in this
+consultation. Implementation remains a separate next step.
 
 ## Question
 
