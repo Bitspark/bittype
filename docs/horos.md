@@ -5,7 +5,7 @@ Horos declaration revision 1, not a readable source grammar or native generator.
 The authoritative value format and binding rules are in
 [horos's declaration specification](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
 
-The Go module pins public Horos 0.7.0 and Ontos 0.16.0. The
+The Go module pins public Horos 0.8.0 and Ontos 0.16.0. The
 [installed consumer](dependencies.md) exercises generic specialization and
 directly authored optional pagination through those public modules without local replacements.
 

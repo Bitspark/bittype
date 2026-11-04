@@ -16,7 +16,7 @@ The engine captures syntax once and invokes each capability explicitly. Horos
 analysis reuses the resolver's [shared semantic graph](docs/semantics.md), with
 separate reports for validity, coverage and model availability.
 Readable Horos syntax, native mappings and package releases remain deferred.
-The concrete Horos frontends use public Horos 0.7.0 and Ontos 0.16.0. Consumers
+The concrete Horos frontends use public Horos 0.8.0 and Ontos 0.16.0. Consumers
 must upgrade together; no older dependency path or compatibility shim remains.
 See the [dependency alignment and consumer checks](docs/dependencies.md).
 The engine starts empty and has no built-in languages or mappings.
