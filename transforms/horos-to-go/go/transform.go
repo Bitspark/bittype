@@ -34,6 +34,8 @@ type dialect struct {
 	optional ast.NodeID
 }
 
+func (*dialect) ReservedNames() []string { return []string{"BittypeOptional"} }
+
 func (*dialect) FieldName(name string) (string, error) { return g.Exported(name) }
 func (*dialect) Parameter(a *g.Arena[s.Language], name string, o ast.NodeRef) ast.NodeID {
 	constraint := a.Add(s.KindInterfaceType, nil, o)

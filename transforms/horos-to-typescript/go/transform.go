@@ -28,6 +28,8 @@ func New(from, to representation.Language, config Config) (transform.ASTTransfor
 
 type dialect struct{}
 
+func (dialect) ReservedNames() []string { return nil }
+
 func (dialect) FieldName(name string) (string, error) { return name, nil }
 func (dialect) Parameter(a *g.Arena[s.Language], name string, o ast.NodeRef) ast.NodeID {
 	return a.Add(s.KindTypeParameter, g.Attr("name", name), o)

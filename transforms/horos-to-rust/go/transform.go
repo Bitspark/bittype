@@ -29,6 +29,8 @@ func New(from, to representation.Language, config Config) (transform.ASTTransfor
 
 type dialect struct{}
 
+func (dialect) ReservedNames() []string { return nil }
+
 func (dialect) FieldName(name string) (string, error) {
 	if !g.Identifier(name) || !native.Declaration(name) {
 		return "", fmt.Errorf("unsupported Rust field name %q", name)

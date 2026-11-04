@@ -35,6 +35,22 @@ lookup is introduced.
 
 ## First mapping profile
 
+For example, this readable source encodes ordinary Horos revision-2 declarations:
+
+```text
+module example.pagination;
+type Page<T> = { items: list<T>; next?: text; };
+type Person = { name: text; active: bool; };
+type PeoplePage = Page<Person>;
+type NestedPage = Page<Page<Person>>;
+type DataPage<D: Data> = Page<D>;
+```
+
+Resolution gives `Page.T` and `DataPage.D` separate binder identities and each
+application an exact target and positional arguments. Generation reads these
+facts, emits one open generic `Page`, and retains `PeoplePage` as an application
+alias. It does not specialize or copy the `Page` body for each consumer.
+
 The first profile covers named/imported declarations, generic binders and
 applications, closed records, UTF-8 text, booleans, lists and optional fields.
 Canonical module identity and target package/file placement remain separate.
@@ -154,6 +170,11 @@ constructors outside the table are rejected with source-node diagnostics and no
 output. This is an explicit first subset, not a fallback that drops constraints.
 Name anonymous records before mapping. Phantom/recursive representations and
 per-library recipes need separately specified profiles.
+
+Go alone reserves the generated support name `BittypeOptional`; other mappings
+do not know that support declaration. C++ declaration references use the fully
+qualified configured namespace, so a member named `Person` can still have the
+type `Person`. A field cannot shadow a C++ template parameter.
 
 The native graph retains separate target nodes for equal-spelled binders and
 references to their actual declarations. Origins point back to current canonical

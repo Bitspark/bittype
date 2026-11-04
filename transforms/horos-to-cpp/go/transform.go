@@ -34,6 +34,8 @@ func New(from, to representation.Language, config Config) (transform.ASTTransfor
 
 type dialect struct{ namespace string }
 
+func (dialect) ReservedNames() []string { return nil }
+
 func (dialect) FieldName(name string) (string, error) {
 	if !g.Identifier(name) || !native.Identifier(name) || strings.HasPrefix(name, "_") {
 		return "", fmt.Errorf("unsupported C++ field name %q", name)
@@ -62,8 +64,10 @@ func path(a *g.Arena[s.Language], names []string, args []ast.NodeID, target ast.
 	}
 	return a.Add(s.KindNamedType, attrs, o, segments...)
 }
-func (dialect) Reference(a *g.Arena[s.Language], name string, target ast.NodeID, args []ast.NodeID, o ast.NodeRef) ast.NodeID {
-	return path(a, []string{name}, args, target, o, false)
+func (d dialect) Reference(a *g.Arena[s.Language], name string, target ast.NodeID, args []ast.NodeID, o ast.NodeRef) ast.NodeID {
+	if a.Err != nil { return 0 }
+	if a.Tree.Nodes[target-1].Kind == s.KindTypeParameter { return path(a, []string{name}, args, target, o, false) }
+	return path(a, []string{d.namespace,name}, args, target, o, true)
 }
 func (dialect) Text(a *g.Arena[s.Language], o ast.NodeRef) ast.NodeID {
 	return path(a, []string{"std", "string"}, nil, 0, o, true)

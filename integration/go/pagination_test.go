@@ -14,7 +14,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
- "github.com/Bitspark/bittype/contracts/parse/go"
+	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
@@ -105,11 +105,14 @@ func paginationModule() core.Value {
 func generationInput(t *testing.T, module core.Value, deps ...core.Value) (*engine.Engine, representation.Language, transform.Input) {
 	t.Helper()
 	source, err := resolve.Resolve(module, deps, "canonical")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	return generationSource(t, source)
 }
-func generationSource(t *testing.T,source h.AST)(*engine.Engine,representation.Language,transform.Input){
- t.Helper();ctx:=context.Background()
+func generationSource(t *testing.T, source h.AST) (*engine.Engine, representation.Language, transform.Input) {
+	t.Helper()
+	ctx := context.Background()
 	from, err := representation.NewLanguage[h.Language](h.Language{}, h.Profile)
 	if err != nil {
 		t.Fatal(err)
@@ -287,7 +290,7 @@ func TestSemanticPaginationMappings(t *testing.T) {
 		"typescript": {formatted(t, tp.Provider{}, out.ts), []string{"export interface Page<T>", "items: T[]", "next?: string", "Page<Page<Person>>", "type DataPage<D> = Page<D>"}},
 		"go":         {formatted(t, gp.Provider{}, out.goTree), []string{"type Page[T interface {}] struct", "Items []T", "Next BittypeOptional[string]", "Page[Page[Person]]", "type DataPage[D interface {}] = Page[D]"}},
 		"rust":       {formatted(t, rp.Provider{}, out.rust), []string{"pub struct Page<T>", "::std::vec::Vec<T>", "::std::option::Option<::std::string::String>", "Page<Page<Person>>"}},
-		"cpp":        {formatted(t, cp.Provider{}, out.cpp), []string{"template<typename T>", "struct Page", "::std::vector<T>", "::std::optional<::std::string>", "Page<Page<Person>>"}},
+		"cpp":        {formatted(t, cp.Provider{}, out.cpp), []string{"template<typename T>", "struct Page", "::std::vector<T>", "::std::optional<::std::string>", "::pagination::Page<::pagination::Page<::pagination::Person>>"}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			for _, want := range fixture.required {
@@ -351,42 +354,84 @@ func TestPaginationRejectsUnsupportedTypes(t *testing.T) {
 	}
 }
 
-func TestGenerationRejectsInvalidCanonicalApplications(t *testing.T){
- for name,source:=range map[string]string{
-  "data-bound":"module invalid; type Page<T> = {items: list<T>;}; type DataPage<D: Data> = Page<D>; type Bad = DataPage<wire<text>>;",
-  "arity":"module invalid; type Page<T> = {items: list<T>;}; type Bad = Page<text, bool>;",
-  "unbound":"module invalid; type Bad = Missing<text>;",
- }{t.Run(name,func(t *testing.T){
-  parsed,err:=(hp.Provider{}).Parse(parse.Input{SourceID:"invalid.horos",TreeID:"canonical",Text:source});if err!=nil{t.Fatal(err)}
-  _,from,input:=generationSource(t,parsed.Abstract)
-  if input.Evidence[0].HasModel(){t.Fatal("invalid canonical application published a model")}
-  mapper,err:=tsMapper(from,mustLanguage[ts.Language](t,ts.Language{}));if err!=nil{t.Fatal(err)}
-  output,err:=mapper.Transform(context.Background(),input);if !errors.Is(err,semantic.ErrEvidenceUnavailable)||output.LanguageID()!=""{t.Fatalf("invalid semantic input mapped: %v",err)}
- })}
+func TestGenerationRejectsInvalidCanonicalApplications(t *testing.T) {
+	for name, source := range map[string]string{
+		"data-bound": "module invalid; type Page<T> = {items: list<T>;}; type DataPage<D: Data> = Page<D>; type Bad = DataPage<wire<text>>;",
+		"arity":      "module invalid; type Page<T> = {items: list<T>;}; type Bad = Page<text, bool>;",
+		"unbound":    "module invalid; type Bad = Missing<text>;",
+	} {
+		t.Run(name, func(t *testing.T) {
+			parsed, err := (hp.Provider{}).Parse(parse.Input{SourceID: "invalid.horos", TreeID: "canonical", Text: source})
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, from, input := generationSource(t, parsed.Abstract)
+			if input.Evidence[0].HasModel() {
+				t.Fatal("invalid canonical application published a model")
+			}
+			mapper, err := tsMapper(from, mustLanguage[ts.Language](t, ts.Language{}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			output, err := mapper.Transform(context.Background(), input)
+			if !errors.Is(err, semantic.ErrEvidenceUnavailable) || output.LanguageID() != "" {
+				t.Fatalf("invalid semantic input mapped: %v", err)
+			}
+		})
+	}
 }
 
-func TestGenerationNameCollisionsAndPhantomSlots(t *testing.T){
- for name,source:=range map[string]string{
-  "declarations":"module collision; type page = text; type Page = bool;",
-  "binders":"module collision; type T = text; type Page<T> = list<T>;",
-  "unused":"module collision; type Phantom<T> = text;",
- }{t.Run(name,func(t *testing.T){
-  parsed,err:=(hp.Provider{}).Parse(parse.Input{SourceID:"names.horos",TreeID:"canonical",Text:source});if err!=nil{t.Fatal(err)}
-  _,from,input:=generationSource(t,parsed.Abstract);if !input.Evidence[0].HasModel(){t.Fatal("fixture must be semantically valid")}
-  mapper,err:=tsMapper(from,mustLanguage[ts.Language](t,ts.Language{}));if err!=nil{t.Fatal(err)}
-  output,err:=mapper.Transform(context.Background(),input);var diagnostic *text.Diagnostic;if !errors.As(err,&diagnostic)||diagnostic.Code!=text.Unsupported||output.LanguageID()!=""{t.Fatalf("unsupported names mapped: %v",err)}
- })}
- _,from,input:=generationInput(t,genModule("fields",genMap(),genEntry("Record",genType(genRecord(genField("name",false,genScalar("utf8-text")),genField("Name",false,genScalar("bool")))))))
- mapper,err:=goMapper(from,mustLanguage[gs.Language](t,gs.Language{}));if err!=nil{t.Fatal(err)}
- if output,err:=mapper.Transform(context.Background(),input);err==nil||output.LanguageID()!=""{t.Fatal("Go field capitalization collision accepted")}
+func TestGenerationNameCollisionsAndPhantomSlots(t *testing.T) {
+	for name, source := range map[string]string{
+		"declarations": "module collision; type page = text; type Page = bool;",
+		"binders":      "module collision; type T = text; type Page<T> = list<T>;",
+		"unused":       "module collision; type Phantom<T> = text;",
+	} {
+		t.Run(name, func(t *testing.T) {
+			parsed, err := (hp.Provider{}).Parse(parse.Input{SourceID: "names.horos", TreeID: "canonical", Text: source})
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, from, input := generationSource(t, parsed.Abstract)
+			if !input.Evidence[0].HasModel() {
+				t.Fatal("fixture must be semantically valid")
+			}
+			mapper, err := tsMapper(from, mustLanguage[ts.Language](t, ts.Language{}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			output, err := mapper.Transform(context.Background(), input)
+			var diagnostic *text.Diagnostic
+			if !errors.As(err, &diagnostic) || diagnostic.Code != text.Unsupported || output.LanguageID() != "" {
+				t.Fatalf("unsupported names mapped: %v", err)
+			}
+		})
+	}
+	_, from, input := generationInput(t, genModule("fields", genMap(), genEntry("Record", genType(genRecord(genField("name", false, genScalar("utf8-text")), genField("Name", false, genScalar("bool")))))))
+	mapper, err := goMapper(from, mustLanguage[gs.Language](t, gs.Language{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if output, err := mapper.Transform(context.Background(), input); err == nil || output.LanguageID() != "" {
+		t.Fatal("Go field capitalization collision accepted")
+	}
 }
 
-func TestGenerationTraversalLimit(t *testing.T){
- nested:=genScalar("utf8-text");for i:=0;i<140;i++{nested=genTuple("horos/list-of",nested)}
- _,from,input:=generationInput(t,genModule("deep",genMap(),genEntry("Deep",genType(nested))))
- mapper,err:=tsMapper(from,mustLanguage[ts.Language](t,ts.Language{}));if err!=nil{t.Fatal(err)}
- output,err:=mapper.Transform(context.Background(),input);var diagnostic *text.Diagnostic
- if !errors.As(err,&diagnostic)||diagnostic.Code!=text.LimitExceeded||output.LanguageID()!=""{t.Fatalf("deep mapping escaped limit: %v",err)}
+func TestGenerationTraversalLimit(t *testing.T) {
+	nested := genScalar("utf8-text")
+	for i := 0; i < 140; i++ {
+		nested = genTuple("horos/list-of", nested)
+	}
+	_, from, input := generationInput(t, genModule("deep", genMap(), genEntry("Deep", genType(nested))))
+	mapper, err := tsMapper(from, mustLanguage[ts.Language](t, ts.Language{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	output, err := mapper.Transform(context.Background(), input)
+	var diagnostic *text.Diagnostic
+	if !errors.As(err, &diagnostic) || diagnostic.Code != text.LimitExceeded || output.LanguageID() != "" {
+		t.Fatalf("deep mapping escaped limit: %v", err)
+	}
 }
 
 func TestGeneratedPaginationCompilers(t *testing.T) {
@@ -443,6 +488,12 @@ pub fn qualify() -> NestedPage {
 	t.Run("cpp", func(t *testing.T) {
 		dir := t.TempDir()
 		write(dir, "types.hpp", formatted(t, cp.Provider{}, out.cpp))
+        e, from, input := generationInput(t, genModule("shadow",genMap(),genEntry("Person",genType(genPerson())),genEntry("Container",genType(genRecord(genField("Person",false,genLocal("Person")))))))
+        shadow := generated(t,e,from,input,cp.Provider{},cppMapper)
+        shadowDir := t.TempDir()
+        write(shadowDir,"shadow.hpp",formatted(t,cp.Provider{},shadow))
+        write(shadowDir,"shadow.cpp","#include \"shadow.hpp\"\n#include <type_traits>\nstatic_assert(std::is_same_v<decltype(pagination::Container::Person),pagination::Person>);\n")
+        command(t,shadowDir,"docker","run","--rm","--network=none","-v",shadowDir+":/work","-w","/work","gcc:14.2.0","g++","-std=c++20","-fsyntax-only","shadow.cpp")
 		write(dir, "consumer.cpp", `#include "types.hpp"
 #include <type_traits>
 static_assert(std::is_same_v<pagination::PeoplePage, pagination::Page<pagination::Person>>);

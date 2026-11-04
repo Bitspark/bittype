@@ -100,6 +100,7 @@ type Field struct {
 	Origin   ast.NodeRef
 }
 type Dialect[L any] interface {
+	ReservedNames() []string
 	Parameter(*Arena[L], string, ast.NodeRef) ast.NodeID
 	Reference(*Arena[L], string, ast.NodeID, []ast.NodeID, ast.NodeRef) ast.NodeID
 	Text(*Arena[L], ast.NodeRef) ast.NodeID
@@ -234,7 +235,8 @@ func (g *generator[L]) prepare() error {
 	if rootModule.Tree == "" {
 		return semantic.ErrInvalidRequest
 	}
-	occupied := map[string]bool{"BittypeOptional": true}
+	occupied := map[string]bool{}
+	for _, name := range g.dialect.ReservedNames() { occupied[name] = true }
 	var declarations []semantics.EntityID
 	for i, e := range g.facts.Entities {
 		if e.Kind != (semantics.Key{Owner: "horos", Name: "declaration"}) {

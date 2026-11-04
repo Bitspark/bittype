@@ -6,7 +6,9 @@ import (
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
+	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
 	"testing"
 )
 
@@ -173,4 +175,18 @@ func TestTransformCancellationAfterCallback(t *testing.T) {
 	if !errors.Is(err, context.Canceled) || output.LanguageID() != "" {
 		t.Fatal(err)
 	}
+}
+
+func TestTypedTransformationRetainsInputCollection(t *testing.T){
+ from,to:=definition[amber](t,"source"),definition[blue](t,"target")
+ e:=engine.New();registerChecked[amber](t,e,from)
+ first:=exampleTree[amber]();second:=exampleTree[amber]();second.ID="second"
+ one,err:=representation.Pack(from,first);if err!=nil{t.Fatal(err)};two,err:=representation.Pack(from,second);if err!=nil{t.Fatal(err)}
+ source,err:=e.Capture(context.Background(),semantic.Input{Entry:ast.NodeRef{Tree:second.ID,Node:second.Root},Trees:[]representation.AST{one,two}});if err!=nil{t.Fatal(err)}
+ mapper,err:=transform.NewTransformer[amber,blue](from,to,transform.Contract{},func(_ context.Context,r transform.Request[amber])(ast.AST[blue],error){
+  if r.Source().ID!="second"||r.Entry()!=source.Entry()||len(r.Inputs())!=2{t.Fatal("entry tree or source collection lost")}
+  inputs:=r.Inputs();inputs[0]=representation.AST{};if r.Inputs()[0].LanguageID()==""{t.Fatal("input slice aliases request")}
+  return mapExample[amber,blue](r.Source())
+ });if err!=nil{t.Fatal(err)}
+ if _,err=mapper.Transform(context.Background(),transform.Input{Source:source});err!=nil{t.Fatal(err)}
 }
