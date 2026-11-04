@@ -1,6 +1,6 @@
 # AST transformation and pipeline design
 
-**Updated: 3 November 2026.** The toolchain is implemented in Go. Generic AST/CST
+**Updated: 4 November 2026.** The toolchain is implemented in Go. Generic AST/CST
 carriers, typed stages, language.Provider and four native text pipelines are
 implemented. The [native text design](parsing-formatting.md) owns parser,
 formatter, printer and checking details. The owner's later 31 October direction
@@ -16,21 +16,22 @@ remain future work. [Resolution](resolution.md) exports Horos's checked model
 to shared facts; [analysis](analysis.md) consumes that evidence explicitly.
 It adds no text parser or ASTTransformer implementation.
 
-The [optional-extension proposal](hydrated-types.md) places mixed types in
+The [optional-extension design](hydrated-types.md) places mixed types in
 horos/wire over the ontos/wire value profile. Bittype's future path is
 `AST[HorosWire] -> AST[Native] -> CST[Native] -> source`, using the existing
 engine and text stages. Horos data generation remains a direct path. An explicit
-Horos-to-HorosWire transformer could embed data or apply Horos's partial lift;
-no route may silently widen domains. Neither optional frontend nor these
-transformers is implemented. Hydration belongs to existing Wire/runtime layers,
+Horos-to-HorosWire transformer applies Horos's partial lift;
+no route may silently widen domains. The [optional frontend and explicit lifting
+transformer](horoswire.md) are implemented; native transformers remain deferred.
+Hydration belongs to existing Wire/runtime layers,
 not this static pipeline or Horos checking.
 
 The [lifting and native representation design](type-representations.md) now
-specifies the proposed partial template translation and per-language library
+specifies the implemented partial template translation and proposed per-language library
 recipes. The consuming build explicitly selects the lift and configures one
 concrete transformer per language pair. Function, Cell and Stream are resolved
-module declarations, never individual engine registrations. This adds no
-implementation or change to ASTTransformer.
+module declarations, never individual engine registrations. No contract-specific
+change to ASTTransformer is required.
 
 The [runtime value boundary](runtime-values.md) is distinct from this static
 pipeline. Runtime adapters would convert existing hydrated values to/from a

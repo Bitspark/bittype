@@ -91,6 +91,31 @@ jobs:
       - name: Check syntax engine concurrency
         if: success() || (failure() && steps.formatting.outcome == 'failure')
         run: go test -race -count=1 -run '^TestEngineConcurrent' ./integration/go
+      - name: Check an independently installed public consumer
+        env:
+          GOPROXY: https://proxy.golang.org,direct
+          GOSUMDB: sum.golang.org
+          GOPRIVATE: ''
+          GONOPROXY: ''
+          GONOSUMDB: ''
+          GOWORK: 'off'
+          GIT_CONFIG_NOSYSTEM: '1'
+          GIT_CONFIG_GLOBAL: /dev/null
+          GIT_TERMINAL_PROMPT: '0'
+          GOMODCACHE: ${{ runner.temp }}/installed-modules
+          GOCACHE: ${{ runner.temp }}/installed-build
+        shell: bash
+        run: |
+          mkdir "$RUNNER_TEMP/installed-consumer"
+          cp integration/go/testdata/installed/consumer_test.go "$RUNNER_TEMP/installed-consumer/"
+          cd "$RUNNER_TEMP/installed-consumer"
+          go mod init installed.consumer
+          go get "github.com/Bitspark/bittype@$EXPECTED_REVISION" github.com/Bitspark/horos/core/go@v0.7.0 github.com/bitspark/ontos@v0.16.0
+          test "$(go mod download -json github.com/Bitspark/bittype | python3 -c 'import json,sys; print(json.load(open(json.load(sys.stdin)["Info"]))["Origin"]["Hash"])')" = "$EXPECTED_REVISION"
+          test "$(go list -m -f '{{.Version}}' github.com/Bitspark/horos/core/go)" = v0.7.0
+          test "$(go list -m -f '{{.Version}}' github.com/bitspark/ontos)" = v0.16.0
+          test -z "$(go list -m -f '{{if .Replace}}{{.Path}}{{end}}' all)"
+          go test -mod=readonly -count=1 -v ./...
       - name: Fuzz native text boundaries
         if: success() || (failure() && steps.formatting.outcome == 'failure')
         env:

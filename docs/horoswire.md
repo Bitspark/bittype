@@ -1,7 +1,7 @@
 # Optional Horos/Wire frontend and lifting
 
 **Implemented in Go, 4 November 2026.** The optional frontend projects
-[horos/wire revision 1](https://github.com/Bitspark/horos/blob/d20e8943725060a3421a4b9949718f51bf900d46/docs/spec/wire-types.md).
+[horos/wire revision 1](https://github.com/Bitspark/horos/blob/v0.7.0/docs/spec/wire-types.md).
 Its canonical input is ground Ontos module data describing mixed types.
 It never accepts live endpoints as source syntax or performs hydration.
 Ground Horos retains its existing domain and public profiles.
@@ -26,8 +26,9 @@ positions and binding. The agnostic trees, semantic model, engine, Wire and
 runtime acquire no new kinds, imports or registrations. Native language stages
 remain independent of Horos/Ontos. Architecture tests enforce these boundaries.
 
-The dependency in `go.mod` is an immutable public Horos source revision, not a
-local checkout or the published ground-only 0.6.0 release. Neither Bittype frontend
+The dependency in `go.mod` is public Horos 0.7.0 with Ontos 0.16.0. Consumers must
+upgrade together; there is no local replacement, legacy dependency path or
+compatibility shim. Neither Bittype frontend
 depends on the live `ontos/wire` carrier. Its static input remains ordinary Ontos
 data. Go is the implemented tooling language; this increment makes no claim of
 Rust or TypeScript optional declaration APIs.
