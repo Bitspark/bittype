@@ -14,13 +14,17 @@ acquiring Horos-specific rules in its agnostic kernel? The owner requested:
 
 > "I want a proper kind system as well. Let's get advice"
 
-Please give a complete answer to the five questions below in at most 2,500 words.
+Please give a complete answer to the five questions below in at most 5,000 words.
 Prioritize a precise core calculus, counterexamples, canonical representation,
 ownership and independently checkable acceptance criteria. We need a sound
 design to implement, not a registry of named contracts or an endorsement of the
 options below. Distinguish indispensable features from independently deferrable
 extensions; a proper kind system need not implement every feature of a general
 programming language.
+
+Spend the response budget on rules, worked positive/negative derivations and a
+compact native-policy table rather than repeating background. Complete all five
+answers; avoid a long introductory report that crowds out the checking rules.
 
 ## Context
 
@@ -48,6 +52,11 @@ names an AST/expression variant tag; that use is unrelated to the proposed kind
 system. A generic **binder** identifies a parameter independently of its spelling.
 `Data` currently means a statically proved data-only type, not the value type
 `any`, a runtime wrapper or a capability-authority claim.
+
+The current canonical bound `type` admits proper type expressions describing
+data or capabilities. In candidate signatures below, `Type` denotes the
+proper-type classifier, not a top value type. Whether `Data` becomes a subkind
+or remains a separate predicate/refinement is deliberately undecided.
 
 Inspected baselines, both clean on main:
 
@@ -131,6 +140,37 @@ Send<Person>                   not data
 Forward<D: Data> = DataPage<D>  valid open generic
 Forward<T> = DataPage<T>        invalid open generic before specialization
 ```
+
+The motivating missing capability is passing a constructor itself. These are
+candidate source spellings, not currently implemented syntax:
+
+```text
+type Wrapped<F: Type -> Type, T: Type> = { value: F<T>; };
+type WrappedPage = Wrapped<Page, Person>;
+type Compose<F: Type -> Type, G: Type -> Type, T: Type> = F<G<T>>;
+type Nested = Compose<Page, Page, Person>;
+type DataWrapped<F: Data -> Data, D: Data> = { value: F<D>; };
+```
+
+The spellings do not select the eventual calculus, but these intended outcomes
+state the precision we want to preserve when known constructor arguments bind:
+
+| Candidate use | Required judgment or design obligation |
+| --- | --- |
+| `Wrapped<Page, Person>` | Admitted; the known application is data. An abstract F's broad bound must not permanently erase known-argument precision. |
+| `Wrapped<Ignore, wire<Person>>` | Admitted and data; Ignore's unused argument does not contaminate its result. |
+| `Wrapped<Send, Person>` | Admitted, not data. |
+| `Compose<Page, Page, Person>` | Admitted and data. |
+| `Wrapped<Person, Person>` | Reject: a proper type is not a unary constructor. |
+| `DataWrapped<Page, Person>` | The one Page must be usable with a proved data-preserving guarantee; propose how the signature/evidence expresses that guarantee. |
+| `DataWrapped<Send, Person>` | Reject: Send does not guarantee a data result. |
+| `DataPage<F<D>>` under only F: Type -> Type and D: Data | Reject the generic body; a future known caller cannot repair an invalid open definition. |
+| The same body under F: Data -> Data and D: Data | Admit using the constructor's explicit result guarantee. |
+
+Distinguish a guarantee necessary to check an open generic body from stronger
+facts available for a well-formed body's concrete application. If a sound
+alternative intentionally sacrifices one desired precision property, explain
+the tradeoff and its user-visible consequence rather than silently widening it.
 
 Literal positions are opaque. For example `H("exact", D("param", I(0)))`
 describes one literal tuple; it contains no free generic variable. Record labels,
@@ -325,11 +365,19 @@ type Term struct {
 type Operand struct { Locator []uint32; Term TermID }
 ```
 
+`Entity.Kind` classifies an entity with a provider-owned key; `Parameter.Sort`
+classifies what sort of argument its slot accepts, also with an opaque key.
+`Term.Kind` selects one graph variant. None of these fields currently holds a
+structural arrow kind or a kind scheme; equal spellings do not imply a common
+language meaning.
+
 `Reference` names an entity. `Application` names an entity plus effective
 positional arguments. `ProviderExpression` carries a provider operator, encoding,
 opaque bytes and explicitly located child terms. One variant is active at a
-time. The immutable graph validates edges, ownership, acyclicity and budgets,
-never language lookup, type equality or subtype rules. However, its current
+time. The immutable graph validates edges, ownership, term-containment acyclicity and budgets,
+never language lookup, type equality or subtype rules. Entity-reference and
+dependency graphs may be cyclic; those cycles have language-owned meaning.
+However, its current
 application check assumes every application is fully applied to a known entity
 (`semantics/go/model.go:247-259`):
 
@@ -413,6 +461,11 @@ No mapping currently accepts Wire or higher-kinded source. Native language
 capabilities and our AST/mapping coverage are separate: C++ offers
 template-template parameters, but the current AST/checker/mapping supports only
 ordinary type parameters, without their nested template parameter lists.
+The current native mapping also rejects unused generic parameters
+(`internal/horosgen/generate.go:206-209`): Ignore is a valid canonical example,
+but is not presently an emitted native generic. Nested records must be named
+declarations, and the first descriptor-expression subset is text, bool and list
+plus references/applications. The broader Horos model is not the native profile.
 Go/TypeScript do not directly provide an unapplied type-constructor parameter
 corresponding to F in F<T>; Rust associated type constructors require an explicit
 representation. We must decide which canonical programs can be represented
@@ -422,17 +475,8 @@ or silent monomorphization is authorized.
 
 ### Required use cases and pressure on the design
 
-These are candidate syntax examples to discuss, not implemented syntax:
-
-```text
-type Wrapped<F: Type -> Type, T: Type> = { value: F<T>; };
-type WrappedPage = Wrapped<Page, Person>;
-
-type Compose<F: Type -> Type, G: Type -> Type, T: Type> = F<G<T>>;
-type Nested = Compose<Page, Page, Person>;
-
-type DataWrapped<F: Data -> Data, D: Data> = { value: F<D>; };
-```
+The earlier Wrapped, Compose and DataWrapped examples motivate these pressures;
+their spellings remain candidates rather than a selected kind calculus.
 
 1. Type constructors should be usable as arguments, with arity/kind errors
    caught at the canonical boundary. Applying a constructor parameter must
@@ -455,6 +499,9 @@ type DataWrapped<F: Data -> Data, D: Data> = { value: F<D>; };
    and rank-1 kind polymorphism are necessary now or separable extensions. Define
    the boundary explicitly. Avoid an accidental Type:Type universe or unbounded
    type-level evaluation simply to make arrows work.
+   A candidate constructor-valued result is `Return<F: Type -> Type> = F`, with
+   `Return<Page>` itself a constructor. If this is in the first calculus, test
+   its kind and further application; if deferred, test explicit rejection.
 7. Separate canonical byte/declaration identity from kind/type equivalence and
    normalization. Preserve exact origins even if application reduction is needed.
    Equivalent expansions do not authorize substituting behavioral libraries.
@@ -495,7 +542,8 @@ type DataWrapped<F: Data -> Data, D: Data> = { value: F<D>; };
 Minimum independent qualification should include existing pagination unchanged;
 Page and Ignore precision; known versus abstract data-preserving constructors;
 same-spelled imported constructors; nested applications and any supported partial
-applications; adverse arrow compatibility; constructor-valued results; kind/binder
+applications; adverse arrow compatibility; supported constructor-valued results
+or explicit rejection when deferred; kind/binder
 scope; literal data resembling new tags; invalid unused arguments; bounded
 normalization/output expansion; and clear native support/rejection for all four
 languages. Syntax round trips, semantic judgments and native compiler acceptance
