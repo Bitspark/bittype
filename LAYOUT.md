@@ -47,7 +47,7 @@ docs/
 ```
 
 The native text language directories are `typescript`, `golang`, `rust` and
-`cpp`; `horos` implements the AST-only syntax/resolve/check/analyze/provider profile.
+`cpp`; `horos` implements those text stages plus resolve/analyze.
 The final `go` directory denotes implementation language, not target:
 `syntax/rust/go` is Go code describing Rust syntax. `ast` and `cst` in the check
 stage are reserved generic-carrier components, not native language names.
@@ -84,11 +84,12 @@ same dependency level. The package boundaries are:
 | Native checker | Own syntax, shared checking mechanics and own lexical helpers |
 | Native parser/formatter | Own syntax/checker and appropriate shared mechanics; neither imports the other |
 | Native provider | Own syntax and stages plus the shared printer; composition only |
-| Horos syntax | Generic AST and identity; no semantic-model imports |
+| Horos syntax | Generic AST/CST and identity; no semantic-model imports |
 | Horos checker | Own syntax and generic structural/grammar checks; no semantic resolution |
 | Horos resolver | Own syntax, private projection/correspondence helper, Horos Go model and Ontos values/codec |
 | Horos analyzer | Own syntax, Horos resolver contract and shared semantic evidence; no direct external model imports |
-| Horos provider | Own syntax/checker/resolver/analyzer and shared contracts; composition, no text stages |
+| Horos parser/formatter | Own syntax/checker, private spelling and canonical-value helpers, Ontos values; no semantic resolution |
+| Horos provider | Own text/checker/resolver/analyzer stages and shared printer; composition only |
 
 The parse, check, format and print interfaces are independent; their configured
 adapters use representations for owned heterogeneous inputs/outputs. The engine
@@ -115,7 +116,7 @@ The [architecture checks](integration/go/architecture_test.go) discover the
 union of language directories across syntax/parse/check/format/provider/resolve/analyze
 and require each language to have every stage in its tested capability profile.
 The four native languages retain all five native text stages; Horos requires
-syntax/resolve/check/analyze/provider and must not acquire unqualified text stages.
+syntax/parse/check/format/provider plus resolve/analyze, with explicit qualification.
 Generic carrier check directories
 are excluded explicitly. An orphan parser and an incomplete syntax package both
 fail. The checks also classify every production package and enforce its directed
@@ -130,8 +131,9 @@ views, formatter snapshot ownership and metadata, whole-input rejection, located
 parse errors and empty output on failure. The same test-only fixture table feeds
 source round trips and fuzzing. Tests never register a production default.
 Independent compiler fixtures remain a separate required qualification.
-The [AST-only suite](integration/go/horos_test.go) separately checks Horos identity,
-registration, checking, snapshot ownership, specialization and absent text capabilities.
+The [semantic suite](integration/go/horos_test.go) separately checks Horos identity,
+registration, checking, snapshot ownership and specialization. Horos text tests qualify
+source retention, canonical pagination round trips and independently registered stages.
 
 Existing public consumer/negative type-check cases, unfamiliar-language tests,
 route oracle, concurrency checks and compiler gates remain required. Directory
@@ -147,7 +149,7 @@ semantic analysis is not implied by native text tooling.
 The [Horos declaration integration](docs/horos.md) implements
 `syntax/horos/go`, `check/horos/go`, `analyze/horos/go`, `provider/horos/go` and
 `resolve/horos/go`, with private projection/correspondence in `internal/horosmodel`.
-Readable syntax, when specified, adds `parse/horos/go` and
+Readable syntax now implements `parse/horos/go` and
 `format/horos/go` under the same stage matrix. These replace the former proposed
 `canonical` paths; there are no compatibility aliases.
 
@@ -156,9 +158,8 @@ reverse mappings under `transforms/<native>-to-horos/go`. Application compositio
 and IO remain under `cmd/bittype/go`. Horos owns the declaration semantics and
 encoding; these packages supply tooling projections and native representations.
 Dependency rules and qualification will accompany implementation, with no empty
-packages created now. The complete language-stage gate will accompany a complete
-readable frontend; an initial AST-only provider must have an explicit separately
-tested capability profile rather than pretending missing text stages exist.
+packages created now. All five current languages have qualified text stages;
+new AST-only providers still require an explicit tested capability profile.
 
 Adding a native language supplies the five stages, any private lexical helpers,
 conformance fixtures and compiler qualification. It requires no change to the

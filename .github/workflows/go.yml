@@ -121,12 +121,19 @@ jobs:
         env:
           GOMAXPROCS: '2'
         run: go test -run='^$' -fuzz=FuzzNativeText -fuzztime=20s ./integration/go
+      - name: Fuzz Horos source boundaries
+        if: success() || (failure() && steps.formatting.outcome == 'failure')
+        env:
+          GOMAXPROCS: '2'
+        run: go test -run='^$' -fuzz=FuzzSourceRoundTrip -fuzztime=20s ./parse/horos/go
       - name: Save failing fuzz cases
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: native-fuzz-corpus
-          path: integration/go/testdata/fuzz/
+          path: |
+            integration/go/testdata/fuzz/
+            parse/horos/go/testdata/fuzz/
           if-no-files-found: ignore
           retention-days: 7
       - name: Verify committed dependency metadata
@@ -134,7 +141,7 @@ jobs:
       - name: Record passing revision
         shell: bash
         run: |
-          echo "PASS $EXPECTED_REVISION: Go 1.27.3 formatting, contract/dependency tests, vet, syntax engine race check and native-text fuzzing." >> "$GITHUB_STEP_SUMMARY"
+          echo "PASS $EXPECTED_REVISION: Go 1.27.3 formatting, contract/dependency tests, vet, syntax engine race check and native/Horos text fuzzing." >> "$GITHUB_STEP_SUMMARY"
 
   native:
     runs-on: ubuntu-latest

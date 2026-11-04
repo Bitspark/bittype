@@ -11,11 +11,12 @@ Specialized providers extend language.Provider. The engine registers parsing,
 checking, formatting and printing independently; identity registration installs
 no capability. See the [engine composition API](docs/engine.md#registration). Horos's Go declaration model now
 supplies module resolution, generic binding, Type/Data bounds and specialization. Bittype
-implements its [AST-only frontend](docs/horos.md), resolver and semantic analyzer.
+implements its [text and semantic frontend](docs/horos.md), resolver and semantic analyzer.
 The engine captures syntax once and invokes each capability explicitly. Horos
 analysis reuses the resolver's [shared semantic graph](docs/semantics.md), with
 separate reports for validity, coverage and model availability.
-Readable Horos syntax, native mappings and package releases remain deferred.
+The [readable Horos syntax](docs/horos-syntax.md) and its text stages are implemented.
+Native mappings and package releases remain deferred.
 The concrete Horos frontend uses public Horos 0.9.0 and Ontos 0.16.0. Consumers
 must upgrade together; no older dependency path or compatibility shim remains.
 See the [dependency alignment and consumer checks](docs/dependencies.md).
@@ -25,8 +26,7 @@ The [stage-first layout](LAYOUT.md) groups shared tree representations under
 trees and public interfaces under contracts. Every native language implements
 the same syntax/parse/check/format/provider matrix, enforced by architecture and
 shared conformance tests. The engine contains no built-in language catalogue.
-Horos has a separately qualified syntax/resolve/check/analyze/provider capability profile;
-it does not advertise text stages that are not implemented.
+Horos implements the same text stages plus separately registered resolution and analysis.
 
 The native pipeline separates source parsing, concrete layout and printing:
 

@@ -62,8 +62,8 @@ Existing horos descriptors are reused, allowing declaration expressions only
 in child-descriptor positions. A parameter-shaped tuple inside an `exact`
 literal remains data. `rec`/`ref` remain recursion syntax, not generic slots.
 
-Readable source notation is a future bittype frontend concern. The exact value
-format does not imply an implemented text parser. Horos's value equations are
+The [readable source grammar](horos-syntax.md) is implemented by bittype. The canonical
+value format remains the authority for identity and semantics. Horos's value equations are
 not JavaScript builders or executable input. Source spans, comments and native
 naming preferences remain tooling metadata outside the canonical module value.
 
@@ -132,8 +132,7 @@ canonical Horos module values
          -> AST[C++]        -> CST[C++]        -> source
 ```
 
-A future readable frontend adds text -> CST[Horos] and its AST view, using the
-same model. Native parsers continue to serve independent native inputs.
+The readable frontend adds text -> CST[Horos] and its AST view, using the same model. Native parsers continue to serve independent native inputs.
 `AST[Horos]` is an ordinary language-specific use of the generic carrier. Its
 provider and transformers are explicitly registered by the application; the
 engine has no canonical preference or knowledge of descriptor constructors.
@@ -142,7 +141,7 @@ alone emits text.
 
 The [generation design](generation.md) and [layout](../LAYOUT.md) retain the
 stage-first matrix. Planned canonical paths use `horos`, replacing the earlier
-proposed `canonical` name. The AST-only stages are implemented; readable syntax
+proposed `canonical` name. The AST and readable syntax stages are implemented; native mappings
 and directed transformations remain future work.
 
 ## Native representation profiles

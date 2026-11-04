@@ -6,9 +6,9 @@ Applications explicitly register providers and transformers. No production
 ASTTransformer or TypeScript, Go, Rust or C++ type generator is implemented.
 Template lifting and its concrete transformer were removed on 4 November 2026.
 
-The [Horos AST-only frontend](horos.md) registers its syntax checker independently
+The [Horos frontend](horos.md) registers its syntax checker independently
 from language identity, [resolution](resolution.md) and [semantic analysis](analysis.md).
-Native generators and readable Horos syntax remain unimplemented.
+Horos text capabilities are independently registered in the same way. Native generators remain unimplemented.
 
 ## Public components
 

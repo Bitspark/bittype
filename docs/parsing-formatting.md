@@ -2,8 +2,8 @@
 
 **Direction: 31 October 2026.** The owner requested native TypeScript, Go, Rust
 and C++ parsers, formatters, checks and tests, then selected a shared CST alongside
-the AST. The [Horos AST-only frontend](horos.md) is now implemented; readable
-Horos syntax, actual language transformers and runtime adapters remain deferred.
+the AST. The [Horos frontend](horos.md) now implements its [source grammar](horos-syntax.md)
+through these same interfaces. Actual language transformers and runtime adapters remain deferred.
 The subsequent [syntax engine](engine.md) supplies registration,
 route execution and composition of these native text stages.
 
@@ -300,7 +300,7 @@ syntax and resource bounds. Native compiler checks use pinned toolchains on
 remote runners: Go 1.27.3, TypeScript 5.9.3 (ES2020), Rust 1.90.0 (edition 2024),
 and GCC 14.2.0 (C++20). Workstation use is limited to source editing, Git and coordination.
 
-The Horos declaration model and [AST-only frontend](horos.md) are implemented
-separately. No Horos text syntax, native AST generator, runtime binding implementation or
-package release is introduced here. Registration is
+The Horos declaration model and [text and semantic frontend](horos.md) are implemented
+with the [readable Horos source grammar](horos-syntax.md). Native AST generators,
+runtime bindings and package releases are separate work. Registration is
 implemented by the separately described engine.
