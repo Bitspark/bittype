@@ -53,7 +53,7 @@ func TestUnifiedPaginationBoundsSurviveASTAndSemanticExport(t *testing.T) {
 		t.Fatal("live page was admitted as a data descriptor")
 	}
 	model := requireModel(t, run(t, tree, nil))
-	for _, wanted := range []struct{name, bound string}{{"T", "type"}, {"D", "data"}, {"Forwarded", "data"}} {
+	for _, wanted := range []struct{ name, bound string }{{"T", "type"}, {"D", "data"}, {"Forwarded", "data"}} {
 		site := ast.NodeRef{Tree: tree.ID, Node: find(tree, s.KindTypeParameter, wanted.name)}
 		found := false
 		for _, expression := range model.Data().Expressions {

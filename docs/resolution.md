@@ -125,8 +125,8 @@ copy truth reports automatically or weaken stale-result protection.
 ## Horos composition
 
 The Horos provider implements syntax checking, resolution.Provider and analysis.Provider.
-Its profiles are `horos-declarations-1/ast-2`,
-`horos-declarations-1/resolution-1` and `horos-declarations-1/analysis-2`.
+Its profiles are `horos-declarations-2/ast-1`,
+`horos-declarations-2/resolution-1` and `horos-declarations-2/analysis-1`.
 Analysis revision 1 is replaced without a compatibility path.
 
 Horos resolution still accepts one Program and its root entry, resolves its

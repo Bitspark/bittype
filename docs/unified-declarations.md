@@ -1,6 +1,6 @@
 # Unified Horos frontend
 
-**Owner decision, 4 November 2026. Implementation in progress.**
+**Owner decision, 4 November 2026. Implemented in the candidate; final public dependency qualification is pending.**
 The [Horos revision-2 work](https://github.com/Bitspark/horos/issues/27) replaces
 both prior declaration profiles with one module language and explicit Type/Data
 bounds. This work migrates Bittype and maintained consumers; it implements no
@@ -32,7 +32,7 @@ and architecture checks, syntax/semantics/receipt tests, bounds and pagination,
 race, fuzz, native compiler fixtures and docs. Run portable checks on hosted
 runners and accept receipts only for the exact committed source.
 
-The pending independent template-lifting removal and 0.8.0 dependency delivery
-remain owned by their existing session. Reconcile that completed baseline before
-integrating this follow-up. Publish/consume the next breaking Horos version, with
+The independent template-lifting removal and Horos 0.8.0 dependency delivery
+are complete. This change starts from verified Bittype main 972fefe82ccb and
+Horos main 690bbe54e1c8. Publish/consume the next breaking Horos version, with
 no compatibility readers, old namespace aliases or executable archives.

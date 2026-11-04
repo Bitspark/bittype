@@ -37,14 +37,22 @@ func TestPublicUnifiedPagination(t *testing.T) {
 	members, err := data.EncodeMap([][2]core.Value{
 		{data.MustEncodeText("Page"), page}, {data.MustEncodeText("DataPage"), dataPage},
 	})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	empty, err := data.EncodeMap(nil)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	module := tag("horos/decl/module", data.EncodeInt(big.NewInt(2)), data.MustEncodeText("installed.pagination"), empty, members)
 	tree, err := resolve.Resolve(module, nil, "installed-unified")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	model, err := resolve.Model(tree)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	id := decl.DeclarationID{Module: model.Root(), Name: "Page"}
 	dataID := decl.DeclarationID{Module: model.Root(), Name: "DataPage"}
 	wireArgument := tag("horos/wire", text)
@@ -55,9 +63,13 @@ func TestPublicUnifiedPagination(t *testing.T) {
 		}
 	}
 	specialized, err := model.DataDescriptor(dataID, []core.Value{text})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	instance, err := data.EncodeMap([][2]core.Value{{data.MustEncodeText("items"), data.EncodeList([]core.Value{data.MustEncodeText("Ada")})}})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !horos.Conforms(instance, specialized) {
 		t.Fatal("public Ontos instance did not conform to the unchanged ground descriptor")
 	}

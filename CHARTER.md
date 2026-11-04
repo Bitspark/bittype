@@ -1,9 +1,9 @@
 # Charter
 
-**Current direction: 3 November 2026.** The owner selected horos for canonical
+**Current direction: 4 November 2026.** The owner selected horos for canonical
 data type semantics and bittype for syntax/tooling and native type generation,
 starting with types only. The [model boundary](docs/model.md) replaces the earlier
-independent bittype type-language proposal. Horos declaration revision 1 and its
+independent bittype type-language proposal. Horos declaration revision 2 and its
 bittype AST projection are implemented in Go source; no package release is implied.
 
 ## Ownership
@@ -23,23 +23,23 @@ bittype owns:
   same semantic infrastructure. Horos supplies the first production resolver and
   analyzer; analysis consumes an explicit receipt and can reuse its sealed model.
 - Small data types needed to represent presence and nullness in generated code.
-- Implemented [tooling for optional horos/wire](docs/hydrated-types.md), adapting
-  its canonical declarations to ASTs and shared semantic facts.
-  Bittype does not own that model or its mixed value domain.
+- Implemented [unified Horos tooling](docs/horos.md), adapting canonical
+  Type/Data bounds to ASTs and shared semantic facts. Bittype does not own the
+  canonical type model or the mixed value domain.
 
 Horos owns data descriptors, conformance and module/generic/application
-semantics for data declarations, their encoding and semantic vectors. Ontos owns
+semantics with Type/Data bounds, their encoding and semantic vectors. Ontos owns
 ground values, structural identity and encoding. Horos does not depend on bittype;
 the current Horos-specific frontend and future qualified providers/transformers
 consume its model. Generic foundations and native text stages remain independent.
 
-**Owner boundary correction, 3 November 2026:** ground Ontos and Horos remain
-data-only. Optional ontos/wire owns a mixed value profile; optional horos/wire
-owns its type model. These proposals replace the Bittype-owned contract model,
-without reviving the earlier ground Horos revision-2 proposal. Hydration stays
-in bitwire/bitruntime; Function, Stream and Cell remain ordinary libraries.
-The [preservation map](docs/wire-extension-preservation.md) records retained
-concepts, explicit supersessions and future qualification obligations.
+**Owner boundary correction, 4 November 2026:** one Horos declaration language
+contains data and capability types, with explicit generic bounds. Ground values
+and conformance stay data-only; Ontos/wire owns mixed values. Separate Horos/Wire
+profiles and Data schema wrappers are removed, without aliases. Hydration stays
+in Bitwire/Bitruntime, and Function, Stream and Cell remain ordinary libraries.
+The [preservation map](docs/wire-extension-preservation.md) records the retained
+concepts and clean migration; no runtime behavior follows from type validity.
 
 The owner's 31 October structure decision selects the stage-first matrix in
 [LAYOUT.md](LAYOUT.md). Shared trees, shared contracts and the engine have distinct
@@ -72,7 +72,8 @@ deferred. Native parsing does not make a target language the
 canonical authority. The [generation design](docs/generation.md) remains separate.
 
 This scope excludes application-value validators, serialization, Wire adapters,
-RPC/streaming implementations, consumer migration and package publication.
+RPC/streaming implementations and service migrations. The unified declaration
+cut includes maintained frontend consumers and the required public Horos release.
 Function, Stream, Cell and future behavioral contracts remain ordinary library
 declarations with no privileged cases in shared infrastructure. Only the Horos
 frontend depends on the Horos Go declaration model and Ontos values. Architecture
@@ -80,15 +81,15 @@ checks enforce that narrow boundary; generic carriers, contracts, engine, printe
 and native text stages have no external Horos/Ontos imports. The engine depends
 on the generic analysis contract, whose graph does not encode language rules.
 
-The optional Horos Wire frontend and its narrow model dependency allowance
-are future work. Their proposal does not alter these current import checks,
-instantiate a runtime or extend the implemented Horos language profile.
+The one Horos frontend and its private helpers have the only concrete model
+import allowances. Removing the second frontend changes no agnostic SPI.
 
 ## Versioning and evidence
 
 A published language revision fixes its admitted syntax and meaning.
 The earlier `bittype: 1` proposal is superseded. Horos's declaration revision is
-implemented in its Go source; released 0.6.0 packages still contain ground checking.
+implemented in Go and versioned with the public Horos distribution. Rust and
+TypeScript retain ground checking; readable syntax and native generators remain deferred.
 
 Canonical declaration identity, normalized value shape, generated-code
 compatibility and undeclared behavior remain distinct. A digest does not prove
@@ -113,7 +114,6 @@ The owner has narrowed the current work to Horos-owned definitions and types-onl
 generation. Historical evidence does not add
 callables, adapters or migration gates to this milestone.
 
-The optional [Horos/Wire frontend](docs/horoswire.md) implements the existing
-stage interfaces. Template lifting and its transformer were removed completely
-on 4 November 2026; optional generics are authored directly. Canonical
-semantics stay in Horos; no native generator or runtime binding is introduced.
+The unified [Horos frontend](docs/horos.md) implements the existing stage
+interfaces. Template lifting and separate profiles are removed without aliases.
+Canonical semantics stay in Horos; no native generator or runtime binding is added.

@@ -45,7 +45,7 @@ docs/
 ```
 
 The native text language directories are `typescript`, `golang`, `rust` and
-`cpp`; `horos` and `horoswire` implement the AST-only syntax/resolve/check/analyze/provider profile.
+`cpp`; `horos` implements the AST-only syntax/resolve/check/analyze/provider profile.
 The final `go` directory denotes implementation language, not target:
 `syntax/rust/go` is Go code describing Rust syntax. `ast` and `cst` in the check
 stage are reserved generic-carrier components, not native language names.
@@ -164,22 +164,16 @@ generic carriers, engine or production registration catalogue: there is no such
 catalogue. Applications choose their registrations. Adding Function, Stream,
 Cell or another library declaration does not add a stage, language or core kind.
 
-The [optional extension](docs/hydrated-types.md) places mixed type semantics in
-horos/wire, over ontos/wire values. Its implemented Bittype projection uses
-`syntax/horoswire/go`, `check/horoswire/go`, `resolve/horoswire/go`,
-`analyze/horoswire/go` and `provider/horoswire/go`. The two Horos profiles share
-syntax framing through `internal/declsyntax` and private model projection,
-correspondence and export through `internal/horosmodel`. Each concrete stage
-selects its fixed grammar/profile; there is no profile registry in that helper.
-These replace the unimplemented `contract` paths without aliases.
+The [unified declaration model](docs/horos.md) uses one `horos` family under
+syntax/check/resolve/analyze/provider. Private syntax framing remains in
+`internal/declsyntax`; model projection, correspondence and export remain in
+`internal/horosmodel`. No `horoswire` stage or compatibility alias remains.
+Bounds are explicit syntax and provider-owned semantic facts, not kernel kinds.
 
-Model dependency allowances cover only the two frontends and private model
-helpers. Their capability tests and architecture checks enforce distinct
-endpoints/profiles and keep the engine and native stages model-independent.
-See [implemented API details](docs/horoswire.md). Future native mappings use
-`transforms/horos-to-<native>/go` and `transforms/horoswire-to-<native>/go`.
-There is no production transformer currently; the template-lifting package and
-its exclusive dependency allowances were removed completely.
+Model dependency allowances cover only this frontend and its private bridge.
+Architecture checks preserve the agnostic and native-stage boundaries. Future
+native mappings use `transforms/horos-to-<native>/go`; none is implemented yet.
+Template lifting and its exclusive dependency allowances remain removed.
 
 The [native representation design](docs/type-representations.md) places uniform
 recipe consumption in concrete native transformers. Each contract library owns

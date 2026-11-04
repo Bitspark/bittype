@@ -6,8 +6,9 @@ existing Wire/runtime value boundary. It distinguishes inspected implementation
 from future adapters and dynamic interpretation. It adds no source, dependency,
 runtime interface, generator, binding or release.
 
-Ground Ontos and Horos stay data-only. Optional ontos/wire is the separate mixed
-value profile; optional horos/wire describes its types. Bittype supplies their
+Ground Ontos values and Horos conformance stay data-only. Ontos/wire is the
+optional mixed value profile; the unified Horos declaration language describes
+data and capability types with explicit Type/Data bounds. Bittype supplies their
 tooling projections. Bitwire 0.7.0 and Bitruntime 0.8.0 now use Ontos 0.16.0's
 shared native mixed value structure in Go and TypeScript.
 Function, Stream and Cell declarations, representations and behavior remain library-owned.
@@ -17,10 +18,10 @@ Function, Stream and Cell declarations, representations and behavior remain libr
 The current generation proposal transforms descriptions:
 
 ```text
-AST[Horos or HorosWire] -> AST[Go] -> CST[Go] -> Go source
+AST[Horos] -> AST[Go] -> CST[Go] -> Go source
 ```
 
-Both ASTs are ordinary Go values describing types. A description of Page<Person>
+These ASTs are ordinary Go values describing types. A description of Page<Person>
 can produce syntax declaring Page[Person]; this operation does not produce a
 particular page or person. The Go implementation language of the generator is
 independent of the language of its output.
@@ -32,17 +33,17 @@ wire.HydratedValue <-> Page[Person]
 wire.HydratedValue <-> Page[Cell[Person]]
 ```
 
-A Page intended to accept capabilities is authored directly in Horos/Wire;
-both data and capability applications can use that same Page and its selected
-native representation. This does not pass a capability into a ground Horos data
-slot. [Direct authoring and ground embedding](type-representations.md#2-direct-declarations-and-ground-embedding)
-concern descriptions; a runtime adapter converts actual instances according to
-those descriptions and selected representations.
+A Type-bound Page accepts both data and capability types through the same
+identity and selected native representation. `DataPage<D: Data> = Page<D>`
+restricts arguments within that language. [Generic bounds](type-representations.md#2-direct-declarations-and-generic-bounds)
+concern descriptions; a future runtime adapter converts actual instances under
+those descriptions and selected representations. Static acceptance allocates no
+endpoint, establishes no authority and implements no protocol.
 
 | Object being represented | Go representation and status |
 | --- | --- |
 | Horos type declarations | Existing Horos model and `horos.AST`, the alias for `ast.AST[horos.Language]` in Bittype's Horos syntax package. |
-| Mixed type declarations containing Wire | Implemented Go horos/wire model and `horoswire.AST` projection; see [the frontend guide](horoswire.md). |
+| Type declarations containing Wire | The same Go Horos model and `horos.AST`, with Type/Data bounds; see [the frontend guide](horos.md). |
 | Go source describing types | Existing `golang.AST`, the alias for `ast.AST[golang.Language]`. |
 | Ground application data | Existing Ontos Atom/Tuple values through the relevant Go `Value` type. |
 | Application data containing live capabilities | `wire.HydratedValue` specializes the Ontos/Wire native value domain; a conforming runtime owns handle admission and construction policy. |
@@ -119,7 +120,7 @@ structs, cyclic objects or any value implementing a Send method. The runtime
 owns capability recognition. A ground Wire cannot become a HydratedWire by a
 type cast; their message domains differ.
 
-`Wire<E>` in the proposed horos/wire profile describes a message contract. The
+`Wire<E>` in unified Horos describes a message contract. The
 existing Go `wire.HydratedWire` interface is not parameterized by E. A future
 selected native view can expose typed sending by composing E's value adapter;
 the hydrator itself does not load E or check a library's message protocol.

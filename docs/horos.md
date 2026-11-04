@@ -1,21 +1,16 @@
 # Horos declaration AST
 
-**Implemented in Go source, 2 November 2026.** This is an AST-only frontend for
-Horos declaration revision 1, not a readable source grammar or native generator.
-The authoritative value format and binding rules are in
-[horos's declaration specification](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
+**Implemented in Go source, 4 November 2026.** One AST-only frontend projects
+Horos declaration revision 2. Type/Data bounds restrict generic slots within that
+language; data and capability expressions share one module, declaration and
+binder model. The old Horos/Wire packages and profiles are removed without aliases.
+The authoritative [canonical format](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md)
+lives in Horos. No readable parser, native generator or runtime binding is added.
 
-The Go module pins public Horos 0.8.0 and Ontos 0.16.0. The
-[installed consumer](dependencies.md) exercises generic specialization and
-directly authored optional pagination through those public modules without local replacements.
-
-The [optional-extension proposal](hydrated-types.md) places the mixed type model
-in horos/wire over ontos/wire values. Bittype projects that optional profile;
-it no longer proposes an independently owned contract model. This implemented
-Horos frontend stays data-only with revision 1 and its existing profiles.
-The [additional frontend](horoswire.md) is implemented separately. Private
-projection and binding mechanics are shared in `internal/horosmodel`, and syntax
-framing in `internal/declsyntax`; ground public profiles and semantics are unchanged.
+The [dependency alignment](dependencies.md) and independent installed consumer
+qualify the public module graph. Private projection and binding mechanics live
+in `internal/horosmodel`; syntax framing lives in `internal/declsyntax`.
+The agnostic kernel contains no Type/Data or Wire interpretation.
 
 ## API and ownership
 
@@ -25,7 +20,7 @@ framing in `internal/declsyntax`; ground public profiles and semantics are uncha
   `Resolve(root, dependencies, treeID)`, `Project(program, treeID)` and `Model(view)`.
   Resolve delegates semantics to Horos, then projects its checked model. Model
   checks the borrowed AST and returns a Horos program for inspection or explicit
-  `Specialize(declarationID, groundArguments)`. No lookup performs network/file IO.
+  `Specialize(declarationID, closedArguments)`. No lookup performs network/file IO.
   The registered resolver uses [ResolveReferences](../resolve/horos/go/resolver.go)
   to export shared semantic facts. It verifies supplied semantic annotations
   against authoritative resolution and never repairs them implicitly.
@@ -40,7 +35,7 @@ framing in `internal/declsyntax`; ground public profiles and semantics are uncha
   and `analysis.Provider[horos.Language]`,
   with ID `horos` and name `Horos`.
   Applications explicitly register it through `representation.NewLanguage` and
-  `Engine.RegisterLanguage`, using profile `horos-declarations-1/ast-2`.
+  `Engine.RegisterLanguage`, using profile `horos-declarations-2/ast-1`.
   Syntax checking is separately bound with `check.NewChecker[h.Language](definition,
   provider)` and installed with `Engine.RegisterChecker`. Identity registration
   alone supplies no syntax or semantic capability.
@@ -57,7 +52,7 @@ and the four native text stages remain independent of the external model. The en
 can hold this AST without registering any transformer. Parse and Render report
 missing text capabilities for this provider.
 
-The syntax profile revision is a clean change: no ast-1 alias or fallback checker
+The syntax profile revision is a clean change: no old-profile alias or fallback checker
 remains. `resolve.Model` is still explicitly semantic, while `Pack` and `Check`
 establish only the new syntax profile. Existing callers that require resolution
 must use Model or the analysis capability.
@@ -78,7 +73,8 @@ in this first resolution profile.
 | Module | `name`, `pin` (lowercase hex) | `import*`, `declaration*` | none |
 | Import | `alias`, expected `name`, `pin` | none | optional `target` module assertion |
 | Declaration | `name` | `parameter*`, one `body` | none |
-| TypeParameter | `name`, canonical decimal `index` | none | none |
+| TypeParameter | `name`, canonical decimal `index` | one `bound` | none |
+| Bound | `name` is `type` or `data` | none | none |
 | Parameter | canonical decimal `index` | none | optional `target` TypeParameter assertion |
 | Application | `scope` (`local` or `imported`), `name`, imported `alias` | `argument*` | optional `target` Declaration and imported `import` assertions |
 | Descriptor | Horos `constructor` name without `horos/` prefix | `operand*` | none |
@@ -108,22 +104,35 @@ It does not reinterpret literal data as declarations or silently normalize an AS
 
 ## Pagination and specialization
 
-The [pagination tests](../resolve/horos/go/resolve_test.go) consume two modules:
-`example.pagination.Page<T>` and `example.people.PeoplePage = Page<Person>`.
-The Page body retains a Parameter node referencing its T declaration. The
-PeoplePage application references the imported Page and caller-side Person;
-a same-spelled Person in the imported module cannot capture that argument.
+The [binding tests](../resolve/horos/go/resolve_test.go) preserve imported Page
+and caller-side Person identities, same-spelled distinct binders and literal
+opacity. Existing data-only fixtures now spell their Data bounds explicitly.
+The [unified bound tests](../analyze/horos/go/bounds_test.go) add:
 
-Projection preserves the open declaration. Calling Horos's Specialize explicitly
-produces the ground closed-record descriptor with required list items and optional
-text next. It does not mutate the AST or the checked model. Nested applications
-retain distinct same-spelled binders; parameter/application-shaped literal tuples
-remain opaque data. No pagination operation or cursor behavior is introduced.
+```text
+Page<T> = list-of(T)
+DataPage<D: Data> = Page<D>
+People = Page<Person>
+Live = Page<Wire<Person>>
+```
+
+The [installed consumer](../integration/go/testdata/installed/consumer_test.go)
+uses the full closed record with required items and optional text next. Both
+applications retain the same open Page. Horos Specialize produces a closed type
+expression; DataDescriptor additionally proves data and returns the existing
+Horos descriptor. A mixed result cannot be passed to ground WF/Conforms.
+No specialization mutates the original generic.
+
+`Forward<D: Data> = DataPage<D>` resolves; `Forward<T> = DataPage<T>` is a located
+semantic bound violation even before specialization. Both are valid AST syntax.
+Check validates the bound spelling/cardinality only; Horos supplies the meaning.
+The resolver exports bounds through existing provider-owned semantic terms and
+analysis consumes the same immutable receipt. No new kernel obligation is needed.
 
 ## Admission and qualification
 
 Horos owns module-name/pin checking, arity, binding scope, recursion closure,
-application-cycle rejection and specialization limits. Its errors retain module,
+application-cycle rejection, symbolic generic bounds and specialization limits. Its errors retain module,
 declaration and tuple-index path context. Structured codes and subjects distinguish
 invalid source, missing dependencies, contradicted context, invalid options and
 exhaustion. AST structure/profile errors are located at current AST nodes; no
@@ -142,7 +151,7 @@ qualify their boundary.
 
 ## Analysis profile and generic queries
 
-`analyze.Contract()` advertises `horos-declarations-1/analysis-2`. Its domain is
+`analyze.Contract()` advertises `horos-declarations-2/analysis-1`. Its domain is
 the selected entry and transitive pinned module closure, not every unused value
 in the supplied pool. Unused pool modules contribute no established semantic
 facts; their binding annotations are outside this analyzed domain. Every supplied
@@ -157,7 +166,7 @@ module still has its document-pin assertion checked during decoding.
 | application-dependencies | Complete / Undetermined; every declaration application, including nested arguments, exported |
 
 The resolver adds a sixth obligation, reference-resolution, requiring Complete /
-Holds for its model. Its profile is horos-declarations-1/resolution-1. Analysis
+Holds for its model. Its profile is horos-declarations-2/resolution-1. Analysis
 requires that resolver evidence and preserves these five reports. All five
 reports are analysis model publication requirements. A semantic rejection or
 missing dependency publishes diagnostics without a partial graph. Missing context
@@ -177,7 +186,12 @@ bounds these bytes without interpreting them. Semantic graph budgets are separat
 
 The graph preserves module/declaration/parameter identity, current input sites,
 open parameters and zero-argument applications. Descriptor terms contain exact
-Ontos codec-v1 bytes and authoritative operand paths. Four generic queries need
+Ontos codec-v1 bytes and authoritative operand paths. Parameter bounds are
+provider-owned expression facts: `TermAt(parameterSite, resolve.BoundRole())`
+returns a term with operator `horos/bound/type` or `horos/bound/data`, and the
+codec-v1 bytes of that bound atom. Parameter entities retain sort `horos/type`;
+bounds constrain arguments, not the kind of entity. No shared semantic field or
+subtype rule is added. ProgramValidity includes Horos's symbolic bound checks. Four generic queries need
 no Horos model import: `Resolve`, `TermAt`, `ParameterBindings` and
 `DependenciesFrom`. Dependency edges describe declaration applications, not a
 general import, inheritance or runtime-effect graph.

@@ -32,7 +32,7 @@ from an established binding, or missing dependency context from invalid source.
 | Dependency | A provider-labeled directed edge between entities | PeoplePage applies Page and also applies Person as its argument |
 | Obligation | A named analysis task for which the caller can request a report | Decide program validity, or enumerate application bindings |
 | Domain | The part of the supplied context covered by an obligation | The selected Horos entry module and every pinned module transitively imported from it |
-| Analysis profile | A versioned contract defining obligations, domains, vocabulary and requirements for a model | `horos-declarations-1/analysis-2` |
+| Analysis profile | A versioned contract defining obligations, domains, vocabulary and requirements for a model | `horos-declarations-2/analysis-1` |
 | Report | An obligation's completion status and, where applicable, its truth verdict | Validity is Complete / Holds; a completed binding enumeration is Complete / Undetermined |
 | Model | The immutable graph of established facts, available when its publication requirements are met | Queryable entities, terms, occurrences and application dependencies |
 
@@ -326,7 +326,7 @@ An unlabelled dependency pool containing Q when import P is required is missing 
 it does not prove that Q was supplied as P. A present explicit assertion
 contradicting the resolved pin/name or binding is a different failure.
 
-The Horos syntax profile is `horos-declarations-1/ast-2`: optional semantic binding
+The Horos syntax profile is `horos-declarations-2/ast-1`: optional semantic binding
 annotations may be absent, while supplied annotations in the analyzed closure
 must agree with analysis. The required entry/root selection is structural.
 Analysis does not repair input or turn stale references into new references

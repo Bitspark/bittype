@@ -1,13 +1,13 @@
 # Library-owned native type representations
 
 **Owner direction updated 4 November 2026. Status: direct declaration frontends implemented; native representations proposed.**
-This refines the [optional Horos Wire tooling proposal](hydrated-types.md) and
-[generation pipeline](generation.md). Ground Ontos/Horos remain data-only;
-optional ontos/wire owns mixed values and horos/wire owns their type model.
+This refines the [unified Horos tooling design](hydrated-types.md) and
+[generation pipeline](generation.md). Ground values/checks remain data-only;
+Ontos/wire owns mixed values and the one Horos language describes their types.
 Bittype consumes that model; Function, Cell and Stream remain ordinary libraries.
 
 The existing ASTTransformer interface and syntax engine need no new operation
-for a named library contract. The optional Horos Wire frontend is [implemented](horoswire.md). Native transformers and representation configuration
+for a named library contract. The unified Horos frontend is [implemented](horos.md). Native transformers and representation configuration
 below remain proposed. Recipe examples are design notation, not executable APIs.
 No runtime adapter, validator, callable implementation or transport is added.
 
@@ -21,7 +21,7 @@ marks the runtime-binding API as unimplemented.
 
 | Input | Owner and purpose |
 | --- | --- |
-| Canonical declaration modules | Libraries define types, imports, parameters and applications. Horos owns ground declarations and, separately, the optional horos/wire profile. |
+| Canonical declaration modules | Libraries define types, imports, parameters and applications. Horos owns one declaration language with explicit Type/Data bounds. |
 | Native representation choices | A library supplies optional target recipes for its declarations; the consuming build selects exact recipes and dependencies. Ordinary structural declarations need no custom recipe. |
 | Runtime bindings | Later library work supplies behavior and conversion where needed. Type generation neither implements nor loads it. |
 
@@ -36,57 +36,46 @@ Providers establish the semantic prerequisites using the existing
 [capture, resolution and analysis boundaries](resolution.md). A syntactically
 admitted AST is insufficient evidence for a semantic transformation.
 
-## 2. Direct declarations and ground embedding
+## 2. Direct declarations and generic bounds
 
-Choose the profile that owns a declaration's intended parameter domain. Ground
-Horos declarations accept data types. Optional Horos/Wire declarations accept
-both `Data(G)` and capability-bearing expressions. Author a mixed-capable generic
-in that optional profile from the start. Its data and capability applications
-refer to the same module, declaration and binder; there is no derived copy.
+Author one declaration with explicit Type/Data parameter bounds. Type accepts
+any admitted type; Data restricts its arguments to proven data types. `Page<T>`
+and `DataPage<D: Data> = Page<D>` express the distinction without separate
+languages, copied templates or a schema-level Data wrapper. Ground descriptors
+occur directly in expressions. Ontos value embedding/recovery is unchanged.
 
-Template lifting, its Horos API, derivation metadata and Bittype transformer
-were removed on the owner's 4 November 2026 instruction. There is no
-Horos-to-HorosWire transformation, alias or fallback route. Existing intentionally
-data-only declarations keep their domain.
-
-**Closed embedding** specializes a ground declaration to a closed, well-formed
-descriptor G and produces `Data(G)`. Horos supplies this operation. G contains no
-upper generic slot or unresolved application and remains opaque to optional
-substitution. Embedding creates no declaration and does not convert a live value.
-It is useful when an optional type contains an existing concrete data type.
-
-Canonical expressions, module pins and lexical binding come from
-[Horos's direct declaration format](https://github.com/Bitspark/horos/blob/main/docs/spec/wire-types.md#4-direct-authoring-and-ground-embedding).
-Profile and revision qualify declaration identities. AST addresses and origins
-record source correspondence; they do not replace canonical pins or prove
-semantic equivalence. Native names and recipe configuration remain separate
-from canonical document identity.
+Template lifting, the second frontend and closed schema embedding are removed
+without aliases. Horos Specialize returns a closed expression; DataDescriptor
+requires a data result before ground conformance. Neither erases the authored
+open declaration. Canonical expressions, bounds, pins and lexical binding come
+from [Horos](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
+AST addresses and origins record correspondence, not semantic equivalence or
+behavioral authority. Native names and recipe configuration remain separate.
 
 ## 3. Pagination through the type pipeline
 
-Author this generic once in Horos/Wire. These equations are explanatory notation,
+Author this generic once in Horos. These equations are explanatory notation,
 not a readable source grammar:
 
 ```text
 Page<T> = record closed {
   items: list-of(T)
-  next?: Data(scalar(utf8-text))
+  next?: scalar(utf8-text)
 }
-Person = Data(PersonDescriptor)
+DataPage<D: Data> = Page<D>
+Person = record closed { name: scalar(utf8-text) }
 PeoplePage = Page<Person>
 EditablePeoplePage = Page<Cell<Person>>
 ```
 
 Both applications select the same Page. Cell is an ordinary pinned library
-declaration. No expanded Page record or second Page module is needed. A separate
-ground-only application can remain entirely in ground Horos. The future routes are:
+declaration. No expanded Page record or second Page module is needed. DataPage imposes an explicit data-only constraint on the same Page. The future route is:
 
 ```text
-AST[Horos]     -> AST[Native] -> CST[Native] -> source
-AST[HorosWire] -> AST[Native] -> CST[Native] -> source
+AST[Horos] -> AST[Native] -> CST[Native] -> source
 ```
 
-Each route consumes the checked semantics of its source profile. Native generation
+The route consumes checked source semantics, including generic bounds. Native generation
 retains generic declarations and applications; specialization is not a required
 prepass. Generate Page once per selected module/representation, not a record per
 application. Representative target shapes are:
@@ -168,7 +157,7 @@ an implemented Go interface:
 | Source | Exact source language/profile, module pin and declaration identity; ordered canonical type parameters. |
 | Target | Target language ID, syntax/profile compatibility and the selected native representation profile/version. These are distinct from source identity. |
 | Native type | Either an external named generic type or a type-only target AST recipe. No raw source string or executable body. |
-| Arguments | Explicit mapping from resolved source parameter slots to target type operands. Native constraints, extra parameters or indirections must be declared by the profile. |
+| Arguments | Explicit mapping from resolved source parameter slots to target type operands. Source Type/Data bounds and their native enforcement limits must be explicit. Native constraints, extra parameters or indirections must be declared by the profile. |
 | Imports and dependencies | Target import/header/crate identity and exported symbol path; exact package artifacts supplied by the consuming dependency lock. |
 | Qualification | Supported applications/constraints and native representation limits. An unsupported argument fails explicitly. |
 
@@ -279,8 +268,7 @@ The existing [stage-first layout](../LAYOUT.md) remains in force:
 
 | Proposed location/owner | Responsibility |
 | --- | --- |
-| `transforms/horos-to-<native>/go` | Direct data type generation, independently useful without capabilities. |
-| `transforms/horoswire-to-<native>/go` | Structural type lowering and uniformly configured native recipes; no named-contract imports. |
+| `transforms/horos-to-<native>/go` | Unified structural type lowering and uniformly configured native recipes, including data-only types; no named-contract imports. |
 | Each independent contract library | Canonical module, optional target recipes/type artifacts and future runtime bindings. No per-library stage is added to bittype. |
 | Consuming application composition | Pin modules/dependencies, select profiles and recipes, register transformers, arrange output artifacts. |
 
@@ -305,11 +293,11 @@ and never discover these libraries by name.
 
 Future fixtures must establish:
 
-- Data and capability applications use the same authored optional Page, preserving
+- Data and capability applications use the same authored Page, preserving
   its declaration identity, lexical parameter scope and open generics in all targets.
-- Direct ground and optional native mappings preserve their own profile domains,
-  imported applications, source origins, presence and literal opacity. Data
-  boundaries remain closed; native erasure never proves ground equivalence.
+- Native mappings preserve Type/Data obligations, imported applications, source
+  origins, presence and literal opacity. Native erasure never proves a Data
+  bound or ground equivalence.
 - The complete pinned module context is checked. Missing imports, inconsistent
   profiles and unsupported target representations produce explicit diagnostics.
 
