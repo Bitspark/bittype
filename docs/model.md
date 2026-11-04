@@ -1,6 +1,6 @@
 # Horos canonical types and bittype generation
 
-**2 November 2026. Status: Go declaration model and Horos AST implemented;
+**Updated 4 November 2026. Status: Go declaration model and Horos AST implemented;
 native mappings proposed, not implemented.** This replaces the 31 October
 proposal for an independent bittype value-type language. The generic AST/CST,
 native text stages and syntax engine already exist. See the [Horos frontend](horos.md).
@@ -11,14 +11,14 @@ native text stages and syntax engine already exist. See the [Horos frontend](hor
 | --- | --- |
 | ontos | Ground data values, structural identity, data embeddings and canonical encoding |
 | horos | Data descriptors/conformance; module, generic and application semantics for data declarations |
-| optional ontos/wire | Implemented Go mixed value profile over Deixis; ground Ontos stays unchanged |
+| optional ontos/wire | Go/TypeScript mixed value profile and native tuple structure in 0.16.0; ground Ontos stays unchanged |
 | optional horos/wire | Implemented static Go mixed declarations, explicit ground embeddings and partial lifting |
 | bittype | Source syntax, AST/CST projections, frontend tooling and generation |
 | bitwire / bitruntime | Capability contracts and hydration above Horos |
 | Contract libraries | Function, Stream, Cell and future behavioral declarations and realizations |
 
-The semantic authority is the [horos descriptor specification](https://github.com/Bitspark/horos/blob/v0.6.0/docs/spec/horos.md)
-and the [canonical declaration specification](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
+The semantic authority is the [horos descriptor specification](https://github.com/Bitspark/horos/blob/v0.7.0/docs/spec/horos.md)
+and the [canonical declaration specification](https://github.com/Bitspark/horos/blob/v0.7.0/docs/spec/declarations.md).
 The latter specifies exact value grammar, immutable imports, indexed binders,
 substitution and identity for data declarations. Bittype must not maintain a
 competing interpretation of those Horos data types or their generic substitution.
@@ -46,11 +46,12 @@ optional native representations belong to libraries and are selected explicitly
 by the consuming build. [Explicit lifting](horoswire.md) is now implemented;
 native transformers, recipe configuration and runtime binding remain proposed.
 
-Horos 0.6.0 implements ground descriptors and value checking, without a public
-dependency on the older proof-integration packages. Newer Go source implements
-the declaration layer; bittype pins that public revision and implements its
-AST projection/checker. Neither implements a Horos-to-native transformation yet.
-No package release or migration is implied.
+Horos 0.7.0 implements ground descriptors and value checking and includes both
+Go declaration profiles, without a public dependency on older proof-integration
+packages. Bittype pins that release and Ontos 0.16.0 and implements their AST
+projections/checkers. The [dependency alignment](dependencies.md) is a clean
+upgrade with installed-consumer qualification. Neither package implements a
+Horos-to-native transformation yet, and no service migration is implied.
 
 A declaration document is an ontos module value, encoded with ontos-codec-v1:
 
