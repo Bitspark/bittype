@@ -2,11 +2,51 @@
 
 **ID:** 0005
 **Date:** 4 November 2026
-**Status:** submitted
+**Status:** delivering
 **Owner:** codex-hydrated-type-design
 **Issue:** https://github.com/Bitspark/bittype/issues/59
-**Reviewed:** https://github.com/Bitspark/bittype/issues/59#issuecomment-6636131079
-**Run-ID:** run_0edf63ea-d8c6-4ee5-9c8c-7f3f0b32f591
+
+## Decision
+
+The [expert advice](0005-general-kinds.advice.md) supports ordinary structural
+kinds, with two adaptations: retain the existing module envelope without a new
+signature digest, and implement proper-kind inclusion using finite cuts of
+positive greatest-fixed-point hedge automata rather than a general parity
+automaton engine. The research owner accepts the decisions below for delivery.
+The closed Type/Data implementation from research 0004 is superseded.
+
+The owner's 4 November rule removes extra validation, checksum, backup and
+provenance workflows from this delivery. No unperformed check is claimed to
+have passed. The semantic judgments implemented by Horos remain product behavior.
+
+## Recommendations and disposition
+
+| Recommendation | Decision | Implementation action |
+| --- | --- | --- |
+| Classify checked type descriptions structurally | Accepted | Normalize aliases/applications into observations; retain designated type children, opaque exact payloads and lexical recursion backedges. |
+| General kind expressions and named definitions | Accepted | Replace the two-claim enum with sorts, top/bottom, ordinary references and applications, unions/intersections, shape/sequence patterns, guarded recursive groups and arrow contracts. |
+| Ordinary Type and Data definitions | Accepted | Define them in the prelude through the same kind language as user definitions; remove all name-sensitive Data proof paths. |
+| Schema, prelude and formation separation | Adapted | Keep these as internal responsibilities of revision 4. Do not add a signature digest, separate schema/profile artifacts or another identity mechanism. |
+| Preserve existing primitive and ground admission | Accepted | Express operand requirements as ordinary kind contracts. Keep ground WF/Conforms and runtime-value recursion semantics unchanged. |
+| Constructor results, aliases and higher-order inputs | Accepted | Separate parameter-list arity from semantic sort. Retain checked bodies and lexical environments in sealed Program-owned values. |
+| General result reasoning | Accepted | Establish requested contracts under explicit rigid assumptions; do not publish a principal kind or a dedicated Data summary. |
+| Joint versus alternative constructor contracts | Accepted | Preserve intersections and unions as different guarantees; use finite, sound rules for abstract applications and constructor inclusion. |
+| Exact closed membership | Accepted | Solve positive obligations over the finite observation graph at their greatest fixed point. |
+| Proper-kind inclusion | Adapted | Compile finite child sequences and positive recursive shapes to hedge automata; solve live states before finite-cut inclusion. Keep free-shape counterexamples distinct from admitted Horos descriptors. |
+| Bounded, immutable operation model | Accepted | Charge graph/automaton construction, environments, comparisons and output against existing operation budgets; keep caches operation-local. |
+| Explicit result meanings | Accepted | Separate proven, refuted, unproved, invalid and exhausted outcomes; absence of a fact is not nonmembership. |
+| Horos facts through agnostic Bittype semantics | Accepted | Publish sort, declared contracts, symbolic bodies and individual memberships as provider-owned facts. Keep the shared kernel unaware of kind meanings. |
+| Representation versus native enforcement | Accepted | Keep pagination generation types-only, with explicit constraint erasure under a representation profile and located Unsupported for unimplemented enforcement. |
+| Clean migration | Accepted | Remove revision 3 readers, Claim/Interface, DataSummary, descriptorData and RequiresData rather than retaining compatibility aliases. |
+| Quantified constructor schemes | Deferred | Add only when a concrete consumer needs an abstract constructor to preserve every future kind in one contract. Finite contracts and known-body queries remain supported. |
+| Type-level lambdas, partial application and growing recursive kind applications | Deferred | Require a concrete declaration that cannot be expressed with saturated applications, constructor-valued results and guarded fixed-parameter recursion. |
+| Complete constructor inference or relational subtree constraints | Deferred | Retain symbolic relationships without claiming a complete solver; extend only for a specified consumer obligation. |
+| Native integer mappings and richer representation recipes | Deferred | Require an explicit target representation contract. Preserve current Unsupported results and library ownership. |
+| New test, checksum, receipt-audit and release-validation workflows | Not applied | Superseded by the owner's current delivery rule. Existing semantic receipt contracts remain part of Bittype's product API. |
+
+The implementation belongs in Horos's declaration model and Bittype's Horos
+frontend/native transformation readers. Function, Stream and Cell remain library
+declarations; Wire, runtime and the generic Bittype kernel gain no such cases.
 
 ## Question
 
