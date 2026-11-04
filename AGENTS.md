@@ -10,7 +10,7 @@ Read [CHARTER.md](CHARTER.md), [docs/model.md](docs/model.md),
 The owner selected canonical definitions as input and TypeScript, Go, Rust and C++
 types as outputs. Horos owns data descriptors and canonical
 module/generic/application semantics with Type/Data bounds; bittype owns syntax,
-AST/CST tooling and transformations. The Go declaration model and AST-only Horos frontend are implemented;
+AST/CST tooling and transformations. The Go declaration model and Horos text/semantic frontend are implemented;
 read [docs/horos.md](docs/horos.md). Do not revive
 the superseded independent bittype value-type algebra. The current native-text
 slice implements parsers, AST-to-CST formatters, syntax checks and a generic
@@ -46,7 +46,7 @@ contract-specific engine registrations, named-library imports in general
 transformers or raw-source recipes. Missing/conflicting required representations
 fail rather than selecting a weaker fallback.
 
-- Readable Horos syntax, native language transformers, public builders and application
+- Readable Horos syntax is implemented in docs/horos-syntax.md. Native language transformers, public builders and application
   CLI remain deferred. The syntax engine and ASTTransformer boundary are now
   implemented; read [docs/engine.md](docs/engine.md). Do not introduce runtime
   adapters, callable behavior,
@@ -105,7 +105,7 @@ fail rather than selecting a weaker fallback.
 - Keep prior research and Nightseam as evidence, not competing specifications.
   Use Horos's declaration specification for normalization/identity and encoding;
   do not infer semantic equivalence or behavioral ownership from document pins.
-- Only the two Horos frontends and their private model helpers consume the
+- Only the Horos frontend stages and their private model helpers consume the
   external Horos/Ontos model dependencies.
   Preserve the narrow package import allowances; generic infrastructure and
   native stages must remain independent of these semantic packages.

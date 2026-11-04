@@ -1,11 +1,12 @@
 # Horos declaration AST
 
-**Implemented in Go source, 4 November 2026.** One AST-only frontend projects
+**Implemented in Go source, 4 November 2026.** One frontend projects
 Horos declaration revision 2. Type/Data bounds restrict generic slots within that
 language; data and capability expressions share one module, declaration and
 binder model. The old Horos/Wire packages and profiles are removed without aliases.
 The authoritative [canonical format](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md)
-lives in Horos. No readable parser, native generator or runtime binding is added.
+lives in Horos. The [readable source grammar](horos-syntax.md) is implemented on this
+same AST. Native generators and runtime bindings remain outside this frontend.
 
 The [dependency alignment](dependencies.md) and independent installed consumer
 qualify the public module graph. Private projection and binding mechanics live
@@ -15,7 +16,7 @@ The agnostic kernel contains no Type/Data or Wire interpretation.
 ## API and ownership
 
 - [syntax/horos/go](../syntax/horos/go/nodes.go) defines `Language`, `AST`, `Node`,
-  `Kind` and the vocabulary. It imports only generic AST and language identity.
+  `Kind` and the vocabulary. It imports only generic AST/CST and language identity.
 - [resolve/horos/go](../resolve/horos/go/resolve.go) provides
   `Resolve(root, dependencies, treeID)`, `Project(program, treeID)` and `Model(view)`.
   Resolve delegates semantics to Horos, then projects its checked model. Model
@@ -30,8 +31,13 @@ The agnostic kernel contains no Type/Data or Wire interpretation.
 - [analyze/horos/go](../analyze/horos/go/analyze.go) consumes the explicit resolver
   result, reusing its model and adapting its evidence to
   [shared semantic facts and reports](analysis.md).
+- [parse/horos/go](../parse/horos/go/parse.go) constructs a lossless CST and stored AST
+  from source; [format/horos/go](../format/horos/go/format.go) constructs CST directly
+  from a borrowed AST. Printing delegates to the [generic printer](../print/go/print.go).
 - [provider/horos/go](../provider/horos/go/provider.go) implements
-  `check.Provider[horos.Language]`, `resolution.Provider[horos.Language]`
+  `parse.Provider[horos.Language]`, `format.Provider[horos.Language]`,
+  `print.Provider[horos.Language]`, `check.Provider[horos.Language]`,
+  `resolution.Provider[horos.Language]`
   and `analysis.Provider[horos.Language]`,
   with ID `horos` and name `Horos`.
   Applications explicitly register it through `representation.NewLanguage` and
@@ -44,13 +50,15 @@ The agnostic kernel contains no Type/Data or Wire interpretation.
   `Engine.RegisterAnalyzer`, and consumes the explicit resolution result.
   See [shared composition](resolution.md); implementing interfaces installs nothing.
 
-Only the Horos resolver and its private bridge directly import Horos/Ontos.
+Only Horos frontend stages and their private bridge directly import Horos/Ontos.
+Text stages use Ontos for literal embeddings and the bridge for canonical module
+encoding/pins; they do not resolve or specialize types.
 The analyzer consumes the resolver contract and shared evidence.
 The model dependency is pinned to a public immutable Go module revision in go.mod;
 there is no local replacement or vendored private checkout. Generic infrastructure
 and the four native text stages remain independent of the external model. The engine
-can hold this AST without registering any transformer. Parse and Render report
-missing text capabilities for this provider.
+can hold this AST without registering any transformer. Parse and Render use the
+explicitly registered text stages; identity registration still installs nothing.
 
 The syntax profile revision is a clean change: no old-profile alias or fallback checker
 remains. `resolve.Model` is still explicitly semantic, while `Pack` and `Check`
@@ -200,10 +208,11 @@ Remote tests cover canonical value round trips, imported and nested pagination,
 specialization, wrong/missing references, invalid pins/indices/UTF-8, literal
 boundaries, address renumbering, provenance, nil views and resource exhaustion.
 Independent integration fixtures qualify explicit engine registration, immutable
-envelopes and absent text stages. Architecture tests enforce the narrow external
+envelopes and independent text-stage registration. The [source grammar](horos-syntax.md)
+adds source and canonical round trips on the same AST. Architecture tests enforce the narrow external
 dependency boundary, and static consumer tests distinguish Horos from every native
 AST marker. Existing native-text/compiler gates remain required.
 
-Native generators, readable Horos parsers/formatters, runtime adapters and
+Native generators, runtime adapters and
 Function/Stream/Cell bindings are outside this change. These contracts retain
 library ownership; none is a special core kind or builtin registration.

@@ -7,14 +7,14 @@ formatter, printer and checking details. The owner's later 31 October direction
 unifies generation and native-to-canonical migration under ASTTransformer. Its
 typed boundary and syntax engine with explicit registration, path finding and
 execution are implemented; see the [engine reference](engine.md). The Horos AST
-is now implemented; readable Horos syntax, actual language mappings, public
+and readable Horos syntax are now implemented; actual language mappings, public
 builders and application CLI remain deferred.
 
 Horos owns the data model and [declaration semantics](model.md).
-Bittype implements the [AST-only projection](horos.md); native transformations
+Bittype implements the [Horos projection](horos.md); native transformations
 remain future work. [Resolution](resolution.md) exports Horos's checked model
 to shared facts; [analysis](analysis.md) consumes that evidence explicitly.
-It adds no text parser or ASTTransformer implementation.
+Text stages are documented in [Horos source syntax](horos-syntax.md); no ASTTransformer implementation is added.
 
 The [unified declaration design](hydrated-types.md) has one future path:
 `AST[Horos] -> AST[Native] -> CST[Native] -> source`. Explicit Type/Data bounds
@@ -63,9 +63,9 @@ canonical declarations or decide how a canonical nullable field should be
 represented. Those choices must already be explicit in the target AST.
 
 The Horos frontend supplies AST projection/checking and located AST errors,
-using Horos-owned resolution, binding and specialization rules. A readable
-authoring syntax can add text -> CST[Horos] with its AST view; the canonical
-document value format does not claim that source syntax already exists.
+using Horos-owned resolution, binding and specialization rules. The
+[readable authoring syntax](horos-syntax.md) adds text -> CST[Horos] with its AST
+view; canonical document identity is still defined by Horos.
 Native parsers remain separate text-to-CST stages. File IO, dependency retrieval,
 configuration and output paths belong to the application. A formatter is usable
 with a target AST from another producer, without a canonical input dependency.
@@ -117,12 +117,12 @@ integration/go/                          present: contracts, conformance, archit
 testdata/text/<language>/valid/          present: native source fixtures
 
 syntax/horos/go/                        present: Horos declaration AST projection
-parse/horos/go/                         proposed: future readable source to CST
+parse/horos/go/                         present: readable source to CST
 resolve/horos/go/                       present: Horos references and binders
 check/horos/go/                         present: syntax-only AST admission
 analyze/horos/go/                       present: Horos semantics to shared facts
-format/horos/go/                        proposed: future readable Horos CST
-provider/horos/go/                      present: AST-only capability composition
+format/horos/go/                        present: readable Horos CST
+provider/horos/go/                      present: text and semantic capability composition
 transforms/horos-to-<native>/go/         planned: directed native generation
 transforms/<native>-to-horos/go/         proposed: partial migration mapping
 cmd/bittype/go/                          planned: application composition and IO
@@ -131,9 +131,8 @@ testdata/{horos,transforms}/             planned: semantic/adoption fixtures
 
 The native directory names are typescript, golang, rust and cpp. Horos replaces
 the earlier proposed canonical directory name; no implementation aliases are
-needed. Planned paths are not placeholder packages. An AST-only first provider
-needs explicit capability checks before the complete readable language-stage
-matrix applies. Public builders, generic traversal and a typed
+needed. Planned paths are not placeholder packages. The Horos provider now has
+explicitly qualified text and semantic stages in the same language-stage matrix. Public builders, generic traversal and a typed
 Stage composition helper remain deferred. Package-level tests belong beside
 their implementation; independent consumer fixtures and composition qualification
 remain under integration. Language coverage is discovered and checked in tests,
