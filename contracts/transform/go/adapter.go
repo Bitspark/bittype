@@ -9,7 +9,9 @@ import (
 )
 
 // NewTransformer adapts a typed stage without changing its AST representation.
-// The stage receives owned storage and its result is checked and snapshotted.
+// The stage receives owned storage and its result is structurally checked and
+// snapshotted. The engine separately requires registered syntax checkers at both
+// endpoints; using this typed bridge alone does not establish syntax admission.
 // This adapter contains no type mapping or behavioral contract binding.
 func NewTransformer[F, T any](from, to representation.Language, stage pipeline.Stage[ast.AST[F], ast.AST[T]]) (ASTTransformer, error) {
 	if stage == nil {
@@ -34,9 +36,6 @@ func (b bound[F, T]) ToID() language.ID                     { return b.to.ID() }
 func (b bound[F, T]) FromLanguage() representation.Language { return b.from }
 func (b bound[F, T]) ToLanguage() representation.Language   { return b.to }
 func (b bound[F, T]) Transform(input representation.AST) (representation.AST, error) {
-	if err := b.from.Check(input); err != nil {
-		return representation.AST{}, err
-	}
 	source, err := representation.Unpack[F](b.from, input)
 	if err != nil {
 		return representation.AST{}, err

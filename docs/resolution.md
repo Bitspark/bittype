@@ -72,6 +72,11 @@ semantic.Input (Entry, Trees, capture Limits)
                                          analysis Result
 ```
 
+Capture requires an explicitly registered `check.Checker`; registering a language
+identity, resolver or analyzer does not install it. Standalone capture uses
+`semantic.Capture(ctx, checker, input)`. Generic Pack/PackCST establish only carrier
+integrity. A semantic Snapshot additionally records successful syntax admission.
+
 `Engine.Resolve(ctx, snapshot, semantic.Options)` receives requested obligations,
 configuration and invocation limits separately from captured syntax. An entirely
 zero limits value selects defaults; partial invalid values fail. Snapshot admission

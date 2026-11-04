@@ -2,7 +2,6 @@ package integration_test
 
 import (
 	"github.com/Bitspark/bittype/contracts/parse/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
 	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
 	goprovider "github.com/Bitspark/bittype/provider/golang/go"
 	rustprovider "github.com/Bitspark/bittype/provider/rust/go"
@@ -80,7 +79,7 @@ func cppFixture() ast.AST[cpp.Language] {
 	f.tree.ID = "independent-cpp"
 	return f.tree
 }
-func formatted[L any](t *testing.T, p text.Provider[L], a ast.AST[L]) string {
+func formatted[L any](t *testing.T, p nativeProvider[L], a ast.AST[L]) string {
 	t.Helper()
 	c, err := p.Format(a)
 	if err != nil {
@@ -137,7 +136,7 @@ func TestFormatterSnapshotOwnership(t *testing.T) {
 		t.Fatal("formatter output changed with input mutation")
 	}
 }
-func invalidAST[L any](t *testing.T, p text.Provider[L], makeTree func() ast.AST[L]) {
+func invalidAST[L any](t *testing.T, p nativeProvider[L], makeTree func() ast.AST[L]) {
 	t.Helper()
 	mutations := []func(*ast.AST[L]){
 		func(a *ast.AST[L]) { a.ID = "" },
@@ -199,7 +198,7 @@ func TestPrimitiveSyntaxPositions(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-func nativeFiles[L any](t *testing.T, p text.Provider[L], language, ext string, independent ast.AST[L]) string {
+func nativeFiles[L any](t *testing.T, p nativeProvider[L], language, ext string, independent ast.AST[L]) string {
 	t.Helper()
 	directory := t.TempDir()
 	paths, err := filepath.Glob("../../testdata/text/" + language + "/valid/*." + ext)

@@ -107,7 +107,7 @@ jobs:
         shell: bash
         run: |
           mkdir "$RUNNER_TEMP/installed-consumer"
-          cp integration/go/testdata/installed/consumer_test.go "$RUNNER_TEMP/installed-consumer/"
+          cp integration/go/testdata/installed/*_test.go "$RUNNER_TEMP/installed-consumer/"
           cd "$RUNNER_TEMP/installed-consumer"
           go mod init installed.consumer
           go get "github.com/Bitspark/bittype@$EXPECTED_REVISION" github.com/Bitspark/horos/core/go@v0.7.0 github.com/bitspark/ontos@v0.16.0

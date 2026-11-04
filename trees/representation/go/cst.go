@@ -8,7 +8,7 @@ import (
 	"github.com/Bitspark/bittype/trees/cst/go"
 )
 
-// CST is a checked concrete snapshot with an already constructed AST view.
+// CST is a structurally checked concrete snapshot with an already constructed AST view.
 // Concrete storage is opaque; UnpackCST returns an independent typed copy.
 type CST struct {
 	abstract AST

@@ -41,6 +41,9 @@ framing in `internal/declsyntax`; ground public profiles and semantics are uncha
   with ID `horos` and name `Horos`.
   Applications explicitly register it through `representation.NewLanguage` and
   `Engine.RegisterLanguage`, using profile `horos-declarations-1/ast-2`.
+  Syntax checking is separately bound with `check.NewChecker[h.Language](definition,
+  provider)` and installed with `Engine.RegisterChecker`. Identity registration
+  alone supplies no syntax or semantic capability.
   Resolution requires `resolution.NewResolver` and `Engine.RegisterResolver`.
   Analysis additionally requires `analysis.NewAnalyzer` and
   `Engine.RegisterAnalyzer`, and consumes the explicit resolution result.

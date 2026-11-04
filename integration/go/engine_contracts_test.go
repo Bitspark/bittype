@@ -58,7 +58,7 @@ func (i *engineImporter) Import(path string) (*types.Package, error) {
 }
 func TestEngineIndependentPublicContracts(t *testing.T) {
 	imports := &engineImporter{standard: importer.Default(), packages: make(map[string]*types.Package)}
-	cases := []struct{ name, want string }{{"consumer", ""}, {"wrong_stage", "cannot use"}, {"wrong_view", "cannot use"}, {"missing_endpoints", "FromID"}, {"private_envelope", "unexported"}}
+	cases := []struct{ name, want string }{{"consumer", ""}, {"independent_stages", ""}, {"removed_text_provider", "undefined"}, {"removed_engine_provider", "undefined"}, {"removed_new_provider", "undefined"}, {"removed_register_provider", "undefined"}, {"wrong_stage", "cannot use"}, {"wrong_view", "cannot use"}, {"missing_endpoints", "FromID"}, {"private_envelope", "unexported"}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			positions := token.NewFileSet()

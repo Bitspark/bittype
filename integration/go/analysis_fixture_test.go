@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"context"
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/engine/go"
@@ -33,8 +34,8 @@ func analyzeCase(e *engine.Engine, ctx context.Context, input analysisCase) (sem
 	}
 	return e.Analyze(ctx, analysis.Input{Snapshot: source, Options: input.options()})
 }
-func runAnalyzerCase(a analysis.Analyzer, ctx context.Context, input analysisCase) (semantic.Result, error) {
-	source, err := semantic.Capture(ctx, a.Language(), input.source())
+func runAnalyzerCase(a analysis.Analyzer, checker check.Checker, ctx context.Context, input analysisCase) (semantic.Result, error) {
+	source, err := semantic.Capture(ctx, checker, input.source())
 	if err != nil {
 		return semantic.Result{}, err
 	}

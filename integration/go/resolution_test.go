@@ -49,7 +49,7 @@ func bindingFixture(t *testing.T, run func(context.Context, semantic.Request[amb
 	t.Helper()
 	d := definition[amber](t, "binding-language")
 	e := engine.New()
-	register(t, e, d)
+	registerChecked[amber](t, e, d)
 	input := analysisFixture[amber](t, d)
 	source, err := e.Capture(context.Background(), input.source())
 	if err != nil {

@@ -4,7 +4,9 @@ import (
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/pipeline/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/contracts/check/go"
+	"github.com/Bitspark/bittype/contracts/format/go"
+	"github.com/Bitspark/bittype/contracts/print/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/cst/go"
 )
@@ -22,7 +24,10 @@ func (Independent) Check(ast.View[Language]) error          { return nil }
 func (Independent) Print(cst.CST[Language]) (string, error) { return "", nil }
 
 var _ language.Provider = Independent{}
-var _ text.Provider[Language] = Independent{}
+var _ parse.Provider[Language] = Independent{}
+var _ check.Provider[Language] = Independent{}
+var _ format.Provider[Language] = Independent{}
+var _ print.Provider[Language] = Independent{}
 var _ ast.View[Language] = ast.AST[Language]{}
 var _ ast.View[Language] = cst.CST[Language]{}
 var _ pipeline.Stage[parse.Input, cst.CST[Language]] = Independent{}.Parse

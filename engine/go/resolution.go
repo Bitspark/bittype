@@ -21,7 +21,10 @@ func (e *Engine) Capture(ctx context.Context, input semantic.Input) (semantic.Sn
 	if err != nil {
 		return semantic.Snapshot{}, err
 	}
-	return semantic.Capture(ctx, r.language, input)
+	if r.checker == nil {
+		return semantic.Snapshot{}, fmt.Errorf("%w: checking for %s", ErrMissingCapability, input.LanguageID())
+	}
+	return semantic.Capture(ctx, *r.checker, input)
 }
 
 func (e *Engine) RegisterResolver(resolver resolution.Resolver) error {

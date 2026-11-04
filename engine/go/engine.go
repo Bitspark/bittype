@@ -10,7 +10,11 @@ import (
 	"sync"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
+	"github.com/Bitspark/bittype/contracts/check/go"
+	"github.com/Bitspark/bittype/contracts/format/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/parse/go"
+	"github.com/Bitspark/bittype/contracts/print/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 )
@@ -23,7 +27,10 @@ var (
 	ErrAmbiguousPath        = errors.New("multiple shortest transformation paths")
 	ErrInvalidRoute         = errors.New("invalid transformation route")
 	ErrMissingCapability    = errors.New("language has no registered capability")
-	ErrInvalidProvider      = errors.New("invalid text provider")
+	ErrDuplicateParser      = errors.New("parser is already registered")
+	ErrDuplicateChecker     = errors.New("checker is already registered")
+	ErrDuplicateFormatter   = errors.New("formatter is already registered")
+	ErrDuplicatePrinter     = errors.New("printer is already registered")
 )
 
 // Engine supports concurrent registration and operations. Registration is
@@ -38,7 +45,10 @@ type Engine struct {
 }
 type registration struct {
 	language representation.Language
-	text     *Provider
+	parser   *parse.Parser
+	checker  *check.Checker
+	formatter *format.Formatter
+	printer  *print.Printer
 	analyzer *analysis.Analyzer
 	resolver *resolution.Resolver
 }

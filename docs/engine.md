@@ -1,21 +1,20 @@
 # Syntax engine and AST transformations
 
-**Implemented, 31 October 2026.** This increment supplies the frame for registered
+**Updated, 4 November 2026.** The implemented frame supports registered
 AST transformations. The engine contains no canonical or native mapping rules.
 Applications explicitly register providers and transformers, including the
 [optional Horos lift](horoswire.md#explicit-transformation). No TypeScript, Go,
 Rust or C++ type generator is implemented.
 
-The 2 November [Horos AST-only frontend](horos.md) uses the language registration
-interface for syntax checking and independently registers
-[resolution](resolution.md) and [semantic analysis](analysis.md). Native generators and readable Horos
-syntax remain unimplemented.
+The [Horos AST-only frontend](horos.md) registers its syntax checker independently
+from language identity, [resolution](resolution.md) and [semantic analysis](analysis.md).
+Native generators and readable Horos syntax remain unimplemented.
 
 ## Public components
 
 | Package | Responsibility |
 | --- | --- |
-| [trees/representation/go](../trees/representation/go/ast.go) | Checked AST/CST envelopes and language/profile descriptors |
+| [trees/representation/go](../trees/representation/go/ast.go) | Structurally checked AST/CST envelopes and language/profile descriptors |
 | [contracts/transform/go](../contracts/transform/go/transformer.go) | ASTTransformer and typed stage registration bridge |
 | [engine/go](../engine/go/engine.go) | Registration, route planning/execution and text-stage composition |
 | [contracts/language/go](../contracts/language/go/language.go) | Shared ID/Name identity contract |
@@ -23,7 +22,7 @@ syntax remain unimplemented.
 | [contracts/parse/go](../contracts/parse/go/provider.go) | Source input and text-to-CST contract |
 | [contracts/format/go](../contracts/format/go/provider.go) | AST-to-CST contract |
 | [contracts/print/go](../contracts/print/go/provider.go) | CST-to-text contract |
-| [contracts/text/go](../contracts/text/go/provider.go) | Composition of the four stage providers |
+| [contracts/text/go](../contracts/text/go/diagnostic.go) | Shared syntax and source diagnostics |
 | [contracts/pipeline/go](../contracts/pipeline/go/stage.go) | Independent typed Stage function contract |
 | Existing native providers | Language-specific parsing, checking, formatting and printing |
 
@@ -37,16 +36,16 @@ registration. Function, Stream and Cell remain ordinary library references.
 The existing ast.AST[L] and cst.CST[L] carriers remain unchanged. L separates
 Go types. A dynamic registry needs an opaque envelope, not ast.AST[any].
 
-representation.NewLanguage[L](checker, profile) creates a Language descriptor from a
-check.Provider[L]. It captures ID and Name, the actual Go marker type, the
-explicit profile string and the checker. Configured descriptors implement
-language.Provider; their zero values are invalid. Native marker providers still
-have usable zero values. Empty metadata and typed nil providers are rejected.
+`representation.NewLanguage[L](identity, profile)` accepts `language.Provider`.
+It captures ID, Name, the actual Go marker type and the explicit profile string.
+It installs no checker or other capability. Configured descriptors implement
+language.Provider; their zero values are invalid. Empty metadata and typed nil
+providers are rejected. Native language markers are usable identity providers.
 
-The checker needs only AST views and language identity. It requires no parser,
-formatter or printer. A combined text.Provider also satisfies this contract;
-AST-only providers can implement it independently. Resolution and analysis
-remain separate registered capabilities.
+The four stage contracts embed only language identity and their own typed method.
+A parser implementation need not implement checking, formatting or printing.
+An implementation may offer several methods, but the application registers each
+selected capability explicitly. Resolution and analysis remain separate too.
 
 A profile names the admitted syntax/representation revision chosen by the
 application, such as native-types-v1. It is not a generated fingerprint,
@@ -57,7 +56,10 @@ provider owner's promise about its checker/profile; the engine cannot prove
 two arbitrary checker implementations have identical semantics.
 
 Pack[L](descriptor, view) accepts a native AST or its existing CST view,
-checks carrier structure and native grammar, and owns a deep snapshot.
+checks generic carrier structure and owns a deep snapshot. It does not invoke a
+language checker or establish syntax admission. `PackCST` likewise checks both
+carrier arenas, not native grammar. Call a configured `check.Checker` or
+`Engine.Check` when syntax admission is required.
 Unpack[L](descriptor, envelope) verifies the endpoint and returns fresh mutable
 storage. AST.Snapshot also copies deeply. Copying an envelope value does not
 expose its private arena. Zero envelopes are invalid.
@@ -69,7 +71,7 @@ identity owns the corresponding reference/provenance mapping.
 
 The existing carrier limits apply before data is copied: node and depth limits,
 aggregate string bytes and list-entry counts. Checker callbacks receive private
-copies. Typed stages receive owned input, and their output is checked and
+copies. Typed stages receive owned input, and their output is structurally checked and
 snapshotted, including when the stage retains a reference to its output.
 
 ## Transformer contract
@@ -96,9 +98,10 @@ pipeline.Stage[ast.AST[F], ast.AST[T]]
 ```
 
 The bridge uses representation.CheckMarker to check actual marker types at
-construction, without access to payloads or unchecked constructors. It checks input, passes the
-stage an owned typed AST, and packs its result against the destination
-descriptor. A nil stage is an error. The adapter returns zero output whenever
+construction, without access to payloads or unchecked constructors. It verifies
+input identity, passes the stage an owned typed AST, and structurally packs its
+result against the destination descriptor. The standalone bridge does not invoke
+syntax checkers; engine execution checks every endpoint explicitly. A nil stage is an error. The adapter returns zero output whenever
 the stage fails, even if the stage also supplied a partial AST.
 
 The adapter additionally implements DescribedTransformer, which exposes
@@ -117,9 +120,15 @@ unsupported inputs. Concurrent callers require concurrency-safe providers.
 
 Engine's zero value is usable; New is a convenience constructor. Both start empty.
 
-- RegisterLanguage installs an AST-only descriptor.
-- NewProvider[L](textProvider, profile) packages a full existing text.Provider[L].
-  RegisterProvider installs its descriptor and text capabilities atomically.
+- RegisterLanguage installs identity/profile/marker metadata only.
+- RegisterParser accepts `parse.Parser`, constructed with
+  `parse.NewParser[L](definition, parse.Provider[L])`.
+- RegisterChecker accepts `check.Checker`, constructed with
+  `check.NewChecker[L](definition, check.Provider[L])`.
+- RegisterFormatter accepts `format.Formatter`, constructed with
+  `format.NewFormatter[L](definition, format.Provider[L])`.
+- RegisterPrinter accepts `print.Printer`, constructed with
+  `print.NewPrinter[L](definition, print.Provider[L])`.
 - RegisterTransformer installs one directed edge between registered languages.
 - RegisterResolver installs an optional resolution capability; Capture and Resolve
   produce an explicit input snapshot and resolution result.
@@ -132,8 +141,18 @@ Engine's zero value is usable; New is a convenience constructor. Both start empt
 Language keys are exact and case-sensitive. Duplicate keys or directed edges
 are errors, including attempts to replace a language with another profile or
 marker. Use a separate explicitly composed engine for an alternative mapping
-profile. Choose a full provider at registration when text capabilities are
-needed; registration does not silently upgrade or replace an AST-only entry.
+profile. Each capability attaches to an already registered compatible descriptor,
+in any order, including after earlier operations. Unknown languages, duplicate
+registrations of the same capability and ID/profile/marker mismatches fail without
+changing the registry. Registering one capability never infers another.
+
+The configured adapters are heterogeneous bridges around typed providers, like
+resolution.Resolver and analysis.Analyzer. Their ID/Name/Language methods expose
+captured metadata; their stage methods use owned boundary snapshots. Provider
+identity must match the descriptor, and the actual Go marker is checked before
+binding. `text.Provider`, `engine.Provider`, `engine.NewProvider` and
+`Engine.RegisterProvider` are removed without compatibility aliases. The text
+contract package contains diagnostics only.
 
 Self-edges are rejected: a same-language request is a checked snapshot, not
 implicit normalization. Graph cycles across different languages are allowed,
@@ -163,7 +182,10 @@ route values, not permissions or opaque bindings to the engine that planned
 them. Registered profiles and actual input/output types are checked again.
 TransformTo(input, targetID) is planning followed by execution.
 
-Execution validates the initial AST, takes an owned snapshot, invokes each
+Execution first requires registered checkers for every language in the route,
+including intermediate endpoints, before invoking any provider or edge. A missing
+checker yields ErrMissingCapability. Planning itself only checks connectivity.
+Execution then checks the initial AST, takes an owned snapshot, invokes each
 selected edge once, validates its destination and snapshots its result before
 continuing. A zero-edge identity plan also validates and snapshots. Changed
 transformer endpoint metadata after registration is an error.
@@ -176,7 +198,7 @@ connectivity; it does not establish that every possible source AST is supported.
 
 ## Native text composition
 
-NewProvider adapts existing implementations; it creates no new native grammar.
+Each configured stage adapter wraps an independently selected typed provider.
 The engine offers:
 
 ```go
@@ -187,10 +209,13 @@ Print(representation.CST) (string, error)
 Render(representation.AST) (string, error)
 ```
 
-Render is Format followed by Print. These methods select the registered provider
-by the envelope's language ID. An AST-only registration returns
-ErrMissingCapability for text operations. Unregistered languages return
-ErrUnknownLanguage.
+Parse requires only a parser; Check only a checker; Format only a formatter;
+Print only a printer. Render captures the formatter and printer together before
+invoking either, then formats and prints. It fails before formatting if either is
+missing. These operations do not implicitly invoke other registered capabilities.
+Native implementations may check their own grammar internally as part of their
+stage contract. Missing selected capabilities return ErrMissingCapability;
+unregistered languages return ErrUnknownLanguage.
 
 The representation.CST envelope exposes ASTView() representation.AST without
 another conversion provider. representation.PackCST and representation.UnpackCST
@@ -201,31 +226,39 @@ its returned text. Providers remain responsible for their grammar, concrete
 spelling and formatter preservation contracts; structural checks do not prove
 that arbitrary leaf text means the stored abstract view.
 
-For example, with explicit imports of engine, the parse contract, the TypeScript syntax
-package and its provider:
+For example, using the TypeScript marker for identity and its native
+implementation for two independently selected capabilities:
 
 ```go
-provider, err := engine.NewProvider[typescript.Language](
-    typescriptprovider.Provider{}, "native-types-v1",
+definition, err := representation.NewLanguage[typescript.Language](
+    typescript.Language{}, "native-types-v1",
 )
 if err != nil { return err }
+parser, err := parse.NewParser[typescript.Language](definition, typescriptprovider.Provider{})
+if err != nil { return err }
+printer, err := print.NewPrinter[typescript.Language](definition, typescriptprovider.Provider{})
+if err != nil { return err }
 syntax := engine.New()
-if err := syntax.RegisterProvider(provider); err != nil { return err }
+if err := syntax.RegisterLanguage(definition); err != nil { return err }
+if err := syntax.RegisterParser(parser); err != nil { return err }
+if err := syntax.RegisterPrinter(printer); err != nil { return err }
 
-parsed, err := syntax.Parse(provider.ID(), parse.Input{
+parsed, err := syntax.Parse(definition.ID(), parse.Input{
     SourceID: "input", TreeID: "input", Text: "type Page<T> = T[];",
 })
 if err != nil { return err }
 original, err := syntax.Print(parsed)
 if err != nil { return err }
-formatted, err := syntax.Render(parsed.ASTView())
-if err != nil { return err }
-// original retains source bytes; formatted has the provider's selected layout.
-_ = original
-_ = formatted
+_ = original // retained source bytes; Check and Render are not registered
 ```
 
-After registering a destination provider and actual mapping, callers can pass
+Register a `format.NewFormatter` adapter to enable Render, and a
+`check.NewChecker` adapter to enable Check, semantic Capture and checked
+transformation execution. `semantic.Capture(ctx, checker, input)` also accepts an
+explicit configured checker outside an engine. Capture preserves budget,
+cancellation, catalogue and snapshot checks before semantic providers run.
+
+After registering source/destination checkers, destination text stages and an actual mapping, callers can pass
 parsed.ASTView() to TransformTo, then Render the resulting AST. No actual mapping
 or canonical registration is installed by this increment.
 
@@ -242,15 +275,16 @@ registration/reentrant reads.
 Public consumer fixtures compile against actual production sources and reject
 wrong typed stages/views, missing transformer endpoints and forged envelopes.
 Production dependency tests prohibit concrete languages and mapping packages
-throughout the frame's import closure. All four existing native providers also
-run through the engine, including parse/print retention and formatting.
+throughout the frame's import closure. Independent single-capability providers exercise partial registration, per-stage
+identity/profile rejection, render preflight and route checker preflight. All four
+existing native implementations also run through the engine, including parse/print retention and formatting.
 
 The maintained GitHub gate runs these tests, vet and a race-detector check for
 concurrent registry operations, alongside existing native compiler and fuzz
 checks. Documentation checks run on the same exact committed revision.
 Workloads run remotely.
 
-The [stage-first hierarchy](../LAYOUT.md) keeps checked tree representations
+The [stage-first hierarchy](../LAYOUT.md) keeps structurally checked tree representations
 independent of transformer contracts and the engine. Shared conformance tests
 and discovered stage/dependency checks enforce this boundary. The moved APIs
 have no aliases at the former package paths.

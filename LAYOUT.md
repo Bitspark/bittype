@@ -12,15 +12,15 @@ go.mod
 trees/
   ast/go/                 generic AST, nodes, addresses, origins and borrowed view
   cst/go/                 generic concrete tree and stored AST view
-  representation/go/      checked AST/CST snapshots and language/profile descriptors
+  representation/go/      structurally checked AST/CST snapshots and language/profile descriptors
 contracts/
   language/go/            language.Provider identity
   pipeline/go/            typed Stage contract
-  parse/go/               parse.Input and text-to-CST provider contract
-  check/go/               independent AST syntax-admission provider contract
-  format/go/              AST-to-CST provider contract
-  print/go/               CST-to-text provider contract
-  text/go/                composed text provider and shared diagnostics
+  parse/go/               parse.Input, text-to-CST contract and registration adapter
+  check/go/               AST syntax-admission contract and registration adapter
+  format/go/              AST-to-CST contract and registration adapter
+  print/go/               CST-to-text contract and registration adapter
+  text/go/                shared source and syntax diagnostics only
   transform/go/           ASTTransformer contract and typed registration bridge
   semantic/go/            common snapshots, requests, reports and publication
   resolution/go/          resolver capability and dependency contract
@@ -65,16 +65,16 @@ same dependency level. The package boundaries are:
 | --- | --- |
 | AST, Stage, language identity | Independent foundations; no native syntax or other foundation dependency |
 | CST | Generic AST carrier |
-| Parse contract | Source input, AST/CST carriers and language identity |
-| Check contract | AST views and language identity; no text or CST dependency |
-| Format contract | AST/CST carriers and language identity |
-| Print contract | CST carrier and language identity |
-| Text composition and diagnostics | Parse/check/format/print contracts; AST addresses for diagnostics |
+| Parse contract/adapter | Source input, AST/CST carriers, representations and language identity |
+| Check contract/adapter | AST views, representations and language identity; no concrete grammar or text-stage dependency |
+| Format contract/adapter | AST/CST carriers, representations and language identity |
+| Print contract/adapter | CST carrier, representations and language identity |
+| Text diagnostics | AST addresses only; no stage contracts |
 | Carrier checks and printer | Generic tree structure and shared diagnostic contracts; no native grammar or formatting choices |
-| Checked representation | Carriers, check/identity contracts and generic carrier checks; no engine or transformer dependency |
+| Structurally checked representation | Carriers, identity and generic carrier checks; no engine or transformer dependency |
 | Transformer contract/bridge | Typed stages, checked representations and endpoint identity; no concrete mapping |
 | Semantic facts | Generic AST addresses; graph integrity and owned storage, no language rules |
-| Shared semantic contract/bridge | Semantic facts, checked representations and identity; capture/publication, no concrete provider |
+| Shared semantic contract/bridge | Semantic facts, representations, explicit checker and identity; capture/publication, no concrete provider |
 | Resolution contract/bridge | Shared semantic contract and identity; binding coverage and typed invocation |
 | Analysis contract/bridge | Shared semantic and resolution contracts; explicit dependency composition |
 | Engine | Checked representations and shared contracts; no concrete language, provider or mapping |
@@ -88,13 +88,15 @@ same dependency level. The package boundaries are:
 | Horos analyzer | Own syntax, Horos resolver contract and shared semantic evidence; no direct external model imports |
 | Horos provider | Own syntax/checker/resolver/analyzer and shared contracts; composition, no text stages |
 
-The parse, check, format and print contracts do not import text composition or
-any implementation. `text.Provider` embeds those four capabilities; source input
-is `parse.Input`. The shared implementation remains under `print/go`, separate
+The parse, check, format and print interfaces are independent; their configured
+adapters use representations for owned heterogeneous inputs/outputs. The engine
+registers them separately after identity/profile registration. Representation
+depends on generic carrier checks and diagnostic records, never a stage-provider
+contract. Source input is `parse.Input`; `text` contains diagnostics only. The shared implementation remains under `print/go`, separate
 from `contracts/print/go`. Imports may use a local alias when both packages are
 needed. No compatibility interfaces or input aliases remain under text.
 
-The checked AST/CST and language descriptors share one home in
+The structurally checked AST/CST and language descriptors share one home in
 `trees/representation/go`. `contracts/transform/go` owns ASTTransformer and
 ErrInvalidTransformer; representation owns tree and identity errors. Its narrow
 CheckMarker operation checks actual Go type identity without exposing payloads

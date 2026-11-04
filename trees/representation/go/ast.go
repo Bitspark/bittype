@@ -1,4 +1,4 @@
-// Package representation owns checked, heterogeneous AST and CST snapshots.
+// Package representation owns structurally checked, heterogeneous AST and CST snapshots.
 // It contains no language vocabulary, transformer or registry.
 package representation
 
@@ -20,7 +20,7 @@ var (
 	ErrInvalidAST       = errors.New("invalid AST envelope")
 )
 
-// AST is an owned, checked, opaque snapshot. Copying the envelope is safe;
+// AST is an owned, structurally checked, opaque snapshot. Copying the envelope is safe;
 // Unpack returns fresh mutable storage. Its zero value is invalid.
 type AST struct {
 	id      language.ID
@@ -50,7 +50,7 @@ func (a AST) Snapshot() (AST, error) {
 }
 
 // Pack accepts either a typed AST or its existing CST view. It validates and
-// snapshots storage; it never erases grammar, resolves names or prints source.
+// snapshots storage; language syntax admission is a separate check.Provider.
 func Pack[L any](definition Language, view ast.View[L]) (AST, error) {
 	if err := definition.acceptMarker(reflect.TypeFor[L]()); err != nil {
 		return AST{}, err
@@ -63,14 +63,11 @@ func Pack[L any](definition Language, view ast.View[L]) (AST, error) {
 		return AST{}, fmt.Errorf("%w: %w", ErrInvalidAST, err)
 	}
 	result := AST{id: definition.id, profile: definition.profile, payload: typed[L]{tree.Clone(input)}}
-	if err := definition.Check(result); err != nil {
-		return AST{}, err
-	}
 	return result, nil
 }
 
 // Unpack checks the identity/profile/actual Go type and returns a deep copy.
-// Grammar checking was performed when the envelope was constructed.
+// It does not imply language syntax admission or semantic validity.
 func Unpack[L any](definition Language, input AST) (ast.AST[L], error) {
 	if err := definition.acceptMarker(reflect.TypeFor[L]()); err != nil {
 		return ast.AST[L]{}, err

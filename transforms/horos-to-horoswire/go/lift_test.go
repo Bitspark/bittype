@@ -1,6 +1,7 @@
 package lift_test
 
 import (
+ checkcontract "github.com/Bitspark/bittype/contracts/check/go"
 	"errors"
 	"math/big"
 	"reflect"
@@ -135,9 +136,15 @@ func TestTransformerIsExplicitAndOwnsConfiguration(t *testing.T) {
 	if err := registry.RegisterLanguage(from); err != nil {
 		t.Fatal(err)
 	}
+ fromChecker, err := checkcontract.NewChecker[h.Language](from, hp.Provider{})
+ if err != nil { t.Fatal(err) }
+ if err := registry.RegisterChecker(fromChecker); err != nil { t.Fatal(err) }
 	if err := registry.RegisterLanguage(to); err != nil {
 		t.Fatal(err)
 	}
+ toChecker, err := checkcontract.NewChecker[w.Language](to, wp.Provider{})
+ if err != nil { t.Fatal(err) }
+ if err := registry.RegisterChecker(toChecker); err != nil { t.Fatal(err) }
 	if _, err := registry.TransformTo(envelope, to.ID()); err == nil {
 		t.Fatal("provider silently registered a lift")
 	}

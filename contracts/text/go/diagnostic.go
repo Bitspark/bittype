@@ -1,3 +1,4 @@
+// Package text defines source and syntax diagnostics shared by stage providers.
 package text
 
 import (

@@ -5,9 +5,10 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 	"testing"
 
-	"github.com/Bitspark/bittype/contracts/language/go"
+	"github.com/Bitspark/bittype/contracts/check/go"
+	"github.com/Bitspark/bittype/contracts/format/go"
+	"github.com/Bitspark/bittype/contracts/print/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/engine/go"
 	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
 	goprovider "github.com/Bitspark/bittype/provider/golang/go"
@@ -21,18 +22,33 @@ import (
 	"github.com/Bitspark/bittype/trees/cst/go"
 )
 
-func nativeRegistration[L any](t *testing.T, e *engine.Engine, p text.Provider[L], source string) engine.Provider {
+// Convenience for conformance fixtures, not a combined production interface.
+func registerNativeStages[L any](t *testing.T, e *engine.Engine, definition representation.Language, p nativeProvider[L]) {
+ t.Helper()
+ register(t, e, definition)
+ parser, err := parse.NewParser[L](definition, p)
+ if err != nil { t.Fatal(err) }
+ checker, err := check.NewChecker[L](definition, p)
+ if err != nil { t.Fatal(err) }
+ formatter, err := format.NewFormatter[L](definition, p)
+ if err != nil { t.Fatal(err) }
+ printer, err := print.NewPrinter[L](definition, p)
+ if err != nil { t.Fatal(err) }
+ for _, err := range []error{e.RegisterParser(parser), e.RegisterChecker(checker), e.RegisterFormatter(formatter), e.RegisterPrinter(printer)} {
+  if err != nil { t.Fatal(err) }
+ }
+}
+
+func nativeRegistration[L any](t *testing.T, e *engine.Engine, p nativeProvider[L], source string) representation.Language {
 	t.Helper()
-	registered, err := engine.NewProvider[L](p, "native-types-v1")
+	registered, err := representation.NewLanguage[L](p, "native-types-v1")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if registered.ID() != p.ID() || registered.Name() != p.Name() {
 		t.Fatal("provider identity changed")
 	}
-	if err := e.RegisterProvider(registered); err != nil {
-		t.Fatal(err)
-	}
+	registerNativeStages(t, e, registered, p)
 	input := parse.Input{SourceID: "engine-native", TreeID: "engine-native", Text: source}
 	parsed, err := e.Parse(p.ID(), input)
 	if err != nil {
@@ -52,7 +68,7 @@ func nativeRegistration[L any](t *testing.T, e *engine.Engine, p text.Provider[L
 	if err := e.Check(parsed.ASTView()); err != nil {
 		t.Fatal(err)
 	}
-	plain, err := representation.UnpackCST[L](registered.Language(), parsed)
+	plain, err := representation.UnpackCST[L](registered, parsed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +95,7 @@ func TestEngineUsesFourExistingTextProviders(t *testing.T) {
 	nativeRegistration[golang.Language](t, e, goprovider.Provider{}, "package p\n\ntype Page[T any] []T\n")
 	nativeRegistration[rust.Language](t, e, rustprovider.Provider{}, "type Page<T> = Vec<T>;\n")
 	nativeRegistration[cpp.Language](t, e, cppprovider.Provider{}, "template<typename T> struct Page { T value; };\n")
-	if err := e.RegisterLanguage(p.Language()); !errors.Is(err, engine.ErrDuplicateLanguage) {
+	if err := e.RegisterLanguage(p); !errors.Is(err, engine.ErrDuplicateLanguage) {
 		t.Fatal(err)
 	}
 	if _, err := e.Plan("typescript", "rust"); !errors.Is(err, engine.ErrNoPath) {
@@ -114,14 +130,12 @@ func TestEngineConcreteSnapshotsAndPartialErrors(t *testing.T) {
 		format:      func(ast.View[amber]) (cst.CST[amber], error) { return raw, formatErr },
 		print:       func(c cst.CST[amber]) (string, error) { return *c.Nodes[0].Text, printErr },
 	}
-	adapted, err := engine.NewProvider[amber](p, "v1")
+	adapted, err := representation.NewLanguage[amber](p, "v1")
 	if err != nil {
 		t.Fatal(err)
 	}
 	e := engine.New()
-	if err := e.RegisterProvider(adapted); err != nil {
-		t.Fatal(err)
-	}
+	registerNativeStages(t, e, adapted, p)
 	parsed, err := e.Parse(adapted.ID(), parse.Input{})
 	if err != nil {
 		t.Fatal(err)
@@ -134,7 +148,7 @@ func TestEngineConcreteSnapshotsAndPartialErrors(t *testing.T) {
 	if err != nil || output != "page" {
 		t.Fatal("provider retained concrete output storage")
 	}
-	unpacked, err := representation.UnpackCST[amber](adapted.Language(), parsed)
+	unpacked, err := representation.UnpackCST[amber](adapted, parsed)
 	if err != nil || unpacked.Nodes[0].Origin.Spans[0].Source != "text" || unpacked.Nodes[0].Origin.Nodes[0].Tree != "earlier" || unpacked.Nodes[0].Syntax[0] != 1 {
 		t.Fatal("concrete metadata aliases provider")
 	}
@@ -155,7 +169,7 @@ func TestEngineConcreteSnapshotsAndPartialErrors(t *testing.T) {
 	if c, err := e.Parse(adapted.ID(), parse.Input{}); err == nil || c.LanguageID() != "" {
 		t.Fatal("invalid concrete parse accepted")
 	}
-	if _, err := representation.UnpackCST[blue](adapted.Language(), parsed); !errors.Is(err, representation.ErrTypeMismatch) {
+	if _, err := representation.UnpackCST[blue](adapted, parsed); !errors.Is(err, representation.ErrTypeMismatch) {
 		t.Fatal(err)
 	}
 }
@@ -163,36 +177,34 @@ func TestEngineConcreteSnapshotsAndPartialErrors(t *testing.T) {
 func TestEngineASTOnlyCapabilitiesAndProfiles(t *testing.T) {
 	a := definition[amber](t, "amber")
 	e := engine.New()
-	register(t, e, a)
+	registerChecked[amber](t, e, a)
 	if _, err := e.Parse("amber", parse.Input{}); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
 	if _, err := e.Render(packed[amber](t, a)); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	if err := e.RegisterProvider(engine.Provider{}); err == nil {
-		t.Fatal("zero provider accepted")
+	if err := e.RegisterParser(parse.Parser{}); err == nil {
+		t.Fatal("zero parser accepted")
 	}
 	var nilProvider *fakeText[amber]
-	if _, err := engine.NewProvider[amber](nilProvider, "v1"); !errors.Is(err, representation.ErrInvalidLanguage) {
+	if _, err := representation.NewLanguage[amber](nilProvider, "v1"); !errors.Is(err, representation.ErrInvalidLanguage) {
 		t.Fatal(err)
 	}
-	p, err := engine.NewProvider[ts.Language](tsprovider.Provider{}, "v1")
+	p, err := representation.NewLanguage[ts.Language](tsprovider.Provider{}, "v1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	other, err := engine.NewProvider[ts.Language](tsprovider.Provider{}, "v2")
+	other, err := representation.NewLanguage[ts.Language](tsprovider.Provider{}, "v2")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := e.RegisterProvider(p); err != nil {
-		t.Fatal(err)
-	}
+	registerNativeStages(t, e, p, tsprovider.Provider{})
 	typedCST, err := (tsprovider.Provider{}).Parse(parse.Input{SourceID: "profile", TreeID: "profile", Text: "type X=string;"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	foreign, err := representation.PackCST(other.Language(), typedCST)
+	foreign, err := representation.PackCST(other, typedCST)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,5 +218,3 @@ func TestEngineASTOnlyCapabilitiesAndProfiles(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
-var _ language.Provider = engine.Provider{}

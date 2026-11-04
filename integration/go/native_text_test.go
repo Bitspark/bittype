@@ -46,7 +46,7 @@ func shape[L any](t ast.AST[L], id ast.NodeID) syntaxShape {
 	}
 	return out
 }
-func exercise[L any](t *testing.T, p text.Provider[L], directory, extension string) {
+func exercise[L any](t *testing.T, p nativeProvider[L], directory, extension string) {
 	t.Helper()
 	paths, err := filepath.Glob("../../testdata/text/" + directory + "/valid/*." + extension)
 	if err != nil || len(paths) == 0 {
@@ -106,7 +106,7 @@ func TestNativeTextRoundTrips(t *testing.T) {
 		t.Run(fixture.directory, fixture.roundTrips)
 	}
 }
-func reject[L any](t *testing.T, p text.Provider[L], sources []string) {
+func reject[L any](t *testing.T, p nativeProvider[L], sources []string) {
 	t.Helper()
 	for _, source := range sources {
 		t.Run(source, func(t *testing.T) {
@@ -129,7 +129,7 @@ func TestConcreteSourceTrivia(t *testing.T) {
 		name, source string
 		run          func(parse.Input) (string, error)
 	}{
-		{"typescript", "\ufeff// comment\r\ntype Café = 'é';\r\n\t", func(i parse.Input) (string, error) {
+		{"typescript", "\ufeff// comment\r\ntype CafÃ© = 'Ã©';\r\n\t", func(i parse.Input) (string, error) {
 			p := tsprovider.Provider{}
 			c, e := p.Parse(i)
 			if e != nil {
@@ -137,7 +137,7 @@ func TestConcreteSourceTrivia(t *testing.T) {
 			}
 			return p.Print(c)
 		}},
-		{"go", "\ufeffpackage p\r\n// comment\r\ntype Café string\r\n", func(i parse.Input) (string, error) {
+		{"go", "\ufeffpackage p\r\n// comment\r\ntype CafÃ© string\r\n", func(i parse.Input) (string, error) {
 			p := goprovider.Provider{}
 			c, e := p.Parse(i)
 			if e != nil {
