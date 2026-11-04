@@ -2,9 +2,9 @@ package integration_test
 
 import (
 	"context"
-	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"errors"
 	"fmt"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 	"reflect"
 	"sync"
@@ -76,7 +76,9 @@ func mapExample[F, T any](input ast.AST[F]) (ast.AST[T], error) {
 }
 func bind[F, T any](t *testing.T, from, to representation.Language) transform.ASTTransformer {
 	t.Helper()
-	result, err := transform.NewTransformer[F, T](from, to, transform.Contract{}, func(_ context.Context, request transform.Request[F]) (ast.AST[T], error) { return mapExample[F,T](request.Source()) })
+	result, err := transform.NewTransformer[F, T](from, to, transform.Contract{}, func(_ context.Context, request transform.Request[F]) (ast.AST[T], error) {
+		return mapExample[F, T](request.Source())
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,7 +159,9 @@ func TestTransformerSnapshotsAndIdentity(t *testing.T) {
 	if _, err := representation.Unpack[amber](otherProfile, envelope); !errors.Is(err, representation.ErrLanguageMismatch) {
 		t.Fatal(err)
 	}
-	if _, err := transform.NewTransformer[blue, amber](a, b, transform.Contract{}, func(_ context.Context, request transform.Request[blue]) (ast.AST[amber], error) { return mapExample[blue,amber](request.Source()) }); !errors.Is(err, representation.ErrTypeMismatch) {
+	if _, err := transform.NewTransformer[blue, amber](a, b, transform.Contract{}, func(_ context.Context, request transform.Request[blue]) (ast.AST[amber], error) {
+		return mapExample[blue, amber](request.Source())
+	}); !errors.Is(err, representation.ErrTypeMismatch) {
 		t.Fatal(err)
 	}
 }
@@ -204,7 +208,9 @@ func TestTransformerRejectsInvalidBoundaries(t *testing.T) {
 	}
 	input := packed[amber](t, a)
 	failed := errors.New("unsupported declaration")
-	stage, err := transform.NewTransformer[amber, blue](a, b, transform.Contract{}, func(context.Context, transform.Request[amber]) (ast.AST[blue], error) { return exampleTree[blue](), failed })
+	stage, err := transform.NewTransformer[amber, blue](a, b, transform.Contract{}, func(context.Context, transform.Request[amber]) (ast.AST[blue], error) {
+		return exampleTree[blue](), failed
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,7 +248,7 @@ func TestTransformerCallbacksCannotMutateEnvelopes(t *testing.T) {
 	}
 	var retained ast.AST[blue]
 	adapter, err := transform.NewTransformer[amber, blue](a, b, transform.Contract{}, func(_ context.Context, request transform.Request[amber]) (ast.AST[blue], error) {
-	source := request.Source()
+		source := request.Source()
 		source.Nodes[1].Attributes[0].Text = "stage mutation"
 		retained, _ = mapExample[amber, blue](source)
 		return retained, nil
@@ -271,7 +277,9 @@ func (d *directTransformer) FromID() language.ID { return d.from }
 func (d *directTransformer) ToID() language.ID   { return d.to }
 func (d *directTransformer) Transform(_ context.Context, input transform.Input) (representation.AST, error) {
 	source, err := input.Source.EntryTree()
-	if err != nil { return representation.AST{}, err }
+	if err != nil {
+		return representation.AST{}, err
+	}
 	return d.run(source)
 }
 
@@ -506,12 +514,18 @@ func TestEngineConcurrentRegistrationAndReentry(t *testing.T) {
 // Construct a test-owned admitted snapshot independently from the registry under
 // test, so route preflight and endpoint checks remain independently exercised.
 func captureForTransform[L any](t *testing.T, definition representation.Language, input representation.AST) transform.Input {
-    t.Helper()
-    checker, err := check.NewChecker[L](definition, testChecker[L]{id: definition.ID(), visit: func(ast.AST[L]) error { return nil }})
-    if err != nil { t.Fatal(err) }
-    info, err := input.Inspect()
-    if err != nil { t.Fatal(err) }
-    snapshot, err := semantic.Capture(context.Background(), checker, semantic.Input{Entry: ast.NodeRef{Tree: info.ID, Node: info.Root}, Trees: []representation.AST{input}})
-    if err != nil { t.Fatal(err) }
-    return transform.Input{Source: snapshot}
+	t.Helper()
+	checker, err := check.NewChecker[L](definition, testChecker[L]{id: definition.ID(), visit: func(ast.AST[L]) error { return nil }})
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, err := input.Inspect()
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := semantic.Capture(context.Background(), checker, semantic.Input{Entry: ast.NodeRef{Tree: info.ID, Node: info.Root}, Trees: []representation.AST{input}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return transform.Input{Source: snapshot}
 }

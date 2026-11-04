@@ -1,7 +1,7 @@
 package independent
 
 import (
-"context"
+	"context"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"

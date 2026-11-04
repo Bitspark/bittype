@@ -1,6 +1,6 @@
 # Semantic native type generation
 
-**Owner direction, 4 November 2026. Implementation in progress.** Generate native
+**Owner direction, 4 November 2026.** Generate native
 types and interfaces from checked Horos declarations. This work adds explicit
 semantic transformation input and pagination mappings for TypeScript, Go, Rust
 and C++. It adds no runtime adapters, validators, serialization or behavior.
@@ -39,22 +39,26 @@ The first profile covers named/imported declarations, generic binders and
 applications, closed records, UTF-8 text, booleans, lists and optional fields.
 Canonical module identity and target package/file placement remain separate.
 Mappings retain declaration/binder links and current source origins. A target
-configuration explicitly supplies native module locations. Generation has no
-implicit network or filesystem IO.
+configuration supplies an output tree ID, a Go package name or a C++ namespace.
+This first profile explicitly bundles the complete checked module closure into
+one source unit. Root declarations use exported native names; imported
+declarations use `M<first-16-hex-of-SHA256(pin-text)>_<Name>`. Collisions fail;
+the hash is only a spelling, never semantic identity. Per-module output/import
+placement is deferred. Generation has no implicit network or filesystem IO.
 
 | Horos form | TypeScript | Go | Rust | C++ |
 | --- | --- | --- | --- | --- |
 | UTF-8 text | string | string | String | std::string |
 | Boolean | boolean | bool | bool | bool |
 | list-of(T) | T[] | []T | Vec<T> | std::vector<T> |
-| Closed record | interface/object | struct | struct | struct |
-| Optional field | field?: T | explicit Optional[T] | Option<T> | std::optional<T> |
+| Named closed record | interface | struct | struct | struct |
+| Optional field | field?: T | explicit BittypeOptional[T] | Option<T> | std::optional<T> |
 | Type parameter | native parameter | native parameter | native parameter | template parameter |
 | Application | F<T> | F[T] | F<T> | F<T> |
 
 TypeScript requires strictNullChecks and exactOptionalPropertyTypes. Go's
 presence helper is a generated type declaration with Present and Value fields;
-the value is ignored when absent. No helper methods or runtime implementation
+the value is ignored when absent. Its public name is `BittypeOptional`. No helper methods or runtime implementation
 are generated. Absence is never silently changed into null or a zero value.
 
 Horos checks Type/Data bounds on the source and all canonical applications.
@@ -96,8 +100,66 @@ target syntax construction; the generic kernel has no Horos/Ontos imports.
 
 Qualification covers stale/mismatched/incomplete receipts, multiple targets
 sharing one snapshot, route isolation, cancellation, bounded work, empty output
-on failure, imported/nested pagination, equal-spelled binders, aliases, names,
+on failure, imported and nested pagination applications, equal-spelled binders, aliases, names,
 origin links, semantic rejection and unsupported types. Independent consumers
 compile all four generated outputs through maintained hosted gates. AST and
 semantic assertions supplement compilation; compiler success alone does not
 prove Horos value conformance. No native generator runs on the workstation.
+
+## Public composition
+
+Each concrete mapping exposes `New(from, to, Config)`. The caller explicitly
+registers the endpoint languages, checkers and transformer. The source descriptor
+uses the Horos AST profile; the destination profile is the caller's promise about
+its native checker. The target marker and language ID must match the mapping.
+The engine has no language or constructor catalogue.
+
+```go
+resolved, err := engine.Resolve(ctx, snapshot, semantic.Options{})
+// Handle err before continuing.
+analyzed, err := engine.Analyze(ctx, analysis.Input{
+    Snapshot: snapshot, Resolution: &resolved,
+})
+// Handle err before continuing.
+input := transform.Input{
+    Source: snapshot,
+    Evidence: []semantic.Result{analyzed},
+}
+typescriptAST, err := engine.TransformTo(ctx, input, "typescript")
+goAST, err := engine.TransformTo(ctx, input, "go")
+```
+
+The mapping requires the Horos analysis operation/profile, its complete validity
+and enumeration reports, an available model and empty analysis configuration.
+A different resolution configuration requires a separately qualified mapping
+profile. The adapter checks capture identity and evidence before the mapper runs.
+Syntax-only mappings declare an empty evidence list. Multi-hop routes discard the
+previous evidence and capture the checked intermediate tree. If a later edge
+needs semantics, the caller must execute that leg separately after explicitly
+resolving/analyzing its new snapshot; the engine never runs hidden analysis.
+
+## Profile limits
+
+Names must fit the documented target syntax. Declarations and generic parameters
+capitalize their initial ASCII letter (`page` becomes `Page`); a leading underscore
+becomes `Type_`, and `Self` becomes `Self_`. Conversion collisions, declaration
+shadowing by generic parameters and unsupported field spellings are errors. Go
+fields also capitalize their initial letter; TypeScript retains property names.
+Rust and C++ reject keyword field names. No member name is guessed from its type.
+
+Records must be named declarations. Nested applications such as
+`Page<Page<Person>>` are supported; anonymous records inside fields/arguments are
+rejected. Unused generic parameters, recursive declarations, open records and
+constructors outside the table are rejected with source-node diagnostics and no
+output. This is an explicit first subset, not a fallback that drops constraints.
+Name anonymous records before mapping. Phantom/recursive representations and
+per-library recipes need separately specified profiles.
+
+The native graph retains separate target nodes for equal-spelled binders and
+references to their actual declarations. Origins point back to current canonical
+AST nodes. Standard-library types are qualified in Rust/C++. Dependencies are
+ordered before uses, and each imported declaration is generated once. The helper
+indexes the admitted semantic graph and decodes descriptor payloads on demand;
+it never calls Horos resolution, specialization or template lifting. Generation
+bounds target nodes to 100,000, recursive traversal depth to 128 and total visits
+to 800,000, with context cancellation. Formatter/carrier budgets still apply.

@@ -46,8 +46,8 @@ contract-specific engine registrations, named-library imports in general
 transformers or raw-source recipes. Missing/conflicting required representations
 fail rather than selecting a weaker fallback.
 
-- Readable Horos syntax, native language transformers, public builders and application
-  CLI remain deferred. The syntax engine and ASTTransformer boundary are now
+- Readable Horos syntax, public builders and application CLI remain deferred.
+  Native pagination transformers are implemented; read [semantic generation](docs/semantic-generation.md). The syntax engine and ASTTransformer boundary are now
   implemented; read [docs/engine.md](docs/engine.md). Do not introduce runtime
   adapters, callable behavior,
   application-value validators, serialization or networking.
@@ -105,8 +105,8 @@ fail rather than selecting a weaker fallback.
 - Keep prior research and Nightseam as evidence, not competing specifications.
   Use Horos's declaration specification for normalization/identity and encoding;
   do not infer semantic equivalence or behavioral ownership from document pins.
-- Only the two Horos frontends and their private model helpers consume the
-  external Horos/Ontos model dependencies.
+- Only the Horos frontend, its private model helpers and source-specific
+  transformation readers consume the external Horos/Ontos model dependencies.
   Preserve the narrow package import allowances; generic infrastructure and
   native stages must remain independent of these semantic packages.
 

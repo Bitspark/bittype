@@ -163,6 +163,6 @@ jobs:
           docker run --rm --network=none rust:1.90.0 rustc --version
           docker run --rm --network=none gcc:14.2.0 g++ --version
       - name: Compile independent AST and parsed native fixtures
-        run: go test -count=1 -v -run '^TestNativeCompilerFixtures$' ./integration/go
+        run: go test -count=1 -v -run '^(TestNativeCompilerFixtures|TestGeneratedPaginationCompilers)$' ./integration/go
       - name: Record passing native revision
         run: echo "PASS $EXPECTED_REVISION native fixtures - Go 1.27.3, TypeScript 5.9.3 ES2020, Rust 1.90.0 edition 2024, GCC 14.2.0 C++20." >> "$GITHUB_STEP_SUMMARY"

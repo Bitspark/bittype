@@ -1,10 +1,10 @@
 package semantic
 
 import (
-    "errors"
-    "slices"
-    "github.com/Bitspark/bittype/semantics/go"
-    "github.com/Bitspark/bittype/trees/representation/go"
+	"errors"
+	"github.com/Bitspark/bittype/semantics/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
+	"slices"
 )
 
 var ErrEvidenceUnavailable = errors.New("required semantic evidence is not established")
@@ -12,56 +12,76 @@ var ErrEvidenceUnavailable = errors.New("required semantic evidence is not estab
 // EvidenceRequirement is a consumer-owned compatibility requirement, not a
 // request to run a provider. Model additionally requires a published graph.
 type EvidenceRequirement struct {
-    Operation semantics.Key
-    Profile string
-    Configuration []Setting
-    Reports []Requirement
-    Model bool
+	Operation     semantics.Key
+	Profile       string
+	Configuration []Setting
+	Reports       []Requirement
+	Model         bool
 }
 
 func (r EvidenceRequirement) Clone() EvidenceRequirement {
-    r.Configuration = cloneSettings(r.Configuration)
-    r.Reports = slices.Clone(r.Reports)
-    return r
+	r.Configuration = cloneSettings(r.Configuration)
+	r.Reports = slices.Clone(r.Reports)
+	return r
 }
 
 // ValidateEvidenceRequirements applies one shared metadata budget to the set.
 func ValidateEvidenceRequirements(requirements []EvidenceRequirement) error {
-    limits := DefaultLimits()
-    if len(requirements) > limits.MaxInputs { return ErrLimit }
-    budget := newMetadataBudget(limits)
-    for _, r := range requirements {
-        if err := validateDependencySpecification(r.Operation, r.Profile, r.Configuration, r.Reports, &budget); err != nil { return err }
-    }
-    return nil
+	limits := DefaultLimits()
+	if len(requirements) > limits.MaxInputs {
+		return ErrLimit
+	}
+	budget := newMetadataBudget(limits)
+	for _, r := range requirements {
+		if err := validateDependencySpecification(r.Operation, r.Profile, r.Configuration, r.Reports, &budget); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // AdmitEvidence shares semantic dependency admission, then requires complete
 // reports and any requested model. It never invokes a resolver or analyzer.
 func AdmitEvidence(source Snapshot, requirements []EvidenceRequirement, results []Result) ([]Result, error) {
-    if !source.Valid() || len(requirements) != len(results) { return nil, ErrInvalidRequest }
-    if err := ValidateEvidenceRequirements(requirements); err != nil { return nil, err }
-    for i, r := range requirements {
-        dependency, err := admitDependency(source.state, Dependency{Result: results[i], Operation: r.Operation, Profile: r.Profile, Configuration: r.Configuration, Reports: r.Reports})
-        if err != nil { return nil, err }
-        if !dependency.reportsEstablished() || r.Model && !results[i].HasModel() { return nil, ErrEvidenceUnavailable }
-    }
-    return slices.Clone(results), nil
+	if !source.Valid() || len(requirements) != len(results) {
+		return nil, ErrInvalidRequest
+	}
+	if err := ValidateEvidenceRequirements(requirements); err != nil {
+		return nil, err
+	}
+	for i, r := range requirements {
+		dependency, err := admitDependency(source.state, Dependency{Result: results[i], Operation: r.Operation, Profile: r.Profile, Configuration: r.Configuration, Reports: r.Reports})
+		if err != nil {
+			return nil, err
+		}
+		if !dependency.reportsEstablished() || r.Model && !results[i].HasModel() {
+			return nil, ErrEvidenceUnavailable
+		}
+	}
+	return slices.Clone(results), nil
 }
 
 // Inputs returns immutable envelopes in a separately owned slice.
 func (s Snapshot) Inputs() []representation.AST {
-    if !s.Valid() { return nil }
-    return slices.Clone(s.state.trees)
+	if !s.Valid() {
+		return nil
+	}
+	return slices.Clone(s.state.trees)
 }
 
 // EntryTree is the captured tree containing the explicit entry node.
 func (s Snapshot) EntryTree() (representation.AST, error) {
-    if !s.Valid() { return representation.AST{}, ErrInvalidRequest }
-    for _, input := range s.state.trees {
-        info, err := input.Inspect()
-        if err != nil { return representation.AST{}, err }
-        if info.ID == s.state.entry.Tree { return input, nil }
-    }
-    return representation.AST{}, ErrInvalidRequest
+	if !s.Valid() {
+		return representation.AST{}, ErrInvalidRequest
+	}
+	for _, input := range s.state.trees {
+		info, err := input.Inspect()
+		if err != nil {
+			return representation.AST{}, err
+		}
+		if info.ID == s.state.entry.Tree {
+			return input, nil
+		}
+	}
+	return representation.AST{}, ErrInvalidRequest
 }

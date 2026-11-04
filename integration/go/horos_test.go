@@ -13,7 +13,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
-"github.com/Bitspark/bittype/contracts/transform/go"
+	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/horos/go"

@@ -1,15 +1,15 @@
 package consumer_test
 
 import (
-"github.com/Bitspark/bittype/contracts/transform/go"
-"github.com/Bitspark/bittype/contracts/semantic/go"
-"context"
+	"context"
 	"errors"
 	nativecheck "github.com/Bitspark/bittype/check/typescript/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/format/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/print/go"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
+	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
 	nativeformat "github.com/Bitspark/bittype/format/typescript/go"
 	nativeparse "github.com/Bitspark/bittype/parse/typescript/go"
@@ -91,10 +91,14 @@ func TestIndependentNativeStages(t *testing.T) {
 		t.Fatal(err)
 	}
 	info, err := parsed.ASTView().Inspect()
-if err != nil { t.Fatal(err) }
-snapshot, err := e.Capture(context.Background(), semantic.Input{Entry: ast.NodeRef{Tree: info.ID, Node: info.Root}, Trees: []representation.AST{parsed.ASTView()}})
-if err != nil { t.Fatal(err) }
-if _, err := e.TransformTo(context.Background(), transform.Input{Source: snapshot}, definition.ID()); err != nil {
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := e.Capture(context.Background(), semantic.Input{Entry: ast.NodeRef{Tree: info.ID, Node: info.Root}, Trees: []representation.AST{parsed.ASTView()}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.TransformTo(context.Background(), transform.Input{Source: snapshot}, definition.ID()); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -15,12 +15,14 @@ var ErrInvalidTransformer = errors.New("invalid AST transformer")
 // Input supplies captured syntax and ordered receipts explicitly. Callers must
 // not mutate Evidence during invocation. No provider runs implicitly.
 type Input struct {
-	Source semantic.Snapshot
+	Source   semantic.Snapshot
 	Evidence []semantic.Result
 }
 
 // Contract declares exactly the evidence required by a typed mapping.
-type Contract struct { Evidence []semantic.EvidenceRequirement }
+type Contract struct {
+	Evidence []semantic.EvidenceRequirement
+}
 
 // ASTTransformer is a directed, potentially partial AST mapping. Endpoint IDs
 // are stable. Implementations return an error for unsupported input, preserve

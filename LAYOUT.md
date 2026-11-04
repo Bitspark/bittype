@@ -39,6 +39,8 @@ check/cst/go/             generic concrete carrier checks
 print/go/                 generic CST to source text
 internal/<language>/     private language-specific lexical helpers
 internal/                shared private checking/parsing/tree mechanics
+transforms/horos-to-<target>/go/  analyzed Horos to native type ASTs
+internal/horosgen/        source-owned semantic reading and bounded target arenas
 integration/go/          independent consumers and cross-package qualification
 testdata/text/<language>/valid/
 docs/
@@ -72,7 +74,7 @@ same dependency level. The package boundaries are:
 | Text diagnostics | AST addresses only; no stage contracts |
 | Carrier checks and printer | Generic tree structure and shared diagnostic contracts; no native grammar or formatting choices |
 | Structurally checked representation | Carriers, identity and generic carrier checks; no engine or transformer dependency |
-| Transformer contract/bridge | Typed stages, checked representations and endpoint identity; no concrete mapping |
+| Transformer contract/bridge | Typed requests, shared semantic evidence admission, checked representations and endpoint identity; no concrete mapping |
 | Semantic facts | Generic AST addresses; graph integrity and owned storage, no language rules |
 | Shared semantic contract/bridge | Semantic facts, representations, explicit checker and identity; capture/publication, no concrete provider |
 | Resolution contract/bridge | Shared semantic contract and identity; binding coverage and typed invocation |
@@ -189,3 +191,5 @@ See the [charter](CHARTER.md), [engine API](docs/engine.md),
 
 The [provider matrix](docs/providers.md) records implemented capabilities.
 [Resolution composition](docs/resolution.md) defines snapshot identity and explicit model reuse.
+
+The first native transformation profile is documented in [semantic generation](docs/semantic-generation.md). Source-specific transform helpers may read Horos terms and Ontos payloads; this allowance does not extend to the engine, shared contracts or native text stages.
