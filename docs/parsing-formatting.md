@@ -159,26 +159,28 @@ type Provider[L any] interface {
 }
 ```
 
-The [text package](../contracts/text/go/provider.go) composes those capabilities:
+Each native parser, formatter and checker package supplies its specialized
+provider. Each native `provider/<language>/go` implementation offers all four
+methods as a convenience, using the generic printer in `print/go`. The separate
+`contracts/print/go` package owns the printer interface. Applications can use
+separate implementations for each capability.
 
-```go
-// package text
-type Provider[L any] interface {
-    parse.Provider[L]
-    format.Provider[L]
-    check.Provider[L]
-    print.Provider[L]
-}
-```
+The engine first registers identity/profile metadata from
+`representation.NewLanguage[L](language.Provider, profile)`. It then independently
+registers adapters made by `parse.NewParser`, `check.NewChecker`,
+`format.NewFormatter` and `print.NewPrinter`. Each adapter captures the same
+ID/profile/Go-marker contract and owns its boundary snapshots. Registration of
+one stage never installs any other stage; additional stages can be attached later.
 
-`text.Provider[L]` combines the three text capabilities with the independent
-checker. Each native parser, formatter and checker package supplies its
-specialized provider; each native `provider/<language>/go` package explicitly
-composes all four, using the generic printer implementation in `print/go`.
-The separate `contracts/print/go` package owns the interface. Horos exposes `check.Provider`
-without any text capability. `representation.NewLanguage` accepts that checker
-contract directly. ID/Name come from the language marker, not duplicate strings.
-The old text stage interfaces and input type have no compatibility aliases.
+Parse, Format and Print require only their respective capabilities. Render
+requires a formatter and printer and preflights both before calling either.
+Check, semantic Capture and transformation execution require explicit syntax
+checkers. Generic Pack/PackCST operations validate carrier structure, not native
+grammar; native stage implementations still enforce their own grammar contracts.
+
+Horos exposes checking, resolution and analysis without any text capability.
+`text.Provider` and the combined engine registration are removed without aliases.
+The [text package](../contracts/text/go/diagnostic.go) retains shared diagnostics.
 
 No provider registers itself. The syntax engine accepts shared contracts
 without concrete imports or a name switch. Heterogeneous AST type erasure belongs

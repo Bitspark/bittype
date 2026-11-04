@@ -25,7 +25,7 @@ from an established binding, or missing dependency context from invalid source.
 
 | Concept | Meaning in this API | Pagination example |
 | --- | --- | --- |
-| Syntax envelope | An owned AST snapshot admitted by a language's syntax checker | A Program tree containing the people module and its supplied pagination dependency |
+| Syntax envelope | An owned, structurally checked AST snapshot; Capture separately requires syntax admission | A Program tree containing the people module and its supplied pagination dependency |
 | Entity | The identity of a module, declaration, parameter or provider-owned intrinsic | Page, Page's T, Person and PeoplePage are distinct entities |
 | Term | An established expression: a Reference, Application or ProviderExpression | Applying Page to Person is an Application; using Page's T is a Reference |
 | Occurrence and binding | A current AST node address plus a role and ordinal, and its established target entity | The target occurrence of `pagination.Page<Person>` binds to the imported Page declaration |
@@ -53,7 +53,7 @@ language: `analyze/horos/go` is Go code implementing analysis for Horos.
 
 | Layer and package | Responsibility |
 | --- | --- |
-| [trees/ast/go](../trees/ast/go/ast.go) and [trees/representation/go](../trees/representation/go/ast.go) | Generic syntax storage, current node addresses and checked snapshots |
+| [trees/ast/go](../trees/ast/go/ast.go) and [trees/representation/go](../trees/representation/go/ast.go) | Generic syntax storage, current node addresses and structurally checked snapshots |
 | [semantics/go](../semantics/go/model.go) | Shared fact records, graph integrity, immutable storage and generic queries |
 | [contracts/semantic/go](../contracts/semantic/go/contract.go) | Shared capture, requests, reports and publication |
 | [contracts/resolution/go](../contracts/resolution/go/provider.go) | Independent resolution capability and requirements |
@@ -101,9 +101,11 @@ declaration; its body's parameter use stores slot 0. PeoplePage's body is an
 imported Application of Page whose argument is a local, zero-argument Application
 of Person. Descriptor nodes retain record/list structure and their operands.
 
-The application packs this tree with the Horos syntax descriptor. Syntax checking
-admits its node kinds, spelling and structure; optional semantic target annotations
-may be absent. Packing does not prove that the names resolve or the pins agree.
+The application packs this tree with the Horos identity/profile descriptor.
+Packing validates generic carrier structure. Capture invokes the independently
+registered Horos checker to admit node kinds, spelling and syntax; optional
+semantic target annotations may be absent. Neither packing nor syntax checking
+proves that the names resolve or the pins agree.
 `resolve.Resolve` is an existing way to obtain an already resolved AST projection
 from canonical module values; analysis can also admit structurally valid ASTs
 whose bindings have not yet been established.
@@ -204,8 +206,9 @@ exercises registration and shared queries through the public API.
 ## Composition
 
 ```text
-application selects syntax descriptor, resolver and analyzer
-    -> RegisterLanguage / RegisterProvider
+application selects syntax descriptor, checker, resolver and analyzer
+    -> RegisterLanguage
+    -> RegisterChecker (independent syntax admission)
     -> RegisterResolver / RegisterAnalyzer (independent capabilities)
 
 syntax envelopes + explicit entry and dependency inputs
@@ -243,13 +246,16 @@ sandbox callbacks, recover arbitrary panics or certify semantic claims.
 ## Request and snapshot
 
 `semantic.Input` supplies Entry, Trees and capture Limits to Engine.Capture.
+Capture requires the registered check.Checker for the language; identity metadata
+alone is insufficient. Outside an engine, use
+`semantic.Capture(ctx, checker, input)` with an explicit configured checker.
 `semantic.Options` supplies Requested obligation keys, Configuration and invocation
 Limits. Empty Requested selects all advertised obligations; entirely zero limits
 select defaults. `analysis.Input` then supplies:
 
 | Field | Meaning |
 | --- | --- |
-| Snapshot | An immutable captured input collection admitted by its syntax descriptor |
+| Snapshot | An immutable captured input collection admitted by the explicitly selected syntax checker |
 | Options | This analysis invocation's requested obligations, configuration and limits |
 | Resolution | Optional explicit dependency receipt, required when declared by the analyzer |
 

@@ -78,10 +78,12 @@ conflicting required representations fail rather than selecting a weaker fallbac
   Name capability interfaces through their package: parse.Provider,
   check.Provider, format.Provider, print.Provider, resolution.Provider and
   analysis.Provider. Each stage contract is independent of text composition;
-  parse.Input owns source input. text.Provider composes parse.Provider,
-  check.Provider, format.Provider and print.Provider. Syntax admission depends
-  only on AST views and language identity. AST-only providers need no text
-  capability. Avoid redundant
+  parse.Input owns source input. Register parse/check/format/print capabilities
+  independently through their configured adapters. Language registration captures
+  identity/profile/marker only. Pack/PackCST check generic carrier structure;
+  explicit checkers admit syntax for Check, semantic Capture and every transform
+  endpoint. AST-only providers need no text capability. text contains diagnostics
+  only; do not restore combined provider registrations or aliases. Avoid redundant
   package prefixes or Provider suffixes; retain no superseded interface aliases.
   Transformers identify two endpoints through FromID/ToID. Registration stays
   explicit and agnostic, with no known-language list,

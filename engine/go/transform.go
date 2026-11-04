@@ -13,7 +13,10 @@ func (e *Engine) Check(input representation.AST) error {
 	if err != nil {
 		return err
 	}
-	return registration.language.Check(input)
+	if registration.checker == nil {
+		return fmt.Errorf("%w: checking for %s", ErrMissingCapability, input.LanguageID())
+	}
+	return registration.checker.Check(input)
 }
 
 func (e *Engine) TransformTo(input representation.AST, targetID language.ID) (representation.AST, error) {
@@ -34,7 +37,13 @@ func (e *Engine) Execute(input representation.AST, plan Plan) (representation.AS
 	if err != nil {
 		return representation.AST{}, err
 	}
-	if err := registrations[0].language.Check(input); err != nil {
+	// Require all admission capabilities before invoking any provider or edge.
+	for _, registered := range registrations {
+		if registered.checker == nil {
+			return representation.AST{}, fmt.Errorf("%w: checking for %s", ErrMissingCapability, registered.language.ID())
+		}
+	}
+	if err := registrations[0].checker.Check(input); err != nil {
 		return representation.AST{}, err
 	}
 	current, err := input.Snapshot()
@@ -52,7 +61,7 @@ func (e *Engine) Execute(input representation.AST, plan Plan) (representation.AS
 		if err != nil {
 			return fail(err)
 		}
-		if err := registrations[i+1].language.Check(result); err != nil {
+		if err := registrations[i+1].checker.Check(result); err != nil {
 			return fail(err)
 		}
 		current, err = result.Snapshot()

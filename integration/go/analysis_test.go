@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/engine/go"
@@ -99,7 +100,7 @@ func analysisEngine(t *testing.T, run func(context.Context, analysis.Request[amb
 	t.Helper()
 	definition := definition[amber](t, "analysis-language")
 	kernel := engine.New()
-	register(t, kernel, definition)
+	registerChecked[amber](t, kernel, definition)
 	if err := kernel.RegisterAnalyzer(analysisAnalyzer[amber](t, definition, run)); err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +137,7 @@ func TestAnalysisRegistrationBoundaries(t *testing.T) {
 	if err := kernel.RegisterAnalyzer(good); !errors.Is(err, engine.ErrUnknownLanguage) {
 		t.Fatal(err)
 	}
-	register(t, kernel, a)
+	registerChecked[amber](t, kernel, a)
 	if err := kernel.RegisterAnalyzer(analysis.Analyzer{}); !errors.Is(err, semantic.ErrInvalidOperation) {
 		t.Fatal(err)
 	}
@@ -177,7 +178,7 @@ func TestAnalysisMissingCapability(t *testing.T) {
 	if _, err := analyzeCase(kernel, context.Background(), input); !errors.Is(err, engine.ErrUnknownLanguage) {
 		t.Fatal(err)
 	}
-	register(t, kernel, a)
+	registerChecked[amber](t, kernel, a)
 	if _, err := analyzeCase(kernel, context.Background(), input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
@@ -421,7 +422,12 @@ func TestAnalysisCaptureAndOutputLimits(t *testing.T) {
 
 func TestAnalysisBudgetsPrecedeCheckerAndCopy(t *testing.T) {
 	checks := 0
-	d, err := representation.NewLanguage[amber](testChecker[amber]{id: "analysis-language", visit: func(ast.AST[amber]) error { checks++; return nil }}, "test-v1")
+	provider := testChecker[amber]{id: "analysis-language", visit: func(ast.AST[amber]) error { checks++; return nil }}
+	d, err := representation.NewLanguage[amber](provider, "test-v1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checker, err := check.NewChecker[amber](d, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -439,6 +445,11 @@ func TestAnalysisBudgetsPrecedeCheckerAndCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 	analyzer := analysisAnalyzer[amber](t, d, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if result, err := runAnalyzerCase(analyzer, checker, ctx, input); !errors.Is(err, context.Canceled) || result.Valid() || checks != 0 {
+		t.Fatal("cancellation checked after syntax callback", err)
+	}
 	for _, alter := range []func(*semantic.Limits){
 		func(l *semantic.Limits) { l.MaxInputNodes = 2 },
 		func(l *semantic.Limits) { l.MaxInputEntries = 5 },
@@ -446,12 +457,12 @@ func TestAnalysisBudgetsPrecedeCheckerAndCopy(t *testing.T) {
 	} {
 		input.Limits = semantic.DefaultLimits()
 		alter(&input.Limits)
-		if result, err := runAnalyzerCase(analyzer, context.Background(), input); !errors.Is(err, semantic.ErrLimit) || result.Valid() || checks != 0 {
+		if result, err := runAnalyzerCase(analyzer, checker, context.Background(), input); !errors.Is(err, semantic.ErrLimit) || result.Valid() || checks != 0 {
 			t.Fatalf("budget checked after callback/copy boundary: %v (%d callbacks)", err, checks)
 		}
 	}
 	input.Limits = semantic.DefaultLimits()
-	if result, err := runAnalyzerCase(analyzer, context.Background(), input); err != nil || !result.HasModel() || checks != 1 {
+	if result, err := runAnalyzerCase(analyzer, checker, context.Background(), input); err != nil || !result.HasModel() || checks != 1 {
 		t.Fatalf("valid request did not execute checker: %v", err)
 	}
 }
@@ -504,7 +515,7 @@ func TestAnalysisCancellation(t *testing.T) {
 func TestEngineConcurrentAnalysisAndReentry(t *testing.T) {
 	kernel := engine.New()
 	d := definition[amber](t, "analysis-language")
-	register(t, kernel, d)
+	registerChecked[amber](t, kernel, d)
 	input := analysisFixture[amber](t, d)
 	analyzer := analysisAnalyzer[amber](t, d, func(_ context.Context, request analysis.Request[amber]) (semantic.Result, error) {
 		_ = kernel.Languages()
@@ -564,12 +575,17 @@ func TestAnalysisCheckerCannotReplacePreflightedInputs(t *testing.T) {
 	var caller analysisCase
 	var replacement representation.AST
 	armed := false
-	d, err := representation.NewLanguage[amber](testChecker[amber]{id: "analysis-language", visit: func(value ast.AST[amber]) error {
+	provider := testChecker[amber]{id: "analysis-language", visit: func(value ast.AST[amber]) error {
 		if armed && value.ID == "input" {
 			caller.Trees[1] = replacement
 		}
 		return nil
-	}}, "test-v1")
+	}}
+	d, err := representation.NewLanguage[amber](provider, "test-v1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checker, err := check.NewChecker[amber](d, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -601,7 +617,7 @@ func TestAnalysisCheckerCannotReplacePreflightedInputs(t *testing.T) {
 		return request.Publish(semantic.Publication{Facts: &data, Reports: analysisReports()})
 	})
 	armed = true
-	result, err := runAnalyzerCase(analyzer, context.Background(), caller)
+	result, err := runAnalyzerCase(analyzer, checker, context.Background(), caller)
 	if err != nil || !result.HasModel() {
 		t.Fatalf("captured input collection changed: %v", err)
 	}

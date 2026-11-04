@@ -33,7 +33,7 @@ func nativeConformanceCases() []nativeConformanceCase {
 	}
 }
 
-func nativeCase[L any](provider text.Provider[L], directory, extension, source string) nativeConformanceCase {
+func nativeCase[L any](provider nativeProvider[L], directory, extension, source string) nativeConformanceCase {
 	return nativeConformanceCase{
 		directory:   directory,
 		conformance: func(t *testing.T) { providerConformance(t, provider, source) },
@@ -48,7 +48,7 @@ func TestNativeProviderConformance(t *testing.T) {
 	}
 }
 
-func providerConformance[L any](t *testing.T, provider text.Provider[L], source string) {
+func providerConformance[L any](t *testing.T, provider nativeProvider[L], source string) {
 	t.Helper()
 	id, name := provider.ID(), provider.Name()
 	if id == "" || name == "" {

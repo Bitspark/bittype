@@ -1,5 +1,4 @@
-// Package text composes text capabilities and supplies shared diagnostics.
-package text
+package integration_test
 
 import (
 	"github.com/Bitspark/bittype/contracts/check/go"
@@ -8,10 +7,11 @@ import (
 	"github.com/Bitspark/bittype/contracts/print/go"
 )
 
-// Provider composes independently usable stage contracts for native text tooling.
-type Provider[L any] interface {
+// Native conformance fixtures exercise four capabilities of one implementation.
+// Engine registration and production contracts do not require this combination.
+type nativeProvider[L any] interface {
 	parse.Provider[L]
-	format.Provider[L]
 	check.Provider[L]
+	format.Provider[L]
 	print.Provider[L]
 }

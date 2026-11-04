@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"context"
+	checkcontract "github.com/Bitspark/bittype/contracts/check/go"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
@@ -37,6 +38,13 @@ func Compose() (*engine.Engine, error) {
 	}
 	kernel := engine.New()
 	if err := kernel.RegisterLanguage(syntax); err != nil {
+		return nil, err
+	}
+	checker, err := checkcontract.NewChecker[Language](syntax, Provider{})
+	if err != nil {
+		return nil, err
+	}
+	if err := kernel.RegisterChecker(checker); err != nil {
 		return nil, err
 	}
 	if err := kernel.RegisterAnalyzer(analyzer); err != nil {

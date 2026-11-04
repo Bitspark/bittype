@@ -32,7 +32,21 @@ func Compose(stage func(ast.AST[First]) (ast.AST[Second], error), input ast.AST[
 	if err := e.RegisterLanguage(first); err != nil {
 		return representation.AST{}, err
 	}
+	firstChecker, err := check.NewChecker[First](first, checker[First]{first.ID()})
+	if err != nil {
+		return representation.AST{}, err
+	}
+	if err := e.RegisterChecker(firstChecker); err != nil {
+		return representation.AST{}, err
+	}
 	if err := e.RegisterLanguage(second); err != nil {
+		return representation.AST{}, err
+	}
+	secondChecker, err := check.NewChecker[Second](second, checker[Second]{second.ID()})
+	if err != nil {
+		return representation.AST{}, err
+	}
+	if err := e.RegisterChecker(secondChecker); err != nil {
 		return representation.AST{}, err
 	}
 	transformer, err := transform.NewTransformer[First, Second](first, second, stage)

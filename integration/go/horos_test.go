@@ -3,6 +3,7 @@ package integration_test
 import (
 	"context"
 	"errors"
+	checkcontract "github.com/Bitspark/bittype/contracts/check/go"
 	"math/big"
 	"testing"
 
@@ -84,6 +85,13 @@ func qualifyHoros(t *testing.T) {
 	tree.Nodes[tree.Root-1].Kind = "broken" // caller storage is not the envelope
 	var registry engine.Engine
 	if err := registry.RegisterLanguage(definition); err != nil {
+		t.Fatal(err)
+	}
+	checker, err := checkcontract.NewChecker[h.Language](definition, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := registry.RegisterChecker(checker); err != nil {
 		t.Fatal(err)
 	}
 	snapshot, err := registry.Capture(context.Background(), semantic.Input{Entry: ast.NodeRef{Tree: "consumer", Node: tree.Root}, Trees: []representation.AST{envelope}})

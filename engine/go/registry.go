@@ -9,19 +9,13 @@ import (
 	"github.com/Bitspark/bittype/contracts/transform/go"
 )
 
-// RegisterLanguage installs an AST-only descriptor. RegisterProvider installs a
-// descriptor and text capabilities together instead; their keys share one space.
+// RegisterLanguage installs identity, profile and Go marker metadata only.
+// Every stage capability must be registered explicitly and independently.
 func (e *Engine) RegisterLanguage(definition representation.Language) error {
 	if err := definition.Validate(); err != nil {
 		return err
 	}
 	return e.register(registration{language: definition})
-}
-func (e *Engine) RegisterProvider(provider Provider) error {
-	if err := provider.validate(); err != nil {
-		return err
-	}
-	return e.register(registration{language: provider.definition, text: &provider})
 }
 func (e *Engine) register(r registration) error {
 	e.mu.Lock()

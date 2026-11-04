@@ -62,9 +62,17 @@ func TestTargetLanguageTypesRemainDistinct(t *testing.T) {
 			if from == to {
 				continue
 			}
+			sourcePackage, err := packages.Import(modulePath + "/syntax/" + from + "/go")
+			if err != nil {
+				t.Fatal(err)
+			}
+			targetPackage, err := packages.Import(modulePath + "/syntax/" + to + "/go")
+			if err != nil {
+				t.Fatal(err)
+			}
 			for _, name := range []string{"Language", "AST", "Node", "Kind"} {
-				source := packages[modulePath+"/syntax/"+from+"/go"].Scope().Lookup(name)
-				target := packages[modulePath+"/syntax/"+to+"/go"].Scope().Lookup(name)
+				source := sourcePackage.Scope().Lookup(name)
+				target := targetPackage.Scope().Lookup(name)
 				if source == nil || target == nil {
 					t.Fatalf("%s or %s does not expose %s", from, to, name)
 				}

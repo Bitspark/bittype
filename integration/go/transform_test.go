@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
@@ -87,6 +88,18 @@ func register(t *testing.T, e *engine.Engine, languages ...representation.Langua
 		}
 	}
 }
+func registerChecked[L any](t *testing.T, e *engine.Engine, l representation.Language) {
+	t.Helper()
+	register(t, e, l)
+	checker, err := check.NewChecker[L](l, testChecker[L]{id: l.ID()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.RegisterChecker(checker); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func connect(t *testing.T, e *engine.Engine, edges ...transform.ASTTransformer) {
 	t.Helper()
 	for _, edge := range edges {
@@ -139,7 +152,7 @@ func TestTransformerSnapshotsAndIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := otherProfile.Check(envelope); !errors.Is(err, representation.ErrLanguageMismatch) {
+	if _, err := representation.Unpack[amber](otherProfile, envelope); !errors.Is(err, representation.ErrLanguageMismatch) {
 		t.Fatal(err)
 	}
 	if _, err := transform.NewTransformer[blue, amber](a, b, mapExample[blue, amber]); !errors.Is(err, representation.ErrTypeMismatch) {
@@ -173,8 +186,16 @@ func TestTransformerRejectsInvalidBoundaries(t *testing.T) {
 	}
 	wrongGrammar := exampleTree[amber]()
 	wrongGrammar.Nodes[0].Kind = "wrong"
-	if _, err := representation.Pack(a, wrongGrammar); err == nil {
-		t.Fatal("grammar check skipped")
+	unchecked, err := representation.Pack(a, wrongGrammar)
+	if err != nil {
+		t.Fatal("carrier packing performed syntax admission", err)
+	}
+	syntaxChecker, err := check.NewChecker[amber](a, testChecker[amber]{id: a.ID()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := syntaxChecker.Check(unchecked); err == nil {
+		t.Fatal("explicit grammar check skipped")
 	}
 	if _, err := (representation.AST{}).Snapshot(); !errors.Is(err, representation.ErrInvalidAST) {
 		t.Fatal(err)
@@ -210,6 +231,13 @@ func TestTransformerCallbacksCannotMutateEnvelopes(t *testing.T) {
 	}
 	b := definition[blue](t, "blue")
 	input := packed[amber](t, a)
+	syntaxChecker, err := check.NewChecker[amber](a, checker)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := syntaxChecker.Check(input); err != nil {
+		t.Fatal(err)
+	}
 	var retained ast.AST[blue]
 	adapter, err := transform.NewTransformer[amber, blue](a, b, func(source ast.AST[amber]) (ast.AST[blue], error) {
 		source.Nodes[1].Attributes[0].Text = "stage mutation"
@@ -251,7 +279,8 @@ func TestEngineRegistration(t *testing.T) {
 	if err := e.RegisterTransformer(bind[amber, blue](t, a, b)); !errors.Is(err, engine.ErrUnknownLanguage) {
 		t.Fatal(err)
 	}
-	register(t, e, a, b)
+	registerChecked[amber](t, e, a)
+	registerChecked[blue](t, e, b)
 	if err := e.RegisterLanguage(definition[blue](t, "amber")); !errors.Is(err, engine.ErrDuplicateLanguage) {
 		t.Fatal(err)
 	}
@@ -289,7 +318,11 @@ func TestEngineRegistration(t *testing.T) {
 func TestEngineRoutesAndExecution(t *testing.T) {
 	a, b, c, d, f := definition[amber](t, "amber"), definition[blue](t, "blue"), definition[coral](t, "coral"), definition[dusk](t, "dusk"), definition[echo](t, "echo")
 	e := engine.New()
-	register(t, e, a, b, c, d, f)
+	registerChecked[amber](t, e, a)
+	registerChecked[blue](t, e, b)
+	registerChecked[coral](t, e, c)
+	registerChecked[dusk](t, e, d)
+	registerChecked[echo](t, e, f)
 	connect(t, e, bind[amber, blue](t, a, b), bind[blue, dusk](t, b, d), bind[dusk, amber](t, d, a))
 	plan, err := e.Plan("amber", "dusk")
 	if err != nil || !reflect.DeepEqual(plan.Languages(), []language.ID{"amber", "blue", "dusk"}) {
@@ -361,7 +394,11 @@ func TestEngineRoutesAndExecution(t *testing.T) {
 func TestEngineAmbiguityPropagatesThroughSharedTail(t *testing.T) {
 	e := engine.New()
 	a, b, c, d, f := definition[amber](t, "a"), definition[blue](t, "b"), definition[coral](t, "c"), definition[dusk](t, "d"), definition[echo](t, "f")
-	register(t, e, a, b, c, d, f)
+	registerChecked[amber](t, e, a)
+	registerChecked[blue](t, e, b)
+	registerChecked[coral](t, e, c)
+	registerChecked[dusk](t, e, d)
+	registerChecked[echo](t, e, f)
 	connect(t, e, bind[amber, blue](t, a, b), bind[amber, coral](t, a, c), bind[blue, dusk](t, b, d), bind[coral, dusk](t, c, d), bind[dusk, echo](t, d, f))
 	if _, err := e.Plan("a", "f"); !errors.Is(err, engine.ErrAmbiguousPath) {
 		t.Fatal(err)
@@ -371,7 +408,9 @@ func TestEngineAmbiguityPropagatesThroughSharedTail(t *testing.T) {
 func TestEngineChecksCustomTransformersAndDoesNotFallback(t *testing.T) {
 	a, b, c := definition[amber](t, "a"), definition[blue](t, "b"), definition[coral](t, "c")
 	e := engine.New()
-	register(t, e, a, b, c)
+	registerChecked[amber](t, e, a)
+	registerChecked[blue](t, e, b)
+	registerChecked[coral](t, e, c)
 	input, good, wrong := packed[amber](t, a), packed[blue](t, b), packed[coral](t, c)
 	rejected := errors.New("requires explicit mapping")
 	calls := 0
@@ -401,7 +440,8 @@ func TestEngineChecksCustomTransformersAndDoesNotFallback(t *testing.T) {
 		t.Fatal(err)
 	}
 	foreign := engine.New()
-	register(t, foreign, definition[coral](t, "a"), b)
+	registerChecked[coral](t, foreign, definition[coral](t, "a"))
+	registerChecked[blue](t, foreign, b)
 	foreignPlan, err := foreign.Plan("a", "a")
 	if err != nil {
 		t.Fatal(err)
@@ -414,7 +454,8 @@ func TestEngineChecksCustomTransformersAndDoesNotFallback(t *testing.T) {
 func TestEngineConcurrentRegistrationAndReentry(t *testing.T) {
 	e := engine.New()
 	a, b := definition[amber](t, "a"), definition[blue](t, "b")
-	register(t, e, a, b)
+	registerChecked[amber](t, e, a)
+	registerChecked[blue](t, e, b)
 	good := packed[blue](t, b)
 	connect(t, e, &directTransformer{from: "a", to: "b", run: func(representation.AST) (representation.AST, error) {
 		_ = e.Languages()

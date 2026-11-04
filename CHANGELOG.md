@@ -4,6 +4,14 @@
 
 ### 4 November 2026
 
+- Remove `text.Provider` and the engine's combined provider API without aliases.
+  Register parser, checker, formatter and printer adapters independently against
+  language identity/profile metadata, in any order. Pack/PackCST validate generic
+  carrier structure; explicit checkers preserve syntax admission for Check,
+  semantic Capture and every transformation endpoint. Add partial-registration,
+  ownership, preflight, concurrency, removed-API and installed-consumer coverage;
+  update current documentation and the provider matrix.
+
 - Move parsing, formatting and printing contracts to `parse.Provider`,
   `format.Provider` and `print.Provider`; move source input to `parse.Input`.
   `text.Provider` composes these independent contracts with `check.Provider`.

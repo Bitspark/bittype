@@ -95,7 +95,7 @@ dependency policy. The final `go` component denotes implementation language.
 ```text
 trees/ast/go/                            present: carrier and borrowed view
 trees/cst/go/                            present: concrete carrier
-trees/representation/go/                 present: checked AST/CST and descriptors
+trees/representation/go/                 present: structurally checked AST/CST and descriptors
 contracts/language/go/                   present: identity interface
 contracts/pipeline/go/                   present: typed Stage
 contracts/parse/go/                      present: source input and parsing contract
@@ -161,7 +161,10 @@ The owner clarified on 31 October that a central agnostic language AST registry
 will exist. The earlier no-language-registry direction is superseded. The
 implemented syntax engine accepts configured descriptors and native providers
 through typed registration adapters, without a concrete language import, switch or builtin
-list. Application composition owns the selected provider instances.
+list. Application composition owns the selected provider instances. Language metadata
+and parse/check/format/print capabilities are registered independently; no
+aggregate text provider is required. Execution requires a checker at every route
+endpoint, while parsing and rendering require only their selected stages.
 
 Identity methods do not discover packages, initialize resources or register
 anything. A shared ID is not proof of equal Go marker types, syntax versions or
@@ -232,7 +235,7 @@ func (e *Engine) TransformTo(input AST, targetID language.ID) (AST, error)
 ```
 
 AST here is the implemented representation.AST envelope: a language identity plus
-an opaque, checked native AST
+an opaque, structurally checked native AST
 payload. It is not ast.AST[any]; different generic instantiations are not
 interchangeable. Typed adapters retain Stage[ast.AST[From], ast.AST[To]] inside
 each implementation and validate the actual payload type and endpoint identities

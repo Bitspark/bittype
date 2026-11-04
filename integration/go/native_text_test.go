@@ -46,7 +46,7 @@ func shape[L any](t ast.AST[L], id ast.NodeID) syntaxShape {
 	}
 	return out
 }
-func exercise[L any](t *testing.T, p text.Provider[L], directory, extension string) {
+func exercise[L any](t *testing.T, p nativeProvider[L], directory, extension string) {
 	t.Helper()
 	paths, err := filepath.Glob("../../testdata/text/" + directory + "/valid/*." + extension)
 	if err != nil || len(paths) == 0 {
@@ -106,7 +106,7 @@ func TestNativeTextRoundTrips(t *testing.T) {
 		t.Run(fixture.directory, fixture.roundTrips)
 	}
 }
-func reject[L any](t *testing.T, p text.Provider[L], sources []string) {
+func reject[L any](t *testing.T, p nativeProvider[L], sources []string) {
 	t.Helper()
 	for _, source := range sources {
 		t.Run(source, func(t *testing.T) {

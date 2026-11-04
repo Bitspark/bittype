@@ -62,9 +62,9 @@ annotations; it never repairs caller syntax. `Program.Specialize` can then bind
 an optional slot to a Wire expression. Ground `Model` and specialization cannot.
 
 Registration remains explicit through `representation.NewLanguage`,
-`resolution.NewResolver` and `analysis.NewAnalyzer`, followed by their engine
-registration methods. Syntax registration installs no semantic capability or
-transformation. Analysis requires the exact compatible resolution receipt and
+`check.NewChecker`, `resolution.NewResolver` and `analysis.NewAnalyzer`, followed
+by their independent engine registration methods. Identity registration installs
+no checker, semantic capability or transformation. Analysis requires the exact compatible resolution receipt and
 reuses its immutable model. Ground receipts and configuration keys cannot stand
 in for optional-profile evidence. Neither provider has a text parser/formatter.
 

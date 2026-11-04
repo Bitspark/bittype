@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -74,14 +75,14 @@ func boundInputs(trees []representation.AST, limits Limits) (map[ast.TreeID]ast.
 }
 
 // Capture bounds and retains immutable envelopes before any checker callback.
-func Capture(ctx context.Context, syntax representation.Language, input Input) (Snapshot, error) {
+func Capture(ctx context.Context, checker check.Checker, input Input) (Snapshot, error) {
 	if ctx == nil {
 		return Snapshot{}, ErrInvalidRequest
 	}
 	if err := ctx.Err(); err != nil {
 		return Snapshot{}, err
 	}
-	if err := syntax.Validate(); err != nil {
+	if err := checker.Validate(); err != nil {
 		return Snapshot{}, err
 	}
 	limits, err := normalizedLimits(input.Limits)
@@ -103,14 +104,14 @@ func Capture(ctx context.Context, syntax representation.Language, input Input) (
 		if err := ctx.Err(); err != nil {
 			return Snapshot{}, err
 		}
-		if err := syntax.Check(tree); err != nil {
+		if err := checker.Check(tree); err != nil {
 			return Snapshot{}, err
 		}
 	}
 	if err := ctx.Err(); err != nil {
 		return Snapshot{}, err
 	}
-	return Snapshot{state: &snapshotState{syntax: syntax, entry: input.Entry, trees: trees, catalogue: catalogue}}, nil
+	return Snapshot{state: &snapshotState{syntax: checker.Language(), entry: input.Entry, trees: trees, catalogue: catalogue}}, nil
 }
 
 // Dependency is an explicit input receipt and the consumer's exact requirements.
