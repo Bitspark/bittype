@@ -3,7 +3,7 @@
 **Direction: 31 October 2026.** The owner requested native TypeScript, Go, Rust
 and C++ parsers, formatters, checks and tests, then selected a shared CST alongside
 the AST. The [Horos frontend](horos.md) now implements its [source grammar](horos-syntax.md)
-through these same interfaces. Actual language transformers and runtime adapters remain deferred.
+through these same interfaces. The first [semantic pagination transformers](semantic-generation.md) now produce native ASTs; runtime adapters remain deferred.
 The subsequent [syntax engine](engine.md) supplies registration,
 route execution and composition of these native text stages.
 

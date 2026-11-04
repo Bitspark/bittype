@@ -42,11 +42,15 @@ entry points, not a substitute for the registered resolution capability.
 Horos uses one declaration grammar with explicit Type/Data parameter bounds.
 Wire expressions do not create a second language or registered profile.
 
-ASTTransformer relates two languages. No production mapping is implemented;
-template lifting and its transformer were removed. Native mappings remain
-unimplemented. The same-language checked
-snapshot operation does not establish a generation or canonicalization mapping.
-Actual mappings will need a separate source-by-target matrix.
+ASTTransformer relates two languages and consumes explicit semantic input.
+The [pagination profile](semantic-generation.md) implements these directed edges:
+
+| Source | TypeScript | Go | Rust | C++ |
+| --- | :---: | :---: | :---: | :---: |
+| Horos (admitted analysis) | X | X | X | X |
+
+Reverse mappings are not implemented. Template lifting remains removed. A
+same-language checked snapshot is not a generation or canonicalization mapping.
 
 See the [checker contract](../contracts/check/go/provider.go),
 [parser contract](../contracts/parse/go/provider.go),

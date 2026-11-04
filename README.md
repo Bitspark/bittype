@@ -16,7 +16,9 @@ The engine captures syntax once and invokes each capability explicitly. Horos
 analysis reuses the resolver's [shared semantic graph](docs/semantics.md), with
 separate reports for validity, coverage and model availability.
 The [readable Horos syntax](docs/horos-syntax.md) and its text stages are implemented.
-Native mappings and package releases remain deferred.
+The first [semantic pagination mappings](docs/semantic-generation.md) generate
+TypeScript, Go, Rust and C++ type ASTs from explicitly supplied Horos analysis.
+Package releases remain deferred.
 The concrete Horos frontend uses public Horos 0.9.0 and Ontos 0.16.0. Consumers
 must upgrade together; no older dependency path or compatibility shim remains.
 See the [dependency alignment and consumer checks](docs/dependencies.md).
@@ -36,7 +38,7 @@ The native pipeline separates source parsing, concrete layout and printing:
 AST and CST expose the same borrowed AST-view interface. Parsers retain source
 tokens and trivia; formatters construct a new concrete layout directly from
 abstract syntax. The generic printer emits supplied leaves without knowing any
-native grammar. Future generators will consume canonical definitions and produce
+native grammar. Native pagination generators consume analyzed canonical definitions and produce
 target ASTs, followed by this formatting/printing pipeline.
 
 Function, Stream, Cell and future behavioral contracts remain library-owned.

@@ -131,8 +131,8 @@ goAST, err := engine.TransformTo(ctx, input, "go")
 
 The mapping requires the Horos analysis operation/profile, its complete validity
 and enumeration reports, an available model and empty analysis configuration.
-A different resolution configuration requires a separately qualified mapping
-profile. The adapter checks capture identity and evidence before the mapper runs.
+Resolution configuration is part of the analyzer
+provider contract; the mapping does not resolve or reinterpret it. The adapter checks capture identity and evidence before the mapper runs.
 Syntax-only mappings declare an empty evidence list. Multi-hop routes discard the
 previous evidence and capture the checked intermediate tree. If a later edge
 needs semantics, the caller must execute that leg separately after explicitly
