@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"reflect"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	check "github.com/Bitspark/bittype/check/horos/go"
@@ -79,14 +80,25 @@ func Format(view ast.View[s.Language]) (cst.CST[s.Language], error) {
 	if err != nil {
 		return cst.CST[s.Language]{}, err
 	}
-	bytes, leaves := 0, 0
+	bytes, tokens := 0, 0
 	for _, n := range result.Nodes {
 		if n.Text != nil {
 			bytes += len(*n.Text)
-			leaves++
+			tokens++
+			// A concrete spelling may contain several lexical tokens. Strings
+			// remain one token; dotted module names and hyphenated constructors
+			// contain punctuation and identifiers, and negatives contain a sign.
+			if n.Kind == s.ConcreteToken {
+				spelling := *n.Text
+				if spelling[0] == '-' && len(spelling) > 1 {
+					tokens++
+				} else if spelling[0] == '`' || spelling[0] == '_' || spelling[0] >= 'a' && spelling[0] <= 'z' || spelling[0] >= 'A' && spelling[0] <= 'Z' {
+					tokens += 2 * (strings.Count(spelling, ".") + strings.Count(spelling, "-"))
+				}
+			}
 		}
 	}
-	if bytes > lex.MaxBytes || leaves > lex.MaxTokens {
+	if bytes > lex.MaxBytes || tokens > lex.MaxTokens {
 		return cst.CST[s.Language]{}, &text.Diagnostic{Code: text.LimitExceeded, Message: "formatted source exceeds parser limits"}
 	}
 	return result, nil

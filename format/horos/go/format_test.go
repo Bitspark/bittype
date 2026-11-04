@@ -1,12 +1,14 @@
 package horosformat_test
 
 import (
+	"errors"
 	"math/big"
 	"slices"
 	"strings"
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/parse/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	format "github.com/Bitspark/bittype/format/horos/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/horos/go"
@@ -172,5 +174,20 @@ func TestFormatterRejectsUnspellableASTWithoutPartialOutput(t *testing.T) {
 		if _, err := format.Format(view); err == nil {
 			t.Fatal("nil view admitted")
 		}
+	}
+}
+
+func TestFormatterBoundsLexicalExpansion(t *testing.T) {
+	// One AST attribute and concrete leaf can expand into more than 200,000
+	// lexical tokens. Counting CST leaves alone would emit unparseable source.
+	module := d("module", integer(2), data.MustEncodeText(strings.Repeat("a.", 100000)+"a"), entries(t), entries(t))
+	tree, err := resolve.Resolve(module, nil, "many-segments")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := format.Format(tree)
+	var diagnostic *text.Diagnostic
+	if !errors.As(err, &diagnostic) || diagnostic.Code != text.LimitExceeded || len(out.Nodes) != 0 || len(out.Abstract.Nodes) != 0 {
+		t.Fatalf("lexical expansion must fail without partial output: %v", err)
 	}
 }
