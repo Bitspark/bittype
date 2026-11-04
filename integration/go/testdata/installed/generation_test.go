@@ -2,12 +2,17 @@ package consumer_test
 
 import (
 	"context"
+	"errors"
+	"strings"
+	"testing"
+
 	analyze "github.com/Bitspark/bittype/analyze/horos/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
 	hp "github.com/Bitspark/bittype/provider/horos/go"
@@ -18,13 +23,12 @@ import (
 	generate "github.com/Bitspark/bittype/transforms/horos-to-typescript/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
-	"strings"
-	"testing"
 )
 
-func TestInstalledSemanticGeneration(t *testing.T) {
+func installedGeneration(t *testing.T, sourceText string) (representation.Language, representation.AST, error) {
+	t.Helper()
 	ctx := context.Background()
-	source, err := (hp.Provider{}).Parse(parse.Input{SourceID: "input.horos", TreeID: "input", Text: "module installed; type Page<T> = { items: list<T>; next?: text; }; type People = Page<text>;"})
+	source, err := (hp.Provider{}).Parse(parse.Input{SourceID: "input.horos", TreeID: "input", Text: sourceText})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +96,15 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !analyzed.HasModel() {
+		t.Fatal("generation fixture must be semantically valid")
+	}
 	output, err := e.TransformTo(ctx, transform.Input{Source: snapshot, Evidence: []semantic.Result{analyzed}}, to.ID())
+	return to, output, err
+}
+
+func TestInstalledSemanticGeneration(t *testing.T) {
+	to, output, err := installedGeneration(t, "module installed; type Page<T> = { items: list<T>; next?: text; }; type People = Page<text>;")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,5 +122,13 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 	}
 	if !strings.Contains(text, "export interface Page<T>") || !strings.Contains(text, "next?: string;") || !strings.Contains(text, "export type People = Page<string>;") {
 		t.Fatal(text)
+	}
+}
+
+func TestInstalledGenerationRejectsResidualConstructor(t *testing.T) {
+	_, output, err := installedGeneration(t, "module installed; type Page<T> = { items: list<T>; }; type Wrapped<F: Type -> Type, T> = F<T>; type People = Wrapped<Page, text>;")
+	var diagnostic *text.Diagnostic
+	if !errors.As(err, &diagnostic) || diagnostic.Code != text.Unsupported || diagnostic.Node == nil || diagnostic.Node.Tree != "input" || diagnostic.Node.Node == 0 || output.LanguageID() != "" {
+		t.Fatalf("residual constructor did not fail atomically at its source: %+v %v", output, err)
 	}
 }

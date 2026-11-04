@@ -59,21 +59,41 @@ func genEntry(name string, value core.Value) [2]core.Value {
 	return [2]core.Value{data.MustEncodeText(name), value}
 }
 func genModule(name string, imports core.Value, entries ...[2]core.Value) core.Value {
-	return genTuple("horos/decl/module", genInt(2), data.MustEncodeText(name), imports, genMap(entries...))
+	return genTuple("horos/decl/module", genInt(3), data.MustEncodeText(name), imports, genMap(entries...))
+}
+func genProper(claim string) core.Value {
+	return genTuple("horos/decl/proper", genAtom(claim))
+}
+func genConstructor(claim string, inputs ...core.Value) core.Value {
+	return genTuple("horos/decl/constructor", data.EncodeList(inputs), genAtom(claim))
+}
+func genParameter(name string, required core.Value) core.Value {
+	return genTuple("horos/decl/parameter", data.MustEncodeText(name), required)
+}
+func genTypeParameters(body core.Value, params ...core.Value) core.Value {
+	return genTuple("horos/decl/type", data.EncodeList(params), genAtom("type"), body)
 }
 func genType(body core.Value, params ...string) core.Value {
 	var p []core.Value
 	for _, name := range params {
-		p = append(p, genTuple("horos/decl/parameter", data.MustEncodeText(name), genAtom("type")))
+		p = append(p, genParameter(name, genProper("type")))
 	}
-	return genTuple("horos/decl/type", data.EncodeList(p), body)
+	return genTypeParameters(body, p...)
 }
 func genParam(i int64) core.Value { return genTuple("horos/decl/param", genInt(i)) }
 func genLocal(name string, args ...core.Value) core.Value {
-	return genTuple("horos/decl/apply", genTuple("horos/decl/local", data.MustEncodeText(name)), data.EncodeList(args))
+	callee := genTuple("horos/decl/local", data.MustEncodeText(name))
+	if len(args) == 0 {
+		return callee
+	}
+	return genTuple("horos/decl/apply", callee, data.EncodeList(args))
 }
 func genImported(alias, name string, args ...core.Value) core.Value {
-	return genTuple("horos/decl/apply", genTuple("horos/decl/imported", data.MustEncodeText(alias), data.MustEncodeText(name)), data.EncodeList(args))
+	callee := genTuple("horos/decl/imported", data.MustEncodeText(alias), data.MustEncodeText(name))
+	if len(args) == 0 {
+		return callee
+	}
+	return genTuple("horos/decl/apply", callee, data.EncodeList(args))
 }
 func genScalar(name string) core.Value { return genTuple("horos/scalar", genAtom(name)) }
 func genField(name string, optional bool, ty core.Value) core.Value {
@@ -98,7 +118,8 @@ func paginationModule() core.Value {
 		genEntry("PeoplePage", genType(genLocal("Page", genLocal("Person")))),
 		genEntry("NestedPage", genType(genLocal("Page", genLocal("Page", genLocal("Person"))))),
 		genEntry("Other", genType(genTuple("horos/list-of", genParam(0)), "T")),
-		genEntry("DataPage", genTuple("horos/decl/type", data.EncodeList([]core.Value{genTuple("horos/decl/parameter", data.MustEncodeText("D"), genAtom("data"))}), genLocal("Page", genParam(0)))),
+		genEntry("DataPage", genTypeParameters(genLocal("Page", genParam(0)), genParameter("D", genProper("data")))),
+		genEntry("PersonAlias", genType(genLocal("Person"))),
 	)
 }
 
@@ -287,10 +308,10 @@ func TestSemanticPaginationMappings(t *testing.T) {
 		source   string
 		required []string
 	}{
-		"typescript": {formatted(t, tp.Provider{}, out.ts), []string{"export interface Page<T>", "items: T[]", "next?: string", "Page<Page<Person>>", "type DataPage<D> = Page<D>"}},
-		"go":         {formatted(t, gp.Provider{}, out.goTree), []string{"type Page[T interface {}] struct", "Items []T", "Next BittypeOptional[string]", "Page[Page[Person]]", "type DataPage[D interface {}] = Page[D]"}},
-		"rust":       {formatted(t, rp.Provider{}, out.rust), []string{"pub struct Page<T>", "::std::vec::Vec<T>", "::std::option::Option<::std::string::String>", "Page<Page<Person>>"}},
-		"cpp":        {formatted(t, cp.Provider{}, out.cpp), []string{"template<typename T>", "struct Page", "::std::vector<T>", "::std::optional<::std::string>", "::pagination::Page<::pagination::Page<::pagination::Person>>"}},
+		"typescript": {formatted(t, tp.Provider{}, out.ts), []string{"export interface Page<T>", "items: T[]", "next?: string", "Page<Page<Person>>", "type DataPage<D> = Page<D>", "type PersonAlias = Person"}},
+		"go":         {formatted(t, gp.Provider{}, out.goTree), []string{"type Page[T interface {}] struct", "Items []T", "Next BittypeOptional[string]", "Page[Page[Person]]", "type DataPage[D interface {}] = Page[D]", "type PersonAlias = Person"}},
+		"rust":       {formatted(t, rp.Provider{}, out.rust), []string{"pub struct Page<T>", "::std::vec::Vec<T>", "::std::option::Option<::std::string::String>", "Page<Page<Person>>", "pub type DataPage<D> = Page<D>", "pub type PersonAlias = Person"}},
+		"cpp":        {formatted(t, cp.Provider{}, out.cpp), []string{"template<typename T>", "struct Page", "::std::vector<T>", "::std::optional<::std::string>", "::pagination::Page<::pagination::Page<::pagination::Person>>", "using DataPage = ::pagination::Page<D>", "using PersonAlias = ::pagination::Person"}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			for _, want := range fixture.required {
@@ -302,8 +323,38 @@ func TestSemanticPaginationMappings(t *testing.T) {
 		})
 	}
 }
+func TestPaginationReferenceDependencyOrder(t *testing.T) {
+	// Bare declaration references must participate in ordering even when the
+	// referring alias and record would otherwise be emitted first by name.
+	module := genModule("references", genMap(),
+		genEntry("AFirstAlias", genType(genLocal("ZRecord"))),
+		genEntry("BContainer", genType(genRecord(genField("value", false, genLocal("ZRecord"))))),
+		genEntry("ZRecord", genType(genPerson())),
+	)
+	out := paginationOutputs(t, module)
+	for name, fixture := range map[string]struct {
+		source string
+		record string
+		alias  string
+		field  string
+	}{
+		"typescript": {formatted(t, tp.Provider{}, out.ts), "export interface ZRecord", "export type AFirstAlias", "export interface BContainer"},
+		"go":         {formatted(t, gp.Provider{}, out.goTree), "type ZRecord struct", "type AFirstAlias = ZRecord", "type BContainer struct"},
+		"rust":       {formatted(t, rp.Provider{}, out.rust), "pub struct ZRecord", "pub type AFirstAlias", "pub struct BContainer"},
+		"cpp":        {formatted(t, cp.Provider{}, out.cpp), "struct ZRecord", "using AFirstAlias", "struct BContainer"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			record := strings.Index(fixture.source, fixture.record)
+			alias := strings.Index(fixture.source, fixture.alias)
+			field := strings.Index(fixture.source, fixture.field)
+			if record < 0 || alias < record || field < record {
+				t.Fatalf("reference dependency was not emitted before its users:\n%s", fixture.source)
+			}
+		})
+	}
+}
 func TestPaginationImportedIdentity(t *testing.T) {
-	first := genModule("first", genMap(), genEntry("Page", genType(genPage(), "T")))
+	first := genModule("first", genMap(), genEntry("Page", genType(genPage(), "T")), genEntry("Record", genType(genPerson())))
 	second := genModule("second", genMap(), genEntry("Page", genType(genTuple("horos/list-of", genParam(0)), "T")))
 	imp := func(name string, module core.Value) core.Value {
 		pin, err := decl.Pin(module)
@@ -312,7 +363,7 @@ func TestPaginationImportedIdentity(t *testing.T) {
 		}
 		return genTuple("horos/decl/import", data.MustEncodeText(name), core.NewAtom(pin[:]))
 	}
-	root := genModule("root", genMap(genEntry("one", imp("first", first)), genEntry("two", imp("second", second))), genEntry("Person", genType(genPerson())), genEntry("First", genType(genImported("one", "Page", genLocal("Person")))), genEntry("Second", genType(genImported("two", "Page", genLocal("Person")))))
+	root := genModule("root", genMap(genEntry("one", imp("first", first)), genEntry("two", imp("second", second))), genEntry("Person", genType(genPerson())), genEntry("First", genType(genImported("one", "Page", genLocal("Person")))), genEntry("Second", genType(genImported("two", "Page", genLocal("Person")))), genEntry("RemoteRecord", genType(genImported("one", "Record"))))
 	out := paginationOutputs(t, root, second, first)
 	// The same-spelled declarations produce two distinct targets and deterministic output.
 	text := formatted(t, tp.Provider{}, out.ts)
@@ -324,6 +375,77 @@ func TestPaginationImportedIdentity(t *testing.T) {
 		t.Fatal("dependency order changed generated names")
 	}
 }
+
+func assertNativeUnsupported(t *testing.T, from representation.Language, input transform.Input, message string) {
+	t.Helper()
+	for _, tc := range []struct {
+		to      representation.Language
+		factory func(representation.Language, representation.Language) (transform.ASTTransformer, error)
+	}{
+		{mustLanguage[ts.Language](t, ts.Language{}), tsMapper}, {mustLanguage[gs.Language](t, gs.Language{}), goMapper}, {mustLanguage[rs.Language](t, rs.Language{}), rustMapper}, {mustLanguage[cs.Language](t, cs.Language{}), cppMapper},
+	} {
+		t.Run(string(tc.to.ID()), func(t *testing.T) {
+			mapper, err := tc.factory(from, tc.to)
+			if err != nil {
+				t.Fatal(err)
+			}
+			output, err := mapper.Transform(context.Background(), input)
+			var diagnostic *text.Diagnostic
+			if !errors.As(err, &diagnostic) || diagnostic.Code != text.Unsupported || diagnostic.Node == nil || diagnostic.Node.Tree == "" || diagnostic.Node.Node == 0 || output.LanguageID() != "" {
+				t.Fatalf("unsupported output: %+v %v", output, err)
+			}
+			if !strings.Contains(diagnostic.Message, message) {
+				t.Fatalf("expected %q diagnostic, got %v", message, err)
+			}
+		})
+	}
+}
+
+func TestPaginationRejectsResidualConstructors(t *testing.T) {
+	proper := genProper("type")
+	unary := genConstructor("type", proper)
+	apply := func(callee core.Value, args ...core.Value) core.Value {
+		return genTuple("horos/decl/apply", callee, data.EncodeList(args))
+	}
+	higher := genTypeParameters(apply(genParam(0), genParam(1)), genParameter("F", unary), genParameter("T", proper))
+	for name, module := range map[string]core.Value{
+		"parameter-callee":      genModule("higher", genMap(), genEntry("Apply", higher)),
+		"closed-specialization": genModule("higher", genMap(),
+			genEntry("Apply", higher), genEntry("Page", genType(genPage(), "T")),
+			genEntry("Closed", genType(genLocal("Apply", genLocal("Page"), genScalar("utf8-text"))))),
+		"unused-export": genModule("higher", genMap(),
+			genEntry("Good", genType(genScalar("utf8-text"))),
+			genEntry("Ignored", genTypeParameters(genScalar("bool"), genParameter("F", unary)))),
+		"higher-order-input": genModule("higher", genMap(), genEntry("Nested", genTypeParameters(
+			apply(genParam(0), genParam(1)), genParameter("F", genConstructor("type", unary)), genParameter("G", unary)))),
+		"data-constructor": genModule("higher", genMap(), genEntry("DataApply", genTypeParameters(
+			apply(genParam(0), genParam(1)), genParameter("F", genConstructor("data", genProper("data"))), genParameter("D", genProper("data"))))),
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, from, input := generationInput(t, module)
+			if !input.Evidence[0].HasModel() {
+				t.Fatal("higher-kinded fixture must be semantically valid")
+			}
+			// The complete declaration closure must fail atomically; a closed use
+			// does not authorize hidden specialization or removal of open exports.
+			assertNativeUnsupported(t, from, input, "constructor")
+		})
+	}
+	t.Run("unused-import", func(t *testing.T) {
+		library := genModule("higher.library", genMap(), genEntry("Apply", higher))
+		pin, err := decl.Pin(library)
+		if err != nil {
+			t.Fatal(err)
+		}
+		root := genModule("higher.root", genMap(genEntry("lib", genTuple("horos/decl/import", data.MustEncodeText("higher.library"), core.NewAtom(pin[:])))), genEntry("Good", genType(genScalar("utf8-text"))))
+		_, from, input := generationInput(t, root, library)
+		if !input.Evidence[0].HasModel() {
+			t.Fatal("imported higher-kinded fixture must be semantically valid")
+		}
+		assertNativeUnsupported(t, from, input, "constructor")
+	})
+}
+
 func TestPaginationRejectsUnsupportedTypes(t *testing.T) {
 	cases := map[string]core.Value{
 		"wire": genTuple("horos/wire", genScalar("utf8-text")), "integer": genScalar("int"),
@@ -334,22 +456,7 @@ func TestPaginationRejectsUnsupportedTypes(t *testing.T) {
 	for name, body := range cases {
 		t.Run(name, func(t *testing.T) {
 			_, from, input := generationInput(t, genModule("unsupported", genMap(), genEntry("Bad", genType(body))))
-			for _, tc := range []struct {
-				to      representation.Language
-				factory func(representation.Language, representation.Language) (transform.ASTTransformer, error)
-			}{
-				{mustLanguage[ts.Language](t, ts.Language{}), tsMapper}, {mustLanguage[gs.Language](t, gs.Language{}), goMapper}, {mustLanguage[rs.Language](t, rs.Language{}), rustMapper}, {mustLanguage[cs.Language](t, cs.Language{}), cppMapper},
-			} {
-				mapper, err := tc.factory(from, tc.to)
-				if err != nil {
-					t.Fatal(err)
-				}
-				output, err := mapper.Transform(context.Background(), input)
-				var diagnostic *text.Diagnostic
-				if !errors.As(err, &diagnostic) || diagnostic.Code != text.Unsupported || diagnostic.Node == nil || diagnostic.Node.Node == 0 || output.LanguageID() != "" {
-					t.Fatalf("unsupported output: %+v %v", output, err)
-				}
-			}
+			assertNativeUnsupported(t, from, input, "")
 		})
 	}
 }
@@ -396,15 +503,7 @@ func TestGenerationNameCollisionsAndPhantomSlots(t *testing.T) {
 			if !input.Evidence[0].HasModel() {
 				t.Fatal("fixture must be semantically valid")
 			}
-			mapper, err := tsMapper(from, mustLanguage[ts.Language](t, ts.Language{}))
-			if err != nil {
-				t.Fatal(err)
-			}
-			output, err := mapper.Transform(context.Background(), input)
-			var diagnostic *text.Diagnostic
-			if !errors.As(err, &diagnostic) || diagnostic.Code != text.Unsupported || output.LanguageID() != "" {
-				t.Fatalf("unsupported names mapped: %v", err)
-			}
+			assertNativeUnsupported(t, from, input, "")
 		})
 	}
 	_, from, input := generationInput(t, genModule("fields", genMap(), genEntry("Record", genType(genRecord(genField("name", false, genScalar("utf8-text")), genField("Name", false, genScalar("bool")))))))

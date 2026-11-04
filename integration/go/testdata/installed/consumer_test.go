@@ -28,14 +28,20 @@ func TestPublicUnifiedPagination(t *testing.T) {
 			tag("horos/field", data.MustEncodeText("next"), atom("opt"), text))
 	}
 	pageBody := pageOf(parameter)
+	proper := func(claim string) core.Value { return tag("horos/decl/proper", atom(claim)) }
+	unary := tag("horos/decl/constructor", data.EncodeList([]core.Value{proper("type")}), atom("type"))
 	page := tag("horos/decl/type", data.EncodeList([]core.Value{
-		tag("horos/decl/parameter", data.MustEncodeText("T"), atom("type")),
-	}), pageBody)
+		tag("horos/decl/parameter", data.MustEncodeText("T"), proper("type")),
+	}), atom("type"), pageBody)
 	dataPage := tag("horos/decl/type", data.EncodeList([]core.Value{
-		tag("horos/decl/parameter", data.MustEncodeText("D"), atom("data")),
-	}), tag("horos/decl/apply", tag("horos/decl/local", data.MustEncodeText("Page")), data.EncodeList([]core.Value{parameter})))
+		tag("horos/decl/parameter", data.MustEncodeText("D"), proper("data")),
+	}), atom("type"), tag("horos/decl/apply", tag("horos/decl/local", data.MustEncodeText("Page")), data.EncodeList([]core.Value{parameter})))
+	apply := tag("horos/decl/type", data.EncodeList([]core.Value{
+		tag("horos/decl/parameter", data.MustEncodeText("F"), unary),
+		tag("horos/decl/parameter", data.MustEncodeText("T"), proper("type")),
+	}), atom("type"), tag("horos/decl/apply", parameter, data.EncodeList([]core.Value{tag("horos/decl/param", data.EncodeInt(big.NewInt(1)))})))
 	members, err := data.EncodeMap([][2]core.Value{
-		{data.MustEncodeText("Page"), page}, {data.MustEncodeText("DataPage"), dataPage},
+		{data.MustEncodeText("Page"), page}, {data.MustEncodeText("DataPage"), dataPage}, {data.MustEncodeText("Apply"), apply},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -44,7 +50,7 @@ func TestPublicUnifiedPagination(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	module := tag("horos/decl/module", data.EncodeInt(big.NewInt(2)), data.MustEncodeText("installed.pagination"), empty, members)
+	module := tag("horos/decl/module", data.EncodeInt(big.NewInt(3)), data.MustEncodeText("installed.pagination"), empty, members)
 	tree, err := resolve.Resolve(module, nil, "installed-unified")
 	if err != nil {
 		t.Fatal(err)
@@ -55,14 +61,21 @@ func TestPublicUnifiedPagination(t *testing.T) {
 	}
 	id := decl.DeclarationID{Module: model.Root(), Name: "Page"}
 	dataID := decl.DeclarationID{Module: model.Root(), Name: "DataPage"}
+	properArgument := func(value core.Value) decl.Argument {
+		argument, err := model.Proper(value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return argument
+	}
 	wireArgument := tag("horos/wire", text)
 	for _, argument := range []core.Value{text, wireArgument} {
-		specialized, err := model.Specialize(id, []core.Value{argument})
+		specialized, err := model.Specialize(id, []decl.Argument{properArgument(argument)})
 		if err != nil || !core.Equal(specialized, pageOf(argument)) {
 			t.Fatalf("same public generic binding: %v", err)
 		}
 	}
-	specialized, err := model.DataDescriptor(dataID, []core.Value{text})
+	specialized, err := model.DataDescriptor(dataID, []decl.Argument{properArgument(text)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,14 +87,30 @@ func TestPublicUnifiedPagination(t *testing.T) {
 		t.Fatal("public Ontos instance did not conform to the unchanged ground descriptor")
 	}
 	for _, argument := range []core.Value{wireArgument, tag("horos/list-of", wireArgument)} {
-		result, err := model.Specialize(dataID, []core.Value{argument})
+		result, err := model.Specialize(dataID, []decl.Argument{properArgument(argument)})
 		var detail *decl.Error
 		if result != nil || !errors.As(err, &detail) || detail.Code != decl.BoundViolation {
 			t.Fatalf("data-only alias accepted capability argument: %v", err)
 		}
 	}
+	constructor, err := model.Constructor(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	applied, err := model.Specialize(decl.DeclarationID{Module: model.Root(), Name: "Apply"}, []decl.Argument{constructor, properArgument(text)})
+	if err != nil || !core.Equal(applied, pageOf(text)) {
+		t.Fatalf("public constructor binding: %v", err)
+	}
+	if result, err := model.Specialize(id, []decl.Argument{constructor}); result != nil {
+		t.Fatal("proper parameter accepted a constructor")
+	} else {
+		var detail *decl.Error
+		if !errors.As(err, &detail) || detail.Code != decl.KindMismatch {
+			t.Fatalf("constructor mismatch diagnostic: %v", err)
+		}
+	}
 	declaration, ok := model.Declaration(id)
-	if !ok || !core.Equal(declaration.Expression().Value(), pageBody) || declaration.Parameters()[0].Bound != decl.TypeBound {
+	if !ok || !core.Equal(declaration.Expression().Value(), pageBody) || declaration.Parameters()[0].Interface.IsConstructor() || declaration.Parameters()[0].Interface.Result() != decl.TypeClaim {
 		t.Fatal("specialization changed the authored generic")
 	}
 }

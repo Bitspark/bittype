@@ -144,7 +144,7 @@ type generator[L any] struct {
 	dialect    Dialect[L]
 	source     h.AST
 	facts      semantics.Data
-	bounds     map[ast.NodeRef]semantics.TermID
+	interfaces map[semantics.Subject]semantics.TermID
 	sites      map[semantics.TermID]ast.NodeRef
 	names      map[semantics.EntityID]string
 	targets    map[semantics.EntityID]ast.NodeID
@@ -172,13 +172,18 @@ func Generate[L any](ctx context.Context, request transform.Request[h.Language],
 	if !ok {
 		return fail(semantic.ErrEvidenceUnavailable)
 	}
-	g := generator[L]{arena: Arena[L]{Tree: ast.AST[L]{ID: id}, Ctx: ctx}, dialect: dialect, source: source, facts: model.Data(), sites: map[semantics.TermID]ast.NodeRef{}, bounds: map[ast.NodeRef]semantics.TermID{}, names: map[semantics.EntityID]string{}, targets: map[semantics.EntityID]ast.NodeID{}, parameters: map[semantics.EntityID][]ast.NodeID{}, payloads: map[semantics.TermID]core.Tuple{}, state: map[semantics.EntityID]byte{}, used: map[semantics.EntityID]bool{}}
+	g := generator[L]{arena: Arena[L]{Tree: ast.AST[L]{ID: id}, Ctx: ctx}, dialect: dialect, source: source, facts: model.Data(), sites: map[semantics.TermID]ast.NodeRef{}, interfaces: map[semantics.Subject]semantics.TermID{}, names: map[semantics.EntityID]string{}, targets: map[semantics.EntityID]ast.NodeID{}, parameters: map[semantics.EntityID][]ast.NodeID{}, payloads: map[semantics.TermID]core.Tuple{}, state: map[semantics.EntityID]byte{}, used: map[semantics.EntityID]bool{}}
 	for _, e := range g.facts.Expressions {
 		if e.At.Role == resolve.ExpressionRole() {
 			g.sites[e.Term] = e.At.Site
 		}
-		if e.At.Role == resolve.BoundRole() {
-			g.bounds[e.At.Site] = e.Term
+	}
+	for _, fact := range g.facts.Facts {
+		if fact.Relation == resolve.InterfaceRelation() {
+			if g.interfaces[fact.Subject] != 0 {
+				return fail(semantic.ErrInvalidRequest)
+			}
+			g.interfaces[fact.Subject] = fact.Term
 		}
 	}
 	if err := g.prepare(); err != nil {
@@ -224,6 +229,41 @@ func (g *generator[L]) unsupported(id semantics.TermID, message string) error {
 	site := g.sites[id]
 	return &text.Diagnostic{Code: text.Unsupported, Message: message, Node: &site}
 }
+
+// The checked Horos interface facts distinguish proper types from constructors.
+// This reader selects a native profile; it does not infer or check those facts.
+func (g *generator[L]) constructor(subject semantics.Subject) (bool, error) {
+	id := g.interfaces[subject]
+	if id == 0 {
+		return false, semantic.ErrInvalidRequest
+	}
+	term := g.facts.Terms[id-1]
+	if term.Kind != semantics.ProviderExpression || term.Encoding != (semantics.Key{Owner: "ontos", Name: "codec-v1"}) {
+		return false, semantic.ErrInvalidRequest
+	}
+	value, err := codec.Decode(term.Data)
+	if err != nil {
+		return false, err
+	}
+	if claim := atom(value); claim != "type" && claim != "data" {
+		return false, semantic.ErrInvalidRequest
+	}
+	switch term.Operator {
+	case semantics.Key{Owner: "horos", Name: "interface/proper"}:
+		if len(term.Operands) != 0 {
+			return false, semantic.ErrInvalidRequest
+		}
+		return false, nil
+	case semantics.Key{Owner: "horos", Name: "interface/constructor"}:
+		if len(term.Operands) == 0 {
+			return false, semantic.ErrInvalidRequest
+		}
+		return true, nil
+	default:
+		return false, semantic.ErrInvalidRequest
+	}
+}
+
 func (g *generator[L]) prepare() error {
 	root := g.source.Nodes[g.source.Root-1]
 	var rootModule ast.NodeRef
@@ -284,6 +324,17 @@ func (g *generator[L]) prepare() error {
 		local := map[string]bool{}
 		for _, p := range e.Parameters {
 			pe := g.facts.Entities[p.Entity-1]
+			if len(pe.Declarations) != 1 {
+				return semantic.ErrInvalidRequest
+			}
+			constructor, err := g.constructor(semantics.Subject{Entity: p.Entity})
+			if err != nil {
+				return err
+			}
+			if constructor {
+				site := pe.Declarations[0]
+				return &text.Diagnostic{Code: text.Unsupported, Message: "constructor parameters require a separate native representation profile", Node: &site}
+			}
 			name, err := Exported(pe.Name)
 			if err != nil {
 				return g.unsupported(e.Body, err.Error())
@@ -292,13 +343,6 @@ func (g *generator[L]) prepare() error {
 				return g.unsupported(e.Body, "native generic name collision: "+name)
 			}
 			local[name] = true
-			var bound semantics.Term
-			if b := g.bounds[pe.Declarations[0]]; b != 0 {
-				bound = g.facts.Terms[b-1]
-			}
-			if bound.Operator != (semantics.Key{Owner: "horos", Name: "bound/type"}) && bound.Operator != (semantics.Key{Owner: "horos", Name: "bound/data"}) {
-				return semantic.ErrInvalidRequest
-			}
 			g.names[p.Entity] = name
 			g.targets[p.Entity] = g.dialect.Parameter(&g.arena, name, pe.Declarations[0])
 			g.parameters[id] = append(g.parameters[id], g.targets[p.Entity])
@@ -339,11 +383,22 @@ func (g *generator[L]) visitDeclaration(id semantics.EntityID, depth int) error 
 			return err
 		}
 		term := g.facts.Terms[id-1]
-		if term.Kind == semantics.Application {
+		if term.Kind == semantics.Reference {
 			if g.targets[term.Target] == 0 {
 				return semantic.ErrInvalidRequest
 			}
-			if err := g.visitDeclaration(term.Target, level+1); err != nil {
+			switch g.facts.Entities[term.Target-1].Kind {
+			case semantics.Key{Owner: "horos", Name: "declaration"}:
+				if err := g.visitDeclaration(term.Target, level+1); err != nil {
+					return err
+				}
+			case semantics.Key{Owner: "horos", Name: "parameter"}:
+			default:
+				return semantic.ErrInvalidRequest
+			}
+		}
+		if term.Kind == semantics.Application {
+			if err := visit(term.Callee, level+1); err != nil {
 				return err
 			}
 		}
@@ -406,12 +461,30 @@ func (g *generator[L]) expression(id semantics.TermID, depth int) (ast.NodeID, e
 	}
 	term := g.facts.Terms[id-1]
 	origin := g.sites[id]
+	constructor, err := g.constructor(semantics.Subject{Term: id})
+	if err != nil {
+		return 0, err
+	}
+	if constructor {
+		return 0, g.unsupported(id, "constructor references require a separate native representation profile")
+	}
 	if term.Kind == semantics.Reference || term.Kind == semantics.Application {
-		target := g.targets[term.Target]
+		entity := term.Target
+		if term.Kind == semantics.Application {
+			callee := g.facts.Terms[term.Callee-1]
+			if callee.Kind != semantics.Reference {
+				return 0, g.unsupported(term.Callee, "only named declaration callees are supported by the pagination profile")
+			}
+			if g.facts.Entities[callee.Target-1].Kind != (semantics.Key{Owner: "horos", Name: "declaration"}) {
+				return 0, g.unsupported(term.Callee, "constructor parameter callees require a separate native representation profile")
+			}
+			entity = callee.Target
+		}
+		target := g.targets[entity]
 		if target == 0 {
 			return 0, semantic.ErrInvalidRequest
 		}
-		g.used[term.Target] = true
+		g.used[entity] = true
 		var arguments []ast.NodeID
 		for _, argument := range term.Arguments {
 			mapped, err := g.expression(argument, depth+1)
@@ -420,7 +493,7 @@ func (g *generator[L]) expression(id semantics.TermID, depth int) (ast.NodeID, e
 			}
 			arguments = append(arguments, mapped)
 		}
-		return g.dialect.Reference(&g.arena, g.names[term.Target], target, arguments, origin), g.arena.Err
+		return g.dialect.Reference(&g.arena, g.names[entity], target, arguments, origin), g.arena.Err
 	}
 	if term.Operator.Owner != "horos" {
 		return 0, g.unsupported(id, "unrecognized semantic operator")
