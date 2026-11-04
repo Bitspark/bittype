@@ -57,6 +57,15 @@ func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 			return nil, r.bad(id, "invalid parameter index")
 		}
 		return tagged(r.declarationPrefix, "param", data.EncodeInt(big.NewInt(int64(index)))), nil
+	case s.KindReference:
+		switch r.attr(id, s.AttributeScope) {
+		case "local":
+			return tagged(r.declarationPrefix, "local", data.MustEncodeText(r.attr(id, s.AttributeName))), nil
+		case "imported":
+			return tagged(r.declarationPrefix, "imported", data.MustEncodeText(r.attr(id, s.AttributeAlias)), data.MustEncodeText(r.attr(id, s.AttributeName))), nil
+		default:
+			return nil, r.bad(id, "invalid reference scope")
+		}
 	case s.KindTuple, s.KindDescriptor, s.KindApplication:
 		values := make([]core.Value, len(n.Children))
 		for i, child := range n.Children {
@@ -72,19 +81,50 @@ func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 		if n.Kind == s.KindDescriptor {
 			return tagged(r.descriptorPrefix, r.attr(id, s.AttributeConstructor), values...), nil
 		}
-		var target core.Value
-		switch r.attr(id, s.AttributeScope) {
-		case "local":
-			target = tagged(r.declarationPrefix, "local", data.MustEncodeText(r.attr(id, s.AttributeName)))
-		case "imported":
-			target = tagged(r.declarationPrefix, "imported", data.MustEncodeText(r.attr(id, s.AttributeAlias)), data.MustEncodeText(r.attr(id, s.AttributeName)))
-		default:
-			return nil, r.bad(id, "invalid application scope")
+		if len(values) < 2 || n.Children[0].Role != s.RoleCallee {
+			return nil, r.bad(id, "expected application callee and arguments")
 		}
-		return tagged(r.declarationPrefix, "apply", target, data.EncodeList(values)), nil
+		return tagged(r.declarationPrefix, "apply", values[0], data.EncodeList(values[1:])), nil
 	default:
 		return nil, r.bad(id, "expected a descriptor expression or value fragment")
 	}
+}
+
+func (r reader[L]) interfaceValue(id ast.NodeID) (core.Value, error) {
+	if r.node(id).Kind != s.KindInterface {
+		return nil, r.bad(id, "expected interface")
+	}
+	claim := r.attr(id, s.AttributeName)
+	if claim == "type" || claim == "data" {
+		return tagged(r.declarationPrefix, "proper", core.NewAtom([]byte(claim))), nil
+	}
+	if claim != "constructor" {
+		return nil, r.bad(id, "unknown interface form")
+	}
+	var inputs []core.Value
+	var result core.Value
+	for _, child := range r.node(id).Children {
+		switch child.Role {
+		case s.RoleInput:
+			input, err := r.interfaceValue(child.Node)
+			if err != nil {
+				return nil, err
+			}
+			inputs = append(inputs, input)
+		case s.RoleResult:
+			name := r.attr(child.Node, s.AttributeName)
+			if result != nil || r.node(child.Node).Kind != s.KindInterface || (name != "type" && name != "data") {
+				return nil, r.bad(child.Node, "expected one proper result claim")
+			}
+			result = core.NewAtom([]byte(name))
+		default:
+			return nil, r.bad(child.Node, "unknown interface child role")
+		}
+	}
+	if len(inputs) == 0 || result == nil {
+		return nil, r.bad(id, "expected constructor inputs and result")
+	}
+	return tagged(r.declarationPrefix, "constructor", data.EncodeList(inputs), result), nil
 }
 
 func (r reader[L]) declaration(id ast.NodeID) (core.Value, error) {
@@ -92,6 +132,7 @@ func (r reader[L]) declaration(id ast.NodeID) (core.Value, error) {
 		return nil, r.bad(id, "expected declaration")
 	}
 	var parameters []core.Value
+	var result core.Value
 	var body core.Value
 	for _, child := range r.node(id).Children {
 		switch child.Role {
@@ -100,12 +141,21 @@ func (r reader[L]) declaration(id ast.NodeID) (core.Value, error) {
 				return nil, r.bad(child.Node, "expected parameter declaration")
 			}
 			parameter := r.node(child.Node)
-			if len(parameter.Children) != 1 || parameter.Children[0].Role != s.RoleBound || r.node(parameter.Children[0].Node).Kind != s.KindBound {
-				return nil, r.bad(child.Node, "expected an explicit parameter bound")
+			if len(parameter.Children) != 1 || parameter.Children[0].Role != s.RoleInterface {
+				return nil, r.bad(child.Node, "expected an explicit parameter interface")
 			}
-			bound := r.attr(parameter.Children[0].Node, s.AttributeName)
+			interfaceValue, err := r.interfaceValue(parameter.Children[0].Node)
+			if err != nil {
+				return nil, err
+			}
 			parameters = append(parameters, tagged(r.declarationPrefix, "parameter",
-				data.MustEncodeText(r.attr(child.Node, s.AttributeName)), core.NewAtom([]byte(bound))))
+				data.MustEncodeText(r.attr(child.Node, s.AttributeName)), interfaceValue))
+		case s.RoleResult:
+			claim := r.attr(child.Node, s.AttributeName)
+			if result != nil || r.node(child.Node).Kind != s.KindInterface || (claim != "type" && claim != "data") {
+				return nil, r.bad(child.Node, "expected one proper declaration result claim")
+			}
+			result = core.NewAtom([]byte(claim))
 		case s.RoleBody:
 			if body != nil {
 				return nil, r.bad(id, "duplicate declaration body")
@@ -119,10 +169,10 @@ func (r reader[L]) declaration(id ast.NodeID) (core.Value, error) {
 			return nil, r.bad(child.Node, "unknown declaration child role")
 		}
 	}
-	if body == nil {
-		return nil, r.bad(id, "missing declaration body")
+	if body == nil || result == nil {
+		return nil, r.bad(id, "missing declaration body or result claim")
 	}
-	return tagged(r.declarationPrefix, "type", data.EncodeList(parameters), body), nil
+	return tagged(r.declarationPrefix, "type", data.EncodeList(parameters), result, body), nil
 }
 
 func (r reader[L]) module(id ast.NodeID) (core.Value, error) {
@@ -161,7 +211,7 @@ func (r reader[L]) module(id ast.NodeID) (core.Value, error) {
 	if err != nil {
 		return nil, r.bad(id, "duplicate or malformed declarations")
 	}
-	return tagged(r.declarationPrefix, "module", data.EncodeInt(big.NewInt(2)),
+	return tagged(r.declarationPrefix, "module", data.EncodeInt(big.NewInt(3)),
 		data.MustEncodeText(r.attr(id, s.AttributeName)), importsValue, declarationsValue), nil
 }
 
@@ -299,10 +349,13 @@ func (d *Decoded[L]) OperandSite(site ast.NodeRef, path []int) ast.NodeRef {
 		case s.KindDescriptor:
 			index-- // descriptor tag has no separate AST node
 		case s.KindApplication:
-			if index != 2 || len(path) == 0 {
+			if index == 1 {
+				index = 0 // callee is the first AST child
+			} else if index == 2 && len(path) > 0 && path[0] > 0 {
+				index, path = path[0], path[1:] // list tag plus callee offset cancel
+			} else {
 				return ast.NodeRef{}
 			}
-			index, path = path[0]-1, path[1:] // encoded argument list tag
 		case s.KindTuple:
 		default:
 			return ast.NodeRef{}
@@ -317,6 +370,27 @@ func (d *Decoded[L]) OperandSite(site ast.NodeRef, path []int) ast.NodeRef {
 
 func (d *Decoded[L]) ArgumentSite(site ast.NodeRef, index int) ast.NodeRef {
 	return d.OperandSite(site, []int{2, index + 1})
+}
+
+func (d *Decoded[L]) CalleeSite(site ast.NodeRef) ast.NodeRef {
+	return d.OperandSite(site, []int{1})
+}
+
+func (d *Decoded[L]) CalleeDeclarationSite(detail *decl.Error) (*ast.NodeRef, bool) {
+	var site ast.NodeRef
+	var module decl.Digest
+	if detail.CalleeParameter.Declaration.Name != "" {
+		site = d.ParameterSite(detail.CalleeParameter)
+		module = detail.CalleeParameter.Declaration.Module
+	} else if detail.Target.Name != "" {
+		site = d.DeclarationSite(detail.Target)
+		module = detail.Target.Module
+	}
+	if site.Node == 0 {
+		return nil, false
+	}
+	rootModule := d.tree.Nodes[d.tree.Root-1].References[0].Target.Node
+	return &site, d.modules[module] != rootModule
 }
 
 func (d *Decoded[L]) Locate(detail *decl.Error) *ast.NodeRef {

@@ -40,15 +40,18 @@ func entry(name string, v value) [2]value { return [2]value{txt(name), v} }
 func definition(body value, names ...string) value {
 	var parameters []value
 	for _, name := range names {
-		parameters = append(parameters, d("parameter", txt(name), atom("data")))
+		parameters = append(parameters, d("parameter", txt(name), d("proper", atom("data"))))
 	}
-	return d("type", data.EncodeList(parameters), body)
+	return d("type", data.EncodeList(parameters), atom("type"), body)
 }
 func module(name string, imports value, declarations ...[2]value) value {
-	return d("module", integer(2), txt(name), imports, mapping(declarations...))
+	return d("module", integer(3), txt(name), imports, mapping(declarations...))
 }
 func param(i int64) value { return d("param", integer(i)) }
 func local(name string, args ...value) value {
+	if len(args) == 0 {
+		return d("local", txt(name))
+	}
 	return d("apply", d("local", txt(name)), data.EncodeList(args))
 }
 func page(element value) value {
@@ -130,7 +133,7 @@ func TestPaginationBindingsAndSpecialization(t *testing.T) {
 	if target(tree.Nodes[use-1], s.RoleTarget) != parameter {
 		t.Fatal("slot lost its binder")
 	}
-	application := find(tree, s.KindApplication, "Page")
+	application := find(tree, s.KindReference, "Page")
 	if target(tree.Nodes[application-1], s.RoleTarget) != pageID || target(tree.Nodes[application-1], s.RoleImport) == 0 {
 		t.Fatal("imported application lost declaration/import identity")
 	}
@@ -188,7 +191,7 @@ func TestExactLiteralIsOpaque(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, node := range tree.Nodes {
-		if node.Kind == s.KindParameter || node.Kind == s.KindApplication {
+		if node.Kind == s.KindParameter || node.Kind == s.KindReference || node.Kind == s.KindApplication {
 			t.Fatal("literal became declaration syntax")
 		}
 	}
@@ -251,7 +254,7 @@ func TestInvalidASTsFailWithoutRepair(t *testing.T) {
 			a.Nodes[i-1].References[0].Target.Node = find(a, s.KindDeclaration, "Page")
 		},
 		"wrong application binding": func(a s.AST) {
-			i := find(a, s.KindApplication, "Page")
+			i := find(a, s.KindReference, "Page")
 			a.Nodes[i-1].References[0].Target.Node = find(a, s.KindDeclaration, "PeoplePage")
 		},
 		"external binding": func(a s.AST) { i := find(a, s.KindParameter, ""); a.Nodes[i-1].References[0].Target.Tree = "external" },

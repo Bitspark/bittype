@@ -12,7 +12,7 @@ import (
 	core "github.com/bitspark/ontos/core/go"
 )
 
-const Profile = "horos-declarations-2/resolution-1"
+const Profile = "horos-declarations-3/resolution-1"
 
 var frontend = bridge.Frontend[s.Language]{
 	DeclarationPrefix: "horos/decl/", DescriptorPrefix: "horos/", Owner: "horos", ResolutionProfile: Profile,
@@ -28,10 +28,15 @@ func Indexing() semantics.Key              { return frontend.Indexing() }
 func Bindings() semantics.Key              { return frontend.Bindings() }
 func Applications() semantics.Key          { return frontend.Applications() }
 func Dependencies() semantics.Key          { return frontend.Dependencies() }
+func TypeFacts() semantics.Key             { return frontend.TypeFacts() }
 func TargetRole() semantics.Key            { return frontend.TargetRole() }
 func ExpressionRole() semantics.Key        { return frontend.ExpressionRole() }
-func BoundRole() semantics.Key             { return frontend.BoundRole() }
-func ApplicationDependency() semantics.Key { return frontend.ApplicationDependency() }
+func ReferenceDependency() semantics.Key   { return frontend.ReferenceDependency() }
+func KindRelation() semantics.Key          { return frontend.KindRelation() }
+func InterfaceRelation() semantics.Key     { return frontend.InterfaceRelation() }
+func DataStatusRelation() semantics.Key    { return frontend.DataStatusRelation() }
+func DataSummaryRelation() semantics.Key   { return frontend.DataSummaryRelation() }
+func IdentityRelation() semantics.Key      { return frontend.IdentityRelation() }
 func LimitsSetting() semantics.Key         { return frontend.LimitsSetting() }
 func Contract() resolution.Contract        { return frontend.Contract() }
 func ResolveReferences(ctx context.Context, request semantic.Request[s.Language]) (semantic.Result, error) {

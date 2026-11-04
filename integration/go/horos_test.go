@@ -63,14 +63,14 @@ func qualifyHoros(t *testing.T) {
 	txt := data.MustEncodeText
 	textType := tuple("horos/scalar", atom("utf8-text"))
 	parameter := tuple("horos/decl/param", data.EncodeInt(big.NewInt(0)))
-	page := tuple("horos/decl/type", data.EncodeList([]core.Value{tuple("horos/decl/parameter", txt("T"), atom("data"))}), tuple("horos/list-of", parameter))
-	applied := tuple("horos/decl/type", data.EncodeList(nil), tuple("horos/decl/apply", tuple("horos/decl/local", txt("Page")), data.EncodeList([]core.Value{textType})))
+	page := tuple("horos/decl/type", data.EncodeList([]core.Value{tuple("horos/decl/parameter", txt("T"), tuple("horos/decl/proper", atom("data")))}), atom("type"), tuple("horos/list-of", parameter))
+	applied := tuple("horos/decl/type", data.EncodeList(nil), atom("type"), tuple("horos/decl/apply", tuple("horos/decl/local", txt("Page")), data.EncodeList([]core.Value{textType})))
 	declarations, err := data.EncodeMap([][2]core.Value{{txt("Page"), page}, {txt("TextPage"), applied}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	empty, _ := data.EncodeMap(nil)
-	module := tuple("horos/decl/module", data.EncodeInt(big.NewInt(2)), txt("consumer.pagination"), empty, declarations)
+	module := tuple("horos/decl/module", data.EncodeInt(big.NewInt(3)), txt("consumer.pagination"), empty, declarations)
 	tree, err := resolve.Resolve(module, nil, "consumer")
 	if err != nil {
 		t.Fatal(err)
@@ -197,8 +197,9 @@ func qualifyHorosFacts(t *testing.T, result semantic.Result) {
 		t.Fatal("declarations or parameter identity lost")
 	}
 	term, exists := model.Term(appliedEntity.Body)
-	bindings, bound := model.ParameterBindings(appliedEntity.Body)
-	if !exists || term.Kind != semantics.Application || term.Target != page || !bound || len(bindings) != 1 || bindings[0].Parameter != pageEntity.Parameters[0].Entity || bindings[0].Argument != term.Arguments[0] {
+	bindings, bound := model.DirectParameterBindings(appliedEntity.Body)
+	callee, hasCallee := model.Term(term.Callee)
+	if !exists || term.Kind != semantics.Application || !hasCallee || callee.Kind != semantics.Reference || callee.Target != page || !bound || len(bindings) != 1 || bindings[0].Parameter != pageEntity.Parameters[0].Entity || bindings[0].Argument != term.Arguments[0] {
 		t.Fatal("generic parameter bindings do not preserve the declared application")
 	}
 	if len(facts.Bindings) == 0 || len(facts.Expressions) == 0 {

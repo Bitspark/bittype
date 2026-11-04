@@ -8,7 +8,6 @@ import (
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	codec "github.com/bitspark/ontos/codec/go"
-	core "github.com/bitspark/ontos/core/go"
 )
 
 type exporter[L any] struct {
@@ -68,26 +67,11 @@ func (e *exporter[L]) binding(site ast.NodeRef, target semantics.EntityID) error
 	return nil
 }
 
-// Bounds are ordinary provider-owned terms associated with their parameter
-// syntax. All parameters still have sort type; the kernel knows no Data rule.
-func (e *exporter[L]) bound(site ast.NodeRef, bound decl.Bound) error {
-	term := semantics.Term{Kind: semantics.ProviderExpression,
-		Operator: e.frontend.key("bound/" + string(bound)), Encoding: semantics.Key{Owner: "ontos", Name: "codec-v1"},
-		Data: codec.Encode(core.NewAtom([]byte(bound)))}
-	at := semantics.Occurrence{Site: site, Role: e.frontend.BoundRole()}
-	if err := e.reserve(2, 0, keySize(term.Operator)+keySize(term.Encoding)+len(term.Data)+occurrenceSize(at)); err != nil {
-		return err
-	}
-	e.facts.Terms = append(e.facts.Terms, term)
-	e.facts.Expressions = append(e.facts.Expressions, semantics.Expression{At: at, Term: semantics.TermID(len(e.facts.Terms))})
-	return nil
-}
-
-func (e *exporter[L]) expression(expression *decl.Expression, site ast.NodeRef, owner semantics.EntityID, depth int) (semantics.TermID, error) {
+func (e *exporter[L]) expression(expression *decl.Expression, site ast.NodeRef, owner semantics.EntityID, depth int, publish bool) (semantics.TermID, error) {
 	if depth > e.limits.MaxDepth {
 		return 0, semantics.ErrLimit
 	}
-	if site.Node == 0 {
+	if publish && site.Node == 0 {
 		return 0, fmt.Errorf("Horos expression has no current syntax site")
 	}
 	if err := e.reserve(1, 0, 0); err != nil {
@@ -100,32 +84,41 @@ func (e *exporter[L]) expression(expression *decl.Expression, site ast.NodeRef, 
 	case decl.Parameter:
 		parameter, _ := expression.Parameter()
 		term.Kind, term.Target = semantics.Reference, e.parameters[parameter]
-		if err := e.binding(site, term.Target); err != nil {
-			return 0, err
+		if publish {
+			if err := e.binding(site, term.Target); err != nil {
+				return 0, err
+			}
+		}
+	case decl.Reference:
+		target, _ := expression.Target()
+		term.Kind, term.Target = semantics.Reference, e.declarations[target]
+		if publish {
+			if err := e.binding(site, term.Target); err != nil {
+				return 0, err
+			}
+			if err := e.dependency(site, owner, term.Target); err != nil {
+				return 0, err
+			}
 		}
 	case decl.Application:
-		target, _ := expression.Target()
-		term.Kind, term.Target = semantics.Application, e.declarations[target]
+		term.Kind = semantics.Application
+		callee, err := e.expression(expression.Callee(), e.input.CalleeSite(site), owner, depth+1, publish)
+		if err != nil {
+			return 0, err
+		}
+		term.Callee = callee
 		arguments := expression.Arguments()
-		if err := e.reserve(0, len(arguments), 0); err != nil {
+		if err := e.reserve(0, 1+len(arguments), 0); err != nil {
 			return 0, err
 		}
 		term.Arguments = make([]semantics.TermID, len(arguments))
 		for i, argument := range arguments {
-			child, err := e.expression(argument, e.input.ArgumentSite(site, i), owner, depth+1)
+			child, err := e.expression(argument, e.input.ArgumentSite(site, i), owner, depth+1, publish)
 			if err != nil {
 				return 0, err
 			}
 			term.Arguments[i] = child
 		}
-		if err := e.binding(site, term.Target); err != nil {
-			return 0, err
-		}
-		at := semantics.Occurrence{Site: site, Role: e.frontend.ExpressionRole()}
-		if err := e.reserve(1, 0, keySize(e.frontend.ApplicationDependency())+occurrenceSize(at)); err != nil {
-			return 0, err
-		}
-		e.facts.Dependencies = append(e.facts.Dependencies, semantics.Dependency{From: owner, To: term.Target, Relation: e.frontend.ApplicationDependency(), At: &at})
 	case decl.Descriptor:
 		term.Kind, term.Operator, term.Encoding = semantics.ProviderExpression, e.frontend.key("descriptor/"+expression.Constructor()), semantics.Key{Owner: "ontos", Name: "codec-v1"}
 		// The value was bounded during Horos resolution. Each retained payload is
@@ -146,7 +139,7 @@ func (e *exporter[L]) expression(expression *decl.Expression, site ast.NodeRef, 
 			for j, part := range path {
 				locator[j] = uint32(part)
 			}
-			child, err := e.expression(operand.Expression(), e.input.OperandSite(site, path), owner, depth+1)
+			child, err := e.expression(operand.Expression(), e.input.OperandSite(site, path), owner, depth+1, publish)
 			if err != nil {
 				return 0, err
 			}
@@ -156,8 +149,13 @@ func (e *exporter[L]) expression(expression *decl.Expression, site ast.NodeRef, 
 		return 0, fmt.Errorf("unsupported checked Horos expression kind")
 	}
 	e.facts.Terms[id-1] = term
-	if err := e.association(site, id); err != nil {
-		return 0, err
+	if publish {
+		if err := e.association(site, id); err != nil {
+			return 0, err
+		}
+		if err := e.typeFacts(semantics.Subject{Term: id}, expression.Interface(), expression.KindShape(), expression.DataSummary(), expression.DataStatus(), depth); err != nil {
+			return 0, err
+		}
 	}
 	return id, nil
 }
@@ -187,10 +185,10 @@ func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Pro
 					return semantics.Data{}, err
 				}
 				e.parameters[parameter] = parameterID
-				if err := e.bound(input.ParameterSite(parameter), slot.Bound); err != nil {
-					return semantics.Data{}, err
-				}
 				sort := f.key("type")
+				if slot.Interface.IsConstructor() {
+					sort = f.key("constructor")
+				}
 				if err := e.reserve(0, 1, keySize(sort)); err != nil {
 					return semantics.Data{}, err
 				}
@@ -199,13 +197,19 @@ func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Pro
 		}
 	}
 	for _, module := range modules {
+		if err := e.moduleIdentity(module.Pin()); err != nil {
+			return semantics.Data{}, err
+		}
 		for _, declaration := range module.Declarations() {
 			id := e.declarations[declaration.ID()]
-			body, err := e.expression(declaration.Expression(), input.BodySite(declaration.ID()), id, 1)
+			body, err := e.expression(declaration.Expression(), input.BodySite(declaration.ID()), id, 1, true)
 			if err != nil {
 				return semantics.Data{}, err
 			}
 			e.facts.Entities[id-1].Body = body
+			if err := e.declarationFacts(declaration); err != nil {
+				return semantics.Data{}, err
+			}
 		}
 	}
 	return e.facts, nil

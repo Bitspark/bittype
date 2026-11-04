@@ -167,9 +167,9 @@ func projectChecked[L any](program Program, treeID ast.TreeID) (ast.AST[L], erro
 				parameter := p.add(s.KindTypeParameter, s.AttributeName, slot.Name, s.AttributeIndex, strconv.Itoa(index))
 				p.parameters[decl.ParameterID{Declaration: declaration.ID(), Index: index}] = parameter
 				p.child(d, s.RoleParameter, parameter)
-				bound := p.add(s.KindBound, s.AttributeName, string(slot.Bound))
-				p.child(parameter, s.RoleBound, bound)
+				p.child(parameter, s.RoleInterface, p.interfaceNode(slot.Interface, 4))
 			}
+			p.child(d, s.RoleResult, p.claimNode(declaration.Result(), 3))
 		}
 		if p.err != nil {
 			return ast.AST[L]{}, p.err
@@ -197,6 +197,31 @@ func projectChecked[L any](program Program, treeID ast.TreeID) (ast.AST[L], erro
 	return p.tree, nil
 }
 
+func (p *projector[L]) claimNode(claim decl.Claim, depth int) ast.NodeID {
+	if !p.depth(depth) {
+		return 0
+	}
+	return p.add(s.KindInterface, s.AttributeName, string(claim))
+}
+
+func (p *projector[L]) interfaceNode(value decl.Interface, depth int) ast.NodeID {
+	if !p.depth(depth) {
+		return 0
+	}
+	if !value.IsConstructor() {
+		return p.add(s.KindInterface, s.AttributeName, string(value.Result()))
+	}
+	n := p.add(s.KindInterface, s.AttributeName, "constructor")
+	for _, input := range value.Inputs() {
+		p.child(n, s.RoleInput, p.interfaceNode(input, depth+1))
+		if p.err != nil {
+			return 0
+		}
+	}
+	p.child(n, s.RoleResult, p.claimNode(value.Result(), depth+1))
+	return n
+}
+
 func (p *projector[L]) expression(expression *decl.Expression, module decl.Digest, depth int) ast.NodeID {
 	if !p.depth(depth) {
 		return 0
@@ -207,10 +232,9 @@ func (p *projector[L]) expression(expression *decl.Expression, module decl.Diges
 		n := p.add(s.KindParameter, s.AttributeIndex, strconv.Itoa(binder.Index))
 		p.reference(n, s.RoleTarget, p.parameters[binder])
 		return n
-	case decl.Application:
+	case decl.Reference:
 		// Syntax remains authored; semantic target comes from the checked model.
-		raw := expression.Value().(core.Tuple)
-		target := raw.At(1).(core.Tuple)
+		target := expression.Value().(core.Tuple)
 		scope := "local"
 		attrs := []string{s.AttributeScope, scope}
 		if target.Len() == 3 {
@@ -222,13 +246,17 @@ func (p *projector[L]) expression(expression *decl.Expression, module decl.Diges
 			name, _ := data.ReadText(target.At(1))
 			attrs = append(attrs, s.AttributeName, name)
 		}
-		n := p.add(s.KindApplication, attrs...)
+		n := p.add(s.KindReference, attrs...)
 		resolved, _ := expression.Target()
 		p.reference(n, s.RoleTarget, p.declarations[resolved])
 		if scope == "imported" {
 			alias, _ := data.ReadText(target.At(1))
 			p.reference(n, s.RoleImport, p.imports[importID{module, alias}])
 		}
+		return n
+	case decl.Application:
+		n := p.add(s.KindApplication)
+		p.child(n, s.RoleCallee, p.expression(expression.Callee(), module, depth+1))
 		for _, argument := range expression.Arguments() {
 			p.child(n, s.RoleArgument, p.expression(argument, module, depth+1))
 			if p.err != nil {

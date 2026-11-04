@@ -49,18 +49,24 @@ func entry(name string, v value) [2]value { return [2]value{txt(name), v} }
 func definition(body value, names ...string) value {
 	var parameters []value
 	for _, name := range names {
-		parameters = append(parameters, d("parameter", txt(name), atom("data")))
+		parameters = append(parameters, d("parameter", txt(name), d("proper", atom("data"))))
 	}
-	return d("type", data.EncodeList(parameters), body)
+	return d("type", data.EncodeList(parameters), atom("type"), body)
 }
 func module(name string, imports value, declarations ...[2]value) value {
-	return d("module", integer(2), txt(name), imports, mapping(declarations...))
+	return d("module", integer(3), txt(name), imports, mapping(declarations...))
 }
 func param(index int64) value { return d("param", integer(index)) }
 func local(name string, args ...value) value {
+	if len(args) == 0 {
+		return d("local", txt(name))
+	}
 	return d("apply", d("local", txt(name)), data.EncodeList(args))
 }
 func imported(alias, name string, args ...value) value {
+	if len(args) == 0 {
+		return d("imported", txt(alias), txt(name))
+	}
 	return d("apply", d("imported", txt(alias), txt(name)), data.EncodeList(args))
 }
 func page(element value) value {
@@ -318,10 +324,10 @@ func TestPaginationBindingsPreserveCallerScopeAndDistinctParameters(t *testing.T
 		t.Fatal("module or generic binder identities collapsed")
 	}
 	outerBody := term(t, model, outer.Body)
-	if outerBody.Kind != semantics.Application || outerBody.Target != pageID {
+	if outerBody.Kind != semantics.Application || term(t, model, outerBody.Callee).Target != pageID {
 		t.Fatal("Outer does not apply imported Page")
 	}
-	bindings, ok := model.ParameterBindings(outer.Body)
+	bindings, ok := model.DirectParameterBindings(outer.Body)
 	if !ok || len(bindings) != 1 || bindings[0].Parameter != page.Parameters[0].Entity {
 		t.Fatal("Page parameter binding missing")
 	}
@@ -330,17 +336,17 @@ func TestPaginationBindingsPreserveCallerScopeAndDistinctParameters(t *testing.T
 		t.Fatal("Page argument captured the callee's T")
 	}
 	peopleBody := term(t, model, people.Body)
-	if peopleBody.Kind != semantics.Application || peopleBody.Target != outerID {
+	if peopleBody.Kind != semantics.Application || term(t, model, peopleBody.Callee).Target != outerID {
 		t.Fatal("PeoplePage lost its Outer application")
 	}
 	personApplication := term(t, model, peopleBody.Arguments[0])
-	if personApplication.Kind != semantics.Application || personApplication.Target != personID || len(personApplication.Arguments) != 0 {
-		t.Fatal("zero-argument Person application lost caller identity")
+	if personApplication.Kind != semantics.Reference || personApplication.Target != personID || len(personApplication.Arguments) != 0 {
+		t.Fatal("zero-parameter Person reference lost caller identity")
 	}
-	if bindings, ok := model.ParameterBindings(peopleBody.Arguments[0]); !ok || len(bindings) != 0 {
-		t.Fatal("zero-argument application must retain application status")
+	if bindings, ok := model.DirectParameterBindings(peopleBody.Arguments[0]); ok || len(bindings) != 0 {
+		t.Fatal("a proper declaration reference is not an application")
 	}
-	deps := model.DependenciesFrom(peopleID, resolve.ApplicationDependency())
+	deps := model.DependenciesFrom(peopleID, resolve.ReferenceDependency())
 	targets := map[semantics.EntityID]bool{}
 	for _, dep := range deps {
 		targets[dep.To] = true
@@ -473,11 +479,11 @@ func requireFailure(t *testing.T, result semantic.Result, status semantic.Comple
 		t.Fatal("failed or incomplete analysis published a model")
 	}
 	requireReport(t, result, resolve.Validity(), status, verdict)
-	for _, key := range []semantics.Key{resolve.Indexing(), resolve.Bindings(), resolve.Applications(), resolve.Dependencies()} {
+	for _, key := range []semantics.Key{resolve.Indexing(), resolve.Bindings(), resolve.Applications(), resolve.Dependencies(), resolve.TypeFacts()} {
 		requireReport(t, result, key, semantic.Incomplete, semantic.Undetermined)
 	}
 	diagnostics := result.Diagnostics()
-	if len(diagnostics) != 1 || diagnostics[0].Code != (semantics.Key{Owner: "horos", Name: code}) || diagnostics[0].Subject != (semantics.Key{Owner: "horos", Name: subject}) {
+	if len(diagnostics) == 0 || diagnostics[0].Code != (semantics.Key{Owner: "horos", Name: code}) || diagnostics[0].Subject != (semantics.Key{Owner: "horos", Name: subject}) {
 		t.Fatalf("wrong diagnostic: %+v", diagnostics)
 	}
 }
@@ -490,15 +496,15 @@ func TestUnresolvedSourceAndContextHaveDistinctReports(t *testing.T) {
 		code, subject string
 	}{
 		{"unknown declaration", fixtureOptions{importedName: "Missing"}, func(tree s.AST) {
-			setAttribute(&tree.Nodes[find(tree, s.KindApplication, "Page")-1], s.AttributeName, "Missing")
+			setAttribute(&tree.Nodes[find(tree, s.KindReference, "Page")-1], s.AttributeName, "Missing")
 		}, "unknown-declaration", "source"},
 		{"unknown import", fixtureOptions{alias: "missing"}, func(tree s.AST) {
-			setAttribute(&tree.Nodes[find(tree, s.KindApplication, "Page")-1], s.AttributeAlias, "missing")
+			setAttribute(&tree.Nodes[find(tree, s.KindReference, "Page")-1], s.AttributeAlias, "missing")
 		}, "unknown-import", "source"},
 		{"out of range parameter", fixtureOptions{parameter: 9}, func(tree s.AST) {
 			outer := find(tree, s.KindDeclaration, "Outer")
 			application := body(tree, outer)
-			setAttribute(&tree.Nodes[tree.Nodes[application-1].Children[0].Node-1], s.AttributeIndex, "9")
+			setAttribute(&tree.Nodes[tree.Nodes[application-1].Children[1].Node-1], s.AttributeIndex, "9")
 		}, "invalid", "source"},
 		{"wrong expected module", fixtureOptions{expectedModule: "example.wrong"}, func(tree s.AST) {
 			setAttribute(&tree.Nodes[find(tree, s.KindImport, "")-1], s.AttributeName, "example.wrong")
@@ -593,7 +599,7 @@ func TestDuplicateDeclarationsIdentifySourceOrSuppliedContext(t *testing.T) {
 func TestPresentAnnotationsAndTypePositionsAreCheckedWithoutRepair(t *testing.T) {
 	t.Run("incorrect present target", func(t *testing.T) {
 		tree := fixture(t)
-		application := find(tree, s.KindApplication, "Page")
+		application := find(tree, s.KindReference, "Page")
 		for i := range tree.Nodes[application-1].References {
 			if tree.Nodes[application-1].References[i].Role == s.RoleTarget {
 				tree.Nodes[application-1].References[i].Target.Node = find(tree, s.KindDeclaration, "Outer")

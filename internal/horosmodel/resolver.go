@@ -25,11 +25,16 @@ func (f Frontend[L]) Validity() semantics.Key              { return f.key("progr
 func (f Frontend[L]) Indexing() semantics.Key              { return f.key("declaration-index") }
 func (f Frontend[L]) Bindings() semantics.Key              { return f.key("occurrence-bindings") }
 func (f Frontend[L]) Applications() semantics.Key          { return f.key("applications") }
-func (f Frontend[L]) Dependencies() semantics.Key          { return f.key("application-dependencies") }
+func (f Frontend[L]) Dependencies() semantics.Key          { return f.key("reference-dependencies") }
+func (f Frontend[L]) TypeFacts() semantics.Key             { return f.key("type-facts") }
 func (f Frontend[L]) TargetRole() semantics.Key            { return f.key("target") }
 func (f Frontend[L]) ExpressionRole() semantics.Key        { return f.key("expression") }
-func (f Frontend[L]) BoundRole() semantics.Key             { return f.key("parameter-bound") }
-func (f Frontend[L]) ApplicationDependency() semantics.Key { return f.key("declaration-application") }
+func (f Frontend[L]) ReferenceDependency() semantics.Key   { return f.key("declaration-reference") }
+func (f Frontend[L]) KindRelation() semantics.Key          { return f.key("kind") }
+func (f Frontend[L]) InterfaceRelation() semantics.Key     { return f.key("interface") }
+func (f Frontend[L]) DataStatusRelation() semantics.Key    { return f.key("data-status") }
+func (f Frontend[L]) DataSummaryRelation() semantics.Key   { return f.key("data-summary") }
+func (f Frontend[L]) IdentityRelation() semantics.Key      { return f.key("canonical-identity") }
 
 // LimitsSetting contains a JSON array [depth,nodes,bytes,modules]. All four
 // positive limits are required; depth must not exceed 512. Its absence selects
@@ -38,7 +43,7 @@ func (f Frontend[L]) ApplicationDependency() semantics.Key { return f.key("decla
 func (f Frontend[L]) LimitsSetting() semantics.Key { return f.key("declaration-limits-json-1") }
 
 func (f Frontend[L]) Contract() resolution.Contract {
-	keys := []semantics.Key{f.ReferenceResolution(), f.Validity(), f.Indexing(), f.Bindings(), f.Applications(), f.Dependencies()}
+	keys := []semantics.Key{f.ReferenceResolution(), f.Validity(), f.Indexing(), f.Bindings(), f.Applications(), f.Dependencies(), f.TypeFacts()}
 	contract := semantic.Contract{Profile: f.ResolutionProfile}
 	for _, k := range keys {
 		contract.Obligations = append(contract.Obligations, semantic.Obligation{Key: k, Domain: f.key("entry-transitive-module-closure")})
@@ -146,7 +151,17 @@ func (f Frontend[L]) failure(request semantic.Request[L], decoded *Decoded[L], e
 			}
 		}
 	}
-	return request.Publish(semantic.Publication{Reports: coverage, Diagnostics: []semantic.Diagnostic{diagnostic}})
+	diagnostics := []semantic.Diagnostic{diagnostic}
+	if decoded != nil && detail != nil {
+		if site, context := decoded.CalleeDeclarationSite(detail); site != nil {
+			subject := f.key("source")
+			if context {
+				subject = f.key("context")
+			}
+			diagnostics = append(diagnostics, semantic.Diagnostic{Code: f.key("callee-declaration"), Subject: subject, At: site, Message: "The callee's declared interface is established here."})
+		}
+	}
+	return request.Publish(semantic.Publication{Reports: coverage, Diagnostics: diagnostics})
 }
 
 // ResolveReferences requires one Program tree and its root as the explicit entry. The

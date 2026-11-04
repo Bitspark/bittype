@@ -16,7 +16,7 @@ import (
 )
 
 func bounded(body value, name, bound string) value {
-	return d("type", data.EncodeList([]value{d("parameter", txt(name), atom(bound))}), body)
+	return d("type", data.EncodeList([]value{d("parameter", txt(name), d("proper", atom(bound)))}), atom("type"), body)
 }
 
 func unifiedModule(forwardBound string) value {
@@ -55,19 +55,27 @@ func TestUnifiedPaginationBoundsSurviveASTAndSemanticExport(t *testing.T) {
 	model := requireModel(t, run(t, tree, nil))
 	for _, wanted := range []struct{ name, bound string }{{"T", "type"}, {"D", "data"}, {"Forwarded", "data"}} {
 		site := ast.NodeRef{Tree: tree.ID, Node: find(tree, s.KindTypeParameter, wanted.name)}
-		termID, ok := model.TermAt(semantics.Occurrence{Site: site, Role: resolve.BoundRole()})
-		if !ok {
-			t.Fatalf("missing bound for %s", wanted.name)
+		var parameterID semantics.EntityID
+		for i, entity := range model.Data().Entities {
+			for _, declarationSite := range entity.Declarations {
+				if declarationSite == site {
+					parameterID = semantics.EntityID(i + 1)
+				}
+			}
 		}
-		fact := term(t, model, termID)
-		if fact.Kind != semantics.ProviderExpression || fact.Operator != (semantics.Key{Owner: "horos", Name: "bound/" + wanted.bound}) || string(fact.Data) != string(codec.Encode(atom(wanted.bound))) {
-			t.Fatal("parameter bound lost its provider-owned meaning")
+		facts := model.Facts(semantics.Subject{Entity: parameterID}, resolve.InterfaceRelation())
+		if len(facts) != 1 {
+			t.Fatalf("missing interface for %s", wanted.name)
+		}
+		fact := term(t, model, facts[0])
+		if fact.Kind != semantics.ProviderExpression || fact.Operator != (semantics.Key{Owner: "horos", Name: "interface/proper"}) || string(fact.Data) != string(codec.Encode(atom(wanted.bound))) {
+			t.Fatal("parameter interface lost its provider-owned meaning")
 		}
 	}
 	_, alias := entity(t, model, "unified.pagination", "DataPage")
 	pageID, pageEntity := entity(t, model, "unified.pagination", "Page")
 	application := term(t, model, alias.Body)
-	if application.Kind != semantics.Application || application.Target != pageID || pageEntity.Parameters[0].Sort != (semantics.Key{Owner: "horos", Name: "type"}) {
+	if application.Kind != semantics.Application || term(t, model, application.Callee).Target != pageID || pageEntity.Parameters[0].Sort != (semantics.Key{Owner: "horos", Name: "type"}) {
 		t.Fatal("constrained alias became a second Page or a different parameter sort")
 	}
 }
