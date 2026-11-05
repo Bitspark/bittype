@@ -268,6 +268,11 @@ caches and immutable Programs.
 
 ## Bittype and native generation
 
+The [native constraint-preservation proposal](native-kind-constraints.md) explains
+how source kind obligations could survive TypeScript, Go, Rust and C++ generation
+through direct bounds or source witnesses. Its encodings remain proposed; the
+implemented representation/enforcement distinction below is unchanged.
+
 The shared Bittype semantic graph already supplies entities, parameters,
 references, applications and subject-associated facts. Horos-specific terms
 represent kind expressions, so the kernel requires no `Data`, `Scalar`, `List`
