@@ -426,7 +426,7 @@ func TestDescriptorPayloadsAndOperandPathsRetainCanonicalMeaning(t *testing.T) {
 	}
 	collect(find(tree, s.KindModule, "example.payloads"))
 	for _, binding := range model.Data().Bindings {
-		if binding.At.Tree == tree.ID && payloadNodes[binding.At.Node] {
+		if binding.At.Site.Tree == tree.ID && payloadNodes[binding.At.Site.Node] {
 			t.Fatal("declaration-looking literal tuples were interpreted as types")
 		}
 	}
