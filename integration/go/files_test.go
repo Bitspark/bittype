@@ -52,15 +52,19 @@ func filePagination(t *testing.T) (parse.FilesInput, string, string) {
 func TestFilesPaginationAndReceiptPreservingRoundTrips(t *testing.T) {
 	ctx := context.Background()
 	input, pagePin, peoplePin := filePagination(t)
-	parser, err := h.NewFilesParser()
+	definition, err := representation.NewLanguage[s.Language](s.Language{}, s.Profile)
 	if err != nil {
 		t.Fatal(err)
 	}
-	formatter, err := h.NewFilesFormatter()
+	parser, err := h.NewFilesParser(definition)
 	if err != nil {
 		t.Fatal(err)
 	}
-	printer, err := h.NewFilesPrinter()
+	formatter, err := h.NewFilesFormatter(definition)
+	if err != nil {
+		t.Fatal(err)
+	}
+	printer, err := h.NewFilesPrinter(definition)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +143,11 @@ func (r replayFiles) Parse(context.Context, parse.FilesRequest[s.Language]) (sou
 func TestFilesCapabilitiesAreIndependentAndRejectStalePublications(t *testing.T) {
 	ctx := context.Background()
 	input, _, _ := filePagination(t)
-	parser, err := h.NewFilesParser()
+	definition, err := representation.NewLanguage[s.Language](s.Language{}, s.Profile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parser, err := h.NewFilesParser(definition)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -2,7 +2,7 @@ package parseutil
 
 import (
 	"fmt"
-	"github.com/Bitspark/bittype/check/ast/go"
+	"github.com/Bitspark/bittype/check/syntax/ast/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/internal/lex"

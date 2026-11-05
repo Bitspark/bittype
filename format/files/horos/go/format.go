@@ -1,5 +1,5 @@
-// Package horosformat organizes admitted Horos semantics into concrete files.
-package horosformat
+// Package format organizes admitted Horos semantics into concrete files.
+package format
 
 import (
 	"context"

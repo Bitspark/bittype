@@ -110,22 +110,22 @@ contracts/analysis/go/                   present: analysis with explicit resolut
 semantics/go/                            present: immutable shared semantic facts
 engine/go/                               present: registry, planning, execution
 syntax/<language>/go/                    present for all four native languages
-parse/<language>/go/                     present: source to CST
-check/<language>/go/                     present: native syntax checks
-format/<language>/go/                    present: AST view to CST
+parse/syntax/<language>/go/                     present: source to CST
+check/syntax/<language>/go/                     present: native syntax checks
+format/syntax/<language>/go/                    present: AST view to CST
 provider/<language>/go/                  present: explicit capability composition
 check/{ast,cst}/go/                      present: carrier checks
-print/go/                                present: CST to text
+print/syntax/go/                                present: CST to text
 integration/go/                          present: contracts, conformance, architecture,
                                                  graph, ownership and compiler checks
 testdata/text/<language>/valid/          present: native source fixtures
 
 syntax/horos/go/                        present: Horos declaration AST projection
-parse/horos/go/                         present: readable source to CST
-resolve/horos/go/                       present: Horos references and binders
-check/horos/go/                         present: syntax-only AST admission
-analyze/horos/go/                       present: Horos semantics to shared facts
-format/horos/go/                        present: readable Horos CST
+parse/syntax/horos/go/                         present: readable source to CST
+resolve/files/horos/go/                       present: Horos references and binders
+check/syntax/horos/go/                         present: syntax-only AST admission
+analyze/files/horos/go/                       present: Horos semantics to shared facts
+format/syntax/horos/go/                        present: readable Horos CST
 provider/horos/go/                      present: text and semantic capability composition
 transforms/horos-to-<native>/go/         present: directed pagination generation
 transforms/<native>-to-horos/go/         proposed: partial migration mapping

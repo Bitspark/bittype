@@ -1,7 +1,7 @@
 package concrete
 
 import (
-	cstcheck "github.com/Bitspark/bittype/check/cst/go"
+	cstcheck "github.com/Bitspark/bittype/check/syntax/cst/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/internal/lex"

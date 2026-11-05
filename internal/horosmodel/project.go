@@ -7,7 +7,7 @@ import (
 	"errors"
 	"strconv"
 
-	structure "github.com/Bitspark/bittype/check/ast/go"
+	structure "github.com/Bitspark/bittype/check/syntax/ast/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	s "github.com/Bitspark/bittype/internal/declsyntax"
 	"github.com/Bitspark/bittype/trees/ast/go"

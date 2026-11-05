@@ -3,7 +3,7 @@ package integration_test
 import (
 	"context"
 	"github.com/Bitspark/bittype/contracts/language/go"
-	print "github.com/Bitspark/bittype/print/go"
+	print "github.com/Bitspark/bittype/print/syntax/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/cst/go"
 	"strings"
@@ -60,7 +60,11 @@ func TestPrinterNeedsNoKnownLanguage(t *testing.T) {
 			{Kind: "foreign-sentence", Children: []cst.NodeID{1, 2}, Syntax: []ast.NodeID{1}},
 		},
 	}
-	output, err := print.Print(context.Background(), concrete)
+	printer, err := print.New[unfamiliarLanguage](unfamiliarLanguage{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	output, err := printer.Print(context.Background(), concrete)
 	if err != nil || output != "hello\r\n" {
 		t.Fatalf("%v: %q", err, output)
 	}

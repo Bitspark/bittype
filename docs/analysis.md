@@ -49,7 +49,7 @@ from a structure's shape or from a declaration name.
 ## Ownership and package layout
 
 The layout follows processing stages. The final `go` denotes implementation
-language: `analyze/horos/go` is Go code implementing analysis for Horos.
+language: `analyze/files/horos/go` is Go code implementing analysis for Horos.
 
 | Layer and package | Responsibility |
 | --- | --- |
@@ -59,9 +59,9 @@ language: `analyze/horos/go` is Go code implementing analysis for Horos.
 | [contracts/resolution/go](../contracts/resolution/go/provider.go) | Independent resolution capability and requirements |
 | [contracts/analysis/go](../contracts/analysis/go/provider.go) | Analysis capability and explicit resolution dependency |
 | [engine/go](../engine/go/analysis.go) | Explicit registration and selection of a compatible analyzer |
-| [syntax/horos/go](../syntax/horos/go/nodes.go) and [check/horos/go](../check/horos/go/check.go) | Horos AST vocabulary and syntax admission |
-| [resolve/horos/go](../resolve/horos/go/resolver.go) | Registered resolution, authoritative fact export and explicit canonical-value helpers |
-| [analyze/horos/go](../analyze/horos/go/analyze.go) | Consume explicit resolution evidence and reuse its immutable model |
+| [syntax/horos/go](../syntax/horos/go/nodes.go) and [check/syntax/horos/go](../check/syntax/horos/go/check.go) | Horos AST vocabulary and syntax admission |
+| [resolve/files/horos/go](../resolve/files/horos/go/resolver.go) | Registered resolution, authoritative fact export and explicit canonical-value helpers |
+| [analyze/files/horos/go](../analyze/files/horos/go/analyze.go) | Consume explicit resolution evidence and reuse its immutable model |
 | [internal/horosmodel](../internal/horosmodel) | Private decoding and correspondence between current AST sites and the authoritative model, used by the resolver |
 | [provider/horos/go](../provider/horos/go/provider.go) | Compose Horos checking, resolution and analysis capabilities for explicit application registration |
 | External horos and ontos packages | Horos owns declaration/type rules; Ontos owns values and encoding |
@@ -199,7 +199,7 @@ occurrence; it does not establish that the source is invalid. Application
 dependencies are explicit edges, not an inferred import or runtime-effect graph.
 
 These queries need no external Horos model import and do not mutate the AST or
-model. The [pagination analyzer tests](../analyze/horos/go/analyze_test.go) qualify
+model. The [pagination analyzer tests](../analyze/files/horos/go/analyze_test.go) qualify
 bindings, caller scope and reports; the [independent consumer](../integration/go/horos_test.go)
 exercises registration and shared queries through the public API.
 

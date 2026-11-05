@@ -171,7 +171,7 @@ Files uses the same roles with the captured requests described in [Source](sourc
 
 Each native parser, formatter and checker package supplies its specialized
 provider. Each native `provider/<language>/go` implementation offers all four
-methods as a convenience, using the generic printer in `print/go`. The separate
+methods as a convenience, using the generic printer in `print/syntax/go`. The separate
 `contracts/print/go` package owns the printer interface. Applications can use
 separate implementations for each capability.
 
@@ -278,20 +278,20 @@ contracts/parse/go/{input,provider}.go      source input and parser contract
 contracts/check/go/provider.go             independent AST syntax admission
 contracts/format/go/provider.go            formatter contract
 contracts/print/go/provider.go             printer contract
-contracts/text/go/{diagnostic,provider}.go  shared diagnostics and stage composition
-check/ast/go/structure.go                  abstract carrier checks
-check/cst/go/check.go                  concrete carrier checks
-check/<language>/go/                   native syntax checks
-parse/<language>/go/                   text -> CST
-format/<language>/go/                  AST view -> CST
-print/go/print.go                      shared CST -> text
-provider/<language>/go/provider.go     explicit capability composition
+contracts/text/go/diagnostic.go            shared diagnostics only
+check/syntax/ast/go/structure.go                  abstract carrier checks
+check/syntax/cst/go/check.go                  concrete carrier checks
+check/syntax/<language>/go/                   native syntax checks
+parse/syntax/<language>/go/                   text -> CST
+format/syntax/<language>/go/                  AST view -> CST
+print/syntax/go/print.go                      shared CST -> text
+provider/<language>/go/{provider,syntax,files}.go  explicit capability composition
 internal/                             implementation helpers and native details
 integration/go/                       independent contract/text/compiler tests
 testdata/text/<language>/valid/        native source fixtures
 ```
 
-The language directories are `typescript`, `golang`, `rust` and `cpp`; the trailing
+The language directories are `typescript`, `golang`, `rust`, `cpp` and `horos`; the trailing
 `go` denotes implementation language. Private parsing and concrete construction
 helpers are not public builders.
 

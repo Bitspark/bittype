@@ -24,6 +24,10 @@ TypeScript, Go, Rust and C++ type ASTs from explicitly supplied Horos analysis.
 The [Syntax and Files design](docs/source.md) specifies the symmetry
 `Syntax : CST : AST` and `Files : Source : Semantics`. Typed carriers, symmetric parse/format/print interfaces, multi-unit transformations
 and the Horos Files composition are implemented. Native Files semantics remain deferred.
+Implementations use explicit Syntax/Files stage paths and role-named Go packages.
+Each language composition package provides matching `NewSyntax...` and
+`NewFiles...` constructors for its existing capabilities, taking an explicit
+language/profile descriptor. See [naming, placement and construction](LAYOUT.md).
 Package releases remain deferred.
 The concrete Horos frontend uses the Horos Go module pinned in go.mod and Ontos 0.16.0. Consumers
 must upgrade together; no older dependency path or compatibility shim remains.

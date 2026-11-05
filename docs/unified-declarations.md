@@ -10,8 +10,8 @@ and constructor contracts. Bittype consumes public Horos Go 0.10.1.
 
 Horos owns the [canonical grammar](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md),
 membership, inclusion, application and ground extraction. Bittype owns
-`syntax/horos`, `parse/horos`, `check/horos`, `resolve/horos`, `analyze/horos`,
-`format/horos` and `provider/horos`, with their private bridge. The language ID
+`syntax/horos`, `parse/syntax/horos`, `check/syntax/horos`, `resolve/files/horos`, `analyze/files/horos`,
+`format/syntax/horos` and `provider/horos`, with their private bridge. The language ID
 stays `horos`; its syntax and semantic profiles advance together.
 
 Revision 4 retains the existing module envelope and ordinary imports. One

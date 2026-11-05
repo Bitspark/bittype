@@ -281,10 +281,26 @@ Files printing invokes only the chosen Syntax printer and returns each recorded
 path/text. Parse→Print preserves original bytes and trivia. Formatting can change
 organization and spelling; semantic preservation does not require old tree IDs.
 
-`provider/horos.NewFilesParser`, `NewFilesFormatter` and `NewFilesPrinter` each
-construct one explicitly requested capability using the current Horos stages.
-They install nothing in an engine. The stage-specific constructors accept
-explicit syntax/check/resolution/analysis collaborators and semantic options.
+Each `provider/<language>/go` package supplies `NewSyntaxParser`,
+`NewSyntaxChecker`, `NewSyntaxFormatter`, `NewSyntaxPrinter` and `NewFilesPrinter`.
+Horos additionally supplies `NewFilesParser`, `NewFilesFormatter`,
+`NewFilesResolver` and `NewFilesAnalyzer`. Every constructor takes an explicit
+`representation.Language` and returns one adapter plus an error; none registers
+anything or selects a profile implicitly. For example:
+
+```go
+definition, err := representation.NewLanguage[horos.Language](horos.Language{}, horos.Profile)
+if err != nil { return err }
+syntaxPrinter, err := horosprovider.NewSyntaxPrinter(definition)
+if err != nil { return err }
+filesPrinter, err := horosprovider.NewFilesPrinter(definition)
+if err != nil { return err }
+```
+
+The lower-level stage constructors accept explicit syntax/check/resolution/analysis
+collaborators and semantic options. Shared printing at both dimensions uses
+`Provider[L]` and `New[L]`; the Files constructor additionally takes the selected
+Syntax printer. A native Files printer requires no semantic provider.
 Native semantic providers remain absent, so TypeScript, Go, Rust and C++ do not
 yet provide Files parsing/formatting. See the [provider matrix](providers.md).
 
@@ -315,8 +331,11 @@ guarantees only. Their complete output must acquire target-language semantics
 before entering Files formatting. Syntax formatting/printing remain independently
 useful for every output tree.
 
-The [stage-first layout](../LAYOUT.md) adds `files/go`, `source/go`,
-`parse/files/horos/go`, `format/files/horos/go` and `print/files/go`.
+The [stage-first layout](../LAYOUT.md) uses explicit dimensions:
+`parse/syntax/<language>/go` and `parse/files/<language>/go`, likewise for
+formatting. Shared printers live at `print/syntax/go` and `print/files/go`.
+Files resolution and analysis live at `resolve/files/<language>/go` and
+`analyze/files/<language>/go`. Only implemented capabilities have directories.
 Files depends on AST addresses; Semantics remains independent of Files.
 Source depends on the semantic capture/result contract to retain receipts.
 Semantic capture may depend on Files but never Source. Tree representation admits

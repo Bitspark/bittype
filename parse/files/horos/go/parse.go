@@ -1,5 +1,5 @@
-// Package horosparse composes per-file syntax parsing with Horos semantics.
-package horosparse
+// Package parse composes per-file syntax parsing with Horos semantics.
+package parse
 
 import (
 	"context"

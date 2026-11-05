@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	analyze "github.com/Bitspark/bittype/analyze/horos/go"
+	analyze "github.com/Bitspark/bittype/analyze/files/horos/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
@@ -25,7 +25,7 @@ import (
 	hp "github.com/Bitspark/bittype/provider/horos/go"
 	rp "github.com/Bitspark/bittype/provider/rust/go"
 	tp "github.com/Bitspark/bittype/provider/typescript/go"
-	resolve "github.com/Bitspark/bittype/resolve/horos/go"
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
 	cs "github.com/Bitspark/bittype/syntax/cpp/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
@@ -71,11 +71,15 @@ func genType(body core.Value, params ...string) core.Value {
 }
 func genParam(i int64) core.Value { return genTuple("horos/decl/param", genInt(i)) }
 func genLocal(name string, args ...core.Value) core.Value {
-	if len(args) == 0 { return genTuple("horos/decl/local", data.MustEncodeText(name)) }
+	if len(args) == 0 {
+		return genTuple("horos/decl/local", data.MustEncodeText(name))
+	}
 	return genTuple("horos/decl/apply", genTuple("horos/decl/local", data.MustEncodeText(name)), data.EncodeList(args))
 }
 func genImported(alias, name string, args ...core.Value) core.Value {
-	if len(args) == 0 { return genTuple("horos/decl/imported", data.MustEncodeText(alias), data.MustEncodeText(name)) }
+	if len(args) == 0 {
+		return genTuple("horos/decl/imported", data.MustEncodeText(alias), data.MustEncodeText(name))
+	}
 	return genTuple("horos/decl/apply", genTuple("horos/decl/imported", data.MustEncodeText(alias), data.MustEncodeText(name)), data.EncodeList(args))
 }
 func genScalar(name string) core.Value { return genTuple("horos/scalar", genAtom(name)) }

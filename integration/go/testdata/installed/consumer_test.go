@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	resolve "github.com/Bitspark/bittype/resolve/horos/go"
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
 	"github.com/Bitspark/horos/core/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	core "github.com/bitspark/ontos/core/go"

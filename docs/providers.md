@@ -31,6 +31,13 @@ Source input belongs to `parse.Input`. `text.Provider` and the engine's combined
 provider registration are removed without compatibility aliases; `text` contains
 shared diagnostics only.
 
+Implementation packages use role names and explicit dimension paths, as specified
+in [the repository layout](../LAYOUT.md). Every language composition package has
+the same Syntax constructors and a Files printer constructor. Horos's additional
+Files constructors expose its existing semantic capabilities. Each constructor
+takes an explicit language/profile descriptor and registers nothing. The matrices
+describe implemented capabilities; constructors do not create additional cells.
+
 <!-- generated:providers:begin -->
 
 | Level | Provider | C++ | Go | Horos | Rust | TypeScript |
@@ -77,7 +84,7 @@ scope and its semantic requirements.
 
 <!-- generated:transformers:begin -->
 
-| Source → target | C++ | Go | Horos | Rust | TypeScript |
+| Source â†’ target | C++ | Go | Horos | Rust | TypeScript |
 | --- | :---: | :---: | :---: | :---: | :---: |
 | C++ | / | / | / | / | / |
 | Go | / | / | / | / | / |
