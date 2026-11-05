@@ -6,4 +6,6 @@ import (
 )
 
 // want-error: outside a type constraint
-type Fake struct{ admission.DataEvidence[admission.WireSource, model.Wire] }
+type Fake struct {
+	admission.DataEvidence[admission.WireSource, model.Wire]
+}

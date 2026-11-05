@@ -161,7 +161,9 @@ func projectChecked[L any](program Program, treeID ast.TreeID) (ast.AST[L], erro
 		}
 		for _, declaration := range module.Declarations() {
 			kind := ast.Kind[L](s.KindTypeDefinition)
-			if declaration.Form() == decl.KindDefinition { kind = s.KindKindDefinition }
+			if declaration.Form() == decl.KindDefinition {
+				kind = s.KindKindDefinition
+			}
 			d := p.add(kind, s.AttributeName, declaration.ID().Name)
 			p.declarations[declaration.ID()] = d
 			p.child(m, s.RoleDeclaration, d)
@@ -205,7 +207,9 @@ func projectChecked[L any](program Program, treeID ast.TreeID) (ast.AST[L], erro
 				p.child(d, s.RoleResult, p.kind(declaration.Result(), module.Pin(), 3))
 				p.child(d, s.RoleBody, p.expression(declaration.Expression(), module.Pin(), 3))
 			}
-			if p.err != nil { return ast.AST[L]{}, p.err }
+			if p.err != nil {
+				return ast.AST[L]{}, p.err
+			}
 		}
 	}
 	if p.err != nil {
@@ -235,7 +239,9 @@ func (p *projector[L]) expression(expression *decl.Expression, module decl.Diges
 		p.child(n, s.RoleCallee, p.expression(expression.Callee(), module, depth+1))
 		for _, argument := range expression.Arguments() {
 			p.child(n, s.RoleArgument, p.expression(argument, module, depth+1))
-			if p.err != nil { return 0 }
+			if p.err != nil {
+				return 0
+			}
 		}
 		return n
 	default:
@@ -288,22 +294,32 @@ func (p *projector[L]) namedReference(kind ast.Kind[L], value core.Value, target
 }
 
 func (p *projector[L]) sort(value decl.Sort, depth int) ast.NodeID {
-	if !p.depth(depth) { return 0 }
-	if value.IsProper() { return p.add(s.KindProperSort) }
+	if !p.depth(depth) {
+		return 0
+	}
+	if value.IsProper() {
+		return p.add(s.KindProperSort)
+	}
 	n := p.add(s.KindArrowSort)
-	for _, input := range value.Inputs() { p.child(n, s.RoleInput, p.sort(input, depth+1)) }
+	for _, input := range value.Inputs() {
+		p.child(n, s.RoleInput, p.sort(input, depth+1))
+	}
 	result, _ := value.Result()
 	p.child(n, s.RoleResult, p.sort(result, depth+1))
 	return n
 }
 
 func (p *projector[L]) kind(value *decl.Kind, module decl.Digest, depth int) ast.NodeID {
-	if !p.depth(depth) { return 0 }
+	if !p.depth(depth) {
+		return 0
+	}
 	var n ast.NodeID
 	switch value.Form() {
 	case decl.KindTop, decl.KindBottom:
 		kind := ast.Kind[L](s.KindTop)
-		if value.Form() == decl.KindBottom { kind = s.KindBottom }
+		if value.Form() == decl.KindBottom {
+			kind = s.KindBottom
+		}
 		n = p.add(kind)
 		p.child(n, s.RoleSort, p.sort(value.Sort(), depth+1))
 	case decl.KindParameterReference:
@@ -316,20 +332,30 @@ func (p *projector[L]) kind(value *decl.Kind, module decl.Digest, depth int) ast
 	case decl.KindApplication:
 		n = p.add(s.KindKindApplication)
 		p.child(n, s.RoleCallee, p.kind(value.Operands()[0].Kind(), module, depth+1))
-		for _, argument := range value.Inputs() { p.child(n, s.RoleArgument, p.kind(argument, module, depth+1)) }
+		for _, argument := range value.Inputs() {
+			p.child(n, s.RoleArgument, p.kind(argument, module, depth+1))
+		}
 	case decl.KindUnion, decl.KindIntersection:
 		kind := ast.Kind[L](s.KindUnion)
-		if value.Form() == decl.KindIntersection { kind = s.KindIntersection }
+		if value.Form() == decl.KindIntersection {
+			kind = s.KindIntersection
+		}
 		n = p.add(kind)
 		p.child(n, s.RoleSort, p.sort(value.Sort(), depth+1))
-		for _, operand := range value.Inputs() { p.child(n, s.RoleOperand, p.kind(operand, module, depth+1)) }
+		for _, operand := range value.Inputs() {
+			p.child(n, s.RoleOperand, p.kind(operand, module, depth+1))
+		}
 	case decl.KindArrow:
 		n = p.add(s.KindArrow)
-		for _, input := range value.Inputs() { p.child(n, s.RoleInput, p.kind(input, module, depth+1)) }
+		for _, input := range value.Inputs() {
+			p.child(n, s.RoleInput, p.kind(input, module, depth+1))
+		}
 		p.child(n, s.RoleResult, p.kind(value.Result(), module, depth+1))
 	case decl.KindNode:
 		n = p.add(s.KindNodePattern, s.AttributeConstructor, value.NodeForm())
-		for _, selector := range value.Selectors() { p.child(n, s.RoleSelector, p.add(s.KindSelector, s.AttributeName, selector.Key, s.AttributeValue, selector.Value)) }
+		for _, selector := range value.Selectors() {
+			p.child(n, s.RoleSelector, p.add(s.KindSelector, s.AttributeName, selector.Key, s.AttributeValue, selector.Value))
+		}
 		p.child(n, s.RolePattern, p.sequence(value.Sequence(), module, depth+1))
 	case decl.KindRecursive:
 		n = p.add(s.KindRecursiveKind, s.AttributeIndex, strconv.Itoa(value.Entry()))
@@ -346,17 +372,27 @@ func (p *projector[L]) kind(value *decl.Kind, module decl.Digest, depth int) ast
 }
 
 func (p *projector[L]) sequence(value *decl.Sequence, module decl.Digest, depth int) ast.NodeID {
-	if !p.depth(depth) { return 0 }
+	if !p.depth(depth) {
+		return 0
+	}
 	kind := ast.Kind[L](s.KindSequenceEpsilon)
 	switch value.Form() {
-	case decl.SequenceItem: kind = s.KindSequenceItem
-	case decl.SequenceConcat: kind = s.KindSequenceConcat
-	case decl.SequenceAlternative: kind = s.KindSequenceAlternative
-	case decl.SequenceStar: kind = s.KindSequenceStar
+	case decl.SequenceItem:
+		kind = s.KindSequenceItem
+	case decl.SequenceConcat:
+		kind = s.KindSequenceConcat
+	case decl.SequenceAlternative:
+		kind = s.KindSequenceAlternative
+	case decl.SequenceStar:
+		kind = s.KindSequenceStar
 	}
 	n := p.add(kind)
-	if value.Element() != nil { p.child(n, s.RoleElement, p.kind(value.Element(), module, depth+1)) }
-	for _, child := range value.Children() { p.child(n, s.RoleElement, p.sequence(child, module, depth+1)) }
+	if value.Element() != nil {
+		p.child(n, s.RoleElement, p.kind(value.Element(), module, depth+1))
+	}
+	for _, child := range value.Children() {
+		p.child(n, s.RoleElement, p.sequence(child, module, depth+1))
+	}
 	return n
 }
 

@@ -241,7 +241,11 @@ suite without an opt-in flag:
 go test -count=1 -v -run '^TestGoNativeAdmission$' ./integration/go
 ```
 
-Initial execution is pending; results will be recorded here after the remote run.
+Remote execution on Go 1.27.3 linux/amd64 passed all 29 admission
+cases: 8 positive consumers compiled and all 21 negative consumers produced the
+expected rejection. The fixture language was Go 1.25.0; this is not a run of the
+Go 1.25 compiler. These observations qualify the tested compiler cases, not the
+universal admission theorem or the source judgments assumed by the issuer.
 
 | Cases | Intended outcome |
 | --- | --- |

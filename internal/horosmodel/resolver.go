@@ -17,24 +17,24 @@ import (
 	decl "github.com/Bitspark/horos/core/go/declarations"
 )
 
-func (f Frontend[L]) key(name string) semantics.Key { return semantics.Key{Owner: f.Owner, Name: name} }
-func (f Frontend[L]) ReferenceResolution() semantics.Key { return f.key("reference-resolution") }
-func (f Frontend[L]) Validity() semantics.Key { return f.key("program-validity") }
-func (f Frontend[L]) Indexing() semantics.Key { return f.key("declaration-index") }
-func (f Frontend[L]) Bindings() semantics.Key { return f.key("occurrence-bindings") }
-func (f Frontend[L]) Applications() semantics.Key { return f.key("applications") }
-func (f Frontend[L]) Dependencies() semantics.Key { return f.key("reference-dependencies") }
-func (f Frontend[L]) TypeFacts() semantics.Key { return f.key("type-facts") }
-func (f Frontend[L]) TargetRole() semantics.Key { return f.key("target") }
-func (f Frontend[L]) ExpressionRole() semantics.Key { return f.key("expression") }
-func (f Frontend[L]) ReferenceDependency() semantics.Key { return f.key("declaration-reference") }
-func (f Frontend[L]) SortRelation() semantics.Key { return f.key("sort") }
-func (f Frontend[L]) ResultSortRelation() semantics.Key { return f.key("result-sort") }
+func (f Frontend[L]) key(name string) semantics.Key       { return semantics.Key{Owner: f.Owner, Name: name} }
+func (f Frontend[L]) ReferenceResolution() semantics.Key  { return f.key("reference-resolution") }
+func (f Frontend[L]) Validity() semantics.Key             { return f.key("program-validity") }
+func (f Frontend[L]) Indexing() semantics.Key             { return f.key("declaration-index") }
+func (f Frontend[L]) Bindings() semantics.Key             { return f.key("occurrence-bindings") }
+func (f Frontend[L]) Applications() semantics.Key         { return f.key("applications") }
+func (f Frontend[L]) Dependencies() semantics.Key         { return f.key("reference-dependencies") }
+func (f Frontend[L]) TypeFacts() semantics.Key            { return f.key("type-facts") }
+func (f Frontend[L]) TargetRole() semantics.Key           { return f.key("target") }
+func (f Frontend[L]) ExpressionRole() semantics.Key       { return f.key("expression") }
+func (f Frontend[L]) ReferenceDependency() semantics.Key  { return f.key("declaration-reference") }
+func (f Frontend[L]) SortRelation() semantics.Key         { return f.key("sort") }
+func (f Frontend[L]) ResultSortRelation() semantics.Key   { return f.key("result-sort") }
 func (f Frontend[L]) DeclaredKindRelation() semantics.Key { return f.key("declared-kind") }
-func (f Frontend[L]) ResultKindRelation() semantics.Key { return f.key("result-kind") }
+func (f Frontend[L]) ResultKindRelation() semantics.Key   { return f.key("result-kind") }
 func (f Frontend[L]) SymbolicBodyRelation() semantics.Key { return f.key("symbolic-body") }
-func (f Frontend[L]) MembershipRelation() semantics.Key { return f.key("membership") }
-func (f Frontend[L]) IdentityRelation() semantics.Key { return f.key("canonical-identity") }
+func (f Frontend[L]) MembershipRelation() semantics.Key   { return f.key("membership") }
+func (f Frontend[L]) IdentityRelation() semantics.Key     { return f.key("canonical-identity") }
 
 // LimitsSetting contains a JSON array [depth,nodes,bytes,modules]. All four
 // positive limits are required; depth must not exceed 512. Its absence selects
@@ -156,9 +156,13 @@ func (f Frontend[L]) failure(request semantic.Request[L], decoded *Decoded[L], e
 		if site := decoded.CalleeDeclarationSite(detail); site != nil {
 			subject := f.key("source")
 			target := detail.Target
-			if detail.CalleeParameter.Declaration.Name != "" { target = detail.CalleeParameter.Declaration }
+			if detail.CalleeParameter.Declaration.Name != "" {
+				target = detail.CalleeParameter.Declaration
+			}
 			root := decoded.tree.Nodes[decoded.tree.Root-1].References[0].Target.Node
-			if (reader[L]{tree: decoded.tree}).attr(root, "pin") != target.Module.String() { subject = f.key("context") }
+			if (reader[L]{tree: decoded.tree}).attr(root, "pin") != target.Module.String() {
+				subject = f.key("context")
+			}
 			diagnostics = append(diagnostics, semantic.Diagnostic{Code: f.key("callee-declaration"), Subject: subject, At: site, Message: "callee declaration or parameter contract"})
 		}
 	}

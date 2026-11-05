@@ -119,7 +119,7 @@ func TestDimensionDiscoveryDoesNotGuessFromPackageNames(t *testing.T) {
 }
 
 func TestDimensionMetadataRejectsAmbiguousDeclarations(t *testing.T) {
-	for name, declaration := range map[string]string{
+	for name, source := range map[string]string{
 		"duplicate":             "// bittype:dimension Syntax\n// bittype:dimension Files\ntype T struct{}",
 		"shared and dimension":  "// bittype:shared\n// bittype:dimension Files\ntype T struct{}",
 		"missing label":         "// bittype:dimension\ntype T struct{}",
@@ -132,7 +132,7 @@ func TestDimensionMetadataRejectsAmbiguousDeclarations(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			p := &program{root: t.TempDir(), module: "example.test/invalid", fset: token.NewFileSet(), packages: map[string]*sourcePackage{}, functions: map[*types.Func]declaration{}}
-			l := &fixtureLoader{p: p, sources: map[string]string{"somewhere": "package invalid\n" + declaration}}
+			l := &fixtureLoader{p: p, sources: map[string]string{"somewhere": "package invalid\n" + source}}
 			_, err := l.Import(p.module + "/somewhere")
 			if err == nil || !strings.Contains(err.Error(), filepath.Join("somewhere", "implementation.go")) {
 				t.Fatalf("expected located metadata error, got %v", err)

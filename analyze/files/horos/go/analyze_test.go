@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"slices"
 	"strconv"
+	"strings"
 	"testing"
 
 	analyze "github.com/Bitspark/bittype/analyze/files/horos/go"
@@ -16,6 +17,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
 	"github.com/Bitspark/bittype/semantics/go"
@@ -412,8 +414,27 @@ func TestDescriptorPayloadsAndOperandPathsRetainCanonicalMeaning(t *testing.T) {
 			t.Fatalf("%v became indistinguishable", pair)
 		}
 	}
-	if len(model.Data().Bindings) != 0 || len(model.Data().Dependencies) != 0 {
-		t.Fatal("declaration-looking literal tuples were interpreted as types")
+	// The bundled prelude now has ordinary kind bindings of its own. Only
+	// occurrences in this payload module must be free of declaration bindings.
+	payloadNodes := map[ast.NodeID]bool{}
+	var collect func(ast.NodeID)
+	collect = func(id ast.NodeID) {
+		payloadNodes[id] = true
+		for _, child := range tree.Nodes[id-1].Children {
+			collect(child.Node)
+		}
+	}
+	collect(find(tree, s.KindModule, "example.payloads"))
+	for _, binding := range model.Data().Bindings {
+		if binding.At.Tree == tree.ID && payloadNodes[binding.At.Node] {
+			t.Fatal("declaration-looking literal tuples were interpreted as types")
+		}
+	}
+	for name := range bodies {
+		id, _ := entity(t, model, "example.payloads", name)
+		if len(model.DependenciesFrom(id, resolve.ReferenceDependency())) != 0 {
+			t.Fatalf("%s invented a declaration dependency from literal data", name)
+		}
 	}
 }
 
@@ -501,11 +522,6 @@ func TestUnresolvedSourceAndContextHaveDistinctReports(t *testing.T) {
 		{"unknown import", fixtureOptions{alias: "missing"}, func(tree s.AST) {
 			setAttribute(&tree.Nodes[find(tree, s.KindReference, "Page")-1], s.AttributeAlias, "missing")
 		}, "unknown-import", "source"},
-		{"out of range parameter", fixtureOptions{parameter: 9}, func(tree s.AST) {
-			outer := find(tree, s.KindTypeDefinition, "Outer")
-			application := body(tree, outer)
-			setAttribute(&tree.Nodes[tree.Nodes[application-1].Children[1].Node-1], s.AttributeIndex, "9")
-		}, "invalid", "source"},
 		{"wrong expected module", fixtureOptions{expectedModule: "example.wrong"}, func(tree s.AST) {
 			setAttribute(&tree.Nodes[find(tree, s.KindImport, "")-1], s.AttributeName, "example.wrong")
 		}, "import-mismatch", "context"},
@@ -572,25 +588,48 @@ func TestMissingPinnedDependencyIsIncomplete(t *testing.T) {
 	}
 }
 
-func TestDuplicateDeclarationsIdentifySourceOrSuppliedContext(t *testing.T) {
-	for _, test := range []struct{ declaration, module, code, subject string }{
-		{"Outer", "example.people", "invalid-source", "source"},
-		{"Page", "example.pagination", "invalid-context", "context"},
+func TestLexicalInvalidityIsRejectedBeforeSemanticCapture(t *testing.T) {
+	for _, test := range []struct {
+		name, module, diagnostic string
+		mutate                   func(s.AST)
+	}{
+		{"duplicate in source", "example.people", "duplicate declaration", func(tree s.AST) {
+			setAttribute(&tree.Nodes[find(tree, s.KindTypeDefinition, "Outer")-1], s.AttributeName, "Person")
+		}},
+		{"duplicate in context", "example.pagination", "duplicate declaration", func(tree s.AST) {
+			setAttribute(&tree.Nodes[find(tree, s.KindTypeDefinition, "Page")-1], s.AttributeName, "Person")
+		}},
+		{"unbound parameter", "example.people", "type parameter index has no source binder", func(tree s.AST) {
+			application := body(tree, find(tree, s.KindTypeDefinition, "Outer"))
+			setAttribute(&tree.Nodes[tree.Nodes[application-1].Children[1].Node-1], s.AttributeIndex, "9")
+		}},
 	} {
-		t.Run(test.subject, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			tree := fixture(t)
-			setAttribute(&tree.Nodes[find(tree, s.KindTypeDefinition, test.declaration)-1], s.AttributeName, "Person")
-			result := run(t, tree, nil)
-			requireFailure(t, result, semantic.Complete, semantic.Rejected, test.code, test.subject)
-			resolved := runResolution(t, tree, nil)
-			status, verdict := semantic.Incomplete, semantic.Undetermined
-			if test.code == "unknown-declaration" || test.code == "unknown-import" {
-				status, verdict = semantic.Complete, semantic.Rejected
+			test.mutate(tree)
+			language, input := horosInput(t, tree)
+			result, err := runHorosCase(language, context.Background(), input)
+			var diagnostic *text.Diagnostic
+			if result.Valid() || !errors.As(err, &diagnostic) || diagnostic.Code != text.InvalidAST || !strings.Contains(diagnostic.Message, test.diagnostic) {
+				t.Fatalf("lexical invalidity did not fail syntax admission: %v", err)
 			}
-			requireReport(t, resolved, resolve.ReferenceResolution(), status, verdict)
-			site := result.Diagnostics()[0].At
-			if site == nil || site.Tree != tree.ID || site.Node != find(tree, s.KindModule, test.module) {
-				t.Fatal("duplicate declaration failure lost its defining module site")
+			if diagnostic.Node == nil || diagnostic.Node.Tree != tree.ID || diagnostic.Node.Node == 0 {
+				t.Fatal("lexical diagnostic lost its current syntax site")
+			}
+			var contains func(ast.NodeID) bool
+			contains = func(id ast.NodeID) bool {
+				if id == diagnostic.Node.Node {
+					return true
+				}
+				for _, child := range tree.Nodes[id-1].Children {
+					if contains(child.Node) {
+						return true
+					}
+				}
+				return false
+			}
+			if !contains(find(tree, s.KindModule, test.module)) {
+				t.Fatal("lexical diagnostic confused source and supplied context")
 			}
 		})
 	}
@@ -725,7 +764,9 @@ func TestInvalidConfigurationEntryAndCancellationReturnNoResult(t *testing.T) {
 
 func TestInvalidConfigurationPrecedesMalformedSourceDecoding(t *testing.T) {
 	tree := fixture(t)
-	setAttribute(&tree.Nodes[find(tree, s.KindTypeDefinition, "Outer")-1], s.AttributeName, "Person")
+	// A valid lexical shape with a false canonical pin reaches decoding. A
+	// duplicate name fails earlier, at syntax admission, before configuration.
+	setAttribute(&tree.Nodes[find(tree, s.KindModule, "example.people")-1], s.AttributePin, strings.Repeat("0", 64))
 	syntax, input := horosInput(t, tree)
 	input.Configuration = []semantic.Setting{{Key: resolve.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}}
 	result, err := runHorosCase(syntax, context.Background(), input)
