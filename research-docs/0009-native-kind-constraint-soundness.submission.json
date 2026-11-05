@@ -1,0 +1,17 @@
+{
+  "attempts": [
+    {
+      "attempt": 1,
+      "idempotencyKey": "bittype-research-0009-6d656eec-fe67-475d-8502-502c61fe9029",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0009-native-kind-constraint-soundness",
+      "submittedPath": "research-docs/0009-native-kind-constraint-soundness.submitted.md",
+      "codeRevision": "f2179283150b1e7344844fc97503ca26fe40795c",
+      "cliBuild": "nightfall 0.1.0 (c9ed336ce96b, bundle 8a8df16bb728) built 2026-11-04T19:12:23.718Z",
+      "recordedAt": "2026-11-05T17:07:56.2408137Z",
+      "state": "prepared",
+      "ownerRule": "No separate local checksum, validation or check workflow; consultation artifacts and service identifiers retained for the explicitly requested research."
+    }
+  ]
+}
