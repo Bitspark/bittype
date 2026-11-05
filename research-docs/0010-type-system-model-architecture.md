@@ -2,11 +2,98 @@
 
 **ID:** 0010
 **Date:** 5 November 2026
-**Status:** submitted
+**Status:** applied
 **Run-ID:** run_e274981d-8f47-46db-b52c-1f0b931b567d
 **Owner:** codex-hydrated-type-design
 **Issue:** https://github.com/Bitspark/bittype/issues/92
 **Reviewed:** https://github.com/Bitspark/bittype/issues/92#issuecomment-6669329915
+**Graded:** https://github.com/Bitspark/bittype/issues/92#issuecomment-6669978474
+
+## Applied
+
+Evaluation scope is **design documentation only**. The complete frozen
+[submitted brief](0010-type-system-model-architecture.submitted.md) and
+[raw advice](0010-type-system-model-architecture.advice.md) were read. Attempt 1,
+document `doc_d799c49f-8580-4342-a6f1-cf7005119237`, run
+`run_e274981d-8f47-46db-b52c-1f0b931b567d`, answered by the service's labelled
+6 Pro advisor, describes Bittype `93713a0`, Horos `ad7c6f4` and Logos `d0df8bbb`.
+Those code revisions were used for the independent evaluations.
+
+The original capture failed to observe completion controls. The supported capture
+recovery published the existing canonical response as
+`result_73d7f50e-29c2-4235-b65b-7c9a9a7e385f`; no second consultation was submitted.
+Attach exited 0, and the service's run/document/process association and downloaded
+headers agree. Content and question coverage were assessed manually; the recovered
+status supplied no automated advice verdict. Under the owner's no-extra-checksum
+or administrative-workflow rule, no separate digest or verifier workflow was
+run, and none is claimed. The recovery record retains that distinction.
+
+Independent read-only evaluations: `model10_bittype` checked carriers, receipts,
+transform outputs and layout; `model10_horos` checked constructor guarantees,
+inspection, original constraints and recursion; `model10_logos` checked the
+production SPI and proposed typed foundation. No compiler, software test or proof
+execution was performed. The Go, TypeScript, Rust and C++ primary references in
+the architecture document were checked for the specific language distinctions.
+
+The main adaptation is that Horos already supports `Satisfies(Page, K => K)` and
+public declaration inspection. An extra DataPage declaration or new inspection
+API is not a prerequisite. The missing work is the precisely scoped evidence
+bridge. The other adaptations preserve the existing root Go module, avoid
+premature transport decisions, and use functional input/assumption association
+without adding administrative manifests, checksums or provenance workflows.
+
+Every HOLDS/NEEDS ADAPTATION row below is a documentation action, owned by
+`codex-hydrated-type-design` (abbreviated **owner**). Links identify the concrete
+design sections to deliver. Validation means checking that the documented
+contract covers the stated case and agrees with the cited code; it does not mean
+that a proposed implementation test has run.
+
+All accepted documentation actions are now implemented in the linked design and
+the reconciled model, preservation, generation, semantics and layout documents.
+Final consistency review found no actionable contradictions. Local file/heading
+links and Git whitespace checks passed. No production source, dependency or
+provider changed; no compiler, software test or proof execution is claimed.
+The three deferred rows retain explicit implementation/certificate triggers.
+
+| # | Recommendation | Verdict | Action | Owner | Link | Validation |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Consume Logos semantic packages; no Bittype-owned type-system foundation | HOLDS | Replace the separate shared-modeling-library direction with explicit consumer integration. | owner | [Ownership](../docs/type-system-architecture.md#ownership-and-dependencies) | Matches Logos ADR0038/design0014; generic Bittype graph retains no rules. |
+| 2 | Separate object semantics, foundation soundness, evidence validity and adequacy | HOLDS | Define the four assurances and their limits. | owner | [Assurance](../docs/type-system-architecture.md#four-assurance-boundaries) | A valid receipt/proof is not presented as compiler or extraction correctness. |
+| 3 | Relate source, native and proof binders | HOLDS | Require real three-way correspondence, not same spelling or a universal Binder record. | owner | [Binding](../docs/type-system-architecture.md#binding-and-the-expected-statement) | Existing ParameterID/EntityID and generated binder references are retained. |
+| 4 | Distinguish proof-context extension from native environment extension | HOLDS | Bind native environment and extension policy as semantic inputs. | owner | [Binding](../docs/type-system-architecture.md#binding-and-the-expected-statement) | C++ specialization and TypeScript merging cannot be treated as harmless logical weakening. |
+| 5 | Add only the missing generation/claim association | HOLDS | Keep the first seam private and specific to actual captured source, output and selected mappings. | owner | [Composition](../docs/type-system-architecture.md#explicit-composition) | Does not replace AST, Semantics or Horos authority. |
+| 6 | Put optional integration in a separate module | NEEDS ADAPTATION | Preserve the one-root-module rule; describe opt-in stage packages first. A future external module requires a concrete dependency decision. | owner | [Layout](../docs/type-system-architecture.md#proposed-package-roles) | Optional Go packages are not claimed to isolate module dependencies. |
+| 7 | Keep ASTTransformer and wrap it explicitly | HOLDS | Capture actual output, explicitly obtain needed native evidence and check the separately constructed statement. | owner | [Composition](../docs/type-system-architecture.md#explicit-composition) | Source receipts do not certify target output or survive another transform leg implicitly. |
+| 8 | Use a small Go-facing checking seam | NEEDS ADAPTATION | Document a private shape using bound Logos statement/evidence references; no copied foundation schema or public SPI yet. | owner | [Composition](../docs/type-system-architecture.md#explicit-composition) | Expected statement is not chosen by the candidate proof. |
+| 9 | Bind actual helpers and emitted artifacts | HOLDS | Scope AST claims to captured ASTs; file claims require explicit emission correspondence. | owner | [Binding](../docs/type-system-architecture.md#binding-and-the-expected-statement) | Changed helper/body or printer output cannot reuse an unrelated result. |
+| 10 | Keep invalid evidence, refutation and incomplete execution separate | HOLDS | Reuse the existing completion/verdict distinction with separate named obligations. | owner | [Outcomes](../docs/type-system-architecture.md#outcomes-and-trust) | Invalid proof does not refute its proposition; Unproved/exhaustion is not false. |
+| 11 | Mapping ownership does not establish law validity | HOLDS | Every law has a precise proposition and checked support or an explicitly accepted assumption. | owner | [Representation](../docs/type-system-architecture.md#representation-and-selected-laws) | No self-asserted final preservation theorem or builtin privilege. |
+| 12 | A narrow Logos typed checker precedes symbolic certification | NEEDS ADAPTATION | State the recommended prerequisite and required operations; Logos owns its admission. | owner | [Checker](../docs/type-system-architecture.md#the-logos-checking-prerequisite) | Test-private Rust/proposed contracts are not claimed as production APIs. |
+| 13 | Use a Go client to a checker process on shared workers | NEEDS ADAPTATION | Keep a process adapter as a candidate, pending the admitted interface. Separate workload-location rules from production deployment design. | owner | [Checker](../docs/type-system-architecture.md#the-logos-checking-prerequisite) | No mandatory service, new protocol implementation or deployment workflow inferred. |
+| 14 | Require contexts, abstraction, substitution, application and exact statement checking | HOLDS | Make these explicit capabilities and refusal conditions. | owner | [Checker](../docs/type-system-architecture.md#the-logos-checking-prerequisite) | Ground DAG and RuleAdmissibility alone cannot establish generalization. |
+| 15 | State the exact quantified Page theorem | HOLDS | Fix source/native domains, resolved kind, family identities and static Rep relation. | owner | [Page](../docs/type-system-architecture.md#statement-two-symbolic-page) | Quantifies over arbitrary admitted T/N, not sampled types or all kinds K. |
+| 16 | Obtain a source schema from DataPage or add inspection/export | NEEDS ADAPTATION | Prefer the existing constructor-arrow query; existing admitted alias inspection is another route. Only the evidence bridge is missing. | owner | [Horos source guarantee](../docs/type-system-architecture.md#the-authoritative-source-guarantee) | `knownConstructor` retains original bounds; no mandatory helper, duplicate Page or new inspection API. |
+| 17 | Prove actual named-family/field correspondence | HOLDS | Connect real definitions, binders, fields and helpers without equating a native named type to its anonymous body. | owner | [Representation](../docs/type-system-architecture.md#representation-and-selected-laws) | Same names or unfolded shapes alone are insufficient. |
+| 18 | Use checked abstraction instead of fresh-atom generalization | HOLDS | State the proof-context rules and uniform imported-law requirements. | owner | [Page proof](../docs/type-system-architecture.md#checked-abstraction-and-nested-use) | No global parametricity assertion or producer freshness Boolean substitutes for checking. |
+| 19 | Instantiate the theorem for nested Page and preserve original contracts | HOLDS | Feed inner membership and representation results into outer application. | owner | [Nested use](../docs/type-system-architecture.md#checked-abstraction-and-nested-use) | Includes ignored-parameter and actual DataPage alias obligations. |
+| 20 | Native admission is independent of conditional preservation | HOLDS | Retain the independent implication from accepted native arguments to source/Rep premises. | owner | [Admission](../docs/type-system-architecture.md#native-admission-remains-independent) | Page[N any] is not advertised as enforcing Data. |
+| 21 | Keep recursive-kind reasoning authoritative initially | HOLDS | Import a scoped trusted source guarantee; the composition proof adds no new coinduction engine. | owner | [Recursion](../docs/type-system-architecture.md#recursion-and-later-certificates) | Greatest-fixed-point meaning and Unproved inclusion remain intact. |
+| 22 | Later independently replay recursive membership/inclusion certificates | DEFERRED | Trigger: a Horos-owned certificate contract specifies actual fixed-point/domain/guard obligations and a qualified checker; inclusion requires separate coverage. | Horos integration | [Deferral](../docs/type-system-architecture.md#recursion-and-later-certificates) | No proof-by-revisitation or implemented certificate is claimed. |
+| 23 | Consider a consumer certificate calculus on today's leaf SPI | DEFERRED | Trigger: an explicit delivery requirement cannot use the Logos milestone and a separate sound certificate contract is justified. Never an automatic fallback. | integration owner | [Alternative](../docs/type-system-architecture.md#the-logos-checking-prerequisite) | No parallel binder/checker framework is selected now. |
+| 24 | Preserve completion outside binary leaf hooks | NEEDS ADAPTATION | Distinguish binary Leaf/Rule hooks from completion-aware GroundDecider; any accepted receipt comes from the actual checker and exact immutable input. | owner | [Outcomes](../docs/type-system-architecture.md#outcomes-and-trust) | Producer-supplied verified flags do not confer authority. |
+| 25 | Start from two exact statements, then derive the minimum API | HOLDS | Define TextBox and Page before public contracts or a general solver. | owner | [Sequence](../docs/type-system-architecture.md#implementation-and-qualification-sequence) | Both exercises precede contract promotion. |
+| 26 | Establish a checked TextBox bool counterexample | HOLDS | Require actual native acceptance, fixed interpretation and authoritative source refutation. | owner | [TextBox](../docs/type-system-architecture.md#statement-one-textbox) | Unproved or an unmapped native type is not a counterexample. |
+| 27 | Characterize exact and underlying Go domains | HOLDS | Specify the grammar/environment and whole-domain laws; ~string needs broader association, not automatic rejection as unsound. | owner | [TextBox](../docs/type-system-architecture.md#statement-one-textbox) | Aliases, definitions and four test examples are distinguished from a quantified characterization. |
+| 28 | Bind the actual Go baseline rather than the moving live spec | HOLDS | Keep Go 1.25 as the example's explicit qualification baseline; require matching future compiler/spec inputs. | owner | [Qualification](../docs/type-system-architecture.md#implementation-and-qualification-sequence) | Current Go 1.27 documentation is not reported as an executed 1.25 result. |
+| 29 | Use a scripted proof producer first; no general search prerequisite | HOLDS | Separate proof production from checking in the minimal sequence. | owner | [Sequence](../docs/type-system-architecture.md#implementation-and-qualification-sequence) | No solver performance or completeness claim. |
+| 30 | Check the native-model adequacy direction that preservation needs | HOLDS | Require admitted actual cases to be covered by the model; clarify specification well-formedness versus compiler acceptance. | owner | [Adequacy](../docs/type-system-architecture.md#four-assurance-boundaries) | Positive compilations alone cannot exclude omitted counterexamples or C++ no-diagnostic cases. |
+| 31 | Add decisive negative cases | HOLDS | Record binding, helper, assumption, dependency, budget and native-profile mutations as future acceptance criteria. | owner | [Qualification](../docs/type-system-architecture.md#implementation-and-qualification-sequence) | Documentation-only criteria; no test execution claimed. |
+| 32 | Stress the model with TypeScript, Rust and C++ distinctions | HOLDS | Preserve language-owned judgment and checking-point differences. | owner | [Languages](../docs/type-system-architecture.md#other-native-languages) | Primary sources support bottom/alias/constraint-context distinctions. |
+| 33 | Define the strength of Rep; allow justified many-to-one relations | HOLDS | Use a static schema association first; value relations/adapters are separate scope. | owner | [Representation](../docs/type-system-architecture.md#representation-and-selected-laws) | Optional inactive payloads or nil/empty values acquire no runtime claim. |
+| 34 | Expose the three elaboration/adequacy boundaries | HOLDS | Separate authoritative source projection, actual target projection and native-model adequacy. | owner | [Assurance](../docs/type-system-architecture.md#four-assurance-boundaries) | Proof validity cannot hide an incorrect artifact projection. |
+| 35 | Retain portable identity and assumption/dependency association | NEEDS ADAPTATION | Reuse existing canonical identities/snapshots; reconstruct local handles; add no universal hash, persistent manifest or administrative provenance workflow. | owner | [Binding](../docs/type-system-architecture.md#binding-and-the-expected-statement) | Program ownership is preserved even for equal canonical inputs. |
+| 36 | Implement/promote the foundation, bridges and proofs | DEFERRED | Trigger: owner authorizes implementation, Logos admits the required checker contract/executable, and the scoped Horos/native bridges are implemented and qualified. | affected component owners | [Sequence](../docs/type-system-architecture.md#implementation-and-qualification-sequence) | All production capabilities remain explicitly unavailable in this documentation task. |
+| 37 | Make missing capabilities and unsatisfied obligations block stronger claims | HOLDS | List precise unsupported/incomplete conditions; preserve current representation/enforcement profiles. | owner | [Limits](../docs/type-system-architecture.md#unsupported-conditions-and-forbidden-shortcuts) | No weaker fallback, erased constraint or undisclosed assumption becomes success. |
 
 ## Question
 

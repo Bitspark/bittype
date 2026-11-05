@@ -16,6 +16,13 @@ assert that such a model already exists. Its [Horos/Go walkthrough](type-system-
 and [language coverage](type-system-model.md#how-the-five-languages-fit) connect
 this example to the other native targets.
 
+The [expert-reviewed architecture](type-system-architecture.md) now selects the
+integration direction: language-owned semantic packages using Logos, a thin
+Bittype claim-association layer, and a narrow Logos-owned typed checker for
+symbolic certification. The scoped rules below illustrate the obligations;
+they do not select a new Bittype proof calculus or claim that today's ground
+checker implements assumption discharge.
+
 ## Prove preservation under symbolic assumptions
 
 For a fixed source world and selected mapping configuration C, the theorem is:
@@ -290,11 +297,15 @@ The introduction rule must establish:
 Logos's current account has ground conclusions and finite acyclic derivations.
 Ground terms here encode a scoped symbolic judgment. A checked query containing
 `rigid(tau)` is **not by itself** universal quantification: the explicit
-introduction/discharge step is still required. A consumer-owned proof theory or
-certificate rule would check it through the existing extension boundary. Its
-implementation and exact evidence API remain deferred; no new served Logos
-capability is claimed. The check must inspect the scoped derivation and premises,
-not accept producer-supplied `fresh` or `parametric` Booleans as sufficient proof.
+introduction/discharge step is still required. The recommended route is the
+[Logos-owned typed checker](type-system-architecture.md#the-logos-checking-prerequisite):
+check an actual abstraction under explicit contexts and uniformly typed imported
+laws against the exact expected statement. A separate consumer certificate
+calculus remains possible only with a justified need and sound checking contract;
+it is not the selected default or a fallback. No new served capability is claimed.
+The current RuleAdmissibility hook lacks the complete instantiated proof context
+needed to perform this job by itself. Producer-supplied `fresh` or `parametric`
+Booleans are not evidence of lawful discharge.
 
 This is a reusable proof rule, not a Page-aware kernel or another Data evaluator.
 Primitive laws remain visible foundational assumptions. A finished account proves
@@ -396,11 +407,18 @@ contract. None is added here.
 
 Public Horos supplies Satisfies, Includes and conditional membership facts in its
 [Go declaration API](https://github.com/Bitspark/horos/blob/main/core/go/declarations/README.md),
-but no public Logos certificate export for general-kind judgments. A first bridge
-could admit established facts through a LeafVerifier, retaining Horos in the
-trusted foundation. A stronger bridge could supply certificates or a justified
-pure Theory. Neither closure-fact notation nor a Proven verdict implements that
-bridge.
+but no public Logos certificate export for general-kind judgments. It already
+supports querying the existing Page constructor against the resolved arrow
+`K => K`, preserving its original bounds and retained body. Existing DataPage
+facts are another route; no new helper, copied Page or inspection API is required.
+The [source-schema bridge](type-system-architecture.md#the-authoritative-source-guarantee)
+must connect that authoritative result to the exact statement and assumptions.
+
+That bridge initially retains Horos in the trusted foundation. Independent
+certificate replay would be a different assurance; a pure Theory callback is
+not automatically stronger than a leaf. Neither closure-fact notation nor a
+Proven verdict implements the bridge. Binary leaf rejection does not mean source
+nonmembership, and Unproved/exhaustion remains incomplete.
 
 Horos recursive kinds use greatest-fixed-point reasoning. The sound closure
 consequences used here do not translate that semantics into ordinary least-model
@@ -414,7 +432,7 @@ keeps these consumer rules outside the kernel. Expressing a claim in Ontos does
 not establish a serving engine/checker. Missing capability, unproved claims,
 exhausted search and refutation remain distinct.
 
-The next design work begins with the [shared type-system model](type-system-model.md)
+The next design work begins with the [language-owned type-system models](type-system-model.md)
 and small Horos/native theories. Then specify the primitive representation laws,
 actual-AST fact extraction and source bridge, followed by the generic
 evidence/result interface. They must preserve the existing source-owned semantics
