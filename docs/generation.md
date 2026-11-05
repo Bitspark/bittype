@@ -31,6 +31,11 @@ and mapping laws. Its symbolic Go pagination proof assumes `T : Data` and a vali
 selected representation; native admission is a separate theorem. The proof
 integration and native semantic models remain unimplemented.
 
+The [Go admission encoding](go-native-admission.md) proposes function-shaped,
+privately marked certificate types and tests them directly with the Go compiler.
+This qualification does not implement generation or establish the missing
+source judgments, representation laws or formal native-admission proof.
+
 **Updated: 5 November 2026.** The toolchain is implemented in Go. Generic AST/CST
 carriers, typed stages, language.Provider and four native text pipelines are
 implemented. The [native text design](parsing-formatting.md) owns parser,

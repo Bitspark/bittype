@@ -83,6 +83,9 @@ interpret these concrete type semantics.
 - [Logos preservation proofs](docs/logos-preservation.md): proposed source/native
   symbolic pagination proof with concrete scoped facts and structural rules;
   native admission is separate. Documentation only.
+- [Go native admission](docs/go-native-admission.md): proposed compositional
+  certificate encoding and independent compiler tests for pagination, nesting,
+  aliases, inference and attempts to forge evidence; no production implementation.
 - [Type and value domains](docs/hydrated-types.md): ownership, authoritative canonical
   input and explicit data boundary. The [frontend guide](docs/horos.md)
   documents implemented APIs and qualification.

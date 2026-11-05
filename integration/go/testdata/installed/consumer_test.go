@@ -59,22 +59,30 @@ func TestPublicUnifiedPagination(t *testing.T) {
 	dataID := decl.DeclarationID{Module: model.Root(), Name: "DataPage"}
 	apply := func(id decl.DeclarationID, argument core.Value) (decl.TypeValue, error) {
 		callee, err := model.Value(id)
-		if err != nil { return decl.TypeValue{}, err }
+		if err != nil {
+			return decl.TypeValue{}, err
+		}
 		value, err := model.Proper(argument)
-		if err != nil { return decl.TypeValue{}, err }
+		if err != nil {
+			return decl.TypeValue{}, err
+		}
 		return model.Apply(callee, []decl.TypeValue{value})
 	}
 	wireArgument := tag("horos/wire", text)
 	for _, argument := range []core.Value{text, wireArgument} {
 		value, err := apply(id, argument)
-		if err != nil { t.Fatal(err) }
+		if err != nil {
+			t.Fatal(err)
+		}
 		specialized, err := model.Descriptor(value)
 		if err != nil || !core.Equal(specialized, pageOf(argument)) {
 			t.Fatalf("same public generic binding: %v", err)
 		}
 	}
 	value, err := apply(dataID, text)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	specialized, err := model.GroundDescriptor(value)
 	if err != nil {
 		t.Fatal(err)

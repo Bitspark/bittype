@@ -364,6 +364,12 @@ rules do not automatically interpret Horos kinds; see the
 An enforcing request still needs a valid encoding and the separate admission
 proof. The current enforcement profile remains Unsupported.
 
+The [Go admission proposal](go-native-admission.md) supplies a concrete candidate:
+function-shaped certificates indexed by source and native types, a private marker,
+and a constrained Page certificate constructor. Independent compiler fixtures
+exercise nesting, aliases, inference and forgery. They do not establish Horos
+premises or replace the formal native-admission theorem.
+
 Neither theorem inherently requires enumeration. Admission mechanisms can also
 have symbolic proofs. The former finite union was one limited admission example,
 not pagination's definition, the Data domain or a requirement of Logos. It is

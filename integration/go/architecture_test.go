@@ -198,7 +198,8 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["engine/go"] = append(rules["engine/go"], "files/go", "source/go")
 	rules["print/files/go"] = []string{"contracts/language/go", "contracts/print/go", "files/go", "source/go", "trees/cst/go", "trees/representation/go"}
 	composition := []string{"contracts/analysis/go", "contracts/check/go", "contracts/format/go", "contracts/parse/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go", "files/go", "source/go", "semantics/go", "syntax/horos/go", "trees/ast/go", "trees/cst/go", "trees/representation/go"}
-	rules["internal/horosfiles"] = append(append([]string{}, composition...), "internal/tree")
+	// Files composition uses the public Horos prelude identity from the resolver.
+	rules["internal/horosfiles"] = append(append([]string{}, composition...), "internal/tree", "resolve/files/horos/go")
 	for _, stage := range []string{"parse", "format"} {
 		rules[stage+"/files/horos/go"] = append(append([]string{}, composition...), "internal/horosfiles")
 	}
@@ -240,6 +241,7 @@ var horosModelDependencies = []string{
 	"github.com/Bitspark/horos/core/go",
 	"github.com/Bitspark/horos/core/go/declarations",
 	"github.com/Bitspark/horos/core/go/internal/declmodel",
+	"github.com/Bitspark/horos/core/go/internal/kindmodel",
 	"github.com/bitspark/ontos/core/go",
 	"github.com/bitspark/ontos/data/go",
 	"github.com/bitspark/ontos/codec/go",
