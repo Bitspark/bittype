@@ -6,6 +6,14 @@ explicit consumer overrides. The existing pagination transformers remain the
 implemented baseline; the contracts and paths below describe their proposed
 replacement. They are not current Go APIs.
 
+The [paired consultation synthesis](generic-elaboration.md) refines this design.
+It replaces the earlier binder-to-slot concept with scoped representation
+products and paired formal/application conventions. The old full Go SPI sketch
+is withdrawn as a candidate interface; it survives only in frozen research
+inputs. The complete replacement SPI awaits a selected support domain and the
+construction/lifetime decisions listed below. No alternative compatibility API
+is proposed.
+
 The design is scoped to native types and interfaces. It generates no calls,
 stream operations, runtime adapters, validators or transport code. The expert
 consultation and its evaluation are recorded in
@@ -94,8 +102,8 @@ Here "kind-specific generator" means a mapping for a source constructor or named
 type. Horos constraint kinds such as Data still govern applicability; their
 overlapping memberships do not select a unique plugin. The same kernel is used
 for TypeScript, Go, Rust and C++; their native grammar and scope rules remain in
-their target backends. No new engine interface or composition-specific SPI is
-needed beyond the proposed contracts below.
+their target backends. The existing engine interface remains; the generic elaboration seam below
+supplies the shared composition convention.
 
 ### Canonical declarations, native types and later adapters
 
@@ -372,527 +380,83 @@ language.
 
 ## Go contracts
 
-Everything in this section is proposed. All shared declarations belong to package
-`generation` at `contracts/generation/go`. `F` and `T` are the existing source and
-target language marker types. Existing `transform`, `representation`, `semantics`
-and `ast` types retain their current meanings. Opaque handles have construction
-capabilities below, so independent source and target implementations can create
-them without importing private Bittype packages.
-
-### Configuration
-
-```go
-type PluginID string
-type BindingID string
-
-// ID identifies this configured binding, including its revision/configuration.
-// Plugin.ID identifies the implementation for diagnostics.
-type Mapping[F, T any] struct {
-    ID     BindingID
-    Plugin Plugin[F, T]
-}
-
-type Binding[F, T any] struct {
-    Source  Selector[F]
-    Mapping Mapping[F, T]
-}
-
-type Override[F, T any] struct {
-    Source   Selector[F]
-    Replaces BindingID
-    With     Mapping[F, T]
-}
-
-type Config[F, T any] struct {
-    Source     Source[F]
-    Target     Target[T]
-    Bindings   []Binding[F, T]
-    Overrides  []Override[F, T]
-    Structural *Mapping[F, T]
-    Limits     Limits
-}
-```
-
-Bindings contain builtin and library mappings uniformly. Structural is a selected
-source/target integration plugin, not a hidden implementation in the kernel.
-The factory belongs to the proposed `generation/syntax/go` package:
-
-```go
-func NewTransformer[F, T any](
-    from, to representation.Language,
-    config Config[F, T],
-) (transform.ASTTransformer, error)
-```
-
-It captures the effective configuration and adapts through the existing
-`transform.NewTransformer` bridge. It registers nothing. Composition provides
-all required source evidence through Source.Contract and the invocation's
-receipts. Plugins never invoke analysis implicitly. A mapping that needs more
-facts requires an explicitly enlarged source contract and corresponding receipts;
-there is no new per-plugin analyzer registry in this initial proposal.
-
-### Use, publication and definition
-
-```go
-type Plugin[F, T any] interface {
-    ID() PluginID
-    Use(context.Context, UseRequest[F, T]) (Type[T], error)
-}
-
-type Publisher[F, T any] interface {
-    Publish(
-        context.Context,
-        PublishRequest[F, T],
-    ) (Symbol[T], error)
-}
-
-type Definer[F, T any] interface {
-    Define(
-        context.Context,
-        DefineRequest[F, T],
-    ) (Decl[T], error)
-}
-
-type UseRequest[F, T any] struct {
-    Input   Ref[F]
-    Context Context[F, T]
-}
-
-type PublishRequest[F, T any] struct {
-    Input   SourceDecl[F] // Always open.
-    Context Context[F, T]
-}
-
-type DefineRequest[F, T any] struct {
-    Spec    DefinitionSpec[F, T]
-    Output  Owned[T]
-    Context Context[F, T]
-}
-```
-
-Use creates a proper type expression such as `[]Person` or `Page<Person>`.
-Publish exposes a requested open declaration such as Page<T> and returns a local
-owned symbol. An open generic declaration is not itself a proper type expression;
-calling Use on it for side effects would conflate these operations.
-
-Publisher and Definer are optional capabilities of the selected Plugin. Publish
-must explicitly arrange an owned alias/wrapper when the normal representation is
-inline or external, or report unsupported publication. It cannot silently omit a
-requested API root. Every requested definition requires Definer. There is no
-Mode enum: an inline type can need a generated helper, and an owned declaration
-can reference an external type.
-
-### Owned declarations and helpers
-
-```go
-type DefinitionSubject[F any] struct { /* private tagged alternative */ }
-
-func SourceDefinition[F any](open Ref[F]) DefinitionSubject[F]
-func HelperDefinition[F any](localKey string) DefinitionSubject[F]
-
-func (s DefinitionSubject[F]) Source() (Ref[F], bool)
-func (s DefinitionSubject[F]) Helper() (string, bool)
-
-// Explicit correspondence; TargetIndex is zero-based.
-type BinderLink[F any] struct {
-    Source      Ref[F]
-    TargetIndex int
-}
-
-type DefinitionSpec[F, T any] struct {
-    Subject DefinitionSubject[F]
-    Header  DeclarationHeader[T]
-    Binders []BinderLink[F]
-}
-
-type Owned[T any] struct {
-    Symbol     Symbol[T]
-    Parameters []Symbol[T]
-    Scope      Scope[T]
-}
-
-type Context[F, T any] interface {
-    Source() SourceSession[F]
-    Syntax() Builder[T]
-
-    Lower(context.Context, Ref[F]) (Type[T], error)
-
-    Own(
-        context.Context,
-        DefinitionSpec[F, T],
-    ) (Owned[T], error)
-
-    External(
-        context.Context,
-        ExternalRef[T],
-    ) (Symbol[T], error)
-}
-```
-
-Own reserves the declaration and parameter symbols immediately, records a copied
-specification, and queues the selected mapping's Define operation. It returns
-without recursively executing Define. Repeated reservations must agree on the
-header and binder correspondence. There are no captured definition closures.
-
-A resource is owned by `(invocation, configured mapping, source declaration or
-helper key)`. SourceDefinition always names the canonical open declaration, not
-the first concrete application that encountered it. A builtin text wrapper can
-use HelperDefinition("text-wrapper") without inventing a source declaration.
-Helpers with the same local name in different mappings remain distinct.
-
-The host enters Define with a fresh formal environment. BinderLink explicitly
-pairs real source binders with reserved target parameter slots. A helper begins
-without captured source binders; HelperDefinition requires an empty Binders list,
-and its native parameters are explicit in the header and Output.Parameters. Nested
-Lower preserves the lexical target environment while changing resource ownership
-to the newly selected mapping.
-
-Header.Parameters can reserve native slots, but BinderLink only associates a
-source binder with a target slot. It does not specify a source-witness/native-type/
-evidence tuple, a representation projection from a witness, or synthesis of extra
-application arguments. Reserving more slots alone therefore does not implement
-the companion's witness sketches. Such an encoding needs an explicit binder and
-application contract shared by Use, Publish and Define; it remains deferred.
-Do not invent source binders for generated native-only evidence parameters.
-
-### Source references, binding and projection
-
-```go
-type Selector[F any] struct { /* private, comparable identity */ }
-type Ref[F any] struct { /* private invocation and source token */ }
-
-func NewSelector[F any](
-    source representation.Language,
-    identitySchema string,
-    canonical []byte,
-) (Selector[F], error)
-
-func (s Selector[F]) SourceLanguage() representation.Language
-func (s Selector[F]) IdentitySchema() string
-func (s Selector[F]) Canonical() []byte // Copy.
-
-// Created by the host for one invocation and supplied to Source.Open.
-// The source adapter keeps it private.
-type RefFactory[F any] interface {
-    Intern(localToken string) (Ref[F], error)
-    Token(Ref[F]) (string, error)
-}
-
-type SelectorClass uint8
-
-const (
-    BuiltinSelector SelectorClass = iota + 1
-    DeclarationSelector
-)
-
-type HeadKind uint8
-
-const (
-    ParameterHead HeadKind = iota + 1
-    BuiltinHead
-    DeclarationHead
-)
-
-type Parameter[F any] struct {
-    Binder   Ref[F]
-    NameHint string
-    Sort     semantics.Key
-}
-
-type Argument[F any] struct {
-    Parameter Ref[F]
-    Value     Ref[F]
-}
-
-type View[F any] struct {
-    Input   Ref[F] // Effective reference after captured substitutions.
-    Subject semantics.Subject
-    Origins []ast.NodeRef
-
-    Kind HeadKind
-
-    Selector Selector[F] // BuiltinHead or DeclarationHead.
-    Binder   Ref[F]      // ParameterHead: canonical real binder.
-    Open     Ref[F]      // DeclarationHead: original open declaration.
-
-    Arguments []Argument[F] // Effective declaration argument order.
-}
-
-type SourceDecl[F any] struct {
-    Open       Ref[F]
-    Selector   Selector[F]
-    NameHint   string
-    Parameters []Parameter[F]
-    Body       Ref[F]
-    Origins    []ast.NodeRef
-}
-
-type Source[F any] interface {
-    Language() representation.Language
-    Contract() transform.Contract
-
-    ClassifySelector(Selector[F]) (SelectorClass, error)
-
-    Open(
-        context.Context,
-        transform.Request[F],
-        RefFactory[F],
-    ) (SourceSession[F], error)
-}
-
-type SourceSession[F any] interface {
-    // Initial profile: requested named declarations, in stable order.
-    // Each reference is the canonical open declaration.
-    Roots() []Ref[F]
-
-    Inspect(Ref[F]) (View[F], error)
-
-    // Accepts an open declaration or an admitted direct application.
-    // Body carries the environment of the supplied reference.
-    Declaration(Ref[F]) (SourceDecl[F], error)
-
-    // Projects an actual child while preserving the parent's effective
-    // substitution, lexical, and captured-assumption environment.
-    Project(
-        parent Ref[F],
-        directChild semantics.Subject,
-    ) (Ref[F], error)
-
-    Model() semantics.Semantics[F]
-}
-```
-
-Source here means the input-language collaborator, not the Files carrier
-`source.Source[F]`. View is an operational view over the existing semantic graph,
-not another canonical type algebra. Its three heads distinguish parameter uses,
-builtin dispatch and declaration dispatch; they do not enumerate type libraries.
-
-A selector is source/profile-qualified and uses a source-owned identity schema.
-Horos's declaration key corresponds to `(decl.Digest, declaration name)`;
-parameter identity adds the ordered slot. ClassifySelector interprets that
-encoding without requiring the declaration to be in the current invocation.
-The generic selection code compares identities without decoding Horos values.
-
-Inspect applies captured substitutions while retaining declaration boundaries.
-Declaration(view.Open) returns an open body; Declaration(use.Input) returns a
-body in that application's environment. Project admits a real direct child and
-preserves the parent's lexical/substitution/assumption context. It is not a
-constructor for arbitrary graph addresses. Crossing a declaration boundary uses
-Declaration. Horos-specific readers decode designated descriptor operands and
-call Project; literal data in exact descriptors is never traversed as types.
-
-Two environments remain separate: source binder -> effective source argument
-belongs to SourceSession; source binder -> target parameter type belongs to the
-lowering context. Matching parameter names or slice positions is insufficient.
-RefFactory interns the complete source context and rejects references from other
-invocations. Source adapters keep their factory private.
-
-Roots means requested named API declarations, not every resolved dependency.
-Source.Open admits source evidence and provides views; it does not eagerly reject
-all recursive or unsupported bodies before representation selection. Required
-negative or absent source admission is still a failure.
-
-### Native fragments and symbols
-
-```go
-type Scope[T any] struct { /* private session identity */ }
-type Symbol[T any] struct { /* private session identity */ }
-
-type Fragment[T any] struct { /* immutable native syntax template */ }
-type Type[T any] struct { /* fragment classified as a type use */ }
-type Decl[T any] struct { /* fragment classified as a declaration */ }
-
-func (t Type[T]) Fragment() Fragment[T]
-func (d Decl[T]) Fragment() Fragment[T]
-```
-
-```go
-type NameSlot[T any] struct {
-    Attribute string
-    Symbol    Symbol[T]
-}
-
-type Child[T any] struct {
-    Role string
-    Node Fragment[T]
-}
-
-type Link[T any] struct {
-    Role   string
-    Target Symbol[T] // Local resolved-link target only.
-}
-
-type NodeSpec[T any] struct {
-    Kind       ast.Kind[T]
-    Attributes []ast.Attribute
-    Names      []NameSlot[T]
-    Children   []Child[T]
-    References []Link[T]
-
-    Defines Symbol[T] // Zero, or the symbol anchored by this node.
-    Origin  ast.Origin
-}
-
-type UseForm[T any] string // Target-owned construction vocabulary.
-
-type SymbolUse[T any] struct {
-    Form   UseForm[T]
-    Symbol Symbol[T]
-    Origin ast.Origin
-}
-
-type FragmentView[T any] struct {
-    Node *NodeSpec[T]
-    Use  *SymbolUse[T]
-}
-
-func (f Fragment[T]) View() FragmentView[T] // Copies; exactly one alternative.
-
-type Builder[T any] interface {
-    Node(NodeSpec[T]) (Fragment[T], error)
-    Use(SymbolUse[T]) (Fragment[T], error)
-    Type(Fragment[T]) (Type[T], error)
-    Declaration(Fragment[T]) (Decl[T], error)
-}
-```
-
-These fragments are immutable target syntax templates. Builder copies input
-slices and enforces session/structural ownership. Type and Declaration mark the
-intended native syntactic category; they do not add a language-independent
-catalogue of valid native kinds. Native category/grammar admission remains with
-the target adapter and existing checker.
-
-A target package supplies typed convenience functions over this surface:
-
-```go
-gotarget.String(builder, origin)
-gotarget.Slice(builder, element, origin)
-gotarget.Named(builder, symbol, arguments, origin)
-gotarget.DefinedType(builder, owned, body, origin)
-```
-
-SymbolUse is a target-owned construction placeholder, expanded into structured
-native syntax during assembly. It is not a canonical type kind or runtime
-binding. The generic kernel never appends generic arguments to arbitrary output;
-the selected plugin and target helper construct the complete native type use.
-
-Names as well as reference links stay symbolic until allocation. Every materialized
-occurrence gets fresh containment nodes; reusable fragments do not share contained
-AST nodes. Definitions and parameter symbols have one primary anchor. Free symbols
-must remain in their native scope. For example, a Page<T> field fragment cannot be
-moved into an unrelated declaration while retaining Page's T.
-
-### Target session and construction capabilities
-
-```go
-type UnitKey string
-
-type Placement struct {
-    Unit  UnitKey
-    Scope string // Target-configured declaration scope within/for the unit.
-}
-
-type ParameterHeader[T any] struct {
-    Form     ast.Kind[T]
-    NameHint string
-}
-
-type DeclarationHeader[T any] struct {
-    Placement Placement
-    Form      ast.Kind[T]
-    NameHint  string
-    Parameters []ParameterHeader[T]
-}
-
-type ExternalRef[T any] struct {
-    Artifact string // Key into the caller-supplied locked artifact catalogue.
-    Export   string // Target-owned export/member identity.
-}
-
-type ResourceKey struct { /* host-created ownership identity */ }
-
-type Target[T any] interface {
-    Language() representation.Language
-
-    Open(
-        context.Context,
-        Storage[T],
-    ) (TargetSession[T], error)
-}
-
-type TargetSession[T any] interface {
-    EntryScope() Scope[T]
-
-    Reserve(ResourceKey, DeclarationHeader[T]) (Owned[T], error)
-    External(ExternalRef[T]) (Symbol[T], error)
-
-    Builder(Scope[T]) Builder[T]
-    Parameter(Scope[T], Symbol[T]) (Type[T], error)
-
-    Define(Owned[T], Decl[T]) error
-
-    Finish(
-        context.Context,
-        []Symbol[T], // Published roots.
-    ) (ast.Set[T], error)
-}
-```
-
-```go
-type Limits struct {
-    MaxNodes       int
-    MaxDepth       int
-    MaxUnits       int
-    MaxWork        int
-    MaxDefinitions int
-    MaxImports     int
-    MaxBytes       int
-}
-
-type Storage[T any] interface {
-    Scope(parent Scope[T], stableKey string) (Scope[T], error)
-    Symbol(scope Scope[T], stableKey string) (Symbol[T], error)
-    Builder(scope Scope[T]) Builder[T]
-
-    Limits() Limits
-    ChargeOutput(nodes, bytes int) error
-}
-```
-
-ResourceKey is comparable and supplied by the host, scoped to the active invocation.
-The target also needs a stable ordering key for deterministic allocation:
-
-```go
-func (k ResourceKey) OrderKey() string
-```
-
-OrderKey is opaque to the target and excludes the invocation nonce. It distinguishes
-the configured mapping and definition subject; it is not a structural fingerprint
-or semantic equivalence claim. Source identity decoding stays in the source adapter.
-
-Only the generation host receives TargetSession and Storage. Plugins receive the
-restricted Context surface. The contract package supplies copying constructors
-and handle issuers; Storage scopes and symbols are session-owned. Native adapters
-own declaration/import scopes, spelling, placement, and artifact/export lookup.
-They can capture those configurations in their constructors. No canonical mapping
-is hidden in the target backend.
-
-Placement identifies logical AST units and configured native declaration scopes.
-The current ASTSet return boundary does not assign filesystem paths or publish a
-Files Source. Parameter constraints are built in Define after reservation and
-must agree with the native header. Arbitrary fragment-local type/lifetime binders
-and arbitrary nested declaration scopes are deferred in the first profile.
-
-ExternalRef identifies a supplied artifact/export, not an AST node. Without its
-declaration tree, emit native import/include and qualified syntax rather than a
-fabricated NodeRef. Import aliases are allocated per materialization unit under
-native scope rules. The consumer retains the dependency environment; ASTSet is
-neither a dependency lock nor a semantic receipt.
-
-Limits cover actual materialized occurrences, expanded uses, definitions, imports,
-units, payloads and work. They retain existing ceilings rather than counting only
-reusable templates. Cancellation is cooperative; arbitrary Go plugins remain
-trusted code. No cross-invocation cache or global mutable plugin state is proposed.
+The earlier complete interface sketch did not express witness-dependent payload
+projections, extra actual arguments or result associations. It is replaced by the
+[paired convention/product proposal](generic-elaboration.md#one-generic-convention-for-formals-and-applications),
+not retained as an alternative SPI. The frozen inputs for research 0007/0008
+retain what those experts reviewed. No package implements either sketch today.
+
+The following are conceptual operations and carriers, not final Go signatures:
+
+| Surface | Required meaning |
+| --- | --- |
+| Configured mapping | Exact selector, configured BindingID, implementation identity and explicit consumer options |
+| Source adapter | Admitted source-use coverage, canonical open declarations, effective applications and context-preserving type-child projection |
+| Representation product | Native payload plus integration-owned immutable association support, scoped to the source use and target formal environment |
+| Generic convention | One immutable open-declaration convention with paired Introduce and Apply operations |
+| Introduce | Bind real source formals to products and construct native formals/constraint clauses from reserved symbols |
+| Apply | Construct the complete native use and its result association under the caller's actual arguments/assumptions |
+| Use | Produce the selected representation product; a generic use follows its convention |
+| Publish | Expose the requested open API declaration, using the same convention |
+| Own | Reserve local declaration/native parameter symbols and queue an immutable definition request |
+| Define | Fill the reservation in its introduced formal environment; preserve the authoritative native formals and constraints |
+| Represent / payload projection | One admitted association path; requesting only the payload does not bypass admission |
+| External reference | Native artifact/export identity accompanied by its supplied generic/representation contract |
+
+A third Go type parameter for the integration's support carrier is a candidate
+mechanic, not a required native source/payload/proof tuple. A carrier must be an
+integration-issued immutable token or obey equivalent safe access rules; generic
+Go typing or copying a struct cannot guarantee that. The kernel cannot bless an
+arbitrary payload/support pair by attaching a requested source reference.
+
+Generic conventions, publication and definition remain separately demanded
+capabilities. Inline, external and owned effects can coexist. Apply must have an
+explicit route to its callee without forcing every application to Own a local
+definition. A requested root cannot silently disappear. Nongeneric definitions
+need explicit zero-formal or nongeneric handling in the eventual API.
+
+### Source interpretation and semantic input
+
+Keep two environments distinct: source binder to effective source argument, and
+source binder to scoped native product. Use real binder identities, not parameter
+names or positions alone. Source references retain lexical, substitution and
+captured-assumption context. Projection only enters actual designated type
+operands; literal data in exact descriptions remains opaque. Crossing a named
+declaration uses its explicit boundary, rather than flattening it before selection.
+
+The source adapter admits coverage already established by the supplied semantic
+receipts. Coarse proper/constructor sorts are not kind contracts. Additional
+judgments require an implemented provider/profile capability and corresponding
+receipts; configuration changes do not manufacture new facts. Generation invokes
+no hidden analyzer or resolver. Association products do not enter source Semantics.
+
+### Ownership and target construction
+
+A source definition belongs to its configured mapping and canonical open
+declaration for one invocation. Helper keys are mapping-local. The first concrete
+application cannot choose a generic signature or capture its caller's symbols.
+Repeated reservations must agree on one authoritative native layout. Native
+helpers have explicit parameters and no inherited source-binder environment.
+
+Reusable fragments remain immutable native syntax templates with symbolic names
+and references. Materialized uses receive fresh containment nodes; owned symbols
+and parameters have their own anchors and valid scopes. The target owns grammar,
+name/import allocation and assembly, not canonical mapping decisions. An external
+reference is not a fabricated resolved AST NodeRef.
+
+Public issuers/accessors for source refs, admitted uses, products, signatures,
+environments and symbols must let independent integrations operate without
+private Bittype imports. The complete construction API, host-mediated Apply,
+callee acquisition and typed support-demand/result operations remain to be
+specified together. The expert's partial Go snippets are not a ready-to-compile
+contract. See the [remaining API decisions](generic-elaboration.md#go-spi-status-and-next-scope).
+
+The generation host retains per-invocation state, bounded work/depth/imports/
+definitions/expanded output, and stable allocation ordering. Product caching must
+include the target formal environment; cross-invocation caching remains deferred.
+Configured plugins are trusted Go code, not a sandbox. Error or cancellation
+discards the entire output. The existing ASTTransformer bridge returns an ast.Set;
+it does not publish file placement, a native semantic receipt or an export manifest.
 
 ## Generics and representation promises
 
@@ -939,8 +503,8 @@ requested representations fail explicitly.
 
 The companion [native kind-constraint proposal](native-kind-constraints.md)
 describes direct bounds and source-witness/evidence encodings for enforcing
-profiles. Its obligations also apply to selected plugins. This initial plugin
-profile does not claim to settle witness-dependent parameter expansion,
+profiles. Its obligations also apply to selected plugins. The complete plugin SPI
+still does not claim to settle every witness-dependent parameter expansion,
 cross-package evidence or all the native syntax such encodings need. Binding
 selection is independent of that future encoding work; it never treats a plugin
 or native representation as proof of kind membership.
@@ -952,11 +516,12 @@ encoding must retain. This plugin design defines which mapping is selected and
 how it produces an owned output. A configured binding, a successful Horos judgment
 and a target encoding are distinct requirements; none substitutes for the others.
 
-Parameter.Sort distinguishes proper types from constructors. It is not the
-parameter's kind contract. Source-owned readers must retain the actual parameter
-and result contracts, membership subjects and assumptions from Model(). Any
-additional required facts belong in Source.Contract and the explicitly supplied
-receipts. Neither the shared host nor a selected plugin invokes analysis on demand.
+A parameter's coarse sort distinguishes proper types from constructors. It is
+not its kind contract. Source-owned readers must retain the actual parameter
+and result contracts, membership subjects and assumptions from the supplied
+semantic graph. Additional judgments require an implemented provider/profile
+capability and corresponding receipts, not merely changed transformer
+requirements. Neither the shared host nor a plugin invokes analysis on demand.
 
 | Generation operation | Obligation when an enforcing profile is selected |
 | --- | --- |
@@ -973,11 +538,12 @@ matching display names cannot merge them. Cross-package evidence remains unresol
 
 The generic-coherence requirement includes bounds, witness arguments, evidence
 arguments and result representations, as well as payload storage. A future witness
-profile must define how all of those substitute together. The simple BinderLink
-surface above does not yet define that expansion or a dependent projection. The
-Go three-parameter and TypeScript/Rust/C++ witness sketches in the companion are
-therefore future encodings, not capabilities implied by these Go interfaces.
-An unsupported encoding fails; extra header slots are not an implicit solution.
+profile must define how all of those substitute together. The paired
+convention/product
+direction replaces BinderLink; the complete support API remains undecided.
+The companion's language encodings remain target-specific candidates, with the
+TypeScript and Go issuance flaws corrected after research 0009. An unsupported encoding
+fails; extra header slots are not an implicit solution.
 
 ### Overrides and external representations
 
@@ -1010,7 +576,7 @@ profile after a plugin, native bound or evidence requirement fails.
 
 ## Composition through the existing pipeline
 
-The consumer constructs one transformer for each desired source/target pair:
+The proposed consumer constructs one transformer for each desired source/target pair:
 
 1. Supply the source and target language/profile descriptors, source adapter,
    target backend, builtin bundle, selected library plugins and overrides.
@@ -1018,20 +584,22 @@ The consumer constructs one transformer for each desired source/target pair:
    The existing typed transformer bridge admits them. Generation invokes no
    resolver or analyzer implicitly.
 3. Select each requested root's mapping and invoke Publish before expanding its
-   body. Own reserves symbols/parameters and queues immutable definition specs.
+   body. Own reserves symbols/parameters from the shared convention and queues
+   immutable definition requests.
    It does not run Define recursively; publication returns an owned symbol.
 4. Compose child mappings under the same configuration. A list mapping requests
    its element's representation; a structural Page mapping composes its field
    representations. An exact library mapping is selected before expanding that
    library declaration's body.
-5. Drain the definition queue, running each selected Define once in its formal
-   context. Definitions can reserve further helpers. After the queue closes,
+5. Drain the definition queue, introducing formal products and preserved native
+   constraints, then running each selected Define once in that context.
+   Definitions can reserve further helpers. After the queue closes,
    assemble target AST units with distinct containment nodes for each occurrence
    and symbolic references to owned declarations or explicit native imports.
    The result is the existing `ast.Set[T]` through the ASTTransformer bridge.
 6. Use the existing target Syntax formatter and shared printer. Source-file
    placement and actual IO remain consumer responsibilities; generation does not
-   fabricate the native semantic evidence required by a Files formatter.
+   fabricate the native semantic-provider receipt required by a Files formatter.
 
 There is one engine edge per language pair. Alternative mapping configurations
 use separate configured engine instances under the current registry policy.
@@ -1051,7 +619,8 @@ Page-specific Cell handling is needed.
 
 ## Proposed file layout and dependencies
 
-These are proposed source paths only. This documentation task creates no Go
+These are proposed source paths only; the final file split depends on completion
+of the public SPI. This documentation task creates no Go
 package, implementation directory, generator, provider or runtime binding.
 
 ```text
@@ -1060,12 +629,15 @@ bittype/
     selector.go                 exact identity and copying constructors
     source.go                   source references, views and sessions
     plugin.go                   bindings, overrides, Use and Publish
-    ownership.go                definition subjects, headers and binder links
+    ownership.go                definition subjects and authoritative headers
+    product.go                  scoped representation products
+    convention.go               paired formal/application conventions
     fragment.go                 immutable native templates and symbolic slots
     target.go                   target sessions, storage and limits
   generation/syntax/go/
     bindings.go                 exact selection and guarded replacement
-    lower.go                    scoped lowering and terminal errors
+    lower.go                    scoped representation and terminal errors
+    conventions.go              signature lifecycle and formal environments
     definitions.go              reservation and deferred definition queue
     transform.go                existing ASTTransformer bridge
   generation/syntax/source/horos/go/
@@ -1136,36 +708,18 @@ shared generation -> contracts/carriers only
 engine -> existing shared transformer contract only
 ```
 
-A consumer's configuration can look like this. Horos and Go are shorthand for
-existing language marker types; the named plugin instances, selectors, source
-adapter and target backend are supplied by their owning packages. This is a
-composition sketch using proposed APIs, not a runnable current API example:
+Consumer construction supplies the source adapter, target backend, selected
+builtin/library mappings, structural policy, explicit guarded overrides,
+artifact contracts and the compatible association/convention protocol. For
+example, replacing the configured text-to-string binding must name its expected
+BindingID and supply the new wrapper mapping and compatible association rules.
+It must fail on a missing/revised expected binding or an incompatible imported
+fixed dependency. The exact Go configuration signature remains part of SPI
+finalization; the earlier two-marker Config example is not an alternative API.
 
-```go
-config := generation.Config[Horos, Go]{
-    Source:     sourceAdapter,
-    Target:     goTarget,
-    Bindings:   slices.Concat(horosDefaults, libraryBindings),
-    Structural: &structuralMapping,
-    Limits:     limits,
-    Overrides: []generation.Override[Horos, Go]{
-        {
-            Source:   textSelector,
-            Replaces: "horos.text.go.string/v1",
-            With: generation.Mapping[Horos, Go]{
-                ID:     "application.text.go.wrapper/v1",
-                Plugin: textWrapper,
-            },
-        },
-    },
-}
-transformer, err := generate.NewTransformer[Horos, Go](from, to, config)
-```
-
-After handling construction errors, the consumer registers this transformer with
-the existing engine. The same composition works for the other three targets with
-their respective plugins/backend. A missing or changed expected text binding
-makes construction fail, rather than quietly changing the override's meaning.
+After construction, the consumer registers one configured ASTTransformer with
+the existing engine. Other targets use the same ownership and operation roles
+with their own integrations and native backends.
 
 When implementation is authorized, replace the private fixed Dialect and its
 builtin native mapping switch with this composition. Retire the superseded route

@@ -2,9 +2,10 @@
 
 **ID:** 0008
 **Date:** 5 November 2026
-**Status:** advised
+**Status:** delivering (documentation synthesis; implementation deferred)
 **Run-ID:** run_aa6f8ad3-4bbc-4b25-a894-fda48f62c8e5
 **Reviewed:** https://github.com/Bitspark/bittype/issues/84#issuecomment-6664097367
+**Graded:** https://github.com/Bitspark/bittype/issues/84#issuecomment-6664723752
 **Owner:** codex-api-retirement-audit
 **Issue:** https://github.com/Bitspark/bittype/issues/84
 **Code baseline:** f2179283150b1e7344844fc97503ca26fe40795c
@@ -1757,3 +1758,56 @@ established facts from their explicit elaborated representation, with expansion
 budgets. Its equality coercions are not Horos membership, and it does not justify
 adding a universal proof calculus or inference engine to Bittype. These are
 architectural analogies for the expert to assess, not adopted implementation plans.
+
+## Applied
+
+This evaluation covers attempt 1, run
+`run_aa6f8ad3-4bbc-4b25-a894-fda48f62c8e5`, against baseline
+`f2179283150b1e7344844fc97503ca26fe40795c`. The frozen input is unchanged
+(`6771ea6ed7f5c9b7698f1a842821c6b2dda5862eb4c63bb5b19edf8e35fb70d5`);
+the genuine completed response is
+`cde74f820e72037f88ef9e37cb4d51e7f5b3be504fab64c7062b00c47e8e5bc8`.
+The living document differs by lifecycle and evaluation additions only.
+
+Accepted actions below are documentation decisions in this conceptual task.
+They do not assert that proposed APIs or native enforcement exist. The owner
+prohibits implicit validation workflows; no compiler/test/build run was added.
+The Validation column gives the source basis or explicitly unqualified boundary,
+not an unperformed passing check. The paired synthesis will integrate 0009's
+independently evaluated soundness limits before the proposal is delivered.
+
+| # | Recommendation | Verdict | Action | Owner | Link | Validation |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Separate source admission, representation selection, generic elaboration, native syntax and coordination | HOLDS | Document the elaboration responsibility in source/target integration; keep engine and kernel agnostic | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Current transformer boundary and proposed ownership support the separation; source inspection only |
+| 2 | Use one shared formal/application convention, rather than independent private bookkeeping | HOLDS | Specify Introduce/Apply as paired conceptual operations for one open declaration | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Current one-to-one formal/application loops and BinderLink limitation shown in Appendix A/B |
+| 3 | Do not mandate a universal source/payload/proof tuple | HOLDS | Keep support encoding and parameter shape integration-owned; additional discrimination is required only by the chosen promise/domain | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Leaf collision explains information loss, without proving one native encoding |
+| 4 | Adopt formal/application and result-association laws | HOLDS | Include scoped assumptions and result composition, including nested TreePage<TreePage<T>> | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Existing memberships retain assumptions in internal/horosmodel/facts.go:50-71; new elaboration remains proposed |
+| 5 | Replace binder-to-index with binder-to-scoped-product | HOLDS | Record the replacement seam; identify BinderLink as insufficient for the expanded proposal | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | docs/type-generation-plugins.md:497-556 explicitly lacks projections/extra arguments |
+| 6 | Use a typed integration support carrier C | NEEDS ADAPTATION | Treat third Go type parameter and immutable support token as a candidate implementation, not a finalized universal public SPI | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Concrete support domain depends on0009; construction/immutability/lifetime API remains to be specified |
+| 7 | Admit the whole source use before payload-driven traversal | HOLDS | Preserve ignored-argument obligations; lazy mapping selection may avoid payload expansion but never source admission | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Horos resolver admits module closure before native generation; current backend rejects unused parameters, so Ignore is a future case |
+| 8 | Add an AdmittedUse coverage handle | NEEDS ADAPTATION | Define it as lookup/transport of established coverage, not an analysis call or new theorem | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | AdmitEvidence checks receipt association; DirectParameterBindings is structural only |
+| 9 | Missing judgments require an expanded source contract/receipt | NEEDS ADAPTATION | State that an implemented provider/profile capability is required; adding configuration requirements alone produces no new facts | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | analyze/files/horos/go/analyze.go:37-72 reuses resolver facts and reports unknown obligations Unsupported |
+| 10 | Do not bless arbitrary payload/support pairs by wrapping them | HOLDS | Require integration-owned association construction/admission and host scope/lifetime discipline; no universal semantic verifier | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Current AST receipts do not establish proposed native association; no new runtime implementation claimed |
+| 11 | Describe each signature from the open declaration and fixed configuration | HOLDS | Prohibit first-use specialization and captured caller products/symbols | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Existing ownership proposal already keys definitions by canonical open declaration |
+| 12 | Apply returns complete result representation, not only extra argument slices | HOLDS | Include full native use and result association in the conceptual convention | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Nested constrained applications expose missing result support; target-specific construction awaits0009 |
+| 13 | Preserve frozen native formal constraints through Define | HOLDS | Target owns grammar/anchors and must not drop an unused argument's admission gate; proposed capability only | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Current Parameter takes only name/origin; current enforcement profile is Unsupported |
+| 14 | Keep Lower as payload projection of the complete representation path | HOLDS | State that convenience payload access cannot bypass admission or association obligations | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Existing proposed Lower centralizes child dispatch; richer result not yet implemented |
+| 15 | Use explicit native parameters for deferred helpers and scoped products | HOLDS | No captured caller environment, even through immutable references; cache keys include target formal environment | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Source and target environments are distinct; existing AST containment/reference rules require scoped anchors |
+| 16 | Keep representation associations outside source Semantics | HOLDS | Store them in invocation-local generation state, with source receipts unchanged | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | semantics/go/model.go owns copied provider facts; engine discards source receipts across transform legs |
+| 17 | Separate selector, source identity, BindingID, association and convention identities | HOLDS | Document distinct purposes and conservative source identity; different identities do not establish semantic inequality | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Existing module/declaration/parameter identities at internal/horosmodel/facts.go:73-90 |
+| 18 | Qualify Native<S> by representation association or restrict coexistence | HOLDS | Require association-qualified witness, explicit family index, or a domain forbidding conflicting coexistence; do not choose a universal encoding | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Same source under explicit override can map to different native types; a single-valued projection needs this distinction |
+| 19 | An override is replacement authority, not compatibility evidence | HOLDS | Preserve source membership separately from native family/constraint validity; reject incompatible changed associations | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Existing exact BindingID guard cannot prove semantic compatibility |
+| 20 | Imported generic exports need explicit contracts | HOLDS | Document source/signature identity, convention/domain, support authority, result behavior and artifact/export association | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | ExternalRef currently names only Artifact/Export in the proposal |
+| 21 | Distinguish baked-in representation dependencies from variable arguments | HOLDS | Compare relevant Text/List/optional/support requirements, not the entire mapping table; unrelated overrides remain independent | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Page.next uses Text independently of Page's generic argument |
+| 22 | Treat export descriptors as producer claims and preserve ASTSet output | HOLDS | Supply descriptors with integrations initially; no mutable side channel/fake AST node/source fact for manifests | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | trees/ast/go/set.go and transform adapter return syntax only; identities do not prove claims |
+| 23 | Preserve explicit failure and no weaker retry | HOLDS | Failure includes missing admission, association mismatch, dropped bounds, incompatible imported dependencies and scope escape | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Existing transformer bridge returns no usable partial output; no new fallback authorized |
+| 24 | Start with a representation-only convention, then one justified enforcement domain | HOLDS | Document ordered implementation proposal and decisive examples; no implementation undertaken now | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Current representation/enforcement split makes the staged boundary explicit |
+| 25 | Finalize public factories, convention construction and support guarantees together with0009 | DEFERRED | Trigger: a specific target/domain and support authority have been selected, and implementation is explicitly requested; then complete public issuer/accessor paths, immutable carrier rules, authoritative formal layout, callee acquisition and result-support demand before production code | codex-api-retirement-audit | [issue84](https://github.com/Bitspark/bittype/issues/84) | Advisor snippets omit constructors and cannot serve as a complete ready-to-compile SPI |
+| 26 | Implement generic products, encoding, import contracts and proposed cases | DEFERRED | Trigger: owner authorizes implementation after paired conceptual discussion; no current generator or native guarantee changed | codex-api-retirement-audit | [issue84](https://github.com/Bitspark/bittype/issues/84) | Current Dialect and Unsupported enforcement remain intact |
+| 27 | Defer higher-order/computed generics, mixed native binders, automatic adaptation and unrestricted recursion | DEFERRED | Trigger: a concrete separately scoped case exceeds the qualified first-order direct-application domain | codex-api-retirement-audit | [issue84](https://github.com/Bitspark/bittype/issues/84) | Current generator explicitly rejects those constructs; declaration reservation is not legality evidence |
+| 28 | Use prior-art elaboration analogies without importing executable dictionaries, universal proofs or fallback | HOLDS | Document limited relevance of paired abstraction/application and generated-support budgets | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Sources in Appendix D support architectural analogies, not Horos/native soundness |
+| 29 | Keep optional plugin effects optional | NEEDS ADAPTATION | Generic convention, publication and definition are separate demanded capabilities; specify callee acquisition for owned/inline/external results without forcing Own for every use | codex-api-retirement-audit | [PR86](https://github.com/Bitspark/bittype/pull/86) | Existing proposal permits mixed inline/external/owned effects; raw advisor snippets leave acquisition/issuance incomplete |
+
+No recommendation is interpreted as permission to implement an enforcing target
+or change the engine's registered capabilities. New generation-association
+contracts remain proposed and must not be advertised in the provider matrix.

@@ -1,5 +1,11 @@
 # AST transformation and pipeline design
 
+The [paired generic-generation consultations](generic-elaboration.md) refine
+type-owned plugin composition and native admission. A shared formal/application
+convention and scoped representation products replace the earlier binder-to-slot
+proposal. Target-specific guarantees and the complete Go SPI remain proposed;
+current native generation capabilities are unchanged.
+
 **Updated: 5 November 2026.** The toolchain is implemented in Go. Generic AST/CST
 carriers, typed stages, language.Provider and four native text pipelines are
 implemented. The [native text design](parsing-formatting.md) owns parser,
