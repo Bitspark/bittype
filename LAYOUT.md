@@ -186,6 +186,13 @@ consistency does not prove grammar or mapping correctness.
 
 ## Future components
 
+The [evaluated type-system reasoning architecture](docs/type-system-architecture.md#proposed-package-roles)
+proposes optional `verification/files` collaborators above existing captures and
+explicit providers. Its private association seam is exercised before a public
+contract; language theories and Logos proof machinery stay with their owners.
+The root Go module and stage-first structure remain unchanged. No proposed
+directory, checker process, dependency or new provider is created by that design.
+
 The [agnostic semantic model](docs/semantics.md), [analysis contract](docs/analysis.md)
 and first Horos analyzer are implemented. Additional analyzers use the same
 optional analyze stage with an explicitly tested capability profile. Native

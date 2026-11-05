@@ -1,0 +1,35 @@
+{
+  "attempts": [
+    {
+      "attempt": 1,
+      "idempotencyKey": "bittype-research-0010-0d9d95f2-3a8a-4a46-bf0f-8ae2b2bde26f",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0010-type-system-model-architecture",
+      "submittedPath": "research-docs/0010-type-system-model-architecture.submitted.md",
+      "submittedSize": 36879,
+      "codeRevision": "93713a007cb28ccbf86bbaf3661cbc7bbaec8ec4",
+      "cliBuild": "nightfall 0.1.0 (c9ed336ce96b, bundle 8a8df16bb728) built 2026-11-04T19:12:23.718Z",
+      "recordedAt": "2026-11-05T21:00:08.0518864Z",
+      "state": "completed",
+      "ownerRule": "No separate checksum or administrative verification workflow; frozen input and recovery identifiers are retained for the explicitly requested consultation.",
+      "documentId": "doc_d799c49f-8580-4342-a6f1-cf7005119237",
+      "uploadedAt": "2026-11-05T21:00:25.5194033Z",
+      "runId": "run_e274981d-8f47-46db-b52c-1f0b931b567d",
+      "submittedAt": "2026-11-05T21:00:45.6219275Z",
+      "captureFailure": "result_content_integrity: completion evidence did not expose newest-response copy control",
+      "generationProcessId": "process_c1f996bbd4f354fd0bd42928",
+      "failedAt": "2026-11-05T21:17:45.5957621Z",
+      "recovery": {
+        "operation": "operation process capture",
+        "taskId": "task_8b85c7ff-3194-4351-9a88-09ac1dd20ad4",
+        "generationProcessId": "process_c1f996bbd4f354fd0bd42928",
+        "reason": "Recover existing completed provider answer with valid completion evidence; no new consultation"
+      },
+      "resultId": "result_73d7f50e-29c2-4235-b65b-7c9a9a7e385f",
+      "resultSize": 35325,
+      "receivedAt": "2026-11-05T21:23:52.9385819Z",
+      "responseAssessment": "Recovery captured and published the existing canonical provider response. Attach completed with exit 0; status binds the same run/document/process to its available canonical result. The full downloaded advice and exact submitted brief were read; matching headers and all five question answers were assessed manually. Service adviceVerdict was absent after recovery. No separate checksum or administrative verifier workflow was run under the owner rule; no automated genuine-advice verdict is claimed."
+    }
+  ]
+}

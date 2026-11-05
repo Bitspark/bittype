@@ -25,6 +25,12 @@ inference rules, with explicit reasoning through Logos. It is a design
 prerequisite for preservation reasoning, not an implemented interpreter or a
 change to this graph's storage and publication contract.
 
+The [expert-reviewed architecture](type-system-architecture.md) assigns shared
+proof contexts and evidence checking to Logos's semantic-package direction.
+Bittype adds only the needed association between actual generation artifacts,
+selected mappings, requested statements and outcomes. A well-associated semantic
+result, valid proof and adequate native model remain separate assurances.
+
 ## Ownership
 
 Syntax records what was supplied; analysis records established meanings and

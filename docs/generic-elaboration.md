@@ -26,6 +26,13 @@ Specify and exercise that model before finalizing preservation-facing product
 and convention interfaces. The pagination walkthrough remains the composition
 example; it does not supply the missing native theories by itself.
 
+The [evaluated architecture](type-system-architecture.md) refines that prerequisite:
+consume Logos semantic packages, exercise two exact statements and their actual
+generation associations, and obtain the narrow typed checker before production
+symbolic certification. Introduce/Apply connects source/native binders and whole
+application results to that evidence; it does not become a proof foundation.
+Horos already supports the constructor-arrow query needed for the source guarantee.
+
 ## What is preserved
 
 Keep three relationships separate:
@@ -376,7 +383,8 @@ third Go type parameter C and immutable integration token are useful candidate
 mechanics, not a finalized public SPI. `C any` cannot itself enforce immutability.
 There is no string-keyed universal evidence bag or automatic carrier cloning.
 
-First specify the [type-system model and its initial theories](type-system-model.md#design-and-qualification-sequence).
+First follow the [type-system architecture sequence](type-system-architecture.md#implementation-and-qualification-sequence)
+and its language-owned theories, exact statements and checking prerequisites.
 This is a model-design prerequisite, not a requirement to formalize every feature
 of all five languages before an initial implementation. Then complete these
 concrete API decisions together for a selected target/domain:

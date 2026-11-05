@@ -26,6 +26,14 @@ and rules from stored semantic facts and mapping laws. Its models remain
 library-owned; selecting a mapping or constructing a product does not install
 native semantics or prove a constraint-preservation claim.
 
+The [evaluated architecture](type-system-architecture.md) places these theories
+in language-owned Logos semantic packages. The generator retains the existing
+transformer boundary; explicit composition binds the actual output, selected
+mappings and independently chosen statement to its checking result. Mapping
+ownership supplies the law, not its truth. Public preservation-facing contracts
+follow the TextBox/Page exercises, and symbolic certification needs the
+Logos-owned typed-checker prerequisite.
+
 The design is scoped to native types and interfaces. It generates no calls,
 stream operations, runtime adapters, validators or transport code. The expert
 consultation and its evaluation are recorded in

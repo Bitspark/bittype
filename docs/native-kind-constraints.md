@@ -19,6 +19,12 @@ structure for the language theories needed to derive those guarantees. Its
 uses the target-specific findings below as requirements, preserving their
 different judgments, checking points and supported domains.
 
+The [evaluated implementation design](type-system-architecture.md) keeps those
+models language-owned and uses Logos's semantic-package/checking direction.
+It separates conditional Page preservation from native admission, invalid proof
+from false claim, and complete modeled coverage from a few compiler examples.
+No new Bittype type-system foundation or target enforcement is implemented.
+
 This document describes how TypeScript, Go, Rust and C++ generation could retain
 Horos kind constraints without recognizing `Data`, `Type`, `Scalar` or any other
 named kind specially. It extends the proposed [native representation design](type-representations.md)
