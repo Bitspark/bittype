@@ -10,8 +10,13 @@
       "codeRevision": "f2179283150b1e7344844fc97503ca26fe40795c",
       "cliBuild": "nightfall 0.1.0 (c9ed336ce96b, bundle 8a8df16bb728) built 2026-11-04T19:12:23.718Z",
       "recordedAt": "2026-11-05T17:07:56.2408137Z",
-      "state": "prepared",
-      "ownerRule": "No separate local checksum, validation or check workflow; consultation artifacts and service identifiers retained for the explicitly requested research."
+      "state": "submitted",
+      "ownerRule": "No separate local checksum, validation or check workflow; consultation artifacts and service identifiers retained for the explicitly requested research.",
+      "documentId": "doc_372fe753-73ce-4436-9d34-57730dc21b6a",
+      "uploadedAt": "2026-11-05T17:08:22.8187844Z",
+      "submittedSize": 36581,
+      "runId": "run_68ae2de0-1874-41dd-950b-837779e86fb0",
+      "submittedAt": "2026-11-05T17:08:55.4121244Z"
     }
   ]
 }
