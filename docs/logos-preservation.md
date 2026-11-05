@@ -366,9 +366,16 @@ proof. The current enforcement profile remains Unsupported.
 
 The [Go admission proposal](go-native-admission.md) supplies a concrete candidate:
 function-shaped certificates indexed by source and native types, a private marker,
-and a constrained Page certificate constructor. Independent compiler fixtures
-exercise nesting, aliases, inference and forgery. They do not establish Horos
-premises or replace the formal native-admission theorem.
+and a constrained Page certificate constructor. Here A is `(S,N,E)`, with a
+source-identity token S, payload N and certificate type E. The intended T is
+identified through S; E must justify the exact source/payload association. The
+[architecture's admission statement](type-system-architecture.md#native-admission-remains-independent)
+does not infer T from N alone or prescribe this tuple for other conventions.
+Independent compiler fixtures exercise nesting, aliases, inference and forgery.
+They do not establish Horos premises or replace the formal native-admission
+theorem. The encoding's empty marker methods require the explicitly proposed
+[emission scope extension](type-system-architecture.md#go-marker-method-scope-extension);
+production emission remains deferred.
 
 Neither theorem inherently requires enumeration. Admission mechanisms can also
 have symbolic proofs. The former finite union was one limited admission example,

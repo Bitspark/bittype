@@ -97,6 +97,13 @@ association. Witness types and expanded native parameters are optional encodings
 The kernel must not standardize an S/N/P tuple or learn Horos kinds, Function,
 Stream, Cell, or their semantics.
 
+The [Go certificate proposal](go-native-admission.md) selects `(S,N,E)` as one
+such convention. Its [admission theorem](type-system-architecture.md#native-admission-remains-independent)
+concerns that complete tuple, with source identity supplied by S and the selected
+S/N association supported by E. Its empty private marker methods are an explicit
+[extension beyond types/interfaces-only emission](type-system-architecture.md#go-marker-method-scope-extension),
+not an existing generator capability or a required convention for other targets.
+
 | Component | Responsibility |
 | --- | --- |
 | Source provider/adapter | Establish and expose admitted uses, memberships and original assumptions |
