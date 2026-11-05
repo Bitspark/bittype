@@ -1,0 +1,18 @@
+{
+  "attempts": [
+    {
+      "attempt": 1,
+      "idempotencyKey": "bittype-research-0010-0d9d95f2-3a8a-4a46-bf0f-8ae2b2bde26f",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0010-type-system-model-architecture",
+      "submittedPath": "research-docs/0010-type-system-model-architecture.submitted.md",
+      "submittedSize": 36879,
+      "codeRevision": "93713a007cb28ccbf86bbaf3661cbc7bbaec8ec4",
+      "cliBuild": "nightfall 0.1.0 (c9ed336ce96b, bundle 8a8df16bb728) built 2026-11-04T19:12:23.718Z",
+      "recordedAt": "2026-11-05T21:00:08.0518864Z",
+      "state": "prepared",
+      "ownerRule": "No separate checksum or administrative verification workflow; frozen input and recovery identifiers are retained for the explicitly requested consultation."
+    }
+  ]
+}
