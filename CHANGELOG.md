@@ -1,5 +1,13 @@
 # Changelog
 
+## Horos module encoding — 5 November 2026
+
+- Add the general `horos-module` command: one Horos source module to canonical
+  Ontos bytes, sharing the existing parser and module lowering with source pins.
+- Add a manual generation-only workflow that builds the encoder and lowers a
+  selected repository source on a GitHub runner. No semantic resolution or
+  prelude-specific logic is added to the command or agnostic kernel.
+
 ## Unified Horos declarations — 4 November 2026
 
 - Replace separate Horos and Horos/Wire frontends with one revision-2 Horos AST

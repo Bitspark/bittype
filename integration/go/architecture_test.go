@@ -122,6 +122,7 @@ func TestProductionArchitecture(t *testing.T) {
 	languages := stageLanguages(t)
 	rules := map[string][]string{
 		"tools/provider-matrix/go": {}, // development tooling, standard library only
+		"tools/horos-module/go":    {"contracts/parse/go", "internal/horosmodel", "internal/lex", "parse/horos/go", "trees/ast/go"},
 		"trees/ast/go":             {},
 		"semantics/go":             {"trees/ast/go"},
 		"trees/cst/go":             {"trees/ast/go"},
@@ -245,6 +246,7 @@ var horosModelDependencies = []string{
 }
 
 var horosExternalImports = map[string][]string{
+	"tools/horos-module/go": {"github.com/bitspark/ontos/codec/go"},
 	"internal/horosgen":   {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 	"parse/horos/go":      {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"format/horos/go":     {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},

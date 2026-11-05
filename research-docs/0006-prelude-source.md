@@ -2,9 +2,9 @@
 
 **ID:** 0006
 **Date:** 4 November 2026
-**Status:** evaluated — design consultation complete; implementation not requested
+**Status:** delivering — implementation authorized 5 November 2026
 **Owner:** codex-hydrated-type-design
-**Scope:** Architectural explanation and recommendation before implementation.
+**Scope:** Source-authored standard module, Bittype encoding tool and Horos packaging.
 **Run-ID:** run_c97ae94d-1d80-4ea5-b039-a7835103cc6d
 **Document-ID:** doc_2e194bc2-3e54-47f8-bc08-1dbc58b1371d
 **Consultation key:** bittype-research-0006-f4f86a35-a5df-4149-8fc5-df68af9a314c
@@ -101,8 +101,10 @@ The following are design dispositions; none claims an implementation change.
 | Move the parser below Horos, add configurable prelude replacement, or require manual standard-library assembly everywhere | REJECTED for this change | These expand ownership or public configuration without addressing a missing capability in this small source-authoring correction. Reconsider only for a separate concrete requirement. |
 | Document the selected Data's formation role and language coverage limits | HOLDS | A library-defined contract can still be part of the selected language semantics. A portable asset does not implement revision-4 declarations in Rust or TypeScript. |
 
-No production code, package versions or release state changed in this
-consultation. Implementation remains a separate next step.
+The owner authorized implementation on 5 November 2026. The Bittype command
+and generation-only workflow are implemented first against the available Horos
+release; the standard module asset, Horos patch release and Bittype dependency
+alignment follow in that order. The design dispositions above remain the scope.
 
 ## Question
 

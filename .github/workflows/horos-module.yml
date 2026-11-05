@@ -1,0 +1,60 @@
+name: Horos module
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_repository:
+        description: Repository containing the Horos source (owner/name)
+        required: true
+        type: string
+      source_ref:
+        description: Source repository revision
+        required: true
+        type: string
+      source_path:
+        description: Path to one Horos source module in that repository
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  encode:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GOTOOLCHAIN: local
+      GOWORK: 'off'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Build module encoder
+        run: go build -o "$RUNNER_TEMP/horos-module" ./tools/horos-module/go
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: ${{ inputs.source_repository }}
+          ref: ${{ inputs.source_ref }}
+          path: module-source
+          persist-credentials: false
+      - name: Encode source module
+        env:
+          SOURCE_PATH: ${{ inputs.source_path }}
+        run: '"$RUNNER_TEMP/horos-module" -o "$RUNNER_TEMP/module.ontos" "module-source/$SOURCE_PATH"'
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: horos-module-tool
+          path: ${{ runner.temp }}/horos-module
+          if-no-files-found: error
+          retention-days: 1
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: canonical-module
+          path: ${{ runner.temp }}/module.ontos
+          if-no-files-found: error
+          retention-days: 1
