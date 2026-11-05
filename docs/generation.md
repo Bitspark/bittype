@@ -1,6 +1,6 @@
 # AST transformation and pipeline design
 
-**Updated: 4 November 2026.** The toolchain is implemented in Go. Generic AST/CST
+**Updated: 5 November 2026.** The toolchain is implemented in Go. Generic AST/CST
 carriers, typed stages, language.Provider and four native text pipelines are
 implemented. The [native text design](parsing-formatting.md) owns parser,
 formatter, printer and checking details. The owner's later 31 October direction
@@ -30,6 +30,19 @@ per language pair. Function, Cell and Stream are resolved module declarations,
 never individual engine registrations. No contract-specific change to
 ASTTransformer is required. The public plugin contracts are proposed; the current
 pagination implementation still uses its private fixed Dialect interface.
+
+The proposed structure is an [agnostic generation kernel with recursive plugin
+composition](type-generation-plugins.md#agnostic-kernel-and-recursive-composition).
+Each language-specific generator is assembled from that kernel, a source semantic
+adapter, supplied builtin/library mappings and a native syntax backend. All
+representation rules, including the structural declaration policy, belong to
+those mappings. Ordinary compositions need no custom plugin per declaration:
+Page<T> uses record/list mappings, and Page<Cell<Person>> supplies the selected
+Cell<Person> representation without regenerating Page or adding a Cell case.
+Selection precedes body expansion; the chosen plugin requests its child mappings
+under the same configuration. Existing ASTTransformer registration remains the
+whole-language boundary. This is a documented proposal, not an implemented
+replacement for the private pagination generator.
 
 The [runtime value boundary](runtime-values.md) is distinct from this static
 pipeline. Runtime adapters would convert existing hydrated values to/from a
