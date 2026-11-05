@@ -6,6 +6,13 @@ Horos kind constraints without recognizing `Data`, `Type`, `Scalar` or any other
 named kind specially. It extends the proposed [native representation design](type-representations.md)
 and uses the existing [semantic transformation boundary](semantic-generation.md).
 
+The companion [type-owned generator plugin design](type-generation-plugins.md)
+owns exact binding selection, overrides and Use/Publish/Define. This document
+owns the guarantees and limits of constraint encodings. Their
+[composition contract](type-generation-plugins.md#constraint-preservation-in-plugin-composition)
+keeps those responsibilities together without adding kind-based dispatch or
+claiming that the proposed plugin SPI already implements witnesses.
+
 The intended rule is: emit an encoding that preserves the requested constraint,
 or return a located `Unsupported` diagnostic. Never silently erase a constraint
 in an output advertised as enforcing it. The target language, representation
@@ -25,6 +32,10 @@ without a constraint plan; see [the generator](../internal/horosgen/generate.go)
 Consequently, for example, the TypeScript emitter produces a bare parameter.
 The proposal changes that source-to-target lowering, not `ASTTransformer`, the
 engine's registry or the shared semantic carrier.
+
+The plugin proposal replaces the private fixed Dialect with source-owned
+integration mappings and source/target collaborators. The existing private
+generator is an implementation anchor, not a second planned enforcement route.
 
 Implementing this proposal would replace constraint erasure in the enforcing
 route. There must be no compatibility fallback to the unconstrained output.
@@ -115,6 +126,12 @@ different algorithm. The Horos-specific lowering necessarily understands the
 Horos kind algebra and primitive observation vocabulary. Those concepts do not
 become cases in the agnostic engine, shared AST/CST carriers or native printers.
 
+Kind-pattern metadata selectors are different from the plugin design's opaque
+mapping Selector. The former describe source observations; the latter selects
+an exact builtin or declaration binding. Membership is an eligibility obligation,
+never a most-specific-kind mapping search. Direct bounds versus witnesses is an
+explicit representation choice, not a retry after the selected mapping fails.
+
 The target output encodes established relationships and supported generic
 implications. It does not ship another Horos evaluator, invoke a runtime registry
 or discover memberships through reflection.
@@ -154,6 +171,12 @@ Membership evidence binds a source subject, its kind obligation and the selected
 representation. The subject includes the relevant application arguments and
 binders; display names or equal-looking native layouts are insufficient.
 
+An override may preserve the source fact `S : K` while changing `S -> N`.
+Evidence and native bounds tied to the old representation cannot simply be
+reused for the new one. The [plugin composition contract](type-generation-plugins.md#overrides-and-external-representations)
+requires a compatible association under the selected configuration; BindingID
+or PluginID alone establishes no semantic guarantee.
+
 There are two distinct products:
 
 - A concrete membership established for a source type.
@@ -174,6 +197,14 @@ Witness output changes the public generic API. A source parameter may become a
 descriptor parameter, or several linked parameters, rather than one arbitrary
 native type. The profile must state this change. Generated named applications
 can hide the extra parameters without duplicating the generic definition.
+
+The initial plugin SPI does not yet specify this binder expansion. Its BinderLink
+pairs a real source binder with a reserved target slot; it does not define a
+tuple of source witness, native representation and evidence, or a projection such
+as Native<S>. A future encoding must specify the same header and argument
+transformation for Use, Publish and Define, including substitution of assumptions
+and result contracts. Extra native parameters are not new canonical binders.
+The sketches below do not claim that reserving extra slots completes that design.
 
 Adding a source type or kind requires ordinary source input and regeneration,
 not a handwritten membership catalogue. An arbitrary independently authored
@@ -351,6 +382,12 @@ Ordinary Rust type-alias bounds are not enforced at use sites, so writing
 `type TreePage<T: TreeMember> = Page<T>` would not solve the problem. A profile
 must use an enforcing declaration/encoding or reject the requested alias shape.
 
+If the profile requires the source alias to remain natively interchangeable with
+Page, a nominal wrapper must not claim to satisfy that promise automatically.
+A profile permitting a distinct wrapper must state the resulting conversion
+boundary; this proposal generates no conversions. If the requested constraint
+and interchangeability promises cannot both be retained, generation fails.
+
 Kind alternatives cannot mechanically become overlapping blanket trait
 implementations. Generate a coherent membership relation for the supported
 descriptor domain. Account for orphan rules and cross-crate ownership. General
@@ -412,21 +449,39 @@ No new central provider registry or core semantic algebra is required. Concrete
 type-generation plugins and library recipes, when configured, must preserve the
 same obligations. This document does not define a competing recipe-dispatch SPI.
 The [type-owned generator plugin proposal](type-generation-plugins.md) specifies
-that separate selection/composition contract. Its source adapter and type-owned
-integration mappings would take over the source/target lowering responsibilities
-currently located in `internal/horosgen` and concrete transformers below; the
-table identifies current implementation anchors, not a requirement to retain the
-private fixed Dialect. Constraint enforcement does not move into the generic
-generation coordinator or a native backend's canonical-type switch.
+that selection/composition contract and the
+[operation obligations](type-generation-plugins.md#constraint-preservation-in-plugin-composition).
+Its source adapter and type-owned integration mappings take over the lowering
+currently located in `internal/horosgen` and concrete transformers. The proposed
+ownership is:
 
-| Location | Proposed responsibility |
+| Owner or location | Responsibility |
 | --- | --- |
 | `internal/horosmodel/` and Horos Files providers | Expose required Horos-owned contracts, memberships and assumptions through existing semantic terms; add explicit semantic obligations if needed |
-| `internal/horosgen/` | Read that evidence, preserve argument/result obligations and representation associations, and reject unsupported plans; replace the name-only parameter handoff |
-| `transforms/horos-to-<target>/go/` | Select and emit the target-specific constraint/witness encoding using target AST nodes |
-| `syntax/<target>/go/` | Add native syntax constructs required by the chosen encoding, without Horos semantics |
-| `parse/syntax/<target>/go/`, `check/syntax/<target>/go/`, `format/syntax/<target>/go/` | Support those native syntax constructs in the existing stage matrix |
+| `generation/syntax/source/horos/go/` | Read the supplied semantic evidence, preserve environments and expose source obligations without choosing native representations |
+| Horos-owned and other type-owned integration mappings | Construct the selected native bounds, witnesses and evidence associations; compose child mappings and reject unsupported encodings |
+| `generation/syntax/go/` | Select configured bindings and coordinate Use/Publish/Define and helper ownership; interpret no Horos kind or canonical type |
+| `generation/syntax/target/<target>/go/` | Supply native construction, symbols and assembly; interpret no canonical membership rule |
+| `transforms/horos-to-<target>/go/` | Configuration-only factories for the composed transformer, with no builtin or library mapping defaults |
+| `syntax/<target>/go/` and its parse/check/format Syntax stages | Support the native grammatical constructs required by the encoding, without Horos semantics |
 | Shared carriers, semantic kernel, engine and printers | Keep their existing language-agnostic contracts |
+
+These are the [plugin proposal's target locations](type-generation-plugins.md#proposed-file-layout-and-dependencies),
+not directories created by this documentation. Type-owned integration modules
+depend on Bittype; Bittype factories do not import their default bundles. The
+private fixed Dialect is replaced rather than retained beside this composition.
+
+Membership evidence may become a generated helper only after its source meaning
+and native association are established. Reserving a helper symbol does not prove
+membership. All uses of a generic must agree with its one published header,
+including any supported witness and evidence parameters; a first concrete use
+must not specialize that header silently.
+
+Requested public roots must remain published or fail. Other representation
+dependencies are demanded by the selected mapping: an external representation
+need not generate its source body's native fields, but it must still satisfy
+required source admission and the selected constraint promise. This does not
+authorize dropping a failed requested root or retrying a weaker mapping.
 
 The present native vocabularies do not yet cover every construct shown here.
 Likely additions include TypeScript conditional types and the selected nominal
