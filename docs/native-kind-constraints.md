@@ -329,6 +329,15 @@ absent from that relation. The generic spelling of a finite intersection remains
 unqualified. A private-method interface does not automatically solve type-only
 issuance either.
 
+The [compositional certificate proposal](go-native-admission.md) adds a second
+restriction: evidence must have underlying type `func(S) N` as well as the
+issuer's private method. Its Page certificate family requires valid child
+evidence and supports nested pagination without a finite union. The source/native
+indices prevent reusing a certificate for another pair; the function shape
+excludes struct method-promotion attempts. Compiler fixtures cover the concrete
+encoding, aliases, inference and forgery. These tests do not establish source
+membership, representation laws or the complete native-model admission lemma.
+
 Use distinct defined descriptor identities, not aliases of the same empty
 struct. Exact payload constraints and underlying-type constraints (`string`
 versus `~string`) admit different domains; neither is a general recursive record
@@ -336,9 +345,11 @@ predicate. Generic aliases can support admission followed by identity erasure.
 See [type identity](https://go.dev/ref/spec#Type_identity) and
 [Go 1.24 generic aliases](https://go.dev/doc/go1.24).
 
-Source-checked named applications are the floor. A finite issued-tuple relation
-is a stronger candidate. Open certificate families and cross-package issuance
-remain deferred until justified independently of private-name hiding.
+Source-checked named applications remain the implemented floor. The certificate
+family is a proposal with a controlled issuing package; it is not an implemented
+generation profile. Independent cross-package issuance remains deferred. A true
+alias reexport retains the original issuer; a new issuer cannot adopt its private
+method merely by copying its spelling.
 
 ## 7. Rust
 

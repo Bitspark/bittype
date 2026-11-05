@@ -96,6 +96,12 @@ compiler qualification remain under integration. Private helpers are not an
 alternative public API. Do not create a language-first packages tree, additional
 Go modules, compatibility aliases or placeholder source directories.
 
+The [Go admission proposal](docs/go-native-admission.md) is qualified by
+`integration/go/go_native_admission_test.go` and isolated model/issuer/consumer
+fixtures under `integration/go/testdata/go-admission/`. These are compiler inputs,
+not production evidence APIs or generated code. The test creates its temporary
+fixture module at execution time; no nested Go module is committed.
+
 ## Dependency direction
 
 Directory groups are not Go packages or an assertion that all members share the
