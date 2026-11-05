@@ -2,7 +2,8 @@
 
 **ID:** 0008
 **Date:** 5 November 2026
-**Status:** reviewed
+**Status:** submitted
+**Run-ID:** run_aa6f8ad3-4bbc-4b25-a894-fda48f62c8e5
 **Reviewed:** https://github.com/Bitspark/bittype/issues/84#issuecomment-6664097367
 **Owner:** codex-api-retirement-audit
 **Issue:** https://github.com/Bitspark/bittype/issues/84
