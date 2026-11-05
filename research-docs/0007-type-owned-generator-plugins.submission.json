@@ -12,7 +12,17 @@
       "codeRevision": "7e55f7689d6cf8439b13a3ead6681eae0d2ad9e5",
       "cliBuild": "nightfall 0.1.0 c9ed336ce96b bundle 8a8df16bb728 built 2026-11-04T19:12:23.718Z",
       "createdAt": "2026-11-05T12:59:31.406945+00:00",
-      "scope": "Documentation proposal only. No implementation or code validation workflows."
+      "scope": "Documentation proposal only. No implementation or code validation workflows.",
+      "documentId": "doc_4c3de827-b0ed-45cc-8870-6c6b892772f0",
+      "serverSha256": "ed5c1cd6cd937fa2c2f35aed51d2476f4adef72559d5a360d28f09a7b3e8515d",
+      "runId": "run_35a886b0-509f-4467-8535-9267d74ba42f",
+      "submittedAt": "2026-11-05T13:00:15.769699+00:00",
+      "state": "completed",
+      "resultId": "result_2eb1161d-d4a7-4b2d-8229-187108be5b41",
+      "resultSha256": "637f56db9c8b4153ce7e7a821f74dc18ef8849878bc5d6da98581774b2e52934",
+      "verified": true,
+      "verificationExitCode": 0,
+      "verifiedAt": "2026-11-05T13:37:49.591027+00:00"
     }
   ]
 }

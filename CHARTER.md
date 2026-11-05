@@ -76,6 +76,13 @@ The ASTTransformer boundary and syntax engine now provide checked heterogeneous
 registration, route planning/execution and native text composition. Pagination AST-to-AST mappings are implemented; public builders and application CLI remain deferred. Native parsing does not make a target language the
 canonical authority. The [generation design](docs/generation.md) remains separate.
 
+The [type-owned generator plugin proposal](docs/type-generation-plugins.md)
+places builtin and library native mappings behind one supplied contract. Consumers
+select exact mappings and explicit overrides; source and target adapters own
+semantic reading and native syntax. The shared generation coordinator and engine
+contain no canonical builtin or named-library mapping catalogue. This is a
+documentation proposal, not an implemented extension API.
+
 This scope excludes application-value validators, serialization, Wire adapters,
 RPC/streaming implementations and service migrations. The unified declaration
 cut includes maintained frontend consumers and the required public Horos release.

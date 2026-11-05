@@ -186,7 +186,11 @@ Function, Stream, Cell and future contracts remain ordinary library definitions.
 Their kind membership or expanded shape does not select a native binding.
 Optional recipes belong to their owning libraries and consuming configuration,
 selected by exact declaration identity and target profile. Recipe SPIs and richer
-capability representations remain separate work.
+capability representations remain separate work. The
+[type-owned generator plugin proposal](type-generation-plugins.md) describes the
+replacement for the private fixed Dialect: supplied builtin/library mappings and
+explicit consumer overrides inside one configured ASTTransformer. This page
+continues to describe the implemented pagination subset, not that proposed API.
 
 This migration preserves types-only output. It does not create serializers,
 application-value validators, executable adapters, protocol implementations or a

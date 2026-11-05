@@ -217,12 +217,44 @@ Architecture checks preserve the agnostic and native-stage boundaries. Native
 pagination mappings use `transforms/horos-to-<native>/go`.
 Template lifting and its exclusive dependency allowances remain removed.
 
-The [native representation design](docs/type-representations.md) places uniform
-recipe consumption in concrete native transformers. Each contract library owns
-its optional recipes and type artifacts outside bittype; the consuming
-application selects them. Adding Cell or another ordinary contract adds no
-bittype stage, engine edge per contract or central registration entry. Recipe
-SPIs remain proposed; the pagination transformers are implemented.
+The [native representation design](docs/type-representations.md) and
+[type-owned generator plugin proposal](docs/type-generation-plugins.md) place
+builtin and library mappings behind one supplied contract. Each type library owns
+its mappings and type artifacts outside Bittype's module; the consumer selects
+defaults and explicit overrides. Adding Cell or another ordinary contract adds no
+Bittype stage, engine edge per contract or central registration entry. Plugin
+contracts remain proposed; the private pagination Dialect remains implemented.
+
+The proposed generation extension preserves stage-first organization and makes
+its Syntax dimension explicit:
+
+```text
+contracts/generation/go/                  shared configuration/plugin contracts
+generation/syntax/go/                     language-neutral composition
+generation/syntax/source/horos/go/        source semantic adapter and selectors
+generation/syntax/target/typescript/go/   TypeScript fragments/symbols/assembly
+generation/syntax/target/golang/go/       Go fragments/symbols/assembly
+generation/syntax/target/rust/go/         Rust fragments/symbols/assembly
+generation/syntax/target/cpp/go/          C++ fragments/symbols/assembly
+transforms/horos-to-<target>/go/          configuration-only transformer factories
+```
+
+The source/target subdirectories distinguish collaborators within Syntax
+generation, not additional dimensions or registered providers. Their identical
+package structure is specified in the proposal. Existing transformer path names
+remain `horos-to-typescript`, `horos-to-go`, `horos-to-rust` and `horos-to-cpp`;
+native vocabulary/implementation directories use `golang` for Go as elsewhere.
+
+Builtin mappings and opinionated default assembly belong in a Horos-owned
+integration module, with `generation/syntax/<language>/go` for each target. Other
+type libraries use the same layout in their own integrations. These may be
+separate Go integration modules inside their owning repositories; they are not
+new modules inside Bittype or a required new repository. Bittype factories never
+import them. This preserves the dependency direction: integration -> Bittype,
+consumer -> integration + Bittype; Horos core remains independent of Bittype.
+
+No proposed source directory is created by the documentation task. Syntax/Files
+providers and source-derived capability matrices remain unchanged.
 
 The [Syntax and Files design](docs/source.md) is implemented with
 `Syntax : CST : AST` and `Files : Source : Semantics`. Both dimension names are

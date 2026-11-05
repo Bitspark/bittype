@@ -2,10 +2,12 @@
 
 **ID:** 0007
 **Date:** 5 November 2026
-**Status:** reviewed
+**Status:** applied (documented proposal only; implementation explicitly deferred)
+**Run-ID:** run_35a886b0-509f-4467-8535-9267d74ba42f
 **Owner:** codex-api-retirement-audit
 **Issue:** https://github.com/Bitspark/bittype/issues/79
 **Reviewed:** https://github.com/Bitspark/bittype/issues/79#issuecomment-6658592424
+**Graded:** https://github.com/Bitspark/bittype/issues/79#issuecomment-6659575195
 
 ## Question
 
@@ -740,7 +742,12 @@ Current limits include a 100,000-node/128-depth private generation budget and a
 1-to-256 tree output-set boundary. Plugins must participate in bounded work;
 there is no measured need for parallel plugin execution in the first increment.
 
-## Proposed starting design
+## Proposed starting design (submitted candidate, superseded by the evaluation)
+
+The candidate below records what was submitted. The evaluated design in
+[the public proposal](../docs/type-generation-plugins.md) supersedes its virtual
+structural-default replacement rule, Mode enum and incomplete planning surface.
+It is retained as consultation context, not a competing current specification.
 
 This is a candidate to critique, not an implementation commitment. The existing
 ASTTransformer and engine edge model stay unchanged. One explicitly configured
@@ -1093,3 +1100,65 @@ capability table or default library catalogue.
 5. What important simplification, failure case or alternative architecture have
    we missed, given the existing ASTTransformer, semantic evidence and types-only
    scope? Please challenge assumptions rather than optimizing the candidate blindly.
+
+
+## Applied
+
+Evaluation scope is documentation only, as explicitly requested by the owner.
+The consulted baseline is Bittype `7e55f7689d6cf8439b13a3ead6681eae0d2ad9e5`.
+Attempt 1 submitted document `doc_4c3de827-b0ed-45cc-8870-6c6b892772f0` to run
+`run_35a886b0-509f-4467-8535-9267d74ba42f`. The frozen input digest is
+`ed5c1cd6cd937fa2c2f35aed51d2476f4adef72559d5a360d28f09a7b3e8515d`.
+The completed raw advice digest is
+`637f56db9c8b4153ce7e7a821f74dc18ef8849878bc5d6da98581774b2e52934`.
+The requested Nightfall response verification completed with exit 0. These records
+belong to the explicitly invoked consultation, not a code-validation workflow.
+The submitted input and raw advice remain intact. Living-document drift consists
+of lifecycle metadata, the supersession notice and this evaluation.
+
+All accepted actions below mean documenting the proposed design, not implementing
+its Go types. The no-implementation instruction overrides the skill's default
+production delivery. No build, test, linter, documentation checker or generated
+provider matrix was run. The source excerpts in this document and direct source
+inspection supply the evaluation basis; native/compiler behavior is not claimed
+from this task. The existing pagination implementation is unchanged.
+
+| # | Recommendation | Verdict | Action | Owner | Link | Validation |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Keep one existing ASTTransformer edge and explicit composition. | HOLDS | Retain FromID/ToID/Transform and the existing typed bridge; propose no engine method or provider cell. | codex-api-retirement-audit | [Composition](../docs/type-generation-plugins.md#composition-through-the-existing-pipeline) | Existing transform interface/bridge inspected; docs only. |
+| 2 | Exact bindings, mandatory replacement guard and separate structural policy. | NEEDS ADAPTATION | Replace the candidate's virtual structural-default overrides with exact additions plus checked replacements. Use BindingID for configured instances and PluginID for implementations. Changed configuration gets a new BindingID. | codex-api-retirement-audit | [Selection](../docs/type-generation-plugins.md#exact-selection-and-explicit-overrides) | Existing registry rejects duplicate edges and semantic source identities distinguish declarations; new selection remains proposed. |
+| 3 | Immutable selection, isolated invocations and terminal errors. | HOLDS | Document no order precedence, retries, global state or cross-invocation cache; no partial output. | codex-api-retirement-audit | [Configuration](../docs/type-generation-plugins.md#configuration) | Existing typed bridge snapshots source and returns errors atomically. |
+| 4 | Exact alias identity does not prove native equality/assignability. | HOLDS | Keep identity selection separate from source-owned eligibility and profile promises. | codex-api-retirement-audit | [Selection](../docs/type-generation-plugins.md#exact-selection-and-explicit-overrides) | Horos identity facts and alias/application handling inspected; no inferred equality promise. |
+| 5 | Complete Source/SourceSession with roots, inspect, declaration and projection. | HOLDS | Specify environment-bearing Ref views over existing Semantics, preserving actual binder identity and designated type operands. | codex-api-retirement-audit | [Source](../docs/type-generation-plugins.md#source-references-binding-and-projection) | Existing Subject, ArgumentBinding, identity and descriptor-operand facts inspected. |
+| 6 | Provide real factories for opaque source handles. | HOLDS | Specify host-created RefFactory for independent adapters; retain session ownership and private source tokens. | codex-api-retirement-audit | [Source](../docs/type-generation-plugins.md#source-references-binding-and-projection) | Existing semantic/AST IDs are local addresses, so public opaque fields alone would not expose an extension path. |
+| 7 | Remove Mode and separate Use, Publish and Define. | HOLDS | Document optional Publisher/Definer alongside Plugin.Use; requested roots require explicit local publication. | codex-api-retirement-audit | [Operations](../docs/type-generation-plugins.md#use-publication-and-definition) | Current prepare reserves declarations before field/type emission; generic declarations are distinct from proper uses. |
+| 8 | Own source definitions or helpers under the selected configured binding. | HOLDS | Specify copied DefinitionSpec, open source identity/helper keys, no definition closures, and explicit binder links. Helpers do not capture source binders. | codex-api-retirement-audit | [Ownership](../docs/type-generation-plugins.md#owned-declarations-and-helpers) | Go's current presence helper demonstrates declaration creation without a source declaration. |
+| 9 | Immutable native fragments with symbolic names and references. | NEEDS ADAPTATION | Adopt templates and per-occurrence cloning; clarify that generic wrappers mark intent while target grammar admits native categories. | codex-api-retirement-audit | [Fragments](../docs/type-generation-plugins.md#native-fragments-and-symbols) | Existing AST separates containment, textual attributes and references; native checkers own grammar. |
+| 10 | Target lifecycle, storage capabilities and deterministic symbol allocation. | NEEDS ADAPTATION | Adopt target/session/storage interfaces; add opaque ResourceKey.OrderKey for independent deterministic allocation without decoding source identity. | codex-api-retirement-audit | [Target](../docs/type-generation-plugins.md#target-session-and-construction-capabilities) | Existing TreeID/NodeID cannot serve as reusable cross-session handles; target aliases/scopes are native concerns. |
+| 11 | External imports are syntax, not fabricated resolved AST links. | HOLDS | State supplied artifact/export requirements and emit native imports/qualification when no declaration tree is supplied. Keep Files/lock/environment separate. | codex-api-retirement-audit | [Target](../docs/type-generation-plugins.md#target-session-and-construction-capabilities) | AST Reference requires an actual target; ast.Set is not a Files Source or lockfile. |
+| 12 | Deferred reservation queue rather than mandatory Plan. | HOLDS | Document immediate reservation, one deferred Define per resource, queue closure before assembly and atomic failure. | codex-api-retirement-audit | [Composition](../docs/type-generation-plugins.md#composition-through-the-existing-pipeline) | Current prepare/body/Finish split supplies the concrete need; a whole-program Plan method is not established by this task. |
+| 13 | Generic coherence applies to plugin behavior, not just selector shapes. | HOLDS | Require uniform families under supported substitutions; prohibit hidden argument-sensitive storage/helper/ownership specialization. Treat this as a trusted-plugin obligation. | codex-api-retirement-audit | [Generics](../docs/type-generation-plugins.md#generics-and-representation-promises) | Current open Page generation and binder references expose the List<Byte> counterexample. |
+| 14 | Keep the first profile narrow. | HOLDS | Propose named roots, proper parameters, direct applications and explicit helpers. Defer application selectors, higher-order/computed constructors, monomorphization and anonymous publication until their semantics are specified. | codex-api-retirement-audit | [Generics](../docs/type-generation-plugins.md#generics-and-representation-promises) | Current pagination already rejects unsupported higher-order and recursive cases. No new capability is claimed. |
+| 15 | Builtin wrapper/helper internals use native primitives directly. | HOLDS | Document Text and Presence examples; canonical child types still compose through Lower. | codex-api-retirement-audit | [Builtin helper](../docs/type-generation-plugins.md#a-builtin-override-that-generates-a-helper) | Current Go presence implementation uses native bool and parameter references; text reentry would select the same override. |
+| 16 | Select before representation-specific recursion rejection. | HOLDS | Keep required Horos admission; examine demanded representation dependencies after selection. Native recursive legality remains a separate obligation. | codex-api-retirement-audit | [Composition](../docs/type-generation-plugins.md#composition-through-the-existing-pipeline) | Current visitDeclaration rejects source cycles; a selected external mapping need not demand that body. |
+| 17 | Exact selection does not prove child/external compatibility. | HOLDS | Require stated target-position and artifact assumptions; no new generic capability calculus. Explain that overrides do not rewrite prebuilt dependencies. | codex-api-retirement-audit | [Selection](../docs/type-generation-plugins.md#exact-selection-and-explicit-overrides) | Current profiles already distinguish representation from enforcement; native semantic providers are unavailable. |
+| 18 | Evidence requirements cover plugin eligibility explicitly. | HOLDS | Source.Contract states supported mapping requirements; additional facts require explicit composition and supplied receipts. Missing facts stay unknown. | codex-api-retirement-audit | [Configuration](../docs/type-generation-plugins.md#configuration) | Existing transform.Contract and captured evidence are explicit; no hidden analyzer call is present. |
+| 19 | Bound expanded work and isolate invocation state. | HOLDS | Specify materialized-node/byte/import/definition accounting and cooperative cancellation without claiming a Go sandbox. | codex-api-retirement-audit | [Target](../docs/type-generation-plugins.md#target-session-and-construction-capabilities) | Existing arena limits/cancellation and bounded AST sets inspected. No limits changed. |
+| 20 | Keep mappings and structural policy in type-owned integrations. | NEEDS ADAPTATION | Adopt the dependency direction; add the existing explicit Syntax dimension to proposed paths, and retain Bittype's root module. Default composition remains outside it. | codex-api-retirement-audit | [Layout](../docs/type-generation-plugins.md#proposed-file-layout-and-dependencies) | Existing LAYOUT and package ownership require stage/dimension symmetry. |
+| 21 | Keep the SPI experimental and avoid a richer generic semantic model. | HOLDS | Use existing semantic carriers plus operational views and source-owned adapters. No public API stability or implementation is claimed. | codex-api-retirement-audit | [Decision](../docs/type-generation-plugins.md#expert-recommendation-and-chosen-proposal) | Only Horos supplies production semantic analysis today. |
+| 22 | Use prior art selectively. | HOLDS | Retain the type/value separation and external-model precedent; reject MLIR retry precedence and Rust's global orphan policy as unsuitable here. | codex-api-retirement-audit | [Prior art](#prior-art-and-limits-of-analogy) | Primary references and earlier research 0003/0005 inspected; no copied selection semantics. |
+
+### Explicit implementation deferrals
+
+The trigger for implementing the proposed Go contracts, coordinator, adapters,
+plugins and migration is a separate owner request to implement this design.
+All accepted recommendations in this task are delivered as documentation. No
+compatibility layer, runtime adapter, new language capability or production
+mapping is introduced by recording the proposal.
+
+Application specialization and higher-order generation need a separately agreed
+coherence/profile design even after basic plugin implementation is authorized.
+Fragment-local type/lifetime binders and anonymous root publication need concrete
+supported target policies. A future mandatory whole-program Plan or per-mapping
+evidence API should be justified by a case the documented queue/source contract
+cannot handle. Runtime bindings remain separate work with separate authorization.

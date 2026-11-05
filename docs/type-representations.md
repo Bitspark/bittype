@@ -1,14 +1,19 @@
 # Library-owned native type representations
 
-**Owner direction updated 4 November 2026. Status: direct declaration frontends implemented; native representations proposed.**
+**Owner direction updated 5 November 2026. Status: direct declaration frontends and pagination transformers implemented; custom native representations proposed.**
 This refines the [unified Horos tooling design](hydrated-types.md) and
 [generation pipeline](generation.md). Ground values/checks remain data-only;
 Ontos/wire owns mixed values and the one Horos language describes their types.
 Bittype consumes that model; Function, Cell and Stream remain ordinary libraries.
 
 The existing ASTTransformer interface and syntax engine need no new operation
-for a named library contract. The unified Horos frontend is [implemented](horos.md). Native transformers and representation configuration
-below remain proposed. Recipe examples are design notation, not executable APIs.
+for a named library contract. The unified Horos frontend is [implemented](horos.md).
+The [pagination transformers](semantic-generation.md) are implemented; custom
+representation configuration below remains proposed. The
+[type-owned generator plugin design](type-generation-plugins.md) is the current
+proposal for Go contracts, builtin mappings, explicit overrides and composition.
+It supersedes this page's earlier open-declaration-only selection scope. Recipe
+examples below explain representations, not executable APIs.
 No runtime adapter, validator, callable implementation or transport is added.
 
 The separate [runtime value explanation](runtime-values.md) connects this static
@@ -170,8 +175,11 @@ artifact. A structural mapping recursively uses the selected representations of
 referenced declarations and arguments. All three preserve origins and generic
 bindings, and return no usable partial output on error.
 
-The initial selection unit is an open declaration, not a runtime application
-value or shape. For an application `Function<A,B>`, look up the resolved
+An ordinary library representation selects an exact declaration, including an
+open declaration, rather than a runtime application value or shape. The
+[plugin proposal](type-generation-plugins.md#exact-selection-and-explicit-overrides)
+also supports exact source-owned builtin selectors through the same mechanism.
+For an application `Function<A,B>`, look up the resolved
 Function declaration once, translate A and B, then instantiate the selected
 native recipe in its defined parameter order. Aliases retain their own origins
 and resolved targets. Following a target recipe uses provider-established
@@ -270,7 +278,8 @@ The existing [stage-first layout](../LAYOUT.md) remains in force:
 
 | Proposed location/owner | Responsibility |
 | --- | --- |
-| `transforms/horos-to-<native>/go` | Unified structural type lowering and uniformly configured native recipes, including data-only types; no named-contract imports. |
+| `transforms/horos-to-<native>/go` | Configuration-only factories for one directed mapping; shared generation composes supplied builtin/library plugins. No named-contract or default-bundle imports. |
+| Horos-owned integration module | Builtin target mappings and optional opinionated composition outside Horos's core module and Bittype's root module. |
 | Each independent contract library | Canonical module, optional target recipes/type artifacts and future runtime bindings. No per-library stage is added to bittype. |
 | Consuming application composition | Pin modules/dependencies, select profiles and recipes, register transformers, arrange output artifacts. |
 

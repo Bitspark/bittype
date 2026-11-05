@@ -78,8 +78,11 @@ interpret these concrete type semantics.
   superseded proposals and expert-review evidence for the ownership change.
 - [Native representations](docs/type-representations.md):
   direct generic pagination and library-owned type recipes configured for
-  TypeScript, Go, Rust and C++; native
-  recipes and generators remain proposed.
+  TypeScript, Go, Rust and C++; custom recipes remain proposed, while pagination
+  transformers are implemented.
+- [Type-owned generator plugins](docs/type-generation-plugins.md): proposed Go
+  contracts, builtin mappings, explicit overrides and consumer composition;
+  documentation only.
 - [Runtime values and hydration](docs/runtime-values.md): type descriptions versus
   native instances, existing Wire/runtime carriers and future typed/dynamic
   adapters; documentation only, with pinned implementation evidence.
