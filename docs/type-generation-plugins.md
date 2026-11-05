@@ -11,6 +11,12 @@ stream operations, runtime adapters, validators or transport code. The expert
 consultation and its evaluation are recorded in
 [research 0007](../research-docs/0007-type-owned-generator-plugins.md).
 
+Read this together with [native kind-constraint preservation](native-kind-constraints.md).
+This document owns mapping selection, generation operations and resource ownership;
+the companion owns the guarantees and limits of native constraint encodings.
+The [composition contract below](#constraint-preservation-in-plugin-composition)
+connects them without claiming that either proposal is implemented.
+
 ## Responsibility and ownership
 
 A native representation has two axes: the source type and the target language.
@@ -57,6 +63,10 @@ syntax NodeRef, display name or structural fingerprint is not such an identity.
 
 Kinds constrain applicability. They do not select mappings: a type may satisfy
 several overlapping kinds, including Data. There is no most-specific-kind search.
+
+Choosing direct bounds or witnesses is part of the explicitly selected
+representation profile and mapping configuration. It is not another kind-based
+dispatch pass, and failure to enforce a bound cannot select a weaker encoding.
 
 The consumer assembles exact bindings from supplied defaults and selected
 libraries, then supplies a separate override set:
@@ -175,8 +185,10 @@ choices are our proposal. See the [TypeScript function-type documentation](https
 [Go specification](https://go.dev/ref/spec#Types), [Rust Vec documentation](https://doc.rust-lang.org/std/vec/struct.Vec.html),
 and [C++ function-wrapper specification](https://eel.is/c++draft/func.wrap.func).
 A nominal Text wrapper alone does not enforce UTF-8 in a language whose underlying
-string can hold other values. Such a choice needs the admitted-source-use profile
-or separately supplied enforcement.
+string can hold other values. That value-level guarantee depends on admitted
+source values or separately supplied construction/validation behavior. Static
+kind membership and native generic bounds do not inspect string contents. Neither
+this plugin proposal nor the constraint proposal generates that runtime behavior.
 
 For Function, the TypeScript library could offer a synchronous callable mapping,
 an asynchronous `(a: A) => Promise<B>` mapping, and a handle mapping such as
@@ -423,6 +435,14 @@ without captured source binders; HelperDefinition requires an empty Binders list
 and its native parameters are explicit in the header and Output.Parameters. Nested
 Lower preserves the lexical target environment while changing resource ownership
 to the newly selected mapping.
+
+Header.Parameters can reserve native slots, but BinderLink only associates a
+source binder with a target slot. It does not specify a source-witness/native-type/
+evidence tuple, a representation projection from a witness, or synthesis of extra
+application arguments. Reserving more slots alone therefore does not implement
+the companion's witness sketches. Such an encoding needs an explicit binder and
+application contract shared by Use, Publish and Define; it remains deferred.
+Do not invent source binders for generated native-only evidence parameters.
 
 ### Source references, binding and projection
 
@@ -813,6 +833,69 @@ profile does not claim to settle witness-dependent parameter expansion,
 cross-package evidence or all the native syntax such encodings need. Binding
 selection is independent of that future encoding work; it never treats a plugin
 or native representation as proof of kind membership.
+
+## Constraint preservation in plugin composition
+
+The [constraint proposal](native-kind-constraints.md) defines what an enforcing
+encoding must retain. This plugin design defines which mapping is selected and
+how it produces an owned output. A configured binding, a successful Horos judgment
+and a target encoding are distinct requirements; none substitutes for the others.
+
+Parameter.Sort distinguishes proper types from constructors. It is not the
+parameter's kind contract. Source-owned readers must retain the actual parameter
+and result contracts, membership subjects and assumptions from Model(). Any
+additional required facts belong in Source.Contract and the explicitly supplied
+receipts. Neither the shared host nor a selected plugin invokes analysis on demand.
+
+| Generation operation | Obligation when an enforcing profile is selected |
+| --- | --- |
+| Use | Preserve admission of the effective source arguments, including ignored arguments; compose their selected representations and required evidence without widening the source/representation association |
+| Publish | Expose the requested open declaration under its original parameter assumptions and result contract; select one supported public parameter/header encoding rather than specializing from the first concrete use |
+| Define | Fill the reserved header consistently with Use and Publish; emit the required bounds and supported helpers while retaining their source assumptions and representation associations |
+
+Witness/evidence helpers use the same ownership and deferred-definition mechanism
+as other generated declarations. Reservation gives a helper a symbol; it does not
+establish membership. Their source meaning remains with Horos and the source-owned
+integration, and their syntax with the selected target mapping. Helper ownership
+must keep different source obligations and representation configurations distinct;
+matching display names cannot merge them. Cross-package evidence remains unresolved.
+
+The generic-coherence requirement includes bounds, witness arguments, evidence
+arguments and result representations, as well as payload storage. A future witness
+profile must define how all of those substitute together. The simple BinderLink
+surface above does not yet define that expansion or a dependent projection. The
+Go three-parameter and TypeScript/Rust/C++ witness sketches in the companion are
+therefore future encodings, not capabilities implied by these Go interfaces.
+An unsupported encoding fails; extra header slots are not an implicit solution.
+
+### Overrides and external representations
+
+An override does not change the source fact `S : K`, but can change the selected
+association `S -> N`. Source membership may remain usable; generated evidence or
+a native bound tied to the old N must not be carried over as though the new
+representation had already been justified. A changed BindingID distinguishes
+configuration; it is not proof that the replacement preserves the requested
+guarantee. Derive compatible output under the new configuration or reject it.
+
+For example, replacing every list with Collection<T> can compose through an open
+Page<T> only when the configured family supports the same substitutions and
+constraint encoding. Selecting a different collection does not establish that
+an external Page already compiled against another family is compatible. Native
+artifacts must supply the required representation and constraint contract;
+matching symbol names or source identities alone is insufficient.
+
+A selected wrapper must also respect any alias-interchangeability promise of the
+profile. Rust's non-enforcing type-alias bounds are a concrete reason to choose
+another representation or fail; emitting a nominal wrapper does not automatically
+preserve native interchangeability with its payload. Representation-only profiles
+must state any conversion boundary, and this types-only design supplies no
+conversions. See the [Rust constraint limits](native-kind-constraints.md#7-rust).
+
+The current pagination representation profile still permits constraint erasure;
+the current enforcement profile still returns Unsupported. Proposed plugin
+composition alone implements neither an enforcing encoding nor a runtime value
+checker. Selecting an enforcing promise cannot fall back to the representation
+profile after a plugin, native bound or evidence requirement fails.
 
 ## Composition through the existing pipeline
 
