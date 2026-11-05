@@ -17,6 +17,10 @@ runtime binding is implemented here. Examples are proposed rules and expected
 reasoning outcomes, not executed proofs or compiler results. Public integration
 contracts remain to be designed; foundation statements follow Logos's admitted
 contract rather than a new Bittype serialization.
+The [remaining verification SPI decisions](type-system-architecture.md#remaining-public-verification-spi-decisions)
+identify the concrete claim/evidence types, joint request binding, provider
+compatibility and result encoding still to specify. Their semantic meanings and
+ownership are settled; API design need not await complete TextBox/Page execution.
 
 ## Purpose and current boundary
 

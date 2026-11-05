@@ -160,8 +160,10 @@ type CheckRequest struct {
 The Ref types above stand for bound integration-owned references, not defined Go
 types, string tokens accepted on trust, or a new serialized schema. Statement
 and proof representation follow the admitted Logos contract; Bittype does not
-copy its proposed expression calculus. The two worked statements should exercise
-this seam before a public `contracts/verification` API is designed.
+copy its proposed expression calculus. The [remaining public SPI decisions](#remaining-public-verification-spi-decisions)
+below identify the missing contract definitions. TextBox and Page should exercise
+the candidate contract during design; their complete implementations are not a
+prerequisite for writing it.
 
 ### Proposed package roles
 
@@ -189,7 +191,9 @@ buried in generation. Later languages follow the same matrix when implemented;
 no empty stubs, registry cells or compatibility aliases are added.
 
 Begin with a private composition seam; promote the shared contract only after
-both examples identify its necessary shape. Generic orchestration depends only
+both examples identify its necessary shape. Contract walkthroughs can establish
+that shape before both examples execute; production guarantees still require
+their implementation and qualification. Generic orchestration depends only
 on carriers and explicit collaborators. Concrete adapters may depend on their
 own language/foundation contracts under explicit dependency rules.
 
@@ -199,6 +203,108 @@ module would need a concrete dependency justification and an explicit architectu
 decision; this consultation does not split Bittype or create another repository.
 The existing type-owned integration-module proposal remains independent of this
 shared orchestration layout.
+
+## Remaining public verification SPI decisions
+
+**Design gaps, 6 November 2026. Documentation only.** The owner requested these
+remaining decisions before implementation. The service-provider interface (SPI)
+is unfinished at the level of concrete public contracts. Its semantic ownership,
+explicit composition and stage-first placement are already agreed. The gaps do
+not require reopening those decisions or waiting for full TextBox/Page execution
+before designing the API.
+
+The fixed boundaries are: languages own judgments, Logos owns proof machinery,
+the expected statement is constructed independently of candidate evidence, and
+verification binds actual source/output/mapping inputs. ASTTransformer continues
+to return syntax. Resolution and analysis are explicit stages; the generic kernel
+does not acquire named kinds, contract cases or hidden semantic operations.
+
+### 1. Claim and evidence representation
+
+Decide the concrete types, construction authority and ownership rules replacing
+StatementRef and EvidenceRef. A claim must carry or bind its typed judgment,
+context, relevant objects and assumptions. Candidate evidence must identify the
+statement/foundation contract under which it can be checked. Arbitrary bytes,
+unqualified names or a producer's asserted conclusion cannot establish that
+compatibility.
+
+The open Go API choice is how typed implementations cross the agnostic boundary
+without erasing their contracts or copying a proof calculus into Bittype. The
+Logos adapter must bind or translate through Logos's admitted statement/evidence
+contract; a new Bittype expression algebra is not the solution. Define which
+references are invocation-local and what reconstruction is required if a later
+caller supplies the same canonical inputs.
+
+### 2. Immutable requests spanning source and target
+
+Existing [semantic requests and results](../contracts/semantic/go/request.go)
+are bound to one captured language context. A preservation request relates source
+and target snapshots, their respective semantic results, selected mappings,
+helpers, environment and the expected claim. Define a joint request's capture
+identity, dependency compatibility checks, copying/lifetime rules and result
+publication authority. Attaching one side's request identity to the other side's
+result does not establish the association.
+
+GenerationBindingRef and AssumptionPolicyRef are still placeholders. Their
+contracts must distinguish logical assumptions from the caller's permitted
+dependencies and checking budgets. The request must prevent evidence for another
+output, mapping or context from being reused as this invocation's result, while
+preserving legitimate reuse under explicitly compatible dependencies. These are
+functional input contracts, not a new digest or provenance workflow.
+
+### 3. Provider compatibility and checking capability
+
+Define how a checking provider declares the statement/evidence contract,
+foundation, supported profile and operations it accepts. The generic boundary
+must reject an incompatible pairing without interpreting Horos or Go judgments.
+Reuse existing typed/profile compatibility patterns where they fit, and specify
+the corresponding construction and dispatch checks.
+
+Language-specific resolution and analysis retain their existing ID/Name-based
+provider interfaces. A cross-language verifier need not belong to one language;
+a language ID alone cannot identify its checking contract. The exact Go provider
+interface and compatibility descriptor remain open. This does not select a new
+registry, automatic discovery or a fallback checker. Caller composition remains
+explicit, and missing capability cannot silently weaken the requested guarantee.
+
+### 4. Result types and failure boundaries
+
+The [outcome meanings](#outcomes-and-trust) are settled; their public Go encoding
+is not. Define how results associate with the exact request and report evidence
+validity, the established judgment and execution completion. Reuse the existing
+completion/verdict concepts where applicable rather than giving one Boolean or
+Rejected value several meanings.
+
+A valid proof establishes its requested statement relative to admitted
+assumptions. A checked counterexample can refute a preservation claim; malformed
+evidence cannot. Unsupported capability, exhaustion and cancellation do not
+establish logical falsehood. Decide which malformed requests or provider
+contract violations return Go errors, which outcomes are published reports, and
+what diagnostic/assumption information a caller needs to interpret them.
+
+### Next contract-design deliverable
+
+Specify the minimal claim, bound request, checking-provider and result contracts,
+including their construction authority and compatibility rules. Keep proof
+production separate from proof checking: the checking operation receives an
+independently fixed expected statement and candidate evidence; it does not
+silently find a proof, change the claim or invoke missing analysis. A future
+producer can use its own explicit contract.
+
+Use the two examples to review the candidate SPI before public promotion:
+
+| Contract exercise | Required distinction |
+| --- | --- |
+| Concrete TextBox counterexample | Source nonmembership plus native acceptance and fixed representation can refute the claim; invalid evidence cannot |
+| Symbolic Page and nested application | Actual binders, scoped assumptions, imported laws and instantiated result evidence remain associated |
+| Changed output/helper, foreign snapshot or incompatible checker | Refuse the mismatched request/evidence instead of reporting a semantic counterexample |
+| Unsupported or exhausted checker | Publish the coverage/completion limitation without a stronger claim |
+
+These are contract-design cases, not passed software or proof tests. The
+[Logos typed-checker milestone](#the-logos-checking-prerequisite) remains an
+execution dependency for production symbolic certification; it does not prevent
+specifying the agnostic SPI now. This section neither defines that SPI nor
+implements a provider, generator, proof producer or checking service.
 
 ## Outcomes and trust
 
@@ -535,8 +641,10 @@ it; a table of future cases is not an implemented native analyzer.
 
 After implementation is authorized:
 
-1. Define the two exact statements, domains, actual artifact associations and
-   evidence dependencies above. Exercise a private seam before a public SPI.
+1. Resolve the [four public SPI decisions](#remaining-public-verification-spi-decisions)
+   around the two exact statements, domains, actual artifact associations and
+   evidence dependencies. Review the candidate contracts through TextBox/Page
+   walkthroughs; complete implementations are not required to design the SPI.
 2. Establish the concrete TextBox bool counterexample through existing ground
    checking capabilities and authoritative source refutation. No sampling theorem.
 3. Model the selected Go fragment's exact/underlying acceptance characterizations

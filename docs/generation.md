@@ -18,6 +18,11 @@ Logos's semantic-package direction directly. Keep ASTTransformer returning
 syntax and use explicit optional composition for actual-output/claim association;
 do not introduce a Bittype proof foundation. The TextBox/Page statements determine
 the minimum integration seam and typed-checker requirements.
+The [remaining verification SPI gaps](type-system-architecture.md#remaining-public-verification-spi-decisions)
+separate unfinished public contract shapes from agreed semantics and placement.
+Claim construction, proof production and evidence checking remain distinct;
+the next API design uses TextBox/Page walkthroughs without requiring their full
+implementations first.
 
 The [pagination walkthrough](generic-elaboration.md#pagination-and-scope) shows
 the proposed first end-to-end replacement: one open Page, selected mappings for
