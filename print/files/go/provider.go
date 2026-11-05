@@ -1,0 +1,22 @@
+package print
+
+import (
+	"github.com/Bitspark/bittype/contracts/language/go"
+	printcontract "github.com/Bitspark/bittype/contracts/print/go"
+	"github.com/Bitspark/bittype/trees/cst/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
+)
+
+type Provider[L any] struct {
+	identity language.Provider
+	syntax   printcontract.Provider[cst.CST[L], string]
+}
+
+func New[L any](identity language.Provider, syntax printcontract.Provider[cst.CST[L], string]) (Provider[L], error) {
+	if representation.IsNil(identity) || representation.IsNil(syntax) || identity.ID() != syntax.ID() {
+		return Provider[L]{}, printcontract.ErrInvalidPrinter
+	}
+	return Provider[L]{identity, syntax}, nil
+}
+func (p Provider[L]) ID() language.ID { return p.identity.ID() }
+func (p Provider[L]) Name() string    { return p.identity.Name() }

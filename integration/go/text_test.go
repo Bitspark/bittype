@@ -3,9 +3,9 @@ package integration_test
 import (
 	"context"
 	"github.com/Bitspark/bittype/contracts/parse/go"
-	goformat "github.com/Bitspark/bittype/format/golang/go"
-	goparse "github.com/Bitspark/bittype/parse/golang/go"
-	printer "github.com/Bitspark/bittype/print/go"
+	goformat "github.com/Bitspark/bittype/format/syntax/golang/go"
+	goparse "github.com/Bitspark/bittype/parse/syntax/golang/go"
+	printer "github.com/Bitspark/bittype/print/syntax/go"
 	"testing"
 )
 

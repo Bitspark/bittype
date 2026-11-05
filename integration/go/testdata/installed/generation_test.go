@@ -2,7 +2,7 @@ package consumer_test
 
 import (
 	"context"
-	analyze "github.com/Bitspark/bittype/analyze/horos/go"
+	analyze "github.com/Bitspark/bittype/analyze/files/horos/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
@@ -12,7 +12,7 @@ import (
 	"github.com/Bitspark/bittype/engine/go"
 	hp "github.com/Bitspark/bittype/provider/horos/go"
 	tp "github.com/Bitspark/bittype/provider/typescript/go"
-	resolve "github.com/Bitspark/bittype/resolve/horos/go"
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
 	generate "github.com/Bitspark/bittype/transforms/horos-to-typescript/go"

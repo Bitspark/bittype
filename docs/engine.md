@@ -236,9 +236,9 @@ definition, err := representation.NewLanguage[typescript.Language](
     typescript.Language{}, "native-types-v1",
 )
 if err != nil { return err }
-parser, err := parse.NewSyntaxParser[typescript.Language](definition, typescriptprovider.Provider{})
+parser, err := typescriptprovider.NewSyntaxParser(definition)
 if err != nil { return err }
-printer, err := print.NewSyntaxPrinter[typescript.Language](definition, typescriptprovider.Provider{})
+printer, err := typescriptprovider.NewSyntaxPrinter(definition)
 if err != nil { return err }
 syntax := engine.New()
 if err := syntax.RegisterLanguage(definition); err != nil { return err }
@@ -254,8 +254,8 @@ if err != nil { return err }
 _ = original // retained source bytes; Check and Render are not registered
 ```
 
-Register a `format.NewSyntaxFormatter` adapter to enable Render, and a
-`check.NewChecker` adapter to enable Check, semantic Capture and checked
+Register a `typescriptprovider.NewSyntaxFormatter` adapter to enable Render, and a
+`typescriptprovider.NewSyntaxChecker` adapter to enable Check, semantic Capture and checked
 transformation execution. `semantic.Capture(ctx, checker, input)` also accepts an
 explicit configured checker outside an engine. Capture preserves budget,
 cancellation, catalogue and snapshot checks before semantic providers run.

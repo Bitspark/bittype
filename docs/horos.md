@@ -11,10 +11,10 @@ composition. The [kind design](kinds.md) supplies the semantic overview.
 
 - `syntax/horos/go` defines the language marker, AST/CST vocabulary and identity.
   It depends on generic carriers and identity, not Horos's semantic implementation.
-- `check/horos/go` admits syntax: node forms, roles, cardinalities and lexical
+- `check/syntax/horos/go` admits syntax: node forms, roles, cardinalities and lexical
   spellings. Unresolved names and semantically invalid contracts can reach
   resolution; syntax admission does not establish membership or module meaning.
-- `resolve/horos/go` delegates meaning to Horos and projects the checked result.
+- `resolve/files/horos/go` delegates meaning to Horos and projects the checked result.
   Its public helpers remain `Resolve(root, dependencies, treeID)`,
   `Project(program, treeID)` and `Model(view)`. `Model` is an explicitly semantic
   single-view convenience, not a generic carrier operation.
@@ -22,9 +22,9 @@ composition. The [kind design](kinds.md) supplies the semantic overview.
   explicit entry. Its private `internal/horosmodel.DecodeCollection` path retains
   several Program trees and tree-qualified sites. It does not concatenate source
   or expose a second public model wrapper.
-- `analyze/horos/go` consumes the explicit compatible resolution result and
+- `analyze/files/horos/go` consumes the explicit compatible resolution result and
   preserves its established typed Semantics and required reports.
-- `parse/horos/go` builds a lossless CST with AST view; `format/horos/go` builds
+- `parse/syntax/horos/go` builds a lossless CST with AST view; `format/syntax/horos/go` builds
   CST directly from an AST view. The shared printer emits leaves. Neither text
   stage resolves or applies type-level values.
 - `provider/horos/go` composes the independent Syntax, checker, resolver and

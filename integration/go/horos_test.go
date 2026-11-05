@@ -8,7 +8,7 @@ import (
 	"math/big"
 	"testing"
 
-	analyze "github.com/Bitspark/bittype/analyze/horos/go"
+	analyze "github.com/Bitspark/bittype/analyze/files/horos/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/format/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
@@ -17,7 +17,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
-	resolve "github.com/Bitspark/bittype/resolve/horos/go"
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -161,7 +161,9 @@ func qualifyHoros(t *testing.T) {
 		t.Fatal(err)
 	}
 	value, err := model.Value(decl.DeclarationID{Module: model.Root(), Name: "TextPage"})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	specialized, err := model.Descriptor(value)
 	if err != nil || !core.Equal(specialized, tuple("horos/list-of", textType)) {
 		t.Fatalf("specialization through registered AST: %v", err)

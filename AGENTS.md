@@ -90,9 +90,15 @@ fail rather than selecting a weaker fallback.
 - Do not make TypeScript extraction the authoritative canonical input.
 - Follow the stage-first hierarchy in LAYOUT.md. Shared trees live under trees,
   shared contracts under contracts; native implementations use the same
-  syntax/parse/check/format/provider language matrix, with explicitly qualified
+  syntax and dimension-qualified parse/check/format/provider matrix, with explicitly qualified
   optional resolve/analyze stages. Do not add compatibility
   aliases or a language-first packages tree. Keep the root Go module.
+- Use explicit dimension paths for implementations: role/syntax/language/go and
+  role/files/language/go; shared printers omit language. Name implementation Go
+  packages by their role. Each provider/language/go composition has provider.go,
+  syntax.go and files.go, with NewSyntax/Files constructors for existing roles.
+  Constructors take an explicit representation.Language, return one adapter and
+  register nothing. Missing capabilities have no stubs or compatibility aliases.
 - Add every language to the shared conformance fixtures; AST-only providers
   require an explicit tested capability profile. Architecture checks
   discover stage directories and enforce complete coverage and directed imports.

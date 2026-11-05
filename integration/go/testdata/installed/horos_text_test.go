@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/parse/go"
-	formatter "github.com/Bitspark/bittype/format/horos/go"
-	parser "github.com/Bitspark/bittype/parse/horos/go"
+	formatter "github.com/Bitspark/bittype/format/syntax/horos/go"
+	parser "github.com/Bitspark/bittype/parse/syntax/horos/go"
 	provider "github.com/Bitspark/bittype/provider/horos/go"
-	resolve "github.com/Bitspark/bittype/resolve/horos/go"
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 )
 
@@ -28,7 +28,9 @@ func TestInstalledHorosTextPagination(t *testing.T) {
 		t.Fatal(err)
 	}
 	value, err := model.Value(decl.DeclarationID{Module: model.Root(), Name: "People"})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if _, err := model.GroundDescriptor(value); err != nil {
 		t.Fatal(err)
 	}

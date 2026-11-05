@@ -29,19 +29,22 @@ contracts/
   analysis/go/            analysis capability and explicit resolution input
 semantics/go/             typed immutable Semantics and provider-owned facts
 engine/go/                explicit registration, planning and execution
-syntax/<language>/go/     native abstract/concrete vocabulary and identity
-resolve/<profile>/go/     Horos profile resolution, fact export and canonical-value helpers
-parse/<language>/go/      source text to CST
-check/<language>/go/      language syntax checking
-analyze/<profile>/go/     consume resolution evidence and reuse its Semantics
-format/<language>/go/     AST view to CST
-parse/files/horos/go/     Files to admitted Source
-format/files/horos/go/    admitted Semantics to Source
-print/files/go/          Source to Files through a selected Syntax printer
-provider/<language>/go/   explicit composition of the language's stages
-check/ast/go/             generic abstract carrier checks
-check/cst/go/             generic concrete carrier checks
-print/go/                 generic CST to source text
+syntax/<language>/go/              abstract/concrete vocabulary and identity
+parse/syntax/<language>/go/        text to CST
+check/syntax/<language>/go/        AST syntax admission
+format/syntax/<language>/go/       AST to CST
+parse/files/<language>/go/         Files to Source (Horos implemented)
+resolve/files/<language>/go/       reference resolution (Horos implemented)
+analyze/files/<language>/go/       semantic analysis (Horos implemented)
+format/files/<language>/go/        Semantics to Source (Horos implemented)
+print/syntax/go/                   shared CST to text
+print/files/go/                    shared Source to Files
+provider/<language>/go/
+  provider.go                     identity and direct typed composition
+  syntax.go                       Syntax delegates and constructors
+  files.go                        Files delegates and constructors
+check/syntax/ast/go/               generic abstract carrier checks
+check/syntax/cst/go/               generic concrete carrier checks
 internal/<language>/     private language-specific lexical helpers
 internal/                shared private checking/parsing/tree mechanics
 transforms/horos-to-<target>/go/  analyzed Horos to native type ASTs
@@ -58,6 +61,34 @@ The native text language directories are `typescript`, `golang`, `rust` and
 The final `go` directory denotes implementation language, not target:
 `syntax/rust/go` is Go code describing Rust syntax. `ast` and `cst` in the check
 stage are reserved generic-carrier components, not native language names.
+
+**Owner cleanup, 5 November 2026:** implementation paths follow
+`<role>/<dimension>/<language>/go`; shared implementations omit the language.
+Both `syntax` and `files` are explicit dimension segments. Language vocabularies
+remain at `syntax/<language>/go`; composition packages span both dimensions and
+remain at `provider/<language>/go`. No empty directories represent missing roles.
+
+Implementation Go packages are named by their role: `parse`, `check`, `format`,
+`print`, `resolve`, `analyze` and `provider`, for every language and dimension.
+Language vocabulary packages retain their language names. Consumers choose local
+import aliases when importing a contract and implementation with the same name.
+Those import aliases are not exported compatibility APIs.
+
+Every composition package has `provider.go`, `syntax.go` and `files.go`.
+`NewSyntaxParser`, `NewSyntaxChecker`, `NewSyntaxFormatter`, `NewSyntaxPrinter`
+and `NewFilesPrinter` each take an explicit `representation.Language` and return
+one configured adapter plus an error. Horos additionally has `NewFilesParser`,
+`NewFilesFormatter`, `NewFilesResolver` and `NewFilesAnalyzer` with the same
+descriptor-first signature. Constructors register nothing and never select a
+profile implicitly. `Provider` remains a direct typed composition of the roles
+that actually exist; it is not an engine registration contract.
+
+Stateless language stages expose a free operation and a zero-value `Provider`.
+Both shared printer packages expose `Provider[L]` and `New[L]`; Files printing
+also receives its Syntax printer collaborator. Their `provider.go` files own
+construction and `print.go` files own emission. Files parsing/formatting retain
+their explicit semantic collaborators. Uniform construction does not erase
+these genuine dependency differences or introduce native semantic providers.
 
 The source and its package-level tests belong with each implementation.
 Independent consumer fixtures, stage composition, language conformance and native
@@ -103,7 +134,7 @@ The parse, check, format and print interfaces are independent; their configured
 adapters use representations for owned heterogeneous inputs/outputs. The engine
 registers them separately after identity/profile registration. Representation
 depends on generic carrier checks and diagnostic records, never a stage-provider
-contract. Source input is `parse.Input`; `text` contains diagnostics only. The shared implementation remains under `print/go`, separate
+contract. Source input is `parse.Input`; `text` contains diagnostics only. The shared implementation remains under `print/syntax/go`, separate
 from `contracts/print/go`. Imports may use a local alias when both packages are
 needed. No compatibility interfaces or input aliases remain under text.
 
@@ -121,10 +152,10 @@ language or a stage. This keeps the rule enforceable through indirect imports.
 ## Enforced consistency
 
 The [architecture checks](integration/go/architecture_test.go) discover the
-union of language directories across syntax/parse/check/format/provider/resolve/analyze
+union of language directories across syntax, provider, Syntax stages and Files semantic stages
 and require each language to have every stage in its tested capability profile.
 The four native languages retain all five native text stages; Horos requires
-syntax/parse/check/format/provider plus resolve/analyze, with explicit qualification.
+the same Syntax stages plus Files resolve/analyze, with explicit qualification.
 Generic carrier check directories
 are excluded explicitly. An orphan parser and an incomplete syntax package both
 fail. The checks also classify every production package and enforce its directed
@@ -155,10 +186,10 @@ optional analyze stage with an explicitly tested capability profile. Native
 semantic analysis is not implied by native text tooling.
 
 The [Horos declaration integration](docs/horos.md) implements
-`syntax/horos/go`, `check/horos/go`, `analyze/horos/go`, `provider/horos/go` and
-`resolve/horos/go`, with private projection/correspondence in `internal/horosmodel`.
-Readable syntax now implements `parse/horos/go` and
-`format/horos/go` under the same stage matrix. These replace the former proposed
+`syntax/horos/go`, `check/syntax/horos/go`, `analyze/files/horos/go`, `provider/horos/go` and
+`resolve/files/horos/go`, with private projection/correspondence in `internal/horosmodel`.
+Readable syntax now implements `parse/syntax/horos/go` and
+`format/syntax/horos/go` under the same stage matrix. These replace the former proposed
 `canonical` paths; there are no compatibility aliases.
 
 Directed pagination mappings live under `transforms/horos-to-<native>/go`; later
@@ -194,9 +225,9 @@ bittype stage, engine edge per contract or central registration entry. Recipe
 SPIs remain proposed; the pagination transformers are implemented.
 
 The [Syntax and Files design](docs/source.md) is implemented with
-`Syntax : CST : AST` and `Files : Source : Semantics`. The additional `files`
-directory inside parse/format is a dimension, not a language. Its implementations
-use the same stage-first paths. Only Horos currently composes Files semantics.
+`Syntax : CST : AST` and `Files : Source : Semantics`. Both dimension names are
+explicit in implementation paths. Only Horos currently composes Files semantics;
+all five language composition packages construct Files printers.
 
 Files depends on AST addresses. Source retains semantic capture/result handles,
 CSTs and typed Semantics. Shared semantic capture depends on Files but never

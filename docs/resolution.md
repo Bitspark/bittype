@@ -14,8 +14,8 @@ establish complete language validity. See the [provider matrix](providers.md).
 | [contracts/resolution/go](../contracts/resolution/go/provider.go) | Resolver contract, dependency requirements and typed registration adapter |
 | [contracts/analysis/go](../contracts/analysis/go/provider.go) | Analyzer and its optional explicit resolution input |
 | [engine/go](../engine/go/resolution.go) | Explicit capture, registration, capability lookup and invocation |
-| [resolve/horos/go](../resolve/horos/go/resolver.go) | Horos resolution, authoritative semantic export and existing canonical-value entry helpers |
-| [analyze/horos/go](../analyze/horos/go/analyze.go) | Consume explicit Horos evidence and reuse its sealed model |
+| [resolve/files/horos/go](../resolve/files/horos/go/resolver.go) | Horos resolution, authoritative semantic export and existing canonical-value entry helpers |
+| [analyze/files/horos/go](../analyze/files/horos/go/analyze.go) | Consume explicit Horos evidence and reuse its sealed model |
 
 The common semantic package replaces the former analysis-owned construction
 records. There are no aliases at their old paths. The semantic fact model remains
@@ -163,7 +163,7 @@ binding-only facts, same-snapshot stale results, foreign captures, profile/confi
 checks, unmet prerequisites, receipt-specific reuse, budgets, cancellation and
 concurrent composition. Existing [analysis tests](../integration/go/analysis_test.go)
 retain adversarial capture/publication coverage through the new API. The
-[Horos tests](../analyze/horos/go/analyze_test.go) exercise explicit resolve/analyze
+[Horos tests](../analyze/files/horos/go/analyze_test.go) exercise explicit resolve/analyze
 composition and the [independent consumer](../integration/go/horos_test.go) checks
 model identity reuse and specialization. Architecture and negative type-check
 fixtures enforce package and marker boundaries. Required checks run remotely.
