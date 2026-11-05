@@ -53,6 +53,85 @@ the decision to use that syntax for its canonical declaration. Moving that
 decision into a general backend switch would violate the same ownership rule as
 putting it in the kernel.
 
+### Agnostic kernel and recursive composition
+
+The proposed generator is one language-agnostic composition kernel. Every native
+representation rule is supplied through plugins, including builtin mappings and
+the structural declaration policy. A language-specific generator becomes a
+configured composition, with this division of work:
+
+```text
+agnostic generation kernel
+  + source semantic adapter
+  + selected builtin and library mappings
+  + target syntax backend
+  = one configured ASTTransformer
+```
+
+An individual mapping is selected for a canonical constructor or declaration and
+a target language/profile. For example, the Horos list mapping for TypeScript
+constructs an array type; its Go counterpart constructs a slice type. Each asks
+Context.Lower for its element under the same effective configuration. The shared
+kernel coordinates selection, binding contexts and owned definitions, then asks
+the target backend to assemble the output. It contains neither a canonical type
+catalogue nor native representation cases.
+
+An ordinary composed declaration does not require a custom mapping of its own.
+Page can use the structural declaration policy, record mapping and list mapping.
+Cell can likewise compose its fields using the selected Function mappings. A
+library supplies a custom mapping when it wants a different native surface, such
+as an existing Cell type. All these choices use the same plugin boundary.
+
+Select a declaration's mapping before expanding its body. The selected plugin
+chooses which source type operands it needs and requests their representations
+through Lower. An external Cell representation can use its argument without
+expanding Cell's implementation shape; a structural Cell representation lowers
+its fields. The kernel does not eagerly flatten every declaration into primitives
+or require a complete child traversal before dispatch. Source adapters preserve
+the actual type-operand and binding boundaries.
+
+Here "kind-specific generator" means a mapping for a source constructor or named
+type. Horos constraint kinds such as Data still govern applicability; their
+overlapping memberships do not select a unique plugin. The same kernel is used
+for TypeScript, Go, Rust and C++; their native grammar and scope rules remain in
+their target backends. No new engine interface or composition-specific SPI is
+needed beyond the proposed contracts below.
+
+### Canonical declarations, native types and later adapters
+
+A library abstraction participating in cross-language mapping has a canonical
+Horos declaration, such as Function<A,B> or Cell<T>. Its library owns the
+behavioral contract as well. The native form is a selected representation of
+that declaration. Other languages consume the same declaration through their
+structural mappings or their own selected native/library representations.
+
+Native syntax itself remains independent of Horos: a language AST can describe
+a function or channel without importing a Horos library. The library plugin owns
+the association between an exact canonical declaration and that native form.
+There is no requirement for a Horos declaration corresponding to every native
+AST node, or a one-to-one correspondence between canonical and native types.
+Support in one language does not establish a faithful representation in another;
+unsupported mappings remain explicit.
+
+Later, a matching library-owned runtime adapter would connect a value conforming
+to the canonical contract with the selected native representation:
+
+```text
+contract value of C<T> <-> selected native value of N<T>
+```
+
+For capability-containing values, decoding and hydration precede adaptation as
+needed. A Function adapter could expose received contract endpoints as a native
+callable facade; a reverse adapter could export a native callable through those
+endpoints. Each supported direction must uphold the library's behavior and the
+selected representation profile. Adapter composition supplies the interpretations
+of generic arguments and fields, so a Page adapter can reuse its element adapter.
+
+This is the future [runtime value boundary](runtime-values.md), not an adapter API
+or implementation added by this proposal. Native type generation supplies no
+invocation, cancellation or conversion behavior. Function, Stream and Cell remain
+unknown to the general generator kernel, Wire and hydration machinery.
+
 ## Exact selection and explicit overrides
 
 The source adapter produces opaque selectors qualified by the source language
@@ -240,24 +319,56 @@ compose through Lower.
 
 ### Pagination keeps its generic structure
 
-With an external Collection<T> override for every list, a TypeScript profile
-could publish this shape:
+Consider this explanatory Horos source, with library imports and Person's body
+omitted:
+
+```text
+type Page<T> = { items: list<T>; };
+type EditablePeoplePage = Page<Cell<Person>>;
+```
+
+Generation separates the open declaration from its application:
+
+1. Publish Page<T> once. The structural declaration policy reserves its name and
+   binder; the record mapping lowers items through the selected list mapping,
+   which retains the real T binder.
+2. Lower Page<Cell<Person>> as an application. The selected Cell mapping composes
+   Person's representation and supplies the native Cell<Person> type as Page's
+   argument. It does not specialize or regenerate Page's record body.
+
+With native array/slice mappings and an external Cell mapping, possible output
+shapes are:
 
 ```typescript
 // Imports and dependent declarations omitted from this shape illustration.
 export interface Page<T> {
-  items: Collection<T>;
-  next?: string;
+  items: T[];
 }
-export type PeoplePage = Page<Person>;
 export type EditablePeoplePage = Page<cell.Cell<Person>>;
 ```
 
-Go could use a selected `collection.Collection[T]` in Items, Rust a selected
-`collection::Collection<T>`, and C++ a selected `collection::Collection<T>`.
-Each plugin family composes with T; Page does not know Cell. A Data bound remains
-a source-owned eligibility constraint, not a mapping selector or another
-language. The separate generic-coherence rule below limits specialization.
+```go
+// Imports and dependent declarations omitted from this shape illustration.
+type Page[T any] struct {
+    Items []T
+}
+type EditablePeoplePage = Page[cell.Cell[Person]]
+```
+
+Rust and C++ can retain the same Page<cell::Cell<Person>> application with their
+selected list and Cell mappings. Page has no Cell-specific case, and the
+structural policy needs no Page-specific plugin. The shapes illustrate an
+admitted-source-use profile; an enforcing profile must also preserve the
+applicable source obligations through its selected native encoding.
+
+An explicit override for every list could instead select Collection<T>: the
+TypeScript field becomes Collection<T>, Go can use collection.Collection[T], and
+Rust/C++ can use collection::Collection<T>. Child lowering propagates the selected
+family through the same open Page. The [generic-coherence rule](#generics-and-representation-promises)
+and [constraint-preservation contract](#constraint-preservation-in-plugin-composition)
+govern that composition, including external artifact compatibility. A Data bound
+remains a source-owned eligibility constraint, not a mapping selector or another
+language.
 
 ## Go contracts
 
