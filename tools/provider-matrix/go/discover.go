@@ -239,21 +239,6 @@ func contractName(contract *types.Named, lang language) string {
 	return strings.ReplaceAll(name, marker, "L")
 }
 
-func (p *program) level(contract *types.Named) string {
-	text := types.TypeString(contract, func(pkg *types.Package) string { return pkg.Path() })
-	iface := contract.Underlying().(*types.Interface)
-	for i := 0; i < iface.NumExplicitMethods(); i++ {
-		text += types.TypeString(iface.ExplicitMethod(i).Type(), func(pkg *types.Package) string { return pkg.Path() })
-	}
-	if strings.Contains(text, p.module+"/source/go.") || strings.Contains(text, p.module+"/files/go.") {
-		return "Files"
-	}
-	if strings.Contains(text, p.module+"/trees/cst/go.") || strings.Contains(text, p.module+"/trees/ast/go.") {
-		return "Syntax"
-	}
-	return "—"
-}
-
 func (p *program) discover() (*matrix, error) {
 	identity, err := p.named("contracts/language/go", "Provider")
 	if err != nil {
@@ -282,7 +267,7 @@ func (p *program) discover() (*matrix, error) {
 		}
 	}
 	m := &matrix{languages: languages, rows: map[string]*row{}, edges: map[string]map[string][]location{}}
-	identityRow := &row{level: "—", contract: "language.Provider", cells: map[string][]location{}}
+	identityRow := &row{level: p.level(identity), contract: "language.Provider", cells: map[string][]location{}}
 	m.rows[identityRow.contract] = identityRow
 	available := map[string]map[string]bool{}
 	for _, lang := range languages {

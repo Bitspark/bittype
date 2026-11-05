@@ -16,6 +16,10 @@ type File struct {
 	Path Path
 	Text string
 }
+
+// Files is a supplied collection of file paths and text.
+//
+// bittype:dimension Files
 type Files struct{ Entries []File }
 type SyntaxLink struct {
 	File   ID

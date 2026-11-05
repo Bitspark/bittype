@@ -46,6 +46,7 @@ type program struct {
 	fset         *token.FileSet
 	packages     map[string]*sourcePackage
 	functions    map[*types.Func]declaration
+	dimensions   map[*types.TypeName]dimensionMetadata
 }
 
 type sourceImporter struct {
@@ -130,7 +131,7 @@ func (l *sourceImporter) Import(path string) (*types.Package, error) {
 		Instances: map[*ast.Ident]types.Instance{},
 	}}
 	for _, name := range item.GoFiles {
-		file, err := parser.ParseFile(p.fset, filepath.Join(item.Dir, name), nil, 0)
+		file, err := parser.ParseFile(p.fset, filepath.Join(item.Dir, name), nil, parser.ParseComments)
 		if err != nil {
 			return nil, err
 		}
@@ -146,6 +147,9 @@ func (l *sourceImporter) Import(path string) (*types.Package, error) {
 		return nil, fmt.Errorf("read Go types: %w", err)
 	}
 	p.packages[path] = sp
+	if err := p.readDimensions(sp); err != nil {
+		return nil, err
+	}
 	for _, file := range sp.files {
 		for _, decl := range file.Decls {
 			if fn, ok := decl.(*ast.FuncDecl); ok {

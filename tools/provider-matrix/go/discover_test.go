@@ -17,14 +17,22 @@ func fixture(t *testing.T) *program {
 	t.Helper()
 	const module = "example.test/fixture"
 	sources := map[string]string{
-		"contracts/language/go": `package language; type ID string; type Provider interface { ID() ID; Name() string }`,
-		"contracts/print/go":    `package print; import "example.test/fixture/contracts/language/go"; type Provider[I,O any] interface { language.Provider; Print(I)(O,error) }`,
-		"contracts/parse/go":    `package parse; import "example.test/fixture/contracts/language/go"; type Provider[I,O any] interface { language.Provider; Parse(I)(O,error) }`,
-		"trees/cst/go":          `package cst; type CST[L any] struct {}`,
-		"source/go":             `package source; type Source[L any] struct {}`,
-		"files/go":              `package files; type Files struct {}`,
-		"syntax/ember/go":       `package ember; import "example.test/fixture/contracts/language/go"; type Language struct{};func(Language)ID()language.ID{return "ember"};func(Language)Name()string{return "Ember"}`,
-		"syntax/ice/go":         `package ice; import "example.test/fixture/contracts/language/go"; type Language struct{};func(Language)ID()language.ID{return "ice"};func(Language)Name()string{return "Ice"}`,
+		"contracts/language/go": `package language; type ID string
+// bittype:shared
+type Provider interface { ID() ID; Name() string }`,
+		"contracts/print/go": `package print; import "example.test/fixture/contracts/language/go"; type Provider[I,O any] interface { language.Provider; Print(I)(O,error) }`,
+		"contracts/parse/go": `package parse; import "example.test/fixture/contracts/language/go"; type Provider[I,O any] interface { language.Provider; Parse(I)(O,error) }`,
+		"trees/cst/go": `package cst
+// bittype:dimension Syntax
+type CST[L any] struct {}`,
+		"source/go": `package source
+// bittype:dimension Files
+type Source[L any] struct {}`,
+		"files/go": `package files
+// bittype:dimension Files
+type Files struct {}`,
+		"syntax/ember/go": `package ember; import "example.test/fixture/contracts/language/go"; type Language struct{};func(Language)ID()language.ID{return "ember"};func(Language)Name()string{return "Ember"}`,
+		"syntax/ice/go":   `package ice; import "example.test/fixture/contracts/language/go"; type Language struct{};func(Language)ID()language.ID{return "ice"};func(Language)Name()string{return "Ice"}`,
 		"provider/ember/go": `package emberprovider
 import (s "example.test/fixture/syntax/ember/go"; tree "example.test/fixture/trees/cst/go")
 type Output struct{s.Language}
@@ -80,7 +88,7 @@ func (l *fixtureLoader) Import(path string) (*types.Package, error) {
 	if !ok {
 		return nil, fmt.Errorf("missing fixture %s", path)
 	}
-	file, err := parser.ParseFile(l.p.fset, filepath.Join(l.p.root, rel, "implementation.go"), source, 0)
+	file, err := parser.ParseFile(l.p.fset, filepath.Join(l.p.root, rel, "implementation.go"), source, parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +99,9 @@ func (l *fixtureLoader) Import(path string) (*types.Package, error) {
 		return nil, err
 	}
 	l.p.packages[path] = p
+	if err := l.p.readDimensions(p); err != nil {
+		return nil, err
+	}
 	for _, decl := range file.Decls {
 		if fn, ok := decl.(*ast.FuncDecl); ok {
 			l.p.functions[p.info.Defs[fn.Name].(*types.Func)] = declaration{p, fn}
@@ -109,8 +120,11 @@ func TestGenericFilesPrintingUsesConstructorCollaborators(t *testing.T) {
 		t.Fatal("language discovery", m.languages)
 	}
 	files := m.rows["print.Provider[source.Source[L], files.Files]"]
-	if files == nil || len(files.cells["ember"]) == 0 || len(files.cells["ice"]) != 0 {
+	if files == nil || files.level != "Files" || len(files.cells["ember"]) == 0 || len(files.cells["ice"]) != 0 {
 		t.Fatal("generic printing must require syntax printing, but no semantics")
+	}
+	if m.rows["language.Provider"].level != "Shared" || m.rows["print.Provider[cst.CST[L], string]"].level != "Syntax" {
+		t.Fatal("matrix dimensions must come from source metadata")
 	}
 	for key := range m.rows {
 		if strings.HasPrefix(key, "parse.Provider") {

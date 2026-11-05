@@ -17,7 +17,8 @@ are still read to discover the interfaces being implemented.
   ID and Name come from their constant-return methods; no language catalogue exists.
 - Rows come from interfaces named `Provider` under `contracts/` that embed language
   identity. Go method sets and inferred generic arguments establish the implemented
-  interface. Carrier types distinguish Syntax and Files, independent of package aliases.
+  interface. Declaration-owned dimension comments classify their operation boundaries;
+  no package or type name determines the dimension.
 - Concrete providers are associated through their language identity. Reusable
   providers are instantiated for each language marker that satisfies their Go constraint.
   Public constructor signatures supply their required provider collaborators.
@@ -34,13 +35,59 @@ are still read to discover the interfaces being implemented.
   `transform.NewTransformer[From, To]` calls. Both markers must be discovered
   languages. Unrecoverable endpoints stop generation rather than omitting an edge.
 
+## Dimension metadata
+
+The doc comment on a defined boundary type can contain one of these directives:
+
+```go
+// bittype:dimension Syntax
+// bittype:dimension Files
+// bittype:shared
+```
+
+These are three alternative examples, not directives to combine on one declaration.
+Dimension labels are source-owned identifiers; the generator has no list of their
+names. A label starts with a letter and continues with letters, digits, hyphens or
+underscores. `Shared`, `Unclassified` and `Mixed` are reserved output states.
+Annotations may appear in line or block doc comments. Annotate individual types
+inside grouped declarations. Aliases inherit the target's metadata and cannot
+declare another dimension.
+
+The foundational AST/View/CST and text-input types declare `Syntax`.
+Files/Source/Semantics and semantic requests/results declare `Files`.
+`language.Provider` explicitly declares itself shared. These comments add no
+runtime methods, imports, registry or registration effects.
+
+For each instantiated provider contract, the generator collects metadata from its
+own declaration and the input/output types of its methods, including inherited
+operations. It follows aliases, pointer/collection elements, callback signatures,
+and type arguments of unannotated generic wrappers. An annotated carrier owns its
+boundary, so traversal stops there. Struct fields, underlying storage, helper
+methods and generic constraints do not classify an operation: a semantic result
+containing AST references is still in its declared dimension.
+
+One distinct dimension produces that label. Multiple dimensions produce a sorted
+`Mixed: A + B` label, retaining the conflict. With none, an explicitly shared
+contract produces `Shared`; otherwise the result is `Unclassified`. Embedding a
+shared identity interface or accepting a shared input does not turn missing
+operation metadata into shared classification. Malformed or duplicate directives
+stop generation with a source location, before any document is rewritten.
+
+Resolution and analysis consequently belong to `Files` through their semantic
+boundary types. Their independent use on captured ASTs requires no physical files
+and does not change this architectural grouping.
+
+## Rendering
+
 Implementation links use Go token positions, ignoring `//line` remapping. Simple
 single-return delegation is followed to its entry point; dynamic dispatch is not.
 Distinct implementations remain separate links in a cell. Shared implementations
 repeat the same link across languages. Direct transformer edges are separate from
 engine routes and profile-specific applicability.
 
-Output is deterministic, with languages sorted by ID. There are no dates, revision
+Output is deterministic, with languages sorted by ID and rows by dimension label
+then contract. There is no special ordering table for known dimensions.
+There are no dates, revision
 records or manually maintained line numbers. Links target the module's GitHub
 `main` branch; `-source-url` overrides the prefix. `-root` selects the repository
 and `-output` the Markdown file. Authored prose and newline style are preserved.

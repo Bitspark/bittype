@@ -35,6 +35,8 @@ type requestState[L any] struct {
 
 // Request owns a captured syntax/context snapshot. Its zero value is invalid.
 // Accessors return owned copies. No accessor fetches dependencies or resolves names.
+//
+// bittype:dimension Files
 type Request[L any] struct{ state *requestState[L] }
 
 func (r Request[L]) Entry() ast.NodeRef {
@@ -103,6 +105,8 @@ type resultState struct {
 
 // Result is an immutable request-bound publication. A valid result can contain
 // diagnostics and reports without a model. Valid does not mean semantic validity.
+//
+// bittype:dimension Files
 type Result struct{ state *resultState }
 
 func (r Result) Valid() bool        { return r.state != nil }

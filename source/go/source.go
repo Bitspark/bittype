@@ -41,6 +41,10 @@ type Publication[L any] struct {
 	Groups    []Group
 	Relations []Relation
 }
+
+// Source retains concrete units and their established semantics.
+//
+// bittype:dimension Files
 type Source[L any] struct{ state *state[L] }
 type state[L any] struct {
 	owner       *publicationIdentity
