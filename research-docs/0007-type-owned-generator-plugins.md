@@ -1123,6 +1123,12 @@ provider matrix was run. The source excerpts in this document and direct source
 inspection supply the evaluation basis; native/compiler behavior is not claimed
 from this task. The existing pagination implementation is unchanged.
 
+During documentation delivery, main advanced to `2c1000e4147830e8074f4d0fbf029e739b46f38d`
+with the separate native kind-constraint proposal. That documentation change was
+merged into this branch and cross-linked. It changed no Go source from the consulted
+baseline. The plugin proposal preserves those enforcement obligations without
+claiming that its initial profile settles witness/evidence parameter expansion.
+
 | # | Recommendation | Verdict | Action | Owner | Link | Validation |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Keep one existing ASTTransformer edge and explicit composition. | HOLDS | Retain FromID/ToID/Transform and the existing typed bridge; propose no engine method or provider cell. | codex-api-retirement-audit | [Composition](../docs/type-generation-plugins.md#composition-through-the-existing-pipeline) | Existing transform interface/bridge inspected; docs only. |

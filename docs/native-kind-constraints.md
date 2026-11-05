@@ -411,6 +411,13 @@ Horos declarations and supplied dependencies
 No new central provider registry or core semantic algebra is required. Concrete
 type-generation plugins and library recipes, when configured, must preserve the
 same obligations. This document does not define a competing recipe-dispatch SPI.
+The [type-owned generator plugin proposal](type-generation-plugins.md) specifies
+that separate selection/composition contract. Its source adapter and type-owned
+integration mappings would take over the source/target lowering responsibilities
+currently located in `internal/horosgen` and concrete transformers below; the
+table identifies current implementation anchors, not a requirement to retain the
+private fixed Dialect. Constraint enforcement does not move into the generic
+generation coordinator or a native backend's canonical-type switch.
 
 | Location | Proposed responsibility |
 | --- | --- |

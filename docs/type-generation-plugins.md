@@ -806,6 +806,14 @@ cannot silently become bounded integers, absence cannot collapse into a zero
 value, and recursive type indirection cannot be guessed by the kernel. Unsupported
 requested representations fail explicitly.
 
+The companion [native kind-constraint proposal](native-kind-constraints.md)
+describes direct bounds and source-witness/evidence encodings for enforcing
+profiles. Its obligations also apply to selected plugins. This initial plugin
+profile does not claim to settle witness-dependent parameter expansion,
+cross-package evidence or all the native syntax such encodings need. Binding
+selection is independent of that future encoding work; it never treats a plugin
+or native representation as proof of kind membership.
+
 ## Composition through the existing pipeline
 
 The consumer constructs one transformer for each desired source/target pair:
