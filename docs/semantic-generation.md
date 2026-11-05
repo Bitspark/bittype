@@ -60,6 +60,11 @@ Horos-admitted values. Native strings, records and generic parameters do not
 prove every source invariant. An enforcement request never silently selects
 representation instead.
 
+The [native kind-constraint proposal](native-kind-constraints.md) describes a
+future enforcing route using direct bounds or source type witnesses, with
+language-specific limits. It is documentation only: the representation profile
+still permits erasure and the enforcement profile still returns Unsupported.
+
 ## Pagination subset
 
 ```text

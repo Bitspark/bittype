@@ -71,6 +71,9 @@ interpret these concrete type semantics.
 - [Horos canonical input](docs/model.md): ownership, declarations and native representation plan.
 - [General kinds](docs/kinds.md): structural families, ordinary Data, constructor
   contracts and the semantic/native generation boundary.
+- [Preserving native kind constraints](docs/native-kind-constraints.md): proposed
+  direct bounds and source witnesses for all four targets, guarantees and
+  unresolved limits; documentation only.
 - [Type and value domains](docs/hydrated-types.md): ownership, authoritative canonical
   input and explicit data boundary. The [frontend guide](docs/horos.md)
   documents implemented APIs and qualification.
