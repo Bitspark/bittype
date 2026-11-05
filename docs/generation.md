@@ -6,6 +6,12 @@ convention and scoped representation products replace the earlier binder-to-slot
 proposal. Target-specific guarantees and the complete Go SPI remain proposed;
 current native generation capabilities are unchanged.
 
+The [pagination walkthrough](generic-elaboration.md#pagination-and-scope) shows
+the proposed first end-to-end replacement: one open Page, selected mappings for
+four targets, caller-scoped parameter products and nested result support. Its
+[implementation sequence](generic-elaboration.md#implementation-sequence)
+separates the shared representation path from target-specific enforcement.
+
 The [Logos preservation proposal](logos-preservation.md) adds a documentation-only
 design for deriving native guarantees from source facts, actual target ASTs and
 mapping laws, with a concrete bounded Go pagination example. Its proof integration

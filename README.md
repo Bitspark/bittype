@@ -89,6 +89,10 @@ interpret these concrete type semantics.
 - [Type-owned generator plugins](docs/type-generation-plugins.md): proposed Go
   contracts, builtin mappings, explicit overrides and consumer composition;
   documentation only.
+- [Generic generation walkthrough](docs/generic-elaboration.md#pagination-and-scope):
+  pagination across four targets, paired parameter/application conventions,
+  nested results, Cell composition and the staged implementation plan;
+  documentation only.
 - [Runtime values and hydration](docs/runtime-values.md): type descriptions versus
   native instances, existing Wire/runtime carriers and future typed/dynamic
   adapters; documentation only, with pinned implementation evidence.
