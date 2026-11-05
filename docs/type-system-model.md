@@ -225,19 +225,27 @@ A cross-language question additionally needs an intended interpretation and a
 selected representation relation. Similar syntax or equal-looking structure
 does not supply either.
 
-For a source declaration H, target declaration N, configuration c and declared
-native argument domain D, the preservation obligation is schematically:
+For a source declaration H, target declaration G, configuration c and declared
+native application-argument domain D, the preservation obligation is schematically:
 
 ```text
-for every n in D:
-    NativeAccepts(N, n)
-        implies SourceAccepts(H, Interpret_c(n))
-        and Represents_c(SourceResult(H, Interpret_c(n)), NativeResult(N, n))
+for every a in D:
+    NativeAccepts(G, a)
+        implies SourceAccepts(H, Interpret_c(a))
+        and Represents_c(SourceResult(H, Interpret_c(a)), NativeResult(G, a))
 ```
 
 Native acceptance includes the specified checking point. Interpret_c must give
 the intended source application for every accepted case in the claimed domain;
 it cannot choose any convenient source type after seeing the desired conclusion.
+Here a contains the complete arguments of the selected convention. In the
+[Go admission proposal](go-native-admission.md), a is `(S,N,E)`: a source-identity
+token, native payload and certificate type. The source interpretation comes from
+S, while the justified admission relation checks E's association with S and N.
+It is not an inverse of the native payload mapping. The
+[architecture's tuple admission statement](type-system-architecture.md#native-admission-remains-independent)
+states the corresponding obligation without imposing that tuple on other
+languages or the kernel.
 Where a contract deliberately interprets unions as choices, that interpretation
 must be stated rather than confused with a canonical union descriptor.
 
@@ -247,6 +255,11 @@ native representation. Rejecting everything is not a useful preservation result.
 Membership, representation correctness and runtime value conformance remain
 separate. A type-level guarantee does not validate arbitrary application values
 or establish the behavior of a library protocol.
+
+The Go certificate convention also proposes a limited
+[marker-method emission extension](type-system-architecture.md#go-marker-method-scope-extension)
+beyond types and interfaces. Its empty method bodies support native admission;
+they add no runtime proof checking. Production emission remains unimplemented.
 
 Query results distinguish:
 

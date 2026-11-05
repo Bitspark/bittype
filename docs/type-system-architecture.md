@@ -434,21 +434,67 @@ A weaker requested result does not relax source admission.
 
 ### Native admission remains independent
 
-An enforcing target additionally needs:
+An enforcing target must account for the complete admitted application. In the
+[Go certificate convention](go-native-admission.md#guarantee-and-scope), its
+arguments are `(S, N, E)`: S is a native source-identity token, N the selected
+native payload type, and E a native certificate type connecting that exact pair.
+E is not a runtime evidence value or, by itself, a checked Logos proof.
+
+Fix the source world, resolved kind K, selected mappings, issuing package and
+consumer operations in configuration C. The admission obligation is:
 
 ```text
-NativeAccepts_C(N) ->
-  (Member(Interpret_C(N),K) and Rep_C(Interpret_C(N),N))
+for every (S,N,E) in the declared native argument domain:
+  NativeAccepts_C(S,N,E) ->
+    exists T:
+      Denotes_C(S,T) and Member(T,K) and Rep_C(T,N)
 ```
 
-The domain, intended interpretation, checking point and allowed operations are
-fixed independently. Compose this theorem with Page's conditional theorem for
-the end-to-end guarantee. Page[N any] alone supplies no native Data gate.
+Denotes_C fixes the intended canonical subject of S independently of the proof;
+it cannot select whichever T makes the conclusion convenient. The existence
+obligation includes establishing that interpretation for every accepted tuple.
+No inverse from N to T is assumed: different source identities can share a native
+payload. The admission argument must justify why the actual E is an authorized
+leaf or constrained composition for this S/N pair under C, including inference,
+aliases and the promised checking point.
+
+This tuple is a selected Go convention, not a mandatory carrier or parameter
+scheme in the agnostic kernel or other languages. Their models must likewise
+include all inputs relevant to admission. Compose the admission theorem with
+Page's conditional theorem using its supported source/native domains and
+formation premises for the end-to-end guarantee. Page[N any] alone
+supplies no native Data gate, and admission followed by alias erasure does not
+retain source identity in the resulting payload.
+
+The Go proposal's PageEvidence requires evidence for its input and supplies
+evidence for the resulting Page application, enabling nested use. Its compiler
+fixtures exercise the native encoding; they do not establish the source and
+representation laws authorizing issuance or the general admission theorem.
 
 An unmapped native argument exposes missing coverage, not source nonmembership.
 A Data enforcement counterexample requires an already fixed interpretation that
 Horos actually refutes against Data. Bool is in Data, so TextBox's bool
 counterexample cannot be reused unchanged for DataPage.
+
+#### Go marker-method scope extension
+
+The [Go encoding](go-native-admission.md#encoding-the-admission-relation) needs
+empty private marker-method declarations on its certificate types. Producing
+those method bodies is an explicit proposed extension beyond the original
+types/interfaces-only generation scope. The methods satisfy the native admission
+constraint; no certificate value needs to be passed or method called.
+
+The selected Go convention owns these declarations alongside its certificate
+types. Future emission must use Go-owned AST/CST tooling and include the actual
+methods and issuing package in the claim's artifact association. This does not
+introduce Data, Page or certificate semantics into the general generator or
+Logos kernel. It does not authorize protocol operations, runtime adapters,
+conversion or validation behavior.
+
+These methods are implemented only in independently authored compiler fixtures.
+Documenting the extension does not implement or activate production method
+emission; the current types-only generators and Unsupported enforcement profile
+remain unchanged.
 
 ### Recursion and later certificates
 

@@ -19,10 +19,17 @@ Fix the source world, selected mappings and a generated Go admission package.
 For the supported consumer operations, the intended claim is:
 
 ```text
-Go admits DataPage[S, N, E]
-    implies E establishes the intended source interpretation T of S,
-            T : Data, and Rep_C(T,N)
+NativeAccepts_C(S,N,E)  // Go admits DataPage[S,N,E]
+    implies there exists T:
+        Denotes_C(S,T) and Member(T,Data) and Rep_C(T,N)
 ```
+
+This specializes the [architecture's admission statement](type-system-architecture.md#native-admission-remains-independent)
+to the resolved ordinary Data kind. S identifies the intended canonical subject
+through the fixed Denotes_C interpretation; N alone need not identify it. E is a
+certificate type whose issuance and constraints must justify that exact S/N
+association under C. The interpretation is fixed before checking, not chosen to
+make the conclusion true. This is a Go convention, not a kernel-wide tuple.
 
 The Go compiler checks the relationships between certificate types. Horos and
 the proposed Logos integration establish the source judgments and representation
@@ -112,7 +119,11 @@ serialization or behavior. No evidence value must be created or passed in the
 generated API. Empty marker methods exist only to make the certificate types
 satisfy the private method requirement; they need never be called. This encoding
 therefore requires marker-method emission beyond strictly type/interface-only
-output. The tests author those methods directly; production emission is deferred.
+output. The [architecture records that scope extension](type-system-architecture.md#go-marker-method-scope-extension)
+and its ownership: the selected Go convention supplies the empty declarations
+through native AST/CST tooling, with no runtime calls, adapters or validation
+behavior. The tests author those methods directly; documenting this proposal
+does not implement production emission, which remains deferred.
 
 DataEvidence is a nonbasic constraint interface, not a runtime proof object.
 An arbitrary function value cannot supply its private method. Creating a nil or

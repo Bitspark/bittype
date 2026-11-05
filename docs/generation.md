@@ -35,6 +35,10 @@ The [Go admission encoding](go-native-admission.md) proposes function-shaped,
 privately marked certificate types and tests them directly with the Go compiler.
 This qualification does not implement generation or establish the missing
 source judgments, representation laws or formal native-admission proof.
+Its admission claim concerns the complete `(S,N,E)` argument tuple. Empty
+marker-method bodies require the proposed
+[emission scope extension](type-system-architecture.md#go-marker-method-scope-extension)
+beyond native types and interfaces; production support remains deferred.
 
 **Updated: 5 November 2026.** The toolchain is implemented in Go. Generic AST/CST
 carriers, typed stages, language.Provider and four native text pipelines are

@@ -34,9 +34,14 @@ ownership supplies the law, not its truth. Public preservation-facing contracts
 follow the TextBox/Page exercises, and symbolic certification needs the
 Logos-owned typed-checker prerequisite.
 
-The design is scoped to native types and interfaces. It generates no calls,
-stream operations, runtime adapters, validators or transport code. The expert
-consultation and its evaluation are recorded in
+The baseline design is scoped to native types and interfaces. The subsequent
+[Go admission proposal](go-native-admission.md) requires empty private marker
+methods on certificate types: an explicit proposed
+[scope extension](type-system-architecture.md#go-marker-method-scope-extension),
+owned by the selected Go convention and emitted through native AST/CST tooling.
+Production support for those method bodies is not implemented. Neither scope
+includes calls, stream operations, runtime adapters, validators or transport code.
+The expert consultation and its evaluation are recorded in
 [research 0007](../research-docs/0007-type-owned-generator-plugins.md).
 
 Read this together with [native kind-constraint preservation](native-kind-constraints.md).
