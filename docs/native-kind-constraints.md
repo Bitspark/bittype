@@ -13,6 +13,12 @@ Native admission remains a separate theorem; the target-specific admission
 candidates below do not bound that generic preservation theorem's domain.
 Runtime value conformance remains separate from both.
 
+The [type-system modeling proposal](type-system-model.md) specifies the common
+structure for the language theories needed to derive those guarantees. Its
+[five-language discussion](type-system-model.md#how-the-five-languages-fit)
+uses the target-specific findings below as requirements, preserving their
+different judgments, checking points and supported domains.
+
 This document describes how TypeScript, Go, Rust and C++ generation could retain
 Horos kind constraints without recognizing `Data`, `Type`, `Scalar` or any other
 named kind specially. It extends the proposed [native representation design](type-representations.md)

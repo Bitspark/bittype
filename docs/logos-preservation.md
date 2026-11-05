@@ -8,6 +8,14 @@ extends the [paired consultation synthesis](generic-elaboration.md) and its
 No provider, transformer, proof bridge, dependency or runtime binding changes.
 The Go and Logos examples below are unexecuted proposal notation.
 
+The [type-system modeling proposal](type-system-model.md) defines the next
+design prerequisite: describe the languages' terms, judgments, binding and rules
+before implementing this bridge. The concrete predicates below illustrate a
+preservation problem; they do not replace a reusable language-theory model or
+assert that such a model already exists. Its [Horos/Go walkthrough](type-system-model.md#worked-example-horos-textbox-and-go-constraints)
+and [language coverage](type-system-model.md#how-the-five-languages-fit) connect
+this example to the other native targets.
+
 ## Prove preservation under symbolic assumptions
 
 For a fixed source world and selected mapping configuration C, the theorem is:
@@ -405,6 +413,12 @@ Its [domain-blind boundary](https://github.com/Bitspark/logos/blob/main/docs/arc
 keeps these consumer rules outside the kernel. Expressing a claim in Ontos does
 not establish a serving engine/checker. Missing capability, unproved claims,
 exhausted search and refutation remain distinct.
+
+The next design work begins with the [shared type-system model](type-system-model.md)
+and small Horos/native theories. Then specify the primitive representation laws,
+actual-AST fact extraction and source bridge, followed by the generic
+evidence/result interface. They must preserve the existing source-owned semantics
+and stage-first layout.
 
 No implementation, native analyzer, proof-execution workflow, provider-matrix
 cell, dependency or runtime behavior is added. Relevant software tests and

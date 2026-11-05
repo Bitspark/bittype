@@ -20,6 +20,12 @@ and assumption-discharge obligations for arbitrary `T : Data` with a valid
 selected representation. This extends the evaluated direction; it does not
 claim that the research or current implementation already provides that bridge.
 
+The subsequent [type-system modeling proposal](type-system-model.md) makes the
+language judgments and rules behind those obligations an explicit design layer.
+Specify and exercise that model before finalizing preservation-facing product
+and convention interfaces. The pagination walkthrough remains the composition
+example; it does not supply the missing native theories by itself.
+
 ## What is preserved
 
 Keep three relationships separate:
@@ -370,8 +376,10 @@ third Go type parameter C and immutable integration token are useful candidate
 mechanics, not a finalized public SPI. `C any` cannot itself enforce immutability.
 There is no string-keyed universal evidence bag or automatic carrier cloning.
 
-Before implementation, complete these concrete API decisions together for a
-selected target/domain:
+First specify the [type-system model and its initial theories](type-system-model.md#design-and-qualification-sequence).
+This is a model-design prerequisite, not a requirement to formalize every feature
+of all five languages before an initial implementation. Then complete these
+concrete API decisions together for a selected target/domain:
 
 1. Public issuance and safe access for admitted uses, products, signatures and
    environment identities, without private Bittype imports.
@@ -385,11 +393,12 @@ selected target/domain:
 
 ### Implementation sequence
 
-The next implementation proceeds through the pagination walkthrough in three
-steps. This document authorizes no code change by itself.
+After that modeling design, implementation proceeds through the pagination
+walkthrough in three steps. This document authorizes no code change by itself.
 
-1. **Define the public product and convention interfaces.** Resolve the five API
-   questions above using Page, Outer and Nested. Independent integrations must be
+1. **Define the public product and convention interfaces.** Use the agreed
+   judgment/assumption model to resolve the five API questions above with Page,
+   Outer and Nested. Independent integrations must be
    able to construct and consume scoped products through public contracts. Keep
    source facts, selected associations and emitted syntax separate; a Go carrier
    cannot establish their semantic correctness by itself.

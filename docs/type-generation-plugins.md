@@ -20,6 +20,12 @@ proofs under parameter assumptions, with native admission proved separately.
 The support carrier and a plugin's declared capability alone do not
 establish those claims; the proof must concern the actual selected output.
 
+The [type-system modeling proposal](type-system-model.md) is now the design
+prerequisite for that preservation-facing SPI. It separates language judgments
+and rules from stored semantic facts and mapping laws. Its models remain
+library-owned; selecting a mapping or constructing a product does not install
+native semantics or prove a constraint-preservation claim.
+
 The design is scoped to native types and interfaces. It generates no calls,
 stream operations, runtime adapters, validators or transport code. The expert
 consultation and its evaluation are recorded in
