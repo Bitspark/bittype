@@ -9,9 +9,9 @@ profile remains Unsupported.
 The [symbolic pagination proof](logos-preservation.md) establishes a result under
 source membership and selected representation assumptions. This document proposes
 a native admission boundary that requires those assumptions before a Go consumer
-instantiates the bounded alias. It extends the
-[type-system modeling proposal](type-system-model.md), without resolving its
-general theory or evidence interfaces.
+instantiates the bounded alias. It is one candidate within the
+[type-system architecture's native-admission boundary](type-system-architecture.md#native-admission-remains-independent).
+It does not implement the proposed theory, evidence or bridge interfaces.
 
 ## Guarantee and scope
 
