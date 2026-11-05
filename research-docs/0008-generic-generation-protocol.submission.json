@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "researchId": "0008",
+  "slug": "0008-generic-generation-protocol",
+  "attempts": [
+    {
+      "attempt": 1,
+      "idempotencyKey": "bittype-research-0008-27c92e58-4015-4e3a-9f4a-8d6465a05e89",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0008-generic-generation-protocol",
+      "submittedPath": "research-docs/0008-generic-generation-protocol.submitted.md",
+      "sha256": "6771ea6ed7f5c9b7698f1a842821c6b2dda5862eb4c63bb5b19edf8e35fb70d5",
+      "byteSize": 74739,
+      "codeRevision": "f2179283150b1e7344844fc97503ca26fe40795c",
+      "cliBuild": "nightfall 0.1.0 (c9ed336ce96b, bundle 8a8df16bb728) built 2026-11-04T19:12:23.718Z",
+      "preparedAt": "2026-11-05T17:04:58.628117+00:00",
+      "state": "prepared"
+    }
+  ]
+}
