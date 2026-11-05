@@ -15,8 +15,9 @@ construction/lifetime decisions listed below. No alternative compatibility API
 is proposed.
 
 The later [Logos preservation proposal](logos-preservation.md) explains how
-mapping-owned representation laws could compose into checked preservation
-claims. The support carrier and a plugin's declared capability alone do not
+mapping-owned representation laws could compose into symbolic preservation
+proofs under parameter assumptions, with native admission proved separately.
+The support carrier and a plugin's declared capability alone do not
 establish those claims; the proof must concern the actual selected output.
 
 The [type-system modeling proposal](type-system-model.md) is now the design

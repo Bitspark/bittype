@@ -184,7 +184,7 @@ identify the actual reasoning route:
   independent replay of its reasoning in Logos.
 
 The current Horos checker can be a starting source of established judgments, as
-the [preservation proposal](logos-preservation.md#existing-foundations-and-deferred-integration)
+the [preservation proposal](logos-preservation.md#integration-and-outstanding-obligations)
 explains. A future certificate exporter could support stronger replay. Neither
 bridge exists for the proposed general-kind preservation claims today. The model
 must expose this distinction instead of presenting assumed facts as derived ones.
@@ -248,8 +248,7 @@ type Label = TextBox<text>;
 
 For this example, the selected associations are canonical text to Go string and
 canonical bool to Go bool. The requested positive source domain is the canonical
-text argument. The Go model uses the explicit Go 1.25 language baseline from the
-[bounded pagination proposal](logos-preservation.md#worked-example-an-explicitly-bounded-go-pagination-view).
+text argument. The Go model uses an explicit Go 1.25 language baseline.
 The candidate claim concerns closed concrete type arguments in a fixed package;
 symbolic forwarding and arbitrary extension require additional modeled rules.
 
@@ -347,12 +346,19 @@ that its argument belongs to Data, without treating Data as a special kind.
 The list, record and optional-field rules compose that result. Source and target
 parameter identities remain distinct; their substitutions must correspond.
 
-The earlier [Go example](logos-preservation.md#worked-example-an-explicitly-bounded-go-pagination-view)
-selects the finite exact native union Person|string|bool. It can be a candidate
-for its declared finite source domain. It is incomplete for unrestricted Data:
-the native Page[Person] result is outside that union, so it cannot supply the
-argument needed for Nested. A sound bounded admission result is not a complete
-implementation of the source generic's whole domain.
+The [symbolic Go proof](logos-preservation.md#prove-preservation-under-symbolic-assumptions)
+uses arbitrary source and native parameters, with two explicit assumptions:
+`T : Data` and a valid selected representation `Rep_C(T,N)`. Structural laws
+derive the source result guarantee and corresponding native result; lawful
+assumption discharge makes that theorem reusable. Nested pagination uses the
+inner application's result proofs as the outer application's premises. It does
+not require a finite catalogue of permitted argument types.
+
+[Native admission](logos-preservation.md#native-admission-is-separate) remains
+independent: an enforcing target must establish those premises for every
+argument it admits. Conditional generic preservation alone neither supplies that
+gate nor promises a mapping for every Data type. Person above illustrates a use;
+it does not bound the theorem's domain.
 
 The [generation walkthrough](generic-elaboration.md#caller-scope-and-nested-results)
 therefore still needs scoped products and result support. The proposed model

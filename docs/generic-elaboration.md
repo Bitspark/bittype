@@ -14,9 +14,10 @@ admission profile is implemented. The research used source/specification
 reasoning, without native compiler runs or a new validation workflow.
 
 The owner's subsequent [Logos preservation proposal](logos-preservation.md)
-expresses native admission and representation guarantees as explicit proof
-obligations. Its bounded Go pagination example supplies concrete facts, rules
-and coverage obligations. This extends the evaluated direction; it does not
+expresses preservation under symbolic assumptions, with native admission proved
+separately. Its Go pagination example supplies scoped facts, structural rules
+and assumption-discharge obligations for arbitrary `T : Data` with a valid
+selected representation. This extends the evaluated direction; it does not
 claim that the research or current implementation already provides that bridge.
 
 The subsequent [type-system modeling proposal](type-system-model.md) makes the
