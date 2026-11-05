@@ -11,8 +11,12 @@
       "codeRevision": "93713a007cb28ccbf86bbaf3661cbc7bbaec8ec4",
       "cliBuild": "nightfall 0.1.0 (c9ed336ce96b, bundle 8a8df16bb728) built 2026-11-04T19:12:23.718Z",
       "recordedAt": "2026-11-05T21:00:08.0518864Z",
-      "state": "prepared",
-      "ownerRule": "No separate checksum or administrative verification workflow; frozen input and recovery identifiers are retained for the explicitly requested consultation."
+      "state": "submitted",
+      "ownerRule": "No separate checksum or administrative verification workflow; frozen input and recovery identifiers are retained for the explicitly requested consultation.",
+      "documentId": "doc_d799c49f-8580-4342-a6f1-cf7005119237",
+      "uploadedAt": "2026-11-05T21:00:25.5194033Z",
+      "runId": "run_e274981d-8f47-46db-b52c-1f0b931b567d",
+      "submittedAt": "2026-11-05T21:00:45.6219275Z"
     }
   ]
 }

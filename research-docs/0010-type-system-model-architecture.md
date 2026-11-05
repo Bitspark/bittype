@@ -2,7 +2,8 @@
 
 **ID:** 0010
 **Date:** 5 November 2026
-**Status:** reviewed
+**Status:** submitted
+**Run-ID:** run_e274981d-8f47-46db-b52c-1f0b931b567d
 **Owner:** codex-hydrated-type-design
 **Issue:** https://github.com/Bitspark/bittype/issues/92
 **Reviewed:** https://github.com/Bitspark/bittype/issues/92#issuecomment-6669329915
