@@ -65,9 +65,14 @@ reserved Type/Data names. Scalar, List, Record, Data and user-defined kinds use
 the same Horos machinery. Kind definitions are compile-time entities, not native
 type exports. Keep semantic sort separate from declaration parameter count.
 
-The [native representation design](docs/type-representations.md) remains proposed.
-Libraries own optional recipes, selected by exact declaration identity in consuming
-build configuration. Concrete transformers consume them uniformly; no
+The [native representation design](docs/type-representations.md) and
+[type-owned generator plugin contracts](docs/type-generation-plugins.md) remain
+proposed. Libraries own optional mappings, selected by exact declaration identity
+in consuming build configuration. Builtin mappings use the same supplied mechanism;
+explicit overrides replace existing exact bindings without order-dependent selection or
+error-triggered fallback. Opinionated default composition stays outside the Bittype
+module, avoiding a dependency cycle through type-owned integration modules.
+Concrete transformers consume plugins uniformly; no
 contract-specific engine registrations, named-library imports in general
 transformers or raw-source recipes. Missing/conflicting required representations
 fail rather than selecting a weaker fallback.

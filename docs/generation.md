@@ -22,11 +22,14 @@ implemented; native transformers cover the explicit pagination subset. There is 
 transformer, template lifting or second Page. Hydration remains separate in the
 existing Wire/runtime layers.
 
-The [native representation design](type-representations.md) specifies proposed
-per-language library recipes. The consuming build configures one concrete
-transformer per language pair. Function, Cell and Stream are resolved module
-declarations, never individual engine registrations. No contract-specific change
-to ASTTransformer is required.
+The [native representation design](type-representations.md) explains optional
+library representations. The [type-owned generator plugin proposal](type-generation-plugins.md)
+extends that design to builtin mappings and explicit overrides, using the same
+supplied plugin mechanism. The consuming build configures one concrete transformer
+per language pair. Function, Cell and Stream are resolved module declarations,
+never individual engine registrations. No contract-specific change to
+ASTTransformer is required. The public plugin contracts are proposed; the current
+pagination implementation still uses its private fixed Dialect interface.
 
 The [runtime value boundary](runtime-values.md) is distinct from this static
 pipeline. Runtime adapters would convert existing hydrated values to/from a
@@ -236,7 +239,7 @@ func (e *Engine) TransformTo(ctx context.Context, input transform.Input, targetI
 Output uses the implemented representation.AST envelope: a language identity plus
 an opaque, structurally checked native AST
 payload. It is not ast.AST[any]; different generic instantiations are not
-interchangeable. Typed adapters invoke functions from transform.Request[From] to ast.AST[To],
+interchangeable. Typed adapters invoke functions from transform.Request[From] to ast.Set[To],
 admit explicit semantic evidence, and validate the actual payload type and endpoint identities
 at the dynamic boundary. No generic AST kind, language switch or reflective
 syntax conversion is needed. CST input can supply its existing AST view when
@@ -344,10 +347,14 @@ registry must never acquire Function, Stream, Cell, Wire or runtime
 imports, special kinds, semantic name switches or structural fingerprint matching.
 Native function-signature syntax remains language-owned. Later library-owned
 runtime realizations require separate scoped work; this slice supplies no
-binding extension registry. The proposed native type recipes are static inputs
-to concrete transformers, selected by consuming applications. Those transformers
-depend on uniform recipe contracts, not named contract libraries. Recipe
-selection is independent of language registration and module resolution.
+binding extension registry. Proposed native type plugins are static inputs to
+configured transformers, selected by consuming applications. This includes builtin
+mappings supplied by source-owned integration packages. A selected override replaces
+an existing exact binding explicitly; failures do not retry that default. Shared
+generation depends on uniform contracts, not named contract libraries, and target
+tooling owns syntax without choosing canonical representations. Plugin selection
+is independent of language registration and module resolution. See the
+[proposed Go contracts and composition](type-generation-plugins.md).
 
 ## Evidence and next increments
 
