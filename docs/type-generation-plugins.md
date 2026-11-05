@@ -503,9 +503,9 @@ requested representations fail explicitly.
 
 The companion [native kind-constraint proposal](native-kind-constraints.md)
 describes direct bounds and source-witness/evidence encodings for enforcing
-profiles. Its obligations also apply to selected plugins. The complete plugin SPI
-still does not claim to settle every witness-dependent parameter expansion,
-cross-package evidence or all the native syntax such encodings need. Binding
+profiles. Its obligations also apply to selected plugins. The proposed plugin SPI
+remains incomplete: witness-dependent parameter expansion, cross-package evidence
+and the native syntax such encodings need still require concrete contracts. Binding
 selection is independent of that future encoding work; it never treats a plugin
 or native representation as proof of kind membership.
 
@@ -534,7 +534,9 @@ as other generated declarations. Reservation gives a helper a symbol; it does no
 establish membership. Their source meaning remains with Horos and the source-owned
 integration, and their syntax with the selected target mapping. Helper ownership
 must keep different source obligations and representation configurations distinct;
-matching display names cannot merge them. Cross-package evidence remains unresolved.
+matching display names cannot merge them. Unrestricted cross-package issuance
+remains unqualified; explicit dependency contracts and consumer-owned composition
+are proposed in the [paired synthesis](generic-elaboration.md).
 
 The generic-coherence requirement includes bounds, witness arguments, evidence
 arguments and result representations, as well as payload storage. A future witness

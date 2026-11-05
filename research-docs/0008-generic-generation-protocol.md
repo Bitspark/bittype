@@ -2,7 +2,7 @@
 
 **ID:** 0008
 **Date:** 5 November 2026
-**Status:** delivering (documentation synthesis; implementation deferred)
+**Status:** applied (documentation only; implementation deferred)
 **Run-ID:** run_aa6f8ad3-4bbc-4b25-a894-fda48f62c8e5
 **Reviewed:** https://github.com/Bitspark/bittype/issues/84#issuecomment-6664097367
 **Graded:** https://github.com/Bitspark/bittype/issues/84#issuecomment-6664723752
@@ -1811,3 +1811,12 @@ independently evaluated soundness limits before the proposal is delivered.
 No recommendation is interpreted as permission to implement an enforcing target
 or change the engine's registered capabilities. New generation-association
 contracts remain proposed and must not be advertised in the provider matrix.
+
+The documentation outcome is delivered in [PR86](https://github.com/Bitspark/bittype/pull/86):
+the [paired synthesis](../docs/generic-elaboration.md), corrected
+[plugin proposal](../docs/type-generation-plugins.md), corrected
+[native constraint proposal](../docs/native-kind-constraints.md), and the current
+[generation overview](../docs/generation.md). The peer reviewed the shared changes
+against consultation0009 before integration. Applied here means the accepted
+conceptual documentation actions are complete. No generator implementation,
+native encoding, runtime binding or compiler qualification is claimed.

@@ -338,8 +338,10 @@ A wrapper can retain association but changes identity/access and cannot silently
 replace an alias-interchangeability promise.
 
 A controlled-descriptor candidate must enforce Sized at the actual gate/carrier
-or as a required supertrait; an alias's bound alone is insufficient. Keep
-membership separate from configuration-selected representation. Sealing, orphan
+or as a required supertrait; an alias's bound alone is insufficient. A dyn-compatible
+membership trait can have a nameable unsized trait-object type satisfying it
+without the intended concrete issuance; the effective Sized gate excludes that
+route. Keep membership separate from configuration-selected representation. Sealing, orphan
 rules, trait objects and overlapping blanket implementations constrain extension.
 See [sealed traits](https://rust-lang.github.io/api-guidelines/future-proofing.html)
 and [coherence](https://doc.rust-lang.org/reference/items/implementations.html#trait-implementation-coherence).
