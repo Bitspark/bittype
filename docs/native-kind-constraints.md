@@ -7,9 +7,11 @@ flaws in the earlier TypeScript/Go evidence sketches; the target sections below
 replace those claims. No candidate is compiler-qualified by this documentation.
 
 The owner's [Logos preservation proposal](logos-preservation.md) develops an
-explicit proof layer for these guarantees. It includes facts, rules and proof
-obligations for a bounded Go DataPage view, while retaining the distinction
-between native admission, representation and runtime value conformance.
+explicit proof layer for these guarantees. It includes scoped facts and rules
+for a symbolic pagination proof under `T : Data` and representation assumptions.
+Native admission remains a separate theorem; the target-specific admission
+candidates below do not bound that generic preservation theorem's domain.
+Runtime value conformance remains separate from both.
 
 This document describes how TypeScript, Go, Rust and C++ generation could retain
 Horos kind constraints without recognizing `Data`, `Type`, `Scalar` or any other

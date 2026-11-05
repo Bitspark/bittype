@@ -1,464 +1,412 @@
 # Logos proofs for native type preservation
 
-**Proposal, 5 November 2026. Documentation only.** The owner proposed expressing
-Horos requirements, native guarantees and their implication in Ontos/Logos. This
-extends the [paired consultation synthesis](generic-elaboration.md); it does not
-change an implemented provider, transformer, profile or dependency. The examples
-below have not been executed as Logos programs or compiled as Go. No generator,
-proof bridge, native semantic analyzer or runtime binding is implemented here.
+**Proposal, 5 November 2026. Documentation only.** The owner selected a symbolic
+pagination proof for any `T : Data`, with native admission proved separately.
+This replaces the finite-argument example as the design of this document. It
+extends the [paired consultation synthesis](generic-elaboration.md) and its
+[pagination walkthrough](generic-elaboration.md#pagination-and-scope).
+No provider, transformer, proof bridge, dependency or runtime binding changes.
+The Go and Logos examples below are unexecuted proposal notation.
 
-## The claim to prove
+## Prove preservation under symbolic assumptions
 
-For a fixed source world, generated declaration, mapping configuration and native
-environment, prove:
+For a fixed source world and selected mapping configuration C, the theorem is:
 
 ```text
-for every native argument in the declared consumer domain:
-    native acceptance
-        implies validity of its declared Horos application
-        and the selected representation of that application's result
+for every source type T and native type N:
+    T : Data and Rep_C(T, N)
+        implies Page<T> : Data
+        and Rep_C(Page<T>, GoPage<N>)
 ```
 
-The interpretation must identify the intended source application. Finding some
-other valid Horos type with the same native payload does not establish this claim.
-Keep source membership, selected representation and runtime value conformance
-separate. This proposal concerns type applications; it does not establish that
-arbitrary runtime values satisfy Horos, or that Function/Stream/Cell behave
-correctly.
+`Rep_C(T, N)` means an established valid selected representation association,
+including a well-formed native type. It is stronger than a mapping's preference
+for a type name. The theorem quantifies over arbitrary T and N satisfying its
+premises; neither is selected from a catalogue. It does not assert that every
+Horos Data type already has an implemented Go mapping. Establishing existence
+of N for a promised source domain is a separate completeness obligation.
 
-Sound admission and relative completeness are separate obligations. Completeness
-requires a native application for every source application in an independently
-declared supported domain. An encoding that rejects everything is insufficient.
-A finite domain is legitimate when explicitly requested; it cannot silently
-replace a request to support every argument admitted by a canonical kind.
+Introduce fresh symbolic types tau and nu, assume `tau : Data` and
+`Rep_C(tau, nu)`, then compose the list, optional-field and record laws. Their
+derivation need not inspect tau's structure or enumerate possible arguments.
+Discharge those assumptions to obtain the theorem. Concrete uses substitute
+their own membership and representation proofs into that same theorem.
 
-An open generic needs a theorem under its original parameter assumptions, or a
-coverage proof for an explicitly complete finite domain. Several successful
-ground applications do not establish the open theorem. A ground Logos conclusion
-such as `bound_sound(context, source, target)` can name a universal property, but
-its rules must justify that property. Naming it or asserting it as a fact is not
-such a justification.
-
-## Ownership and connection to the pipeline
-
-| Component | Proposed responsibility |
-| --- | --- |
-| Horos integration | Supply established source judgments with their real binders, assumptions, subjects and source dependencies |
-| Native language integration | Describe native acceptance and type identity in a specified fragment, compiler/language configuration and consumer-operation domain |
-| Type-owned mapping | Supply representation equations, composition obligations and their derivations for the actual selected native form |
-| Logos integration | Derive/check the requested claims against those programs, facts and explicitly admitted primitive theories |
-| Bittype orchestration | Keep the source, candidate AST, mappings, requirements and proof result associated with the same invocation |
-
-Ontos carries ground data; Logos supplies terms with variables, clauses and
-accounts. These predicate names and rules belong to consumer programs. Neither
-the Logos kernel nor Bittype's generic infrastructure gains a Data, Go, Page,
-Function, Stream or Cell case. A contract library may supply its own mapping
-laws; the native integration supplies language laws. Exact mapping selection and
-explicit overrides continue to precede generation.
-
-The proposed flow is:
+The canonical declarations are unchanged; `h` denotes an explicit import of
+the ordinary standard kinds module:
 
 ```text
-captured source + explicit source semantic evidence
-        + selected mappings and requested guarantees
-    -> candidate native AST
-    -> explicit native analysis and representation obligations
-    -> Logos account for the requested preservation claims
-    -> admit the candidate output under those claims, or report failure
-```
-
-This is requested library behavior, not an additional repository delivery check.
-No hidden source analysis is invoked from a mapping. A future integration must
-request the relevant native/source capabilities explicitly. Existing semantic
-receipts associate evidence with captured inputs; they do not prove preservation.
-Generated associations and accounts belong to invocation/result state, not to the
-immutable source Semantics graph. The existing ASTSet output contains syntax
-only; transporting accounts would require an explicit result/evidence contract.
-This document does not add that SPI or pretend the current adapter carries it.
-
-Native facts must be extracted from the actual candidate AST and resolved
-dependencies. A plugin's assertion `enforces_data` is not an acceptable substitute.
-The native model must cover every consumer operation admitted by its promise,
-including applicable aliases, inference and extension mechanisms. A model that
-omits a permitted bypass cannot establish the promised guarantee.
-
-Logos checks reasoning relative to admitted rules and premises. A native language
-model remains a foundational assumption unless its adequacy is established
-separately; a proof about a model does not independently prove a compiler correct.
-This is consistent with [Logos's account boundary](https://github.com/Bitspark/logos/blob/main/README.md)
-and [domain-blind ownership](https://github.com/Bitspark/logos/blob/main/docs/architecture/decisions/0025-logos-is-domain-blind.md).
-
-## Worked example: an explicitly bounded Go pagination view
-
-The canonical declarations use the existing Horos syntax; `h` denotes an explicit
-import of the standard kinds module:
-
-```text
-type Person = { name: text; active: bool; };
 type Page<T> = { items: list<T>; next?: text; };
 type DataPage<D: h.Data>: h.Data = Page<D>;
 ```
 
-For this example the consumer independently requests the source argument domain
-`Person`, `text`, and `bool`. This is a native view of DataPage over those three
-types, not a definition of Data or complete native support for it. The illustrative
-target uses Go 1.25 language semantics and a fixed generated package:
+Page itself remains unconstrained. Establishing its conditional Data guarantee
+does not add a Data bound to Page. DataPage is an ordinary constrained alias.
+Both declarations must already be valid under their original contracts; a
+narrower query cannot repair an invalid declaration.
+
+For consistency with the [existing Go representation choice](semantic-generation.md#pagination-subset),
+this example selects the presence helper for optional fields:
 
 ```go
-package pagination
-
-type Person struct {
-    Name   string
-    Active bool
+type BittypeOptional[V any] struct {
+    Present bool
+    Value   V
 }
 
-type DataItem interface {
-    Person | string | bool
+type Page[N any] struct {
+    Items []N
+    Next  BittypeOptional[string]
 }
-
-type Page[T any] struct {
-    Items []T
-    Next  *string
-}
-
-type DataPage[T DataItem] = Page[T]
-type PeoplePage = DataPage[Person]
 ```
 
-The candidate exploits an exact finite union, with no `~` terms, method-based
-seal or generic private evidence constructor. The native-domain lemma concerns
-closed concrete type arguments at instantiation. Aliases are normalized to their
-actual Go type identities; an alias of Person adds no new case. A distinct
-defined type with Person's underlying structure is a different identity.
-Symbolic forwarding through other Go generic declarations requires an additional
-constraint-inclusion theorem and is outside this first example's claim.
+This is the representation family to reason about. Its `any` parameter does
+not enforce Horos Data on native callers. No hypothetical Go Data constraint
+or constrained alias is inserted. There are no executable bodies or adapters.
 
-The language basis is Go's [general-interface type sets](https://go.dev/ref/spec#General_interfaces),
-[constraint satisfaction](https://go.dev/ref/spec#Satisfying_a_type_constraint),
-and [instantiation](https://go.dev/ref/spec#Instantiations).
-Parameterized aliases are a standard language feature from
-[Go 1.24](https://go.dev/doc/go1.24#language). A future model must identify its
-actual supported language/compiler configuration; these links alone are not an
-implemented model or a compilation result.
+## Ownership and proof inputs
 
-The mapping selects slices for lists, pointers for optional fields and exported
-Go fields for canonical field names. At the type-representation level, `Next`
-stands for the optional text field. This makes no claim that every Go string is
-valid UTF-8, that pointer mutation preserves a value invariant, or that a Go value
-has been validated as a Horos record.
+| Owner | Proposed contribution |
+| --- | --- |
+| Horos integration | Valid source declarations, established kind judgments and closure consequences, original assumptions |
+| Native integration | Actual Go AST, resolved type/field/binder identities and applicable native type rules |
+| Selected mappings | Admitted representation laws connected to the selected native forms and fixed dependencies |
+| Logos integration | Scoped derivation, assumption discharge and independent checking of requested claims |
+| Bittype orchestration | Association of source, candidate AST, mappings, requirements and proof result with the same invocation |
 
-### Concrete input facts
+Ontos carries ground data; Logos supplies terms with variables, clauses and
+accounts. These predicates are consumer-owned logic vocabulary. Neither general
+kernel interprets Data, Page, Go, Function, Stream or Cell. A contract library
+can supply its mapping laws through the same mechanism.
 
-The following is proposed Logos consumer-program notation using ordinary
-predicates, compounds and lists. Lowercase atoms abbreviate resolved identities;
-uppercase identifiers are logical variables. `c` names one immutable context
-containing both captured inputs, their dependencies and the selected mapping.
-It is not a new digest or provenance mechanism.
+Native facts must describe the actual candidate AST and resolved dependencies.
+Representation laws must apply to the selected mappings. Declaring
+`preserves_data` or selecting an implementation ID establishes neither. Changed
+list/text/optional choices require applicable laws for the new configuration.
 
-These are **expected bridge inputs**, not observations from an executed proof.
-Horos facts require source evidence; native facts require actual AST extraction.
-Configuration facts specify intent and never independently prove enforcement.
+### Concrete scoped facts
+
+Lowercase atoms are ground identities; uppercase names in rules are Logos
+variables. `c` identifies one immutable source/target/configuration context;
+`p` identifies a proof scope. `rigid(tau)` and `rigid(nu)` are ground terms
+encoding arbitrary symbolic types, not concrete types or Logos variables awaiting
+discovery. Real implementations retain the actual source and native binders.
 
 ```prolog
 context(c).
-native_model(c, go_1_25_exact_union).
+proof_scope(c, p).
+requested_kind(c, p, k_data).
+checked_kind(c, k_data).
 
-% Established Horos facts; h_data is the resolved ordinary imported kind.
-h_bound(c, h_data_page, h_data).
-h_result_bound(c, h_data_page, h_data).
-h_alias(c, h_data_page, h_page).
-h_arrow(c, h_page, h_data, h_data).
-h_member(c, h_person, h_data).
-h_member(c, h_text, h_data).
-h_member(c, h_bool, h_data).
+% Paired declarations and actual bound parameters.
+definition_pair(c, h_page, g_page).
+source_parameter(c, p, h_page_t, rigid(tau)).
+native_parameter(c, p, g_page_n, rigid(nu)).
 
-% Consumer scope and intended interpretation, fixed before proving coverage.
-source_domain(c, [h_person, h_text, h_bool]).
-interpretation_table(c, [pair(g_person, h_person),
-                         pair(g_string, h_text), pair(g_bool, h_bool)]).
-selected_representation(c, h_person, g_person).
-selected_representation(c, h_text, g_string).
-selected_representation(c, h_bool, g_bool).
-declaration_mapping(c, h_data_page, g_data_page).
+% Local hypotheses, not unconditional global facts.
+assumed(c, p, member(rigid(tau), k_data)).
+assumed(c, p, representation(rigid(tau), rigid(nu))).
 
-% Complete normalized observations of the actual target declarations.
-g_exact_union(c, g_data_item, [g_person, g_string, g_bool]).
-g_alias(c, g_data_page, g_data_item, g_page).
-g_unconstrained_parameter(c, g_page).
+% Established consequences for the ordinary resolved source kind.
+horos_member(c, h_text, k_data).
+kind_closure(c, k_data, list).
+kind_closure(c, k_data, closed_record).
+
+% Admitted laws of the selected representations.
+primitive_representation(c, h_text, g_string).
+mapping_law(c, list_to_slice).
+mapping_law(c, optional_to_presence).
+mapping_law(c, closed_record_to_struct).
+
+% Actual templates opened with their corresponding symbolic parameters.
+source_body(c, p, h_page,
+    record([required(items, list(rigid(tau))), optional(next, h_text)])).
+native_body(c, p, g_page,
+    structure([field(g_items, slice(rigid(nu))),
+               field(g_next, presence(g_string))])).
+field_binding(c, p, items, g_items).
+field_binding(c, p, next, g_next).
 ```
 
-`g_exact_union` is issued only for a well-formed complete finite union of exact,
-resolved, non-interface types. An arbitrary list of selected cases, an unresolved
-type name, a `~` term or a partial scan cannot produce that fact. `g_alias` records
-the complete one-parameter constrained alias and its unchanged argument use in
-the base application. The declared native model supplies the admission lemma
-for this exact syntactic fragment; merely inserting `native_model` does not
-install an implementation of that lemma.
+These are expected bridge inputs, not results of a proof run. Their admission
+has explicit responsibilities:
 
-`selected_representation` records a choice. It does not assert that Person's
-fields were generated correctly. Result-representation obligations below cover
-the selected element mappings and the Page body separately.
+- The scope and parameter records identify fresh, correctly sorted symbols and
+  their real binders; they do not grant kind membership.
+- `definition_pair` identifies selected named families and corresponding formal
+  layout. It does not equate Go Page with an anonymous struct or prove its body.
+- Body facts come from capture-avoiding substitution into the actual captured
+  templates. They are not replacement bodies invented by the proof producer.
+- `kind_closure` denotes an established Horos consequence, not a configurable
+  claim that every kind is closed under lists or records. The closed-record
+  consequence covers arbitrary well-formed finite required/optional fields.
+- Primitive representation and mapping laws require admitted equations or
+  derivations with stated assumptions. They are not self-asserted capabilities.
+  The presence law covers the actual helper and its selected type-representation
+  meaning, without asserting runtime value conformance.
+- Field identities resolve to the actual corresponding fields. `presence(...)`
+  denotes application of the selected helper, not a new generic AST kind.
 
-### Rules for admission and the source result
+These source consequences do not redefine Data by a smaller constructor set or
+replace its general calculus. Tau can denote any Data type, including one whose
+construction is absent here, provided its representation premise is established.
+
+## Rules for the source guarantee
 
 ```prolog
-% Ordinary list traversal; the term fragment grounds each proof instance.
-member(X, [X|Rest]).
-member(X, [Head|Rest]) :- member(X, Rest).
+kind_in(C, P, T, K) :-
+    proof_scope(C, P), assumed(C, P, member(T, K)).
 
-% Native language lemma specialized to the admitted fragment.
-native_domain(C, G, Ns) :-
-    native_model(C, go_1_25_exact_union),
-    g_alias(C, G, Constraint, Base),
-    g_exact_union(C, Constraint, Ns),
-    g_unconstrained_parameter(C, Base).
+kind_in(C, P, T, K) :-
+    proof_scope(C, P), horos_member(C, T, K).
 
-native_accepts(C, G, N) :-
-    native_domain(C, G, Ns), member(N, Ns).
+kind_in(C, P, list(T), K) :-
+    kind_closure(C, K, list), kind_in(C, P, T, K).
 
-interpretation(C, N, S) :-
-    interpretation_table(C, Rows), member(pair(N, S), Rows).
+fields_in(C, P, [], K) :-
+    proof_scope(C, P), checked_kind(C, K).
 
-source_accepts(C, H, S) :-
-    h_bound(C, H, K), h_member(C, S, K).
+fields_in(C, P, [required(Label, T)|Rest], K) :-
+    kind_in(C, P, T, K), fields_in(C, P, Rest, K).
 
-source_result(C, H, S, Kout) :-
-    source_accepts(C, H, S),
-    h_alias(C, H, Base),
-    h_bound(C, H, Kin), h_arrow(C, Base, Kin, Kout).
+fields_in(C, P, [optional(Label, T)|Rest], K) :-
+    kind_in(C, P, T, K), fields_in(C, P, Rest, K).
 
-safe_argument(C, H, G, N) :-
-    declaration_mapping(C, H, G),
-    native_accepts(C, G, N), interpretation(C, N, S),
-    selected_representation(C, S, N), source_accepts(C, H, S).
+kind_in(C, P, record(Fields), K) :-
+    kind_closure(C, K, closed_record), fields_in(C, P, Fields, K).
 ```
 
-The admission characterization has two directions in the native model: every
-concrete Go type accepted by this exact constraint is in `Ns`, and each listed
-type can instantiate it. The first direction is essential. Merely writing the
-positive `native_accepts` rule does not establish that Go accepts nothing else.
-This model-adequacy obligation is stated explicitly below.
-
-`h_arrow` is a checked Horos conditional result guarantee. It includes the whole
-Page body, including `next`, and its original parameter domain. It is not a rule
-that every collection preserves membership in every kind. All these rules carry
-the context; additional symbolic facts would also carry the full assumption
-environment and real binder identities.
-
-### A finite coverage account, not sample testing
-
-```prolog
-% A functional intended interpretation, using ground structural inequality.
-different_keys(N, []).
-different_keys(N, [pair(M, S)|Rest]) :-
-    N \== M, different_keys(N, Rest).
-
-unique_keys([]).
-unique_keys([pair(N, S)|Rest]) :-
-    different_keys(N, Rest), unique_keys(Rest).
-
-all_safe(C, H, G, []) :- declaration_mapping(C, H, G).
-all_safe(C, H, G, [N|Rest]) :-
-    safe_argument(C, H, G, N), all_safe(C, H, G, Rest).
-
-bound_sound(C, H, G) :-
-    declaration_mapping(C, H, G),
-    interpretation_table(C, Rows), unique_keys(Rows),
-    native_domain(C, G, Ns), all_safe(C, H, G, Ns).
-
-represented_source(C, H, G, S) :-
-    safe_argument(C, H, G, N), interpretation(C, N, S).
-
-all_represented(C, H, G, []) :- declaration_mapping(C, H, G).
-all_represented(C, H, G, [S|Rest]) :-
-    represented_source(C, H, G, S), all_represented(C, H, G, Rest).
-
-domain_complete(C, H, G) :-
-    source_domain(C, Ss), all_represented(C, H, G, Ss).
-```
-
-The recursion consumes the complete lists. `bound_sound` covers every identity
-the native-domain lemma admits, not just the example PeoplePage. `domain_complete`
-covers the independently supplied source list; it does not redefine that list
-as whatever Go happened to accept. `unique_keys` prevents choosing whichever
-source interpretation makes a desired conclusion true.
-
-This is the positive Horn term/list fragment with ground structural inequality.
-Clauses with variables are instantiated in a finite ground account. No use of
-negation-as-failure converts missing membership into nonmembership, and no
-absence of a counterexample is treated as a universal proof. Selecting and
-implementing a serving Logos integration is future work.
-
-### The representation obligation
-
-The rules above prove an admission property relative to their model. They do not
-yet prove that the generated body represents Page. That is a separate obligation
-over the actual source and native ASTs. For this example the normalized body
-observations would include:
-
-```prolog
-h_page_shape(c, h_page, ht,
-    record([required(items, list(parameter(ht))), optional(next, h_text)])).
-g_page_shape(c, g_page, gt,
-    record([field(g_items, slice(parameter(gt))),
-            field(g_next, pointer(g_string))])).
-field_binding(c, h_page, items, g_page, g_items).
-field_binding(c, h_page, next, g_page, g_next).
-```
-
-Here `g_items` and `g_next` resolve to the actual Go Items and Next fields.
-The selected structural mapping supplies a composition rule of this shape:
-
-```prolog
-page_representation_law(C, HBase, GBase) :-
-    h_page_shape(C, HBase, HB,
-        record([required(items, list(parameter(HB))), optional(next, h_text)])),
-    g_page_shape(C, GBase, GB,
-        record([field(g_items, slice(parameter(GB))),
-                field(g_next, pointer(g_string))])),
-    field_binding(C, HBase, items, GBase, g_items),
-    field_binding(C, HBase, next, GBase, g_next),
-    list_slice_law(C), optional_pointer_law(C),
-    element_representation(C, h_text, g_string).
-
-result_representation(C, H, G, S, N) :-
-    safe_argument(C, H, G, N), interpretation(C, N, S),
-    h_alias(C, H, HBase), g_alias(C, G, Constraint, GBase),
-    page_representation_law(C, HBase, GBase),
-    element_representation(C, S, N).
-```
-
-`list_slice_law`, `optional_pointer_law` and `element_representation` are **proof
-premises to discharge**, deliberately not unconditional facts in the input block.
-The primitive mapping library must define their precise type-representation
-meaning and supply admitted axioms/derivations. Person's instance must account for
-its required Name/Active field mappings. The optional-pointer law is scoped to
-this type-level representation promise and is not a general value-conformance
-law. Page composition then works under a symbolic element-association assumption;
-the syntactic binders HB and GB remain distinct and correspond by this rule.
-
-The displayed Page rule is a readable instance of the structural mapping's rule,
-owned outside the kernel. The structural mapper would instantiate the supplied
-record/list/optional laws for this body; an author need not write a Page-specific
-mapping or proof rule. Production rules must use actual resolved source operands,
-native nodes and field bindings; the spellings Page, Data, Items or Next must never
-trigger generic runtime dispatch. The same record/list composition must work for
-another declaration with the corresponding admitted structure.
-
-The complete requested claim combines the independent obligations:
-
-```prolog
-all_results(C, H, G, []) :- declaration_mapping(C, H, G).
-all_results(C, H, G, [N|Rest]) :-
-    interpretation(C, N, S),
-    h_result_bound(C, H, K), source_result(C, H, S, K),
-    result_representation(C, H, G, S, N), all_results(C, H, G, Rest).
-
-preserves_declared_domain(C, H, G) :-
-    bound_sound(C, H, G), domain_complete(C, H, G),
-    native_domain(C, G, Ns), all_results(C, H, G, Ns).
-```
-
-### Queries and expected proof outline
-
-The requested queries, written separately from the program, are:
-
-```prolog
-native_accepts(c, g_data_page, g_person)
-source_accepts(c, h_data_page, h_person)
-source_result(c, h_data_page, h_person, h_data)
-bound_sound(c, h_data_page, g_data_page)
-domain_complete(c, h_data_page, g_data_page)
-result_representation(c, h_data_page, g_data_page, h_person, g_person)
-preserves_declared_domain(c, h_data_page, g_data_page)
-```
-
-For PeoplePage, an account would have the following dependencies:
+For the supplied facts, these derive:
 
 ```text
-native union/alias observations + Go admission lemma
-    -> native_accepts(DataPage, Person)
-source bound + Person : Data
-    -> source_accepts(DataPage, Person)
-source acceptance + Page : Data -> Data
-    -> source_result(DataPage<Person>, Data)
-native acceptance + fixed interpretation + selected association + source acceptance
-    -> safe_argument(DataPage, Person)
-three safe_argument instances + complete native domain + unique interpretation
-    -> bound_sound(DataPage)
-three represented source instances + independent source domain
-    -> domain_complete(DataPage, declared source domain)
-Page AST shapes + primitive/element representation laws + safe argument
-    -> result_representation(DataPage<Person>, Go DataPage[Person])
+under p:
+    tau : Data                                  assumption
+    list<tau> : Data                            list closure
+    text : Data                                 supplied Horos judgment
+    { items: list<tau>; next?: text; } : Data    record closure
 ```
 
-No account is produced by this document. The full preservation claim requires
-result representation for **every** admitted argument, in addition to the bound
-and completeness accounts. The `all_results` fold covers those three result
-obligations; the single Person query above is an illustration, not a replacement
-for that coverage. Missing primitive or element laws prevent completion of the
-top-level account even when its bound-soundness subgoal is established.
+This walks the fields of one open body, not possible T values. K remains a
+variable in the rules; the resolved Data identity appears only in supplied facts
+and the requested conclusion. Another kind requires its own established closure
+consequences, not a kernel branch.
 
-## Obligations before any enforcing claim
+## Rules for representation composition
 
-| Obligation | What must be established |
+```prolog
+rep_in(C, P, T, N) :-
+    proof_scope(C, P), assumed(C, P, representation(T, N)).
+
+rep_in(C, P, T, N) :-
+    proof_scope(C, P), primitive_representation(C, T, N).
+
+rep_in(C, P, list(T), slice(N)) :-
+    mapping_law(C, list_to_slice), rep_in(C, P, T, N).
+
+fields_rep(C, P, [], []) :- proof_scope(C, P).
+
+fields_rep(C, P, [required(HName, T)|Hs], [field(GName, N)|Gs]) :-
+    field_binding(C, P, HName, GName),
+    rep_in(C, P, T, N), fields_rep(C, P, Hs, Gs).
+
+fields_rep(C, P, [optional(HName, T)|Hs],
+                 [field(GName, presence(N))|Gs]) :-
+    mapping_law(C, optional_to_presence),
+    field_binding(C, P, HName, GName),
+    rep_in(C, P, T, N), fields_rep(C, P, Hs, Gs).
+
+rep_in(C, P, record(Hs), structure(Gs)) :-
+    mapping_law(C, closed_record_to_struct), fields_rep(C, P, Hs, Gs).
+
+symbolic_preservation(C, P, H, G, K) :-
+    definition_pair(C, H, G), requested_kind(C, P, K),
+    source_body(C, P, H, HBody), native_body(C, P, G, GBody),
+    kind_in(C, P, HBody, K), rep_in(C, P, HBody, GBody).
+```
+
+This derives the correspondence between `list<tau>` and `[]nu`, the optional
+text field and BittypeOptional[string], and the complete record/struct bodies.
+Both field lists must be consumed. Missing, extra or differently represented
+fields cannot be skipped. This rule uses corresponding field order; another
+ordering needs an explicit lawful field correspondence.
+
+The final rule is generic in source and target declarations. Page needs no
+hand-authored proof rule: the structural mapping instantiates its ordinary
+record/list/optional rules for the opened bodies. Actual binder correspondence
+is retained instead of matching same-spelled parameter names.
+
+Representative ground queries, separate from the program, are:
+
+```prolog
+kind_in(c, p, list(rigid(tau)), k_data)
+rep_in(c, p, list(rigid(tau)), slice(rigid(nu)))
+symbolic_preservation(c, p, h_page, g_page, k_data)
+```
+
+Their conclusions remain **under p**. No rule drops that scope, promotes a
+hypothesis to an unconditional fact, runs hidden analysis or treats an unproved
+goal as nonmembership.
+
+## Assumption discharge and the generic theorem
+
+The intended theorem-introduction rule is:
+
+```text
+Gamma = { tau : Data, Rep_C(tau, nu) }
+Gamma |- Page<tau> : Data and Rep_C(Page<tau>, GoPage<nu>)
+tau and nu are arbitrary fresh parameters; the proof is stable under substitution
+-------------------------------------------------------------------------------
+|- forall T,N. (T : Data and Rep_C(T,N))
+       implies (Page<T> : Data and Rep_C(Page<T>,GoPage<N>))
+```
+
+The body derivation is one premise. Lifting it to named application families
+also requires checked definition/binder correspondence and the selected
+named-representation law: substituting represented arguments into the native
+definition agrees with representing the source substitution. This preserves
+nominal/alias promises without identifying every named type with its body.
+
+The introduction rule must establish:
+
+1. Tau and nu are fresh, correctly sorted parameters. Earlier premises contain
+   no concrete choice for either symbol.
+2. Recorded assumptions are exactly the theorem's premises. Additional
+   assumptions remain in its statement; they cannot disappear at discharge.
+3. Used rules and theory results remain valid under admissible substitutions.
+   A name test, whitelist or property of a concrete example is insufficient.
+4. Opening and closing are capture-avoiding, preserve repeated binders and keep
+   caller-local symbols from escaping into helpers or another declaration.
+5. The result carries the whole application association and conditional kind
+   guarantee. Support for T alone is not support for Page<T>.
+
+Logos's current account has ground conclusions and finite acyclic derivations.
+Ground terms here encode a scoped symbolic judgment. A checked query containing
+`rigid(tau)` is **not by itself** universal quantification: the explicit
+introduction/discharge step is still required. A consumer-owned proof theory or
+certificate rule would check it through the existing extension boundary. Its
+implementation and exact evidence API remain deferred; no new served Logos
+capability is claimed. The check must inspect the scoped derivation and premises,
+not accept producer-supplied `fresh` or `parametric` Booleans as sufficient proof.
+
+This is a reusable proof rule, not a Page-aware kernel or another Data evaluator.
+Primitive laws remain visible foundational assumptions. A finished account proves
+preservation relative to those laws, not their independent real-world truth or
+the correctness of a compiler implementation.
+
+## Reuse and nested pagination
+
+For a later Invoice, establish its ordinary `Invoice : Data` judgment and
+`Rep_C(Invoice, GoInvoice)`, then substitute those proofs into the theorem. Page's
+definition and proof schema need no new Invoice case or whitelist entry.
+
+The theorem also supports nested pagination:
+
+```text
+T : Data, Rep_C(T,N)
+    -> Page<T> : Data, Rep_C(Page<T>,GoPage<N>)
+    -> Page<Page<T>> : Data, Rep_C(Page<Page<T>>,GoPage<GoPage<N>>)
+```
+
+The second application uses the first application's **result** proofs, not the
+original T evidence. An outer generic likewise retains its caller binder and
+assumptions instead of capturing Page's formal environment.
+
+The Data theorem does not restrict ordinary Page. `Page<Cell<Person>>` may use
+the unconstrained representation theorem when a valid Cell mapping is supplied.
+A Cell containing Wire cannot supply the Data premise for DataPage. These
+contracts and their mappings remain library-owned.
+
+This establishes type representation and source membership, not validation of
+arbitrary Go values, UTF-8 correctness of every Go string, mutation safety or
+implementation of a behavioral contract.
+
+## Native admission is separate
+
+Generic preservation starts with premises. An enforcing native boundary must
+establish them for the arguments it admits:
+
+```text
+for every A allowed by the native consumer contract:
+    NativeAccepts_C(Encoding, A)
+        implies an established intended interpretation (T,N)
+        and T : Data and Rep_C(T,N)
+```
+
+The interpretation is the declared one, not whichever source type makes the
+conclusion convenient. A may be a payload, descriptor or another supported
+encoding; no universal source/native/proof tuple is prescribed. Aliases,
+inference, extension authority and checking points belong to this theorem.
+
+There is deliberately no rule from `native_accepts` to `assumed(member(...))`.
+A hypothetical premise is not evidence that a native caller satisfied it.
+Go Page[N any] supplies a representation family but no Data gate. Its constraint
+rules do not automatically interpret Horos kinds; see the
+[Go type-set specification](https://go.dev/ref/spec#General_interfaces).
+An enforcing request still needs a valid encoding and the separate admission
+proof. The current enforcement profile remains Unsupported.
+
+Neither theorem inherently requires enumeration. Admission mechanisms can also
+have symbolic proofs. The former finite union was one limited admission example,
+not pagination's definition, the Data domain or a requirement of Logos. It is
+not retained as the proof in this document.
+
+For source-checked generation, explicit Horos evidence supplies the premises of
+each generated use. This is a representation guarantee, not Go enforcing the
+bound on arbitrary handwritten native code. An enforcing result composes the
+independent admission theorem with generic preservation. Neither replaces the
+other. Completeness is also separate: a conditional theorem over valid
+representations does not establish their availability for every source type.
+
+## Integration and outstanding obligations
+
+The proposed flow keeps prerequisites explicit:
+
+```text
+captured source + source semantic evidence + selected mappings
+    -> candidate native AST and explicit native/body facts
+    -> scoped preservation account and assumption discharge
+    -> independent native-admission account, when requested
+    -> output with the established guarantees, or failure
+```
+
+No mapping invokes hidden source analysis. Semantic receipts associate evidence
+with captured inputs but do not prove preservation. Generated associations and
+accounts belong to invocation/result state, not immutable source Semantics.
+ASTSet still contains syntax only; carrying accounts needs an explicit evidence
+contract. None is added here.
+
+| Obligation | Required scope |
 | --- | --- |
-| Source admission | Horos judgments concern the exact input, original parameter contracts and actual assumptions; no foreign Program handle or unproved query becomes a fact |
-| Native-model adequacy | For the declared Go fragment, actual acceptance is equivalent to the extracted exact union; aliases and applicable inference cannot add an unmodeled concrete case |
-| AST correspondence | Native facts describe the complete candidate declarations and dependency identities, including the bound, base use and all fields |
-| Interpretation | Every admitted argument has the intended, functional source interpretation and the selected representation association |
-| Bound soundness | Every admitted native argument satisfies the corresponding Horos argument contract |
-| Relative completeness | Every source argument in the independent declared domain has a supported native argument |
-| Result preservation | Primitive, element and structural mapping laws justify the entire result family, under symbolic assumptions where applicable |
-| Composition and emission | Definition/use substitution agrees; changed imported fixed dependencies invalidate inapplicable laws; AST-to-source emission preserves the proved declaration |
+| Source evidence | Actual source world, valid original declarations, resolved kinds and complete assumptions; no foreign Program handle or unproved fact |
+| AST correspondence | Complete bodies, helper definitions, field links, selected dependencies and real formal binders |
+| Mapping laws | Stated representation meaning, well-formedness and substitution stability; no self-asserted top-level preservation claim |
+| Symbolic derivation | Kind and representation conclusions under explicit assumptions, accounting for every field |
+| Assumption discharge | Freshness, complete dependencies, lawful introduction and named-family substitution |
+| Native admission | Independent proof that native acceptance establishes the intended membership and representation premises |
+| Completeness | Coverage of the independently promised source/native domain |
+| Emission | Formatter/printer and native-model assumptions preserve the proved AST's meaning; no automatic compiler-correctness claim |
 
-The proof may treat a language-model law or primitive representation equation as
-an explicit foundational axiom. Its authority and meaning remain visible. It must
-not disguise the desired top-level preservation conclusion as a primitive axiom.
-Likewise, proving facts for a candidate AST does not by itself prove its formatter,
-printer or the native compiler implementation correct.
+Public Horos supplies Satisfies, Includes and conditional membership facts in its
+[Go declaration API](https://github.com/Bitspark/horos/blob/main/core/go/declarations/README.md),
+but no public Logos certificate export for general-kind judgments. A first bridge
+could admit established facts through a LeafVerifier, retaining Horos in the
+trusted foundation. A stronger bridge could supply certificates or a justified
+pure Theory. Neither closure-fact notation nor a Proven verdict implements that
+bridge.
 
-If the required domain includes all Data types, this finite example is incomplete.
-For instance, `DataPage<DataPage<Person>>` is source-valid but its inner native
-Page type is outside DataItem. That request must fail or use a separately justified
-larger encoding. No automatic finite-domain fallback is permitted.
+Horos recursive kinds use greatest-fixed-point reasoning. The sound closure
+consequences used here do not translate that semantics into ordinary least-model
+Horn recursion. Tau's structure stays abstract. Required source consequences
+must be established or requested through an implemented provider capability.
 
-The unconstrained Go Page remains usable with other types, just like canonical
-Page. Its existence does not grant a Data guarantee. Successful DataPage alias
-instantiation then erases the alias identity: assigning a Page value is not proof
-of passage through DataPage. Retained identity, arbitrary native generic
-forwarding, cross-package extension and runtime conformance need separate claims.
+Logos distinguishes Rule derivations, Builtin theories and admitted Leaf premises
+in its [account contract](https://github.com/Bitspark/logos/blob/main/docs/spec/logos-contract.md).
+Its [domain-blind boundary](https://github.com/Bitspark/logos/blob/main/docs/architecture/decisions/0025-logos-is-domain-blind.md)
+keeps these consumer rules outside the kernel. Expressing a claim in Ontos does
+not establish a serving engine/checker. Missing capability, unproved claims,
+exhausted search and refutation remain distinct.
 
-Changing exact terms to `~` underlying-type terms, widening the union,
-changing an element mapping, or altering the optional/list representation changes
-the obligations. The former private singleton-evidence scheme is still withdrawn;
-moving it into this proof vocabulary does not fix its inference hole.
-
-## Existing foundations and deferred integration
-
-Current public Horos exposes Satisfies, Includes and conditional membership facts
-through its [Go declaration API](https://github.com/Bitspark/horos/blob/main/core/go/declarations/README.md).
-It has no public Logos certificate export for these general-kind judgments.
-Earlier private Horos proof integration concerned descriptor conformance, not
-the native-preservation theorem proposed here.
-
-A first bridge could admit Horos-established facts through an explicit
-LeafVerifier bound to the supplied source evidence. That retains Horos's decision
-procedure in the trusted foundation; it is not an independent Logos replay of
-Horos reasoning. A stronger bridge could export certificates or bind a justified
-pure Theory for selected judgments. Recursive Horos kinds use greatest-fixed-point
-reasoning; ordinary least-model Horn recursion is not a semantics-preserving
-replacement. No required missing fact triggers hidden reanalysis or a duplicated
-Horos evaluator in generation.
-
-Logos already separates Rule derivations, Builtin theories and admitted Leaf
-premises in its [account contract](https://github.com/Bitspark/logos/blob/main/docs/spec/logos-contract.md).
-Encoding a new claim as Ontos data does not mean that a packaged engine or checker
-already supports its reasoning. Missing capability, an unproved goal and exhausted
-search remain distinct from a counterexample. None permits an enforcing success.
-
-The next design work is to specify the primitive representation laws, the native
-fact extractor/model and the source bridge, then a generic evidence/result
-interface. They must preserve the existing source-owned semantics and stage-first
-layout. No new source packages, dependency pins, registry entries, provider-matrix
-cells, proof workflows or runtime behavior are introduced by this proposal.
+No implementation, native analyzer, proof-execution workflow, provider-matrix
+cell, dependency or runtime behavior is added. Relevant software tests and
+typechecking belong to future implementation; this document claims no executed
+proof or compiler result.

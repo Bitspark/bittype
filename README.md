@@ -75,8 +75,8 @@ interpret these concrete type semantics.
   direct bounds and source witnesses for all four targets, guarantees and
   unresolved limits; documentation only.
 - [Logos preservation proofs](docs/logos-preservation.md): proposed source/native
-  implication model and concrete Go pagination facts, rules and proof obligations;
-  documentation only.
+  symbolic pagination proof with concrete scoped facts and structural rules;
+  native admission is separate. Documentation only.
 - [Type and value domains](docs/hydrated-types.md): ownership, authoritative canonical
   input and explicit data boundary. The [frontend guide](docs/horos.md)
   documents implemented APIs and qualification.

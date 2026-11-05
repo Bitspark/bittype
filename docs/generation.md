@@ -13,9 +13,10 @@ four targets, caller-scoped parameter products and nested result support. Its
 separates the shared representation path from target-specific enforcement.
 
 The [Logos preservation proposal](logos-preservation.md) adds a documentation-only
-design for deriving native guarantees from source facts, actual target ASTs and
-mapping laws, with a concrete bounded Go pagination example. Its proof integration
-and native semantic models remain unimplemented.
+design for deriving generic preservation from source facts, actual target ASTs
+and mapping laws. Its symbolic Go pagination proof assumes `T : Data` and a valid
+selected representation; native admission is a separate theorem. The proof
+integration and native semantic models remain unimplemented.
 
 **Updated: 5 November 2026.** The toolchain is implemented in Go. Generic AST/CST
 carriers, typed stages, language.Provider and four native text pipelines are
