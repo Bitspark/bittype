@@ -6,6 +6,11 @@ conceptual direction and admission promises. Consultations 0008/0009 exposed
 flaws in the earlier TypeScript/Go evidence sketches; the target sections below
 replace those claims. No candidate is compiler-qualified by this documentation.
 
+The owner's [Logos preservation proposal](logos-preservation.md) develops an
+explicit proof layer for these guarantees. It includes facts, rules and proof
+obligations for a bounded Go DataPage view, while retaining the distinction
+between native admission, representation and runtime value conformance.
+
 This document describes how TypeScript, Go, Rust and C++ generation could retain
 Horos kind constraints without recognizing `Data`, `Type`, `Scalar` or any other
 named kind specially. It extends the proposed [native representation design](type-representations.md)

@@ -6,6 +6,11 @@ convention and scoped representation products replace the earlier binder-to-slot
 proposal. Target-specific guarantees and the complete Go SPI remain proposed;
 current native generation capabilities are unchanged.
 
+The [Logos preservation proposal](logos-preservation.md) adds a documentation-only
+design for deriving native guarantees from source facts, actual target ASTs and
+mapping laws, with a concrete bounded Go pagination example. Its proof integration
+and native semantic models remain unimplemented.
+
 **Updated: 5 November 2026.** The toolchain is implemented in Go. Generic AST/CST
 carriers, typed stages, language.Provider and four native text pipelines are
 implemented. The [native text design](parsing-formatting.md) owns parser,

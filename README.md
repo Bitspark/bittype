@@ -74,6 +74,9 @@ interpret these concrete type semantics.
 - [Preserving native kind constraints](docs/native-kind-constraints.md): proposed
   direct bounds and source witnesses for all four targets, guarantees and
   unresolved limits; documentation only.
+- [Logos preservation proofs](docs/logos-preservation.md): proposed source/native
+  implication model and concrete Go pagination facts, rules and proof obligations;
+  documentation only.
 - [Type and value domains](docs/hydrated-types.md): ownership, authoritative canonical
   input and explicit data boundary. The [frontend guide](docs/horos.md)
   documents implemented APIs and qualification.
