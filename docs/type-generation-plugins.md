@@ -332,6 +332,10 @@ compose through Lower.
 
 ### Pagination keeps its generic structure
 
+The [worked generic-generation walkthrough](generic-elaboration.md#pagination-and-scope)
+connects this composition to Introduce/Apply, scoped products, all four target
+representations and the [implementation sequence](generic-elaboration.md#implementation-sequence).
+
 Consider this explanatory Horos source, with library imports and Person's body
 omitted:
 

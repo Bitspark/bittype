@@ -225,6 +225,12 @@ this encoding. Native shape inspection is not a substitute.
 
 ## 4. Pagination through an ordinary recursive kind
 
+The [generation walkthrough](generic-elaboration.md#pagination-and-scope) follows
+this example through parameter introduction, application and nested result
+support. Its [implementation sequence](generic-elaboration.md#implementation-sequence)
+retains the current representation-only guarantee until an explicit native
+enforcing encoding is supported.
+
 The following source excerpt assumes `h` is explicitly imported. It uses a
 custom kind to make the absence of named-kind cases visible:
 

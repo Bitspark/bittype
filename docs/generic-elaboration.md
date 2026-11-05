@@ -120,31 +120,155 @@ or equal IDs cannot establish either law.
 
 ### Pagination and scope
 
+This walkthrough is the proposed first implementation through the shared plugin
+architecture. The source excerpts assume an explicit import of the ordinary
+`horos.kinds` module as `h`; module headers and import identities are omitted.
+See [Horos source syntax](horos-syntax.md) for complete module syntax. The
+examples specify intended composition, not executed new generator capabilities.
+
 ```text
+kind Tree = nu {
+  X = h.Text | h.Bool | h.List<X> | h.ClosedRecord<X>;
+} in X;
+
 type Page<T> = { items: list<T>; next?: text; };
 type TreePage<T: Tree>: Tree = Page<T>;
-type Outer<T: Tree>: Tree = TreePage<T>;
+
+type Person = { name: text; active: bool; };
+type People = TreePage<Person>;
 ```
 
-Tree is an ordinary imported/user-authored kind. A simple Page convention can
-introduce one native parameter. A selected TreePage convention might introduce
-one witness with a payload projection, or several linked parameters. Both must
-produce the same source/application relationship within their stated domains.
+Tree is an ordinary kind definition. Horos supplies the judgment that Person
+belongs to Tree and that TreePage's result belongs to Tree under its original
+argument assumption. Generation consumes those established judgments with the
+actual source binders; it does not recognize Tree's name or reconstruct its
+meaning from the native Person fields.
+
+```mermaid
+flowchart LR
+    H["Horos AST + supplied semantic facts"] --> G["Configured Bittype generation"]
+    M["Builtin and library mappings"] --> G
+    G --> A["Target-language AST"]
+    A --> F["Formatter → CST"]
+    F --> P["Printer → native source"]
+```
+
+Resolution and analysis run explicitly before this generation invocation. The
+diagram does not permit the host or a mapping to invoke them on demand. The
+target AST is the generator's output; source text is produced by the existing
+formatter and printer stages.
+
+#### One open declaration, four target representations
+
+The ordinary declaration and record mappings compose the selected list and text
+mappings. Page needs no handwritten pagination plugin. One possible composition
+retains the existing [pagination representation choices](semantic-generation.md#pagination-subset):
+
+| Target | Page application | `items` type | Optional `next` type |
+| --- | --- | --- | --- |
+| TypeScript | `Page<T>` | `T[]` | `next?: string` |
+| Go | `Page[T]` | `[]T` | `BittypeOptional[string]` |
+| Rust | `Page<T>` | `Vec<T>` | `Option<String>` |
+| C++ | `Page<T>` | `std::vector<T>` | `std::optional<std::string>` |
+
+These are configured choices, not a language table built into the host. Go's
+presence helper and the other optional forms preserve absence separately from
+a present value. The TypeScript choice retains the existing strict-null and
+exact-optional-property settings. This table concerns representations; it does
+not make arbitrary native applications satisfy Tree.
+
+#### Introduce, define and apply
+
+The same configured convention governs the open declaration and every use:
+
+1. **Reserve Page and introduce its formals.** Own reserves the native declaration
+   and parameter symbols. Introduce uses those reserved symbols to associate the
+   real source binder Page.T with a scoped representation product whose payload
+   is the native parameter T. A simple Page convention introduces one native
+   parameter.
+2. **Define Page's body.** The record mapping requests the selected list mapping
+   for `list<T>`. That mapping consumes Page.T's product and constructs the native
+   list type. Text and optional-field representation are composed the same way.
+   Define fills the reserved declaration with those AST nodes and the already
+   chosen native formals.
+3. **Apply TreePage to Person.** The source adapter supplies the admitted use
+   under its real arguments and assumptions. The selected Person mapping supplies
+   its representation. TreePage's convention constructs the complete native
+   application using the same layout as its published declaration. It returns
+   the result association as well as the native type expression.
+4. **Publish People.** Expose the requested named application using that product.
+   Retain the open Page and TreePage declarations; the first Person use neither
+   chooses their generic signatures nor creates a specialized copy of Page.
+
+Use obtains a representation product; Publish exposes a requested declaration;
+Define fills an owned reservation. Introduce and Apply supply the shared generic
+convention used by those operations. A mapping selecting an external native
+declaration can apply its compatible supplied convention without defining that
+declaration locally.
+
+A representation product has two conceptual parts:
+
+| Part | Meaning during generation |
+| --- | --- |
+| Native payload | Target AST expression for the selected representation |
+| Integration-owned support | Information connecting that payload to the effective source use, its assumptions and selected association, including the result support required by composition |
+
+The integration owns the support vocabulary and establishes its association.
+The host owns invocation and scope rules; it does not interpret kind proofs or
+accept an arbitrary pair as valid merely because its fields have the right Go
+types. This is not a universal source/native/proof tuple or a dictionary of named
+kinds. Support stays in generation state. An enforcing encoding may additionally
+emit native descriptor or constraint types; neither operation creates runtime
+adapters or values.
+
+#### Caller scope and nested results
+
+```text
+type Outer<T: Tree>: Tree = TreePage<T>;
+type Nested<T: Tree>: Tree = TreePage<TreePage<T>>;
+```
 
 When defining Outer, TreePage's actual argument is **Outer.T**. Apply consumes
 Outer's scoped product; it must not use TreePage's own formal symbols or discard
-Outer's assumption. `TreePage<TreePage<T>>` also requires support for the inner
-**result**, not reuse of support for T as though it described the whole page.
+Outer's assumption. A selected enforcing convention might represent a source
+parameter with one descriptor and a payload projection, or with several linked
+native parameters. Introduce and Apply must agree on that arrangement.
+
+Nested requires support for the inner **result**. Its inner application produces
+the selected native representation of TreePage<T> and the supported result
+membership under `T: Tree`. The outer application consumes that product. Reusing
+support for T as though it described the whole page is invalid. This requirement
+does not authorize hidden source analysis when the supplied facts are missing.
+
+#### Library composition and unused arguments
+
+```text
+// Cell is an ordinary imported library declaration.
+type EditablePeople = Page<Cell<Person>>;
+```
 
 `Page<Cell<Person>>` composes Page's structural/list mappings with Cell's selected
 library mapping. It introduces no Data obligation and no Cell-specific kernel
-case. A capability-containing Cell still fails a Data bound regardless of its
-native representation.
+case. The consuming build supplies a mapping for Cell's exact resolved declaration
+and the target configuration. For example, an external mapping could supply
+`cell.Cell<Person>` in TypeScript, `cell.Cell[Person]` in Go, or
+`cell::Cell<Person>` in Rust/C++. These are illustrative library type references,
+not new built-in packages. The enclosing Page uses the same open definition and
+passes that selected representation as its argument.
+
+The current pagination profile does not thereby gain Wire or Cell support. This
+is a future composition fixture requiring an explicit library mapping and its
+supported source/target contract. Function and Stream use the same supplied
+mechanism. A capability-containing Cell still fails a Data bound regardless of
+its native representation, and choosing a native handle supplies no protocol
+behavior.
 
 For `Ignore<T: Tree> = text`, source admission must retain T's obligation even
 when payload lowering never visits T. Native publication must retain the chosen
-admission gate or fail. The current backend rejects unused proper parameters;
-this example specifies a future requirement, not current support.
+admission gate or fail when enforcement is requested. A representation-only
+profile must keep its stated source-checking guarantee distinct from native
+enforcement. The current backend rejects unused proper parameters; this example
+specifies a future requirement, not current support.
 
 ### Admission and products do not manufacture proofs
 
@@ -258,14 +382,57 @@ selected target/domain:
    without enumerating every kind or running hidden analysis.
 5. Optional-capability and nongeneric-definition behavior, limits and failure.
 
-Then implement the representation-only convention over the existing proper,
-direct, saturated generic domain. A later selected admission encoding must
-establish its domain, authority and substitution promises. Exercise Outer,
-nested TreePage, Ignore, Cell composition and matching/mismatching imported fixed
-dependencies when that implementation is authorized. Higher-order/computed
-generics, automatic convention adaptation, mixed native binders, unrestricted
-recursion and cross-invocation caches remain deferred until a concrete supported
-case requires them.
+### Implementation sequence
+
+The next implementation proceeds through the pagination walkthrough in three
+steps. This document authorizes no code change by itself.
+
+1. **Define the public product and convention interfaces.** Resolve the five API
+   questions above using Page, Outer and Nested. Independent integrations must be
+   able to construct and consume scoped products through public contracts. Keep
+   source facts, selected associations and emitted syntax separate; a Go carrier
+   cannot establish their semantic correctness by itself.
+2. **Replace the private pagination path across all four targets.** Implement the
+   shared convention over the existing proper, direct, saturated generic domain
+   and supply the ordinary declaration, record, list, text, boolean and optional
+   mappings.
+   Preserve the existing representation profile's behavior and remove the
+   superseded private generation path in the completed replacement. No compatibility
+   implementation or implicit fallback remains. Existing unsupported cases stay
+   explicit until their own mappings/contracts are implemented. Extend composition
+   through ordinary library fixtures such as Cell without adding core cases.
+3. **Add supported native constraint encodings.** For each selected target/domain,
+   specify the admitted arguments, consumer operations, issuer assumptions,
+   checking points and identity/alias promises. Exercise the counterexamples in
+   the [constraint proposal](native-kind-constraints.md). An unavailable enforcing
+   representation returns Unsupported; no weaker output satisfies that request.
+
+The first implementation retains today's explicit representation-only guarantee.
+It preserves the associations needed for stronger encodings without claiming
+those encodings already exist. The [Logos preservation proposal](logos-preservation.md)
+describes a possible explicit proof integration using source facts, actual target
+AST semantics and mapping laws. The product/convention API is not that proof,
+and the proposal does not install a Logos dependency or native analyzer implicitly.
+
+The implementation's automated tests and target typechecking should cover:
+
+| Case | Required outcome |
+| --- | --- |
+| Page and People in each target | One open definition and correctly substituted applications; preserve the selected list and optional representations |
+| Outer with renamed source parameters | Resolve the caller's real binder and retain its assumptions; no captured callee formal or name-based substitution |
+| Nested constrained application | Compose the inner result's association and required support, not its argument's support |
+| Missing source admission or incompatible support | Located failure with no partial output or retry through a weaker mapping |
+| Ignore's unused constrained argument | Preserve source admission independently of payload traversal; an enforcing encoding must retain its gate or reject the request |
+| Supplied Cell mapping | Compose through the ordinary Page/list mappings without a host, engine, runtime or Wire change |
+| Imported generic with compatible/incompatible fixed choices | Reuse only supported parameter substitutions; an element override cannot rewrite a baked-in list or optional representation |
+| Requested native enforcing API | Target-specific positive and negative typechecking demonstrates the stated domain and checking point; a few accepted concrete uses do not establish an open guarantee |
+
+These are future acceptance criteria, not tests executed by this documentation
+change. Run the applicable Go tests and native typechecking through the
+repository's maintained execution paths when implementation is authorized.
+Higher-order/computed generics, automatic convention adaptation, mixed native
+binders, unrestricted recursion and cross-invocation caches remain deferred
+until a concrete supported case requires them.
 
 Any absent admission, incompatible association, omitted bound, illegal scope,
 unsupported publication or forbidden wrapper change fails the entire invocation.
