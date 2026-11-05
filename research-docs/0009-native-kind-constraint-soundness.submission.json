@@ -10,13 +10,17 @@
       "codeRevision": "f2179283150b1e7344844fc97503ca26fe40795c",
       "cliBuild": "nightfall 0.1.0 (c9ed336ce96b, bundle 8a8df16bb728) built 2026-11-04T19:12:23.718Z",
       "recordedAt": "2026-11-05T17:07:56.2408137Z",
-      "state": "submitted",
+      "state": "completed",
       "ownerRule": "No separate local checksum, validation or check workflow; consultation artifacts and service identifiers retained for the explicitly requested research.",
       "documentId": "doc_372fe753-73ce-4436-9d34-57730dc21b6a",
       "uploadedAt": "2026-11-05T17:08:22.8187844Z",
       "submittedSize": 36581,
       "runId": "run_68ae2de0-1874-41dd-950b-837779e86fb0",
-      "submittedAt": "2026-11-05T17:08:55.4121244Z"
+      "submittedAt": "2026-11-05T17:08:55.4121244Z",
+      "resultId": "result_a2eb66f7-df85-4c3c-9e75-198987fe2b69",
+      "resultSize": 37299,
+      "receivedAt": "2026-11-05T17:31:45.2910781Z",
+      "responseAssessment": "Attached run completed with exit 0; service status binds the same run/document to its canonical available result and reports adviceVerdict genuine. Downloaded response header names the matching run/document, and the complete answer was read against the submitted questions. No separate checksum/validation workflow was run under the owner rule."
     }
   ]
 }

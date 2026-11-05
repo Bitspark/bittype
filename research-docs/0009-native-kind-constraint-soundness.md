@@ -2,14 +2,73 @@
 
 **ID:** 0009
 **Date:** 5 November 2026
-**Status:** submitted
+**Status:** delivering (documentation scope; shared proposal integration pending)
 **Run-ID:** run_68ae2de0-1874-41dd-950b-837779e86fb0
 **Document-ID:** doc_372fe753-73ce-4436-9d34-57730dc21b6a
 **Reviewed:** https://github.com/Bitspark/bittype/issues/85#issuecomment-6664161148
+**Graded:** https://github.com/Bitspark/bittype/issues/85#issuecomment-6664969914
 **Owner:** codex-hydrated-type-design
 **Issue:** https://github.com/Bitspark/bittype/issues/85
 **Companion consultation:** 0008, https://github.com/Bitspark/bittype/issues/84
 **Inspected baseline:** bittype f2179283150b1e7344844fc97503ca26fe40795c
+
+## Evaluated decision
+
+The [expert response](0009-native-kind-constraint-soundness.advice.md) supports
+preserving an established source application and its selected native association,
+with explicit admission profiles instead of a universal native-enforcement claim.
+This is a documented conceptual direction. No native gate, generator SPI or
+runtime behavior is implemented or compiler-qualified by this research.
+
+The most important corrections are:
+
+- **TypeScript upper-bound evidence is not sufficient.** An independent proof
+  argument can be `never` while the output is an inhabited `Page<N>`. Structural
+  evidence also admits mapped-bottom counterexamples. Invariance addresses
+  widening but does not repair these cases. Finite complete-application selection
+  is a different, explicitly bounded normalization promise.
+- **The Go private-evidence sketch is unsound as a selective issuer.** A singleton
+  exported constraint can let inference select an unpublished private constructor
+  instance. Hiding its name and selectively exporting aliases do not restrict
+  which source/native tuples the relation admits. The earlier favorable
+  closed-package assessment is withdrawn. A finite issued relation is a candidate
+  requiring its own exact design, not a demonstrated replacement.
+- **Rust alias bounds, demanded projections and wrappers have different checking
+  points.** Sized requirements must hold at the actual gate, not merely appear on
+  an ordinary alias. C++20 constrained aliases can provide a useful finite gate
+  over exact generated descriptor identities, under explicit customization and
+  visibility rules. Neither language supplies universal earliest rejection.
+- **Admission and retained identity are separate.** An admitted alias may erase
+  source/evidence parameters. Later composition needs explicit result support;
+  payload assignability cannot reconstruct that support. A wrapper is an explicit
+  API choice, not an automatic alias replacement.
+- **Source facts and native associations have different reuse conditions.** A
+  Person representation override can preserve its source membership while
+  invalidating native evidence. A truly parametric imported Page may accept the
+  new element type; its fixed list/text/optional choices remain fixed. Consumer
+  generation can own new associations and evidence while reusing compatible
+  imported payload families.
+
+Each admission profile must specify native argument grammar, allowed consumer
+operations and issuer assumptions, checking point, alias/identity promises,
+extension model and completeness over an independently stated represented
+domain. A request for an unsupported open declaration remains an error; named
+concrete applications are not a silent substitute. Recursive source facts,
+recursive native representations and open native recursive inference remain
+separate problems.
+
+This agrees with [research 0008](0008-generic-generation-protocol.md): a scoped
+representation product and paired formal/application convention carry complete
+source assumptions, selected associations and result support. The kernel
+coordinates them without interpreting kinds. The concrete public support API
+and native admission mechanisms remain deferred.
+
+The shared documentation owner is incorporating the decisions into
+[generic elaboration](../docs/generic-elaboration.md),
+[native kind constraints](../docs/native-kind-constraints.md) and
+[type-owned plugins](../docs/type-generation-plugins.md). The context below
+records the submitted design, including challenged sketches; it is not an
+alternative accepted design. The frozen input and raw response remain unchanged.
 
 ## Question
 
@@ -713,3 +772,70 @@ Primary language references for the limitations to examine:
 - [Rust implementation coherence](https://doc.rust-lang.org/reference/items/implementations.html#trait-implementation-coherence)
 - [C++ template constraints](https://eel.is/c++draft/temp.constr)
 - [C++ specialization access rules](https://eel.is/c++draft/temp.spec.general#6)
+
+## Applied
+
+Evaluation covers attempt 1, run `run_68ae2de0-1874-41dd-950b-837779e86fb0`,
+document `doc_372fe753-73ce-4436-9d34-57730dc21b6a`, and the baseline stated above.
+The attached run completed and delivered its canonical response; its header and
+the service's run/document/result association match this consultation. The full
+response and submitted brief were read. The service reports the response genuine.
+No separate checksum or validation workflow was run under the standing owner rule.
+
+The research owner evaluates and grades the advice for **documentation only**:
+20 recommendations hold, seven need adaptation, and implementation is deferred.
+The Validation column records source/primary-reference assessment and scope, not
+executed compiler evidence. `HOLDS` and `NEEDS ADAPTATION` below authorize the
+stated documentation action; they do not mark an encoding implemented. The
+shared proposal actions are owned by codex-api-retirement-audit under issue84;
+codex-hydrated-type-design owns this evaluation record under issue85.
+
+| # | Recommendation | Verdict | Action | Owner | Link | Validation |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Replace universal enforcement with explicit admission profiles. | HOLDS | Specify native argument domain, consumer operations, checking point, extension/issuer model and API promise separately. Keep current representation behavior and Unsupported enforcement unchanged. | codex-api-retirement-audit | [Synthesis](../docs/generic-elaboration.md) | Current `internal/horosgen/generate.go:174` rejects enforcement; no proposed gate is implemented. |
+| 2 | Require a declared canonical interpretation, not merely some source type explaining a payload. | HOLDS | Define sound admission against the intended source expression, assumptions and selected association; explicitly distinguish a set-of-choices interpretation when offered. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md) | Exact declaration/parameter identities and environment-bearing source references already retain the necessary distinctions. |
+| 3 | State relative completeness over an independent supported domain. | HOLDS | Avoid an accept-nothing soundness claim or a domain defined as whatever succeeds. Quantify over established source judgments and represented substitutions, with resource limits stated. | codex-api-retirement-audit | [Synthesis](../docs/generic-elaboration.md) | Horos distinguishes Proven/Refuted/Unproved and Invalid/Exhausted; current generation rejects unsupported representations. |
+| 4 | Direct payload bounds need membership constant over representation-collision classes. | HOLDS | Document this necessary condition and target expressibility requirement; do not require full representation injectivity or equate native assignability with membership. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md) | The existing Leaf example already separates descriptor-kind alternatives from a native payload union. This is a logical condition, not a tested target encoding. |
+| 5 | Keep value conformance separate from membership and association. | HOLDS | Retain the type-only boundary; no native admission claim validates arbitrary strings, refinements, closed-record contents or protocol behavior. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md) | Horos ground conformance and generation are independent APIs; current generators emit types only. |
+| 6 | Retain mapping-sensitive source identity even when membership normalizes aliases. | HOLDS | Keep resolved declaration/application identities for selection; do not derive witness identity only from equal expanded structure. | codex-api-retirement-audit | [Plugins](../docs/type-generation-plugins.md) | `internal/horosmodel/facts.go` exports declaration and ordered parameter identities separately from memberships. |
+| 7 | Admission followed by alias erasure does not imply retained evidence. | HOLDS | State checking-point and persistent-association promises independently. Later composition uses explicit result support; a nominal wrapper requires an explicit API choice. | codex-api-retirement-audit | [Synthesis](../docs/generic-elaboration.md) | Native alias identity rules and the existing wrapper/interchangeability constraint support the distinction; no compiler run. |
+| 8 | TypeScript `never` can bypass independent evidence bounds. | HOLDS | Remove any claim that structural/invariant evidence bounds alone enforce formation. Include the inhabited Page<N> counterexample and preserve normalization versus formation distinctions. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#5-typescript) | [TypeScript bottom-type rule](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-0.html#the-never-type); language-rule deduction, not compiled output. |
+| 9 | Structural bottom-property evidence defeats a primitive-never exclusion. | HOLDS | Document mapped-bottom fabrication for the property-based sketch; private symbol spelling and constructor privacy do not prove type-only issuance. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#5-typescript) | TypeScript mapped types and structural compatibility apply to the concrete property Evidence example; this is not a universal impossibility theorem for every encoding. |
+| 10 | Invariance still matters, but does not repair bottom or structural issuance holes. | HOLDS | Retain correlation requirements, actual structural variance and strictFunctionTypes assumptions; distinguish method and function-property behavior. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#5-typescript) | [Variance annotations](https://www.typescriptlang.org/docs/handbook/2/generics.html#variance-annotations) do not change structural comparisons. |
+| 11 | Start TypeScript with named applications or finite whole-application selectors. | NEEDS ADAPTATION | Record a candidate bounded normalization domain: atomic keys identify complete applications, unions preserve whole-application choices, bottom denotes empty selection. Exclude any/forged augmentation from its stated guarantee. Do not publish it as an implemented gate or replace a requested open root with concrete exports. | codex-api-retirement-audit | [Synthesis](../docs/generic-elaboration.md) | TypeScript distribution and alias rules support the distinction; the exact selector grammar and compiler configuration still need specification. |
+| 12 | Go singleton constraints can infer the private evidence type. | HOLDS | Withdraw and remove the private-constructor/selective-alias issuance proposal as a sound design. Explain that the relation admits unpublished tuples even though ordinary constraint checking still occurs. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#6-go) | [Go type unification](https://go.dev/ref/spec#Type_unification) and [infer.go](https://go.dev/src/go/types/infer.go), single non-tilde inference branch, support the counterexample. No compiler invocation. |
+| 13 | Go needs actual issued-tuple restriction, not unnameability or private methods. | NEEDS ADAPTATION | Require invalid tuples to be absent from the admissible relation. Keep finite issued relations as candidates; do not claim that a particular parameter-dependent intersection or open family is already expressible/complete. Private-method embedding/self-satisfaction is not a substitute. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#6-go) | General interface/type-set rules and the inference hole invalidate hiding-only issuance; exact replacement syntax remains deferred. |
+| 14 | Go source/kind tokens need distinct defined identity; aliases can erase checked parameters. | HOLDS | Retain exact versus underlying-type distinctions, Go 1.24+ alias baseline and one-package privacy boundary. Do not recover source evidence from Page[T] after successful alias reduction. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#6-go) | [Type identity](https://go.dev/ref/spec#Type_identity), [instantiation](https://go.dev/ref/spec#Instantiations) and Go 1.24 alias support; no target qualification. |
+| 15 | Rust ordinary alias bounds, projection gates and wrappers have different promises. | NEEDS ADAPTATION | Treat demanded associated projections as a candidate alias-preserving gate, including constant-output Ignore. State exact well-formedness/normalization points; do not promise rejection at every unused alias mention, even through a wrapper. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#7-rust) | [Alias-bound lint](https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#type-alias-bounds) and [free-alias well-formedness](https://rustc-dev-guide.rust-lang.org/analysis/well-formed.html#free-type-aliases) support the limit. Exact gate remains a proposal. |
+| 16 | Rust certificates require controlled implementations and sized inputs. | NEEDS ADAPTATION | Put Sized at the actual gate implementation/carrier or relevant supertrait; an ordinary alias bound is insufficient. Explain sealed extension limits and nameable unsized trait-object evidence. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#7-rust) | Rust trait-object/Sized rules and ordinary alias-bound limits; no generated proof family is qualified. |
+| 17 | Rust association ownership must respect configuration and coherence. | HOLDS | Separate representation from membership; allow an explicitly selected local configuration owner or association-qualified identity, not competing Repr choices per kind. Avoid overlapping blanket implementations and unsupported cross-crate grants. | codex-api-retirement-audit | [Synthesis](../docs/generic-elaboration.md) | Rust orphan/coherence rules and the current explicit override contract support this ownership requirement. The concrete API is deferred. |
+| 18 | C++20 constrained aliases can gate finite exact descriptor identities. | NEEDS ADAPTATION | Document a candidate finite domain of complete nongeneric descriptors and header constraints; distinguish failed substitution/unsatisfied dependent requirements from whole-unit diagnostic promises. Successful alias substitution still erases identity. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#8-c) | C++20 constraints and alias-template rules support the mechanism under explicit type-definition/identity-library contracts; not a general open proof language. |
+| 19 | C++ backing-template specialization and late visibility can undermine facts. | HOLDS | Exclude unauthorized positive specializations from the guarantee; private placement is insufficient. Require relevant definitions before use and forbid late-registration semantics for constraint satisfaction. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#8-c) | C++ specialization access and atomic constraint satisfaction rules; no runtime registry is introduced. |
+| 20 | Separate recursive kind membership, recursive representation and open target inference. | HOLDS | Allow finite export of already-established source facts in principle; do not re-run coinduction in the target. Keep current recursive native declarations unsupported and finite compositional rules distinct from arbitrary recursive admission. | codex-api-retirement-audit | [Synthesis](../docs/generic-elaboration.md) | Horos supports finite observation graphs and source judgments; `generate.go:450` rejects recursive native declarations today. |
+| 21 | Reuse source theorems separately from native association/evidence. | NEEDS ADAPTATION | Preserve subject, kind, assumptions and checked source dependencies. Reuse compatible supplied facts or ordinary fresh source admission, never transfer Program-owned handles between Programs. Overrides require a new applicable native association. | codex-api-retirement-audit | [Synthesis](../docs/generic-elaboration.md) | Horos declaration API explicitly rejects foreign Program handles; Bittype receipts are tied to captured inputs. |
+| 22 | Imported generic compatibility depends on fixed dependencies and parameter slots. | HOLDS | Permit genuine element-parameter substitution such as A.Page<external.User> when its export contract allows it. Do not let that change fixed List/Text/optional choices or A.People. Compare relevant dependencies, not entire configurations. | codex-api-retirement-audit | [Plugins](../docs/type-generation-plugins.md) | Existing exact selection/override rules and open generic representation require this distinction; companion0008 independently identifies fixed dependencies. |
+| 23 | Consumer-owned generated composition can own fresh local associations. | NEEDS ADAPTATION | Document a possible composition owner that imports canonical facts, chooses associations/evidence and reuses compatible payload families. Require a sound admission relation: moving the flawed Go singleton scheme into that package does not repair it. Keep issuer trust explicit; no handwritten semantic grants, runtime registry or universal digest subsystem. | codex-api-retirement-audit | [Synthesis](../docs/generic-elaboration.md) | A consumer cannot declare another package's owner-defined certificate types, but private generic instances exposed through constraints may be inferred. Rust sealing and C++ customization also require explicit ownership; source facts alone do not mint arbitrary native evidence. |
+| 24 | Preserve complete judgments, substitutions and result support. | HOLDS | Carry real binders and assumptions through the paired convention, preserve association independently of proof route, and retain result support for nested constrained applications. | codex-api-retirement-audit | [Synthesis](../docs/generic-elaboration.md) | `facts.go:50-70` retains assumptions; `export.go:223-236` retains contracts; companion0008 supplies the missing formal/application/result seam. |
+| 25 | Preserve ignored-argument admission and constructor/result contracts. | HOLDS | Keep whole-source-use admission independent of payload demand, including Ignore. Additional Data/Tree implications must not narrow Page's original domain; native higher-order support can remain explicitly unsupported. | codex-api-retirement-audit | [Plugins](../docs/type-generation-plugins.md) | Horos admission includes ignored arguments and original domains; current unused-parameter rejection remains unchanged. |
+| 26 | Stage work by representation domain rather than special kind names. | HOLDS | Begin from the current representation slice and explicit library mappings; constrain domains/operations, not Data/Tree spellings. Preserve Function/Stream/Cell library ownership and type-only scope. | codex-api-retirement-audit | [Synthesis](../docs/generic-elaboration.md) | Current model and owner boundary decisions already require this ownership; no kernel or Wire changes follow. |
+| 27 | Use the counterexamples as future acceptance criteria. | HOLDS | Document the expected outcomes for TS bottom/widening, Go inference, Rust checking points/unsized input, C++ specialization/visibility, overrides, nested results and unavailable evidence. Record these as future criteria, not tests run now. | codex-api-retirement-audit | [Synthesis](../docs/generic-elaboration.md) | Every challenge is tied to a language rule or current source boundary; no compiler execution occurred. |
+| 28 | Implement profiles, native gates, theorem families and broader recursion. | DEFERRED | Production implementation is outside this consultation. Resume only after the repository defines the selected convention, native argument grammar, checking points, issuer boundary and target conditions for an authorized implementation slice. Open families/recursive representations additionally require their own supported rules. | future implementation owner | [Issue85 scope](https://github.com/Bitspark/bittype/issues/85) | No implementation or native compiler qualification is claimed; unsupported existing behavior remains intact. |
+
+### Assessment references and limits
+
+The TypeScript/Go and Rust/C++ investigations were reviewed separately against
+the full advice and primary language sources. The research owner retained the
+soundness/completeness, source-fact and composition assessment. No target program
+was compiled. Source/library documentation can support a counterexample or reject
+a claim without establishing a complete new encoding.
+
+In particular, the Go inference counterexample is supported by the specification's
+single non-tilde type-term rule and the implementation branch assigning that term
+to the missing type argument. It is not an inference from private naming alone.
+The proposed finite issued relation remains unqualified. Likewise, Rust projection
+normalization is a candidate with a specified checking point, not a universal
+alias well-formedness guarantee.
+
+The shared proposal integration is the remaining documentation action. The peer
+owns that edit after both research records are available; the frozen brief and
+raw response are not rewritten to match the resulting proposal.
