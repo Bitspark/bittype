@@ -14,6 +14,11 @@ inputs. The complete replacement SPI awaits a selected support domain and the
 construction/lifetime decisions listed below. No alternative compatibility API
 is proposed.
 
+The later [Logos preservation proposal](logos-preservation.md) explains how
+mapping-owned representation laws could compose into checked preservation
+claims. The support carrier and a plugin's declared capability alone do not
+establish those claims; the proof must concern the actual selected output.
+
 The design is scoped to native types and interfaces. It generates no calls,
 stream operations, runtime adapters, validators or transport code. The expert
 consultation and its evaluation are recorded in

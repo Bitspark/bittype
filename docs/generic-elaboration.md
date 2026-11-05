@@ -13,6 +13,12 @@ returns Unsupported. Neither the interfaces discussed here nor a new native
 admission profile is implemented. The research used source/specification
 reasoning, without native compiler runs or a new validation workflow.
 
+The owner's subsequent [Logos preservation proposal](logos-preservation.md)
+expresses native admission and representation guarantees as explicit proof
+obligations. Its bounded Go pagination example supplies concrete facts, rules
+and coverage obligations. This extends the evaluated direction; it does not
+claim that the research or current implementation already provides that bridge.
+
 ## What is preserved
 
 Keep three relationships separate:
