@@ -22,6 +22,15 @@ dimensions, not language IDs. File placement, grouping and concrete import route
 belong to Source; their construction belongs to Files formatting. There is no
 separate layout carrier, layout provider or combined Source provider.
 
+Resolution and analysis operate on the semantic side of the Files dimension.
+They remain independently callable on captured ASTs; the dimension is an
+architectural grouping, not a requirement to open physical files. Source-owned
+`bittype:dimension` doc comments on boundary types express this grouping for the
+[generated provider matrix](providers.md). The shared language identity contract
+uses `bittype:shared`. These annotations introduce no runtime methods or registry;
+the generator reads declared operation boundaries, never storage fields or
+package names, using the [metadata rules](../tools/provider-matrix/README.md#dimension-metadata).
+
 ## Carriers
 
 The existing `ast.AST[L]`, `ast.View[L]` and `cst.CST[L]` remain the Syntax carriers.

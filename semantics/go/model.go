@@ -141,6 +141,8 @@ func (l Limits) Valid() bool {
 
 // Semantics[L] is an immutable owned graph. Its zero value is invalid. Accessors return
 // independent mutable copies; copying the Semantics[L] handle is safe.
+//
+// bittype:dimension Files
 type Semantics[L any] struct{ state *Data }
 
 func (m Semantics[L]) Valid() bool { return m.state != nil }
@@ -551,6 +553,8 @@ func (m Semantics[L]) DirectParameterBindings(id TermID) ([]ArgumentBinding, boo
 }
 
 // View exposes immutable semantics in the same language.
+//
+// bittype:dimension Files
 type View[L any] interface{ SemanticsView() Semantics[L] }
 
 func (m Semantics[L]) SemanticsView() Semantics[L] { return m }

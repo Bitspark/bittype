@@ -67,24 +67,13 @@ func (p *program) render(m *matrix, sourceURL string) (string, string, error) {
 		rows = append(rows, row)
 	}
 	slices.SortFunc(rows, func(a, b *row) int {
-		// Only presentation order is chosen here, never capability availability.
-		rank := func(level string) int {
-			switch level {
-			case "Syntax":
-				return 1
-			case "Files":
-				return 2
-			default:
-				return 0
-			}
-		}
-		if rank(a.level) != rank(b.level) {
-			return rank(a.level) - rank(b.level)
+		if a.level != b.level {
+			return strings.Compare(a.level, b.level)
 		}
 		return strings.Compare(a.contract, b.contract)
 	})
 	for _, row := range rows {
-		fmt.Fprintf(&providers, "| %s | `%s` |", row.level, strings.ReplaceAll(row.contract, "|", "&#124;"))
+		fmt.Fprintf(&providers, "| %s | `%s` |", escape(row.level), strings.ReplaceAll(row.contract, "|", "&#124;"))
 		for _, lang := range m.languages {
 			links, err := p.links(row.cells[lang.id], sourceURL)
 			if err != nil {

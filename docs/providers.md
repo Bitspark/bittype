@@ -13,6 +13,14 @@ regenerates these regions after source changes and automatically lands a docs-on
 pull request when their content changes. Keep explanations outside the generated
 regions; do not edit cells or maintain a separate capability catalogue.
 
+The Level column comes from `bittype:dimension` comments on declared operation
+boundary types, not package names. `Shared` requires an explicit `bittype:shared`
+contract annotation; absent dimension metadata appears as `Unclassified`, and
+conflicting dimensions appear as `Mixed: A + B`. See the generator's
+[metadata rules](../tools/provider-matrix/README.md#dimension-metadata).
+Resolution and analysis belong to the Files dimension through their semantic
+request/result types, even when called independently without physical files.
+
 Provider interfaces use their package to identify the role: `parse.Provider`,
 `check.Provider`, `format.Provider`, `print.Provider`, `resolution.Provider` and
 `analysis.Provider`. Each embeds `language.Provider` for ID and Name. The

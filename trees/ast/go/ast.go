@@ -26,6 +26,8 @@ type NodeID uint32
 // Recursive declarations use references rather than containment cycles.
 // Fields remain mutable: callers must treat stage inputs as read-only and
 // create separate output storage. No immutability or validity is enforced here.
+//
+// bittype:dimension Syntax
 type AST[L any] struct {
 	ID    TreeID
 	Root  NodeID

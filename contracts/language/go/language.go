@@ -17,6 +17,8 @@ type ID string
 //
 // This interface intentionally supplies no AST construction, validation, parsing,
 // transformation or formatting operations. It does not erase or convert AST[L].
+//
+// bittype:shared
 type Provider interface {
 	ID() ID
 	Name() string

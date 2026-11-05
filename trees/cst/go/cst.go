@@ -19,6 +19,8 @@ type Node[L any] struct {
 }
 
 // CST owns both arenas. Stage inputs and borrowed views must not be mutated.
+//
+// bittype:dimension Syntax
 type CST[L any] struct {
 	Abstract ast.AST[L]
 	Root     NodeID

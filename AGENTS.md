@@ -34,6 +34,9 @@ compatible receipt; never invoke a hidden resolver or bypass snapshot identity.
 The [provider matrix](docs/providers.md) is generated from source by
 `tools/provider-matrix/go`; its workflow updates the two marked regions.
 Do not hand-edit cells or add a capability catalogue or runtime registry.
+Dimensions come from `bittype:dimension` comments on boundary type declarations;
+`bittype:shared` explicitly marks shared contracts. Keep these source-owned and
+do not restore package-name classification or add runtime metadata methods.
 Syntax admission must accept unresolved names; analysis publishes request-bound,
 immutable facts with explicit completion, verdict and model availability.
 Only Horos implements production semantics; native analysis remains deferred.
