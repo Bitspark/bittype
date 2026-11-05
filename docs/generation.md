@@ -6,6 +6,13 @@ convention and scoped representation products replace the earlier binder-to-slot
 proposal. Target-specific guarantees and the complete Go SPI remain proposed;
 current native generation capabilities are unchanged.
 
+The next design prerequisite is the [type-system modeling proposal](type-system-model.md):
+describe Horos and native judgments, binding and inference rules before finalizing
+preservation-facing generation interfaces. The Horos/Go examples distinguish
+argument admission from result representation; TypeScript, Rust and C++ exercise
+the same modeling structure through their own theories. No model or proof bridge
+is implemented by that document.
+
 The [pagination walkthrough](generic-elaboration.md#pagination-and-scope) shows
 the proposed first end-to-end replacement: one open Page, selected mappings for
 four targets, caller-scoped parameter products and nested result support. Its

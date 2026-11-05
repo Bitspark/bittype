@@ -7,6 +7,14 @@ change an implemented provider, transformer, profile or dependency. The examples
 below have not been executed as Logos programs or compiled as Go. No generator,
 proof bridge, native semantic analyzer or runtime binding is implemented here.
 
+The later [type-system modeling proposal](type-system-model.md) defines the next
+design prerequisite: describe the languages' terms, judgments, binding and rules
+before implementing this bridge. The concrete predicates below illustrate a
+preservation problem; they do not replace a reusable language-theory model or
+assert that such a model already exists. Its [Horos/Go walkthrough](type-system-model.md#worked-example-horos-textbox-and-go-constraints)
+and [language coverage](type-system-model.md#how-the-five-languages-fit) connect
+this example to the other native targets.
+
 ## The claim to prove
 
 For a fixed source world, generated declaration, mapping configuration and native
@@ -457,8 +465,10 @@ Encoding a new claim as Ontos data does not mean that a packaged engine or check
 already supports its reasoning. Missing capability, an unproved goal and exhausted
 search remain distinct from a counterexample. None permits an enforcing success.
 
-The next design work is to specify the primitive representation laws, the native
-fact extractor/model and the source bridge, then a generic evidence/result
-interface. They must preserve the existing source-owned semantics and stage-first
-layout. No new source packages, dependency pins, registry entries, provider-matrix
-cells, proof workflows or runtime behavior are introduced by this proposal.
+The next design work begins with the [shared type-system model](type-system-model.md)
+and small Horos/native theories. Then specify the primitive representation laws,
+actual-AST fact extraction and source bridge, followed by the generic
+evidence/result interface. They must preserve the existing source-owned semantics
+and stage-first layout. No new source packages, dependency pins, registry entries,
+provider-matrix cells, proof workflows or runtime behavior are introduced by this
+proposal.
