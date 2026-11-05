@@ -4,8 +4,13 @@
 Bittype supplies readable spelling for Horos's canonical general-kind language.
 The [frontend](horos.md) owns its AST projection and stage composition;
 [Horos](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md)
-owns canonical meaning. This page does not claim that the migration or public
-package delivery is complete.
+owns canonical meaning. The frontend uses the public Horos dependency selected
+in [go.mod](../go.mod).
+
+The [Horos module command](../tools/horos-module/README.md) lowers one module
+through this parser and the existing syntax-to-canonical conversion, then writes
+its Ontos encoding. It retains unresolved references and does not invoke semantic
+resolution. The result enters Horos's ordinary module machinery when consumed.
 
 ## Modules and ordinary prelude imports
 

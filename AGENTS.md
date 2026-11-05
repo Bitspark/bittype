@@ -71,7 +71,11 @@ fail rather than selecting a weaker fallback.
 
 - Readable Horos syntax and native pagination transformers are implemented;
   read [Horos syntax](docs/horos-syntax.md) and [semantic generation](docs/semantic-generation.md).
-  Public builders and application CLI remain deferred. The syntax engine and ASTTransformer boundary are now
+  Public builders and a general application CLI remain deferred. The
+  `tools/horos-module/go` command lowers a single Horos source module to canonical
+  Ontos bytes through the existing parser/private encoder, without resolution.
+  It is a Horos-specific composition tool, never a prelude-aware core stage.
+  The syntax engine and ASTTransformer boundary are now
   implemented; read [docs/engine.md](docs/engine.md). Do not introduce runtime
   adapters, callable behavior,
   application-value validators, serialization or networking.

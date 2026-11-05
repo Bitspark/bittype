@@ -16,6 +16,9 @@ The engine captures syntax once and invokes each capability explicitly. Horos
 analysis reuses the resolver's [shared semantic graph](docs/semantics.md), with
 separate reports for validity, coverage and model availability.
 The [readable Horos syntax](docs/horos-syntax.md) and its text stages are implemented.
+The [Horos module command](tools/horos-module/README.md) lowers an ordinary source
+module to canonical Ontos bytes for distribution, using the same parser and
+module encoding as the frontend, without semantic resolution.
 The first [semantic pagination mappings](docs/semantic-generation.md) generate
 TypeScript, Go, Rust and C++ type ASTs from explicitly supplied Horos analysis.
 The [Syntax and Files design](docs/source.md) specifies the symmetry

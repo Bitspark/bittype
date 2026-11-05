@@ -48,6 +48,7 @@ transforms/horos-to-<target>/go/  analyzed Horos to native type ASTs
 internal/horosgen/        source-owned semantic reading and bounded target arenas
 integration/go/          independent consumers and cross-package qualification
 tools/provider-matrix/go/ development-only source-derived documentation generation
+tools/horos-module/go/    ordinary Horos source to canonical Ontos module command
 testdata/text/<language>/valid/
 docs/
 ```
@@ -96,6 +97,7 @@ same dependency level. The package boundaries are:
 | Horos analyzer | Own syntax, Horos resolver contract and shared semantic evidence; no direct external model imports |
 | Horos parser/formatter | Own syntax/checker, private spelling and canonical-value helpers, Ontos values; no semantic resolution |
 | Horos provider | Own text/checker/resolver/analyzer stages and shared printer; composition only |
+| Horos module command | Existing Horos parser, private module lowering and Ontos encoder; no semantic resolution or prelude-specific logic |
 
 The parse, check, format and print interfaces are independent; their configured
 adapters use representations for owned heterogeneous inputs/outputs. The engine
