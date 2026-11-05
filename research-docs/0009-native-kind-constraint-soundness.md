@@ -2,7 +2,7 @@
 
 **ID:** 0009
 **Date:** 5 November 2026
-**Status:** delivering (documentation scope; shared proposal integration pending)
+**Status:** applied (documentation only; implementation deferred)
 **Run-ID:** run_68ae2de0-1874-41dd-950b-837779e86fb0
 **Document-ID:** doc_372fe753-73ce-4436-9d34-57730dc21b6a
 **Reviewed:** https://github.com/Bitspark/bittype/issues/85#issuecomment-6664161148
@@ -809,8 +809,8 @@ codex-hydrated-type-design owns this evaluation record under issue85.
 | 15 | Rust ordinary alias bounds, projection gates and wrappers have different promises. | NEEDS ADAPTATION | Treat demanded associated projections as a candidate alias-preserving gate, including constant-output Ignore. State exact well-formedness/normalization points; do not promise rejection at every unused alias mention, even through a wrapper. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#7-rust) | [Alias-bound lint](https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#type-alias-bounds) and [free-alias well-formedness](https://rustc-dev-guide.rust-lang.org/analysis/well-formed.html#free-type-aliases) support the limit. Exact gate remains a proposal. |
 | 16 | Rust certificates require controlled implementations and sized inputs. | NEEDS ADAPTATION | Put Sized at the actual gate implementation/carrier or relevant supertrait; an ordinary alias bound is insufficient. Explain sealed extension limits and nameable unsized trait-object evidence. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#7-rust) | Rust trait-object/Sized rules and ordinary alias-bound limits; no generated proof family is qualified. |
 | 17 | Rust association ownership must respect configuration and coherence. | HOLDS | Separate representation from membership; allow an explicitly selected local configuration owner or association-qualified identity, not competing Repr choices per kind. Avoid overlapping blanket implementations and unsupported cross-crate grants. | codex-api-retirement-audit | [Synthesis](../docs/generic-elaboration.md) | Rust orphan/coherence rules and the current explicit override contract support this ownership requirement. The concrete API is deferred. |
-| 18 | C++20 constrained aliases can gate finite exact descriptor identities. | NEEDS ADAPTATION | Document a candidate finite domain of complete nongeneric descriptors and header constraints; distinguish failed substitution/unsatisfied dependent requirements from whole-unit diagnostic promises. Successful alias substitution still erases identity. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#8-c) | C++20 constraints and alias-template rules support the mechanism under explicit type-definition/identity-library contracts; not a general open proof language. |
-| 19 | C++ backing-template specialization and late visibility can undermine facts. | HOLDS | Exclude unauthorized positive specializations from the guarantee; private placement is insufficient. Require relevant definitions before use and forbid late-registration semantics for constraint satisfaction. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#8-c) | C++ specialization access and atomic constraint satisfaction rules; no runtime registry is introduced. |
+| 18 | C++20 constrained aliases can gate finite exact descriptor identities. | NEEDS ADAPTATION | Document a candidate finite domain of complete nongeneric descriptors and header constraints; distinguish failed substitution/unsatisfied dependent requirements from whole-unit diagnostic promises. Successful alias substitution still erases identity. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#8-c20) | C++20 constraints and alias-template rules support the mechanism under explicit type-definition/identity-library contracts; not a general open proof language. |
+| 19 | C++ backing-template specialization and late visibility can undermine facts. | HOLDS | Exclude unauthorized positive specializations from the guarantee; private placement is insufficient. Require relevant definitions before use and forbid late-registration semantics for constraint satisfaction. | codex-api-retirement-audit | [Constraints](../docs/native-kind-constraints.md#8-c20) | C++ specialization access and atomic constraint satisfaction rules; no runtime registry is introduced. |
 | 20 | Separate recursive kind membership, recursive representation and open target inference. | HOLDS | Allow finite export of already-established source facts in principle; do not re-run coinduction in the target. Keep current recursive native declarations unsupported and finite compositional rules distinct from arbitrary recursive admission. | codex-api-retirement-audit | [Synthesis](../docs/generic-elaboration.md) | Horos supports finite observation graphs and source judgments; `generate.go:450` rejects recursive native declarations today. |
 | 21 | Reuse source theorems separately from native association/evidence. | NEEDS ADAPTATION | Preserve subject, kind, assumptions and checked source dependencies. Reuse compatible supplied facts or ordinary fresh source admission, never transfer Program-owned handles between Programs. Overrides require a new applicable native association. | codex-api-retirement-audit | [Synthesis](../docs/generic-elaboration.md) | Horos declaration API explicitly rejects foreign Program handles; Bittype receipts are tied to captured inputs. |
 | 22 | Imported generic compatibility depends on fixed dependencies and parameter slots. | HOLDS | Permit genuine element-parameter substitution such as A.Page<external.User> when its export contract allows it. Do not let that change fixed List/Text/optional choices or A.People. Compare relevant dependencies, not entire configurations. | codex-api-retirement-audit | [Plugins](../docs/type-generation-plugins.md) | Existing exact selection/override rules and open generic representation require this distinction; companion0008 independently identifies fixed dependencies. |
@@ -836,6 +836,13 @@ The proposed finite issued relation remains unqualified. Likewise, Rust projecti
 normalization is a candidate with a specified checking point, not a universal
 alias well-formedness guarantee.
 
-The shared proposal integration is the remaining documentation action. The peer
-owns that edit after both research records are available; the frozen brief and
-raw response are not rewritten to match the resulting proposal.
+The research record is delivered in [PR87](https://github.com/Bitspark/bittype/pull/87).
+The shared documentation outcome is delivered in
+[PR86](https://github.com/Bitspark/bittype/pull/86): the
+[paired synthesis](../docs/generic-elaboration.md), corrected
+[native constraint proposal](../docs/native-kind-constraints.md), and corrected
+[plugin proposal](../docs/type-generation-plugins.md). The research owner reviewed
+that integration against this evaluation and authorized the integration owner to
+close its documentation status. Applied here means the accepted conceptual
+documentation actions are complete. No native encoding or compiler qualification
+is claimed. The frozen brief and raw response remain unchanged.

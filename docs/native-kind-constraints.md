@@ -1,6 +1,11 @@
 # Preserving Horos kind constraints in native types
 
 **Proposal, 5 November 2026. Documentation only; no enforcement implementation.**
+The [paired consultation synthesis](generic-elaboration.md) states the current
+conceptual direction and admission promises. Consultations 0008/0009 exposed
+flaws in the earlier TypeScript/Go evidence sketches; the target sections below
+replace those claims. No candidate is compiler-qualified by this documentation.
+
 This document describes how TypeScript, Go, Rust and C++ generation could retain
 Horos kind constraints without recognizing `Data`, `Type`, `Scalar` or any other
 named kind specially. It extends the proposed [native representation design](type-representations.md)
@@ -162,9 +167,12 @@ claim that every kind can be translated to a bound on an arbitrary native type.
 
 ### Source type witnesses and membership evidence
 
-A source type witness is a generated compile-time type identifying a source
-expression and its selected native representation. For example, `PersonType`
-identifies the source `Person`, while `Person` is its native value representation.
+A proposed witness can identify a source expression, its selected association,
+or a source expression plus a separately indexed representation family. The
+choice must be explicit; a source-only identity with one fixed projection cannot
+serve incompatible representations simultaneously. For example, PersonType can identify Person under a selected
+association, while
+Person is its native payload representation.
 A page's items still contain native person values, not witness objects.
 
 Membership evidence binds a source subject, its kind obligation and the selected
@@ -198,13 +206,12 @@ descriptor parameter, or several linked parameters, rather than one arbitrary
 native type. The profile must state this change. Generated named applications
 can hide the extra parameters without duplicating the generic definition.
 
-The initial plugin SPI does not yet specify this binder expansion. Its BinderLink
-pairs a real source binder with a reserved target slot; it does not define a
-tuple of source witness, native representation and evidence, or a projection such
-as Native<S>. A future encoding must specify the same header and argument
-transformation for Use, Publish and Define, including substitution of assumptions
-and result contracts. Extra native parameters are not new canonical binders.
-The sketches below do not claim that reserving extra slots completes that design.
+The [paired convention/product direction](generic-elaboration.md#one-generic-convention-for-formals-and-applications)
+replaces the earlier binder-to-slot sketch. Introduce and Apply share a
+convention for native formals, payload projections, actual arguments and result
+associations. The complete support API and its target-specific authority remain
+unfinalized. Additional native parameters create no additional source binders,
+and a successfully reserved helper is not membership evidence.
 
 Adding a source type or kind requires ordinary source input and regeneration,
 not a handwritten membership catalogue. An arbitrary independently authored
@@ -256,180 +263,114 @@ implementations or a claim that every source form already has a native mapping.
 
 ## 5. TypeScript
 
-Direct constraints can use `extends` where the representation rule supports it.
-Conditional and mapped types may support more elaborate encodings, but a
-structural payload type is not by itself a source witness.
-
-A proposed witness-facing API is:
+An upper bound on a separate proof argument does not establish issuance:
 
 ```typescript
-export type TreePage<S extends TreeMember> = Page<Native<S>>;
-
-export type People = TreePage<PersonType>;
+// Rejected as a general enforcement scheme; support definitions are schematic.
+type CheckedPage<S, N, P extends Evidence<S, N>> = Page<N>;
+type Wrong = CheckedPage<WireTextType, number, never>;
 ```
 
-`Native<PersonType>` would select `Person`. `TreeMember` would restrict admitted
-source witnesses through generated support types. It is not a preinstalled
-interface and must not mean an object with a writable `isTree` member.
+Because `never` satisfies the bound, the resulting Page<number> may be inhabited
+without evidence for the intended source tuple. Invariance does not repair this
+bottom-type case. An outer `never` result is normalization, not formation
+rejection; Page<never> can still contain an empty list. These are deductions from
+the [documented bottom-type rules](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-0.html),
+not reported compiler runs.
 
-This sketch leaves the exact enforcement construction unresolved. In particular:
+Property-based structural evidence also permits mapped-bottom constructions.
+Private-symbol spelling and readonly payload fields do not establish controlled
+issuance or invariance. Witness unions must preserve whole-application choices:
+Page<string> | Page<boolean> differs from Page<string | boolean>. See
+[mapped types](https://www.typescriptlang.org/docs/handbook/2/mapped-types.html),
+[strict function variance](https://www.typescriptlang.org/tsconfig/strictFunctionTypes.html)
+and [conditional distribution](https://www.typescriptlang.org/docs/handbook/2/conditional-types.html).
 
-- Private symbols and structural brands do not automatically make arbitrary
-  type-only evidence impossible to manufacture or widen.
-- A TypeScript union of possible witnesses is different from a Horos union node.
-  Projecting it to a union of payload types can lose correlations. For example,
-  `Page<string> | Page<boolean>` and `Page<string | boolean>` permit different
-  collections. The encoding must preserve the distinction or reject that use.
-- Conditional types can distribute over unions. Distribution must be deliberate
-  at the whole application boundary, not an accidental broadening of a field.
-- Mapping an invalid application to `never` does not reject the type expression
-  itself. A profile promising formation rejection cannot advertise that as an
-  equivalent result.
-- Recursive aliases, compiler resource limits, `any`, bottom types and native
-  assertion escape hatches need explicit treatment in the supported profile.
-
-Start with a bounded generated witness domain and supported generic composition
-rules whose guarantees can be stated precisely. A finite membership enumeration
-must be described as finite; it is not an implementation of arbitrary open
-recursive membership. Do not claim general TypeScript enforcement from the
-signature sketch alone.
-
-References: [generic constraints](https://www.typescriptlang.org/docs/handbook/2/generics.html),
-[conditional types and distribution](https://www.typescriptlang.org/docs/handbook/2/conditional-types.html),
-and [native type compatibility](https://www.typescriptlang.org/docs/handbook/type-compatibility.html).
+Start with source-checked named applications. A stronger candidate is a finite,
+non-augmentable selector of complete applications, with unions meaning choices
+and bottom the empty selection. Payloads come from that configuration-specific
+association, not an independently supplied native type. State strict settings,
+consumer operations and excluded forging/any behavior. This is bounded
+normalization; a requested open formation-enforcing API can remain Unsupported.
 
 ## 6. Go
 
-Direct bounds use interface type sets where their meaning fits the selected
-representation. For example, an exact `string` term differs from `~string`, which
-also admits user-defined types with that underlying type. That widening must be
-justified rather than inserted for convenience.
+**The former private singleton-evidence proposal is withdrawn.** An exported
+constraint containing one exact private generic instantiation can permit that
+instantiation to be inferred even when no alias for it was exported. A consumer
+generic function assignment can infer the missing evidence argument, while an
+alias erases it from the resulting payload. Private naming does not establish
+selective issuance. This follows from the
+[type-inference rules](https://go.dev/ref/spec#Type_inference) and is recorded as
+specification/source reasoning, not an executed compiler example.
 
-Go interface constraints cannot recursively contain themselves, and do not
-provide arbitrary recursive predicates over every field of an unknown struct.
-The full ordinary Data definition cannot simply be rendered as one recursive
-interface constraint on arbitrary native types.
+A candidate repair must restrict the admissible relation to actually issued
+source/representation tuples; an unauthorized private instantiation must be
+absent from that relation. The generic spelling of a finite intersection remains
+unqualified. A private-method interface does not automatically solve type-only
+issuance either.
 
-The proposed witness encoding therefore makes the native representation and
-membership parameter explicit:
+Use distinct defined descriptor identities, not aliases of the same empty
+struct. Exact payload constraints and underlying-type constraints (`string`
+versus `~string`) admit different domains; neither is a general recursive record
+predicate. Generic aliases can support admission followed by identity erasure.
+See [type identity](https://go.dev/ref/spec#Type_identity) and
+[Go 1.24 generic aliases](https://go.dev/doc/go1.24).
 
-```go
-type TreePage[
-    S, T any,
-    P TreeEvidence[S, T],
-] = Page[T]
-
-type People = TreePage[PersonType, Person, PersonInTree]
-```
-
-A candidate generated-package mechanism is an exact type-set constraint over a
-package-private evidence constructor:
-
-```go
-type evidence[S, T, K any] struct{}
-
-type TreeEvidence[S, T any] interface {
-    evidence[S, T, treeKind]
-}
-
-type PersonInTree = evidence[PersonType, Person, treeKind]
-```
-
-The example assumes the generated package also declares its source token and
-kind token. `PersonInTree` is emitted only for the established association.
-Different argument tuples denote different instantiations of the private named
-type. Native callers can use exported evidence aliases, but there is no exported
-unrestricted constructor for arbitrary tuples. No method or runtime evidence
-field is required in Page.
-
-Generic evidence aliases or families would preserve all their own prerequisite
-constraints. A rule for list composition or Page's result must come from an
-established Horos implication, not from a switch recognizing either declaration's
-name. An unused evidence argument still has to satisfy its bound.
-
-Initially this mechanism applies within one generated module closure/package.
-Cross-package evidence composition remains unresolved: two private constructors
-in different packages are not interchangeable. Exporting the unrestricted
-constructor or replacing the exact constraint with an empty interface would
-defeat the design. A later package composition contract must preserve the same
-relationship without manual grants or a runtime registry.
-
-Reference: [Go general interfaces and type-set restrictions](https://go.dev/ref/spec#General_interfaces).
+Source-checked named applications are the floor. A finite issued-tuple relation
+is a stronger candidate. Open certificate families and cross-package issuance
+remain deferred until justified independently of private-name hiding.
 
 ## 7. Rust
 
-Use trait bounds and associated representation types. Membership implementations
-belong to a controlled generated domain and are emitted from source facts or
-supported conditional implications. A candidate public shape is:
+Separate three mechanisms: ordinary alias bounds, demanded associated-type
+projections, and nominal wrappers. Ordinary alias bounds do not supply a reliable
+use-site gate under the baseline semantics. A projection through a constrained
+implementation is a different candidate: selecting its output can demand the
+argument obligation even if that output ignores the argument. See
+[alias-bound limitations](https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#type-alias-bounds)
+and [associated types](https://doc.rust-lang.org/reference/items/associated-items.html).
 
-```rust
-pub struct TreePage<S: TreeMember> {
-    pub page: Page<S::Repr>,
-}
+Promise admission at specified well-formedness or demanded-normalization points,
+not every unused alias mention. The compiler guide explicitly describes
+[incomplete alias checking](https://rustc-dev-guide.rust-lang.org/analysis/well-formed.html).
+A wrapper can retain association but changes identity/access and cannot silently
+replace an alias-interchangeability promise.
 
-pub type People = TreePage<PersonType>;
-```
+A controlled-descriptor candidate must enforce Sized at the actual gate/carrier
+or as a required supertrait; an alias's bound alone is insufficient. A dyn-compatible
+membership trait can have a nameable unsized trait-object type satisfying it
+without the intended concrete issuance; the effective Sized gate excludes that
+route. Keep membership separate from configuration-selected representation. Sealing, orphan
+rules, trait objects and overlapping blanket implementations constrain extension.
+See [sealed traits](https://rust-lang.github.io/api-guidelines/future-proofing.html)
+and [coherence](https://doc.rust-lang.org/reference/items/implementations.html#trait-implementation-coherence).
 
-`TreeMember` would associate the selected `Repr` and require the generated
-membership relationship. Appropriate sealing and ownership of the descriptor
-types must prevent an unrelated native implementation from merely asserting that
-relationship. Phantom type storage, if needed for a selected encoding, is part
-of the representation choice and does not add runtime behavior.
+Controlled sized descriptors with generated facts are a candidate domain, not
+an implementation of arbitrary coinductive Horos reasoning in Rust's solver.
 
-The wrapper is an observable API choice: native users access the payload through
-`page`. It must not be substituted for an alias without the profile stating it.
-Ordinary Rust type-alias bounds are not enforced at use sites, so writing
-`type TreePage<T: TreeMember> = Page<T>` would not solve the problem. A profile
-must use an enforcing declaration/encoding or reject the requested alias shape.
+## 8. C++20
 
-If the profile requires the source alias to remain natively interchangeable with
-Page, a nominal wrapper must not claim to satisfy that promise automatically.
-A profile permitting a distinct wrapper must state the resulting conversion
-boundary; this proposal generates no conversions. If the requested constraint
-and interchangeability promises cannot both be retained, generation fails.
+Constrained alias templates can preserve an argument gate even for a constant
+result, then erase separate source identity. Dependent constraints and requires
+expressions have their own checking points; an unsatisfied requirement need not
+make the whole translation unit fail. See
+[constraints](https://timsong-cpp.github.io/cppwp/n4861/temp.constr) and
+[alias templates](https://timsong-cpp.github.io/cppwp/n4861/temp.alias).
 
-Kind alternatives cannot mechanically become overlapping blanket trait
-implementations. Generate a coherent membership relation for the supported
-descriptor domain. Account for orphan rules and cross-crate ownership. General
-greatest-fixed-point kind recursion is not automatically supplied by Rust's
-ordinary trait solver; use established source judgments and supported generic
-rules, or report the unsupported case.
+Concepts cannot be specialized, but supporting class/variable templates can.
+Private placement alone is not a sound positive-membership authority, because
+explicit specialization has special access rules. A finite candidate uses exact
+identities of complete nongeneric generated descriptors under explicit definition
+and customization contracts. See
+[concepts](https://timsong-cpp.github.io/cppwp/n4861/temp.concept) and
+[specializations](https://timsong-cpp.github.io/cppwp/n4861/temp.spec.general).
 
-References: [traits and associated types](https://doc.rust-lang.org/reference/items/traits.html),
-[implementation coherence](https://doc.rust-lang.org/reference/items/implementations.html#trait-implementation-coherence),
-and [type-alias bounds](https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#type-alias-bounds).
-
-## 8. C++
-
-Use concepts and requires-clauses under an explicit target standard. A proposed
-witness-facing alias is:
-
-```cpp
-template<class S>
-    requires tree_member<S>
-using TreePage = Page<typename S::representation>;
-
-using People = TreePage<PersonType>;
-```
-
-The concept is backed by generated membership relationships for the descriptor
-domain. It does not infer Data membership from trivial copyability, class layout
-or a library name. Native type aliases can erase identity; distinct descriptor
-tokens preserve source distinctions when those distinctions are required.
-
-Concept conjunction/disjunction can combine supported obligations. Membership
-traits and partial specializations must avoid ambiguity and preserve generic
-prerequisites. Unknown descriptors have no positive membership by default.
-Unrestricted user specializations cannot be treated as Horos-established facts;
-the supported domain and extension rules belong to the profile.
-
-Compile-time expressions used by concepts are static support definitions, not
-runtime adapters. C++ template recursion alone does not establish Horos's
-coinductive membership rules. General recursive cases and compiler resource
-limits need the same explicit supported-fragment treatment as other targets.
-
-Reference: [C++ template constraints](https://eel.is/c++draft/temp.constr), including
-[conjunction and disjunction](https://eel.is/c++draft/temp.constr.op).
+Required declarations must be visible consistently before use; constraint
+satisfaction cannot change through late certificate registration. See
+[atomic constraints](https://timsong-cpp.github.io/cppwp/n4861/temp.constr.atomic).
+Generic descriptor families need a separately justified authority/extension model.
+No native recursive template machinery automatically supplies Horos membership.
 
 ## 9. Pipeline and target file responsibilities
 
@@ -511,7 +452,7 @@ settle these concrete questions:
 | Does rejection occur at type formation, or only when attempting to use a value? | State the promised level; do not equate an uninhabitable result with a formation error |
 | Can the target erase or widen the source/evidence/representation association? | Preserve the association for the supported domain or reject that encoding |
 | How do new source types and generic families enter the generated domain? | Derive evidence from ordinary source facts and prerequisites; no manual semantic grants |
-| How do separately generated packages/crates/modules compose evidence? | Explicit ownership and identity rules; initially unresolved |
+| How do separately generated packages/crates/modules compose evidence? | Consumer-owned composition and explicit dependency contracts are proposed; unrestricted cross-package issuance remains unqualified |
 | Can a recursive or higher-order obligation be represented faithfully? | Establish a supported rule or return `Unsupported`; retain `Unproved` and exhaustion distinctly |
 | Does the encoding change native generic arity, nominality, layout or access syntax? | Make that part of the selected representation profile |
 
@@ -535,8 +476,10 @@ all ground descriptors, Wire or library runtime implementations.
   contracts; treating missing evidence or `Unproved` as successful admission.
 - Equating native assignability with Horos kind inclusion, or a native value
   union with a kind union over source descriptions.
-- Hiding failed admission behind `never`, an empty representation, a permissive
-  fallback, implicit specialization or removal of an unsupported public type.
+- Claiming formation rejection while returning `never` for a failed application;
+  hiding failure through a permissive fallback, implicit specialization or removal
+  of an unsupported requested type. An explicitly declared finite selector may
+  instead give bottom the distinct meaning of an empty selection.
 - Reintroducing template lifting, handwritten operation mappings, runtime
   membership registries, serializers, value validators or protocol behavior.
 

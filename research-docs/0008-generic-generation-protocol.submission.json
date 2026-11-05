@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "researchId": "0008",
+  "slug": "0008-generic-generation-protocol",
+  "attempts": [
+    {
+      "attempt": 1,
+      "idempotencyKey": "bittype-research-0008-27c92e58-4015-4e3a-9f4a-8d6465a05e89",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0008-generic-generation-protocol",
+      "submittedPath": "research-docs/0008-generic-generation-protocol.submitted.md",
+      "sha256": "6771ea6ed7f5c9b7698f1a842821c6b2dda5862eb4c63bb5b19edf8e35fb70d5",
+      "byteSize": 74739,
+      "codeRevision": "f2179283150b1e7344844fc97503ca26fe40795c",
+      "cliBuild": "nightfall 0.1.0 (c9ed336ce96b, bundle 8a8df16bb728) built 2026-11-04T19:12:23.718Z",
+      "preparedAt": "2026-11-05T17:04:58.628117+00:00",
+      "state": "completed",
+      "documentId": "doc_3aad1791-02c0-47bf-b286-3d0ffe045f41",
+      "serverSha256": "6771ea6ed7f5c9b7698f1a842821c6b2dda5862eb4c63bb5b19edf8e35fb70d5",
+      "uploadedAt": "2026-11-05T17:05:22.593451+00:00",
+      "runId": "run_aa6f8ad3-4bbc-4b25-a894-fda48f62c8e5",
+      "submittedAt": "2026-11-05T17:05:46.167172+00:00",
+      "resultSha256": "cde74f820e72037f88ef9e37cb4d51e7f5b3be504fab64c7062b00c47e8e5bc8",
+      "resultBytes": 34857,
+      "verified": true,
+      "verifyExitCode": 0,
+      "verifiedAt": "2026-11-05T17:25:01.448557+00:00",
+      "frozenInputMatchesRecordedDigest": true
+    }
+  ]
+}
