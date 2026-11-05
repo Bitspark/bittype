@@ -53,6 +53,8 @@ application-value validation or dependencies on bitwire/bitruntime.
 
 Horos has one [declaration language](docs/model.md) with [general kinds](docs/kinds.md).
 `Type`, `Data`, `Scalar`, `List<K>` and `Record<K>` are ordinary prelude definitions.
+Horos 0.10.2 authors those definitions in `.horos` source and packages the canonical
+module produced by the Bittype encoder; the Go-authored definition table is removed.
 `Page<T>` accepts data or capability types; `DataPage<D: h.Data> = Page<D>`
 restricts arguments without a second language or copied template. The old
 Horos/Wire frontend and profiles are removed without aliases. Ground Ontos values,

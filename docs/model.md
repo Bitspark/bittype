@@ -1,7 +1,7 @@
 # Horos canonical types and Bittype generation
 
 **Revision 4 implemented in Go source, 4 November 2026.** This page describes
-general kinds and their Bittype integration using public Horos Go 0.10.1.
+general kinds and their Bittype integration using public Horos Go 0.10.2.
 Generic carriers, Syntax/Files composition and native pagination retain their
 existing ownership boundaries.
 
@@ -25,6 +25,10 @@ The [general-kind design](kinds.md) replaces closed Type/Data bounds and the
 dedicated Data evaluator. Users define, import, parameterize and combine kinds
 through ordinary declarations. `Type`, `Data`, `Scalar`, `List` and `Record` are
 ordinary names, not semantic switches in the checker, engine or generator.
+Their standard definitions are maintained in Horos source and lowered through
+Bittype's [ordinary module encoder](../tools/horos-module/README.md). Horos
+packages the resulting canonical asset and loads it through the same declaration
+machinery as consumer modules.
 
 The [agnostic graph](semantics.md) retains entities, bindings, applications and
 subject-associated facts. Typed `Semantics[L]` and its sealed envelope preserve

@@ -7,6 +7,8 @@
 - Add a manual generation-only workflow that builds the encoder and lowers a
   selected repository source on a GitHub runner. No semantic resolution or
   prelude-specific logic is added to the command or agnostic kernel.
+- Pin Horos Go 0.10.2, whose complete standard kinds module is authored in Horos
+  source and loaded from the generated canonical asset. Keep Ontos at 0.16.0.
 
 ## Unified Horos declarations — 4 November 2026
 

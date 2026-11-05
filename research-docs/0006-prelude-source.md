@@ -2,7 +2,7 @@
 
 **ID:** 0006
 **Date:** 4 November 2026
-**Status:** delivering — implementation authorized 5 November 2026
+**Status:** implemented — 5 November 2026; no validation/check workflow run
 **Owner:** codex-hydrated-type-design
 **Scope:** Source-authored standard module, Bittype encoding tool and Horos packaging.
 **Run-ID:** run_c97ae94d-1d80-4ea5-b039-a7835103cc6d
@@ -16,7 +16,7 @@ should be maintained in Horos source. The Go construction was an authoring and
 packaging shortcut, not a requirement of the kind model. Its output already
 uses the ordinary canonical module loader and general kind calculus.
 
-Adopt this design for a subsequent implementation:
+The implementation follows this design:
 
 ```text
 Horos: authoritative horos.kinds.horos
@@ -84,7 +84,8 @@ would build the tool against an incomplete target missing its embedded asset.
 
 The research owner evaluated the recommendations against the source paths in
 this brief. This is architectural analysis, with no validation/check workflow.
-The following are design dispositions; none claims an implementation change.
+The following records the design dispositions. The implementation below delivers
+the accepted rows; deferred capabilities remain outside this change.
 
 | Recommendation | Verdict | Reason and proposed action |
 | --- | --- | --- |
@@ -101,10 +102,27 @@ The following are design dispositions; none claims an implementation change.
 | Move the parser below Horos, add configurable prelude replacement, or require manual standard-library assembly everywhere | REJECTED for this change | These expand ownership or public configuration without addressing a missing capability in this small source-authoring correction. Reconsider only for a separate concrete requirement. |
 | Document the selected Data's formation role and language coverage limits | HOLDS | A library-defined contract can still be part of the selected language semantics. A portable asset does not implement revision-4 declarations in Rust or TypeScript. |
 
-The owner authorized implementation on 5 November 2026. The Bittype command
-and generation-only workflow are implemented first against the available Horos
-release; the standard module asset, Horos patch release and Bittype dependency
-alignment follow in that order. The design dispositions above remain the scope.
+### Implementation — 5 November 2026
+
+The owner authorized the next step, and the accepted design is implemented:
+
+- [Bittype PR 72](https://github.com/Bitspark/bittype/pull/72) adds the ordinary
+  single-module command at `tools/horos-module/go` and a manual generation-only
+  workflow. `SourceModules` shares the private lowering with `SourcePins`.
+  The command has no prelude-name logic and never invokes semantic resolution.
+- [Horos PR 32](https://github.com/Bitspark/horos/pull/32) moves all 22 exports
+  into `core/go/declarations/standard/horos.kinds.horos`, ships its generated
+  `.ontos` asset, and removes the Go-authored definition builders. The loader
+  uses ordinary Ontos decoding and the existing module/kind admission path.
+- [Horos Go 0.10.2](https://github.com/Bitspark/horos/releases/tag/core/go/v0.10.2)
+  publishes the source and asset. Bittype pins that release; Ontos remains
+  0.16.0. npm/Cargo and runtime behavior are outside this Go-only delivery.
+
+The encoder build and actual asset generation ran on a GitHub runner. No tests,
+formatting checks or validation/check workflows ran under the owner's standing
+rule. This status records implementation, not the skill's validated `applied`
+state. Public API expansion, source-text accessors and general canonical-only
+dependency support remain deferred with the triggers in the table.
 
 ## Question
 

@@ -1,6 +1,6 @@
 # Public model dependencies
 
-Bittype's [go.mod](../go.mod) pins public Horos Go 0.10.1 and
+Bittype's [go.mod](../go.mod) pins public Horos Go 0.10.2 and
 Ontos 0.16.0. There are no local replacements, private module paths or
 compatibility aliases. Consumers upgrade together across the declaration revision.
 
@@ -16,7 +16,12 @@ model-independent import boundaries. The native pagination readers consume
 Horos-owned facts under an explicit representation profile.
 
 The ordinary `horos.kinds` prelude is bundled by Horos and exposed as a canonical
-module value and import. Its exact identity is used for primitive operand
+module value and import. Its complete definitions are maintained in
+[Horos source](https://github.com/Bitspark/horos/blob/main/core/go/declarations/standard/horos.kinds.horos),
+lowered by the [Bittype module command](../tools/horos-module/README.md), and
+shipped as a canonical asset. Horos decodes and admits that asset through the
+ordinary module loader; its Go-authored definition builders are removed.
+Downstream Horos builds do not run Bittype. Its exact identity is used for primitive operand
 contracts. Source authors import it explicitly to refer to its names; there is no
 implicit binding called Data or Type. An absent bundled prelude file does not
 cause Bittype to fabricate a source location or physical file dependency.
