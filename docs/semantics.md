@@ -19,6 +19,12 @@ None is required for the current four consumer queries: resolve an occurrence,
 inspect an expression, inspect an application's parameter bindings, and enumerate
 a declaration's dependencies.
 
+The later [type-system modeling proposal](type-system-model.md) describes a
+theory layer above these stored facts: language-owned judgments, binding and
+inference rules, with explicit reasoning through Logos. It is a design
+prerequisite for preservation reasoning, not an implemented interpreter or a
+change to this graph's storage and publication contract.
+
 ## Ownership
 
 Syntax records what was supplied; analysis records established meanings and
