@@ -74,6 +74,9 @@ interpret these concrete type semantics.
 - [Type-system modeling](docs/type-system-model.md): proposed terms, judgments,
   binding and rules for Horos and native languages, their relationship to Logos,
   and concrete Horos/Go reasoning examples; documentation only.
+- [Type-system reasoning architecture](docs/type-system-architecture.md): expert-reviewed
+  ownership, stage-first package roles, exact TextBox/Page statements, Logos
+  checking prerequisites and implementation sequence; documentation only.
 - [Preserving native kind constraints](docs/native-kind-constraints.md): proposed
   direct bounds and source witnesses for all four targets, guarantees and
   unresolved limits; documentation only.

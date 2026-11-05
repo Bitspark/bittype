@@ -13,6 +13,12 @@ argument admission from result representation; TypeScript, Rust and C++ exercise
 the same modeling structure through their own theories. No model or proof bridge
 is implemented by that document.
 
+The [evaluated architecture and package roles](type-system-architecture.md) consume
+Logos's semantic-package direction directly. Keep ASTTransformer returning
+syntax and use explicit optional composition for actual-output/claim association;
+do not introduce a Bittype proof foundation. The TextBox/Page statements determine
+the minimum integration seam and typed-checker requirements.
+
 The [pagination walkthrough](generic-elaboration.md#pagination-and-scope) shows
 the proposed first end-to-end replacement: one open Page, selected mappings for
 four targets, caller-scoped parameter products and nested result support. Its

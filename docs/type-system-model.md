@@ -1,15 +1,22 @@
 # Type-system models and preservation reasoning
 
-**Proposal, 5 November 2026. Documentation only.** The owner requested an explicit
+**Evaluated proposal, 5 November 2026. Documentation only.** The owner requested an explicit
 model for describing Horos and native type systems before implementing native
 constraint-preservation reasoning. This is the next design prerequisite for the
 [Logos preservation proposal](logos-preservation.md) and the preservation-facing
 parts of the [generic generation design](generic-elaboration.md).
 
+The [expert-reviewed implementation design](type-system-architecture.md) refines
+ownership: use Logos's semantic-package direction directly, with language-owned
+theories and an explicit Bittype generation/claim association. Do not introduce
+a separate Bittype type-system framework or proof foundation. The first design
+artifacts are the exact TextBox and Page statements and their dependencies.
+
 No type-system interpreter, Logos bridge, native analyzer, generator change or
 runtime binding is implemented here. Examples are proposed rules and expected
-reasoning outcomes, not executed proofs or compiler results. Public Go contracts
-and a serialized model format remain to be designed.
+reasoning outcomes, not executed proofs or compiler results. Public integration
+contracts remain to be designed; foundation statements follow Logos's admitted
+contract rather than a new Bittype serialization.
 
 ## Purpose and current boundary
 
@@ -28,19 +35,21 @@ It does not select LF or another new dependency as an implementation.
 | AST/CST | Language syntax, references, layout and source emission | None in this document |
 | Bittype Semantics | Immutable provider-owned facts, entities, terms and bindings | Explicit bridges to the judgments needed by a selected type-system model |
 | Language providers | Horos resolution/analysis; native syntax tooling | Native semantic models and explicitly supported reasoning capabilities |
-| Type-system theories | No shared theory specification is implemented | Terms, judgments, rules and supported interpretation for each language |
+| Type-system theories | No native type theories are implemented here | Language-owned semantic packages using the proposed Logos model |
 | Mapping integrations | Proposed representation selection and composition | Representation laws relating the actual source and target terms |
 | Logos integration | Proposed consumer of facts and laws | Evaluation and checking of supported claims under the supplied theories |
 
 The [current semantic graph](semantics.md) is a fact carrier, not a type-system
 interpreter. Its common storage does not establish the facts' truth. This
-proposal adds a theory layer above that boundary; it does not replace the graph,
-Horos's type model, the generic AST, or the existing analysis/result separation.
+proposal adds language-owned theory integrations above that boundary; it does
+not replace the graph, Horos's type model, the generic AST, or the existing
+analysis/result separation. Shared proof-language machinery belongs to Logos.
 
 ## What describes a type system
 
-A model consists conceptually of the following parts. These are design
-requirements, not fields of a new implemented Go struct.
+A model consists conceptually of the following parts. These are requirements for
+language integrations and Logos semantic packages, not fields of a new shared
+Bittype model or implemented Go struct.
 
 | Part | Required meaning |
 | --- | --- |
@@ -150,15 +159,24 @@ general host.
 | --- | --- |
 | Horos and its integration | Authoritative declaration/kind meaning and the bridge to corresponding judgments; no second generator-owned Horos evaluator |
 | Native language integration | Terms and rules for an explicit native fragment, plus correspondence with actual native syntax and dependencies |
-| Shared type-system modeling library | Reusable judgment/rule descriptions, binding conventions and query/result contracts above the agnostic carriers |
+| Logos semantic-package and checking contracts | Reusable typed judgments, proof contexts, evidence rules, abstraction/substitution and checking; richer production contracts remain proposed |
 | Type-owned mapping library | Selected representation equations and composition laws, including builtin mappings |
 | Bittype orchestration | Explicitly select providers and keep inputs, facts, candidate ASTs, mappings and results associated |
 | Logos | Execute/check supported reasoning through its general model and extension points |
 
-The shared modeling library and concrete theories would be separate modules or
-packages, not mandatory new fields in Semantics or built-in engine registrations.
-Their exact package API remains part of the next design. This document requires
-no repository split or dependency change.
+Concrete theories and the optional association/checking adapters remain separate
+from generic carriers and registrations. The [package-role plan](type-system-architecture.md#proposed-package-roles)
+preserves the root Go module and stage-first matrix. Begin with a private seam
+exercised by the two exact statements, then design the public contract. This
+document requires no repository split or dependency change; optional Go packages
+do not by themselves isolate module dependencies.
+
+Distinguish object-language meaning, foundation soundness, validity of particular
+evidence and adequacy to actual artifacts/native behavior. Source binders, native
+binders and proof variables need a checked correspondence. A shared record or
+identical spelling supplies none. The [four assurance boundaries](type-system-architecture.md#four-assurance-boundaries)
+and [statement binding](type-system-architecture.md#binding-and-the-expected-statement)
+make these obligations explicit.
 
 Language theories and mapping laws are ordinary Logos consumer content. Logos
 does not gain Data, Page, Go, TypeScript, Function, Stream or Cell predicates as
@@ -188,6 +206,16 @@ the [preservation proposal](logos-preservation.md#integration-and-outstanding-ob
 explains. A future certificate exporter could support stronger replay. Neither
 bridge exists for the proposed general-kind preservation claims today. The model
 must expose this distinction instead of presenting assumed facts as derived ones.
+Public Horos no longer includes its earlier private-history Logos bridge.
+Its existing constructor-arrow query and immutable public inspection are sufficient
+source operations; the [new evidence bridge](type-system-architecture.md#the-authoritative-source-guarantee)
+must translate their actual results and original assumptions.
+
+The selected next route is a [narrow Logos-owned typed checker](type-system-architecture.md#the-logos-checking-prerequisite)
+for signatures, contexts, abstraction, substitution, theorem application and exact
+statement checking. Logos owns that milestone's admission. Its current richer
+foundation is experimental, not a production dependency. A separate consumer
+certificate calculus remains an explicitly justified alternative, not the default.
 
 ## Questions, mappings and outcomes
 
@@ -234,7 +262,11 @@ Query results distinguish:
 Unsupported, exhaustion and invalid input are execution/coverage outcomes, not
 logical nonmembership. This follows the existing separation in the
 [analysis contract](analysis.md) and Horos's judgment API; it is not a new
-implemented result enum. Missing proof is not false. Negation needs an explicit
+implemented result enum. Invalid evidence does not refute its requested claim;
+certificate validity and language/preservation judgments are separate obligations.
+The [outcome boundary](type-system-architecture.md#outcomes-and-trust) preserves
+that distinction, including binary leaf hooks and completion-aware theories.
+Missing proof is not false. Negation needs an explicit
 justification, such as a justified complete domain, rather than search failure.
 
 ## Worked example: Horos TextBox and Go constraints
@@ -312,8 +344,10 @@ domain, not every future mapping of a named source declaration.
 Changing the constraint to `~string` changes the admitted domain. NamedString
 would then be admitted, requiring an applicable intended interpretation and
 representation association. Sharing an underlying type does not create those
-associations automatically. Generic inference and forwarding must be assessed
-when included in the requested consumer operations.
+associations automatically; missing support is not an established source
+counterexample, and the broader constraint is not inherently unsound. Generic
+inference and forwarding must be assessed when included in the requested consumer
+operations.
 
 ### Result representation is another obligation
 
@@ -341,10 +375,18 @@ type People = DataPage<Person>;
 type Nested = DataPage<DataPage<Person>>;
 ```
 
-The model should express Page's result guarantee under the original assumption
-that its argument belongs to Data, without treating Data as a special kind.
+The model should express Page's result guarantee under the requested assumption
+that its argument belongs to Data, while preserving its original contracts and
+without treating Data as a special kind.
 The list, record and optional-field rules compose that result. Source and target
 parameter identities remain distinct; their substitutions must correspond.
+
+Horos can already check the existing Page constructor against a particular
+resolved arrow kind `K => K`; it retains the original parameter bounds and body.
+An existing DataPage alias is another source of the relevant conditional facts,
+not a mandatory helper or a second Page. The missing [trusted source-schema
+bridge](type-system-architecture.md#the-authoritative-source-guarantee) translates
+that authoritative result into the selected evidence foundation.
 
 The [symbolic Go proof](logos-preservation.md#prove-preservation-under-symbolic-assumptions)
 uses arbitrary source and native parameters, with two explicit assumptions:
@@ -429,28 +471,30 @@ reasoning principles, not only a convenient representation as data.
 
 ## Design and qualification sequence
 
-This changes the order of the next design work. Define the model before finalizing
-preservation-facing product/convention interfaces or implementing the Logos
-bridge. The [generation implementation sequence](generic-elaboration.md#implementation-sequence)
-remains the subsequent composition plan.
+The [evaluated implementation sequence](type-system-architecture.md#implementation-and-qualification-sequence)
+starts from two exact statements and their actual artifact associations. It
+supersedes designing an independent shared framework before the examples.
 
-1. Specify extensible term/judgment declarations, binding and substitution,
-   rule semantics, assumptions, coverage and result meanings. Distinguish source
-   binders from logical rule variables and state the available proof principles.
-2. Describe small Horos and Go theories and their AST/fact correspondence. Work
-   through TextBox admission, its counterexample, exact-constraint coverage and
-   the separate structural result law.
-3. Exercise the abstraction against the TypeScript, Rust and C++ cases above.
-   Extend through language-owned vocabulary or explicitly unsupported coverage;
-   do not encode one language's constraint mechanism as the shared model.
-4. Specify the explicit Logos reasoning route and its foundations, then the
-   generation queries and result-support interfaces that consume those outcomes.
-   Preserve current source ownership and configuration-specific mapping laws.
-5. When implementation is authorized, add binding/substitution and rule tests,
-   positive and negative native typechecking, and preservation/completeness
-   regressions for the declared domains. Include known inference, bottom,
-   normalization and extension counterexamples. Use maintained remote execution
-   paths for portable workloads; all Logos workloads stay off this workstation.
+1. Specify TextBox admission/result representation and Page's quantified
+   composition theorem, with their domains, original assumptions and selected
+   mapping dependencies. Use language-owned judgments in Logos semantic packages.
+2. Exercise a private Bittype association seam and a concrete TextBox
+   counterexample. Characterize the complete admitted Go fragment and its
+   source/target correspondence; several successful examples do not prove coverage.
+3. Obtain the Logos-owned typed check-only prerequisite for lawful abstraction,
+   substitution and exact statement checking. Define the trusted Horos schema
+   bridge through existing authoritative operations, without a duplicate evaluator.
+4. Check one symbolic Page theorem and its nested instantiation, then stress
+   the model with the TypeScript, Rust and C++ distinctions. Promote only the
+   public integration contract that the examples show necessary.
+5. On implementation authorization, run binding, rule, negative mutation and
+   native typechecking tests for the declared domains and adequacy direction.
+   Portable workloads use maintained shared/CI execution; all Logos workloads
+   stay off this workstation. No unsupported checking route grants a stronger claim.
+
+The [generation sequence](generic-elaboration.md#implementation-sequence) remains
+the subsequent composition plan. Public proof integration and target enforcement
+must not be inferred from the existing representation-only path.
 
 This documentation performs none of those software or proof executions. The
 current pagination representation profile continues to permit constraint erasure;
