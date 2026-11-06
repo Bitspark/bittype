@@ -22,6 +22,12 @@ Bittype claim-association layer, and a narrow Logos-owned typed checker for
 symbolic certification. The scoped rules below illustrate the obligations;
 they do not select a new Bittype proof calculus or claim that today's ground
 checker implements assumption discharge.
+The [Logos inspection and SPI map](logos-verification.md) traces existing direct
+checking and separates it from the typed production dependency. Ground TextBox
+counterexamples can use the current checker once their authoritative premises
+are supplied; the quantified Page theorem below still requires the admitted
+typed route. Stored semantic facts and compiler acceptance are not themselves
+proofs of this theorem.
 
 ## Prove preservation under symbolic assumptions
 
