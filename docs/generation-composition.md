@@ -1,5 +1,9 @@
 # Automatic generation composition
 
+**Owner update, 6 November 2026:** [kernel-owned construction](kernel-composition.md)
+replaces the complete-Composition factory and per-pair defaults below. Selection
+and scheduling guarantees remain; construction implementation is pending.
+
 Implemented in Go source, 6 November 2026. This is the production composition of
 [Use, Publish, Define and Introduce/Apply](generation-spi.md). The four former
 private pagination Dialects and `internal/horosgen` have been deleted. The native

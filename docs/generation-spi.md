@@ -1,5 +1,9 @@
 # Public generation operations
 
+The accepted [kernel-owned construction SPI](kernel-composition.md) adds source,
+target and mapping providers above these operations. Its implementation is
+pending; operation, association and scope guarantees remain unchanged.
+
 This implements the
 [type-owned generation design](type-generation-plugins.md) and
 [generic elaboration protocol](generic-elaboration.md). Its scope is public

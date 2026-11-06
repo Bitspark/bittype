@@ -6,6 +6,12 @@ the same responsibilities occupy the same paths, making omissions and drift
 visible. One public root Go module contains independently owned packages,
 including the [concrete verification composition](docs/type-system-architecture.md#proposed-package-roles).
 
+**Owner decision, 6 November 2026:** the accepted
+[kernel-owned composition and uniform layout](docs/kernel-composition.md)
+uses `<stage>/<dimension>/<scope>/<component>/go`, with generic factories in
+kernel/contracts and no per-pair assembly or presets. Implementation is pending;
+the hierarchy below records the starting state.
+
 ## Current hierarchy
 
 ```text
