@@ -67,7 +67,12 @@ verification/            concrete static verification; public Logos contract
   files/source/horos/go/  explicit authoritative queries bound to captured Horos
   files/horos-to-go/go/   selected mapping, prepared claim and direct Logos check
   integration/go/        TextBox/Page, nested reuse and dependency qualification
-tools/provider-matrix/go/ development-only source-derived documentation generation
+tools/provider-matrix/
+  go/                    development command; explicit extractor/result composition
+  report/go/             public discovery, association, rendering and write host
+  capability/go/         public source/definition/structural extraction contract
+  extract/grammar/go/    exact owning Rules-format extractor
+  observation/go/        invocation import and source-context association
 tools/horos-module/go/    ordinary Horos source to canonical Ontos module command
 testdata/text/<language>/valid/
 docs/
@@ -156,6 +161,11 @@ same dependency level. The package boundaries are:
 | Horos parser/formatter | Own syntax/checker, private spelling and canonical-value helpers, Ontos values; no semantic resolution |
 | Horos provider | Own text/checker/resolver/analyzer stages and shared printer; composition only |
 | Horos module command | Existing Horos parser, private module lowering and Ontos encoder; no semantic resolution or prelude-specific logic |
+| Capability extraction contract | Tooling-only selectors, captured source/fact queries and fixed structural records; no runtime provider or report destination authority |
+| Capability report host | Selected-module source discovery, annotations, validated association and rendering; depends on extraction/observation contracts, never concrete extractors |
+| Grammar extractor | Owns interpretation of the Rules declaration format through the public tooling contract; no provider registration or execution claims |
+| Execution observations | Explicit Go test invocation import and exact-context association; no profile interpretation or capability support verdict |
+| Matrix command | Composes the public host, selected extractors and optional captured results; no tests or inspected provider code are executed |
 
 The parse, check, format and print interfaces are independent; their configured
 adapters use representations for owned heterogeneous inputs/outputs. The engine
@@ -164,6 +174,15 @@ depends on generic carrier checks and diagnostic records, never a stage-provider
 contract. Source input is `parse.Input`; `text` contains diagnostics only. The shared implementation remains under `print/syntax/go`, separate
 from `contracts/print/go`. Imports may use a local alias when both packages are
 needed. No compatibility interfaces or input aliases remain under text.
+
+The [reporting tools](tools/provider-matrix/README.md) are outside the runtime
+dependency graph. The public host selects one module using this repository
+layout; dependency export data does not select dependency annotations or docs.
+The command generates compact matrices and static details together, while
+execution observations belong to per-invocation artifacts. Independent extractors
+use the same fixed structural contract. This is not a second language registry,
+an open semantic payload model or a sandbox for hostile extractor code. The
+[capability report design](docs/capability-reports.md) specifies those boundaries.
 
 The structurally checked AST/CST and language descriptors share one home in
 `trees/representation/go`. `contracts/transform/go` owns ASTTransformer and

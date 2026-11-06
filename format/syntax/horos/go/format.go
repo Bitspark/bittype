@@ -38,6 +38,7 @@ type formatter struct {
 // Format preserves canonical values, including unresolved applications. A
 // multi-module Program is emitted as sections with its selected entry first.
 // Formatting does not resolve imports, specialize generics or repair assertions.
+// bittype:scope docs/horos-syntax.md#pipeline-and-limits
 func Format(ctx context.Context, view ast.View[s.Language]) (cst.CST[s.Language], error) {
 	if ctx == nil {
 		return cst.CST[s.Language]{}, errors.New("nil context")

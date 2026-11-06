@@ -13,6 +13,16 @@ import (
 	"github.com/Bitspark/bittype/syntax/typescript/go"
 )
 
+// bittype:case target=github.com/Bitspark/bittype/syntax/typescript/go#Language.ID feature=language-identity case=stable-registration-and-name expects=expected-identity
+// bittype:case target=github.com/Bitspark/bittype/syntax/typescript/go#Language.Name feature=language-identity case=stable-registration-and-name expects=expected-identity
+// bittype:case target=github.com/Bitspark/bittype/syntax/golang/go#Language.ID feature=language-identity case=stable-registration-and-name expects=expected-identity
+// bittype:case target=github.com/Bitspark/bittype/syntax/golang/go#Language.Name feature=language-identity case=stable-registration-and-name expects=expected-identity
+// bittype:case target=github.com/Bitspark/bittype/syntax/rust/go#Language.ID feature=language-identity case=stable-registration-and-name expects=expected-identity
+// bittype:case target=github.com/Bitspark/bittype/syntax/rust/go#Language.Name feature=language-identity case=stable-registration-and-name expects=expected-identity
+// bittype:case target=github.com/Bitspark/bittype/syntax/cpp/go#Language.ID feature=language-identity case=stable-registration-and-name expects=expected-identity
+// bittype:case target=github.com/Bitspark/bittype/syntax/cpp/go#Language.Name feature=language-identity case=stable-registration-and-name expects=expected-identity
+// bittype:case target=github.com/Bitspark/bittype/syntax/horos/go#Language.ID feature=language-identity case=stable-registration-and-name expects=expected-identity
+// bittype:case target=github.com/Bitspark/bittype/syntax/horos/go#Language.Name feature=language-identity case=stable-registration-and-name expects=expected-identity
 func TestLanguageIdentityInterface(t *testing.T) {
 	// These calls exercise only the common interface, as a future registry would.
 	cases := []struct {

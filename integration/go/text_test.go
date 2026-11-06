@@ -9,6 +9,9 @@ import (
 	"testing"
 )
 
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/golang/go#Parse feature=go-concrete-pipeline case=pagination-and-interface expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/format/syntax/golang/go#Format feature=go-concrete-pipeline case=pagination-and-interface expects=stable-formatting
+// bittype:case target=github.com/Bitspark/bittype/print/syntax/go#Print feature=go-concrete-pipeline case=pagination-and-interface expects=source-retained language=github.com/Bitspark/bittype/syntax/golang/go#Language
 func TestGoConcretePipeline(t *testing.T) {
 	source := "package sample\r\n\r\n// pagination\r\ntype Page[T any] struct { Items []T; Next *string }\r\ntype PeoplePage = Page[string]\r\ntype Reader[T any] interface { Read(key string) (T, error) }\r\n"
 	parsed, err := goparse.Parse(context.Background(), parse.Input{SourceID: "go-input", TreeID: "go-tree", Text: source})

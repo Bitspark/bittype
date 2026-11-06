@@ -52,6 +52,8 @@ var rules = g.Rules{
 	"member-pointer-type":   {Roles: []g.Role{g.One("owner", "named-type"), g.One("element", types...)}},
 }
 
+// bittype:grammar rules
+// bittype:scope docs/syntax.md
 func Check(view ast.View[s.Language]) error {
 	t := view.ASTView()
 	if err := g.Check(t, "translation-unit", rules); err != nil {

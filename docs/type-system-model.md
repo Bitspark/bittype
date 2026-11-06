@@ -512,8 +512,7 @@ supersedes designing an independent shared framework before the examples.
    public integration contract that the examples show necessary.
 5. On implementation authorization, run binding, rule, negative mutation and
    native typechecking tests for the declared domains and adequacy direction.
-   Portable workloads use maintained shared/CI execution; all Logos workloads
-   stay off this workstation. No unsupported checking route grants a stronger claim.
+   No unsupported checking route grants a stronger claim.
 
 The [generation sequence](generic-elaboration.md#implementation-sequence) remains
 the subsequent composition plan. Public proof integration and target enforcement

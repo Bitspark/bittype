@@ -13,6 +13,7 @@ import (
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
 )
 
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/typescript/go#Parse feature=conditional-mapped-syntax case=structured-binders-and-modifiers expects=structure-preserved
 func TestConditionalMappedStructure(t *testing.T) {
 	source := "type X<T> = { -readonly [K in keyof T as T[K] extends string ? K : never]+?: T[K] extends infer U extends string ? U : never };"
 	c, err := tsparse.Parse(context.Background(), parse.Input{SourceID: "source", TreeID: "tree", Text: source})
@@ -43,6 +44,7 @@ func TestConditionalMappedStructure(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/typescript/go#Parse feature=conditional-mapped-syntax case=unresolved-syntax expects=accept
 func TestConditionalMappedWithoutResolution(t *testing.T) {
 	for _, source := range []string{
 		"type X = Unknown extends Other ? Left : Right;",
@@ -65,6 +67,7 @@ func TestConditionalMappedWithoutResolution(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/typescript/go#Parse feature=conditional-mapped-syntax case=malformed-and-bounded-input expects=located-error-without-output
 func TestMalformedConditionalMappedTypes(t *testing.T) {
 	for _, source := range []string{
 		"type X = T extends U;", "type X = T extends U ? A;", "type X = T extends U ? : B;",

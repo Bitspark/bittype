@@ -678,8 +678,7 @@ outputs and native compilers, and an independently installed public Go consumer.
 Candidate `7082f9c` has identical Go/workflow sources to `f5256ed`, with additional
 documentation; its exact-head hosted conclusions were still pending when this
 brief was prepared. None of these runs qualifies an unimplemented general-kind
-replacement. Tests run only on maintained remote/shared gates, not this
-workstation. New general-kind tests need an
+replacement. New general-kind tests need an
 independent oracle or explicit countermodels, including renamed/user-defined
 categories that would expose a hidden Data-specific branch.
 

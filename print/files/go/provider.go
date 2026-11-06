@@ -18,5 +18,9 @@ func New[L any](identity language.Provider, syntax printcontract.Provider[cst.CS
 	}
 	return Provider[L]{identity, syntax}, nil
 }
+
+// bittype:scope docs/syntax.md#identity-and-registration
 func (p Provider[L]) ID() language.ID { return p.identity.ID() }
-func (p Provider[L]) Name() string    { return p.identity.Name() }
+
+// bittype:scope docs/syntax.md#identity-and-registration
+func (p Provider[L]) Name() string { return p.identity.Name() }

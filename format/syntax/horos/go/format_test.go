@@ -49,6 +49,9 @@ func field(name, presence string, typ core.Value) core.Value {
 	return h("field", data.MustEncodeText(name), atom(presence), typ)
 }
 
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Parse feature=horos-modules-and-generics case=pagination-and-imported-library expects=canonical-identity-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Format feature=horos-modules-and-generics case=pagination-and-imported-library expects=canonical-identity-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Print feature=horos-modules-and-generics case=pagination-and-imported-library expects=canonical-identity-preserved
 func TestCanonicalPaginationAndImportedLibraryRoundTrip(t *testing.T) {
 	txt := data.MustEncodeText
 	textType := h("scalar", atom("utf8-text"))
@@ -156,6 +159,7 @@ func TestCanonicalPaginationAndImportedLibraryRoundTrip(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/format/syntax/horos/go#Format feature=ast-admission case=unspellable-and-nil-ast expects=rejection-without-output
 func TestFormatterRejectsUnspellableASTWithoutPartialOutput(t *testing.T) {
 	p := provider.Provider{}
 	parsed, err := p.Parse(context.Background(), parse.Input{SourceID: "small", TreeID: "small", Text: "module small; type Identity<T> = T;"})

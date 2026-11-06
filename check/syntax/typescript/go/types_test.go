@@ -29,6 +29,7 @@ func syntaxTree() (ast.AST[s.Language], map[string]ast.NodeID) {
 	return tree, ids
 }
 
+// bittype:case target=github.com/Bitspark/bittype/check/syntax/typescript/go#Check feature=conditional-mapped-syntax case=independent-ast expects=accept
 func TestConditionalMappedAdmission(t *testing.T) {
 	tree, _ := syntaxTree()
 	if err := check.Check(tree); err != nil {
@@ -36,6 +37,7 @@ func TestConditionalMappedAdmission(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/check/syntax/typescript/go#Check feature=conditional-mapped-syntax case=invalid-shapes-and-contexts expects=located-rejection
 func TestInvalidConditionalMappedShapes(t *testing.T) {
 	cases := map[string]func(*ast.AST[s.Language], map[string]ast.NodeID){
 		"conditional branch role": func(a *ast.AST[s.Language], ids map[string]ast.NodeID) {

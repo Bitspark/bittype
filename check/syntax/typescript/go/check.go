@@ -47,6 +47,8 @@ var rules = g.Rules{
 	"indexed-access-type": {Roles: []g.Role{g.One("object", types...), g.One("index", types...)}},
 }
 
+// bittype:grammar rules
+// bittype:scope docs/syntax.md#typescript
 func Check(view ast.View[s.Language]) error {
 	t := view.ASTView()
 	if err := g.Check(t, "source-file", rules); err != nil {

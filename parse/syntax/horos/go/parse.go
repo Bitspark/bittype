@@ -57,6 +57,7 @@ func (p *parser) AddSpan(kind s.Kind, start, end int, attrs []ast.Attribute, chi
 
 // Parse admits one or more module sections. The first selects the program entry;
 // subsequent sections explicitly supply dependency documents. No IO is done.
+// bittype:scope docs/horos-syntax.md#pipeline-and-limits
 func Parse(ctx context.Context, input parsecontract.Input) (cst.CST[s.Language], error) {
 	if ctx == nil {
 		return cst.CST[s.Language]{}, errors.New("nil context")

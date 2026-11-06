@@ -38,6 +38,7 @@ func decimalKey(s string) bool {
 
 var vocabulary = concrete.Vocabulary[s.Language]{Layout: s.ConcreteLayout, Token: s.ConcreteToken, Whitespace: s.ConcreteWhitespace, Comment: s.ConcreteComment}
 
+// bittype:scope docs/syntax.md#typescript
 func Parse(ctx context.Context, input parsecontract.Input) (cst.CST[s.Language], error) {
 	if ctx == nil {
 		return cst.CST[s.Language]{}, errors.New("nil context")

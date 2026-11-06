@@ -200,6 +200,8 @@ func qualifyTypeScript(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/typescript/go#Provider.Resolve feature=typescript-semantic-subset case=generic-and-native-facts expects=native-identity-and-substitution-preserved
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/typescript/go#Provider.Analyze feature=typescript-semantic-subset case=generic-and-native-facts expects=native-identity-and-substitution-preserved
 func TestTypeScriptSemanticGenericsAndNativeFacts(t *testing.T) {
 	m := tsModel(t, `export type Text = string;
 export type Alias = Text;
@@ -242,6 +244,8 @@ export type StandardReadonly = ReadonlyArray<Person>;`)
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/typescript/go#Provider.Resolve feature=typescript-semantic-subset case=rejected-and-unsupported-fixtures expects=no-partial-model
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/typescript/go#Provider.Analyze feature=typescript-semantic-subset case=rejected-and-unsupported-fixtures expects=no-partial-model
 func TestTypeScriptSemanticReports(t *testing.T) {
 	for _, tc := range []struct {
 		name, text string

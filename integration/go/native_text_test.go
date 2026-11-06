@@ -102,6 +102,19 @@ func exercise[L any](t *testing.T, p nativeProvider[L], directory, extension str
 		})
 	}
 }
+
+// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Parse feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Format feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Print feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Parse feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Format feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Print feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Parse feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Format feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Print feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Parse feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Format feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Print feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
 func TestNativeTextRoundTrips(t *testing.T) {
 	for _, fixture := range nativeConformanceCases() {
 		t.Run(fixture.directory, fixture.roundTrips)
@@ -119,6 +132,11 @@ func reject[L any](t *testing.T, p nativeProvider[L], sources []string) {
 		})
 	}
 }
+
+// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
+// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
+// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
+// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
 func TestUnsupportedAndMalformedSources(t *testing.T) {
 	reject(t, tsprovider.Provider{}, []string{"const x = 1;", "type X = string; garbage", "type X = (x: string;", "type X = [a?:string,b:number];", "type X = typeof foo;", "type X = 1 + 2;", "import type {} from 'x';", "/// <reference path='x'/>\ntype X=string;"})
 	reject(t, goprovider.Provider{}, []string{"package p; var X int", "package p; type X [1+2]int", "package p; type X [N]int", "package p; type X struct {", "//go:build ignore\npackage p; type X int"})
@@ -200,6 +218,8 @@ func TestProviderIdentity(t *testing.T) {
 		}
 	}
 }
+
+// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Print feature=concrete-admission case=malformed-concrete-tree expects=rejection-without-output
 func TestMalformedConcreteTree(t *testing.T) {
 	p := tsprovider.Provider{}
 	parsed, err := p.Parse(context.Background(), parse.Input{SourceID: "good", TreeID: "tree", Text: "type X = string;"})

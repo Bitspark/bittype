@@ -36,6 +36,7 @@ func rustAssociatedFixture() ast.AST[rust.Language] {
 	return f.tree
 }
 
+// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Format feature=associated-type-projections case=independent-ast-formatting expects=ast-preserved-and-golden-text
 func TestIndependentRustAssociatedFormatter(t *testing.T) {
 	a := rustAssociatedFixture()
 	p := rustprovider.Provider{}

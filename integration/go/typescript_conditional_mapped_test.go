@@ -33,6 +33,7 @@ func tsMappedFixture() ast.AST[ts.Language] {
 	return f.tree
 }
 
+// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Format feature=conditional-mapped-syntax case=independent-ast-formatting expects=ast-preserved-and-golden-text
 func TestIndependentTypeScriptMappedFormatter(t *testing.T) {
 	a := tsMappedFixture()
 	p := tsprovider.Provider{}

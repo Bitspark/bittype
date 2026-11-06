@@ -41,6 +41,7 @@ func declarationsTree() (ast.AST[s.Language], map[string]ast.NodeID) {
 	return tree, ids
 }
 
+// bittype:case target=github.com/Bitspark/bittype/check/syntax/rust/go#Check feature=generic-associated-declarations case=independent-ast expects=accept
 func TestGenericAssociatedDeclarationAdmission(t *testing.T) {
 	tree, _ := declarationsTree()
 	if err := check.Check(tree); err != nil {
@@ -48,6 +49,7 @@ func TestGenericAssociatedDeclarationAdmission(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/check/syntax/rust/go#Check feature=generic-associated-declarations case=relaxed-bound-context expects=context-sensitive-admission
 func TestRelaxedBoundContext(t *testing.T) {
 	for _, tc := range []struct {
 		owner string
@@ -67,6 +69,7 @@ func TestRelaxedBoundContext(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/check/syntax/rust/go#Check feature=generic-associated-declarations case=invalid-declaration-contexts expects=located-rejection
 func TestGenericAssociatedContextRules(t *testing.T) {
 	cases := map[string]func(*ast.AST[s.Language], map[string]ast.NodeID){
 		"impl has no visibility": func(a *ast.AST[s.Language], ids map[string]ast.NodeID) {

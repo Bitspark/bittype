@@ -1,6 +1,7 @@
-package main
+package report
 
 import (
+	"context"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -69,7 +70,7 @@ func New()bridge.ASTTransformer{return bridge.NewTransformer[a.Language,b.Langua
 			sources[path] = source
 		}
 	}
-	p := &program{root: t.TempDir(), module: module, fset: token.NewFileSet(), packages: map[string]*sourcePackage{}, functions: map[*types.Func]declaration{}}
+	p := &program{root: t.TempDir(), module: module, fset: token.NewFileSet(), packages: map[string]*sourcePackage{}, functions: map[*types.Func]declaration{}, ctx: context.Background(), limits: DefaultLoadLimits(), sources: map[string]string{}, metadata: map[string]packageInfo{}}
 	l := &fixtureLoader{p: p, sources: sources}
 	for path := range sources {
 		if _, err := l.Import(module + "/" + path); err != nil {
@@ -97,13 +98,22 @@ func (l *fixtureLoader) Import(path string) (*types.Package, error) {
 	if err != nil {
 		return nil, err
 	}
-	p := &sourcePackage{files: []*ast.File{file}, info: &types.Info{Types: map[ast.Expr]types.TypeAndValue{}, Defs: map[*ast.Ident]types.Object{}, Uses: map[*ast.Ident]types.Object{}, Selections: map[*ast.SelectorExpr]*types.Selection{}, Instances: map[*ast.Ident]types.Instance{}}}
+	p := &sourcePackage{files: []*ast.File{file}, sources: map[string]string{filepath.Join(l.p.root, rel, "implementation.go"): source}, info: &types.Info{Types: map[ast.Expr]types.TypeAndValue{}, Defs: map[*ast.Ident]types.Object{}, Uses: map[*ast.Ident]types.Object{}, Selections: map[*ast.SelectorExpr]*types.Selection{}, Instances: map[*ast.Ident]types.Instance{}}}
 	config := types.Config{Importer: l}
 	p.types, err = config.Check(path, l.p.fset, p.files, p.info)
 	if err != nil {
 		return nil, err
 	}
 	l.p.packages[path] = p
+	if l.p.sources == nil {
+		l.p.sources = map[string]string{}
+	}
+	filename := filepath.Join(l.p.root, rel, "implementation.go")
+	l.p.sources[filename] = source
+	if l.p.metadata == nil {
+		l.p.metadata = map[string]packageInfo{}
+	}
+	l.p.metadata[path] = packageInfo{ImportPath: path, Name: p.types.Name(), Dir: filepath.Dir(filename), GoFiles: []string{"implementation.go"}}
 	if err := l.p.readDimensions(p); err != nil {
 		return nil, err
 	}
@@ -148,6 +158,23 @@ func TestGenericFilesPrintingUsesConstructorCollaborators(t *testing.T) {
 	}
 	if !strings.Contains(transformers, "[New](https://example.test/blob/main/transforms/example/go/implementation.go#L3)") {
 		t.Fatal("missing transformer factory link", transformers)
+	}
+}
+
+func TestRendererLinksCapabilityDetails(t *testing.T) {
+	p := fixture(t)
+	m, err := p.discover()
+	if err != nil {
+		t.Fatal(err)
+	}
+	providers, transformers, err := p.render(m, "https://example.test/blob/main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, table := range map[string]string{"providers": providers, "transformers": transformers} {
+		if !strings.Contains(table, "[details](provider-capabilities.md#") {
+			t.Fatalf("%s matrix has no link to implementation details", name)
+		}
 	}
 }
 
@@ -223,10 +250,116 @@ func New()bridge.ASTTransformer{return New()}`,
 	}
 }
 
+func TestTransformerRetainsRelatedCallsFromEveryTypedPath(t *testing.T) {
+	p := fixture(t, map[string]string{
+		"generation/paths/go": `package generation
+import (bridge "example.test/fixture/contracts/transform/go";a "example.test/fixture/syntax/ember/go";b "example.test/fixture/syntax/ice/go")
+func first()bridge.ASTTransformer{return bridge.NewTransformer[a.Language,b.Language]()}
+func second()bridge.ASTTransformer{return bridge.NewTransformer[a.Language,b.Language]()}
+func New()bridge.ASTTransformer{result:=first();_ = second();return result}
+`,
+	})
+	m, err := p.discover()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, loc := range m.edges["ember"]["ice"] {
+		if loc.op.public.Pkg().Path() != p.module+"/generation/paths/go" {
+			continue
+		}
+		seen := map[string]bool{}
+		for _, link := range loc.op.chain {
+			seen[link.callee.Name()] = true
+		}
+		if !seen["first"] || !seen["second"] || len(loc.op.chain) != 4 {
+			t.Fatal("same-endpoint paths discarded related operation identities", loc.op.chain)
+		}
+		return
+	}
+	t.Fatal("missing factory candidate")
+}
+
+func TestDiscoveryRetainsPublicMethodAndRelatedDelegateIdentity(t *testing.T) {
+	p := fixture(t, map[string]string{
+		"provider/ember/go": `package emberprovider
+import (s "example.test/fixture/syntax/ember/go"; tree "example.test/fixture/trees/cst/go")
+type Output struct{s.Language}
+type Other struct{s.Language}
+func(Output)Print(v tree.CST[s.Language])(string,error){return emit(rewrite(v))}
+func(Other)Print(v tree.CST[s.Language])(string,error){return emit(v)}
+func rewrite(v tree.CST[s.Language]) tree.CST[s.Language] { return v }
+func emit(tree.CST[s.Language])(string,error){return "",nil}
+`,
+	})
+	m, err := p.discover()
+	if err != nil {
+		t.Fatal(err)
+	}
+	locations := m.rows["print.Provider[cst.CST[L], string]"].cells["ember"]
+	if len(locations) != 2 {
+		t.Fatalf("expected two public contributions, got %d", len(locations))
+	}
+	ids := map[string]bool{}
+	for _, loc := range locations {
+		op := loc.op
+		if op == nil || op.public == nil || op.public.Name() != "Print" || op.entry.Name() != "emit" || len(op.chain) != 1 || op.chain[0].callee != op.entry {
+			t.Fatal("public identity collapsed to delegate", op)
+		}
+		if op.receiver == nil || op.contract == nil || op.language.id != "ember" || op.id == "" || ids[op.id] {
+			t.Fatal("incomplete or duplicate contribution identity", op)
+		}
+		ids[op.id] = true
+		if canonicalSymbol(op.public).Receiver == "" || canonicalSymbol(op.entry).Receiver != "" {
+			t.Fatal("method and free function identity collapsed")
+		}
+	}
+	// The typed factory retains every single path step and its bound arguments;
+	// it remains a source relation, not evidence that the factory was executed.
+	op := m.edges["ember"]["ice"][0].op
+	if op.kind != "transformer" || op.from.id != "ember" || op.to.id != "ice" || len(op.chain) != 1 || len(op.chain[0].arguments) != 2 {
+		t.Fatal("transformer identity or generic endpoints lost", op)
+	}
+}
+
+func TestDiscoveryRejectsSameDisplayContractFromDifferentOwners(t *testing.T) {
+	p := fixture(t, map[string]string{
+		"contracts/elsewhere/go": `package print
+import "example.test/fixture/contracts/language/go"
+type Provider[I,O any] interface { language.Provider; Print(I)(O,error) }`,
+	})
+	if _, err := p.discover(); err == nil || !strings.Contains(err.Error(), "ambiguous matrix contract label") {
+		t.Fatal("unrelated contract identities merged by display spelling", err)
+	}
+}
+
+func TestDependenciesDoNotUseDisplayContractNames(t *testing.T) {
+	p := fixture(t, map[string]string{
+		"contracts/elsewhere/go": `package print
+import "example.test/fixture/contracts/language/go"
+type Provider[I,O any] interface { language.Provider; Render(I)(O,error) }`,
+		"print/files/go": `package filesprint
+import (id "example.test/fixture/contracts/language/go"; other "example.test/fixture/contracts/elsewhere/go"; tree "example.test/fixture/trees/cst/go"; source "example.test/fixture/source/go"; files "example.test/fixture/files/go")
+type Output[L any] struct {identity id.Provider; required other.Provider[tree.CST[L],string]}
+func New[L any](identity id.Provider,required other.Provider[tree.CST[L],string])(Output[L],error){return Output[L]{identity,required},nil}
+func(p Output[L])ID()id.ID{return p.identity.ID()}
+func(p Output[L])Name()string{return p.identity.Name()}
+func(p Output[L])Print(source.Source[L])(files.Files,error){return files.Files{},nil}
+`,
+	})
+	m, err := p.discover()
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := m.rows["print.Provider[source.Source[L], files.Files]"]
+	if files == nil || len(files.cells["ember"]) != 0 || len(files.cells["ice"]) != 0 {
+		t.Fatal("a different print.Provider's Print operation discharged the required Render contract")
+	}
+}
+
 func TestCurrentRepositoryProviderDiscovery(t *testing.T) {
 	// Exercise the maintained documentation command's source-discovery path in
 	// the existing hosted Go test gate, before a main-only publication job runs.
-	p, err := load(filepath.Join("..", "..", ".."))
+	p, err := load(context.Background(), filepath.Join("..", "..", "..", ".."), DefaultLoadLimits(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

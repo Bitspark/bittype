@@ -73,6 +73,10 @@ func roundTrip(t *testing.T, source string) s.AST {
 	return reparsed.Abstract
 }
 
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Parse feature=horos-text-vocabulary case=declared-constructor-fixtures expects=canonical-round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Check feature=horos-text-vocabulary case=declared-constructor-fixtures expects=canonical-round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Format feature=horos-text-vocabulary case=declared-constructor-fixtures expects=canonical-round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Print feature=horos-text-vocabulary case=declared-constructor-fixtures expects=canonical-round-trip-preserved
 func TestCompleteSourceVocabulary(t *testing.T) {
 	prelude := decl.PreludePin()
 	source := `module examples.vocabulary;
@@ -162,6 +166,8 @@ func TestSourceTriviaAndSpans(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Parse feature=syntax-semantics-boundary case=semantically-invalid-syntax-fixtures expects=syntax-accepted
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Check feature=syntax-semantics-boundary case=semantically-invalid-syntax-fixtures expects=syntax-accepted
 func TestSyntaxDoesNotResolveOrCheckContracts(t *testing.T) {
 	for _, body := range []string{
 		"type Missing = Unknown<text>;",
@@ -182,6 +188,7 @@ func TestSyntaxDoesNotResolveOrCheckContracts(t *testing.T) {
 	roundTrip(t, `module missing.context; import pages from example.pagination pin "sha256:`+strings.Repeat("AB", 32)+`"; type People = pages.Page<text>;`)
 }
 
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Parse feature=source-boundary case=whole-input-rejection expects=located-error-without-output
 func TestRejectWholeInput(t *testing.T) {
 	cases := []string{
 		"", "type X = text;", "module x", "module x; garbage", "module x; type X = text; junk",

@@ -45,6 +45,8 @@ func Contract() resolution.Contract       { return frontend.Contract() }
 
 // PreludePin identifies the revision's bundled module, not a source location.
 func PreludePin() string { return decl.PreludePin().String() }
+
+// bittype:scope docs/resolution.md#horos-composition
 func ResolveReferences(ctx context.Context, request semantic.Request[s.Language]) (semantic.Result, error) {
 	return frontend.ResolveReferences(ctx, request)
 }

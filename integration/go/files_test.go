@@ -49,6 +49,10 @@ func filePagination(t *testing.T) (parse.FilesInput, string, string) {
 	people := fmt.Sprintf("module example.people;\nimport pages from example.pagination pin \"sha256:%s\";\ntype Person = { name: text; };\ntype People = pages.Page<Person>;\n", pagePin)
 	return parse.FilesInput{Entry: "people", Files: files.Files{Entries: []files.File{{ID: "page", Path: "lib/page.horos", Text: page}, {ID: "people", Path: "people.horos", Text: people}}}}, pagePin, pinOf(people)
 }
+
+// bittype:case target=github.com/Bitspark/bittype/parse/files/horos/go#Provider.Parse feature=multi-file-pagination case=receipt-preserving-round-trips expects=module-context-preserved
+// bittype:case target=github.com/Bitspark/bittype/format/files/horos/go#Provider.Format feature=multi-file-pagination case=receipt-preserving-round-trips expects=fresh-output-and-receipt
+// bittype:case target=github.com/Bitspark/bittype/print/files/go#Provider.Print feature=multi-file-pagination case=receipt-preserving-round-trips expects=file-content-and-placement-preserved language=github.com/Bitspark/bittype/syntax/horos/go#Language
 func TestFilesPaginationAndReceiptPreservingRoundTrips(t *testing.T) {
 	ctx := context.Background()
 	input, pagePin, peoplePin := filePagination(t)

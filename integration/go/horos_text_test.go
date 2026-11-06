@@ -18,6 +18,12 @@ import (
 	decl "github.com/Bitspark/horos/core/go/declarations"
 )
 
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Parse feature=independent-engine-stages case=pagination-source expects=independently-composable
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Check feature=independent-engine-stages case=pagination-source expects=independently-composable
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Format feature=independent-engine-stages case=pagination-source expects=independently-composable
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Print feature=independent-engine-stages case=pagination-source expects=independently-composable
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Resolve feature=independent-engine-stages case=pagination-source expects=independently-composable
+// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Analyze feature=independent-engine-stages case=pagination-source expects=independently-composable
 func TestHorosSourceThroughIndependentEngineStages(t *testing.T) {
 	p := provider.Provider{}
 	definition, err := representation.NewLanguage[s.Language](p, s.Profile)
