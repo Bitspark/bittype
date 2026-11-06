@@ -59,7 +59,7 @@ func sourceTypeFact(t types.Type) capability.TypeFact {
 	if t == nil {
 		return capability.TypeFact{}
 	}
-	result := capability.TypeFact{Text: fullType(t)}
+	result := capability.TypeFact{Text: typeLabel(t)}
 	if named, ok := types.Unalias(t).(*types.Named); ok {
 		result.Origin = symbolPointer(named.Origin().Obj())
 		for i := 0; i < named.TypeArgs().Len(); i++ {

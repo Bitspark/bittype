@@ -7,10 +7,7 @@ import (
 	"go/token"
 	"go/types"
 	"slices"
-	"strconv"
 	"strings"
-	"unicode"
-	"unicode/utf8"
 )
 
 type language struct {
@@ -46,7 +43,7 @@ type callLink struct {
 	arguments      []types.Type
 }
 
-func fullType(t types.Type) string {
+func typeLabel(t types.Type) string {
 	if t == nil {
 		return ""
 	}
@@ -54,7 +51,7 @@ func fullType(t types.Type) string {
 }
 
 func operationID(kind string, fn *types.Func, contract *types.Named, receiver types.Type, markers ...language) string {
-	parts := []string{kind, canonicalSymbol(fn).String(), fullType(contract), fullType(receiver)}
+	parts := []string{kind, canonicalSymbol(fn).String(), typeLabel(contract), typeLabel(receiver)}
 	for _, marker := range markers {
 		parts = append(parts, canonicalSymbol(marker.marker.Obj()).String(), marker.id)
 	}
@@ -63,7 +60,7 @@ func operationID(kind string, fn *types.Func, contract *types.Named, receiver ty
 
 type row struct {
 	level, contract string
-	identity        string
+	identity        types.Type
 	cells           map[string][]location
 }
 type matrix struct {
@@ -284,34 +281,6 @@ func contractName(contract *types.Named, lang language) string {
 	return strings.ReplaceAll(name, marker, "L")
 }
 
-func contractRowIdentity(contract *types.Named, lang language) string {
-	// Quoted package paths and an identifier boundary make this a replacement of
-	// the exact marker token, not of similarly named types or path suffixes.
-	qualifier := func(pkg *types.Package) string { return strconv.Quote(pkg.Path()) }
-	text := types.TypeString(contract, qualifier)
-	marker := types.TypeString(lang.marker, qualifier)
-	var result strings.Builder
-	for {
-		start := strings.Index(text, marker)
-		if start < 0 {
-			result.WriteString(text)
-			return result.String()
-		}
-		end := start + len(marker)
-		result.WriteString(text[:start])
-		if end < len(text) {
-			r, _ := utf8.DecodeRuneInString(text[end:])
-			if r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r) {
-				result.WriteString(marker)
-				text = text[end:]
-				continue
-			}
-		}
-		result.WriteString("<language>")
-		text = text[end:]
-	}
-}
-
 func (p *program) discover() (*matrix, error) {
 	identity, err := p.named("contracts/language/go", "Provider")
 	if err != nil {
@@ -340,14 +309,31 @@ func (p *program) discover() (*matrix, error) {
 		}
 	}
 	m := &matrix{languages: languages, rows: map[string]*row{}, edges: map[string]map[string][]location{}}
-	identityRow := &row{level: p.level(identity), contract: "language.Provider", identity: fullType(identity), cells: map[string][]location{}}
+	identityRow := &row{level: p.level(identity), contract: "language.Provider", identity: identity, cells: map[string][]location{}}
 	m.rows[identityRow.contract] = identityRow
-	available := map[string]map[string]bool{}
+	parameter := rowParameter()
+	selectRow := func(c contribution) (*row, error) {
+		key := contractName(c.contract, c.language)
+		normalized, err := rowType(c.contract, c.language.marker, parameter)
+		if err != nil {
+			return nil, fmt.Errorf("matrix row %s: %w", key, err)
+		}
+		if existing := m.rows[key]; existing != nil {
+			if !types.Identical(existing.identity, normalized) {
+				return nil, fmt.Errorf("ambiguous matrix contract label %q: distinct Go identities share this display spelling", key)
+			}
+			return existing, nil
+		}
+		result := &row{level: p.level(c.contract), contract: key, identity: normalized, cells: map[string][]location{}}
+		m.rows[key] = result
+		return result, nil
+	}
+	available := map[string]*typeSet{}
 	for _, lang := range languages {
 		op := &operation{kind: "identity", contract: identity, receiver: lang.marker, language: lang}
 		op.id = operationID(op.kind, nil, identity, lang.marker, lang)
 		identityRow.cells[lang.id] = []location{{label: "Language", pos: lang.marker.Obj().Pos(), op: op}}
-		available[lang.id] = map[string]bool{fullType(identity): true}
+		available[lang.id] = &typeSet{identity}
 	}
 	var pending []contribution
 	for path, pkg := range p.packages {
@@ -429,7 +415,7 @@ func (p *program) discover() (*matrix, error) {
 			for _, deps := range c.alternatives {
 				all := true
 				for _, dep := range deps {
-					all = all && available[c.language.id][fullType(dep)]
+					all = all && available[c.language.id].contains(dep)
 				}
 				ready = ready || all
 			}
@@ -437,21 +423,18 @@ func (p *program) discover() (*matrix, error) {
 				remaining = append(remaining, c)
 				continue
 			}
-			key := contractName(c.contract, c.language)
-			if existing := m.rows[key]; existing != nil && existing.identity != contractRowIdentity(c.contract, c.language) {
-				return nil, fmt.Errorf("ambiguous matrix contract label %q: %s and %s", key, existing.identity, fullType(c.contract))
-			}
-			if m.rows[key] == nil {
-				m.rows[key] = &row{level: p.level(c.contract), contract: key, identity: contractRowIdentity(c.contract, c.language), cells: map[string][]location{}}
+			row, err := selectRow(c)
+			if err != nil {
+				return nil, err
 			}
 			duplicate := false
-			for _, loc := range m.rows[key].cells[c.language.id] {
-				duplicate = duplicate || loc.op.id == c.op.id
+			for _, loc := range row.cells[c.language.id] {
+				duplicate = duplicate || sameOperation(loc.op, c.op)
 			}
 			if !duplicate {
-				m.rows[key].cells[c.language.id] = append(m.rows[key].cells[c.language.id], location{label: c.implementation.Name(), pos: c.implementation.Pos(), op: c.op})
+				row.cells[c.language.id] = append(row.cells[c.language.id], location{label: c.implementation.Name(), pos: c.implementation.Pos(), op: c.op})
 			}
-			available[c.language.id][fullType(c.contract)] = true
+			available[c.language.id].add(c.contract)
 			progress = true
 		}
 		pending = remaining
@@ -461,15 +444,14 @@ func (p *program) discover() (*matrix, error) {
 	}
 	// Keep discovered but unsatisfied generic pairings visible as unavailable rows.
 	for _, c := range pending {
-		key := contractName(c.contract, c.language)
-		if existing := m.rows[key]; existing != nil && existing.identity != contractRowIdentity(c.contract, c.language) {
-			return nil, fmt.Errorf("ambiguous matrix contract label %q: %s and %s", key, existing.identity, fullType(c.contract))
-		}
-		if m.rows[key] == nil {
-			m.rows[key] = &row{level: p.level(c.contract), contract: key, identity: contractRowIdentity(c.contract, c.language), cells: map[string][]location{}}
+		if _, err := selectRow(c); err != nil {
+			return nil, err
 		}
 	}
 	if err := p.transformers(m); err != nil {
+		return nil, err
+	}
+	if err := validateOperationAnchors(m); err != nil {
 		return nil, err
 	}
 	return m, nil
@@ -609,7 +591,7 @@ func (p *program) transformers(m *matrix) error {
 		if err != nil {
 			return err
 		}
-		seen := map[string]*operation{}
+		var seen []*operation
 		for _, edge := range edges {
 			var from, to *language
 			for i := range m.languages {
@@ -622,17 +604,19 @@ func (p *program) transformers(m *matrix) error {
 			}
 			op := &operation{kind: "transformer", public: fn, entry: edge.chain[len(edge.chain)-1].callee, chain: edge.chain, stop: "typed transformer boundary", contract: contract, from: from, to: to}
 			op.id = operationID(op.kind, fn, contract, nil, *from, *to)
-			if previous := seen[op.id]; previous == nil {
+			previousIndex := slices.IndexFunc(seen, func(previous *operation) bool { return sameOperation(previous, op) })
+			if previousIndex < 0 {
 				add(edge.from, edge.to, location{label: fn.Name(), pos: fn.Pos(), op: op})
-				seen[op.id] = op
+				seen = append(seen, op)
 			} else {
+				previous := seen[previousIndex]
 				// Several typed call paths can establish the same candidate edge.
 				// Retain their source relationships without treating any as returned
 				// value flow or discarding a related declaration's own associations.
 				for _, link := range op.chain {
 					duplicate := false
 					for _, existing := range previous.chain {
-						if callLinkKey(link) == callLinkKey(existing) {
+						if sameCallLink(link, existing) {
 							duplicate = true
 							break
 						}
@@ -645,12 +629,4 @@ func (p *program) transformers(m *matrix) error {
 		}
 	}
 	return nil
-}
-
-func callLinkKey(link callLink) string {
-	parts := []string{canonicalSymbol(link.caller).String(), canonicalSymbol(link.callee).String(), strconv.Itoa(int(link.pos)), fullType(link.receiver)}
-	for _, argument := range link.arguments {
-		parts = append(parts, fullType(argument))
-	}
-	return stableKey(parts...)
 }

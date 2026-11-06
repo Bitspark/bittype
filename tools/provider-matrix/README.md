@@ -43,6 +43,12 @@ are still read to discover the interfaces being implemented.
   Public constructor signatures supply their required provider collaborators.
   Availability is the least fixed point of those requirements; circular dependencies
   cannot create availability. Infrastructure adapters never supply implementations.
+- Dependency matching uses `go/types.Identical`, including unnamed arguments with
+  package-owned private fields or methods. Row grouping replaces only the selected
+  language marker with a common Go type parameter and compares the resulting Go
+  types. Operation/call/context association also retains Go identity. Type strings
+  are display labels, not equality keys; a rendered row or anchor collision fails
+  rather than merging unequal contributions.
 - Operation input carriers are not required providers. In particular, `Source[L]`
   as an input does not make printing depend on parsing or semantic analysis.
 - Generic providers currently have one language parameter and a public constructor
