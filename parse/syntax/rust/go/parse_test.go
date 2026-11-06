@@ -13,6 +13,7 @@ import (
 	s "github.com/Bitspark/bittype/syntax/rust/go"
 )
 
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/rust/go#Parse feature=associated-type-projections case=structured-projections-and-bindings expects=structure-preserved
 func TestAssociatedTypeStructure(t *testing.T) {
 	source := "type X = <T as ::api::Source<'a, U, Item<'a> = <V>::Output>>::Result<W>::Leaf;"
 	c, err := rustparse.Parse(context.Background(), parse.Input{SourceID: "source", TreeID: "tree", Text: source})
@@ -52,6 +53,7 @@ func TestAssociatedTypeStructure(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/rust/go#Parse feature=associated-type-projections case=unresolved-projection-syntax expects=accept
 func TestAssociatedTypeSyntaxWithoutResolution(t *testing.T) {
 	for _, source := range []string{
 		"type X = <Unknown>::Item;",
@@ -74,6 +76,7 @@ func TestAssociatedTypeSyntaxWithoutResolution(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/rust/go#Parse feature=associated-type-projections case=malformed-and-bounded-projections expects=located-error-without-output
 func TestMalformedAssociatedTypes(t *testing.T) {
 	for _, source := range []string{
 		"type X = <T as Trait>;", "type X = <T>::;", "type X = <as Trait>::Item;",
@@ -99,6 +102,7 @@ func TestMalformedAssociatedTypes(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/rust/go#Parse feature=associated-type-projections case=associated-bound-syntax expects=unsupported-without-output
 func TestAssociatedTypeBoundsRemainUnsupported(t *testing.T) {
 	c, err := rustparse.Parse(context.Background(), parse.Input{SourceID: "source", TreeID: "tree", Text: "trait X: Iterator<Item: Clone> {}"})
 	var diagnostic *text.Diagnostic

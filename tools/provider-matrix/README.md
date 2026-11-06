@@ -1,21 +1,33 @@
-# Provider matrix generation
+# Provider matrices and capability reports
 
-`go run ./tools/provider-matrix/go` updates only the `providers` and `transformers`
-generated regions in [docs/providers.md](../../docs/providers.md). The tool is
-development tooling in the root Go module; runtime packages do not import it.
-It has no third-party dependencies and executes no provider constructors or methods.
+`go run ./tools/provider-matrix/go` updates the `providers` and `transformers`
+generated regions in [docs/providers.md](../../docs/providers.md) and renders
+[docs/provider-capabilities.md](../../docs/provider-capabilities.md). The committed
+pair contains source-derived identity, scope links, structural inventories and
+named case associations. It contains no current-pass labels or completeness score.
 
-The [capability report proposal](../../docs/capability-reports.md) describes future
-`grammar`, `scope` and `case` annotations, independently supplied definition
-extractors and detailed reports linked from provider and transformer cells.
-Those directives and reports are not implemented. Existing source discovery and
-dimension metadata remain the authority for the current matrices; the proposal
-adds neither runtime metadata nor automatic claims of architectural conformance.
+This is development tooling in the root Go module. Runtime and language-provider
+packages do not import it, and it executes no inspected initializers, provider
+constructors, methods or predicates. The public host accepts independently
+supplied extractors. The command explicitly composes the current grammar-format
+extractor; source discovery and dimension metadata remain the authority for
+matrix availability.
+
+The [capability report design](../../docs/capability-reports.md) defines `grammar`,
+`scope` and `case` annotations and separates declarations, authored expectations,
+execution observations and their applicability. Reports do not certify whole
+languages, arbitrary configurations or architectural correctness.
 
 ## Source discovery
 
 The Go command supplies package files and dependency export data for the active
-Go build context. The tool reads repository source with `go/parser` and `go/types`.
+Go build context. The host selects one explicit module in the existing Bittype
+repository layout and reads its production source with `go/parser` and `go/types`.
+Dependency export data provides type identity, not ambient dependency source,
+annotations or documentation. Cross-module source discovery is not implemented.
+Active `TestGoFiles` and `XTestGoFiles` form a separate declaration index for
+annotations; their bodies are not interpreted and test-only providers cannot
+create matrix cells.
 Test packages and infrastructure under contracts, trees, engine, internal,
 integration and tools are not implementation candidates. The contract packages
 are still read to discover the interfaces being implemented.
@@ -86,18 +98,107 @@ and does not change this architectural grouping.
 
 ## Rendering
 
-Implementation links use Go token positions, ignoring `//line` remapping. Simple
-single-return delegation is followed to its entry point; dynamic dispatch is not.
-Distinct implementations remain separate links in a cell. Shared implementations
-repeat the same link across languages. Direct transformer edges are separate from
-engine routes and profile-specific applicability.
+Implementation links use physical Go token positions, ignoring `//line`
+remapping. Statically discovered wrapper/delegate relationships support source
+navigation; dynamic dispatch is not followed. Canonical operation and receiver,
+contract arguments, marker and endpoints remain distinct before rendering.
+A delegate's case or result does not qualify its wrapper. Distinct contributions
+remain separate links and detailed sections even when one matrix cell aggregates
+them. Shared implementations repeat across applicable language instantiations.
+Direct transformer edges remain separate from engine routes and applicability.
 
-Output is deterministic, with languages sorted by ID and rows by dimension label
-then contract. There is no special ordering table for known dimensions.
-There are no dates, revision
-records or manually maintained line numbers. Links target the module's GitHub
-`main` branch; `-source-url` overrides the prefix. `-root` selects the repository
-and `-output` the Markdown file. Authored prose and newline style are preserved.
+Output is deterministic for the selected source/build context, with languages
+sorted by ID and rows by dimension label then contract. There is no special
+ordering table for known dimensions. Detail anchors encode canonical identity
+tuples, including absent versus explicit profiles, without hashes or line-number
+identity. Static reports have no timestamps or inspected HEAD records. Links
+target the module's GitHub `main` branch; `-source-url` overrides the prefix.
+`-root` selects the module root, `-output` the matrix Markdown file and `-details`
+the static details path. Repeatable `-build-flag` values select supported Go build
+options. `-timeout` supplies a cooperative command deadline; the remote job still
+owns the outer deadline. Authored matrix prose and its newline style are preserved.
+
+Both outputs are rendered and validated before writes begin. A malformed
+annotation or extraction failure prevents publication. Two OS writes are not a
+transaction: the caller must stop publication on a write failure. The existing
+updater publishes the completed pair together in one Git commit.
+
+## Public composition
+
+| Package | Responsibility |
+| --- | --- |
+| [report/go](report/go/report.go) | Public source-discovery, association, validation, rendering and write host |
+| [capability/go](capability/go/model.go) | Definition selectors, immutable source view and fixed structural inventory schema |
+| [extract/grammar/go](extract/grammar/go/extract.go) | Interpretation of the exact owning Rules type and helpers |
+| [observation/go](observation/go/types.go) | Invocation-scoped Go JSON import and exact-context test association |
+| `go/` | Command selecting the extractors and explicit optional observation inputs |
+
+The host imports no concrete extractor. A consuming tool can choose its own
+bindings using the same public runner:
+
+```go
+documents, err := report.Generate(ctx, report.Config{
+    Root: root,
+    Extractors: []report.Binding{
+        {Format: grammar.Format, Extractor: grammar.Extractor{}},
+    },
+})
+if err != nil {
+    return err
+}
+return report.Write(documents)
+```
+
+Here `report` and `grammar` refer to the public packages in the table. `Generate`
+returns rendered documents without mutating files; `Write` reports failures and
+does not commit or publish. An independent struct-field extractor fixture uses
+this same runner without changing discovery or rendering.
+
+Extractors receive only a definition, source view and limits. The host owns the
+format/root/provider/profile association and validates returned physical spans
+and structural records. Known, partial, unknown and opaque fields stay distinct;
+known unrestricted values and unbounded cardinalities are explicit, not unknown.
+No match is unavailable extraction; multiple matches are configuration errors.
+An arbitrary payload or renderer callback cannot extend the result schema.
+
+Source loading, metadata, traversal, queries and accepted output are bounded.
+These are cooperative guarantees over trusted tooling, not a hostile-extractor
+sandbox. In-process Go checking and arbitrary extractor code are not forcibly
+preemptible; the caller context and existing remote job deadline remain the
+outer boundary. Portable generation runs remotely under repository policy.
+
+## Exact-invocation observations
+
+The default generation path never fetches test results. Existing remote jobs can
+supply captures explicitly:
+
+```sh
+go run ./tools/provider-matrix/go -results invocation.json -context source-context.json -execution-output report.md
+```
+
+`invocation.json` uses [observation.Invocation](observation/go/types.go) and sits
+beside its `stdout.jsonl` and `stderr.log`. It records the actual command,
+allowlisted environment, run/job/attempt, process completion and source selection.
+`source-context.json` independently describes the inspected source/module/harness
+and Go build context. Its build flags replace `-build-flag`; supplying both is an
+error. `-results` can be repeated without merging the invocation identities.
+The execution report is an invocation artifact; it does not replace the
+committed static report or mutate it into a latest-success ledger.
+
+The importer retains tests, packages, build failures, stderr, repeated
+occurrences, exact subtest names and incomplete captures. Association requires
+matching complete, unmodified source selections and exact top-level runner names.
+Internal/external declarations with a duplicate runner name remain ambiguous.
+Package passes and parent/subtest outcomes are not substitutes for a missing
+named observation. Skip and incomplete are never pass; an early pass does not
+erase a later process failure.
+
+Profile labels and `expects` labels remain authored assertions, not facts
+inferred from Go JSON or the error value. An absent profile is unspecified, not
+a wildcard. Observations from different contracts/native/installed-consumer
+invocations retain their own contexts. Missing or mismatched context is visible
+without attributing success. The report command does not run tests or weaken
+their original exit status.
 
 ## Automatic updates
 
@@ -107,14 +208,15 @@ also triggers generation when `[skip ci]` suppresses the ordinary push workflow.
 Only merged PRs qualify, and the job always reads `main`, never an unmerged head.
 Direct pushes with skip instructions require explicit workflow dispatch, following
 [GitHub's event behavior](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/skip-workflow-runs).
-It reads latest
-main, generates the tables, and, when they change, creates or updates the bot-owned
+It reads latest main, generates both static documents and, when they change,
+creates or updates the bot-owned
 `automation/provider-matrices` branch and pull request, then squash-merges that
 docs-only update. No manual table edit or merge is needed. The job is serialized
 and uses `GITHUB_TOKEN`, with write credentials available only during publication.
 
-The bot commits only `docs/providers.md`, using `[skip ci]`. Token-authored changes
-do not recursively start another update. Unchanged output creates no commit. This
+The bot commits only `docs/providers.md` and `docs/provider-capabilities.md`,
+using `[skip ci]`. Token-authored changes do not recursively start another update.
+Unchanged output creates no commit. This
 is output generation, not a validation gate; existing checks remain separate.
 Portable generation runs on the shared build service or GitHub runner.
 

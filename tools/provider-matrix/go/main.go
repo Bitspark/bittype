@@ -1,174 +1,63 @@
-// Command provider-matrix derives documentation from implemented Go providers.
+// Command provider-matrix composes source discovery, supplied extractors and
+// report publication. Inspected provider code is never executed.
 package main
 
 import (
-	"bytes"
+	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
-	"net/url"
+	"io"
 	"os"
-	"path/filepath"
-	"slices"
-	"strings"
+	"time"
+
+	grammar "github.com/Bitspark/bittype/tools/provider-matrix/extract/grammar/go"
+	observation "github.com/Bitspark/bittype/tools/provider-matrix/observation/go"
+	report "github.com/Bitspark/bittype/tools/provider-matrix/report/go"
 )
 
-func (p *program) links(locations []location, sourceURL string) (string, error) {
-	unique := map[string]bool{}
-	var links []string
-	for _, loc := range locations {
-		pos := p.fset.PositionFor(loc.pos, false)
-		if !pos.IsValid() {
-			return "", fmt.Errorf("missing source position for %s", loc.label)
-		}
-		rel, err := filepath.Rel(p.root, pos.Filename)
-		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-			return "", fmt.Errorf("implementation is outside the repository: %s", pos.Filename)
-		}
-		parts := strings.Split(filepath.ToSlash(rel), "/")
-		for i := range parts {
-			parts[i] = url.PathEscape(parts[i])
-		}
-		target := fmt.Sprintf("%s/%s#L%d", strings.TrimSuffix(sourceURL, "/"), strings.Join(parts, "/"), pos.Line)
-		link := fmt.Sprintf("[%s](%s)", escape(loc.label), target)
-		if !unique[link] {
-			unique[link] = true
-			links = append(links, link)
-		}
-	}
-	slices.Sort(links)
-	if len(links) == 0 {
-		return "/", nil
-	}
-	return strings.Join(links, "<br>"), nil
-}
+type values []string
+func(v *values)String()string{return fmt.Sprint([]string(*v))}
+func(v *values)Set(s string)error{*v=append(*v,s);return nil}
 
-func escape(text string) string {
-	return strings.NewReplacer("|", "&#124;", "\n", " ", "\r", " ", "[", "&#91;", "]", "&#93;").Replace(text)
-}
-
-func (p *program) render(m *matrix, sourceURL string) (string, string, error) {
-	var providers, transformers strings.Builder
-	providers.WriteString("| Level | Provider |")
-	transformers.WriteString("| Source → target |")
-	for _, lang := range m.languages {
-		fmt.Fprintf(&providers, " %s |", escape(lang.name))
-		fmt.Fprintf(&transformers, " %s |", escape(lang.name))
-	}
-	providers.WriteString("\n| --- | --- |")
-	transformers.WriteString("\n| --- |")
-	for range m.languages {
-		providers.WriteString(" :---: |")
-		transformers.WriteString(" :---: |")
-	}
-	providers.WriteString("\n")
-	transformers.WriteString("\n")
-	var rows []*row
-	for _, row := range m.rows {
-		rows = append(rows, row)
-	}
-	slices.SortFunc(rows, func(a, b *row) int {
-		if a.level != b.level {
-			return strings.Compare(a.level, b.level)
-		}
-		return strings.Compare(a.contract, b.contract)
-	})
-	for _, row := range rows {
-		fmt.Fprintf(&providers, "| %s | `%s` |", escape(row.level), strings.ReplaceAll(row.contract, "|", "&#124;"))
-		for _, lang := range m.languages {
-			links, err := p.links(row.cells[lang.id], sourceURL)
-			if err != nil {
-				return "", "", err
-			}
-			fmt.Fprintf(&providers, " %s |", links)
-		}
-		providers.WriteString("\n")
-	}
-	for _, from := range m.languages {
-		fmt.Fprintf(&transformers, "| %s |", escape(from.name))
-		for _, to := range m.languages {
-			links, err := p.links(m.edges[from.id][to.id], sourceURL)
-			if err != nil {
-				return "", "", err
-			}
-			fmt.Fprintf(&transformers, " %s |", links)
-		}
-		transformers.WriteString("\n")
-	}
-	return providers.String(), transformers.String(), nil
-}
-
-func replaceRegion(document, name, table string) (string, error) {
-	begin, end := "<!-- generated:"+name+":begin -->", "<!-- generated:"+name+":end -->"
-	if strings.Count(document, begin) != 1 || strings.Count(document, end) != 1 {
-		return "", fmt.Errorf("expected one %s generated region", name)
-	}
-	start, stop := strings.Index(document, begin)+len(begin), strings.Index(document, end)
-	if start > stop {
-		return "", fmt.Errorf("reversed %s generated markers", name)
-	}
-	return document[:start] + "\n\n" + strings.TrimSpace(table) + "\n\n" + document[stop:], nil
-}
-
-func run() error {
-	rootFlag := flag.String("root", ".", "repository root")
-	outputFlag := flag.String("output", "docs/providers.md", "Markdown document relative to the repository root")
-	urlFlag := flag.String("source-url", "", "source URL prefix (defaults to the module's GitHub main branch)")
+func run()error{
+	var resultPaths,buildFlags values
+	root:=flag.String("root",".","selected source module root")
+	output:=flag.String("output","docs/providers.md","matrix Markdown path relative to root")
+	details:=flag.String("details","docs/provider-capabilities.md","details Markdown path relative to root")
+	sourceURL:=flag.String("source-url","","source URL prefix; defaults to the module GitHub main branch")
+	contextPath:=flag.String("context","","independently captured current source context JSON")
+	executionOutput:=flag.String("execution-output","","write an execution report here, leaving committed reports unchanged")
+	timeout:=flag.Duration("timeout",5*time.Minute,"whole-command cooperative deadline (outer worker deadline remains required)")
+	flag.Var(&resultPaths,"results","invocation.json path (repeatable)")
+	flag.Var(&buildFlags,"build-flag","explicit source-selection Go build flag (repeatable)")
 	flag.Parse()
-	root, err := filepath.Abs(*rootFlag)
-	if err != nil {
-		return err
+	if flag.NArg()!=0{return fmt.Errorf("unexpected positional arguments")}
+	if *timeout<=0{return fmt.Errorf("timeout must be positive")}
+	ctx,cancel:=context.WithTimeout(context.Background(),*timeout);defer cancel()
+	config:=report.Config{Root:*root,MatrixPath:*output,DetailsPath:*details,SourceURL:*sourceURL,BuildFlags:buildFlags,Extractors:[]report.Binding{{Format:grammar.Format,Extractor:grammar.Extractor{}}}}
+	if *contextPath!=""{
+		file,err:=os.Open(*contextPath);if err!=nil{return err};defer file.Close()
+		decoder:=json.NewDecoder(io.LimitReader(file,1<<20));decoder.DisallowUnknownFields()
+		var source observation.SourceContext
+		if err:=decoder.Decode(&source);err!=nil{return err}
+		var extra any;if err:=decoder.Decode(&extra);err!=io.EOF{return fmt.Errorf("trailing or oversized source context")}
+		config.Context=&source
+		if len(config.BuildFlags)>0{return fmt.Errorf("context supplies build flags; do not also pass -build-flag")}
+		config.BuildFlags=source.BuildFlags
+		if config.SourceURL=="" && source.Revision!=""{config.SourceURL="https://"+source.ModulePath+"/blob/"+source.Revision}
 	}
-	p, err := load(root)
-	if err != nil {
-		return err
-	}
-	m, err := p.discover()
-	if err != nil {
-		return err
-	}
-	sourceURL := *urlFlag
-	if sourceURL == "" {
-		if !strings.HasPrefix(p.module, "github.com/") {
-			return fmt.Errorf("supply -source-url for a non-GitHub module")
-		}
-		sourceURL = "https://" + p.module + "/blob/main"
-	}
-	providers, transformers, err := p.render(m, sourceURL)
-	if err != nil {
-		return err
-	}
-	path := filepath.Join(root, *outputFlag)
-	original, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	document := strings.ReplaceAll(string(original), "\r\n", "\n")
-	document, err = replaceRegion(document, "providers", providers)
-	if err != nil {
-		return err
-	}
-	document, err = replaceRegion(document, "transformers", transformers)
-	if err != nil {
-		return err
-	}
-	// Preserve the document's existing newline convention and all authored prose.
-	if bytes.Contains(original, []byte("\r\n")) {
-		document = strings.ReplaceAll(document, "\n", "\r\n")
-	}
-	if document == string(original) {
-		fmt.Println("Provider matrices are unchanged.")
+	for _,path:=range resultPaths{execution,err:=observation.Load(ctx,path,observation.Limits{});if err!=nil{return err};config.Executions=append(config.Executions,execution)}
+	if (len(resultPaths)>0 || config.Context!=nil) && *executionOutput==""{return fmt.Errorf("observations require -execution-output; they are never written into committed reports")}
+	documents,err:=report.Generate(ctx,config);if err!=nil{return err}
+	if *executionOutput!=""{
+		if err:=os.WriteFile(*executionOutput,[]byte(documents.Capabilities),0644);err!=nil{return err}
+		fmt.Println("Wrote invocation report",*executionOutput)
 		return nil
 	}
-	if err := os.WriteFile(path, []byte(document), 0644); err != nil {
-		return err
-	}
-	fmt.Println("Updated", *outputFlag)
+	if err:=report.Write(documents);err!=nil{return err}
+	fmt.Println("Generated provider matrices and capability details.")
 	return nil
 }
 
-func main() {
-	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-}
+func main(){if err:=run();err!=nil{fmt.Fprintln(os.Stderr,err);os.Exit(1)}}

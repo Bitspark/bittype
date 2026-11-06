@@ -40,6 +40,8 @@ var rules = g.Rules{
 	"type-approximation": {Roles: []g.Role{g.One("type", types...)}},
 }
 
+// bittype:grammar rules
+// bittype:scope docs/syntax.md#go
 func Check(view ast.View[s.Language]) error {
 	t := view.ASTView()
 	if err := g.Check(t, "file", rules); err != nil {

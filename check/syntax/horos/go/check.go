@@ -8,6 +8,8 @@ import (
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
+// bittype:grammar github.com/Bitspark/bittype/internal/declsyntax#rules
+// bittype:scope docs/horos.md#syntax-vocabulary
 func Check(view ast.View[s.Language]) error { return common.Check(view) }
 
 // Provider supplies syntax admission independently of every other role.

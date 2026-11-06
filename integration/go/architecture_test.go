@@ -19,6 +19,7 @@ type productionPackage struct {
 	Standard   bool
 	Imports    []string
 	GoFiles    []string
+	CgoFiles   []string
 }
 
 func productionPackages(t *testing.T) map[string]productionPackage {
@@ -123,7 +124,11 @@ func TestProductionArchitecture(t *testing.T) {
 	packages := productionPackages(t)
 	languages := stageLanguages(t)
 	rules := map[string][]string{
-		"tools/provider-matrix/go":  {}, // development tooling, standard library only
+		"tools/provider-matrix/go": {"tools/provider-matrix/report/go", "tools/provider-matrix/observation/go", "tools/provider-matrix/extract/grammar/go"},
+		"tools/provider-matrix/report/go": {"tools/provider-matrix/capability/go", "tools/provider-matrix/observation/go"},
+		"tools/provider-matrix/capability/go": {},
+		"tools/provider-matrix/observation/go": {},
+		"tools/provider-matrix/extract/grammar/go": {"tools/provider-matrix/capability/go"},
 		"tools/horos-module/go":     {"contracts/parse/go", "internal/horosmodel", "internal/lex", "parse/syntax/horos/go", "trees/ast/go"},
 		"trees/ast/go":              {},
 		"semantics/go":              {"trees/ast/go"},
@@ -231,7 +236,7 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["provider/rust/go"] = append(rules["provider/rust/go"], "contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "analyze/files/rust/go", "resolve/files/rust/go")
 	rules["verification/files/horos-to-go/go"] = []string{"contracts/semantic/go", "contracts/verification/go", "semantics/go", "trees/ast/go", "verification/files/source/horos/go", "semantics/golang/go", "analyze/files/golang/go"}
 	for path, p := range packages {
-		if p.Standard || path == modulePath+"/integration/go" || path == modulePath+"/verification/integration/go" {
+		if p.Standard || len(p.GoFiles)+len(p.CgoFiles)==0 || path == modulePath+"/integration/go" || path == modulePath+"/verification/integration/go" {
 			continue
 		}
 		if !strings.HasPrefix(path, modulePath+"/") {

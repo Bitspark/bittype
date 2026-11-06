@@ -92,6 +92,14 @@ func formatted[L any](t *testing.T, p nativeProvider[L], a ast.AST[L]) string {
 	}
 	return result
 }
+// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Format feature=independent-ast-formatting case=independent-ast-goldens expects=golden-text
+// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Print feature=independent-ast-formatting case=independent-ast-goldens expects=golden-text
+// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Format feature=independent-ast-formatting case=independent-ast-goldens expects=golden-text
+// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Print feature=independent-ast-formatting case=independent-ast-goldens expects=golden-text
+// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Format feature=independent-ast-formatting case=independent-ast-goldens expects=golden-text
+// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Print feature=independent-ast-formatting case=independent-ast-goldens expects=golden-text
+// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Format feature=independent-ast-formatting case=independent-ast-goldens expects=golden-text
+// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Print feature=independent-ast-formatting case=independent-ast-goldens expects=golden-text
 func TestIndependentFormatterGoldens(t *testing.T) {
 	cases := map[string]struct{ got, want string }{
 		"typescript": {formatted(t, tsprovider.Provider{}, tsFixture()), "export type Strings = (string | null)[];\n"},
@@ -107,6 +115,7 @@ func TestIndependentFormatterGoldens(t *testing.T) {
 		})
 	}
 }
+// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Format feature=snapshot-ownership case=input-mutation-after-format expects=output-unchanged
 func TestFormatterSnapshotOwnership(t *testing.T) {
 	a := tsFixture()
 	a.Nodes[0].Origin = ast.Origin{Spans: []ast.Span{{Source: "original", Start: 0, End: 1}}, Nodes: []ast.NodeRef{{Tree: "external", Node: 1}}}
@@ -168,6 +177,14 @@ func invalidAST[L any](t *testing.T, p nativeProvider[L], makeTree func() ast.AS
 		}
 	}
 }
+// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Check feature=ast-admission case=malformed-carriers expects=reject
+// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Format feature=ast-admission case=malformed-carriers expects=rejection-without-output
+// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Check feature=ast-admission case=malformed-carriers expects=reject
+// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Format feature=ast-admission case=malformed-carriers expects=rejection-without-output
+// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Check feature=ast-admission case=malformed-carriers expects=reject
+// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Format feature=ast-admission case=malformed-carriers expects=rejection-without-output
+// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Check feature=ast-admission case=malformed-carriers expects=reject
+// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Format feature=ast-admission case=malformed-carriers expects=rejection-without-output
 func TestMalformedASTs(t *testing.T) {
 	invalidAST(t, tsprovider.Provider{}, tsFixture)
 	invalidAST(t, goprovider.Provider{}, goFixture)
@@ -235,6 +252,10 @@ func command(t *testing.T, dir, name string, args ...string) {
 		t.Fatal(err)
 	}
 }
+// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Format feature=native-compiler-qualification case=formatted-fixture-contract expects=compiler-fixture-contract
+// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Format feature=native-compiler-qualification case=formatted-fixture-contract expects=compiler-fixture-contract
+// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Format feature=native-compiler-qualification case=formatted-fixture-contract expects=compiler-fixture-contract
+// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Format feature=native-compiler-qualification case=formatted-fixture-contract expects=compiler-fixture-contract
 func TestNativeCompilerFixtures(t *testing.T) {
 	if os.Getenv("BITTYPE_NATIVE") != "1" {
 		t.Skip("native compiler qualification runs in the dedicated remote job")

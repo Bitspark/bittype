@@ -9,6 +9,7 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
+// bittype:scope docs/source.md#symmetric-role-contracts
 func (p Provider[L]) Print(ctx context.Context, input source.Source[L]) (files.Files, error) {
 	if ctx == nil || !input.Valid() || representation.IsNil(p.syntax) {
 		return files.Files{}, source.ErrInvalid

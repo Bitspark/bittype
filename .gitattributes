@@ -6,3 +6,5 @@
 *.yml text eol=lf
 *.mjs text eol=lf
 *.md text eol=lf
+# Preserve the verified expert answer's intentional Markdown hard breaks.
+research-docs/0012-capability-reports.advice.md whitespace=-blank-at-eol

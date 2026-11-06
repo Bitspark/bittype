@@ -32,6 +32,7 @@ func associatedTree() ast.AST[s.Language] {
 	}}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/check/syntax/rust/go#Check feature=associated-type-projections case=independent-ast-and-references expects=accept
 func TestAssociatedTypeAdmission(t *testing.T) {
 	tree := associatedTree()
 	// The syntax checker accepts resolved references without interpreting them.
@@ -48,6 +49,7 @@ func TestAssociatedTypeAdmission(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/check/syntax/rust/go#Check feature=associated-type-projections case=invalid-shapes-and-ordering expects=located-rejection
 func TestInvalidAssociatedTypeShapes(t *testing.T) {
 	cases := map[string]func(*ast.AST[s.Language]){
 		"missing subject":          func(a *ast.AST[s.Language]) { a.Nodes[5].Children[0].Role = "type" },

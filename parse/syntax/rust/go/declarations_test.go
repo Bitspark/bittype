@@ -12,6 +12,7 @@ import (
 	s "github.com/Bitspark/bittype/syntax/rust/go"
 )
 
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/rust/go#Parse feature=generic-associated-declarations case=declaration-and-impl-structure expects=structure-preserved
 func TestGenericAssociatedDeclarationStructure(t *testing.T) {
 	source := "trait Family { type Item<'a, T: Clone>: Clone + 'a where T: 'a; } impl<U> Family for Wrap<U> where U: Clone { type Item<'a, T: Clone> = Vec<T> where T: 'a; }"
 	c, err := rustparse.Parse(context.Background(), parse.Input{SourceID: "source", TreeID: "tree", Text: source})
@@ -41,6 +42,7 @@ func TestGenericAssociatedDeclarationStructure(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/rust/go#Parse feature=generic-associated-declarations case=unresolved-syntax expects=accept
 func TestGenericAssociatedSyntaxWithoutResolution(t *testing.T) {
 	for _, source := range []string{
 		"trait X { type Item<T>; type Other; }",
@@ -61,6 +63,7 @@ func TestGenericAssociatedSyntaxWithoutResolution(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/rust/go#Parse feature=generic-associated-declarations case=malformed-declarations expects=located-error-without-output
 func TestMalformedGenericAssociatedDeclarations(t *testing.T) {
 	for _, source := range []string{
 		"trait X { type Item<>; }", "trait X { type Item<T> }", "trait X { type Item<T>:; }",
@@ -87,6 +90,7 @@ func TestMalformedGenericAssociatedDeclarations(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/rust/go#Parse feature=type-only-impl-scope case=unsupported-impl-forms expects=unsupported-without-output
 func TestImplScopeRejection(t *testing.T) {
 	for _, source := range []string{
 		"impl V {}", "impl<T> V<T> { type Item = T; }",

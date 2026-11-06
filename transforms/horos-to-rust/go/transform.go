@@ -11,6 +11,7 @@ import (
 )
 
 // New installs no builtin or library mappings. The consumer supplies the complete factory.
+// bittype:scope docs/generation-composition.md#construction-and-selection
 func New(from, to representation.Language, factory c.Factory[h.Language, s.Language]) (transform.ASTTransformer, error) {
 	if from.ID() != (h.Language{}).ID() || from.Profile() != h.Profile || to.ID() != (s.Language{}).ID() {
 		return nil, transform.ErrInvalidTransformer

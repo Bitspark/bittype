@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+// bittype:scope docs/parsing-formatting.md#carriers-and-ownership
 func Print[L any](ctx context.Context, tree cst.CST[L]) (string, error) {
 	if ctx == nil {
 		return "", errors.New("nil context")

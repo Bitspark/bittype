@@ -177,6 +177,8 @@ func qualifyGolang(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/go#Provider.Resolve feature=go-semantic-subset case=rejected-and-unsupported-fixtures expects=no-partial-model
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/golang/go#Provider.Analyze feature=go-semantic-subset case=rejected-and-unsupported-fixtures expects=no-partial-model
 func TestGoSemanticReportsAndCoverage(t *testing.T) {
 	for _, tc := range []struct {
 		name, text string

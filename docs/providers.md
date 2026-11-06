@@ -1,7 +1,9 @@
 # Language provider matrix
 
 The tables below are generated from implemented Go providers and typed transformer
-factories. A link leads to the implementation's source line; / means unavailable.
+factories. Source links lead to implementations; details links identify the exact
+contribution in the [capability report](provider-capabilities.md). `/` means
+unavailable.
 Applications compose and register capabilities explicitly. Availability of a stage
 does not require every preceding stage to be available. Native support covers the
 documented type-declaration subset, not complete programming languages.
@@ -14,15 +16,19 @@ See the [TypeScript](native-semantics.md#first-typescript-profile) and
 The [matrix generator](../tools/provider-matrix/README.md) discovers language
 markers, implemented provider contracts, generic constructor collaborators and
 typed transformer endpoints. The [update workflow](../.github/workflows/provider-matrices.yml)
-regenerates these regions after source changes and automatically lands a docs-only
-pull request when their content changes. Keep explanations outside the generated
-regions; do not edit cells or maintain a separate capability catalogue.
+regenerates these regions and the detailed report after source changes, then
+automatically lands a docs-only pull request when their content changes. Keep
+explanations outside the generated regions; do not edit cells or maintain a
+separate capability catalogue.
 
-The [detailed capability report proposal](capability-reports.md) specifies future
-`grammar`, `scope` and `case` annotations and detail links from both matrices.
-It separates extracted definitions, authored scope, associated tests and observed
-results. That reporting extension is not implemented; these tables still show
-availability and source links, not completeness or architectural conformance.
+The [capability report design](capability-reports.md) explains `grammar`, `scope`
+and `case` annotations, format-owned extraction and exact test associations.
+Committed details are source-only: identity, authored scope, structural facts,
+named cases and explicit missing evidence. Existing [Go checks](../.github/workflows/go.yml)
+publish execution observations for their own invocations; the static report does
+not claim a latest passing result. An absent profile is unspecified, and a
+delegate's tests do not qualify its wrapper. Neither matrix nor report supplies
+a completeness denominator or an architectural-conformance verdict.
 
 The Level column comes from `bittype:dimension` comments on declared operation
 boundary types, not package names. `Shared` requires an explicit `bittype:shared`

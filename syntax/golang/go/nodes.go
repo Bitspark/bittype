@@ -12,9 +12,11 @@ import (
 type Language struct{}
 
 // ID is the stable registration key for this language family.
+// bittype:scope docs/syntax.md#identity-and-registration
 func (Language) ID() language.ID { return "go" }
 
 // Name is the human-readable language name, not a registration key.
+// bittype:scope docs/syntax.md#identity-and-registration
 func (Language) Name() string { return "Go" }
 
 var _ language.Provider = Language{}

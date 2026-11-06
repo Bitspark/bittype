@@ -1,4 +1,4 @@
-package main
+package report
 
 import (
 	"fmt"
@@ -7,7 +7,10 @@ import (
 	"go/token"
 	"go/types"
 	"slices"
+	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 type language struct {
@@ -17,9 +20,49 @@ type language struct {
 type location struct {
 	label string
 	pos   token.Pos
+	op    *operation
+}
+
+// An operation keeps compiler identities until presentation. A delegate edge is
+// a source relationship only; it does not establish wrapper equivalence or carry
+// a delegate's qualification to the public method.
+type operation struct {
+	id string
+	kind string
+	public, entry *types.Func
+	chain []callLink
+	stop string
+	contract *types.Named
+	receiver types.Type
+	language language
+	from, to *language
+	alternatives [][]*types.Named
+}
+
+type callLink struct {
+	caller, callee *types.Func
+	pos token.Pos
+	receiver types.Type
+	arguments []types.Type
+}
+
+func fullType(t types.Type) string {
+	if t == nil {
+		return ""
+	}
+	return types.TypeString(t, func(pkg *types.Package) string { return pkg.Path() })
+}
+
+func operationID(kind string, fn *types.Func, contract *types.Named, receiver types.Type, markers ...language) string {
+	parts := []string{kind, canonicalSymbol(fn).String(), fullType(contract), fullType(receiver)}
+	for _, marker := range markers {
+		parts = append(parts, canonicalSymbol(marker.marker.Obj()).String(), marker.id)
+	}
+	return stableKey(parts...)
 }
 type row struct {
 	level, contract string
+	identity string
 	cells           map[string][]location
 }
 type matrix struct {
@@ -31,6 +74,7 @@ type contribution struct {
 	language       language
 	contract       *types.Named
 	implementation *types.Func
+	op             *operation
 	// Each alternative is a public constructor's provider requirements.
 	// Concrete implementations use one empty alternative.
 	alternatives [][]*types.Named
@@ -239,6 +283,34 @@ func contractName(contract *types.Named, lang language) string {
 	return strings.ReplaceAll(name, marker, "L")
 }
 
+func contractRowIdentity(contract *types.Named, lang language) string {
+	// Quoted package paths and an identifier boundary make this a replacement of
+	// the exact marker token, not of similarly named types or path suffixes.
+	qualifier := func(pkg *types.Package) string { return strconv.Quote(pkg.Path()) }
+	text := types.TypeString(contract, qualifier)
+	marker := types.TypeString(lang.marker, qualifier)
+	var result strings.Builder
+	for {
+		start := strings.Index(text, marker)
+		if start < 0 {
+			result.WriteString(text)
+			return result.String()
+		}
+		end := start+len(marker)
+		result.WriteString(text[:start])
+		if end < len(text) {
+			r, _ := utf8.DecodeRuneInString(text[end:])
+			if r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r) {
+				result.WriteString(marker)
+				text = text[end:]
+				continue
+			}
+		}
+		result.WriteString("<language>")
+		text = text[end:]
+	}
+}
+
 func (p *program) discover() (*matrix, error) {
 	identity, err := p.named("contracts/language/go", "Provider")
 	if err != nil {
@@ -267,12 +339,14 @@ func (p *program) discover() (*matrix, error) {
 		}
 	}
 	m := &matrix{languages: languages, rows: map[string]*row{}, edges: map[string]map[string][]location{}}
-	identityRow := &row{level: p.level(identity), contract: "language.Provider", cells: map[string][]location{}}
+	identityRow := &row{level: p.level(identity), contract: "language.Provider", identity: fullType(identity), cells: map[string][]location{}}
 	m.rows[identityRow.contract] = identityRow
 	available := map[string]map[string]bool{}
 	for _, lang := range languages {
-		identityRow.cells[lang.id] = []location{{"Language", lang.marker.Obj().Pos()}}
-		available[lang.id] = map[string]bool{identityRow.contract: true}
+		op := &operation{kind: "identity", contract: identity, receiver: lang.marker, language: lang}
+		op.id = operationID(op.kind, nil, identity, lang.marker, lang)
+		identityRow.cells[lang.id] = []location{{label: "Language", pos: lang.marker.Obj().Pos(), op: op}}
+		available[lang.id] = map[string]bool{fullType(identity): true}
 	}
 	var pending []contribution
 	for path, pkg := range p.packages {
@@ -331,9 +405,13 @@ func (p *program) discover() (*matrix, error) {
 						}
 						iface := bound.Underlying().(*types.Interface)
 						for i := 0; i < iface.NumExplicitMethods(); i++ {
-							fn := p.entry(method(candidate, iface.ExplicitMethod(i).Name()))
+							public := method(candidate, iface.ExplicitMethod(i).Name())
+							fn, chain, stop := p.entryChain(public)
 							if fn != nil {
-								pending = append(pending, contribution{lang, bound, fn, alternatives})
+								receiver := public.Type().(*types.Signature).Recv().Type()
+								op := &operation{kind: "provider", public: public, entry: fn, chain: chain, stop: stop, contract: bound, receiver: receiver, language: lang, alternatives: alternatives}
+								op.id = operationID(op.kind, public, bound, receiver, lang)
+								pending = append(pending, contribution{language: lang, contract: bound, implementation: fn, op: op, alternatives: alternatives})
 							}
 						}
 					}
@@ -350,7 +428,7 @@ func (p *program) discover() (*matrix, error) {
 			for _, deps := range c.alternatives {
 				all := true
 				for _, dep := range deps {
-					all = all && available[c.language.id][contractName(dep, c.language)]
+					all = all && available[c.language.id][fullType(dep)]
 				}
 				ready = ready || all
 			}
@@ -359,11 +437,20 @@ func (p *program) discover() (*matrix, error) {
 				continue
 			}
 			key := contractName(c.contract, c.language)
-			if m.rows[key] == nil {
-				m.rows[key] = &row{level: p.level(c.contract), contract: key, cells: map[string][]location{}}
+			if existing := m.rows[key]; existing != nil && existing.identity != contractRowIdentity(c.contract, c.language) {
+				return nil, fmt.Errorf("ambiguous matrix contract label %q: %s and %s", key, existing.identity, fullType(c.contract))
 			}
-			m.rows[key].cells[c.language.id] = append(m.rows[key].cells[c.language.id], location{c.implementation.Name(), c.implementation.Pos()})
-			available[c.language.id][key] = true
+			if m.rows[key] == nil {
+				m.rows[key] = &row{level: p.level(c.contract), contract: key, identity: contractRowIdentity(c.contract, c.language), cells: map[string][]location{}}
+			}
+			duplicate := false
+			for _, loc := range m.rows[key].cells[c.language.id] {
+				duplicate = duplicate || loc.op.id == c.op.id
+			}
+			if !duplicate {
+				m.rows[key].cells[c.language.id] = append(m.rows[key].cells[c.language.id], location{label: c.implementation.Name(), pos: c.implementation.Pos(), op: c.op})
+			}
+			available[c.language.id][fullType(c.contract)] = true
 			progress = true
 		}
 		pending = remaining
@@ -374,8 +461,11 @@ func (p *program) discover() (*matrix, error) {
 	// Keep discovered but unsatisfied generic pairings visible as unavailable rows.
 	for _, c := range pending {
 		key := contractName(c.contract, c.language)
+		if existing := m.rows[key]; existing != nil && existing.identity != contractRowIdentity(c.contract, c.language) {
+			return nil, fmt.Errorf("ambiguous matrix contract label %q: %s and %s", key, existing.identity, fullType(c.contract))
+		}
 		if m.rows[key] == nil {
-			m.rows[key] = &row{level: p.level(c.contract), contract: key, cells: map[string][]location{}}
+			m.rows[key] = &row{level: p.level(c.contract), contract: key, identity: contractRowIdentity(c.contract, c.language), cells: map[string][]location{}}
 		}
 	}
 	if err := p.transformers(m); err != nil {
@@ -416,8 +506,12 @@ func (p *program) transformers(m *matrix) error {
 	// Follow typed factory delegation to the existing transformer boundary.
 	// Generic helpers are not concrete edges. Bind their actual type arguments
 	// at each call, including reordered parameters, without executing factories.
-	var endpoints func(*types.Func, map[*types.TypeParam]types.Type, map[*types.Func]bool) ([][2]string, error)
-	endpoints = func(fn *types.Func, bindings map[*types.TypeParam]types.Type, active map[*types.Func]bool) ([][2]string, error) {
+	type endpoint struct {
+		from, to string
+		chain []callLink
+	}
+	var endpoints func(*types.Func, map[*types.TypeParam]types.Type, map[*types.Func]bool) ([]endpoint, error)
+	endpoints = func(fn *types.Func, bindings map[*types.TypeParam]types.Type, active map[*types.Func]bool) ([]endpoint, error) {
 		fn = fn.Origin()
 		if active[fn] {
 			return nil, fmt.Errorf("%s: cyclic transformer factory delegation", fn)
@@ -428,7 +522,7 @@ func (p *program) transformers(m *matrix) error {
 		}
 		active[fn] = true
 		defer delete(active, fn)
-		var result [][2]string
+		var result []endpoint
 		var failure error
 		ast.Inspect(decl.node.Body, func(n ast.Node) bool {
 			if failure != nil {
@@ -469,6 +563,7 @@ func (p *program) transformers(m *matrix) error {
 				actuals[i] = actual
 				nested[parameters.At(i)] = actual
 			}
+			link := callLink{caller: fn, callee: callee.Origin(), pos: call.Pos(), receiver: callReceiver(decl.pkg, call.Fun), arguments: actuals}
 			if callee.Pkg().Path() == p.module+"/contracts/transform/go" && callee.Name() == "NewTransformer" {
 				if len(actuals) != 2 {
 					failure = fmt.Errorf("%s: transformer requires two endpoint arguments", fn)
@@ -479,7 +574,7 @@ func (p *program) transformers(m *matrix) error {
 					failure = fmt.Errorf("%s: transformer uses an undiscovered language marker", fn)
 					return false
 				}
-				result = append(result, [2]string{from, to})
+				result = append(result, endpoint{from: from, to: to, chain: []callLink{link}})
 				return false
 			}
 			child, err := endpoints(callee, nested, active)
@@ -487,7 +582,10 @@ func (p *program) transformers(m *matrix) error {
 				failure = err
 				return false
 			}
-			result = append(result, child...)
+			for _, edge := range child {
+				edge.chain = append([]callLink{link}, edge.chain...)
+				result = append(result, edge)
+			}
 			return false
 		})
 		if failure != nil {
@@ -510,13 +608,48 @@ func (p *program) transformers(m *matrix) error {
 		if err != nil {
 			return err
 		}
-		seen := map[[2]string]bool{}
+		seen := map[string]*operation{}
 		for _, edge := range edges {
-			if !seen[edge] {
-				add(edge[0], edge[1], location{fn.Name(), fn.Pos()})
-				seen[edge] = true
+			var from, to *language
+			for i := range m.languages {
+				if m.languages[i].id == edge.from {
+					from = &m.languages[i]
+				}
+				if m.languages[i].id == edge.to {
+					to = &m.languages[i]
+				}
+			}
+			op := &operation{kind: "transformer", public: fn, entry: edge.chain[len(edge.chain)-1].callee, chain: edge.chain, stop: "typed transformer boundary", contract: contract, from: from, to: to}
+			op.id = operationID(op.kind, fn, contract, nil, *from, *to)
+			if previous := seen[op.id]; previous == nil {
+				add(edge.from, edge.to, location{label: fn.Name(), pos: fn.Pos(), op: op})
+				seen[op.id] = op
+			} else {
+				// Several typed call paths can establish the same candidate edge.
+				// Retain their source relationships without treating any as returned
+				// value flow or discarding a related declaration's own associations.
+				for _, link := range op.chain {
+					duplicate := false
+					for _, existing := range previous.chain {
+						if callLinkKey(link) == callLinkKey(existing) {
+							duplicate = true
+							break
+						}
+					}
+					if !duplicate {
+						previous.chain = append(previous.chain, link)
+					}
+				}
 			}
 		}
 	}
 	return nil
+}
+
+func callLinkKey(link callLink) string {
+	parts := []string{canonicalSymbol(link.caller).String(), canonicalSymbol(link.callee).String(), strconv.Itoa(int(link.pos)), fullType(link.receiver)}
+	for _, argument := range link.arguments {
+		parts = append(parts, fullType(argument))
+	}
+	return stableKey(parts...)
 }

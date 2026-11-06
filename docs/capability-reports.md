@@ -1,12 +1,15 @@
 # Detailed capability reports
 
-**Proposal, 6 November 2026. No implementation in this change.** The owner
-requested a way to explain the extent of each implemented capability behind the
-[generated matrices](providers.md), without putting a coverage essay in each
-cell or inventing completeness percentages. This document specifies proposed
-source annotations, extraction rules and report navigation. The annotations,
-extractors, report files and CI result integration described below do not yet
-exist. Existing `bittype:dimension` and `bittype:shared` annotations are unchanged.
+The [generated matrices](providers.md) link each discovered contribution to its
+[detailed report](provider-capabilities.md). Source annotations, format-owned
+extractors and explicit test observations explain the extent of an implementation
+without inventing completeness percentages. The committed report is source-only;
+execution observations belong to reports for specific test invocations.
+
+This design incorporates the [evaluated expert recommendations](../research-docs/0012-capability-reports.md#applied).
+The [tool guide](../tools/provider-matrix/README.md) covers commands and public
+composition. Existing `bittype:dimension` and `bittype:shared` annotations retain
+their separate attachment and interpretation rules.
 
 ## Purpose and meaning
 
@@ -14,14 +17,16 @@ The current [matrix tool](../tools/provider-matrix/README.md) discovers provider
 implementations and typed transformer endpoints. Existence is distinct from
 feature breadth, exercised examples and architectural correctness.
 
-A detailed report combines four separately labelled sources:
+A detailed report keeps these facts separate:
 
 | Information | Owner and permitted interpretation |
 | --- | --- |
+| Contribution identity | Go discovery identifies the language, instantiated contract, operation or direct transformer factory |
 | Declared scope and exclusions | Authored provider/profile documentation; defines the intended boundary and known limitations |
 | Extracted definitions | Owning implementation's structured declarations; establishes what is written in those declarations |
 | Associated cases | Explicit links from tests to operations and scenarios; establishes that a case has been identified |
 | Executed results | Existing test runner output for those cases and their execution context; establishes the observed result of the named tests |
+| Applicability | Host-owned association determines whether an observation matches the supplied source declarations and execution context |
 
 A rule-table entry does not prove that the parser, formatter or analyzer handles
 it. A passing case does not prove all combinations of a feature. Neither a
@@ -35,8 +40,10 @@ convert it to a percentage or merely describe it as missing feature coverage.
 Scope is relative to a language revision, provider profile and supplied
 configuration. Types-only tooling is not measured against every executable
 construct in a complete language. No overall percentage, estimate of remaining
-effort or fixed feature denominator is proposed. An omitted test is unassessed,
-not necessarily unsupported. Known exclusions remain explicit authored facts.
+effort or fixed feature denominator is used. An omitted test is unassessed within
+the declared scope, not necessarily unsupported. Known exclusions remain
+explicit authored facts. An unavailable extractor, an unknown structural field,
+a skipped test and an unobserved test are distinct facts.
 
 ## Ownership and extension boundary
 
@@ -44,37 +51,71 @@ The existing source discovery continues to own language/contract association,
 operation identity and direct transformer endpoints. Annotations cannot create a
 matrix cell, register a runtime provider or override those discoveries.
 
-The reporting mechanism owns annotation syntax, resolved symbol association,
-bounded inputs, result structure, source links, diagnostics and deterministic
-rendering. Independently supplied extractors own interpretation of particular
-structured definition formats. The command's composition selects extractors by
-the resolved Go declaration/type identities they handle. It contains no language
-or feature catalogue. The initial grammar extractor uses exactly the same
-contract as an external extractor.
+The public host in `tools/provider-matrix/report/go` owns annotation syntax,
+resolved symbol association, bounded inputs, result validation, source links,
+diagnostics and deterministic rendering. Independently supplied extractors own
+interpretation of particular structured definition formats. The command composes
+`report.Binding` values pairing format identities with extractors selected by
+exact definition symbol or named-type origin. True Go aliases retain their
+original identity; a newly defined lookalike type does not match. The host has no
+language or feature catalogue and does not import the concrete grammar extractor.
 
 The extraction contract must be narrow enough to preserve these guarantees:
 
-- A request identifies the annotated operation, the selected definition symbol,
-  its package and type, the applicable profile context, and a bounded read-only
-  source/type view. It does not grant arbitrary repository or environment access.
-- A result is an inventory associated with that request. It contains feature
-  entries, structural child/attribute constraints, links to opaque custom checks
-  and explicit unsupported extraction reasons. It cannot create unrelated
-  providers, claim a test passed or certify semantic validity.
-- Feature keys are scoped to the owning definition/provider context. Source
-  locations must belong to the supplied source view. Host association checks
-  prevent an extractor from attaching another operation's definitions or tests.
+- A request contains only the selected definition symbol, a captured source view
+  and limits. Provider, profile and test destinations remain host-owned; the
+  extractor cannot redirect the result to another contribution.
+- The fixed result schema contains structural features, ordered roles,
+  cardinalities, allowed kinds, attributes, reference-role allowance and located
+  extraction limitations. It cannot create providers, claim test outcomes or
+  certify semantic validity.
+- Feature identity is `(definition root, format identity, feature key)`. Equal
+  spellings from different roots or formats do not merge. Source locations must
+  belong to the supplied capture and are validated before host association.
 - Selection is explicit and unique. Missing extractors produce an unavailable
   inventory with a reason; overlapping selections are configuration errors.
   Neither invokes an ordered fallback or guesses from package/feature names.
-- Cancellation, bounded traversal and failure produce explicit outcomes. No
-  partial extraction is labelled a complete inventory.
+- Loading, source queries, traversal and accepted results are bounded. Unknown
+  syntax may yield an explicitly partial inventory; exhausting a resource limit
+  fails the operation instead of publishing a complete-looking subset.
+
+The public contract is definition-centered:
+
+```go
+type Extractor interface {
+    Selectors() []Selector
+    Extract(context.Context, DefinitionRequest) (Inventory, error)
+}
+
+type DefinitionRequest struct {
+    Root   Symbol
+    Source SourceView
+    Limits Limits
+}
+```
+
+`SourceView` returns immutable captured source strings and copied records for
+declarations, exact expression spans, canonical symbols, named-type origins and
+compile-time constants. Extractors may parse private copies. No mutable host AST
+or `go/types` graph is exposed. Locations use physical byte offsets; `//line`
+directives do not redirect links. Foreign files and spans are rejected.
+
+Each invocation selects one explicit source module in the existing Bittype
+repository layout. Dependency export data supplies type identity, not dependency
+source, annotations or documentation. Active `TestGoFiles` and `XTestGoFiles`
+have a separate declaration index and cannot introduce production providers.
+The public runner does not imply arbitrary multi-module or repository-layout
+support. There is no ambient documentation search or implicit network fetch.
 
 This is a development-tool contract, not a new provider SPI in `contracts/`, a
 runtime registry, an AST node annotation scheme or a Logos proof contract. An
-extractor is trusted tooling code supplied by the composition; a read-only API
-does not claim to sandbox arbitrary Go code. The source being inspected is data:
-the tool never runs provider constructors, initializers or predicate functions.
+extractor is trusted tooling code supplied by the composition. Loading bounds
+metadata, file count and captured source bytes; extraction bounds queries,
+traversal, records and accepted output. These are cooperative guarantees, not a
+hostile-code sandbox: arbitrary Go extractor code and an active `go/types` call
+cannot be forcibly preempted by an interface. The caller's context and existing
+remote job deadline provide the outer execution boundary. The tool never runs
+inspected provider constructors, initializers or predicate functions.
 
 For a new structured definition format, its owner supplies an extractor through
 this tooling contract and the consumer selects it. Shared discovery, renderer
@@ -85,8 +126,7 @@ callbacks or renderer snippets are not an escape hatch.
 
 ## Annotation format
 
-The first proposal adds three directives in Go declaration doc comments. The
-following is annotation grammar, not implemented Go tooling:
+Three directives in Go declaration doc comments associate existing source:
 
 ```text
 // bittype:grammar <symbol-ref> [profile=<value>]
@@ -159,30 +199,32 @@ checks that the operation belongs to a discovered provider/delegation chain and
 does not perform speculative whole-program call analysis.
 
 Multiple roots may be declared when the operation composes several definition
-sets. Their origins stay separate. Duplicate roots or conflicting definitions
-of a feature within the same effective operation/profile are errors unless the
-owning format defines an explicit composition that its extractor represents.
-There is no last-writer-wins rule.
+sets. Their root/format namespaces stay separate, including equally spelled
+feature keys. Duplicate root/profile associations or duplicate feature keys
+inside one extracted root are errors. There is no last-writer-wins rule.
 
 ### `scope`: existing authored documentation
 
 Attach a scope link to an operation/delegate or a typed transformer factory:
 
 ```go
-// bittype:scope docs/native-semantics.md#first-typescript-profile profile="captured-types-1"
+// bittype:scope docs/native-semantics.md#first-typescript-profile
 ```
 
 Document references are relative to the annotated source module's repository
 root, with an optional Markdown fragment. They must resolve inside that supplied
-root to an existing document/anchor. Absolute paths and path escapes are errors.
-An independently supplied library resolves its documentation against its own
-supplied source root, not Bittype's root. The composition supplies the publication
-URL base; source annotations do not choose an arbitrary publishing destination.
+root to an existing document/anchor. Absolute paths, path escapes and symlink
+escapes are errors. Only the explicitly selected source module supplies
+documents; dependency export data does not enable dependency documentation.
+The composition supplies the publication URL base; annotations do not choose an
+arbitrary publishing destination.
 
 Scope links are additive. The report links to the authored sections; it does not
 parse prose into automatic promises, duplicate exclusions into a manually
 maintained status catalogue or treat a linked proposal as delivered support.
 No scope annotation means scope documentation is unassociated, not unrestricted.
+Identity documentation belongs on `ID`/`Name` methods, not a provider type
+declaration.
 
 ### `case`: a named test association
 
@@ -195,8 +237,11 @@ func TestMappedKeyRemapping(t *testing.T) {
 }
 ```
 
-`expects` is `accept` or `reject`: it describes the operation outcome asserted
-by the case, not the result of executing the test. Rejection cases must assert
+`expects` is a nonempty owner-defined label, such as `accept`,
+`located-rejection`, `round-trip-preserved` or `no-partial-model`. It describes
+the outcome asserted by the case, not the result of executing the test. The
+host does not interpret those labels as a closed support taxonomy. Rejection
+cases must assert
 the relevant diagnostic/category in their test code; merely observing some
 failure does not establish the desired boundary. A successful rejection test is
 shown as an expected-rejection case, never as successful support for the input.
@@ -224,6 +269,13 @@ Case links are exact. Testing parsing does not qualify checking, formatting,
 semantic analysis or transformation. An end-to-end test may explicitly associate
 several operations, but it must exercise and assert the claimed behavior of each.
 The tool cannot determine the adequacy of those assertions by scanning the test.
+
+Static wrapper/delegate relationships support navigation only. A delegate's case
+or observation does not assert that a wrapper executed, preserved its arguments
+or selected the same configuration. Each annotation keeps its exact target.
+Generic-composer tests do not qualify native transformer factories they never
+call. Profile labels remain authored assertions; Go test events cannot observe
+which profile a test selected internally.
 
 ## Extraction rules
 
@@ -261,6 +313,22 @@ For each declared node kind it emits:
 - Declared reference allowance and links to the defining source.
 - Opaque predicate links where an attribute uses a custom function.
 
+Knowledge is recorded for each field, rather than assigning one support flag to
+the whole feature:
+
+| State | Meaning |
+| --- | --- |
+| Known | The declaration supplies the value, including known empty, false or zero |
+| Partial | A collection has a known subset and an explicit unresolved portion |
+| Unknown | The field could not be decoded; no invented empty value replaces it |
+| Opaque | An attribute predicate is identified but its behavior is not interpreted |
+
+Unbounded cardinality and unrestricted attribute values have explicit flags;
+they are not unknown values. Every uncertain field has a reason and physical
+source location. An undecodable entry key remains an unresolved portion of the
+inventory. Its decoded/partial extent concerns the selected declaration and the
+fixed structural schema, not feature or language completeness.
+
 The owning helper syntax is interpreted only in that extractor. The reporting
 host does not know TypeScript, `mapped-type` or the names of grammar helpers.
 An unsupported initializer, cyclic definition or exhausted traversal budget
@@ -289,32 +357,65 @@ word heuristics to turn custom checks into semantic guarantees.
 
 ### Test results remain a separate input
 
-Source extraction discovers associations even when no tests have run. Execution
-status can be attached only from explicitly supplied existing test-runner output
-for the inspected source and relevant configuration. A global green job does
-not establish that a named case ran. A result for different source, an unknown
-profile or another compiler configuration is not silently reused as a current
-qualification. No extra checksum, history store or provenance workflow is needed;
-use the context already available to the existing CI run, or omit the result.
+The committed report is source-only: it records associations even when no tests
+have run, with no mutable latest-pass labels, timestamps or inspected HEAD value.
+Existing remote jobs publish invocation-specific observations as artifacts or
+job summaries. A documentation-only commit does not relabel an earlier test
+result as evidence for the new revision.
+
+The observation package imports an explicit invocation capture with Go JSON
+stdout and stderr. It preserves exact emitted test names, package events, build
+failures, repeated occurrences, selection arguments, process exit and capture
+completeness. Events are observations first, including failed or unassociated
+executions. Package success, output text or cached-looking messages cannot
+supply a missing named execution. An early test pass does not erase a later
+package, build or invocation failure.
+
+Attribution requires an independently supplied matching source context:
+revision, module and harness identities, selected modules/replacements and Go
+build selection. Unknown, modified, incomplete or unequal inputs prevent
+attributed success and retain their reasons. Preparation changes are disclosed,
+not hidden behind a recorded HEAD. An independently installed consumer harness
+retains its own context instead of donating results to repository tests.
+
+The join uses exact tested-package/top-level-test-name pairs. Internal and
+external test declarations sharing a runner name remain ambiguous. Child events
+retain their emitted names without becoming authored cases; parent outcomes do
+not become independent subtest qualifications. Repeated invocations and repeated
+occurrences remain separate.
+
+Invocation arguments and allowlisted environment describe the supplied execution
+configuration. Go test JSON does not establish which provider profile or mapping
+a test selected internally; profile annotations remain authored assertions.
+Contracts and native-compiler jobs keep their separate observations and context.
 
 Keep case execution states separate from expected operation outcomes: passed,
-failed, skipped and not observed. A failed test may represent an implementation
-or test defect; it does not automatically mean a valid feature is unsupported.
+failed, skipped, incomplete and not observed. A failed test may represent an
+implementation or test defect; it does not automatically mean a valid feature is unsupported.
 Skipped and unobserved cases are never counted as passed. Missing results leave
 the source-derived report usable with associations only. Stale or mismatched
 supplied results produce a visible diagnostic and no attributed success.
 
-The documentation generator does not launch compilers/tests or download arbitrary
-results. Existing remote test execution remains responsible for qualification.
-This proposal adds no architectural score, administrative gate or release step.
+The documentation generator does not run qualification tests or native-language
+compiler checks, or download arbitrary results. Its Go loader may prepare
+dependency export data, so generation follows the remote-workload policy.
+Existing remote tests remain responsible for qualification. This adds no
+architectural score, administrative gate or release step.
+
+For captured results, generate a separate execution report with:
+
+```sh
+go run ./tools/provider-matrix/go -results invocation.json -context source-context.json -execution-output report.md
+```
+
+The command does not launch tests, fetch a latest successful run or create a
+result ledger. The existing test workflow owns execution and its exit status.
 
 ## Reports and links from both matrices
 
-Proposed output is one generated `docs/provider-capabilities.md` file containing
-provider sections followed by transformer sections. It is not created by this
-documentation change. The existing `docs/providers.md` remains the compact entry
-point. The current source links stay; generation would add a `details` link beside
-each implemented operation/factory, for example:
+The generated `docs/provider-capabilities.md` contains provider and transformer
+details. `docs/providers.md` remains the compact entry point. Source links stay;
+generation adds a `details` link beside each implemented operation/factory:
 
 ```text
 Provider cell:     Check · details
@@ -324,12 +425,15 @@ Unavailable cell: /
 
 Each link resolves to the report for that specific implementation, not just its
 language. Multiple implementations in a cell each retain their own links. Section
-anchors derive deterministically from the full discovered identity tuple
-(including profile when present), using escaped identity text and deterministic
-collision disambiguation, not line numbers or checksums. A symbol/profile change
-regenerates both the anchor and incoming links together. Generated links and
-sections must agree before publication; a malformed annotation must not publish
-a half-updated matrix. Existing authored prose remains outside generated regions.
+anchors encode the full discovered identity tuple injectively, including the
+distinction between absent and explicit profiles. They do not depend on line
+numbers, feature counts, timestamps, hashes or inspection revisions. A
+symbol/profile change regenerates both the anchor and incoming links together.
+Generated links and sections must agree before publication; a malformed annotation must not publish
+a half-updated matrix. Both documents are fully rendered and validated before
+writing. Two file writes are not a filesystem transaction: a write failure stops
+publication, and the existing updater commits the successful pair together.
+Existing authored prose remains outside generated regions.
 
 A provider report contains:
 
@@ -337,8 +441,9 @@ A provider report contains:
 2. Links to the owning scope and exclusions.
 3. Extracted inventory, its completeness/limitations as an extraction, and links
    to custom predicates. Extraction completeness is not language completeness.
-4. Named case associations with their expected operation outcomes and any supplied
-   execution results. Definitions without associated cases are visibly unassessed.
+4. Exact named case associations and their authored expected outcomes. Execution
+   reports add invocation observations separately. Definitions without associated
+   cases are visibly unassessed.
 5. Missing associations or unavailable inventory/results, without treating absence
    as either unsupported behavior or successful coverage.
 
@@ -362,49 +467,44 @@ The generated file is a view of definitions and associations, not a new source
 of provider support flags. Exclusions remain in the owning scope documents. No
 manual edits to cells, feature rows or observed-result labels are required.
 
-## Placement and implementation sequence
+## Packages and composition
 
-The proposed tooling layout is:
+The tooling lives in the root Go module:
 
 ```text
 tools/provider-matrix/
-  go/                    existing command; discovery and explicit composition
-  capability/go/         proposed tooling-only records and extraction contract
-  extract/grammar/go/    proposed extractor for the current grammar format
+  go/                    command and explicit extractor/result composition
+  report/go/             public discovery, association, rendering and write host
+  capability/go/         public definition/source/structural extraction contract
+  extract/grammar/go/    owning Rules-format extractor
+  observation/go/        invocation decoding and exact-context association
 docs/
-  providers.md           existing generated matrices with proposed detail links
-  provider-capabilities.md  proposed generated reports
+  providers.md           compact generated matrices within authored prose
+  provider-capabilities.md  generated static details
   capability-reports.md  this authored design
 ```
 
-Independent extractors may live in their owners' tooling packages. Runtime
-packages never import the reporting packages. The command may select concrete
-extractors; shared report orchestration depends only on their contract. Exact Go
-API details belong to implementation review, but the ownership, association and
-failure guarantees above are requirements from the first slice.
+Independent extractors live in their owners' tooling packages. Runtime and
+language-provider packages never import the reporting packages. The command
+selects concrete extractors; the report host depends only on their contract and
+the observation model. A materially different struct-field extractor fixture
+uses the same public runner without changes to the host or renderer. A second
+language using the same grammar table alone would not establish that boundary.
 
-Implementation can proceed in bounded steps:
+`report.Generate` returns fully rendered documents without writing them.
+`report.Write` writes that pair and reports write failures; it does not commit or
+publish. External tooling consumers can compose another extractor over the
+runner's explicitly selected module snapshot. See the
+[public composition example](../tools/provider-matrix/README.md#public-composition).
 
-1. Add annotation parsing/resolution and associated source records. Keep existing
-   matrix availability discovery unchanged. Test malformed and ambiguous metadata.
-2. Add the grammar extractor through the tooling contract and a materially
-   different independently supplied extractor fixture, for example declarative
-   Go struct definitions instead of the current helper/map grammar encoding.
-   Compose both through the same contract, including invalid associations, with
-   shared orchestration fixed. Another language using the same rule table alone
-   would not demonstrate this extension boundary.
-3. Generate inventory/case sections and links from both matrices. Initially show
-   cases as defined, with execution not observed. Missing extractors remain explicit.
-4. Optionally consume named results already produced by existing remote tests.
-   Extend the existing documentation update path when this is implemented; no
-   separate reporting service or status ledger is proposed.
+The annotation rollout covers native and Horos grammar roots, operation scope
+links and bounded cases for syntax, formatting, pagination and native semantic
+subsets. It is not an exhaustive case catalogue. Transformer factories have scope
+links; generic composer tests are not attributed to factory wrappers they do not
+execute. Source observations and mechanical tests never establish whole-language
+coverage or replace architectural reasoning.
 
-Relevant future tests cover symbol/profile isolation, custom predicates, partial
-extraction, bounds, duplicate definitions, accept/reject distinctions, missing and
-skipped results, generic-provider association, transformer directions, deterministic
-anchors and unchanged authored prose. They qualify these mechanics; they do not
-replace architectural reasoning or establish whole-language coverage.
-
-Until implementation lands, the matrices retain their existing source-only links
-and meaning. This proposal changes no executable annotations, provider methods,
-grammars, generation mappings, semantic models, workflows or runtime behavior.
+Stronger process isolation, explicit dependency-source selection and precise
+dynamic subtest metadata are deferred until a supported consumer needs them.
+They are not implicit guarantees of the public host. Missing evidence remains
+visible without a new reporting service, ledger or approval workflow.

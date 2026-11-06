@@ -44,6 +44,7 @@ func New(definition representation.Language, syntax parse.Provider[parse.Input, 
 	}}
 	return parse.NewFilesParser(definition, contract, Provider{stages: stages})
 }
+// bittype:scope docs/source.md#horos-composition-and-pagination
 func (p Provider) Parse(ctx context.Context, request parse.FilesRequest[s.Language]) (source.Source[s.Language], error) {
 	if ctx == nil || representation.IsNil(p.stages.Parser) {
 		return source.Source[s.Language]{}, source.ErrInvalid

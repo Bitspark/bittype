@@ -192,6 +192,8 @@ func qualifyRust(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/rust/go#Provider.Resolve feature=rust-semantic-subset case=native-types-and-generics expects=native-identity-and-substitution-preserved
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/rust/go#Provider.Analyze feature=rust-semantic-subset case=native-types-and-generics expects=native-identity-and-substitution-preserved
 func TestRustSemanticNativeTypes(t *testing.T) {
 	m := rsModel(t, `pub struct Person {pub name: String}
 pub struct Page<T=Person> {pub items: Vec<T>}
@@ -252,6 +254,8 @@ func TestRustSemanticNamespaceAndCoordinates(t *testing.T) {
 	}
 }
 
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/rust/go#Provider.Resolve feature=rust-semantic-subset case=bounds-and-profile-outcomes expects=qualified-reports-without-partial-model
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/rust/go#Provider.Analyze feature=rust-semantic-subset case=bounds-and-profile-outcomes expects=qualified-reports-without-partial-model
 func TestRustSemanticBoundsAndOutcomes(t *testing.T) {
 	m := rsModel(t, `pub trait Marker {} pub struct Person {} impl Marker for Person {} pub struct Boxed<T: Marker> {pub value: T} pub type Good = Boxed<Person>;`)
 	b := rsDecl(t, m, "0", "Boxed")

@@ -7,7 +7,8 @@ on:
       - '**/*.go'
       - go.mod
       - go.sum
-      - docs/providers.md
+      - '**/*.md'
+      - tools/provider-matrix/capture.py
       - .github/workflows/provider-matrices.yml
   # Merged PRs still regenerate documentation when their commit says [skip ci].
   # This event never checks out or executes an unmerged PR head.
@@ -18,7 +19,8 @@ on:
       - '**/*.go'
       - go.mod
       - go.sum
-      - docs/providers.md
+      - '**/*.md'
+      - tools/provider-matrix/capture.py
       - .github/workflows/provider-matrices.yml
   workflow_dispatch:
 
@@ -49,7 +51,7 @@ jobs:
         with:
           go-version: '1.27.3'
           cache: false
-      - name: Generate tables from implemented providers
+      - name: Generate inventories and tables from implemented providers
         run: go run ./tools/provider-matrix/go
       - name: Publish generated documentation
         env:
@@ -58,16 +60,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet -- docs/providers.md; then
+          documents=(docs/providers.md docs/provider-capabilities.md)
+          if git diff --quiet -- "${documents[@]}" && [ -z "$(git ls-files --others --exclude-standard -- "${documents[@]}")" ]; then
             echo 'No generated documentation changes.'
             exit 0
           fi
-          # Only this generated document is staged. No credentials are available
+          # Only this generated document pair is staged. No credentials are available
           # to the generation step or persisted in Git configuration on disk.
           branch=automation/provider-matrices
           base=$(git rev-parse HEAD)
           git switch -c "$branch"
-          git add -- docs/providers.md
+          git add -- "${documents[@]}"
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'docs: regenerate provider matrices [skip ci]'
           head=$(git rev-parse HEAD)
           export GIT_CONFIG_COUNT=1
@@ -85,7 +88,7 @@ jobs:
           git push "--force-with-lease=refs/heads/$branch:$remote" origin "HEAD:refs/heads/$branch"
           pr=$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number // empty')
           if [ -z "$pr" ]; then
-            printf '%s\n' 'Regenerate the provider and transformer tables from implemented Go source. Only generated regions in docs/providers.md change.' > "$RUNNER_TEMP/provider-matrices-body.md"
+            printf '%s\n' 'Regenerate the provider and transformer tables and detailed static capability inventory from implemented Go source. Publish docs/providers.md and docs/provider-capabilities.md together; execution observations remain CI artifacts.' > "$RUNNER_TEMP/provider-matrices-body.md"
             gh pr create --head "$branch" --base main --title 'docs: regenerate provider matrices [skip ci]' --body-file "$RUNNER_TEMP/provider-matrices-body.md"
             pr=$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number')
           fi

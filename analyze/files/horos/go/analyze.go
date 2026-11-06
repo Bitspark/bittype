@@ -33,6 +33,7 @@ func ContractWithResolutionConfiguration(settings []semantic.Setting) analysis.C
 	return analysis.Contract{Semantic: contract, Resolution: &requirement}
 }
 
+// bittype:scope docs/analysis.md#horos-profile
 func Analyze(ctx context.Context, request analysis.Request[s.Language]) (semantic.Result, error) {
 	if ctx == nil {
 		return semantic.Result{}, semantic.ErrInvalidRequest

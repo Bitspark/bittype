@@ -9,7 +9,9 @@ import (
 
 type Language struct{}
 
+// bittype:scope docs/syntax.md#identity-and-registration
 func (Language) ID() language.ID { return "horos" }
+// bittype:scope docs/syntax.md#identity-and-registration
 func (Language) Name() string    { return "Horos" }
 
 var _ language.Provider = Language{}
