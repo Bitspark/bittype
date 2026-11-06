@@ -452,7 +452,7 @@ func (p *program) renderDetails(ctx context.Context, m *matrix, a *annotations, 
 	if b.err != nil {
 		return "", b.err
 	}
-	return b.String(), nil
+	return strings.TrimRight(b.String(), "\n") + "\n", nil
 }
 
 func operationTitle(op *operation) string {
