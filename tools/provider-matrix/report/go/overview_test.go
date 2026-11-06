@@ -55,7 +55,7 @@ func TestOverviewScopesProfilesAndCaseDeduplication(t *testing.T) {
 	if s != render() {
 		t.Fatal("overview is not deterministic")
 	}
-	for _, want := range []string{"../docs/providers.md", "../docs/provider-capabilities.md", "Ember → Ice", "Bodies excluded.", "profile: strict", "authored profile absent", "1 associated test declarations, 2 authored cases", "no execution results", "Delegate evidence does not qualify wrappers"} {
+	for _, want := range []string{"../docs/providers.md", "../docs/provider-capabilities.md", "Source → target", "| Dimension |", "Bodies excluded.", "profile: strict", "authored profile absent", "1 associated test declarations, 2 authored cases", "no execution results", "Delegate evidence does not qualify wrappers"} {
 		if !strings.Contains(s, want) {
 			t.Errorf("missing %q", want)
 		}
@@ -85,7 +85,7 @@ func TestOverviewMatchedOccurrencesKeepFailuresAndApplicability(t *testing.T) {
 	config := Config{Context: &ctx, Executions: []observation.Execution{execution}}
 	var b limitedText
 	renderOverviewObservations(&b, a, config, views)
-	for _, want := range []string{"process exit: **1**", "| Ember | fail: 1; pass: 1 |", "| Ice | No matching observation |"} {
+	for _, want := range []string{"process exit: **1**", "| Language | pass | fail | skip | incomplete |", "| Ember | 1 | 1 | 0 | 0 |", "| Ice | / | / | / | / |"} {
 		if !strings.Contains(b.String(), want) {
 			t.Fatalf("missing %q: %s", want, b.String())
 		}
@@ -93,7 +93,7 @@ func TestOverviewMatchedOccurrencesKeepFailuresAndApplicability(t *testing.T) {
 	config.Executions[0].Invocation.Context.Harness = "installed-consumer"
 	b = limitedText{}
 	renderOverviewObservations(&b, a, config, views)
-	if !strings.Contains(b.String(), "mismatched") || strings.Contains(b.String(), "pass: 1") || strings.Contains(b.String(), "fail: 1") {
+	if !strings.Contains(b.String(), "mismatched") || !strings.Contains(b.String(), "| Ember | / | / | / | / |") {
 		t.Fatal("foreign harness credited", b.String())
 	}
 }

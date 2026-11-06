@@ -1,8 +1,9 @@
 # Language provider matrix
 
-For support depth, start with the compact generated
+For support depth, start with the generated
 [language-by-language overview](language-support.md), including declared features,
-exclusions and associated test evidence. These tables describe availability.
+exclusions, per-language provider matrices, direct transformers and associated test
+evidence. These tables describe availability.
 
 The tables below are generated from implemented Go providers and typed transformer
 factories. Source links lead to implementations; details links identify the exact

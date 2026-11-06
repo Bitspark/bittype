@@ -129,8 +129,10 @@ annotation or extraction failure prevents publication. OS writes are not a
 transaction: the caller must stop publication on a write failure. The existing
 updater publishes the completed three documents together in one Git commit.
 
-The [compact-view contract](../../docs/capability-reports.md#compact-language-overview)
+The [language-overview contract](../../docs/capability-reports.md#language-overview-matrices)
 defines exact scope excerpt markers, feature inventories and test deduplication.
+Provider dimensions/contracts and transformer endpoints remain explicit matrix
+axes, including empty cells. Invocation outcomes also occupy separate columns.
 Excerpts live in the existing owning scope documents. The renderer has no list
 of languages, supported features or exclusion keywords. Missing excerpts remain
 explicit, and test associations never become passing results by inference.

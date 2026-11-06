@@ -5,7 +5,7 @@ C++, using horos as the canonical type model.
 
 **How much of each language is supported?** Start with the generated
 [language overview](docs/language-support.md): supported features, exclusions,
-available stages and expandable test evidence for each language.
+provider and transformer matrices, and expandable test evidence for each language.
 
 **Current status, 6 November 2026:** generic AST/CST carriers, typed pipeline
 contracts, native syntax vocabularies, parsers, formatters, checks and a shared
