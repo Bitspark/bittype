@@ -172,6 +172,41 @@ func (f formatter) typ(id ast.NodeID, parent, level int) doc {
 	var parts []doc
 	t := func(role string, p int) doc { return f.typ(f.Child(id, role), p, level) }
 	switch f.Kind(id) {
+	case "conditional-type":
+		prec = 0
+		parts = []doc{t("check", 1), f.Space(), f.T("extends"), f.Space(), t("constraint", 1), f.Space(), f.T("?"), f.Space(), t("true", 0), f.Space(), f.T(":"), f.Space(), t("false", 0)}
+	case "infer-type":
+		prec = 3
+		parameter := f.Child(id, "type-parameter")
+		binder := []doc{f.T(f.Attr(parameter, "name"))}
+		if constraint := f.Child(parameter, "constraint"); constraint != 0 {
+			// The constraint consumes a complete union/intersection operand.
+			// Group the infer when composing it with another such operand.
+			prec = 0
+			binder = append(binder, f.Space(), f.T("extends"), f.Space(), f.typ(constraint, 1, level))
+		}
+		parts = []doc{f.T("infer"), f.Space(), f.Group(parameter, binder...)}
+	case "mapped-type":
+		parts = []doc{f.T("{"), f.Line("  ", level+1)}
+		if modifier := f.Attr(id, "readonly-modifier"); modifier != "" {
+			if modifier == "remove" {
+				parts = append(parts, f.T("-"))
+			}
+			parts = append(parts, f.T("readonly"), f.Space())
+		}
+		parameter := f.Child(id, "type-parameter")
+		parts = append(parts, f.T("["), f.Group(parameter, f.T(f.Attr(parameter, "name")), f.Space(), f.T("in"), f.Space(), f.typ(f.Child(parameter, "constraint"), 0, level+1)))
+		if nameType := f.Child(id, "name-type"); nameType != 0 {
+			parts = append(parts, f.Space(), f.T("as"), f.Space(), f.typ(nameType, 0, level+1))
+		}
+		parts = append(parts, f.T("]"))
+		if modifier := f.Attr(id, "optional-modifier"); modifier != "" {
+			if modifier == "remove" {
+				parts = append(parts, f.T("-"))
+			}
+			parts = append(parts, f.T("?"))
+		}
+		parts = append(parts, f.T(":"), f.Space(), f.typ(f.Child(id, "type"), 0, level+1), f.T(";"), f.Line("  ", level), f.T("}"))
 	case "type-reference", "keyword-type":
 		parts = []doc{f.T(f.Attr(id, "name"))}
 	case "qualified-type":

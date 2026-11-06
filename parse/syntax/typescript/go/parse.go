@@ -18,7 +18,10 @@ import (
 	"strings"
 )
 
-type parser struct{ *parseutil.Parser[s.Language] }
+type parser struct {
+	*parseutil.Parser[s.Language]
+	noConditional bool
+}
 
 func decimalKey(s string) bool {
 	if len(s) == 0 || (len(s) > 1 && s[0] == '0') {
@@ -46,7 +49,7 @@ func Parse(ctx context.Context, input parsecontract.Input) (cst.CST[s.Language],
 	if err != nil {
 		return cst.CST[s.Language]{}, err
 	}
-	p := parser{base}
+	p := parser{Parser: base}
 	var children []ast.Child
 	declarations := false
 	for !p.EOF() && p.Err == nil {
@@ -337,13 +340,112 @@ func (p *parser) typ(min int) ast.NodeID {
 		children = append(children, tr.Child("type", right))
 		left = p.Add(kind, start, nil, children...)
 	}
+	if p.Err == nil && min == 0 && !p.noConditional && p.Peek() == "extends" && !strings.ContainsAny(p.Input.Text[p.Tokens[p.Pos-1].End:p.Token().Start], "\r\n\u2028\u2029") {
+		p.Take()
+		p.noConditional = true
+		constraint := p.typ(0)
+		p.noConditional = false
+		p.Want("?")
+		whenTrue := p.typ(0)
+		p.Want(":")
+		whenFalse := p.typ(0)
+		left = p.Add(s.KindConditionalType, start, nil, tr.Child("check", left), tr.Child("constraint", constraint), tr.Child("true", whenTrue), tr.Child("false", whenFalse))
+	}
 	return left
+}
+func (p *parser) mappedAhead() bool {
+	i := 1 // The opening brace is current.
+	if p.At(i) == "+" || p.At(i) == "-" {
+		i++
+		if p.At(i) != "readonly" {
+			return false
+		}
+	}
+	if p.At(i) == "readonly" {
+		i++
+	}
+	return p.At(i) == "[" && p.At(i+2) == "in"
+}
+func (p *parser) mapped() ast.NodeID {
+	start := p.Token().Start
+	p.Want("{")
+	var attrs []ast.Attribute
+	modifier := func(token, attribute string) {
+		mode := "add"
+		if p.Eat("-") {
+			mode = "remove"
+			p.Want(token)
+		} else if p.Eat("+") {
+			p.Want(token)
+		} else if !p.Eat(token) {
+			return
+		}
+		attrs = append(attrs, tr.Attrs(attribute, mode)...)
+	}
+	modifier("readonly", "readonly-modifier")
+	p.Want("[")
+	begin := p.Token().Start
+	name := p.Ident()
+	p.Want("in")
+	keys := p.typ(0)
+	parameter := p.Add(s.KindTypeParameter, begin, tr.Attrs("name", name), tr.Child("constraint", keys))
+	children := []ast.Child{tr.Child("type-parameter", parameter)}
+	if p.Eat("as") {
+		children = append(children, tr.Child("name-type", p.typ(0)))
+	}
+	p.Want("]")
+	modifier("?", "optional-modifier")
+	if p.Peek() != ":" {
+		p.Fail(text.Unsupported, "mapped types require an explicit value type")
+		return 0
+	}
+	p.Want(":")
+	children = append(children, tr.Child("type", p.typ(0)))
+	p.semi()
+	if p.Err == nil && p.Peek() != "}" {
+		p.Fail(text.Unsupported, "mapped types cannot contain additional members")
+	}
+	p.Want("}")
+	return p.Add(s.KindMappedType, start, attrs, children...)
+}
+func (p *parser) inferred() ast.NodeID {
+	start := p.Take().Start
+	begin := p.Token().Start
+	name := p.Ident()
+	var children []ast.Child
+	if p.Peek() == "extends" {
+		position, nodes := p.Pos, len(p.Tree.Nodes)
+		p.Take()
+		saved := p.noConditional
+		p.noConditional = true
+		constraint := p.typ(0)
+		p.noConditional = saved
+		if p.Err == nil && !saved && p.Peek() == "?" {
+			// This extends belongs to a conditional containing the infer use,
+			// rather than a constraint on the inferred parameter.
+			p.Pos, p.Tree.Nodes = position, p.Tree.Nodes[:nodes]
+		} else {
+			children = append(children, tr.Child("constraint", constraint))
+		}
+	}
+	parameter := p.Add(s.KindTypeParameter, begin, tr.Attrs("name", name), children...)
+	return p.Add(s.KindInferType, start, nil, tr.Child("type-parameter", parameter))
 }
 func (p *parser) primary() ast.NodeID {
 	if p.Err != nil {
 		return 0
 	}
 	start := p.Token().Start
+	// Operators and infer inherit the surrounding conditional restriction;
+	// delimited types and function signatures start their own type grammar.
+	if p.Peek() == "infer" {
+		return p.inferred()
+	}
+	if p.Peek() != "keyof" && p.Peek() != "readonly" && p.Peek() != "unique" {
+		saved := p.noConditional
+		p.noConditional = false
+		defer func() { p.noConditional = saved }()
+	}
 	var id ast.NodeID
 	switch p.Peek() {
 	case "keyof", "readonly", "unique":
@@ -363,7 +465,11 @@ func (p *parser) primary() ast.NodeID {
 			p.Tree.Nodes[id-1].Origin.Spans = []ast.Span{{Source: p.Input.SourceID, Start: uint64(start), End: uint64(p.Tokens[p.Pos-1].End)}}
 		}
 	case "{":
-		id = p.Add(s.KindObjectType, start, nil, p.members()...)
+		if p.mappedAhead() {
+			id = p.mapped()
+		} else {
+			id = p.Add(s.KindObjectType, start, nil, p.members()...)
+		}
 	case "[":
 		p.Take()
 		var elements []ast.Child
@@ -420,7 +526,7 @@ func (p *parser) primary() ast.NodeID {
 			switch name {
 			case "any", "unknown", "never", "void", "undefined", "boolean", "number", "bigint", "string", "symbol", "object", "this":
 				kind = s.KindKeywordType
-			case "infer", "typeof", "new", "import":
+			case "typeof", "new", "import":
 				p.Fail(text.Unsupported, "unsupported type operator")
 				return 0
 			}

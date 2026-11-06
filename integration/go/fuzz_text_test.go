@@ -30,6 +30,9 @@ func fuzzOne[L any](t *testing.T, p nativeProvider[L], source string) {
 }
 func FuzzNativeText(f *testing.F) {
 	f.Add(uint8(0), "type X = string;")
+	f.Add(uint8(0), "type X<T> = T extends [infer U extends string] ? U : never;")
+	f.Add(uint8(0), "type X<T> = { -readonly [K in keyof T as K extends string ? K : never]-?: T[K] };")
+	f.Add(uint8(0), "type X = A extends B ? C extends D ? E : F : G;")
 	f.Add(uint8(1), "package p; type X []string")
 	f.Add(uint8(2), "type X<'a> = &'a str;")
 	f.Add(uint8(2), "type X<T> = <<T as Source>::Item as Iterator>::Item;")

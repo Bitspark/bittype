@@ -241,8 +241,11 @@ func TestNativeCompilerFixtures(t *testing.T) {
 	}
 	t.Run("typescript", func(t *testing.T) {
 		dir := nativeFiles(t, tsprovider.Provider{}, "typescript", "ts", tsFixture())
+		if err := os.WriteFile(filepath.Join(dir, "independent_mapped.ts"), []byte(formatted(t, tsprovider.Provider{}, tsMappedFixture())), 0600); err != nil {
+			t.Fatal(err)
+		}
 		command(t, dir, "tsc", "--version")
-		command(t, dir, "tsc", "--noEmit", "--strict", "--target", "ES2020", "--lib", "ES2020", "--module", "ESNext", "--moduleResolution", "node", "types.ts", "external.ts", "independent.ts")
+		command(t, dir, "tsc", "--noEmit", "--strict", "--target", "ES2020", "--lib", "ES2020", "--module", "ESNext", "--moduleResolution", "node", "types.ts", "external.ts", "independent.ts", "conditional_mapped.ts", "independent_mapped.ts")
 	})
 	t.Run("go", func(t *testing.T) {
 		dir := nativeFiles(t, goprovider.Provider{}, "golang", "go", goFixture())
