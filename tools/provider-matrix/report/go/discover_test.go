@@ -153,10 +153,10 @@ func TestGenericFilesPrintingUsesConstructorCollaborators(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(providers, "[emit](https://example.test/blob/main/provider/ember/go/implementation.go#L5)") {
-		t.Fatal("missing direct delegation source position", providers)
+	if !strings.Contains(providers, "[provider/ember/go.Output.Print](https://example.test/blob/main/provider/ember/go/implementation.go#L4)") {
+		t.Fatal("missing public provider method source position", providers)
 	}
-	if !strings.Contains(transformers, "[New](https://example.test/blob/main/transforms/example/go/implementation.go#L3)") {
+	if !strings.Contains(transformers, "[transforms/example/go.New](https://example.test/blob/main/transforms/example/go/implementation.go#L3)") {
 		t.Fatal("missing transformer factory link", transformers)
 	}
 }

@@ -15,9 +15,7 @@ type language struct {
 	marker   *types.Named
 }
 type location struct {
-	label string
-	pos   token.Pos
-	op    *operation
+	op *operation
 }
 
 // An operation keeps compiler identities until presentation. A delegate edge is
@@ -69,10 +67,9 @@ type matrix struct {
 	edges     map[string]map[string][]location
 }
 type contribution struct {
-	language       language
-	contract       *types.Named
-	implementation *types.Func
-	op             *operation
+	language language
+	contract *types.Named
+	op       *operation
 	// Each alternative is a public constructor's provider requirements.
 	// Concrete implementations use one empty alternative.
 	alternatives [][]*types.Named
@@ -332,7 +329,7 @@ func (p *program) discover() (*matrix, error) {
 	for _, lang := range languages {
 		op := &operation{kind: "identity", contract: identity, receiver: lang.marker, language: lang}
 		op.id = operationID(op.kind, nil, identity, lang.marker, lang)
-		identityRow.cells[lang.id] = []location{{label: "Language", pos: lang.marker.Obj().Pos(), op: op}}
+		identityRow.cells[lang.id] = []location{{op: op}}
 		available[lang.id] = &typeSet{identity}
 	}
 	var pending []contribution
@@ -398,7 +395,7 @@ func (p *program) discover() (*matrix, error) {
 								receiver := public.Type().(*types.Signature).Recv().Type()
 								op := &operation{kind: "provider", public: public, entry: fn, chain: chain, stop: stop, contract: bound, receiver: receiver, language: lang, alternatives: alternatives}
 								op.id = operationID(op.kind, public, bound, receiver, lang)
-								pending = append(pending, contribution{language: lang, contract: bound, implementation: fn, op: op, alternatives: alternatives})
+								pending = append(pending, contribution{language: lang, contract: bound, op: op, alternatives: alternatives})
 							}
 						}
 					}
@@ -432,7 +429,7 @@ func (p *program) discover() (*matrix, error) {
 				duplicate = duplicate || sameOperation(loc.op, c.op)
 			}
 			if !duplicate {
-				row.cells[c.language.id] = append(row.cells[c.language.id], location{label: c.implementation.Name(), pos: c.implementation.Pos(), op: c.op})
+				row.cells[c.language.id] = append(row.cells[c.language.id], location{op: c.op})
 			}
 			available[c.language.id].add(c.contract)
 			progress = true
@@ -606,7 +603,7 @@ func (p *program) transformers(m *matrix) error {
 			op.id = operationID(op.kind, fn, contract, nil, *from, *to)
 			previousIndex := slices.IndexFunc(seen, func(previous *operation) bool { return sameOperation(previous, op) })
 			if previousIndex < 0 {
-				add(edge.from, edge.to, location{label: fn.Name(), pos: fn.Pos(), op: op})
+				add(edge.from, edge.to, location{op: op})
 				seen = append(seen, op)
 			} else {
 				previous := seen[previousIndex]
