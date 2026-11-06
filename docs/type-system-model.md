@@ -19,10 +19,11 @@ contracts remain to be designed; foundation statements follow Logos's admitted
 contract rather than a new Bittype serialization.
 The [remaining verification SPI decisions](type-system-architecture.md#remaining-public-verification-spi-decisions)
 now incorporate the [Logos request trace and contract map](logos-verification.md).
-Logos already supplies ground claim/evidence types and direct checking; its richer
-typed statement/checking contract remains proposed with a test-private Rust
-implementation. Bittype still needs joint artifact binding, language projections,
-expected-claim construction and associated outcomes. This does not require a
+Logos already supplies ground claim/evidence types and direct checking. The
+[typed check-only follow-up](logos-verification.md#concrete-typed-check-only-contract)
+now has a concrete Go implementation pending final validation/landing; the
+broader typed-package roadmap remains proposed. Bittype still needs joint artifact
+binding, language projections, expected-claim construction and associated outcomes. This does not require a
 second proof algebra or checker registry. API design need not await complete
 TextBox/Page execution.
 
@@ -167,7 +168,7 @@ general host.
 | --- | --- |
 | Horos and its integration | Authoritative declaration/kind meaning and the bridge to corresponding judgments; no second generator-owned Horos evaluator |
 | Native language integration | Terms and rules for an explicit native fragment, plus correspondence with actual native syntax and dependencies |
-| Logos semantic-package and checking contracts | Reusable typed judgments, proof contexts, evidence rules, abstraction/substitution and checking; richer production contracts remain proposed |
+| Logos semantic-package and checking contracts | Concrete typed check-only contexts, evidence, abstraction/substitution and checking in the pending delivery; broader semantic-package contracts remain proposed |
 | Type-owned mapping library | Selected representation equations and composition laws, including builtin mappings |
 | Bittype orchestration | Explicitly select providers and keep inputs, facts, candidate ASTs, mappings and results associated |
 | Logos | Execute/check supported reasoning through its general model and extension points |
@@ -221,9 +222,10 @@ must translate their actual results and original assumptions.
 
 The selected next route is a [narrow Logos-owned typed checker](type-system-architecture.md#the-logos-checking-prerequisite)
 for signatures, contexts, abstraction, substitution, theorem application and exact
-statement checking. Logos owns that milestone's admission. Its current richer
-foundation is experimental, not a production dependency. A separate consumer
-certificate calculus remains an explicitly justified alternative, not the default.
+statement checking. Logos owns that milestone's admission. Its concrete typed Go
+API is the first integration target; the [status and boundary](logos-verification.md#concrete-typed-check-only-contract)
+remain distinct from the broader semantic-package proposal. No separate consumer
+certificate calculus or process client is needed for this route.
 
 ## Questions, mappings and outcomes
 

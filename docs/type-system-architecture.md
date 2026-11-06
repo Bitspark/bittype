@@ -6,8 +6,11 @@ expert review to the [type-system model](type-system-model.md),
 [symbolic pagination proof](logos-preservation.md) and
 [generic generation design](generic-elaboration.md).
 The owner's subsequent [Logos source inspection](logos-verification.md),
-6 November, refines the verification SPI boundary below. That refinement is
-source-based design work, not a new expert consultation or implemented API.
+6 November, refines the verification SPI boundary below. Its
+[typed check-only follow-up](logos-verification.md#concrete-typed-check-only-contract)
+now supplies a concrete Go integration target, pending Logos's final validation
+and landing. This is source-based design work, not a new expert consultation or
+implemented Bittype API.
 
 Use Logos's semantic-package direction directly. Language integrations supply
 their meanings and judgments; mapping owners supply selected representation
@@ -17,9 +20,10 @@ universal type-system interpreter.
 
 The first implementation should exercise two exact statements: TextBox admission
 and result representation, and Page's conditional generic preservation. A narrow
-Logos-owned typed checker is the recommended prerequisite for **production
-symbolic certification**. This document supplies neither that checker nor new
-providers, dependencies, runtime bindings or public Go APIs.
+Logos-owned typed checker supplies the checking prerequisite for **production
+symbolic certification** once its delivery is admitted. This document supplies
+neither that checker nor new providers, dependencies, runtime bindings or public
+Go APIs.
 
 ## Ownership and dependencies
 
@@ -27,7 +31,7 @@ providers, dependencies, runtime bindings or public Go APIs.
 | --- | --- |
 | Horos | Canonical declaration/kind semantics, original argument contracts, authoritative query procedures and checked public views |
 | Native language integration | Language-specific semantic objects, judgments, configuration, artifact interpretation and supported coverage |
-| Logos | Implemented ground derivation checking and optional search/certification; proposed typed proof contexts, binding, substitution and semantic-package composition |
+| Logos | Ground derivation checking and optional search/certification; concrete typed check-only API in the pending delivery; broader semantic-package composition remains proposed |
 | Type-owned mapping integration | The selected static representation relation, native family/helper choices and precisely stated mapping laws |
 | Bittype integration | Captured source/output association, actual mapping selection, the independently constructed expected statement and associated outcomes |
 | Caller composition | Explicitly select and invoke the required stages, checking route and accepted assumptions |
@@ -37,8 +41,11 @@ and [typed statement design](https://github.com/Bitspark/logos/blob/d94e8dc996eb
 They cover signatures/contexts, meaning, judgments, evidence, adequacy,
 composition and operational services. Those concepts are the destination for
 the seven requirements in the model document, not a new Bittype-owned framework.
-The contracts remain proposed; their richer checker is test-private Rust, not a
-stable Go package or deployed service that Bittype can use today.
+The broader contracts remain proposed. The subsequent narrow typed check-only
+delivery exposes a Go `Statement`/`Expr`/`Policy`/`Limits`/`Outcome` boundary and
+the required checking operations without delivering the full package model.
+Its [reviewed versus delivered status](logos-verification.md#concrete-typed-check-only-contract)
+must remain explicit; no Bittype integration is implemented here.
 
 The existing Go ground checker is usable independently: `contract.Check`
 checks supplied positive derivations, and `certify.CheckWithDerivedContext`
@@ -233,10 +240,13 @@ does not acquire named kinds, contract cases or hidden semantic operations.
 
 ### 1. Bind the owning claim and evidence contracts
 
-**Already provided:** Logos Go has `GroundLiteral`, `Derivation`, `CheckProfile`
-and direct checking. Its typed proposal owns `Statement`, scoped contexts,
-bound objects, typed evidence and dependency-sensitive checking. The latter is
-not a production Go API yet.
+**Concrete Logos contracts:** the ground route has `GroundLiteral`, `Derivation`,
+`CheckProfile` and direct checking. The reviewed typed delivery has
+`typed.Statement`, scoped contexts, `typed.Expr` and dependency-sensitive
+`typed.Check`. Its delivery status is recorded in the
+[contract map](logos-verification.md#concrete-typed-check-only-contract). The
+broader typed-package proposal is a separate contract, not a required dependency
+of this first integration.
 
 **Bittype decision:** specify how owning integrations project actual semantic
 objects, construct the expected claim independently of evidence, and bind the
@@ -245,9 +255,10 @@ reference lifetimes and reconstruction when canonical inputs are supplied again.
 No Bittype proof-term algebra or serialization is required. Arbitrary bytes,
 unqualified names and a producer-selected conclusion do not establish compatibility.
 
-**Remaining Logos dependency:** an admitted typed checking contract and accessible
-implementation for symbolic claims. This does not block the current ground
-checking route or the design of Bittype's artifact association.
+**Delivery dependency:** finish and admit the reviewed typed Go implementation.
+Claim/evidence syntax and the in-process call no longer need an invented Bittype
+equivalent. The language projections and association remain Bittype integration
+work; final public request construction and lifetimes still need definition.
 
 ### 2. Immutable requests spanning source and target
 
@@ -259,10 +270,10 @@ identity, dependency compatibility checks, copying/lifetime rules and result
 publication authority. Attaching one side's request identity to the other side's
 result does not establish the association.
 
-This is the main new Bittype-owned contract. Use Logos's current consumer context
-or proposed typed bound objects to connect it to checking; neither automatically
-captures Bittype's artifacts. Keep logical assumptions, the receiver's permitted
-dependencies and checking budgets distinct. Prevent evidence for another output,
+This is the main new Bittype-owned contract. The typed route retains the logical
+statement, candidate and policy in its acceptance result; it does not capture
+Bittype's artifacts or source locations. Keep logical assumptions, the receiver's
+permitted dependencies and checking budgets distinct. Prevent evidence for another output,
 mapping or context from being published as this invocation's result, while
 preserving legitimate reuse under explicitly compatible dependencies. These are
 functional inputs, not a new digest or provenance workflow.
@@ -274,14 +285,16 @@ or provide checkable evidence; retain Unproved and exhaustion distinctly.
 
 ### 3. Provider compatibility and checking capability
 
-**Already provided:** the ground route explicitly binds a Logos `CheckProfile`
-and consumer context. Search has its own EngineProvider SPI. The typed proposal
-owns foundation/package/service compatibility and receiver-owned checker bindings.
+**Concrete Logos contracts:** the ground route explicitly binds a `CheckProfile`
+and consumer context. The typed route has exact foundation/checker identities,
+receiver-owned `Policy` and explicit `Limits`. Caller composition selects the
+actual installed checking dependency; an identity string does not select or
+authenticate an executable. Search has a separate EngineProvider SPI.
 
-**Bittype decision:** select the checking route and bind its required inputs;
-determine which association/composition operation, if any, needs a shared public
-interface. A direct check does not require an EngineProvider or a second verifier
-registry. Do not invent an independent compatibility descriptor duplicating Logos's
+**Bittype direction:** use the direct typed Go route for the first TextBox/Page
+composition and bind its required inputs. Determine which artifact-association
+operation, if any, needs a shared public interface. A direct check does not require
+an EngineProvider or a second verifier registry. Do not invent an independent compatibility descriptor duplicating Logos's
 contract. The generic boundary must reject unsupported pairings without
 interpreting Horos or Go judgments or trying a weaker checker.
 
@@ -292,10 +305,13 @@ is selected merely because the eventual association boundary is called an SPI.
 
 ### 4. Result types and failure boundaries
 
-**Already provided:** Logos has checking outcomes, rejection codes, certification
-results and a completion algebra. Its low-level `Check` still returns
-Accept/Reject with codes, including limit codes; the adapter must use the actual
-selected API rather than assume every route already returns a typed completion.
+**Concrete Logos contracts:** the ground `Check` returns Accept/Reject with codes,
+including limit codes. The typed `Outcome` separates accepted, invalid, incomplete
+and unsupported statuses with typed codes and logical locations. Its acceptance
+retains the exact statement/candidate/policy and actual dependency closure.
+Collection accessors are defensive; the Go acceptance is a value handle, not a
+caller-mutable wrapper retained by the outcome. Use the selected API's actual
+contract rather than flattening these results or duplicating its outcome types.
 
 **Bittype decision:** specify result publication against the joint request and
 projection into located diagnostics and semantic reports. Preserve evidence
@@ -309,6 +325,10 @@ evidence cannot. Unsupported capability, exhaustion and cancellation do not
 establish logical falsehood. Decide which malformed requests or provider
 contract violations return Go errors, which outcomes are published reports, and
 what diagnostic/assumption information a caller needs to interpret them.
+Logos's locations identify phases and declaration/context positions; Bittype
+supplies the mapping to actual source/output sites. The synchronous checker has
+no cancellation API, so cancellation of surrounding extraction or orchestration
+must remain a separate operation-completion condition.
 
 ### Next contract-design deliverable
 
@@ -329,7 +349,9 @@ Use the two examples to review the candidate SPI before public promotion:
 | Changed output/helper, foreign snapshot or incompatible checker | Refuse the mismatched request/evidence instead of reporting a semantic counterexample |
 | Unsupported or exhausted checker | Publish the coverage/completion limitation without a stronger claim |
 
-These are contract-design cases, not passed software or proof tests. The
+These remain Bittype contract-design cases, not completed Bittype integration
+tests. The Logos follow-up has shared logical TextBox/Page cases, but no actual
+Bittype artifact extractor or native model. The
 [Logos typed-checker milestone](#the-logos-checking-prerequisite) remains an
 execution dependency for production symbolic certification; it does not prevent
 specifying the agnostic SPI now. This section neither defines that SPI nor
@@ -363,12 +385,13 @@ proof than a leaf: strength depends on the actual checking contract and basis.
 
 ## The Logos checking prerequisite
 
-Recommend a narrow Logos-owned **typed, check-only milestone**, admitted through
-Logos's own contract and implementation process. Bittype documentation cannot
-activate proposed Logos semantics. The [inspected status](logos-verification.md#typed-statements-existing-proposal-and-experiment)
-distinguishes the implemented Go ground API from the draft typed contract and
-test-private Rust checker. This prerequisite concerns production symbolic
-certification, not every Bittype verification operation. The needed capabilities are:
+Use the narrow Logos-owned **typed, check-only milestone**, admitted through
+Logos's own contract and implementation process. The
+[follow-up inspection](logos-verification.md#concrete-typed-check-only-contract)
+records its concrete API and pending delivery separately from the earlier
+test-private Rust experiment and the broader semantic-package roadmap. This
+prerequisite concerns production symbolic certification, not every Bittype
+verification operation. The reviewed implementation supplies:
 
 - Checked signatures and ordered contexts.
 - The dependent-function/pair fragment needed for quantification, implication
@@ -383,23 +406,20 @@ the full Logos roadmap are not prerequisites for this small checker. A scripted
 proof producer can supply the first evidence. Supported claims and admitted
 package imports must still be explicit; a manifest or registration is not proof.
 
-A thin Go process client is a candidate if the admitted checker remains a Rust
-executable. Its versioned interface and resource contract must then be agreed
-with Logos. A supported Go checker API could use the same ownership boundary.
-The process protocol and deployment are not selected or implemented here. The
-owner's shared/CI workload rule governs development executions; it does not imply
-a permanent remote service or a new publishing/artifact workflow.
+The selected first route is the in-process Go API
+`github.com/Bitspark/logos/contract/go/typed.Check`. Bittype does not need to design
+a Rust process protocol, service deployment or portable proof decoder for this
+slice. The owner's shared/CI workload rule governs development executions; it
+does not imply a permanent remote service or a new publishing/artifact workflow.
 
 Today's ground Rule/Builtin/Leaf DAG can transport a theorem established by an
 admitted external checker. It does not itself implement universal introduction.
 RuleAdmissibility receives no full instantiated derivation and cannot check
 scope discharge merely through its current signature.
 
-A separate consumer certificate calculus is a possible alternative only when
-an explicit delivery requirement justifies it. It would need a certificate
-language, binder/substitution rules, dependency control, resource behavior and a
-soundness argument for every lifted step. It is not selected now and must never
-be an automatic fallback when the typed route is unsupported.
+Keep checking in the selected Logos contract. An unsupported claim must remain
+unsupported; it does not authorize a second consumer certificate calculus,
+unchecked trusted leaf or weaker automatic fallback.
 
 ## Statement one: TextBox
 
@@ -678,15 +698,16 @@ After implementation is authorized:
    Walk through the exact TextBox/Page statements, domains, artifact associations
    and evidence dependencies without designing another proof or checker registry.
    Complete implementations are not required to design this boundary.
-2. Establish the concrete TextBox bool counterexample through existing ground
-   checking capabilities and authoritative source refutation. No sampling theorem.
+2. Establish the concrete TextBox bool counterexample through the selected typed
+   Go checking route and authoritative source refutation. The existing ground
+   route remains usable, but this slice does not require two integrations.
 3. Model the selected Go fragment's exact/underlying acceptance characterizations
    and field representation. Retain the example's explicit Go 1.25 baseline with
    matching compiler/specification inputs; the moving live specification now
    describes Go 1.27. This document ran neither toolchain.
-4. Obtain the Logos-owned typed check-only contract and admitted implementation.
-   In parallel, prepare the precise Horos schema bridge and language/mapping
-   packages. A research/conformance example is not production certification.
+4. Admit the delivered Logos typed Go dependency after its own validation and
+   landing. Prepare the precise Horos schema bridge and language/mapping inputs.
+   Logical conformance cases do not establish artifact or native-model adequacy.
 5. Supply a scripted Page proof, check its actual quantified statement, then
    instantiate it for Person and again for the nested result. No general search
    engine or finite argument whitelist is required.
