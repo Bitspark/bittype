@@ -191,7 +191,7 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["generation/syntax/target/go"] = []string{"contracts/generation/go", "trees/ast/go", "trees/representation/go"}
 	for target, syntax := range map[string]string{"typescript": "typescript", "go": "golang", "rust": "rust", "cpp": "cpp"} {
 		rules["transforms/horos-to-"+target+"/go"] = []string{"contracts/transform/go", "generation/syntax/go", "generation/syntax/source/horos/go", "syntax/horos/go", "syntax/" + syntax + "/go", "trees/representation/go"}
-		rules["generation/syntax/target/"+syntax+"/go"] = []string{"contracts/generation/go", "generation/syntax/target/go", "internal/"+syntax, "check/syntax/"+syntax+"/go", "syntax/"+syntax+"/go", "trees/ast/go", "trees/representation/go"}
+		rules["generation/syntax/target/"+syntax+"/go"] = []string{"contracts/generation/go", "generation/syntax/target/go", "internal/" + syntax, "check/syntax/" + syntax + "/go", "syntax/" + syntax + "/go", "trees/ast/go", "trees/representation/go"}
 	}
 	// The Files dimension has explicit stage paths and a separate sealed carrier.
 	rules["files/go"] = []string{"trees/ast/go"}

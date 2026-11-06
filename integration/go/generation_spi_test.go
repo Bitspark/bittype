@@ -79,6 +79,15 @@ func generationSPIFixture(t *testing.T, useFirst bool) (s.AST, string) {
 	return tree, formatted(t, gp.Provider{}, tree)
 }
 
+func nodeAttribute[L any](node ast.Node[L], name string) string {
+	for _, attribute := range node.Attributes {
+		if attribute.Name == name {
+			return attribute.Text
+		}
+	}
+	return ""
+}
+
 func TestGenerationSPIIndependentGoComposition(t *testing.T) {
 	tree, source := generationSPIFixture(t, true)
 	for _, want := range []string{
