@@ -3,6 +3,8 @@ package report
 
 import (
 	"fmt"
+	"go/token"
+	"go/types"
 	"html"
 	"net/url"
 
@@ -11,13 +13,43 @@ import (
 	"strings"
 )
 
+// Label the exposed provider and link to its actual public declaration. Shared
+// callees remain separate source relationships in the details; they never stand
+// in for the public method's label or location. Labels decide no identity.
+func (p *program) publicLocation(op *operation) (string, token.Pos, error) {
+	if op == nil {
+		return "", token.NoPos, fmt.Errorf("report contribution lacks operation identity")
+	}
+	qualify := func(pkg *types.Package) string { return strings.TrimPrefix(pkg.Path(), p.module+"/") }
+	if op.public != nil {
+		var label string
+		if op.receiver != nil {
+			label = types.TypeString(op.receiver, qualify)
+			if _, pointer := op.receiver.(*types.Pointer); pointer {
+				label = "(" + label + ")"
+			}
+		} else {
+			label = qualify(op.public.Pkg())
+		}
+		return label + "." + op.public.Name(), op.public.Origin().Pos(), nil
+	}
+	if op.kind == "identity" && op.language.marker != nil {
+		return types.TypeString(op.language.marker, qualify), op.language.marker.Obj().Pos(), nil
+	}
+	return "", token.NoPos, fmt.Errorf("report operation has no public declaration")
+}
+
 func (p *program) links(locations []location, sourceURL string, detailPaths ...string) (string, error) {
 	unique := map[string]bool{}
 	var links []string
 	for _, loc := range locations {
-		pos := p.fset.PositionFor(loc.pos, false)
+		label, at, err := p.publicLocation(loc.op)
+		if err != nil {
+			return "", err
+		}
+		pos := p.fset.PositionFor(at, false)
 		if !pos.IsValid() {
-			return "", fmt.Errorf("missing source position for %s", loc.label)
+			return "", fmt.Errorf("missing source position for %s", label)
 		}
 		rel, err := filepath.Rel(p.root, pos.Filename)
 		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
@@ -28,14 +60,12 @@ func (p *program) links(locations []location, sourceURL string, detailPaths ...s
 			parts[i] = url.PathEscape(parts[i])
 		}
 		target := fmt.Sprintf("%s/%s#L%d", strings.TrimSuffix(sourceURL, "/"), strings.Join(parts, "/"), pos.Line)
-		link := fmt.Sprintf("[%s](%s)", escape(loc.label), target)
-		if loc.op != nil {
-			detailPath := "provider-capabilities.md"
-			if len(detailPaths) > 0 {
-				detailPath = detailPaths[0]
-			}
-			link += fmt.Sprintf(" ([details](%s#cap-%s))", detailPath, loc.op.id)
+		link := fmt.Sprintf("[%s](%s)", escape(label), target)
+		detailPath := "provider-capabilities.md"
+		if len(detailPaths) > 0 {
+			detailPath = detailPaths[0]
 		}
+		link += fmt.Sprintf(" ([details](%s#cap-%s))", detailPath, loc.op.id)
 		if !unique[link] {
 			unique[link] = true
 			links = append(links, link)

@@ -431,8 +431,8 @@ support-depth entry point; [the matrices](providers.md) show availability. Sourc
 generation adds a `details` link beside each implemented operation/factory:
 
 ```text
-Provider cell:     Check · details
-Transformer cell: New · details
+Provider cell:     check/syntax/horos/go.Provider.Check · details
+Transformer cell: transforms/horos-to-go/go.New · details
 Unavailable cell: /
 ```
 
@@ -448,6 +448,15 @@ a half-updated matrix. All three documents are fully rendered and validated befo
 writing. File writes are not a filesystem transaction: a write failure stops
 publication, and the existing updater commits the successful three documents together.
 Existing authored prose remains outside generated regions.
+
+Source-link labels identify each public provider receiver, including its generic
+arguments, followed by the method name. Package paths are relative to the selected
+module; external package paths remain fully qualified. Source links point to the
+public declaration's physical position, not the final delegate reached by tracing
+its body. Factory labels are package-qualified, and identity labels name their
+language marker. Two providers delegating to the same `Print` remain two visibly
+distinct entries. Their detailed reports preserve the shared function and static
+call chains, with the existing separation between delegate and wrapper evidence.
 
 ### Language overview matrices
 

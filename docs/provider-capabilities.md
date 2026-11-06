@@ -3,7 +3,7 @@
 Generated from selected production declarations and explicit test associations.
 These reports describe bounded implementation scope, not language completeness.
 
-Inspection build: go1.27.3, linux/amd64; Go flags ; explicit build flags .
+Inspection build: go1.27.0, windows/amd64; Go flags -mod=readonly; explicit build flags .
 
 Definitions describe selected initializers; mutation, operation bodies and procedural semantics are not inferred. Profiles and expectations are authored assertions. A test function's observation is not separate execution of every associated case, nor evidence that a wrapper or every branch ran.
 

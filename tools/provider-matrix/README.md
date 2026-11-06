@@ -104,8 +104,12 @@ and does not change this architectural grouping.
 
 ## Rendering
 
-Implementation links use physical Go token positions, ignoring `//line`
-remapping. Statically discovered wrapper/delegate relationships support source
+Source links identify the exposed provider and point to its public method's
+physical Go declaration, ignoring `//line` remapping. Labels retain instantiated
+receiver types and use module-relative package paths; external packages retain
+their full import paths. Factory labels are package-qualified and language
+identity labels name the actual marker type. Shared delegates never replace
+public labels or locations. Statically discovered wrapper/delegate relationships support source
 navigation; dynamic dispatch is not followed. Canonical operation and receiver,
 contract arguments, marker and endpoints remain distinct before rendering.
 A delegate's case or result does not qualify its wrapper. Distinct contributions
