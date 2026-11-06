@@ -272,14 +272,12 @@ jobs:
           docker pull gcc:14.2.0
           docker run --rm --network=none rust:1.90.0 rustc --version
           docker run --rm --network=none gcc:14.2.0 g++ --version
-      - name: Compile independent AST and parsed native fixtures
-        # Horos-owned pagination/compiler qualification now runs in its separate
-        # tooling/bittype integration module. This module retains generic/native fixtures.
+      - name: Compile independent AST, parsed and generated native fixtures
         run: >-
           python3 tools/provider-matrix/capture.py run --root "$GITHUB_WORKSPACE"
           --output "$RUNNER_TEMP/capability-observations/native" --command-id native
           --env BITTYPE_NATIVE
-          -- go test -count=1 -json -run '^(TestNativeCompilerFixtures|TestGenerationSPIHostedGoCompiler)$' ./integration/go
+          -- go test -count=1 -json -run '^(TestNativeCompilerFixtures|TestGenerationSPIHostedGoCompiler|TestGeneratedPaginationCompilers|TestListOverrideComposesThroughGenericPage|TestLibraryOwnedCellAvoidsBodyExpansion)$' ./integration/go
       - name: Render native invocation capability observations
         if: ${{ !cancelled() }}
         shell: bash

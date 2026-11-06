@@ -16,16 +16,21 @@ enforcement, runtime bindings and protocol behavior are separate work.
 | `generation/syntax/target/go` | Invocation-local symbolic native fragments, reservations, immutable layouts and bounded assembly |
 | `generation/syntax/target/{typescript,golang,rust,cpp}/go` | Native grammatical construction, symbols and output units; no canonical representation catalogue |
 | `transforms/horos-to-*/go` | Thin endpoint-qualified ASTTransformer factories requiring a configured composition |
-| Horos `tooling/bittype` module | Horos-owned builtin mappings, ordinary structural declaration policy and optional four-target default compositions |
+| `generation/syntax/mapping/horos` | Supplied Horos builtin mappings and ordinary structural declaration policy |
+| `generation/syntax/composition/horos-to-<target>/go` | Optional explicit four-target default compositions |
 | Other type libraries and consuming applications | Exact library mappings, native artifact assumptions and explicit consumer overrides |
 
-The optional [Horos integration module](https://github.com/Bitspark/horos/tree/main/tooling/bittype)
-depends on Bittype. Bittype and Horos core do not depend on that module. There are
-no builtin-mapping imports in the composer or thin transformer factories. A
-library can implement the public operations directly; using Horos's optional
-mapping helpers is not required. Native backends have no Horos/Ontos dependency.
-The [architecture tests](../integration/go/architecture_test.go) enforce these
-import boundaries.
+**Owner placement correction, 6 November 2026:** these [Horos mapping packages](../generation/syntax/mapping/horos/README.md)
+live in Bittype's existing root Go module. Horos owns the canonical type model;
+Bittype owns this native generation implementation. The separate Horos mapping
+module is removed, so Horos's repository has no generator dependency on Bittype.
+
+Repository placement does not change the extension contract. The shared composer,
+source reader, native backends and thin transformer factories do not import the
+mappings or defaults. Consumers explicitly select a default composition or supply
+their own mappings through the same public operations. Native backends have no
+Horos/Ontos dependency. The [architecture tests](../integration/go/architecture_test.go)
+retain these directed package boundaries.
 
 ## Construction and selection
 
@@ -45,7 +50,7 @@ Composition[F, T]{
 ```
 
 This is a field-shape illustration; concrete imports and setup are in the
-[Horos defaults](https://github.com/Bitspark/horos/tree/main/tooling/bittype/transforms).
+[Horos defaults](../generation/syntax/composition).
 The composer supplies Config's Plans and Select; prepopulating either is invalid.
 The Catalog reports declaration selectors and eligibility for an explicitly
 supplied structural policy. Inventory does not lower a body. Source admission
@@ -109,7 +114,7 @@ select stricter limits. No cache or live collaborator state crosses invocations.
 
 ## Extension examples and qualification
 
-The [Horos composition tests](https://github.com/Bitspark/horos/blob/main/tooling/bittype/integration/go/composition_test.go)
+The [Horos composition tests](../integration/go/horos_generation_composition_test.go)
 exercise replacing the exact list mapping with ReadonlyArray in TypeScript.
 Page<T>'s body composes that choice under T, and nested uses preserve it without
 regenerating Page. A deliberately failing replacement is called once and yields
@@ -128,9 +133,9 @@ additional native formals, nested whole-result associations, external ownership
 and a native helper acquired while defining another declaration. Existing SPI
 negative tests retain scope, replay, incomplete-root and mutation checks.
 
-Horos's integration suite retains four-target pagination, imported identity,
+Bittype's integration suite retains four-target pagination, imported identity,
 source bound rejection, naming limits, native compilation, installed-consumer
-qualification and [verification of actual generated Go output](https://github.com/Bitspark/horos/blob/main/tooling/bittype/integration/go/verification_test.go),
+qualification and [verification of actual generated Go output](../integration/go/horos_generation_verification_test.go),
 including nested Page reuse through the landed Logos checker. Generation products
 are not those verification results. Source analysis, native analysis, mapping
 meaning and final-output checking remain separately owned and invoked.

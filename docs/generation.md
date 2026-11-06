@@ -83,9 +83,11 @@ extends that design to builtin mappings and explicit overrides, using the same
 supplied plugin mechanism. The consuming build configures one concrete transformer
 per language pair. Function, Cell and Stream are resolved module declarations,
 never individual engine registrations. No contract-specific change to
-ASTTransformer is required. The public plugin contracts and automatic composer are implemented. Horos-owned
-builtin mappings and optional defaults live outside Bittype in Horos's
-`tooling/bittype` integration module.
+ASTTransformer is required. The public plugin contracts and automatic composer are implemented. Horos
+builtin mappings live in `generation/syntax/mapping/horos`, with explicit defaults
+in `generation/syntax/composition/horos-to-<target>/go`, inside Bittype's root module.
+These packages are separate from the agnostic composer; Horos retains only the
+canonical model and does not depend on Bittype for generation.
 
 The implemented structure is an [agnostic generation kernel with recursive plugin
 composition](type-generation-plugins.md#agnostic-kernel-and-recursive-composition).

@@ -3,7 +3,7 @@
 Generated from selected production declarations and explicit test associations.
 These reports describe bounded implementation scope, not language completeness.
 
-Inspection build: go1.27.3, linux/amd64; Go flags ; explicit build flags .
+Inspection build: go1.27.0, windows/amd64; Go flags -mod=readonly; explicit build flags .
 
 Definitions describe selected initializers; mutation, operation bodies and procedural semantics are not inferred. Profiles and expectations are authored assertions. A test function's observation is not separate execution of every associated case, nor evidence that a wrapper or every branch ran.
 
@@ -114,6 +114,126 @@ Traversal boundary: typed transformer boundary.
 ### Declared target [github.com/Bitspark/bittype/transforms/horos-to-typescript/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-typescript/go/transform.go#L15)
 
 <a id="binding-MzgzOk1URTZkSEpoYm5ObWIzSnRaWEkyTlRwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmRISmhibk5tYjNKdGN5OW9iM0p2Y3kxMGJ5MTBlWEJsYzJOeWFYQjBMMmR2STA1bGR6WTFPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYjI1MGNtRmpkSE12ZEhKaGJuTm1iM0p0TDJkdkxrRlRWRlJ5WVc1elptOXliV1Z5TURvMU1qcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyaHZjbTl6TDJkdkkweGhibWQxWVdkbE5UcG9iM0p2Y3pVM09tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmRIbHdaWE5qY21sd2RDOW5ieU5NWVc1bmRXRm5aVEV3T25SNWNHVnpZM0pwY0hRNjU6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3RyYW5zZm9ybXMvaG9yb3MtdG8tdHlwZXNjcmlwdC9nbyNOZXc1OnNjb3BlMTojNTc6ZG9jcy9nZW5lcmF0aW9uLWNvbXBvc2l0aW9uLm1kI2NvbnN0cnVjdGlvbi1hbmQtc2VsZWN0aW9uNTpmYWxzZTA6"></a>
+
+Authored scope: [docs/generation-composition.md#construction-and-selection](https://github.com/Bitspark/bittype/blob/main/docs/generation-composition.md#construction-and-selection); profile: unspecified (authored profile absent).
+
+No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
+
+No associated cases found in the selected test sources. This does not establish absence of tests.
+
+<a id="cap-MTE6dHJhbnNmb3JtZXI3NjpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvZ2VuZXJhdGlvbi9zeW50YXgvY29tcG9zaXRpb24vaG9yb3MtdG8tZ28vZ28jTmV3NjU6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NvbnRyYWN0cy90cmFuc2Zvcm0vZ28uQVNUVHJhbnNmb3JtZXIwOjUyOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9zeW50YXgvaG9yb3MvZ28jTGFuZ3VhZ2U1Omhvcm9zNTM6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3N5bnRheC9nb2xhbmcvZ28jTGFuZ3VhZ2UyOmdv"></a>
+
+## Horos → Go / github.com/Bitspark/bittype/generation/syntax/composition/horos-to-go/go#New
+
+Contract: github.com/Bitspark/bittype/contracts/transform/go.ASTTransformer.
+
+Public operation: [github.com/Bitspark/bittype/generation/syntax/composition/horos-to-go/go#New](https://github.com/Bitspark/bittype/blob/main/generation/syntax/composition/horos-to-go/go/defaults.go#L32).
+
+Direct endpoints: github.com/Bitspark/bittype/syntax/horos/go.Language → github.com/Bitspark/bittype/syntax/golang/go.Language. Typed calls in the factory body establish this discovered edge; runtime reachability, returned-value flow, configured mappings and composed routes are not inferred.
+
+Static call relationships (no evidence transfer):
+
+- [github.com/Bitspark/bittype/generation/syntax/composition/horos-to-go/go#New](https://github.com/Bitspark/bittype/blob/main/generation/syntax/composition/horos-to-go/go/defaults.go#L32) → [github.com/Bitspark/bittype/transforms/horos-to-go/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-go/go/transform.go#L15) ([call](https://github.com/Bitspark/bittype/blob/main/generation/syntax/composition/horos-to-go/go/defaults.go#L36)); receiver ; type arguments .
+- [github.com/Bitspark/bittype/transforms/horos-to-go/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-go/go/transform.go#L15) → [github.com/Bitspark/bittype/generation/syntax/go#NewTransformer](https://github.com/Bitspark/bittype/blob/main/generation/syntax/go/transform.go#L16) ([call](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-go/go/transform.go#L19)); receiver ; type arguments github.com/Bitspark/bittype/syntax/horos/go.Language, github.com/Bitspark/bittype/syntax/golang/go.Language.
+- [github.com/Bitspark/bittype/generation/syntax/go#NewTransformer](https://github.com/Bitspark/bittype/blob/main/generation/syntax/go/transform.go#L16) → [github.com/Bitspark/bittype/contracts/transform/go#NewTransformer](https://github.com/Bitspark/bittype/blob/main/contracts/transform/go/adapter.go#L40) ([call](https://github.com/Bitspark/bittype/blob/main/generation/syntax/go/transform.go#L20)); receiver ; type arguments github.com/Bitspark/bittype/syntax/horos/go.Language, github.com/Bitspark/bittype/syntax/golang/go.Language.
+
+Traversal boundary: typed transformer boundary.
+
+### Declared target [github.com/Bitspark/bittype/transforms/horos-to-go/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-go/go/transform.go#L15)
+
+Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-MzgwOk1URTZkSEpoYm5ObWIzSnRaWEkzTmpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdloyVnVaWEpoZEdsdmJpOXplVzUwWVhndlkyOXRjRzl6YVhScGIyNHZhRzl5YjNNdGRHOHRaMjh2WjI4alRtVjNOalU2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJOdmJuUnlZV04wY3k5MGNtRnVjMlp2Y20wdloyOHVRVk5VVkhKaGJuTm1iM0p0WlhJd09qVXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZhRzl5YjNNdloyOGpUR0Z1WjNWaFoyVTFPbWh2Y205ek5UTTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOW5iMnhoYm1jdloyOGpUR0Z1WjNWaFoyVXlPbWR2NTc6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3RyYW5zZm9ybXMvaG9yb3MtdG8tZ28vZ28jTmV3NTpzY29wZTE6IzU3OmRvY3MvZ2VuZXJhdGlvbi1jb21wb3NpdGlvbi5tZCNjb25zdHJ1Y3Rpb24tYW5kLXNlbGVjdGlvbjU6ZmFsc2UwOg"></a>
+
+Authored scope: [docs/generation-composition.md#construction-and-selection](https://github.com/Bitspark/bittype/blob/main/docs/generation-composition.md#construction-and-selection); profile: unspecified (authored profile absent).
+
+No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
+
+No associated cases found in the selected test sources. This does not establish absence of tests.
+
+<a id="cap-MTE6dHJhbnNmb3JtZXI3NzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvZ2VuZXJhdGlvbi9zeW50YXgvY29tcG9zaXRpb24vaG9yb3MtdG8tY3BwL2dvI05ldzY1OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jb250cmFjdHMvdHJhbnNmb3JtL2dvLkFTVFRyYW5zZm9ybWVyMDo1MjpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvc3ludGF4L2hvcm9zL2dvI0xhbmd1YWdlNTpob3JvczUwOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9zeW50YXgvY3BwL2dvI0xhbmd1YWdlMzpjcHA"></a>
+
+## Horos → C++ / github.com/Bitspark/bittype/generation/syntax/composition/horos-to-cpp/go#New
+
+Contract: github.com/Bitspark/bittype/contracts/transform/go.ASTTransformer.
+
+Public operation: [github.com/Bitspark/bittype/generation/syntax/composition/horos-to-cpp/go#New](https://github.com/Bitspark/bittype/blob/main/generation/syntax/composition/horos-to-cpp/go/defaults.go#L32).
+
+Direct endpoints: github.com/Bitspark/bittype/syntax/horos/go.Language → github.com/Bitspark/bittype/syntax/cpp/go.Language. Typed calls in the factory body establish this discovered edge; runtime reachability, returned-value flow, configured mappings and composed routes are not inferred.
+
+Static call relationships (no evidence transfer):
+
+- [github.com/Bitspark/bittype/generation/syntax/composition/horos-to-cpp/go#New](https://github.com/Bitspark/bittype/blob/main/generation/syntax/composition/horos-to-cpp/go/defaults.go#L32) → [github.com/Bitspark/bittype/transforms/horos-to-cpp/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-cpp/go/transform.go#L15) ([call](https://github.com/Bitspark/bittype/blob/main/generation/syntax/composition/horos-to-cpp/go/defaults.go#L36)); receiver ; type arguments .
+- [github.com/Bitspark/bittype/transforms/horos-to-cpp/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-cpp/go/transform.go#L15) → [github.com/Bitspark/bittype/generation/syntax/go#NewTransformer](https://github.com/Bitspark/bittype/blob/main/generation/syntax/go/transform.go#L16) ([call](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-cpp/go/transform.go#L19)); receiver ; type arguments github.com/Bitspark/bittype/syntax/horos/go.Language, github.com/Bitspark/bittype/syntax/cpp/go.Language.
+- [github.com/Bitspark/bittype/generation/syntax/go#NewTransformer](https://github.com/Bitspark/bittype/blob/main/generation/syntax/go/transform.go#L16) → [github.com/Bitspark/bittype/contracts/transform/go#NewTransformer](https://github.com/Bitspark/bittype/blob/main/contracts/transform/go/adapter.go#L40) ([call](https://github.com/Bitspark/bittype/blob/main/generation/syntax/go/transform.go#L20)); receiver ; type arguments github.com/Bitspark/bittype/syntax/horos/go.Language, github.com/Bitspark/bittype/syntax/cpp/go.Language.
+
+Traversal boundary: typed transformer boundary.
+
+### Declared target [github.com/Bitspark/bittype/transforms/horos-to-cpp/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-cpp/go/transform.go#L15)
+
+Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-Mzc5Ok1URTZkSEpoYm5ObWIzSnRaWEkzTnpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdloyVnVaWEpoZEdsdmJpOXplVzUwWVhndlkyOXRjRzl6YVhScGIyNHZhRzl5YjNNdGRHOHRZM0J3TDJkdkkwNWxkelkxT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmRISmhibk5tYjNKdEwyZHZMa0ZUVkZSeVlXNXpabTl5YldWeU1EbzFNanBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMmh2Y205ekwyZHZJMHhoYm1kMVlXZGxOVHBvYjNKdmN6VXdPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZZM0J3TDJkdkkweGhibWQxWVdkbE16cGpjSEE1ODpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvdHJhbnNmb3Jtcy9ob3Jvcy10by1jcHAvZ28jTmV3NTpzY29wZTE6IzU3OmRvY3MvZ2VuZXJhdGlvbi1jb21wb3NpdGlvbi5tZCNjb25zdHJ1Y3Rpb24tYW5kLXNlbGVjdGlvbjU6ZmFsc2UwOg"></a>
+
+Authored scope: [docs/generation-composition.md#construction-and-selection](https://github.com/Bitspark/bittype/blob/main/docs/generation-composition.md#construction-and-selection); profile: unspecified (authored profile absent).
+
+No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
+
+No associated cases found in the selected test sources. This does not establish absence of tests.
+
+<a id="cap-MTE6dHJhbnNmb3JtZXI3ODpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvZ2VuZXJhdGlvbi9zeW50YXgvY29tcG9zaXRpb24vaG9yb3MtdG8tcnVzdC9nbyNOZXc2NTpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY29udHJhY3RzL3RyYW5zZm9ybS9nby5BU1RUcmFuc2Zvcm1lcjA6NTI6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3N5bnRheC9ob3Jvcy9nbyNMYW5ndWFnZTU6aG9yb3M1MTpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvc3ludGF4L3J1c3QvZ28jTGFuZ3VhZ2U0OnJ1c3Q"></a>
+
+## Horos → Rust / github.com/Bitspark/bittype/generation/syntax/composition/horos-to-rust/go#New
+
+Contract: github.com/Bitspark/bittype/contracts/transform/go.ASTTransformer.
+
+Public operation: [github.com/Bitspark/bittype/generation/syntax/composition/horos-to-rust/go#New](https://github.com/Bitspark/bittype/blob/main/generation/syntax/composition/horos-to-rust/go/defaults.go#L31).
+
+Direct endpoints: github.com/Bitspark/bittype/syntax/horos/go.Language → github.com/Bitspark/bittype/syntax/rust/go.Language. Typed calls in the factory body establish this discovered edge; runtime reachability, returned-value flow, configured mappings and composed routes are not inferred.
+
+Static call relationships (no evidence transfer):
+
+- [github.com/Bitspark/bittype/generation/syntax/composition/horos-to-rust/go#New](https://github.com/Bitspark/bittype/blob/main/generation/syntax/composition/horos-to-rust/go/defaults.go#L31) → [github.com/Bitspark/bittype/transforms/horos-to-rust/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-rust/go/transform.go#L15) ([call](https://github.com/Bitspark/bittype/blob/main/generation/syntax/composition/horos-to-rust/go/defaults.go#L35)); receiver ; type arguments .
+- [github.com/Bitspark/bittype/transforms/horos-to-rust/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-rust/go/transform.go#L15) → [github.com/Bitspark/bittype/generation/syntax/go#NewTransformer](https://github.com/Bitspark/bittype/blob/main/generation/syntax/go/transform.go#L16) ([call](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-rust/go/transform.go#L19)); receiver ; type arguments github.com/Bitspark/bittype/syntax/horos/go.Language, github.com/Bitspark/bittype/syntax/rust/go.Language.
+- [github.com/Bitspark/bittype/generation/syntax/go#NewTransformer](https://github.com/Bitspark/bittype/blob/main/generation/syntax/go/transform.go#L16) → [github.com/Bitspark/bittype/contracts/transform/go#NewTransformer](https://github.com/Bitspark/bittype/blob/main/contracts/transform/go/adapter.go#L40) ([call](https://github.com/Bitspark/bittype/blob/main/generation/syntax/go/transform.go#L20)); receiver ; type arguments github.com/Bitspark/bittype/syntax/horos/go.Language, github.com/Bitspark/bittype/syntax/rust/go.Language.
+
+Traversal boundary: typed transformer boundary.
+
+### Declared target [github.com/Bitspark/bittype/transforms/horos-to-rust/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-rust/go/transform.go#L15)
+
+Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-MzgzOk1URTZkSEpoYm5ObWIzSnRaWEkzT0RwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdloyVnVaWEpoZEdsdmJpOXplVzUwWVhndlkyOXRjRzl6YVhScGIyNHZhRzl5YjNNdGRHOHRjblZ6ZEM5bmJ5Tk9aWGMyTlRwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdlkyOXVkSEpoWTNSekwzUnlZVzV6Wm05eWJTOW5ieTVCVTFSVWNtRnVjMlp2Y20xbGNqQTZOVEk2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzlvYjNKdmN5OW5ieU5NWVc1bmRXRm5aVFU2YUc5eWIzTTFNVHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM0oxYzNRdloyOGpUR0Z1WjNWaFoyVTBPbkoxYzNRNTk6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3RyYW5zZm9ybXMvaG9yb3MtdG8tcnVzdC9nbyNOZXc1OnNjb3BlMTojNTc6ZG9jcy9nZW5lcmF0aW9uLWNvbXBvc2l0aW9uLm1kI2NvbnN0cnVjdGlvbi1hbmQtc2VsZWN0aW9uNTpmYWxzZTA6"></a>
+
+Authored scope: [docs/generation-composition.md#construction-and-selection](https://github.com/Bitspark/bittype/blob/main/docs/generation-composition.md#construction-and-selection); profile: unspecified (authored profile absent).
+
+No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
+
+No associated cases found in the selected test sources. This does not establish absence of tests.
+
+<a id="cap-MTE6dHJhbnNmb3JtZXI4NDpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvZ2VuZXJhdGlvbi9zeW50YXgvY29tcG9zaXRpb24vaG9yb3MtdG8tdHlwZXNjcmlwdC9nbyNOZXc2NTpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY29udHJhY3RzL3RyYW5zZm9ybS9nby5BU1RUcmFuc2Zvcm1lcjA6NTI6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3N5bnRheC9ob3Jvcy9nbyNMYW5ndWFnZTU6aG9yb3M1NzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvc3ludGF4L3R5cGVzY3JpcHQvZ28jTGFuZ3VhZ2UxMDp0eXBlc2NyaXB0"></a>
+
+## Horos → TypeScript / github.com/Bitspark/bittype/generation/syntax/composition/horos-to-typescript/go#New
+
+Contract: github.com/Bitspark/bittype/contracts/transform/go.ASTTransformer.
+
+Public operation: [github.com/Bitspark/bittype/generation/syntax/composition/horos-to-typescript/go#New](https://github.com/Bitspark/bittype/blob/main/generation/syntax/composition/horos-to-typescript/go/defaults.go#L31).
+
+Direct endpoints: github.com/Bitspark/bittype/syntax/horos/go.Language → github.com/Bitspark/bittype/syntax/typescript/go.Language. Typed calls in the factory body establish this discovered edge; runtime reachability, returned-value flow, configured mappings and composed routes are not inferred.
+
+Static call relationships (no evidence transfer):
+
+- [github.com/Bitspark/bittype/generation/syntax/composition/horos-to-typescript/go#New](https://github.com/Bitspark/bittype/blob/main/generation/syntax/composition/horos-to-typescript/go/defaults.go#L31) → [github.com/Bitspark/bittype/transforms/horos-to-typescript/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-typescript/go/transform.go#L15) ([call](https://github.com/Bitspark/bittype/blob/main/generation/syntax/composition/horos-to-typescript/go/defaults.go#L35)); receiver ; type arguments .
+- [github.com/Bitspark/bittype/transforms/horos-to-typescript/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-typescript/go/transform.go#L15) → [github.com/Bitspark/bittype/generation/syntax/go#NewTransformer](https://github.com/Bitspark/bittype/blob/main/generation/syntax/go/transform.go#L16) ([call](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-typescript/go/transform.go#L19)); receiver ; type arguments github.com/Bitspark/bittype/syntax/horos/go.Language, github.com/Bitspark/bittype/syntax/typescript/go.Language.
+- [github.com/Bitspark/bittype/generation/syntax/go#NewTransformer](https://github.com/Bitspark/bittype/blob/main/generation/syntax/go/transform.go#L16) → [github.com/Bitspark/bittype/contracts/transform/go#NewTransformer](https://github.com/Bitspark/bittype/blob/main/contracts/transform/go/adapter.go#L40) ([call](https://github.com/Bitspark/bittype/blob/main/generation/syntax/go/transform.go#L20)); receiver ; type arguments github.com/Bitspark/bittype/syntax/horos/go.Language, github.com/Bitspark/bittype/syntax/typescript/go.Language.
+
+Traversal boundary: typed transformer boundary.
+
+### Declared target [github.com/Bitspark/bittype/transforms/horos-to-typescript/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-typescript/go/transform.go#L15)
+
+Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NDA4Ok1URTZkSEpoYm5ObWIzSnRaWEk0TkRwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdloyVnVaWEpoZEdsdmJpOXplVzUwWVhndlkyOXRjRzl6YVhScGIyNHZhRzl5YjNNdGRHOHRkSGx3WlhOamNtbHdkQzluYnlOT1pYYzJOVHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTI5dWRISmhZM1J6TDNSeVlXNXpabTl5YlM5bmJ5NUJVMVJVY21GdWMyWnZjbTFsY2pBNk5USTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOW9iM0p2Y3k5bmJ5Tk1ZVzVuZFdGblpUVTZhRzl5YjNNMU56cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwzUjVjR1Z6WTNKcGNIUXZaMjhqVEdGdVozVmhaMlV4TURwMGVYQmxjMk55YVhCMDY1OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS90cmFuc2Zvcm1zL2hvcm9zLXRvLXR5cGVzY3JpcHQvZ28jTmV3NTpzY29wZTE6IzU3OmRvY3MvZ2VuZXJhdGlvbi1jb21wb3NpdGlvbi5tZCNjb25zdHJ1Y3Rpb24tYW5kLXNlbGVjdGlvbjU6ZmFsc2UwOg"></a>
 
 Authored scope: [docs/generation-composition.md#construction-and-selection](https://github.com/Bitspark/bittype/blob/main/docs/generation-composition.md#construction-and-selection); profile: unspecified (authored profile absent).
 

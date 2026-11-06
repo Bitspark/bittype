@@ -110,8 +110,14 @@ four generators now use it, and the private pagination Dialects are deleted. Lib
 composer selects exact declaration identities in consuming configuration.
 Builtin mappings use the same supplied mechanism. Explicit overrides must replace
 existing exact bindings without order-dependent selection or error-triggered
-fallback. Opinionated default composition stays outside the Bittype module,
-avoiding a dependency cycle through type-owned integration modules.
+fallback. Owner correction, 6 November 2026: builtin Horos mappings live in
+`generation/syntax/mapping/horos` and optional default compositions in
+`generation/syntax/composition/horos-to-<target>/go`, inside Bittype's root module.
+Semantic ownership does not require placing generator code in Horos's repository.
+Horos owns the type model and has no generator module depending back on Bittype.
+The shared composer, source reader, native backends and thin transformer factories
+must not import these mappings or defaults. Independent libraries can supply
+their mappings through the same public SPI from their chosen packages.
 Replacement transformers must consume plugins uniformly; no
 contract-specific engine registrations, named-library imports in general
 transformers or raw-source recipes. Missing/conflicting required representations

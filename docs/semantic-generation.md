@@ -3,7 +3,7 @@
 **Revision 4 on the public generation SPI, 6 November 2026.** The four native
 pagination mappings consume general kinds through explicit target
 profiles, using public Horos Go 0.10.2. The [automatic composer](generation-composition.md)
-now drives all four, with mappings owned by Horos's optional integration module. This
+now drives all four, with Horos mappings in Bittype's root Go module. This
 is types/interfaces generation; it adds no runtime adapters, application-value
 validators, serialization or executable behavior.
 
@@ -36,9 +36,11 @@ resolution/analysis of its own snapshot.
 
 ## Representation and enforcement profiles
 
-In `github.com/Bitspark/horos/tooling/bittype`, each of
-`transforms/horos-to-typescript/go`, `transforms/horos-to-go/go`,
-`transforms/horos-to-rust/go` and `transforms/horos-to-cpp/go` exports:
+In `github.com/Bitspark/bittype`, each of
+`generation/syntax/composition/horos-to-typescript/go`,
+`generation/syntax/composition/horos-to-go/go`,
+`generation/syntax/composition/horos-to-rust/go` and
+`generation/syntax/composition/horos-to-cpp/go` exports:
 
 ```go
 const RepresentationProfile = "pagination-representation/1"
@@ -182,7 +184,7 @@ Mappings retain real declaration/parameter links and available current source
 origins. Imported definitions are emitted once with dependencies before uses.
 The source reader lives at `generation/syntax/source/horos/go`; bounded native
 storage lives at `generation/syntax/target/go`, with native adapters under the
-four language paths. Horos-owned mappings choose representations. Shared contracts, engine and
+four language paths. The packages under `generation/syntax/mapping/horos` choose representations. Shared contracts, engine and
 printer gain no Horos/Ontos or behavioral-library imports.
 
 Generation uses the public SPI defaults: 100,000 operations, depth 128, 4,096

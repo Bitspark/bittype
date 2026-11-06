@@ -194,9 +194,14 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["generation/syntax/go"] = []string{"contracts/generation/go", "contracts/semantic/go", "contracts/transform/go", "trees/ast/go", "trees/representation/go"}
 	rules["generation/syntax/source/horos/go"] = []string{"analyze/files/horos/go", "contracts/analysis/go", "contracts/generation/go", "contracts/semantic/go", "contracts/text/go", "contracts/transform/go", "generation/syntax/go", "resolve/files/horos/go", "semantics/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
 	rules["generation/syntax/target/go"] = []string{"contracts/generation/go", "trees/ast/go", "trees/representation/go"}
+	rules["generation/syntax/mapping/horos/go"] = []string{"contracts/generation/go", "contracts/text/go", "contracts/transform/go", "generation/syntax/go", "generation/syntax/source/horos/go", "generation/syntax/target/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
 	for target, syntax := range map[string]string{"typescript": "typescript", "go": "golang", "rust": "rust", "cpp": "cpp"} {
 		rules["transforms/horos-to-"+target+"/go"] = []string{"contracts/transform/go", "generation/syntax/go", "generation/syntax/source/horos/go", "syntax/horos/go", "syntax/" + syntax + "/go", "trees/representation/go"}
 		rules["generation/syntax/target/"+syntax+"/go"] = []string{"contracts/generation/go", "generation/syntax/target/go", "internal/" + syntax, "check/syntax/" + syntax + "/go", "syntax/" + syntax + "/go", "trees/ast/go", "trees/representation/go"}
+		// These are supplied Horos integrations. The shared composer, source
+		// reader, target backends and thin transformer factories cannot import them.
+		rules["generation/syntax/mapping/horos/"+syntax+"/go"] = []string{"contracts/generation/go", "generation/syntax/go", "generation/syntax/mapping/horos/go", "generation/syntax/source/horos/go", "generation/syntax/target/go", "generation/syntax/target/" + syntax + "/go", "syntax/horos/go", "syntax/" + syntax + "/go", "trees/ast/go"}
+		rules["generation/syntax/composition/horos-to-"+target+"/go"] = []string{"contracts/generation/go", "contracts/transform/go", "generation/syntax/go", "generation/syntax/mapping/horos/go", "generation/syntax/mapping/horos/" + syntax + "/go", "generation/syntax/source/horos/go", "generation/syntax/target/" + syntax + "/go", "syntax/horos/go", "syntax/" + syntax + "/go", "transforms/horos-to-" + target + "/go", "trees/ast/go", "trees/representation/go"}
 	}
 	// The Files dimension has explicit stage paths and a separate sealed carrier.
 	rules["files/go"] = []string{"trees/ast/go"}
