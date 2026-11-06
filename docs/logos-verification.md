@@ -4,6 +4,8 @@
 The owner requested a deeper Logos request trace before implementing verification.
 This document records that inspection and narrows the
 [verification SPI proposal](type-system-architecture.md#remaining-public-verification-spi-decisions).
+The [joint request/result contract](verification.md) applies these findings to
+artifact capture, preparation, checking and TextBox/Page walkthroughs.
 It adds no provider, checker, dependency, generator or runtime binding.
 
 The inspected sources are Logos
@@ -15,12 +17,13 @@ and public Horos
 The traces below follow source and test fixtures; no query, proof, build or test
 was executed for this inspection. Fixture outputs are their specified expectations.
 
-The [typed check-only follow-up](#concrete-typed-check-only-contract) inspects
-Logos PR [3881](https://github.com/Bitspark/logos/pull/3881), revision
-`c0f8b3e9cd340301e0b8e301ab4ff999a0173fac`. That implementation is under final
-validation and has not landed at this documentation revision. It gives the
-Bittype proposal concrete Go contracts to target; it does not deliver Bittype's
-integration or the broader Logos semantic-package roadmap.
+The [typed check-only follow-up](#concrete-typed-check-only-contract) is now landed
+through Logos PR [3881](https://github.com/Bitspark/logos/pull/3881), main revision
+`5aab58c48a616967a041c25da36b5c9946e08e88`, on 6 November 2026. All eleven required
+PR checks passed at source head `a778c2dca23faa7e33d307eae170bed4c38b45d5`; this
+records GitHub's delivery result, not local test execution. The delivery provides
+concrete Go contracts to target. It does not add a Bittype dependency or implement
+Bittype's integration or the broader Logos semantic-package roadmap.
 
 ## What exists and what remains proposed
 
@@ -30,7 +33,7 @@ integration or the broader Logos semantic-package roadmap.
 | Logos Go kernel | Implemented capability negotiation, candidate production, certification and terminal outcomes | Use when an integration explicitly needs search; checking supplied evidence does not require this pipeline |
 | Logos typed semantic packages | Draft `Statement`, `JudgmentRequest`, package/rule bindings, typed evidence and checking contract | Use this ownership and contract direction; these are not production Go types |
 | Logos typed foundation and replay at the original inspection | Test-private Rust experiment | Historical basis for the narrow check-only implementation below |
-| Logos typed check-only follow-up | Go, Rust and TypeScript implementation in PR 3881, pending final validation/landing | Concrete statement/evidence/checking API; use the Go binding once its delivery is admitted |
+| Logos typed check-only follow-up | Go, Rust and TypeScript implementation landed in PR 3881 | Concrete statement/evidence/checking API; Bittype dependency selection and integration remain unimplemented |
 | Bittype semantic infrastructure | Implemented captured requests/results, provider-owned facts and explicit transformation inputs | Supplies artifact association, not a logical foundation or proof of every stored fact |
 | Language semantics | Horos resolution/analysis implemented; native analysis deferred | Native text support does not supply Go, TypeScript, Rust or C++ semantic judgments |
 | Cross-language verification | Proposed | Source/native projections, mapping laws, joint request and outcome association still need implementation |
@@ -186,14 +189,14 @@ fallback for a requested quantified proof.
 
 ## Concrete typed check-only contract
 
-Logos owns the [narrow contract](https://github.com/Bitspark/logos/blob/c0f8b3e9cd340301e0b8e301ab4ff999a0173fac/docs/spec/typed-check-only.md).
+Logos owns the [narrow contract](https://github.com/Bitspark/logos/blob/5aab58c48a616967a041c25da36b5c9946e08e88/docs/spec/typed-check-only.md).
 The intended Bittype integration can call
 `github.com/Bitspark/logos/contract/go/typed` directly. No process client, hosted
 service, search engine, checker registry or package-discovery framework is needed
 for this route. This selects an integration direction, not a new Bittype API or
 dependency in this documentation change.
 
-The [Go signature](https://github.com/Bitspark/logos/blob/c0f8b3e9cd340301e0b8e301ab4ff999a0173fac/contract/go/typed/check.go#L7)
+The [Go signature](https://github.com/Bitspark/logos/blob/5aab58c48a616967a041c25da36b5c9946e08e88/contract/go/typed/check.go#L7)
 is:
 
 ```go
@@ -212,7 +215,7 @@ All five types belong to Logos. The integration supplies them as follows:
 | `Policy` | Admit the foundation, checker and permitted semantic dependencies through receiver-owned configuration |
 | `Limits` | Bound checking explicitly; do not treat exhaustion as nonmembership or a counterexample |
 
-The [syntax contract](https://github.com/Bitspark/logos/blob/c0f8b3e9cd340301e0b8e301ab4ff999a0173fac/contract/go/typed/syntax.go)
+The [syntax contract](https://github.com/Bitspark/logos/blob/5aab58c48a616967a041c25da36b5c9946e08e88/contract/go/typed/syntax.go)
 provides the required dependent functions, pairs, substitution/conversion and
 equality operations. `Assume` names the dependencies of a trusted premise;
 `Define` requires a value checked against its declared type. Logical hypotheses,
@@ -228,7 +231,7 @@ There is no byte decoder, proof transport or asynchronous cancellation API in
 this slice. Cancelling a surrounding Bittype operation is a separate completion
 condition, not a logical result from Logos.
 
-The [outcome contract](https://github.com/Bitspark/logos/blob/c0f8b3e9cd340301e0b8e301ab4ff999a0173fac/contract/go/typed/outcome.go)
+The [outcome contract](https://github.com/Bitspark/logos/blob/5aab58c48a616967a041c25da36b5c9946e08e88/contract/go/typed/outcome.go)
 already separates `AcceptedStatus`, `InvalidStatus`, `IncompleteStatus` and
 `UnsupportedStatus`, with typed codes and logical locations. `Accepted()` returns
 an immutable value handle. It retains the exact statement, candidate and policy,
@@ -241,7 +244,7 @@ proposition is accepted evidence of that proposition.
 
 ### What the consumer examples establish
 
-The [TextBox/Page cases](https://github.com/Bitspark/logos/blob/c0f8b3e9cd340301e0b8e301ab4ff999a0173fac/docs/spec/typed-check-only-cases.md)
+The [TextBox/Page cases](https://github.com/Bitspark/logos/blob/5aab58c48a616967a041c25da36b5c9946e08e88/docs/spec/typed-check-only-cases.md)
 exercise the checker over explicit consumer model descriptors and assumptions.
 Their model domains are not new Horos constructors or native compiler objects.
 TextBox combines native acceptance, a fixed representation and positive evidence
@@ -267,7 +270,7 @@ over `(S,N,E)` and from runtime value correspondence.
 The earlier SPI gaps include both Bittype-specific association work and
 Logos-owned checking contracts. Their separation is:
 
-| Concern | Existing or proposed Logos contract | Bittype responsibility still to specify |
+| Concern | Existing or proposed Logos contract | Bittype responsibility in the joint contract |
 | --- | --- | --- |
 | Expected claim and candidate evidence | Ground `GroundLiteral` / `Derivation`; concrete typed `Statement` / `Expr` in the follow-up | Language-owned projection and independent expected-claim construction from actual inputs |
 | Joint source/output invocation | Ground consumer context; typed acceptance retains the logical statement, candidate and policy | Capture both artifacts, their compatible semantic results, mappings, helpers and relevant environment; copying/lifetime and publication authority |
@@ -280,7 +283,10 @@ route, and publishes associated diagnostics. It does not define another proof
 term algebra, generic theorem checker, foundation registry or automatic checker
 discovery. No separate public checker-provider interface is required merely to
 call `Check`; any shared SPI is promoted only for a demonstrated association or
-composition requirement. Its concrete public Go shape remains undecided.
+composition requirement. The [joint contract](verification.md) now defines the
+private composition's construction record and prepared request/result behavior;
+promotion of a shared public association surface awaits implementation and
+qualification. Logos-specific logical types remain in the concrete integration.
 
 The existing [semantic request/result](../contracts/semantic/go/request.go)
 contract seals a result against its capture. `Result.Valid()` means the result
@@ -327,7 +333,9 @@ this inspection authorizes no method or runtime implementation.
 
 ## Missing work and next contract deliverable
 
-Within Bittype and the owning language/mapping integrations, specify:
+The [joint request/result proposal](verification.md) defines the association and
+failure semantics. Bittype and the owning language/mapping integrations still
+need to implement and qualify:
 
 1. A joint immutable association for the actual source, output, semantic results,
    selected mappings/helpers and relevant language environment.
@@ -340,16 +348,18 @@ Within Bittype and the owning language/mapping integrations, specify:
 4. Representation laws owned by the selected mapping integrations. Mapping
    selection or successful compilation alone does not establish those laws.
 
-The reviewed Logos delivery provides a concrete Go route for the symbolic claim.
-Its final validation and landing remain with Logos. Bittype must then admit the
-delivered dependency and implement the artifact-to-statement association above;
+The landed Logos delivery provides a concrete Go route for the symbolic claim.
+Bittype must admit the delivered dependency and implement the artifact-to-statement
+association above;
 the checking API alone does not complete symbolic generation verification.
 General proof search, a hosted service and the entire Logos roadmap are not
 prerequisites.
 
-Walk through TextBox, Page, nesting, changed helpers, foreign captures,
-incompatible checking contracts and exhausted checks before finalizing the public
-association SPI. Those design exercises need not wait for complete implementations.
+The [TextBox walkthrough](verification.md#textbox-walkthrough) and
+[Page walkthrough](verification.md#page-walkthrough) now cover nesting, changed
+helpers and the exact result meaning. The failure contract covers foreign captures,
+incompatible compositions and exhausted checks. Qualify those behaviors on actual
+artifacts before promoting the public association surface.
 Keep [ASTTransformer](../contracts/transform/go/transformer.go) returning syntax,
 resolution/analysis explicitly invoked, and the
 [stage-first package roles](type-system-architecture.md#proposed-package-roles).

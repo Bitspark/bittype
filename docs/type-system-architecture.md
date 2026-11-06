@@ -8,9 +8,13 @@ expert review to the [type-system model](type-system-model.md),
 The owner's subsequent [Logos source inspection](logos-verification.md),
 6 November, refines the verification SPI boundary below. Its
 [typed check-only follow-up](logos-verification.md#concrete-typed-check-only-contract)
-now supplies a concrete Go integration target, pending Logos's final validation
-and landing. This is source-based design work, not a new expert consultation or
+now supplies a concrete Go integration target, landed in Logos PR 3881. This is
+source-based design work, not a new expert consultation or
 implemented Bittype API.
+The subsequent [joint request/result contract](verification.md) defines preparation,
+checking, ownership, lifetimes and failure behavior, with TextBox/Page walkthroughs.
+It remains a documentation proposal; public package promotion and implementation
+are separate from those contract decisions.
 
 Use Logos's semantic-package direction directly. Language integrations supply
 their meanings and judgments; mapping owners supply selected representation
@@ -31,7 +35,7 @@ Go APIs.
 | --- | --- |
 | Horos | Canonical declaration/kind semantics, original argument contracts, authoritative query procedures and checked public views |
 | Native language integration | Language-specific semantic objects, judgments, configuration, artifact interpretation and supported coverage |
-| Logos | Ground derivation checking and optional search/certification; concrete typed check-only API in the pending delivery; broader semantic-package composition remains proposed |
+| Logos | Ground derivation checking and optional search/certification; landed typed check-only API; broader semantic-package composition remains proposed |
 | Type-owned mapping integration | The selected static representation relation, native family/helper choices and precisely stated mapping laws |
 | Bittype integration | Captured source/output association, actual mapping selection, the independently constructed expected statement and associated outcomes |
 | Caller composition | Explicitly select and invoke the required stages, checking route and accepted assumptions |
@@ -166,7 +170,7 @@ map, not a new Go struct or serialized schema:
 
 | Input | Construction and ownership |
 | --- | --- |
-| Source and actual output captures | Existing Bittype snapshots, with a joint association still to specify |
+| Source and actual output captures | Existing Bittype snapshots retained separately by the proposed joint association |
 | Source/native semantic results | Compatible provider-issued reports for those captures; not automatically proof evidence |
 | Selected mappings, helpers and environment | Caller configuration and owning language/mapping integrations |
 | Independently expected claim | Owning integration constructs the appropriate Logos ground claim or admitted typed statement from the bound artifacts |
@@ -177,8 +181,8 @@ Claim and evidence representations belong to the selected Logos contract.
 The [Logos contract map](logos-verification.md#ownership-map-for-the-verification-spi)
 identifies the existing and proposed owners of those inputs. Bittype specifies
 their artifact association and integration, without copying Logos's expression
-calculus. TextBox and Page should exercise the candidate boundary during design;
-complete implementations are not a prerequisite for specifying it.
+calculus. The [joint contract walkthroughs](verification.md#textbox-walkthrough)
+exercise the boundary for TextBox and Page without claiming completed integration.
 
 ### Proposed package roles
 
@@ -227,10 +231,13 @@ shared orchestration layout.
 **Refined after source inspection, 6 November 2026. Documentation only.** The
 owner requested that the [Logos findings](logos-verification.md) narrow this
 proposal. The four concerns below distinguish existing Logos capabilities,
-Logos production gaps and Bittype's unfinished association contract. They are
-not four new Bittype frameworks or proof APIs to design. The eventual public SPI
-remains unimplemented; semantic ownership, explicit composition and stage-first
-placement are unchanged. API design need not await full TextBox/Page execution.
+Logos production gaps and Bittype's association responsibilities. The
+[joint request/result proposal](verification.md) now defines the association,
+lifetimes, preparation/checking split and failure behavior. The remaining public
+decision is which demonstrated agnostic surface to promote from the first
+private composition; it is not a missing proof calculus or undefined request
+semantics. Implementation and qualification remain outstanding. Semantic
+ownership, explicit composition and stage-first placement are unchanged.
 
 The fixed boundaries are: languages own judgments, Logos owns proof machinery,
 the expected statement is constructed independently of candidate evidence, and
@@ -248,27 +255,30 @@ does not acquire named kinds, contract cases or hidden semantic operations.
 broader typed-package proposal is a separate contract, not a required dependency
 of this first integration.
 
-**Bittype decision:** specify how owning integrations project actual semantic
-objects, construct the expected claim independently of evidence, and bind the
-concrete Logos types at the integration boundary. Define invocation-local
-reference lifetimes and reconstruction when canonical inputs are supplied again.
+**Contract decision:** the receiver-selected integrations supply input-associated
+projections and procedure results. Preparation constructs the expected statement
+without a candidate, then seals it with the actual artifacts, interpretation,
+policy and limits. Owner-local references retain their models; fresh canonical
+resolution requires reconstruction and fresh preparation/checking. See
+[construction and preparation](verification.md#request-construction-record).
 No Bittype proof-term algebra or serialization is required. Arbitrary bytes,
 unqualified names and a producer-selected conclusion do not establish compatibility.
 
-**Delivery dependency:** finish and admit the reviewed typed Go implementation.
+**Integration dependency:** admit the landed typed Go implementation in Bittype.
 Claim/evidence syntax and the in-process call no longer need an invented Bittype
-equivalent. The language projections and association remain Bittype integration
-work; final public request construction and lifetimes still need definition.
+equivalent. The language projections and defined association still need
+implementation; public promotion does not authorize another checking framework.
 
 ### 2. Immutable requests spanning source and target
 
 Existing [semantic requests and results](../contracts/semantic/go/request.go)
 are bound to one captured language context. A preservation request relates source
 and target snapshots, their respective semantic results, selected mappings,
-helpers, environment and the expected claim. Define a joint request's capture
-identity, dependency compatibility checks, copying/lifetime rules and result
-publication authority. Attaching one side's request identity to the other side's
-result does not establish the association.
+helpers, environment and the expected claim. The [joint contract](verification.md)
+retains separate snapshot/receipt handles, admits each participant's evidence
+under its own requirements, owns mutable construction collections and issues
+results only through its checking path. Attaching one side's request identity
+to the other side's result does not establish the association.
 
 This is the main new Bittype-owned contract. The typed route retains the logical
 statement, candidate and policy in its acceptance result; it does not capture
@@ -292,10 +302,13 @@ actual installed checking dependency; an identity string does not select or
 authenticate an executable. Search has a separate EngineProvider SPI.
 
 **Bittype direction:** use the direct typed Go route for the first TextBox/Page
-composition and bind its required inputs. Determine which artifact-association
-operation, if any, needs a shared public interface. A direct check does not require
-an EngineProvider or a second verifier registry. Do not invent an independent compatibility descriptor duplicating Logos's
-contract. The generic boundary must reject unsupported pairings without
+composition and bind its required inputs. The
+[placement proposal](verification.md#placement-qualification-and-remaining-work)
+keeps Logos-specific prepared requests/results in the concrete integration and
+promotes only demonstrated agnostic association contracts. A direct check does
+not require an EngineProvider or a second verifier registry. Do not invent an
+independent compatibility descriptor duplicating Logos's contract. The generic
+boundary must reject unsupported pairings without
 interpreting Horos or Go judgments or trying a weaker checker.
 
 Language-specific resolution and analysis retain their existing ID/Name-based
@@ -313,8 +326,10 @@ Collection accessors are defensive; the Go acceptance is a value handle, not a
 caller-mutable wrapper retained by the outcome. Use the selected API's actual
 contract rather than flattening these results or duplicating its outcome types.
 
-**Bittype decision:** specify result publication against the joint request and
-projection into located diagnostics and semantic reports. Preserve evidence
+**Contract decision:** a result retains its prepared request, exact candidate and
+actual Logos outcome. Only the direct checking path seals that result; it cannot
+retag another outcome. Participant-qualified diagnostic sites retain Logos's
+logical code/location when no source mapping exists. Preserve evidence
 validity, the established judgment and execution completion separately. Reuse
 the existing contracts; do not invent another proof outcome algebra or flatten
 the result to a Boolean.
@@ -322,23 +337,25 @@ the result to a Boolean.
 A valid proof establishes its requested statement relative to admitted
 assumptions. A checked counterexample can refute a preservation claim; malformed
 evidence cannot. Unsupported capability, exhaustion and cancellation do not
-establish logical falsehood. Decide which malformed requests or provider
-contract violations return Go errors, which outcomes are published reports, and
-what diagnostic/assumption information a caller needs to interpret them.
+establish logical falsehood. The [failure contract](verification.md#result-and-failure-contract)
+assigns malformed associations, unavailable preparation inputs, contract
+violations and cancellation to errors without a joint result. Actual Logos
+outcomes, including invalid candidates, are retained in a joint result. This
+does not discard the underlying semantic reports or confuse incomplete source
+evidence with refutation.
 Logos's locations identify phases and declaration/context positions; Bittype
 supplies the mapping to actual source/output sites. The synchronous checker has
 no cancellation API, so cancellation of surrounding extraction or orchestration
 must remain a separate operation-completion condition.
 
-### Next contract-design deliverable
+### Joint contract and implementation cases
 
-Specify the joint artifact request, source/native projections, expected-claim
-constructor and result association using the selected Logos API. Name the exact
-current types or proposed Logos contract consumed at each boundary, and identify
-unsupported operations explicitly. A new public checker abstraction is justified
-only by an association/composition requirement that direct use does not meet.
-Keep proof production separate: checking receives an independently fixed expected
-statement and supplied evidence, without hidden search or missing analysis.
+The [joint contract](verification.md) specifies the construction record, sealed
+request/result and concrete Logos bindings. Its walkthroughs identify which
+source/native/mapping inputs are still missing implementations. Keep proof
+production separate: checking receives an independently fixed expected statement
+and supplied evidence, without hidden search or missing analysis. A new public
+checker abstraction is not needed for this direct-call contract.
 
 Use the two examples to review the candidate SPI before public promotion:
 
@@ -346,7 +363,7 @@ Use the two examples to review the candidate SPI before public promotion:
 | --- | --- |
 | Concrete TextBox counterexample | Source nonmembership plus native acceptance and fixed representation can refute the claim; invalid evidence cannot |
 | Symbolic Page and nested application | Actual binders, scoped assumptions, imported laws and instantiated result evidence remain associated |
-| Changed output/helper, foreign snapshot or incompatible checker | Refuse the mismatched request/evidence instead of reporting a semantic counterexample |
+| Changed output/helper, foreign snapshot or incompatible checker | Require fresh association; reject a stale result or unsupported binding. Candidate syntax may still pass a fresh check if the new meaning and laws justify it |
 | Unsupported or exhausted checker | Publish the coverage/completion limitation without a stronger claim |
 
 These remain Bittype contract-design cases, not completed Bittype integration
@@ -354,8 +371,8 @@ tests. The Logos follow-up has shared logical TextBox/Page cases, but no actual
 Bittype artifact extractor or native model. The
 [Logos typed-checker milestone](#the-logos-checking-prerequisite) remains an
 execution dependency for production symbolic certification; it does not prevent
-specifying the agnostic SPI now. This section neither defines that SPI nor
-implements a provider, generator, proof producer or checking service.
+defining this contract. The proposal implements no provider, generator, proof
+producer or checking service.
 
 ## Outcomes and trust
 
@@ -388,7 +405,7 @@ proof than a leaf: strength depends on the actual checking contract and basis.
 Use the narrow Logos-owned **typed, check-only milestone**, admitted through
 Logos's own contract and implementation process. The
 [follow-up inspection](logos-verification.md#concrete-typed-check-only-contract)
-records its concrete API and pending delivery separately from the earlier
+records its landed concrete API separately from the earlier
 test-private Rust experiment and the broader semantic-package roadmap. This
 prerequisite concerns production symbolic certification, not every Bittype
 verification operation. The reviewed implementation supplies:
@@ -693,11 +710,10 @@ it; a table of future cases is not an implemented native analyzer.
 
 After implementation is authorized:
 
-1. Specify the [Bittype-owned association decisions](#remaining-public-verification-spi-decisions)
+1. Implement the private composition defined by the [joint contract](verification.md)
    against the [Logos contract map](logos-verification.md#ownership-map-for-the-verification-spi).
-   Walk through the exact TextBox/Page statements, domains, artifact associations
+   Preserve the walkthroughs' exact TextBox/Page statements, artifact associations
    and evidence dependencies without designing another proof or checker registry.
-   Complete implementations are not required to design this boundary.
 2. Establish the concrete TextBox bool counterexample through the selected typed
    Go checking route and authoritative source refutation. The existing ground
    route remains usable, but this slice does not require two integrations.
@@ -705,8 +721,8 @@ After implementation is authorized:
    and field representation. Retain the example's explicit Go 1.25 baseline with
    matching compiler/specification inputs; the moving live specification now
    describes Go 1.27. This document ran neither toolchain.
-4. Admit the delivered Logos typed Go dependency after its own validation and
-   landing. Prepare the precise Horos schema bridge and language/mapping inputs.
+4. Admit the delivered Logos typed Go dependency. Prepare the precise Horos
+   schema bridge and language/mapping inputs.
    Logical conformance cases do not establish artifact or native-model adequacy.
 5. Supply a scripted Page proof, check its actual quantified statement, then
    instantiate it for Person and again for the nested result. No general search
@@ -722,7 +738,7 @@ The future regression set includes:
 | TextBox[bool] under any with the fixed interpretation | Checked counterexample to TextBox preservation |
 | NamedString under the exact string term | Native rejection in the admitted fragment |
 | Change exact string to ~string | Earlier evidence loses association; reassess the larger domain |
-| Remove a field, alter optionality or change a helper | Representation evidence rejected |
+| Remove a field, alter optionality or change a helper beyond the admitted law | Fresh preparation/checking rejects stale representation evidence or reports missing coverage |
 | Same-spelling foreign binder or escaping assumption | Binding/evidence rejection |
 | Generalize a fact depending on one chosen rigid atom | Evidence rejection |
 | Drop an ignored parameter's original bound | Source admission still required |
