@@ -36,7 +36,7 @@ func semanticConformanceCases() []struct {
 	return []struct {
 		directory string
 		qualify   func(*testing.T)
-	}{{"horos", qualifyHoros}, {"golang", qualifyGolang}, {"typescript", qualifyTypeScript}}
+	}{{"horos", qualifyHoros}, {"golang", qualifyGolang}, {"typescript", qualifyTypeScript}, {"rust", qualifyRust}}
 }
 
 func TestSemanticProviders(t *testing.T) {

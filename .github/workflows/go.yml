@@ -12,7 +12,7 @@ permissions:
 jobs:
   contracts:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       EXPECTED_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
       GOTOOLCHAIN: local
@@ -40,6 +40,29 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/bittype-typescript" --ignore-scripts --no-audit --no-fund typescript@5.9.3 @types/node@24.0.0
           echo "BITTYPE_TYPESCRIPT_NODE=$(command -v node)" >> "$GITHUB_ENV"
           echo "BITTYPE_TYPESCRIPT_MODULE=$RUNNER_TEMP/bittype-typescript/node_modules/typescript/lib/typescript.js" >> "$GITHUB_ENV"
+      - name: Prepare pinned Rust semantic compiler
+        shell: bash
+        run: |
+          rustup toolchain install 1.90.0 --profile minimal --component rustc-dev --component llvm-tools-preview --component rustfmt
+          sysroot="$(rustc +1.90.0 --print sysroot)"
+          echo "BITTYPE_RUST_SYSROOT=$sysroot" >> "$GITHUB_ENV"
+          echo "BITTYPE_RUST_HELPER=$RUNNER_TEMP/bittype-rust/release/bittype-rust-semantics" >> "$GITHUB_ENV"
+          echo "CARGO_TARGET_DIR=$RUNNER_TEMP/bittype-rust" >> "$GITHUB_ENV"
+          cargo +1.90.0 fetch --locked --manifest-path internal/rustsem/helper/Cargo.toml
+      - name: Save Rust dependency and formatting corrections
+        shell: bash
+        run: |
+          cargo +1.90.0 fmt --manifest-path internal/rustsem/helper/Cargo.toml
+          git diff --binary -- internal/rustsem/helper > "$RUNNER_TEMP/rust-helper.patch"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: rust-helper-patch
+          path: ${{ runner.temp }}/rust-helper.patch
+          retention-days: 7
+      - name: Build and typecheck Rust semantic helper
+        shell: bash
+        run: |
+          RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C link-arg=-Wl,-rpath,$BITTYPE_RUST_SYSROOT/lib" cargo +1.90.0 build --release --locked --manifest-path internal/rustsem/helper/Cargo.toml
       - name: Save dependency checksum corrections
         shell: bash
         run: git diff --binary -- go.mod go.sum > "$RUNNER_TEMP/go-mod.patch"
@@ -101,7 +124,7 @@ jobs:
           node "$RUNNER_TEMP/bittype-typescript/node_modules/typescript/lib/tsc.js" --allowJs --checkJs --noEmit --target es2020 --module commonjs --baseUrl "$RUNNER_TEMP/bittype-typescript/node_modules" --typeRoots "$RUNNER_TEMP/bittype-typescript/node_modules/@types" internal/typescriptsem/compiler.cjs
       - name: Check syntax engine concurrency
         if: success() || (failure() && steps.formatting.outcome == 'failure')
-        run: go test -race -count=1 -run '^(TestEngineConcurrent|TestGoSemanticConcurrent|TestTypeScriptSemanticConcurrent)' ./integration/go
+        run: go test -race -count=1 -run '^(TestEngineConcurrent|TestGoSemanticConcurrent|TestTypeScriptSemanticConcurrent|TestRustSemanticConcurrent)' ./integration/go
       - name: Check joint verification concurrency
         if: success() || (failure() && steps.formatting.outcome == 'failure')
         run: go test -race -count=1 -run '^TestJointConcurrentChecks$' ./verification/integration/go
@@ -152,7 +175,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: Verify committed dependency metadata
-        run: git diff --exit-code -- go.mod go.sum
+        run: git diff --exit-code -- go.mod go.sum internal/rustsem/helper
       - name: Record passing revision
         shell: bash
         run: |

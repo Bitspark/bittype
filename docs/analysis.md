@@ -8,8 +8,8 @@ the right number of arguments, and how Person binds to Page's parameter.
 Bittype provides the common request, result and fact representation. Each language
 provider supplies the rules that establish those facts. The engine selects an
 explicitly registered provider; it starts empty and imports no concrete analyzer.
-Horos, Go and TypeScript have production semantic providers. Native coverage is
-bounded and compiler-owned; Rust and C++ currently have syntax tooling only.
+Horos, Go, TypeScript and Rust have production semantic providers. Native coverage is
+bounded and compiler-owned; C++ currently has syntax tooling only.
 
 This guide connects the concepts, package boundaries and a pagination example.
 The [semantic model reference](semantics.md) specifies the fact records and their
@@ -342,8 +342,8 @@ Analysis does not repair input or turn stale references into new references
 silently. The explicit `resolve.Model` helper remains semantic and shares the
 same authoritative path.
 
-[Bounded Go and TypeScript semantics](native-semantics.md) use the same resolution and
-analysis interfaces. Broader native coverage, Rust/C++ analyzers, general
+[Bounded Go, TypeScript and Rust semantics](native-semantics.md) use the same resolution and
+analysis interfaces. Broader native coverage, C++ analysis, general
 scope/relation APIs, partial checked graphs and incremental caches remain deferred.
 The independent test-only language still qualifies the agnostic contract.
 
@@ -366,5 +366,5 @@ records the original semantic slice, not the subsequent resolver split; its froz
 advice remain separate from the implemented specification.
 
 See [native semantic providers](native-semantics.md)
-for the bounded Go and TypeScript resolvers/analyzers, immutable native facts and
-explicit compiler queries. Rust and C++ semantic providers remain planned.
+for the bounded Go, TypeScript and Rust resolvers/analyzers, immutable native facts and
+explicit Go/TypeScript compiler queries. C++ semantics and broader Rust coverage remain planned.

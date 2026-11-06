@@ -224,6 +224,11 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["resolve/files/typescript/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/typescriptsem", "semantics/go", "semantics/typescript/go", "syntax/typescript/go"}
 	rules["analyze/files/typescript/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/typescriptsem", "resolve/files/typescript/go", "semantics/go", "semantics/typescript/go", "syntax/typescript/go", "trees/representation/go"}
 	rules["provider/typescript/go"] = append(rules["provider/typescript/go"], "contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "analyze/files/typescript/go", "resolve/files/typescript/go")
+	rules["semantics/rust/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "syntax/rust/go", "trees/ast/go", "trees/representation/go"}
+	rules["internal/rustsem"] = []string{"contracts/parse/go", "contracts/semantic/go", "files/go", "parse/syntax/rust/go", "semantics/go", "semantics/rust/go", "syntax/rust/go", "trees/ast/go"}
+	rules["resolve/files/rust/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/rustsem", "semantics/go", "semantics/rust/go", "syntax/rust/go"}
+	rules["analyze/files/rust/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/rustsem", "resolve/files/rust/go", "semantics/go", "semantics/rust/go", "syntax/rust/go", "trees/representation/go"}
+	rules["provider/rust/go"] = append(rules["provider/rust/go"], "contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "analyze/files/rust/go", "resolve/files/rust/go")
 	rules["verification/files/horos-to-go/go"] = []string{"contracts/semantic/go", "contracts/verification/go", "semantics/go", "trees/ast/go", "verification/files/source/horos/go", "semantics/golang/go", "analyze/files/golang/go"}
 	for path, p := range packages {
 		if p.Standard || path == modulePath+"/integration/go" || path == modulePath+"/verification/integration/go" {

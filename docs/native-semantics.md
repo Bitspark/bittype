@@ -1,6 +1,6 @@
 # Native semantic providers
 
-The Go and TypeScript providers use the existing [resolution](resolution.md) and
+The Go, TypeScript and Rust providers use the existing [resolution](resolution.md) and
 [analysis](analysis.md) contracts. Native providers own their compiler integration
 and vocabulary in the [agnostic semantic graph](semantics.md). They do not depend
 on Horos, Logos, generation plugins or runtime bindings. The
@@ -236,7 +236,122 @@ receipt isolation, assignability and concurrency. The
 also qualifies the embedded helper from a fresh public-module installation.
 The remote gate runs these with TypeScript 5.9.3 and typechecks the helper itself.
 
-## Extension to the other native languages
+## First Rust profile
+
+**6 November 2026:** Rust implements the same independent resolution and analysis
+contracts. Its syntax and generation providers already existed; this adds native
+semantic checking without changing generation or runtime behavior.
+
+```text
+syntax-admitted Rust AST + captured Files and links
+  -> resolve/files/rust/go
+  -> original-source/AST correspondence + pinned rustc_driver helper
+  -> immutable native declarations, types, bindings, predicates and reports
+  -> analyze/files/rust/go (explicit receipt; reuses the exact graph)
+  -> semantics/rust/go (typed read-only view)
+```
+
+The public adapters and orchestration are Go. The private helper at
+`internal/rustsem/helper` uses Rust's compiler APIs, pinned to **1.90.0**.
+Its Cargo package is unpublished. `provider/rust/go.NewFilesResolver` takes a
+`resolve.Compiler` with absolute `HelperPath` and `SysrootPath`. Constructors
+perform no IO, discovery or installation. The caller provisions that helper and
+the matching compiler sysroot explicitly. Both operations require
+`rust.Configuration()`: edition 2024, `x86_64-unknown-linux-gnu`, crate `captured`,
+library checking, sysroot-only dependencies, no code generation, and the
+`captured-types-1` helper profile. Compiler version, profile and environment are
+receipt identity; executable locations are configuration of the collaborator.
+
+The remote gate builds the helper with Rust 1.90.0, `rustc-dev` and
+`llvm-tools-preview`; `RUSTC_BOOTSTRAP=1` enables the private compiler API only
+while building that helper. The checked input gets no feature-enabling environment.
+The helper links its explicit compiler library location and receives an empty
+environment from the Go bridge. It supplies original source through `Input::Str`,
+denies filesystem source lookup and stops after compiler analysis, before codegen.
+There is no Cargo project discovery, external package resolution, dependency
+download, build script, proc macro or source emission during semantic checking.
+Compiler/helper installation is a trusted prerequisite. This first executable
+profile is qualified on Linux x86-64; other hosts require deliberate qualification.
+
+The private Go bridge reparses the original `.rs` capture with the existing parser
+and compares node kinds, attributes and containment. It recomputes spans, maps
+CRLF/BOM normalization to compiler byte positions, and ignores caller origin claims.
+Supplied reference targets must agree with native path resolution. The existing
+syntax parser excludes attributes, macros and executable bodies. No source is
+printed from ASTs to obtain a compiler input; generated text needs a new explicit
+capture. The helper distinguishes compiler-injected standard prelude declarations
+from authored declarations.
+
+The supported semantic fragment is one captured source file with inline modules,
+type aliases, structs/tuple structs, enums with unit/tuple/record variants, fields,
+ordinary type parameters and defaults, effective generic applications, paths,
+primitives, tuples, numeric-length arrays, slices, raw pointers and explicit
+`'static` references. Marker traits, supertraits, ordinary trait bounds/where
+predicates and empty type-only trait impls are checked by the compiler. Sysroot
+types use their compiler declaration identities: `Vec`, `Option`, `String`, `Box`
+and similar types have no name-specific mapping in Bittype. Their internals stay
+opaque; effective arguments include native defaults, such as an allocator argument.
+
+Imports and multi-file crates, dependency closures, methods/functions/callable
+types, trait objects, associated types/projections/GATs, lifetime parameters,
+non-static references, const generics and higher-ranked predicates are outside
+this first semantic profile. Some have syntax tooling; that does not imply
+semantic coverage. An unsupported source construct or exported compiler form
+reports unsupported coverage without a partial graph. The standard compiler
+prelude and sysroot are part of the explicit environment, not a library-name
+switch in the kernel.
+
+The provider-owned `rust` vocabulary is:
+
+| Graph element | Meaning |
+| --- | --- |
+| `module`, `alias`, `struct`, `enum`, `variant`, `field`, `trait`, `impl`, `parameter` entities | Native declaration identities, captured sites and owners |
+| `Reference` / `Application` | Native types and effective arguments; shared `DirectParameterBindings` applies |
+| `target` bindings | Compiler-resolved path segments at captured nodes |
+| `declared-type` facts/occurrences | Checked type of each captured type declaration or field |
+| `native-type`, `display` facts | Native type handles and diagnostic spelling; display is never identity |
+| `fields`, `variants` facts | Ordered local ADT structure, substituted field types, field names/visibility and declaration identities |
+| `default`, `predicate`, `implements` facts | Generic defaults, declared trait predicates and checked impl headers |
+| `primitive`, `tuple`, `slice`, `array`, `pointer`, `reference` expressions | Rust-owned `json-1` metadata and ordered type operands |
+
+Generic parameters retain their actual owning declaration and slot. Rust's
+implicit trait `Self` is a distinct binder even though rustc internally reuses
+the trait's `DefId`. Same-spelled `T` parameters in different declarations never
+collapse. The native type cache includes the binder environment for parameterized
+types. Recursive local types use entity/fact links, not cyclic term containment.
+Aliases keep their declaration identities while their native type can normalize
+to another declaration. Source path bindings still identify the alias. This slice
+does not export a semantic occurrence for every nested source type expression.
+
+`rust.Open(analyzed)` admits the exact completed analysis receipt and reads the
+graph without a compiler invocation. `Lookup` takes a compiler path such as
+`captured::models::Person`; paths select declarations but do not define equality.
+Ambiguous paths across native namespaces require selecting the actual entity ID.
+`Type.Same` means compiler type identity with the same generic binder environment
+in that receipt. It does not imply coercibility, trait satisfaction or Horos
+representation preservation. Declared predicates are facts about declarations,
+not proofs of every possible specialization. Rust does not enforce ordinary
+type-alias bounds at every use site; this provider preserves rustc's behavior.
+There is no dynamic admission/coercion query API in this first Rust slice.
+
+Missing Files context reports incomplete coverage. Native source errors report
+rejected validity with a captured-node diagnostic. Unsupported forms report
+unsupported coverage. None publishes partial semantics. Contradictory source/AST
+captures, false references, wrong configuration and foreign receipts are request
+errors; helper/toolchain failures are operational errors. Cancellation stops the
+child process. The bounds are 4,096 AST nodes and 1 MiB source, 16,000 native type
+handles, 32,768 semantic records, export depth 128, a 30-second process deadline, 16 MiB response and
+256 KiB stderr. Shared capture/publication budgets apply independently.
+
+The [provider tests](../integration/go/rust_semantics_test.go) cover pagination,
+nested substitution, defaults, binder ownership, recursion, module paths, marker
+traits, invalid/unsupported/incomplete outcomes, source correspondence and receipt
+isolation. The [installed consumer](../integration/go/testdata/installed/rust_semantics_test.go)
+uses the published Go module with an explicitly provisioned helper. Immutable
+graph reuse is exercised under the race detector. Missing compiler provisioning
+fails qualification rather than silently skipping it.
+
+## Extension to C++ and broader native coverage
 
 The same roles and receipt contracts apply, with language-owned facts and query
 semantics. There is no universal `Compatible` predicate and no Bittype
@@ -244,7 +359,7 @@ reimplementation of all native type systems.
 
 | Language | Planned authority and initial semantic surface |
 | --- | --- |
-| Rust | Toolchain-pinned `rustc_driver` helper; declaration/path identity, generic predicates and instantiation, later associated-type normalization. Compiler internals are unstable. |
+| Rust extension | Broader dependency/lifetime/associated-type coverage and explicit native queries on top of the pinned helper. Compiler internals remain unstable. |
 | C++ | Pinned Clang LibTooling helper; declarations, template parameters/applications and constraint checking. |
 
 Public orchestration stays in Go; compiler helpers may use their native language.
