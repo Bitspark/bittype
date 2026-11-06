@@ -29,6 +29,12 @@ are supplied; the quantified Page theorem below still requires the admitted
 typed route. Stored semantic facts and compiler acceptance are not themselves
 proofs of this theorem.
 
+The [typed check-only follow-up](logos-verification.md#concrete-typed-check-only-contract)
+now identifies the concrete Go API and Logos's separate TextBox/Page logical
+cases, pending its final validation and landing. Those cases check composition
+under explicit premises; connecting them to actual source/output artifacts and
+qualifying the language/mapping interpretation remain Bittype integration work.
+
 ## Prove preservation under symbolic assumptions
 
 For a fixed source world and selected mapping configuration C, the theorem is:
