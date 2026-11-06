@@ -213,7 +213,7 @@ Use a task branch or worktree and a pull request. Squash the task change onto
 
 Do not add documentation checks, CI waiting, independent review or verification
 records as delivery prerequisites under the owner rule above. Existing workflow
-definitions remain unless their change is in scope. Portable workloads belong on the shared build service.
+definitions remain unless their change is in scope.
 
 Keep historical commits, research evidence, license notices and unrelated work.
 Do not add private checkout dependencies, local coordination state or credentials.

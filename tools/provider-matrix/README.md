@@ -218,7 +218,6 @@ The bot commits only `docs/providers.md` and `docs/provider-capabilities.md`,
 using `[skip ci]`. Token-authored changes do not recursively start another update.
 Unchanged output creates no commit. This
 is output generation, not a validation gate; existing checks remain separate.
-Portable generation runs on the shared build service or GitHub runner.
 
 Source changes can briefly precede their generated documentation while the job
 runs. Publication failures remain workflow failures, never a claim that the

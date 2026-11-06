@@ -17,7 +17,7 @@ No execution observations are included in this committed inventory. Per-invocati
 
 Contract: github.com/Bitspark/bittype/contracts/transform/go.ASTTransformer.
 
-Public operation: [github.com/Bitspark/bittype/transforms/horos-to-go/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-go/go/transform.go#L15). Receiver: .
+Public operation: [github.com/Bitspark/bittype/transforms/horos-to-go/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-go/go/transform.go#L15).
 
 Direct endpoints: github.com/Bitspark/bittype/syntax/horos/go.Language → github.com/Bitspark/bittype/syntax/golang/go.Language. Typed calls in the factory body establish this discovered edge; runtime reachability, returned-value flow, configured mappings and composed routes are not inferred.
 
@@ -29,6 +29,8 @@ Static call relationships (no evidence transfer):
 Traversal boundary: typed transformer boundary.
 
 ### Declared target [github.com/Bitspark/bittype/transforms/horos-to-go/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-go/go/transform.go#L15)
+
+<a id="binding-MzU1Ok1URTZkSEpoYm5ObWIzSnRaWEkxTnpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmRISmhibk5tYjNKdGN5OW9iM0p2Y3kxMGJ5MW5ieTluYnlOT1pYYzJOVHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTI5dWRISmhZM1J6TDNSeVlXNXpabTl5YlM5bmJ5NUJVMVJVY21GdWMyWnZjbTFsY2pBNk5USTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOW9iM0p2Y3k5bmJ5Tk1ZVzVuZFdGblpUVTZhRzl5YjNNMU16cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyZHZiR0Z1Wnk5bmJ5Tk1ZVzVuZFdGblpUSTZaMjg1NzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvdHJhbnNmb3Jtcy9ob3Jvcy10by1nby9nbyNOZXc1OnNjb3BlMTojNTc6ZG9jcy9nZW5lcmF0aW9uLWNvbXBvc2l0aW9uLm1kI2NvbnN0cnVjdGlvbi1hbmQtc2VsZWN0aW9uNTpmYWxzZTA6"></a>
 
 Authored scope: [docs/generation-composition.md#construction-and-selection](https://github.com/Bitspark/bittype/blob/main/docs/generation-composition.md#construction-and-selection); profile: unspecified (authored profile absent).
 
@@ -42,7 +44,7 @@ No associated cases found in the selected test sources. This does not establish 
 
 Contract: github.com/Bitspark/bittype/contracts/transform/go.ASTTransformer.
 
-Public operation: [github.com/Bitspark/bittype/transforms/horos-to-cpp/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-cpp/go/transform.go#L15). Receiver: .
+Public operation: [github.com/Bitspark/bittype/transforms/horos-to-cpp/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-cpp/go/transform.go#L15).
 
 Direct endpoints: github.com/Bitspark/bittype/syntax/horos/go.Language → github.com/Bitspark/bittype/syntax/cpp/go.Language. Typed calls in the factory body establish this discovered edge; runtime reachability, returned-value flow, configured mappings and composed routes are not inferred.
 
@@ -54,6 +56,8 @@ Static call relationships (no evidence transfer):
 Traversal boundary: typed transformer boundary.
 
 ### Declared target [github.com/Bitspark/bittype/transforms/horos-to-cpp/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-cpp/go/transform.go#L15)
+
+<a id="binding-MzU0Ok1URTZkSEpoYm5ObWIzSnRaWEkxT0RwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmRISmhibk5tYjNKdGN5OW9iM0p2Y3kxMGJ5MWpjSEF2WjI4alRtVjNOalU2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJOdmJuUnlZV04wY3k5MGNtRnVjMlp2Y20wdloyOHVRVk5VVkhKaGJuTm1iM0p0WlhJd09qVXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZhRzl5YjNNdloyOGpUR0Z1WjNWaFoyVTFPbWh2Y205ek5UQTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOWpjSEF2WjI4alRHRnVaM1ZoWjJVek9tTndjQTU4OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS90cmFuc2Zvcm1zL2hvcm9zLXRvLWNwcC9nbyNOZXc1OnNjb3BlMTojNTc6ZG9jcy9nZW5lcmF0aW9uLWNvbXBvc2l0aW9uLm1kI2NvbnN0cnVjdGlvbi1hbmQtc2VsZWN0aW9uNTpmYWxzZTA6"></a>
 
 Authored scope: [docs/generation-composition.md#construction-and-selection](https://github.com/Bitspark/bittype/blob/main/docs/generation-composition.md#construction-and-selection); profile: unspecified (authored profile absent).
 
@@ -67,7 +71,7 @@ No associated cases found in the selected test sources. This does not establish 
 
 Contract: github.com/Bitspark/bittype/contracts/transform/go.ASTTransformer.
 
-Public operation: [github.com/Bitspark/bittype/transforms/horos-to-rust/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-rust/go/transform.go#L15). Receiver: .
+Public operation: [github.com/Bitspark/bittype/transforms/horos-to-rust/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-rust/go/transform.go#L15).
 
 Direct endpoints: github.com/Bitspark/bittype/syntax/horos/go.Language → github.com/Bitspark/bittype/syntax/rust/go.Language. Typed calls in the factory body establish this discovered edge; runtime reachability, returned-value flow, configured mappings and composed routes are not inferred.
 
@@ -79,6 +83,8 @@ Static call relationships (no evidence transfer):
 Traversal boundary: typed transformer boundary.
 
 ### Declared target [github.com/Bitspark/bittype/transforms/horos-to-rust/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-rust/go/transform.go#L15)
+
+<a id="binding-MzU4Ok1URTZkSEpoYm5ObWIzSnRaWEkxT1RwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmRISmhibk5tYjNKdGN5OW9iM0p2Y3kxMGJ5MXlkWE4wTDJkdkkwNWxkelkxT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmRISmhibk5tYjNKdEwyZHZMa0ZUVkZSeVlXNXpabTl5YldWeU1EbzFNanBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMmh2Y205ekwyZHZJMHhoYm1kMVlXZGxOVHBvYjNKdmN6VXhPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZjblZ6ZEM5bmJ5Tk1ZVzVuZFdGblpUUTZjblZ6ZEE1OTpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvdHJhbnNmb3Jtcy9ob3Jvcy10by1ydXN0L2dvI05ldzU6c2NvcGUxOiM1Nzpkb2NzL2dlbmVyYXRpb24tY29tcG9zaXRpb24ubWQjY29uc3RydWN0aW9uLWFuZC1zZWxlY3Rpb241OmZhbHNlMDo"></a>
 
 Authored scope: [docs/generation-composition.md#construction-and-selection](https://github.com/Bitspark/bittype/blob/main/docs/generation-composition.md#construction-and-selection); profile: unspecified (authored profile absent).
 
@@ -92,7 +98,7 @@ No associated cases found in the selected test sources. This does not establish 
 
 Contract: github.com/Bitspark/bittype/contracts/transform/go.ASTTransformer.
 
-Public operation: [github.com/Bitspark/bittype/transforms/horos-to-typescript/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-typescript/go/transform.go#L15). Receiver: .
+Public operation: [github.com/Bitspark/bittype/transforms/horos-to-typescript/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-typescript/go/transform.go#L15).
 
 Direct endpoints: github.com/Bitspark/bittype/syntax/horos/go.Language → github.com/Bitspark/bittype/syntax/typescript/go.Language. Typed calls in the factory body establish this discovered edge; runtime reachability, returned-value flow, configured mappings and composed routes are not inferred.
 
@@ -104,6 +110,8 @@ Static call relationships (no evidence transfer):
 Traversal boundary: typed transformer boundary.
 
 ### Declared target [github.com/Bitspark/bittype/transforms/horos-to-typescript/go#New](https://github.com/Bitspark/bittype/blob/main/transforms/horos-to-typescript/go/transform.go#L15)
+
+<a id="binding-MzgzOk1URTZkSEpoYm5ObWIzSnRaWEkyTlRwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmRISmhibk5tYjNKdGN5OW9iM0p2Y3kxMGJ5MTBlWEJsYzJOeWFYQjBMMmR2STA1bGR6WTFPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYjI1MGNtRmpkSE12ZEhKaGJuTm1iM0p0TDJkdkxrRlRWRlJ5WVc1elptOXliV1Z5TURvMU1qcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyaHZjbTl6TDJkdkkweGhibWQxWVdkbE5UcG9iM0p2Y3pVM09tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmRIbHdaWE5qY21sd2RDOW5ieU5NWVc1bmRXRm5aVEV3T25SNWNHVnpZM0pwY0hRNjU6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3RyYW5zZm9ybXMvaG9yb3MtdG8tdHlwZXNjcmlwdC9nbyNOZXc1OnNjb3BlMTojNTc6ZG9jcy9nZW5lcmF0aW9uLWNvbXBvc2l0aW9uLm1kI2NvbnN0cnVjdGlvbi1hbmQtc2VsZWN0aW9uNTpmYWxzZTA6"></a>
 
 Authored scope: [docs/generation-composition.md#construction-and-selection](https://github.com/Bitspark/bittype/blob/main/docs/generation-composition.md#construction-and-selection); profile: unspecified (authored profile absent).
 
@@ -121,6 +129,8 @@ Language marker: github.com/Bitspark/bittype/syntax/cpp/go.Language.
 
 ### Declared target [github.com/Bitspark/bittype/syntax/cpp/go#Language.ID](https://github.com/Bitspark/bittype/blob/main/syntax/cpp/go/nodes.go#L16)
 
+<a id="binding-MjQ3Ok9EcHBaR1Z1ZEdsMGVURTZJelU0T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmJHRnVaM1ZoWjJVdloyOHVVSEp2ZG1sa1pYSTFNRHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5NU1ZVzVuZFdGblpUVXdPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZZM0J3TDJkdkkweGhibWQxWVdkbE16cGpjSEE1MzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvc3ludGF4L2NwcC9nbyNMYW5ndWFnZS5JRDU6c2NvcGUxOiM0MDpkb2NzL3N5bnRheC5tZCNpZGVudGl0eS1hbmQtcmVnaXN0cmF0aW9uNTpmYWxzZTA6"></a>
+
 Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#identity-and-registration); profile: unspecified (authored profile absent).
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
@@ -128,6 +138,8 @@ Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bi
 | language-identity | stable-registration-and-name | expected-identity | unspecified (authored profile absent) | [TestLanguageIdentityInterface](https://github.com/Bitspark/bittype/blob/main/integration/go/syntax_test.go#L26) (external) |
 
 ### Declared target [github.com/Bitspark/bittype/syntax/cpp/go#Language.Name](https://github.com/Bitspark/bittype/blob/main/syntax/cpp/go/nodes.go#L20)
+
+<a id="binding-MjQ3Ok9EcHBaR1Z1ZEdsMGVURTZJelU0T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmJHRnVaM1ZoWjJVdloyOHVVSEp2ZG1sa1pYSTFNRHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5NU1ZVzVuZFdGblpUVXdPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZZM0J3TDJkdkkweGhibWQxWVdkbE16cGpjSEE1NTpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvc3ludGF4L2NwcC9nbyNMYW5ndWFnZS5OYW1lNTpzY29wZTE6IzQwOmRvY3Mvc3ludGF4Lm1kI2lkZW50aXR5LWFuZC1yZWdpc3RyYXRpb241OmZhbHNlMDo"></a>
 
 Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#identity-and-registration); profile: unspecified (authored profile absent).
 
@@ -147,6 +159,8 @@ Language marker: github.com/Bitspark/bittype/syntax/rust/go.Language.
 
 ### Declared target [github.com/Bitspark/bittype/syntax/rust/go#Language.ID](https://github.com/Bitspark/bittype/blob/main/syntax/rust/go/nodes.go#L16)
 
+<a id="binding-MjUxOk9EcHBaR1Z1ZEdsMGVURTZJelU0T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmJHRnVaM1ZoWjJVdloyOHVVSEp2ZG1sa1pYSTFNVHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM0oxYzNRdloyOHVUR0Z1WjNWaFoyVTFNVHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM0oxYzNRdloyOGpUR0Z1WjNWaFoyVTBPbkoxYzNRNTQ6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3N5bnRheC9ydXN0L2dvI0xhbmd1YWdlLklENTpzY29wZTE6IzQwOmRvY3Mvc3ludGF4Lm1kI2lkZW50aXR5LWFuZC1yZWdpc3RyYXRpb241OmZhbHNlMDo"></a>
+
 Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#identity-and-registration); profile: unspecified (authored profile absent).
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
@@ -154,6 +168,8 @@ Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bi
 | language-identity | stable-registration-and-name | expected-identity | unspecified (authored profile absent) | [TestLanguageIdentityInterface](https://github.com/Bitspark/bittype/blob/main/integration/go/syntax_test.go#L26) (external) |
 
 ### Declared target [github.com/Bitspark/bittype/syntax/rust/go#Language.Name](https://github.com/Bitspark/bittype/blob/main/syntax/rust/go/nodes.go#L20)
+
+<a id="binding-MjUxOk9EcHBaR1Z1ZEdsMGVURTZJelU0T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmJHRnVaM1ZoWjJVdloyOHVVSEp2ZG1sa1pYSTFNVHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM0oxYzNRdloyOHVUR0Z1WjNWaFoyVTFNVHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM0oxYzNRdloyOGpUR0Z1WjNWaFoyVTBPbkoxYzNRNTY6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3N5bnRheC9ydXN0L2dvI0xhbmd1YWdlLk5hbWU1OnNjb3BlMTojNDA6ZG9jcy9zeW50YXgubWQjaWRlbnRpdHktYW5kLXJlZ2lzdHJhdGlvbjU6ZmFsc2UwOg"></a>
 
 Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#identity-and-registration); profile: unspecified (authored profile absent).
 
@@ -173,6 +189,8 @@ Language marker: github.com/Bitspark/bittype/syntax/horos/go.Language.
 
 ### Declared target [github.com/Bitspark/bittype/syntax/horos/go#Language.ID](https://github.com/Bitspark/bittype/blob/main/syntax/horos/go/nodes.go#L13)
 
+<a id="binding-MjU1Ok9EcHBaR1Z1ZEdsMGVURTZJelU0T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmJHRnVaM1ZoWjJVdloyOHVVSEp2ZG1sa1pYSTFNanBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMmh2Y205ekwyZHZMa3hoYm1kMVlXZGxOVEk2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzlvYjNKdmN5OW5ieU5NWVc1bmRXRm5aVFU2YUc5eWIzTTU1OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9zeW50YXgvaG9yb3MvZ28jTGFuZ3VhZ2UuSUQ1OnNjb3BlMTojNDA6ZG9jcy9zeW50YXgubWQjaWRlbnRpdHktYW5kLXJlZ2lzdHJhdGlvbjU6ZmFsc2UwOg"></a>
+
 Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#identity-and-registration); profile: unspecified (authored profile absent).
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
@@ -180,6 +198,8 @@ Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bi
 | language-identity | stable-registration-and-name | expected-identity | unspecified (authored profile absent) | [TestLanguageIdentityInterface](https://github.com/Bitspark/bittype/blob/main/integration/go/syntax_test.go#L26) (external) |
 
 ### Declared target [github.com/Bitspark/bittype/syntax/horos/go#Language.Name](https://github.com/Bitspark/bittype/blob/main/syntax/horos/go/nodes.go#L16)
+
+<a id="binding-MjU1Ok9EcHBaR1Z1ZEdsMGVURTZJelU0T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmJHRnVaM1ZoWjJVdloyOHVVSEp2ZG1sa1pYSTFNanBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMmh2Y205ekwyZHZMa3hoYm1kMVlXZGxOVEk2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzlvYjNKdmN5OW5ieU5NWVc1bmRXRm5aVFU2YUc5eWIzTTU3OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9zeW50YXgvaG9yb3MvZ28jTGFuZ3VhZ2UuTmFtZTU6c2NvcGUxOiM0MDpkb2NzL3N5bnRheC5tZCNpZGVudGl0eS1hbmQtcmVnaXN0cmF0aW9uNTpmYWxzZTA6"></a>
 
 Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#identity-and-registration); profile: unspecified (authored profile absent).
 
@@ -199,6 +219,8 @@ Language marker: github.com/Bitspark/bittype/syntax/golang/go.Language.
 
 ### Declared target [github.com/Bitspark/bittype/syntax/golang/go#Language.ID](https://github.com/Bitspark/bittype/blob/main/syntax/golang/go/nodes.go#L16)
 
+<a id="binding-MjU0Ok9EcHBaR1Z1ZEdsMGVURTZJelU0T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmJHRnVaM1ZoWjJVdloyOHVVSEp2ZG1sa1pYSTFNenBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMmR2YkdGdVp5OW5ieTVNWVc1bmRXRm5aVFV6T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2WjI5c1lXNW5MMmR2STB4aGJtZDFZV2RsTWpwbmJ3NTY6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3N5bnRheC9nb2xhbmcvZ28jTGFuZ3VhZ2UuSUQ1OnNjb3BlMTojNDA6ZG9jcy9zeW50YXgubWQjaWRlbnRpdHktYW5kLXJlZ2lzdHJhdGlvbjU6ZmFsc2UwOg"></a>
+
 Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#identity-and-registration); profile: unspecified (authored profile absent).
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
@@ -206,6 +228,8 @@ Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bi
 | language-identity | stable-registration-and-name | expected-identity | unspecified (authored profile absent) | [TestLanguageIdentityInterface](https://github.com/Bitspark/bittype/blob/main/integration/go/syntax_test.go#L26) (external) |
 
 ### Declared target [github.com/Bitspark/bittype/syntax/golang/go#Language.Name](https://github.com/Bitspark/bittype/blob/main/syntax/golang/go/nodes.go#L20)
+
+<a id="binding-MjU0Ok9EcHBaR1Z1ZEdsMGVURTZJelU0T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmJHRnVaM1ZoWjJVdloyOHVVSEp2ZG1sa1pYSTFNenBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMmR2YkdGdVp5OW5ieTVNWVc1bmRXRm5aVFV6T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2WjI5c1lXNW5MMmR2STB4aGJtZDFZV2RsTWpwbmJ3NTg6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3N5bnRheC9nb2xhbmcvZ28jTGFuZ3VhZ2UuTmFtZTU6c2NvcGUxOiM0MDpkb2NzL3N5bnRheC5tZCNpZGVudGl0eS1hbmQtcmVnaXN0cmF0aW9uNTpmYWxzZTA6"></a>
 
 Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#identity-and-registration); profile: unspecified (authored profile absent).
 
@@ -225,6 +249,8 @@ Language marker: github.com/Bitspark/bittype/syntax/typescript/go.Language.
 
 ### Declared target [github.com/Bitspark/bittype/syntax/typescript/go#Language.ID](https://github.com/Bitspark/bittype/blob/main/syntax/typescript/go/nodes.go#L16)
 
+<a id="binding-Mjc2Ok9EcHBaR1Z1ZEdsMGVURTZJelU0T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmJHRnVaM1ZoWjJVdloyOHVVSEp2ZG1sa1pYSTFOenBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM1I1Y0dWelkzSnBjSFF2WjI4dVRHRnVaM1ZoWjJVMU56cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwzUjVjR1Z6WTNKcGNIUXZaMjhqVEdGdVozVmhaMlV4TURwMGVYQmxjMk55YVhCMDYwOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9zeW50YXgvdHlwZXNjcmlwdC9nbyNMYW5ndWFnZS5JRDU6c2NvcGUxOiM0MDpkb2NzL3N5bnRheC5tZCNpZGVudGl0eS1hbmQtcmVnaXN0cmF0aW9uNTpmYWxzZTA6"></a>
+
 Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#identity-and-registration); profile: unspecified (authored profile absent).
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
@@ -232,6 +258,8 @@ Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bi
 | language-identity | stable-registration-and-name | expected-identity | unspecified (authored profile absent) | [TestLanguageIdentityInterface](https://github.com/Bitspark/bittype/blob/main/integration/go/syntax_test.go#L26) (external) |
 
 ### Declared target [github.com/Bitspark/bittype/syntax/typescript/go#Language.Name](https://github.com/Bitspark/bittype/blob/main/syntax/typescript/go/nodes.go#L20)
+
+<a id="binding-Mjc2Ok9EcHBaR1Z1ZEdsMGVURTZJelU0T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmJHRnVaM1ZoWjJVdloyOHVVSEp2ZG1sa1pYSTFOenBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM1I1Y0dWelkzSnBjSFF2WjI4dVRHRnVaM1ZoWjJVMU56cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwzUjVjR1Z6WTNKcGNIUXZaMjhqVEdGdVozVmhaMlV4TURwMGVYQmxjMk55YVhCMDYyOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9zeW50YXgvdHlwZXNjcmlwdC9nbyNMYW5ndWFnZS5OYW1lNTpzY29wZTE6IzQwOmRvY3Mvc3ludGF4Lm1kI2lkZW50aXR5LWFuZC1yZWdpc3RyYXRpb241OmZhbHNlMDo"></a>
 
 Authored scope: [docs/syntax.md#identity-and-registration](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#identity-and-registration); profile: unspecified (authored profile absent).
 
@@ -255,6 +283,8 @@ Construction alternatives: github.com/Bitspark/bittype/contracts/language/go.Pro
 
 ### Declared target [github.com/Bitspark/bittype/print/files/go#Provider.Print](https://github.com/Bitspark/bittype/blob/main/print/files/go/print.go#L13)
 
+<a id="binding-NTgyOk9EcHdjbTkyYVdSbGNqVTNPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y21sdWRDOW1hV3hsY3k5bmJ5TlFjbTkyYVdSbGNpNVFjbWx1ZERFNU56cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZMjl1ZEhKaFkzUnpMM0J5YVc1MEwyZHZMbEJ5YjNacFpHVnlXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6YjNWeVkyVXZaMjh1VTI5MWNtTmxXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZZM0J3TDJkdkxreGhibWQxWVdkbFhTd2daMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMlpwYkdWekwyZHZMa1pwYkdWelhURXdNenBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2Y0hKcGJuUXZabWxzWlhNdloyOHVVSEp2ZG1sa1pYSmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOWpjSEF2WjI4dVRHRnVaM1ZoWjJWZE5UQTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOWpjSEF2WjI4alRHRnVaM1ZoWjJVek9tTndjQTU3OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9wcmludC9maWxlcy9nbyNQcm92aWRlci5QcmludDU6c2NvcGUxOiMzOTpkb2NzL3NvdXJjZS5tZCNzeW1tZXRyaWMtcm9sZS1jb250cmFjdHM1OmZhbHNlMDo"></a>
+
 Authored scope: [docs/source.md#symmetric-role-contracts](https://github.com/Bitspark/bittype/blob/main/docs/source.md#symmetric-role-contracts); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -275,6 +305,8 @@ Construction alternatives: github.com/Bitspark/bittype/contracts/language/go.Pro
 
 ### Declared target [github.com/Bitspark/bittype/print/files/go#Provider.Print](https://github.com/Bitspark/bittype/blob/main/print/files/go/print.go#L13)
 
+<a id="binding-NTg3Ok9EcHdjbTkyYVdSbGNqVTNPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y21sdWRDOW1hV3hsY3k5bmJ5TlFjbTkyYVdSbGNpNVFjbWx1ZERFNU9EcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZMjl1ZEhKaFkzUnpMM0J5YVc1MEwyZHZMbEJ5YjNacFpHVnlXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6YjNWeVkyVXZaMjh1VTI5MWNtTmxXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZjblZ6ZEM5bmJ5NU1ZVzVuZFdGblpWMHNJR2RwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYVd4bGN5OW5ieTVHYVd4bGMxMHhNRFE2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNCeWFXNTBMMlpwYkdWekwyZHZMbEJ5YjNacFpHVnlXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZjblZ6ZEM5bmJ5NU1ZVzVuZFdGblpWMDFNVHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM0oxYzNRdloyOGpUR0Z1WjNWaFoyVTBPbkoxYzNRNTc6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3ByaW50L2ZpbGVzL2dvI1Byb3ZpZGVyLlByaW50NTpzY29wZTE6IzM5OmRvY3Mvc291cmNlLm1kI3N5bW1ldHJpYy1yb2xlLWNvbnRyYWN0czU6ZmFsc2UwOg"></a>
+
 Authored scope: [docs/source.md#symmetric-role-contracts](https://github.com/Bitspark/bittype/blob/main/docs/source.md#symmetric-role-contracts); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -294,6 +326,8 @@ Language marker: github.com/Bitspark/bittype/syntax/horos/go.Language.
 Construction alternatives: github.com/Bitspark/bittype/contracts/language/go.Provider + github.com/Bitspark/bittype/contracts/print/go.Provider&#91;github.com/Bitspark/bittype/trees/cst/go.CST&#91;github.com/Bitspark/bittype/syntax/horos/go.Language&#93;, string&#93;.
 
 ### Declared target [github.com/Bitspark/bittype/print/files/go#Provider.Print](https://github.com/Bitspark/bittype/blob/main/print/files/go/print.go#L13)
+
+<a id="binding-NTkyOk9EcHdjbTkyYVdSbGNqVTNPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y21sdWRDOW1hV3hsY3k5bmJ5TlFjbTkyYVdSbGNpNVFjbWx1ZERFNU9UcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZMjl1ZEhKaFkzUnpMM0J5YVc1MEwyZHZMbEJ5YjNacFpHVnlXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6YjNWeVkyVXZaMjh1VTI5MWNtTmxXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZhRzl5YjNNdloyOHVUR0Z1WjNWaFoyVmRMQ0JuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2Wm1sc1pYTXZaMjh1Um1sc1pYTmRNVEExT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5d2NtbHVkQzltYVd4bGN5OW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMmh2Y205ekwyZHZMa3hoYm1kMVlXZGxYVFV5T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2YUc5eWIzTXZaMjhqVEdGdVozVmhaMlUxT21odmNtOXo1NzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcHJpbnQvZmlsZXMvZ28jUHJvdmlkZXIuUHJpbnQ1OnNjb3BlMTojMzk6ZG9jcy9zb3VyY2UubWQjc3ltbWV0cmljLXJvbGUtY29udHJhY3RzNTpmYWxzZTA6"></a>
 
 Authored scope: [docs/source.md#symmetric-role-contracts](https://github.com/Bitspark/bittype/blob/main/docs/source.md#symmetric-role-contracts); profile: unspecified (authored profile absent).
 
@@ -317,6 +351,8 @@ Construction alternatives: github.com/Bitspark/bittype/contracts/language/go.Pro
 
 ### Declared target [github.com/Bitspark/bittype/print/files/go#Provider.Print](https://github.com/Bitspark/bittype/blob/main/print/files/go/print.go#L13)
 
+<a id="binding-NTkyOk9EcHdjbTkyYVdSbGNqVTNPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y21sdWRDOW1hV3hsY3k5bmJ5TlFjbTkyYVdSbGNpNVFjbWx1ZERJd01EcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZMjl1ZEhKaFkzUnpMM0J5YVc1MEwyZHZMbEJ5YjNacFpHVnlXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6YjNWeVkyVXZaMjh1VTI5MWNtTmxXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZaMjlzWVc1bkwyZHZMa3hoYm1kMVlXZGxYU3dnWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJacGJHVnpMMmR2TGtacGJHVnpYVEV3TmpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmNISnBiblF2Wm1sc1pYTXZaMjh1VUhKdmRtbGtaWEpiWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzluYjJ4aGJtY3ZaMjh1VEdGdVozVmhaMlZkTlRNNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5bmIyeGhibWN2WjI4alRHRnVaM1ZoWjJVeU9tZHY1NzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcHJpbnQvZmlsZXMvZ28jUHJvdmlkZXIuUHJpbnQ1OnNjb3BlMTojMzk6ZG9jcy9zb3VyY2UubWQjc3ltbWV0cmljLXJvbGUtY29udHJhY3RzNTpmYWxzZTA6"></a>
+
 Authored scope: [docs/source.md#symmetric-role-contracts](https://github.com/Bitspark/bittype/blob/main/docs/source.md#symmetric-role-contracts); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -336,6 +372,8 @@ Language marker: github.com/Bitspark/bittype/syntax/typescript/go.Language.
 Construction alternatives: github.com/Bitspark/bittype/contracts/language/go.Provider + github.com/Bitspark/bittype/contracts/print/go.Provider&#91;github.com/Bitspark/bittype/trees/cst/go.CST&#91;github.com/Bitspark/bittype/syntax/typescript/go.Language&#93;, string&#93;.
 
 ### Declared target [github.com/Bitspark/bittype/print/files/go#Provider.Print](https://github.com/Bitspark/bittype/blob/main/print/files/go/print.go#L13)
+
+<a id="binding-NjIwOk9EcHdjbTkyYVdSbGNqVTNPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y21sdWRDOW1hV3hsY3k5bmJ5TlFjbTkyYVdSbGNpNVFjbWx1ZERJd05EcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZMjl1ZEhKaFkzUnpMM0J5YVc1MEwyZHZMbEJ5YjNacFpHVnlXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6YjNWeVkyVXZaMjh1VTI5MWNtTmxXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZkSGx3WlhOamNtbHdkQzluYnk1TVlXNW5kV0ZuWlYwc0lHZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOW1hV3hsY3k5bmJ5NUdhV3hsYzEweE1UQTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM0J5YVc1MEwyWnBiR1Z6TDJkdkxsQnliM1pwWkdWeVcyZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmRIbHdaWE5qY21sd2RDOW5ieTVNWVc1bmRXRm5aVjAxTnpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDNSNWNHVnpZM0pwY0hRdloyOGpUR0Z1WjNWaFoyVXhNRHAwZVhCbGMyTnlhWEIwNTc6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3ByaW50L2ZpbGVzL2dvI1Byb3ZpZGVyLlByaW50NTpzY29wZTE6IzM5OmRvY3Mvc291cmNlLm1kI3N5bW1ldHJpYy1yb2xlLWNvbnRyYWN0czU6ZmFsc2UwOg"></a>
 
 Authored scope: [docs/source.md#symmetric-role-contracts](https://github.com/Bitspark/bittype/blob/main/docs/source.md#symmetric-role-contracts); profile: unspecified (authored profile absent).
 
@@ -364,6 +402,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/check/syntax/cpp/go#Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L57)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-Mzk0Ok9EcHdjbTkyYVdSbGNqVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlqY0hBdloyOGpVSEp2ZG1sa1pYSXVRMmhsWTJzeE1EYzZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTlqYUdWamF5OW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5NU1ZVzVuZFdGblpWMDFNanBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2Y0hKdmRtbGtaWEl2WTNCd0wyZHZMbEJ5YjNacFpHVnlOVEE2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzlqY0hBdloyOGpUR0Z1WjNWaFoyVXpPbU53Y0E1MzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L2NwcC9nbyNDaGVjazc6Z3JhbW1hcjUzOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jaGVjay9zeW50YXgvY3BwL2dvI3J1bGVzMDo1OmZhbHNlMDo"></a>
 
 Definition: [github.com/Bitspark/bittype/check/syntax/cpp/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L29); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
@@ -708,6 +748,8 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
+<a id="binding-Mzk0Ok9EcHdjbTkyYVdSbGNqVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlqY0hBdloyOGpVSEp2ZG1sa1pYSXVRMmhsWTJzeE1EYzZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTlqYUdWamF5OW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5NU1ZVzVuZFdGblpWMDFNanBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2Y0hKdmRtbGtaWEl2WTNCd0wyZHZMbEJ5YjNacFpHVnlOVEE2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzlqY0hBdloyOGpUR0Z1WjNWaFoyVXpPbU53Y0E1MzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L2NwcC9nbyNDaGVjazU6c2NvcGUxOiMxNDpkb2NzL3N5bnRheC5tZDU6ZmFsc2UwOg"></a>
+
 Authored scope: [docs/syntax.md](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md); profile: unspecified (authored profile absent).
 
 ### Declared target [github.com/Bitspark/bittype/provider/cpp/go#Provider.Check](https://github.com/Bitspark/bittype/blob/main/provider/cpp/go/syntax.go#L22)
@@ -738,6 +780,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/parse/syntax/cpp/go#Parse](https://github.com/Bitspark/bittype/blob/main/parse/syntax/cpp/go/parse.go#L25)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NTI3Ok9EcHdjbTkyYVdSbGNqVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlqY0hBdloyOGpVSEp2ZG1sa1pYSXVVR0Z5YzJVeU1EYzZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTl3WVhKelpTOW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTI5dWRISmhZM1J6TDNCaGNuTmxMMmR2TGtsdWNIVjBMQ0JuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2ZEhKbFpYTXZZM04wTDJkdkxrTlRWRnRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5NU1ZVzVuZFdGblpWMWROVEk2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNCeWIzWnBaR1Z5TDJOd2NDOW5ieTVRY205MmFXUmxjalV3T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2WTNCd0wyZHZJMHhoYm1kMVlXZGxNenBqY0hBNTM6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3BhcnNlL3N5bnRheC9jcHAvZ28jUGFyc2U1OnNjb3BlMTojMTQ6ZG9jcy9zeW50YXgubWQ1OmZhbHNlMDo"></a>
 
 Authored scope: [docs/syntax.md](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md); profile: unspecified (authored profile absent).
 
@@ -773,6 +817,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NDY2Ok9EcHdjbTkyYVdSbGNqVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlqY0hBdloyOGpVSEp2ZG1sa1pYSXVVSEpwYm5ReE5qRTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTl3Y21sdWRDOW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2ZEhKbFpYTXZZM04wTDJkdkxrTlRWRnRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5NU1ZVzVuZFdGblpWMHNJSE4wY21sdVoxMDFNanBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2Y0hKdmRtbGtaWEl2WTNCd0wyZHZMbEJ5YjNacFpHVnlOVEE2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzlqY0hBdloyOGpUR0Z1WjNWaFoyVXpPbU53Y0E0OTpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcHJpbnQvc3ludGF4L2dvI1ByaW50NTpzY29wZTE6IzQ5OmRvY3MvcGFyc2luZy1mb3JtYXR0aW5nLm1kI2NhcnJpZXJzLWFuZC1vd25lcnNoaXA1OmZhbHNlMDo"></a>
+
 Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://github.com/Bitspark/bittype/blob/main/docs/parsing-formatting.md#carriers-and-ownership); profile: unspecified (authored profile absent).
 
 ### Declared target [github.com/Bitspark/bittype/provider/cpp/go#Provider.Print](https://github.com/Bitspark/bittype/blob/main/provider/cpp/go/syntax.go#L26)
@@ -807,6 +853,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NTM2Ok9EcHdjbTkyYVdSbGNqVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y21sdWRDOXplVzUwWVhndloyOGpVSEp2ZG1sa1pYSXVVSEpwYm5ReE5qRTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTl3Y21sdWRDOW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2ZEhKbFpYTXZZM04wTDJkdkxrTlRWRnRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5NU1ZVzVuZFdGblpWMHNJSE4wY21sdVoxMHhNRFE2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNCeWFXNTBMM041Ym5SaGVDOW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5NU1ZVzVuZFdGblpWMDFNRHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5Tk1ZVzVuZFdGblpUTTZZM0J3NDk6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3ByaW50L3N5bnRheC9nbyNQcmludDU6c2NvcGUxOiM0OTpkb2NzL3BhcnNpbmctZm9ybWF0dGluZy5tZCNjYXJyaWVycy1hbmQtb3duZXJzaGlwNTpmYWxzZTA6"></a>
+
 Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://github.com/Bitspark/bittype/blob/main/docs/parsing-formatting.md#carriers-and-ownership); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -834,6 +882,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/print/syntax/go#Print](https://github.com/Bitspark/bittype/blob/main/print/syntax/go/print.go#L14)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NTQyOk9EcHdjbTkyYVdSbGNqVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y21sdWRDOXplVzUwWVhndloyOGpVSEp2ZG1sa1pYSXVVSEpwYm5ReE5qSTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTl3Y21sdWRDOW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2ZEhKbFpYTXZZM04wTDJkdkxrTlRWRnRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM0oxYzNRdloyOHVUR0Z1WjNWaFoyVmRMQ0J6ZEhKcGJtZGRNVEExT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5d2NtbHVkQzl6ZVc1MFlYZ3ZaMjh1VUhKdmRtbGtaWEpiWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzl5ZFhOMEwyZHZMa3hoYm1kMVlXZGxYVFV4T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2Y25WemRDOW5ieU5NWVc1bmRXRm5aVFE2Y25WemRBNDk6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3ByaW50L3N5bnRheC9nbyNQcmludDU6c2NvcGUxOiM0OTpkb2NzL3BhcnNpbmctZm9ybWF0dGluZy5tZCNjYXJyaWVycy1hbmQtb3duZXJzaGlwNTpmYWxzZTA6"></a>
 
 Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://github.com/Bitspark/bittype/blob/main/docs/parsing-formatting.md#carriers-and-ownership); profile: unspecified (authored profile absent).
 
@@ -863,6 +913,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NTQ3Ok9EcHdjbTkyYVdSbGNqVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y21sdWRDOXplVzUwWVhndloyOGpVSEp2ZG1sa1pYSXVVSEpwYm5ReE5qTTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTl3Y21sdWRDOW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2ZEhKbFpYTXZZM04wTDJkdkxrTlRWRnRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMmh2Y205ekwyZHZMa3hoYm1kMVlXZGxYU3dnYzNSeWFXNW5YVEV3TmpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmNISnBiblF2YzNsdWRHRjRMMmR2TGxCeWIzWnBaR1Z5VzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2YUc5eWIzTXZaMjh1VEdGdVozVmhaMlZkTlRJNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5b2IzSnZjeTluYnlOTVlXNW5kV0ZuWlRVNmFHOXliM000OTpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcHJpbnQvc3ludGF4L2dvI1ByaW50NTpzY29wZTE6IzQ5OmRvY3MvcGFyc2luZy1mb3JtYXR0aW5nLm1kI2NhcnJpZXJzLWFuZC1vd25lcnNoaXA1OmZhbHNlMDo"></a>
+
 Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://github.com/Bitspark/bittype/blob/main/docs/parsing-formatting.md#carriers-and-ownership); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -890,6 +942,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/print/syntax/go#Print](https://github.com/Bitspark/bittype/blob/main/print/syntax/go/print.go#L14)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NTQ3Ok9EcHdjbTkyYVdSbGNqVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y21sdWRDOXplVzUwWVhndloyOGpVSEp2ZG1sa1pYSXVVSEpwYm5ReE5qUTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTl3Y21sdWRDOW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2ZEhKbFpYTXZZM04wTDJkdkxrTlRWRnRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMmR2YkdGdVp5OW5ieTVNWVc1bmRXRm5aVjBzSUhOMGNtbHVaMTB4TURjNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzQnlhVzUwTDNONWJuUmhlQzluYnk1UWNtOTJhV1JsY2x0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDJkdmJHRnVaeTluYnk1TVlXNW5kV0ZuWlYwMU16cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyZHZiR0Z1Wnk5bmJ5Tk1ZVzVuZFdGblpUSTZaMjg0OTpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcHJpbnQvc3ludGF4L2dvI1ByaW50NTpzY29wZTE6IzQ5OmRvY3MvcGFyc2luZy1mb3JtYXR0aW5nLm1kI2NhcnJpZXJzLWFuZC1vd25lcnNoaXA1OmZhbHNlMDo"></a>
 
 Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://github.com/Bitspark/bittype/blob/main/docs/parsing-formatting.md#carriers-and-ownership); profile: unspecified (authored profile absent).
 
@@ -921,6 +975,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NTc1Ok9EcHdjbTkyYVdSbGNqVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y21sdWRDOXplVzUwWVhndloyOGpVSEp2ZG1sa1pYSXVVSEpwYm5ReE5qZzZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTl3Y21sdWRDOW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2ZEhKbFpYTXZZM04wTDJkdkxrTlRWRnRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM1I1Y0dWelkzSnBjSFF2WjI4dVRHRnVaM1ZoWjJWZExDQnpkSEpwYm1kZE1URXhPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y21sdWRDOXplVzUwWVhndloyOHVVSEp2ZG1sa1pYSmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOTBlWEJsYzJOeWFYQjBMMmR2TGt4aGJtZDFZV2RsWFRVM09tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmRIbHdaWE5qY21sd2RDOW5ieU5NWVc1bmRXRm5aVEV3T25SNWNHVnpZM0pwY0hRNDk6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3ByaW50L3N5bnRheC9nbyNQcmludDU6c2NvcGUxOiM0OTpkb2NzL3BhcnNpbmctZm9ybWF0dGluZy5tZCNjYXJyaWVycy1hbmQtb3duZXJzaGlwNTpmYWxzZTA6"></a>
+
 Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://github.com/Bitspark/bittype/blob/main/docs/parsing-formatting.md#carriers-and-ownership); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -948,6 +1004,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/format/syntax/cpp/go#Format](https://github.com/Bitspark/bittype/blob/main/format/syntax/cpp/go/format.go#L23)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NTkwOk9EcHdjbTkyYVdSbGNqVTVPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlqY0hBdloyOGpVSEp2ZG1sa1pYSXVSbTl5YldGME1qVXpPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYjI1MGNtRmpkSE12Wm05eWJXRjBMMmR2TGxCeWIzWnBaR1Z5VzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5MGNtVmxjeTloYzNRdloyOHVWbWxsZDF0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDJOd2NDOW5ieTVNWVc1bmRXRm5aVjBzSUdkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5MGNtVmxjeTlqYzNRdloyOHVRMU5VVzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2WTNCd0wyZHZMa3hoYm1kMVlXZGxYVjAxTWpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmNISnZkbWxrWlhJdlkzQndMMmR2TGxCeWIzWnBaR1Z5TlRBNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5amNIQXZaMjhqVEdGdVozVmhaMlV6T21Od2NBNTU6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2Zvcm1hdC9zeW50YXgvY3BwL2dvI0Zvcm1hdDU6c2NvcGUxOiMxNDpkb2NzL3N5bnRheC5tZDU6ZmFsc2UwOg"></a>
 
 Authored scope: [docs/syntax.md](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md); profile: unspecified (authored profile absent).
 
@@ -984,6 +1042,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/check/syntax/rust/go#Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L72)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NDAwOk9EcHdjbTkyYVdSbGNqVTVPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTl5ZFhOMEwyZHZJMUJ5YjNacFpHVnlMa05vWldOck1UQTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYjI1MGNtRmpkSE12WTJobFkyc3ZaMjh1VUhKdmRtbGtaWEpiWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzl5ZFhOMEwyZHZMa3hoYm1kMVlXZGxYVFV6T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5d2NtOTJhV1JsY2k5eWRYTjBMMmR2TGxCeWIzWnBaR1Z5TlRFNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5eWRYTjBMMmR2STB4aGJtZDFZV2RsTkRweWRYTjA1NDpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L3J1c3QvZ28jQ2hlY2s3OmdyYW1tYXI1NDpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L3J1c3QvZ28jcnVsZXMwOjU6ZmFsc2UwOg"></a>
 
 Definition: [github.com/Bitspark/bittype/check/syntax/rust/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L31); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
@@ -1543,6 +1603,8 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
+<a id="binding-NDAwOk9EcHdjbTkyYVdSbGNqVTVPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTl5ZFhOMEwyZHZJMUJ5YjNacFpHVnlMa05vWldOck1UQTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYjI1MGNtRmpkSE12WTJobFkyc3ZaMjh1VUhKdmRtbGtaWEpiWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzl5ZFhOMEwyZHZMa3hoYm1kMVlXZGxYVFV6T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5d2NtOTJhV1JsY2k5eWRYTjBMMmR2TGxCeWIzWnBaR1Z5TlRFNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5eWRYTjBMMmR2STB4aGJtZDFZV2RsTkRweWRYTjA1NDpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L3J1c3QvZ28jQ2hlY2s1OnNjb3BlMTojMTk6ZG9jcy9zeW50YXgubWQjcnVzdDU6ZmFsc2UwOg"></a>
+
 Authored scope: [docs/syntax.md#rust](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#rust); profile: unspecified (authored profile absent).
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
@@ -1581,6 +1643,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/parse/syntax/rust/go#Parse](https://github.com/Bitspark/bittype/blob/main/parse/syntax/rust/go/parse.go#L25)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NTM0Ok9EcHdjbTkyYVdSbGNqVTVPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTl5ZFhOMEwyZHZJMUJ5YjNacFpHVnlMbEJoY25ObE1qQTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYjI1MGNtRmpkSE12Y0dGeWMyVXZaMjh1VUhKdmRtbGtaWEpiWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJOdmJuUnlZV04wY3k5d1lYSnpaUzluYnk1SmJuQjFkQ3dnWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNSeVpXVnpMMk56ZEM5bmJ5NURVMVJiWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzl5ZFhOMEwyZHZMa3hoYm1kMVlXZGxYVjAxTXpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmNISnZkbWxrWlhJdmNuVnpkQzluYnk1UWNtOTJhV1JsY2pVeE9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmNuVnpkQzluYnlOTVlXNW5kV0ZuWlRRNmNuVnpkQTU0OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9wYXJzZS9zeW50YXgvcnVzdC9nbyNQYXJzZTU6c2NvcGUxOiMxOTpkb2NzL3N5bnRheC5tZCNydXN0NTpmYWxzZTA6"></a>
 
 Authored scope: [docs/syntax.md#rust](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#rust); profile: unspecified (authored profile absent).
 
@@ -1627,6 +1691,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NDcyOk9EcHdjbTkyYVdSbGNqVTVPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTl5ZFhOMEwyZHZJMUJ5YjNacFpHVnlMbEJ5YVc1ME1UWXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYjI1MGNtRmpkSE12Y0hKcGJuUXZaMjh1VUhKdmRtbGtaWEpiWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNSeVpXVnpMMk56ZEM5bmJ5NURVMVJiWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzl5ZFhOMEwyZHZMa3hoYm1kMVlXZGxYU3dnYzNSeWFXNW5YVFV6T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5d2NtOTJhV1JsY2k5eWRYTjBMMmR2TGxCeWIzWnBaR1Z5TlRFNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5eWRYTjBMMmR2STB4aGJtZDFZV2RsTkRweWRYTjA0OTpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcHJpbnQvc3ludGF4L2dvI1ByaW50NTpzY29wZTE6IzQ5OmRvY3MvcGFyc2luZy1mb3JtYXR0aW5nLm1kI2NhcnJpZXJzLWFuZC1vd25lcnNoaXA1OmZhbHNlMDo"></a>
+
 Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://github.com/Bitspark/bittype/blob/main/docs/parsing-formatting.md#carriers-and-ownership); profile: unspecified (authored profile absent).
 
 ### Declared target [github.com/Bitspark/bittype/provider/rust/go#Provider.Print](https://github.com/Bitspark/bittype/blob/main/provider/rust/go/syntax.go#L26)
@@ -1660,6 +1726,8 @@ Traversal boundary: callee is dynamic or outside implementation source.
 ### Declared target [github.com/Bitspark/bittype/check/syntax/horos/go#Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/horos/go/check.go#L13)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NDE4Ok9EcHdjbTkyYVdSbGNqWTBPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndmFHOXliM012WjI4alVISnZkbWxrWlhJdVEyaGxZMnN4TURrNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTnZiblJ5WVdOMGN5OWphR1ZqYXk5bmJ5NVFjbTkyYVdSbGNsdG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyaHZjbTl6TDJkdkxreGhibWQxWVdkbFhUVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndmFHOXliM012WjI4dVVISnZkbWxrWlhJMU1qcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyaHZjbTl6TDJkdkkweGhibWQxWVdkbE5UcG9iM0p2Y3c1NTpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L2hvcm9zL2dvI0NoZWNrNzpncmFtbWFyNTM6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2ludGVybmFsL2RlY2xzeW50YXgjcnVsZXMwOjU6ZmFsc2UwOg"></a>
 
 Definition: [github.com/Bitspark/bittype/internal/declsyntax#rules](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L66); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
@@ -2111,6 +2179,8 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
+<a id="binding-NDE4Ok9EcHdjbTkyYVdSbGNqWTBPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndmFHOXliM012WjI4alVISnZkbWxrWlhJdVEyaGxZMnN4TURrNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTnZiblJ5WVdOMGN5OWphR1ZqYXk5bmJ5NVFjbTkyYVdSbGNsdG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyaHZjbTl6TDJkdkxreGhibWQxWVdkbFhUVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndmFHOXliM012WjI4dVVISnZkbWxrWlhJMU1qcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyaHZjbTl6TDJkdkkweGhibWQxWVdkbE5UcG9iM0p2Y3c1NTpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L2hvcm9zL2dvI0NoZWNrNTpzY29wZTE6IzMxOmRvY3MvaG9yb3MubWQjc3ludGF4LXZvY2FidWxhcnk1OmZhbHNlMDo"></a>
+
 Authored scope: [docs/horos.md#syntax-vocabulary](https://github.com/Bitspark/bittype/blob/main/docs/horos.md#syntax-vocabulary); profile: unspecified (authored profile absent).
 
 No associated cases found in the selected test sources. This does not establish absence of tests.
@@ -2136,6 +2206,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/format/syntax/cpp/go#Format](https://github.com/Bitspark/bittype/blob/main/format/syntax/cpp/go/format.go#L23)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NjAzOk9EcHdjbTkyYVdSbGNqWTBPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYjNKdFlYUXZjM2x1ZEdGNEwyTndjQzluYnlOUWNtOTJhV1JsY2k1R2IzSnRZWFF5TlRNNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTnZiblJ5WVdOMGN5OW1iM0p0WVhRdloyOHVVSEp2ZG1sa1pYSmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM1J5WldWekwyRnpkQzluYnk1V2FXVjNXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZZM0J3TDJkdkxreGhibWQxWVdkbFhTd2daMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM1J5WldWekwyTnpkQzluYnk1RFUxUmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOWpjSEF2WjI4dVRHRnVaM1ZoWjJWZFhUVTNPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYjNKdFlYUXZjM2x1ZEdGNEwyTndjQzluYnk1UWNtOTJhV1JsY2pVd09tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndlkzQndMMmR2STB4aGJtZDFZV2RsTXpwamNIQTU1OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9mb3JtYXQvc3ludGF4L2NwcC9nbyNGb3JtYXQ1OnNjb3BlMTojMTQ6ZG9jcy9zeW50YXgubWQ1OmZhbHNlMDo"></a>
 
 Authored scope: [docs/syntax.md](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md); profile: unspecified (authored profile absent).
 
@@ -2165,6 +2237,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NTUxOk9EcHdjbTkyYVdSbGNqWTBPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3WVhKelpTOXplVzUwWVhndmFHOXliM012WjI4alVISnZkbWxrWlhJdVVHRnljMlV5TURrNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTnZiblJ5WVdOMGN5OXdZWEp6WlM5bmJ5NVFjbTkyYVdSbGNsdG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZMjl1ZEhKaFkzUnpMM0JoY25ObEwyZHZMa2x1Y0hWMExDQm5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZkSEpsWlhNdlkzTjBMMmR2TGtOVFZGdG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyaHZjbTl6TDJkdkxreGhibWQxWVdkbFhWMDFPRHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2Y0dGeWMyVXZjM2x1ZEdGNEwyaHZjbTl6TDJkdkxsQnliM1pwWkdWeU5USTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOW9iM0p2Y3k5bmJ5Tk1ZVzVuZFdGblpUVTZhRzl5YjNNNTU6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3BhcnNlL3N5bnRheC9ob3Jvcy9nbyNQYXJzZTU6c2NvcGUxOiM0MDpkb2NzL2hvcm9zLXN5bnRheC5tZCNwaXBlbGluZS1hbmQtbGltaXRzNTpmYWxzZTA6"></a>
+
 Authored scope: [docs/horos-syntax.md#pipeline-and-limits](https://github.com/Bitspark/bittype/blob/main/docs/horos-syntax.md#pipeline-and-limits); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -2192,6 +2266,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/check/syntax/golang/go#Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L45)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NDE5Ok9EcHdjbTkyYVdSbGNqWTFPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndloyOXNZVzVuTDJkdkkxQnliM1pwWkdWeUxrTm9aV05yTVRFd09tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOWpiMjUwY21GamRITXZZMmhsWTJzdloyOHVVSEp2ZG1sa1pYSmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOW5iMnhoYm1jdloyOHVUR0Z1WjNWaFoyVmROVGs2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJOb1pXTnJMM041Ym5SaGVDOW5iMnhoYm1jdloyOHVVSEp2ZG1sa1pYSTFNenBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMmR2YkdGdVp5OW5ieU5NWVc1bmRXRm5aVEk2WjI4NTY6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NoZWNrL3N5bnRheC9nb2xhbmcvZ28jQ2hlY2s3OmdyYW1tYXI1NjpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L2dvbGFuZy9nbyNydWxlczA6NTpmYWxzZTA6"></a>
 
 Definition: [github.com/Bitspark/bittype/check/syntax/golang/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L17); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
@@ -2521,6 +2597,8 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
+<a id="binding-NDE5Ok9EcHdjbTkyYVdSbGNqWTFPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndloyOXNZVzVuTDJkdkkxQnliM1pwWkdWeUxrTm9aV05yTVRFd09tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOWpiMjUwY21GamRITXZZMmhsWTJzdloyOHVVSEp2ZG1sa1pYSmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOW5iMnhoYm1jdloyOHVUR0Z1WjNWaFoyVmROVGs2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJOb1pXTnJMM041Ym5SaGVDOW5iMnhoYm1jdloyOHVVSEp2ZG1sa1pYSTFNenBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMmR2YkdGdVp5OW5ieU5NWVc1bmRXRm5aVEk2WjI4NTY6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NoZWNrL3N5bnRheC9nb2xhbmcvZ28jQ2hlY2s1OnNjb3BlMTojMTc6ZG9jcy9zeW50YXgubWQjZ281OmZhbHNlMDo"></a>
+
 Authored scope: [docs/syntax.md#go](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#go); profile: unspecified (authored profile absent).
 
 No associated cases found in the selected test sources. This does not establish absence of tests.
@@ -2538,6 +2616,8 @@ Language marker: github.com/Bitspark/bittype/syntax/horos/go.Language.
 Construction alternatives: no provider collaborators.
 
 ### Declared target [github.com/Bitspark/bittype/format/files/horos/go#Provider.Format](https://github.com/Bitspark/bittype/blob/main/format/files/horos/go/format.go#L54)
+
+<a id="binding-NjM2Ok9EcHdjbTkyYVdSbGNqWTFPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYjNKdFlYUXZabWxzWlhNdmFHOXliM012WjI4alVISnZkbWxrWlhJdVJtOXliV0YwTWpjeU9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOWpiMjUwY21GamRITXZabTl5YldGMEwyZHZMbEJ5YjNacFpHVnlXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYjI1MGNtRmpkSE12Wm05eWJXRjBMMmR2TGtacGJHVnpVbVZ4ZFdWemRGdG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyaHZjbTl6TDJkdkxreGhibWQxWVdkbFhTd2daMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM052ZFhKalpTOW5ieTVUYjNWeVkyVmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOW9iM0p2Y3k5bmJ5NU1ZVzVuZFdGblpWMWROVGc2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJadmNtMWhkQzltYVd4bGN5OW9iM0p2Y3k5bmJ5NVFjbTkyYVdSbGNqVXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZhRzl5YjNNdloyOGpUR0Z1WjNWaFoyVTFPbWh2Y205ejY1OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9mb3JtYXQvZmlsZXMvaG9yb3MvZ28jUHJvdmlkZXIuRm9ybWF0NTpzY29wZTE6IzQ3OmRvY3Mvc291cmNlLm1kI2hvcm9zLWNvbXBvc2l0aW9uLWFuZC1wYWdpbmF0aW9uNTpmYWxzZTA6"></a>
 
 Authored scope: [docs/source.md#horos-composition-and-pagination](https://github.com/Bitspark/bittype/blob/main/docs/source.md#horos-composition-and-pagination); profile: unspecified (authored profile absent).
 
@@ -2569,6 +2649,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NjExOk9EcHdjbTkyYVdSbGNqWTFPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYjNKdFlYUXZjM2x1ZEdGNEwzSjFjM1F2WjI4alVISnZkbWxrWlhJdVJtOXliV0YwTWpVMU9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOWpiMjUwY21GamRITXZabTl5YldGMEwyZHZMbEJ5YjNacFpHVnlXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzkwY21WbGN5OWhjM1F2WjI4dVZtbGxkMXRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM0oxYzNRdloyOHVUR0Z1WjNWaFoyVmRMQ0JuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2ZEhKbFpYTXZZM04wTDJkdkxrTlRWRnRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM0oxYzNRdloyOHVUR0Z1WjNWaFoyVmRYVFU0T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5bWIzSnRZWFF2YzNsdWRHRjRMM0oxYzNRdloyOHVVSEp2ZG1sa1pYSTFNVHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM0oxYzNRdloyOGpUR0Z1WjNWaFoyVTBPbkoxYzNRNTY6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2Zvcm1hdC9zeW50YXgvcnVzdC9nbyNGb3JtYXQ1OnNjb3BlMTojMTk6ZG9jcy9zeW50YXgubWQjcnVzdDU6ZmFsc2UwOg"></a>
+
 Authored scope: [docs/syntax.md#rust](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#rust); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -2596,6 +2678,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/parse/syntax/golang/go#Parse](https://github.com/Bitspark/bittype/blob/main/parse/syntax/golang/go/parse.go#L26)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NTUyOk9EcHdjbTkyYVdSbGNqWTFPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3WVhKelpTOXplVzUwWVhndloyOXNZVzVuTDJkdkkxQnliM1pwWkdWeUxsQmhjbk5sTWpFd09tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOWpiMjUwY21GamRITXZjR0Z5YzJVdloyOHVVSEp2ZG1sa1pYSmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTl3WVhKelpTOW5ieTVKYm5CMWRDd2daMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM1J5WldWekwyTnpkQzluYnk1RFUxUmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOW5iMnhoYm1jdloyOHVUR0Z1WjNWaFoyVmRYVFU1T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5d1lYSnpaUzl6ZVc1MFlYZ3ZaMjlzWVc1bkwyZHZMbEJ5YjNacFpHVnlOVE02WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzluYjJ4aGJtY3ZaMjhqVEdGdVozVmhaMlV5T21kdjU2OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9wYXJzZS9zeW50YXgvZ29sYW5nL2dvI1BhcnNlNTpzY29wZTE6IzE3OmRvY3Mvc3ludGF4Lm1kI2dvNTpmYWxzZTA6"></a>
 
 Authored scope: [docs/syntax.md#go](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#go); profile: unspecified (authored profile absent).
 
@@ -2626,6 +2710,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/check/syntax/typescript/go#Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L52)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NDQyOk9EcHdjbTkyYVdSbGNqWTFPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTkwZVhCbGMyTnlhWEIwTDJkdkkxQnliM1pwWkdWeUxrTm9aV05yTVRFME9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOWpiMjUwY21GamRITXZZMmhsWTJzdloyOHVVSEp2ZG1sa1pYSmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOTBlWEJsYzJOeWFYQjBMMmR2TGt4aGJtZDFZV2RsWFRVNU9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXdjbTkyYVdSbGNpOTBlWEJsYzJOeWFYQjBMMmR2TGxCeWIzWnBaR1Z5TlRjNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5MGVYQmxjMk55YVhCMEwyZHZJMHhoYm1kMVlXZGxNVEE2ZEhsd1pYTmpjbWx3ZEE2MDpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L3R5cGVzY3JpcHQvZ28jQ2hlY2s3OmdyYW1tYXI2MDpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L3R5cGVzY3JpcHQvZ28jcnVsZXMwOjU6ZmFsc2UwOg"></a>
 
 Definition: [github.com/Bitspark/bittype/check/syntax/typescript/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L18); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
@@ -3052,6 +3138,8 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
+<a id="binding-NDQyOk9EcHdjbTkyYVdSbGNqWTFPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTkwZVhCbGMyTnlhWEIwTDJkdkkxQnliM1pwWkdWeUxrTm9aV05yTVRFME9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOWpiMjUwY21GamRITXZZMmhsWTJzdloyOHVVSEp2ZG1sa1pYSmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOTBlWEJsYzJOeWFYQjBMMmR2TGt4aGJtZDFZV2RsWFRVNU9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXdjbTkyYVdSbGNpOTBlWEJsYzJOeWFYQjBMMmR2TGxCeWIzWnBaR1Z5TlRjNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5MGVYQmxjMk55YVhCMEwyZHZJMHhoYm1kMVlXZGxNVEE2ZEhsd1pYTmpjbWx3ZEE2MDpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L3R5cGVzY3JpcHQvZ28jQ2hlY2s1OnNjb3BlMTojMjU6ZG9jcy9zeW50YXgubWQjdHlwZXNjcmlwdDU6ZmFsc2UwOg"></a>
+
 Authored scope: [docs/syntax.md#typescript](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#typescript); profile: unspecified (authored profile absent).
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
@@ -3087,6 +3175,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/parse/syntax/typescript/go#Parse](https://github.com/Bitspark/bittype/blob/main/parse/syntax/typescript/go/parse.go#L42)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NTc1Ok9EcHdjbTkyYVdSbGNqWTFPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTkwZVhCbGMyTnlhWEIwTDJkdkkxQnliM1pwWkdWeUxsQmhjbk5sTWpFME9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOWpiMjUwY21GamRITXZjR0Z5YzJVdloyOHVVSEp2ZG1sa1pYSmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTl3WVhKelpTOW5ieTVKYm5CMWRDd2daMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM1J5WldWekwyTnpkQzluYnk1RFUxUmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOTBlWEJsYzJOeWFYQjBMMmR2TGt4aGJtZDFZV2RsWFYwMU9UcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjSEp2ZG1sa1pYSXZkSGx3WlhOamNtbHdkQzluYnk1UWNtOTJhV1JsY2pVM09tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmRIbHdaWE5qY21sd2RDOW5ieU5NWVc1bmRXRm5aVEV3T25SNWNHVnpZM0pwY0hRNjA6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3BhcnNlL3N5bnRheC90eXBlc2NyaXB0L2dvI1BhcnNlNTpzY29wZTE6IzI1OmRvY3Mvc3ludGF4Lm1kI3R5cGVzY3JpcHQ1OmZhbHNlMDo"></a>
 
 Authored scope: [docs/syntax.md#typescript](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#typescript); profile: unspecified (authored profile absent).
 
@@ -3128,6 +3218,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NTE0Ok9EcHdjbTkyYVdSbGNqWTFPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTkwZVhCbGMyTnlhWEIwTDJkdkkxQnliM1pwWkdWeUxsQnlhVzUwTVRZNE9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOWpiMjUwY21GamRITXZjSEpwYm5RdloyOHVVSEp2ZG1sa1pYSmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM1J5WldWekwyTnpkQzluYnk1RFUxUmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOTBlWEJsYzJOeWFYQjBMMmR2TGt4aGJtZDFZV2RsWFN3Z2MzUnlhVzVuWFRVNU9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXdjbTkyYVdSbGNpOTBlWEJsYzJOeWFYQjBMMmR2TGxCeWIzWnBaR1Z5TlRjNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5MGVYQmxjMk55YVhCMEwyZHZJMHhoYm1kMVlXZGxNVEE2ZEhsd1pYTmpjbWx3ZEE0OTpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcHJpbnQvc3ludGF4L2dvI1ByaW50NTpzY29wZTE6IzQ5OmRvY3MvcGFyc2luZy1mb3JtYXR0aW5nLm1kI2NhcnJpZXJzLWFuZC1vd25lcnNoaXA1OmZhbHNlMDo"></a>
+
 Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://github.com/Bitspark/bittype/blob/main/docs/parsing-formatting.md#carriers-and-ownership); profile: unspecified (authored profile absent).
 
 ### Declared target [github.com/Bitspark/bittype/provider/typescript/go#Provider.Print](https://github.com/Bitspark/bittype/blob/main/provider/typescript/go/syntax.go#L26)
@@ -3163,6 +3255,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NDIwOk9EcHdjbTkyYVdSbGNqWTJPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzloYm1Gc2VYcGxMMlpwYkdWekwzSjFjM1F2WjI4alVISnZkbWxrWlhJdVFXNWhiSGw2WlRFeE1UcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZMjl1ZEhKaFkzUnpMMkZ1WVd4NWMybHpMMmR2TGxCeWIzWnBaR1Z5VzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2Y25WemRDOW5ieTVNWVc1bmRXRm5aVjAxT0RwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdllXNWhiSGw2WlM5bWFXeGxjeTl5ZFhOMEwyZHZMbEJ5YjNacFpHVnlOVEU2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzl5ZFhOMEwyZHZJMHhoYm1kMVlXZGxORHB5ZFhOMDU3OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9hbmFseXplL2ZpbGVzL3J1c3QvZ28jQW5hbHl6ZTU6c2NvcGUxOiM0Mzpkb2NzL25hdGl2ZS1zZW1hbnRpY3MubWQjZmlyc3QtcnVzdC1wcm9maWxlNTpmYWxzZTA6"></a>
+
 Authored scope: [docs/native-semantics.md#first-rust-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-rust-profile); profile: unspecified (authored profile absent).
 
 ### Declared target [github.com/Bitspark/bittype/analyze/files/rust/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/go/analyze.go#L57)
@@ -3197,6 +3291,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NjE5Ok9EcHdjbTkyYVdSbGNqWTJPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYjNKdFlYUXZjM2x1ZEdGNEwyaHZjbTl6TDJkdkkxQnliM1pwWkdWeUxrWnZjbTFoZERJMU56cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZMjl1ZEhKaFkzUnpMMlp2Y20xaGRDOW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2ZEhKbFpYTXZZWE4wTDJkdkxsWnBaWGRiWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzlvYjNKdmN5OW5ieTVNWVc1bmRXRm5aVjBzSUdkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5MGNtVmxjeTlqYzNRdloyOHVRMU5VVzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2YUc5eWIzTXZaMjh1VEdGdVozVmhaMlZkWFRVNU9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOW1iM0p0WVhRdmMzbHVkR0Y0TDJodmNtOXpMMmR2TGxCeWIzWnBaR1Z5TlRJNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5b2IzSnZjeTluYnlOTVlXNW5kV0ZuWlRVNmFHOXliM001NzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvZm9ybWF0L3N5bnRheC9ob3Jvcy9nbyNGb3JtYXQ1OnNjb3BlMTojNDA6ZG9jcy9ob3Jvcy1zeW50YXgubWQjcGlwZWxpbmUtYW5kLWxpbWl0czU6ZmFsc2UwOg"></a>
+
 Authored scope: [docs/horos-syntax.md#pipeline-and-limits](https://github.com/Bitspark/bittype/blob/main/docs/horos-syntax.md#pipeline-and-limits); profile: unspecified (authored profile absent).
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
@@ -3227,6 +3323,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NjQ3Ok9EcHdjbTkyYVdSbGNqWTJPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTkwZVhCbGMyTnlhWEIwTDJkdkkxQnliM1pwWkdWeUxrWnZjbTFoZERJMk56cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZMjl1ZEhKaFkzUnpMMlp2Y20xaGRDOW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2ZEhKbFpYTXZZWE4wTDJkdkxsWnBaWGRiWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzkwZVhCbGMyTnlhWEIwTDJkdkxreGhibWQxWVdkbFhTd2daMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM1J5WldWekwyTnpkQzluYnk1RFUxUmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOTBlWEJsYzJOeWFYQjBMMmR2TGt4aGJtZDFZV2RsWFYwMU9UcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjSEp2ZG1sa1pYSXZkSGx3WlhOamNtbHdkQzluYnk1UWNtOTJhV1JsY2pVM09tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmRIbHdaWE5qY21sd2RDOW5ieU5NWVc1bmRXRm5aVEV3T25SNWNHVnpZM0pwY0hRNjI6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2Zvcm1hdC9zeW50YXgvdHlwZXNjcmlwdC9nbyNGb3JtYXQ1OnNjb3BlMTojMjU6ZG9jcy9zeW50YXgubWQjdHlwZXNjcmlwdDU6ZmFsc2UwOg"></a>
+
 Authored scope: [docs/syntax.md#typescript](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#typescript); profile: unspecified (authored profile absent).
 
 ### Declared target [github.com/Bitspark/bittype/provider/typescript/go#Provider.Format](https://github.com/Bitspark/bittype/blob/main/provider/typescript/go/syntax.go#L23)
@@ -3256,6 +3354,8 @@ Language marker: github.com/Bitspark/bittype/syntax/rust/go.Language.
 Construction alternatives: no provider collaborators.
 
 ### Declared target [github.com/Bitspark/bittype/resolve/files/rust/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/rust/go/resolver.go#L43)
+
+<a id="binding-NDIzOk9EcHdjbTkyYVdSbGNqWTJPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl5WlhOdmJIWmxMMlpwYkdWekwzSjFjM1F2WjI4alVISnZkbWxrWlhJdVVtVnpiMngyWlRFeE16cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZMjl1ZEhKaFkzUnpMM0psYzI5c2RYUnBiMjR2WjI4dVVISnZkbWxrWlhKYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5eWRYTjBMMmR2TGt4aGJtZDFZV2RsWFRVNE9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXlaWE52YkhabEwyWnBiR1Z6TDNKMWMzUXZaMjh1VUhKdmRtbGtaWEkxTVRwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDNKMWMzUXZaMjhqVEdGdVozVmhaMlUwT25KMWMzUTY2OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9yZXNvbHZlL2ZpbGVzL3J1c3QvZ28jUHJvdmlkZXIuUmVzb2x2ZTU6c2NvcGUxOiM0Mzpkb2NzL25hdGl2ZS1zZW1hbnRpY3MubWQjZmlyc3QtcnVzdC1wcm9maWxlNTpmYWxzZTA6"></a>
 
 Authored scope: [docs/native-semantics.md#first-rust-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-rust-profile); profile: unspecified (authored profile absent).
 
@@ -3289,6 +3389,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NDI3Ok9EcHdjbTkyYVdSbGNqWTNPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzloYm1Gc2VYcGxMMlpwYkdWekwyaHZjbTl6TDJkdkkxQnliM1pwWkdWeUxrRnVZV3g1ZW1VeE1USTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTloYm1Gc2VYTnBjeTluYnk1UWNtOTJhV1JsY2x0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDJodmNtOXpMMmR2TGt4aGJtZDFZV2RsWFRVNU9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOWhibUZzZVhwbEwyWnBiR1Z6TDJodmNtOXpMMmR2TGxCeWIzWnBaR1Z5TlRJNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5b2IzSnZjeTluYnlOTVlXNW5kV0ZuWlRVNmFHOXliM001ODpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvYW5hbHl6ZS9maWxlcy9ob3Jvcy9nbyNBbmFseXplNTpzY29wZTE6IzMwOmRvY3MvYW5hbHlzaXMubWQjaG9yb3MtcHJvZmlsZTU6ZmFsc2UwOg"></a>
+
 Authored scope: [docs/analysis.md#horos-profile](https://github.com/Bitspark/bittype/blob/main/docs/analysis.md#horos-profile); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -3316,6 +3418,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/format/syntax/golang/go#Format](https://github.com/Bitspark/bittype/blob/main/format/syntax/golang/go/format.go#L23)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NjIyOk9EcHdjbTkyYVdSbGNqWTNPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYjNKdFlYUXZjM2x1ZEdGNEwyZHZiR0Z1Wnk5bmJ5TlFjbTkyYVdSbGNpNUdiM0p0WVhReU5UazZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTltYjNKdFlYUXZaMjh1VUhKdmRtbGtaWEpiWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNSeVpXVnpMMkZ6ZEM5bmJ5NVdhV1YzVzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2WjI5c1lXNW5MMmR2TGt4aGJtZDFZV2RsWFN3Z1oybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzUnlaV1Z6TDJOemRDOW5ieTVEVTFSYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5bmIyeGhibWN2WjI4dVRHRnVaM1ZoWjJWZFhUWXdPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYjNKdFlYUXZjM2x1ZEdGNEwyZHZiR0Z1Wnk5bmJ5NVFjbTkyYVdSbGNqVXpPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZaMjlzWVc1bkwyZHZJMHhoYm1kMVlXZGxNanBuYnc1ODpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvZm9ybWF0L3N5bnRheC9nb2xhbmcvZ28jRm9ybWF0NTpzY29wZTE6IzE3OmRvY3Mvc3ludGF4Lm1kI2dvNTpmYWxzZTA6"></a>
 
 Authored scope: [docs/syntax.md#go](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#go); profile: unspecified (authored profile absent).
 
@@ -3347,6 +3451,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NDQ4Ok9EcHdjbTkyYVdSbGNqWTNPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTkwZVhCbGMyTnlhWEIwTDJkdkkxQnliM1pwWkdWeUxrRnVZV3g1ZW1VeE1UYzZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTloYm1Gc2VYTnBjeTluYnk1UWNtOTJhV1JsY2x0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDNSNWNHVnpZM0pwY0hRdloyOHVUR0Z1WjNWaFoyVmROVGs2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNCeWIzWnBaR1Z5TDNSNWNHVnpZM0pwY0hRdloyOHVVSEp2ZG1sa1pYSTFOenBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM1I1Y0dWelkzSnBjSFF2WjI4alRHRnVaM1ZoWjJVeE1EcDBlWEJsYzJOeWFYQjA2MzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvYW5hbHl6ZS9maWxlcy90eXBlc2NyaXB0L2dvI0FuYWx5emU1OnNjb3BlMTojNDk6ZG9jcy9uYXRpdmUtc2VtYW50aWNzLm1kI2ZpcnN0LXR5cGVzY3JpcHQtcHJvZmlsZTU6ZmFsc2UwOg"></a>
+
 Authored scope: [docs/native-semantics.md#first-typescript-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-typescript-profile); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -3374,6 +3480,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/resolve/files/typescript/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/typescript/go/resolver.go#L43)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NDUxOk9EcHdjbTkyYVdSbGNqWTNPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTkwZVhCbGMyTnlhWEIwTDJkdkkxQnliM1pwWkdWeUxsSmxjMjlzZG1VeE1UazZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTl5WlhOdmJIVjBhVzl1TDJkdkxsQnliM1pwWkdWeVcyZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmRIbHdaWE5qY21sd2RDOW5ieTVNWVc1bmRXRm5aVjAxT1RwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmNISnZkbWxrWlhJdmRIbHdaWE5qY21sd2RDOW5ieTVRY205MmFXUmxjalUzT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2ZEhsd1pYTmpjbWx3ZEM5bmJ5Tk1ZVzVuZFdGblpURXdPblI1Y0dWelkzSnBjSFE3MjpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcmVzb2x2ZS9maWxlcy90eXBlc2NyaXB0L2dvI1Byb3ZpZGVyLlJlc29sdmU1OnNjb3BlMTojNDk6ZG9jcy9uYXRpdmUtc2VtYW50aWNzLm1kI2ZpcnN0LXR5cGVzY3JpcHQtcHJvZmlsZTU6ZmFsc2UwOg"></a>
 
 Authored scope: [docs/native-semantics.md#first-typescript-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-typescript-profile); profile: unspecified (authored profile absent).
 
@@ -3407,6 +3515,8 @@ Traversal boundary: callee is dynamic or outside implementation source.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NDMwOk9EcHdjbTkyYVdSbGNqWTNPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl5WlhOdmJIWmxMMlpwYkdWekwyaHZjbTl6TDJkdkkxQnliM1pwWkdWeUxsSmxjMjlzZG1VeE1UUTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTl5WlhOdmJIVjBhVzl1TDJkdkxsQnliM1pwWkdWeVcyZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmFHOXliM012WjI4dVRHRnVaM1ZoWjJWZE5UazZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM0psYzI5c2RtVXZabWxzWlhNdmFHOXliM012WjI4dVVISnZkbWxrWlhJMU1qcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyaHZjbTl6TDJkdkkweGhibWQxWVdkbE5UcG9iM0p2Y3c2ODpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcmVzb2x2ZS9maWxlcy9ob3Jvcy9nbyNSZXNvbHZlUmVmZXJlbmNlczU6c2NvcGUxOiMzNjpkb2NzL3Jlc29sdXRpb24ubWQjaG9yb3MtY29tcG9zaXRpb241OmZhbHNlMDo"></a>
+
 Authored scope: [docs/resolution.md#horos-composition](https://github.com/Bitspark/bittype/blob/main/docs/resolution.md#horos-composition); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -3434,6 +3544,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/analyze/files/golang/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/go/analyze.go#L23)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NDI4Ok9EcHdjbTkyYVdSbGNqWTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzloYm1Gc2VYcGxMMlpwYkdWekwyZHZiR0Z1Wnk5bmJ5TlFjbTkyYVdSbGNpNUJibUZzZVhwbE1URXpPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYjI1MGNtRmpkSE12WVc1aGJIbHphWE12WjI4dVVISnZkbWxrWlhKYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5bmIyeGhibWN2WjI4dVRHRnVaM1ZoWjJWZE5qQTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMkZ1WVd4NWVtVXZabWxzWlhNdloyOXNZVzVuTDJkdkxsQnliM1pwWkdWeU5UTTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOW5iMnhoYm1jdloyOGpUR0Z1WjNWaFoyVXlPbWR2NTk6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2FuYWx5emUvZmlsZXMvZ29sYW5nL2dvI0FuYWx5emU1OnNjb3BlMTojNDE6ZG9jcy9uYXRpdmUtc2VtYW50aWNzLm1kI2ZpcnN0LWdvLXByb2ZpbGU1OmZhbHNlMDo"></a>
 
 Authored scope: [docs/native-semantics.md#first-go-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-go-profile); profile: unspecified (authored profile absent).
 
@@ -3475,6 +3587,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NDMxOk9EcHdjbTkyYVdSbGNqWTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl5WlhOdmJIWmxMMlpwYkdWekwyZHZiR0Z1Wnk5bmJ5TlFjbTkyYVdSbGNpNVNaWE52YkhabE1URTFPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYjI1MGNtRmpkSE12Y21WemIyeDFkR2x2Ymk5bmJ5NVFjbTkyYVdSbGNsdG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyZHZiR0Z1Wnk5bmJ5NU1ZVzVuZFdGblpWMDJNRHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2Y21WemIyeDJaUzltYVd4bGN5OW5iMnhoYm1jdloyOHVVSEp2ZG1sa1pYSTFNenBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMmR2YkdGdVp5OW5ieU5NWVc1bmRXRm5aVEk2WjI4NTk6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3Jlc29sdmUvZmlsZXMvZ29sYW5nL2dvI1Jlc29sdmU1OnNjb3BlMTojNDE6ZG9jcy9uYXRpdmUtc2VtYW50aWNzLm1kI2ZpcnN0LWdvLXByb2ZpbGU1OmZhbHNlMDo"></a>
+
 Authored scope: [docs/native-semantics.md#first-go-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-go-profile); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -3500,6 +3614,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/check/syntax/typescript/go#Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L52)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NDUyOk9EcHdjbTkyYVdSbGNqWTVPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndmRIbHdaWE5qY21sd2RDOW5ieU5RY205MmFXUmxjaTVEYUdWamF6RXhORHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTI5dWRISmhZM1J6TDJOb1pXTnJMMmR2TGxCeWIzWnBaR1Z5VzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2ZEhsd1pYTmpjbWx3ZEM5bmJ5NU1ZVzVuZFdGblpWMDJNenBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTJobFkyc3ZjM2x1ZEdGNEwzUjVjR1Z6WTNKcGNIUXZaMjh1VUhKdmRtbGtaWEkxTnpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDNSNWNHVnpZM0pwY0hRdloyOGpUR0Z1WjNWaFoyVXhNRHAwZVhCbGMyTnlhWEIwNjA6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NoZWNrL3N5bnRheC90eXBlc2NyaXB0L2dvI0NoZWNrNzpncmFtbWFyNjA6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NoZWNrL3N5bnRheC90eXBlc2NyaXB0L2dvI3J1bGVzMDo1OmZhbHNlMDo"></a>
 
 Definition: [github.com/Bitspark/bittype/check/syntax/typescript/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L18); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
@@ -3926,6 +4042,8 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
+<a id="binding-NDUyOk9EcHdjbTkyYVdSbGNqWTVPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndmRIbHdaWE5qY21sd2RDOW5ieU5RY205MmFXUmxjaTVEYUdWamF6RXhORHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTI5dWRISmhZM1J6TDJOb1pXTnJMMmR2TGxCeWIzWnBaR1Z5VzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2ZEhsd1pYTmpjbWx3ZEM5bmJ5NU1ZVzVuZFdGblpWMDJNenBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTJobFkyc3ZjM2x1ZEdGNEwzUjVjR1Z6WTNKcGNIUXZaMjh1VUhKdmRtbGtaWEkxTnpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDNSNWNHVnpZM0pwY0hRdloyOGpUR0Z1WjNWaFoyVXhNRHAwZVhCbGMyTnlhWEIwNjA6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NoZWNrL3N5bnRheC90eXBlc2NyaXB0L2dvI0NoZWNrNTpzY29wZTE6IzI1OmRvY3Mvc3ludGF4Lm1kI3R5cGVzY3JpcHQ1OmZhbHNlMDo"></a>
+
 Authored scope: [docs/syntax.md#typescript](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#typescript); profile: unspecified (authored profile absent).
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
@@ -3954,6 +4072,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/parse/syntax/typescript/go#Parse](https://github.com/Bitspark/bittype/blob/main/parse/syntax/typescript/go/parse.go#L42)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NTg2Ok9EcHdjbTkyYVdSbGNqWTVPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3WVhKelpTOXplVzUwWVhndmRIbHdaWE5qY21sd2RDOW5ieU5RY205MmFXUmxjaTVRWVhKelpUSXhORHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTI5dWRISmhZM1J6TDNCaGNuTmxMMmR2TGxCeWIzWnBaR1Z5VzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmNHRnljMlV2WjI4dVNXNXdkWFFzSUdkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5MGNtVmxjeTlqYzNRdloyOHVRMU5VVzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2ZEhsd1pYTmpjbWx3ZEM5bmJ5NU1ZVzVuZFdGblpWMWROak02WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNCaGNuTmxMM041Ym5SaGVDOTBlWEJsYzJOeWFYQjBMMmR2TGxCeWIzWnBaR1Z5TlRjNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5MGVYQmxjMk55YVhCMEwyZHZJMHhoYm1kMVlXZGxNVEE2ZEhsd1pYTmpjbWx3ZEE2MDpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcGFyc2Uvc3ludGF4L3R5cGVzY3JpcHQvZ28jUGFyc2U1OnNjb3BlMTojMjU6ZG9jcy9zeW50YXgubWQjdHlwZXNjcmlwdDU6ZmFsc2UwOg"></a>
 
 Authored scope: [docs/syntax.md#typescript](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#typescript); profile: unspecified (authored profile absent).
 
@@ -3986,6 +4106,8 @@ Traversal boundary: callee is dynamic or outside implementation source.
 ### Declared target [github.com/Bitspark/bittype/check/syntax/horos/go#Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/horos/go/check.go#L13)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NDA3Ok9EcHdjbTkyYVdSbGNqWXdPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlvYjNKdmN5OW5ieU5RY205MmFXUmxjaTVEYUdWamF6RXdPVHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTI5dWRISmhZM1J6TDJOb1pXTnJMMmR2TGxCeWIzWnBaR1Z5VzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2YUc5eWIzTXZaMjh1VEdGdVozVmhaMlZkTlRRNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzQnliM1pwWkdWeUwyaHZjbTl6TDJkdkxsQnliM1pwWkdWeU5USTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOW9iM0p2Y3k5bmJ5Tk1ZVzVuZFdGblpUVTZhRzl5YjNNNTU6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NoZWNrL3N5bnRheC9ob3Jvcy9nbyNDaGVjazc6Z3JhbW1hcjUzOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9pbnRlcm5hbC9kZWNsc3ludGF4I3J1bGVzMDo1OmZhbHNlMDo"></a>
 
 Definition: [github.com/Bitspark/bittype/internal/declsyntax#rules](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L66); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
@@ -4437,6 +4559,8 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
+<a id="binding-NDA3Ok9EcHdjbTkyYVdSbGNqWXdPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlvYjNKdmN5OW5ieU5RY205MmFXUmxjaTVEYUdWamF6RXdPVHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTI5dWRISmhZM1J6TDJOb1pXTnJMMmR2TGxCeWIzWnBaR1Z5VzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2YUc5eWIzTXZaMjh1VEdGdVozVmhaMlZkTlRRNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzQnliM1pwWkdWeUwyaHZjbTl6TDJkdkxsQnliM1pwWkdWeU5USTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOW9iM0p2Y3k5bmJ5Tk1ZVzVuZFdGblpUVTZhRzl5YjNNNTU6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NoZWNrL3N5bnRheC9ob3Jvcy9nbyNDaGVjazU6c2NvcGUxOiMzMTpkb2NzL2hvcm9zLm1kI3N5bnRheC12b2NhYnVsYXJ5NTpmYWxzZTA6"></a>
+
 Authored scope: [docs/horos.md#syntax-vocabulary](https://github.com/Bitspark/bittype/blob/main/docs/horos.md#syntax-vocabulary); profile: unspecified (authored profile absent).
 
 ### Declared target [github.com/Bitspark/bittype/provider/horos/go#Provider.Check](https://github.com/Bitspark/bittype/blob/main/provider/horos/go/syntax.go#L22)
@@ -4468,6 +4592,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/parse/syntax/horos/go#Parse](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/go/parse.go#L61)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NTQwOk9EcHdjbTkyYVdSbGNqWXdPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlvYjNKdmN5OW5ieU5RY205MmFXUmxjaTVRWVhKelpUSXdPVHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTI5dWRISmhZM1J6TDNCaGNuTmxMMmR2TGxCeWIzWnBaR1Z5VzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmNHRnljMlV2WjI4dVNXNXdkWFFzSUdkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5MGNtVmxjeTlqYzNRdloyOHVRMU5VVzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2YUc5eWIzTXZaMjh1VEdGdVozVmhaMlZkWFRVME9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXdjbTkyYVdSbGNpOW9iM0p2Y3k5bmJ5NVFjbTkyYVdSbGNqVXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZhRzl5YjNNdloyOGpUR0Z1WjNWaFoyVTFPbWh2Y205ejU1OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9wYXJzZS9zeW50YXgvaG9yb3MvZ28jUGFyc2U1OnNjb3BlMTojNDA6ZG9jcy9ob3Jvcy1zeW50YXgubWQjcGlwZWxpbmUtYW5kLWxpbWl0czU6ZmFsc2UwOg"></a>
 
 Authored scope: [docs/horos-syntax.md#pipeline-and-limits](https://github.com/Bitspark/bittype/blob/main/docs/horos-syntax.md#pipeline-and-limits); profile: unspecified (authored profile absent).
 
@@ -4505,6 +4631,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NDc5Ok9EcHdjbTkyYVdSbGNqWXdPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlvYjNKdmN5OW5ieU5RY205MmFXUmxjaTVRY21sdWRERTJNenBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTI5dWRISmhZM1J6TDNCeWFXNTBMMmR2TGxCeWIzWnBaR1Z5VzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5MGNtVmxjeTlqYzNRdloyOHVRMU5VVzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2YUc5eWIzTXZaMjh1VEdGdVozVmhaMlZkTENCemRISnBibWRkTlRRNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzQnliM1pwWkdWeUwyaHZjbTl6TDJkdkxsQnliM1pwWkdWeU5USTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOW9iM0p2Y3k5bmJ5Tk1ZVzVuZFdGblpUVTZhRzl5YjNNNDk6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3ByaW50L3N5bnRheC9nbyNQcmludDU6c2NvcGUxOiM0OTpkb2NzL3BhcnNpbmctZm9ybWF0dGluZy5tZCNjYXJyaWVycy1hbmQtb3duZXJzaGlwNTpmYWxzZTA6"></a>
+
 Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://github.com/Bitspark/bittype/blob/main/docs/parsing-formatting.md#carriers-and-ownership); profile: unspecified (authored profile absent).
 
 ### Declared target [github.com/Bitspark/bittype/provider/horos/go#Provider.Print](https://github.com/Bitspark/bittype/blob/main/provider/horos/go/syntax.go#L26)
@@ -4538,6 +4666,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/format/syntax/rust/go#Format](https://github.com/Bitspark/bittype/blob/main/format/syntax/rust/go/format.go#L23)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NTk4Ok9EcHdjbTkyYVdSbGNqWXdPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTl5ZFhOMEwyZHZJMUJ5YjNacFpHVnlMa1p2Y20xaGRESTFOVHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTI5dWRISmhZM1J6TDJadmNtMWhkQzluYnk1UWNtOTJhV1JsY2x0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmRISmxaWE12WVhOMEwyZHZMbFpwWlhkYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5eWRYTjBMMmR2TGt4aGJtZDFZV2RsWFN3Z1oybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzUnlaV1Z6TDJOemRDOW5ieTVEVTFSYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5eWRYTjBMMmR2TGt4aGJtZDFZV2RsWFYwMU16cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjSEp2ZG1sa1pYSXZjblZ6ZEM5bmJ5NVFjbTkyYVdSbGNqVXhPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZjblZ6ZEM5bmJ5Tk1ZVzVuZFdGblpUUTZjblZ6ZEE1NjpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvZm9ybWF0L3N5bnRheC9ydXN0L2dvI0Zvcm1hdDU6c2NvcGUxOiMxOTpkb2NzL3N5bnRheC5tZCNydXN0NTpmYWxzZTA6"></a>
 
 Authored scope: [docs/syntax.md#rust](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#rust); profile: unspecified (authored profile absent).
 
@@ -4576,6 +4706,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/check/syntax/golang/go#Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L45)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NDA4Ok9EcHdjbTkyYVdSbGNqWXhPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTluYjJ4aGJtY3ZaMjhqVUhKdmRtbGtaWEl1UTJobFkyc3hNVEE2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJOdmJuUnlZV04wY3k5amFHVmpheTluYnk1UWNtOTJhV1JsY2x0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDJkdmJHRnVaeTluYnk1TVlXNW5kV0ZuWlYwMU5UcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjSEp2ZG1sa1pYSXZaMjlzWVc1bkwyZHZMbEJ5YjNacFpHVnlOVE02WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzluYjJ4aGJtY3ZaMjhqVEdGdVozVmhaMlV5T21kdjU2OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jaGVjay9zeW50YXgvZ29sYW5nL2dvI0NoZWNrNzpncmFtbWFyNTY6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NoZWNrL3N5bnRheC9nb2xhbmcvZ28jcnVsZXMwOjU6ZmFsc2UwOg"></a>
 
 Definition: [github.com/Bitspark/bittype/check/syntax/golang/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L17); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
@@ -4905,6 +5037,8 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
+<a id="binding-NDA4Ok9EcHdjbTkyYVdSbGNqWXhPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTluYjJ4aGJtY3ZaMjhqVUhKdmRtbGtaWEl1UTJobFkyc3hNVEE2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJOdmJuUnlZV04wY3k5amFHVmpheTluYnk1UWNtOTJhV1JsY2x0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDJkdmJHRnVaeTluYnk1TVlXNW5kV0ZuWlYwMU5UcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjSEp2ZG1sa1pYSXZaMjlzWVc1bkwyZHZMbEJ5YjNacFpHVnlOVE02WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzluYjJ4aGJtY3ZaMjhqVEdGdVozVmhaMlV5T21kdjU2OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jaGVjay9zeW50YXgvZ29sYW5nL2dvI0NoZWNrNTpzY29wZTE6IzE3OmRvY3Mvc3ludGF4Lm1kI2dvNTpmYWxzZTA6"></a>
+
 Authored scope: [docs/syntax.md#go](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#go); profile: unspecified (authored profile absent).
 
 ### Declared target [github.com/Bitspark/bittype/provider/golang/go#Provider.Check](https://github.com/Bitspark/bittype/blob/main/provider/golang/go/syntax.go#L22)
@@ -4935,6 +5069,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/parse/syntax/golang/go#Parse](https://github.com/Bitspark/bittype/blob/main/parse/syntax/golang/go/parse.go#L26)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NTQyOk9EcHdjbTkyYVdSbGNqWXhPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTluYjJ4aGJtY3ZaMjhqVUhKdmRtbGtaWEl1VUdGeWMyVXlNVEE2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJOdmJuUnlZV04wY3k5d1lYSnpaUzluYnk1UWNtOTJhV1JsY2x0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdlkyOXVkSEpoWTNSekwzQmhjbk5sTDJkdkxrbHVjSFYwTENCbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmRISmxaWE12WTNOMEwyZHZMa05UVkZ0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDJkdmJHRnVaeTluYnk1TVlXNW5kV0ZuWlYxZE5UVTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM0J5YjNacFpHVnlMMmR2YkdGdVp5OW5ieTVRY205MmFXUmxjalV6T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2WjI5c1lXNW5MMmR2STB4aGJtZDFZV2RsTWpwbmJ3NTY6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3BhcnNlL3N5bnRheC9nb2xhbmcvZ28jUGFyc2U1OnNjb3BlMTojMTc6ZG9jcy9zeW50YXgubWQjZ281OmZhbHNlMDo"></a>
 
 Authored scope: [docs/syntax.md#go](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#go); profile: unspecified (authored profile absent).
 
@@ -4974,6 +5110,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NDgwOk9EcHdjbTkyYVdSbGNqWXhPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTluYjJ4aGJtY3ZaMjhqVUhKdmRtbGtaWEl1VUhKcGJuUXhOalE2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJOdmJuUnlZV04wY3k5d2NtbHVkQzluYnk1UWNtOTJhV1JsY2x0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmRISmxaWE12WTNOMEwyZHZMa05UVkZ0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDJkdmJHRnVaeTluYnk1TVlXNW5kV0ZuWlYwc0lITjBjbWx1WjEwMU5UcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjSEp2ZG1sa1pYSXZaMjlzWVc1bkwyZHZMbEJ5YjNacFpHVnlOVE02WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzluYjJ4aGJtY3ZaMjhqVEdGdVozVmhaMlV5T21kdjQ5OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9wcmludC9zeW50YXgvZ28jUHJpbnQ1OnNjb3BlMTojNDk6ZG9jcy9wYXJzaW5nLWZvcm1hdHRpbmcubWQjY2FycmllcnMtYW5kLW93bmVyc2hpcDU6ZmFsc2UwOg"></a>
+
 Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://github.com/Bitspark/bittype/blob/main/docs/parsing-formatting.md#carriers-and-ownership); profile: unspecified (authored profile absent).
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
@@ -5011,6 +5149,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/format/syntax/horos/go#Format](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/go/format.go#L42)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NjA2Ok9EcHdjbTkyYVdSbGNqWXhPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlvYjNKdmN5OW5ieU5RY205MmFXUmxjaTVHYjNKdFlYUXlOVGM2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJOdmJuUnlZV04wY3k5bWIzSnRZWFF2WjI4dVVISnZkbWxrWlhKYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzUnlaV1Z6TDJGemRDOW5ieTVXYVdWM1cyZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmFHOXliM012WjI4dVRHRnVaM1ZoWjJWZExDQm5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZkSEpsWlhNdlkzTjBMMmR2TGtOVFZGdG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyaHZjbTl6TDJkdkxreGhibWQxWVdkbFhWMDFORHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2Y0hKdmRtbGtaWEl2YUc5eWIzTXZaMjh1VUhKdmRtbGtaWEkxTWpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDJodmNtOXpMMmR2STB4aGJtZDFZV2RsTlRwb2IzSnZjdzU3OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9mb3JtYXQvc3ludGF4L2hvcm9zL2dvI0Zvcm1hdDU6c2NvcGUxOiM0MDpkb2NzL2hvcm9zLXN5bnRheC5tZCNwaXBlbGluZS1hbmQtbGltaXRzNTpmYWxzZTA6"></a>
 
 Authored scope: [docs/horos-syntax.md#pipeline-and-limits](https://github.com/Bitspark/bittype/blob/main/docs/horos-syntax.md#pipeline-and-limits); profile: unspecified (authored profile absent).
 
@@ -5050,6 +5190,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NDA3Ok9EcHdjbTkyYVdSbGNqWXhPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTl5ZFhOMEwyZHZJMUJ5YjNacFpHVnlMa0Z1WVd4NWVtVXhNVEU2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJOdmJuUnlZV04wY3k5aGJtRnNlWE5wY3k5bmJ5NVFjbTkyYVdSbGNsdG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwzSjFjM1F2WjI4dVRHRnVaM1ZoWjJWZE5UTTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM0J5YjNacFpHVnlMM0oxYzNRdloyOHVVSEp2ZG1sa1pYSTFNVHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMM0oxYzNRdloyOGpUR0Z1WjNWaFoyVTBPbkoxYzNRNTc6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2FuYWx5emUvZmlsZXMvcnVzdC9nbyNBbmFseXplNTpzY29wZTE6IzQzOmRvY3MvbmF0aXZlLXNlbWFudGljcy5tZCNmaXJzdC1ydXN0LXByb2ZpbGU1OmZhbHNlMDo"></a>
+
 Authored scope: [docs/native-semantics.md#first-rust-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-rust-profile); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -5077,6 +5219,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/resolve/files/rust/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/rust/go/resolver.go#L43)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NDEwOk9EcHdjbTkyYVdSbGNqWXhPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTl5ZFhOMEwyZHZJMUJ5YjNacFpHVnlMbEpsYzI5c2RtVXhNVE02WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJOdmJuUnlZV04wY3k5eVpYTnZiSFYwYVc5dUwyZHZMbEJ5YjNacFpHVnlXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZjblZ6ZEM5bmJ5NU1ZVzVuZFdGblpWMDFNenBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2Y0hKdmRtbGtaWEl2Y25WemRDOW5ieTVRY205MmFXUmxjalV4T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2Y25WemRDOW5ieU5NWVc1bmRXRm5aVFE2Y25WemRBNjY6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3Jlc29sdmUvZmlsZXMvcnVzdC9nbyNQcm92aWRlci5SZXNvbHZlNTpzY29wZTE6IzQzOmRvY3MvbmF0aXZlLXNlbWFudGljcy5tZCNmaXJzdC1ydXN0LXByb2ZpbGU1OmZhbHNlMDo"></a>
 
 Authored scope: [docs/native-semantics.md#first-rust-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-rust-profile); profile: unspecified (authored profile absent).
 
@@ -5109,6 +5253,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/check/syntax/cpp/go#Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L57)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NDA0Ok9EcHdjbTkyYVdSbGNqWXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndlkzQndMMmR2STFCeWIzWnBaR1Z5TGtOb1pXTnJNVEEzT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdlkyaGxZMnN2WjI4dVVISnZkbWxrWlhKYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5amNIQXZaMjh1VEdGdVozVmhaMlZkTlRZNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTm9aV05yTDNONWJuUmhlQzlqY0hBdloyOHVVSEp2ZG1sa1pYSTFNRHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5Tk1ZVzVuZFdGblpUTTZZM0J3NTM6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NoZWNrL3N5bnRheC9jcHAvZ28jQ2hlY2s3OmdyYW1tYXI1MzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L2NwcC9nbyNydWxlczA6NTpmYWxzZTA6"></a>
 
 Definition: [github.com/Bitspark/bittype/check/syntax/cpp/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L29); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
@@ -5453,6 +5599,8 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
+<a id="binding-NDA0Ok9EcHdjbTkyYVdSbGNqWXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndlkzQndMMmR2STFCeWIzWnBaR1Z5TGtOb1pXTnJNVEEzT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdlkyaGxZMnN2WjI4dVVISnZkbWxrWlhKYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5amNIQXZaMjh1VEdGdVozVmhaMlZkTlRZNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTm9aV05yTDNONWJuUmhlQzlqY0hBdloyOHVVSEp2ZG1sa1pYSTFNRHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5Tk1ZVzVuZFdGblpUTTZZM0J3NTM6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NoZWNrL3N5bnRheC9jcHAvZ28jQ2hlY2s1OnNjb3BlMTojMTQ6ZG9jcy9zeW50YXgubWQ1OmZhbHNlMDo"></a>
+
 Authored scope: [docs/syntax.md](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md); profile: unspecified (authored profile absent).
 
 No associated cases found in the selected test sources. This does not establish absence of tests.
@@ -5478,6 +5626,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/parse/syntax/cpp/go#Parse](https://github.com/Bitspark/bittype/blob/main/parse/syntax/cpp/go/parse.go#L25)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NTM4Ok9EcHdjbTkyYVdSbGNqWXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3WVhKelpTOXplVzUwWVhndlkzQndMMmR2STFCeWIzWnBaR1Z5TGxCaGNuTmxNakEzT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmNHRnljMlV2WjI4dVVISnZkbWxrWlhKYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTnZiblJ5WVdOMGN5OXdZWEp6WlM5bmJ5NUpibkIxZEN3Z1oybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzUnlaV1Z6TDJOemRDOW5ieTVEVTFSYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5amNIQXZaMjh1VEdGdVozVmhaMlZkWFRVMk9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXdZWEp6WlM5emVXNTBZWGd2WTNCd0wyZHZMbEJ5YjNacFpHVnlOVEE2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzlqY0hBdloyOGpUR0Z1WjNWaFoyVXpPbU53Y0E1MzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcGFyc2Uvc3ludGF4L2NwcC9nbyNQYXJzZTU6c2NvcGUxOiMxNDpkb2NzL3N5bnRheC5tZDU6ZmFsc2UwOg"></a>
 
 Authored scope: [docs/syntax.md](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md); profile: unspecified (authored profile absent).
 
@@ -5506,6 +5656,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/format/syntax/golang/go#Format](https://github.com/Bitspark/bittype/blob/main/format/syntax/golang/go/format.go#L23)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NjA4Ok9EcHdjbTkyYVdSbGNqWXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTluYjJ4aGJtY3ZaMjhqVUhKdmRtbGtaWEl1Um05eWJXRjBNalU1T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdlptOXliV0YwTDJkdkxsQnliM1pwWkdWeVcyZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOTBjbVZsY3k5aGMzUXZaMjh1Vm1sbGQxdG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyZHZiR0Z1Wnk5bmJ5NU1ZVzVuZFdGblpWMHNJR2RwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzkwY21WbGN5OWpjM1F2WjI4dVExTlVXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZaMjlzWVc1bkwyZHZMa3hoYm1kMVlXZGxYVjAxTlRwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmNISnZkbWxrWlhJdloyOXNZVzVuTDJkdkxsQnliM1pwWkdWeU5UTTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOW5iMnhoYm1jdloyOGpUR0Z1WjNWaFoyVXlPbWR2NTg6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2Zvcm1hdC9zeW50YXgvZ29sYW5nL2dvI0Zvcm1hdDU6c2NvcGUxOiMxNzpkb2NzL3N5bnRheC5tZCNnbzU6ZmFsc2UwOg"></a>
 
 Authored scope: [docs/syntax.md#go](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#go); profile: unspecified (authored profile absent).
 
@@ -5547,6 +5699,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NDE0Ok9EcHdjbTkyYVdSbGNqWXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlvYjNKdmN5OW5ieU5RY205MmFXUmxjaTVCYm1Gc2VYcGxNVEV5T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdllXNWhiSGx6YVhNdloyOHVVSEp2ZG1sa1pYSmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOW9iM0p2Y3k5bmJ5NU1ZVzVuZFdGblpWMDFORHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2Y0hKdmRtbGtaWEl2YUc5eWIzTXZaMjh1VUhKdmRtbGtaWEkxTWpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDJodmNtOXpMMmR2STB4aGJtZDFZV2RsTlRwb2IzSnZjdzU4OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9hbmFseXplL2ZpbGVzL2hvcm9zL2dvI0FuYWx5emU1OnNjb3BlMTojMzA6ZG9jcy9hbmFseXNpcy5tZCNob3Jvcy1wcm9maWxlNTpmYWxzZTA6"></a>
+
 Authored scope: [docs/analysis.md#horos-profile](https://github.com/Bitspark/bittype/blob/main/docs/analysis.md#horos-profile); profile: unspecified (authored profile absent).
 
 ### Declared target [github.com/Bitspark/bittype/provider/horos/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/provider/horos/go/files.go#L40)
@@ -5587,6 +5741,8 @@ Traversal boundary: callee is dynamic or outside implementation source.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NDE2Ok9EcHdjbTkyYVdSbGNqWXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlvYjNKdmN5OW5ieU5RY205MmFXUmxjaTVTWlhOdmJIWmxNVEUwT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmNtVnpiMngxZEdsdmJpOW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMmh2Y205ekwyZHZMa3hoYm1kMVlXZGxYVFUwT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5d2NtOTJhV1JsY2k5b2IzSnZjeTluYnk1UWNtOTJhV1JsY2pVeU9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmFHOXliM012WjI4alRHRnVaM1ZoWjJVMU9taHZjbTl6Njg6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3Jlc29sdmUvZmlsZXMvaG9yb3MvZ28jUmVzb2x2ZVJlZmVyZW5jZXM1OnNjb3BlMTojMzY6ZG9jcy9yZXNvbHV0aW9uLm1kI2hvcm9zLWNvbXBvc2l0aW9uNTpmYWxzZTA6"></a>
+
 Authored scope: [docs/resolution.md#horos-composition](https://github.com/Bitspark/bittype/blob/main/docs/resolution.md#horos-composition); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -5612,6 +5768,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/check/syntax/rust/go#Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L72)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NDExOk9EcHdjbTkyYVdSbGNqWXpPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndmNuVnpkQzluYnlOUWNtOTJhV1JsY2k1RGFHVmphekV3T0RwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdlkyOXVkSEpoWTNSekwyTm9aV05yTDJkdkxsQnliM1pwWkdWeVcyZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmNuVnpkQzluYnk1TVlXNW5kV0ZuWlYwMU56cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZMmhsWTJzdmMzbHVkR0Y0TDNKMWMzUXZaMjh1VUhKdmRtbGtaWEkxTVRwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDNKMWMzUXZaMjhqVEdGdVozVmhaMlUwT25KMWMzUTU0OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jaGVjay9zeW50YXgvcnVzdC9nbyNDaGVjazc6Z3JhbW1hcjU0OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jaGVjay9zeW50YXgvcnVzdC9nbyNydWxlczA6NTpmYWxzZTA6"></a>
 
 Definition: [github.com/Bitspark/bittype/check/syntax/rust/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L31); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
@@ -6171,6 +6329,8 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
+<a id="binding-NDExOk9EcHdjbTkyYVdSbGNqWXpPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndmNuVnpkQzluYnlOUWNtOTJhV1JsY2k1RGFHVmphekV3T0RwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdlkyOXVkSEpoWTNSekwyTm9aV05yTDJkdkxsQnliM1pwWkdWeVcyZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmNuVnpkQzluYnk1TVlXNW5kV0ZuWlYwMU56cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZMmhsWTJzdmMzbHVkR0Y0TDNKMWMzUXZaMjh1VUhKdmRtbGtaWEkxTVRwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDNKMWMzUXZaMjhqVEdGdVozVmhaMlUwT25KMWMzUTU0OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jaGVjay9zeW50YXgvcnVzdC9nbyNDaGVjazU6c2NvcGUxOiMxOTpkb2NzL3N5bnRheC5tZCNydXN0NTpmYWxzZTA6"></a>
+
 Authored scope: [docs/syntax.md#rust](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#rust); profile: unspecified (authored profile absent).
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
@@ -6194,6 +6354,8 @@ Language marker: github.com/Bitspark/bittype/syntax/horos/go.Language.
 Construction alternatives: no provider collaborators.
 
 ### Declared target [github.com/Bitspark/bittype/parse/files/horos/go#Provider.Parse](https://github.com/Bitspark/bittype/blob/main/parse/files/horos/go/parse.go#L49)
+
+<a id="binding-NjMwOk9EcHdjbTkyYVdSbGNqWXpPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3WVhKelpTOW1hV3hsY3k5b2IzSnZjeTluYnlOUWNtOTJhV1JsY2k1UVlYSnpaVEkzTURwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdlkyOXVkSEpoWTNSekwzQmhjbk5sTDJkdkxsQnliM1pwWkdWeVcyZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOWpiMjUwY21GamRITXZjR0Z5YzJVdloyOHVSbWxzWlhOU1pYRjFaWE4wVzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2YUc5eWIzTXZaMjh1VEdGdVozVmhaMlZkTENCbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMyOTFjbU5sTDJkdkxsTnZkWEpqWlZ0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDJodmNtOXpMMmR2TGt4aGJtZDFZV2RsWFYwMU56cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjR0Z5YzJVdlptbHNaWE12YUc5eWIzTXZaMjh1VUhKdmRtbGtaWEkxTWpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDJodmNtOXpMMmR2STB4aGJtZDFZV2RsTlRwb2IzSnZjdzYzOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9wYXJzZS9maWxlcy9ob3Jvcy9nbyNQcm92aWRlci5QYXJzZTU6c2NvcGUxOiM0Nzpkb2NzL3NvdXJjZS5tZCNob3Jvcy1jb21wb3NpdGlvbi1hbmQtcGFnaW5hdGlvbjU6ZmFsc2UwOg"></a>
 
 Authored scope: [docs/source.md#horos-composition-and-pagination](https://github.com/Bitspark/bittype/blob/main/docs/source.md#horos-composition-and-pagination); profile: unspecified (authored profile absent).
 
@@ -6224,6 +6386,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/parse/syntax/rust/go#Parse](https://github.com/Bitspark/bittype/blob/main/parse/syntax/rust/go/parse.go#L25)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NTQ0Ok9EcHdjbTkyYVdSbGNqWXpPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3WVhKelpTOXplVzUwWVhndmNuVnpkQzluYnlOUWNtOTJhV1JsY2k1UVlYSnpaVEl3T0RwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdlkyOXVkSEpoWTNSekwzQmhjbk5sTDJkdkxsQnliM1pwWkdWeVcyZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOWpiMjUwY21GamRITXZjR0Z5YzJVdloyOHVTVzV3ZFhRc0lHZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOTBjbVZsY3k5amMzUXZaMjh1UTFOVVcyZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmNuVnpkQzluYnk1TVlXNW5kV0ZuWlYxZE5UYzZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM0JoY25ObEwzTjViblJoZUM5eWRYTjBMMmR2TGxCeWIzWnBaR1Z5TlRFNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5eWRYTjBMMmR2STB4aGJtZDFZV2RsTkRweWRYTjA1NDpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcGFyc2Uvc3ludGF4L3J1c3QvZ28jUGFyc2U1OnNjb3BlMTojMTk6ZG9jcy9zeW50YXgubWQjcnVzdDU6ZmFsc2UwOg"></a>
 
 Authored scope: [docs/syntax.md#rust](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#rust); profile: unspecified (authored profile absent).
 
@@ -6262,6 +6426,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NDE1Ok9EcHdjbTkyYVdSbGNqWXpPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTluYjJ4aGJtY3ZaMjhqVUhKdmRtbGtaWEl1UVc1aGJIbDZaVEV4TXpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdlkyOXVkSEpoWTNSekwyRnVZV3g1YzJsekwyZHZMbEJ5YjNacFpHVnlXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZaMjlzWVc1bkwyZHZMa3hoYm1kMVlXZGxYVFUxT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5d2NtOTJhV1JsY2k5bmIyeGhibWN2WjI4dVVISnZkbWxrWlhJMU16cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyZHZiR0Z1Wnk5bmJ5Tk1ZVzVuZFdGblpUSTZaMjg1OTpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvYW5hbHl6ZS9maWxlcy9nb2xhbmcvZ28jQW5hbHl6ZTU6c2NvcGUxOiM0MTpkb2NzL25hdGl2ZS1zZW1hbnRpY3MubWQjZmlyc3QtZ28tcHJvZmlsZTU6ZmFsc2UwOg"></a>
+
 Authored scope: [docs/native-semantics.md#first-go-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-go-profile); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -6289,6 +6455,8 @@ Traversal boundary: not a single-return static call.
 ### Declared target [github.com/Bitspark/bittype/resolve/files/golang/go#Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/go/resolver.go#L25)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
+
+<a id="binding-NDE4Ok9EcHdjbTkyYVdSbGNqWXpPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTluYjJ4aGJtY3ZaMjhqVUhKdmRtbGtaWEl1VW1WemIyeDJaVEV4TlRwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdlkyOXVkSEpoWTNSekwzSmxjMjlzZFhScGIyNHZaMjh1VUhKdmRtbGtaWEpiWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzluYjJ4aGJtY3ZaMjh1VEdGdVozVmhaMlZkTlRVNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzQnliM1pwWkdWeUwyZHZiR0Z1Wnk5bmJ5NVFjbTkyYVdSbGNqVXpPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZaMjlzWVc1bkwyZHZJMHhoYm1kMVlXZGxNanBuYnc1OTpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcmVzb2x2ZS9maWxlcy9nb2xhbmcvZ28jUmVzb2x2ZTU6c2NvcGUxOiM0MTpkb2NzL25hdGl2ZS1zZW1hbnRpY3MubWQjZmlyc3QtZ28tcHJvZmlsZTU6ZmFsc2UwOg"></a>
 
 Authored scope: [docs/native-semantics.md#first-go-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-go-profile); profile: unspecified (authored profile absent).
 
@@ -6318,6 +6486,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NjYwOk9EcHdjbTkyYVdSbGNqY3hPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYjNKdFlYUXZjM2x1ZEdGNEwzUjVjR1Z6WTNKcGNIUXZaMjhqVUhKdmRtbGtaWEl1Um05eWJXRjBNalkzT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdlptOXliV0YwTDJkdkxsQnliM1pwWkdWeVcyZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOTBjbVZsY3k5aGMzUXZaMjh1Vm1sbGQxdG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwzUjVjR1Z6WTNKcGNIUXZaMjh1VEdGdVozVmhaMlZkTENCbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmRISmxaWE12WTNOMEwyZHZMa05UVkZ0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDNSNWNHVnpZM0pwY0hRdloyOHVUR0Z1WjNWaFoyVmRYVFkwT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5bWIzSnRZWFF2YzNsdWRHRjRMM1I1Y0dWelkzSnBjSFF2WjI4dVVISnZkbWxrWlhJMU56cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwzUjVjR1Z6WTNKcGNIUXZaMjhqVEdGdVozVmhaMlV4TURwMGVYQmxjMk55YVhCMDYyOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9mb3JtYXQvc3ludGF4L3R5cGVzY3JpcHQvZ28jRm9ybWF0NTpzY29wZTE6IzI1OmRvY3Mvc3ludGF4Lm1kI3R5cGVzY3JpcHQ1OmZhbHNlMDo"></a>
+
 Authored scope: [docs/syntax.md#typescript](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#typescript); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -6346,6 +6516,8 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
+<a id="binding-NDYyOk9EcHdjbTkyYVdSbGNqY3lPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzloYm1Gc2VYcGxMMlpwYkdWekwzUjVjR1Z6WTNKcGNIUXZaMjhqVUhKdmRtbGtaWEl1UVc1aGJIbDZaVEV4TnpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdlkyOXVkSEpoWTNSekwyRnVZV3g1YzJsekwyZHZMbEJ5YjNacFpHVnlXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZkSGx3WlhOamNtbHdkQzluYnk1TVlXNW5kV0ZuWlYwMk5EcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZVzVoYkhsNlpTOW1hV3hsY3k5MGVYQmxjMk55YVhCMEwyZHZMbEJ5YjNacFpHVnlOVGM2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzkwZVhCbGMyTnlhWEIwTDJkdkkweGhibWQxWVdkbE1UQTZkSGx3WlhOamNtbHdkQTYzOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9hbmFseXplL2ZpbGVzL3R5cGVzY3JpcHQvZ28jQW5hbHl6ZTU6c2NvcGUxOiM0OTpkb2NzL25hdGl2ZS1zZW1hbnRpY3MubWQjZmlyc3QtdHlwZXNjcmlwdC1wcm9maWxlNTpmYWxzZTA6"></a>
+
 Authored scope: [docs/native-semantics.md#first-typescript-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-typescript-profile); profile: unspecified (authored profile absent).
 
 ### Declared target [github.com/Bitspark/bittype/analyze/files/typescript/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/typescript/go/analyze.go#L57)
@@ -6372,6 +6544,8 @@ Construction alternatives: no provider collaborators.
 
 ### Declared target [github.com/Bitspark/bittype/resolve/files/typescript/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/typescript/go/resolver.go#L43)
 
+<a id="binding-NDY0Ok9EcHdjbTkyYVdSbGNqY3lPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl5WlhOdmJIWmxMMlpwYkdWekwzUjVjR1Z6WTNKcGNIUXZaMjhqVUhKdmRtbGtaWEl1VW1WemIyeDJaVEV4T1RwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdlkyOXVkSEpoWTNSekwzSmxjMjlzZFhScGIyNHZaMjh1VUhKdmRtbGtaWEpiWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzkwZVhCbGMyTnlhWEIwTDJkdkxreGhibWQxWVdkbFhUWTBPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl5WlhOdmJIWmxMMlpwYkdWekwzUjVjR1Z6WTNKcGNIUXZaMjh1VUhKdmRtbGtaWEkxTnpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDNSNWNHVnpZM0pwY0hRdloyOGpUR0Z1WjNWaFoyVXhNRHAwZVhCbGMyTnlhWEIwNzI6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3Jlc29sdmUvZmlsZXMvdHlwZXNjcmlwdC9nbyNQcm92aWRlci5SZXNvbHZlNTpzY29wZTE6IzQ5OmRvY3MvbmF0aXZlLXNlbWFudGljcy5tZCNmaXJzdC10eXBlc2NyaXB0LXByb2ZpbGU1OmZhbHNlMDo"></a>
+
 Authored scope: [docs/native-semantics.md#first-typescript-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-typescript-profile); profile: unspecified (authored profile absent).
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
@@ -6381,4 +6555,3 @@ Authored scope: [docs/native-semantics.md#first-typescript-profile](https://gith
 | typescript-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestTypeScriptSemanticReports](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L249) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
-

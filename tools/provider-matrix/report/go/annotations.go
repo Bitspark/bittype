@@ -254,15 +254,15 @@ func (p *program) readAnnotations() (*annotations, error) {
 							if err != nil {
 								return nil, p.at(fn.Pos(), err)
 							}
-								typeName, ok := marker.(*types.TypeName)
-								if !ok {
+							typeName, ok := marker.(*types.TypeName)
+							if !ok {
 								return nil, p.at(fn.Pos(), fmt.Errorf("language qualifier must name a production marker type"))
 							}
-								named, ok := types.Unalias(typeName.Type()).(*types.Named)
-								if !ok {
-									return nil, p.at(fn.Pos(), fmt.Errorf("language qualifier must denote a named marker, not a pointer or composite type"))
-								}
-								assoc.marker = canonicalSymbol(named.Obj())
+							named, ok := types.Unalias(typeName.Type()).(*types.Named)
+							if !ok {
+								return nil, p.at(fn.Pos(), fmt.Errorf("language qualifier must denote a named marker, not a pointer or composite type"))
+							}
+							assoc.marker = canonicalSymbol(named.Obj())
 						}
 						for _, prev := range result.cases {
 							if prev.target == assoc.target && prev.marker == assoc.marker && prev.directive.profile == d.profile && prev.directive.values["feature"] == d.values["feature"] && prev.directive.values["case"] == d.values["case"] && prev.test.id == test.id {
