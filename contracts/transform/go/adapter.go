@@ -12,6 +12,7 @@ import (
 
 // Request supplies an owned typed source and admitted immutable evidence.
 type Request[L any] struct {
+	snapshot semantic.Snapshot
 	source   ast.AST[L]
 	entry    ast.NodeRef
 	evidence []semantic.Result
@@ -20,6 +21,10 @@ type Request[L any] struct {
 
 func (r Request[L]) Source() ast.AST[L] { return tree.Clone(r.source) }
 func (r Request[L]) Entry() ast.NodeRef { return r.entry }
+
+// Snapshot returns the exact captured input, including when no evidence is required.
+// A zero request returns an invalid snapshot.
+func (r Request[L]) Snapshot() semantic.Snapshot { return r.snapshot }
 
 // Inputs retains the complete captured source collection for multi-tree mappings.
 func (r Request[L]) Inputs() []representation.AST { return slices.Clone(r.inputs) }
@@ -81,7 +86,7 @@ func (b bound[F, T]) Transform(ctx context.Context, input Input) (representation
 	if err != nil {
 		return representation.ASTSet{}, err
 	}
-	result, err := b.stage(ctx, Request[F]{source: source, entry: input.Source.Entry(), evidence: evidence, inputs: input.Source.Inputs()})
+	result, err := b.stage(ctx, Request[F]{snapshot: input.Source, source: source, entry: input.Source.Entry(), evidence: evidence, inputs: input.Source.Inputs()})
 	if err != nil {
 		return representation.ASTSet{}, err
 	}

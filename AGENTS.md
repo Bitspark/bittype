@@ -68,17 +68,30 @@ reserved Type/Data names. Scalar, List, Record, Data and user-defined kinds use
 the same Horos machinery. Kind definitions are compile-time entities, not native
 type exports. Keep semantic sort separate from declaration parameter count.
 
-The [native representation design](docs/type-representations.md) and
-[type-owned generator plugin contracts](docs/type-generation-plugins.md) remain
-proposed. Libraries own optional mappings, selected by exact declaration identity
-in consuming build configuration. Builtin mappings use the same supplied mechanism;
-explicit overrides replace existing exact bindings without order-dependent selection or
-error-triggered fallback. Opinionated default composition stays outside the Bittype
-module, avoiding a dependency cycle through type-owned integration modules.
-Concrete transformers consume plugins uniformly; no
+The first [public generation SPI](docs/generation-spi.md) and guarded invocation
+are implemented in `contracts/generation/go`, alongside the contracts. Keep that
+minimal runner here; do not add an empty `generation/syntax` wrapper. The broader
+[plugin composition design](docs/type-generation-plugins.md), automatic selectors
+and overrides, definition scheduling and replacement of the four private
+pagination Dialects remain separate work. Libraries own optional mappings; the
+replacement selects exact declaration identities in consuming configuration.
+Builtin mappings use the same supplied mechanism. Explicit overrides must replace
+existing exact bindings without order-dependent selection or error-triggered
+fallback. Opinionated default composition stays outside the Bittype module,
+avoiding a dependency cycle through type-owned integration modules.
+Replacement transformers must consume plugins uniformly; no
 contract-specific engine registrations, named-library imports in general
 transformers or raw-source recipes. Missing/conflicting required representations
 fail rather than selecting a weaker fallback.
+
+Keep lexical association scope separate from a callback's operation ticket.
+Retained formal products survive Introduce for use in Define; callback issuance
+expires when that callback returns. The configured association owner authenticates
+immutable records before the host seals a product; attaching a requested binding
+to an unrelated payload/token is forbidden. Native-only helpers use configured
+helper keys, never fabricated source declarations or inherited caller binders.
+Source admission, native syntax/scoping and representation meaning remain with
+their supplied owners. None is inferred by the agnostic runner.
 
 - Readable Horos syntax and native pagination transformers are implemented;
   read [Horos syntax](docs/horos-syntax.md) and [semantic generation](docs/semantic-generation.md).

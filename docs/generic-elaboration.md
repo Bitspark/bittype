@@ -1,24 +1,30 @@
 # Generic generation and native admission
 
-**Evaluated proposal, 5 November 2026. No implementation.** This reconciles the
+**Evaluated design with first public SPI implemented in Go source, 6 November 2026.**
+This reconciles the
 independent consultations [0008](../research-docs/0008-generic-generation-protocol.md)
 on composition and [0009](../research-docs/0009-native-kind-constraint-soundness.md)
 on native soundness. It refines [plugin generation](type-generation-plugins.md)
 and [native constraints](native-kind-constraints.md). Their earlier binder-to-slot
 and private-evidence sketches are not alternate supported contracts.
 
+The [first public SPI](generation-spi.md) implements Use, Publish, Define and
+paired Introduce/Apply with explicit collaborators and a guarded lifecycle.
 The current pagination implementation still uses its private Dialect. Its
 representation profile permits constraint erasure; its enforcement profile
-returns Unsupported. Neither the interfaces discussed here nor a new native
-admission profile is implemented. The research used source/specification
-reasoning, without native compiler runs or a new validation workflow.
+returns Unsupported. Automatic selectors/overrides, definition scheduling, the
+four production Dialect replacements and native admission profiles remain next
+steps. The earlier research used source/specification reasoning; it is distinct
+from implementation qualification.
 
 The owner's subsequent [Logos preservation proposal](logos-preservation.md)
 expresses preservation under symbolic assumptions, with native admission proved
 separately. Its Go pagination example supplies scoped facts, structural rules
 and assumption-discharge obligations for arbitrary `T : Data` with a valid
-selected representation. This extends the evaluated direction; it does not
-claim that the research or current implementation already provides that bridge.
+selected representation. The subsequent
+[scoped Horos/Go integration](verification.md#implemented-go-surface) implements
+explicit projections and direct Logos checking for TextBox/Page and nested reuse.
+That checking composition remains separate from the generation SPI.
 
 The subsequent [type-system modeling proposal](type-system-model.md) makes the
 language judgments and rules behind those obligations an explicit design layer.
@@ -27,9 +33,9 @@ and convention interfaces. The pagination walkthrough remains the composition
 example; it does not supply the missing native theories by itself.
 
 The [evaluated architecture](type-system-architecture.md) refines that prerequisite:
-consume Logos semantic packages, exercise two exact statements and their actual
-generation associations, and obtain the narrow typed checker before production
-symbolic certification. Introduce/Apply connects source/native binders and whole
+consume Logos semantic packages and exercise two exact statements and their actual
+generation associations. The scoped integration now uses the landed narrow typed
+checker. Introduce/Apply connects source/native binders and whole
 application results to that evidence; it does not become a proof foundation.
 Horos already supports the constructor-arrow query needed for the source guarantee.
 
@@ -110,7 +116,7 @@ not an existing generator capability or a required convention for other targets.
 | Selected mapping | Choose the native representation family |
 | Configured source/target convention | Introduce native formals; elaborate actual applications; preserve result associations |
 | Target tooling | Native syntax, scopes, anchors, imports and assembly |
-| Generation kernel | Exact selection, invocation/scope identity, reservation, lifecycle, budgets and whole-output failure |
+| Generation kernel | Invocation/scope identity, reservation, lifecycle, budgets and whole-output failure; automatic exact selection remains a future composer responsibility |
 
 Replace the former binder-to-target-index idea with **real source binder to scoped
 representation product**. A product includes the native payload projection and
@@ -130,8 +136,8 @@ Use, Publish and Define share this convention. Apply may reference an owned or
 external declaration, or construct inline syntax; it does not imply that every
 use must own a local definition. Publication and deferred definition remain
 optional capabilities required only when their operation is demanded.
-Nongeneric source definitions need an explicit treatment, not an accidental
-requirement to implement a generic capability.
+Nongeneric source definitions use the public SPI's explicit `Nullary` layout
+route when no Convention is supplied, without an artificial generic capability.
 
 The formal/application law is that substituting represented actuals into the
 introduced products agrees with representing the corresponding source
@@ -141,8 +147,9 @@ or equal IDs cannot establish either law.
 
 ### Pagination and scope
 
-This walkthrough is the proposed first implementation through the shared plugin
-architecture. The source excerpts assume an explicit import of the ordinary
+This walkthrough guides the production migration to the shared plugin
+architecture; the first public SPI does not yet replace those generators.
+The source excerpts assume an explicit import of the ordinary
 `horos.kinds` module as `h`; module headers and import identities are omitted.
 See [Horos source syntax](horos-syntax.md) for complete module syntax. The
 examples specify intended composition, not executed new generator capabilities.
@@ -202,8 +209,8 @@ not make arbitrary native applications satisfy Tree.
 
 The same configured convention governs the open declaration and every use:
 
-1. **Reserve Page and introduce its formals.** Own reserves the native declaration
-   and parameter symbols. Introduce uses those reserved symbols to associate the
+1. **Reserve Page and introduce its formals.** Acquisition reserves the native
+   declaration and parameter symbols. Introduce uses those reserved symbols to associate the
    real source binder Page.T with a scoped representation product whose payload
    is the native parameter T. A simple Page convention introduces one native
    parameter.
@@ -235,12 +242,28 @@ A representation product has two conceptual parts:
 | Integration-owned support | Information connecting that payload to the effective source use, its assumptions and selected association, including the result support required by composition |
 
 The integration owns the support vocabulary and establishes its association.
+In the public SPI, each preselected plan supplies an `Associations` owner. It
+authenticates an immutable stored token and returns its actual payload and binding;
+the host checks that binding before sealing a Product. A record address alone
+does not establish existence or authorize attaching a different source subject.
 The host owns invocation and scope rules; it does not interpret kind proofs or
 accept an arbitrary pair as valid merely because its fields have the right Go
 types. This is not a universal source/native/proof tuple or a dictionary of named
 kinds. Support stays in generation state. An enforcing encoding may additionally
 emit native descriptor or constraint types; neither operation creates runtime
 adapters or values.
+
+The retained lexical scope is distinct from an operation ticket. `Binding`
+records the run/configuration, issuer, subject/environment, native frame and
+signature. `Ticket` governs one callback's return and issuance lifetime.
+Introduce's formal products survive for later Define operations in the same
+frame, while the completed Introduce callback loses issuance authority. A fresh
+callback return envelope does not change a product's semantic association.
+
+Native-only helpers are configured with a local helper key and no source
+Declaration. They do not need dummy canonical declarations, source binders or
+the caller's source environment. Their explicit native layout and body remain
+the target's responsibility.
 
 #### Caller scope and nested results
 
@@ -293,7 +316,7 @@ specifies a future requirement, not current support.
 
 ### Admission and products do not manufacture proofs
 
-An admitted-use operation would expose coverage already established in supplied
+The source adapter's admitted-use operation exposes coverage already established in supplied
 provider results. The current transformer receipt admission establishes
 snapshot/profile/configuration/report association. DirectParameterBindings
 establishes structural argument correspondence. Neither proves every contextual
@@ -385,39 +408,47 @@ nodes or source semantic facts.
 
 ## Go SPI status and next scope
 
-The paired-operation/product direction is the evaluated proposal. The expert's
-third Go type parameter C and immutable integration token are useful candidate
-mechanics, not a finalized public SPI. `C any` cannot itself enforce immutability.
-There is no string-keyed universal evidence bag or automatic carrier cloning.
+The [public generation SPI](generation-spi.md) is implemented in
+[`contracts/generation/go`](../contracts/generation/go/contracts.go), including
+its minimal guarded Session. As with the existing semantic operation contract,
+the runner belongs beside the contracts; there is no empty `generation/syntax`
+wrapper. It implements these construction and lifetime decisions:
 
-First follow the [type-system architecture sequence](type-system-architecture.md#implementation-and-qualification-sequence)
-and its language-owned theories, exact statements and checking prerequisites.
-This is a model-design prerequisite, not a requirement to formalize every feature
-of all five languages before an initial implementation. Then complete these
-concrete API decisions together for a selected target/domain:
+1. Owner-qualified record addresses and authenticated source views, with guarded
+   product issuance and host-owned invocation/signature identities. Independent
+   integrations need no private Bittype imports.
+2. One frozen native layout, exact real-binder coverage and retained formal
+   products. Lexical association scope survives callback boundaries; issuance
+   authority tied to the operation ticket expires when each callback returns.
+3. Host-mediated Apply and explicit owned/external destination acquisition.
+   Native-only helpers have configured keys and no fabricated source declarations.
+   Inline use does not require ownership; an external callee requires no local Define.
+4. A configured association owner authenticates immutable support records and
+   their actual payload/binding. The host checks identity and lifetime without
+   interpreting kind semantics or accepting a caller's arbitrary payload/support pair.
+5. Separate optional capabilities, an explicit nongeneric layout route, bounded
+   invocation and whole-output failure. Finish is the only output commit; callbacks
+   and their record stores remain trusted collaborators with stable policy.
 
-1. Public issuance and safe access for admitted uses, products, signatures and
-   environment identities, without private Bittype imports.
-2. One authoritative native formal layout, including preserved constraint clauses
-   and exact real-binder coverage.
-3. Host-mediated convention application and acquisition of owned/external/inline
-   callees; no first-use capture or unconditional Own requirement.
-4. Typed support-demand/coverage operations and result association production,
-   without enumerating every kind or running hidden analysis.
-5. Optional-capability and nongeneric-definition behavior, limits and failure.
+The implementation accepts already selected plans and explicit driving of
+acquisition, publication and definition. It does not supply automatic exact
+selection/overrides, a definition queue, language-specific mappings or native
+admission encodings. There is no universal evidence bag or automatic cloning of
+arbitrary integration state. The [joint verification composition](verification.md)
+continues to own actual-artifact claims and Logos checking separately.
 
 ### Implementation sequence
 
-After that modeling design, implementation proceeds through the pagination
-walkthrough in three steps. This document authorizes no code change by itself.
+The pagination migration has three stages:
 
-1. **Define the public product and convention interfaces.** Use the agreed
-   judgment/assumption model to resolve the five API questions above with Page,
-   Outer and Nested. Independent integrations must be
-   able to construct and consume scoped products through public contracts. Keep
-   source facts, selected associations and emitted syntax separate; a Go carrier
-   cannot establish their semantic correctness by itself.
-2. **Replace the private pagination path across all four targets.** Implement the
+1. **Implemented in source: public operations and guarded lifecycle.** The first
+   SPI supplies product/convention contracts and explicit invocation. Source facts,
+   selected associations and emitted syntax stay separate; a Go carrier cannot
+   establish their semantic correctness by itself. Qualification of this surface
+   is distinct from replacing production generators.
+2. **Next: compose and replace the private pagination path across all four targets.**
+   Add automatic exact selection, guarded overrides and definition scheduling.
+   Implement the
    shared convention over the existing proper, direct, saturated generic domain
    and supply the ordinary declaration, record, list, text, boolean and optional
    mappings.
@@ -426,20 +457,20 @@ walkthrough in three steps. This document authorizes no code change by itself.
    implementation or implicit fallback remains. Existing unsupported cases stay
    explicit until their own mappings/contracts are implemented. Extend composition
    through ordinary library fixtures such as Cell without adding core cases.
-3. **Add supported native constraint encodings.** For each selected target/domain,
+3. **Deferred: add supported native constraint encodings.** For each selected target/domain,
    specify the admitted arguments, consumer operations, issuer assumptions,
    checking points and identity/alias promises. Exercise the counterexamples in
    the [constraint proposal](native-kind-constraints.md). An unavailable enforcing
    representation returns Unsupported; no weaker output satisfies that request.
 
-The first implementation retains today's explicit representation-only guarantee.
-It preserves the associations needed for stronger encodings without claiming
-those encodings already exist. The [Logos preservation proposal](logos-preservation.md)
-describes a possible explicit proof integration using source facts, actual target
-AST semantics and mapping laws. The product/convention API is not that proof,
-and the proposal does not install a Logos dependency or native analyzer implicitly.
+The production migration initially retains today's explicit representation-only
+guarantee. The first SPI preserves associations needed for stronger encodings
+without supplying those encodings. The [joint verification composition](verification.md)
+already checks the scoped TextBox/Page claims using actual captured artifacts.
+The product/convention API is not that proof and imports no Logos checker or
+native analyzer implicitly.
 
-The implementation's automated tests and target typechecking should cover:
+Qualification of the complete production migration should cover:
 
 | Case | Required outcome |
 | --- | --- |
@@ -452,9 +483,10 @@ The implementation's automated tests and target typechecking should cover:
 | Imported generic with compatible/incompatible fixed choices | Reuse only supported parameter substitutions; an element override cannot rewrite a baked-in list or optional representation |
 | Requested native enforcing API | Target-specific positive and negative typechecking demonstrates the stated domain and checking point; a few accepted concrete uses do not establish an open guarantee |
 
-These are future acceptance criteria, not tests executed by this documentation
-change. Run the applicable Go tests and native typechecking through the
-repository's maintained execution paths when implementation is authorized.
+These are acceptance criteria for the full migration, not a claim that the first
+SPI already generates each example. Public contract qualification and production
+native typechecking remain separate. Run applicable checks through the repository's
+maintained execution paths; the first SPI does not add target-language capabilities.
 Higher-order/computed generics, automatic convention adaptation, mixed native
 binders, unrestricted recursion and cross-invocation caches remain deferred
 until a concrete supported case requires them.

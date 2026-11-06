@@ -55,8 +55,8 @@ checks supplied positive derivations, and `certify.CheckWithDerivedContext`
 binds closed-world checking to the caller's live inputs. Neither requires
 Bittype to implement an EngineProvider. The
 [production request trace and direct route](logos-verification.md#direct-checking-needs-no-search-provider)
-separate these existing APIs from the typed proposal and identify the source,
-native and artifact-association work Bittype still needs.
+separate these existing APIs from the landed typed boundary and the scoped
+source/native projection and artifact-association work implemented in Bittype.
 
 The dependency direction is:
 
@@ -169,7 +169,7 @@ map, not a new Go struct or serialized schema:
 
 | Input | Construction and ownership |
 | --- | --- |
-| Source and actual output captures | Existing Bittype snapshots retained separately by the proposed joint association |
+| Source and actual output captures | Existing Bittype snapshots retained separately by the implemented joint association |
 | Source/native semantic results | Compatible provider-issued reports for those captures; not automatically proof evidence |
 | Selected mappings, helpers and environment | Caller configuration and owning language/mapping integrations |
 | Independently expected claim | Owning integration constructs the appropriate Logos ground claim or admitted typed statement from the bound artifacts |
@@ -208,12 +208,12 @@ implements registered `resolve/files/golang` and `analyze/files/golang` roles,
 with explicit query sessions. Later languages follow the same matrix when implemented;
 no empty stubs, registry cells or compatibility aliases are added.
 
-Begin with a private composition seam; promote the shared contract only after
-both examples identify its necessary shape. Contract walkthroughs can establish
-that shape before both examples execute; production guarantees still require
-their implementation and qualification. Generic orchestration depends only
-on carriers and explicit collaborators. Concrete adapters may depend on their
-own language/foundation contracts under explicit dependency rules.
+The TextBox/Page integration implements the shared participant/evidence/site
+association and keeps interpretation and checking in the concrete composition.
+Its guarantees remain limited to the documented supported domain. Generic
+orchestration depends only on carriers and explicit collaborators. Concrete
+integrations may depend on their own language/foundation contracts under explicit
+dependency rules.
 The checker collaborator need not become a separate public provider SPI. Direct
 composition with a supported Logos API is sufficient where it meets the claim.
 No new verifier registry, foundation catalogue or automatic discovery is selected.
@@ -231,18 +231,17 @@ representation plugins remain a separate, broader design.
 
 ## Remaining public verification SPI decisions
 
-**Refined after source inspection, 6 November 2026. Documentation only.** The
+**Refined after source inspection and scoped implementation, 6 November 2026.** The
 owner requested that the [Logos findings](logos-verification.md) narrow this
 proposal. The four concerns below distinguish existing Logos capabilities,
 Logos production gaps and Bittype's association responsibilities. The
-[joint request/result proposal](verification.md) now defines the association,
-lifetimes, preparation/checking split and failure behavior. The remaining public
-decision is which demonstrated agnostic surface to promote from the first
-private composition; it is not a missing proof calculus or undefined request
-semantics. The first implementation promotes the agnostic participant/evidence/site
-association and keeps the concrete Logos contract in the owning composition. A wider
-cross-language verification provider SPI remains deferred. Semantic
-ownership, explicit composition and stage-first placement are unchanged.
+[joint request/result contract](verification.md) implements the association,
+lifetimes, preparation/checking split and failure behavior for the scoped
+Horos/Go composition. Its public agnostic surface covers participant/evidence/site
+association; the concrete Logos contract stays in the owning composition. A wider
+cross-language verification provider SPI remains deferred, rather than blocked
+on a missing proof calculus or undefined request semantics. Semantic ownership,
+explicit composition and stage-first placement are unchanged.
 
 The fixed boundaries are: languages own judgments, Logos owns proof machinery,
 the expected statement is constructed independently of candidate evidence, and
@@ -355,14 +354,14 @@ must remain a separate operation-completion condition.
 
 ### Joint contract and implementation cases
 
-The [joint contract](verification.md) specifies the construction record, sealed
-request/result and concrete Logos bindings. Its walkthroughs identify which
-source/native/mapping inputs are still missing implementations. Keep proof
+The [joint contract](verification.md) implements the construction record, sealed
+request/result and concrete Logos bindings. Its walkthroughs describe the
+implemented source/native/mapping inputs and their supported domain. Keep proof
 production separate: checking receives an independently fixed expected statement
 and supplied evidence, without hidden search or missing analysis. A new public
 checker abstraction is not needed for this direct-call contract.
 
-Use the two examples to review the candidate SPI before public promotion:
+The two examples exercise the following contract distinctions:
 
 | Contract exercise | Required distinction |
 | --- | --- |
@@ -371,13 +370,13 @@ Use the two examples to review the candidate SPI before public promotion:
 | Changed output/helper, foreign snapshot or incompatible checker | Require fresh association; reject a stale result or unsupported binding. Candidate syntax may still pass a fresh check if the new meaning and laws justify it |
 | Unsupported or exhausted checker | Publish the coverage/completion limitation without a stronger claim |
 
-These remain Bittype contract-design cases, not completed Bittype integration
-tests. The Logos follow-up has shared logical TextBox/Page cases, but no actual
-Bittype artifact extractor or native model. The
-[Logos typed-checker milestone](#the-logos-checking-prerequisite) remains an
-execution dependency for production symbolic certification; it does not prevent
-defining this contract. The proposal implements no provider, generator, proof
-producer or checking service.
+The [integration tests](../verification/integration/go/joint_test.go) exercise
+actual captured inputs for these scoped TextBox/Page cases. The composition
+supplies explicit Horos and Go projections, selected mapping laws and scripted
+candidates, then calls the landed
+[Logos typed checker](#the-logos-checking-prerequisite) directly. General native
+theories, automatic proof search and native admission enforcement remain
+deferred. The integration adds no generator behavior or runtime bindings.
 
 ## Outcomes and trust
 
@@ -539,10 +538,10 @@ check that actual association; it must not invent a general definitional-equalit
 proof or equate distinct declaration IDs by unfolding.
 
 Neither route requires a mandatory helper declaration, a copied Page, template
-lifting or a new inspection API. The **missing** integration translates the
+lifting or a new inspection API. The scoped Horos/Go integration translates the
 authoritative result into a precisely scoped source-only schema in the selected
 evidence foundation. All original assumptions, declarations and dependencies stay
-visible. The current verdict/handle is not itself a portable proof, and several
+visible. The Horos verdict/handle is not itself a portable proof, and several
 closed Satisfies calls cannot establish a universal schema.
 
 Initially this is a trusted Horos procedure result. The composition checker proves
@@ -713,30 +712,29 @@ it; a table of future cases is not an implemented native analyzer.
 
 ## Implementation and qualification sequence
 
-After implementation is authorized:
+The first scoped Horos/Go composition is implemented through the
+[joint contract](verification.md#implemented-go-surface):
 
-1. Implement the private composition defined by the [joint contract](verification.md)
-   against the [Logos contract map](logos-verification.md#ownership-map-for-the-verification-spi).
-   Preserve the walkthroughs' exact TextBox/Page statements, artifact associations
-   and evidence dependencies without designing another proof or checker registry.
-2. Establish the concrete TextBox bool counterexample through the selected typed
-   Go checking route and authoritative source refutation. The existing ground
-   route remains usable, but this slice does not require two integrations.
-3. Model the selected Go fragment's exact/underlying acceptance characterizations
-   and field representation. Retain the example's explicit Go 1.25 baseline with
-   matching compiler/specification inputs; the moving live specification now
-   describes Go 1.27. This document ran neither toolchain.
-4. Admit the delivered Logos typed Go dependency. Prepare the precise Horos
-   schema bridge and language/mapping inputs.
-   Logical conformance cases do not establish artifact or native-model adequacy.
-5. Supply a scripted Page proof, check its actual quantified statement, then
-   instantiate it for Person and again for the nested result. No general search
-   engine or finite argument whitelist is required.
-6. Qualify source projection, target projection, native-model adequacy and any
-   emission promise. Then exercise the other language distinctions and promote
-   only the shared API shown necessary by both examples.
+1. Public agnostic association retains actual captures and receipt requirements.
+   Exact statements, interpretation and direct checking remain in the owning
+   composition; no second proof or checker registry is added.
+2. Explicit Horos queries and a Go projection using `go/types` with the Go 1.25
+   language baseline supply the scoped source/native premises. The TextBox bool
+   counterexample uses authoritative source nonmembership and actual native
+   admission under the selected static representation.
+3. The composition uses the public Logos typed Go dependency and translates
+   the authoritative Horos constructor query into a scoped source premise.
+   Procedure and projection correspondence remain explicit trusted dependencies;
+   logical checking does not independently prove their adequacy.
+4. Scripted Page evidence is checked against its actual quantified statement and
+   reused through a rechecked definition for Person and the nested result. No
+   general search engine or finite argument whitelist is required.
 
-The future regression set includes:
+Further work extends and qualifies source/native projections, mapping laws and
+emission promises beyond that [supported domain](verification.md#supported-domain-and-limits).
+Other language theories and native admission enforcement remain separate steps.
+
+The broader qualification set includes:
 
 | Change or input | Required observation |
 | --- | --- |
@@ -753,15 +751,17 @@ The future regression set includes:
 | Justify a recursive cycle solely by revisitation | Certificate rejected |
 | Actual native acceptance outside modeled acceptance | Adequacy defect; no unqualified result |
 
-These are acceptance requirements, not passed tests. Relevant automated tests
-and native typechecking accompany implementation using maintained shared/CI
-execution. All Logos workloads remain off the workstation. No extra administrative
-validation system or speculative performance target is introduced.
+This table states acceptance requirements, not a blanket report of passed tests.
+The joint contract documents the implemented coverage and remaining limits.
+Relevant automated tests and native typechecking accompany further implementation
+using maintained shared/CI execution. All Logos workloads remain off the
+workstation. No extra administrative validation system or speculative performance
+target is introduced.
 
 ## Unsupported conditions and forbidden shortcuts
 
-Production symbolic certification remains unavailable until the required checking
-contract/executable and source/native bridges are admitted and qualified. Missing
+Claims beyond the implemented scoped composition require their checking contracts
+and source/native bridges to be admitted and qualified. Missing
 abstraction/substitution checking, absent actual-output correspondence, lost
 original constraints, unsupported recursive obligations, uncovered native
 operations or unresolved adequacy defects prevent the stronger result.

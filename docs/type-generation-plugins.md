@@ -1,18 +1,21 @@
 # Type-owned generator plugins
 
-**Proposal, 5 November 2026. No implementation is included.** This extends the
+**Design with first public SPI implemented in Go source, 6 November 2026.**
+This extends the
 [native representation design](type-representations.md) to builtin mappings and
 explicit consumer overrides. The existing pagination transformers remain the
-implemented baseline; the contracts and paths below describe their proposed
-replacement. They are not current Go APIs.
+production baseline. The [public generation SPI](generation-spi.md) implements
+Use, Publish, Define and paired Introduce/Apply with a minimal guarded invocation
+over preselected collaborators. Automatic selectors/overrides, definition
+scheduling and migration of the four private Dialects remain proposed.
 
 The [paired consultation synthesis](generic-elaboration.md) refines this design.
 It replaces the earlier binder-to-slot concept with scoped representation
 products and paired formal/application conventions. The old full Go SPI sketch
 is withdrawn as a candidate interface; it survives only in frozen research
-inputs. The complete replacement SPI awaits a selected support domain and the
-construction/lifetime decisions listed below. No alternative compatibility API
-is proposed.
+inputs. Its replacement is now the
+[implemented public contract](generation-spi.md); the remaining composition work
+uses that contract. No alternative compatibility API is retained.
 
 The later [Logos preservation proposal](logos-preservation.md) explains how
 mapping-owned representation laws could compose into symbolic preservation
@@ -30,9 +33,9 @@ The [evaluated architecture](type-system-architecture.md) places these theories
 in language-owned Logos semantic packages. The generator retains the existing
 transformer boundary; explicit composition binds the actual output, selected
 mappings and independently chosen statement to its checking result. Mapping
-ownership supplies the law, not its truth. Public preservation-facing contracts
-follow the TextBox/Page exercises, and symbolic certification needs the
-Logos-owned typed-checker prerequisite.
+ownership supplies the law, not its truth. The scoped
+[TextBox/Page integration](verification.md#implemented-go-surface) uses the landed
+Logos typed checker; generation products do not themselves certify those claims.
 
 The baseline design is scoped to native types and interfaces. The subsequent
 [Go admission proposal](go-native-admission.md) requires empty private marker
@@ -330,10 +333,12 @@ The Go text mapping can use a generated wrapper rather than a plain native strin
 type Text string
 ```
 
-Its Use operation reserves HelperDefinition("text-wrapper") and returns a named
-type fragment. Own queues Define once. Define emits the backing native `string`
-directly; calling Lower on Horos text again would reselect the same override and
-cause a cycle. The ordinary list plugin still lowers its element through the
+In this proposed mapping, Use calls `RequireHelper("text-wrapper")` and returns
+a named type fragment. The helper key selects a native-only configured plan;
+it is not a synthetic Horos declaration. The driver invokes Define explicitly;
+automatic scheduling belongs to the future composer. Define emits the backing
+native `string` directly; representing Horos text again would reselect the same
+override and cause a cycle. The ordinary list plugin still lowers its element through the
 selected mappings, so list-of(text) becomes `[]Text`.
 
 The same distinction applies to a generic presence helper:
@@ -410,39 +415,52 @@ language.
 ## Go contracts
 
 The earlier complete interface sketch did not express witness-dependent payload
-projections, extra actual arguments or result associations. It is replaced by the
-[paired convention/product proposal](generic-elaboration.md#one-generic-convention-for-formals-and-applications),
-not retained as an alternative SPI. The frozen inputs for research 0007/0008
-retain what those experts reviewed. No package implements either sketch today.
+projections, extra actual arguments or result associations. The
+[paired convention/product design](generic-elaboration.md#one-generic-convention-for-formals-and-applications)
+now has a first public implementation in
+[`contracts/generation/go`](../contracts/generation/go/contracts.go). The frozen
+inputs for research 0007/0008 retain what those experts reviewed; neither earlier
+sketch is an alternative SPI. See [the public surface](generation-spi.md) for
+operation ownership and invocation rules.
 
-The following are conceptual operations and carriers, not final Go signatures:
+The implemented roles and the remaining composition boundary are:
 
 | Surface | Required meaning |
 | --- | --- |
-| Configured mapping | Exact selector, configured BindingID, implementation identity and explicit consumer options |
-| Source adapter | Admitted source-use coverage, canonical open declarations, effective applications and context-preserving type-child projection |
-| Representation product | Native payload plus integration-owned immutable association support, scoped to the source use and target formal environment |
+| Configured mapping | A preselected Plan with explicit optional capabilities and association owner; automatic exact selectors and guarded override configuration remain future composition work |
+| Source adapter | Source admits supplied evidence and authenticates existing uses, canonical open declarations and effective applications; it performs no hidden analysis |
+| Representation product | Host-sealed Product containing the authenticated native payload and immutable association token, scoped to the source use and target formal environment |
 | Generic convention | One immutable open-declaration convention with paired Introduce and Apply operations |
 | Introduce | Bind real source formals to products and construct native formals/constraint clauses from reserved symbols |
 | Apply | Construct the complete native use and its result association under the caller's actual arguments/assumptions |
 | Use | Produce the selected representation product; a generic use follows its convention |
 | Publish | Expose the requested open API declaration, using the same convention |
-| Own | Reserve local declaration/native parameter symbols and queue an immutable definition request |
+| Acquisition | Acquire an owned or external destination and retain its frozen layout; RequireOwned and RequireHelper demand local ownership without scheduling Define automatically |
 | Define | Fill the reservation in its introduced formal environment; preserve the authoritative native formals and constraints |
 | Represent / payload projection | One admitted association path; requesting only the payload does not bypass admission |
 | External reference | Native artifact/export identity accompanied by its supplied generic/representation contract |
 
-A third Go type parameter for the integration's support carrier is a candidate
-mechanic, not a required native source/payload/proof tuple. A carrier must be an
-integration-issued immutable token or obey equivalent safe access rules; generic
-Go typing or copying a struct cannot guarantee that. The kernel cannot bless an
-arbitrary payload/support pair by attaching a requested source reference.
+The public contract uses typed, owner-qualified addresses for immutable records.
+The configured `Associations` collaborator authenticates an existing token and
+returns its stored payload and binding; the host compares that binding with the
+requested association before sealing a Product. A nonzero address does not prove
+record existence, and copying a Go interface does not freeze its private state.
+Owners must retain immutable records and stable policy for the invocation. The
+kernel cannot bless an arbitrary payload/support pair by attaching the requested
+source reference. It imposes no universal native source/payload/proof tuple.
 
 Generic conventions, publication and definition remain separately demanded
 capabilities. Inline, external and owned effects can coexist. Apply must have an
-explicit route to its callee without forcing every application to Own a local
+explicit route to its callee without forcing every application to own a local
 definition. A requested root cannot silently disappear. Nongeneric definitions
-need explicit zero-formal or nongeneric handling in the eventual API.
+use the explicit `Nullary` layout route when no Convention is supplied.
+
+Lexical scope and callback lifetime are separate. `Binding` retains the run,
+configuration, configured issuer, source subject/environment, native frame and
+signature. An operation `Ticket` identifies the shorter callback-return window.
+Formal products retained from Introduce remain available in Define's same frame;
+the earlier callback cannot issue another result after returning. A new callback
+envelope never grants permission to retag the underlying association.
 
 ### Source interpretation and semantic input
 
@@ -462,8 +480,10 @@ no hidden analyzer or resolver. Association products do not enter source Semanti
 ### Ownership and target construction
 
 A source definition belongs to its configured mapping and canonical open
-declaration for one invocation. Helper keys are mapping-local. The first concrete
-application cannot choose a generic signature or capture its caller's symbols.
+declaration for one invocation. Native-only helpers use keys local to the captured
+configuration and a plan with no source Declaration; they need no fabricated
+canonical declaration. The first concrete application cannot choose a generic
+signature or capture its caller's symbols.
 Repeated reservations must agree on one authoritative native layout. Native
 helpers have explicit parameters and no inherited source-binder environment.
 
@@ -473,19 +493,22 @@ and parameters have their own anchors and valid scopes. The target owns grammar,
 name/import allocation and assembly, not canonical mapping decisions. An external
 reference is not a fabricated resolved AST NodeRef.
 
-Public issuers/accessors for source refs, admitted uses, products, signatures,
-environments and symbols must let independent integrations operate without
-private Bittype imports. The complete construction API, host-mediated Apply,
-callee acquisition and typed support-demand/result operations remain to be
-specified together. The expert's partial Go snippets are not a ready-to-compile
-contract. See the [remaining API decisions](generic-elaboration.md#go-spi-status-and-next-scope).
+Public owner-qualified references, source admission, product issuance, frozen
+layouts and host-mediated Apply now let independent integrations operate without
+private Bittype imports. Source and native owners authenticate their records;
+configured association owners retain support meaning. The guarded Session is
+driven explicitly through acquisition, publication and definition to Finish.
+Automatic selection/overrides, a definition scheduler and concrete production
+integrations remain separate work. See the
+[implemented boundary and next scope](generic-elaboration.md#go-spi-status-and-next-scope).
 
-The generation host retains per-invocation state, bounded work/depth/imports/
-definitions/expanded output, and stable allocation ordering. Product caching must
-include the target formal environment; cross-invocation caching remains deferred.
+The generation host bounds operations, nesting, plans, source references, formals,
+reservations and expanded output. Any future product caching must include the
+target formal environment; cross-invocation caching remains deferred.
 Configured plugins are trusted Go code, not a sandbox. Error or cancellation
-discards the entire output. The existing ASTTransformer bridge returns an ast.Set;
-it does not publish file placement, a native semantic receipt or an export manifest.
+discards the entire output; Finish is the only output commit. The existing
+ASTTransformer bridge returns an ast.Set; it does not publish file placement,
+a native semantic receipt or an export manifest.
 
 ## Generics and representation promises
 
@@ -532,9 +555,10 @@ requested representations fail explicitly.
 
 The companion [native kind-constraint proposal](native-kind-constraints.md)
 describes direct bounds and source-witness/evidence encodings for enforcing
-profiles. Its obligations also apply to selected plugins. The proposed plugin SPI
-remains incomplete: witness-dependent parameter expansion, cross-package evidence
-and the native syntax such encodings need still require concrete contracts. Binding
+profiles. Its obligations also apply to selected plugins. The first public SPI
+provides frozen layouts and whole-result associations; witness-dependent native
+encodings, cross-package evidence and their language-specific syntax still require
+qualified concrete implementations. Binding
 selection is independent of that future encoding work; it never treats a plugin
 or native representation as proof of kind membership.
 
@@ -565,7 +589,9 @@ integration, and their syntax with the selected target mapping. Helper ownership
 must keep different source obligations and representation configurations distinct;
 matching display names cannot merge them. Unrestricted cross-package issuance
 remains unqualified; explicit dependency contracts and consumer-owned composition
-are proposed in the [paired synthesis](generic-elaboration.md).
+remain part of the broader [paired synthesis](generic-elaboration.md). The first
+SPI supplies native-only helper acquisition and explicit definition, not those
+native evidence encodings or an automatic definition queue.
 
 The generic-coherence requirement includes bounds, witness arguments, evidence
 arguments and result representations, as well as payload storage. A future witness
@@ -615,9 +641,9 @@ The proposed consumer constructs one transformer for each desired source/target 
    The existing typed transformer bridge admits them. Generation invokes no
    resolver or analyzer implicitly.
 3. Select each requested root's mapping and invoke Publish before expanding its
-   body. Own reserves symbols/parameters from the shared convention and queues
-   immutable definition requests.
-   It does not run Define recursively; publication returns an owned symbol.
+   body. Acquisition reserves symbols/parameters through the shared convention;
+   the future composer queues immutable definition requests for owned outputs.
+   It does not run Define recursively; publication records the exposed destination.
 4. Compose child mappings under the same configuration. A list mapping requests
    its element's representation; a structural Page mapping composes its field
    representations. An exact library mapping is selected before expanding that
@@ -650,26 +676,31 @@ Page-specific Cell handling is needed.
 
 ## Proposed file layout and dependencies
 
-These are proposed source paths only; the final file split depends on completion
-of the public SPI. This documentation task creates no Go
-package, implementation directory, generator, provider or runtime binding.
+The first slice implements the contract and minimal guarded runner together in
+`contracts/generation/go`, like the existing semantic operation contract. It adds
+no empty `generation/syntax` wrapper. The actual files are:
 
 ```text
 bittype/
   contracts/generation/go/
-    selector.go                 exact identity and copying constructors
-    source.go                   source references, views and sessions
-    plugin.go                   bindings, overrides, Use and Publish
-    ownership.go                definition subjects and authoritative headers
-    product.go                  scoped representation products
-    convention.go               paired formal/application conventions
-    fragment.go                 immutable native templates and symbolic slots
-    target.go                   target sessions, storage and limits
+    reference.go                owner-qualified addresses and invocation identities
+    source.go                   source admission and authenticated views
+    contracts.go                operations, collaborators, preselected plans and limits
+    handles.go                  sealed requests, products and lifecycle handles
+    session.go                  explicit invocation and final output commit
+    product.go                  association admission and guarded Use/Apply
+    callee.go                   acquisition, Introduce, Publish and Define
+```
+
+The fuller replacement remains proposed. These paths would add substantive
+composition and language-specific implementations, not relocate the minimal
+runner or wrap it without additional responsibility:
+
+```text
+bittype/
   generation/syntax/go/
     bindings.go                 exact selection and guarded replacement
-    lower.go                    scoped representation and terminal errors
-    conventions.go              signature lifecycle and formal environments
-    definitions.go              reservation and deferred definition queue
+    definitions.go              automatic deferred definition scheduling
     transform.go                existing ASTTransformer bridge
   generation/syntax/source/horos/go/
     source.go                   source view and captured environments
@@ -686,11 +717,11 @@ bittype/
   transforms/horos-to-go/go/transform.go
   transforms/horos-to-rust/go/transform.go
   transforms/horos-to-cpp/go/transform.go
-                                thin configuration-only factories
+                                proposed thin configuration-only replacements
 ```
 
-Every target directory has the same three-file responsibility split. Syntax is
-explicit as in the existing stage hierarchy. Source/target are collaborators of
+Every proposed target directory has the same three-file responsibility split.
+Syntax is explicit as in the existing stage hierarchy. Source/target are collaborators of
 Syntax generation, not new dimensions. Go uses `golang` in native implementation
 paths and the existing `horos-to-go` transformer edge path remains unchanged.
 Proposed Go package names are `generation` for the shared contract/composer,
@@ -745,17 +776,20 @@ artifact contracts and the compatible association/convention protocol. For
 example, replacing the configured text-to-string binding must name its expected
 BindingID and supply the new wrapper mapping and compatible association rules.
 It must fail on a missing/revised expected binding or an incompatible imported
-fixed dependency. The exact Go configuration signature remains part of SPI
-finalization; the earlier two-marker Config example is not an alternative API.
+fixed dependency. That automatic configuration layer remains proposed; the
+implemented [Config and Plan contracts](generation-spi.md) accept explicit
+collaborators and already selected plans. They do not implement guarded overrides
+or dependency selection.
 
 After construction, the consumer registers one configured ASTTransformer with
 the existing engine. Other targets use the same ownership and operation roles
 with their own integrations and native backends.
 
-When implementation is authorized, replace the private fixed Dialect and its
-builtin native mapping switch with this composition. Retire the superseded route
-without compatibility aliases, duplicated builtin modes or hidden defaults. The
-current task changes documentation only; the existing implementation is intact.
+The next implementation stage replaces the private fixed Dialect and its builtin
+native mapping switch with this composition. Remove the superseded route without
+compatibility aliases, duplicated builtin modes or hidden defaults when that
+replacement is complete. The first public SPI slice leaves the four production
+pagination generators unchanged.
 
 ## Forbidden shortcuts
 

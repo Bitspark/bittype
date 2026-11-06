@@ -3,10 +3,12 @@
 The [paired generic-generation consultations](generic-elaboration.md) refine
 type-owned plugin composition and native admission. A shared formal/application
 convention and scoped representation products replace the earlier binder-to-slot
-proposal. Target-specific guarantees and the complete Go SPI remain proposed;
-current native generation capabilities are unchanged.
+proposal. The [public generation SPI and explicitly driven lifecycle](generation-spi.md)
+are implemented. Automatic plugin composition and replacement of the four
+production pagination generators remain next; target-specific enforcement
+remains proposed.
 
-The next design prerequisite is the [type-system modeling proposal](type-system-model.md):
+The [type-system modeling proposal](type-system-model.md) supplies the design basis:
 describe Horos and native judgments, binding and inference rules before finalizing
 preservation-facing generation interfaces. The Horos/Go examples distinguish
 argument admission from result representation; TypeScript, Rust and C++ exercise
@@ -21,11 +23,13 @@ the minimum integration seam and typed-checker requirements.
 The [remaining verification SPI gaps](type-system-architecture.md#remaining-public-verification-spi-decisions)
 are narrowed by the [Logos request trace and contract map](logos-verification.md):
 Bittype owns joint artifact association and language/mapping integration; Logos
-already supplies direct ground checking and proposes the richer typed contract.
-Production symbolic checking still needs the admitted typed implementation.
-Claim construction, proof production and checking remain distinct. The next API
-design uses TextBox/Page walkthroughs without requiring their full implementations
-or inventing another checking-provider registry.
+supplies direct ground checking and the landed typed check-only implementation.
+The [scoped Horos/Go integration](verification.md#implemented-go-surface) now
+connects explicit source/native projections and selected mapping laws to actual
+captures, then calls that checker directly for TextBox/Page and nested reuse.
+Claim construction, proof production and checking remain distinct. Broader native
+theories and native admission enforcement remain separate work; no second
+checking-provider registry is introduced.
 
 The [pagination walkthrough](generic-elaboration.md#pagination-and-scope) shows
 the proposed first end-to-end replacement: one open Page, selected mappings for
@@ -36,14 +40,16 @@ separates the shared representation path from target-specific enforcement.
 The [Logos preservation proposal](logos-preservation.md) adds a documentation-only
 design for deriving generic preservation from source facts, actual target ASTs
 and mapping laws. Its symbolic Go pagination proof assumes `T : Data` and a valid
-selected representation; native admission is a separate theorem. The scoped [joint verification](verification.md) integration and
+selected representation; native admission is a separate theorem. The proof
+encoding in that document remains proposed. The scoped
+[joint verification](verification.md) integration and
 [Go semantic providers](native-semantics.md) are implemented; broader native
 semantic coverage and generation enforcement remain proposed.
 
 The [Go admission encoding](go-native-admission.md) proposes function-shaped,
 privately marked certificate types and tests them directly with the Go compiler.
-This qualification does not implement generation or establish the missing
-source judgments, representation laws or formal native-admission proof.
+This qualification does not implement generation or establish general source
+judgments, representation laws or a formal native-admission proof.
 Its admission claim concerns the complete `(S,N,E)` argument tuple. Empty
 marker-method bodies require the proposed
 [emission scope extension](type-system-architecture.md#go-marker-method-scope-extension)

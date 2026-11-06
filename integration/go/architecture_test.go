@@ -142,6 +142,7 @@ func TestProductionArchitecture(t *testing.T) {
 		"contracts/transform/go":    {"trees/ast/go", "trees/representation/go", "contracts/language/go", "contracts/semantic/go", "internal/tree"},
 		"contracts/semantic/go":     {"contracts/check/go", "trees/ast/go", "trees/representation/go", "contracts/language/go", "semantics/go", "internal/tree"},
 		"contracts/verification/go": {"contracts/semantic/go", "semantics/go", "trees/ast/go", "trees/representation/go"},
+		"contracts/generation/go":   {"contracts/semantic/go", "trees/representation/go"},
 		"contracts/resolution/go":   {"trees/representation/go", "contracts/language/go", "contracts/semantic/go", "semantics/go"},
 		"contracts/analysis/go":     {"trees/representation/go", "contracts/language/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"},
 		"engine/go":                 {"trees/ast/go", "trees/representation/go", "contracts/language/go", "contracts/parse/go", "contracts/check/go", "contracts/format/go", "contracts/print/go", "contracts/transform/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go"},

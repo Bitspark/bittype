@@ -1,0 +1,24 @@
+{
+  "attempts": [
+    {
+      "codeRevision": "e13a6f456d0bdb27e7e7facfd514dbd0cb0dbf67",
+      "idempotencyKey": "bittype-research-0011-fcbaa026-3edd-4a14-bb03-0d3bf64985a5",
+      "attempt": 1,
+      "ownerRule": "Exact consultation input and recovery identifiers retained for the explicit consultation; no separate checksum or administrative verifier workflow.",
+      "submittedSize": 45651,
+      "submittedPath": "research-docs/0011-public-generation-spi.submitted.md",
+      "collection": "bittype-research",
+      "recordedAt": "2026-11-06T06:05:50.8078571Z",
+      "state": "completed",
+      "cliBuild": "nightfall 0.1.0 (5df394ae65d4, bundle 7ee9a599bfbd) built 2026-11-06T04:26:59.843Z",
+      "slug": "0011-public-generation-spi",
+      "clientTag": "bittype",
+      "documentId": "doc_9d0d3c9e-4487-4300-8e9d-3f72381774aa",
+      "runId": "run_971a5b3d-7108-49fe-936a-f2ce60d7c222",
+      "submittedAt": "2026-11-06T06:09:05.2279237Z",
+      "resultId": "result_cd0be160-9668-45f2-902f-40022fa33f41",
+      "receivedAt": "2026-11-06T06:36:49.4612423Z",
+      "assessment": "Completed run and matching document/run headers inspected; full response addresses this frozen brief. Manual association assessment under owner no-extra-checksum/admin-verifier rule."
+    }
+  ]
+}

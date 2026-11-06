@@ -29,6 +29,9 @@ func TestTransformEvidenceAdmission(t *testing.T) {
 		if !ok || !evidence.HasSemantics() {
 			t.Fatal("missing admitted graph")
 		}
+		if !r.Snapshot().Same(source) || !r.Snapshot().Same(evidence.Snapshot()) {
+			t.Fatal("request lost the evidence-associated input snapshot")
+		}
 		if _, ok := r.Evidence(1); ok {
 			t.Fatal("unexpected evidence")
 		}
@@ -212,5 +215,51 @@ func TestTypedTransformationRetainsInputCollection(t *testing.T) {
 	}
 	if _, err = mapper.Transform(context.Background(), transform.Input{Source: source}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestTypedTransformationRetainsSnapshotWithoutEvidence(t *testing.T) {
+	from, to := definition[amber](t, "source"), definition[blue](t, "target")
+	envelope := packed[amber](t, from)
+	inputs := []transform.Input{
+		captureForTransform[amber](t, from, envelope),
+		captureForTransform[amber](t, from, envelope),
+	}
+	if inputs[0].Source.Same(inputs[1].Source) {
+		t.Fatal("independent captures must have distinct identities")
+	}
+	var snapshots []semantic.Snapshot
+	mapper, err := transform.NewTransformer[amber, blue](from, to, transform.Contract{}, func(_ context.Context, r transform.Request[amber]) (ast.Set[blue], error) {
+		if _, ok := r.Evidence(0); ok {
+			t.Fatal("unexpected evidence in evidence-free request")
+		}
+		snapshots = append(snapshots, r.Snapshot())
+		return singleResult(mapExample[amber, blue](r.Source()))
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, input := range inputs {
+		if _, err := mapper.Transform(context.Background(), input); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(snapshots) != len(inputs) {
+		t.Fatal("mapping did not receive each captured input")
+	}
+	for i, snapshot := range snapshots {
+		if !snapshot.Same(inputs[i].Source) {
+			t.Fatalf("request %d lost or recaptured its input snapshot", i)
+		}
+		if snapshot.Same(inputs[1-i].Source) {
+			t.Fatalf("request %d reused another capture of the same AST", i)
+		}
+	}
+}
+
+func TestZeroTransformRequestHasNoSnapshot(t *testing.T) {
+	var request transform.Request[amber]
+	if request.Snapshot().Valid() {
+		t.Fatal("zero request has a valid input snapshot")
 	}
 }
