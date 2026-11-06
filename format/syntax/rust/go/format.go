@@ -135,7 +135,13 @@ func (f formatter) item(id ast.NodeID, level int) doc {
 		}
 		parts = append(parts, f.Line("    ", level), f.T("}"))
 	case "type-alias":
-		parts = append(parts, f.T("type"), f.Space(), f.T(f.Attr(id, "name")), f.generics(id), f.where(id), f.Space(), f.T("="), f.Space(), f.typ(f.Child(id, "type")), f.T(";"))
+		parts = append(parts, f.typeAlias(id, false))
+	case "trait-impl":
+		parts = append(parts, f.T("impl"), f.generics(id), f.Space(), f.typ(f.Child(id, "trait")), f.Space(), f.T("for"), f.Space(), f.typ(f.Child(id, "subject")), f.where(id), f.Space(), f.T("{"))
+		for _, member := range f.Children(id, "member") {
+			parts = append(parts, f.Line("    ", level+1), f.Group(member, f.typeAlias(member, true)))
+		}
+		parts = append(parts, f.Line("    ", level), f.T("}"))
 	case "struct", "tuple-struct":
 		parts = append(parts, f.T("struct"), f.Space(), f.T(f.Attr(id, "name")), f.generics(id))
 		if kind == "tuple-struct" {
@@ -166,10 +172,11 @@ func (f formatter) item(id ast.NodeID, level int) doc {
 			parts = append(parts, f.Line("    ", level+1))
 			var p []doc
 			if f.Kind(m) == "associated-type" {
-				p = []doc{f.T("type"), f.Space(), f.T(f.Attr(m, "name"))}
+				p = []doc{f.T("type"), f.Space(), f.T(f.Attr(m, "name")), f.generics(m)}
 				if len(f.Children(m, "bound")) > 0 {
 					p = append(p, f.T(":"), f.Space(), f.bounds(m))
 				}
+				p = append(p, f.where(m))
 			} else {
 				p = append(p, f.T("fn"), f.Space(), f.T(f.Attr(m, "name")), f.generics(m), f.T("("))
 				var params []doc
@@ -189,6 +196,17 @@ func (f formatter) item(id ast.NodeID, level int) doc {
 		parts = append(parts, f.Line("    ", level), f.T("}"))
 	}
 	return f.Group(id, parts...)
+}
+func (f formatter) typeAlias(id ast.NodeID, associated bool) doc {
+	parts := []doc{f.T("type"), f.Space(), f.T(f.Attr(id, "name")), f.generics(id)}
+	if !associated {
+		parts = append(parts, f.where(id))
+	}
+	parts = append(parts, f.Space(), f.T("="), f.Space(), f.typ(f.Child(id, "type")))
+	if associated {
+		parts = append(parts, f.where(id))
+	}
+	return f.Seq(append(parts, f.T(";"))...)
 }
 func (f formatter) receiver(id ast.NodeID) doc {
 	var parts []doc
@@ -250,6 +268,8 @@ func (f formatter) pathSegments(id ast.NodeID) doc {
 func (f formatter) typ(id ast.NodeID) doc {
 	var parts []doc
 	switch f.Kind(id) {
+	case "relaxed-bound":
+		parts = []doc{f.T("?"), f.typ(f.Child(id, "path"))}
 	case "primitive-type":
 		parts = []doc{f.T(f.Attr(id, "name"))}
 	case "lifetime-reference":
