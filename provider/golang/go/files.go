@@ -1,6 +1,12 @@
 package provider
 
 import (
+ "context"
+ analyzing "github.com/Bitspark/bittype/analyze/files/golang/go"
+ "github.com/Bitspark/bittype/contracts/analysis/go"
+ "github.com/Bitspark/bittype/contracts/resolution/go"
+ "github.com/Bitspark/bittype/contracts/semantic/go"
+ resolving "github.com/Bitspark/bittype/resolve/files/golang/go"
 	"github.com/Bitspark/bittype/contracts/print/go"
 	filesprint "github.com/Bitspark/bittype/print/files/go"
 	syntaxprint "github.com/Bitspark/bittype/print/syntax/go"
@@ -20,3 +26,10 @@ func NewFilesPrinter(definition representation.Language) (print.FilesPrinter[s.L
 	}
 	return print.NewFilesPrinter[s.Language](definition, provider)
 }
+
+func (Provider) Resolve(ctx context.Context,request semantic.Request[s.Language]) (semantic.Result,error) { return resolving.Resolve(ctx,request) }
+func (Provider) Analyze(ctx context.Context,request analysis.Request[s.Language]) (semantic.Result,error) { return analyzing.Analyze(ctx,request) }
+func NewFilesResolver(definition representation.Language) (resolution.Resolver,error) { return resolution.NewResolver[s.Language](definition,resolving.Contract(),resolving.Provider{}) }
+func NewFilesAnalyzer(definition representation.Language) (analysis.Analyzer,error) { return analysis.NewAnalyzer[s.Language](definition,analyzing.Contract(),analyzing.Provider{}) }
+var _ resolution.Provider[s.Language]=Provider{}
+var _ analysis.Provider[s.Language]=Provider{}

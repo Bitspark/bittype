@@ -30,14 +30,16 @@ contracts/
   analysis/go/            analysis capability and explicit resolution input
   verification/go/        agnostic joint capture/receipt/site association
 semantics/go/             typed immutable Semantics and provider-owned facts
+semantics/golang/go/      Go vocabulary and immutable native type readers
+internal/golangsem/       private direct Go compiler bridge and fact export
 engine/go/                explicit registration, planning and execution
 syntax/<language>/go/              abstract/concrete vocabulary and identity
 parse/syntax/<language>/go/        text to CST
 check/syntax/<language>/go/        AST syntax admission
 format/syntax/<language>/go/       AST to CST
 parse/files/<language>/go/         Files to Source (Horos implemented)
-resolve/files/<language>/go/       reference resolution (Horos implemented)
-analyze/files/<language>/go/       semantic analysis (Horos implemented)
+resolve/files/<language>/go/       reference resolution (Horos and bounded Go)
+analyze/files/<language>/go/       semantic analysis (Horos and bounded Go)
 format/files/<language>/go/        Semantics to Source (Horos implemented)
 print/syntax/go/                   shared CST to text
 print/files/go/                    shared Source to Files
@@ -54,7 +56,6 @@ internal/horosgen/        source-owned semantic reading and bounded target arena
 integration/go/          independent consumers and cross-package qualification
 verification/            concrete static verification; public Logos contract
   files/source/horos/go/  explicit authoritative queries bound to captured Horos
-  files/target/golang/go/ explicit Go AST to go/ast and go/types projection
   files/horos-to-go/go/   selected mapping, prepared claim and direct Logos check
   integration/go/        TextBox/Page, nested reuse and dependency qualification
 tools/provider-matrix/go/ development-only source-derived documentation generation
@@ -64,7 +65,7 @@ docs/
 ```
 
 The native text language directories are `typescript`, `golang`, `rust` and
-`cpp`; `horos` implements those text stages plus resolve/analyze.
+`cpp`; `horos` and `golang` also implement resolve/analyze.
 The final `go` directory denotes implementation language, not target:
 `syntax/rust/go` is Go code describing Rust syntax. `ast` and `cst` in the check
 stage are reserved generic-carrier components, not native language names.
@@ -95,7 +96,8 @@ Both shared printer packages expose `Provider[L]` and `New[L]`; Files printing
 also receives its Syntax printer collaborator. Their `provider.go` files own
 construction and `print.go` files own emission. Files parsing/formatting retain
 their explicit semantic collaborators. Uniform construction does not erase
-these genuine dependency differences or introduce native semantic providers.
+these genuine dependency differences. Go now supplies bounded native semantic
+providers through the same independent role constructors.
 
 The source and its package-level tests belong with each implementation.
 Independent consumer fixtures, stage composition, language conformance and native
@@ -284,7 +286,8 @@ providers and source-derived capability matrices remain unchanged.
 
 The [Syntax and Files design](docs/source.md) is implemented with
 `Syntax : CST : AST` and `Files : Source : Semantics`. Both dimension names are
-explicit in implementation paths. Only Horos currently composes Files semantics;
+explicit in implementation paths. Horos composes the full Files text pipeline; Go adds bounded Files resolution
+and analysis without Files parsing/formatting;
 all five language composition packages construct Files printers.
 
 Files depends on AST addresses. Source retains semantic capture/result handles,
@@ -294,3 +297,7 @@ contracts depend on those carriers; concrete Files compositions depend on explic
 syntax/check/resolution/analysis contracts. `internal/horosfiles` is private
 composition, not a substitute language registry. Generic infrastructure never
 imports Horos or Ontos. No layout package or combined Source provider is retained.
+
+The [native provider design](docs/native-semantics.md) specifies the compiler
+boundary and explicit query sessions. Native stages do not depend on Horos or
+Logos; joint verification remains the consuming composition.

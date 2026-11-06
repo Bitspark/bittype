@@ -167,3 +167,7 @@ retain adversarial capture/publication coverage through the new API. The
 composition and the [independent consumer](../integration/go/horos_test.go) checks
 model identity reuse and specialization. Architecture and negative type-check
 fixtures enforce package and marker boundaries. Required checks run remotely.
+
+See [native semantic providers](native-semantics.md)
+for the bounded Go resolver/analyzer, immutable native facts and explicit
+admission queries. TypeScript, Rust and C++ semantic providers remain planned.

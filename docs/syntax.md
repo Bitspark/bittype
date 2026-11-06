@@ -340,3 +340,7 @@ native text tests cover checking, retained source and independent AST formatting
 Native compiler fixtures run separately on remote runners. These claims do not
 establish executable behavior, registry operation or canonical equivalence.
 The pipeline contract is unchanged; AST adds a borrowed view interface.
+
+See [native semantic providers](native-semantics.md)
+for the bounded Go resolver/analyzer, immutable native facts and explicit
+admission queries. TypeScript, Rust and C++ semantic providers remain planned.

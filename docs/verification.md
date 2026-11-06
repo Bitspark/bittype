@@ -452,7 +452,7 @@ projection. Copying or replacing an outer handle does not change retained state.
 | Explicit step | Current API and meaning |
 | --- | --- |
 | Source projection | [Horos `Inspect`](../verification/files/source/horos/go/model.go) admits the existing resolution receipt and reconstructs a Program from that captured collection, checking all present annotations against Horos. Queries run explicitly through `Satisfies`; their sealed results retain the Program, value, kind, resolution module and exact Horos verdict. |
-| Native projection | [Go `Inspect`](../verification/files/target/golang/go/model.go) converts admitted ASTs directly to `go/ast`, then uses `go/types` with `GoVersion: "go1.25"`. Its receipt and opaque type/query handles retain the original snapshot and package. `Admit` invokes validated generic instantiation. |
+| Native semantics | [Go providers](native-semantics.md) convert captured ASTs directly to `go/ast` and check them with `go/types` under the explicit Go 1.25 environment. Analysis reuses the exact resolution graph. Immutable native readers retain its declarations and type facts; a separately constructed query session checks generic admission. |
 | Counterexample construction | `Counterexample` requires the original source bound, an authoritative bool nonmembership result, actual native bool admission and this integration's scalar association. It constructs the existential claim independently of `CounterexampleCandidate`. |
 | Family selection | `BindFamily` takes exact source/native declarations, explicit field pairs, an optional-helper selection, a resolved ordinary kind K and an authoritative K-to-K constructor query. It checks every source and target field, the original parameter identities and the helper's actual presence/value fields. |
 | Closed theorem | `Family.Theorem` constructs the conditional membership-and-representation claim. `Family.Candidate` constructs separate proof syntax using ordinary Logos constructors. No final family theorem is assumed. |
@@ -489,7 +489,7 @@ remain outside this mapping's coverage. Missing coverage returns `ErrCoverage`;
 missing established semantic premises return the existing evidence-unavailable
 cause. Neither is a source refutation.
 
-The Go projection accepts the implemented type-only syntax fragment: named types,
+The Go semantic provider accepts the implemented type-only syntax fragment: named types,
 parameters, applications, slices, structs, constraint interfaces/unions and
 approximation, and aliases during package checking. Mapping targets must be
 actual defined named types. Imports, methods, executable bodies and other type

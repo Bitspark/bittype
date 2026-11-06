@@ -10,7 +10,7 @@ import (
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
-	n "github.com/Bitspark/bittype/verification/files/target/golang/go"
+	n "github.com/Bitspark/bittype/semantics/golang/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	"github.com/Bitspark/logos-contract/contract/go/typed"
 	core "github.com/bitspark/ontos/core/go"

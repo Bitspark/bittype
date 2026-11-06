@@ -36,8 +36,9 @@ separates the shared representation path from target-specific enforcement.
 The [Logos preservation proposal](logos-preservation.md) adds a documentation-only
 design for deriving generic preservation from source facts, actual target ASTs
 and mapping laws. Its symbolic Go pagination proof assumes `T : Data` and a valid
-selected representation; native admission is a separate theorem. The proof
-integration and native semantic models remain unimplemented.
+selected representation; native admission is a separate theorem. The scoped [joint verification](verification.md) integration and
+[Go semantic providers](native-semantics.md) are implemented; broader native
+semantic coverage and generation enforcement remain proposed.
 
 The [Go admission encoding](go-native-admission.md) proposes function-shaped,
 privately marked certificate types and tests them directly with the Go compiler.

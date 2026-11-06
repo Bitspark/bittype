@@ -1,6 +1,8 @@
 package consumer_test
 
 import (
+ "github.com/Bitspark/bittype/contracts/analysis/go"
+ nativequery "github.com/Bitspark/bittype/analyze/files/golang/go"
 	"context"
 	"go/types"
 	"testing"
@@ -20,7 +22,7 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 	v "github.com/Bitspark/bittype/verification/files/horos-to-go/go"
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
-	n "github.com/Bitspark/bittype/verification/files/target/golang/go"
+	n "github.com/Bitspark/bittype/semantics/golang/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	"github.com/Bitspark/logos-contract/contract/go/typed"
 	core "github.com/bitspark/ontos/core/go"
@@ -91,7 +93,7 @@ func TestInstalledJointTextBox(t *testing.T) {
 	if err != nil || nonmember.Verdict() != decl.Refuted {
 		t.Fatalf("authoritative nonmembership: %v %v", nonmember.Verdict(), err)
 	}
-	target, err := n.Inspect(ctx, installedCapture[gs.Language](t, gp.Provider{}, "go-syntax-1", "package installed; type TextBox[T any] struct { Value T }"))
+	target, err := checkedNative(ctx, installedCapture[gs.Language](t, gp.Provider{}, "go-syntax-1", "package installed; type TextBox[T any] struct { Value T }"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +105,7 @@ func TestInstalledJointTextBox(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	admission, err := target.Admit(ctx, nativeBox, nativeBool)
+	admission, err := nativeAdmission(t,ctx,target,nativeBox,nativeBool)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,4 +125,16 @@ func TestInstalledJointTextBox(t *testing.T) {
 	if err != nil || !result.Outcome().IsAccepted() {
 		t.Fatalf("joint check: %v %s %s", err, result.Outcome().Code(), result.Outcome().Detail())
 	}
+}
+
+// Each semantic role is explicit; opening the typed view compiles nothing.
+func checkedNative(ctx context.Context,snapshot semantic.Snapshot) (n.Model,error) {
+ resolver,err:=gp.NewFilesResolver(snapshot.Language()); if err!=nil { return n.Model{},err }
+ resolved,err:=resolver.Resolve(ctx,snapshot,semantic.Options{Configuration:n.Configuration()}); if err!=nil { return n.Model{},err }
+ analyzer,err:=gp.NewFilesAnalyzer(snapshot.Language()); if err!=nil { return n.Model{},err }
+ analyzed,err:=analyzer.Analyze(ctx,analysis.Input{Snapshot:snapshot,Resolution:&resolved,Options:semantic.Options{Configuration:n.Configuration()}}); if err!=nil { return n.Model{},err }
+ return n.Open(analyzed)
+}
+func nativeAdmission(t *testing.T,ctx context.Context,model n.Model,constructor n.Type,args ...n.Type) (nativequery.Admission,error) {
+ t.Helper(); queries,err:=nativequery.NewQueries(ctx,model); if err!=nil { return nativequery.Admission{},err }; return queries.Admit(ctx,constructor,args...)
 }

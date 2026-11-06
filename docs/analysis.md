@@ -363,3 +363,7 @@ Horos pagination and foreign-provider tests. The earlier
 [consultation delivery record](../research-docs/0002-semantic-analysis-kernel.md)
 records the original semantic slice, not the subsequent resolver split; its frozen expert input and raw
 advice remain separate from the implemented specification.
+
+See [native semantic providers](native-semantics.md)
+for the bounded Go resolver/analyzer, immutable native facts and explicit
+admission queries. TypeScript, Rust and C++ semantic providers remain planned.

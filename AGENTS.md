@@ -26,7 +26,7 @@ slice implements parsers, AST-to-CST formatters, syntax checks and a generic
 CST-to-text printer. Read the [concrete syntax design](docs/parsing-formatting.md).
 
 The [agnostic semantic model](docs/semantics.md), [analysis SPI](docs/analysis.md)
-and [resolver SPI](docs/resolution.md) are implemented, with Horos providers.
+and [resolver SPI](docs/resolution.md) are implemented, with Horos and bounded Go providers.
 Keep semantic rules provider-owned. Shared snapshots, requests/results and reports
 live in contracts/semantic/go; no aliases remain at the old analysis paths.
 Resolution and analysis are independently registered. Analysis consumes an explicit
@@ -39,9 +39,10 @@ Dimensions come from `bittype:dimension` comments on boundary type declarations;
 do not restore package-name classification or add runtime metadata methods.
 Syntax admission must accept unresolved names; analysis publishes request-bound,
 immutable facts with explicit completion, verdict and model availability.
-Only Horos supplies registered Files resolution/analysis providers. The
-`verification/files/target/golang/go` package has an explicit, scoped projection using `go/types`;
-it is not an engine capability or general native analyzer.
+Horos and Go supply registered Files resolution/analysis providers. Read
+[the native semantic-provider design](docs/native-semantics.md). The bounded Go
+provider uses `go/types`; native queries are explicit and the verifier consumes
+its immutable graph. Other native analyzers remain unimplemented.
 
 The owner's 4 November [Syntax and Files symmetry](docs/source.md) replaces the
 separate layout proposal: `Syntax : CST : AST` and `Files : Source : Semantics`.
