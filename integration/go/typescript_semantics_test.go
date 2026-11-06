@@ -14,6 +14,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
+	syntaxtext "github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/files/go"
 	p "github.com/Bitspark/bittype/provider/typescript/go"
@@ -259,13 +260,6 @@ func TestTypeScriptSemanticReports(t *testing.T) {
 		{"merging", "interface Box {x:string} interface Box {y:string}", semantic.Unsupported, semantic.Undetermined},
 		{"external", "type DateValue = Date;", semantic.Unsupported, semantic.Undetermined},
 		{"external-mapped", "type Changed = Readonly<{value: string}>;", semantic.Unsupported, semantic.Undetermined},
-		{"nocheck", "// @ts-nocheck\ntype Box<T extends string> = {value:T}; type Bad = Box<boolean>;", semantic.Unsupported, semantic.Undetermined},
-		{"ignore", "type Box<T extends string> = {value:T};\n// @ts-ignore\ntype Bad = Box<boolean>;", semantic.Unsupported, semantic.Undetermined},
-		{"expect-error", "type Box<T extends string> = {value:T};\n// @ts-expect-error\ntype Bad = Box<boolean>;", semantic.Unsupported, semantic.Undetermined},
-		{"lib-directive", "/// <reference lib=\"dom\" />\ntype Text = string;", semantic.Unsupported, semantic.Undetermined},
-		{"path-directive", "/// <reference path=\"ambient.ts\" />\ntype Text = string;", semantic.Unsupported, semantic.Undetermined},
-		{"types-directive", "/// <reference types=\"node\" />\ntype Text = string;", semantic.Unsupported, semantic.Undetermined},
-		{"no-default-lib", "/// <reference no-default-lib=\"true\" />\ntype Text = string;", semantic.Unsupported, semantic.Undetermined},
 		{"conditional", "type Choice<T> = T extends string ? string : boolean;", semantic.Unsupported, semantic.Undetermined},
 		{"mapped", "type Copy<T> = {[K in keyof T]: T[K]};", semantic.Unsupported, semantic.Undetermined},
 	} {
@@ -285,6 +279,44 @@ func TestTypeScriptSemanticReports(t *testing.T) {
 			}
 			if _, err := n.Open(result); err == nil {
 				t.Fatal("invalid model admitted")
+			}
+		})
+	}
+}
+
+func TestTypeScriptSemanticControlsCannotBypassCorrespondence(t *testing.T) {
+	ctx := context.Background()
+	definition := "type Box<T extends string> = {value:T};\n"
+	application := "type Bad = Box<boolean>;"
+	_, trees, source := tsCapture(t, definition+application)
+	for _, directive := range []string{
+		"// @ts-nocheck", "// @ts-check", "// @ts-ignore", "// @ts-expect-error",
+		"/* @ts-nocheck */",
+		"/// <reference lib=\"dom\" />", "/// <reference path=\"ambient.ts\" />",
+		"/// <reference types=\"node\" />", "/// <reference no-default-lib=\"true\" />",
+	} {
+		t.Run(directive, func(t *testing.T) {
+			text := directive + "\n" + definition + application
+			if strings.Contains(directive, "ts-ignore") || strings.Contains(directive, "ts-expect-error") {
+				text = definition + directive + "\n" + application
+			}
+			_, err := (p.Provider{}).Parse(ctx, parse.Input{Text: text, SourceID: "0", TreeID: "0"})
+			var diagnostic *syntaxtext.Diagnostic
+			if !errors.As(err, &diagnostic) || diagnostic.Code != syntaxtext.Unsupported {
+				t.Fatal("parser admitted a compiler control", err)
+			}
+			// Supplying an independently constructed AST does not bypass parsing
+			// of the original source at the semantic correspondence boundary.
+			changed := source.Clone()
+			changed.Files.Entries[0].Text = text
+			snapshot := tsCaptureTrees(t, trees, &changed)
+			resolver, err := p.NewFilesResolver(snapshot.Language(), tsCompiler(t))
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, err := resolver.Resolve(ctx, snapshot, semantic.Options{Configuration: n.Configuration()})
+			if !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
+				t.Fatal("compiler control bypassed correspondence", err)
 			}
 		})
 	}

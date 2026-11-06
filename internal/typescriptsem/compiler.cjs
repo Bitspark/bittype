@@ -31,16 +31,7 @@ function main(request) {
   const unitByFile = new Map();
   for (const unit of request.Units) {
     const name = "/input/" + unit.Path;
-    const sf = ts.createSourceFile(name, unit.Text, options.target, true, ts.ScriptKind.TS);
-    const at = site(unit, unit.Nodes.find(node => node.Kind === "source-file"));
-    if (sf.hasNoDefaultLib || sf.referencedFiles.length || sf.typeReferenceDirectives.length || sf.libReferenceDirectives.length) unsupported("Source dependency directives are outside captured-types-1", at);
-    // Captured comments must not disable or suppress the checks advertised by
-    // this profile. Scan comment tokens, never string literal contents.
-    const scanner = ts.createScanner(options.target, false, ts.LanguageVariant.Standard, unit.Text);
-    for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
-      if ((token === ts.SyntaxKind.SingleLineCommentTrivia || token === ts.SyntaxKind.MultiLineCommentTrivia) && /@ts-(?:nocheck|check|ignore|expect-error)\b/i.test(scanner.getTokenText())) unsupported("TypeScript diagnostic-control comments are outside captured-types-1", at);
-    }
-    sourceFiles.set(name, sf);
+    sourceFiles.set(name, ts.createSourceFile(name, unit.Text, options.target, true, ts.ScriptKind.TS));
     unitByFile.set(name, unit);
   }
   const libDir = path.dirname(process.argv[1]);

@@ -168,9 +168,11 @@ outside this first profile. Standard arrays and readonly arrays are supported;
 mapped utility types such as `Readonly<T>` are not. Their synthesized modifiers
 need a separate extension of native fact export. Authored conditional and mapped
 types are also unsupported even though the syntax provider admits them.
-Diagnostic-control comments (`@ts-nocheck`, `@ts-ignore`, `@ts-expect-error`,
-`@ts-check`) and source dependency directives receive unsupported coverage;
-they cannot suppress advertised checking or alter the supplied dependency scope.
+The existing syntax parser rejects diagnostic-control comments (`@ts-nocheck`,
+`@ts-ignore`, `@ts-expect-error`, `@ts-check`) and source dependency directives.
+Supplying an AST separately does not bypass that rule: correspondence reparses
+the original source and rejects the incompatible capture with `ErrInvalidRequest`,
+before invoking the compiler. No duplicate compiler guard is needed.
 Directive-looking text inside a string literal has no such effect.
 This is bounded native checking, not support for
 all TypeScript syntax or arbitrary `.d.ts` dependency closures. Generic
