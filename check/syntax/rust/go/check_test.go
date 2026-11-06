@@ -50,15 +50,21 @@ func TestAssociatedTypeAdmission(t *testing.T) {
 
 func TestInvalidAssociatedTypeShapes(t *testing.T) {
 	cases := map[string]func(*ast.AST[s.Language]){
-		"missing subject": func(a *ast.AST[s.Language]) { a.Nodes[5].Children[0].Role = "type" },
-		"missing suffix": func(a *ast.AST[s.Language]) { a.Nodes[5].Children[2].Role = "trait" },
-		"trait must be path": func(a *ast.AST[s.Language]) { a.Nodes[5].Children[1].Node, a.Nodes[5].Children[2].Node = 5, 4 },
-		"binding requires value": func(a *ast.AST[s.Language]) { a.Nodes[7].Children[1].Role = "subject" },
+		"missing subject":          func(a *ast.AST[s.Language]) { a.Nodes[5].Children[0].Role = "type" },
+		"missing suffix":           func(a *ast.AST[s.Language]) { a.Nodes[5].Children[2].Role = "trait" },
+		"trait must be path":       func(a *ast.AST[s.Language]) { a.Nodes[5].Children[1].Node, a.Nodes[5].Children[2].Node = 5, 4 },
+		"binding requires value":   func(a *ast.AST[s.Language]) { a.Nodes[7].Children[1].Role = "subject" },
 		"binding requires segment": func(a *ast.AST[s.Language]) { a.Nodes[7].Children[0].Node, a.Nodes[7].Children[1].Node = 6, 7 },
-		"binding is not a type": func(a *ast.AST[s.Language]) { a.Nodes[11].Children[2].Role = "type" },
-		"type after binding": func(a *ast.AST[s.Language]) { a.Nodes[11].Children[1], a.Nodes[11].Children[2] = a.Nodes[11].Children[2], a.Nodes[11].Children[1] },
-		"lifetime after type": func(a *ast.AST[s.Language]) { a.Nodes[11].Children[0], a.Nodes[11].Children[1] = a.Nodes[11].Children[1], a.Nodes[11].Children[0] },
-		"lifetime after binding": func(a *ast.AST[s.Language]) { a.Nodes[11].Children[0], a.Nodes[11].Children[2] = a.Nodes[11].Children[2], a.Nodes[11].Children[0] },
+		"binding is not a type":    func(a *ast.AST[s.Language]) { a.Nodes[11].Children[2].Role = "type" },
+		"type after binding": func(a *ast.AST[s.Language]) {
+			a.Nodes[11].Children[1], a.Nodes[11].Children[2] = a.Nodes[11].Children[2], a.Nodes[11].Children[1]
+		},
+		"lifetime after type": func(a *ast.AST[s.Language]) {
+			a.Nodes[11].Children[0], a.Nodes[11].Children[1] = a.Nodes[11].Children[1], a.Nodes[11].Children[0]
+		},
+		"lifetime after binding": func(a *ast.AST[s.Language]) {
+			a.Nodes[11].Children[0], a.Nodes[11].Children[2] = a.Nodes[11].Children[2], a.Nodes[11].Children[0]
+		},
 	}
 	for _, name := range []string{"_", "Self", "self", "crate", "super"} {
 		cases["binding name "+name] = func(a *ast.AST[s.Language]) { a.Nodes[6].Attributes = tr.Attrs("name", name) }

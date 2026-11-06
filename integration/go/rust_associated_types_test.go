@@ -47,7 +47,7 @@ func TestIndependentRustAssociatedFormatter(t *testing.T) {
 		t.Fatal("formatter changed the projection/binding AST or its references/origins")
 	}
 	got, err := p.Print(context.Background(), c)
-	want := "pub type Item<I: Iterator> = <I as Iterator>::Item;\npub trait Bytes: Iterator<Item = u8> {\n}\n"
+	want := "pub type Item<I: Iterator> = <I as Iterator>::Item;\n\npub trait Bytes: Iterator<Item = u8> {\n}\n"
 	if err != nil || got != want {
 		t.Fatalf("want %q, got %q: %v", want, got, err)
 	}
