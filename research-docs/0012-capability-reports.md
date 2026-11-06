@@ -2,7 +2,7 @@
 
 **ID:** 0012
 **Date:** 6 November 2026
-**Status:** delivering
+**Status:** applied
 **Graded:** https://github.com/Bitspark/bittype/pull/126#issuecomment-6689094045
 **Run-ID:** run_43b89675-3878-47ea-93fd-2452942f7f4d
 **Reviewed:** https://github.com/Bitspark/bittype/pull/126#issuecomment-6688471895
@@ -584,7 +584,7 @@ authorized implementation, not a new runtime or semantic-model task.
 | 5 | Exact owning helper identities, static interpretation only | HOLDS | Grammar extractor recognizes its owned types/helpers; new defined lookalikes do not match; unsupported expressions stay explicit | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Unrelated Rules/One, aliases, opaque functions, cycles and partial roles |
 | 6 | Public composable host plus materially different extractor | HOLDS | Move the host out of package main; command composes grammar extractor; independent struct-format fixture uses the same public runner | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | External-package fixture supplies struct-field schema without host/renderer changes |
 | 7 | End-to-end resource guarantees, not extractor-only budgets | NEEDS ADAPTATION | Bound loading/output/source/records/queries/traversal and use cancellation plus the existing remote job deadline. Trusted in-process code is not a hard CPU/memory sandbox | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Oversized input/output and traversal failures; document non-preemptible Go checker/extractor limit |
-| 8 | Retain canonical contribution identities and static wrapper relationships | HOLDS | Keep contract arguments, operation/receiver and marker/endpoints before rendering; wrapper navigation never transfers observations | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Existing availability/factory tests plus rewriting wrapper, generic ambiguity and stable-anchor tests |
+| 8 | Retain canonical contribution identities and static wrapper relationships | HOLDS | Keep compiler identities through availability, contribution/call/context association and row abstraction; wrapper navigation never transfers observations; display collisions fail | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126), [PR128](https://github.com/Bitspark/bittype/pull/128) | Availability/factory/wrapper tests, private/exported unnamed arguments, shared aliases, exact-marker row substitution, case/call association and anchor collision regressions |
 | 9 | Isolated test-declaration index and exact event-name join | HOLDS | Parse active TestGoFiles/XTestGoFiles without interpreting bodies or admitting test-only implementations; duplicate runner names remain ambiguous | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | External test aliases, invalid signatures, test-only providers and duplicate TestFoo |
 | 10 | Strict raw-comment directives and owner-defined expectations | NEEDS ADAPTATION | Keep existing dimension attachment rules; add standalone grammar/scope/case parser, nonempty authored expects labels and safe module-root Markdown fragments | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Unknown/repeated keys, quoted labels, fences, wrong attachments, symlink/path escapes and fragment tests |
 | 11 | Stable injective anchors and explicit inspection build context | HOLDS | Encode canonical tuples without hashes; omit timestamps/HEAD from committed reports; distinguish absent profile from any string | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Reordered discovery and documentation-only revision produce stable output; profile collision tests |
@@ -604,7 +604,8 @@ The initial advice evaluation found no additional existing architectural
 violation. Subsequent implementation inspection exposed a concrete dependency
 identity failure: display names could discharge an unrelated provider contract.
 [ACX-007](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/0007-bittype-matrix-contract-identity.md)
-records that counterexample and the canonical-key correction landed in PR126.
+records that counterexample, the first correction in PR126 and its completed
+Go-type-identity follow-up in PR128.
 The separately tracked ACX-001 verification-composition defect remains outside
 this task. The reporting extension must meet AC-02 through AC-05 from its first
 slice; report facts and tests remain qualified under AC-07.
@@ -642,5 +643,16 @@ Independent delivery review reopened row 8 and ACX-007: package-qualified Go typ
 strings still omit ownership of private fields/methods in unnamed type arguments.
 The original named-contract regressions passed but did not qualify this case.
 The follow-up replaces string-based semantic comparisons with actual Go type
-identity and adds distinct-owner unnamed-argument regressions. This qualification
-is pending; the consultation is delivering again until the correction lands.
+identity and adds distinct-owner unnamed-argument regressions.
+
+That correction landed in [PR128](https://github.com/Bitspark/bittype/pull/128)
+as `580aca20548553e083d5fd6a7c65ec55a72528fb`. Its tested head `b773f1a` passed
+the [full Go contracts/native workflow](https://github.com/Bitspark/bittype/actions/runs/42258794400)
+and [documentation checks](https://github.com/Bitspark/bittype/actions/runs/42258794478).
+The tooling suite and vet also passed locally. Independent source review and seven
+targeted regression tests found no remaining blocker in this bounded correction.
+Go identity now governs semantic decisions; only the selected language marker is
+abstracted for row grouping, and unequal contributions cannot merge through an
+anchor collision. Row 8 is implemented and qualified by these results, without a
+claim of general proof over every possible Go type. All accepted implementation
+links are closed; row 16's explicit deferrals are unchanged.
