@@ -186,9 +186,12 @@ func TestProductionArchitecture(t *testing.T) {
 			rules[stage+"/syntax/"+name+"/go"] = append(rules[stage+"/syntax/"+name+"/go"], "internal/horosmodel", "internal/lex")
 		}
 	}
-	rules["internal/horosgen"] = []string{"analyze/files/horos/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/text/go", "contracts/transform/go", "resolve/files/horos/go", "semantics/go", "syntax/horos/go", "trees/ast/go"}
+	rules["generation/syntax/go"] = []string{"contracts/generation/go", "contracts/semantic/go", "contracts/transform/go", "trees/ast/go", "trees/representation/go"}
+	rules["generation/syntax/source/horos/go"] = []string{"analyze/files/horos/go", "contracts/analysis/go", "contracts/generation/go", "contracts/semantic/go", "contracts/text/go", "contracts/transform/go", "generation/syntax/go", "resolve/files/horos/go", "semantics/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
+	rules["generation/syntax/target/go"] = []string{"contracts/generation/go", "trees/ast/go", "trees/representation/go"}
 	for target, syntax := range map[string]string{"typescript": "typescript", "go": "golang", "rust": "rust", "cpp": "cpp"} {
-		rules["transforms/horos-to-"+target+"/go"] = []string{"contracts/transform/go", "contracts/text/go", "internal/horosgen", "internal/" + syntax, "syntax/horos/go", "syntax/" + syntax + "/go", "trees/ast/go", "trees/representation/go"}
+		rules["transforms/horos-to-"+target+"/go"] = []string{"contracts/transform/go", "generation/syntax/go", "generation/syntax/source/horos/go", "syntax/horos/go", "syntax/" + syntax + "/go", "trees/representation/go"}
+		rules["generation/syntax/target/"+syntax+"/go"] = []string{"contracts/generation/go", "generation/syntax/target/go", "internal/"+syntax, "check/syntax/"+syntax+"/go", "syntax/"+syntax+"/go", "trees/ast/go", "trees/representation/go"}
 	}
 	// The Files dimension has explicit stage paths and a separate sealed carrier.
 	rules["files/go"] = []string{"trees/ast/go"}
@@ -208,7 +211,6 @@ func TestProductionArchitecture(t *testing.T) {
 		rules[stage+"/files/horos/go"] = append(append([]string{}, composition...), "internal/horosfiles")
 	}
 	rules["provider/horos/go"] = append(rules["provider/horos/go"], "parse/files/horos/go", "format/files/horos/go", "print/files/go", "trees/representation/go")
-	rules["internal/horosgen"] = append(rules["internal/horosgen"], "trees/representation/go")
 	// Verification projections are explicit concrete compositions, not registered
 	// language stages. The agnostic association above never imports their models.
 	rules["verification/files/source/horos/go"] = []string{"contracts/semantic/go", "contracts/resolution/go", "internal/horosmodel", "resolve/files/horos/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
@@ -263,7 +265,7 @@ var modelDependencies = []string{
 
 var modelExternalImports = map[string][]string{
 	"tools/horos-module/go":              {"github.com/bitspark/ontos/codec/go"},
-	"internal/horosgen":                  {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
+	"generation/syntax/source/horos/go":  {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 	"parse/syntax/horos/go":              {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"format/syntax/horos/go":             {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"internal/horosmodel":                {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
