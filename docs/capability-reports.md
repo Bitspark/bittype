@@ -2,9 +2,14 @@
 
 The [ACX-007 identity correction](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/0007-bittype-matrix-contract-identity.md)
 records the existing matrix bug found during implementation: short display names
-could satisfy an unrelated constructor dependency. Availability now uses canonical
-contract identities; conflicting display rows diagnose. The correction and report
-implementation landed in [PR126](https://github.com/Bitspark/bittype/pull/126).
+could satisfy an unrelated constructor dependency. The initial report implementation
+landed in [PR126](https://github.com/Bitspark/bittype/pull/126), but independent review
+found that even package-qualified type strings lose private member ownership in
+unnamed arguments. Availability, contribution deduplication and case-context
+association now use `go/types.Identical`. Row grouping substitutes only the selected
+language marker with a shared type parameter before that comparison, preserving
+the other Go identities, private members and structural properties. Display labels
+and anchors never establish type equivalence; ambiguous rows or anchors diagnose.
 
 The [generated matrices](providers.md) link each discovered contribution to its
 [detailed report](provider-capabilities.md). Source annotations, format-owned

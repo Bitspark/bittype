@@ -24,11 +24,11 @@ func stableKey(parts ...string) string {
 }
 
 func operations(m *matrix) []*operation {
-	byID := map[string]*operation{}
+	var result []*operation
 	add := func(locations []location) {
 		for _, loc := range locations {
-			if loc.op != nil {
-				byID[loc.op.id] = loc.op
+			if loc.op != nil && !slices.ContainsFunc(result, func(op *operation) bool { return sameOperation(op, loc.op) }) {
+				result = append(result, loc.op)
 			}
 		}
 	}
@@ -41,10 +41,6 @@ func operations(m *matrix) []*operation {
 		for _, cell := range edge {
 			add(cell)
 		}
-	}
-	result := make([]*operation, 0, len(byID))
-	for _, op := range byID {
-		result = append(result, op)
 	}
 	slices.SortFunc(result, func(a, b *operation) int { return strings.Compare(a.id, b.id) })
 	return result
@@ -85,23 +81,14 @@ func markerMatches(op *operation, marker capability.Symbol) bool {
 	return op.from != nil && canonicalSymbol(op.from.marker.Obj()) == marker || op.to != nil && canonicalSymbol(op.to.marker.Obj()) == marker
 }
 
-func targetContext(op *operation, target capability.Symbol) string {
-	parts := []string{op.kind, target.String(), fullType(op.contract)}
-	if op.language.marker != nil {
-		parts = append(parts, canonicalSymbol(op.language.marker.Obj()).String())
-	}
-	if op.from != nil {
-		parts = append(parts, canonicalSymbol(op.from.marker.Obj()).String(), canonicalSymbol(op.to.marker.Obj()).String())
-	}
-	return stableKey(parts...)
-}
-
 func associateCases(m *matrix, a *annotations) error {
 	for _, c := range a.cases {
-		contexts := map[string]bool{}
+		var contexts []*operation
 		for _, op := range operations(m) {
 			if markerMatches(op, c.marker) && slices.Contains(operationTargets(op), c.target) {
-				contexts[targetContext(op, c.target)] = true
+				if !slices.ContainsFunc(contexts, func(previous *operation) bool { return sameTargetContext(previous, op) }) {
+					contexts = append(contexts, op)
+				}
 			}
 		}
 		if len(contexts) == 0 {
@@ -336,25 +323,25 @@ func (p *program) renderDetails(ctx context.Context, m *matrix, a *annotations, 
 			return "", err
 		}
 		fmt.Fprintf(&b, "<a id=\"cap-%s\"></a>\n\n## %s\n\n", op.id, escape(operationTitle(op)))
-		fmt.Fprintf(&b, "Contract: %s.\n\n", escape(fullType(op.contract)))
+		fmt.Fprintf(&b, "Contract: %s.\n\n", escape(typeLabel(op.contract)))
 		if op.public != nil {
 			fmt.Fprintf(&b, "Public operation: %s.", p.symbolLink(canonicalSymbol(op.public), sourceURL))
 			if op.receiver != nil {
-				fmt.Fprintf(&b, " Receiver: %s.", escape(fullType(op.receiver)))
+				fmt.Fprintf(&b, " Receiver: %s.", escape(typeLabel(op.receiver)))
 			}
 			b.WriteString("\n\n")
 		}
 		if op.from != nil {
-			fmt.Fprintf(&b, "Direct endpoints: %s → %s. Typed calls in the factory body establish this discovered edge; runtime reachability, returned-value flow, configured mappings and composed routes are not inferred.\n\n", escape(fullType(op.from.marker)), escape(fullType(op.to.marker)))
+			fmt.Fprintf(&b, "Direct endpoints: %s → %s. Typed calls in the factory body establish this discovered edge; runtime reachability, returned-value flow, configured mappings and composed routes are not inferred.\n\n", escape(typeLabel(op.from.marker)), escape(typeLabel(op.to.marker)))
 		} else {
-			fmt.Fprintf(&b, "Language marker: %s.\n\n", escape(fullType(op.language.marker)))
+			fmt.Fprintf(&b, "Language marker: %s.\n\n", escape(typeLabel(op.language.marker)))
 		}
 		if len(op.alternatives) > 0 {
 			var alternatives []string
 			for _, set := range op.alternatives {
 				var requirements []string
 				for _, dep := range set {
-					requirements = append(requirements, fullType(dep))
+					requirements = append(requirements, typeLabel(dep))
 				}
 				slices.Sort(requirements)
 				if len(requirements) == 0 {
@@ -372,9 +359,9 @@ func (p *program) renderDetails(ctx context.Context, m *matrix, a *annotations, 
 				pos := p.fset.PositionFor(call.pos, false)
 				var args []string
 				for _, arg := range call.arguments {
-					args = append(args, fullType(arg))
+					args = append(args, typeLabel(arg))
 				}
-				fmt.Fprintf(&b, "- %s → %s ([call](%s)); receiver %s; type arguments %s.\n", p.symbolLink(canonicalSymbol(call.caller), sourceURL), p.symbolLink(canonicalSymbol(call.callee), sourceURL), sourceTarget(p.root, sourceURL, pos.Filename, pos.Line), escape(fullType(call.receiver)), escape(strings.Join(args, ", ")))
+				fmt.Fprintf(&b, "- %s → %s ([call](%s)); receiver %s; type arguments %s.\n", p.symbolLink(canonicalSymbol(call.caller), sourceURL), p.symbolLink(canonicalSymbol(call.callee), sourceURL), sourceTarget(p.root, sourceURL, pos.Filename, pos.Line), escape(typeLabel(call.receiver)), escape(strings.Join(args, ", ")))
 			}
 			fmt.Fprintf(&b, "\nTraversal boundary: %s.\n\n", escape(op.stop))
 		}

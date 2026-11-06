@@ -2,7 +2,7 @@
 
 **ID:** 0012
 **Date:** 6 November 2026
-**Status:** applied
+**Status:** delivering
 **Graded:** https://github.com/Bitspark/bittype/pull/126#issuecomment-6689094045
 **Run-ID:** run_43b89675-3878-47ea-93fd-2452942f7f4d
 **Reviewed:** https://github.com/Bitspark/bittype/pull/126#issuecomment-6688471895
@@ -616,7 +616,7 @@ It is retained in the importable report package for the corrected behavior.
 
 ### Delivered result
 
-All accepted rows were implemented by [PR126](https://github.com/Bitspark/bittype/pull/126),
+The initial implementation was delivered by [PR126](https://github.com/Bitspark/bittype/pull/126),
 merged as `a582c5bc9327b38b75b16dba59fc558067ed1171`. Its final head `f209457`
 passed [Go contracts and native qualification](https://github.com/Bitspark/bittype/actions/runs/42254515087)
 and [documentation checks](https://github.com/Bitspark/bittype/actions/runs/42254514914).
@@ -637,3 +637,10 @@ so it cannot credit their cases. Static inventories contain no current-pass clai
 Both matrix/detail outputs are committed, and the existing updater publishes the
 pair. Row 16's explicit deferrals remain the supported boundary, not accepted
 implementation left open. No runtime or semantic-provider behavior was added.
+
+Independent delivery review reopened row 8 and ACX-007: package-qualified Go type
+strings still omit ownership of private fields/methods in unnamed type arguments.
+The original named-contract regressions passed but did not qualify this case.
+The follow-up replaces string-based semantic comparisons with actual Go type
+identity and adds distinct-owner unnamed-argument regressions. This qualification
+is pending; the consultation is delivering again until the correction lands.
