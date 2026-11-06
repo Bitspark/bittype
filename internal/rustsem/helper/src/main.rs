@@ -393,6 +393,9 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
             .collect()
     }
     fn native(&mut self, t: Ty<'tcx>, owner: Option<DefId>) -> ExportResult<u32> {
+        if self.entities.len() + self.terms.len() + self.facts.len() >= 32768 {
+            return Err(("incomplete", "native semantic record limit".into()));
+        }
         if self.depth >= 128 {
             return Err(("incomplete", "native type expansion depth".into()));
         }
@@ -666,9 +669,10 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
                 }
             }
         }
-        Ok(
-            json!({"Entities":self.entities,"Terms":self.terms,"Bindings":self.bindings,"Expressions":self.expressions,"Facts":self.facts}),
-        )
+        if self.entities.len() + self.terms.len() + self.facts.len() + self.bindings.len() + self.expressions.len() > 32768 {
+            return Err(("incomplete", "native semantic record limit".into()));
+        }
+        Ok(json!({"Entities":self.entities,"Terms":self.terms,"Bindings":self.bindings,"Expressions":self.expressions,"Facts":self.facts}))
     }
 }
 fn main() {

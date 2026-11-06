@@ -340,7 +340,7 @@ unsupported coverage. None publishes partial semantics. Contradictory source/AST
 captures, false references, wrong configuration and foreign receipts are request
 errors; helper/toolchain failures are operational errors. Cancellation stops the
 child process. The bounds are 4,096 AST nodes and 1 MiB source, 16,000 native type
-handles, export depth 128, a 30-second process deadline, 16 MiB response and
+handles, 32,768 semantic records, export depth 128, a 30-second process deadline, 16 MiB response and
 256 KiB stderr. Shared capture/publication budgets apply independently.
 
 The [provider tests](../integration/go/rust_semantics_test.go) cover pagination,

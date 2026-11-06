@@ -171,4 +171,4 @@ fixtures enforce package and marker boundaries. Required checks run remotely.
 
 See [native semantic providers](native-semantics.md)
 for the bounded Go, TypeScript and Rust resolvers/analyzers, immutable native facts and
-explicit compiler queries. C++ semantic checking and broader Rust coverage remain planned.
+explicit Go/TypeScript compiler queries. C++ semantics and broader Rust coverage remain planned.

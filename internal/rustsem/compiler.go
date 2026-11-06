@@ -131,10 +131,12 @@ func Check(ctx context.Context, helper, sysroot string, trees []s.AST, source *f
 	return out, nil
 }
 func compilerDiagnostics(data []byte, units []Unit) []semantic.Diagnostic {
+	var diagnostics []semantic.Diagnostic
 	for _, line := range bytes.Split(data, []byte{'\n'}) {
 		var d struct {
 			Level   string
 			Message string
+			Code    *struct{ Code string }
 			Spans   []struct {
 				FileName string `json:"file_name"`
 				Start    int    `json:"byte_start"`
@@ -144,6 +146,14 @@ func compilerDiagnostics(data []byte, units []Unit) []semantic.Diagnostic {
 		}
 		if json.Unmarshal(line, &d) != nil || d.Level != "error" {
 			continue
+		}
+		// rustc can attach missing/incompatible sysroot metadata errors to a
+		// captured span. Those are environment failures, never type rejection.
+		if d.Code != nil {
+			switch d.Code.Code {
+			case "E0460", "E0461", "E0462", "E0463", "E0514", "E0786":
+				return nil
+			}
 		}
 		for _, span := range d.Spans {
 			if !span.Primary || span.FileName != "<captured.rs>" {
@@ -156,11 +166,11 @@ func compilerDiagnostics(data []byte, units []Unit) []semantic.Diagnostic {
 					best = &unit.Nodes[i]
 				}
 			}
-			if best != nil {
+			if best != nil && len(diagnostics) == 0 {
 				at := ast.NodeRef{Tree: unit.Tree, Node: best.ID}
-				return []semantic.Diagnostic{{Code: n.Key("compiler-error"), Subject: n.Validity(), Message: d.Message, At: &at}}
+				diagnostics = []semantic.Diagnostic{{Code: n.Key("compiler-error"), Subject: n.Validity(), Message: d.Message, At: &at}}
 			}
 		}
 	}
-	return nil
+	return diagnostics
 }
