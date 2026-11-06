@@ -70,7 +70,7 @@ handle. Neither choice changes the canonical Function declaration.
 | Consumer | Supply dependencies and select defaults, library plugins, explicit overrides and representation profiles. |
 | Existing engine | Register the resulting ASTTransformer as one directed language edge. It never registers individual type plugins. |
 
-Builtins are ordinary supplied mappings. Horos-owned integration code provides
+Builtins are ordinary supplied mappings. Bittype's Horos integration packages provide
 text, boolean, list and record mappings; it is outside the language-neutral
 generation kernel. Function, Stream, Cell and future libraries supply their own
 optional mappings through the same contract. An ordinary record declaration can
@@ -730,43 +730,44 @@ Go package names are `generation` for the shared contract/composer,
 `source` for source adapters and `target` for native adapters; consumers use local
 import aliases when needed. Neither adapter is an engine-registered provider.
 
-Outside Bittype, a type owner can add an independent Go integration module within
-its repository. Horos now implements this layout; other libraries can follow it without a new repository:
+**Owner placement correction, 6 November 2026:** semantic ownership does not
+require generator implementations to live in the type model's repository.
+Horos owns canonical meaning; Bittype owns the builtin Horos-to-native generation
+implementations. The former `horos/tooling/bittype` module is removed completely.
+The same public SPI remains available to independently packaged library mappings.
 
 ```text
-type-library/
-  tooling/bittype/go.mod
-  tooling/bittype/generation/syntax/typescript/go/
-  tooling/bittype/generation/syntax/golang/go/
-  tooling/bittype/generation/syntax/rust/go/
-  tooling/bittype/generation/syntax/cpp/go/
-    mapping.go                  owned builtin/declaration mapping
-    bindings.go                 supplied exact bindings
-
-horos/tooling/bittype/
-  generation/syntax/go/
-    mapping.go diagnostics.go    shared Horos-owned structural policy and rules
-  generation/syntax/<language>/go/
-    mapping.go bindings.go      native representations and exact supplied bindings
-  transforms/horos-to-<target>/go/
-    defaults.go                 optional opinionated composition
+bittype/                                 one root Go module
+  generation/syntax/mapping/horos/
+    go/                                  structural policy and associations
+    typescript/go/                       TypeScript mappings and bindings
+    golang/go/                           Go mappings and optional helper
+    rust/go/                             Rust mappings and bindings
+    cpp/go/                              C++ mappings and bindings
+  generation/syntax/composition/
+    horos-to-typescript/go/               explicit default assembly
+    horos-to-go/go/
+    horos-to-rust/go/
+    horos-to-cpp/go/
+  integration/go/                         generation and native compiler tests
 
 consumer/
-  generation/
-    configuration.go            select bindings, overrides and artifacts
+  generation/configuration.go            select bindings, overrides and artifacts
 ```
 
-All four target packages are implemented; missing representation support is
-explicit, with no empty placeholders. The Horos integration
-owns builtin mappings and structural declaration policies. Horos core does not
-import Bittype. Bittype factories do not import the integration module, so there
-is no Bittype -> integration -> Bittype module dependency cycle.
+These are optional packages within Bittype's existing module, not a second
+module or a mandatory builtin catalogue. Default compositions import mappings,
+source/native collaborators and thin transformer factories. The shared composer,
+source reader, native backends and thin factories do not import the mappings or
+defaults. Horos core and its repository contain no generator module depending on
+Bittype. Independent Function, Stream and Cell integrations continue to use the
+same public contract; their repository placement is a separate ownership choice.
 
 Dependencies follow the ownership boundaries:
 
 ```text
 consumer -> generation composer + source adapter + target adapter
-consumer -> selected Horos/library integration modules
+consumer -> selected Horos/library integration packages
 integration mapping -> generation contracts + source readers + target helpers
 source adapter -> Horos model/front-end facts + shared contracts
 target adapter -> own native syntax + shared contracts/carriers

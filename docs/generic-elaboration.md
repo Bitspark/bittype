@@ -12,7 +12,7 @@ The [first public SPI](generation-spi.md) implements Use, Publish, Define and
 paired Introduce/Apply with explicit collaborators and a guarded lifecycle.
 The [automatic composer](generation-composition.md) now supplies exact
 selectors/overrides and definition scheduling, replacing all four private
-Dialects. Horos's optional integration owns the mappings. Its representation
+Dialects. Bittype's supplied Horos integration packages own the mappings. Their representation
 profile permits constraint erasure; its enforcement profile returns Unsupported.
 Native admission profiles remain next steps. The earlier research used source/specification reasoning; it is distinct
 from implementation qualification.

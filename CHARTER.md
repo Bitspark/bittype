@@ -126,7 +126,8 @@ A published language revision fixes its admitted syntax and meaning.
 The earlier `bittype: 1` proposal is superseded. Horos's declaration revision is
 implemented in Go and versioned with the public Horos distribution. Rust and
 TypeScript retain ground checking; Bittype supplies readable syntax and native
-backends, with Horos-owned mapping compositions in Horos's optional integration module.
+backends, with Horos mapping packages and optional explicit compositions in Bittype's root
+module. Horos owns the canonical model; it has no generator dependency on Bittype.
 
 Canonical declaration identity, normalized value shape, generated-code
 compatibility and undeclared behavior remain distinct. A digest does not prove

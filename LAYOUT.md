@@ -62,6 +62,8 @@ generation/syntax/go/     automatic mapping selection and definition scheduling
 generation/syntax/source/horos/go/ source-owned semantic reading
 generation/syntax/target/go/       shared symbolic native storage
 generation/syntax/target/<language>/go/ native construction and assembly
+generation/syntax/mapping/horos/       supplied builtin mappings and structural policy
+generation/syntax/composition/horos-to-<target>/go/ explicit default assembly
 integration/go/          independent consumers and cross-package qualification
 verification/            concrete static verification; public Logos contract
   files/source/horos/go/  explicit authoritative queries bound to captured Horos
@@ -279,7 +281,8 @@ Template lifting and its exclusive dependency allowances remain removed.
 The [native representation design](docs/type-representations.md) and
 [type-owned generator plugin proposal](docs/type-generation-plugins.md) place
 builtin and library mappings behind one supplied contract. Each type library owns
-its mappings and type artifacts outside Bittype's module; the consumer selects
+its mappings and type artifacts through the same SPI; repository placement is
+separate from semantic ownership. The consumer selects
 defaults and explicit overrides. Adding Cell or another ordinary contract adds no
 Bittype stage, engine edge per contract or central registration entry. The first
 [public SPI and guarded invocation](docs/generation-spi.md) are implemented in
@@ -308,17 +311,25 @@ package structure is specified in the proposal. Existing transformer path names
 remain `horos-to-typescript`, `horos-to-go`, `horos-to-rust` and `horos-to-cpp`;
 native vocabulary/implementation directories use `golang` for Go as elsewhere.
 
-Builtin mappings and opinionated default assembly belong in a Horos-owned
-integration module, with `generation/syntax/<language>/go` for each target. Other
-type libraries use the same layout in their own integrations. These may be
-separate Go integration modules inside their owning repositories; they are not
-new modules inside Bittype or a required new repository. Bittype factories never
-import them. This preserves the dependency direction: integration -> Bittype,
-consumer -> integration + Bittype; Horos core remains independent of Bittype.
+**Owner placement correction, 6 November 2026:** builtin Horos mappings and
+explicit default assembly live in Bittype's existing root Go module:
 
-All listed generation directories are implemented. The transformer factories
-require an explicit invocation factory; default compositions live in Horos's
-optional `tooling/bittype` module, with no Bittype-to-integration dependency.
+```text
+generation/syntax/mapping/horos/go/             structural policy and associations
+generation/syntax/mapping/horos/typescript/go/  TypeScript mappings and bindings
+generation/syntax/mapping/horos/golang/go/      Go mappings and optional helper
+generation/syntax/mapping/horos/rust/go/        Rust mappings and bindings
+generation/syntax/mapping/horos/cpp/go/         C++ mappings and bindings
+generation/syntax/composition/horos-to-<target>/go/ explicit default assembly
+```
+
+Mapping packages implement the same public SPI available to independent libraries.
+The shared composer, source reader, native backends and thin transformer factories
+cannot import them or their default compositions. The defaults supply those
+collaborators explicitly; they register nothing. No separate Horos generation
+module or compatibility import remains. Horos owns canonical semantics without
+acquiring a repository dependency on Bittype's generator implementation.
+
 Syntax/Files provider registration and engine capabilities remain unchanged.
 
 The [Syntax and Files design](docs/source.md) is implemented with
