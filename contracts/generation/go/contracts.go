@@ -8,26 +8,27 @@ import (
 )
 
 var (
-	ErrInvalid = errors.New("invalid generation operation")
+	ErrInvalid     = errors.New("invalid generation operation")
 	ErrUnsupported = errors.New("generation capability unavailable")
-	ErrScope = errors.New("incompatible generation scope or association")
-	ErrLimit = errors.New("generation limit exhausted")
-	ErrIncomplete = errors.New("generation obligations incomplete")
+	ErrScope       = errors.New("incompatible generation scope or association")
+	ErrLimit       = errors.New("generation limit exhausted")
+	ErrIncomplete  = errors.New("generation obligations incomplete")
 )
 
 // Limits bound host work and target-controlled expansion. Providers must also
 // bound their own captured records and honor cancellation. They are trusted Go
 // collaborators, not a sandbox. Zero/negative limits are invalid.
 type Limits struct {
-	Operations int
-	Depth int
-	Plans int
-	References int
-	Formals int
+	Operations   int
+	Depth        int
+	Plans        int
+	References   int
+	Formals      int
 	Reservations int
-	OutputNodes int
-	OutputBytes int
+	OutputNodes  int
+	OutputBytes  int
 }
+
 func DefaultLimits() Limits { return Limits{100000, 128, 4096, 65536, 4096, 4096, 200000, 32 << 20} }
 func (l Limits) Valid() bool {
 	return l.Operations > 0 && l.Depth > 0 && l.Plans > 0 && l.References > 0 && l.Formals > 0 && l.Reservations > 0 && l.OutputNodes > 0 && l.OutputBytes > 0
@@ -36,17 +37,17 @@ func (l Limits) Valid() bool {
 // Binding describes lexical association. The shorter callback lifetime is on
 // Want and Product, not on this record. It contains immutable handles only.
 type Binding[F any] struct {
-	Run RunID
-	Config ConfigID
-	Issuer IssuerID
-	Subject Use[F]
+	Run         RunID
+	Config      ConfigID
+	Issuer      IssuerID
+	Subject     Use[F]
 	Environment Environment[F]
-	Frame FrameID
-	Signature SignatureID
+	Frame       FrameID
+	Signature   SignatureID
 }
 type Captured[F, T any] struct {
 	Binding Binding[F]
-	Token Token[F, T]
+	Token   Token[F, T]
 	Payload Fragment[T]
 }
 
@@ -74,11 +75,20 @@ type Native[F, T any] interface {
 
 // The independent capability interfaces are Syntax-generation operations.
 // bittype:dimension Syntax
-type User[F, T any] interface { Use(context.Context, UseRequest[F, T]) (Product[F, T], error) }
+type User[F, T any] interface {
+	Use(context.Context, UseRequest[F, T]) (Product[F, T], error)
+}
+
 // bittype:dimension Syntax
-type Publisher[F, T any] interface { Publish(context.Context, PublishRequest[F, T]) (Publication[F, T], error) }
+type Publisher[F, T any] interface {
+	Publish(context.Context, PublishRequest[F, T]) (Publication[F, T], error)
+}
+
 // bittype:dimension Syntax
-type Definer[F, T any] interface { Define(context.Context, DefineRequest[F, T]) (Definition[F, T], error) }
+type Definer[F, T any] interface {
+	Define(context.Context, DefineRequest[F, T]) (Definition[F, T], error)
+}
+
 // bittype:dimension Syntax
 type Convention[F, T any] interface {
 	Introduce(context.Context, IntroduceRequest[F, T]) (Introduction[F, T], error)
@@ -91,30 +101,33 @@ type Convention[F, T any] interface {
 // Callbacks and their private records must retain stable policy for the run;
 // copying an interface cannot freeze arbitrary implementation state.
 type Plan[F, T any] struct {
-	Key string
-	Declaration Declaration[F]
-	User User[F, T]
-	Publisher Publisher[F, T]
-	Definer Definer[F, T]
-	Convention Convention[F, T]
+	Key          string
+	Declaration  Declaration[F]
+	User         User[F, T]
+	Publisher    Publisher[F, T]
+	Definer      Definer[F, T]
+	Convention   Convention[F, T]
 	Associations Associations[F, T]
-	Acquire func(context.Context, Site[F, T]) (Destination[T], bool, error)
+	Acquire      func(context.Context, Site[F, T]) (Destination[T], bool, error)
 	// Header supplies the layout without a source generic convention. Source
 	// binders must be empty; a native-only helper may have explicit native formals.
 	Header func(context.Context, Site[F, T], Destination[T]) (Layout[T], error)
 }
 
 type Config[F, T any] struct {
-	Source Source[F]
-	Native Native[F, T]
-	Target representation.Language
+	Source   Source[F]
+	Native   Native[F, T]
+	Target   representation.Language
 	Evidence []semantic.EvidenceRequirement
-	Plans []Plan[F, T]
+	Plans    []Plan[F, T]
 	// Select chooses among the already supplied plans. It is not discovery,
 	// fallback, analysis or a core constructor/name switch.
 	Select func(UseData[F]) (string, error)
 }
-type Input struct { Snapshot semantic.Snapshot; Evidence []semantic.Result }
+type Input struct {
+	Snapshot semantic.Snapshot
+	Evidence []semantic.Result
+}
 
 type UseRequest[F, T any] interface {
 	Want() Want[F, T]
@@ -131,7 +144,10 @@ type IntroduceRequest[F, T any] interface {
 	Destination() Destination[T]
 	FreezeLayout(Layout[T]) (FormalRequest[F, T], error)
 }
-type FormalBinding[F, T any] struct { Binder Binder[F]; Token Token[F, T] }
+type FormalBinding[F, T any] struct {
+	Binder Binder[F]
+	Token  Token[F, T]
+}
 type FormalRequest[F, T any] interface {
 	WantFor(Binder[F]) (Want[F, T], error)
 	Finish([]FormalBinding[F, T]) (Introduction[F, T], error)

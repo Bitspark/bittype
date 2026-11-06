@@ -3,7 +3,7 @@
 Syntax infrastructure and native type generation for TypeScript, Go, Rust and
 C++, using horos as the canonical type model.
 
-**Current status, 4 November 2026:** generic AST/CST carriers, typed pipeline
+**Current status, 6 November 2026:** generic AST/CST carriers, typed pipeline
 contracts, native syntax vocabularies, parsers, formatters, checks and a shared
 printer are implemented in Go. The syntax engine registers languages and
 ASTTransformer implementations, plans routes and composes existing text stages.
@@ -41,6 +41,13 @@ supply TextBox counterexamples and conditional Page representation proofs,
 including nested reuse. The owning composition imports the public Logos contract;
 all packages use the root module and its anonymous installed-consumer gate.
 Native admission enforcement and runtime bindings are separate.
+
+The first [public generation SPI](docs/generation-spi.md) is implemented in Go
+source: independent Use, Publish and Define capabilities, paired Introduce/Apply,
+and a guarded invocation with explicitly supplied collaborators. The runner lives
+with its contracts in `contracts/generation/go`. Automatic selection/overrides,
+definition scheduling and replacement of the four private pagination Dialects
+remain next steps; the current native generators are unchanged.
 
 The [stage-first layout](LAYOUT.md) groups shared tree representations under
 trees and public interfaces under contracts. Every native language implements
@@ -109,13 +116,14 @@ interpret these concrete type semantics.
   direct generic pagination and library-owned type recipes configured for
   TypeScript, Go, Rust and C++; custom recipes remain proposed, while pagination
   transformers are implemented.
-- [Type-owned generator plugins](docs/type-generation-plugins.md): proposed Go
-  contracts, builtin mappings, explicit overrides and consumer composition;
-  documentation only.
+- [Public generation SPI](docs/generation-spi.md): implemented operations,
+  association ownership, scope and callback lifetimes, and explicit invocation.
+- [Type-owned generator plugins](docs/type-generation-plugins.md): implemented
+  first public contracts and the broader composition design; automatic selectors,
+  overrides and production mapping migration remain proposed.
 - [Generic generation walkthrough](docs/generic-elaboration.md#pagination-and-scope):
   pagination across four targets, paired parameter/application conventions,
-  nested results, Cell composition and the staged implementation plan;
-  documentation only.
+  nested results, Cell composition and the remaining implementation stages.
 - [Runtime values and hydration](docs/runtime-values.md): type descriptions versus
   native instances, existing Wire/runtime carriers and future typed/dynamic
   adapters; documentation only, with pinned implementation evidence.

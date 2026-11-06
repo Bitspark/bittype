@@ -25,6 +25,7 @@ contracts/
   print/go/               symmetric Syntax/Files print contracts and adapters
   text/go/                shared source and syntax diagnostics only
   transform/go/           ASTTransformer contract and typed registration bridge
+  generation/go/          public mapping operations and guarded explicit invocation
   semantic/go/            common snapshots, requests, reports and publication
   resolution/go/          resolver capability and dependency contract
   analysis/go/            analysis capability and explicit resolution input
@@ -126,6 +127,7 @@ same dependency level. The package boundaries are:
 | Carrier checks and printer | Generic tree structure and shared diagnostic contracts; no native grammar or formatting choices |
 | Structurally checked representation | Carriers, identity and generic carrier checks; no engine or transformer dependency |
 | Transformer contract/bridge | Typed requests, shared semantic evidence admission, checked representations and endpoint identity; no concrete mapping |
+| Generation contracts/invocation | Shared semantic evidence admission, representations, scoped identities and operation lifecycle; configured source/association/native collaborators own meaning; no concrete language, Logos or mapping imports |
 | Semantic facts | Generic AST addresses; graph integrity and owned storage, no language rules |
 | Shared semantic contract/bridge | Semantic facts, Files context, representations, explicit checker and identity; no Source dependency |
 | Resolution contract/bridge | Shared semantic contract and identity; binding coverage and typed invocation |
@@ -248,15 +250,19 @@ The [native representation design](docs/type-representations.md) and
 builtin and library mappings behind one supplied contract. Each type library owns
 its mappings and type artifacts outside Bittype's module; the consumer selects
 defaults and explicit overrides. Adding Cell or another ordinary contract adds no
-Bittype stage, engine edge per contract or central registration entry. Plugin
-contracts remain proposed; the private pagination Dialect remains implemented.
+Bittype stage, engine edge per contract or central registration entry. The first
+[public SPI and guarded invocation](docs/generation-spi.md) are implemented in
+`contracts/generation/go`. The four private pagination Dialects remain the
+production generation path until the full replacement is implemented.
 
-The proposed generation extension preserves stage-first organization and makes
-its Syntax dimension explicit:
+The current contract package owns the minimal explicitly driven runner, as the
+semantic contract owns its guarded operation. There is no empty
+`generation/syntax/go` wrapper. The future automatic composer and concrete
+collaborators retain the proposed stage-first layout:
 
 ```text
-contracts/generation/go/                  shared configuration/plugin contracts
-generation/syntax/go/                     language-neutral composition
+contracts/generation/go/                  implemented contracts and explicit runner
+generation/syntax/go/                     future selectors/overrides/definition scheduling
 generation/syntax/source/horos/go/        source semantic adapter and selectors
 generation/syntax/target/typescript/go/   TypeScript fragments/symbols/assembly
 generation/syntax/target/golang/go/       Go fragments/symbols/assembly
@@ -279,8 +285,10 @@ new modules inside Bittype or a required new repository. Bittype factories never
 import them. This preserves the dependency direction: integration -> Bittype,
 consumer -> integration + Bittype; Horos core remains independent of Bittype.
 
-No proposed source directory is created by the documentation task. Syntax/Files
-providers and source-derived capability matrices remain unchanged.
+Only the shared contract/invocation package is implemented in this first slice.
+The other generation directories above remain proposals, with no empty
+placeholders. Existing transformers are not yet configuration-only factories.
+Syntax/Files provider registration and engine capabilities remain unchanged.
 
 The [Syntax and Files design](docs/source.md) is implemented with
 `Syntax : CST : AST` and `Files : Source : Semantics`. Both dimension names are

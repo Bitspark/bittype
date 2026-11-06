@@ -21,11 +21,13 @@ the minimum integration seam and typed-checker requirements.
 The [remaining verification SPI gaps](type-system-architecture.md#remaining-public-verification-spi-decisions)
 are narrowed by the [Logos request trace and contract map](logos-verification.md):
 Bittype owns joint artifact association and language/mapping integration; Logos
-already supplies direct ground checking and proposes the richer typed contract.
-Production symbolic checking still needs the admitted typed implementation.
-Claim construction, proof production and checking remain distinct. The next API
-design uses TextBox/Page walkthroughs without requiring their full implementations
-or inventing another checking-provider registry.
+supplies direct ground checking and the landed typed check-only implementation.
+The [scoped Horos/Go integration](verification.md#implemented-go-surface) now
+connects explicit source/native projections and selected mapping laws to actual
+captures, then calls that checker directly for TextBox/Page and nested reuse.
+Claim construction, proof production and checking remain distinct. Broader native
+theories and native admission enforcement remain separate work; no second
+checking-provider registry is introduced.
 
 The [pagination walkthrough](generic-elaboration.md#pagination-and-scope) shows
 the proposed first end-to-end replacement: one open Page, selected mappings for
@@ -37,12 +39,14 @@ The [Logos preservation proposal](logos-preservation.md) adds a documentation-on
 design for deriving generic preservation from source facts, actual target ASTs
 and mapping laws. Its symbolic Go pagination proof assumes `T : Data` and a valid
 selected representation; native admission is a separate theorem. The proof
-integration and native semantic models remain unimplemented.
+encoding in that document remains proposed. The subsequent joint integration
+implements scoped Horos/Go checking; general native semantic models and native
+admission enforcement remain unimplemented.
 
 The [Go admission encoding](go-native-admission.md) proposes function-shaped,
 privately marked certificate types and tests them directly with the Go compiler.
-This qualification does not implement generation or establish the missing
-source judgments, representation laws or formal native-admission proof.
+This qualification does not implement generation or establish general source
+judgments, representation laws or a formal native-admission proof.
 Its admission claim concerns the complete `(S,N,E)` argument tuple. Empty
 marker-method bodies require the proposed
 [emission scope extension](type-system-architecture.md#go-marker-method-scope-extension)

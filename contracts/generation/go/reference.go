@@ -10,25 +10,29 @@ type domain[K any] struct{ identity byte }
 // Ref is a typed, owner-qualified address, not a proof or an existing-record claim.
 type Ref[K any] struct {
 	owner *domain[K]
-	slot uint64
+	slot  uint64
 }
 
 // Owner exposes identity checks without exposing the issuing space.
 type Owner[K any] struct{ owner *domain[K] }
 
-func NewSpace[K any]() Space[K] { return Space[K]{&domain[K]{identity: 1}} }
+func NewSpace[K any]() Space[K]    { return Space[K]{&domain[K]{identity: 1}} }
 func (s Space[K]) Owner() Owner[K] { return Owner[K]{s.owner} }
 func (s Space[K]) Ref(slot uint64) (Ref[K], bool) {
-	if s.owner == nil || slot == 0 { return Ref[K]{}, false }
+	if s.owner == nil || slot == 0 {
+		return Ref[K]{}, false
+	}
 	return Ref[K]{s.owner, slot}, true
 }
 func (s Space[K]) Index(r Ref[K]) (uint64, bool) {
-	if !s.Owner().Owns(r) { return 0, false }
+	if !s.Owner().Owns(r) {
+		return 0, false
+	}
 	return r.slot, true
 }
-func (o Owner[K]) Valid() bool { return o.owner != nil }
+func (o Owner[K]) Valid() bool        { return o.owner != nil }
 func (o Owner[K]) Owns(r Ref[K]) bool { return o.owner != nil && r.owner == o.owner && r.slot != 0 }
-func (r Ref[K]) Valid() bool { return r.owner != nil && r.slot != 0 }
+func (r Ref[K]) Valid() bool          { return r.owner != nil && r.slot != 0 }
 
 type DeclarationRole[F any] struct{}
 type BinderRole[F any] struct{}
@@ -57,10 +61,10 @@ type FrameID struct{ value *identity }
 type SignatureID struct{ value *identity }
 type Ticket struct{ value *identity }
 
-func (i RunID) Valid() bool { return i.value != nil }
-func (i ConfigID) Valid() bool { return i.value != nil }
-func (i IssuerID) Valid() bool { return i.value != nil }
-func (i FrameID) Valid() bool { return i.value != nil }
+func (i RunID) Valid() bool       { return i.value != nil }
+func (i ConfigID) Valid() bool    { return i.value != nil }
+func (i IssuerID) Valid() bool    { return i.value != nil }
+func (i FrameID) Valid() bool     { return i.value != nil }
 func (i SignatureID) Valid() bool { return i.value != nil }
-func (i Ticket) Valid() bool { return i.value != nil }
-func fresh() *identity { return &identity{value: 1} }
+func (i Ticket) Valid() bool      { return i.value != nil }
+func fresh() *identity            { return &identity{value: 1} }

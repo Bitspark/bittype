@@ -1,6 +1,6 @@
 # Charter
 
-**Current direction: 4 November 2026.** The owner selected horos for canonical
+**Current direction: 6 November 2026.** The owner selected horos for canonical
 data type semantics and bittype for syntax/tooling and native type generation,
 starting with types only. The [model boundary](docs/model.md) replaces the earlier
 independent bittype type-language proposal. Horos declaration revision 4 and its
@@ -14,6 +14,8 @@ bittype owns:
 - Frontend parsing, resolution tooling and located diagnostics implementing
   horos's declaration/binding rules, without a second semantic specification.
 - Native type generation for TypeScript, Go, Rust and C++.
+- The [public generation SPI](docs/generation-spi.md) and its minimal guarded
+  invocation, with language and mapping interpretation supplied explicitly.
 - Native AST vocabularies and an agnostic language identity/registration
   boundary, independent of particular language providers.
 - Native representation profiles and independent generation/round-trip fixtures.
@@ -76,12 +78,16 @@ The ASTTransformer boundary and syntax engine now provide checked heterogeneous
 registration, route planning/execution and native text composition. Pagination AST-to-AST mappings are implemented; public builders and application CLI remain deferred. Native parsing does not make a target language the
 canonical authority. The [generation design](docs/generation.md) remains separate.
 
-The [type-owned generator plugin proposal](docs/type-generation-plugins.md)
-places builtin and library native mappings behind one supplied contract. Consumers
-select exact mappings and explicit overrides; source and target adapters own
-semantic reading and native syntax. The shared generation coordinator and engine
-contain no canonical builtin or named-library mapping catalogue. This is a
-documentation proposal, not an implemented extension API.
+The [type-owned generator plugin design](docs/type-generation-plugins.md)
+places builtin and library native mappings behind one supplied contract. Its first
+[public SPI](docs/generation-spi.md) is implemented in Go source: Use, Publish,
+Define and paired Introduce/Apply, with an explicitly driven lifecycle in
+`contracts/generation/go`. Source and target collaborators own semantic reading
+and native syntax; the configured association owner retains representation
+meaning. The runner checks identity and operation lifetimes without interpreting
+that meaning. Automatic exact selection/overrides, definition scheduling and the
+four production Dialect replacements remain future work. No canonical builtin or
+named-library catalogue is added to shared generation or the engine.
 
 This scope excludes application-value validators, serialization, Wire adapters,
 RPC/streaming implementations and service migrations. The unified declaration
