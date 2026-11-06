@@ -23,24 +23,26 @@ type Binding struct {
 // export data supplies types, not ambient dependency sources or documentation.
 // Extractors are trusted Go tooling, never inspected provider implementations.
 type Config struct {
-	Root        string
-	MatrixPath  string
-	DetailsPath string
-	SourceURL   string
-	Extractors  []Binding
-	LoadLimits  LoadLimits
-	Limits      capability.Limits
-	BuildFlags  []string
-	Context     *observation.SourceContext
-	Executions  []observation.Execution
+	Root         string
+	MatrixPath   string
+	DetailsPath  string
+	OverviewPath string
+	SourceURL    string
+	Extractors   []Binding
+	LoadLimits   LoadLimits
+	Limits       capability.Limits
+	BuildFlags   []string
+	Context      *observation.SourceContext
+	Executions   []observation.Execution
 }
 
 // Documents contains fully rendered outputs. Generation does not modify files.
 // Write publishes neither Git commits nor execution artifacts automatically.
 type Documents struct {
-	Matrix                        string
-	Capabilities                  string
-	root, matrixPath, detailsPath string
+	Matrix                                      string
+	Capabilities                                string
+	Overview                                    string
+	root, matrixPath, detailsPath, overviewPath string
 }
 
 func Generate(ctx context.Context, config Config) (Documents, error) {
@@ -58,13 +60,18 @@ func Generate(ctx context.Context, config Config) (Documents, error) {
 	if config.DetailsPath == "" {
 		config.DetailsPath = "docs/provider-capabilities.md"
 	}
-	for _, path := range []string{config.MatrixPath, config.DetailsPath} {
+	if config.OverviewPath == "" {
+		config.OverviewPath = "docs/language-support.md"
+	}
+	paths := map[string]bool{}
+	for _, path := range []string{config.MatrixPath, config.DetailsPath, config.OverviewPath} {
 		if filepath.IsAbs(path) || !contained(root, filepath.Join(root, path)) {
 			return Documents{}, fmt.Errorf("output escapes selected module: %s", path)
 		}
-	}
-	if filepath.Clean(config.MatrixPath) == filepath.Clean(config.DetailsPath) {
-		return Documents{}, fmt.Errorf("matrix and details require different paths")
+		if paths[filepath.Clean(path)] {
+			return Documents{}, fmt.Errorf("reports require different paths")
+		}
+		paths[filepath.Clean(path)] = true
 	}
 	p, err := load(ctx, root, config.LoadLimits, config.BuildFlags)
 	if err != nil {
@@ -102,7 +109,8 @@ func generate(ctx context.Context, p *program, config Config) (Documents, error)
 	if err != nil {
 		return Documents{}, err
 	}
-	providers, transformers, err := p.render(m, sourceURL, filepath.ToSlash(detailLink))
+	overviewLink := relativeReportLink(config.MatrixPath, config.OverviewPath)
+	providers, transformers, err := p.render(m, sourceURL, filepath.ToSlash(detailLink), overviewLink)
 	if err != nil {
 		return Documents{}, err
 	}
@@ -119,7 +127,15 @@ func generate(ctx context.Context, p *program, config Config) (Documents, error)
 	if err != nil {
 		return Documents{}, err
 	}
-	details, err := p.renderDetails(ctx, m, a, config, sourceURL)
+	definitions, err := p.extractDefinitions(ctx, m, a, config)
+	if err != nil {
+		return Documents{}, err
+	}
+	details, err := p.renderDetails(ctx, m, a, config, sourceURL, definitions)
+	if err != nil {
+		return Documents{}, err
+	}
+	overview, err := p.renderOverview(ctx, m, a, config, sourceURL, definitions)
 	if err != nil {
 		return Documents{}, err
 	}
@@ -129,21 +145,21 @@ func generate(ctx context.Context, p *program, config Config) (Documents, error)
 	if bytes.Contains(original, []byte("\r\n")) {
 		document = strings.ReplaceAll(document, "\n", "\r\n")
 	}
-	return Documents{Matrix: document, Capabilities: details, root: p.root, matrixPath: config.MatrixPath, detailsPath: config.DetailsPath}, nil
+	return Documents{Matrix: document, Capabilities: details, Overview: overview, root: p.root, matrixPath: config.MatrixPath, detailsPath: config.DetailsPath, overviewPath: config.OverviewPath}, nil
 }
 
-// Write writes the already rendered pair and returns every write failure. Two
+// Write writes the already rendered documents and returns every write failure. File
 // writes are not a transaction: the calling publication step must stop on error.
-// The existing updater publishes the pair together in one Git commit.
+// The existing updater publishes all three together in one Git commit.
 func Write(documents Documents) error {
 	return writeDocuments(documents, os.WriteFile)
 }
 
 func writeDocuments(documents Documents, write func(string, []byte, os.FileMode) error) error {
-	if documents.root == "" || documents.matrixPath == "" || documents.detailsPath == "" {
+	if documents.root == "" || documents.matrixPath == "" || documents.detailsPath == "" || documents.overviewPath == "" {
 		return fmt.Errorf("documents were not produced by Generate")
 	}
-	for _, item := range []struct{ path, text string }{{documents.matrixPath, documents.Matrix}, {documents.detailsPath, documents.Capabilities}} {
+	for _, item := range []struct{ path, text string }{{documents.matrixPath, documents.Matrix}, {documents.detailsPath, documents.Capabilities}, {documents.overviewPath, documents.Overview}} {
 		path := filepath.Join(documents.root, item.path)
 		if !contained(documents.root, path) {
 			return fmt.Errorf("output path escapes selected module")

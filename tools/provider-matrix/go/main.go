@@ -26,10 +26,12 @@ func run() error {
 	root := flag.String("root", ".", "selected source module root")
 	output := flag.String("output", "docs/providers.md", "matrix Markdown path relative to root")
 	details := flag.String("details", "docs/provider-capabilities.md", "details Markdown path relative to root")
+	overview := flag.String("overview", "docs/language-support.md", "compact language overview path relative to root")
 	sourceURL := flag.String("source-url", "", "source URL prefix; defaults to the module GitHub main branch")
 	contextPath := flag.String("context", "", "independently captured current source context JSON")
 	executionOutput := flag.String("execution-output", "", "write an execution report here, leaving committed reports unchanged")
-	timeout := flag.Duration("timeout", 5*time.Minute, "whole-command cooperative deadline (outer worker deadline remains required)")
+	executionOverview := flag.String("execution-overview", "", "write a compact invocation overview alongside -execution-output")
+	timeout := flag.Duration("timeout", 5*time.Minute, "whole-command cooperative deadline")
 	flag.Var(&resultPaths, "results", "invocation.json path (repeatable)")
 	flag.Var(&buildFlags, "build-flag", "explicit source-selection Go build flag (repeatable)")
 	flag.Parse()
@@ -41,7 +43,7 @@ func run() error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
-	config := report.Config{Root: *root, MatrixPath: *output, DetailsPath: *details, SourceURL: *sourceURL, BuildFlags: buildFlags, Extractors: []report.Binding{{Format: grammar.Format, Extractor: grammar.Extractor{}}}}
+	config := report.Config{Root: *root, MatrixPath: *output, DetailsPath: *details, OverviewPath: *overview, SourceURL: *sourceURL, BuildFlags: buildFlags, Extractors: []report.Binding{{Format: grammar.Format, Extractor: grammar.Extractor{}}}}
 	if *contextPath != "" {
 		file, err := os.Open(*contextPath)
 		if err != nil {
@@ -77,6 +79,9 @@ func run() error {
 	if (len(resultPaths) > 0 || config.Context != nil) && *executionOutput == "" {
 		return fmt.Errorf("observations require -execution-output; they are never written into committed reports")
 	}
+	if *executionOverview != "" && (*executionOutput == "" || *executionOverview == *executionOutput) {
+		return fmt.Errorf("-execution-overview requires a distinct -execution-output")
+	}
 	documents, err := report.Generate(ctx, config)
 	if err != nil {
 		return err
@@ -85,13 +90,18 @@ func run() error {
 		if err := os.WriteFile(*executionOutput, []byte(documents.Capabilities), 0644); err != nil {
 			return err
 		}
+		if *executionOverview != "" {
+			if err := os.WriteFile(*executionOverview, []byte(documents.Overview), 0644); err != nil {
+				return err
+			}
+		}
 		fmt.Println("Wrote invocation report", *executionOutput)
 		return nil
 	}
 	if err := report.Write(documents); err != nil {
 		return err
 	}
-	fmt.Println("Generated provider matrices and capability details.")
+	fmt.Println("Generated provider matrices, capability details and language overview.")
 	return nil
 }
 

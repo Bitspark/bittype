@@ -54,11 +54,17 @@ func escape(text string) string {
 
 func (p *program) render(m *matrix, sourceURL string, detailPaths ...string) (string, string, error) {
 	var providers, transformers strings.Builder
+	languageLabel := func(lang language) string {
+		if len(detailPaths) > 1 {
+			return fmt.Sprintf("[%s](%s#language-%s)", escape(lang.name), detailPaths[1], stableKey(lang.id))
+		}
+		return escape(lang.name)
+	}
 	providers.WriteString("| Level | Provider |")
 	transformers.WriteString("| Source → target |")
 	for _, lang := range m.languages {
-		fmt.Fprintf(&providers, " %s |", escape(lang.name))
-		fmt.Fprintf(&transformers, " %s |", escape(lang.name))
+		fmt.Fprintf(&providers, " %s |", languageLabel(lang))
+		fmt.Fprintf(&transformers, " %s |", languageLabel(lang))
 	}
 	providers.WriteString("\n| --- | --- |")
 	transformers.WriteString("\n| --- |")
@@ -90,7 +96,7 @@ func (p *program) render(m *matrix, sourceURL string, detailPaths ...string) (st
 		providers.WriteString("\n")
 	}
 	for _, from := range m.languages {
-		fmt.Fprintf(&transformers, "| %s |", escape(from.name))
+		fmt.Fprintf(&transformers, "| %s |", languageLabel(from))
 		for _, to := range m.languages {
 			links, err := p.links(m.edges[from.id][to.id], sourceURL, detailPaths...)
 			if err != nil {

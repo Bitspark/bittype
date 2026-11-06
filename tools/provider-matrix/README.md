@@ -2,8 +2,8 @@
 
 `go run ./tools/provider-matrix/go` updates the `providers` and `transformers`
 generated regions in [docs/providers.md](../../docs/providers.md) and renders
-[docs/provider-capabilities.md](../../docs/provider-capabilities.md). The committed
-pair contains source-derived identity, scope links, structural inventories and
+[docs/provider-capabilities.md](../../docs/provider-capabilities.md) and the compact
+[language overview](../../docs/language-support.md). The committed reports contains source-derived identity, scope links, structural inventories and
 named case associations. It contains no current-pass labels or completeness score.
 
 This is development tooling in the root Go module. Runtime and language-provider
@@ -119,15 +119,21 @@ ordering table for known dimensions. Detail anchors encode canonical identity
 tuples, including absent versus explicit profiles, without hashes or line-number
 identity. Static reports have no timestamps or inspected HEAD records. Links
 target the module's GitHub `main` branch; `-source-url` overrides the prefix.
-`-root` selects the module root, `-output` the matrix Markdown file and `-details`
-the static details path. Repeatable `-build-flag` values select supported Go build
-options. `-timeout` supplies a cooperative command deadline; the remote job still
-owns the outer deadline. Authored matrix prose and its newline style are preserved.
+`-root` selects the module root, `-output` the matrix Markdown file, `-details`
+the static details path and `-overview` the compact language view. Repeatable
+`-build-flag` values select supported Go build options. `-timeout` supplies a
+cooperative command deadline. Authored matrix prose and its newline style are preserved.
 
-Both outputs are rendered and validated before writes begin. A malformed
-annotation or extraction failure prevents publication. Two OS writes are not a
+All three outputs are rendered and validated before writes begin. A malformed
+annotation or extraction failure prevents publication. OS writes are not a
 transaction: the caller must stop publication on a write failure. The existing
-updater publishes the completed pair together in one Git commit.
+updater publishes the completed three documents together in one Git commit.
+
+The [compact-view contract](../../docs/capability-reports.md#compact-language-overview)
+defines exact scope excerpt markers, feature inventories and test deduplication.
+Excerpts live in the existing owning scope documents. The renderer has no list
+of languages, supported features or exclusion keywords. Missing excerpts remain
+explicit, and test associations never become passing results by inference.
 
 ## Public composition
 
@@ -170,8 +176,7 @@ An arbitrary payload or renderer callback cannot extend the result schema.
 Source loading, metadata, traversal, queries and accepted output are bounded.
 These are cooperative guarantees over trusted tooling, not a hostile-extractor
 sandbox. In-process Go checking and arbitrary extractor code are not forcibly
-preemptible; the caller context and existing remote job deadline remain the
-outer boundary. Portable generation runs remotely under repository policy.
+preemptible.
 
 ## Exact-invocation observations
 
@@ -179,7 +184,7 @@ The default generation path never fetches test results. Existing remote jobs can
 supply captures explicitly:
 
 ```sh
-go run ./tools/provider-matrix/go -results invocation.json -context source-context.json -execution-output report.md
+go run ./tools/provider-matrix/go -results invocation.json -context source-context.json -execution-output report.md -execution-overview overview.md
 ```
 
 `invocation.json` uses [observation.Invocation](observation/go/types.go) and sits
@@ -214,13 +219,13 @@ also triggers generation when `[skip ci]` suppresses the ordinary push workflow.
 Only merged PRs qualify, and the job always reads `main`, never an unmerged head.
 Direct pushes with skip instructions require explicit workflow dispatch, following
 [GitHub's event behavior](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/skip-workflow-runs).
-It reads latest main, generates both static documents and, when they change,
+It reads latest main, generates all three static documents and, when they change,
 creates or updates the bot-owned
 `automation/provider-matrices` branch and pull request, then squash-merges that
 docs-only update. No manual table edit or merge is needed. The job is serialized
 and uses `GITHUB_TOKEN`, with write credentials available only during publication.
 
-The bot commits only `docs/providers.md` and `docs/provider-capabilities.md`,
+The bot commits only `docs/providers.md`, `docs/provider-capabilities.md` and `docs/language-support.md`,
 using `[skip ci]`. Token-authored changes do not recursively start another update.
 Unchanged output creates no commit. This
 is output generation, not a validation gate; existing checks remain separate.
