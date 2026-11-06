@@ -25,20 +25,20 @@ import (
 // Repository packages are read from source so symbols retain their actual positions.
 // No repository initializer, constructor or provider method is executed.
 type packageInfo struct {
-	ImportPath, Name, Dir, Export string
-	GoFiles, CgoFiles, Imports []string
+	ImportPath, Name, Dir, Export                        string
+	GoFiles, CgoFiles, Imports                           []string
 	TestGoFiles, XTestGoFiles, TestImports, XTestImports []string
-	Module                  *struct {
+	Module                                               *struct {
 		Path, Dir, GoVersion string
-		Main            bool
+		Main                 bool
 	}
 	Error *struct{ Err string }
 }
 
 type sourcePackage struct {
-	types *types.Package
-	info  *types.Info
-	files []*ast.File
+	types   *types.Package
+	info    *types.Info
+	files   []*ast.File
 	sources map[string]string
 }
 
@@ -122,10 +122,10 @@ func validateBuildFlags(flags []string) error {
 }
 
 type outputBudget struct {
-	mu sync.Mutex
+	mu        sync.Mutex
 	remaining int
-	exceeded bool
-	cancel context.CancelFunc
+	exceeded  bool
+	cancel    context.CancelFunc
 }
 
 type boundedOutput struct {
@@ -295,7 +295,7 @@ func (p *program) readSource(path string) (string, error) {
 		return "", err
 	}
 	defer file.Close()
-	remaining := p.limits.MaxSourceBytes-p.sourceBytes
+	remaining := p.limits.MaxSourceBytes - p.sourceBytes
 	data, err := io.ReadAll(io.LimitReader(file, int64(remaining)+1))
 	if err != nil {
 		return "", err

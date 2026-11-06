@@ -123,7 +123,7 @@ type Limitation struct {
 type ExtractionExtent string
 
 const (
-	Decoded ExtractionExtent = "decoded"
+	Decoded       ExtractionExtent = "decoded"
 	PartlyDecoded ExtractionExtent = "partial"
 )
 

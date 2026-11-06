@@ -1,5 +1,11 @@
 # Detailed capability reports
 
+The [ACX-007 identity correction](https://github.com/Bitspark/platform/blob/docs/bittype-matrix-contract-identity-20261106/docs/concepts/architecture-cases/0007-bittype-matrix-contract-identity.md)
+records the existing matrix bug found during implementation: short display names
+could satisfy an unrelated constructor dependency. Availability now uses canonical
+contract identities; conflicting display rows diagnose. Remote qualification and
+landing of this correction are tracked with the report implementation in PR126.
+
 The [generated matrices](providers.md) link each discovered contribution to its
 [detailed report](provider-capabilities.md). Source annotations, format-owned
 extractors and explicit test observations explain the extent of an implementation

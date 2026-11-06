@@ -226,6 +226,21 @@ jobs:
           path: ${{ runner.temp }}/capability-observations/
           if-no-files-found: ignore
           retention-days: 7
+      - name: Generate reviewable static capability reports
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          go run ./tools/provider-matrix/go
+          mkdir -p "$RUNNER_TEMP/capability-static"
+          cp docs/providers.md docs/provider-capabilities.md "$RUNNER_TEMP/capability-static/"
+      - name: Upload generated static capability reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: capability-static-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/capability-static/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Record passing revision
         shell: bash
         run: |

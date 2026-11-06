@@ -124,38 +124,38 @@ func TestProductionArchitecture(t *testing.T) {
 	packages := productionPackages(t)
 	languages := stageLanguages(t)
 	rules := map[string][]string{
-		"tools/provider-matrix/go": {"tools/provider-matrix/report/go", "tools/provider-matrix/observation/go", "tools/provider-matrix/extract/grammar/go"},
-		"tools/provider-matrix/report/go": {"tools/provider-matrix/capability/go", "tools/provider-matrix/observation/go"},
-		"tools/provider-matrix/capability/go": {},
-		"tools/provider-matrix/observation/go": {},
+		"tools/provider-matrix/go":                 {"tools/provider-matrix/report/go", "tools/provider-matrix/observation/go", "tools/provider-matrix/extract/grammar/go"},
+		"tools/provider-matrix/report/go":          {"tools/provider-matrix/capability/go", "tools/provider-matrix/observation/go"},
+		"tools/provider-matrix/capability/go":      {},
+		"tools/provider-matrix/observation/go":     {},
 		"tools/provider-matrix/extract/grammar/go": {"tools/provider-matrix/capability/go"},
-		"tools/horos-module/go":     {"contracts/parse/go", "internal/horosmodel", "internal/lex", "parse/syntax/horos/go", "trees/ast/go"},
-		"trees/ast/go":              {},
-		"semantics/go":              {"trees/ast/go"},
-		"trees/cst/go":              {"trees/ast/go"},
-		"contracts/language/go":     {},
-		"contracts/pipeline/go":     {},
-		"contracts/check/go":        {"trees/representation/go", "trees/ast/go", "contracts/language/go"},
-		"contracts/parse/go":        {"trees/representation/go", "trees/ast/go", "trees/cst/go", "contracts/language/go"},
-		"contracts/format/go":       {"trees/representation/go", "trees/ast/go", "trees/cst/go", "contracts/language/go"},
-		"contracts/print/go":        {"trees/representation/go", "trees/cst/go", "contracts/language/go"},
-		"contracts/text/go":         {"trees/ast/go"},
-		"check/syntax/ast/go":       {"trees/ast/go", "contracts/text/go"},
-		"check/syntax/cst/go":       {"trees/ast/go", "trees/cst/go", "check/syntax/ast/go", "contracts/text/go"},
-		"print/syntax/go":           {"trees/cst/go", "check/syntax/cst/go", "contracts/language/go", "contracts/print/go", "trees/representation/go"},
-		"trees/representation/go":   {"trees/ast/go", "trees/cst/go", "contracts/language/go", "check/syntax/ast/go", "check/syntax/cst/go", "internal/tree"},
-		"contracts/transform/go":    {"trees/ast/go", "trees/representation/go", "contracts/language/go", "contracts/semantic/go", "internal/tree"},
-		"contracts/semantic/go":     {"contracts/check/go", "trees/ast/go", "trees/representation/go", "contracts/language/go", "semantics/go", "internal/tree"},
-		"contracts/verification/go": {"contracts/semantic/go", "semantics/go", "trees/ast/go", "trees/representation/go"},
-		"contracts/generation/go":   {"contracts/semantic/go", "trees/representation/go"},
-		"contracts/resolution/go":   {"trees/representation/go", "contracts/language/go", "contracts/semantic/go", "semantics/go"},
-		"contracts/analysis/go":     {"trees/representation/go", "contracts/language/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"},
-		"engine/go":                 {"trees/ast/go", "trees/representation/go", "contracts/language/go", "contracts/parse/go", "contracts/check/go", "contracts/format/go", "contracts/print/go", "contracts/transform/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go"},
-		"internal/tree":             {"trees/ast/go"},
-		"internal/grammar":          {"trees/ast/go", "check/syntax/ast/go", "contracts/text/go"},
-		"internal/lex":              {"trees/ast/go", "contracts/parse/go", "contracts/text/go"},
-		"internal/parseutil":        {"trees/ast/go", "check/syntax/ast/go", "contracts/parse/go", "contracts/text/go", "internal/lex"},
-		"internal/concrete":         {"trees/ast/go", "trees/cst/go", "check/syntax/cst/go", "contracts/parse/go", "contracts/text/go", "internal/lex", "internal/tree"},
+		"tools/horos-module/go":                    {"contracts/parse/go", "internal/horosmodel", "internal/lex", "parse/syntax/horos/go", "trees/ast/go"},
+		"trees/ast/go":                             {},
+		"semantics/go":                             {"trees/ast/go"},
+		"trees/cst/go":                             {"trees/ast/go"},
+		"contracts/language/go":                    {},
+		"contracts/pipeline/go":                    {},
+		"contracts/check/go":                       {"trees/representation/go", "trees/ast/go", "contracts/language/go"},
+		"contracts/parse/go":                       {"trees/representation/go", "trees/ast/go", "trees/cst/go", "contracts/language/go"},
+		"contracts/format/go":                      {"trees/representation/go", "trees/ast/go", "trees/cst/go", "contracts/language/go"},
+		"contracts/print/go":                       {"trees/representation/go", "trees/cst/go", "contracts/language/go"},
+		"contracts/text/go":                        {"trees/ast/go"},
+		"check/syntax/ast/go":                      {"trees/ast/go", "contracts/text/go"},
+		"check/syntax/cst/go":                      {"trees/ast/go", "trees/cst/go", "check/syntax/ast/go", "contracts/text/go"},
+		"print/syntax/go":                          {"trees/cst/go", "check/syntax/cst/go", "contracts/language/go", "contracts/print/go", "trees/representation/go"},
+		"trees/representation/go":                  {"trees/ast/go", "trees/cst/go", "contracts/language/go", "check/syntax/ast/go", "check/syntax/cst/go", "internal/tree"},
+		"contracts/transform/go":                   {"trees/ast/go", "trees/representation/go", "contracts/language/go", "contracts/semantic/go", "internal/tree"},
+		"contracts/semantic/go":                    {"contracts/check/go", "trees/ast/go", "trees/representation/go", "contracts/language/go", "semantics/go", "internal/tree"},
+		"contracts/verification/go":                {"contracts/semantic/go", "semantics/go", "trees/ast/go", "trees/representation/go"},
+		"contracts/generation/go":                  {"contracts/semantic/go", "trees/representation/go"},
+		"contracts/resolution/go":                  {"trees/representation/go", "contracts/language/go", "contracts/semantic/go", "semantics/go"},
+		"contracts/analysis/go":                    {"trees/representation/go", "contracts/language/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"},
+		"engine/go":                                {"trees/ast/go", "trees/representation/go", "contracts/language/go", "contracts/parse/go", "contracts/check/go", "contracts/format/go", "contracts/print/go", "contracts/transform/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go"},
+		"internal/tree":                            {"trees/ast/go"},
+		"internal/grammar":                         {"trees/ast/go", "check/syntax/ast/go", "contracts/text/go"},
+		"internal/lex":                             {"trees/ast/go", "contracts/parse/go", "contracts/text/go"},
+		"internal/parseutil":                       {"trees/ast/go", "check/syntax/ast/go", "contracts/parse/go", "contracts/text/go", "internal/lex"},
+		"internal/concrete":                        {"trees/ast/go", "trees/cst/go", "check/syntax/cst/go", "contracts/parse/go", "contracts/text/go", "internal/lex", "internal/tree"},
 	}
 	for _, name := range languages {
 		syntax := "syntax/" + name + "/go"
@@ -236,7 +236,7 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["provider/rust/go"] = append(rules["provider/rust/go"], "contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "analyze/files/rust/go", "resolve/files/rust/go")
 	rules["verification/files/horos-to-go/go"] = []string{"contracts/semantic/go", "contracts/verification/go", "semantics/go", "trees/ast/go", "verification/files/source/horos/go", "semantics/golang/go", "analyze/files/golang/go"}
 	for path, p := range packages {
-		if p.Standard || len(p.GoFiles)+len(p.CgoFiles)==0 || path == modulePath+"/integration/go" || path == modulePath+"/verification/integration/go" {
+		if p.Standard || len(p.GoFiles)+len(p.CgoFiles) == 0 || path == modulePath+"/integration/go" || path == modulePath+"/verification/integration/go" {
 			continue
 		}
 		if !strings.HasPrefix(path, modulePath+"/") {

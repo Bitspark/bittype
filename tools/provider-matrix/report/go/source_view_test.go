@@ -124,7 +124,7 @@ var B = b.Value
 `,
 	})
 	view := newSourceView(p)
-	for _, test := range []struct { name, origin, value string }{{"A", "one", ""}, {"B", "two", "2"}} {
+	for _, test := range []struct{ name, origin, value string }{{"A", "one", ""}, {"B", "two", "2"}} {
 		decl, err := view.Declaration(capability.Symbol{Package: p.module + "/unrelated/use", Name: test.name})
 		if err != nil {
 			t.Fatal(err)

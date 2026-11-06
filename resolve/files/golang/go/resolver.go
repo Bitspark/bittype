@@ -20,6 +20,7 @@ func Contract() resolution.Contract {
 	}
 	return resolution.Contract{Semantic: c, Bindings: n.Bindings()}
 }
+
 // bittype:scope docs/native-semantics.md#first-go-profile
 func Resolve(ctx context.Context, request semantic.Request[s.Language]) (semantic.Result, error) {
 	if ctx == nil || request.Contract().Profile != n.ResolutionProfile || !n.MatchesConfiguration(request.Configuration()) {

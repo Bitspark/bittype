@@ -139,8 +139,13 @@ func TestSourceAndBuildSelectionMustMatchIndependently(t *testing.T) {
 		{"race", func(e *Execution) { e.Invocation.Context.BuildFlags = []string{"-race"} }, Mismatched},
 		{"toolchain", func(e *Execution) { e.Invocation.Context.GoVersion = "go1.28.0" }, Mismatched},
 		{"dependency", func(e *Execution) { e.Invocation.Context.Modules[1].Version = "v2.0.0" }, Mismatched},
-		{"replacement", func(e *Execution) { e.Invocation.Context.Replacements = []Replacement{{Path: "example.test/dependency", Version: "v1.0.0", Replacement: "elsewhere", WithVersion: "v1.0.0"}} }, Mismatched},
-		{"modified", func(e *Execution) { e.Invocation.Context.InputState = "modified"; e.Invocation.Context.InputChanges = []string{" M go.sum"} }, Mismatched},
+		{"replacement", func(e *Execution) {
+			e.Invocation.Context.Replacements = []Replacement{{Path: "example.test/dependency", Version: "v1.0.0", Replacement: "elsewhere", WithVersion: "v1.0.0"}}
+		}, Mismatched},
+		{"modified", func(e *Execution) {
+			e.Invocation.Context.InputState = "modified"
+			e.Invocation.Context.InputChanges = []string{" M go.sum"}
+		}, Mismatched},
 		{"unknown", func(e *Execution) { e.Invocation.Context.InputState = "unknown" }, Insufficient},
 		{"context-incomplete", func(e *Execution) { e.Invocation.Context.Complete = false }, Insufficient},
 		{"capture-incomplete", func(e *Execution) { e.Invocation.CaptureComplete = false }, Insufficient},
@@ -247,7 +252,7 @@ func TestCaptureHelperPreservesFailureAndIndependentContext(t *testing.T) {
 	helper := filepath.Join(filepath.Dir(filename), "..", "..", "capture.py")
 	root, artifacts := t.TempDir(), t.TempDir()
 	for name, body := range map[string]string{
-		"go.mod": "module example.test/capture\n\ngo 1.25.0\n",
+		"go.mod":          "module example.test/capture\n\ngo 1.25.0\n",
 		"capture_test.go": "package capture\nimport \"testing\"\nfunc TestPass(t *testing.T) {}\nfunc TestFails(t *testing.T) { t.Fatal(\"fixture failure\") }\nfunc TestSkipped(t *testing.T) { t.Skip(\"fixture skip\") }\n",
 	} {
 		if err := os.WriteFile(filepath.Join(root, name), []byte(body), 0600); err != nil {

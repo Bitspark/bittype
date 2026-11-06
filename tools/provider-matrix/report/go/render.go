@@ -2,12 +2,10 @@
 package report
 
 import (
-	
-	
 	"fmt"
 	"html"
 	"net/url"
-	
+
 	"path/filepath"
 	"slices"
 	"strings"
@@ -33,8 +31,10 @@ func (p *program) links(locations []location, sourceURL string, detailPaths ...s
 		link := fmt.Sprintf("[%s](%s)", escape(loc.label), target)
 		if loc.op != nil {
 			detailPath := "provider-capabilities.md"
-			if len(detailPaths)>0 { detailPath=detailPaths[0] }
-			link += fmt.Sprintf(" ([details](%s#cap-%s))",detailPath,loc.op.id)
+			if len(detailPaths) > 0 {
+				detailPath = detailPaths[0]
+			}
+			link += fmt.Sprintf(" ([details](%s#cap-%s))", detailPath, loc.op.id)
 		}
 		if !unique[link] {
 			unique[link] = true
@@ -114,4 +114,3 @@ func replaceRegion(document, name, table string) (string, error) {
 	}
 	return document[:start] + "\n\n" + strings.TrimSpace(table) + "\n\n" + document[stop:], nil
 }
-

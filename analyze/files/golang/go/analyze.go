@@ -18,6 +18,7 @@ func Contract() analysis.Contract {
 	c.Profile = n.AnalysisProfile
 	return analysis.Contract{Semantic: c, Resolution: &resolution.Requirement{Profile: n.ResolutionProfile, Configuration: n.Configuration()}}
 }
+
 // bittype:scope docs/native-semantics.md#first-go-profile
 func Analyze(ctx context.Context, request analysis.Request[s.Language]) (semantic.Result, error) {
 	if ctx == nil || request.Contract().Profile != n.AnalysisProfile || !n.MatchesConfiguration(request.Configuration()) {

@@ -16,10 +16,12 @@ func New[L any](identity language.Provider) (Provider[L], error) {
 	}
 	return Provider[L]{identity: identity}, nil
 }
+
 // bittype:scope docs/syntax.md#identity-and-registration
 func (p Provider[L]) ID() language.ID { return p.identity.ID() }
+
 // bittype:scope docs/syntax.md#identity-and-registration
-func (p Provider[L]) Name() string    { return p.identity.Name() }
+func (p Provider[L]) Name() string { return p.identity.Name() }
 func (p Provider[L]) Print(ctx context.Context, input cst.CST[L]) (string, error) {
 	return Print(ctx, input)
 }

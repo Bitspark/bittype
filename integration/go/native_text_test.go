@@ -102,6 +102,7 @@ func exercise[L any](t *testing.T, p nativeProvider[L], directory, extension str
 		})
 	}
 }
+
 // bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Parse feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
 // bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Format feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
 // bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Print feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
@@ -131,6 +132,7 @@ func reject[L any](t *testing.T, p nativeProvider[L], sources []string) {
 		})
 	}
 }
+
 // bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
 // bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
 // bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
@@ -216,6 +218,7 @@ func TestProviderIdentity(t *testing.T) {
 		}
 	}
 }
+
 // bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Print feature=concrete-admission case=malformed-concrete-tree expects=rejection-without-output
 func TestMalformedConcreteTree(t *testing.T) {
 	p := tsprovider.Provider{}

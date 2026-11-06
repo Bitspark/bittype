@@ -31,7 +31,7 @@ func known[T any](value T) c.Field[T] { return c.Field[T]{State: c.Known, Value:
 func example() c.Inventory {
 	return c.Inventory{Extent: c.Decoded, Features: []c.Feature{{
 		Key: "item", At: at,
-		Roles: known([]c.Role{{Name: "value", At: at, Min: known(0), Max: known(c.UpperBound{Unbounded: true}), Kinds: known([]string{})}}),
+		Roles:      known([]c.Role{{Name: "value", At: at, Min: known(0), Max: known(c.UpperBound{Unbounded: true}), Kinds: known([]string{})}}),
 		Attributes: known([]c.Attribute{{Name: "name", At: at, Required: known(false), Values: known(c.ValueSet{Unrestricted: true})}}),
 		References: known([]string{}),
 	}}}
@@ -60,18 +60,32 @@ func TestKnowledgePreservesKnownEmptyUnboundedAndOpaqueFields(t *testing.T) {
 func TestInvalidRecordsFailInsteadOfBecomingUnknown(t *testing.T) {
 	cases := map[string]func(*c.Inventory){
 		"missing knowledge": func(i *c.Inventory) { i.Features[0].References.State = "" },
-		"unknown value": func(i *c.Inventory) { i.Features[0].References = c.Field[[]string]{State: c.Unknown, Value: []string{"x"}, At: at, Reason: "unknown"} },
-		"opaque role": func(i *c.Inventory) { i.Features[0].Roles = c.Field[[]c.Role]{State: c.Opaque, At: at, Reason: "opaque"} },
-		"partial scalar": func(i *c.Inventory) { i.Features[0].Roles.Value[0].Min.State = c.Partial; i.Features[0].Roles.Value[0].Min.Reason = "partial" },
+		"unknown value": func(i *c.Inventory) {
+			i.Features[0].References = c.Field[[]string]{State: c.Unknown, Value: []string{"x"}, At: at, Reason: "unknown"}
+		},
+		"opaque role": func(i *c.Inventory) {
+			i.Features[0].Roles = c.Field[[]c.Role]{State: c.Opaque, At: at, Reason: "opaque"}
+		},
+		"partial scalar": func(i *c.Inventory) {
+			i.Features[0].Roles.Value[0].Min.State = c.Partial
+			i.Features[0].Roles.Value[0].Min.Reason = "partial"
+		},
 		"unbounded with count": func(i *c.Inventory) { i.Features[0].Roles.Value[0].Max.Value.Value = 2 },
-		"contradictory bounds": func(i *c.Inventory) { i.Features[0].Roles.Value[0].Min.Value = 3; i.Features[0].Roles.Value[0].Max.Value = c.UpperBound{Value: 2} },
+		"contradictory bounds": func(i *c.Inventory) {
+			i.Features[0].Roles.Value[0].Min.Value = 3
+			i.Features[0].Roles.Value[0].Max.Value = c.UpperBound{Value: 2}
+		},
 		"unrestricted enum": func(i *c.Inventory) { i.Features[0].Attributes.Value[0].Values.Value.Values = []string{"x"} },
 		"duplicate feature": func(i *c.Inventory) { i.Features = append(i.Features, i.Features[0]) },
-		"duplicate role": func(i *c.Inventory) { i.Features[0].Roles.Value = append(i.Features[0].Roles.Value, i.Features[0].Roles.Value[0]) },
-		"duplicate enum": func(i *c.Inventory) { i.Features[0].Attributes.Value[0].Values.Value = c.ValueSet{Values: []string{"x", "x"}} },
-		"foreign span": func(i *c.Inventory) { i.Features[0].At.File = "other-capture/one" },
-		"outside file": func(i *c.Inventory) { i.Features[0].At.End = 1000 },
-		"decoded with limitation": func(i *c.Inventory) { i.Limitations = []c.Limitation{{At: at, Message: "unknown"}} },
+		"duplicate role": func(i *c.Inventory) {
+			i.Features[0].Roles.Value = append(i.Features[0].Roles.Value, i.Features[0].Roles.Value[0])
+		},
+		"duplicate enum": func(i *c.Inventory) {
+			i.Features[0].Attributes.Value[0].Values.Value = c.ValueSet{Values: []string{"x", "x"}}
+		},
+		"foreign span":               func(i *c.Inventory) { i.Features[0].At.File = "other-capture/one" },
+		"outside file":               func(i *c.Inventory) { i.Features[0].At.End = 1000 },
+		"decoded with limitation":    func(i *c.Inventory) { i.Limitations = []c.Limitation{{At: at, Message: "unknown"}} },
 		"partial without limitation": func(i *c.Inventory) { i.Extent = c.PartlyDecoded },
 	}
 	for name, mutate := range cases {

@@ -83,8 +83,11 @@ func Associate(snapshot Snapshot, execution Execution) Assessment {
 			result.Reasons = append(result.Reasons, item.label+": "+reason)
 		}
 	}
-	if !execution.ProtocolComplete || !execution.Invocation.CaptureComplete || execution.Invocation.ExitCode == nil {
+	if !execution.ProtocolComplete || !execution.Invocation.CaptureComplete || execution.Invocation.ExitCode == nil || len(execution.Diagnostics) != 0 {
 		result.Reasons = append(result.Reasons, "execution capture is incomplete")
+	}
+	if execution.Invocation.Schema != Schema || execution.Invocation.CommandID == "" || len(execution.Invocation.Args) == 0 {
+		result.Reasons = append(result.Reasons, "invocation capture metadata is invalid")
 	}
 	if execution.Invocation.RunID == "" || execution.Invocation.Attempt == "" || execution.Invocation.Job == "" {
 		result.Reasons = append(result.Reasons, "invocation identity is incomplete")
@@ -129,7 +132,7 @@ func Associate(snapshot Snapshot, execution Execution) Assessment {
 		} else if candidates[0].ID == "" || candidates[0].File == "" || (candidates[0].Variant != "internal" && candidates[0].Variant != "external") {
 			association.Status = Insufficient
 			association.Reason = "test declaration identity is incomplete"
-		} else if !run.Started || run.Outcome == Incomplete {
+		} else if !run.Started || run.Occurrence < 1 || (run.Outcome != Passed && run.Outcome != Failed && run.Outcome != Skipped) {
 			association.Status = Insufficient
 			association.Reason = "test execution is incomplete"
 		} else {

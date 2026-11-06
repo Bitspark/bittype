@@ -92,6 +92,7 @@ func formatted[L any](t *testing.T, p nativeProvider[L], a ast.AST[L]) string {
 	}
 	return result
 }
+
 // bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Format feature=independent-ast-formatting case=independent-ast-goldens expects=golden-text
 // bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Print feature=independent-ast-formatting case=independent-ast-goldens expects=golden-text
 // bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Format feature=independent-ast-formatting case=independent-ast-goldens expects=golden-text
@@ -115,6 +116,7 @@ func TestIndependentFormatterGoldens(t *testing.T) {
 		})
 	}
 }
+
 // bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Format feature=snapshot-ownership case=input-mutation-after-format expects=output-unchanged
 func TestFormatterSnapshotOwnership(t *testing.T) {
 	a := tsFixture()
@@ -177,6 +179,7 @@ func invalidAST[L any](t *testing.T, p nativeProvider[L], makeTree func() ast.AS
 		}
 	}
 }
+
 // bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Check feature=ast-admission case=malformed-carriers expects=reject
 // bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Format feature=ast-admission case=malformed-carriers expects=rejection-without-output
 // bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Check feature=ast-admission case=malformed-carriers expects=reject
@@ -252,6 +255,7 @@ func command(t *testing.T, dir, name string, args ...string) {
 		t.Fatal(err)
 	}
 }
+
 // bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Format feature=native-compiler-qualification case=formatted-fixture-contract expects=compiler-fixture-contract
 // bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Format feature=native-compiler-qualification case=formatted-fixture-contract expects=compiler-fixture-contract
 // bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Format feature=native-compiler-qualification case=formatted-fixture-contract expects=compiler-fixture-contract

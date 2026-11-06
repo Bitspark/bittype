@@ -27,23 +27,23 @@ type location struct {
 // a source relationship only; it does not establish wrapper equivalence or carry
 // a delegate's qualification to the public method.
 type operation struct {
-	id string
-	kind string
+	id            string
+	kind          string
 	public, entry *types.Func
-	chain []callLink
-	stop string
-	contract *types.Named
-	receiver types.Type
-	language language
-	from, to *language
-	alternatives [][]*types.Named
+	chain         []callLink
+	stop          string
+	contract      *types.Named
+	receiver      types.Type
+	language      language
+	from, to      *language
+	alternatives  [][]*types.Named
 }
 
 type callLink struct {
 	caller, callee *types.Func
-	pos token.Pos
-	receiver types.Type
-	arguments []types.Type
+	pos            token.Pos
+	receiver       types.Type
+	arguments      []types.Type
 }
 
 func fullType(t types.Type) string {
@@ -60,9 +60,10 @@ func operationID(kind string, fn *types.Func, contract *types.Named, receiver ty
 	}
 	return stableKey(parts...)
 }
+
 type row struct {
 	level, contract string
-	identity string
+	identity        string
 	cells           map[string][]location
 }
 type matrix struct {
@@ -296,7 +297,7 @@ func contractRowIdentity(contract *types.Named, lang language) string {
 			result.WriteString(text)
 			return result.String()
 		}
-		end := start+len(marker)
+		end := start + len(marker)
 		result.WriteString(text[:start])
 		if end < len(text) {
 			r, _ := utf8.DecodeRuneInString(text[end:])
@@ -508,7 +509,7 @@ func (p *program) transformers(m *matrix) error {
 	// at each call, including reordered parameters, without executing factories.
 	type endpoint struct {
 		from, to string
-		chain []callLink
+		chain    []callLink
 	}
 	var endpoints func(*types.Func, map[*types.TypeParam]types.Type, map[*types.Func]bool) ([]endpoint, error)
 	endpoints = func(fn *types.Func, bindings map[*types.TypeParam]types.Type, active map[*types.Func]bool) ([]endpoint, error) {

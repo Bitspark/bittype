@@ -184,15 +184,15 @@ var rules = Alias{
 func TestInterpretationMatchesMaintainedOwningHelpers(t *testing.T) {
 	result := inventory(t, `var rules=g.Rules{"x":{
  Roles:[]g.Role{g.One("one","a"),g.Opt("optional","a","b"),g.Many("many",2,"b")},
- Attributes:g.Attributes("finite",g.Attr(true,g.Set("a","b")),"empty",g.Attr(false,g.Set()),"free",g.Attr(false,nil)),Reference:true,
+ Attributes:g.Attributes("finite",g.Attr(true,g.Set("a","b")),"empty",g.Attr(false,g.Set()),"free",g.Attr(false,nil),"override",g.Attr(true,func(string)bool{return true}),"override",g.Attr(false,g.Set("after"))),Reference:true,
 }}`)
 	maintained := g.Rule{
 		Roles: []g.Role{g.One("one","a"),g.Opt("optional","a","b"),g.Many("many",2,"b")},
-		Attributes: g.Attributes("finite",g.Attr(true,g.Set("a","b")),"empty",g.Attr(false,g.Set()),"free",g.Attr(false,nil)),
+		Attributes: g.Attributes("finite",g.Attr(true,g.Set("a","b")),"empty",g.Attr(false,g.Set()),"free",g.Attr(false,nil),"override",g.Attr(true,func(string)bool{return true}),"override",g.Attr(false,g.Set("after"))),
 		Reference: true,
 	}
 	feature := result.Features[0]
-	if result.Extent != c.Decoded || len(feature.Roles.Value) != len(maintained.Roles) { t.Fatalf("unexpected interpretation: %#v",result) }
+	if result.Extent != c.Decoded || len(feature.Roles.Value) != len(maintained.Roles) || len(feature.Attributes.Value) != len(maintained.Attributes) { t.Fatalf("unexpected interpretation: %#v",result) }
 	for i,actual := range maintained.Roles {
 		model := feature.Roles.Value[i]
 		if model.Name != actual.Name || model.Min.Value != actual.Min || model.Max.Value.Unbounded != (actual.Max<0) || actual.Max>=0 && model.Max.Value.Value!=actual.Max || !slices.Equal(model.Kinds.Value,actual.Kinds) {
@@ -202,13 +202,28 @@ func TestInterpretationMatchesMaintainedOwningHelpers(t *testing.T) {
 	for _,model := range feature.Attributes.Value {
 		actual,ok := maintained.Attributes[model.Name]
 		if !ok || model.Required.Value != actual.Required || model.Values.State != c.Known { t.Fatalf("owning attribute disagrees: %#v",model) }
-		for _,sample := range []string{"","a","b","c"} {
+		for _,sample := range []string{"","a","b","c","before","after"} {
 			accepted := actual.Accept==nil || actual.Accept(sample)
 			represented := model.Values.Value.Unrestricted || slices.Contains(model.Values.Value.Values,sample)
 			if accepted != represented { t.Fatalf("%s(%q): maintained=%v interpreted=%v",model.Name,sample,accepted,represented) }
 		}
 	}
 	if !slices.Equal(feature.References.Value,[]string{"target"}) { t.Fatal("reference allowance changed") }
+}
+
+func TestKnownAttributeOverwritePreservesUnresolvedKeyUncertainty(t *testing.T) {
+	result := inventory(t, `
+func key()string{return "dynamic"}
+var rules=g.Rules{"node":{Attributes:g.Attributes("same",g.Attr(true,g.Set("before")),key(),g.Attr(true,nil),"same",g.Attr(false,g.Set("after")))}}
+`)
+	attributes := result.Features[0].Attributes
+	if result.Extent != c.PartlyDecoded || attributes.State != c.Partial || len(attributes.Value) != 1 {
+		t.Fatalf("unknown map portion lost during overwrite: %#v", result)
+	}
+	value := attributes.Value[0]
+	if value.Name != "same" || value.Required.Value || !slices.Equal(value.Values.Value.Values, []string{"after"}) {
+		t.Fatalf("last known assignment did not win: %#v", value)
+	}
 }
 
 func TestUnknownFieldsPreserveIndependentFacts(t *testing.T) {

@@ -70,17 +70,17 @@ func sourceTypeFact(t types.Type) capability.TypeFact {
 }
 
 type sourceView struct {
-	fset *token.FileSet
-	files map[capability.FileRef]capability.File
-	paths map[string]capability.FileRef
+	fset         *token.FileSet
+	files        map[capability.FileRef]capability.File
+	paths        map[string]capability.FileRef
 	declarations map[capability.Symbol]capability.Declaration
-	expressions map[capability.Span]expressionFacts
+	expressions  map[capability.Span]expressionFacts
 }
 
 type expressionFacts struct {
-	typ types.Type
+	typ            types.Type
 	symbol, callee types.Object
-	value constant.Value
+	value          constant.Value
 }
 
 var sourceSequence atomic.Uint64

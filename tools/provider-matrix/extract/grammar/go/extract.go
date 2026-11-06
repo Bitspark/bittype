@@ -64,13 +64,38 @@ func (Extractor) Extract(ctx context.Context, request c.DefinitionRequest) (c.In
 	if e.err != nil {
 		return c.Inventory{}, e.err
 	}
-	if e.uncertain {
+	// A later map assignment may have replaced an opaque earlier value. Extent
+	// describes the retained result, while unresolved keys remain localized on
+	// their collection and cannot be erased by a known-name overwrite.
+	if e.uncertain && hasUncertainty(e.result) {
 		e.result.Extent = c.PartlyDecoded
 	}
 	if err := c.Validate(request, e.result); err != nil {
 		return c.Inventory{}, err
 	}
 	return e.result, nil
+}
+
+func hasUncertainty(inventory c.Inventory) bool {
+	if len(inventory.Limitations) > 0 {
+		return true
+	}
+	for _, feature := range inventory.Features {
+		if feature.Roles.State != c.Known || feature.Attributes.State != c.Known || feature.References.State != c.Known {
+			return true
+		}
+		for _, role := range feature.Roles.Value {
+			if role.Min.State != c.Known || role.Max.State != c.Known || role.Kinds.State != c.Known {
+				return true
+			}
+		}
+		for _, attribute := range feature.Attributes.Value {
+			if attribute.Required.State != c.Known || attribute.Values.State != c.Known {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 type parsed struct {
@@ -673,11 +698,21 @@ func (e *evaluator) attributes(x *expression, depth int) c.Field[[]c.Attribute] 
 	add := func(key, value *expression) {
 		name, ok := e.constant(key, "string", depth+1)
 		if !ok || name == "" {
-			result.State, result.Reason = c.Partial, "Attribute collection contains an unresolved key"
+			result.State, result.Reason = c.Partial, "Unresolved attribute key; reported source entries do not establish the effective map"
 			e.uncertain = true
 			return
 		}
-		result.Value = append(result.Value, e.attribute(name, value, depth+1))
+		attribute := e.attribute(name, value, depth+1)
+		// Attributes assigns into a map in argument order. Repeated known names
+		// therefore replace the earlier value; an unresolved key still leaves the
+		// collection partial because it can collide with a reported source entry.
+		for i, previous := range result.Value {
+			if previous.Name == name {
+				result.Value[i] = attribute
+				return
+			}
+		}
+		result.Value = append(result.Value, attribute)
 	}
 	if call, ok := x.node.(*ast.CallExpr); ok && e.owned(x, "Attributes") && !call.Ellipsis.IsValid() && len(call.Args)%2 == 0 {
 		for i := 0; i < len(call.Args); i += 2 {

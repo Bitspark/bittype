@@ -97,11 +97,11 @@ type TestRun struct {
 }
 
 type PackageRun struct {
-	Package    string
-	Occurrence int
-	Started    bool
-	Outcome    Outcome
-	Elapsed    float64
+	Package     string
+	Occurrence  int
+	Started     bool
+	Outcome     Outcome
+	Elapsed     float64
 	FailedBuild string
 }
 

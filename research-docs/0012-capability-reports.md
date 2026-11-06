@@ -600,7 +600,16 @@ not imply arbitrary multi-module provider discovery. An external consumer can
 compose extractors over that runner's selected source snapshot. Export-only
 dependencies do not become ambient source/document inputs.
 
-No new existing architectural violation was established by this review. The
-separately tracked ACX-001 verification-composition defect remains outside this
-task. The reporting extension must meet AC-02 through AC-05 from its first slice;
-report facts and tests remain qualified under AC-07.
+The initial advice evaluation found no additional existing architectural
+violation. Subsequent implementation inspection exposed a concrete dependency
+identity failure: display names could discharge an unrelated provider contract.
+[ACX-007](https://github.com/Bitspark/platform/blob/docs/bittype-matrix-contract-identity-20261106/docs/concepts/architecture-cases/0007-bittype-matrix-contract-identity.md)
+records that counterexample and the pending canonical-key correction in PR126.
+The separately tracked ACX-001 verification-composition defect remains outside
+this task. The reporting extension must meet AC-02 through AC-05 from its first
+slice; report facts and tests remain qualified under AC-07.
+
+The renderer regression `TestRendererLinksCapabilityDetails` failed on the
+pre-implementation renderer at `bb631f69280275f3c336c1bd0d0f15b498f7862f` in
+[run 42246957504](https://github.com/Bitspark/bittype/actions/runs/42246957504).
+It is retained in the importable report package for the corrected behavior.

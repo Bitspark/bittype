@@ -49,6 +49,7 @@ func New(definition representation.Language, parser parse.Provider[parse.Input, 
 	}}
 	return format.NewFilesFormatter(definition, contract, Provider{stages: stages})
 }
+
 // bittype:scope docs/source.md#horos-composition-and-pagination
 func (p Provider) Format(ctx context.Context, request format.FilesRequest[s.Language]) (source.Source[s.Language], error) {
 	if ctx == nil || representation.IsNil(p.stages.Formatter) {
