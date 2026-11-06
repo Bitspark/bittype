@@ -65,11 +65,42 @@ references, foreign receipts and cancellation remain operation errors. Native
 checking is synchronous: cancellation is checked around compiler calls and does
 not claim to preempt `go/types` while it runs.
 
+Those incomplete reports cover the provider's own input, conversion and export
+bounds. The shared capture/publication boundary can also return `ErrLimit` when
+the caller's input or result budget is too small; that is not a native type
+rejection. No budget is raised implicitly.
+
 The graph contains package/type/alias/parameter/field entities, resolved name
 bindings, expression terms and generic applications. Go-owned facts retain
 underlying types, alias targets, constraints, instantiated fields and native type
 identity. Aliases remain distinguishable from definitions even when Go considers
 their types identical. IDs belong to that exact model, never to a spelling.
+
+The vocabulary owner is `go`. The published representation is:
+
+| Graph element | Meaning |
+| --- | --- |
+| `package`, `defined`, `alias`, `parameter`, `field`, `builtin` entities | Package and declaration identities; parameters carry their declaration owner and ordinary `type` sort |
+| `Reference` / `Application` terms | Bound named types/parameters and effective generic arguments; the shared `DirectParameterBindings` reader applies |
+| `name` bindings / `type-expression` occurrences | Resolved identifier targets and native type terms at current AST nodes |
+| `underlying`, `alias-target`, `constraint` facts | Go's checked relationships, including substituted underlying types of applications |
+| `identical` fact | A model-local representative established by `types.Identical`, not identity inferred from spelling or serialized shape |
+| `basic`, `slice`, `struct`, `interface`, `union` expressions | Native structure with ordered operands and Go-owned `json-1` metadata |
+
+Struct metadata records field names, tags, embedding flags and model-local field
+entities; corresponding operands are their types. Interface metadata records
+embedded-term count, explicit method names, comparability and whether it is a
+method-set interface. Union metadata records each term's approximation flag.
+The builtin `error` interface needs signature/tuple facts internally, even though
+authoring method/function syntax remains unsupported. `display` facts are UTF-8
+diagnostic text, never semantic identity. Typed readers return copies or immutable
+handles; callers cannot mutate a published graph through them.
+
+A consumer explicitly constructs both adapters, resolves with
+`semantic.Options{Configuration: golang.Configuration()}`, and calls the analyzer
+with that same configuration and `Resolution: &resolved`. `golang.Open(analyzed)`
+then opens the typed view. A resolution receipt alone, a receipt from a different
+capture or a different compiler configuration cannot substitute for that input.
 
 `semantics/golang.Open` admits the analysis receipt and reads this graph without
 compilation. Native `NewQueries` is a separate, explicit operation: it rebuilds

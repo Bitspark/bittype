@@ -12,8 +12,8 @@ import (
 )
 
 type model struct {
-	receipt  semantic.Result
-	graph    semantics.Semantics[s.Language]
+	receipt semantic.Result
+	graph   semantics.Semantics[s.Language]
 }
 type Model struct{ state *model }
 type Type struct {

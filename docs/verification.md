@@ -494,8 +494,9 @@ parameters, applications, slices, structs, constraint interfaces/unions and
 approximation, and aliases during package checking. Mapping targets must be
 actual defined named types. Imports, methods, executable bodies and other type
 forms are rejected. Its environment is the supplied package plus the predeclared
-Go universe; it reads no ambient files or dependency packages. This is a scoped
-projection, not a general native resolution/analysis capability in the engine.
+Go universe; it reads no ambient files or dependency packages. It is an independently registered
+resolution/analysis capability with this deliberately bounded coverage; see the
+[native-provider profile](native-semantics.md).
 
 Source inspection uses existing semantic and Horos bounds. Native inspection
 admits at most 16 units, 4096 AST nodes, 32768 entries, 1 MiB of text and conversion
