@@ -5,6 +5,13 @@ generated regions in [docs/providers.md](../../docs/providers.md). The tool is
 development tooling in the root Go module; runtime packages do not import it.
 It has no third-party dependencies and executes no provider constructors or methods.
 
+The [capability report proposal](../../docs/capability-reports.md) describes future
+`grammar`, `scope` and `case` annotations, independently supplied definition
+extractors and detailed reports linked from provider and transformer cells.
+Those directives and reports are not implemented. Existing source discovery and
+dimension metadata remain the authority for the current matrices; the proposal
+adds neither runtime metadata nor automatic claims of architectural conformance.
+
 ## Source discovery
 
 The Go command supplies package files and dependency export data for the active

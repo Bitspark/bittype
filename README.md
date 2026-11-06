@@ -134,6 +134,8 @@ interpret these concrete type semantics.
 - [Resolution capability](docs/resolution.md): shared snapshots, explicit prerequisites
   and immutable model reuse.
 - [Provider matrix](docs/providers.md): implemented capabilities by language.
+- [Capability report proposal](docs/capability-reports.md): proposed source
+  annotations, bounded extraction, test associations and details behind matrix cells.
 - [Analysis capability](docs/analysis.md): request capture, explicit registration,
   completion/verdict reports and publication requirements.
 - [Generic AST](docs/ast.md): carriers, typed views, addressing and provenance.
