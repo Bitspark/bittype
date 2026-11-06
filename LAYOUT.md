@@ -35,14 +35,17 @@ semantics/golang/go/      Go vocabulary and immutable native type readers
 internal/golangsem/       private direct Go compiler bridge and fact export
 semantics/typescript/go/  TypeScript vocabulary and immutable native type readers
 internal/typescriptsem/   private captured-source compiler helper and fact export
+semantics/rust/go/        Rust vocabulary and immutable native type readers
+internal/rustsem/         private captured-source compiler bridge
+  helper/                private pinned rustc_driver executable (Rust/Cargo)
 engine/go/                explicit registration, planning and execution
 syntax/<language>/go/              abstract/concrete vocabulary and identity
 parse/syntax/<language>/go/        text to CST
 check/syntax/<language>/go/        AST syntax admission
 format/syntax/<language>/go/       AST to CST
 parse/files/<language>/go/         Files to Source (Horos implemented)
-resolve/files/<language>/go/       reference resolution (Horos and bounded Go/TypeScript)
-analyze/files/<language>/go/       semantic analysis (Horos and bounded Go/TypeScript)
+resolve/files/<language>/go/       reference resolution (Horos and bounded Go/TypeScript/Rust)
+analyze/files/<language>/go/       semantic analysis (Horos and bounded Go/TypeScript/Rust)
 format/files/<language>/go/        Semantics to Source (Horos implemented)
 print/syntax/go/                   shared CST to text
 print/files/go/                    shared Source to Files
@@ -71,7 +74,7 @@ docs/
 ```
 
 The native text language directories are `typescript`, `golang`, `rust` and
-`cpp`; `horos`, `golang` and `typescript` also implement resolve/analyze.
+`cpp`; `horos`, `golang`, `typescript` and `rust` also implement resolve/analyze.
 The final `go` directory denotes implementation language, not target:
 `syntax/rust/go` is Go code describing Rust syntax. `ast` and `cst` in the check
 stage are reserved generic-carrier components, not native language names.
@@ -94,7 +97,7 @@ and `NewFilesPrinter` each take an explicit `representation.Language` and return
 one configured adapter plus an error. Horos additionally has `NewFilesParser`,
 `NewFilesFormatter`, `NewFilesResolver` and `NewFilesAnalyzer` with the same
 descriptor-first signature. Go also supplies `NewFilesResolver` and
-`NewFilesAnalyzer`. TypeScript supplies both, with an explicit compiler collaborator
+`NewFilesAnalyzer`. TypeScript and Rust supply both, with an explicit compiler collaborator
 on `NewFilesResolver`. Constructors register nothing and never select a
 profile implicitly. `Provider` remains a direct typed composition of the roles
 that actually exist; it is not an engine registration contract.
@@ -104,7 +107,7 @@ Both shared printer packages expose `Provider[L]` and `New[L]`; Files printing
 also receives its Syntax printer collaborator. Their `provider.go` files own
 construction and `print.go` files own emission. Files parsing/formatting retain
 their explicit semantic collaborators. Uniform construction does not erase
-these genuine dependency differences. Go and TypeScript supply bounded native
+these genuine dependency differences. Go, TypeScript and Rust supply bounded native
 semantic providers through the same independent role constructors.
 
 The source and its package-level tests belong with each implementation.
@@ -302,7 +305,7 @@ Syntax/Files provider registration and engine capabilities remain unchanged.
 The [Syntax and Files design](docs/source.md) is implemented with
 `Syntax : CST : AST` and `Files : Source : Semantics`. Both dimension names are
 explicit in implementation paths. Horos composes the full Files text pipeline;
-Go and TypeScript add bounded Files resolution and analysis without Files parsing/formatting;
+Go, TypeScript and Rust add bounded Files resolution and analysis without Files parsing/formatting;
 all five language composition packages construct Files printers.
 
 Files depends on AST addresses. Source retains semantic capture/result handles,

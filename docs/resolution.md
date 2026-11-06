@@ -154,7 +154,7 @@ Resolver settings belong to Resolve's Options, not the analyzer's Options.
 Pagination retains imported Page, the caller's plain Person reference,
 distinct same-spelled binders and opaque literal data. Specialization remains an
 explicit Horos operation. Native pagination generation consumes these facts. The separate
-[Go and TypeScript native providers](native-semantics.md) analyze native captures; no
+[Go, TypeScript and Rust native providers](native-semantics.md) analyze native captures; no
 provider introduces runtime bindings.
 
 ## Qualification
@@ -170,5 +170,5 @@ model identity reuse and specialization. Architecture and negative type-check
 fixtures enforce package and marker boundaries. Required checks run remotely.
 
 See [native semantic providers](native-semantics.md)
-for the bounded Go and TypeScript resolvers/analyzers, immutable native facts and
-explicit compiler queries. Rust and C++ semantic providers remain planned.
+for the bounded Go, TypeScript and Rust resolvers/analyzers, immutable native facts and
+explicit compiler queries. C++ semantic checking and broader Rust coverage remain planned.

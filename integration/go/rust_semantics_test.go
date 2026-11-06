@@ -104,7 +104,7 @@ func rsModel(t *testing.T, texts ...string) n.Model {
 }
 func rsDecl(t *testing.T, m n.Model, tree ast.TreeID, name string) n.Declaration {
 	t.Helper()
-	d, err := m.Lookup("captured::"+name)
+	d, err := m.Lookup("captured::" + name)
 	if err != nil {
 		t.Fatal(name, err)
 	}
@@ -116,33 +116,84 @@ func rsType(t *testing.T, m n.Model, name string) n.Type {
 }
 
 func qualifyRust(t *testing.T) {
- ctx:=context.Background()
- snapshot,_,_:=rsCapture(t,"pub struct Person { pub name: String } pub struct Page<T> { pub items: Vec<T>, pub next: Option<String> } pub type People = Page<Person>;")
- var e engine.Engine
- if err:=e.RegisterLanguage(snapshot.Language());err!=nil {t.Fatal(err)}
- if _,err:=e.Resolve(ctx,snapshot,semantic.Options{});!errors.Is(err,engine.ErrMissingCapability) {t.Fatal(err)}
- resolver,err:=p.NewFilesResolver(snapshot.Language(),rsCompiler(t));if err!=nil {t.Fatal(err)}
- if err=e.RegisterResolver(resolver);err!=nil {t.Fatal(err)}
- resolved,err:=e.Resolve(ctx,snapshot,semantic.Options{Configuration:n.Configuration()});if err!=nil {t.Fatal(err)}
- input:=analysis.Input{Snapshot:snapshot,Resolution:&resolved,Options:semantic.Options{Configuration:n.Configuration()}}
- if _,err=e.Analyze(ctx,input);!errors.Is(err,engine.ErrMissingCapability) {t.Fatal(err)}
- analyzer,err:=p.NewFilesAnalyzer(snapshot.Language());if err!=nil {t.Fatal(err)}
- if err=e.RegisterAnalyzer(analyzer);err!=nil {t.Fatal(err)}
- result,err:=e.Analyze(ctx,input);if err!=nil {t.Fatal(err)}
- rg,_:=resolved.Semantics();ag,_:=result.Semantics();if !rg.Same(ag) {t.Fatal("analysis rebuilt compiler facts",result.Diagnostics())}
- m,err:=n.Open(result);if err!=nil {t.Fatal(err,result.Diagnostics())}
- if _,err=n.Open(resolved);err==nil {t.Fatal("resolution admitted as analysis")}
- if len(m.Graph().Data().Bindings)==0 || len(m.Graph().Data().Expressions)==0 {t.Fatal("missing native occurrences")}
- page:=rsDecl(t,m,"0","Page");if len(page.Parameters())!=1 || page.Parameters()[0].Entity().Owner!=page.ID() {t.Fatal("binder ownership")}
- people:=rsType(t,m,"People");fields,ok:=people.Fields();if !ok || len(fields)!=2 || fields[0].Name!="items" || !fields[0].Public {t.Fatal(fields)}
- if !strings.Contains(fields[0].Type.String(),"Person") {t.Fatal("missing field substitution",fields[0].Type.String())}
- pairs,ok:=m.Graph().DirectParameterBindings(people.ID());if !ok || len(pairs)!=1 || pairs[0].Parameter!=page.Parameters()[0].ID() || pairs[0].Argument!=rsType(t,m,"Person").ID() {t.Fatal("effective application",pairs)}
- data:=m.Graph().Data();data.Entities[0].Name="mutated";if reflect.DeepEqual(data,m.Graph().Data()) {t.Fatal("mutable graph")}
- if _,err=analyzer.Analyze(ctx,analysis.Input{Snapshot:snapshot,Options:semantic.Options{Configuration:n.Configuration()}});err==nil {t.Fatal("hidden resolver")}
+	ctx := context.Background()
+	snapshot, _, _ := rsCapture(t, "pub struct Person { pub name: String } pub struct Page<T> { pub items: Vec<T>, pub next: Option<String> } pub type People = Page<Person>;")
+	var e engine.Engine
+	if err := e.RegisterLanguage(snapshot.Language()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.Resolve(ctx, snapshot, semantic.Options{}); !errors.Is(err, engine.ErrMissingCapability) {
+		t.Fatal(err)
+	}
+	resolver, err := p.NewFilesResolver(snapshot.Language(), rsCompiler(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = e.RegisterResolver(resolver); err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := e.Resolve(ctx, snapshot, semantic.Options{Configuration: n.Configuration()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	input := analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}}
+	if _, err = e.Analyze(ctx, input); !errors.Is(err, engine.ErrMissingCapability) {
+		t.Fatal(err)
+	}
+	analyzer, err := p.NewFilesAnalyzer(snapshot.Language())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = e.RegisterAnalyzer(analyzer); err != nil {
+		t.Fatal(err)
+	}
+	result, err := e.Analyze(ctx, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rg, _ := resolved.Semantics()
+	ag, _ := result.Semantics()
+	if !rg.Same(ag) {
+		t.Fatal("analysis rebuilt compiler facts", result.Diagnostics())
+	}
+	m, err := n.Open(result)
+	if err != nil {
+		t.Fatal(err, result.Diagnostics())
+	}
+	if _, err = n.Open(resolved); err == nil {
+		t.Fatal("resolution admitted as analysis")
+	}
+	if len(m.Graph().Data().Bindings) == 0 || len(m.Graph().Data().Expressions) == 0 {
+		t.Fatal("missing native occurrences")
+	}
+	page := rsDecl(t, m, "0", "Page")
+	if len(page.Parameters()) != 1 || page.Parameters()[0].Entity().Owner != page.ID() {
+		t.Fatal("binder ownership")
+	}
+	people := rsType(t, m, "People")
+	fields, ok := people.Fields()
+	if !ok || len(fields) != 2 || fields[0].Name != "items" || !fields[0].Public {
+		t.Fatal(fields)
+	}
+	if !strings.Contains(fields[0].Type.String(), "Person") {
+		t.Fatal("missing field substitution", fields[0].Type.String())
+	}
+	pairs, ok := m.Graph().DirectParameterBindings(people.ID())
+	if !ok || len(pairs) != 1 || pairs[0].Parameter != page.Parameters()[0].ID() || pairs[0].Argument != rsType(t, m, "Person").ID() {
+		t.Fatal("effective application", pairs)
+	}
+	data := m.Graph().Data()
+	data.Entities[0].Name = "mutated"
+	if reflect.DeepEqual(data, m.Graph().Data()) {
+		t.Fatal("mutable graph")
+	}
+	if _, err = analyzer.Analyze(ctx, analysis.Input{Snapshot: snapshot, Options: semantic.Options{Configuration: n.Configuration()}}); err == nil {
+		t.Fatal("hidden resolver")
+	}
 }
 
 func TestRustSemanticNativeTypes(t *testing.T) {
- m:=rsModel(t,`pub struct Person {pub name: String}
+	m := rsModel(t, `pub struct Person {pub name: String}
 pub struct Page<T=Person> {pub items: Vec<T>}
 pub type DefaultPage = Page;
 pub type People = Page<Person>;
@@ -155,54 +206,159 @@ pub type Text = &'static str;
 pub enum Choice<T> {Empty, Value(T), Named {value: T}}
 pub mod models {pub struct Item {pub value: u32}}
 pub type Item = models::Item;`)
- if !rsType(t,m,"People").Same(rsType(t,m,"DefaultPage")) {t.Fatal("native alias identity")}
- page:=rsDecl(t,m,"0","Page");if !page.Parameters()[0].Default().Same(rsType(t,m,"Person")) {t.Fatal("generic default")}
- fields,_:=rsType(t,m,"Nested").Fields();if !strings.Contains(fields[0].Type.String(),"Page<Person>") {t.Fatal("nested substitution",fields)}
- other:=rsDecl(t,m,"0","Boxed");if page.Parameters()[0].ID()==other.Parameters()[0].ID() {t.Fatal("collapsed generic owners")}
- pf,_:=page.Type().Fields();bf,_:=other.Type().Fields();args:=pf[0].Type.Term().Arguments
- if len(args)==0 || args[0]==bf[0].Type.ID() {t.Fatal("same-spelled parameters collapsed")}
- if !rsType(t,m,"Item").Same(rsType(t,m,"models::Item")) {t.Fatal("module binding")}
- if len(m.Graph().Facts(semantics.Subject{Term:rsType(t,m,"Choice").ID()},n.Key("variants")))!=1 {t.Fatal("enum variants")}
+	if !rsType(t, m, "People").Same(rsType(t, m, "DefaultPage")) {
+		t.Fatal("native alias identity")
+	}
+	page := rsDecl(t, m, "0", "Page")
+	if !page.Parameters()[0].Default().Same(rsType(t, m, "Person")) {
+		t.Fatal("generic default")
+	}
+	fields, _ := rsType(t, m, "Nested").Fields()
+	if !strings.Contains(fields[0].Type.String(), "Page<Person>") {
+		t.Fatal("nested substitution", fields)
+	}
+	other := rsDecl(t, m, "0", "Boxed")
+	if page.Parameters()[0].ID() == other.Parameters()[0].ID() {
+		t.Fatal("collapsed generic owners")
+	}
+	pf, _ := page.Type().Fields()
+	bf, _ := other.Type().Fields()
+	args := pf[0].Type.Term().Arguments
+	if len(args) == 0 || args[0] == bf[0].Type.ID() {
+		t.Fatal("same-spelled parameters collapsed")
+	}
+	if !rsType(t, m, "Item").Same(rsType(t, m, "models::Item")) {
+		t.Fatal("module binding")
+	}
+	if len(m.Graph().Facts(semantics.Subject{Term: rsType(t, m, "Choice").ID()}, n.Key("variants"))) != 1 {
+		t.Fatal("enum variants")
+	}
 }
 
 func TestRustSemanticBoundsAndOutcomes(t *testing.T) {
- m:=rsModel(t,`pub trait Marker {} pub struct Person {} impl Marker for Person {} pub struct Boxed<T: Marker> {pub value: T} pub type Good = Boxed<Person>;`)
- b:=rsDecl(t,m,"0","Boxed");marker:=rsDecl(t,m,"0","Marker")
- if len(b.Predicates())==0 || len(marker.Parameters())!=1 || marker.Parameters()[0].ID()==marker.ID() {t.Fatal("trait predicates/Self binder")}
- for _,text:=range []string{
-  `pub trait Marker {} pub struct Person {} pub struct Boxed<T: Marker> {pub value: T} pub struct Bad {pub value: Boxed<Person>}`,
-  `pub type Missing = Unknown;`,
-  `pub struct Boxed<T> {value:T} pub type Missing = Boxed;`,
-  `pub trait Marker {} pub struct Person {} impl Marker for Person {} impl Marker for Person {}`,
- } {t.Run(text,func(t *testing.T){snapshot,_,_:=rsCapture(t,text);_,result:=rsResults(t,snapshot);r,_:=result.Report(n.Validity());if r.Status!=semantic.Complete || r.Verdict!=semantic.Rejected || result.HasSemantics() || len(result.Diagnostics())==0 {t.Fatal(r,result.Diagnostics())}})}
- for _,text:=range []string{`pub trait Call {fn call(&self);}`,`pub type Call = fn(u8)->u8;`,`pub struct Borrowed<'a> {value: &'a str}`,`pub trait Family {type Item;}`,`use std::string::String; pub type Text = String;`} {
-  t.Run(text,func(t *testing.T){snapshot,_,_:=rsCapture(t,text);_,result:=rsResults(t,snapshot);r,_:=result.Report(n.Coverage());if r.Status!=semantic.Unsupported || result.HasSemantics() {t.Fatal(r,result.Diagnostics())}})
- }
- snapshot,trees,_:=rsCapture(t,"pub type Byte = u8;");snapshot=rsCaptureTrees(t,trees,nil);_,result:=rsResults(t,snapshot);r,_:=result.Report(n.Coverage());if r.Status!=semantic.Incomplete || result.HasSemantics() {t.Fatal(r)}
- snapshot,_,_=rsCapture(t,"pub type A = u8;","pub type B = u8;");_,result=rsResults(t,snapshot);r,_=result.Report(n.Coverage());if r.Status!=semantic.Unsupported {t.Fatal(r)}
+	m := rsModel(t, `pub trait Marker {} pub struct Person {} impl Marker for Person {} pub struct Boxed<T: Marker> {pub value: T} pub type Good = Boxed<Person>;`)
+	b := rsDecl(t, m, "0", "Boxed")
+	marker := rsDecl(t, m, "0", "Marker")
+	if len(b.Predicates()) == 0 || len(marker.Parameters()) != 1 || marker.Parameters()[0].ID() == marker.ID() {
+		t.Fatal("trait predicates/Self binder")
+	}
+	for _, text := range []string{
+		`pub trait Marker {} pub struct Person {} pub struct Boxed<T: Marker> {pub value: T} pub struct Bad {pub value: Boxed<Person>}`,
+		`pub type Missing = Unknown;`,
+		`pub struct Boxed<T> {value:T} pub type Missing = Boxed;`,
+		`pub trait Marker {} pub struct Person {} impl Marker for Person {} impl Marker for Person {}`,
+	} {
+		t.Run(text, func(t *testing.T) {
+			snapshot, _, _ := rsCapture(t, text)
+			_, result := rsResults(t, snapshot)
+			r, _ := result.Report(n.Validity())
+			if r.Status != semantic.Complete || r.Verdict != semantic.Rejected || result.HasSemantics() || len(result.Diagnostics()) == 0 {
+				t.Fatal(r, result.Diagnostics())
+			}
+		})
+	}
+	for _, text := range []string{`pub trait Call {fn call(&self);}`, `pub type Call = fn(u8)->u8;`, `pub struct Borrowed<'a> {value: &'a str}`, `pub trait Family {type Item;}`, `use std::string::String; pub type Text = String;`} {
+		t.Run(text, func(t *testing.T) {
+			snapshot, _, _ := rsCapture(t, text)
+			_, result := rsResults(t, snapshot)
+			r, _ := result.Report(n.Coverage())
+			if r.Status != semantic.Unsupported || result.HasSemantics() {
+				t.Fatal(r, result.Diagnostics())
+			}
+		})
+	}
+	snapshot, trees, _ := rsCapture(t, "pub type Byte = u8;")
+	snapshot = rsCaptureTrees(t, trees, nil)
+	_, result := rsResults(t, snapshot)
+	r, _ := result.Report(n.Coverage())
+	if r.Status != semantic.Incomplete || result.HasSemantics() {
+		t.Fatal(r)
+	}
+	snapshot, _, _ = rsCapture(t, "pub type A = u8;", "pub type B = u8;")
+	_, result = rsResults(t, snapshot)
+	r, _ = result.Report(n.Coverage())
+	if r.Status != semantic.Unsupported {
+		t.Fatal(r)
+	}
 }
 
 func TestRustSemanticCaptureAndReceipts(t *testing.T) {
- ctx:=context.Background();snapshot,trees,source:=rsCapture(t,"pub struct A {} pub struct B {} pub type Alias = A;")
- resolved,_:=rsResults(t,snapshot);resolver,_:=p.NewFilesResolver(snapshot.Language(),rsCompiler(t));analyzer,_:=p.NewFilesAnalyzer(snapshot.Language())
- other:=rsCaptureTrees(t,trees,source)
- if _,err:=analyzer.Analyze(ctx,analysis.Input{Snapshot:other,Resolution:&resolved,Options:semantic.Options{Configuration:n.Configuration()}});err==nil {t.Fatal("foreign receipt")}
- for i:=range trees[0].Nodes {if trees[0].Nodes[i].Kind==s.KindPathSegment {trees[0].Nodes[i].Attributes[0].Text="B"}}
- forged:=rsCaptureTrees(t,trees,source)
- if _,err:=resolver.Resolve(ctx,forged,semantic.Options{Configuration:n.Configuration()});!errors.Is(err,semantic.ErrInvalidRequest) {t.Fatal("forged source admitted",err)}
- _,trees,source=rsCapture(t,"pub struct A {} pub struct B {} pub type Alias = A;")
- var b ast.NodeID;for i,node:=range trees[0].Nodes {if node.Kind==s.KindStruct {for _,a:=range node.Attributes {if a.Name=="name"&&a.Text=="B" {b=ast.NodeID(i+1)}}}}
- for i:=range trees[0].Nodes {if trees[0].Nodes[i].Kind==s.KindPathSegment {trees[0].Nodes[i].References=[]ast.Reference{{Role:s.RoleTarget,Target:ast.NodeRef{Tree:trees[0].ID,Node:b}}}}}
- forged=rsCaptureTrees(t,trees,source)
- if _,err:=resolver.Resolve(ctx,forged,semantic.Options{Configuration:n.Configuration()});!errors.Is(err,semantic.ErrInvalidRequest) {t.Fatal("false reference admitted",err)}
- if _,err:=resolver.Resolve(ctx,snapshot,semantic.Options{});!errors.Is(err,semantic.ErrInvalidRequest) {t.Fatal("implicit configuration",err)}
- cancelled,cancel:=context.WithCancel(ctx);cancel();if _,err:=resolver.Resolve(cancelled,snapshot,semantic.Options{Configuration:n.Configuration()});!errors.Is(err,context.Canceled) {t.Fatal(err)}
+	ctx := context.Background()
+	snapshot, trees, source := rsCapture(t, "pub struct A {} pub struct B {} pub type Alias = A;")
+	resolved, _ := rsResults(t, snapshot)
+	resolver, _ := p.NewFilesResolver(snapshot.Language(), rsCompiler(t))
+	analyzer, _ := p.NewFilesAnalyzer(snapshot.Language())
+	other := rsCaptureTrees(t, trees, source)
+	if _, err := analyzer.Analyze(ctx, analysis.Input{Snapshot: other, Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}}); err == nil {
+		t.Fatal("foreign receipt")
+	}
+	for i := range trees[0].Nodes {
+		if trees[0].Nodes[i].Kind == s.KindPathSegment {
+			trees[0].Nodes[i].Attributes[0].Text = "B"
+		}
+	}
+	forged := rsCaptureTrees(t, trees, source)
+	if _, err := resolver.Resolve(ctx, forged, semantic.Options{Configuration: n.Configuration()}); !errors.Is(err, semantic.ErrInvalidRequest) {
+		t.Fatal("forged source admitted", err)
+	}
+	_, trees, source = rsCapture(t, "pub struct A {} pub struct B {} pub type Alias = A;")
+	var b ast.NodeID
+	for i, node := range trees[0].Nodes {
+		if node.Kind == s.KindStruct {
+			for _, a := range node.Attributes {
+				if a.Name == "name" && a.Text == "B" {
+					b = ast.NodeID(i + 1)
+				}
+			}
+		}
+	}
+	for i := range trees[0].Nodes {
+		if trees[0].Nodes[i].Kind == s.KindPathSegment {
+			trees[0].Nodes[i].References = []ast.Reference{{Role: s.RoleTarget, Target: ast.NodeRef{Tree: trees[0].ID, Node: b}}}
+		}
+	}
+	forged = rsCaptureTrees(t, trees, source)
+	if _, err := resolver.Resolve(ctx, forged, semantic.Options{Configuration: n.Configuration()}); !errors.Is(err, semantic.ErrInvalidRequest) {
+		t.Fatal("false reference admitted", err)
+	}
+	if _, err := resolver.Resolve(ctx, snapshot, semantic.Options{}); !errors.Is(err, semantic.ErrInvalidRequest) {
+		t.Fatal("implicit configuration", err)
+	}
+	cancelled, cancel := context.WithCancel(ctx)
+	cancel()
+	if _, err := resolver.Resolve(cancelled, snapshot, semantic.Options{Configuration: n.Configuration()}); !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
 }
 
 func TestRustSemanticConcurrent(t *testing.T) {
- snapshot,_,_:=rsCapture(t,"pub struct Page<T> {pub item:T} pub type Bytes = Page<u8>;")
- resolver,_:=p.NewFilesResolver(snapshot.Language(),rsCompiler(t));analyzer,_:=p.NewFilesAnalyzer(snapshot.Language())
- resolved,err:=resolver.Resolve(context.Background(),snapshot,semantic.Options{Configuration:n.Configuration()});if err!=nil {t.Fatal(err)}
- var wg sync.WaitGroup;for i:=0;i<4;i++ {wg.Add(1);go func(){defer wg.Done();for j:=0;j<20;j++ {result,err:=analyzer.Analyze(context.Background(),analysis.Input{Snapshot:snapshot,Resolution:&resolved,Options:semantic.Options{Configuration:n.Configuration()}});if err!=nil {t.Error(err);return};m,err:=n.Open(result);if err!=nil {t.Error(err,result.Diagnostics());return};data:=m.Graph().Data();data.Entities[0].Name="local"}}()};wg.Wait()
+	snapshot, _, _ := rsCapture(t, "pub struct Page<T> {pub item:T} pub type Bytes = Page<u8>;")
+	resolver, _ := p.NewFilesResolver(snapshot.Language(), rsCompiler(t))
+	analyzer, _ := p.NewFilesAnalyzer(snapshot.Language())
+	resolved, err := resolver.Resolve(context.Background(), snapshot, semantic.Options{Configuration: n.Configuration()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 20; j++ {
+				result, err := analyzer.Analyze(context.Background(), analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				m, err := n.Open(result)
+				if err != nil {
+					t.Error(err, result.Diagnostics())
+					return
+				}
+				data := m.Graph().Data()
+				data.Entities[0].Name = "local"
+			}
+		}()
+	}
+	wg.Wait()
 }
-

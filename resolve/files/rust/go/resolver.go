@@ -15,7 +15,7 @@ import (
 // Compiler names explicitly provisioned executables. Constructors do no discovery
 // or installation; SysrootPath selects the matching pinned compiler sysroot.
 type Compiler struct {
-	HelperPath       string
+	HelperPath  string
 	SysrootPath string
 }
 
