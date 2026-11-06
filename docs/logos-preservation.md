@@ -30,10 +30,14 @@ typed route. Stored semantic facts and compiler acceptance are not themselves
 proofs of this theorem.
 
 The [typed check-only follow-up](logos-verification.md#concrete-typed-check-only-contract)
-now identifies the concrete Go API and Logos's separate TextBox/Page logical
-cases, pending its final validation and landing. Those cases check composition
+now identifies the landed Go API and Logos's separate TextBox/Page logical
+cases. Those cases check composition
 under explicit premises; connecting them to actual source/output artifacts and
 qualifying the language/mapping interpretation remain Bittype integration work.
+The [joint contract's Page walkthrough](verification.md#page-walkthrough) defines
+the exact captures, prepared statement, result meaning and rechecked Person/nested
+reuse for this proposal. Its [TextBox walkthrough](verification.md#textbox-walkthrough)
+separates an accepted counterexample from invalid or missing evidence.
 
 ## Prove preservation under symbolic assumptions
 

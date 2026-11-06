@@ -14,16 +14,18 @@ artifacts are the exact TextBox and Page statements and their dependencies.
 
 No type-system interpreter, Logos bridge, native analyzer, generator change or
 runtime binding is implemented here. Examples are proposed rules and expected
-reasoning outcomes, not executed proofs or compiler results. Public integration
-contracts remain to be designed; foundation statements follow Logos's admitted
-contract rather than a new Bittype serialization.
+reasoning outcomes, not executed proofs or compiler results. The
+[joint integration contract](verification.md) now defines request/result semantics;
+implementation and public promotion remain outstanding. Foundation statements
+follow Logos's admitted contract rather than a new Bittype serialization.
 The [remaining verification SPI decisions](type-system-architecture.md#remaining-public-verification-spi-decisions)
 now incorporate the [Logos request trace and contract map](logos-verification.md).
 Logos already supplies ground claim/evidence types and direct checking. The
 [typed check-only follow-up](logos-verification.md#concrete-typed-check-only-contract)
-now has a concrete Go implementation pending final validation/landing; the
-broader typed-package roadmap remains proposed. Bittype still needs joint artifact
-binding, language projections, expected-claim construction and associated outcomes. This does not require a
+now has a landed Go implementation; the
+broader typed-package roadmap remains proposed. Bittype still needs to implement
+the proposed joint artifact binding, language projections, expected-claim
+construction and associated outcomes. This does not require a
 second proof algebra or checker registry. API design need not await complete
 TextBox/Page execution.
 
@@ -168,7 +170,7 @@ general host.
 | --- | --- |
 | Horos and its integration | Authoritative declaration/kind meaning and the bridge to corresponding judgments; no second generator-owned Horos evaluator |
 | Native language integration | Terms and rules for an explicit native fragment, plus correspondence with actual native syntax and dependencies |
-| Logos semantic-package and checking contracts | Concrete typed check-only contexts, evidence, abstraction/substitution and checking in the pending delivery; broader semantic-package contracts remain proposed |
+| Logos semantic-package and checking contracts | Landed typed check-only contexts, evidence, abstraction/substitution and checking; broader semantic-package contracts remain proposed |
 | Type-owned mapping library | Selected representation equations and composition laws, including builtin mappings |
 | Bittype orchestration | Explicitly select providers and keep inputs, facts, candidate ASTs, mappings and results associated |
 | Logos | Execute/check supported reasoning through its general model and extension points |

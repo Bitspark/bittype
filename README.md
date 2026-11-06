@@ -80,6 +80,9 @@ interpret these concrete type semantics.
 - [Logos checking and the verification boundary](docs/logos-verification.md):
   source-traced production request, direct checking APIs, typed proposal/experiment,
   Bittype-owned association work and remaining dependencies; documentation only.
+- [Joint verification contract](docs/verification.md): proposed immutable
+  artifact association, preparation/checking split, result/failure semantics and
+  TextBox/Page walkthroughs; no implementation.
 - [Preserving native kind constraints](docs/native-kind-constraints.md): proposed
   direct bounds and source witnesses for all four targets, guarantees and
   unresolved limits; documentation only.
