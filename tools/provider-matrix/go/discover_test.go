@@ -13,7 +13,7 @@ import (
 
 // An unrelated language set demonstrates source discovery without extending a
 // production language/capability catalogue or executing provider code.
-func fixture(t *testing.T) *program {
+func fixture(t *testing.T, additions ...map[string]string) *program {
 	t.Helper()
 	const module = "example.test/fixture"
 	sources := map[string]string{
@@ -63,6 +63,11 @@ func NewTransformer[F,T any]()ASTTransformer{return bound[F,T]{}}
 import(bridge "example.test/fixture/contracts/transform/go";a "example.test/fixture/syntax/ember/go";b "example.test/fixture/syntax/ice/go")
 func New()bridge.ASTTransformer{return bridge.NewTransformer[a.Language,b.Language]()}
 `,
+	}
+	for _, extra := range additions {
+		for path, source := range extra {
+			sources[path] = source
+		}
 	}
 	p := &program{root: t.TempDir(), module: module, fset: token.NewFileSet(), packages: map[string]*sourcePackage{}, functions: map[*types.Func]declaration{}}
 	l := &fixtureLoader{p: p, sources: sources}
@@ -179,5 +184,53 @@ func TestGeneratedRegionsPreserveProseAndRejectAmbiguousMarkers(t *testing.T) {
 	}
 	if _, err := replaceRegion("authored", "providers", "new"); err == nil {
 		t.Fatal("missing markers accepted")
+	}
+}
+
+func TestComposedTransformerFactoriesRetainTypedEndpoints(t *testing.T) {
+	p := fixture(t, map[string]string{
+		"generation/syntax/go": `package generation
+import bridge "example.test/fixture/contracts/transform/go"
+func Compose[F,T any]()bridge.ASTTransformer{return bridge.NewTransformer[F,T]()}`,
+		"generation/relay/go": `package relay
+import (g "example.test/fixture/generation/syntax/go";bridge "example.test/fixture/contracts/transform/go")
+func Forward[Out,In any]()bridge.ASTTransformer{return g.Compose[In,Out]()}`,
+		"transforms/configured/go": `package configured
+import (r "example.test/fixture/generation/relay/go";bridge "example.test/fixture/contracts/transform/go";a "example.test/fixture/syntax/ember/go";b "example.test/fixture/syntax/ice/go")
+func New()bridge.ASTTransformer{return r.Forward[b.Language,a.Language]()}`,
+	})
+	m, err := p.discover()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(m.edges["ember"]["ice"]) != 2 || len(m.edges["ice"]["ember"]) != 0 {
+		t.Fatal("delegation lost endpoints or advertised the open helper", m.edges)
+	}
+	_, table, err := p.render(m, "https://example.test/blob/main")
+	if err != nil || !strings.Contains(table, "/transforms/configured/go/implementation.go#L3") {
+		t.Fatal("missing concrete factory location", table, err)
+	}
+}
+
+func TestCyclicTransformerFactoryFails(t *testing.T) {
+	p := fixture(t, map[string]string{
+		"transforms/cycle/go": `package cyclic
+import bridge "example.test/fixture/contracts/transform/go"
+func New()bridge.ASTTransformer{return New()}`,
+	})
+	if _, err := p.discover(); err == nil || !strings.Contains(err.Error(), "cyclic transformer") {
+		t.Fatal("cyclic factory accepted", err)
+	}
+}
+
+func TestCurrentRepositoryProviderDiscovery(t *testing.T) {
+	// Exercise the maintained documentation command's source-discovery path in
+	// the existing hosted Go test gate, before a main-only publication job runs.
+	p, err := load(filepath.Join("..", "..", ".."))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := p.discover(); err != nil {
+		t.Fatal(err)
 	}
 }
