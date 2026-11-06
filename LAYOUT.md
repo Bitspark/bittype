@@ -301,8 +301,8 @@ Syntax/Files provider registration and engine capabilities remain unchanged.
 
 The [Syntax and Files design](docs/source.md) is implemented with
 `Syntax : CST : AST` and `Files : Source : Semantics`. Both dimension names are
-explicit in implementation paths. Horos composes the full Files text pipeline; Go adds bounded Files resolution
-and analysis without Files parsing/formatting;
+explicit in implementation paths. Horos composes the full Files text pipeline;
+Go and TypeScript add bounded Files resolution and analysis without Files parsing/formatting;
 all five language composition packages construct Files printers.
 
 Files depends on AST addresses. Source retains semantic capture/result handles,

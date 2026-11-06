@@ -206,9 +206,11 @@ the same API with unfamiliar keys, non-type parameters, aliases, source-less
 intrinsics and recursive entities. This proves structural extensibility, not
 production semantics for Go or another native language.
 
-Scopes and namespace lookup await a consumer needing them. Assignability,
-conversion, inference, conditional judgments and partial checked models require
-separate contracts before implementation. No cache key, persistent semantic
+General scope/namespace lookup APIs and cross-language assignability, conversion,
+inference, conditional judgments and partial checked models remain outside this
+carrier. [Go and TypeScript providers](native-semantics.md) now supply bounded
+native semantics and explicit language-owned queries; these do not add a universal
+compatibility predicate to the kernel. No cache key, persistent semantic
 identity, automatic normalization or cross-language equivalence is specified.
 
 Function, Stream, Cell and future contracts remain ordinary library declarations.
