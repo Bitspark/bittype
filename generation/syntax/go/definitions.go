@@ -2,8 +2,8 @@ package generation
 
 import (
 	"context"
+	"errors"
 	"fmt"
- "errors"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
@@ -80,7 +80,9 @@ func Run[F, T any](ctx context.Context, input g.Input, c Composition[F, T]) (rep
 		if errors.Is(err, g.ErrUnsupported) {
 			continue // Missing mappings fail if this declaration is demanded.
 		}
-		if err != nil {return fail(err)}
+		if err != nil {
+			return fail(err)
+		}
 		plan, err := appendPlan(m, d)
 		if err != nil {
 			return fail(err)
@@ -98,7 +100,9 @@ func Run[F, T any](ctx context.Context, input g.Input, c Composition[F, T]) (rep
 		direct[b.Selector.key] = plan
 	}
 	for _, helper := range c.Helpers {
-		if len(plans) >= c.Limits.Plans { return fail(g.ErrLimit) }
+		if len(plans) >= c.Limits.Plans {
+			return fail(g.ErrLimit)
+		}
 		if helper.Declaration.Valid() || helper.Key == "" {
 			return fail(g.ErrInvalid)
 		}
@@ -116,7 +120,9 @@ func Run[F, T any](ctx context.Context, input g.Input, c Composition[F, T]) (rep
 		if err != nil {
 			return "", err
 		}
-		if !key.Valid() || !input.Snapshot.Language().Compatible(key.Language()) { return "", g.ErrInvalid }
+		if !key.Valid() || !input.Snapshot.Language().Compatible(key.Language()) {
+			return "", g.ErrInvalid
+		}
 		if value := direct[key.key]; value != "" {
 			return value, nil
 		}

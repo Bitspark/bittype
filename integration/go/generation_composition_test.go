@@ -2,7 +2,7 @@ package integration_test
 
 import (
 	"context"
- "errors"
+	"errors"
 	generationfixture "github.com/Bitspark/bittype/integration/go/testdata/generationfixture"
 	gp "github.com/Bitspark/bittype/provider/golang/go"
 	s "github.com/Bitspark/bittype/syntax/golang/go"
@@ -46,8 +46,14 @@ func TestAutomaticGenerationKeepsWholeResultAssociation(t *testing.T) {
 }
 
 func TestAutomaticGenerationCancellationReturnsNoOutput(t *testing.T) {
- f,err:=generationfixture.New(context.Background());if err!=nil{t.Fatal(err)}
- ctx,cancel:=context.WithCancel(context.Background());cancel()
- out,err:=f.Automatic(ctx)
- if !errors.Is(err,context.Canceled)||out.LanguageID()!=""{t.Fatal("canceled invocation produced output",err)}
+	f, err := generationfixture.New(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	out, err := f.Automatic(ctx)
+	if !errors.Is(err, context.Canceled) || out.LanguageID() != "" {
+		t.Fatal("canceled invocation produced output", err)
+	}
 }

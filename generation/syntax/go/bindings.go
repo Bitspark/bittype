@@ -97,7 +97,7 @@ func NewBindings[F, T any](from representation.Language, entries []Binding[F, T]
 
 func (b Bindings[F, T]) selectMapping(key Selector, structural bool) (Mapping[F, T], error) {
 	if !key.Valid() || !b.language.Compatible(key.language) {
-		return Mapping[F,T]{}, g.ErrInvalid
+		return Mapping[F, T]{}, g.ErrInvalid
 	}
 	for _, entry := range b.entries {
 		if entry.Selector.key == key.key {

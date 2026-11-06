@@ -1,18 +1,18 @@
 package target
 
 import (
- "slices"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	m "github.com/Bitspark/bittype/generation/syntax/target/go"
 	s "github.com/Bitspark/bittype/syntax/cpp/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
+	"slices"
 )
 
 func (b *Backend[F]) assemble(declarations []g.Fragment[s.Language]) (g.Fragment[s.Language], error) {
 	var children []m.Child[s.Language]
 	headers := slices.Clone(b.headers)
- slices.Sort(headers)
- for _, header := range headers {
+	slices.Sort(headers)
+	for _, header := range headers {
 		n, err := b.Node(m.Node(s.KindInclude, m.Attributes("path", header, "system", "true"), ast.NodeRef{}))
 		if err != nil {
 			return n, err

@@ -45,16 +45,22 @@ func TestExactBindingsAndGuardedOverrides(t *testing.T) {
 }
 
 type renamed struct{}
+
 func (renamed) ID() language.ID { return "independent" }
-func (renamed) Name() string { return "New display name" }
+func (renamed) Name() string    { return "New display name" }
 func TestSelectorDisplayNameIsNotIdentity(t *testing.T) {
- a, _ := representation.NewLanguage[source](source{}, "v1")
- b, _ := representation.NewLanguage[source](renamed{}, "v1")
- ka, _ := c.NewSelector(a, "one")
- kb, _ := c.NewSelector(b, "one")
- mapping := c.Mapping[source,source]{ID:"base",PluginID:"owner",Plan:func(g.Declaration[source])(g.Plan[source,source],error){return g.Plan[source,source]{},nil}}
- entries := []c.Binding[source,source]{{Selector:ka,Mapping:mapping},{Selector:kb,Mapping:mapping}}
- if _,err:=c.NewBindings(a,entries,nil,nil);err==nil{t.Fatal("display name created a second identity")}
- replacement:=mapping;replacement.ID="new"
- if _,err:=c.NewBindings(a,entries[:1],[]c.Override[source,source]{{Binding:c.Binding[source,source]{Selector:kb,Mapping:replacement},ExpectedID:"base"}},nil);err!=nil{t.Fatal(err)}
+	a, _ := representation.NewLanguage[source](source{}, "v1")
+	b, _ := representation.NewLanguage[source](renamed{}, "v1")
+	ka, _ := c.NewSelector(a, "one")
+	kb, _ := c.NewSelector(b, "one")
+	mapping := c.Mapping[source, source]{ID: "base", PluginID: "owner", Plan: func(g.Declaration[source]) (g.Plan[source, source], error) { return g.Plan[source, source]{}, nil }}
+	entries := []c.Binding[source, source]{{Selector: ka, Mapping: mapping}, {Selector: kb, Mapping: mapping}}
+	if _, err := c.NewBindings(a, entries, nil, nil); err == nil {
+		t.Fatal("display name created a second identity")
+	}
+	replacement := mapping
+	replacement.ID = "new"
+	if _, err := c.NewBindings(a, entries[:1], []c.Override[source, source]{{Binding: c.Binding[source, source]{Selector: kb, Mapping: replacement}, ExpectedID: "base"}}, nil); err != nil {
+		t.Fatal(err)
+	}
 }

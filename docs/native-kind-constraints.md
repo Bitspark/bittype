@@ -51,15 +51,16 @@ pagination mappings currently emit ordinary native generics under the
 The `pagination-enforcement/1` profile currently returns `Unsupported` with no
 output. Neither the encodings nor the helper names below are implemented APIs.
 
-The present private dialect operation receives a parameter name and origin,
-without a constraint plan; see [the generator](../internal/horosgen/generate.go).
-Consequently, for example, the TypeScript emitter produces a bare parameter.
+The [implemented composer](generation-composition.md) separates source
+assumptions, representation conventions and native construction. The Horos-owned
+representation policy currently requests bare native parameters, so TypeScript
+emits no kind constraint.
 The proposal changes that source-to-target lowering, not `ASTTransformer`, the
 engine's registry or the shared semantic carrier.
 
-The plugin proposal replaces the private fixed Dialect with source-owned
-integration mappings and source/target collaborators. The existing private
-generator is an implementation anchor, not a second planned enforcement route.
+The private fixed Dialect has been removed. Source-owned integration mappings
+and source/target collaborators are the implemented generation path; native
+enforcement must be supplied through that same path.
 
 Implementing this proposal would replace constraint erasure in the enforcing
 route. There must be no compatibility fallback to the unconstrained output.
@@ -428,9 +429,8 @@ same obligations. This document does not define a competing recipe-dispatch SPI.
 The [type-owned generator plugin proposal](type-generation-plugins.md) specifies
 that selection/composition contract and the
 [operation obligations](type-generation-plugins.md#constraint-preservation-in-plugin-composition).
-Its source adapter and type-owned integration mappings take over the lowering
-currently located in `internal/horosgen` and concrete transformers. The proposed
-ownership is:
+Its source adapter and type-owned integration mappings now own lowering;
+`internal/horosgen` is deleted. Enforcement extends these implemented owners:
 
 | Owner or location | Responsibility |
 | --- | --- |
@@ -444,9 +444,9 @@ ownership is:
 | Shared carriers, semantic kernel, engine and printers | Keep their existing language-agnostic contracts |
 
 These are the [plugin proposal's target locations](type-generation-plugins.md#proposed-file-layout-and-dependencies),
-not directories created by this documentation. Type-owned integration modules
+implemented for representation, with enforcement still proposed. Type-owned integration modules
 depend on Bittype; Bittype factories do not import their default bundles. The
-private fixed Dialect is replaced rather than retained beside this composition.
+private fixed Dialect is deleted.
 
 Membership evidence may become a generated helper only after its source meaning
 and native association are established. Reserving a helper symbol does not prove

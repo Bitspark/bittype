@@ -64,7 +64,9 @@ func (s *Store[F, T]) Freeze(site g.Site[F, T], d g.Destination[T], names []stri
 	l, _ := s.layouts.Ref(uint64(len(s.layoutRecords) + 1))
 	s.layoutRecords[l] = layout[T]{identity: at(site), destination: d, names: slices.Clone(names), parameters: slices.Clone(parameters)}
 	s.headers[d] = l
-	for _, name := range names { s.formalNames[name] = true }
+	for _, name := range names {
+		s.formalNames[name] = true
+	}
 	return l, nil
 }
 func (s *Store[F, T]) Formal(l g.Layout[T], index int) (Symbol[T], error) {

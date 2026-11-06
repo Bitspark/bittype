@@ -2,8 +2,8 @@
 package source
 
 import (
+	"encoding/hex"
 	"fmt"
- "encoding/hex"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	c "github.com/Bitspark/bittype/generation/syntax/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
