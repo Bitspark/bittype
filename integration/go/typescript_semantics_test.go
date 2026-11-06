@@ -259,6 +259,15 @@ func TestTypeScriptSemanticReports(t *testing.T) {
 		{"merging", "interface Box {x:string} interface Box {y:string}", semantic.Unsupported, semantic.Undetermined},
 		{"external", "type DateValue = Date;", semantic.Unsupported, semantic.Undetermined},
 		{"external-mapped", "type Changed = Readonly<{value: string}>;", semantic.Unsupported, semantic.Undetermined},
+		{"nocheck", "// @ts-nocheck\ntype Box<T extends string> = {value:T}; type Bad = Box<boolean>;", semantic.Unsupported, semantic.Undetermined},
+		{"ignore", "type Box<T extends string> = {value:T};\n// @ts-ignore\ntype Bad = Box<boolean>;", semantic.Unsupported, semantic.Undetermined},
+		{"expect-error", "type Box<T extends string> = {value:T};\n// @ts-expect-error\ntype Bad = Box<boolean>;", semantic.Unsupported, semantic.Undetermined},
+		{"lib-directive", "/// <reference lib=\"dom\" />\ntype Text = string;", semantic.Unsupported, semantic.Undetermined},
+		{"path-directive", "/// <reference path=\"ambient.ts\" />\ntype Text = string;", semantic.Unsupported, semantic.Undetermined},
+		{"types-directive", "/// <reference types=\"node\" />\ntype Text = string;", semantic.Unsupported, semantic.Undetermined},
+		{"no-default-lib", "/// <reference no-default-lib=\"true\" />\ntype Text = string;", semantic.Unsupported, semantic.Undetermined},
+		{"conditional", "type Choice<T> = T extends string ? string : boolean;", semantic.Unsupported, semantic.Undetermined},
+		{"mapped", "type Copy<T> = {[K in keyof T]: T[K]};", semantic.Unsupported, semantic.Undetermined},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			snapshot, _, _ := tsCapture(t, tc.text)
@@ -282,6 +291,11 @@ func TestTypeScriptSemanticReports(t *testing.T) {
 }
 
 func TestTypeScriptSemanticScopeAndSourceCorrespondence(t *testing.T) {
+	// Directive-looking literal values do not control the compiler.
+	literal := tsModel(t, "type Label = '@ts-nocheck';")
+	if tsType(t, literal, "Label").Term().Operator != n.Key("literal") {
+		t.Fatal("literal text mistaken for a compiler directive")
+	}
 	m := tsModel(t, "export interface Box<T> {value:T}", "export interface Box<T> {value:T}")
 	a, b := tsDecl(t, m, "0", "Box"), tsDecl(t, m, "1", "Box")
 	if a.ID() == b.ID() || a.Parameters()[0].ID() == b.Parameters()[0].ID() {

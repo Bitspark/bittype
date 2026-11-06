@@ -166,7 +166,13 @@ Imports and qualified names, callable/method/index signatures, indexed access,
 external type references other than compiler-recognized array constructors remain
 outside this first profile. Standard arrays and readonly arrays are supported;
 mapped utility types such as `Readonly<T>` are not. Their synthesized modifiers
-need a separate extension of native fact export. This is bounded native checking, not support for
+need a separate extension of native fact export. Authored conditional and mapped
+types are also unsupported even though the syntax provider admits them.
+Diagnostic-control comments (`@ts-nocheck`, `@ts-ignore`, `@ts-expect-error`,
+`@ts-check`) and source dependency directives receive unsupported coverage;
+they cannot suppress advertised checking or alter the supplied dependency scope.
+Directive-looking text inside a string literal has no such effect.
+This is bounded native checking, not support for
 all TypeScript syntax or arbitrary `.d.ts` dependency closures. Generic
 applications must supply their complete arguments; there is no public dynamic
 generic-instantiation query in this slice.
