@@ -12,7 +12,7 @@ import (
 
 func identifier(v string) bool { return native.Identifier(v) }
 
-var types = []string{"path-type", "primitive-type", "reference-type", "raw-pointer-type", "slice-type", "array-type", "tuple-type", "never-type", "function-type", "trait-object-type"}
+var types = []string{"path-type", "qualified-path-type", "primitive-type", "reference-type", "raw-pointer-type", "slice-type", "array-type", "tuple-type", "never-type", "function-type", "trait-object-type"}
 var bounds = []string{"path-type", "lifetime-reference"}
 var generics = []string{"type-parameter", "lifetime-parameter"}
 var items = []string{"module", "use", "type-alias", "struct", "tuple-struct", "enum", "trait"}
@@ -50,7 +50,9 @@ var rules = g.Rules{
 	"lifetime-reference": {Attributes: g.Attributes("name", g.Attr(true, native.LifetimeReference)), Reference: true},
 	"where-predicate":    {Roles: []g.Role{g.One("subject", append(types, "lifetime-reference")...), g.Many("bound", 1, bounds...)}},
 	"path-type":          {Attributes: g.Attributes("absolute", g.Attr(false, g.Bool)), Roles: []g.Role{g.Many("segment", 1, "path-segment")}},
-	"path-segment":       {Attributes: g.Attributes("name", g.Attr(true, native.PathSegment)), Roles: []g.Role{g.Many("argument", 0, append(types, "lifetime-reference")...)}, Reference: true},
+	"qualified-path-type": {Roles: []g.Role{g.One("subject", types...), g.Opt("trait", "path-type"), g.Many("segment", 1, "path-segment")}},
+	"path-segment":       {Attributes: g.Attributes("name", g.Attr(true, native.PathSegment)), Roles: []g.Role{g.Many("argument", 0, append(types, "lifetime-reference", "associated-type-binding")...)}, Reference: true},
+	"associated-type-binding": {Roles: []g.Role{g.One("path", "path-segment"), g.One("type", types...)}},
 	"primitive-type":     {Attributes: g.Attributes("name", g.Attr(true, primitive))},
 	"reference-type":     {Attributes: g.Attributes("mutable", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("element", types...), g.Opt("lifetime", "lifetime-reference")}},
 	"raw-pointer-type":   {Attributes: g.Attributes("mutable", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("element", types...)}},
@@ -72,7 +74,7 @@ func Check(view ast.View[s.Language]) error {
 		id := ast.NodeID(i + 1)
 		bad := func(m string) error { return text.AtNode(t, id, m) }
 		for _, child := range n.Children {
-			if v.Kind(child.Node) != "path-type" || child.Role == "bound" || n.Kind == s.KindUse {
+			if v.Kind(child.Node) != "path-type" || child.Role == "bound" || child.Role == "trait" || n.Kind == s.KindUse {
 				continue
 			}
 			segments := v.Children(child.Node, "segment")
@@ -89,6 +91,27 @@ func Check(view ast.View[s.Language]) error {
 			}
 		}
 		switch n.Kind {
+		case s.KindPathSegment:
+			seenType, seenBinding := false, false
+			for _, arg := range v.Children(id, "argument") {
+				switch v.Kind(arg) {
+				case "lifetime-reference":
+					if seenType || seenBinding {
+						return text.AtNode(t, arg, "lifetime arguments must precede type arguments and associated-type bindings")
+					}
+				case "associated-type-binding":
+					seenBinding = true
+				default:
+					if seenBinding {
+						return text.AtNode(t, arg, "type arguments must precede associated-type bindings")
+					}
+					seenType = true
+				}
+			}
+		case s.KindAssociatedTypeBinding:
+			if !native.Declaration(v.Attr(v.Child(id, "path"), "name")) {
+				return bad("associated-type binding requires an unqualified associated name")
+			}
 		case s.KindUse:
 			for _, seg := range v.Children(v.Child(id, "path"), "segment") {
 				if len(v.Children(seg, "argument")) > 0 {

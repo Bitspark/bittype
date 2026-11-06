@@ -52,7 +52,9 @@ const (
 	KindLifetimeReference Kind = "lifetime-reference"
 	KindWherePredicate    Kind = "where-predicate"
 	KindPathType          Kind = "path-type"
+	KindQualifiedPathType Kind = "qualified-path-type"
 	KindPathSegment       Kind = "path-segment"
+	KindAssociatedTypeBinding Kind = "associated-type-binding"
 	KindPrimitiveType     Kind = "primitive-type"
 	KindReferenceType     Kind = "reference-type"
 	KindRawPointerType    Kind = "raw-pointer-type"
@@ -64,7 +66,8 @@ const (
 	KindTraitObjectType   Kind = "trait-object-type"
 )
 
-// Containment roles. Generic arguments may be type nodes or lifetime references.
+// Containment roles. Generic arguments may be types, lifetime references or
+// associated-type equality bindings.
 const (
 	RoleItem             = "item"
 	RolePath             = "path"
@@ -74,6 +77,7 @@ const (
 	RoleBound            = "bound"
 	RoleWhere            = "where"
 	RoleSubject          = "subject"
+	RoleTrait            = "trait"
 	RoleField            = "field"
 	RoleVariant          = "variant"
 	RoleMember           = "member"
