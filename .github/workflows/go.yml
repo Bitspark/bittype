@@ -113,7 +113,7 @@ jobs:
           cp integration/go/testdata/installed/*_test.go "$RUNNER_TEMP/installed-consumer/"
           cd "$RUNNER_TEMP/installed-consumer"
           go mod init installed.consumer
-          go get "github.com/Bitspark/bittype@$EXPECTED_REVISION" github.com/Bitspark/horos/core/go@v0.10.2 github.com/bitspark/ontos@v0.16.0
+          go get "github.com/Bitspark/bittype@$EXPECTED_REVISION" github.com/Bitspark/horos/core/go@v0.10.2 github.com/bitspark/ontos@v0.16.0 github.com/Bitspark/logos-contract/contract/go@v0.24.1-0.20261106050133-fc6132c238ea
           test "$(go mod download -json github.com/Bitspark/bittype | python3 -c 'import json,sys; print(json.load(open(json.load(sys.stdin)["Info"]))["Origin"]["Hash"])')" = "$EXPECTED_REVISION"
           test "$(go list -m -f '{{.Version}}' github.com/Bitspark/horos/core/go)" = v0.10.2
           test "$(go list -m -f '{{.Version}}' github.com/bitspark/ontos)" = v0.16.0
