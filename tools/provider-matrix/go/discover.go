@@ -404,30 +404,42 @@ func (p *program) transformers(m *matrix) error {
 		}
 		m.edges[from][to] = append(m.edges[from][to], loc)
 	}
-	for fn, decl := range p.functions {
-		if !p.implementation(fn.Pkg().Path()) || !fn.Exported() {
-			continue
-		}
+	returnsTransformer := func(fn *types.Func) bool {
 		signature := fn.Type().(*types.Signature)
-		if signature.Recv() != nil {
-			continue
-		}
-		returns := false
 		for i := 0; i < signature.Results().Len(); i++ {
-			returns = returns || types.Implements(signature.Results().At(i).Type(), iface)
+			if types.Implements(signature.Results().At(i).Type(), iface) {
+				return true
+			}
 		}
-		if !returns {
-			continue
+		return false
+	}
+	// Follow typed factory delegation to the existing transformer boundary.
+	// Generic helpers are not concrete edges. Bind their actual type arguments
+	// at each call, including reordered parameters, without executing factories.
+	var endpoints func(*types.Func, map[*types.TypeParam]types.Type, map[*types.Func]bool) ([][2]string, error)
+	endpoints = func(fn *types.Func, bindings map[*types.TypeParam]types.Type, active map[*types.Func]bool) ([][2]string, error) {
+		fn = fn.Origin()
+		if active[fn] {
+			return nil, fmt.Errorf("%s: cyclic transformer factory delegation", fn)
 		}
-		found := false
+		decl, ok := p.functions[fn]
+		if !ok || decl.node.Body == nil {
+			return nil, fmt.Errorf("%s: transformer factory source unavailable", fn)
+		}
+		active[fn] = true
+		defer delete(active, fn)
+		var result [][2]string
 		var failure error
 		ast.Inspect(decl.node.Body, func(n ast.Node) bool {
+			if failure != nil {
+				return false
+			}
 			call, ok := n.(*ast.CallExpr)
 			if !ok {
 				return true
 			}
 			callee := p.called(decl.pkg, call.Fun)
-			if callee == nil || callee.Pkg().Path() != p.module+"/contracts/transform/go" || callee.Name() != "NewTransformer" {
+			if callee == nil || !returnsTransformer(callee) {
 				return true
 			}
 			var ident *ast.Ident
@@ -438,24 +450,72 @@ func (p *program) transformers(m *matrix) error {
 				return true
 			})
 			instance := decl.pkg.info.Instances[ident]
-			if instance.TypeArgs == nil || instance.TypeArgs.Len() != 2 {
-				failure = fmt.Errorf("%s: transformer endpoints are not statically instantiated", fn)
+			parameters := callee.Origin().Type().(*types.Signature).TypeParams()
+			if parameters.Len() != instance.TypeArgs.Len() {
+				failure = fmt.Errorf("%s: transformer arguments are not statically instantiated", fn)
 				return false
 			}
-			from, to := lookup(instance.TypeArgs.At(0)), lookup(instance.TypeArgs.At(1))
-			if from == "" || to == "" {
-				failure = fmt.Errorf("%s: transformer uses an undiscovered language marker", fn)
+			actuals := make([]types.Type, parameters.Len())
+			nested := map[*types.TypeParam]types.Type{}
+			for i := range actuals {
+				actual := types.Unalias(instance.TypeArgs.At(i))
+				if parameter, ok := actual.(*types.TypeParam); ok {
+					actual = bindings[parameter]
+				}
+				if actual == nil {
+					failure = fmt.Errorf("%s: open transformer endpoint", fn)
+					return false
+				}
+				actuals[i] = actual
+				nested[parameters.At(i)] = actual
+			}
+			if callee.Pkg().Path() == p.module+"/contracts/transform/go" && callee.Name() == "NewTransformer" {
+				if len(actuals) != 2 {
+					failure = fmt.Errorf("%s: transformer requires two endpoint arguments", fn)
+					return false
+				}
+				from, to := lookup(actuals[0]), lookup(actuals[1])
+				if from == "" || to == "" {
+					failure = fmt.Errorf("%s: transformer uses an undiscovered language marker", fn)
+					return false
+				}
+				result = append(result, [2]string{from, to})
 				return false
 			}
-			add(from, to, location{fn.Name(), fn.Pos()})
-			found = true
+			child, err := endpoints(callee, nested, active)
+			if err != nil {
+				failure = err
+				return false
+			}
+			result = append(result, child...)
 			return false
 		})
 		if failure != nil {
-			return failure
+			return nil, failure
 		}
-		if !found {
-			return fmt.Errorf("%s: cannot derive transformer endpoints from the typed factory", fn)
+		if len(result) == 0 {
+			return nil, fmt.Errorf("%s: cannot derive transformer endpoints from the typed factory", fn)
+		}
+		return result, nil
+	}
+	for fn := range p.functions {
+		if !p.implementation(fn.Pkg().Path()) || !fn.Exported() {
+			continue
+		}
+		signature := fn.Type().(*types.Signature)
+		if signature.Recv() != nil || signature.TypeParams().Len() != 0 || !returnsTransformer(fn) {
+			continue
+		}
+		edges, err := endpoints(fn, nil, map[*types.Func]bool{})
+		if err != nil {
+			return err
+		}
+		seen := map[[2]string]bool{}
+		for _, edge := range edges {
+			if !seen[edge] {
+				add(edge[0], edge[1], location{fn.Name(), fn.Pos()})
+				seen[edge] = true
+			}
 		}
 	}
 	return nil
