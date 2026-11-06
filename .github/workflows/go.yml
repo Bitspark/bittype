@@ -48,8 +48,7 @@ jobs:
           echo "BITTYPE_RUST_SYSROOT=$sysroot" >> "$GITHUB_ENV"
           echo "BITTYPE_RUST_HELPER=$RUNNER_TEMP/bittype-rust/release/bittype-rust-semantics" >> "$GITHUB_ENV"
           echo "CARGO_TARGET_DIR=$RUNNER_TEMP/bittype-rust" >> "$GITHUB_ENV"
-          cargo +1.90.0 generate-lockfile --manifest-path internal/rustsem/helper/Cargo.toml
-          git add -N internal/rustsem/helper/Cargo.lock
+          cargo +1.90.0 fetch --locked --manifest-path internal/rustsem/helper/Cargo.toml
       - name: Save Rust dependency and formatting corrections
         shell: bash
         run: |
@@ -64,7 +63,6 @@ jobs:
         shell: bash
         run: |
           RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C link-arg=-Wl,-rpath,$BITTYPE_RUST_SYSROOT/lib" cargo +1.90.0 build --release --locked --manifest-path internal/rustsem/helper/Cargo.toml
-          git diff --exit-code -- internal/rustsem/helper
       - name: Save dependency checksum corrections
         shell: bash
         run: git diff --binary -- go.mod go.sum > "$RUNNER_TEMP/go-mod.patch"
@@ -177,7 +175,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: Verify committed dependency metadata
-        run: git diff --exit-code -- go.mod go.sum
+        run: git diff --exit-code -- go.mod go.sum internal/rustsem/helper
       - name: Record passing revision
         shell: bash
         run: |

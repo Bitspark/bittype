@@ -85,6 +85,9 @@ impl Callbacks for Driver {
 struct Catalogue { definitions: Vec<(DefId,Span,&'static str)>, paths: Vec<(Span,Res)> }
 impl<'tcx> Visitor<'tcx> for Catalogue {
     fn visit_item(&mut self, item: &'tcx hir::Item<'tcx>) {
+        // rustc injects a standard-library prelude import; it is compiler context,
+        // not an authored declaration in the capture.
+        if item.span.is_dummy() || item.span.from_expansion() { return; }
         let kind=match item.kind {
             hir::ItemKind::Mod(..)=>"module", hir::ItemKind::TyAlias(..)=>"type-alias",
             hir::ItemKind::Struct(..)=>"struct", hir::ItemKind::Enum(..)=>"enum",
@@ -105,12 +108,12 @@ impl<'tcx> Visitor<'tcx> for Catalogue {
         self.definitions.push((v.def_id.to_def_id(),v.span,"variant"));
         intravisit::walk_variant(self,v);
     }
-    fn visit_path(&mut self,path: &hir::Path<'tcx>,id: hir::HirId) {
+    fn visit_path(&mut self,path: &hir::Path<'tcx>,_: hir::HirId) {
         for (i,s) in path.segments.iter().enumerate() {
             let res=if matches!(s.res,Res::Err) && i+1==path.segments.len() {path.res} else {s.res};
             self.paths.push((s.ident.span,res));
         }
-        intravisit::walk_path(self,path,id);
+        intravisit::walk_path(self,path);
     }
 }
 type ExportResult<T> = Result<T,(&'static str,String)>;
@@ -120,10 +123,11 @@ struct Exporter<'tcx,'a> {
     entities: Vec<Value>, terms: Vec<Value>, bindings: Vec<Value>, expressions: Vec<Value>, facts: Vec<Value>,
     defs: HashMap<DefId,u32>, params: HashMap<(DefId,u32),u32>,
     types: HashMap<(Ty<'tcx>,Option<DefId>),u32>, sites: HashMap<DefId,u32>,
+    depth: usize,
 }
 impl<'tcx,'a> Exporter<'tcx,'a> {
     fn new(tcx: TyCtxt<'tcx>,unit: &'a Unit) -> Self {
-        Self { tcx,unit,entities:vec![],terms:vec![],bindings:vec![],expressions:vec![],facts:vec![],defs:HashMap::new(),params:HashMap::new(),types:HashMap::new(),sites:HashMap::new() }
+        Self { tcx,unit,entities:vec![],terms:vec![],bindings:vec![],expressions:vec![],facts:vec![],defs:HashMap::new(),params:HashMap::new(),types:HashMap::new(),sites:HashMap::new(),depth:0 }
     }
     fn site(&self,id:u32) -> Value { json!({"Tree":self.unit.tree,"Node":id}) }
     fn find(&self,span:Span,kind:&str) -> Option<u32> {
@@ -195,12 +199,19 @@ impl<'tcx,'a> Exporter<'tcx,'a> {
         Ok(id)
     }
     fn arguments(&mut self,args:ty::GenericArgsRef<'tcx>,owner:Option<DefId>) -> ExportResult<Vec<u32>> {
-        args.iter().map(|a|match a.unpack() {
+        args.iter().map(|a|match a.kind() {
             ty::GenericArgKind::Type(t)=>self.native(t,owner),
             _=>Err(unsupported_error("lifetime/const native arguments")),
         }).collect()
     }
     fn native(&mut self,t:Ty<'tcx>,owner:Option<DefId>) -> ExportResult<u32> {
+        if self.depth>=128 { return Err(("incomplete","native type expansion depth".into())); }
+        self.depth+=1;
+        let result=self.native_inner(t,owner);
+        self.depth-=1;
+        result
+    }
+    fn native_inner(&mut self,t:Ty<'tcx>,owner:Option<DefId>) -> ExportResult<u32> {
         let context=if t.has_param() {owner} else {None};
         if let Some(&id)=self.types.get(&(t,context)) { return Ok(id); }
         if self.types.len()>16000 { return Err(("incomplete","native type graph limit".into())); }
