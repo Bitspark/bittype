@@ -41,7 +41,11 @@ func faultyInterpretation(t *testing.T, statement typed.Statement) Claim {
 		t.Fatal(err)
 	}
 	input := association.Input{Source: sourceKey(), Target: sourceKey(), Participants: []association.Participant{{Key: sourceKey(), Snapshot: snapshot}}}
-	origin := Origin{Location: typed.Location{Phase: typed.DeclarationPhase, Index: 0, HasIndex: true}, Sites: []association.Site{site(sourceKey(), snapshot.Entry())}}
+	location := typed.Location{Phase: typed.ExpectedPhase}
+	if len(statement.Declarations) > 0 {
+		location = typed.Location{Phase: typed.DeclarationPhase, Index: 0, HasIndex: true}
+	}
+	origin := Origin{Location: location, Sites: []association.Site{site(sourceKey(), snapshot.Entry())}}
 	return Claim{&claim{input: input, requirements: []association.Requirement{{Key: sourceKey(), Language: language}}, question: question("fault-injection"), statement: statement, origins: []Origin{origin}}}
 }
 func TestInvalidSignatureIsAnUnchangedLogosOutcome(t *testing.T) {
@@ -112,6 +116,11 @@ func TestPreparationRejectsForeignSitesAndBoundsWholeMap(t *testing.T) {
 		t.Fatal(err)
 	}
 	claim.state.origins[0].Sites[0].Participant = sourceKey()
+	claim.state.origins[0].Location = typed.Location{Phase: typed.DeclarationPhase, Index: 99, HasIndex: true}
+	if r, err := c.Prepare(context.Background(), claim); !errors.Is(err, ErrInvalid) || r.Valid() {
+		t.Fatal("accepted foreign logical location", err)
+	}
+	claim.state.origins[0].Location = typed.Location{Phase: typed.ExpectedPhase}
 	limits := DefaultLimits()
 	limits.Association.Sites = 1
 	c, _ = New(typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker}, limits)

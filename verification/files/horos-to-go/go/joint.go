@@ -105,6 +105,19 @@ func logicalOrigins(declarations []typed.Declaration, sites []association.Site) 
 	return out
 }
 
+func validLocation(location typed.Location, statement typed.Statement) bool {
+	switch location.Phase {
+	case typed.DeclarationPhase:
+		return location.HasIndex && uint64(location.Index) < uint64(len(statement.Declarations))
+	case typed.ContextPhase:
+		return location.HasIndex && uint64(location.Index) < uint64(len(statement.Context))
+	case typed.ExpectedPhase:
+		return !location.HasIndex && location.Index == 0
+	default:
+		return false
+	}
+}
+
 // New captures receiver policy. Unknown foundations/dependencies and checker
 // resource exhaustion remain Logos outcomes; this constructor does not precheck
 // or silently expand the receiver's policy/budget.
@@ -140,7 +153,13 @@ func (c Composition) Prepare(ctx context.Context, input Claim) (Request, error) 
 		return Request{}, err
 	}
 	count, bytes := 0, 0
+	if len(b.origins) > c.state.limits.Association.Sites {
+		return Request{}, association.ErrLimit
+	}
 	for _, origin := range b.origins {
+		if !validLocation(origin.Location, b.statement) {
+			return Request{}, ErrInvalid
+		}
 		count += len(origin.Sites)
 		if count > c.state.limits.Association.Sites {
 			return Request{}, association.ErrLimit

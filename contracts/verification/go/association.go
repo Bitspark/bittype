@@ -148,7 +148,11 @@ func (a Association) CheckSites(sites []Site) error {
 	if len(sites) > a.state.limits.Sites {
 		return ErrLimit
 	}
+	metadata := a.state.limits.MetadataBytes
 	for _, site := range sites {
+		if !keyBytes(&metadata, site.Participant) || !take(&metadata, len(site.Node.Tree)) {
+			return ErrLimit
+		}
 		if !a.Contains(site) {
 			return ErrInvalid
 		}

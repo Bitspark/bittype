@@ -304,7 +304,7 @@ func bindPage(t *testing.T, s h.Model, g n.Model) (pagination, error) {
 }
 
 func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
-	s := sourceModel(t, sourcePage)
+	s := sourceModel(t, sourcePage+" type PeoplePage = Page<Person>; type NestedPage = Page<Page<Person>>;")
 	ctx := context.Background()
 	from := s.Snapshot().Language()
 	a, err := analysis.NewAnalyzer[hs.Language](from, analyze.Contract(), hp.Provider{})
@@ -340,6 +340,7 @@ func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !native(t, g, "NestedPage").IsAlias() { t.Fatal("missing actual nested Go instantiation") }
 	p, err := bindPage(t, s, g)
 	if err != nil {
 		t.Fatal(err)
@@ -430,6 +431,16 @@ func TestPageClosedTheoremAndNestedReuse(t *testing.T) {
 		if invalid.Outcome().Status() != typed.InvalidStatus {
 			t.Fatal("membership alone supplied representation", invalid.Outcome().Status())
 		}
+	}
+	application, err := p.family.Application(theorem, p.argument, 2)
+	if err != nil { t.Fatal(err) }
+	dependencies := slices.DeleteFunc(v.MappingDependencies(), func(dependency string) bool { return dependency == v.OptionalLaw })
+	limits := v.DefaultLimits()
+	limits.Checker.Work = 20000000
+	restricted := composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: dependencies}, limits)
+	refused := checkClaim(t, restricted, application, p.argument.Candidate(2))
+	if refused.Outcome().Status() != typed.UnsupportedStatus || refused.Outcome().Code() != typed.UnadmittedDependency {
+		t.Fatal("reused theorem bypassed the current receiver policy", refused.Outcome().Status(), refused.Outcome().Code())
 	}
 }
 
