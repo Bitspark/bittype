@@ -56,5 +56,10 @@ type Source[F any] interface {
 	RootEnvironment() Environment[F]
 	Authenticate(context.Context, References[F]) error
 	Open(context.Context, Declaration[F]) (OpenData[F], error)
+	// Admit establishes the whole use's applicability under its original
+	// assumptions using supplied evidence, including actuals the mapping may
+	// never represent. Authenticate only checks record ownership/existence.
+	// Use identifies the occurrence; Subject is the source-certified effective
+	// subject. Missing evidence must fail, never trigger hidden analysis.
 	Admit(context.Context, Environment[F], Use[F]) (UseData[F], error)
 }

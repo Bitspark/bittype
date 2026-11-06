@@ -99,7 +99,9 @@ type Plan[F, T any] struct {
 	Convention Convention[F, T]
 	Associations Associations[F, T]
 	Acquire func(context.Context, Site[F, T]) (Destination[T], bool, error)
-	Nullary func(context.Context, Site[F, T], Destination[T]) (Layout[T], error)
+	// Header supplies the layout without a source generic convention. Source
+	// binders must be empty; a native-only helper may have explicit native formals.
+	Header func(context.Context, Site[F, T], Destination[T]) (Layout[T], error)
 }
 
 type Config[F, T any] struct {

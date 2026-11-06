@@ -184,6 +184,7 @@ func (s *Session[F, T]) Finish() (representation.ASTSet, error) {
 	output, err := s.native.Assemble(s.ctx, slices.Clone(s.publications), slices.Clone(s.definitions), s.limits)
 	if err != nil { return representation.ASTSet{}, s.fail(err) }
 	if err := s.check(); err != nil { return representation.ASTSet{}, err }
+	if len(output.Trees) == 0 || len(output.Trees) > 256 { return representation.ASTSet{}, s.fail(ErrInvalid) }
 	nodes, bytes := 0, 0
 	for _, envelope := range output.Trees {
 		info, err := envelope.Inspect(); if err != nil { return representation.ASTSet{}, s.fail(err) }

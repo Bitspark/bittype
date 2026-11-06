@@ -58,8 +58,8 @@ func (s *Session[F, T]) acquire(p *planState[F, T]) (Callee[F, T], error) {
 		if !introOp.completed || !intro.Valid() || intro.state.ticket != introOp.ticket || intro.state.callee != c || !c.layout.Valid() { return Callee[F, T]{}, s.fail(ErrInvalid) }
 		c.formals = intro.state.formals
 	} else {
-		if len(c.open.Formals) != 0 || p.value.Nullary == nil { return Callee[F, T]{}, s.fail(ErrUnsupported) }
-		h, err := p.value.Nullary(s.ctx, site, z)
+		if len(c.open.Formals) != 0 || p.value.Header == nil { return Callee[F, T]{}, s.fail(ErrUnsupported) }
+		h, err := p.value.Header(s.ctx, site, z)
 		if err != nil { return Callee[F, T]{}, s.fail(err) }
 		if err := o.check(); err != nil { return Callee[F, T]{}, err }
 		if !h.Valid() { return Callee[F, T]{}, s.fail(ErrInvalid) }

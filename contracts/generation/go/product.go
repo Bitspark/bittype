@@ -4,7 +4,8 @@ import "github.com/Bitspark/bittype/trees/representation/go"
 
 func (s *Session[F, T]) accept(o *operation[F, T], want Want[F, T], token Token[F, T]) (Product[F, T], error) {
 	if err := o.check(); err != nil { return Product[F, T]{}, err }
-	if !token.Valid() || !want.Valid() || want.site.operation != o || representation.IsNil(o.plan.value.Associations) { return Product[F, T]{}, s.fail(ErrInvalid) }
+	if !token.Valid() || !want.Valid() || want.site.operation != o { return Product[F, T]{}, s.fail(ErrInvalid) }
+	if representation.IsNil(o.plan.value.Associations) { return Product[F, T]{}, s.fail(ErrUnsupported) }
 	if err := s.step(); err != nil { return Product[F, T]{}, err }
 	captured, err := o.plan.value.Associations.Capture(s.ctx, want, token)
 	if err != nil { return Product[F, T]{}, s.fail(err) }
