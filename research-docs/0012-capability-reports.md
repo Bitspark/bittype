@@ -2,7 +2,8 @@
 
 **ID:** 0012
 **Date:** 6 November 2026
-**Status:** submitted
+**Status:** delivering
+**Graded:** https://github.com/Bitspark/bittype/pull/126#issuecomment-6689094045
 **Run-ID:** run_43b89675-3878-47ea-93fd-2452942f7f4d
 **Reviewed:** https://github.com/Bitspark/bittype/pull/126#issuecomment-6688471895
 **Owner:** codex-bittype-rust-syntax
@@ -555,3 +556,51 @@ architectural violations documented independently. Making those all one scalar
 5. What have we missed? Recommend a conceptually sound, appropriately bounded
    implementation sequence and meaningful counterexamples/tests, including any
    changes you think the documented proposal itself needs before implementation.
+
+## Applied
+
+Evaluation is against Bittype `902121e4581a10914923a359c329fb4af1176025`,
+which merges the owner's architecture rules into the submitted code baseline.
+Attempt 1 submitted 29,532 bytes, SHA-256
+`96ebf4613f685c0975d49def09f9d45dc2d1f51d5d6bf3e82b0c50aae954494b`,
+to run `run_43b89675-3878-47ea-93fd-2452942f7f4d`. The local frozen input
+still matches. Nightfall completed and verified the local advice against its
+stored result, SHA-256
+`80556cec8f7ef1351df5b2d3583b0ff7c3c2e93687a4742fdabbd955d07f11ec`.
+The living document differed from the submitted input only in lifecycle metadata.
+The raw advice's sandbox link is not needed: its substantive answer is present.
+
+The research owner evaluated the complete answer, with independent source-bound
+reviews of discovery/source access, grammar interpretation, and CI observations.
+The advice confirms the existing direction; these refinements are part of the
+authorized implementation, not a new runtime or semantic-model task.
+
+| # | Recommendation | Verdict | Action | Owner | Link | Validation |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Keep identity, authored scope, structural facts, cases, execution and applicability separate | HOLDS | Use separate records and report sections; no percentage, support score or architecture verdict | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Report tests distinguish absent associations, unknown extraction and absent observations |
+| 2 | Definition-centered extractor; host retains provider/profile/test authority | HOLDS | Public tooling contract takes only definition/source/limits; validate and associate output in the host | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Invalid selectors/results and foreign spans fail; no destination IDs in extractor output |
+| 3 | Field-level knowledge and namespaced features | HOLDS | Preserve known/unknown/unconstrained/opaque fields, root/format/key identity and unresolved entries | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Custom predicates, undecodable kinds/map keys and duplicate-root cases |
+| 4 | Immutable source strings and narrow existing Go fact queries | HOLDS | Extractors parse private copies; source views return copied records, physical spans and canonical symbols; no mutable compiler objects | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Span/selection/alias/constant tests and independent extractor fixture |
+| 5 | Exact owning helper identities, static interpretation only | HOLDS | Grammar extractor recognizes its owned types/helpers; new defined lookalikes do not match; unsupported expressions stay explicit | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Unrelated Rules/One, aliases, opaque functions, cycles and partial roles |
+| 6 | Public composable host plus materially different extractor | HOLDS | Move the host out of package main; command composes grammar extractor; independent struct-format fixture uses the same public runner | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | External-package fixture supplies struct-field schema without host/renderer changes |
+| 7 | End-to-end resource guarantees, not extractor-only budgets | NEEDS ADAPTATION | Bound loading/output/source/records/queries/traversal and use cancellation plus the existing remote job deadline. Trusted in-process code is not a hard CPU/memory sandbox | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Oversized input/output and traversal failures; document non-preemptible Go checker/extractor limit |
+| 8 | Retain canonical contribution identities and static wrapper relationships | HOLDS | Keep contract arguments, operation/receiver and marker/endpoints before rendering; wrapper navigation never transfers observations | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Existing availability/factory tests plus rewriting wrapper, generic ambiguity and stable-anchor tests |
+| 9 | Isolated test-declaration index and exact event-name join | HOLDS | Parse active TestGoFiles/XTestGoFiles without interpreting bodies or admitting test-only implementations; duplicate runner names remain ambiguous | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | External test aliases, invalid signatures, test-only providers and duplicate TestFoo |
+| 10 | Strict raw-comment directives and owner-defined expectations | NEEDS ADAPTATION | Keep existing dimension attachment rules; add standalone grammar/scope/case parser, nonempty authored expects labels and safe module-root Markdown fragments | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Unknown/repeated keys, quoted labels, fences, wrong attachments, symlink/path escapes and fragment tests |
+| 11 | Stable injective anchors and explicit inspection build context | HOLDS | Encode canonical tuples without hashes; omit timestamps/HEAD from committed reports; distinguish absent profile from any string | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Reordered discovery and documentation-only revision produce stable output; profile collision tests |
+| 12 | Observe executions first; preserve Go JSON protocol and failures | HOLDS | Import named events, build events, subtests, occurrence/selection, stderr, completion and process exit; never infer from Output text or package pass | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Skip, repeat, incomplete, malformed stream, early pass then failure, build failure and filter tests |
+| 13 | Explicit applicable invocation context and authored profiles | NEEDS ADAPTATION | Capture existing checked HEAD and allowlisted configuration, disclose preparation changes, keep independent consumer harness separate. Match exact declared context; do not observe profile selection from test JSON | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Revision/module/replacement/context mismatch tests; distinct native and installed-consumer reports |
+| 14 | Commit static reports; publish observations per CI invocation | HOLDS | Extend existing Go jobs with JSON capture and artifacts, preserving test selections/failures. Static page links to the existing workflow, never mutable latest-pass assertions | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Exact-revision remote runs show contracts/native differences and retain failures |
+| 15 | Validate/render both documents before publication; useful current rollout | HOLDS | Every discovered contribution gets details; annotate all current provider scopes/native grammars and useful current tests. Extend existing updater's generated-file set together | research owner | [PR126](https://github.com/Bitspark/bittype/pull/126) | Both-matrix detail regression, write-failure/no-publication tests and remote generated artifacts |
+| 16 | Stronger isolation, cross-module source loading and dynamic-case precision when required | DEFERRED | Add worker-process isolation if untrusted extractors become a supported input; add explicit external source selections when a consumer needs dependency annotations; add definition/subtest qualifiers only with an ambiguous real use case. Current missing evidence stays explicit | research owner | — | Trigger is a supported consumer requiring those capabilities, not an undocumented promise |
+
+Source discovery remains explicitly rooted in one selected module using the
+existing Bittype repository layout. Making the tooling runner importable does
+not imply arbitrary multi-module provider discovery. An external consumer can
+compose extractors over that runner's selected source snapshot. Export-only
+dependencies do not become ambient source/document inputs.
+
+No new existing architectural violation was established by this review. The
+separately tracked ACX-001 verification-composition defect remains outside this
+task. The reporting extension must meet AC-02 through AC-05 from its first slice;
+report facts and tests remain qualified under AC-07.
