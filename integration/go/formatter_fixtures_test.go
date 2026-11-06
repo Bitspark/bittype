@@ -270,13 +270,14 @@ func TestNativeCompilerFixtures(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(dir, "independent_associated.rs"), []byte(formatted(t, rustprovider.Provider{}, rustAssociatedFixture())), 0600); err != nil {
 			t.Fatal(err)
 		}
-		// This external trait's generic associated declaration is outside the
-		// parser subset. Its uses still have structured, compiler-checked syntax.
-		uses, err := (rustprovider.Provider{}).Parse(context.Background(), parse.Input{SourceID: "associated-use", TreeID: "associated-use", Text: "pub type Applied<T: Family> = <T as Family>::Item<u8>; pub trait Selected: Family<Item<u8> = u16> {}"})
+		if err := os.WriteFile(filepath.Join(dir, "independent_declarations.rs"), []byte(formatted(t, rustprovider.Provider{}, rustDeclarationsFixture())), 0600); err != nil {
+			t.Fatal(err)
+		}
+		uses, err := (rustprovider.Provider{}).Parse(context.Background(), parse.Input{SourceID: "associated-use", TreeID: "associated-use", Text: "pub trait Family { type Item<T>; } pub type Applied<T: Family> = <T as Family>::Item<u8>; pub trait Selected: Family<Item<u8> = u16> {}"})
 		if err != nil {
 			t.Fatal(err)
 		}
-		genericUse := "pub trait Family { type Item<T>; }\n" + formatted(t, rustprovider.Provider{}, uses.Abstract)
+		genericUse := formatted(t, rustprovider.Provider{}, uses.Abstract)
 		if err := os.WriteFile(filepath.Join(dir, "generic_associated_use.rs"), []byte(genericUse), 0600); err != nil {
 			t.Fatal(err)
 		}
