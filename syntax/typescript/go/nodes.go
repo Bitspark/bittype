@@ -94,16 +94,16 @@ const (
 
 // Attribute names. Text is an identifier, literal token or documented atom, never raw source.
 const (
-	AttributeName        = "name"
-	AttributeModule      = "module"
-	AttributeAlias       = "alias"
-	AttributeExported    = "exported"
-	AttributeOptional    = "optional"
-	AttributeReadonly    = "readonly"
-	AttributeRest        = "rest"
-	AttributeLiteralKind = "literal-kind"
-	AttributeText        = "text"
-	AttributeOperator    = "operator"
+	AttributeName             = "name"
+	AttributeModule           = "module"
+	AttributeAlias            = "alias"
+	AttributeExported         = "exported"
+	AttributeOptional         = "optional"
+	AttributeReadonly         = "readonly"
+	AttributeRest             = "rest"
+	AttributeLiteralKind      = "literal-kind"
+	AttributeText             = "text"
+	AttributeOperator         = "operator"
 	AttributeReadonlyModifier = "readonly-modifier"
 	AttributeOptionalModifier = "optional-modifier"
 )

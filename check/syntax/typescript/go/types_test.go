@@ -38,7 +38,9 @@ func TestConditionalMappedAdmission(t *testing.T) {
 
 func TestInvalidConditionalMappedShapes(t *testing.T) {
 	cases := map[string]func(*ast.AST[s.Language], map[string]ast.NodeID){
-		"conditional branch role": func(a *ast.AST[s.Language], ids map[string]ast.NodeID) { a.Nodes[ids["conditional"]-1].Children[3].Role = "result" },
+		"conditional branch role": func(a *ast.AST[s.Language], ids map[string]ast.NodeID) {
+			a.Nodes[ids["conditional"]-1].Children[3].Role = "result"
+		},
 		"conditional role order": func(a *ast.AST[s.Language], ids map[string]ast.NodeID) {
 			children := a.Nodes[ids["conditional"]-1].Children
 			children[2], children[3] = children[3], children[2]
@@ -62,8 +64,12 @@ func TestInvalidConditionalMappedShapes(t *testing.T) {
 			a.Nodes[nameType-1].Children = []ast.Child{tr.Child("type", children[0].Node)}
 			a.Nodes[id-1].Children = nil
 		},
-		"invalid modifier": func(a *ast.AST[s.Language], ids map[string]ast.NodeID) { a.Nodes[ids["mapped"]-1].Attributes[0].Text = "false" },
-		"mapped cannot have members": func(a *ast.AST[s.Language], ids map[string]ast.NodeID) { a.Nodes[ids["mapped"]-1].Children[2].Role = "member" },
+		"invalid modifier": func(a *ast.AST[s.Language], ids map[string]ast.NodeID) {
+			a.Nodes[ids["mapped"]-1].Attributes[0].Text = "false"
+		},
+		"mapped cannot have members": func(a *ast.AST[s.Language], ids map[string]ast.NodeID) {
+			a.Nodes[ids["mapped"]-1].Children[2].Role = "member"
+		},
 	}
 	for _, key := range []string{"parameter", "inferred-parameter"} {
 		cases["no default on "+key] = func(a *ast.AST[s.Language], ids map[string]ast.NodeID) {
