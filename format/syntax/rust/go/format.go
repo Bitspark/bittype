@@ -225,6 +225,28 @@ func (f formatter) element(id ast.NodeID) doc {
 	}
 	return d
 }
+func (f formatter) pathSegment(id ast.NodeID) doc {
+	parts := []doc{f.T(f.Attr(id, "name"))}
+	var args []doc
+	for _, arg := range f.Children(id, "argument") {
+		if f.Kind(arg) == "associated-type-binding" {
+			args = append(args, f.Group(arg, f.pathSegment(f.Child(arg, "path")), f.Space(), f.T("="), f.Space(), f.typ(f.Child(arg, "type"))))
+		} else {
+			args = append(args, f.typ(arg))
+		}
+	}
+	if len(args) > 0 {
+		parts = append(parts, f.T("<"), f.Join(args, f.T(","), f.Space()), f.T(">"))
+	}
+	return f.Group(id, parts...)
+}
+func (f formatter) pathSegments(id ast.NodeID) doc {
+	var parts []doc
+	for _, seg := range f.Children(id, "segment") {
+		parts = append(parts, f.pathSegment(seg))
+	}
+	return f.Join(parts, f.T("::"))
+}
 func (f formatter) typ(id ast.NodeID) doc {
 	var parts []doc
 	switch f.Kind(id) {
@@ -236,20 +258,13 @@ func (f formatter) typ(id ast.NodeID) doc {
 		if f.Flag(id, "absolute") {
 			parts = append(parts, f.T("::"))
 		}
-		var segments []doc
-		for _, seg := range f.Children(id, "segment") {
-			p := []doc{f.T(f.Attr(seg, "name"))}
-			args := f.Children(seg, "argument")
-			if len(args) > 0 {
-				var docs []doc
-				for _, a := range args {
-					docs = append(docs, f.typ(a))
-				}
-				p = append(p, f.T("<"), f.Join(docs, f.T(","), f.Space()), f.T(">"))
-			}
-			segments = append(segments, f.Group(seg, p...))
+		parts = append(parts, f.pathSegments(id))
+	case "qualified-path-type":
+		parts = append(parts, f.T("<"), f.typ(f.Child(id, "subject")))
+		if trait := f.Child(id, "trait"); trait != 0 {
+			parts = append(parts, f.Space(), f.T("as"), f.Space(), f.typ(trait))
 		}
-		parts = append(parts, f.Join(segments, f.T("::")))
+		parts = append(parts, f.T(">"), f.T("::"), f.pathSegments(id))
 	case "reference-type":
 		parts = append(parts, f.T("&"))
 		if l := f.Child(id, "lifetime"); l != 0 {

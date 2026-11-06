@@ -12,7 +12,7 @@ import (
 
 func identifier(v string) bool { return native.Identifier(v) }
 
-var types = []string{"path-type", "primitive-type", "reference-type", "raw-pointer-type", "slice-type", "array-type", "tuple-type", "never-type", "function-type", "trait-object-type"}
+var types = []string{"path-type", "qualified-path-type", "primitive-type", "reference-type", "raw-pointer-type", "slice-type", "array-type", "tuple-type", "never-type", "function-type", "trait-object-type"}
 var bounds = []string{"path-type", "lifetime-reference"}
 var generics = []string{"type-parameter", "lifetime-parameter"}
 var items = []string{"module", "use", "type-alias", "struct", "tuple-struct", "enum", "trait"}
@@ -28,38 +28,40 @@ func prefix() []g.Role {
 func with(rs []g.Role, more ...g.Role) []g.Role { return append(rs, more...) }
 
 var rules = g.Rules{
-	"file":               {Roles: []g.Role{g.Many("item", 0, items...)}},
-	"module":             {Attributes: named(), Roles: []g.Role{g.Many("item", 0, items...)}},
-	"use":                {Attributes: g.Attributes("alias", g.Attr(false, identifier)), Roles: []g.Role{g.One("path", "path-type")}},
-	"type-alias":         {Attributes: named(), Roles: with(prefix(), g.One("type", types...))},
-	"struct":             {Attributes: named(), Roles: with(prefix(), g.Many("field", 0, "field"))},
-	"tuple-struct":       {Attributes: named(), Roles: with(prefix(), g.Many("field", 0, "tuple-field"))},
-	"enum":               {Attributes: named(), Roles: with(prefix(), g.Many("variant", 0, "unit-variant", "tuple-variant", "record-variant"))},
-	"unit-variant":       {Attributes: g.Attributes("name", g.Attr(true, native.Declaration))},
-	"tuple-variant":      {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("field", 0, "tuple-field")}},
-	"record-variant":     {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("field", 0, "field")}},
-	"field":              {Attributes: named(), Roles: []g.Role{g.One("type", types...)}},
-	"tuple-field":        {Attributes: g.Attributes("visibility", g.Attr(false, visibility)), Roles: []g.Role{g.One("type", types...)}},
-	"trait":              {Attributes: named(), Roles: []g.Role{g.Many("generic-parameter", 0, generics...), g.Many("bound", 0, bounds...), g.Many("where", 0, "where-predicate"), g.Many("member", 0, "method-signature", "associated-type")}},
-	"associated-type":    {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("bound", 0, bounds...)}},
-	"method-signature":   {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: with(prefix(), g.Opt("receiver", "receiver"), g.Many("parameter", 0, "parameter"), g.Opt("result", types...))},
-	"receiver":           {Attributes: g.Attributes("receiver-form", g.Attr(true, g.Set("value", "shared", "mutable"))), Roles: []g.Role{g.Opt("lifetime", "lifetime-reference")}},
-	"parameter":          {Attributes: g.Attributes("name", g.Attr(false, identifier)), Roles: []g.Role{g.One("type", types...)}},
-	"type-parameter":     {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("bound", 0, bounds...), g.Opt("default", types...)}},
-	"lifetime-parameter": {Attributes: g.Attributes("name", g.Attr(true, native.LifetimeParameter)), Roles: []g.Role{g.Many("bound", 0, "lifetime-reference")}},
-	"lifetime-reference": {Attributes: g.Attributes("name", g.Attr(true, native.LifetimeReference)), Reference: true},
-	"where-predicate":    {Roles: []g.Role{g.One("subject", append(types, "lifetime-reference")...), g.Many("bound", 1, bounds...)}},
-	"path-type":          {Attributes: g.Attributes("absolute", g.Attr(false, g.Bool)), Roles: []g.Role{g.Many("segment", 1, "path-segment")}},
-	"path-segment":       {Attributes: g.Attributes("name", g.Attr(true, native.PathSegment)), Roles: []g.Role{g.Many("argument", 0, append(types, "lifetime-reference")...)}, Reference: true},
-	"primitive-type":     {Attributes: g.Attributes("name", g.Attr(true, primitive))},
-	"reference-type":     {Attributes: g.Attributes("mutable", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("element", types...), g.Opt("lifetime", "lifetime-reference")}},
-	"raw-pointer-type":   {Attributes: g.Attributes("mutable", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("element", types...)}},
-	"slice-type":         {Roles: []g.Role{g.One("element", types...)}},
-	"array-type":         {Attributes: g.Attributes("length", g.Attr(true, g.Decimal)), Roles: []g.Role{g.One("element", types...)}},
-	"tuple-type":         {Roles: []g.Role{g.Many("element", 0, types...)}},
-	"never-type":         {},
-	"function-type":      {Attributes: g.Attributes("unsafe", g.Attr(false, g.Bool), "abi", g.Attr(false, native.ABI)), Roles: []g.Role{g.Many("parameter", 0, "parameter"), g.Opt("result", types...)}},
-	"trait-object-type":  {Roles: []g.Role{g.Many("bound", 1, bounds...)}},
+	"file":                    {Roles: []g.Role{g.Many("item", 0, items...)}},
+	"module":                  {Attributes: named(), Roles: []g.Role{g.Many("item", 0, items...)}},
+	"use":                     {Attributes: g.Attributes("alias", g.Attr(false, identifier)), Roles: []g.Role{g.One("path", "path-type")}},
+	"type-alias":              {Attributes: named(), Roles: with(prefix(), g.One("type", types...))},
+	"struct":                  {Attributes: named(), Roles: with(prefix(), g.Many("field", 0, "field"))},
+	"tuple-struct":            {Attributes: named(), Roles: with(prefix(), g.Many("field", 0, "tuple-field"))},
+	"enum":                    {Attributes: named(), Roles: with(prefix(), g.Many("variant", 0, "unit-variant", "tuple-variant", "record-variant"))},
+	"unit-variant":            {Attributes: g.Attributes("name", g.Attr(true, native.Declaration))},
+	"tuple-variant":           {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("field", 0, "tuple-field")}},
+	"record-variant":          {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("field", 0, "field")}},
+	"field":                   {Attributes: named(), Roles: []g.Role{g.One("type", types...)}},
+	"tuple-field":             {Attributes: g.Attributes("visibility", g.Attr(false, visibility)), Roles: []g.Role{g.One("type", types...)}},
+	"trait":                   {Attributes: named(), Roles: []g.Role{g.Many("generic-parameter", 0, generics...), g.Many("bound", 0, bounds...), g.Many("where", 0, "where-predicate"), g.Many("member", 0, "method-signature", "associated-type")}},
+	"associated-type":         {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("bound", 0, bounds...)}},
+	"method-signature":        {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: with(prefix(), g.Opt("receiver", "receiver"), g.Many("parameter", 0, "parameter"), g.Opt("result", types...))},
+	"receiver":                {Attributes: g.Attributes("receiver-form", g.Attr(true, g.Set("value", "shared", "mutable"))), Roles: []g.Role{g.Opt("lifetime", "lifetime-reference")}},
+	"parameter":               {Attributes: g.Attributes("name", g.Attr(false, identifier)), Roles: []g.Role{g.One("type", types...)}},
+	"type-parameter":          {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("bound", 0, bounds...), g.Opt("default", types...)}},
+	"lifetime-parameter":      {Attributes: g.Attributes("name", g.Attr(true, native.LifetimeParameter)), Roles: []g.Role{g.Many("bound", 0, "lifetime-reference")}},
+	"lifetime-reference":      {Attributes: g.Attributes("name", g.Attr(true, native.LifetimeReference)), Reference: true},
+	"where-predicate":         {Roles: []g.Role{g.One("subject", append(types, "lifetime-reference")...), g.Many("bound", 1, bounds...)}},
+	"path-type":               {Attributes: g.Attributes("absolute", g.Attr(false, g.Bool)), Roles: []g.Role{g.Many("segment", 1, "path-segment")}},
+	"qualified-path-type":     {Roles: []g.Role{g.One("subject", types...), g.Opt("trait", "path-type"), g.Many("segment", 1, "path-segment")}},
+	"path-segment":            {Attributes: g.Attributes("name", g.Attr(true, native.PathSegment)), Roles: []g.Role{g.Many("argument", 0, append(types, "lifetime-reference", "associated-type-binding")...)}, Reference: true},
+	"associated-type-binding": {Roles: []g.Role{g.One("path", "path-segment"), g.One("type", types...)}},
+	"primitive-type":          {Attributes: g.Attributes("name", g.Attr(true, primitive))},
+	"reference-type":          {Attributes: g.Attributes("mutable", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("element", types...), g.Opt("lifetime", "lifetime-reference")}},
+	"raw-pointer-type":        {Attributes: g.Attributes("mutable", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("element", types...)}},
+	"slice-type":              {Roles: []g.Role{g.One("element", types...)}},
+	"array-type":              {Attributes: g.Attributes("length", g.Attr(true, g.Decimal)), Roles: []g.Role{g.One("element", types...)}},
+	"tuple-type":              {Roles: []g.Role{g.Many("element", 0, types...)}},
+	"never-type":              {},
+	"function-type":           {Attributes: g.Attributes("unsafe", g.Attr(false, g.Bool), "abi", g.Attr(false, native.ABI)), Roles: []g.Role{g.Many("parameter", 0, "parameter"), g.Opt("result", types...)}},
+	"trait-object-type":       {Roles: []g.Role{g.Many("bound", 1, bounds...)}},
 }
 
 func Check(view ast.View[s.Language]) error {
@@ -72,7 +74,7 @@ func Check(view ast.View[s.Language]) error {
 		id := ast.NodeID(i + 1)
 		bad := func(m string) error { return text.AtNode(t, id, m) }
 		for _, child := range n.Children {
-			if v.Kind(child.Node) != "path-type" || child.Role == "bound" || n.Kind == s.KindUse {
+			if v.Kind(child.Node) != "path-type" || child.Role == "bound" || child.Role == "trait" || n.Kind == s.KindUse {
 				continue
 			}
 			segments := v.Children(child.Node, "segment")
@@ -89,6 +91,27 @@ func Check(view ast.View[s.Language]) error {
 			}
 		}
 		switch n.Kind {
+		case s.KindPathSegment:
+			seenType, seenBinding := false, false
+			for _, arg := range v.Children(id, "argument") {
+				switch v.Kind(arg) {
+				case "lifetime-reference":
+					if seenType || seenBinding {
+						return text.AtNode(t, arg, "lifetime arguments must precede type arguments and associated-type bindings")
+					}
+				case "associated-type-binding":
+					seenBinding = true
+				default:
+					if seenBinding {
+						return text.AtNode(t, arg, "type arguments must precede associated-type bindings")
+					}
+					seenType = true
+				}
+			}
+		case s.KindAssociatedTypeBinding:
+			if !native.Declaration(v.Attr(v.Child(id, "path"), "name")) {
+				return bad("associated-type binding requires an unqualified associated name")
+			}
 		case s.KindUse:
 			for _, seg := range v.Children(v.Child(id, "path"), "segment") {
 				if len(v.Children(seg, "argument")) > 0 {

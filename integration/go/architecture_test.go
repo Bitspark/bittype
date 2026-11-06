@@ -86,11 +86,13 @@ func TestLanguageStageMatrix(t *testing.T) {
 		qualified[fixture.directory] = true
 		profiles[fixture.directory] = nativeStages
 	}
+	semanticQualified := map[string]bool{}
 	for _, fixture := range semanticConformanceCases() {
-		if qualified[fixture.directory] || fixture.qualify == nil {
+		if semanticQualified[fixture.directory] || fixture.qualify == nil {
 			t.Fatalf("duplicate or unqualified semantic/text fixture: %s", fixture.directory)
 		}
 		qualified[fixture.directory] = true
+		semanticQualified[fixture.directory] = true
 		profiles[fixture.directory] = []string{"syntax", "parse/syntax", "resolve/files", "check/syntax", "analyze/files", "format/syntax", "provider"}
 	}
 	for _, name := range languages {
@@ -210,8 +212,12 @@ func TestProductionArchitecture(t *testing.T) {
 	// Verification projections are explicit concrete compositions, not registered
 	// language stages. The agnostic association above never imports their models.
 	rules["verification/files/source/horos/go"] = []string{"contracts/semantic/go", "contracts/resolution/go", "internal/horosmodel", "resolve/files/horos/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
-	rules["verification/files/target/golang/go"] = []string{"contracts/semantic/go", "semantics/go", "syntax/golang/go", "trees/ast/go", "trees/representation/go"}
-	rules["verification/files/horos-to-go/go"] = []string{"contracts/semantic/go", "contracts/verification/go", "semantics/go", "trees/ast/go", "verification/files/source/horos/go", "verification/files/target/golang/go"}
+	rules["semantics/golang/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "syntax/golang/go", "trees/ast/go", "trees/representation/go"}
+	rules["internal/golangsem"] = []string{"contracts/semantic/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/ast/go"}
+	rules["resolve/files/golang/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "semantics/go", "semantics/golang/go", "syntax/golang/go"}
+	rules["analyze/files/golang/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "resolve/files/golang/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/representation/go"}
+	rules["provider/golang/go"] = append(rules["provider/golang/go"], "contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "analyze/files/golang/go", "resolve/files/golang/go")
+	rules["verification/files/horos-to-go/go"] = []string{"contracts/semantic/go", "contracts/verification/go", "semantics/go", "trees/ast/go", "verification/files/source/horos/go", "semantics/golang/go", "analyze/files/golang/go"}
 	for path, p := range packages {
 		if p.Standard || path == modulePath+"/integration/go" || path == modulePath+"/verification/integration/go" {
 			continue

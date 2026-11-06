@@ -340,39 +340,93 @@ func (p *parser) method() ast.NodeID {
 func (p *parser) path() ast.NodeID {
 	start := p.Token().Start
 	absolute := p.Eat("::")
-	var children []ast.Child
-	for p.Err == nil {
-		begin := p.Token().Start
-		name := p.Ident()
-		var args []ast.Child
-		if p.Eat("<") {
-			for p.Err == nil && !p.EOF() && p.Peek() != ">" {
-				var arg ast.NodeID
-				if p.Token().Class == "lifetime" {
-					arg = p.lifetime()
-				} else {
-					arg = p.typ()
-				}
-				args = append(args, tr.Child("argument", arg))
-				if !p.Eat(",") {
-					break
-				}
-			}
-			p.Want(">")
-			if len(args) == 0 {
-				p.Fail(text.SyntaxError, "empty generic arguments")
-			}
-		}
-		children = append(children, tr.Child("segment", p.Add(s.KindPathSegment, begin, tr.Attrs("name", name), args...)))
-		if !p.Eat("::") {
-			break
-		}
-	}
+	children := p.pathSegments()
 	var attrs []ast.Attribute
 	if absolute {
 		attrs = tr.Attrs("absolute", "true")
 	}
 	return p.Add(s.KindPathType, start, attrs, children...)
+}
+func (p *parser) pathSegments() []ast.Child {
+	var children []ast.Child
+	for p.Err == nil {
+		begin := p.Token().Start
+		name := p.Ident()
+		if p.Peek() == "::" && p.At(1) == "<" {
+			p.Take() // Optional turbofish separator in a type path.
+		}
+		args := p.arguments()
+		children = append(children, tr.Child("segment", p.Add(s.KindPathSegment, begin, tr.Attrs("name", name), args...)))
+		if !p.Eat("::") {
+			break
+		}
+	}
+	return children
+}
+func (p *parser) arguments() []ast.Child {
+	if !p.Eat("<") {
+		return nil
+	}
+	var args []ast.Child
+	for p.Err == nil && !p.EOF() && p.Peek() != ">" {
+		start := p.Token().Start
+		bindingName := p.Token().Class == "identifier" && native.Declaration(p.Peek())
+		var arg ast.NodeID
+		if p.Token().Class == "lifetime" {
+			arg = p.lifetime()
+		} else {
+			arg = p.typ()
+		}
+		if p.Err != nil {
+			break
+		}
+		if p.Eat("=") {
+			if !bindingName {
+				p.Fail(text.SyntaxError, "associated-type binding requires one unqualified name")
+				break
+			}
+			// A binding's left side is exactly one TypePathSegment, which
+			// retains its own arguments and origin. Compact drops the wrapper.
+			n := p.Tree.Nodes[arg-1]
+			var name ast.NodeID
+			v := tr.View[s.Language]{Tree: p.Tree}
+			if n.Kind == s.KindPrimitiveType {
+				// Primitive spellings are also legal associated identifiers.
+				p.Tree.Nodes[arg-1].Kind = s.KindPathSegment
+				name = arg
+			} else if n.Kind == s.KindPathType && !v.Flag(arg, "absolute") && len(n.Children) == 1 {
+				name = n.Children[0].Node
+			} else {
+				p.Fail(text.SyntaxError, "associated-type binding requires one unqualified name")
+				break
+			}
+			value := p.typ()
+			arg = p.Add(s.KindAssociatedTypeBinding, start, nil, tr.Child("path", name), tr.Child("type", value))
+		} else if p.Peek() == ":" {
+			p.Fail(text.Unsupported, "associated-type bounds are unsupported; expected an equality binding")
+		}
+		args = append(args, tr.Child("argument", arg))
+		if !p.Eat(",") {
+			break
+		}
+	}
+	p.Want(">")
+	if len(args) == 0 {
+		p.Fail(text.SyntaxError, "empty generic arguments")
+	}
+	return args
+}
+func (p *parser) qualifiedPath() ast.NodeID {
+	start := p.Token().Start
+	p.Want("<")
+	children := []ast.Child{tr.Child("subject", p.typ())}
+	if p.Eat("as") {
+		children = append(children, tr.Child("trait", p.path()))
+	}
+	p.Want(">")
+	p.Want("::")
+	children = append(children, p.pathSegments()...)
+	return p.Add(s.KindQualifiedPathType, start, nil, children...)
 }
 func (p *parser) typ() ast.NodeID {
 	if !p.Enter() {
@@ -381,6 +435,8 @@ func (p *parser) typ() ast.NodeID {
 	defer p.Leave()
 	start := p.Token().Start
 	switch p.Peek() {
+	case "<":
+		return p.qualifiedPath()
 	case "&":
 		p.Take()
 		var children []ast.Child

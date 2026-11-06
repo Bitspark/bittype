@@ -37,7 +37,7 @@ implement the broader Logos semantic-package roadmap.
 | Logos typed foundation and replay at the original inspection | Test-private Rust experiment | Historical basis for the narrow check-only implementation below |
 | Logos typed check-only follow-up | Go, Rust and TypeScript implementation landed in PR 3881 | Concrete statement/evidence/checking API used by the scoped Bittype integration |
 | Bittype semantic infrastructure | Implemented captured requests/results, provider-owned facts and explicit transformation inputs | Supplies artifact association, not a logical foundation or proof of every stored fact |
-| Language semantics | Horos resolution/analysis implemented; scoped Go projection in the joint integration | General native analysis providers remain deferred; native text support alone supplies no semantic judgment |
+| Language semantics | Horos and bounded Go resolution/analysis implemented | Go uses the [native provider contract](native-semantics.md); broader Go coverage and the other native analyzers remain deferred |
 | Cross-language verification | Scoped Horos/Go implementation | Actual projections, selected static mapping laws and joint association for TextBox/Page; other language theories and native enforcement remain proposed |
 
 The public Horos [history boundary](https://github.com/Bitspark/horos/blob/ad7c6f493d726a82e445875d42af319adce0e3ce/README.md#history-and-license)

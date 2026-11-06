@@ -11,7 +11,7 @@ levels: Syntax/CST/AST and Files/Source/Semantics. Files parsing explicitly
 composes per-file Syntax parsing with resolution/analysis and publishes Source
 only with established Semantics. No parser opens files or concatenates a project
 into one text. The Files stages and multi-file Horos resolution are implemented;
-native semantic providers remain unimplemented.
+Go has [bounded native semantic providers](native-semantics.md); the other native semantic providers remain planned.
 
 ## Pipeline
 
@@ -252,9 +252,19 @@ Some deliberate boundaries deserve explicit mention:
   (`struct X;`) are rejected because the current AST distinguishes named-field
   and tuple structs but has no unit-struct form. Const generics, macros,
   attributes, implementations and higher-ranked types remain unsupported.
+  [Qualified projections and associated-type equality bindings](syntax.md#rust)
+  are structured AST nodes: `<T as Trait>::Item`, `<T>::Item` and
+  `Trait<Item = U>`. They compose with nested paths, type/lifetime arguments,
+  raw identifiers and generic associated-type uses. Generic associated-type
+  declarations and associated-type argument bounds (`Item: Bound`) remain
+  unsupported. Equality bindings require a single associated name with optional
+  arguments and a type RHS; they follow positional arguments. Parsing retains
+  source trivia and optional turbofish separators; formatting builds normalized
+  CST directly from the structured AST, preserving references and origins.
   Bare primitive spellings in type-expression positions use PrimitiveType;
-  qualified paths remain PathType. This lexical distinction does not perform
-  name resolution or prove what a shadowing declaration denotes.
+  ordinary multi-segment paths remain PathType, and `<...>::...` uses
+  QualifiedPathType. These distinctions do not perform name resolution, prove
+  what a shadowing declaration denotes or check associated-type equalities.
 - C++: the listed declarations and declarators. Function bodies, non-type
   template arguments, arbitrary preprocessing, constructors and expression
   initializers remain unsupported. Backslash-newline splicing is rejected even

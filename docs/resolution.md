@@ -153,8 +153,9 @@ Resolver settings belong to Resolve's Options, not the analyzer's Options.
 
 Pagination retains imported Page, the caller's plain Person reference,
 distinct same-spelled binders and opaque literal data. Specialization remains an
-explicit Horos operation. Native pagination generation consumes these facts;
-no native semantic analyzer or runtime binding is added.
+explicit Horos operation. Native pagination generation consumes these facts. The separate
+[Go native providers](native-semantics.md) analyze native captures; neither
+provider introduces runtime bindings.
 
 ## Qualification
 
@@ -167,3 +168,7 @@ retain adversarial capture/publication coverage through the new API. The
 composition and the [independent consumer](../integration/go/horos_test.go) checks
 model identity reuse and specialization. Architecture and negative type-check
 fixtures enforce package and marker boundaries. Required checks run remotely.
+
+See [native semantic providers](native-semantics.md)
+for the bounded Go resolver/analyzer, immutable native facts and explicit
+admission queries. TypeScript, Rust and C++ semantic providers remain planned.

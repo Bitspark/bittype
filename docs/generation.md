@@ -3,10 +3,12 @@
 The [paired generic-generation consultations](generic-elaboration.md) refine
 type-owned plugin composition and native admission. A shared formal/application
 convention and scoped representation products replace the earlier binder-to-slot
-proposal. Target-specific guarantees and the complete Go SPI remain proposed;
-current native generation capabilities are unchanged.
+proposal. The [public generation SPI and explicitly driven lifecycle](generation-spi.md)
+are implemented. Automatic plugin composition and replacement of the four
+production pagination generators remain next; target-specific enforcement
+remains proposed.
 
-The next design prerequisite is the [type-system modeling proposal](type-system-model.md):
+The [type-system modeling proposal](type-system-model.md) supplies the design basis:
 describe Horos and native judgments, binding and inference rules before finalizing
 preservation-facing generation interfaces. The Horos/Go examples distinguish
 argument admission from result representation; TypeScript, Rust and C++ exercise
@@ -39,9 +41,10 @@ The [Logos preservation proposal](logos-preservation.md) adds a documentation-on
 design for deriving generic preservation from source facts, actual target ASTs
 and mapping laws. Its symbolic Go pagination proof assumes `T : Data` and a valid
 selected representation; native admission is a separate theorem. The proof
-encoding in that document remains proposed. The subsequent joint integration
-implements scoped Horos/Go checking; general native semantic models and native
-admission enforcement remain unimplemented.
+encoding in that document remains proposed. The scoped
+[joint verification](verification.md) integration and
+[Go semantic providers](native-semantics.md) are implemented; broader native
+semantic coverage and generation enforcement remain proposed.
 
 The [Go admission encoding](go-native-admission.md) proposes function-shaped,
 privately marked certificate types and tests them directly with the Go compiler.
