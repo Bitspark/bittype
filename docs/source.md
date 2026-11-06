@@ -301,8 +301,9 @@ The lower-level stage constructors accept explicit syntax/check/resolution/analy
 collaborators and semantic options. Shared printing at both dimensions uses
 `Provider[L]` and `New[L]`; the Files constructor additionally takes the selected
 Syntax printer. A native Files printer requires no semantic provider.
-Native semantic providers remain absent, so TypeScript, Go, Rust and C++ do not
-yet provide Files parsing/formatting. See the [provider matrix](providers.md).
+Go and TypeScript supply [bounded Files resolution and analysis](native-semantics.md),
+but native Files parsing/formatting compositions remain unimplemented for all four
+languages. Those are independent capabilities; see the [provider matrix](providers.md).
 
 ## Bounds
 

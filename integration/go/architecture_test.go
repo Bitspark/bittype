@@ -219,6 +219,11 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["resolve/files/golang/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "semantics/go", "semantics/golang/go", "syntax/golang/go"}
 	rules["analyze/files/golang/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "resolve/files/golang/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/representation/go"}
 	rules["provider/golang/go"] = append(rules["provider/golang/go"], "contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "analyze/files/golang/go", "resolve/files/golang/go")
+	rules["semantics/typescript/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "syntax/typescript/go", "trees/ast/go", "trees/representation/go"}
+	rules["internal/typescriptsem"] = []string{"contracts/parse/go", "contracts/semantic/go", "files/go", "parse/syntax/typescript/go", "semantics/go", "semantics/typescript/go", "syntax/typescript/go", "trees/ast/go"}
+	rules["resolve/files/typescript/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/typescriptsem", "semantics/go", "semantics/typescript/go", "syntax/typescript/go"}
+	rules["analyze/files/typescript/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/typescriptsem", "resolve/files/typescript/go", "semantics/go", "semantics/typescript/go", "syntax/typescript/go", "trees/representation/go"}
+	rules["provider/typescript/go"] = append(rules["provider/typescript/go"], "contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "analyze/files/typescript/go", "resolve/files/typescript/go")
 	rules["verification/files/horos-to-go/go"] = []string{"contracts/semantic/go", "contracts/verification/go", "semantics/go", "trees/ast/go", "verification/files/source/horos/go", "semantics/golang/go", "analyze/files/golang/go"}
 	for path, p := range packages {
 		if p.Standard || path == modulePath+"/integration/go" || path == modulePath+"/verification/integration/go" {
