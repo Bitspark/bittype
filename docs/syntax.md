@@ -123,6 +123,9 @@ Native reference: [TypeScript object types](https://www.typescriptlang.org/docs/
 | TupleElement | optional `name`; `optional`; `rest` | `type` |
 | ObjectType | — | `member*` Property/Method/CallSignature/IndexSignature |
 | UnionType, IntersectionType | — | `type+` (at least two) |
+| ConditionalType | — | `check` type; `constraint` type; `true` type; `false` type |
+| InferType | — | `type-parameter` TypeParameter without a default |
+| MappedType | optional `readonly-modifier`, `optional-modifier`: `add` or `remove` | `type-parameter` TypeParameter with a constraint, without a default; `name-type?` type; `type` value |
 | FunctionType | — | `type-parameter*`; `parameter*`; `result` type |
 | Parameter | `name`; `optional`; `rest` | `type` |
 | Property | `name`: exact property text; `optional`; `readonly` | `type` |
@@ -147,8 +150,63 @@ applicability. Semantic index-key and imported-type constraints remain compiler
 obligations. Numeric property keys are admitted only as canonical safe decimal
 integers; other spellings need numeric-to-property-text decoding.
 
-Conditional/mapped/inferred/template-literal types, value declarations,
-class bodies, decorators and executable expressions are outside this slice.
+ConditionalType represents `T extends U ? A : B` with four structured operands.
+Conditional branches nest to the right; conditionals used as a check or extends
+operand, union/intersection member, array element, operator operand or indexed
+object are parenthesized when formatting requires it. Tuple wrappers such as
+`[T] extends [U]` remain explicit tuple nodes. They are not discarded as redundant
+grouping because TypeScript gives them different conditional behavior.
+
+InferType introduces an ordinary TypeParameter child, optionally constrained by
+`extends`, with no default. It is admitted only inside the extends operand of an
+enclosing conditional. This checks syntactic placement; it does not resolve
+uses of the inferred name or infer its type. Constrained infer operands are
+grouped where needed to avoid absorbing a surrounding union/intersection.
+
+```typescript
+type Flatten<T> = T extends (infer Item)[] ? Item : T;
+type FirstText<T> = T extends [infer Head extends string, ...unknown[]]
+  ? Head
+  : never;
+```
+
+MappedType is a type expression, separate from ObjectType and IndexSignature.
+Its TypeParameter's `constraint` stores the source key type following `in`.
+The optional `name-type` stores key remapping after `as`, and the final `type`
+stores the value type. These children can themselves contain conditional or
+mapped types. Same-spelled binders remain separate nodes; consumers can attach
+ordinary `target` references to their uses without changing the shared carrier.
+
+```typescript
+type TextFields<T> = {
+  [K in keyof T as T[K] extends string ? K : never]: T[K];
+};
+type MutableRequired<T> = {
+  -readonly [K in keyof T]-?: T[K];
+};
+```
+
+Absent mapped modifiers retain the original modifier behavior. `add` prints
+`readonly` or `?`; `remove` prints `-readonly` or `-?`. The parser retains
+explicit `+readonly` / `+?` spelling and trivia in source CST, while formatting
+normalizes those plus signs away. Removing a modifier is therefore distinct
+from leaving it unspecified. Mapping requires an explicit value type, admits
+one binder, and cannot contain additional object members. Template-literal key
+remapping remains outside the subset; ordinary type applications, indexed
+access and conditional remapping are supported.
+
+The language-owned stages follow the supported forms in the TypeScript
+[conditional type](https://www.typescriptlang.org/docs/handbook/2/conditional-types.html)
+and [mapped type](https://www.typescriptlang.org/docs/handbook/2/mapped-types.html)
+documentation. Syntax admission accepts unresolved references. It does not
+evaluate conditionals, infer substitutions, validate key membership, or prove
+distributivity or canonical constraint preservation. Compiler fixtures test
+representative formatted outputs, including type-only assertions about their
+native results; that does not add a semantic provider or generator mapping.
+
+Template-literal types, value declarations, class bodies, decorators and
+executable expressions remain outside this slice. See the
+[text-tooling boundary](parsing-formatting.md#checks-and-admitted-syntax).
 
 ## Go
 

@@ -120,7 +120,7 @@ func reject[L any](t *testing.T, p nativeProvider[L], sources []string) {
 	}
 }
 func TestUnsupportedAndMalformedSources(t *testing.T) {
-	reject(t, tsprovider.Provider{}, []string{"const x = 1;", "type X = T extends U ? A : B;", "type X = { [P in keyof T]: T[P] };", "type X = string; garbage", "type X = (x: string;", "type X = [a?:string,b:number];", "type X = typeof foo;", "type X = 1 + 2;", "import type {} from 'x';", "/// <reference path='x'/>\ntype X=string;"})
+	reject(t, tsprovider.Provider{}, []string{"const x = 1;", "type X = string; garbage", "type X = (x: string;", "type X = [a?:string,b:number];", "type X = typeof foo;", "type X = 1 + 2;", "import type {} from 'x';", "/// <reference path='x'/>\ntype X=string;"})
 	reject(t, goprovider.Provider{}, []string{"package p; var X int", "package p; type X [1+2]int", "package p; type X [N]int", "package p; type X struct {", "//go:build ignore\npackage p; type X int"})
 	reject(t, rustprovider.Provider{}, []string{"struct Unit;", "pub fn f() {}", "type X = impl Clone;", "type X<const N:usize> = [u8;N];", "type X = u8; trailing", "struct X { value: }", "type X = for<'a> fn(&'a str);", "type X = 'x';", "use std::{string,vec};"})
 	reject(t, cppprovider.Provider{}, []string{"#define X int\nusing A = X;", "using X = decltype(1);", "struct X { int a = 1; };", "struct X { int a[N]; };", "template<int N> struct X {};", "using X = int; trailing", "struct X { int (X::*f)() const; };", "struct X { X(); };", "struct X { virtual int f() = 1; };"})

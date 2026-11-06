@@ -12,7 +12,7 @@ import (
 
 func identifier(v string) bool { return lit.Identifier(v) }
 
-var types = []string{"type-reference", "qualified-type", "type-application", "keyword-type", "literal-type", "array-type", "tuple-type", "object-type", "union-type", "intersection-type", "function-type", "type-operator", "indexed-access-type"}
+var types = []string{"type-reference", "qualified-type", "type-application", "keyword-type", "literal-type", "array-type", "tuple-type", "object-type", "union-type", "intersection-type", "conditional-type", "infer-type", "mapped-type", "function-type", "type-operator", "indexed-access-type"}
 var members = []string{"property", "method", "call-signature", "index-signature"}
 var keywords = g.Set("any", "unknown", "never", "void", "undefined", "boolean", "number", "bigint", "string", "symbol", "object", "this")
 var rules = g.Rules{
@@ -34,6 +34,9 @@ var rules = g.Rules{
 	"object-type":         {Roles: []g.Role{g.Many("member", 0, members...)}},
 	"union-type":          {Roles: []g.Role{g.Many("type", 2, types...)}},
 	"intersection-type":   {Roles: []g.Role{g.Many("type", 2, types...)}},
+	"conditional-type":    {Roles: []g.Role{g.One("check", types...), g.One("constraint", types...), g.One("true", types...), g.One("false", types...)}},
+	"infer-type":          {Roles: []g.Role{g.One("type-parameter", "type-parameter")}},
+	"mapped-type":         {Attributes: g.Attributes("readonly-modifier", g.Attr(false, g.Set("add", "remove")), "optional-modifier", g.Attr(false, g.Set("add", "remove"))), Roles: []g.Role{g.One("type-parameter", "type-parameter"), g.Opt("name-type", types...), g.One("type", types...)}},
 	"function-type":       {Roles: []g.Role{g.Many("type-parameter", 0, "type-parameter"), g.Many("parameter", 0, "parameter"), g.One("result", types...)}},
 	"parameter":           {Attributes: g.Attributes("name", g.Attr(true, identifier), "optional", g.Attr(false, g.Bool), "rest", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("type", types...)}},
 	"property":            {Attributes: g.Attributes("name", g.Attr(true, g.String), "optional", g.Attr(false, g.Bool), "readonly", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("type", types...)}},
@@ -50,10 +53,36 @@ func Check(view ast.View[s.Language]) error {
 		return err
 	}
 	v := tree.View[s.Language]{Tree: t}
+	// Infer's position is a syntactic restriction. This walk neither resolves
+	// its binder nor decides what a conditional or mapped type evaluates to.
+	var context func(ast.NodeID, bool) error
+	context = func(id ast.NodeID, inConstraint bool) error {
+		n := v.Node(id)
+		if n.Kind == s.KindInferType && !inConstraint {
+			return text.AtNode(t, id, "infer is only supported within a conditional extends operand")
+		}
+		for _, child := range n.Children {
+			if err := context(child.Node, inConstraint || (n.Kind == s.KindConditionalType && child.Role == "constraint")); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	if err := context(t.Root, false); err != nil {
+		return err
+	}
 	for i, n := range t.Nodes {
 		id := ast.NodeID(i + 1)
 		bad := func(m string) error { return text.AtNode(t, id, m) }
 		switch n.Kind {
+		case s.KindMappedType, s.KindInferType:
+			parameter := v.Child(id, "type-parameter")
+			if v.Child(parameter, "default") != 0 {
+				return text.AtNode(t, parameter, "mapped and inferred parameters cannot have defaults")
+			}
+			if n.Kind == s.KindMappedType && v.Child(parameter, "constraint") == 0 {
+				return text.AtNode(t, parameter, "mapped parameter requires an in type")
+			}
 		case s.KindImport:
 			b := v.Children(id, "binding")
 			for _, x := range b {

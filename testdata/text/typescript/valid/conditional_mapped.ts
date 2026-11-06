@@ -1,0 +1,28 @@
+export type Choose<T, U, A, B> = T extends U ? A : B;
+export type Nested<T> = T extends string ? "text" : T extends number ? "number" : "other";
+export type NonDistributive<T> = [T] extends [string] ? true : false;
+export type Flatten<T> = T extends (infer Item)[] ? Item : T;
+export type Result<T> = T extends (...args: never[]) => infer R ? R : never;
+export type FirstText<T> = T extends [infer Head extends string, ...unknown[]] ? Head : never;
+export type NestedConstraint<T> = T extends (infer U extends string) | number ? U : never;
+export type Values<T> = { [K in keyof T]: T[K] };
+export type ReadOptional<T> = { +readonly [K in keyof T]+?: T[K] };
+export type MutableRequired<T> = { -readonly [K in keyof T]-?: T[K] };
+export type TextFields<T> = { [K in keyof T as T[K] extends string ? K : never]: T[K] };
+export type WithoutSkip<T> = { [K in keyof T as Exclude<K, "skip">]: T[K] };
+export type NestedMaps<T> = { [K in keyof T]: { [P in keyof T[K]]?: T[K][P] } };
+export type ConditionalKeys<T> = { [K in T extends object ? keyof T : never]: T[K] };
+export type KeyUnion = { [K in "left" | "right"]: number };
+export type EventHandlers<E extends { kind: string }> = { [Event in E as Event["kind"]]: (event: Event) => void };
+
+type Assert<T extends true> = T;
+type Same<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+type CheckFlatten = Assert<Same<Flatten<string[]>, string>>;
+type CheckResult = Assert<Same<Result<(value: string) => number>, number>>;
+type CheckFirst = Assert<Same<FirstText<["hello", number]>, "hello">>;
+type CheckDistributed = Assert<Same<Choose<string | number, string, "yes", "no">, "yes" | "no">>;
+type CheckWrapped = Assert<Same<NonDistributive<string | number>, false>>;
+type CheckPreserved = Assert<Same<Values<{ readonly x?: string }>, { readonly x?: string }>>;
+type CheckRemoved = Assert<Same<MutableRequired<{ readonly x?: string }>, { x: string }>>;
+type CheckAdded = Assert<Same<ReadOptional<{ x: string }>, { readonly x?: string }>>;
+type CheckRemapped = Assert<Same<TextFields<{ name: string; age: number }>, { name: string }>>;

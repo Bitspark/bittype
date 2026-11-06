@@ -243,9 +243,15 @@ source spans or abstract node addresses.
 
 Some deliberate boundaries deserve explicit mention:
 
-- TypeScript: type-only imports, aliases, interfaces and the listed type syntax.
-  Conditional/mapped/template-literal types, classes and executable declarations
-  remain unsupported.
+- TypeScript: type-only imports, aliases, interfaces and the listed type syntax,
+  including [conditional and mapped types](syntax.md#typescript). Conditional
+  operands, `infer` binders/constraints, mapped key binders, `as` remapping and
+  modifier addition/removal have structured AST children or attributes.
+  Formatting preserves precedence and builds CST directly; source CST retains
+  comments and explicit plus-modifier spelling. Mapped types require explicit
+  value annotations and cannot include ordinary members. Template-literal types,
+  classes and executable declarations remain unsupported. Syntax admission does
+  not perform conditional evaluation, inference or mapped-key checking.
 - Go: imports, aliases/defined types and the listed type syntax. Computed array
   bounds and value/function declarations remain unsupported.
 - Rust: the listed type declarations and trait signatures. Unit structs
