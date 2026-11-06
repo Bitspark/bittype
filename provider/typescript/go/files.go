@@ -28,15 +28,18 @@ func NewFilesPrinter(definition representation.Language) (print.FilesPrinter[s.L
 }
 
 func (p Provider) Resolve(ctx context.Context, request semantic.Request[s.Language]) (semantic.Result, error) {
-	return (resolving.Provider{Compiler:p.Compiler}).Resolve(ctx, request)
+	return (resolving.Provider{Compiler: p.Compiler}).Resolve(ctx, request)
 }
 func (Provider) Analyze(ctx context.Context, request analysis.Request[s.Language]) (semantic.Result, error) {
 	return analyzing.Analyze(ctx, request)
 }
+
 // NewFilesResolver takes an explicitly provisioned compiler; it performs no IO.
 func NewFilesResolver(definition representation.Language, compiler resolving.Compiler) (resolution.Resolver, error) {
-	if err:=compiler.Validate(); err!=nil { return resolution.Resolver{},err }
-	return resolution.NewResolver[s.Language](definition, resolving.Contract(), resolving.Provider{Compiler:compiler})
+	if err := compiler.Validate(); err != nil {
+		return resolution.Resolver{}, err
+	}
+	return resolution.NewResolver[s.Language](definition, resolving.Contract(), resolving.Provider{Compiler: compiler})
 }
 func NewFilesAnalyzer(definition representation.Language) (analysis.Analyzer, error) {
 	return analysis.NewAnalyzer[s.Language](definition, analyzing.Contract(), analyzing.Provider{})

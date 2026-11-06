@@ -178,16 +178,22 @@ The `typescript` vocabulary is:
 | `type-expression` occurrences | Source reference/application structure, preserving constructor identity even when aliases disappear from native types |
 | `native-type` occurrences and marker facts | Native compiler types; model-local handles, not serialized shape identity |
 | `declared-type`, `constraint` facts | Declaration types and explicit generic bounds |
-| `structure`, `properties` facts | Native structural descriptions and substituted property read types |
+| `structure`, `properties` facts | Native structural descriptions and substituted declared property value types |
 | `primitive`, `literal`, `array`, `tuple`, `union`, `intersection`, `object` expressions | TypeScript-owned `json-1` data and ordered operands |
 | `display` facts | UTF-8 diagnostic spelling, never type identity |
 
 Property metadata retains optional and readonly flags and declaration entities.
-A property's read type can include `undefined` even when explicitly writing
-`undefined` would be rejected by exact optional-property checking. Aliases retain
+Its operand is the compiler's declared non-missing value type: `age?: number`
+exposes `number` plus `Optional: true`, while `age: number | undefined` exposes
+the explicit union plus `Optional: false`. This is not a flow-sensitive read type
+or a writable acceptance judgment; native assignability uses the complete
+compiler type. This follows the pinned checker's
+[symbol-at-location behavior](https://github.com/microsoft/TypeScript/blob/v5.9.3/src/compiler/checker.ts).
+Aliases retain
 declaration identities but can denote the same compiler type. `Type.Same` means
 the same native type handle in the same admitted receipt, not mutual assignability.
-The shared `DirectParameterBindings` reader works on explicit applications.
+The shared `DirectParameterBindings` reader works on source application terms;
+the corresponding native type can retain an alias or normalize to another form.
 
 `typescript.Open(analyzed)` admits a complete analysis receipt and reads its
 immutable graph without invoking the compiler. `analyze.NewQueries(model,

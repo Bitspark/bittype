@@ -9,4 +9,7 @@ import (
 
 // Provider exposes the language's implemented roles for direct typed composition.
 // Each role remains independently constructible and independently registered.
-type Provider struct{ s.Language; Compiler resolve.Compiler }
+type Provider struct {
+	s.Language
+	Compiler resolve.Compiler
+}

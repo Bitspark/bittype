@@ -175,7 +175,7 @@ function main(request) {
     for (const property of checker.getPropertiesOfType(type)) {
       const declaration = property.valueDeclaration || property.declarations?.[0];
       if (!declaration || !captured(declaration)) unsupported("External object members are outside captured-types-1");
-      metadata.push({ Name: property.getName(), Optional: !!(property.flags & ts.SymbolFlags.Optional), Readonly: !!declaration.modifiers?.some(m => m.kind === ts.SyntaxKind.ReadonlyKeyword), Entity: entity(property) });
+      metadata.push({ Name: property.getName(), Optional: !!(property.flags & ts.SymbolFlags.Optional), Readonly: ts.canHaveModifiers(declaration) && !!ts.getModifiers(declaration)?.some(m => m.kind === ts.SyntaxKind.ReadonlyKeyword), Entity: entity(property) });
       operands.push(nativeType(checker.getTypeOfSymbolAtLocation(property, declaration)));
     }
     return term(expression("object", metadata, operands));
@@ -252,8 +252,9 @@ function main(request) {
       graph.Entities[id - 1].Body = type;
     }
   }
-  // Property entities share the compiler's read type, including undefined for
-  // optional reads. Presence and readonly flags remain separate object metadata.
+  // Property entities share the compiler's declared non-missing value type.
+  // Presence and readonly flags remain separate object metadata. These are not
+  // flow-sensitive read types or writable acceptance judgments.
   for (const [id, symbol] of symbolByEntity) if (graph.Entities[id - 1].Kind.Name === "property") {
     const d = symbol.valueDeclaration || symbol.declarations[0]; graph.Entities[id - 1].Body = nativeType(checker.getTypeOfSymbolAtLocation(symbol, d));
   }
