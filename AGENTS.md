@@ -70,11 +70,10 @@ type exports. Keep semantic sort separate from declaration parameter count.
 
 The first [public generation SPI](docs/generation-spi.md) and guarded invocation
 are implemented in `contracts/generation/go`, alongside the contracts. Keep that
-minimal runner here; do not add an empty `generation/syntax` wrapper. The broader
-[plugin composition design](docs/type-generation-plugins.md), automatic selectors
-and overrides, definition scheduling and replacement of the four private
-pagination Dialects remain separate work. Libraries own optional mappings; the
-replacement selects exact declaration identities in consuming configuration.
+minimal runner here. The [automatic composer](docs/generation-composition.md)
+lives at `generation/syntax/go`; source/native collaborators are separate. All
+four generators now use it, and the private pagination Dialects are deleted. Libraries own optional mappings; the
+composer selects exact declaration identities in consuming configuration.
 Builtin mappings use the same supplied mechanism. Explicit overrides must replace
 existing exact bindings without order-dependent selection or error-triggered
 fallback. Opinionated default composition stays outside the Bittype module,

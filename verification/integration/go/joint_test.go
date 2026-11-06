@@ -11,21 +11,18 @@ import (
 	"sync"
 	"testing"
 
-	analyze "github.com/Bitspark/bittype/analyze/files/horos/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
-	"github.com/Bitspark/bittype/contracts/transform/go"
 	gp "github.com/Bitspark/bittype/provider/golang/go"
 	hp "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	hs "github.com/Bitspark/bittype/syntax/horos/go"
-	generate "github.com/Bitspark/bittype/transforms/horos-to-go/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -302,65 +299,6 @@ func bindPage(t *testing.T, s h.Model, g n.Model) (pagination, error) {
 	}
 	a, err := f.BindArgument(p, native(t, g, "Person"), []v.FieldBinding{{Source: "name", Target: "Name"}, {Source: "active", Target: "Active"}}, member)
 	return pagination{s, g, f, k, a}, err
-}
-
-func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
-	s := sourceModel(t, sourcePage+" type PeoplePage = Page<Person>; type NestedPage = Page<Page<Person>>;")
-	ctx := context.Background()
-	from := s.Snapshot().Language()
-	a, err := analysis.NewAnalyzer[hs.Language](from, analyze.Contract(), hp.Provider{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	receipt := s.Receipt()
-	evidence, err := a.Analyze(ctx, analysis.Input{Snapshot: s.Snapshot(), Resolution: &receipt})
-	if err != nil {
-		t.Fatal(err)
-	}
-	to, err := representation.NewLanguage[gs.Language](gp.Provider{}, "go-syntax-1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	mapper, err := generate.New(from, to, generate.Config{TreeID: "generated", Package: "example", Profile: generate.RepresentationProfile})
-	if err != nil {
-		t.Fatal(err)
-	}
-	out, err := mapper.Transform(ctx, transform.Input{Source: s.Snapshot(), Evidence: []semantic.Result{evidence}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	checker, err := check.NewChecker[gs.Language](to, gp.Provider{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	snapshot, err := semantic.Capture(ctx, checker, semantic.Input{Entry: out.Entry, Trees: out.Trees})
-	if err != nil {
-		t.Fatal(err)
-	}
-	g, err := checkedNative(ctx, snapshot)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !native(t, g, "NestedPage").IsAlias() {
-		t.Fatal("missing actual nested Go instantiation")
-	}
-	p, err := bindPage(t, s, g)
-	if err != nil {
-		t.Fatal(err)
-	}
-	claim, _ := p.family.Theorem()
-	c := receiver(t)
-	theorem := checkClaim(t, c, claim, p.family.Candidate())
-	accepted(t, theorem)
-	application, err := p.family.Application(theorem, p.argument, 2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	r := checkClaim(t, c, application, p.argument.Candidate(2))
-	accepted(t, r)
-	if !r.Request().Association().Participants()[1].Snapshot.Same(snapshot) {
-		t.Fatal("verification substituted a hand-authored target")
-	}
 }
 
 func TestOrdinaryRenamedFamilyUsesSameMapping(t *testing.T) {
