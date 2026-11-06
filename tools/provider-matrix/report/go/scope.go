@@ -54,6 +54,7 @@ func scopeDocument(root, reference string) (string, error) {
 		if err != nil || !headingAnchors(string(data))[decoded] {
 			return "", fmt.Errorf("scope fragment does not exist: %s", reference)
 		}
+		fragment = decoded
 	}
 	rel, _ := filepath.Rel(root, path)
 	result := filepath.ToSlash(rel)
@@ -67,13 +68,14 @@ func scopeDocument(root, reference string) (string, error) {
 // suffix rules for ordinary Markdown headings. Explicit anchors are preferred.
 func headingAnchors(document string) map[string]bool {
 	anchors := map[string]bool{}
-	for _, match := range markdownAnchor.FindAllStringSubmatch(document, -1) {
-		anchors[match[1]] = true
-	}
 	counts := map[string]int{}
+	used := map[string]bool{}
 	fenced := false
 	lines := strings.Split(document, "\n")
 	for i, line := range lines {
+		if strings.HasPrefix(line, "    ") || strings.HasPrefix(line, "\t") {
+			continue
+		}
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "```") || strings.HasPrefix(line, "~~~") {
 			fenced = !fenced
@@ -81,6 +83,9 @@ func headingAnchors(document string) map[string]bool {
 		}
 		if fenced {
 			continue
+		}
+		for _, match := range markdownAnchor.FindAllStringSubmatch(line, -1) {
+			anchors[match[1]] = true
 		}
 		text := ""
 		if strings.HasPrefix(line, "#") {
@@ -112,10 +117,11 @@ func headingAnchors(document string) map[string]bool {
 		}
 		base := slug.String()
 		key := base
-		if counts[base] > 0 {
+		for used[key] {
+			counts[base]++
 			key = fmt.Sprintf("%s-%d", base, counts[base])
 		}
-		counts[base]++
+		used[key] = true
 		anchors[key] = true
 	}
 	return anchors

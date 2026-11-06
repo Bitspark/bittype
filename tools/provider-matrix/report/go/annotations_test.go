@@ -152,4 +152,34 @@ func TestQueryLeaseAndProfileIdentity(t *testing.T) {
 	if profileLabel(profile{}) == profileLabel(profile{true, "unspecified"}) {
 		t.Fatal("absent profile conflated with named profile")
 	}
+	op := &operation{id: "operation"}
+	entry := authored{directive: directive{name: "grammar"}}
+	absent := bindingAnchor(op, symbol, entry)
+	entry.directive.profile = profile{present: true, value: "unspecified"}
+	if absent == bindingAnchor(op, symbol, entry) {
+		t.Fatal("absent profile collided with explicit binding anchor")
+	}
+}
+
+func TestMarkerAliasesRetainActualGoIdentity(t *testing.T) {
+	for _, name := range []string{"Alias", "Pointer"} {
+		t.Run(name, func(t *testing.T) {
+			p := fixture(t, map[string]string{"unrelated/aliases": `package aliases; import s "example.test/fixture/syntax/ember/go"; type Alias = s.Language; type Pointer = *s.Language`})
+			text := "package emberprovider_test\nimport \"testing\"\n// bittype:case target=example.test/fixture/print/files/go#Output.Print feature=f case=c expects=ok language=example.test/fixture/unrelated/aliases#" + name + "\nfunc TestAlias(t *testing.T){}\n"
+			addTestFile(t, p, "provider/ember/go", "alias_test.go", text, true)
+			a, err := p.readAnnotations()
+			if name == "Pointer" {
+				if err == nil {
+					t.Fatal("pointer substituted for marker")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if a.cases[0].marker != (capability.Symbol{Package: p.module + "/syntax/ember/go", Name: "Language"}) {
+				t.Fatal("alias spelling replaced Go identity")
+			}
+		})
+	}
 }

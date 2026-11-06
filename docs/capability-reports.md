@@ -431,8 +431,9 @@ Unavailable cell: /
 
 Each link resolves to the report for that specific implementation, not just its
 language. Multiple implementations in a cell each retain their own links. Section
-anchors encode the full discovered identity tuple injectively, including the
-distinction between absent and explicit profiles. They do not depend on line
+anchors encode the full discovered identity tuple injectively. Attached definition
+and scope anchors also encode whether a profile is absent or explicitly named.
+They do not depend on line
 numbers, feature counts, timestamps, hashes or inspection revisions. A
 symbol/profile change regenerates both the anchor and incoming links together.
 Generated links and sections must agree before publication; a malformed annotation must not publish

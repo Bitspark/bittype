@@ -8,15 +8,15 @@ import (
 
 func TestScopeDocumentsAndFragments(t *testing.T) {
 	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, "scope.md"), []byte("# Scope\n## Repeated\n## Repeated\n<a id=\"owned\"></a>\n```\n# Hidden\n```\n"), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "scope.md"), []byte("# Scope\n## Repeated\n## Repeated\n## Repeated-1\n<a id=\"owned\"></a>\n```\n# Hidden\n<a id=\"not-an-anchor\"></a>\n```\n    # Indented\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	for _, ref := range []string{"scope.md", "scope.md#scope", "scope.md#repeated-1", "scope.md#owned"} {
+	for _, ref := range []string{"scope.md", "scope.md#scope", "scope.md#repeated-1", "scope.md#repeated-1-1", "scope.md#owned"} {
 		if _, err := scopeDocument(root, ref); err != nil {
 			t.Fatal(ref, err)
 		}
 	}
-	for _, ref := range []string{"scope.md#missing", "scope.md#hidden", "../scope.md", "/scope.md", "C:/scope.md", "missing.md"} {
+	for _, ref := range []string{"scope.md#missing", "scope.md#hidden", "scope.md#not-an-anchor", "scope.md#indented", "../scope.md", "/scope.md", "C:/scope.md", "missing.md"} {
 		if _, err := scopeDocument(root, ref); err == nil {
 			t.Fatal("accepted", ref)
 		}

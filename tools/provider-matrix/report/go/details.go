@@ -278,6 +278,10 @@ func profileLabel(p profile) string {
 	return p.value
 }
 
+func bindingAnchor(op *operation, target capability.Symbol, entry authored) string {
+	return stableKey(op.id, target.String(), entry.directive.name, entry.root.String(), entry.document, fmt.Sprint(entry.directive.profile.present), entry.directive.profile.value)
+}
+
 func sourceTarget(root, sourceURL, path string, line int) string {
 	if filepath.IsAbs(path) {
 		path, _ = filepath.Rel(root, path)
@@ -316,7 +320,12 @@ func (p *program) renderDetails(ctx context.Context, m *matrix, a *annotations, 
 	b.WriteString("# Provider capability details\n\nGenerated from selected production declarations and explicit test associations.\nThese reports describe bounded implementation scope, not language completeness.\n\n")
 	fmt.Fprintf(&b, "Inspection build: %s, %s/%s; Go flags %s; explicit build flags %s.\n\n", escape(p.build.GOVERSION), escape(p.build.GOOS), escape(p.build.GOARCH), escape(p.build.GOFLAGS), escape(strings.Join(config.BuildFlags, " ")))
 	b.WriteString("Definitions describe selected initializers; mutation, operation bodies and procedural semantics are not inferred. Profiles and expectations are authored assertions. A test function's observation is not separate execution of every associated case, nor evidence that a wrapper or every branch ran.\n\n")
-	fmt.Fprintf(&b, "[Report contract](capability-reports.md) · [Provider matrices](providers.md) · [Existing CI invocations](https://%s/actions/workflows/go.yml)\n\n", p.module)
+	contractLink, matrixLink := "capability-reports.md", "providers.md"
+	if config.Context != nil {
+		contractLink = sourceTarget(p.root, sourceURL, "docs/capability-reports.md", 0)
+		matrixLink = sourceTarget(p.root, sourceURL, config.MatrixPath, 0)
+	}
+	fmt.Fprintf(&b, "[Report contract](%s) · [Provider matrices](%s) · [Existing CI invocations](https://%s/actions/workflows/go.yml)\n\n", contractLink, matrixLink, p.module)
 	if len(config.Executions) == 0 {
 		b.WriteString("No execution observations are included in this committed inventory. Per-invocation CI artifacts contain observations with their actual source, build selection and process result. Missing observations do not mean a test never ran.\n\n")
 	}
@@ -329,7 +338,11 @@ func (p *program) renderDetails(ctx context.Context, m *matrix, a *annotations, 
 		fmt.Fprintf(&b, "<a id=\"cap-%s\"></a>\n\n## %s\n\n", op.id, escape(operationTitle(op)))
 		fmt.Fprintf(&b, "Contract: %s.\n\n", escape(fullType(op.contract)))
 		if op.public != nil {
-			fmt.Fprintf(&b, "Public operation: %s. Receiver: %s.\n\n", p.symbolLink(canonicalSymbol(op.public), sourceURL), escape(fullType(op.receiver)))
+			fmt.Fprintf(&b, "Public operation: %s.", p.symbolLink(canonicalSymbol(op.public), sourceURL))
+			if op.receiver != nil {
+				fmt.Fprintf(&b, " Receiver: %s.", escape(fullType(op.receiver)))
+			}
+			b.WriteString("\n\n")
 		}
 		if op.from != nil {
 			fmt.Fprintf(&b, "Direct endpoints: %s → %s. Typed calls in the factory body establish this discovered edge; runtime reachability, returned-value flow, configured mappings and composed routes are not inferred.\n\n", escape(fullType(op.from.marker)), escape(fullType(op.to.marker)))
@@ -382,6 +395,7 @@ func (p *program) renderDetails(ctx context.Context, m *matrix, a *annotations, 
 				b.WriteString("Related declaration; its cases and observations do not qualify the public wrapper.\n\n")
 			}
 			for _, entry := range entries {
+				fmt.Fprintf(&b, "<a id=\"binding-%s\"></a>\n\n", bindingAnchor(op, target, entry))
 				if entry.directive.name == "scope" {
 					hasScope = true
 					name, frag, _ := strings.Cut(entry.document, "#")
