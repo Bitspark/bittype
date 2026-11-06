@@ -18,9 +18,13 @@ reasoning outcomes, not executed proofs or compiler results. Public integration
 contracts remain to be designed; foundation statements follow Logos's admitted
 contract rather than a new Bittype serialization.
 The [remaining verification SPI decisions](type-system-architecture.md#remaining-public-verification-spi-decisions)
-identify the concrete claim/evidence types, joint request binding, provider
-compatibility and result encoding still to specify. Their semantic meanings and
-ownership are settled; API design need not await complete TextBox/Page execution.
+now incorporate the [Logos request trace and contract map](logos-verification.md).
+Logos already supplies ground claim/evidence types and direct checking; its richer
+typed statement/checking contract remains proposed with a test-private Rust
+implementation. Bittype still needs joint artifact binding, language projections,
+expected-claim construction and associated outcomes. This does not require a
+second proof algebra or checker registry. API design need not await complete
+TextBox/Page execution.
 
 ## Purpose and current boundary
 

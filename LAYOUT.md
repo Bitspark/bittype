@@ -190,6 +190,9 @@ The [evaluated type-system reasoning architecture](docs/type-system-architecture
 proposes optional `verification/files` collaborators above existing captures and
 explicit providers. Its private association seam is exercised before a public
 contract; language theories and Logos proof machinery stay with their owners.
+The [Logos contract map](docs/logos-verification.md#ownership-map-for-the-verification-spi)
+narrows any eventual shared contract to artifact association and explicit
+composition. A direct Logos checker call needs no second checker-provider registry.
 The root Go module and stage-first structure remain unchanged. No proposed
 directory, checker process, dependency or new provider is created by that design.
 

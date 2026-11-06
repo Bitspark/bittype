@@ -5,6 +5,9 @@
 expert review to the [type-system model](type-system-model.md),
 [symbolic pagination proof](logos-preservation.md) and
 [generic generation design](generic-elaboration.md).
+The owner's subsequent [Logos source inspection](logos-verification.md),
+6 November, refines the verification SPI boundary below. That refinement is
+source-based design work, not a new expert consultation or implemented API.
 
 Use Logos's semantic-package direction directly. Language integrations supply
 their meanings and judgments; mapping owners supply selected representation
@@ -24,18 +27,26 @@ providers, dependencies, runtime bindings or public Go APIs.
 | --- | --- |
 | Horos | Canonical declaration/kind semantics, original argument contracts, authoritative query procedures and checked public views |
 | Native language integration | Language-specific semantic objects, judgments, configuration, artifact interpretation and supported coverage |
-| Logos | Proof-language contexts, binding, substitution, evidence checking and justified semantic-package composition |
+| Logos | Implemented ground derivation checking and optional search/certification; proposed typed proof contexts, binding, substitution and semantic-package composition |
 | Type-owned mapping integration | The selected static representation relation, native family/helper choices and precisely stated mapping laws |
 | Bittype integration | Captured source/output association, actual mapping selection, the independently constructed expected statement and associated outcomes |
 | Caller composition | Explicitly select and invoke the required stages, checking route and accepted assumptions |
 
-Logos already has a [semantic-package proposal](https://github.com/Bitspark/logos/blob/d0df8bbb6914e8002a441cb79241da8c9a3db7b0/docs/architecture/decisions/0038-typed-judgments-and-semantic-packages.md)
-and [typed statement design](https://github.com/Bitspark/logos/blob/d0df8bbb6914e8002a441cb79241da8c9a3db7b0/docs/design/0014-typed-package-production.md).
+Logos already has a [semantic-package proposal](https://github.com/Bitspark/logos/blob/d94e8dc996ebba99e2bd26cde518df4918e2354f/docs/architecture/decisions/0038-typed-judgments-and-semantic-packages.md)
+and [typed statement design](https://github.com/Bitspark/logos/blob/d94e8dc996ebba99e2bd26cde518df4918e2354f/docs/design/0014-typed-package-production.md).
 They cover signatures/contexts, meaning, judgments, evidence, adequacy,
 composition and operational services. Those concepts are the destination for
 the seven requirements in the model document, not a new Bittype-owned framework.
 The contracts remain proposed; their richer checker is test-private Rust, not a
 stable Go package or deployed service that Bittype can use today.
+
+The existing Go ground checker is usable independently: `contract.Check`
+checks supplied positive derivations, and `certify.CheckWithDerivedContext`
+binds closed-world checking to the caller's live inputs. Neither requires
+Bittype to implement an EngineProvider. The
+[production request trace and direct route](logos-verification.md#direct-checking-needs-no-search-provider)
+separate these existing APIs from the typed proposal and identify the source,
+native and artifact-association work Bittype still needs.
 
 The dependency direction is:
 
@@ -130,7 +141,7 @@ state or establish formatter/printer correspondence with the actual files.
 Keep the existing ASTTransformer boundary initially. An explicitly selected
 composition performs:
 
-1. Admit the supplied source and semantic evidence using existing contracts.
+1. Admit the supplied source and semantic reports using existing contracts.
 2. Fix actual mapping choices, including helper/import dependencies.
 3. Invoke the configured transformation.
 4. Capture its actual output collection and relevant helpers.
@@ -143,27 +154,24 @@ Evidence about one generation leg is not automatically target semantic evidence
 or evidence about the next leg. The current engine deliberately discards a
 previous leg's evidence when capturing the next input. This remains correct.
 
-An illustrative **private integration shape**, not a public API, is:
+The private integration binds the following inputs; this is a responsibility
+map, not a new Go struct or serialized schema:
 
-```go
-type CheckRequest struct {
-    Source    semantic.Snapshot
-    Output    semantic.Snapshot
-    Evidence  []semantic.Result
-    Binding   GenerationBindingRef
-    Expected  StatementRef
-    Candidate EvidenceRef
-    Policy    AssumptionPolicyRef
-}
-```
+| Input | Construction and ownership |
+| --- | --- |
+| Source and actual output captures | Existing Bittype snapshots, with a joint association still to specify |
+| Source/native semantic results | Compatible provider-issued reports for those captures; not automatically proof evidence |
+| Selected mappings, helpers and environment | Caller configuration and owning language/mapping integrations |
+| Independently expected claim | Owning integration constructs the appropriate Logos ground claim or admitted typed statement from the bound artifacts |
+| Candidate derivation/evidence | Supplied separately, in the selected Logos checking contract |
+| Checking basis and limits | Explicit Logos profile or admitted typed receiver bindings/policy; logical assumptions remain distinct from permitted dependencies and budgets |
 
-The Ref types above stand for bound integration-owned references, not defined Go
-types, string tokens accepted on trust, or a new serialized schema. Statement
-and proof representation follow the admitted Logos contract; Bittype does not
-copy its proposed expression calculus. The [remaining public SPI decisions](#remaining-public-verification-spi-decisions)
-below identify the missing contract definitions. TextBox and Page should exercise
-the candidate contract during design; their complete implementations are not a
-prerequisite for writing it.
+Claim and evidence representations belong to the selected Logos contract.
+The [Logos contract map](logos-verification.md#ownership-map-for-the-verification-spi)
+identifies the existing and proposed owners of those inputs. Bittype specifies
+their artifact association and integration, without copying Logos's expression
+calculus. TextBox and Page should exercise the candidate boundary during design;
+complete implementations are not a prerequisite for specifying it.
 
 ### Proposed package roles
 
@@ -171,11 +179,11 @@ Preserve the [stage-first layout](../LAYOUT.md) and one root Go module. These ar
 future role locations, not directories or provider capabilities created now:
 
 ```text
-contracts/verification/go/                 eventual shared association boundary
+contracts/verification/go/                 eventual request/result association, if needed
 verification/files/go/                     explicit whole-claim orchestration
 verification/files/source/horos/go/         authoritative source facts to statements
 verification/files/target/golang/go/        actual native facts to model inputs
-verification/files/checker/logos/go/        selected Logos checker adapter
+verification/files/checker/logos/go/        direct use/adaptation of selected Logos API
 
 resolve/files/golang/go/                    native resolution when required
 analyze/files/golang/go/                    explicitly supported native judgments
@@ -196,6 +204,9 @@ that shape before both examples execute; production guarantees still require
 their implementation and qualification. Generic orchestration depends only
 on carriers and explicit collaborators. Concrete adapters may depend on their
 own language/foundation contracts under explicit dependency rules.
+The checker collaborator need not become a separate public provider SPI. Direct
+composition with a supported Logos API is sufficient where it meets the claim.
+No new verifier registry, foundation catalogue or automatic discovery is selected.
 
 An optional Go package still affects its module's requirements if it imports
 Logos. Package isolation is not module isolation. A separate external integration
@@ -206,12 +217,13 @@ shared orchestration layout.
 
 ## Remaining public verification SPI decisions
 
-**Design gaps, 6 November 2026. Documentation only.** The owner requested these
-remaining decisions before implementation. The service-provider interface (SPI)
-is unfinished at the level of concrete public contracts. Its semantic ownership,
-explicit composition and stage-first placement are already agreed. The gaps do
-not require reopening those decisions or waiting for full TextBox/Page execution
-before designing the API.
+**Refined after source inspection, 6 November 2026. Documentation only.** The
+owner requested that the [Logos findings](logos-verification.md) narrow this
+proposal. The four concerns below distinguish existing Logos capabilities,
+Logos production gaps and Bittype's unfinished association contract. They are
+not four new Bittype frameworks or proof APIs to design. The eventual public SPI
+remains unimplemented; semantic ownership, explicit composition and stage-first
+placement are unchanged. API design need not await full TextBox/Page execution.
 
 The fixed boundaries are: languages own judgments, Logos owns proof machinery,
 the expected statement is constructed independently of candidate evidence, and
@@ -219,21 +231,23 @@ verification binds actual source/output/mapping inputs. ASTTransformer continues
 to return syntax. Resolution and analysis are explicit stages; the generic kernel
 does not acquire named kinds, contract cases or hidden semantic operations.
 
-### 1. Claim and evidence representation
+### 1. Bind the owning claim and evidence contracts
 
-Decide the concrete types, construction authority and ownership rules replacing
-StatementRef and EvidenceRef. A claim must carry or bind its typed judgment,
-context, relevant objects and assumptions. Candidate evidence must identify the
-statement/foundation contract under which it can be checked. Arbitrary bytes,
-unqualified names or a producer's asserted conclusion cannot establish that
-compatibility.
+**Already provided:** Logos Go has `GroundLiteral`, `Derivation`, `CheckProfile`
+and direct checking. Its typed proposal owns `Statement`, scoped contexts,
+bound objects, typed evidence and dependency-sensitive checking. The latter is
+not a production Go API yet.
 
-The open Go API choice is how typed implementations cross the agnostic boundary
-without erasing their contracts or copying a proof calculus into Bittype. The
-Logos adapter must bind or translate through Logos's admitted statement/evidence
-contract; a new Bittype expression algebra is not the solution. Define which
-references are invocation-local and what reconstruction is required if a later
-caller supplies the same canonical inputs.
+**Bittype decision:** specify how owning integrations project actual semantic
+objects, construct the expected claim independently of evidence, and bind the
+concrete Logos types at the integration boundary. Define invocation-local
+reference lifetimes and reconstruction when canonical inputs are supplied again.
+No Bittype proof-term algebra or serialization is required. Arbitrary bytes,
+unqualified names and a producer-selected conclusion do not establish compatibility.
+
+**Remaining Logos dependency:** an admitted typed checking contract and accessible
+implementation for symbolic claims. This does not block the current ground
+checking route or the design of Bittype's artifact association.
 
 ### 2. Immutable requests spanning source and target
 
@@ -245,35 +259,49 @@ identity, dependency compatibility checks, copying/lifetime rules and result
 publication authority. Attaching one side's request identity to the other side's
 result does not establish the association.
 
-GenerationBindingRef and AssumptionPolicyRef are still placeholders. Their
-contracts must distinguish logical assumptions from the caller's permitted
-dependencies and checking budgets. The request must prevent evidence for another
-output, mapping or context from being reused as this invocation's result, while
+This is the main new Bittype-owned contract. Use Logos's current consumer context
+or proposed typed bound objects to connect it to checking; neither automatically
+captures Bittype's artifacts. Keep logical assumptions, the receiver's permitted
+dependencies and checking budgets distinct. Prevent evidence for another output,
+mapping or context from being published as this invocation's result, while
 preserving legitimate reuse under explicitly compatible dependencies. These are
-functional input contracts, not a new digest or provenance workflow.
+functional inputs, not a new digest or provenance workflow.
+
+Existing semantic results remain provider-issued reports. `Result.Valid()`
+does not establish their semantic truth, and a `Holds` report is not automatically
+a Logos proof. Admit authoritative procedure results under explicit assumptions
+or provide checkable evidence; retain Unproved and exhaustion distinctly.
 
 ### 3. Provider compatibility and checking capability
 
-Define how a checking provider declares the statement/evidence contract,
-foundation, supported profile and operations it accepts. The generic boundary
-must reject an incompatible pairing without interpreting Horos or Go judgments.
-Reuse existing typed/profile compatibility patterns where they fit, and specify
-the corresponding construction and dispatch checks.
+**Already provided:** the ground route explicitly binds a Logos `CheckProfile`
+and consumer context. Search has its own EngineProvider SPI. The typed proposal
+owns foundation/package/service compatibility and receiver-owned checker bindings.
+
+**Bittype decision:** select the checking route and bind its required inputs;
+determine which association/composition operation, if any, needs a shared public
+interface. A direct check does not require an EngineProvider or a second verifier
+registry. Do not invent an independent compatibility descriptor duplicating Logos's
+contract. The generic boundary must reject unsupported pairings without
+interpreting Horos or Go judgments or trying a weaker checker.
 
 Language-specific resolution and analysis retain their existing ID/Name-based
-provider interfaces. A cross-language verifier need not belong to one language;
-a language ID alone cannot identify its checking contract. The exact Go provider
-interface and compatibility descriptor remain open. This does not select a new
-registry, automatic discovery or a fallback checker. Caller composition remains
-explicit, and missing capability cannot silently weaken the requested guarantee.
+interfaces. A language ID alone cannot identify a cross-language checking
+contract. No public checker-provider interface, automatic discovery or fallback
+is selected merely because the eventual association boundary is called an SPI.
 
 ### 4. Result types and failure boundaries
 
-The [outcome meanings](#outcomes-and-trust) are settled; their public Go encoding
-is not. Define how results associate with the exact request and report evidence
-validity, the established judgment and execution completion. Reuse the existing
-completion/verdict concepts where applicable rather than giving one Boolean or
-Rejected value several meanings.
+**Already provided:** Logos has checking outcomes, rejection codes, certification
+results and a completion algebra. Its low-level `Check` still returns
+Accept/Reject with codes, including limit codes; the adapter must use the actual
+selected API rather than assume every route already returns a typed completion.
+
+**Bittype decision:** specify result publication against the joint request and
+projection into located diagnostics and semantic reports. Preserve evidence
+validity, the established judgment and execution completion separately. Reuse
+the existing contracts; do not invent another proof outcome algebra or flatten
+the result to a Boolean.
 
 A valid proof establishes its requested statement relative to admitted
 assumptions. A checked counterexample can refute a preservation claim; malformed
@@ -284,12 +312,13 @@ what diagnostic/assumption information a caller needs to interpret them.
 
 ### Next contract-design deliverable
 
-Specify the minimal claim, bound request, checking-provider and result contracts,
-including their construction authority and compatibility rules. Keep proof
-production separate from proof checking: the checking operation receives an
-independently fixed expected statement and candidate evidence; it does not
-silently find a proof, change the claim or invoke missing analysis. A future
-producer can use its own explicit contract.
+Specify the joint artifact request, source/native projections, expected-claim
+constructor and result association using the selected Logos API. Name the exact
+current types or proposed Logos contract consumed at each boundary, and identify
+unsupported operations explicitly. A new public checker abstraction is justified
+only by an association/composition requirement that direct use does not meet.
+Keep proof production separate: checking receives an independently fixed expected
+statement and supplied evidence, without hidden search or missing analysis.
 
 Use the two examples to review the candidate SPI before public promotion:
 
@@ -336,7 +365,10 @@ proof than a leaf: strength depends on the actual checking contract and basis.
 
 Recommend a narrow Logos-owned **typed, check-only milestone**, admitted through
 Logos's own contract and implementation process. Bittype documentation cannot
-activate proposed Logos semantics. The needed capabilities are:
+activate proposed Logos semantics. The [inspected status](logos-verification.md#typed-statements-existing-proposal-and-experiment)
+distinguishes the implemented Go ground API from the draft typed contract and
+test-private Rust checker. This prerequisite concerns production symbolic
+certification, not every Bittype verification operation. The needed capabilities are:
 
 - Checked signatures and ordered contexts.
 - The dependent-function/pair fragment needed for quantification, implication
@@ -641,10 +673,11 @@ it; a table of future cases is not an implemented native analyzer.
 
 After implementation is authorized:
 
-1. Resolve the [four public SPI decisions](#remaining-public-verification-spi-decisions)
-   around the two exact statements, domains, actual artifact associations and
-   evidence dependencies. Review the candidate contracts through TextBox/Page
-   walkthroughs; complete implementations are not required to design the SPI.
+1. Specify the [Bittype-owned association decisions](#remaining-public-verification-spi-decisions)
+   against the [Logos contract map](logos-verification.md#ownership-map-for-the-verification-spi).
+   Walk through the exact TextBox/Page statements, domains, artifact associations
+   and evidence dependencies without designing another proof or checker registry.
+   Complete implementations are not required to design this boundary.
 2. Establish the concrete TextBox bool counterexample through existing ground
    checking capabilities and authoritative source refutation. No sampling theorem.
 3. Model the selected Go fragment's exact/underlying acceptance characterizations

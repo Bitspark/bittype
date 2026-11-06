@@ -77,6 +77,9 @@ interpret these concrete type semantics.
 - [Type-system reasoning architecture](docs/type-system-architecture.md): expert-reviewed
   ownership, stage-first package roles, exact TextBox/Page statements, Logos
   checking prerequisites and implementation sequence; documentation only.
+- [Logos checking and the verification boundary](docs/logos-verification.md):
+  source-traced production request, direct checking APIs, typed proposal/experiment,
+  Bittype-owned association work and remaining dependencies; documentation only.
 - [Preserving native kind constraints](docs/native-kind-constraints.md): proposed
   direct bounds and source witnesses for all four targets, guarantees and
   unresolved limits; documentation only.

@@ -19,10 +19,13 @@ syntax and use explicit optional composition for actual-output/claim association
 do not introduce a Bittype proof foundation. The TextBox/Page statements determine
 the minimum integration seam and typed-checker requirements.
 The [remaining verification SPI gaps](type-system-architecture.md#remaining-public-verification-spi-decisions)
-separate unfinished public contract shapes from agreed semantics and placement.
-Claim construction, proof production and evidence checking remain distinct;
-the next API design uses TextBox/Page walkthroughs without requiring their full
-implementations first.
+are narrowed by the [Logos request trace and contract map](logos-verification.md):
+Bittype owns joint artifact association and language/mapping integration; Logos
+already supplies direct ground checking and proposes the richer typed contract.
+Production symbolic checking still needs the admitted typed implementation.
+Claim construction, proof production and checking remain distinct. The next API
+design uses TextBox/Page walkthroughs without requiring their full implementations
+or inventing another checking-provider registry.
 
 The [pagination walkthrough](generic-elaboration.md#pagination-and-scope) shows
 the proposed first end-to-end replacement: one open Page, selected mappings for
