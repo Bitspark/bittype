@@ -2,6 +2,7 @@ package rust
 
 import (
 	"encoding/json"
+
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	s "github.com/Bitspark/bittype/syntax/rust/go"
@@ -73,17 +74,22 @@ func (m Model) Declaration(id semantics.EntityID) (Declaration, error) {
 	return Declaration{m.state, id}, nil
 }
 
-// Lookup selects an exact compiler path, for example captured::models::Person.
+// Lookup selects an unambiguous compiler path, for example captured::models::Person.
+// IDs remain authoritative; paths can coincide across native namespaces.
 func (m Model) Lookup(path string) (Declaration, error) {
 	if !m.Valid() {
 		return Declaration{}, ErrForeign
 	}
+	var found semantics.EntityID
 	for i, e := range m.Graph().Data().Entities {
 		if e.Name == path {
-			return m.Declaration(semantics.EntityID(i + 1))
+			if found != 0 {
+				return Declaration{}, ErrForeign
+			}
+			found = semantics.EntityID(i + 1)
 		}
 	}
-	return Declaration{}, ErrForeign
+	return m.Declaration(found)
 }
 func (m Model) Type(id semantics.TermID) (Type, error) {
 	if !m.Valid() || len(m.Graph().Facts(semantics.Subject{Term: id}, Key("native-type"))) != 1 {

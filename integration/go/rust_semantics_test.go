@@ -214,8 +214,9 @@ pub type Item = models::Item;`)
 		t.Fatal("generic default")
 	}
 	fields, _ := rsType(t, m, "Nested").Fields()
-	if !strings.Contains(fields[0].Type.String(), "Page<Person>") {
-		t.Fatal("nested substitution", fields)
+	arguments := fields[0].Type.Term().Arguments
+	if len(arguments) == 0 || arguments[0] != rsType(t, m, "People").ID() {
+		t.Fatal("nested substitution", arguments)
 	}
 	other := rsDecl(t, m, "0", "Boxed")
 	if page.Parameters()[0].ID() == other.Parameters()[0].ID() {
@@ -232,6 +233,22 @@ pub type Item = models::Item;`)
 	}
 	if len(m.Graph().Facts(semantics.Subject{Term: rsType(t, m, "Choice").ID()}, n.Key("variants"))) != 1 {
 		t.Fatal("enum variants")
+	}
+}
+
+func TestRustSemanticNamespaceAndCoordinates(t *testing.T) {
+	m := rsModel(t, "// café\r\npub struct Boxed<T> {pub T: T}\r\npub type Small = Boxed<u8>;\r\n")
+	if _, err := m.Lookup("captured::Boxed::T"); !errors.Is(err, n.ErrForeign) {
+		t.Fatal("ambiguous native namespaces selected by spelling", err)
+	}
+	box := rsDecl(t, m, "0", "Boxed")
+	fields, _ := box.Type().Fields()
+	if len(fields) != 1 || fields[0].Type.Term().Target != box.Parameters()[0].ID() {
+		t.Fatal("namespace or CRLF/UTF-8 source association", fields)
+	}
+	zero := n.Model{}
+	if zero.Valid() || zero.Same(m) || zero.Receipt().Valid() {
+		t.Fatal("zero model")
 	}
 }
 

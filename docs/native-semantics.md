@@ -326,6 +326,7 @@ does not export a semantic occurrence for every nested source type expression.
 `rust.Open(analyzed)` admits the exact completed analysis receipt and reads the
 graph without a compiler invocation. `Lookup` takes a compiler path such as
 `captured::models::Person`; paths select declarations but do not define equality.
+Ambiguous paths across native namespaces require selecting the actual entity ID.
 `Type.Same` means compiler type identity with the same generic binder environment
 in that receipt. It does not imply coercibility, trait satisfaction or Horos
 representation preservation. Declared predicates are facts about declarations,

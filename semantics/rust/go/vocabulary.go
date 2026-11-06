@@ -3,10 +3,11 @@ package rust
 
 import (
 	"errors"
+	"reflect"
+
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/semantics/go"
-	"reflect"
 )
 
 const CompilerVersion = "1.90.0"

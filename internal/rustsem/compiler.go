@@ -6,17 +6,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/rust/go"
 	s "github.com/Bitspark/bittype/syntax/rust/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
-	"io"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 type Output struct {
@@ -145,7 +146,7 @@ func compilerDiagnostics(data []byte, units []Unit) []semantic.Diagnostic {
 			continue
 		}
 		for _, span := range d.Spans {
-			if !span.Primary || span.FileName != "captured.rs" {
+			if !span.Primary || span.FileName != "<captured.rs>" {
 				continue
 			}
 			unit := units[0]

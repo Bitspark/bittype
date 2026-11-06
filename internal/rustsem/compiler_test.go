@@ -3,16 +3,17 @@ package rustsem
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
+	"runtime"
+	"testing"
+
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
 	parser "github.com/Bitspark/bittype/parse/syntax/rust/go"
 	n "github.com/Bitspark/bittype/semantics/rust/go"
 	s "github.com/Bitspark/bittype/syntax/rust/go"
-	"os"
-	"path/filepath"
-	"runtime"
-	"testing"
 )
 
 func compilerFixture(t *testing.T) ([]s.AST, *files.Context) {

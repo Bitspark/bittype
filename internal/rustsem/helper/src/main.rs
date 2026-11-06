@@ -82,7 +82,12 @@ fn unsupported(unit: &Unit) -> Option<&Node> {
         | "type-parameter" | "where-predicate" | "relaxed-bound" | "path-type" | "path-segment"
         | "primitive-type" | "raw-pointer-type" | "slice-type" | "array-type" | "tuple-type"
         | "never-type" => false,
-        "trait-impl" => n.children.as_deref().unwrap_or(&[]).iter().any(|c| c["Role"] == "member"),
+        "trait-impl" => n
+            .children
+            .as_deref()
+            .unwrap_or(&[])
+            .iter()
+            .any(|c| c["Role"] == "member"),
         "reference-type" => !n
             .children
             .as_deref()
@@ -229,7 +234,11 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
         json!({"Tree":self.unit.tree,"Node":id})
     }
     fn path(&self, did: DefId) -> String {
-        format!("{}{}", self.tcx.crate_name(did.krate), self.tcx.def_path(did).to_string_no_crate_verbose())
+        format!(
+            "{}{}",
+            self.tcx.crate_name(did.krate),
+            self.tcx.def_path(did).to_string_no_crate_verbose()
+        )
     }
     fn find(&self, span: Span, kind: &str) -> Option<u32> {
         let lo = self.tcx.sess.source_map().lookup_byte_offset(span.lo());
@@ -245,7 +254,10 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
                     "variant" => n.kind.ends_with("-variant"),
                     _ => n.kind == kind,
                 };
-                matches && n.start <= start && n.end >= end && (kind != "path-segment" || n.start == start)
+                matches
+                    && n.start <= start
+                    && n.end >= end
+                    && (kind != "path-segment" || n.start == start)
             })
             .min_by_key(|n| n.end - n.start)
             .map(|n| n.id)

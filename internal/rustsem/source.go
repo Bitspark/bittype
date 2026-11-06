@@ -4,6 +4,10 @@ package rustsem
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"strings"
+	"unicode/utf8"
+
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
@@ -11,9 +15,6 @@ import (
 	n "github.com/Bitspark/bittype/semantics/rust/go"
 	s "github.com/Bitspark/bittype/syntax/rust/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
-	"reflect"
-	"strings"
-	"unicode/utf8"
 )
 
 type Node struct {
