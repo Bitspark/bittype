@@ -1,0 +1,18 @@
+{
+  "attempts": [
+    {
+      "codeRevision": "e13a6f456d0bdb27e7e7facfd514dbd0cb0dbf67",
+      "idempotencyKey": "bittype-research-0011-fcbaa026-3edd-4a14-bb03-0d3bf64985a5",
+      "attempt": 1,
+      "ownerRule": "Exact consultation input and recovery identifiers retained for the explicit consultation; no separate checksum or administrative verifier workflow.",
+      "submittedSize": 45651,
+      "submittedPath": "research-docs/0011-public-generation-spi.submitted.md",
+      "collection": "bittype-research",
+      "recordedAt": "2026-11-06T06:05:50.8078571Z",
+      "state": "prepared",
+      "cliBuild": "nightfall 0.1.0 (5df394ae65d4, bundle 7ee9a599bfbd) built 2026-11-06T04:26:59.843Z",
+      "slug": "0011-public-generation-spi",
+      "clientTag": "bittype"
+    }
+  ]
+}
