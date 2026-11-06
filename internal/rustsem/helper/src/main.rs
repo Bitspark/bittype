@@ -669,10 +669,18 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
                 }
             }
         }
-        if self.entities.len() + self.terms.len() + self.facts.len() + self.bindings.len() + self.expressions.len() > 32768 {
+        if self.entities.len()
+            + self.terms.len()
+            + self.facts.len()
+            + self.bindings.len()
+            + self.expressions.len()
+            > 32768
+        {
             return Err(("incomplete", "native semantic record limit".into()));
         }
-        Ok(json!({"Entities":self.entities,"Terms":self.terms,"Bindings":self.bindings,"Expressions":self.expressions,"Facts":self.facts}))
+        Ok(
+            json!({"Entities":self.entities,"Terms":self.terms,"Bindings":self.bindings,"Expressions":self.expressions,"Facts":self.facts}),
+        )
     }
 }
 fn main() {
