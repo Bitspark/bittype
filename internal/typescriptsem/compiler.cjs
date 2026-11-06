@@ -169,6 +169,13 @@ function main(request) {
     }
   }
   function ownSymbol(symbol) { return symbol?.getDeclarations()?.some(d => captured(d)); }
+  // External mapped/utility types can synthesize modifiers whose meaning is not
+  // captured by declaration-owned property metadata. Admit only compiler-known
+  // array constructors from the standard library in this bounded profile.
+  for (const unit of request.Units) for (const node of unit.Nodes) if (node.Kind === "type-reference") {
+    const symbol = symbolFor(nativeByNode.get(unit.Tree + ":" + node.ID));
+    if (!ownSymbol(symbol) && !checker.isArrayType(checker.getDeclaredTypeOfSymbol(symbol))) unsupported("External type references other than array constructors are outside captured-types-1", site(unit, node));
+  }
   function properties(type) {
     if (checker.getSignaturesOfType(type, ts.SignatureKind.Call).length || checker.getSignaturesOfType(type, ts.SignatureKind.Construct).length || checker.getIndexInfosOfType(type).length) unsupported("Callable and indexed object types are outside captured-types-1");
     const metadata = [], operands = [];

@@ -163,8 +163,10 @@ Named recursive types retain entity/fact links without cyclic term containment.
 
 Imports and qualified names, callable/method/index signatures, indexed access,
 `keyof`, `unique`, `this`, generic defaults, interface declaration merging and
-external object members remain outside this first profile. Standard arrays and
-readonly arrays are supported. This is bounded native checking, not support for
+external type references other than compiler-recognized array constructors remain
+outside this first profile. Standard arrays and readonly arrays are supported;
+mapped utility types such as `Readonly<T>` are not. Their synthesized modifiers
+need a separate extension of native fact export. This is bounded native checking, not support for
 all TypeScript syntax or arbitrary `.d.ts` dependency closures. Generic
 applications must supply their complete arguments; there is no public dynamic
 generic-instantiation query in this slice.

@@ -258,6 +258,7 @@ func TestTypeScriptSemanticReports(t *testing.T) {
 		{"keyof", "type Box = {value:string}; type Key = keyof Box;", semantic.Unsupported, semantic.Undetermined},
 		{"merging", "interface Box {x:string} interface Box {y:string}", semantic.Unsupported, semantic.Undetermined},
 		{"external", "type DateValue = Date;", semantic.Unsupported, semantic.Undetermined},
+		{"external-mapped", "type Changed = Readonly<{value: string}>;", semantic.Unsupported, semantic.Undetermined},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			snapshot, _, _ := tsCapture(t, tc.text)
