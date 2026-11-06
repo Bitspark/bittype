@@ -3,11 +3,11 @@
 **Design with first public SPI implemented in Go source, 6 November 2026.**
 This extends the
 [native representation design](type-representations.md) to builtin mappings and
-explicit consumer overrides. The existing pagination transformers remain the
-production baseline. The [public generation SPI](generation-spi.md) implements
+explicit consumer overrides. The [automatic composer](generation-composition.md)
+and all four migrated generators are implemented. The [public generation SPI](generation-spi.md) implements
 Use, Publish, Define and paired Introduce/Apply with a minimal guarded invocation
-over preselected collaborators. Automatic selectors/overrides, definition
-scheduling and migration of the four private Dialects remain proposed.
+over selected collaborators. Automatic exact selectors/overrides and definition
+scheduling use that boundary; the four private Dialects are deleted.
 
 The [paired consultation synthesis](generic-elaboration.md) refines this design.
 It replaces the earlier binder-to-slot concept with scoped representation
@@ -91,7 +91,7 @@ putting it in the kernel.
 
 ### Agnostic kernel and recursive composition
 
-The proposed generator is one language-agnostic composition kernel. Every native
+The implemented generator uses one language-agnostic composition kernel. Every native
 representation rule is supplied through plugins, including builtin mappings and
 the structural declaration policy. A language-specific generator becomes a
 configured composition, with this division of work:
@@ -427,7 +427,7 @@ The implemented roles and the remaining composition boundary are:
 
 | Surface | Required meaning |
 | --- | --- |
-| Configured mapping | A preselected Plan with explicit optional capabilities and association owner; automatic exact selectors and guarded override configuration remain future composition work |
+| Configured mapping | A preselected Plan with explicit optional capabilities and association owner; automatic exact selectors and guarded overrides now compose those plans |
 | Source adapter | Source admits supplied evidence and authenticates existing uses, canonical open declarations and effective applications; it performs no hidden analysis |
 | Representation product | Host-sealed Product containing the authenticated native payload and immutable association token, scoped to the source use and target formal environment |
 | Generic convention | One immutable open-declaration convention with paired Introduce and Apply operations |
@@ -692,9 +692,8 @@ bittype/
     callee.go                   acquisition, Introduce, Publish and Define
 ```
 
-The fuller replacement remains proposed. These paths would add substantive
-composition and language-specific implementations, not relocate the minimal
-runner or wrap it without additional responsibility:
+The fuller replacement is implemented. These paths add substantive composition
+and language-specific implementations alongside the minimal runner:
 
 ```text
 bittype/
@@ -706,6 +705,8 @@ bittype/
     source.go                   source view and captured environments
     identity.go                 builtin/declaration selector construction
     read.go                     Horos operands, fields and evidence queries
+  generation/syntax/target/go/
+    builder.go symbols.go assemble.go   shared symbolic storage, no native grammar
   generation/syntax/target/typescript/go/
   generation/syntax/target/golang/go/
   generation/syntax/target/rust/go/
@@ -717,19 +718,20 @@ bittype/
   transforms/horos-to-go/go/transform.go
   transforms/horos-to-rust/go/transform.go
   transforms/horos-to-cpp/go/transform.go
-                                proposed thin configuration-only replacements
+                                implemented thin configuration-only replacements
 ```
 
-Every proposed target directory has the same three-file responsibility split.
+Every concrete target directory has the same construction/symbol/assembly split.
+Rust and C++ additionally keep their native path construction in path.go.
 Syntax is explicit as in the existing stage hierarchy. Source/target are collaborators of
 Syntax generation, not new dimensions. Go uses `golang` in native implementation
 paths and the existing `horos-to-go` transformer edge path remains unchanged.
-Proposed Go package names are `generation` for the shared contract/composer,
+Go package names are `generation` for the shared contract/composer,
 `source` for source adapters and `target` for native adapters; consumers use local
 import aliases when needed. Neither adapter is an engine-registered provider.
 
 Outside Bittype, a type owner can add an independent Go integration module within
-its repository. The location is illustrative; no new repository is required:
+its repository. Horos now implements this layout; other libraries can follow it without a new repository:
 
 ```text
 type-library/
@@ -741,9 +743,11 @@ type-library/
     mapping.go                  owned builtin/declaration mapping
     bindings.go                 supplied exact bindings
 
-horos-owned integration module/
+horos/tooling/bittype/
+  generation/syntax/go/
+    mapping.go diagnostics.go    shared Horos-owned structural policy and rules
   generation/syntax/<language>/go/
-    scalar.go list.go record.go structural.go bindings.go
+    mapping.go bindings.go      native representations and exact supplied bindings
   transforms/horos-to-<target>/go/
     defaults.go                 optional opinionated composition
 
@@ -752,8 +756,8 @@ consumer/
     configuration.go            select bindings, overrides and artifacts
 ```
 
-Only supported target packages are created during a future implementation;
-missing support is explicit, with no empty placeholders. The Horos integration
+All four target packages are implemented; missing representation support is
+explicit, with no empty placeholders. The Horos integration
 owns builtin mappings and structural declaration policies. Horos core does not
 import Bittype. Bittype factories do not import the integration module, so there
 is no Bittype -> integration -> Bittype module dependency cycle.
@@ -776,20 +780,19 @@ artifact contracts and the compatible association/convention protocol. For
 example, replacing the configured text-to-string binding must name its expected
 BindingID and supply the new wrapper mapping and compatible association rules.
 It must fail on a missing/revised expected binding or an incompatible imported
-fixed dependency. That automatic configuration layer remains proposed; the
-implemented [Config and Plan contracts](generation-spi.md) accept explicit
-collaborators and already selected plans. They do not implement guarded overrides
-or dependency selection.
+fixed dependency. The [automatic configuration layer](generation-composition.md) implements
+guarded overrides over the [Config and Plan contracts](generation-spi.md). It
+does not discover dependencies or prove imported artifact compatibility; these
+remain supplied integration obligations.
 
 After construction, the consumer registers one configured ASTTransformer with
 the existing engine. Other targets use the same ownership and operation roles
 with their own integrations and native backends.
 
-The next implementation stage replaces the private fixed Dialect and its builtin
-native mapping switch with this composition. Remove the superseded route without
-compatibility aliases, duplicated builtin modes or hidden defaults when that
-replacement is complete. The first public SPI slice leaves the four production
-pagination generators unchanged.
+The private fixed Dialect and its builtin native mapping switch are deleted.
+All four production generators use this composition. No compatibility aliases,
+duplicated builtin mode or hidden defaults remain. Native enforcement and runtime
+bindings remain separate work.
 
 ## Forbidden shortcuts
 

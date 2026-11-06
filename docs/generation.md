@@ -4,9 +4,9 @@ The [paired generic-generation consultations](generic-elaboration.md) refine
 type-owned plugin composition and native admission. A shared formal/application
 convention and scoped representation products replace the earlier binder-to-slot
 proposal. The [public generation SPI and explicitly driven lifecycle](generation-spi.md)
-are implemented. Automatic plugin composition and replacement of the four
-production pagination generators remain next; target-specific enforcement
-remains proposed.
+and [automatic composition](generation-composition.md) are implemented. The four
+production generators now use supplied mappings and the old private Dialects are
+deleted; target-specific enforcement remains proposed.
 
 The [type-system modeling proposal](type-system-model.md) supplies the design basis:
 describe Horos and native judgments, binding and inference rules before finalizing
@@ -55,7 +55,7 @@ marker-method bodies require the proposed
 [emission scope extension](type-system-architecture.md#go-marker-method-scope-extension)
 beyond native types and interfaces; production support remains deferred.
 
-**Updated: 5 November 2026.** The toolchain is implemented in Go. Generic AST/CST
+**Updated: 6 November 2026.** The toolchain is implemented in Go. Generic AST/CST
 carriers, typed stages, language.Provider and four native text pipelines are
 implemented. The [native text design](parsing-formatting.md) owns parser,
 formatter, printer and checking details. The owner's later 31 October direction
@@ -83,10 +83,11 @@ extends that design to builtin mappings and explicit overrides, using the same
 supplied plugin mechanism. The consuming build configures one concrete transformer
 per language pair. Function, Cell and Stream are resolved module declarations,
 never individual engine registrations. No contract-specific change to
-ASTTransformer is required. The public plugin contracts are proposed; the current
-pagination implementation still uses its private fixed Dialect interface.
+ASTTransformer is required. The public plugin contracts and automatic composer are implemented. Horos-owned
+builtin mappings and optional defaults live outside Bittype in Horos's
+`tooling/bittype` integration module.
 
-The proposed structure is an [agnostic generation kernel with recursive plugin
+The implemented structure is an [agnostic generation kernel with recursive plugin
 composition](type-generation-plugins.md#agnostic-kernel-and-recursive-composition).
 Each language-specific generator is assembled from that kernel, a source semantic
 adapter, supplied builtin/library mappings and a native syntax backend. All
@@ -96,8 +97,8 @@ Page<T> uses record/list mappings, and Page<Cell<Person>> supplies the selected
 Cell<Person> representation without regenerating Page or adding a Cell case.
 Selection precedes body expansion; the chosen plugin requests its child mappings
 under the same configuration. Existing ASTTransformer registration remains the
-whole-language boundary. This is a documented proposal, not an implemented
-replacement for the private pagination generator.
+whole-language boundary. The [composition reference](generation-composition.md)
+describes its public construction and supported limits.
 
 The [runtime value boundary](runtime-values.md) is distinct from this static
 pipeline. Runtime adapters would convert existing hydrated values to/from a

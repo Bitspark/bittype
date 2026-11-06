@@ -1,12 +1,12 @@
 # Public generation operations
 
-This is the first implementation slice of the
+This implements the
 [type-owned generation design](type-generation-plugins.md) and
 [generic elaboration protocol](generic-elaboration.md). Its scope is public
 operation contracts and the machinery needed to exercise them safely with
-explicitly selected collaborators. Automatic mapping selection, definition-queue
-composition and replacement of the four private pagination generators are the
-next slice. Native constraint enforcement and runtime bindings are separate work.
+explicitly selected collaborators. [Automatic composition](generation-composition.md)
+now selects mappings, publishes roots and schedules definitions; all four native
+generators use this SPI. Native constraint enforcement and runtime bindings are separate work.
 
 The [expert review](../research-docs/0011-public-generation-spi.md) addresses
 construction, ownership and generic scope. The existing
@@ -17,8 +17,9 @@ The public package is `github.com/Bitspark/bittype/contracts/generation/go`.
 It contains both the operation contracts and their guarded lifecycle adapter,
 following the existing semantic operation pattern. Keeping issuance with the
 opaque handles avoids an unrestricted public constructor between packages.
-There is no empty composer package or forwarding alias. The future stage-owned
-composer can use this boundary for selection and scheduling.
+The stage-owned `generation/syntax/go` composer uses this boundary for selection
+and scheduling. Session also supports explicit driving; no forwarding alias or
+second issuance path is introduced.
 
 ## Construction and driving
 

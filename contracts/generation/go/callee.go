@@ -1,6 +1,33 @@
 package generation
 
-import "github.com/Bitspark/bittype/trees/representation/go"
+import (
+	"github.com/Bitspark/bittype/trees/representation/go"
+	"slices"
+)
+
+// PendingDefinitions exposes the acquired owned obligations to an outer
+// scheduler. It cannot be called from a mapping callback and never acquires or
+// defines anything. Stable plan order makes scheduling independent of map order.
+func (s *Session[F, T]) PendingDefinitions() ([]Callee[F, T], error) {
+	if err := s.step(); err != nil {
+		return nil, err
+	}
+	if s.depth != 0 {
+		return nil, s.fail(ErrInvalid)
+	}
+	var keys []string
+	for key, p := range s.plans {
+		if c := p.callee; c != nil && c.owned && c.phase == ready {
+			keys = append(keys, key)
+		}
+	}
+	slices.Sort(keys)
+	result := make([]Callee[F, T], 0, len(keys))
+	for _, key := range keys {
+		result = append(result, Callee[F, T]{s.plans[key].callee})
+	}
+	return result, nil
+}
 
 func (s *Session[F, T]) Acquire(d Declaration[F]) (Callee[F, T], error) {
 	if err := s.check(); err != nil {
