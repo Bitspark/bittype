@@ -9,10 +9,13 @@
       "submittedPath": "research-docs/0011-public-generation-spi.submitted.md",
       "collection": "bittype-research",
       "recordedAt": "2026-11-06T06:05:50.8078571Z",
-      "state": "prepared",
+      "state": "submitted",
       "cliBuild": "nightfall 0.1.0 (5df394ae65d4, bundle 7ee9a599bfbd) built 2026-11-06T04:26:59.843Z",
       "slug": "0011-public-generation-spi",
-      "clientTag": "bittype"
+      "clientTag": "bittype",
+      "documentId": "doc_9d0d3c9e-4487-4300-8e9d-3f72381774aa",
+      "runId": "run_971a5b3d-7108-49fe-936a-f2ce60d7c222",
+      "submittedAt": "2026-11-06T06:09:05.2279237Z"
     }
   ]
 }
