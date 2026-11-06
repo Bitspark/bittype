@@ -411,8 +411,7 @@ supplied results produce a visible diagnostic and no attributed success.
 
 The documentation generator does not run qualification tests or native-language
 compiler checks, or download arbitrary results. Its Go loader may prepare
-dependency export data, so generation follows the remote-workload policy.
-Existing remote tests remain responsible for qualification. This adds no
+dependency export data. This adds no
 architectural score, administrative gate or release step.
 
 For captured results, generate a separate execution report with:
@@ -427,7 +426,8 @@ result ledger. The existing test workflow owns execution and its exit status.
 ## Reports and links from both matrices
 
 The generated `docs/provider-capabilities.md` contains provider and transformer
-details. `docs/providers.md` remains the compact entry point. Source links stay;
+details. The generated [language overview](language-support.md) is the compact
+support-depth entry point; [the matrices](providers.md) show availability. Source links stay;
 generation adds a `details` link beside each implemented operation/factory:
 
 ```text
@@ -444,10 +444,70 @@ They do not depend on line
 numbers, feature counts, timestamps, hashes or inspection revisions. A
 symbol/profile change regenerates both the anchor and incoming links together.
 Generated links and sections must agree before publication; a malformed annotation must not publish
-a half-updated matrix. Both documents are fully rendered and validated before
-writing. Two file writes are not a filesystem transaction: a write failure stops
-publication, and the existing updater commits the successful pair together.
+a half-updated matrix. All three documents are fully rendered and validated before
+writing. File writes are not a filesystem transaction: a write failure stops
+publication, and the existing updater commits the successful three documents together.
 Existing authored prose remains outside generated regions.
+
+### Compact language overview
+
+`docs/language-support.md` groups the same captured reporting facts by discovered
+language. It shows available stages and direct transformer directions, owner-written
+features/exclusions, and expandable structural inventories and exact test sources.
+The README and both matrices link to it. No language, stage or feature catalogue
+is added to the renderer. Each selected definition is extracted once, then shared
+by the detailed and compact views, including independently supplied formats.
+
+Existing `bittype:scope` documents own the prose selected for the compact view:
+
+```markdown
+## Type fragment
+
+<!-- bittype:overview scope=type-fragment part=features -->
+Aliases and generic applications have structured syntax tooling.
+<!-- bittype:overview:end -->
+
+<!-- bittype:overview scope=type-fragment part=exclusions -->
+Executable bodies remain outside this profile.
+<!-- bittype:overview:end -->
+```
+
+The marker's `scope` is an existing heading or explicit anchor in that document;
+`-` means the document itself. Selection requires the exact fragment of the
+operation's `bittype:scope` annotation. A file-wide scope does not select its
+children. Profile absence remains distinct from a named profile. Several passages
+can select the same scope, in document order. The owning doc remains the source
+of truth; these passages are authored claims, not inferred or verified support.
+They cannot add a provider, transformer edge or test association.
+
+Passages contain paragraphs with emphasis, single-backtick code spans and simple
+inline Markdown links, at most 4 KiB each. Ordinary
+inline links are rebased to the owning source document. Block markup, reference
+links, images and raw HTML are outside this small excerpt format. Fenced/indented
+examples outside excerpts are ignored. Invalid markers, missing anchors, empty
+or oversized excerpts stop generation before publication. Scope files retain the
+existing module containment and 2 MiB read bounds. An absent feature/exclusion
+passage is reported as unreported, never interpreted as complete support or no
+exclusions. No expectation label or feature spelling is classified by keywords.
+
+Scope passages explicitly associated with multiple languages appear once in a
+shared expandable section. Scopes without excerpts remain listed inside the
+evidence section; they are not silently treated as fully supported.
+
+Repeated wrappers do not inflate case or test counts. Structural inventories may
+be folded by exact definition/format/profile for readability; all operation and
+target associations remain linked separately. Counts describe associated test
+declarations and authored cases, not execution, percentage coverage or separate
+execution of every case annotation. A delegate's evidence remains its own.
+
+The committed overview has no execution outcomes. The existing CI capture steps
+also emit `overview.md` beside each detailed invocation `report.md`. This uses
+the same exact source/build/harness association as the detailed report, counts
+only matched test occurrences, retains repeated pass/fail outcomes and the
+process exit, and credits no language for a mismatched invocation. Full
+diagnostics and unassociated observations remain in that invocation's detailed
+report and raw capture. Counts across languages are not additive: one declared
+test can explicitly cover several languages.
 
 A provider report contains:
 
@@ -495,6 +555,7 @@ tools/provider-matrix/
 docs/
   providers.md           compact generated matrices within authored prose
   provider-capabilities.md  generated static details
+  language-support.md       generated compact language overview
   capability-reports.md  this authored design
 ```
 
@@ -506,7 +567,7 @@ uses the same public runner without changes to the host or renderer. A second
 language using the same grammar table alone would not establish that boundary.
 
 `report.Generate` returns fully rendered documents without writing them.
-`report.Write` writes that pair and reports write failures; it does not commit or
+`report.Write` writes those three documents and reports write failures; it does not commit or
 publish. External tooling consumers can compose another extractor over the
 runner's explicitly selected module snapshot. See the
 [public composition example](../tools/provider-matrix/README.md#public-composition).

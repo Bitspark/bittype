@@ -9,12 +9,17 @@ import (
 	observation "github.com/Bitspark/bittype/tools/provider-matrix/observation/go"
 )
 
-func renderObservations(b io.Writer, p *program, a *annotations, config Config, sourceURL string) {
-	fmt.Fprint(b, "## Invocation observations\n\nEach outcome belongs to one emitted test occurrence in one invocation. Authored profiles and expectations remain separate. Child events do not create independently declared cases.\n\n")
+func observationSnapshot(a *annotations, config Config) observation.Snapshot {
 	snapshot := observation.Snapshot{Context: *config.Context}
 	for _, test := range a.tests {
 		snapshot.Declarations = append(snapshot.Declarations, observation.TestDeclaration{ID: test.id, TestedPackage: test.pkg, Name: test.name, Variant: test.variant, File: test.file})
 	}
+	return snapshot
+}
+
+func renderObservations(b io.Writer, p *program, a *annotations, config Config, sourceURL string) {
+	fmt.Fprint(b, "## Invocation observations\n\nEach outcome belongs to one emitted test occurrence in one invocation. Authored profiles and expectations remain separate. Child events do not create independently declared cases.\n\n")
+	snapshot := observationSnapshot(a, config)
 	assessments := make([]observation.Assessment, len(config.Executions))
 	for i, execution := range config.Executions {
 		assessment := observation.Associate(snapshot, execution)

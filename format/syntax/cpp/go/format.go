@@ -19,7 +19,7 @@ type formatter struct {
 	concrete.Builder[s.Language]
 }
 
-// bittype:scope docs/syntax.md
+// bittype:scope docs/syntax.md#c
 func Format(ctx context.Context, view ast.View[s.Language]) (cst.CST[s.Language], error) {
 	if ctx == nil {
 		return cst.CST[s.Language]{}, errors.New("nil context")

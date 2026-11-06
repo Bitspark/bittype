@@ -53,7 +53,7 @@ var rules = g.Rules{
 }
 
 // bittype:grammar rules
-// bittype:scope docs/syntax.md
+// bittype:scope docs/syntax.md#c
 func Check(view ast.View[s.Language]) error {
 	t := view.ASTView()
 	if err := g.Check(t, "translation-unit", rules); err != nil {

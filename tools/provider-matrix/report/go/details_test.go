@@ -19,7 +19,7 @@ func TestDelegateCasesAreRelatedRatherThanWrapperQualification(t *testing.T) {
 	if err := associateCases(m, a); err != nil {
 		t.Fatal(err)
 	}
-	text, err := p.renderDetails(context.Background(), m, a, Config{}, "https://example.test/source")
+	text, err := p.renderDetails(context.Background(), m, a, Config{}, "https://example.test/source", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

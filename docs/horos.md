@@ -54,10 +54,12 @@ alignment belongs to the [dependency guide](dependencies.md).
 
 ## Syntax vocabulary
 
+<!-- bittype:overview scope=syntax-vocabulary part=features -->
 The canonical module envelope remains revision, name, imports and declarations,
 with revision 4. There is no schema-digest field. The AST retains Program roots,
 module names/pins, imports, ordered parameters and literal Atom/Tuple fragments.
 Module declarations now distinguish kind and type definitions.
+<!-- bittype:overview:end -->
 
 | Construct | AST vocabulary and purpose |
 | --- | --- |
@@ -82,12 +84,14 @@ canonical slots. Optional equation names support readable output, while lexical
 depth/slot determines binding. The formatter freshens names only when needed to
 preserve that binding.
 
+<!-- bittype:overview scope=syntax-vocabulary part=exclusions -->
 The old generic Declaration/Bound nodes and RoleBound are removed. Type/Data
 names are ordinary references and never choose an AST variant. Primitive top
 and sort syntax supplies the unconstrained proper default. Descriptor operands
 still preserve the exact canonical value layout. Only Horos-designated type
 positions contain type expressions; labels, scalar selectors, field wrappers and
 `exact` payloads retain their literal roles.
+<!-- bittype:overview:end -->
 
 Parameter uses, local/imported references and expression callees retain separate
 bindings. A constructor-valued declaration may have no declared parameters, so

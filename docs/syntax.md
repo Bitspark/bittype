@@ -101,6 +101,13 @@ AST, identity interface, pipeline or registry.
 
 ## TypeScript
 
+<!-- bittype:overview scope=typescript part=features -->
+Type-only imports, aliases and interfaces; generic parameters/applications;
+objects, tuples, arrays, unions and intersections; function signatures, indexed
+access and type operators; conditional/infer types and mapped types with key
+remapping and modifier changes have structured syntax tooling.
+<!-- bittype:overview:end -->
+
 Source vocabulary: [nodes.go](../syntax/typescript/go/nodes.go).
 Native reference: [TypeScript object types](https://www.typescriptlang.org/docs/handbook/2/objects.html).
 
@@ -204,11 +211,20 @@ distributivity or canonical constraint preservation. Compiler fixtures test
 representative formatted outputs, including type-only assertions about their
 native results; that does not add a semantic provider or generator mapping.
 
+<!-- bittype:overview scope=typescript part=exclusions -->
 Template-literal types, value declarations, class bodies, decorators and
 executable expressions remain outside this slice. See the
 [text-tooling boundary](parsing-formatting.md#checks-and-admitted-syntax).
+<!-- bittype:overview:end -->
 
 ## Go
+
+<!-- bittype:overview scope=go part=features -->
+Imports, defined types and aliases, generic parameters/applications, structs,
+interfaces and method signatures, function types, pointers, slices, literal-length
+arrays, maps, channels and constraint unions/approximations have structured syntax
+tooling.
+<!-- bittype:overview:end -->
 
 Source vocabulary: [nodes.go](../syntax/golang/go/nodes.go).
 Native reference: [Go types](https://go.dev/ref/spec#Types).
@@ -247,11 +263,19 @@ last input parameter may be variadic; results may not be. Interface method
 signatures cannot introduce method-specific type parameters. Constraint unions
 and approximations belong to constraint positions, not arbitrary value unions.
 
+<!-- bittype:overview scope=go part=exclusions -->
 Array lengths are literal integers in this initial vocabulary. Constant
 expressions, constant/variable/function declarations, method implementations
 and statements are outside this slice.
+<!-- bittype:overview:end -->
 
 ## Rust
+
+<!-- bittype:overview scope=rust part=features -->
+Type aliases, structs, enums, traits, generics and bounds; qualified associated-type
+projections and equality bindings; generic associated-type declarations and
+type-only trait impls with where clauses have structured syntax tooling.
+<!-- bittype:overview:end -->
 
 Source vocabulary: [nodes.go](../syntax/rust/go/nodes.go).
 Native reference: [Rust types](https://doc.rust-lang.org/reference/types.html).
@@ -409,14 +433,22 @@ no trait membership, associated-type existence, equality, lifetime relationship
 or projection normalization is established. Rust compiler fixtures separately
 qualify representative formatted output, including independently authored ASTs.
 
+<!-- bittype:overview scope=rust part=exclusions -->
 Unit structs have no distinct AST form and are rejected.
 Const generics, higher-ranked binders, associated-type argument bounds
 (`Iterator<Item: Clone>`), associated-type defaults, `impl Trait`, macros,
 attributes, inherent/unsafe/negative/specializing impls, associated constants,
 impl methods and executable bodies are outside this slice. Type-only trait
 impls are the supported implementation form.
+<!-- bittype:overview:end -->
 
 ## C++
+
+<!-- bittype:overview scope=c part=features -->
+Includes, namespaces, records, type aliases, enums, type templates, fields,
+method/destructor declarations and structured pointer/reference/array/function
+declarators have syntax tooling, including dependent-name disambiguators.
+<!-- bittype:overview:end -->
 
 Source vocabulary: [nodes.go](../syntax/cpp/go/nodes.go).
 Native reference: [C++ declaration grammar](https://eel.is/c++draft/dcl.pre).
@@ -470,12 +502,14 @@ const T differs from a const pointer to T. NamedType represents applications
 such as `std::vector<T>` using separate name segments and argument nodes.
 There is no source-string fallback for a difficult declarator.
 
+<!-- bittype:overview scope=c part=exclusions -->
 Non-type/template-template parameters, parameter packs, specialization,
 constraints/requires expressions, computed array bounds, initializers,
 constructors, operator declarations, macros and function bodies are outside
 this slice. Qualified member-function-pointer types are rejected because native
 FunctionType has no method CV/ref fields. The maintained native text gates
 provide separately scoped compiler qualification.
+<!-- bittype:overview:end -->
 
 ## Evidence and limits
 

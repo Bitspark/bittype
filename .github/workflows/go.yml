@@ -215,7 +215,7 @@ jobs:
             python3 tools/provider-matrix/capture.py context --root "$GITHUB_WORKSPACE" \
               --output "$directory/source-context.json" "${flags[@]}" || status=1
             go run ./tools/provider-matrix/go -results "$directory/invocation.json" \
-              -context "$directory/source-context.json" -execution-output "$directory/report.md" || status=1
+              -context "$directory/source-context.json" -execution-output "$directory/report.md" -execution-overview "$directory/overview.md" || status=1
           done
           exit "$status"
       - name: Upload invocation capability observations
@@ -232,7 +232,7 @@ jobs:
         run: |
           go run ./tools/provider-matrix/go
           mkdir -p "$RUNNER_TEMP/capability-static"
-          cp docs/providers.md docs/provider-capabilities.md "$RUNNER_TEMP/capability-static/"
+          cp docs/providers.md docs/provider-capabilities.md docs/language-support.md "$RUNNER_TEMP/capability-static/"
       - name: Upload generated static capability reports
         if: ${{ always() }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
@@ -290,7 +290,7 @@ jobs:
           python3 tools/provider-matrix/capture.py context --root "$GITHUB_WORKSPACE" \
             --output "$directory/source-context.json" || status=1
           go run ./tools/provider-matrix/go -results "$directory/invocation.json" \
-            -context "$directory/source-context.json" -execution-output "$directory/report.md" || status=1
+            -context "$directory/source-context.json" -execution-output "$directory/report.md" -execution-overview "$directory/overview.md" || status=1
           exit "$status"
       - name: Upload native invocation capability observations
         if: ${{ always() }}

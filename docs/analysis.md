@@ -322,6 +322,7 @@ pinned dependency closure. It distinguishes source rejection, missing context,
 contradicted context, invalid configuration and resource exhaustion using Horos's
 structured error codes and subjects, never diagnostic message matching.
 
+<!-- bittype:overview scope=horos-profile part=features -->
 The unified Horos profile exports general kinds as provider-owned terms and
 facts. Semantic sort, declared contract, checked symbolic body and individual
 memberships are separate relations. Type and kind definitions have distinct
@@ -330,17 +331,20 @@ Membership facts retain their assumptions; missing facts assert nothing.
 Program validity includes Horos's symbolic obligations on open declarations.
 A syntactically valid `Forward<T> = DataPage<T>` can therefore be rejected before
 specialization. Shared semantic carriers do not interpret these kind rules.
+<!-- bittype:overview:end -->
 
 An unlabelled dependency pool containing Q when import P is required is missing P;
 it does not prove that Q was supplied as P. A present explicit assertion
 contradicting the resolved pin/name or binding is a different failure.
 
+<!-- bittype:overview scope=horos-profile part=exclusions -->
 The Horos syntax profile is `horos-declarations-4/ast-1`: optional semantic binding
 annotations may be absent, while supplied annotations in the analyzed closure
 must agree with analysis. The required entry/root selection is structural.
 Analysis does not repair input or turn stale references into new references
 silently. The explicit `resolve.Model` helper remains semantic and shares the
 same authoritative path.
+<!-- bittype:overview:end -->
 
 [Bounded Go, TypeScript and Rust semantics](native-semantics.md) use the same resolution and
 analysis interfaces. Broader native coverage, C++ analysis, general

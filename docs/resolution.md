@@ -129,6 +129,7 @@ Its profiles are `horos-declarations-4/ast-1`,
 `horos-declarations-4/resolution-1` and `horos-declarations-4/analysis-1`.
 Earlier declaration profiles are removed without a compatibility path.
 
+<!-- bittype:overview scope=horos-composition part=features -->
 Horos resolution accepts multiple separate Program trees and an explicit root entry, resolves its
 reachable pinned module closure, verifies supplied annotations and exports exact
 descriptor payloads and operand paths. Alongside `reference-resolution`, it
@@ -137,13 +138,16 @@ application, reference-dependency and type-fact evidence. General kind facts
 separate sort, result sort, declared contract, result contract, checked symbolic
 body and memberships with assumptions. Its owning resolver currently checks the
 whole required program; a resolution-only request does not promise less work.
+<!-- bittype:overview:end -->
 
+<!-- bittype:overview scope=horos-composition part=exclusions -->
 Unknown imports/declarations can reject reference resolution. Other semantic
 failures retain their own validity diagnostics and may leave reference resolution
 incomplete. They are not automatically evidence of an unbound name. Missing
 dependencies and resource exhaustion remain incomplete outcomes, not rejected
 types. Export exhaustion preserves established reference resolution and program
 validity without a model.
+<!-- bittype:overview:end -->
 
 The analyzer consumes that explicit result, preserves the advertised analysis
 reports and reuses the same model without repeating authoritative resolution.

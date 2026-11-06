@@ -3,11 +3,13 @@
 Generated from selected production declarations and explicit test associations.
 These reports describe bounded implementation scope, not language completeness.
 
-Inspection build: go1.27.3, linux/amd64; Go flags ; explicit build flags .
+Inspection build: go1.27.0, windows/amd64; Go flags -mod=readonly; explicit build flags .
 
 Definitions describe selected initializers; mutation, operation bodies and procedural semantics are not inferred. Profiles and expectations are authored assertions. A test function's observation is not separate execution of every associated case, nor evidence that a wrapper or every branch ran.
 
 [Report contract](capability-reports.md) · [Provider matrices](providers.md) · [Existing CI invocations](https://github.com/Bitspark/bittype/actions/workflows/go.yml)
+
+For a compact view, see the [language support overview](language-support.md).
 
 No execution observations are included in this committed inventory. Per-invocation CI artifacts contain observations with their actual source, build selection and process result. Missing observations do not mean a test never ran.
 
@@ -407,7 +409,7 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Definition: [github.com/Bitspark/bittype/check/syntax/cpp/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L29); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
-#### translation-unit ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L30))
+#### translation-unit (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key translation-unit.
 
@@ -420,7 +422,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### include ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L31))
+#### include (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key include.
 
@@ -433,7 +435,7 @@ Roles: 0 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### namespace ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L32))
+#### namespace (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key namespace.
 
@@ -449,7 +451,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### record ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L33))
+#### record (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key record.
 
@@ -463,7 +465,7 @@ Roles: 3 declared. Attributes: unknown: Attribute collection could not be decode
 
 No feature-key case association at this exact authored profile.
 
-#### type-alias ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L34))
+#### type-alias (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-alias.
 
@@ -481,7 +483,7 @@ Roles: 2 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### enum ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L35))
+#### enum (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key enum.
 
@@ -494,7 +496,7 @@ Roles: 2 declared. Attributes: unknown: Attribute collection could not be decode
 
 No feature-key case association at this exact authored profile.
 
-#### enumerator ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L36))
+#### enumerator (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key enumerator.
 
@@ -507,7 +509,7 @@ Roles: 0 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### base ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L37))
+#### base (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key base.
 
@@ -524,7 +526,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### field ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L38))
+#### field (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key field.
 
@@ -541,7 +543,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### method ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L39))
+#### method (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key method.
 
@@ -554,7 +556,7 @@ Roles: 2 declared. Attributes: unknown: Attribute collection could not be decode
 
 No feature-key case association at this exact authored profile.
 
-#### destructor ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L40))
+#### destructor (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key destructor.
 
@@ -569,7 +571,7 @@ Roles: 0 declared. Attributes: 4 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L41))
+#### parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key parameter.
 
@@ -585,7 +587,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L42))
+#### type-parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-parameter.
 
@@ -602,7 +604,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### named-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L43))
+#### named-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key named-type.
 
@@ -619,7 +621,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### name-segment ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L44))
+#### name-segment (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key name-segment.
 
@@ -636,7 +638,7 @@ Roles: 1 declared. Attributes: 2 declared. References: target.
 
 No feature-key case association at this exact authored profile.
 
-#### builtin-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L45))
+#### builtin-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key builtin-type.
 
@@ -648,7 +650,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### pointer-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L46))
+#### pointer-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key pointer-type.
 
@@ -660,7 +662,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### lvalue-reference-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L47))
+#### lvalue-reference-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key lvalue-reference-type.
 
@@ -672,7 +674,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### rvalue-reference-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L48))
+#### rvalue-reference-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key rvalue-reference-type.
 
@@ -684,7 +686,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### cv-qualified-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L49))
+#### cv-qualified-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key cv-qualified-type.
 
@@ -701,7 +703,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### array-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L50))
+#### array-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key array-type.
 
@@ -717,7 +719,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### function-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L51))
+#### function-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key function-type.
 
@@ -735,7 +737,7 @@ Roles: 2 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### member-pointer-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L52))
+#### member-pointer-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key member-pointer-type.
 
@@ -748,9 +750,9 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-<a id="binding-Mzk0Ok9EcHdjbTkyYVdSbGNqVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlqY0hBdloyOGpVSEp2ZG1sa1pYSXVRMmhsWTJzeE1EYzZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTlqYUdWamF5OW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5NU1ZVzVuZFdGblpWMDFNanBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2Y0hKdmRtbGtaWEl2WTNCd0wyZHZMbEJ5YjNacFpHVnlOVEE2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzlqY0hBdloyOGpUR0Z1WjNWaFoyVXpPbU53Y0E1MzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L2NwcC9nbyNDaGVjazU6c2NvcGUxOiMxNDpkb2NzL3N5bnRheC5tZDU6ZmFsc2UwOg"></a>
+<a id="binding-Mzk0Ok9EcHdjbTkyYVdSbGNqVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlqY0hBdloyOGpVSEp2ZG1sa1pYSXVRMmhsWTJzeE1EYzZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTlqYUdWamF5OW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5NU1ZVzVuZFdGblpWMDFNanBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2Y0hKdmRtbGtaWEl2WTNCd0wyZHZMbEJ5YjNacFpHVnlOVEE2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzlqY0hBdloyOGpUR0Z1WjNWaFoyVXpPbU53Y0E1MzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L2NwcC9nbyNDaGVjazU6c2NvcGUxOiMxNjpkb2NzL3N5bnRheC5tZCNjNTpmYWxzZTA6"></a>
 
-Authored scope: [docs/syntax.md](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md); profile: unspecified (authored profile absent).
+Authored scope: [docs/syntax.md#c](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#c); profile: unspecified (authored profile absent).
 
 ### Declared target [github.com/Bitspark/bittype/provider/cpp/go#Provider.Check](https://github.com/Bitspark/bittype/blob/main/provider/cpp/go/syntax.go#L22)
 
@@ -781,9 +783,9 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
-<a id="binding-NTI3Ok9EcHdjbTkyYVdSbGNqVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlqY0hBdloyOGpVSEp2ZG1sa1pYSXVVR0Z5YzJVeU1EYzZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTl3WVhKelpTOW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTI5dWRISmhZM1J6TDNCaGNuTmxMMmR2TGtsdWNIVjBMQ0JuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2ZEhKbFpYTXZZM04wTDJkdkxrTlRWRnRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5NU1ZVzVuZFdGblpWMWROVEk2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNCeWIzWnBaR1Z5TDJOd2NDOW5ieTVRY205MmFXUmxjalV3T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2WTNCd0wyZHZJMHhoYm1kMVlXZGxNenBqY0hBNTM6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3BhcnNlL3N5bnRheC9jcHAvZ28jUGFyc2U1OnNjb3BlMTojMTQ6ZG9jcy9zeW50YXgubWQ1OmZhbHNlMDo"></a>
+<a id="binding-NTI3Ok9EcHdjbTkyYVdSbGNqVTRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlqY0hBdloyOGpVSEp2ZG1sa1pYSXVVR0Z5YzJVeU1EYzZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMk52Ym5SeVlXTjBjeTl3WVhKelpTOW5ieTVRY205MmFXUmxjbHRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2WTI5dWRISmhZM1J6TDNCaGNuTmxMMmR2TGtsdWNIVjBMQ0JuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2ZEhKbFpYTXZZM04wTDJkdkxrTlRWRnRuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5NU1ZVzVuZFdGblpWMWROVEk2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNCeWIzWnBaR1Z5TDJOd2NDOW5ieTVRY205MmFXUmxjalV3T21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2WTNCd0wyZHZJMHhoYm1kMVlXZGxNenBqY0hBNTM6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3BhcnNlL3N5bnRheC9jcHAvZ28jUGFyc2U1OnNjb3BlMTojMTY6ZG9jcy9zeW50YXgubWQjYzU6ZmFsc2UwOg"></a>
 
-Authored scope: [docs/syntax.md](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md); profile: unspecified (authored profile absent).
+Authored scope: [docs/syntax.md#c](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#c); profile: unspecified (authored profile absent).
 
 ### Declared target [github.com/Bitspark/bittype/provider/cpp/go#Provider.Parse](https://github.com/Bitspark/bittype/blob/main/provider/cpp/go/syntax.go#L19)
 
@@ -1005,9 +1007,9 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
-<a id="binding-NTkwOk9EcHdjbTkyYVdSbGNqVTVPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlqY0hBdloyOGpVSEp2ZG1sa1pYSXVSbTl5YldGME1qVXpPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYjI1MGNtRmpkSE12Wm05eWJXRjBMMmR2TGxCeWIzWnBaR1Z5VzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5MGNtVmxjeTloYzNRdloyOHVWbWxsZDF0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDJOd2NDOW5ieTVNWVc1bmRXRm5aVjBzSUdkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5MGNtVmxjeTlqYzNRdloyOHVRMU5VVzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2WTNCd0wyZHZMa3hoYm1kMVlXZGxYVjAxTWpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmNISnZkbWxrWlhJdlkzQndMMmR2TGxCeWIzWnBaR1Z5TlRBNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5amNIQXZaMjhqVEdGdVozVmhaMlV6T21Od2NBNTU6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2Zvcm1hdC9zeW50YXgvY3BwL2dvI0Zvcm1hdDU6c2NvcGUxOiMxNDpkb2NzL3N5bnRheC5tZDU6ZmFsc2UwOg"></a>
+<a id="binding-NTkwOk9EcHdjbTkyYVdSbGNqVTVPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3Y205MmFXUmxjaTlqY0hBdloyOGpVSEp2ZG1sa1pYSXVSbTl5YldGME1qVXpPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYjI1MGNtRmpkSE12Wm05eWJXRjBMMmR2TGxCeWIzWnBaR1Z5VzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5MGNtVmxjeTloYzNRdloyOHVWbWxsZDF0bmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDJOd2NDOW5ieTVNWVc1bmRXRm5aVjBzSUdkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5MGNtVmxjeTlqYzNRdloyOHVRMU5VVzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2WTNCd0wyZHZMa3hoYm1kMVlXZGxYVjAxTWpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmNISnZkbWxrWlhJdlkzQndMMmR2TGxCeWIzWnBaR1Z5TlRBNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5amNIQXZaMjhqVEdGdVozVmhaMlV6T21Od2NBNTU6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2Zvcm1hdC9zeW50YXgvY3BwL2dvI0Zvcm1hdDU6c2NvcGUxOiMxNjpkb2NzL3N5bnRheC5tZCNjNTpmYWxzZTA6"></a>
 
-Authored scope: [docs/syntax.md](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md); profile: unspecified (authored profile absent).
+Authored scope: [docs/syntax.md#c](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#c); profile: unspecified (authored profile absent).
 
 ### Declared target [github.com/Bitspark/bittype/provider/cpp/go#Provider.Format](https://github.com/Bitspark/bittype/blob/main/provider/cpp/go/syntax.go#L23)
 
@@ -1047,7 +1049,7 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Definition: [github.com/Bitspark/bittype/check/syntax/rust/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L31); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
-#### file ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L32))
+#### file (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key file.
 
@@ -1059,7 +1061,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### module ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L33))
+#### module (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key module.
 
@@ -1076,7 +1078,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### use ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L34))
+#### use (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key use.
 
@@ -1092,7 +1094,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-alias ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L35))
+#### type-alias (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-alias.
 
@@ -1111,7 +1113,7 @@ Roles: 3 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### struct ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L36))
+#### struct (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key struct.
 
@@ -1130,7 +1132,7 @@ Roles: 3 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### tuple-struct ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L37))
+#### tuple-struct (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key tuple-struct.
 
@@ -1149,7 +1151,7 @@ Roles: 3 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### enum ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L38))
+#### enum (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key enum.
 
@@ -1168,7 +1170,7 @@ Roles: 3 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### unit-variant ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L39))
+#### unit-variant (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key unit-variant.
 
@@ -1180,7 +1182,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### tuple-variant ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L40))
+#### tuple-variant (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key tuple-variant.
 
@@ -1196,7 +1198,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### record-variant ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L41))
+#### record-variant (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key record-variant.
 
@@ -1212,7 +1214,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### field ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L42))
+#### field (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key field.
 
@@ -1229,7 +1231,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### tuple-field ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L43))
+#### tuple-field (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key tuple-field.
 
@@ -1245,7 +1247,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### trait ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L44))
+#### trait (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key trait.
 
@@ -1265,7 +1267,7 @@ Roles: 4 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### trait-impl ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L45))
+#### trait-impl (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key trait-impl.
 
@@ -1281,7 +1283,7 @@ Roles: 5 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### associated-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L46))
+#### associated-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key associated-type.
 
@@ -1299,7 +1301,7 @@ Roles: 3 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### method-signature ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L47))
+#### method-signature (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key method-signature.
 
@@ -1319,7 +1321,7 @@ Roles: 5 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### receiver ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L48))
+#### receiver (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key receiver.
 
@@ -1335,7 +1337,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L49))
+#### parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key parameter.
 
@@ -1351,7 +1353,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L50))
+#### type-parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-parameter.
 
@@ -1368,7 +1370,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### lifetime-parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L51))
+#### lifetime-parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key lifetime-parameter.
 
@@ -1384,7 +1386,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### lifetime-reference ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L52))
+#### lifetime-reference (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key lifetime-reference.
 
@@ -1396,7 +1398,7 @@ Roles: 0 declared. Attributes: 1 declared. References: target.
 
 No feature-key case association at this exact authored profile.
 
-#### where-predicate ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L53))
+#### where-predicate (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key where-predicate.
 
@@ -1409,7 +1411,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### relaxed-bound ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L54))
+#### relaxed-bound (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key relaxed-bound.
 
@@ -1421,7 +1423,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### path-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L55))
+#### path-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key path-type.
 
@@ -1437,7 +1439,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### qualified-path-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L56))
+#### qualified-path-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key qualified-path-type.
 
@@ -1451,7 +1453,7 @@ Roles: 3 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### path-segment ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L57))
+#### path-segment (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key path-segment.
 
@@ -1467,7 +1469,7 @@ Roles: 1 declared. Attributes: 1 declared. References: target.
 
 No feature-key case association at this exact authored profile.
 
-#### associated-type-binding ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L58))
+#### associated-type-binding (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key associated-type-binding.
 
@@ -1480,7 +1482,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### primitive-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L59))
+#### primitive-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key primitive-type.
 
@@ -1492,7 +1494,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### reference-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L60))
+#### reference-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key reference-type.
 
@@ -1509,7 +1511,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### raw-pointer-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L61))
+#### raw-pointer-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key raw-pointer-type.
 
@@ -1525,7 +1527,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### slice-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L62))
+#### slice-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key slice-type.
 
@@ -1537,7 +1539,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### array-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L63))
+#### array-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key array-type.
 
@@ -1553,7 +1555,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### tuple-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L64))
+#### tuple-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key tuple-type.
 
@@ -1565,7 +1567,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### never-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L65))
+#### never-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key never-type.
 
@@ -1573,7 +1575,7 @@ Roles: 0 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### function-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L66))
+#### function-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key function-type.
 
@@ -1591,7 +1593,7 @@ Roles: 2 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### trait-object-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L67))
+#### trait-object-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key trait-object-type.
 
@@ -1731,7 +1733,7 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Definition: [github.com/Bitspark/bittype/internal/declsyntax#rules](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L66); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
-#### program ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L67))
+#### program (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key program.
 
@@ -1743,7 +1745,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### module ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L68))
+#### module (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key module.
 
@@ -1761,7 +1763,7 @@ Roles: 2 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### import ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L69))
+#### import (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key import.
 
@@ -1775,7 +1777,7 @@ Roles: 0 declared. Attributes: 3 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-definition ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L70))
+#### type-definition (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-definition.
 
@@ -1793,7 +1795,7 @@ Roles: 3 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-definition ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L71))
+#### kind-definition (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-definition.
 
@@ -1811,7 +1813,7 @@ Roles: 3 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-parameter ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L72))
+#### type-parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-parameter.
 
@@ -1828,7 +1830,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-parameter ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L73))
+#### kind-parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-parameter.
 
@@ -1845,7 +1847,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### parameter ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L74))
+#### parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key parameter.
 
@@ -1857,7 +1859,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### reference ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L75))
+#### reference (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key reference.
 
@@ -1871,7 +1873,7 @@ Roles: 0 declared. Attributes: 3 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### application ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L76))
+#### application (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key application.
 
@@ -1884,7 +1886,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### descriptor ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L77))
+#### descriptor (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key descriptor.
 
@@ -1900,7 +1902,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### atom ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L78))
+#### atom (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key atom.
 
@@ -1912,7 +1914,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### tuple ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L79))
+#### tuple (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key tuple.
 
@@ -1924,7 +1926,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### proper-sort ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L80))
+#### proper-sort (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key proper-sort.
 
@@ -1932,7 +1934,7 @@ Roles: 0 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### arrow-sort ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L81))
+#### arrow-sort (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key arrow-sort.
 
@@ -1945,7 +1947,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-top ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L82))
+#### kind-top (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-top.
 
@@ -1957,7 +1959,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-bottom ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L83))
+#### kind-bottom (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-bottom.
 
@@ -1969,7 +1971,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-parameter-reference ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L84))
+#### kind-parameter-reference (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-parameter-reference.
 
@@ -1981,7 +1983,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-reference ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L85))
+#### kind-reference (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-reference.
 
@@ -1995,7 +1997,7 @@ Roles: 0 declared. Attributes: 3 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-application ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L86))
+#### kind-application (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-application.
 
@@ -2008,7 +2010,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-union ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L87))
+#### kind-union (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-union.
 
@@ -2021,7 +2023,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-intersection ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L88))
+#### kind-intersection (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-intersection.
 
@@ -2034,7 +2036,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-arrow ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L89))
+#### kind-arrow (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-arrow.
 
@@ -2047,7 +2049,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-node ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L90))
+#### kind-node (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-node.
 
@@ -2064,7 +2066,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### selector ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L91))
+#### selector (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key selector.
 
@@ -2077,7 +2079,7 @@ Roles: 0 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-recursive ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L92))
+#### kind-recursive (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-recursive.
 
@@ -2093,7 +2095,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-equation ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L93))
+#### kind-equation (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-equation.
 
@@ -2110,7 +2112,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-recursive-variable ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L94))
+#### kind-recursive-variable (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-recursive-variable.
 
@@ -2123,7 +2125,7 @@ Roles: 0 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### sequence-epsilon ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L95))
+#### sequence-epsilon (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key sequence-epsilon.
 
@@ -2131,7 +2133,7 @@ Roles: 0 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### sequence-item ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L96))
+#### sequence-item (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key sequence-item.
 
@@ -2143,7 +2145,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### sequence-concat ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L97))
+#### sequence-concat (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key sequence-concat.
 
@@ -2155,7 +2157,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### sequence-alternative ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L98))
+#### sequence-alternative (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key sequence-alternative.
 
@@ -2167,7 +2169,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### sequence-star ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L99))
+#### sequence-star (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key sequence-star.
 
@@ -2207,9 +2209,9 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
-<a id="binding-NjAzOk9EcHdjbTkyYVdSbGNqWTBPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYjNKdFlYUXZjM2x1ZEdGNEwyTndjQzluYnlOUWNtOTJhV1JsY2k1R2IzSnRZWFF5TlRNNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTnZiblJ5WVdOMGN5OW1iM0p0WVhRdloyOHVVSEp2ZG1sa1pYSmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM1J5WldWekwyRnpkQzluYnk1V2FXVjNXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZZM0J3TDJkdkxreGhibWQxWVdkbFhTd2daMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM1J5WldWekwyTnpkQzluYnk1RFUxUmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOWpjSEF2WjI4dVRHRnVaM1ZoWjJWZFhUVTNPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYjNKdFlYUXZjM2x1ZEdGNEwyTndjQzluYnk1UWNtOTJhV1JsY2pVd09tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndlkzQndMMmR2STB4aGJtZDFZV2RsTXpwamNIQTU1OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9mb3JtYXQvc3ludGF4L2NwcC9nbyNGb3JtYXQ1OnNjb3BlMTojMTQ6ZG9jcy9zeW50YXgubWQ1OmZhbHNlMDo"></a>
+<a id="binding-NjAzOk9EcHdjbTkyYVdSbGNqWTBPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYjNKdFlYUXZjM2x1ZEdGNEwyTndjQzluYnlOUWNtOTJhV1JsY2k1R2IzSnRZWFF5TlRNNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTnZiblJ5WVdOMGN5OW1iM0p0WVhRdloyOHVVSEp2ZG1sa1pYSmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM1J5WldWekwyRnpkQzluYnk1V2FXVjNXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZZM0J3TDJkdkxreGhibWQxWVdkbFhTd2daMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM1J5WldWekwyTnpkQzluYnk1RFUxUmJaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMM041Ym5SaGVDOWpjSEF2WjI4dVRHRnVaM1ZoWjJWZFhUVTNPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYjNKdFlYUXZjM2x1ZEdGNEwyTndjQzluYnk1UWNtOTJhV1JsY2pVd09tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndlkzQndMMmR2STB4aGJtZDFZV2RsTXpwamNIQTU1OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9mb3JtYXQvc3ludGF4L2NwcC9nbyNGb3JtYXQ1OnNjb3BlMTojMTY6ZG9jcy9zeW50YXgubWQjYzU6ZmFsc2UwOg"></a>
 
-Authored scope: [docs/syntax.md](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md); profile: unspecified (authored profile absent).
+Authored scope: [docs/syntax.md#c](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#c); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -2271,7 +2273,7 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Definition: [github.com/Bitspark/bittype/check/syntax/golang/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L17); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
-#### file ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L18))
+#### file (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key file.
 
@@ -2288,7 +2290,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### import ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L19))
+#### import (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key import.
 
@@ -2301,7 +2303,7 @@ Roles: 0 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-declaration ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L20))
+#### type-declaration (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-declaration.
 
@@ -2318,7 +2320,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-alias ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L21))
+#### type-alias (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-alias.
 
@@ -2335,7 +2337,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L22))
+#### type-parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-parameter.
 
@@ -2351,7 +2353,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### named-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L23))
+#### named-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key named-type.
 
@@ -2363,7 +2365,7 @@ Roles: 0 declared. Attributes: 1 declared. References: target.
 
 No feature-key case association at this exact authored profile.
 
-#### qualified-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L24))
+#### qualified-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key qualified-type.
 
@@ -2376,7 +2378,7 @@ Roles: 0 declared. Attributes: 2 declared. References: target.
 
 No feature-key case association at this exact authored profile.
 
-#### type-application ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L25))
+#### type-application (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-application.
 
@@ -2389,7 +2391,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### struct-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L26))
+#### struct-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key struct-type.
 
@@ -2401,7 +2403,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### field ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L27))
+#### field (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key field.
 
@@ -2418,7 +2420,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### embedded-field ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L28))
+#### embedded-field (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key embedded-field.
 
@@ -2434,7 +2436,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### interface-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L29))
+#### interface-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key interface-type.
 
@@ -2446,7 +2448,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### method ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L30))
+#### method (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key method.
 
@@ -2462,7 +2464,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### embedded-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L31))
+#### embedded-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key embedded-type.
 
@@ -2474,7 +2476,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### function-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L32))
+#### function-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key function-type.
 
@@ -2487,7 +2489,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L33))
+#### parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key parameter.
 
@@ -2504,7 +2506,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### pointer-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L34))
+#### pointer-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key pointer-type.
 
@@ -2516,7 +2518,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### slice-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L35))
+#### slice-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key slice-type.
 
@@ -2528,7 +2530,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### array-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L36))
+#### array-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key array-type.
 
@@ -2544,7 +2546,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### map-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L37))
+#### map-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key map-type.
 
@@ -2557,7 +2559,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### channel-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L38))
+#### channel-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key channel-type.
 
@@ -2573,7 +2575,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-union ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L39))
+#### type-union (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-union.
 
@@ -2585,7 +2587,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-approximation ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L40))
+#### type-approximation (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-approximation.
 
@@ -2715,7 +2717,7 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Definition: [github.com/Bitspark/bittype/check/syntax/typescript/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L18); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
-#### source-file ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L19))
+#### source-file (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key source-file.
 
@@ -2728,7 +2730,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### import ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L20))
+#### import (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key import.
 
@@ -2744,7 +2746,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### import-binding ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L21))
+#### import-binding (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key import-binding.
 
@@ -2757,7 +2759,7 @@ Roles: 0 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### namespace-import ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L22))
+#### namespace-import (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key namespace-import.
 
@@ -2769,7 +2771,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-alias ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L23))
+#### type-alias (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-alias.
 
@@ -2787,7 +2789,7 @@ Roles: 2 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### interface ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L24))
+#### interface (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key interface.
 
@@ -2806,7 +2808,7 @@ Roles: 3 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L25))
+#### type-parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-parameter.
 
@@ -2823,7 +2825,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-reference ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L26))
+#### type-reference (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-reference.
 
@@ -2835,7 +2837,7 @@ Roles: 0 declared. Attributes: 1 declared. References: target.
 
 No feature-key case association at this exact authored profile.
 
-#### qualified-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L27))
+#### qualified-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key qualified-type.
 
@@ -2851,7 +2853,7 @@ Roles: 1 declared. Attributes: 1 declared. References: target.
 
 No feature-key case association at this exact authored profile.
 
-#### type-application ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L28))
+#### type-application (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-application.
 
@@ -2864,7 +2866,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### keyword-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L29))
+#### keyword-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key keyword-type.
 
@@ -2876,7 +2878,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### literal-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L30))
+#### literal-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key literal-type.
 
@@ -2889,7 +2891,7 @@ Roles: 0 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### array-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L31))
+#### array-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key array-type.
 
@@ -2901,7 +2903,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### tuple-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L32))
+#### tuple-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key tuple-type.
 
@@ -2913,7 +2915,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### tuple-element ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L33))
+#### tuple-element (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key tuple-element.
 
@@ -2931,7 +2933,7 @@ Roles: 1 declared. Attributes: 3 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### object-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L34))
+#### object-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key object-type.
 
@@ -2943,7 +2945,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### union-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L35))
+#### union-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key union-type.
 
@@ -2955,7 +2957,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### intersection-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L36))
+#### intersection-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key intersection-type.
 
@@ -2967,7 +2969,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### conditional-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L37))
+#### conditional-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key conditional-type.
 
@@ -2982,7 +2984,7 @@ Roles: 4 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### infer-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L38))
+#### infer-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key infer-type.
 
@@ -2994,7 +2996,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### mapped-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L39))
+#### mapped-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key mapped-type.
 
@@ -3013,7 +3015,7 @@ Roles: 3 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### function-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L40))
+#### function-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key function-type.
 
@@ -3027,7 +3029,7 @@ Roles: 3 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L41))
+#### parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key parameter.
 
@@ -3045,7 +3047,7 @@ Roles: 1 declared. Attributes: 3 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### property ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L42))
+#### property (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key property.
 
@@ -3063,7 +3065,7 @@ Roles: 1 declared. Attributes: 3 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### method ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L43))
+#### method (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key method.
 
@@ -3080,7 +3082,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### call-signature ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L44))
+#### call-signature (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key call-signature.
 
@@ -3092,7 +3094,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### index-signature ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L45))
+#### index-signature (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key index-signature.
 
@@ -3109,7 +3111,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-operator ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L46))
+#### type-operator (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-operator.
 
@@ -3125,7 +3127,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### indexed-access-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L47))
+#### indexed-access-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key indexed-access-type.
 
@@ -3619,7 +3621,7 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Definition: [github.com/Bitspark/bittype/check/syntax/typescript/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L18); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
-#### source-file ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L19))
+#### source-file (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key source-file.
 
@@ -3632,7 +3634,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### import ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L20))
+#### import (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key import.
 
@@ -3648,7 +3650,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### import-binding ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L21))
+#### import-binding (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key import-binding.
 
@@ -3661,7 +3663,7 @@ Roles: 0 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### namespace-import ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L22))
+#### namespace-import (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key namespace-import.
 
@@ -3673,7 +3675,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-alias ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L23))
+#### type-alias (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-alias.
 
@@ -3691,7 +3693,7 @@ Roles: 2 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### interface ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L24))
+#### interface (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key interface.
 
@@ -3710,7 +3712,7 @@ Roles: 3 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L25))
+#### type-parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-parameter.
 
@@ -3727,7 +3729,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-reference ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L26))
+#### type-reference (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-reference.
 
@@ -3739,7 +3741,7 @@ Roles: 0 declared. Attributes: 1 declared. References: target.
 
 No feature-key case association at this exact authored profile.
 
-#### qualified-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L27))
+#### qualified-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key qualified-type.
 
@@ -3755,7 +3757,7 @@ Roles: 1 declared. Attributes: 1 declared. References: target.
 
 No feature-key case association at this exact authored profile.
 
-#### type-application ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L28))
+#### type-application (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-application.
 
@@ -3768,7 +3770,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### keyword-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L29))
+#### keyword-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key keyword-type.
 
@@ -3780,7 +3782,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### literal-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L30))
+#### literal-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key literal-type.
 
@@ -3793,7 +3795,7 @@ Roles: 0 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### array-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L31))
+#### array-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key array-type.
 
@@ -3805,7 +3807,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### tuple-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L32))
+#### tuple-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key tuple-type.
 
@@ -3817,7 +3819,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### tuple-element ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L33))
+#### tuple-element (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key tuple-element.
 
@@ -3835,7 +3837,7 @@ Roles: 1 declared. Attributes: 3 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### object-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L34))
+#### object-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key object-type.
 
@@ -3847,7 +3849,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### union-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L35))
+#### union-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key union-type.
 
@@ -3859,7 +3861,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### intersection-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L36))
+#### intersection-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key intersection-type.
 
@@ -3871,7 +3873,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### conditional-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L37))
+#### conditional-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key conditional-type.
 
@@ -3886,7 +3888,7 @@ Roles: 4 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### infer-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L38))
+#### infer-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key infer-type.
 
@@ -3898,7 +3900,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### mapped-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L39))
+#### mapped-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key mapped-type.
 
@@ -3917,7 +3919,7 @@ Roles: 3 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### function-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L40))
+#### function-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key function-type.
 
@@ -3931,7 +3933,7 @@ Roles: 3 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L41))
+#### parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key parameter.
 
@@ -3949,7 +3951,7 @@ Roles: 1 declared. Attributes: 3 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### property ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L42))
+#### property (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key property.
 
@@ -3967,7 +3969,7 @@ Roles: 1 declared. Attributes: 3 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### method ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L43))
+#### method (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key method.
 
@@ -3984,7 +3986,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### call-signature ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L44))
+#### call-signature (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key call-signature.
 
@@ -3996,7 +3998,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### index-signature ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L45))
+#### index-signature (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key index-signature.
 
@@ -4013,7 +4015,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-operator ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L46))
+#### type-operator (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-operator.
 
@@ -4029,7 +4031,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### indexed-access-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/typescript/go/check.go#L47))
+#### indexed-access-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/typescript/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key indexed-access-type.
 
@@ -4111,7 +4113,7 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Definition: [github.com/Bitspark/bittype/internal/declsyntax#rules](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L66); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
-#### program ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L67))
+#### program (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key program.
 
@@ -4123,7 +4125,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### module ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L68))
+#### module (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key module.
 
@@ -4141,7 +4143,7 @@ Roles: 2 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### import ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L69))
+#### import (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key import.
 
@@ -4155,7 +4157,7 @@ Roles: 0 declared. Attributes: 3 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-definition ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L70))
+#### type-definition (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-definition.
 
@@ -4173,7 +4175,7 @@ Roles: 3 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-definition ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L71))
+#### kind-definition (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-definition.
 
@@ -4191,7 +4193,7 @@ Roles: 3 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-parameter ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L72))
+#### type-parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-parameter.
 
@@ -4208,7 +4210,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-parameter ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L73))
+#### kind-parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-parameter.
 
@@ -4225,7 +4227,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### parameter ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L74))
+#### parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key parameter.
 
@@ -4237,7 +4239,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### reference ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L75))
+#### reference (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key reference.
 
@@ -4251,7 +4253,7 @@ Roles: 0 declared. Attributes: 3 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### application ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L76))
+#### application (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key application.
 
@@ -4264,7 +4266,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### descriptor ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L77))
+#### descriptor (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key descriptor.
 
@@ -4280,7 +4282,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### atom ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L78))
+#### atom (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key atom.
 
@@ -4292,7 +4294,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### tuple ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L79))
+#### tuple (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key tuple.
 
@@ -4304,7 +4306,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### proper-sort ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L80))
+#### proper-sort (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key proper-sort.
 
@@ -4312,7 +4314,7 @@ Roles: 0 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### arrow-sort ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L81))
+#### arrow-sort (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key arrow-sort.
 
@@ -4325,7 +4327,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-top ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L82))
+#### kind-top (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-top.
 
@@ -4337,7 +4339,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-bottom ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L83))
+#### kind-bottom (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-bottom.
 
@@ -4349,7 +4351,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-parameter-reference ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L84))
+#### kind-parameter-reference (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-parameter-reference.
 
@@ -4361,7 +4363,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-reference ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L85))
+#### kind-reference (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-reference.
 
@@ -4375,7 +4377,7 @@ Roles: 0 declared. Attributes: 3 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-application ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L86))
+#### kind-application (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-application.
 
@@ -4388,7 +4390,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-union ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L87))
+#### kind-union (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-union.
 
@@ -4401,7 +4403,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-intersection ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L88))
+#### kind-intersection (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-intersection.
 
@@ -4414,7 +4416,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-arrow ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L89))
+#### kind-arrow (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-arrow.
 
@@ -4427,7 +4429,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-node ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L90))
+#### kind-node (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-node.
 
@@ -4444,7 +4446,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### selector ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L91))
+#### selector (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key selector.
 
@@ -4457,7 +4459,7 @@ Roles: 0 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-recursive ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L92))
+#### kind-recursive (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-recursive.
 
@@ -4473,7 +4475,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-equation ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L93))
+#### kind-equation (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-equation.
 
@@ -4490,7 +4492,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### kind-recursive-variable ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L94))
+#### kind-recursive-variable (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key kind-recursive-variable.
 
@@ -4503,7 +4505,7 @@ Roles: 0 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### sequence-epsilon ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L95))
+#### sequence-epsilon (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key sequence-epsilon.
 
@@ -4511,7 +4513,7 @@ Roles: 0 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### sequence-item ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L96))
+#### sequence-item (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key sequence-item.
 
@@ -4523,7 +4525,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### sequence-concat ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L97))
+#### sequence-concat (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key sequence-concat.
 
@@ -4535,7 +4537,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### sequence-alternative ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L98))
+#### sequence-alternative (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key sequence-alternative.
 
@@ -4547,7 +4549,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### sequence-star ([source](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L99))
+#### sequence-star (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/internal/declsyntax#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key sequence-star.
 
@@ -4711,7 +4713,7 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Definition: [github.com/Bitspark/bittype/check/syntax/golang/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L17); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
-#### file ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L18))
+#### file (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key file.
 
@@ -4728,7 +4730,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### import ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L19))
+#### import (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key import.
 
@@ -4741,7 +4743,7 @@ Roles: 0 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-declaration ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L20))
+#### type-declaration (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-declaration.
 
@@ -4758,7 +4760,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-alias ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L21))
+#### type-alias (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-alias.
 
@@ -4775,7 +4777,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L22))
+#### type-parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-parameter.
 
@@ -4791,7 +4793,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### named-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L23))
+#### named-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key named-type.
 
@@ -4803,7 +4805,7 @@ Roles: 0 declared. Attributes: 1 declared. References: target.
 
 No feature-key case association at this exact authored profile.
 
-#### qualified-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L24))
+#### qualified-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key qualified-type.
 
@@ -4816,7 +4818,7 @@ Roles: 0 declared. Attributes: 2 declared. References: target.
 
 No feature-key case association at this exact authored profile.
 
-#### type-application ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L25))
+#### type-application (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-application.
 
@@ -4829,7 +4831,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### struct-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L26))
+#### struct-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key struct-type.
 
@@ -4841,7 +4843,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### field ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L27))
+#### field (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key field.
 
@@ -4858,7 +4860,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### embedded-field ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L28))
+#### embedded-field (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key embedded-field.
 
@@ -4874,7 +4876,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### interface-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L29))
+#### interface-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key interface-type.
 
@@ -4886,7 +4888,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### method ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L30))
+#### method (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key method.
 
@@ -4902,7 +4904,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### embedded-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L31))
+#### embedded-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key embedded-type.
 
@@ -4914,7 +4916,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### function-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L32))
+#### function-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key function-type.
 
@@ -4927,7 +4929,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L33))
+#### parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key parameter.
 
@@ -4944,7 +4946,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### pointer-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L34))
+#### pointer-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key pointer-type.
 
@@ -4956,7 +4958,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### slice-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L35))
+#### slice-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key slice-type.
 
@@ -4968,7 +4970,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### array-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L36))
+#### array-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key array-type.
 
@@ -4984,7 +4986,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### map-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L37))
+#### map-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key map-type.
 
@@ -4997,7 +4999,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### channel-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L38))
+#### channel-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key channel-type.
 
@@ -5013,7 +5015,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-union ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L39))
+#### type-union (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-union.
 
@@ -5025,7 +5027,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-approximation ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/golang/go/check.go#L40))
+#### type-approximation (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/golang/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-approximation.
 
@@ -5258,7 +5260,7 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Definition: [github.com/Bitspark/bittype/check/syntax/cpp/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L29); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
-#### translation-unit ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L30))
+#### translation-unit (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key translation-unit.
 
@@ -5271,7 +5273,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### include ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L31))
+#### include (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key include.
 
@@ -5284,7 +5286,7 @@ Roles: 0 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### namespace ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L32))
+#### namespace (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key namespace.
 
@@ -5300,7 +5302,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### record ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L33))
+#### record (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key record.
 
@@ -5314,7 +5316,7 @@ Roles: 3 declared. Attributes: unknown: Attribute collection could not be decode
 
 No feature-key case association at this exact authored profile.
 
-#### type-alias ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L34))
+#### type-alias (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-alias.
 
@@ -5332,7 +5334,7 @@ Roles: 2 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### enum ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L35))
+#### enum (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key enum.
 
@@ -5345,7 +5347,7 @@ Roles: 2 declared. Attributes: unknown: Attribute collection could not be decode
 
 No feature-key case association at this exact authored profile.
 
-#### enumerator ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L36))
+#### enumerator (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key enumerator.
 
@@ -5358,7 +5360,7 @@ Roles: 0 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### base ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L37))
+#### base (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key base.
 
@@ -5375,7 +5377,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### field ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L38))
+#### field (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key field.
 
@@ -5392,7 +5394,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### method ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L39))
+#### method (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key method.
 
@@ -5405,7 +5407,7 @@ Roles: 2 declared. Attributes: unknown: Attribute collection could not be decode
 
 No feature-key case association at this exact authored profile.
 
-#### destructor ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L40))
+#### destructor (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key destructor.
 
@@ -5420,7 +5422,7 @@ Roles: 0 declared. Attributes: 4 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L41))
+#### parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key parameter.
 
@@ -5436,7 +5438,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L42))
+#### type-parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-parameter.
 
@@ -5453,7 +5455,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### named-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L43))
+#### named-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key named-type.
 
@@ -5470,7 +5472,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### name-segment ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L44))
+#### name-segment (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key name-segment.
 
@@ -5487,7 +5489,7 @@ Roles: 1 declared. Attributes: 2 declared. References: target.
 
 No feature-key case association at this exact authored profile.
 
-#### builtin-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L45))
+#### builtin-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key builtin-type.
 
@@ -5499,7 +5501,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### pointer-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L46))
+#### pointer-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key pointer-type.
 
@@ -5511,7 +5513,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### lvalue-reference-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L47))
+#### lvalue-reference-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key lvalue-reference-type.
 
@@ -5523,7 +5525,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### rvalue-reference-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L48))
+#### rvalue-reference-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key rvalue-reference-type.
 
@@ -5535,7 +5537,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### cv-qualified-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L49))
+#### cv-qualified-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key cv-qualified-type.
 
@@ -5552,7 +5554,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### array-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L50))
+#### array-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key array-type.
 
@@ -5568,7 +5570,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### function-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L51))
+#### function-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key function-type.
 
@@ -5586,7 +5588,7 @@ Roles: 2 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### member-pointer-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/cpp/go/check.go#L52))
+#### member-pointer-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/cpp/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key member-pointer-type.
 
@@ -5599,9 +5601,9 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-<a id="binding-NDA0Ok9EcHdjbTkyYVdSbGNqWXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndlkzQndMMmR2STFCeWIzWnBaR1Z5TGtOb1pXTnJNVEEzT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdlkyaGxZMnN2WjI4dVVISnZkbWxrWlhKYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5amNIQXZaMjh1VEdGdVozVmhaMlZkTlRZNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTm9aV05yTDNONWJuUmhlQzlqY0hBdloyOHVVSEp2ZG1sa1pYSTFNRHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5Tk1ZVzVuZFdGblpUTTZZM0J3NTM6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NoZWNrL3N5bnRheC9jcHAvZ28jQ2hlY2s1OnNjb3BlMTojMTQ6ZG9jcy9zeW50YXgubWQ1OmZhbHNlMDo"></a>
+<a id="binding-NDA0Ok9EcHdjbTkyYVdSbGNqWXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndlkzQndMMmR2STFCeWIzWnBaR1Z5TGtOb1pXTnJNVEEzT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdlkyaGxZMnN2WjI4dVVISnZkbWxrWlhKYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5amNIQXZaMjh1VEdGdVozVmhaMlZkTlRZNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTm9aV05yTDNONWJuUmhlQzlqY0hBdloyOHVVSEp2ZG1sa1pYSTFNRHBuYVhSb2RXSXVZMjl0TDBKcGRITndZWEpyTDJKcGRIUjVjR1V2YzNsdWRHRjRMMk53Y0M5bmJ5Tk1ZVzVuZFdGblpUTTZZM0J3NTM6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NoZWNrL3N5bnRheC9jcHAvZ28jQ2hlY2s1OnNjb3BlMTojMTY6ZG9jcy9zeW50YXgubWQjYzU6ZmFsc2UwOg"></a>
 
-Authored scope: [docs/syntax.md](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md); profile: unspecified (authored profile absent).
+Authored scope: [docs/syntax.md#c](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#c); profile: unspecified (authored profile absent).
 
 No associated cases found in the selected test sources. This does not establish absence of tests.
 
@@ -5627,9 +5629,9 @@ Traversal boundary: not a single-return static call.
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
-<a id="binding-NTM4Ok9EcHdjbTkyYVdSbGNqWXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3WVhKelpTOXplVzUwWVhndlkzQndMMmR2STFCeWIzWnBaR1Z5TGxCaGNuTmxNakEzT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmNHRnljMlV2WjI4dVVISnZkbWxrWlhKYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTnZiblJ5WVdOMGN5OXdZWEp6WlM5bmJ5NUpibkIxZEN3Z1oybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzUnlaV1Z6TDJOemRDOW5ieTVEVTFSYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5amNIQXZaMjh1VEdGdVozVmhaMlZkWFRVMk9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXdZWEp6WlM5emVXNTBZWGd2WTNCd0wyZHZMbEJ5YjNacFpHVnlOVEE2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzlqY0hBdloyOGpUR0Z1WjNWaFoyVXpPbU53Y0E1MzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcGFyc2Uvc3ludGF4L2NwcC9nbyNQYXJzZTU6c2NvcGUxOiMxNDpkb2NzL3N5bnRheC5tZDU6ZmFsc2UwOg"></a>
+<a id="binding-NTM4Ok9EcHdjbTkyYVdSbGNqWXlPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl3WVhKelpTOXplVzUwWVhndlkzQndMMmR2STFCeWIzWnBaR1Z5TGxCaGNuTmxNakEzT21kcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5amIyNTBjbUZqZEhNdmNHRnljMlV2WjI4dVVISnZkbWxrWlhKYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTnZiblJ5WVdOMGN5OXdZWEp6WlM5bmJ5NUpibkIxZEN3Z1oybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzUnlaV1Z6TDJOemRDOW5ieTVEVTFSYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5amNIQXZaMjh1VEdGdVozVmhaMlZkWFRVMk9tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXdZWEp6WlM5emVXNTBZWGd2WTNCd0wyZHZMbEJ5YjNacFpHVnlOVEE2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzlqY0hBdloyOGpUR0Z1WjNWaFoyVXpPbU53Y0E1MzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcGFyc2Uvc3ludGF4L2NwcC9nbyNQYXJzZTU6c2NvcGUxOiMxNjpkb2NzL3N5bnRheC5tZCNjNTpmYWxzZTA6"></a>
 
-Authored scope: [docs/syntax.md](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md); profile: unspecified (authored profile absent).
+Authored scope: [docs/syntax.md#c](https://github.com/Bitspark/bittype/blob/main/docs/syntax.md#c); profile: unspecified (authored profile absent).
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -5773,7 +5775,7 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Definition: [github.com/Bitspark/bittype/check/syntax/rust/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L31); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
-#### file ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L32))
+#### file (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key file.
 
@@ -5785,7 +5787,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### module ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L33))
+#### module (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key module.
 
@@ -5802,7 +5804,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### use ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L34))
+#### use (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key use.
 
@@ -5818,7 +5820,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-alias ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L35))
+#### type-alias (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-alias.
 
@@ -5837,7 +5839,7 @@ Roles: 3 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### struct ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L36))
+#### struct (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key struct.
 
@@ -5856,7 +5858,7 @@ Roles: 3 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### tuple-struct ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L37))
+#### tuple-struct (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key tuple-struct.
 
@@ -5875,7 +5877,7 @@ Roles: 3 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### enum ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L38))
+#### enum (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key enum.
 
@@ -5894,7 +5896,7 @@ Roles: 3 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### unit-variant ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L39))
+#### unit-variant (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key unit-variant.
 
@@ -5906,7 +5908,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### tuple-variant ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L40))
+#### tuple-variant (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key tuple-variant.
 
@@ -5922,7 +5924,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### record-variant ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L41))
+#### record-variant (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key record-variant.
 
@@ -5938,7 +5940,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### field ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L42))
+#### field (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key field.
 
@@ -5955,7 +5957,7 @@ Roles: 1 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### tuple-field ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L43))
+#### tuple-field (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key tuple-field.
 
@@ -5971,7 +5973,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### trait ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L44))
+#### trait (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key trait.
 
@@ -5991,7 +5993,7 @@ Roles: 4 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### trait-impl ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L45))
+#### trait-impl (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key trait-impl.
 
@@ -6007,7 +6009,7 @@ Roles: 5 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### associated-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L46))
+#### associated-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key associated-type.
 
@@ -6025,7 +6027,7 @@ Roles: 3 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### method-signature ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L47))
+#### method-signature (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key method-signature.
 
@@ -6045,7 +6047,7 @@ Roles: 5 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### receiver ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L48))
+#### receiver (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key receiver.
 
@@ -6061,7 +6063,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L49))
+#### parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key parameter.
 
@@ -6077,7 +6079,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### type-parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L50))
+#### type-parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key type-parameter.
 
@@ -6094,7 +6096,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### lifetime-parameter ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L51))
+#### lifetime-parameter (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key lifetime-parameter.
 
@@ -6110,7 +6112,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### lifetime-reference ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L52))
+#### lifetime-reference (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key lifetime-reference.
 
@@ -6122,7 +6124,7 @@ Roles: 0 declared. Attributes: 1 declared. References: target.
 
 No feature-key case association at this exact authored profile.
 
-#### where-predicate ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L53))
+#### where-predicate (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key where-predicate.
 
@@ -6135,7 +6137,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### relaxed-bound ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L54))
+#### relaxed-bound (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key relaxed-bound.
 
@@ -6147,7 +6149,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### path-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L55))
+#### path-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key path-type.
 
@@ -6163,7 +6165,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### qualified-path-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L56))
+#### qualified-path-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key qualified-path-type.
 
@@ -6177,7 +6179,7 @@ Roles: 3 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### path-segment ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L57))
+#### path-segment (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key path-segment.
 
@@ -6193,7 +6195,7 @@ Roles: 1 declared. Attributes: 1 declared. References: target.
 
 No feature-key case association at this exact authored profile.
 
-#### associated-type-binding ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L58))
+#### associated-type-binding (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key associated-type-binding.
 
@@ -6206,7 +6208,7 @@ Roles: 2 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### primitive-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L59))
+#### primitive-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key primitive-type.
 
@@ -6218,7 +6220,7 @@ Roles: 0 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### reference-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L60))
+#### reference-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key reference-type.
 
@@ -6235,7 +6237,7 @@ Roles: 2 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### raw-pointer-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L61))
+#### raw-pointer-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key raw-pointer-type.
 
@@ -6251,7 +6253,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### slice-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L62))
+#### slice-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key slice-type.
 
@@ -6263,7 +6265,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### array-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L63))
+#### array-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key array-type.
 
@@ -6279,7 +6281,7 @@ Roles: 1 declared. Attributes: 1 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### tuple-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L64))
+#### tuple-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key tuple-type.
 
@@ -6291,7 +6293,7 @@ Roles: 1 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### never-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L65))
+#### never-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key never-type.
 
@@ -6299,7 +6301,7 @@ Roles: 0 declared. Attributes: 0 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### function-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L66))
+#### function-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key function-type.
 
@@ -6317,7 +6319,7 @@ Roles: 2 declared. Attributes: 2 declared. References: none.
 
 No feature-key case association at this exact authored profile.
 
-#### trait-object-type ([source](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/go/check.go#L67))
+#### trait-object-type (source unavailable)
 
 Feature identity: definition github.com/Bitspark/bittype/check/syntax/rust/go#rules / format github.com/Bitspark/bittype/internal/grammar#Rules / key trait-object-type.
 

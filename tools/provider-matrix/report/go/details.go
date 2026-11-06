@@ -302,7 +302,32 @@ func (p *program) symbolLink(symbol capability.Symbol, sourceURL string) string 
 	return fmt.Sprintf("[%s](%s)", escape(symbol.String()), sourceTarget(p.root, sourceURL, pos.Filename, pos.Line))
 }
 
-func (p *program) renderDetails(ctx context.Context, m *matrix, a *annotations, config Config, sourceURL string) (string, error) {
+// Capture each selected definition once for every rendered view. Formatting a
+// second report must not invoke an extractor again or see a different inventory.
+func (p *program) extractDefinitions(ctx context.Context, m *matrix, a *annotations, config Config) (map[capability.Symbol]definitionReport, error) {
+	definitions := map[capability.Symbol]definitionReport{}
+	source := newSourceView(p)
+	for _, op := range operations(m) {
+		for _, target := range operationTargets(op) {
+			for _, entry := range a.operations[target] {
+				if entry.directive.name != "grammar" {
+					continue
+				}
+				if _, ok := definitions[entry.root]; ok {
+					continue
+				}
+				definition, err := extractDefinition(ctx, source, entry.root, config.Extractors, config.Limits)
+				if err != nil {
+					return nil, err
+				}
+				definitions[entry.root] = definition
+			}
+		}
+	}
+	return definitions, nil
+}
+
+func (p *program) renderDetails(ctx context.Context, m *matrix, a *annotations, config Config, sourceURL string, definitions map[capability.Symbol]definitionReport) (string, error) {
 	var b limitedText
 	b.WriteString("# Provider capability details\n\nGenerated from selected production declarations and explicit test associations.\nThese reports describe bounded implementation scope, not language completeness.\n\n")
 	fmt.Fprintf(&b, "Inspection build: %s, %s/%s; Go flags %s; explicit build flags %s.\n\n", escape(p.build.GOVERSION), escape(p.build.GOOS), escape(p.build.GOARCH), escape(p.build.GOFLAGS), escape(strings.Join(config.BuildFlags, " ")))
@@ -313,11 +338,15 @@ func (p *program) renderDetails(ctx context.Context, m *matrix, a *annotations, 
 		matrixLink = sourceTarget(p.root, sourceURL, config.MatrixPath, 0)
 	}
 	fmt.Fprintf(&b, "[Report contract](%s) · [Provider matrices](%s) · [Existing CI invocations](https://%s/actions/workflows/go.yml)\n\n", contractLink, matrixLink, p.module)
+	overviewLink := relativeReportLink(config.DetailsPath, config.OverviewPath)
+	if config.Context != nil {
+		overviewLink = sourceTarget(p.root, sourceURL, config.OverviewPath, 0)
+	}
+	fmt.Fprintf(&b, "For a compact view, see the [language support overview](%s).\n\n", overviewLink)
 	if len(config.Executions) == 0 {
 		b.WriteString("No execution observations are included in this committed inventory. Per-invocation CI artifacts contain observations with their actual source, build selection and process result. Missing observations do not mean a test never ran.\n\n")
 	}
 	source := newSourceView(p)
-	definitions := map[capability.Symbol]definitionReport{}
 	for _, op := range operations(m) {
 		if err := ctx.Err(); err != nil {
 			return "", err
@@ -394,15 +423,7 @@ func (p *program) renderDetails(ctx context.Context, m *matrix, a *annotations, 
 					continue
 				}
 				hasDefinition = true
-				definition, ok := definitions[entry.root]
-				if !ok {
-					var err error
-					definition, err = extractDefinition(ctx, source, entry.root, config.Extractors, config.Limits)
-					if err != nil {
-						return "", err
-					}
-					definitions[entry.root] = definition
-				}
+				definition := definitions[entry.root]
 				fmt.Fprintf(&b, "Definition: %s; format: %s; extraction: **%s**; profile: %s.\n\n", p.symbolLink(entry.root, sourceURL), escape(definition.format), escape(definition.state), escape(profileLabel(entry.directive.profile)))
 				renderInventory(&b, p, source, sourceURL, definition, cases, entry.directive.profile, entries)
 			}

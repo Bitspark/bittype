@@ -60,12 +60,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          documents=(docs/providers.md docs/provider-capabilities.md)
+          documents=(docs/providers.md docs/provider-capabilities.md docs/language-support.md)
           if git diff --quiet -- "${documents[@]}" && [ -z "$(git ls-files --others --exclude-standard -- "${documents[@]}")" ]; then
             echo 'No generated documentation changes.'
             exit 0
           fi
-          # Only this generated document pair is staged. No credentials are available
+          # Only this generated document set is staged. No credentials are available
           # to the generation step or persisted in Git configuration on disk.
           branch=automation/provider-matrices
           base=$(git rev-parse HEAD)
@@ -88,7 +88,7 @@ jobs:
           git push "--force-with-lease=refs/heads/$branch:$remote" origin "HEAD:refs/heads/$branch"
           pr=$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number // empty')
           if [ -z "$pr" ]; then
-            printf '%s\n' 'Regenerate the provider and transformer tables and detailed static capability inventory from implemented Go source. Publish docs/providers.md and docs/provider-capabilities.md together; execution observations remain CI artifacts.' > "$RUNNER_TEMP/provider-matrices-body.md"
+            printf '%s\n' 'Regenerate the provider and transformer tables and detailed static capability inventory plus compact language overview from implemented Go source. Publish docs/providers.md, docs/provider-capabilities.md and docs/language-support.md together; execution observations remain CI artifacts.' > "$RUNNER_TEMP/provider-matrices-body.md"
             gh pr create --head "$branch" --base main --title 'docs: regenerate provider matrices [skip ci]' --body-file "$RUNNER_TEMP/provider-matrices-body.md"
             pr=$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number')
           fi

@@ -224,7 +224,7 @@ type Alias = Conditional
 ` + "type Conditional struct{ Check Node `role:\"check\" min:\"1\" max:\"1\" kind:\"node\"`; True Node `role:\"true\" min:\"1\" max:\"1\" kind:\"node\"` }\n" +
 			"type Forms struct{ Conditional Conditional `form:\"conditional-type\"`; Alias Alias `form:\"aliased-type\"`; Imported f.Record `form:\"imported-type\"`; Unsupported func() `form:\"unsupported-form\"` }\n",
 		"docs/providers.md": "# Providers\n<!-- generated:providers:begin -->\n<!-- generated:providers:end -->\n<!-- generated:transformers:begin -->\n<!-- generated:transformers:end -->\n",
-		"docs/scope.md":     "# Fixture\n## Types\nThe fixture supplies its own struct-tag interpretation.\n",
+		"docs/scope.md":     "# Fixture\n## Types\n<!-- bittype:overview scope=types part=features -->\nThe fixture supplies its own struct-tag interpretation.\n<!-- bittype:overview:end -->\n<!-- bittype:overview scope=types part=exclusions -->\nNon-struct forms remain unknown.\n<!-- bittype:overview:end -->\n",
 	}
 	for path, text := range sources {
 		filename := filepath.Join(root, filepath.FromSlash(path))
@@ -263,6 +263,35 @@ func TestIndependentStructFormatUsesPublicRunner(t *testing.T) {
 	}
 	if !strings.Contains(documents.Matrix, "provider-capabilities.md#") {
 		t.Fatal("matrix does not link capability report")
+	}
+	if strings.Count(documents.Matrix, "[Ember](language-support.md#language-") != 3 {
+		t.Fatal("both matrices must link to the exact language overview")
+	}
+	for _, value := range []string{"Ember", "example.test/struct-tags/v1", "4 declared forms", "conditional-type", "Non-struct forms remain unknown", "partial", "0 associated test declarations"} {
+		if !strings.Contains(documents.Overview, value) {
+			t.Fatalf("missing %q in compact overview", value)
+		}
+	}
+	if err := report.Write(documents); err != nil {
+		t.Fatal(err)
+	}
+	if data, err := os.ReadFile(filepath.Join(root, "docs/language-support.md")); err != nil || string(data) != documents.Overview {
+		t.Fatal("overview not published", err)
+	}
+	// Malformed scope passages fail before the caller can publish any document.
+	scopePath := filepath.Join(root, "docs/scope.md")
+	original, err := os.ReadFile(scopePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(scopePath, append(original, []byte("\n<!-- bittype:overview scope=types part=features -->\nunclosed\n")...), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if partial, err := report.Generate(context.Background(), config); err == nil || partial.Matrix != "" || partial.Capabilities != "" || partial.Overview != "" {
+		t.Fatal("malformed excerpt produced publishable output", err)
+	}
+	if err := os.WriteFile(scopePath, original, 0600); err != nil {
+		t.Fatal(err)
 	}
 	// The same public host rejects ambiguous owners and a result pointing outside
 	// its source capture; an extractor cannot grant itself association authority.

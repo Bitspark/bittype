@@ -304,11 +304,13 @@ comments remain trivia, not directives or canonical data.
 
 ## Pipeline and limits
 
+<!-- bittype:overview scope=pipeline-and-limits part=features -->
 Syntax parsing constructs a lossless CST and AST view. Formatting constructs CST
 from an AST view directly; the generic printer emits supplied leaves. The
 provider composes independently registered Syntax/check/resolution/analysis
 capabilities. [Files parsing and formatting](source.md) compose these stages over
 several Program trees without creating a second language.
+<!-- bittype:overview:end -->
 
 Direct parsing/printing retains original source, comments, BOM and line endings.
 Formatting uses four-space indentation and LF, removes source trivia and preserves
@@ -317,7 +319,9 @@ the same canonical sort/kind. Recursive names can change while their canonical
 lexical references remain fixed. A freshly parsed formatted document requires
 new resolution; source text does not recreate old node IDs or receipts.
 
+<!-- bittype:overview scope=pipeline-and-limits part=exclusions -->
 Source is bounded to 4 MiB and 200,000 lexical tokens. Syntax/AST/CST and canonical
 operations retain their separate limits. Failures return no usable partial
 output. Function, Stream and Cell remain ordinary declarations with no parser or engine
 special cases.
+<!-- bittype:overview:end -->

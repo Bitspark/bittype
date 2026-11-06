@@ -22,37 +22,42 @@ func contained(root, path string) bool {
 // scopeDocument admits only an existing Markdown file within the selected
 // module. Lexical and resolved filesystem containment are both checked.
 func scopeDocument(root, reference string) (string, error) {
+	reference, _, err := scopeSource(root, reference)
+	return reference, err
+}
+
+func scopeSource(root, reference string) (string, string, error) {
 	name, fragment, _ := strings.Cut(reference, "#")
 	if name == "" || strings.ContainsAny(name, "\\:") || strings.HasPrefix(name, "/") || !strings.HasSuffix(name, ".md") {
-		return "", fmt.Errorf("scope must name a module-relative Markdown file: %q", reference)
+		return "", "", fmt.Errorf("scope must name a module-relative Markdown file: %q", reference)
 	}
 	path := filepath.Join(root, filepath.FromSlash(name))
 	if !contained(root, path) {
-		return "", fmt.Errorf("scope path escapes selected module")
+		return "", "", fmt.Errorf("scope path escapes selected module")
 	}
 	realRoot, err := filepath.EvalSymlinks(root)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	realPath, err := filepath.EvalSymlinks(path)
 	if err != nil {
-		return "", fmt.Errorf("scope document: %w", err)
+		return "", "", fmt.Errorf("scope document: %w", err)
 	}
 	if !contained(realRoot, realPath) {
-		return "", fmt.Errorf("scope symlink escapes selected module")
+		return "", "", fmt.Errorf("scope symlink escapes selected module")
 	}
 	info, err := os.Stat(realPath)
 	if err != nil || !info.Mode().IsRegular() || info.Size() > 2<<20 {
-		return "", fmt.Errorf("scope document unavailable or exceeds 2 MiB: %s", name)
+		return "", "", fmt.Errorf("scope document unavailable or exceeds 2 MiB: %s", name)
 	}
 	data, err := os.ReadFile(realPath)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if fragment != "" {
 		decoded, err := url.PathUnescape(fragment)
 		if err != nil || !headingAnchors(string(data))[decoded] {
-			return "", fmt.Errorf("scope fragment does not exist: %s", reference)
+			return "", "", fmt.Errorf("scope fragment does not exist: %s", reference)
 		}
 		fragment = decoded
 	}
@@ -61,7 +66,7 @@ func scopeDocument(root, reference string) (string, error) {
 	if fragment != "" {
 		result += "#" + fragment
 	}
-	return result, nil
+	return result, string(data), nil
 }
 
 // Heading fragments follow GitHub's punctuation removal, whitespace and duplicate

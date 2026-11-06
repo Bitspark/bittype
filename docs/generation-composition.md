@@ -52,13 +52,16 @@ supplied structural policy. Inventory does not lower a body. Source admission
 still covers the complete original application, including arguments a mapping
 may omit from its native output.
 
+<!-- bittype:overview scope=construction-and-selection part=features -->
 A Selector combines a compatible source language/profile/Go marker with an
 opaque key. Display names and graph-local IDs are not selector identity. The
 Horos adapter constructs keys for exact module-pin/declaration pairs, builtin
 constructors with literal discriminators, and bound variables. Only that adapter
 interprets Horos identity. Native choices never follow a name such as Cell or
 Data, a kind classification, or an expanded structural fingerprint.
+<!-- bittype:overview:end -->
 
+<!-- bittype:overview scope=construction-and-selection part=exclusions -->
 `NewBindings` captures an effective table. Duplicate exact bindings fail. An
 override must name the existing Mapping.ID in ExpectedID and provide a different
 new ID; missing, stale, repeated and foreign-profile overrides fail. Exact
@@ -66,6 +69,7 @@ bindings precede the explicitly supplied structural policy. Failure of a
 selected mapping ends the invocation; no fallback or automatic specialization
 is attempted. Factories create invocation-local collaborators; their Plan and
 selection policy must remain stable and must not lower bodies speculatively.
+<!-- bittype:overview:end -->
 
 ## Demands, generics and final output
 

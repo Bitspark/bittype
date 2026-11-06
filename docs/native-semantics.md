@@ -42,12 +42,18 @@ compatibility entry point remains. No type-generation behavior changes.
 
 ## First Go profile
 
+<!-- bittype:overview scope=first-go-profile part=features -->
 The supported subset remains the captured type-declaration fragment: one supplied
 package across at most 16 files, defined types and aliases, generic parameters and
 applications, named/predeclared types, slices, ordinary struct fields and tags,
-embedded interface type terms, approximations and unions. Imported packages,
+embedded interface type terms, approximations and unions.
+<!-- bittype:overview:end -->
+
+<!-- bittype:overview scope=first-go-profile part=exclusions -->
+Imported packages,
 methods, embedded struct fields, pointer/array/map/function types and executable
 bodies remain unsupported. Syntax acceptance does not promise semantic coverage.
+<!-- bittype:overview:end -->
 
 The language version is Go 1.25, the package path is `captured`, and the only
 external scope is the predeclared universe. The native compiler is the `go/types`
@@ -154,13 +160,16 @@ offsets. Caller origins are not proof of correspondence. Supplied resolved
 references must agree with compiler symbols. No formatter or printer is involved;
 checking generated text would require an explicit new capture.
 
+<!-- bittype:overview scope=first-typescript-profile part=features -->
 The first profile covers aliases, interfaces and bases, generic parameters and
 constraints, explicit applications, references, primitive/literal types, arrays,
 tuples, object properties, unions, intersections and readonly arrays/tuples.
 Script files share global scope; exported declarations give each file module
 scope. Binders and declarations with the same spelling remain distinct symbols.
 Named recursive types retain entity/fact links without cyclic term containment.
+<!-- bittype:overview:end -->
 
+<!-- bittype:overview scope=first-typescript-profile part=exclusions -->
 Imports and qualified names, callable/method/index signatures, indexed access,
 `keyof`, `unique`, `this`, generic defaults, interface declaration merging and
 external type references other than compiler-recognized array constructors remain
@@ -168,6 +177,8 @@ outside this first profile. Standard arrays and readonly arrays are supported;
 mapped utility types such as `Readonly<T>` are not. Their synthesized modifiers
 need a separate extension of native fact export. Authored conditional and mapped
 types are also unsupported even though the syntax provider admits them.
+<!-- bittype:overview:end -->
+
 The existing syntax parser rejects diagnostic-control comments (`@ts-nocheck`,
 `@ts-ignore`, `@ts-expect-error`, `@ts-check`) and source dependency directives.
 Supplying an AST separately does not bypass that rule: correspondence reparses
@@ -282,6 +293,7 @@ printed from ASTs to obtain a compiler input; generated text needs a new explici
 capture. The helper distinguishes compiler-injected standard prelude declarations
 from authored declarations.
 
+<!-- bittype:overview scope=first-rust-profile part=features -->
 The supported semantic fragment is one captured source file with inline modules,
 type aliases, structs/tuple structs, enums with unit/tuple/record variants, fields,
 ordinary type parameters and defaults, effective generic applications, paths,
@@ -291,7 +303,9 @@ predicates and empty type-only trait impls are checked by the compiler. Sysroot
 types use their compiler declaration identities: `Vec`, `Option`, `String`, `Box`
 and similar types have no name-specific mapping in Bittype. Their internals stay
 opaque; effective arguments include native defaults, such as an allocator argument.
+<!-- bittype:overview:end -->
 
+<!-- bittype:overview scope=first-rust-profile part=exclusions -->
 Imports and multi-file crates, dependency closures, methods/functions/callable
 types, trait objects, associated types/projections/GATs, lifetime parameters,
 non-static references, const generics and higher-ranked predicates are outside
@@ -300,6 +314,7 @@ semantic coverage. An unsupported source construct or exported compiler form
 reports unsupported coverage without a partial graph. The standard compiler
 prelude and sysroot are part of the explicit environment, not a library-name
 switch in the kernel.
+<!-- bittype:overview:end -->
 
 The provider-owned `rust` vocabulary is:
 
