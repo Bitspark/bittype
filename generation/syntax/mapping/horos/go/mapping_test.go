@@ -7,7 +7,7 @@ import (
 )
 
 func TestStructuralNamingPolicy(t *testing.T) {
-	for _, name := range []string{"", "_", "a__b", "a-b", "Ã©"} {
+	for _, name := range []string{"", "_", "a__b", "a-b", "\u00e9"} {
 		if _, err := rules.Exported(name); err == nil {
 			t.Fatal("unsupported identifier accepted", name)
 		}
