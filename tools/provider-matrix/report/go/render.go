@@ -53,27 +53,16 @@ func escape(text string) string {
 }
 
 func (p *program) render(m *matrix, sourceURL string, detailPaths ...string) (string, string, error) {
-	var providers, transformers strings.Builder
-	languageLabel := func(lang language) string {
-		if len(detailPaths) > 1 {
-			return fmt.Sprintf("[%s](%s#language-%s)", escape(lang.name), detailPaths[1], stableKey(lang.id))
-		}
-		return escape(lang.name)
-	}
+	var providers strings.Builder
 	providers.WriteString("| Level | Provider |")
-	transformers.WriteString("| Source → target |")
 	for _, lang := range m.languages {
-		fmt.Fprintf(&providers, " %s |", languageLabel(lang))
-		fmt.Fprintf(&transformers, " %s |", languageLabel(lang))
+		fmt.Fprintf(&providers, " %s |", matrixLanguageLabel(lang, detailPaths...))
 	}
 	providers.WriteString("\n| --- | --- |")
-	transformers.WriteString("\n| --- |")
 	for range m.languages {
 		providers.WriteString(" :---: |")
-		transformers.WriteString(" :---: |")
 	}
 	providers.WriteString("\n")
-	transformers.WriteString("\n")
 	var rows []*row
 	for _, row := range m.rows {
 		rows = append(rows, row)
@@ -95,18 +84,45 @@ func (p *program) render(m *matrix, sourceURL string, detailPaths ...string) (st
 		}
 		providers.WriteString("\n")
 	}
+	transformers, err := p.renderTransformers(m, sourceURL, detailPaths...)
+	if err != nil {
+		return "", "", err
+	}
+	return providers.String(), transformers, nil
+}
+
+func matrixLanguageLabel(lang language, detailPaths ...string) string {
+	if len(detailPaths) > 1 {
+		return fmt.Sprintf("[%s](%s#language-%s)", escape(lang.name), detailPaths[1], stableKey(lang.id))
+	}
+	return escape(lang.name)
+}
+
+// Both report views use the same direct-edge matrix. Never add inferred routes
+// or identity edges while rendering it.
+func (p *program) renderTransformers(m *matrix, sourceURL string, detailPaths ...string) (string, error) {
+	var b strings.Builder
+	b.WriteString("| Source → target |")
+	for _, lang := range m.languages {
+		fmt.Fprintf(&b, " %s |", matrixLanguageLabel(lang, detailPaths...))
+	}
+	b.WriteString("\n| --- |")
+	for range m.languages {
+		b.WriteString(" :---: |")
+	}
+	b.WriteString("\n")
 	for _, from := range m.languages {
-		fmt.Fprintf(&transformers, "| %s |", languageLabel(from))
+		fmt.Fprintf(&b, "| %s |", matrixLanguageLabel(from, detailPaths...))
 		for _, to := range m.languages {
 			links, err := p.links(m.edges[from.id][to.id], sourceURL, detailPaths...)
 			if err != nil {
-				return "", "", err
+				return "", err
 			}
-			fmt.Fprintf(&transformers, " %s |", links)
+			fmt.Fprintf(&b, " %s |", links)
 		}
-		transformers.WriteString("\n")
+		b.WriteString("\n")
 	}
-	return providers.String(), transformers.String(), nil
+	return b.String(), nil
 }
 
 func replaceRegion(document, name, table string) (string, error) {

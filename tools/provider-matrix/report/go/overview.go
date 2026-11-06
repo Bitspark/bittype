@@ -18,11 +18,10 @@ type overviewBinding struct {
 }
 
 type languageOverview struct {
-	language      language
-	stages, edges []string
-	bindings      []overviewBinding
-	cases         []caseAssociation
-	tests         map[string]bool
+	language language
+	bindings []overviewBinding
+	cases    []caseAssociation
+	tests    map[string]bool
 }
 
 func caseKey(c caseAssociation) string {
@@ -33,21 +32,6 @@ func collectOverview(m *matrix, a *annotations) []languageOverview {
 	var result []languageOverview
 	for _, lang := range m.languages {
 		view := languageOverview{language: lang, tests: map[string]bool{}}
-		levels := map[string][]string{}
-		for _, row := range m.rows {
-			if len(row.cells[lang.id]) == 0 {
-				continue
-			}
-			// Abbreviate only the label; the detail links retain each exact Go
-			// contract and instantiated operation. These labels decide no identity.
-			label, _, _ := strings.Cut(row.contract, "[")
-			levels[row.level] = append(levels[row.level], label)
-		}
-		for level, labels := range levels {
-			slices.Sort(labels)
-			view.stages = append(view.stages, escape(level)+": "+escape(strings.Join(slices.Compact(labels), ", ")))
-		}
-		slices.Sort(view.stages)
 		bindings, cases := map[string]bool{}, map[string]bool{}
 		for _, op := range operations(m) {
 			belongs := sameLanguage(op.language, lang)
@@ -56,9 +40,6 @@ func collectOverview(m *matrix, a *annotations) []languageOverview {
 			}
 			if !belongs {
 				continue
-			}
-			if op.from != nil {
-				view.edges = append(view.edges, op.from.name+" → "+op.to.name)
 			}
 			for _, target := range operationTargets(op) {
 				for _, entry := range a.operations[target] {
@@ -77,8 +58,6 @@ func collectOverview(m *matrix, a *annotations) []languageOverview {
 				}
 			}
 		}
-		slices.Sort(view.edges)
-		view.edges = slices.Compact(view.edges)
 		slices.SortFunc(view.bindings, func(a, b overviewBinding) int {
 			return strings.Compare(bindingAnchor(a.op, a.target, a.entry), bindingAnchor(b.op, b.target, b.entry))
 		})
@@ -109,15 +88,24 @@ func (p *program) renderOverview(ctx context.Context, m *matrix, a *annotations,
 		b.WriteString("This committed view contains no execution results. Existing CI artifacts pair invocation reports with compact overviews; those retain source/build applicability and process failures. An absent observation does not mean a test never ran.\n\n")
 	}
 	fmt.Fprintf(&b, "Inspection build: %s, %s/%s; explicit build flags: %s.\n\n", escape(p.build.GOVERSION), escape(p.build.GOOS), escape(p.build.GOARCH), escape(strings.Join(config.BuildFlags, " ")))
-	b.WriteString("| Language | Available stages | Direct transformations | Associated tests / cases |\n| --- | --- | --- | --- |\n")
-	for _, view := range views {
-		edges := escape(strings.Join(view.edges, "; "))
-		if edges == "" {
-			edges = "None discovered"
+	b.WriteString("Languages: ")
+	for i, view := range views {
+		if i > 0 {
+			b.WriteString(" · ")
 		}
-		fmt.Fprintf(&b, "| [%s](#language-%s) | %s | %s | %d / %d |\n", escape(view.language.name), stableKey(view.language.id), strings.Join(view.stages, "<br>"), edges, len(view.tests), len(view.cases))
+		fmt.Fprintf(&b, "[%s](#language-%s)", escape(view.language.name), stableKey(view.language.id))
 	}
-	b.WriteString("\nStage availability and transformer edges do not establish configured mappings, whole-language coverage or end-to-end reachability. Missing stages remain visible in the matrices.\n\n")
+	b.WriteString("\n\n## Direct transformer matrix\n\nRows are source languages; columns are target languages. Each populated cell links to its exact factory and capability evidence. `/` means no directly implemented transformer is discovered, including on the diagonal. Composed routes and configured applicability are separate.\n\n")
+	transformers, err := p.renderTransformers(m, sourceURL, detailsLink, "")
+	if err != nil {
+		return "", err
+	}
+	b.WriteString(transformers)
+	b.WriteString("\nProvider matrices below use discovered dimensions and provider contracts. `/` means no implementation is discovered for that pairing; it does not declare the pairing impossible. Each implementation retains its own source and evidence links.\n\n")
+	grid, err := collectProviderGrid(m)
+	if err != nil {
+		return "", err
+	}
 	scopes, err := p.overviewScopes(views, sourceURL)
 	if err != nil {
 		return "", err
@@ -127,6 +115,13 @@ func (p *program) renderOverview(ctx context.Context, m *matrix, a *annotations,
 			return "", err
 		}
 		fmt.Fprintf(&b, "<a id=\"language-%s\"></a>\n\n## %s\n\n", stableKey(view.language.id), escape(view.language.name))
+		identity, providers, err := p.renderProviderGrid(grid, view.language, sourceURL, detailsLink)
+		if err != nil {
+			return "", err
+		}
+		fmt.Fprintf(&b, "Language ID: %s. Identity: %s.\n\n", escape(view.language.id), identity)
+		b.WriteString(providers)
+		b.WriteString("\n")
 		var scoped []overviewScope
 		for _, scope := range scopes {
 			if slices.Contains(scope.languages, view.language.id) {
@@ -224,23 +219,40 @@ func renderOverviewObservations(b *limitedText, a *annotations, config Config, v
 		for _, reason := range assessment.Reasons {
 			fmt.Fprintf(b, "- %s\n", escape(reason))
 		}
-		b.WriteString("\n| Language | Matched test occurrences by outcome |\n| --- | --- |\n")
+		columns := []observation.Outcome{observation.Passed, observation.Failed, observation.Skipped, observation.Incomplete}
+		var additional []observation.Outcome
+		for _, association := range assessment.Observations {
+			if !slices.Contains(columns, association.Run.Outcome) {
+				additional = append(additional, association.Run.Outcome)
+			}
+		}
+		slices.Sort(additional)
+		columns = append(columns, slices.Compact(additional)...)
+		b.WriteString("\n`/` means no matching observation. Zero means observations matched, but none had that outcome.\n\n| Language |")
+		for _, outcome := range columns {
+			fmt.Fprintf(b, " %s |", escape(string(outcome)))
+		}
+		b.WriteString("\n| --- |")
+		for range columns {
+			b.WriteString(" --- |")
+		}
+		b.WriteString("\n")
 		for _, view := range views {
-			outcomes := map[string]int{}
+			outcomes := map[observation.Outcome]int{}
 			for _, association := range assessment.Observations {
 				if association.Status == observation.Matched && view.tests[association.DeclarationID] {
-					outcomes[string(association.Run.Outcome)]++
+					outcomes[association.Run.Outcome]++
 				}
 			}
-			var labels []string
-			for outcome, count := range outcomes {
-				labels = append(labels, fmt.Sprintf("%s: %d", escape(outcome), count))
+			fmt.Fprintf(b, "| %s |", escape(view.language.name))
+			for _, outcome := range columns {
+				if len(outcomes) == 0 {
+					b.WriteString(" / |")
+				} else {
+					fmt.Fprintf(b, " %d |", outcomes[outcome])
+				}
 			}
-			slices.Sort(labels)
-			if len(labels) == 0 {
-				labels = []string{"No matching observation"}
-			}
-			fmt.Fprintf(b, "| %s | %s |\n", escape(view.language.name), strings.Join(labels, "; "))
+			b.WriteString("\n")
 		}
 		b.WriteString("\n")
 	}

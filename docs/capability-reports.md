@@ -449,16 +449,41 @@ writing. File writes are not a filesystem transaction: a write failure stops
 publication, and the existing updater commits the successful three documents together.
 Existing authored prose remains outside generated regions.
 
-### Compact language overview
+### Language overview matrices
 
 `docs/language-support.md` groups the same captured reporting facts by discovered
-language. It shows available stages and direct transformer directions, owner-written
-features/exclusions, and expandable structural inventories and exact test sources.
+language. It shows a dimension × provider-contract matrix for each language and a
+separate source-language × target-language matrix of direct transformers, alongside
+owner-written features/exclusions and expandable inventories and exact test sources.
 The README and both matrices link to it. No language, stage or feature catalogue
 is added to the renderer. Each selected definition is extracted once, then shared
-by the detailed and compact views, including independently supplied formats.
+by the detailed and language views, including independently supplied formats.
 
-Existing `bittype:scope` documents own the prose selected for the compact view:
+**Owner direction, 6 November 2026:** preserve conceptual matrix axes. Do not
+replace stage dimensions or transformation endpoints with lists in a combined
+cell, or suppress empty rows/columns to make the overview smaller. The transformer
+matrix and each provider matrix remain visible; expandable details hold their
+supporting evidence.
+
+Provider rows are discovered dimension labels. Columns are the actual originating
+Go provider declarations, compared by Go type identity. Instantiations of one
+provider in different dimensions share a column, while each cell retains every
+exact instantiated operation and its evidence link. Same-spelled unrelated
+contracts receive qualified column labels; they are never merged. All discovered
+axes appear for every language, including completely empty rows or columns.
+Language identity appears as metadata above its matrix, separate from pipeline
+operations. There is no fixed list of dimensions, roles or languages.
+
+Transformer rows and columns both contain every discovered language. Only
+explicitly discovered direct edges populate cells. Reverse, composed and diagonal
+identity routes are not inferred. Both documentation views use the same direct-edge
+renderer. `/` means no discovered implementation for that pairing, not a claim
+that the pairing is inherently impossible. Populated cells link separately to each
+implementation and its exact capability details, including scope/profile/test
+associations. Language-wide test totals remain in the evidence section; they do
+not serve as per-cell qualification.
+
+Existing `bittype:scope` documents own the prose selected for the overview:
 
 ```markdown
 ## Type fragment
@@ -501,7 +526,11 @@ declarations and authored cases, not execution, percentage coverage or separate
 execution of every case annotation. A delegate's evidence remains its own.
 
 The committed overview has no execution outcomes. The existing CI capture steps
-also emit `overview.md` beside each detailed invocation `report.md`. This uses
+also emit `overview.md` beside each detailed invocation `report.md`. Outcomes
+remain a language × outcome matrix: pass, fail, skip and incomplete occupy
+separate columns; any additional supplied outcome retains its own column. `/`
+means no matching observation, while zero means matching observations exist but
+none has that outcome. This uses
 the same exact source/build/harness association as the detailed report, counts
 only matched test occurrences, retains repeated pass/fail outcomes and the
 process exit, and credits no language for a mismatched invocation. Full
