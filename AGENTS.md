@@ -32,6 +32,15 @@ requires correction. Its scoped proof results do not establish compliance with
 the library-owned composition rule. Preserve the agnostic association and Logos
 checking boundaries while replacing its closed contribution path.
 
+Reference the [AC-01 through AC-08 rules](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#numbered-rules)
+when explaining architectural requirements or violations. Maintain a numbered
+[case record](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/README.md)
+for an identified violation and update it with the actual correction and its
+qualification when fixed, linking the owning design. The current verification
+case is [ACX-001](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/0001-bittype-verification-composition.md),
+still correction pending. Do not mark a case corrected on a proposal or on tests
+that do not establish the violated boundary.
+
 Read [CHARTER.md](CHARTER.md), [docs/model.md](docs/model.md),
 [docs/ast.md](docs/ast.md), [docs/syntax.md](docs/syntax.md),
 [docs/generation.md](docs/generation.md) and
