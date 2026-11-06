@@ -197,6 +197,8 @@ and statements are outside this slice.
 
 Source vocabulary: [nodes.go](../syntax/rust/go/nodes.go).
 Native reference: [Rust types](https://doc.rust-lang.org/reference/types.html).
+Qualified paths and generic arguments follow the supported subset of
+[Rust path syntax](https://doc.rust-lang.org/reference/paths.html).
 
 | Kind | Attributes | Children |
 | --- | --- | --- |
@@ -222,7 +224,9 @@ Native reference: [Rust types](https://doc.rust-lang.org/reference/types.html).
 | LifetimeReference | `name` without apostrophe | — |
 | WherePredicate | — | `subject` type/lifetime; `bound+` |
 | PathType | `absolute` | `segment+` PathSegment |
-| PathSegment | `name` | `argument*` types/LifetimeReference |
+| QualifiedPathType | — | `subject` type; `trait?` PathType; `segment+` PathSegment |
+| PathSegment | `name` | `argument*` types/LifetimeReference/AssociatedTypeBinding |
+| AssociatedTypeBinding | — | `path` PathSegment; `type` |
 | PrimitiveType | `name`: native primitive | — |
 | ReferenceType | `mutable` | `element` type; `lifetime?` |
 | RawPointerType | `mutable` | `element` type |
@@ -249,9 +253,46 @@ separate nodes, never ordinary first parameters. TraitObjectType represents
 explicit `dyn` bounds. Default generic types belong only where Rust allows
 them, not on method-specific parameters.
 
+QualifiedPathType represents both `<T as Collection>::Item` and `<T>::Item`.
+The subject remains a complete type child; the optional trait is an ordinary
+PathType, including an absolute path and its arguments. Each suffix segment
+retains its own name and arguments. Nested projections therefore compose without
+flattening the qualified subject into a name:
+
+```rust
+type Element<T: Collection> = <T as Collection>::Item;
+type Inferred<T: Collection> = <T>::Item;
+type Nested<T: Collection> where <T as Collection>::Item: Collection =
+    <<T as Collection>::Item as Collection>::Item;
+trait Bytes: Iterator<Item = u8> {}
+trait Linked<T: Collection>: Iterator<Item = <T as Collection>::Item> {}
+```
+
+AssociatedTypeBinding is an equality argument, not a standalone type expression
+or an associated-type declaration. For `Iterator<Item = T>`, its `path` child is
+the single PathSegment `Item` and its `type` child is `T`. The single segment
+can itself carry arguments, as in `Family<Item<U> = V>` or
+`Lending<Item<'a> = &'a T>`. Generic associated-type **uses** are represented,
+including `<T as Family>::Item<U>`; generic associated-type declarations remain
+outside the current vocabulary. Raw identifiers are retained. The binding name
+must be an associated identifier, not `_`, `Self`, `self`, `super` or `crate`.
+Path segments, including binding names, can retain ordinary `target` references
+and origins through the existing carrier.
+
+Within each argument list, lifetime arguments precede positional type arguments,
+which precede equality bindings. The parser retains the original source in CST;
+formatting normalizes optional type-path turbofish separators (`Trait::<T>` to
+`Trait<T>`) and whitespace. Empty generic argument lists remain unsupported.
+See [text stages and their limits](parsing-formatting.md#checks-and-admitted-syntax).
+
+These are syntax rules only. Unresolved traits and associated names are admitted;
+no trait membership, associated-type existence, equality, lifetime relationship
+or projection normalization is established. Rust compiler fixtures separately
+qualify representative formatted output, including independently authored ASTs.
+
 Unit structs have no distinct AST form and are rejected.
-Const generics, higher-ranked binders, associated-type argument bindings,
-qualified associated-type projections, generic associated types, `impl Trait`,
+Const generics, higher-ranked binders, associated-type argument bounds
+(`Iterator<Item: Clone>`), generic associated-type declarations, `impl Trait`,
 macros, attributes, impl blocks and executable bodies are outside this slice.
 
 ## C++

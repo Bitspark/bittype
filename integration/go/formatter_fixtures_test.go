@@ -267,7 +267,25 @@ func TestNativeCompilerFixtures(t *testing.T) {
 	})
 	t.Run("rust", func(t *testing.T) {
 		dir := nativeFiles(t, rustprovider.Provider{}, "rust", "rs", rustFixture())
-		for _, file := range []string{"types.rs", "independent.rs"} {
+		if err := os.WriteFile(filepath.Join(dir, "independent_associated.rs"), []byte(formatted(t, rustprovider.Provider{}, rustAssociatedFixture())), 0600); err != nil {
+			t.Fatal(err)
+		}
+		// This external trait's generic associated declaration is outside the
+		// parser subset. Its uses still have structured, compiler-checked syntax.
+		uses, err := (rustprovider.Provider{}).Parse(context.Background(), parse.Input{SourceID: "associated-use", TreeID: "associated-use", Text: "pub type Applied<T: Family> = <T as Family>::Item<u8>; pub trait Selected: Family<Item<u8> = u16> {}"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		genericUse := "pub trait Family { type Item<T>; }\n" + formatted(t, rustprovider.Provider{}, uses.Abstract)
+		if err := os.WriteFile(filepath.Join(dir, "generic_associated_use.rs"), []byte(genericUse), 0600); err != nil {
+			t.Fatal(err)
+		}
+		files, err := filepath.Glob(filepath.Join(dir, "*.rs"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, path := range files {
+			file := filepath.Base(path)
 			command(t, dir, "docker", "run", "--rm", "--network=none", "-v", dir+":/work", "-w", "/work", "rust:1.90.0", "rustc", "--edition=2024", "--crate-type=lib", "-A", "dead_code", "-A", "unused_imports", file)
 		}
 	})
