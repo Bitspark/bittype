@@ -182,31 +182,30 @@ The [Logos contract map](logos-verification.md#ownership-map-for-the-verificatio
 identifies the existing and proposed owners of those inputs. Bittype specifies
 their artifact association and integration, without copying Logos's expression
 calculus. The [joint contract walkthroughs](verification.md#textbox-walkthrough)
-exercise the boundary for TextBox and Page without claiming completed integration.
+exercise the boundary for TextBox and Page. The first concrete integration is
+described in the [implemented surface](verification.md#implemented-go-surface).
 
 ### Proposed package roles
 
-Preserve the [stage-first layout](../LAYOUT.md) and one root Go module. These are
-future role locations, not directories or provider capabilities created now:
+Preserve the [stage-first layout](../LAYOUT.md). The first implementation uses:
 
 ```text
-contracts/verification/go/                 eventual request/result association, if needed
-verification/files/go/                     explicit whole-claim orchestration
-verification/files/source/horos/go/         authoritative source facts to statements
-verification/files/target/golang/go/        actual native facts to model inputs
-verification/files/checker/logos/go/        direct use/adaptation of selected Logos API
-
-resolve/files/golang/go/                    native resolution when required
-analyze/files/golang/go/                    explicitly supported native judgments
-integration/go/                            TextBox/Page composition qualification
+contracts/verification/go/                 public agnostic artifact association
+verification/go.mod                        optional integration module
+verification/files/source/horos/go/         explicit authoritative source queries
+verification/files/target/golang/go/        explicit captured Go semantic projection
+verification/files/horos-to-go/go/          owning mapping and direct Logos composition
+verification/integration/go/               TextBox/Page composition qualification
 ```
 
 Files is the dimension because a claim can cover multiple generated units,
 dependencies and a module environment. Source, target and checker are
 collaborators within that role, like the existing proposed generation
 collaborators; they are not new carrier dimensions or hidden providers. Native
-semantic extraction belongs to its native semantic stages, not another analyzer
-buried in generation. Later languages follow the same matrix when implemented;
+semantic extraction is an explicit step in the owning target projection, never
+an analyzer hidden in generation or joint preparation. The limited Go projection
+does not yet implement registered `resolve/files/golang` or `analyze/files/golang`
+providers. Later languages follow the same matrix when implemented;
 no empty stubs, registry cells or compatibility aliases are added.
 
 Begin with a private composition seam; promote the shared contract only after
@@ -219,12 +218,21 @@ The checker collaborator need not become a separate public provider SPI. Direct
 composition with a supported Logos API is sufficient where it meets the claim.
 No new verifier registry, foundation catalogue or automatic discovery is selected.
 
-An optional Go package still affects its module's requirements if it imports
-Logos. Package isolation is not module isolation. A separate external integration
-module would need a concrete dependency justification and an explicit architecture
-decision; this consultation does not split Bittype or create another repository.
-The existing type-owned integration-module proposal remains independent of this
-shared orchestration layout.
+**Module decision, 6 November 2026:** the landed typed Go checker is in the private
+Logos repository and has no anonymous module delivery route. Put the concrete
+integration in the optional `github.com/Bitspark/bittype/verification` module
+inside this repository. Keep `contracts/verification/go` in the public root with
+no Logos imports. Package isolation alone would still add a private dependency
+to the root module graph and break its independently installed public consumer.
+The root consumer gate remains anonymous and replacement-free. The optional
+module is tested separately on a private Logos-owned runner. No private source,
+signer or permanent access token is copied into Bittype.
+
+This is the concrete dependency justification for the module exception, not a
+new repository, a language-first hierarchy or a general module-per-stage policy.
+The direct checker call stays in the owning Horos/Go composition; a separate
+public checker adapter or registry has not demonstrated a need. Type-owned native
+representation plugins remain a separate, broader design.
 
 ## Remaining public verification SPI decisions
 
@@ -236,7 +244,9 @@ Logos production gaps and Bittype's association responsibilities. The
 lifetimes, preparation/checking split and failure behavior. The remaining public
 decision is which demonstrated agnostic surface to promote from the first
 private composition; it is not a missing proof calculus or undefined request
-semantics. Implementation and qualification remain outstanding. Semantic
+semantics. The first implementation promotes the agnostic participant/evidence/site
+association and keeps the concrete Logos contract in the optional module. A wider
+cross-language verification provider SPI remains deferred. Semantic
 ownership, explicit composition and stage-first placement are unchanged.
 
 The fixed boundaries are: languages own judgments, Logos owns proof machinery,

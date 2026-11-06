@@ -102,8 +102,9 @@ func BindFamily(source h.Declaration,target n.Type,fields []FieldBinding,optiona
 	if guarantee.Verdict()!=decl.Proven{return Family{},semantic.ErrEvidenceUnavailable}
 	if !declarationValue(guarantee.Value(),source) || len(source.Definition().Parameters())!=1{return Family{},ErrCoverage}
 	k:=kind.Expression();q:=guarantee.Kind().Expression();if k==nil || q==nil{return Family{},ErrCoverage}
+	if !k.Sort().IsProper() || !source.Definition().Parameters()[0].Kind.Sort().IsProper(){return Family{},ErrCoverage}
 	want:=core.NewTuple(core.NewAtom([]byte("horos/decl/arrow")),data.EncodeList([]core.Value{k.Value()}),k.Value())
-	if !q.Value().Equal(want){return Family{},ErrCoverage}
+	if guarantee.Kind().Module()!=kind.Module() || !q.Value().Equal(want){return Family{},ErrCoverage}
 	r,err:=bindRecord(source,target,fields,optional);if err!=nil{return Family{},err}
 	f:=&family{record:r,kind:kind,guarantee:guarantee,optional:optional}
 	f.declarations,f.expected,f.candidate=familyLogic(r)
@@ -111,7 +112,7 @@ func BindFamily(source h.Declaration,target n.Type,fields []FieldBinding,optiona
 }
 func (f Family) Theorem()(Claim,error){
 	if f.state==nil{return Claim{},ErrInvalid};s:=f.state;input,req:=associationInput(s.record.source.Model(),s.record.target.Model())
-	origins:=[]Origin{{Location:typed.Location{Phase:typed.ExpectedPhase},Sites:slices.Clone(s.record.sites)}}
+	origins:=logicalOrigins(s.declarations,s.record.sites)
 	return Claim{&claim{input:input,requirements:req,question:question("conditional-representation"),statement:typed.Statement{Foundation:typed.Foundation,Declarations:slices.Clone(s.declarations),Expected:s.expected},origins:origins,family:s}},nil
 }
 // Candidate returns ordinary proof syntax. It carries no acceptance authority.
@@ -142,7 +143,7 @@ func (f Family) Application(theorem Result,arg Argument,depth int)(Claim,error){
 	for range depth{h=app(con("h.family"),h);n=app(con("n.family"),n)}
 	input,req:=associationInput(f.state.record.source.Model(),f.state.record.target.Model())
 	sites:=append(slices.Clone(f.state.record.sites),arg.state.record.sites...)
-	return Claim{&claim{input:input,requirements:req,question:question("application-representation"),statement:typed.Statement{Foundation:typed.Foundation,Declarations:d,Expected:conjunction(member(h),rep(h,n))(0)},origins:[]Origin{{Location:typed.Location{Phase:typed.ExpectedPhase},Sites:sites}},family:f.state}},nil
+	return Claim{&claim{input:input,requirements:req,question:question("application-representation"),statement:typed.Statement{Foundation:typed.Foundation,Declarations:d,Expected:conjunction(member(h),rep(h,n))(0)},origins:logicalOrigins(d,sites),family:f.state,argument:arg.state,theorem:theorem,depth:depth}},nil
 }
 func (a Argument) Candidate(depth int)typed.Expr{
 	if a.state==nil || depth<1 || depth>4{return typed.Expr{}}

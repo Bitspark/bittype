@@ -3,7 +3,9 @@
 **Owner decision, 31 October 2026:** organize by processing stage and enforce a
 uniform structure across languages. The stage-by-language matrix is deliberate:
 the same responsibilities occupy the same paths, making omissions and drift
-visible. There is one root Go module, with independently owned packages.
+visible. The public root Go module has independently owned packages. The optional
+`verification` module isolates its private Logos dependency; see the
+[module decision](docs/type-system-architecture.md#proposed-package-roles).
 
 ## Current hierarchy
 
@@ -27,6 +29,7 @@ contracts/
   semantic/go/            common snapshots, requests, reports and publication
   resolution/go/          resolver capability and dependency contract
   analysis/go/            analysis capability and explicit resolution input
+  verification/go/        agnostic joint capture/receipt/site association
 semantics/go/             typed immutable Semantics and provider-owned facts
 engine/go/                explicit registration, planning and execution
 syntax/<language>/go/              abstract/concrete vocabulary and identity
@@ -50,6 +53,12 @@ internal/                shared private checking/parsing/tree mechanics
 transforms/horos-to-<target>/go/  analyzed Horos to native type ASTs
 internal/horosgen/        source-owned semantic reading and bounded target arenas
 integration/go/          independent consumers and cross-package qualification
+verification/            optional integration module; private Logos dependency
+  go.mod
+  files/source/horos/go/  explicit authoritative queries bound to captured Horos
+  files/target/golang/go/ explicit Go AST to go/ast and go/types projection
+  files/horos-to-go/go/   selected mapping, prepared claim and direct Logos check
+  integration/go/        TextBox/Page, nested reuse and dependency qualification
 tools/provider-matrix/go/ development-only source-derived documentation generation
 tools/horos-module/go/    ordinary Horos source to canonical Ontos module command
 testdata/text/<language>/valid/

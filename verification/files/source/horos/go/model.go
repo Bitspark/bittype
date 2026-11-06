@@ -35,7 +35,7 @@ type state struct {
 type Model struct { state *state }
 type Declaration struct { owner *state; value *decl.Declaration }
 type Value struct { owner *state; value decl.TypeValue }
-type Kind struct { owner *state; value decl.KindHandle }
+type Kind struct { owner *state; value decl.KindHandle; module decl.Digest }
 type Judgment struct { owner *state; value Value; kind Kind; verdict decl.Verdict }
 
 func Evidence() semantic.EvidenceRequirement {
@@ -97,15 +97,16 @@ func (m Model) Proper(descriptor core.Value) (Value,error) {
 func (m Model) CompileKind(module decl.Digest, expression core.Value) (Kind,error) {
 	if !m.Valid() { return Kind{}, ErrForeign }
 	k,err := m.state.program.CompileKind(module,expression)
-	if err != nil { return Kind{},err }; return Kind{m.state,k},nil
+	if err != nil { return Kind{},err }; return Kind{m.state,k,module},nil
 }
 // Arrow uses the same canonical Horos kind syntax as any other request.
 func (k Kind) Arrow(module decl.Digest) (Kind,error) {
-	if k.owner == nil { return Kind{}, ErrForeign }
+	if k.owner == nil || module!=k.module { return Kind{}, ErrForeign }
 	v := k.value.Expression().Value()
 	return (Model{k.owner}).CompileKind(module, core.NewTuple(core.NewAtom([]byte("horos/decl/arrow")), data.EncodeList([]core.Value{v}), v))
 }
 func (k Kind) Model() Model { return Model{k.owner} }
+func (k Kind) Module() decl.Digest { return k.module }
 func (k Kind) Expression() *decl.Kind { return k.value.Expression() }
 func (v Value) Model() Model { return Model{v.owner} }
 func (v Value) Expression() *decl.Expression { return v.value.Expression() }

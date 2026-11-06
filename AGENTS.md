@@ -39,7 +39,9 @@ Dimensions come from `bittype:dimension` comments on boundary type declarations;
 do not restore package-name classification or add runtime metadata methods.
 Syntax admission must accept unresolved names; analysis publishes request-bound,
 immutable facts with explicit completion, verdict and model availability.
-Only Horos implements production semantics; native analysis remains deferred.
+Only Horos supplies registered Files resolution/analysis providers. The optional
+`verification` module has an explicit, scoped Go projection using `go/types`;
+it is not an engine capability or general native analyzer.
 
 The owner's 4 November [Syntax and Files symmetry](docs/source.md) replaces the
 separate layout proposal: `Syntax : CST : AST` and `Files : Source : Semantics`.
@@ -97,7 +99,10 @@ fail rather than selecting a weaker fallback.
   shared contracts under contracts; native implementations use the same
   syntax and dimension-qualified parse/check/format/provider matrix, with explicitly qualified
   optional resolve/analyze stages. Do not add compatibility
-  aliases or a language-first packages tree. Keep the root Go module.
+  aliases or a language-first packages tree. Keep the public root Go module
+  independent of private dependencies. The optional `verification/go.mod`
+  isolates the private Logos checker, as documented in
+  [the verification architecture](docs/type-system-architecture.md#proposed-package-roles).
 - Use explicit dimension paths for implementations: role/syntax/language/go and
   role/files/language/go; shared printers omit language. Name implementation Go
   packages by their role. Each provider/language/go composition has provider.go,
@@ -109,7 +114,8 @@ fail rather than selecting a weaker fallback.
   discover stage directories and enforce complete coverage and directed imports.
   Keep package tests with their implementation and cross-package qualification
   under integration. Private helpers must obey the same ownership boundaries.
-- Implement the toolchain in Go in component-owned packages in the root module.
+- Implement the toolchain in Go in component-owned packages in the root module;
+  the explicitly isolated Logos integration is the sole current module exception.
   Formatters construct CST tokens/trivia; only the printer emits source text.
   Do not print source and reparse it as an intermediate AST/CST.
 - AST, pipeline and language identity remain independent. CST depends on AST.

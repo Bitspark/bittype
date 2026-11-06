@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"strings"
 
 	association "github.com/Bitspark/bittype/contracts/verification/go"
 	"github.com/Bitspark/bittype/semantics/go"
@@ -29,6 +30,10 @@ type claim struct {
 	statement typed.Statement
 	origins []Origin
 	family *family
+	argument *argument
+	theorem Result
+	depth int
+	counterexample *counterexample
 }
 // Claim is sealed by this owning interpretation, never by a caller-supplied
 // formula, verdict flag or arbitrary checker outcome.
@@ -41,6 +46,19 @@ type Result struct { state *result }
 func cloneStatement(s typed.Statement) typed.Statement { s.Declarations=slices.Clone(s.Declarations);s.Context=slices.Clone(s.Context);return s }
 func clonePolicy(p typed.Policy) typed.Policy { p.Dependencies=slices.Clone(p.Dependencies);return p }
 func cloneOrigins(in []Origin) []Origin { out:=slices.Clone(in);for i:=range out{out[i].Sites=slices.Clone(in[i].Sites)};return out }
+func logicalOrigins(declarations []typed.Declaration,sites []association.Site)[]Origin{
+	out:=[]Origin{{Location:typed.Location{Phase:typed.ExpectedPhase},Sites:slices.Clone(sites)}}
+	for i,d:=range declarations{
+		name:=d.Name();var selected []association.Site
+		for _,s:=range sites{
+			source:=(strings.HasPrefix(name,"source.") || strings.HasPrefix(name,"h.") || strings.Contains(name,".h.") || name=="argument.member") && s.Participant==sourceKey()
+			target:=(strings.HasPrefix(name,"native.") || strings.HasPrefix(name,"n.") || strings.Contains(name,".n.")) && s.Participant==targetKey()
+			mapping:=strings.HasPrefix(name,"law.") || strings.Contains(name,".law.") || name=="family.theorem"
+			if source || target || mapping{selected=append(selected,s)}
+		}
+		if len(selected)>0{out=append(out,Origin{Location:typed.Location{Phase:typed.DeclarationPhase,Index:uint32(i),HasIndex:true},Sites:selected})}
+	};return out
+}
 
 // New captures receiver policy. Unknown foundations/dependencies and checker
 // resource exhaustion remain Logos outcomes; this constructor does not precheck

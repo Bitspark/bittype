@@ -331,11 +331,11 @@ from payload N to source identity is assumed. The Go marker-method proposal
 retains its explicit [emission scope extension](type-system-architecture.md#go-marker-method-scope-extension);
 this inspection authorizes no method or runtime implementation.
 
-## Missing work and next contract deliverable
+## Bittype integration and remaining work
 
-The [joint request/result proposal](verification.md) defines the association and
-failure semantics. Bittype and the owning language/mapping integrations still
-need to implement and qualify:
+The [joint request/result contract](verification.md) defines the association and
+failure semantics. Its [first implementation](verification.md#implemented-go-surface)
+now supplies these responsibilities for the scoped Horos/Go static mapping:
 
 1. A joint immutable association for the actual source, output, semantic results,
    selected mappings/helpers and relevant language environment.
@@ -349,9 +349,11 @@ need to implement and qualify:
    selection or successful compilation alone does not establish those laws.
 
 The landed Logos delivery provides a concrete Go route for the symbolic claim.
-Bittype must admit the delivered dependency and implement the artifact-to-statement
-association above;
-the checking API alone does not complete symbolic generation verification.
+Bittype consumes it in the optional `verification` module and associates the
+statement with real source/native projections. The private dependency is isolated
+from the public root module. The checker alone does not establish model adequacy;
+the selected integration's procedure and representation-law premises remain
+explicit, visible dependencies of acceptance.
 General proof search, a hosted service and the entire Logos roadmap are not
 prerequisites.
 
@@ -359,7 +361,8 @@ The [TextBox walkthrough](verification.md#textbox-walkthrough) and
 [Page walkthrough](verification.md#page-walkthrough) now cover nesting, changed
 helpers and the exact result meaning. The failure contract covers foreign captures,
 incompatible compositions and exhausted checks. Qualify those behaviors on actual
-artifacts before promoting the public association surface.
+artifacts in the optional module. Broader native profiles, mapping-plugin
+integration and native `(S,N,E)` enforcement remain future work.
 Keep [ASTTransformer](../contracts/transform/go/transformer.go) returning syntax,
 resolution/analysis explicitly invoked, and the
 [stage-first package roles](type-system-architecture.md#proposed-package-roles).

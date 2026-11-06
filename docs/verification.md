@@ -1,10 +1,12 @@
 # Joint verification requests and results
 
-**Contract proposal, 6 November 2026. Documentation only.** This defines the
+**Contract and first implementation, 6 November 2026.** This defines the
 association contract requested after the [Logos investigation](logos-verification.md)
-and [architecture review](type-system-architecture.md). No Go package, provider,
-dependency, generator, proof producer or runtime binding is implemented here.
-Examples below describe required behavior, not executed Bittype tests.
+and [architecture review](type-system-architecture.md). The
+[Go surface](#implemented-go-surface) implements this boundary for the scoped
+Horos/Go composition. The walkthroughs below specify its claim semantics;
+[integration tests](../verification/integration/go/joint_test.go) exercise actual
+captured inputs and the landed Logos checker. No runtime binding is added.
 
 The first composition prepares one exact claim about actual captured artifacts,
 then passes a separate candidate to Logos's typed Go checker. Bittype owns the
@@ -81,19 +83,19 @@ fetches dependencies or invents a compiler profile.
 
 ## Preparation and checking
 
-The first integration has two logical operations. These are proposed Go-shaped
-signatures for an explicitly configured Logos composition, not implemented APIs
-or a generic checker-provider SPI:
+The first integration has two operations in its explicitly configured Horos/Go
+composition. `Claim` is an opaque, owning-integration construction, not a formula
+or verdict supplied by a proof producer. There is no generic checker-provider SPI:
 
 ```go
-func (c Composition) Prepare(ctx context.Context, input Input) (Request, error)
+func (c Composition) Prepare(ctx context.Context, input Claim) (Request, error)
 func (c Composition) Check(ctx context.Context, request Request, candidate typed.Expr) (Result, error)
 
 type Request struct { /* private immutable state */ }
 type Result  struct { /* private immutable state */ }
 ```
 
-The proposed concrete views expose `Request.Statement()`, `Policy()` and
+The concrete views expose `Request.Statement()`, `Policy()` and
 `Limits()` for proof construction, and `Result.Request()`, `Candidate()` and
 `Outcome()` for inspection. They return the retained Logos types and defensive
 statement/policy lists. Association and diagnostic views retain their participant
@@ -129,9 +131,8 @@ Resolution, analysis, generation and any required authoritative Horos query run
 explicitly before preparation. The owning integrations must provide their
 input-associated results. Preparation does not silently run an analyzer, search
 for a proof, invoke a native compiler or accept unproved source membership as
-nonmembership. These missing projection/query bridges are implementation work;
-this contract does not claim the existing general Horos report already contains
-every TextBox/Page premise.
+nonmembership. The implemented explicit query/projection bridges supply these
+premises; the existing general Horos report alone does not contain them.
 
 The expected statement is not caller-supplied proof metadata. An artifact
 verification composition has no constructor that attaches an arbitrary formula
@@ -420,14 +421,11 @@ collaborators. Do not register Page, Data, TextBox, Function, Stream or Cell as
 general verification cases. Type-owned mapping plugins contribute through the
 same [library-owned selection design](type-generation-plugins.md).
 
-The contract semantics above are defined; implementation and API qualification
-remain. The first implementation must supply the real source/query, native and
-mapping projections, bounded immutable capture and direct Logos adaptation.
-Choose the eventual exported constructor/accessor names when promoting that
-private composition; do not mistake that packaging decision for missing proof
-machinery. No native analyzer or mapping-law implementation is supplied here.
+The first implementation supplies the source/query, native and mapping
+projections, bounded immutable capture and direct Logos checking described below.
+The scoped native projection is not a registered general Go semantic provider.
 
-Qualification must exercise foreign receipts/models, changed configuration and
+Qualification exercises foreign receipts/models, changed configuration and
 helpers, invalid/unsupported/exhausted checking, TextBox's counterexample and
 missing-premise cases, Page's closed theorem and nested reuse, and mutation of
 construction/accessor storage.
@@ -435,3 +433,82 @@ Use actual captured inputs for association tests; Logos's symbolic fixtures alon
 cannot establish this layer. Verify that cancellation, invalid evidence and
 missing source premises never become semantic refutation. Preserve the owner
 rule that all Logos workloads run on qualified shared/CI workers.
+
+## Implemented Go surface
+
+The [agnostic association](../contracts/verification/go/association.go) owns
+participant-qualified snapshots, receipt requirements, resource limits and site
+membership. It imports no Logos or native model. `Capture` admits each receipt
+against its own exact snapshot and the receiver's requirements, with aggregate
+budgets across participants. It never invokes another semantic stage.
+
+The concrete [Horos/Go composition](../verification/files/horos-to-go/go/joint.go)
+has sealed value handles `Claim`, `Request` and `Result`. Only the owning mapping
+constructs a Claim. There is no public formula attachment or outcome publication
+API. The request retains the original projections and queries, mapping selection,
+actual helpers, and, for an application, the original theorem result and argument
+projection. Copying or replacing an outer handle does not change retained state.
+
+| Explicit step | Current API and meaning |
+| --- | --- |
+| Source projection | [Horos `Inspect`](../verification/files/source/horos/go/model.go) admits the existing resolution receipt and reconstructs a Program from that captured collection, checking all present annotations against Horos. Queries run explicitly through `Satisfies`; their sealed results retain the Program, value, kind, resolution module and exact Horos verdict. |
+| Native projection | [Go `Inspect`](../verification/files/target/golang/go/model.go) converts admitted ASTs directly to `go/ast`, then uses `go/types` with `GoVersion: "go1.25"`. Its receipt and opaque type/query handles retain the original snapshot and package. `Admit` invokes validated generic instantiation. |
+| Counterexample construction | `Counterexample` requires the original source bound, an authoritative bool nonmembership result, actual native bool admission and this integration's scalar association. It constructs the existential claim independently of `CounterexampleCandidate`. |
+| Family selection | `BindFamily` takes exact source/native declarations, explicit field pairs, an optional-helper selection, a resolved ordinary kind K and an authoritative K-to-K constructor query. It checks every source and target field, the original parameter identities and the helper's actual presence/value fields. |
+| Closed theorem | `Family.Theorem` constructs the conditional membership-and-representation claim. `Family.Candidate` constructs separate proof syntax using ordinary Logos constructors. No final family theorem is assumed. |
+| Argument and nesting | `Family.BindArgument` captures an actual nullary record and its authoritative membership query. `Family.Application` retains the earlier checked closed theorem as `typed.Define`. `Argument.Candidate(depth)` applies it using both projections of each preceding pair. Each result is checked afresh. |
+| Prepare and check | `New(policy, limits)` captures receiver configuration. `Prepare(ctx, claim)` seals a fresh association. `Check(ctx, request, candidate)` calls the landed `typed.Check` directly and retains its unchanged outcome. |
+
+Logical dependencies are explicit integration contracts:
+`horos/declarations-4/procedure`, `go1.25/captured-types-1`, and the selected
+scalar, list/slice, optional/presence, record-field and named-representation laws.
+`MappingDependencies()` returns a new list for explicit receiver configuration;
+it installs no policy. The source/native procedure and projection correspondence
+are trusted premises, not proofs produced by Logos. Representation laws state
+the chosen static meaning of those mappings. Logos checks their composition and
+reports the actual dependency closure, including the rechecked theorem definition.
+
+The family interpretation uses private model descriptor domains H and N, not a
+new Horos type language. Record positions refer to the selected actual field
+pairs. The optional symbol denotes the selected field-presence helper; it does
+not add an optional proper-type constructor to Horos. Named native types remain
+distinct from their bodies and use a separate representation law. The source
+body premise is conditional on `Member(T,K)`, so its original contract is not
+silently extended to inadmissible arguments.
+
+### Supported domain and limits
+
+This first mapping supports a single proper-type parameter, closed records,
+text, bool, lists of supported operands and optional fields using an explicitly
+selected two-field presence/value helper. It supports nullary record arguments
+for application. It recognizes no Page, TextBox or Data name; a renamed family,
+helper and ordinary user kind use the same path. Alias unfolding, arbitrary
+Horos descriptors, higher-order parameters and alternate native representations
+remain outside this mapping's coverage. Missing coverage returns `ErrCoverage`;
+missing established semantic premises return the existing evidence-unavailable
+cause. Neither is a source refutation.
+
+The Go projection accepts the implemented type-only syntax fragment: named types,
+parameters, applications, slices, structs, constraint interfaces/unions and
+approximation, and aliases during package checking. Mapping targets must be
+actual defined named types. Imports, methods, executable bodies and other type
+forms are rejected. Its environment is the supplied package plus the predeclared
+Go universe; it reads no ambient files or dependency packages. This is a scoped
+projection, not a general native resolution/analysis capability in the engine.
+
+Source inspection uses existing semantic and Horos bounds. Native inspection
+admits at most 16 units, 4096 AST nodes, 32768 entries, 1 MiB of text and conversion
+depth 64. Mapping selection is bounded to 64 field pairs and operand depth 32;
+the application helper accepts depth 1 through 4. Joint association separately
+bounds aggregate input size, receipt/configuration metadata and diagnostic sites.
+The receiver supplies Logos limits explicitly; insufficient budgets produce the
+unchanged incomplete outcome. Preparation neither proves the statement nor raises
+the budget to make a proof pass. Go/Horos synchronous procedures, like Logos,
+check cancellation before and after their bounded calls.
+
+Claims cover captured ASTs and the stated interpretation. They do not prove
+formatter/printer correspondence, public field construction, codecs, native
+`(S,N,E)` admission enforcement or runtime value behavior. The broader
+[type-owned plugin design](type-generation-plugins.md) and native enforcement
+proposal remain separate. These selected mapping laws are not automatic defaults
+or registrations in the syntax engine.

@@ -10,16 +10,20 @@ import (
 	"sync"
 	"testing"
 
+	analyze "github.com/Bitspark/bittype/analyze/files/horos/go"
+	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
+	"github.com/Bitspark/bittype/contracts/transform/go"
 	gp "github.com/Bitspark/bittype/provider/golang/go"
 	hp "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
 	hs "github.com/Bitspark/bittype/syntax/horos/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
+	generate "github.com/Bitspark/bittype/transforms/horos-to-go/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -90,11 +94,28 @@ func TestTextBoxExplicitCounterexample(t *testing.T){
 	_,_,_,err=box(t,"interface{ ~string }");if !errors.Is(err,semantic.ErrEvidenceUnavailable){t.Fatal(err)}
 }
 
+func TestKindSpellingDoesNotSubstituteItsResolutionModule(t *testing.T){
+	s:=sourceModel(t,"kind Text = h.Bool; type Box<T: Text> = {value:T;};")
+	g:=nativeModel(t,"type Box[T any] struct {Value T}")
+	d:=declaration(t,s,"Box");bound,err:=d.ParameterKind(0);if err!=nil{t.Fatal(err)}
+	boolean,err:=s.Proper(core.NewTuple(core.NewAtom([]byte("horos/scalar")),core.NewAtom([]byte("bool"))));if err!=nil{t.Fatal(err)}
+	actual,err:=s.Satisfies(context.Background(),boolean,bound);if err!=nil || actual.Verdict()!=decl.Proven{t.Fatal(actual.Verdict(),err)}
+	foreignScope,err:=s.CompileKind(decl.PreludePin(),core.NewTuple(core.NewAtom([]byte("horos/decl/kind-local")),data.MustEncodeText("Text")));if err!=nil{t.Fatal(err)}
+	refuted,err:=s.Satisfies(context.Background(),boolean,foreignScope);if err!=nil || refuted.Verdict()!=decl.Refuted{t.Fatal(refuted.Verdict(),err)}
+	if !bound.Expression().Value().Equal(foreignScope.Expression().Value()){t.Fatal("fixture must use the same local spelling")}
+	b,_:=g.Basic(types.Bool);admission,err:=g.Admit(context.Background(),native(t,g,"Box"),b);if err!=nil{t.Fatal(err)}
+	if _,err:=v.Counterexample(d,native(t,g,"Box"),refuted,admission);!errors.Is(err,v.ErrCoverage){t.Fatal("query was rebound by spelling",err)}
+	if _,err:=foreignScope.Arrow(s.Root());!errors.Is(err,h.ErrForeign){t.Fatal("arrow reinterpreted a bound kind in a foreign module",err)}
+}
+
 const sourcePage="type Page<T> = { items: list<T>; next?: text; }; type Person = {name: text; active: bool;};"
 const nativePage="type BittypeOptional[V any] struct { Present bool; Value V }; type Page[N any] struct { Items []N; Next BittypeOptional[string] }; type Person struct { Name string; Active bool }"
 type pagination struct{source h.Model;target n.Model;family v.Family;kind h.Kind;argument v.Argument}
 func page(t *testing.T,sourceText,nativeText string)(pagination,error){
-	t.Helper();s:=sourceModel(t,sourceText);g:=nativeModel(t,nativeText);d:=declaration(t,s,"Page");k:=importedKind(t,s,"Data")
+	t.Helper();return bindPage(t,sourceModel(t,sourceText),nativeModel(t,nativeText))
+}
+func bindPage(t *testing.T,s h.Model,g n.Model)(pagination,error){
+	t.Helper();d:=declaration(t,s,"Page");k:=importedKind(t,s,"Data")
 	constructor,err:=d.Value();if err!=nil{t.Fatal(err)};arrow,err:=k.Arrow(s.Root());if err!=nil{t.Fatal(err)}
 	guarantee,err:=s.Satisfies(context.Background(),constructor,arrow);if err!=nil{t.Fatal(err)}
 	f,err:=v.BindFamily(d,native(t,g,"Page"),[]v.FieldBinding{{"items","Items"},{"next","Next"}},v.Optional{Constructor:native(t,g,"BittypeOptional"),PresenceField:"Present",ValueField:"Value"},k,guarantee)
@@ -103,6 +124,34 @@ func page(t *testing.T,sourceText,nativeText string)(pagination,error){
 	member,err:=s.Satisfies(context.Background(),pv,k);if err!=nil{t.Fatal(err)}
 	a,err:=f.BindArgument(p,native(t,g,"Person"),[]v.FieldBinding{{"name","Name"},{"active","Active"}},member)
 	return pagination{s,g,f,k,a},err
+}
+
+func TestGeneratedPageUsesActualTransformerOutput(t *testing.T){
+	s:=sourceModel(t,sourcePage)
+	ctx:=context.Background();from:=s.Snapshot().Language()
+	a,err:=analysis.NewAnalyzer[hs.Language](from,analyze.Contract(),hp.Provider{});if err!=nil{t.Fatal(err)}
+	receipt:=s.Receipt();evidence,err:=a.Analyze(ctx,analysis.Input{Snapshot:s.Snapshot(),Resolution:&receipt});if err!=nil{t.Fatal(err)}
+	to,err:=representation.NewLanguage[gs.Language](gp.Provider{},"go-syntax-1");if err!=nil{t.Fatal(err)}
+	mapper,err:=generate.New(from,to,generate.Config{TreeID:"generated",Package:"example",Profile:generate.RepresentationProfile});if err!=nil{t.Fatal(err)}
+	out,err:=mapper.Transform(ctx,transform.Input{Source:s.Snapshot(),Evidence:[]semantic.Result{evidence}});if err!=nil{t.Fatal(err)}
+	checker,err:=check.NewChecker[gs.Language](to,gp.Provider{});if err!=nil{t.Fatal(err)}
+	snapshot,err:=semantic.Capture(ctx,checker,semantic.Input{Entry:out.Entry,Trees:out.Trees});if err!=nil{t.Fatal(err)}
+	g,err:=n.Inspect(ctx,snapshot);if err!=nil{t.Fatal(err)}
+	p,err:=bindPage(t,s,g);if err!=nil{t.Fatal(err)}
+	claim,_:=p.family.Theorem();c:=receiver(t);theorem:=checkClaim(t,c,claim,p.family.Candidate());accepted(t,theorem)
+	application,err:=p.family.Application(theorem,p.argument,2);if err!=nil{t.Fatal(err)}
+	r:=checkClaim(t,c,application,p.argument.Candidate(2));accepted(t,r)
+	if !r.Request().Association().Participants()[1].Snapshot.Same(snapshot){t.Fatal("verification substituted a hand-authored target")}
+}
+
+func TestOrdinaryRenamedFamilyUsesSameMapping(t *testing.T){
+	s:=sourceModel(t,"kind Payload = h.Data; type Envelope<Element> = { entries: list<Element>; cursor?: text; };")
+	g:=nativeModel(t,"type Maybe[X any] struct { Has bool; Item X }; type Envelope[Value any] struct { Entries []Value; Cursor Maybe[string] }")
+	d:=declaration(t,s,"Envelope");k,err:=s.CompileKind(s.Root(),core.NewTuple(core.NewAtom([]byte("horos/decl/kind-local")),data.MustEncodeText("Payload")));if err!=nil{t.Fatal(err)}
+	arrow,err:=k.Arrow(s.Root());if err!=nil{t.Fatal(err)};value,err:=d.Value();if err!=nil{t.Fatal(err)}
+	guarantee,err:=s.Satisfies(context.Background(),value,arrow);if err!=nil{t.Fatal(err)}
+	f,err:=v.BindFamily(d,native(t,g,"Envelope"),[]v.FieldBinding{{"entries","Entries"},{"cursor","Cursor"}},v.Optional{Constructor:native(t,g,"Maybe"),PresenceField:"Has",ValueField:"Item"},k,guarantee);if err!=nil{t.Fatal(err)}
+	claim,_:=f.Theorem();accepted(t,checkClaim(t,receiver(t),claim,f.Candidate()))
 }
 func TestPageClosedTheoremAndNestedReuse(t *testing.T){
 	p,err:=page(t,sourcePage,nativePage);if err!=nil{t.Fatal(err)}
@@ -137,7 +186,7 @@ func TestFreshCapturesAndForeignProjectionHandles(t *testing.T){
 	if _,err:=q.family.Application(theorem,q.argument,1);!errors.Is(err,v.ErrInvalid){t.Fatal("retagged theorem",err)}
 	fresh,_:=q.family.Theorem();result:=checkClaim(t,receiver(t),fresh,p.family.Candidate());accepted(t,result)
 	if result.Request().Association().Same(theorem.Request().Association()){t.Fatal("proof syntax reuse reused authority")}
-	copy:=d.Definition();*copy=decl.Declaration{};if !declaration(t,p.source,"Page").Valid(){t.Fatal("definition view mutated model")}
+	copy:=d.Definition();*copy=decl.Declaration{};if d.Definition().ID().Name!="Page"{t.Fatal("definition view mutated retained handle")}
 }
 
 func TestJointOutcomesAndImmutability(t *testing.T){
