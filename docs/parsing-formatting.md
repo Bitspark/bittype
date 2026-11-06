@@ -11,7 +11,7 @@ levels: Syntax/CST/AST and Files/Source/Semantics. Files parsing explicitly
 composes per-file Syntax parsing with resolution/analysis and publishes Source
 only with established Semantics. No parser opens files or concatenates a project
 into one text. The Files stages and multi-file Horos resolution are implemented;
-native semantic providers remain unimplemented.
+Go has [bounded native semantic providers](native-semantics.md); the other native semantic providers remain planned.
 
 ## Pipeline
 

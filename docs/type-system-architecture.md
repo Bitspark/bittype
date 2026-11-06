@@ -191,7 +191,9 @@ Preserve the [stage-first layout](../LAYOUT.md). The first implementation uses:
 ```text
 contracts/verification/go/                 public agnostic artifact association
 verification/files/source/horos/go/         explicit authoritative source queries
-verification/files/target/golang/go/        explicit captured Go semantic projection
+semantics/golang/go/                      immutable Go type facts and typed readers
+resolve/files/golang/go/                  bounded Go compiler-backed resolution
+analyze/files/golang/go/                  explicit analysis and admission queries
 verification/files/horos-to-go/go/          owning mapping and direct Logos composition
 verification/integration/go/               TextBox/Page composition qualification
 ```
@@ -200,10 +202,10 @@ Files is the dimension because a claim can cover multiple generated units,
 dependencies and a module environment. Source, target and checker are
 collaborators within that role, like the existing proposed generation
 collaborators; they are not new carrier dimensions or hidden providers. Native
-semantic extraction is an explicit step in the owning target projection, never
-an analyzer hidden in generation or joint preparation. The limited Go projection
-does not yet implement registered `resolve/files/golang` or `analyze/files/golang`
-providers. Later languages follow the same matrix when implemented;
+semantic extraction is an explicit step in the owning native provider, never
+an analyzer hidden in generation or joint preparation. The bounded Go semantic provider
+implements registered `resolve/files/golang` and `analyze/files/golang` roles,
+with explicit query sessions. Later languages follow the same matrix when implemented;
 no empty stubs, registry cells or compatibility aliases are added.
 
 Begin with a private composition seam; promote the shared contract only after
@@ -771,3 +773,7 @@ atom as universal introduction, or a private constructor name as native issuance
 Do not hide resolution, carry evidence across incompatible outputs/configurations,
 or fall back silently to erased constraints. Current representation generation
 and its Unsupported enforcement profile remain unchanged.
+
+See [native semantic providers](native-semantics.md)
+for the bounded Go resolver/analyzer, immutable native facts and explicit
+admission queries. TypeScript, Rust and C++ semantic providers remain planned.

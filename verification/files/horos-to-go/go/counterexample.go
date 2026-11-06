@@ -1,12 +1,13 @@
 package verification
 
 import (
+	nativequery "github.com/Bitspark/bittype/analyze/files/golang/go"
 	"go/types"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	association "github.com/Bitspark/bittype/contracts/verification/go"
+	n "github.com/Bitspark/bittype/semantics/golang/go"
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
-	n "github.com/Bitspark/bittype/verification/files/target/golang/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	"github.com/Bitspark/logos-contract/contract/go/typed"
 )
@@ -15,13 +16,13 @@ type counterexample struct {
 	source    h.Declaration
 	target    n.Type
 	nonmember h.Judgment
-	admission n.Admission
+	admission nativequery.Admission
 }
 
 // Counterexample fixes the original source parameter contract, the native
 // declaration and an explicitly checked bool witness. The mapping relates only
 // this scalar pair; it makes no assertion about the declaration's fields.
-func Counterexample(source h.Declaration, target n.Type, nonmember h.Judgment, admission n.Admission) (Claim, error) {
+func Counterexample(source h.Declaration, target n.Type, nonmember h.Judgment, admission nativequery.Admission) (Claim, error) {
 	if !source.Valid() || !target.IsNamed() || !source.Model().Same(nonmember.Model()) || !target.Model().Same(admission.Model()) || !admission.Constructor().Same(target) {
 		return Claim{}, ErrInvalid
 	}

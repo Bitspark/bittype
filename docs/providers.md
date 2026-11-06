@@ -105,7 +105,9 @@ interfaces serve Syntax/CST/AST and Files/Source/Semantics. Methods take a conte
 The engine registers Syntax and Files capabilities independently. Horos Files
 compositions are constructed explicitly with `provider/horos.NewFilesParser`,
 `NewFilesFormatter` and `NewFilesPrinter`; they do not install engine capabilities.
-Files parsing and formatting compositions require their language's semantic
+Go independently supplies `NewFilesResolver` and `NewFilesAnalyzer` under its
+[bounded native profile](native-semantics.md); this does not add Files
+parsing or formatting. Files parsing and formatting compositions require their language's semantic
 collaborators. Missing collaborators do not disable Files printing: the generic
 printer can serve an existing admitted Source when configured with its Syntax
 printer. The matrix describes each capability independently, not whether a

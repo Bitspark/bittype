@@ -36,7 +36,7 @@ The engine starts empty and has no built-in languages or mappings.
 
 The [joint verification composition](docs/verification.md#implemented-go-surface)
 adds immutable source/target association and an optional Logos-backed Horos/Go
-integration. Explicit Horos kind queries and a bounded Go `go/types` projection
+integration. Explicit Horos kind queries and registered bounded Go `go/types` semantic providers
 supply TextBox counterexamples and conditional Page representation proofs,
 including nested reuse. The owning composition imports the public Logos contract;
 all packages use the root module and its anonymous installed-consumer gate.
@@ -139,3 +139,7 @@ interpret these concrete type semantics.
   [source layout](LAYOUT.md): ownership, delivery and package boundaries.
 
 Historical research remains in Git history, not as competing active specifications.
+
+See [native semantic providers](docs/native-semantics.md)
+for the bounded Go resolver/analyzer, immutable native facts and explicit
+admission queries. TypeScript, Rust and C++ semantic providers remain planned.

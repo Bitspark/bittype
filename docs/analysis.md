@@ -342,9 +342,10 @@ Analysis does not repair input or turn stale references into new references
 silently. The explicit `resolve.Model` helper remains semantic and shares the
 same authoritative path.
 
-Native semantic analyzers, scope lookup, relation queries, partial checked graphs
-and incremental caches remain deferred. A separate test-only unknown-language
-provider qualifies the generic contract without adding a production native checker.
+[Bounded Go semantics](native-semantics.md) now uses the same resolution and
+analysis interfaces. Broader native coverage, the other native analyzers, general
+scope/relation APIs, partial checked graphs and incremental caches remain deferred.
+The independent test-only language still qualifies the agnostic contract.
 
 See the [provider matrix](providers.md) for the independently registered capabilities.
 
@@ -363,3 +364,7 @@ Horos pagination and foreign-provider tests. The earlier
 [consultation delivery record](../research-docs/0002-semantic-analysis-kernel.md)
 records the original semantic slice, not the subsequent resolver split; its frozen expert input and raw
 advice remain separate from the implemented specification.
+
+See [native semantic providers](native-semantics.md)
+for the bounded Go resolver/analyzer, immutable native facts and explicit
+admission queries. TypeScript, Rust and C++ semantic providers remain planned.
