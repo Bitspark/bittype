@@ -2,7 +2,7 @@
 
 **ID:** 0012
 **Date:** 6 November 2026
-**Status:** delivering
+**Status:** applied
 **Graded:** https://github.com/Bitspark/bittype/pull/126#issuecomment-6689094045
 **Run-ID:** run_43b89675-3878-47ea-93fd-2452942f7f4d
 **Reviewed:** https://github.com/Bitspark/bittype/pull/126#issuecomment-6688471895
@@ -603,8 +603,8 @@ dependencies do not become ambient source/document inputs.
 The initial advice evaluation found no additional existing architectural
 violation. Subsequent implementation inspection exposed a concrete dependency
 identity failure: display names could discharge an unrelated provider contract.
-[ACX-007](https://github.com/Bitspark/platform/blob/docs/bittype-matrix-contract-identity-20261106/docs/concepts/architecture-cases/0007-bittype-matrix-contract-identity.md)
-records that counterexample and the pending canonical-key correction in PR126.
+[ACX-007](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/0007-bittype-matrix-contract-identity.md)
+records that counterexample and the canonical-key correction landed in PR126.
 The separately tracked ACX-001 verification-composition defect remains outside
 this task. The reporting extension must meet AC-02 through AC-05 from its first
 slice; report facts and tests remain qualified under AC-07.
@@ -613,3 +613,27 @@ The renderer regression `TestRendererLinksCapabilityDetails` failed on the
 pre-implementation renderer at `bb631f69280275f3c336c1bd0d0f15b498f7862f` in
 [run 42246957504](https://github.com/Bitspark/bittype/actions/runs/42246957504).
 It is retained in the importable report package for the corrected behavior.
+
+### Delivered result
+
+All accepted rows were implemented by [PR126](https://github.com/Bitspark/bittype/pull/126),
+merged as `a582c5bc9327b38b75b16dba59fc558067ed1171`. Its final head `f209457`
+passed [Go contracts and native qualification](https://github.com/Bitspark/bittype/actions/runs/42254515087)
+and [documentation checks](https://github.com/Bitspark/bittype/actions/runs/42254514914).
+The merged source tree is the tested tree. The tooling packages additionally passed
+`go test ./tools/provider-matrix/...` locally on Windows.
+
+The successful suite includes annotation/source/identity regressions, exact grammar
+helper interpretation, the external-package struct extractor, bounded-input and
+invalid-result failures, observation decoding and context association, and the
+real failing-child capture test. Existing full Go tests, vet, TypeScript/Rust
+typechecking, concurrency checks, native/Horos fuzzing, independently installed
+public consumption and native compiler fixtures also passed.
+
+The real invocation artifacts were inspected: repository, native and race/fuzz
+captures match their independently selected reporting contexts. The successful
+installed-consumer invocation is explicitly mismatched to repository declarations,
+so it cannot credit their cases. Static inventories contain no current-pass claim.
+Both matrix/detail outputs are committed, and the existing updater publishes the
+pair. Row 16's explicit deferrals remain the supported boundary, not accepted
+implementation left open. No runtime or semantic-provider behavior was added.

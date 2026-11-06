@@ -1,10 +1,10 @@
 # Detailed capability reports
 
-The [ACX-007 identity correction](https://github.com/Bitspark/platform/blob/docs/bittype-matrix-contract-identity-20261106/docs/concepts/architecture-cases/0007-bittype-matrix-contract-identity.md)
+The [ACX-007 identity correction](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/0007-bittype-matrix-contract-identity.md)
 records the existing matrix bug found during implementation: short display names
 could satisfy an unrelated constructor dependency. Availability now uses canonical
-contract identities; conflicting display rows diagnose. Remote qualification and
-landing of this correction are tracked with the report implementation in PR126.
+contract identities; conflicting display rows diagnose. The correction and report
+implementation landed in [PR126](https://github.com/Bitspark/bittype/pull/126).
 
 The [generated matrices](providers.md) link each discovered contribution to its
 [detailed report](provider-capabilities.md). Source annotations, format-owned
@@ -111,7 +111,9 @@ repository layout. Dependency export data supplies type identity, not dependency
 source, annotations or documentation. Active `TestGoFiles` and `XTestGoFiles`
 have a separate declaration index and cannot introduce production providers.
 The public runner does not imply arbitrary multi-module or repository-layout
-support. There is no ambient documentation search or implicit network fetch.
+support. There is no ambient documentation search. The Go command follows the
+caller's module and toolchain configuration and may download missing dependencies;
+their export data does not expand the selected source/document boundary.
 
 This is a development-tool contract, not a new provider SPI in `contracts/`, a
 runtime registry, an AST node annotation scheme or a Logos proof contract. An
@@ -119,8 +121,8 @@ extractor is trusted tooling code supplied by the composition. Loading bounds
 metadata, file count and captured source bytes; extraction bounds queries,
 traversal, records and accepted output. These are cooperative guarantees, not a
 hostile-code sandbox: arbitrary Go extractor code and an active `go/types` call
-cannot be forcibly preempted by an interface. The caller's context and existing
-remote job deadline provide the outer execution boundary. The tool never runs
+cannot be forcibly preempted by an interface. The caller's context bounds
+cooperative operations; existing CI jobs also impose an outer job deadline. The tool never runs
 inspected provider constructors, initializers or predicate functions.
 
 For a new structured definition format, its owner supplies an extractor through
