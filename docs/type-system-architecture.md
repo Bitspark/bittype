@@ -1,6 +1,6 @@
 # Type-system reasoning: ownership and implementation design
 
-**Evaluated design, 5 November 2026. Documentation only.**
+**Evaluated design, 5 November 2026; scoped implementation, 6 November.**
 [Research 0010](../research-docs/0010-type-system-model-architecture.md) applies the
 expert review to the [type-system model](type-system-model.md),
 [symbolic pagination proof](logos-preservation.md) and
@@ -8,13 +8,12 @@ expert review to the [type-system model](type-system-model.md),
 The owner's subsequent [Logos source inspection](logos-verification.md),
 6 November, refines the verification SPI boundary below. Its
 [typed check-only follow-up](logos-verification.md#concrete-typed-check-only-contract)
-now supplies a concrete Go integration target, landed in Logos PR 3881. This is
-source-based design work, not a new expert consultation or
-implemented Bittype API.
+now supplies a concrete Go integration target, landed in Logos PR 3881. This
+follow-up is source-based design work, not a new expert consultation.
 The subsequent [joint request/result contract](verification.md) defines preparation,
 checking, ownership, lifetimes and failure behavior, with TextBox/Page walkthroughs.
-It remains a documentation proposal; public package promotion and implementation
-are separate from those contract decisions.
+The [implemented surface](verification.md#implemented-go-surface) exercises the
+TextBox counterexample and Page conditional theorem, including nested reuse.
 
 Use Logos's semantic-package direction directly. Language integrations supply
 their meanings and judgments; mapping owners supply selected representation
@@ -22,12 +21,12 @@ relationships. Bittype associates the requested claim and evidence with the
 actual generation operation. It does not gain a second logical foundation or a
 universal type-system interpreter.
 
-The first implementation should exercise two exact statements: TextBox admission
-and result representation, and Page's conditional generic preservation. A narrow
+The first implementation exercises two exact statements: a TextBox admission
+counterexample and Page's conditional generic preservation. TextBox field
+representation is a separate obligation, not inferred from its counterexample. A narrow
 Logos-owned typed checker supplies the checking prerequisite for **production
-symbolic certification** once its delivery is admitted. This document supplies
-neither that checker nor new providers, dependencies, runtime bindings or public
-Go APIs.
+symbolic certification**. It does not supply native admission enforcement or
+runtime bindings.
 
 ## Ownership and dependencies
 
@@ -49,7 +48,7 @@ The broader contracts remain proposed. The subsequent narrow typed check-only
 delivery exposes a Go `Statement`/`Expr`/`Policy`/`Limits`/`Outcome` boundary and
 the required checking operations without delivering the full package model.
 Its [reviewed versus delivered status](logos-verification.md#concrete-typed-check-only-contract)
-must remain explicit; no Bittype integration is implemented here.
+remains explicit; the Bittype integration uses the narrow delivered boundary.
 
 The existing Go ground checker is usable independently: `contract.Check`
 checks supplied positive derivations, and `certify.CheckWithDerivedContext`

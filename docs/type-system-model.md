@@ -12,22 +12,20 @@ theories and an explicit Bittype generation/claim association. Do not introduce
 a separate Bittype type-system framework or proof foundation. The first design
 artifacts are the exact TextBox and Page statements and their dependencies.
 
-No type-system interpreter, Logos bridge, native analyzer, generator change or
-runtime binding is implemented here. Examples are proposed rules and expected
-reasoning outcomes, not executed proofs or compiler results. The
-[joint integration contract](verification.md) now defines request/result semantics;
-implementation and public promotion remain outstanding. Foundation statements
+This broad type-system model remains a proposal, rather than a new Bittype
+interpreter. The subsequent [joint integration](verification.md#implemented-go-surface)
+implements the scoped TextBox/Page cases with explicit source/native projections
+and Logos checking. It adds no runtime bindings or generator behavior. Foundation statements
 follow Logos's admitted contract rather than a new Bittype serialization.
 The [remaining verification SPI decisions](type-system-architecture.md#remaining-public-verification-spi-decisions)
 now incorporate the [Logos request trace and contract map](logos-verification.md).
 Logos already supplies ground claim/evidence types and direct checking. The
 [typed check-only follow-up](logos-verification.md#concrete-typed-check-only-contract)
 now has a landed Go implementation; the
-broader typed-package roadmap remains proposed. Bittype still needs to implement
-the proposed joint artifact binding, language projections, expected-claim
-construction and associated outcomes. This does not require a
-second proof algebra or checker registry. API design need not await complete
-TextBox/Page execution.
+broader typed-package roadmap remains proposed. The scoped joint artifact binding,
+projections, expected-claim construction and associated outcomes use that checker
+without a second proof algebra or checker registry. General native theories and
+constraint enforcement remain separate from this first implementation.
 
 ## Purpose and current boundary
 

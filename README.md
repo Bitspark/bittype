@@ -87,7 +87,7 @@ interpret these concrete type semantics.
   checking prerequisites, implementation boundary and module isolation.
 - [Logos checking and the verification boundary](docs/logos-verification.md):
   source-traced production request, direct checking APIs, typed proposal/experiment,
-  Bittype-owned association work and remaining dependencies; documentation only.
+  Bittype-owned association work, scoped integration and remaining dependencies.
 - [Joint verification contract](docs/verification.md): implemented immutable
   artifact association, preparation/checking split, result/failure semantics and
   TextBox/Page walkthroughs, with the supported integration subset and limits.
