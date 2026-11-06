@@ -58,7 +58,13 @@ are still read to discover the interfaces being implemented.
   configuration validity, semantic correctness or complete language coverage.
 - Transformer factories supply endpoints through actual
   `transform.NewTransformer[From, To]` calls. Both markers must be discovered
-  languages. Unrecoverable endpoints stop generation rather than omitting an edge.
+  languages. A function accepting a transformer collaborator can have no fixed
+  endpoint of its own, as with a diagnostics decorator. Its caller supplies that
+  input; discovery neither invents an edge nor assumes the function preserves
+  the input's endpoints. Typed factory calls inside its body or call arguments
+  still contribute static candidates. This does not establish returned-value
+  flow. A factory without transformer inputs or recoverable typed endpoints
+  stops generation rather than silently omitting an edge.
 
 ## Dimension metadata
 

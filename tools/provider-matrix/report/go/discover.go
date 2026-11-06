@@ -483,6 +483,15 @@ func (p *program) transformers(m *matrix) error {
 		}
 		return false
 	}
+	acceptsTransformer := func(fn *types.Func) bool {
+		signature := fn.Type().(*types.Signature)
+		for i := 0; i < signature.Params().Len(); i++ {
+			if types.Implements(signature.Params().At(i).Type(), iface) {
+				return true
+			}
+		}
+		return false
+	}
 	// Follow typed factory delegation to the existing transformer boundary.
 	// Generic helpers are not concrete edges. Bind their actual type arguments
 	// at each call, including reordered parameters, without executing factories.
@@ -566,12 +575,15 @@ func (p *program) transformers(m *matrix) error {
 				edge.chain = append([]callLink{link}, edge.chain...)
 				result = append(result, edge)
 			}
-			return false
+			// Arguments can contain their own statically typed factories, as in
+			// Decorate(NewTransformer[A, B](...)). The decorator's supplied input
+			// does not establish an endpoint or prove returned-value flow.
+			return true
 		})
 		if failure != nil {
 			return nil, failure
 		}
-		if len(result) == 0 {
+		if len(result) == 0 && !acceptsTransformer(fn) {
 			return nil, fmt.Errorf("%s: cannot derive transformer endpoints from the typed factory", fn)
 		}
 		return result, nil

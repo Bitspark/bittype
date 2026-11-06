@@ -250,6 +250,59 @@ func New()bridge.ASTTransformer{return New()}`,
 	}
 }
 
+func TestTransformerInputsDoNotInventOrHideFixedEndpoints(t *testing.T) {
+	p := fixture(t, map[string]string{
+		"generation/decorated/go": `package decorated
+import (bridge "example.test/fixture/contracts/transform/go";a "example.test/fixture/syntax/ember/go";b "example.test/fixture/syntax/ice/go")
+type wrapped struct{bridge.ASTTransformer}
+type Collaborator interface{bridge.ASTTransformer}
+type Alias = Collaborator
+func Wrap(input Alias)bridge.ASTTransformer{return wrapped{input}}
+func Again(input bridge.ASTTransformer)bridge.ASTTransformer{return Wrap(input)}
+func New()bridge.ASTTransformer{return Again(bridge.NewTransformer[a.Language,b.Language]())}
+func WithInput(input bridge.ASTTransformer)bridge.ASTTransformer{_ = input;return bridge.NewTransformer[b.Language,a.Language]()}
+`,
+	})
+	m, err := p.discover()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(m.edges["ember"]["ice"]) != 2 || len(m.edges["ice"]["ember"]) != 1 {
+		t.Fatal("transformer inputs invented or hid a fixed endpoint", m.edges)
+	}
+	for _, targets := range m.edges {
+		for _, locations := range targets {
+			for _, loc := range locations {
+				if name := loc.op.public.Name(); name == "Wrap" || name == "Again" {
+					t.Fatal("caller-supplied transformer advertised as a fixed edge", loc.op)
+				}
+			}
+		}
+	}
+	if m.edges["ice"]["ember"][0].op.public.Name() != "WithInput" {
+		t.Fatal("a transformer input hid the function's own typed factory")
+	}
+}
+
+func TestUnboundTransformerFactoriesStillFail(t *testing.T) {
+	for name, body := range map[string]string{
+		"unbound":   "return nil",
+		"decorated": "return Wrap(nil)",
+	} {
+		t.Run(name, func(t *testing.T) {
+			p := fixture(t, map[string]string{
+				"generation/unbound/go": `package unbound
+import bridge "example.test/fixture/contracts/transform/go"
+func Wrap(input bridge.ASTTransformer)bridge.ASTTransformer{return input}
+func New()bridge.ASTTransformer{` + body + `}`,
+			})
+			if _, err := p.discover(); err == nil || !strings.Contains(err.Error(), "cannot derive transformer endpoints") {
+				t.Fatal("factory without a typed endpoint accepted", err)
+			}
+		})
+	}
+}
+
 func TestTransformerRetainsRelatedCallsFromEveryTypedPath(t *testing.T) {
 	p := fixture(t, map[string]string{
 		"generation/paths/go": `package generation
