@@ -216,11 +216,16 @@ func (s *Session[F, T]) Publish(root Declaration[F]) (Publication[F, T], error) 
 	if p == nil || representation.IsNil(p.value.Publisher) {
 		return Publication[F, T]{}, s.fail(ErrUnsupported)
 	}
+	if s.publishing[root] {
+		return Publication[F, T]{}, s.fail(ErrInvalid)
+	}
 	for _, previous := range s.publications {
 		if previous.Root() == root {
 			return Publication[F, T]{}, s.fail(ErrInvalid)
 		}
 	}
+	s.publishing[root] = true
+	defer delete(s.publishing, root)
 	o, err := s.enter(p, s.frame, s.root, nil)
 	if err != nil {
 		return Publication[F, T]{}, err
@@ -258,7 +263,7 @@ func (r *publishRequest[F, T]) Expose(c Callee[F, T]) (Publication[F, T], error)
 	if err := o.check(); err != nil {
 		return Publication[F, T]{}, err
 	}
-	if !c.Valid() || c.state.run != s || c.state.phase < ready || c.state.plan != o.plan || c.state.open.Declaration != r.root {
+	if !c.Valid() || c.state.run.sessionState != s.sessionState || c.state.phase < ready || c.state.plan != o.plan || c.state.open.Declaration != r.root {
 		return Publication[F, T]{}, s.fail(ErrScope)
 	}
 	if err := s.native.CheckExposure(s.ctx, r.Site(), r.root, c); err != nil {
@@ -275,7 +280,7 @@ func (s *Session[F, T]) Define(c Callee[F, T]) (Definition[F, T], error) {
 	if err := s.step(); err != nil {
 		return Definition[F, T]{}, err
 	}
-	if !c.Valid() || c.state.run != s || !c.Owned() || c.state.phase != ready {
+	if !c.Valid() || c.state.run.sessionState != s.sessionState || !c.Owned() || c.state.phase != ready {
 		return Definition[F, T]{}, s.fail(ErrInvalid)
 	}
 	p := c.state.plan

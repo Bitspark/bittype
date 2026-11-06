@@ -10,20 +10,24 @@ import (
 )
 
 type Fixture struct {
-	source *Source
-	native *Native
-	config g.Config[SourceLanguage, s.Language]
+	source       *Source
+	native       *Native
+	config       g.Config[SourceLanguage, s.Language]
 	declarations map[string]g.Declaration[SourceLanguage]
-	rootUses map[string]g.Use[SourceLanguage]
-	roots []g.Declaration[SourceLanguage]
+	rootUses     map[string]g.Use[SourceLanguage]
+	roots        []g.Declaration[SourceLanguage]
 }
 
 func (f *Fixture) Input() g.Input { return g.Input{Snapshot: f.source.snapshot} }
-func (f *Fixture) Config() g.Config[SourceLanguage, s.Language] { c := f.config; c.Plans = slices.Clone(c.Plans); return c }
-func (f *Fixture) Target() representation.Language { return f.native.language }
+func (f *Fixture) Config() g.Config[SourceLanguage, s.Language] {
+	c := f.config
+	c.Plans = slices.Clone(c.Plans)
+	return c
+}
+func (f *Fixture) Target() representation.Language                       { return f.native.language }
 func (f *Fixture) Declaration(name string) g.Declaration[SourceLanguage] { return f.declarations[name] }
-func (f *Fixture) Use(name string) g.Use[SourceLanguage] { return f.rootUses[name] }
-func (f *Fixture) Roots() []g.Declaration[SourceLanguage] { return slices.Clone(f.roots) }
+func (f *Fixture) Use(name string) g.Use[SourceLanguage]                 { return f.rootUses[name] }
+func (f *Fixture) Roots() []g.Declaration[SourceLanguage]                { return slices.Clone(f.roots) }
 
 // New composes independent source, target and mapping owners through public
 // contracts. No engine registry or hardcoded product variant is involved.
@@ -39,9 +43,13 @@ func NewArgumentOnlySupport(ctx context.Context) (*Fixture, error) {
 
 func newFixture(ctx context.Context, argumentOnlySupport bool) (*Fixture, error) {
 	source, err := newSource(ctx)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	native, err := newNative()
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	f := &Fixture{source: source, native: native, declarations: make(map[string]g.Declaration[SourceLanguage]), rootUses: make(map[string]g.Use[SourceLanguage])}
 	names := []string{"Person", "Page", "Outer", "Nested", "People", "Inline", "External", "InlinePeople", "ExternalPeople"}
 	for _, name := range names {
@@ -92,7 +100,9 @@ func newFixture(ctx context.Context, argumentOnlySupport bool) (*Fixture, error)
 		exportName, artifact, arity := name, "", 0
 		if !owned {
 			artifact, arity = "fixture-native-library-v1", 2
-			if name == "External" { exportName = "ExternalBox" }
+			if name == "External" {
+				exportName = "ExternalBox"
+			}
 		}
 		plan := g.Plan[SourceLanguage, s.Language]{Key: name, Declaration: decl, Associations: rules[name]}
 		plan.Acquire = func(_ context.Context, site g.Site[SourceLanguage, s.Language]) (g.Destination[s.Language], bool, error) {
@@ -102,13 +112,19 @@ func newFixture(ctx context.Context, argumentOnlySupport bool) (*Fixture, error)
 			rules[name].applicationDeclaration = decl
 			rules[name].applicationInline = name == "Inline"
 			parameter := "T"
-			if name == "Outer" { parameter = "U" }
-			if name == "Nested" { parameter = "V" }
+			if name == "Outer" {
+				parameter = "U"
+			}
+			if name == "Nested" {
+				parameter = "V"
+			}
 			mapping := &genericMapping{native: native, rules: rules[name], read: read, name: parameter, inline: name == "Inline", argumentOnlySupport: argumentOnlySupport && name == "Page"}
 			plan.User, plan.Convention = mapping, mapping
 		} else {
 			plan.User = nonGeneric(native, rules[name])
-			plan.Header = func(_ context.Context, site g.Site[SourceLanguage, s.Language], destination g.Destination[s.Language]) (g.Layout[s.Language], error) { return native.freeze(site, destination) }
+			plan.Header = func(_ context.Context, site g.Site[SourceLanguage, s.Language], destination g.Destination[s.Language]) (g.Layout[s.Language], error) {
+				return native.freeze(site, destination)
+			}
 		}
 		if owned {
 			plan.Publisher, plan.Definer = publisher{}, defineFunc(defineSource)
@@ -116,40 +132,68 @@ func newFixture(ctx context.Context, argumentOnlySupport bool) (*Fixture, error)
 		}
 		plans = append(plans, plan)
 	}
-	plans = append(plans, g.Plan[SourceLanguage, s.Language]{Key: "bound", User: useFunc(func(_ context.Context, r g.UseRequest[SourceLanguage, s.Language]) (g.Product[SourceLanguage, s.Language], error) { return r.Bound() })})
+	plans = append(plans, g.Plan[SourceLanguage, s.Language]{Key: "bound", User: useFunc(func(_ context.Context, r g.UseRequest[SourceLanguage, s.Language]) (g.Product[SourceLanguage, s.Language], error) {
+		return r.Bound()
+	})})
 	plans = append(plans, g.Plan[SourceLanguage, s.Language]{Key: "person-body", Associations: rules["person-body"], User: useFunc(func(ctx context.Context, r g.UseRequest[SourceLanguage, s.Language]) (g.Product[SourceLanguage, s.Language], error) {
 		text, err := native.text()
-		if err != nil { return g.Product[SourceLanguage, s.Language]{}, err }
+		if err != nil {
+			return g.Product[SourceLanguage, s.Language]{}, err
+		}
 		body, err := native.record(nativeField{"Name", text})
-		if err != nil { return g.Product[SourceLanguage, s.Language]{}, err }
+		if err != nil {
+			return g.Product[SourceLanguage, s.Language]{}, err
+		}
 		token, err := rules["person-body"].issue(ctx, r.Want(), body, text)
-		if err != nil { return g.Product[SourceLanguage, s.Language]{}, err }
+		if err != nil {
+			return g.Product[SourceLanguage, s.Language]{}, err
+		}
 		return r.Return(token)
 	})})
 	plans = append(plans, g.Plan[SourceLanguage, s.Language]{Key: "page-body", Associations: rules["page-body"], User: useFunc(func(ctx context.Context, r g.UseRequest[SourceLanguage, s.Language]) (g.Product[SourceLanguage, s.Language], error) {
 		parameter, err := r.Child(pageOpen.Formals[0].Subject)
-		if err != nil { return g.Product[SourceLanguage, s.Language]{}, err }
+		if err != nil {
+			return g.Product[SourceLanguage, s.Language]{}, err
+		}
 		support, err := read.readActual(ctx, r.Want(), pageOpen.Formals[0].Subject, parameter)
-		if err != nil { return g.Product[SourceLanguage, s.Language]{}, err }
+		if err != nil {
+			return g.Product[SourceLanguage, s.Language]{}, err
+		}
 		items, err := native.slice(parameter.Payload())
-		if err != nil { return g.Product[SourceLanguage, s.Language]{}, err }
+		if err != nil {
+			return g.Product[SourceLanguage, s.Language]{}, err
+		}
 		helper, err := r.RequireHelper("cursor-helper")
-		if err != nil { return g.Product[SourceLanguage, s.Language]{}, err }
+		if err != nil {
+			return g.Product[SourceLanguage, s.Language]{}, err
+		}
 		cursor, err := native.reference(helper)
-		if err != nil { return g.Product[SourceLanguage, s.Language]{}, err }
+		if err != nil {
+			return g.Product[SourceLanguage, s.Language]{}, err
+		}
 		body, err := native.record(nativeField{"Items", items}, nativeField{"Support", support}, nativeField{"Cursor", cursor})
-		if err != nil { return g.Product[SourceLanguage, s.Language]{}, err }
+		if err != nil {
+			return g.Product[SourceLanguage, s.Language]{}, err
+		}
 		token, err := rules["page-body"].issue(ctx, r.Want(), body, items)
-		if err != nil { return g.Product[SourceLanguage, s.Language]{}, err }
+		if err != nil {
+			return g.Product[SourceLanguage, s.Language]{}, err
+		}
 		return r.Return(token)
 	})})
 	plans = append(plans, g.Plan[SourceLanguage, s.Language]{
 		Key: "cursor-helper",
-		Acquire: func(_ context.Context, site g.Site[SourceLanguage, s.Language]) (g.Destination[s.Language], bool, error) { return native.reserve(site, "Cursor", true, false, "", 0) },
-		Header: func(_ context.Context, site g.Site[SourceLanguage, s.Language], destination g.Destination[s.Language]) (g.Layout[s.Language], error) { return native.freeze(site, destination) },
+		Acquire: func(_ context.Context, site g.Site[SourceLanguage, s.Language]) (g.Destination[s.Language], bool, error) {
+			return native.reserve(site, "Cursor", true, false, "", 0)
+		},
+		Header: func(_ context.Context, site g.Site[SourceLanguage, s.Language], destination g.Destination[s.Language]) (g.Layout[s.Language], error) {
+			return native.freeze(site, destination)
+		},
 		Definer: defineFunc(func(_ context.Context, r g.DefineRequest[SourceLanguage, s.Language]) (g.Definition[SourceLanguage, s.Language], error) {
 			text, err := native.text()
-			if err != nil { return g.Definition[SourceLanguage, s.Language]{}, err }
+			if err != nil {
+				return g.Definition[SourceLanguage, s.Language]{}, err
+			}
 			return r.CompleteBody(text)
 		}),
 	})

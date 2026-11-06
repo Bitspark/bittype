@@ -15,12 +15,19 @@ func TestMissingCapabilitiesFailOnlyWhenDemanded(t *testing.T) {
 			c := f.configuration(nil)
 			p := f.plainPlan(true)
 			switch name {
-			case "use": c.Plans[0].User = nil
-			case "publish": p.Publisher = nil
-			case "define": p.Definer = nil
-			case "convention": p = f.genericPlan(false, nil); p.Convention = nil
-			case "acquire": p.Acquire = nil
-			case "header": p.Header = nil
+			case "use":
+				c.Plans[0].User = nil
+			case "publish":
+				p.Publisher = nil
+			case "define":
+				p.Definer = nil
+			case "convention":
+				p = f.genericPlan(false, nil)
+				p.Convention = nil
+			case "acquire":
+				p.Acquire = nil
+			case "header":
+				p.Header = nil
 			}
 			c.Plans = append(c.Plans, p)
 			// Construction does not demand every capability from every mapping.
@@ -30,21 +37,33 @@ func TestMissingCapabilitiesFailOnlyWhenDemanded(t *testing.T) {
 			case "use":
 				var out product
 				out, err = s.Use(f.scalar)
-				if out.Valid() { t.Fatal("missing Use returned a product") }
+				if out.Valid() {
+					t.Fatal("missing Use returned a product")
+				}
 			case "publish":
 				var out gen.Publication[sourceLanguage, nativeLanguage]
 				out, err = s.Publish(f.plain)
-				if out.Valid() { t.Fatal("missing Publish returned a publication") }
+				if out.Valid() {
+					t.Fatal("missing Publish returned a publication")
+				}
 			case "define":
 				owned, acquireErr := s.Acquire(f.plain)
-				if acquireErr != nil { t.Fatal(acquireErr) }
+				if acquireErr != nil {
+					t.Fatal(acquireErr)
+				}
 				var out gen.Definition[sourceLanguage, nativeLanguage]
 				out, err = s.Define(owned)
-				if out.Valid() { t.Fatal("missing Define returned a definition") }
-			case "convention": _, err = s.Acquire(f.generic)
-			default: _, err = s.Acquire(f.plain)
+				if out.Valid() {
+					t.Fatal("missing Define returned a definition")
+				}
+			case "convention":
+				_, err = s.Acquire(f.generic)
+			default:
+				_, err = s.Acquire(f.plain)
 			}
-			if !errors.Is(err, gen.ErrUnsupported) { t.Fatalf("missing capability did not fail explicitly: %v", err) }
+			if !errors.Is(err, gen.ErrUnsupported) {
+				t.Fatalf("missing capability did not fail explicitly: %v", err)
+			}
 			failedFinish(t, s, gen.ErrUnsupported)
 		})
 	}
@@ -57,9 +76,15 @@ func TestNongenericAndExternalMappingsOmitUnneededCapabilities(t *testing.T) {
 		c.Plans = append(c.Plans, f.plainPlan(true))
 		s := begin(t, context.Background(), f, c, gen.DefaultLimits())
 		publication, err := s.Publish(f.plain)
-		if err != nil { t.Fatal(err) }
-		if _, err := s.Define(publication.Callee()); err != nil { t.Fatal(err) }
-		if _, err := s.Finish(); err != nil { t.Fatal(err) }
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := s.Define(publication.Callee()); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := s.Finish(); err != nil {
+			t.Fatal(err)
+		}
 	})
 	t.Run("external-without-publish-or-define", func(t *testing.T) {
 		f := newFixture(t)
@@ -68,12 +93,18 @@ func TestNongenericAndExternalMappingsOmitUnneededCapabilities(t *testing.T) {
 		c := f.configuration(nil)
 		c.Plans = append(c.Plans, p)
 		c.Select = func(u useData) (string, error) {
-			if u.Callee == f.generic { return "generic", nil }
+			if u.Callee == f.generic {
+				return "generic", nil
+			}
 			return "direct", nil
 		}
 		s := begin(t, context.Background(), f, c, gen.DefaultLimits())
-		if _, err := s.Use(f.application); err != nil { t.Fatal(err) }
-		if _, err := s.Finish(); err != nil { t.Fatal(err) }
+		if _, err := s.Use(f.application); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := s.Finish(); err != nil {
+			t.Fatal(err)
+		}
 	})
 }
 
@@ -83,10 +114,16 @@ func TestPublicationFromAnotherInvocationCannotBeReplayed(t *testing.T) {
 	p := f.plainPlan(false)
 	p.Publisher = publishFunc(func(_ context.Context, r gen.PublishRequest[sourceLanguage, nativeLanguage]) (gen.Publication[sourceLanguage, nativeLanguage], error) {
 		callee, err := r.Acquire()
-		if err != nil { return gen.Publication[sourceLanguage, nativeLanguage]{}, err }
+		if err != nil {
+			return gen.Publication[sourceLanguage, nativeLanguage]{}, err
+		}
 		current, err := r.Expose(callee)
-		if err != nil { return gen.Publication[sourceLanguage, nativeLanguage]{}, err }
-		if previous.Valid() { return previous, nil }
+		if err != nil {
+			return gen.Publication[sourceLanguage, nativeLanguage]{}, err
+		}
+		if previous.Valid() {
+			return previous, nil
+		}
 		return current, nil
 	})
 	c := f.configuration(nil)
@@ -94,9 +131,13 @@ func TestPublicationFromAnotherInvocationCannotBeReplayed(t *testing.T) {
 	first := begin(t, context.Background(), f, c, gen.DefaultLimits())
 	var err error
 	previous, err = first.Publish(f.plain)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	second := begin(t, context.Background(), f, c, gen.DefaultLimits())
-	if out, err := second.Publish(f.plain); !errors.Is(err, gen.ErrInvalid) || out.Valid() { t.Fatalf("saved publication replaced a current exposure: %v", err) }
+	if out, err := second.Publish(f.plain); !errors.Is(err, gen.ErrInvalid) || out.Valid() {
+		t.Fatalf("saved publication replaced a current exposure: %v", err)
+	}
 	failedFinish(t, second, gen.ErrInvalid)
 }
 
@@ -105,8 +146,12 @@ func TestDefinitionCannotBeReplayedForAnotherCallee(t *testing.T) {
 	var previous gen.Definition[sourceLanguage, nativeLanguage]
 	replay := defineFunc(func(_ context.Context, r gen.DefineRequest[sourceLanguage, nativeLanguage]) (gen.Definition[sourceLanguage, nativeLanguage], error) {
 		current, err := r.CompleteBody(f.closed)
-		if err != nil { return gen.Definition[sourceLanguage, nativeLanguage]{}, err }
-		if previous.Valid() { return previous, nil }
+		if err != nil {
+			return gen.Definition[sourceLanguage, nativeLanguage]{}, err
+		}
+		if previous.Valid() {
+			return previous, nil
+		}
 		return current, nil
 	})
 	plain, generic := f.plainPlan(true), f.genericPlan(true, nil)
@@ -115,12 +160,20 @@ func TestDefinitionCannotBeReplayedForAnotherCallee(t *testing.T) {
 	c.Plans = append(c.Plans, plain, generic)
 	s := begin(t, context.Background(), f, c, gen.DefaultLimits())
 	one, err := s.Acquire(f.plain)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	two, err := s.Acquire(f.generic)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	previous, err = s.Define(one)
-	if err != nil { t.Fatal(err) }
-	if out, err := s.Define(two); !errors.Is(err, gen.ErrInvalid) || out.Valid() { t.Fatalf("saved definition filled another callee: %v", err) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out, err := s.Define(two); !errors.Is(err, gen.ErrInvalid) || out.Valid() {
+		t.Fatalf("saved definition filled another callee: %v", err)
+	}
 	failedFinish(t, s, gen.ErrInvalid)
 }
 
@@ -130,9 +183,15 @@ func TestDefinitionCanOnlyFillItsReservationOnce(t *testing.T) {
 	c.Plans = append(c.Plans, f.plainPlan(true))
 	s := begin(t, context.Background(), f, c, gen.DefaultLimits())
 	owned, err := s.Acquire(f.plain)
-	if err != nil { t.Fatal(err) }
-	if _, err := s.Define(owned); err != nil { t.Fatal(err) }
-	if out, err := s.Define(owned); !errors.Is(err, gen.ErrInvalid) || out.Valid() { t.Fatalf("reservation filled twice: %v", err) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Define(owned); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := s.Define(owned); !errors.Is(err, gen.ErrInvalid) || out.Valid() {
+		t.Fatalf("reservation filled twice: %v", err)
+	}
 	failedFinish(t, s, gen.ErrInvalid)
 }
 
@@ -160,7 +219,9 @@ func TestReentrantSignatureAcquisitionFails(t *testing.T) {
 			c := f.configuration(nil)
 			c.Plans = append(c.Plans, p)
 			s = begin(t, context.Background(), f, c, gen.DefaultLimits())
-			if out, err := s.Acquire(f.generic); !errors.Is(err, gen.ErrInvalid) || out.Valid() { t.Fatalf("unfinished signature escaped: %v", err) }
+			if out, err := s.Acquire(f.generic); !errors.Is(err, gen.ErrInvalid) || out.Valid() {
+				t.Fatalf("unfinished signature escaped: %v", err)
+			}
 			failedFinish(t, s, gen.ErrInvalid)
 		})
 	}
@@ -176,12 +237,17 @@ func TestInvalidOrReplacedFormalLayoutsFail(t *testing.T) {
 				introduce: func(_ context.Context, r gen.IntroduceRequest[sourceLanguage, nativeLanguage]) (gen.Introduction[sourceLanguage, nativeLanguage], error) {
 					layout := f.native.layout(r.Destination())
 					switch name {
-					case "foreign-owner": layout = ref(gen.NewSpace[gen.LayoutRole[nativeLanguage]](), 1)
-					case "absent-record": layout = ref(f.native.layouts, 999)
-					case "other-destination": layout = f.native.layout(f.native.destination(false))
+					case "foreign-owner":
+						layout = ref(gen.NewSpace[gen.LayoutRole[nativeLanguage]](), 1)
+					case "absent-record":
+						layout = ref(f.native.layouts, 999)
+					case "other-destination":
+						layout = f.native.layout(f.native.destination(false))
 					}
 					_, err := r.FreezeLayout(layout)
-					if err == nil && name == "freeze-twice" { _, err = r.FreezeLayout(layout) }
+					if err == nil && name == "freeze-twice" {
+						_, err = r.FreezeLayout(layout)
+					}
 					return gen.Introduction[sourceLanguage, nativeLanguage]{}, err
 				},
 				apply: original.Apply,
@@ -190,8 +256,12 @@ func TestInvalidOrReplacedFormalLayoutsFail(t *testing.T) {
 			c.Plans = append(c.Plans, p)
 			s := begin(t, context.Background(), f, c, gen.DefaultLimits())
 			expected := error(errRecord)
-			if name == "freeze-twice" { expected = gen.ErrInvalid }
-			if out, err := s.Acquire(f.generic); !errors.Is(err, expected) || out.Valid() { t.Fatalf("invalid layout admitted: %v", err) }
+			if name == "freeze-twice" {
+				expected = gen.ErrInvalid
+			}
+			if out, err := s.Acquire(f.generic); !errors.Is(err, expected) || out.Valid() {
+				t.Fatalf("invalid layout admitted: %v", err)
+			}
 			failedFinish(t, s, expected)
 		})
 	}
@@ -205,7 +275,9 @@ func TestNativeHelperDoesNotInheritSourceOrNativeScope(t *testing.T) {
 			helper := f.plainPlan(true)
 			helper.Key, helper.Declaration, helper.Publisher = "helper", declaration{}, nil
 			helper.Definer = defineFunc(func(_ context.Context, r gen.DefineRequest[sourceLanguage, nativeLanguage]) (gen.Definition[sourceLanguage, nativeLanguage], error) {
-				if r.Site().Environment().Valid() || len(r.Open().Formals) != 0 { t.Fatal("native helper inherited source scope") }
+				if r.Site().Environment().Valid() || len(r.Open().Formals) != 0 {
+					t.Fatal("native helper inherited source scope")
+				}
 				switch name {
 				case "source-use":
 					_, err := r.Use(f.scalar)
@@ -213,7 +285,8 @@ func TestNativeHelperDoesNotInheritSourceOrNativeScope(t *testing.T) {
 				case "source-binder":
 					_, err := r.Bound(f.first)
 					return gen.Definition[sourceLanguage, nativeLanguage]{}, err
-				default: return r.CompleteBody(f.native.fragment(other.Frame()))
+				default:
+					return r.CompleteBody(f.native.fragment(other.Frame()))
 				}
 			})
 			c := f.configuration(nil)
@@ -221,10 +294,16 @@ func TestNativeHelperDoesNotInheritSourceOrNativeScope(t *testing.T) {
 			s := begin(t, context.Background(), f, c, gen.DefaultLimits())
 			var err error
 			other, err = s.Acquire(f.generic)
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			owned, err := s.AcquireHelper("helper")
-			if err != nil { t.Fatal(err) }
-			if out, err := s.Define(owned); !errors.Is(err, gen.ErrScope) || out.Valid() { t.Fatalf("helper captured caller scope: %v", err) }
+			if err != nil {
+				t.Fatal(err)
+			}
+			if out, err := s.Define(owned); !errors.Is(err, gen.ErrScope) || out.Valid() {
+				t.Fatalf("helper captured caller scope: %v", err)
+			}
 			failedFinish(t, s, gen.ErrScope)
 		})
 	}

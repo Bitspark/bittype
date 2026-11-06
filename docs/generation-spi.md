@@ -58,8 +58,11 @@ caller's source binders. Its target-owned header may still have explicit native
 parameters. Helper keys are local to the captured configuration and are not
 synthetic source identities.
 
-A Session permits nested callbacks on one call stack. Consumers serialize calls
-to it. Separate sessions can run concurrently when their collaborators support
+A Session permits nested callbacks on one call stack. Copies share its entire
+private invocation state; consumers serialize calls across all copies. Finish
+freezes the obligation ledger before target assembly and rejects reentrant
+operations. Recursive publication of the same root is also rejected. Separate
+sessions can run concurrently when their collaborators support
 that use. The host copies its owned slices and records; collaborators must keep
 their private records and policy stable. Copying a Go interface cannot freeze a
 mutable implementation.

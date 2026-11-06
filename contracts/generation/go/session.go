@@ -14,10 +14,13 @@ type planState[F, T any] struct {
 }
 
 // Session is an explicitly driven, preselected invocation, not a selector or
-// definition scheduler. It supports nested callbacks on one call stack; callers
-// must serialize access to a Session. Distinct sessions may run concurrently if
+// definition scheduler. Copies refer to the same private invocation state. It
+// supports nested callbacks on one call stack; callers must serialize access to
+// a Session and all its copies. Distinct sessions may run concurrently if
 // their supplied collaborators support it. Finish is the only output commit.
-type Session[F, T any] struct {
+type Session[F, T any] struct{ *sessionState[F, T] }
+
+type sessionState[F, T any] struct {
 	ctx                                         context.Context
 	id                                          RunID
 	configuration                               ConfigID
@@ -36,9 +39,11 @@ type Session[F, T any] struct {
 	limits                                      Limits
 	operations, depth, references, reservations int
 	publications                                []Publication[F, T]
+	publishing                                  map[Declaration[F]]bool
 	definitions                                 []Definition[F, T]
 	failed                                      error
 	finished                                    bool
+	committing                                  bool
 }
 
 func Begin[F, T any](ctx context.Context, input Input, config Config[F, T], limits Limits) (*Session[F, T], error) {
@@ -62,10 +67,10 @@ func Begin[F, T any](ctx context.Context, input Input, config Config[F, T], limi
 	if err := config.Source.CheckInput(ctx, input.Snapshot, evidence); err != nil {
 		return nil, err
 	}
-	s := &Session[F, T]{ctx: ctx, id: RunID{fresh()}, configuration: ConfigID{fresh()}, snapshot: input.Snapshot,
+	s := &Session[F, T]{&sessionState[F, T]{ctx: ctx, id: RunID{fresh()}, configuration: ConfigID{fresh()}, snapshot: input.Snapshot,
 		source: config.Source, owners: config.Source.Owners(), native: config.Native, target: config.Target, selectPlan: config.Select,
 		plans: make(map[string]*planState[F, T]), declarations: make(map[Declaration[F]]*planState[F, T]), opens: make(map[Declaration[F]]OpenData[F]),
-		frames: make(map[FrameID]map[Binder[F]]Product[F, T]), root: config.Source.RootEnvironment(), frame: FrameID{fresh()}, limits: limits}
+		frames: make(map[FrameID]map[Binder[F]]Product[F, T]), publishing: make(map[Declaration[F]]bool), root: config.Source.RootEnvironment(), frame: FrameID{fresh()}, limits: limits}}
 	if !s.owners.Valid() {
 		return nil, ErrInvalid
 	}
@@ -98,16 +103,16 @@ func (s *Session[F, T]) fail(err error) error {
 	if err == nil {
 		err = ErrInvalid
 	}
-	if s != nil && s.failed == nil {
-		s.failed = err
-	}
-	if s == nil {
+	if s == nil || s.sessionState == nil {
 		return err
+	}
+	if s.failed == nil {
+		s.failed = err
 	}
 	return s.failed
 }
 func (s *Session[F, T]) check() error {
-	if s == nil {
+	if s == nil || s.sessionState == nil || s.ctx == nil {
 		return ErrInvalid
 	}
 	if s.failed != nil {
@@ -115,6 +120,9 @@ func (s *Session[F, T]) check() error {
 	}
 	if s.finished {
 		return ErrInvalid
+	}
+	if s.committing {
+		return s.fail(ErrInvalid)
 	}
 	if err := s.ctx.Err(); err != nil {
 		return s.fail(err)
@@ -334,7 +342,13 @@ func (s *Session[F, T]) Finish() (representation.ASTSet, error) {
 			return representation.ASTSet{}, s.fail(ErrIncomplete)
 		}
 	}
-	output, err := s.native.Assemble(s.ctx, slices.Clone(s.publications), slices.Clone(s.definitions), s.limits)
+	// Freeze the ledger before crossing the target callback. Reentrant public
+	// operations poison the invocation even if the callback ignores their error.
+	s.committing = true
+	output, err := func() (representation.ASTSet, error) {
+		defer func() { s.committing = false }()
+		return s.native.Assemble(s.ctx, slices.Clone(s.publications), slices.Clone(s.definitions), s.limits)
+	}()
 	if err != nil {
 		return representation.ASTSet{}, s.fail(err)
 	}
