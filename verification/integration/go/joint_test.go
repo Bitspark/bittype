@@ -31,7 +31,7 @@ import (
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
 	n "github.com/Bitspark/bittype/verification/files/target/golang/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
-	"github.com/Bitspark/logos/contract/go/typed"
+	"github.com/Bitspark/logos-contract/contract/go/typed"
 	core "github.com/bitspark/ontos/core/go"
 	data "github.com/bitspark/ontos/data/go"
 )
@@ -340,7 +340,9 @@ func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !native(t, g, "NestedPage").IsAlias() { t.Fatal("missing actual nested Go instantiation") }
+	if !native(t, g, "NestedPage").IsAlias() {
+		t.Fatal("missing actual nested Go instantiation")
+	}
 	p, err := bindPage(t, s, g)
 	if err != nil {
 		t.Fatal(err)
@@ -433,7 +435,9 @@ func TestPageClosedTheoremAndNestedReuse(t *testing.T) {
 		}
 	}
 	application, err := p.family.Application(theorem, p.argument, 2)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	dependencies := slices.DeleteFunc(v.MappingDependencies(), func(dependency string) bool { return dependency == v.OptionalLaw })
 	limits := v.DefaultLimits()
 	limits.Checker.Work = 20000000

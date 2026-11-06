@@ -12,7 +12,7 @@ import (
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
 	n "github.com/Bitspark/bittype/verification/files/target/golang/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
-	"github.com/Bitspark/logos/contract/go/typed"
+	"github.com/Bitspark/logos-contract/contract/go/typed"
 	core "github.com/bitspark/ontos/core/go"
 	data "github.com/bitspark/ontos/data/go"
 )

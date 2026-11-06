@@ -1,6 +1,6 @@
 package verification
 
-import "github.com/Bitspark/logos/contract/go/typed"
+import "github.com/Bitspark/logos-contract/contract/go/typed"
 
 func domainsN(domain expression, count int, result expression) expression {
 	for range count {

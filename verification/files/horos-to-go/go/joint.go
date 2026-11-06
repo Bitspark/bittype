@@ -10,7 +10,7 @@ import (
 
 	association "github.com/Bitspark/bittype/contracts/verification/go"
 	"github.com/Bitspark/bittype/semantics/go"
-	"github.com/Bitspark/logos/contract/go/typed"
+	"github.com/Bitspark/logos-contract/contract/go/typed"
 )
 
 var ErrInvalid = errors.New("invalid or foreign joint verification request")

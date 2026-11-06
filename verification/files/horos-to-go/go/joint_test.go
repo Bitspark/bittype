@@ -13,7 +13,7 @@ import (
 	s "github.com/Bitspark/bittype/syntax/golang/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
-	"github.com/Bitspark/logos/contract/go/typed"
+	"github.com/Bitspark/logos-contract/contract/go/typed"
 )
 
 // Inject defects at the private trusted interpretation boundary. No production

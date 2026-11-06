@@ -191,14 +191,14 @@ fallback for a requested quantified proof.
 
 ## Concrete typed check-only contract
 
-Logos owns the [narrow contract](https://github.com/Bitspark/logos/blob/5aab58c48a616967a041c25da36b5c9946e08e88/docs/spec/typed-check-only.md).
-The intended Bittype integration can call
-`github.com/Bitspark/logos/contract/go/typed` directly. No process client, hosted
+Logos owns the [narrow contract](https://github.com/Bitspark/logos-contract/blob/fc6132c238eae843720acf096e884550454351c8/docs/spec/typed-check-only.md).
+The concrete Bittype integration calls
+`github.com/Bitspark/logos-contract/contract/go/typed` directly. No process client, hosted
 service, search engine, checker registry or package-discovery framework is needed
-for this route. This selects an integration direction, not a new Bittype API or
-dependency in this documentation change.
+for this route. See the [implemented composition](verification.md#implemented-go-surface)
+and its [public dependency](dependencies.md).
 
-The [Go signature](https://github.com/Bitspark/logos/blob/5aab58c48a616967a041c25da36b5c9946e08e88/contract/go/typed/check.go#L7)
+The [Go signature](https://github.com/Bitspark/logos-contract/blob/fc6132c238eae843720acf096e884550454351c8/contract/go/typed/check.go#L7)
 is:
 
 ```go
@@ -351,9 +351,9 @@ now supplies these responsibilities for the scoped Horos/Go static mapping:
    selection or successful compilation alone does not establish those laws.
 
 The landed Logos delivery provides a concrete Go route for the symbolic claim.
-Bittype consumes it in the optional `verification` module and associates the
-statement with real source/native projections. The private dependency is isolated
-from the public root module. The checker alone does not establish model adequacy;
+Bittype consumes the public `logos-contract` distribution in its concrete
+verification composition and associates the statement with real source/native
+projections. All packages remain in the root module. The checker alone does not establish model adequacy;
 the selected integration's procedure and representation-law premises remain
 explicit, visible dependencies of acceptance.
 General proof search, a hosted service and the entire Logos roadmap are not
@@ -363,7 +363,7 @@ The [TextBox walkthrough](verification.md#textbox-walkthrough) and
 [Page walkthrough](verification.md#page-walkthrough) now cover nesting, changed
 helpers and the exact result meaning. The failure contract covers foreign captures,
 incompatible compositions and exhausted checks. Qualify those behaviors on actual
-artifacts in the optional module. Broader native profiles, mapping-plugin
+artifacts in the concrete integration. Broader native profiles, mapping-plugin
 integration and native `(S,N,E)` enforcement remain future work.
 Keep [ASTTransformer](../contracts/transform/go/transformer.go) returning syntax,
 resolution/analysis explicitly invoked, and the

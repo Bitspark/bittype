@@ -39,8 +39,8 @@ Dimensions come from `bittype:dimension` comments on boundary type declarations;
 do not restore package-name classification or add runtime metadata methods.
 Syntax admission must accept unresolved names; analysis publishes request-bound,
 immutable facts with explicit completion, verdict and model availability.
-Only Horos supplies registered Files resolution/analysis providers. The optional
-`verification` module has an explicit, scoped Go projection using `go/types`;
+Only Horos supplies registered Files resolution/analysis providers. The
+`verification/files/target/golang/go` package has an explicit, scoped projection using `go/types`;
 it is not an engine capability or general native analyzer.
 
 The owner's 4 November [Syntax and Files symmetry](docs/source.md) replaces the
@@ -99,9 +99,9 @@ fail rather than selecting a weaker fallback.
   shared contracts under contracts; native implementations use the same
   syntax and dimension-qualified parse/check/format/provider matrix, with explicitly qualified
   optional resolve/analyze stages. Do not add compatibility
-  aliases or a language-first packages tree. Keep the public root Go module
-  independent of private dependencies. The optional `verification/go.mod`
-  isolates the private Logos checker, as documented in
+  aliases or a language-first packages tree. Keep one public root Go module
+  independent of private dependencies. The concrete verification composition
+  consumes the public Logos contract, as documented in
   [the verification architecture](docs/type-system-architecture.md#proposed-package-roles).
 - Use explicit dimension paths for implementations: role/syntax/language/go and
   role/files/language/go; shared printers omit language. Name implementation Go
@@ -114,8 +114,7 @@ fail rather than selecting a weaker fallback.
   discover stage directories and enforce complete coverage and directed imports.
   Keep package tests with their implementation and cross-package qualification
   under integration. Private helpers must obey the same ownership boundaries.
-- Implement the toolchain in Go in component-owned packages in the root module;
-  the explicitly isolated Logos integration is the sole current module exception.
+- Implement the toolchain in Go in component-owned packages in the root module.
   Formatters construct CST tokens/trivia; only the printer emits source text.
   Do not print source and reparse it as an intermediate AST/CST.
 - AST, pipeline and language identity remain independent. CST depends on AST.
@@ -153,8 +152,10 @@ fail rather than selecting a weaker fallback.
 - Keep prior research and Nightseam as evidence, not competing specifications.
   Use Horos's declaration specification for normalization/identity and encoding;
   do not infer semantic equivalence or behavioral ownership from document pins.
-- Only the Horos frontend (including its text stages), its private model helpers
-  and source-specific transformation readers consume external Horos/Ontos model dependencies.
+- Only the Horos frontend (including its text stages), its private model helpers,
+  source-specific transformation readers and the concrete Horos verification
+  projections/composition consume external Horos/Ontos model dependencies.
+  Only the concrete verification composition imports the public Logos checker.
   Preserve the narrow package import allowances; generic infrastructure and
   native stages must remain independent of these semantic packages.
 

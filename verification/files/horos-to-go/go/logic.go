@@ -1,6 +1,6 @@
 package verification
 
-import "github.com/Bitspark/logos/contract/go/typed"
+import "github.com/Bitspark/logos-contract/contract/go/typed"
 
 // Local syntax construction uses lexical closures solely to calculate de Bruijn
 // indices. Logos owns all substitution, conversion, inference and checking.

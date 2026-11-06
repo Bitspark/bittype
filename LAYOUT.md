@@ -3,9 +3,8 @@
 **Owner decision, 31 October 2026:** organize by processing stage and enforce a
 uniform structure across languages. The stage-by-language matrix is deliberate:
 the same responsibilities occupy the same paths, making omissions and drift
-visible. The public root Go module has independently owned packages. The optional
-`verification` module isolates its private Logos dependency; see the
-[module decision](docs/type-system-architecture.md#proposed-package-roles).
+visible. One public root Go module contains independently owned packages,
+including the [concrete verification composition](docs/type-system-architecture.md#proposed-package-roles).
 
 ## Current hierarchy
 
@@ -53,8 +52,7 @@ internal/                shared private checking/parsing/tree mechanics
 transforms/horos-to-<target>/go/  analyzed Horos to native type ASTs
 internal/horosgen/        source-owned semantic reading and bounded target arenas
 integration/go/          independent consumers and cross-package qualification
-verification/            optional integration module; private Logos dependency
-  go.mod
+verification/            concrete static verification; public Logos contract
   files/source/horos/go/  explicit authoritative queries bound to captured Horos
   files/target/golang/go/ explicit Go AST to go/ast and go/types projection
   files/horos-to-go/go/   selected mapping, prepared claim and direct Logos check

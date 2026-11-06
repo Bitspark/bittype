@@ -206,12 +206,17 @@ func TestProductionArchitecture(t *testing.T) {
 	}
 	rules["provider/horos/go"] = append(rules["provider/horos/go"], "parse/files/horos/go", "format/files/horos/go", "print/files/go", "trees/representation/go")
 	rules["internal/horosgen"] = append(rules["internal/horosgen"], "trees/representation/go")
+	// Verification projections are explicit concrete compositions, not registered
+	// language stages. The agnostic association above never imports their models.
+	rules["verification/files/source/horos/go"] = []string{"contracts/semantic/go", "contracts/resolution/go", "internal/horosmodel", "resolve/files/horos/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
+	rules["verification/files/target/golang/go"] = []string{"contracts/semantic/go", "semantics/go", "syntax/golang/go", "trees/ast/go", "trees/representation/go"}
+	rules["verification/files/horos-to-go/go"] = []string{"contracts/semantic/go", "contracts/verification/go", "semantics/go", "trees/ast/go", "verification/files/source/horos/go", "verification/files/target/golang/go"}
 	for path, p := range packages {
-		if p.Standard || path == modulePath+"/integration/go" {
+		if p.Standard || path == modulePath+"/integration/go" || path == modulePath+"/verification/integration/go" {
 			continue
 		}
 		if !strings.HasPrefix(path, modulePath+"/") {
-			if !slices.Contains(horosModelDependencies, path) {
+			if !slices.Contains(modelDependencies, path) {
 				t.Errorf("unclassified external production dependency: %s", path)
 			}
 			continue
@@ -226,7 +231,7 @@ func TestProductionArchitecture(t *testing.T) {
 			if dep, ok := packages[dependency]; ok && dep.Standard {
 				continue
 			}
-			if slices.Contains(horosExternalImports[relative], dependency) {
+			if slices.Contains(modelExternalImports[relative], dependency) {
 				continue
 			}
 			if !strings.HasPrefix(dependency, modulePath+"/") || !slices.Contains(allowed, strings.TrimPrefix(dependency, modulePath+"/")) {
@@ -236,9 +241,9 @@ func TestProductionArchitecture(t *testing.T) {
 	}
 }
 
-// Only the Horos frontend consumes the semantic model. A global exemption for
+// Only owning frontends/compositions consume external semantic models. A global exemption for
 // external modules would let model dependencies leak into generic infrastructure.
-var horosModelDependencies = []string{
+var modelDependencies = []string{
 	"github.com/Bitspark/horos/core/go",
 	"github.com/Bitspark/horos/core/go/declarations",
 	"github.com/Bitspark/horos/core/go/internal/declmodel",
@@ -246,15 +251,18 @@ var horosModelDependencies = []string{
 	"github.com/bitspark/ontos/core/go",
 	"github.com/bitspark/ontos/data/go",
 	"github.com/bitspark/ontos/codec/go",
+	"github.com/Bitspark/logos-contract/contract/go/typed",
 }
 
-var horosExternalImports = map[string][]string{
+var modelExternalImports = map[string][]string{
 	"tools/horos-module/go":  {"github.com/bitspark/ontos/codec/go"},
 	"internal/horosgen":      {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 	"parse/syntax/horos/go":  {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"format/syntax/horos/go": {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"internal/horosmodel":    {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 	"resolve/files/horos/go": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
+	"verification/files/source/horos/go": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
+	"verification/files/horos-to-go/go": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/Bitspark/logos-contract/contract/go/typed"},
 }
 
 func TestFilesDimensionStageCoverage(t *testing.T) {

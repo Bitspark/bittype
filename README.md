@@ -38,9 +38,9 @@ The [joint verification composition](docs/verification.md#implemented-go-surface
 adds immutable source/target association and an optional Logos-backed Horos/Go
 integration. Explicit Horos kind queries and a bounded Go `go/types` projection
 supply TextBox counterexamples and conditional Page representation proofs,
-including nested reuse. The private Logos dependency is confined to the separate
-`verification` module; the public root and its installed-consumer gate remain
-credential-free. Native admission enforcement and runtime bindings are separate.
+including nested reuse. The owning composition imports the public Logos contract;
+all packages use the root module and its anonymous installed-consumer gate.
+Native admission enforcement and runtime bindings are separate.
 
 The [stage-first layout](LAYOUT.md) groups shared tree representations under
 trees and public interfaces under contracts. Every native language implements

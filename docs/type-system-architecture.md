@@ -190,7 +190,6 @@ Preserve the [stage-first layout](../LAYOUT.md). The first implementation uses:
 
 ```text
 contracts/verification/go/                 public agnostic artifact association
-verification/go.mod                        optional integration module
 verification/files/source/horos/go/         explicit authoritative source queries
 verification/files/target/golang/go/        explicit captured Go semantic projection
 verification/files/horos-to-go/go/          owning mapping and direct Logos composition
@@ -217,18 +216,13 @@ The checker collaborator need not become a separate public provider SPI. Direct
 composition with a supported Logos API is sufficient where it meets the claim.
 No new verifier registry, foundation catalogue or automatic discovery is selected.
 
-**Module decision, 6 November 2026:** the landed typed Go checker is in the private
-Logos repository and has no anonymous module delivery route. Put the concrete
-integration in the optional `github.com/Bitspark/bittype/verification` module
-inside this repository. Keep `contracts/verification/go` in the public root with
-no Logos imports. Package isolation alone would still add a private dependency
-to the root module graph and break its independently installed public consumer.
-The root consumer gate remains anonymous and replacement-free. The optional
-module is tested separately on a private Logos-owned runner. No private source,
-signer or permanent access token is copied into Bittype.
+**Dependency decision, 6 November 2026:** the typed Go checker is publicly
+distributed from [logos-contract](https://github.com/Bitspark/logos-contract)
+as `github.com/Bitspark/logos-contract/contract/go/typed`. All Bittype packages
+remain in one root module. `contracts/verification/go` has no Logos imports;
+only the concrete Horos/Go composition imports the checker. The existing public
+consumer gate remains anonymous and replacement-free and exercises this surface.
 
-This is the concrete dependency justification for the module exception, not a
-new repository, a language-first hierarchy or a general module-per-stage policy.
 The direct checker call stays in the owning Horos/Go composition; a separate
 public checker adapter or registry has not demonstrated a need. Type-owned native
 representation plugins remain a separate, broader design.
@@ -244,7 +238,7 @@ lifetimes, preparation/checking split and failure behavior. The remaining public
 decision is which demonstrated agnostic surface to promote from the first
 private composition; it is not a missing proof calculus or undefined request
 semantics. The first implementation promotes the agnostic participant/evidence/site
-association and keeps the concrete Logos contract in the optional module. A wider
+association and keeps the concrete Logos contract in the owning composition. A wider
 cross-language verification provider SPI remains deferred. Semantic
 ownership, explicit composition and stage-first placement are unchanged.
 
@@ -433,7 +427,7 @@ proof producer can supply the first evidence. Supported claims and admitted
 package imports must still be explicit; a manifest or registration is not proof.
 
 The selected first route is the in-process Go API
-`github.com/Bitspark/logos/contract/go/typed.Check`. Bittype does not need to design
+`github.com/Bitspark/logos-contract/contract/go/typed.Check`. Bittype does not need to design
 a Rust process protocol, service deployment or portable proof decoder for this
 slice. The owner's shared/CI workload rule governs development executions; it
 does not imply a permanent remote service or a new publishing/artifact workflow.
