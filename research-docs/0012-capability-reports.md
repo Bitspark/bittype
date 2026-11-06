@@ -2,8 +2,10 @@
 
 **ID:** 0012
 **Date:** 6 November 2026
-**Status:** draft
+**Status:** reviewed
+**Reviewed:** https://github.com/Bitspark/bittype/pull/126#issuecomment-6688471895
 **Owner:** codex-bittype-rust-syntax
+**Issue:** https://github.com/Bitspark/bittype/pull/126
 **Decision recipient:** research owner, coordinating with the Bittype integration session
 **Code baseline:** Bittype 02489506c817a93e71878c55a254da5587791fd4
 
@@ -18,6 +20,12 @@ The owner approved the documented proposal and now requests expert consultation
 followed by full implementation. We can refine the proposal before implementation.
 This is documentation tooling and qualification integration, not new language
 semantics, native generation behavior or runtime bindings.
+Delivery means the complete reporting/extraction/result-association mechanism,
+scope links for existing providers, inventories for the existing native grammar
+format, and useful associations to current tests. It does not mean inventing an
+exhaustive per-feature test catalogue or closing every native-language gap.
+Unassociated areas must remain visibly unassessed rather than a TypeScript-only
+demonstration being labelled a complete rollout.
 
 ## Context
 
@@ -26,7 +34,8 @@ semantics, native generation behavior or runtime bindings.
 Bittype is a public Go module providing typed syntax infrastructure for Horos,
 TypeScript, Go, Rust and C++. Horos is the canonical type/declaration language;
 its semantics belong to the independent Horos library. An AST (abstract syntax
-tree) stores types/declarations; a CST (concrete syntax tree) adds tokens/trivia.
+tree) stores types/declarations; a CST (concrete syntax tree) adds tokens and
+trivia (whitespace/comments).
 Native tools currently cover bounded types-only subsets, not full compilers.
 
 The generic engine registers separately supplied operations. A language marker
@@ -35,6 +44,10 @@ role interfaces for parsing, syntax checking, formatting, printing, reference
 resolution and semantic analysis. An ASTTransformer has explicit source/target
 language identities and transforms admitted source ASTs using explicitly supplied
 semantics and mappings. Configuration/profile identity is separate from language.
+Here admission means carrier structure and applicable syntax checks, not semantic
+validity; semantic evidence is supplied separately. A profile names a documented
+behavioral boundary, while configuration supplies actual collaborators, compilers
+and environment choices. Equal profile labels do not establish equal execution context.
 
 Syntax operations act on AST/CST/text. Files operations act on an explicitly
 captured source collection and semantic results. Those labels are dimensions,
@@ -70,6 +83,17 @@ existing collection entries, current research files/branches and live runs;
 there is no existing consultation on capability reports. We are not importing
 generation/proof protocols into this tool just because association matters here.
 
+The owner has now assigned stable architecture references: AC-01 architecture is
+correctness; AC-02 semantic ownership; AC-03 additive extension; AC-04 the same
+public mechanism for independent contributions; AC-05 preserved composition
+guarantees; AC-06 limited coverage cannot redefine architecture; AC-07 evidence
+supports only established claims; AC-08 general contract changes need a general
+justification. Identified violations must enter the maintained ACX-numbered
+violation/correction corpus with the actual dependency/ownership failure and its
+repair state. Those architectural cases are human explanations, distinct from
+the `bittype:case` test associations proposed below; neither supplies a score.
+This capability-report work has not yet identified a new architectural violation.
+
 Scope constraints:
 
 - Existing matrices remain source-derived; no second manual capability catalogue.
@@ -86,10 +110,44 @@ Scope constraints:
 - Preserve current matrix discovery, explicit provider identity, generic dependency
   availability, direct transformer directions and authored documentation.
 
+Ownership, truthful association and bounded failure behavior are fixed. Directive
+names/syntax, extractor API shape, package placement and static-versus-executed
+publication are proposed mechanisms the expert may replace or simplify.
+
 ### Relevant code: source loading and typed discovery
 
 The current command is `go run ./tools/provider-matrix/go`. Its path is
 `run -> load -> discover -> render -> replaceRegion -> write`.
+
+These are the actual small contracts that discovery matches, in separate packages:
+
+```go
+// contracts/language/go/language.go:11,22-25, package language
+type ID string
+type Provider interface {
+    ID() ID
+    Name() string
+}
+```
+
+```go
+// contracts/check/go/provider.go:12-15, package check
+type Provider[L any] interface {
+    language.Provider
+    Check(ast.View[L]) error
+}
+```
+
+```go
+// contracts/parse/go/provider.go:9-12, package parse
+type Provider[I, O any] interface {
+    language.Provider
+    Parse(context.Context, I) (O, error)
+}
+```
+
+Here `ast.View[L]` is Bittype's borrowed AST view. In the source-discovery code
+below `ast` instead means the standard library's `go/ast` package.
 
 `tools/provider-matrix/go/load.go:23-49,59-64` (relevant definitions and call):
 
@@ -144,8 +202,10 @@ interfaces under contracts and matches actual Go method-set signatures/type
 arguments. Current generic providers have one language parameter; public
 constructor signatures supply alternative sets of required provider collaborators.
 A least fixed point admits only available sets: a dependency cycle cannot create
-availability. Typed transformer factories are followed through transparent
-delegation with concrete generic substitution, retaining only direct endpoints.
+availability. Typed transformer factories use typed call traversal through whole
+factory bodies with concrete generic substitution, retaining only direct endpoints.
+Unlike provider delegation below, this does not prove runtime reachability or
+returned-value flow; it must not be reported as such a proof.
 
 `tools/provider-matrix/go/discover.go:17-36,236-239,365`:
 
@@ -235,6 +295,8 @@ func Attributes(pairs ...any) map[string]Attribute {
 
 `check/syntax/typescript/go/check.go:14-39` defines a `types` string slice of
 allowed type-expression node kinds and the actual grammar map. Selected entries:
+`g` means Bittype's `internal/grammar`, `s` in checker signatures means
+`syntax/typescript/go`, and `ast` in those signatures means `trees/ast/go`.
 
 ```go
 var rules = g.Rules{
@@ -367,6 +429,10 @@ semantic helpers. The native job supplies compiler fixture environments separate
 Native compiler fixtures skip without that environment in the contracts job.
 Both jobs check `HEAD == EXPECTED_REVISION`; a green package/job alone does not
 establish that a specific case ran. Current commands emit text, not test JSON.
+Go test events identify package/test/outcome, not the provider profile actually
+selected inside a test. CI can supply its toolchain/environment context, but the
+profile annotation currently remains an authored assertion about the test.
+Matching a test event does not upgrade that assertion into an observed profile fact.
 
 Go's `test2json` contract distinguishes test events (Package, Test) from package
 events (no Test); parallel events can interleave. Cached results/subtest filtering
@@ -406,6 +472,9 @@ Thus a source S's test result is not automatically applicable to the updater's
 latest main, and committing a report creates another revision D immediately.
 The draft proposal permits an optional explicit results input but does not yet
 settle how to present observations without stale 'current' pass labels.
+Concretely, the contracts job can pass after its native case skips, the native
+job may still be running, and the independent updater can already publish another
+documentation commit. None establishes that native case execution has completed.
 
 One considered implementation is to commit only deterministic inventories,
 scope links and named case associations, while generating reports with observed
@@ -465,7 +534,7 @@ architectural violations documented independently. Making those all one scalar
 
 1. What precise vocabulary and report model best separates definition inventories,
    author assertions, test associations and observations while staying useful for
-   finding unassessed areas? How should partial extraction and custom procedural
+   finding unassessed areas within an explicitly declared scope? How should partial extraction and custom procedural
    checks be expressed without implying semantic completeness?
 2. What minimal extractor request/result contract preserves independent format
    ownership, exact association and bounded interpretation? How should it expose
@@ -480,6 +549,8 @@ architectural violations documented independently. Making those all one scalar
    associated and published using these existing workflows? Assess the static
    committed report plus per-run result artifact approach, including skip/cache,
    subtests, separate jobs, failed tests and automatic docs-only commits.
+   What minimum execution context can be established reliably, and which
+   profile/configuration claims must remain authored rather than observed facts?
 5. What have we missed? Recommend a conceptually sound, appropriately bounded
    implementation sequence and meaningful counterexamples/tests, including any
    changes you think the documented proposal itself needs before implementation.

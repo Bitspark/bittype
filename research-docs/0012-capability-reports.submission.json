@@ -1,0 +1,19 @@
+{
+  "attempts": [
+    {
+      "attempt": 1,
+      "idempotencyKey": "bittype-research-0012-33008499-f706-48f8-956d-d6324bfcac47",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0012-capability-reports",
+      "submittedPath": "research-docs/0012-capability-reports.submitted.md",
+      "submittedSha256": "96ebf4613f685c0975d49def09f9d45dc2d1f51d5d6bf3e82b0c50aae954494b",
+      "submittedSize": 29532,
+      "codeRevision": "02489506c817a93e71878c55a254da5587791fd4",
+      "cliBuild": "nightfall 0.1.0 (a8eaa9941df6, bundle 89e875e6203c) built 2026-11-06T14:18:08.944Z",
+      "recordedAt": "2026-11-06T15:27:30.7382667Z",
+      "state": "prepared",
+      "ownerRule": "Frozen input and recovery fields are explicitly requested by the invoked bb-research skill; no unrelated checksum or administrative workflow."
+    }
+  ]
+}
