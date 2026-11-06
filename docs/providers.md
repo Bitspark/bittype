@@ -18,6 +18,12 @@ regenerates these regions after source changes and automatically lands a docs-on
 pull request when their content changes. Keep explanations outside the generated
 regions; do not edit cells or maintain a separate capability catalogue.
 
+The [detailed capability report proposal](capability-reports.md) specifies future
+`grammar`, `scope` and `case` annotations and detail links from both matrices.
+It separates extracted definitions, authored scope, associated tests and observed
+results. That reporting extension is not implemented; these tables still show
+availability and source links, not completeness or architectural conformance.
+
 The Level column comes from `bittype:dimension` comments on declared operation
 boundary types, not package names. `Shared` requires an explicit `bittype:shared`
 contract annotation; absent dimension metadata appears as `Unclassified`, and
