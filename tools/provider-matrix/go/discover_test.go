@@ -151,6 +151,23 @@ func TestGenericFilesPrintingUsesConstructorCollaborators(t *testing.T) {
 	}
 }
 
+func TestRendererLinksCapabilityDetails(t *testing.T) {
+	p := fixture(t)
+	m, err := p.discover()
+	if err != nil {
+		t.Fatal(err)
+	}
+	providers, transformers, err := p.render(m, "https://example.test/blob/main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, table := range map[string]string{"providers": providers, "transformers": transformers} {
+		if !strings.Contains(table, "[details](provider-capabilities.md#") {
+			t.Fatalf("%s matrix has no link to implementation details", name)
+		}
+	}
+}
+
 func TestMissingSyntaxPrinterDoesNotCreateFilesPrinting(t *testing.T) {
 	p := fixture(t)
 	// Remove the concrete syntax printer; the generic printer must not seed itself.
