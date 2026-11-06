@@ -34,6 +34,12 @@ jobs:
           go version
       - name: Download pinned modules
         run: go mod download all
+      - name: Prepare pinned TypeScript semantic compiler
+        shell: bash
+        run: |
+          npm install --prefix "$RUNNER_TEMP/bittype-typescript" --ignore-scripts --no-audit --no-fund typescript@5.9.3 @types/node@24.0.0
+          echo "BITTYPE_TYPESCRIPT_NODE=$(command -v node)" >> "$GITHUB_ENV"
+          echo "BITTYPE_TYPESCRIPT_MODULE=$RUNNER_TEMP/bittype-typescript/node_modules/typescript/lib/typescript.js" >> "$GITHUB_ENV"
       - name: Save dependency checksum corrections
         shell: bash
         run: git diff --binary -- go.mod go.sum > "$RUNNER_TEMP/go-mod.patch"
@@ -88,9 +94,14 @@ jobs:
       - name: Vet Go packages
         if: success() || (failure() && steps.formatting.outcome == 'failure')
         run: go vet ./...
+      - name: Typecheck TypeScript semantic helper
+        if: success() || (failure() && steps.formatting.outcome == 'failure')
+        shell: bash
+        run: |
+          node "$RUNNER_TEMP/bittype-typescript/node_modules/typescript/lib/tsc.js" --allowJs --checkJs --noEmit --target es2020 --module commonjs --baseUrl "$RUNNER_TEMP/bittype-typescript/node_modules" --typeRoots "$RUNNER_TEMP/bittype-typescript/node_modules/@types" internal/typescriptsem/compiler.cjs
       - name: Check syntax engine concurrency
         if: success() || (failure() && steps.formatting.outcome == 'failure')
-        run: go test -race -count=1 -run '^(TestEngineConcurrent|TestGoSemanticConcurrent)' ./integration/go
+        run: go test -race -count=1 -run '^(TestEngineConcurrent|TestGoSemanticConcurrent|TestTypeScriptSemanticConcurrent)' ./integration/go
       - name: Check joint verification concurrency
         if: success() || (failure() && steps.formatting.outcome == 'failure')
         run: go test -race -count=1 -run '^TestJointConcurrentChecks$' ./verification/integration/go

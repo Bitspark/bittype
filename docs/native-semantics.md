@@ -1,6 +1,6 @@
 # Native semantic providers
 
-The Go migration uses the existing [resolution](resolution.md) and
+The Go and TypeScript providers use the existing [resolution](resolution.md) and
 [analysis](analysis.md) contracts. Native providers own their compiler integration
 and vocabulary in the [agnostic semantic graph](semantics.md). They do not depend
 on Horos, Logos, generation plugins or runtime bindings. The
@@ -112,6 +112,114 @@ its answer to the model, constructor and arguments. It proves native argument
 admission only, not Horos membership or representation preservation. Query sessions
 serialize compiler queries; immutable semantic views may be read concurrently.
 
+## First TypeScript profile
+
+**6 November 2026:** TypeScript uses the same resolution and analysis interfaces
+as Go. The generation work's new Source and transformation capture accessors do
+not alter those contracts. Native semantic receipts remain independent of
+generation support and representation-preservation claims.
+
+```text
+syntax-admitted TypeScript ASTs + captured Files and links
+  -> resolve/files/typescript/go
+  -> private source/AST correspondence check + pinned TypeScript compiler
+  -> immutable symbols, native type terms, bindings and reports
+  -> analyze/files/typescript/go (explicit receipt; reuses the exact graph)
+  -> semantics/typescript/go (typed read-only view)
+```
+
+The package roles mirror Go. `internal/typescriptsem` owns the compiler bridge,
+including its embedded CommonJS helper. `provider/typescript/go` composes each
+role independently. No TypeScript types, rules or compiler handles enter the
+agnostic kernel; no native stage imports Horos, Logos or generation packages.
+
+The resolver constructor requires a `resolve.Compiler` containing absolute
+`NodePath` and `TypeScriptPath` paths. The latter names the explicitly provisioned
+TypeScript package's `lib/typescript.js`. Construction does no discovery,
+installation or IO. Resolution invokes that compiler and requires version
+**5.9.3**. The caller supplies `typescript.Configuration()` in both operations;
+the configuration fixes ES2020, ESNext modules, strict checking,
+`exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`, `lib.es2020.d.ts`, no
+ambient packages, and the `captured-types-1` helper profile. The helper's host
+reads only supplied source units and that compiler package's standard libraries.
+It never resolves an ambient project, imports packages, downloads dependencies
+or emits source. Compiler files are trusted, explicitly provisioned dependencies.
+The child process receives no `NODE_OPTIONS`, `NODE_PATH` or credential environment.
+
+Every supplied AST must correspond to its captured original `.ts` text. The
+private bridge reparses that text using Bittype's existing TypeScript parser,
+compares kinds, attributes and containment, and recomputes offsets before
+associating native compiler syntax. UTF-8 source spans become UTF-16 compiler
+offsets. Caller origins are not proof of correspondence. Supplied resolved
+references must agree with compiler symbols. No formatter or printer is involved;
+checking generated text would require an explicit new capture.
+
+The first profile covers aliases, interfaces and bases, generic parameters and
+constraints, explicit applications, references, primitive/literal types, arrays,
+tuples, object properties, unions, intersections and readonly arrays/tuples.
+Script files share global scope; exported declarations give each file module
+scope. Binders and declarations with the same spelling remain distinct symbols.
+Named recursive types retain entity/fact links without cyclic term containment.
+
+Imports and qualified names, callable/method/index signatures, indexed access,
+`keyof`, `unique`, `this`, generic defaults, interface declaration merging and
+external object members remain outside this first profile. Standard arrays and
+readonly arrays are supported. This is bounded native checking, not support for
+all TypeScript syntax or arbitrary `.d.ts` dependency closures. Generic
+applications must supply their complete arguments; there is no public dynamic
+generic-instantiation query in this slice.
+
+The `typescript` vocabulary is:
+
+| Graph element | Meaning |
+| --- | --- |
+| `program`, `script`, `module`, `alias`, `interface`, `parameter`, `property`, `builtin` entities | Compiler symbol identities; declaration sites and real generic binder owners |
+| `name` bindings | Native lookup results at captured reference nodes |
+| `type-expression` occurrences | Source reference/application structure, preserving constructor identity even when aliases disappear from native types |
+| `native-type` occurrences and marker facts | Native compiler types; model-local handles, not serialized shape identity |
+| `declared-type`, `constraint` facts | Declaration types and explicit generic bounds |
+| `structure`, `properties` facts | Native structural descriptions and substituted property read types |
+| `primitive`, `literal`, `array`, `tuple`, `union`, `intersection`, `object` expressions | TypeScript-owned `json-1` data and ordered operands |
+| `display` facts | UTF-8 diagnostic spelling, never type identity |
+
+Property metadata retains optional and readonly flags and declaration entities.
+A property's read type can include `undefined` even when explicitly writing
+`undefined` would be rejected by exact optional-property checking. Aliases retain
+declaration identities but can denote the same compiler type. `Type.Same` means
+the same native type handle in the same admitted receipt, not mutual assignability.
+The shared `DirectParameterBindings` reader works on explicit applications.
+
+`typescript.Open(analyzed)` admits a complete analysis receipt and reads its
+immutable graph without invoking the compiler. `analyze.NewQueries(model,
+compiler)` separately configures explicit native queries. `Assignable(ctx,
+source, target)` calls the official checker's directional `isTypeAssignableTo`.
+It reconstructs compiler state from the original capture and exact environment,
+requires correspondence with the entire published graph, and returns a result
+bound to that model and both type handles. It does not test Horos membership or
+representation preservation. Each query owns a fresh process; concurrent queries
+share only immutable facts. There is no persistent compiler service or cache.
+
+Missing Files context reports incomplete coverage; unsupported constructs report
+unsupported coverage; compiler type errors report complete coverage and rejected
+validity. None publishes partial semantics. AST/source contradictions, forged
+references and wrong configuration are request errors. Missing/wrong compiler
+executables or modules are operational compiler errors. Resource limits yield
+incomplete coverage or a boundary `ErrLimit`, never a false type judgment.
+
+The profile bounds captures to 16 units, 4,096 nodes and 1 MiB of source, 16
+parameters per declaration, 32,768 semantic records and depth 128. Each compiler
+process has a 30-second deadline, a 16 MiB response limit and a 16 KiB stderr
+limit. Cancellation terminates the child. The shared capture/publication limits
+still apply independently. Tests require explicitly provisioned compiler paths;
+missing compilers fail rather than silently skipping semantic qualification.
+
+The [provider tests](../integration/go/typescript_semantics_test.go) cover nested
+pagination, constraints, scope, recursion, immutable facts, source correspondence,
+receipt isolation, assignability and concurrency. The
+[installed consumer](../integration/go/testdata/installed/typescript_semantics_test.go)
+also qualifies the embedded helper from a fresh public-module installation.
+The remote gate runs these with TypeScript 5.9.3 and typechecks the helper itself.
+
 ## Extension to the other native languages
 
 The same roles and receipt contracts apply, with language-owned facts and query
@@ -120,7 +228,6 @@ reimplementation of all native type systems.
 
 | Language | Planned authority and initial semantic surface |
 | --- | --- |
-| TypeScript | Pinned official Compiler API helper; symbols, aliases/interfaces, generics, unions, optional members and structural assignability. Current native qualification uses 5.9.3; API upgrades are explicit. |
 | Rust | Toolchain-pinned `rustc_driver` helper; declaration/path identity, generic predicates and instantiation, later associated-type normalization. Compiler internals are unstable. |
 | C++ | Pinned Clang LibTooling helper; declarations, template parameters/applications and constraint checking. |
 

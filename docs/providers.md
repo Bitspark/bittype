@@ -6,6 +6,10 @@ Applications compose and register capabilities explicitly. Availability of a sta
 does not require every preceding stage to be available. Native support covers the
 documented type-declaration subset, not complete programming languages.
 
+TypeScript resolution requires an explicitly supplied compiler and captured
+source context; the zero-value text provider does not discover a compiler.
+See [native semantic profiles](native-semantics.md#first-typescript-profile).
+
 The [matrix generator](../tools/provider-matrix/README.md) discovers language
 markers, implemented provider contracts, generic constructor collaborators and
 typed transformer endpoints. The [update workflow](../.github/workflows/provider-matrices.yml)
