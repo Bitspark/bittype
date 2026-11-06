@@ -8,7 +8,7 @@ Available stages are discovered implementations. **Supported features and exclus
 
 This committed view contains no execution results. Existing CI artifacts pair invocation reports with compact overviews; those retain source/build applicability and process failures. An absent observation does not mean a test never ran.
 
-Inspection build: go1.27.0, windows/amd64; explicit build flags: .
+Inspection build: go1.27.3, linux/amd64; explicit build flags: .
 
 | Language | Available stages | Direct transformations | Associated tests / cases |
 | --- | --- | --- | --- |
