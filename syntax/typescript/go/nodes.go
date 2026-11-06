@@ -48,6 +48,9 @@ const (
 	KindObjectType        Kind = "object-type"
 	KindUnionType         Kind = "union-type"
 	KindIntersectionType  Kind = "intersection-type"
+	KindConditionalType   Kind = "conditional-type"
+	KindInferType         Kind = "infer-type"
+	KindMappedType        Kind = "mapped-type"
 	KindFunctionType      Kind = "function-type" // Native signature syntax; no library Function semantics.
 	KindParameter         Kind = "parameter"
 	KindProperty          Kind = "property"
@@ -78,6 +81,10 @@ const (
 	RoleSignature     = "signature"
 	RoleObject        = "object"
 	RoleIndex         = "index"
+	RoleCheck         = "check"
+	RoleTrue          = "true"
+	RoleFalse         = "false"
+	RoleNameType      = "name-type"
 )
 
 // Reference roles. Target links name declarations, imports or lexical binders.
@@ -97,4 +104,6 @@ const (
 	AttributeLiteralKind = "literal-kind"
 	AttributeText        = "text"
 	AttributeOperator    = "operator"
+	AttributeReadonlyModifier = "readonly-modifier"
+	AttributeOptionalModifier = "optional-modifier"
 )

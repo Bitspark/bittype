@@ -461,11 +461,14 @@ required source admission and the selected constraint promise. This does not
 authorize dropping a failed requested root or retrying a weaker mapping.
 
 The present native vocabularies do not yet cover every construct shown here.
-Likely additions include TypeScript conditional types and the selected nominal
-support forms, Rust implementation items beyond type-only trait impls and any required
+Likely additions include TypeScript's selected nominal support forms,
+Rust implementation items beyond type-only trait impls and any required
 representation attributes, and C++ concepts, requires-expressions and selected
 trait/specialization constructs. Go's existing generic/type-set vocabulary is a
 starting point, not a claim that the evidence encoding is already delivered.
+TypeScript conditional/mapped types and infer binders are available in the
+[native syntax tooling](syntax.md#typescript); their evaluation and preservation
+claims still require a separate semantic integration.
 Rust qualified projections, associated-type equality arguments, generic
 associated declarations and type-only trait impls are available
 in the [native syntax tooling](syntax.md#rust); this supplies syntax support,
