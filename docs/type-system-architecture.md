@@ -1,6 +1,6 @@
 # Type-system reasoning: ownership and implementation design
 
-**Evaluated design, 5 November 2026. Documentation only.**
+**Evaluated design, 5 November 2026; scoped implementation, 6 November.**
 [Research 0010](../research-docs/0010-type-system-model-architecture.md) applies the
 expert review to the [type-system model](type-system-model.md),
 [symbolic pagination proof](logos-preservation.md) and
@@ -8,13 +8,12 @@ expert review to the [type-system model](type-system-model.md),
 The owner's subsequent [Logos source inspection](logos-verification.md),
 6 November, refines the verification SPI boundary below. Its
 [typed check-only follow-up](logos-verification.md#concrete-typed-check-only-contract)
-now supplies a concrete Go integration target, landed in Logos PR 3881. This is
-source-based design work, not a new expert consultation or
-implemented Bittype API.
+now supplies a concrete Go integration target, landed in Logos PR 3881. This
+follow-up is source-based design work, not a new expert consultation.
 The subsequent [joint request/result contract](verification.md) defines preparation,
 checking, ownership, lifetimes and failure behavior, with TextBox/Page walkthroughs.
-It remains a documentation proposal; public package promotion and implementation
-are separate from those contract decisions.
+The [implemented surface](verification.md#implemented-go-surface) exercises the
+TextBox counterexample and Page conditional theorem, including nested reuse.
 
 Use Logos's semantic-package direction directly. Language integrations supply
 their meanings and judgments; mapping owners supply selected representation
@@ -22,12 +21,12 @@ relationships. Bittype associates the requested claim and evidence with the
 actual generation operation. It does not gain a second logical foundation or a
 universal type-system interpreter.
 
-The first implementation should exercise two exact statements: TextBox admission
-and result representation, and Page's conditional generic preservation. A narrow
+The first implementation exercises two exact statements: a TextBox admission
+counterexample and Page's conditional generic preservation. TextBox field
+representation is a separate obligation, not inferred from its counterexample. A narrow
 Logos-owned typed checker supplies the checking prerequisite for **production
-symbolic certification** once its delivery is admitted. This document supplies
-neither that checker nor new providers, dependencies, runtime bindings or public
-Go APIs.
+symbolic certification**. It does not supply native admission enforcement or
+runtime bindings.
 
 ## Ownership and dependencies
 
@@ -49,7 +48,7 @@ The broader contracts remain proposed. The subsequent narrow typed check-only
 delivery exposes a Go `Statement`/`Expr`/`Policy`/`Limits`/`Outcome` boundary and
 the required checking operations without delivering the full package model.
 Its [reviewed versus delivered status](logos-verification.md#concrete-typed-check-only-contract)
-must remain explicit; no Bittype integration is implemented here.
+remains explicit; the Bittype integration uses the narrow delivered boundary.
 
 The existing Go ground checker is usable independently: `contract.Check`
 checks supplied positive derivations, and `certify.CheckWithDerivedContext`
@@ -182,31 +181,29 @@ The [Logos contract map](logos-verification.md#ownership-map-for-the-verificatio
 identifies the existing and proposed owners of those inputs. Bittype specifies
 their artifact association and integration, without copying Logos's expression
 calculus. The [joint contract walkthroughs](verification.md#textbox-walkthrough)
-exercise the boundary for TextBox and Page without claiming completed integration.
+exercise the boundary for TextBox and Page. The first concrete integration is
+described in the [implemented surface](verification.md#implemented-go-surface).
 
 ### Proposed package roles
 
-Preserve the [stage-first layout](../LAYOUT.md) and one root Go module. These are
-future role locations, not directories or provider capabilities created now:
+Preserve the [stage-first layout](../LAYOUT.md). The first implementation uses:
 
 ```text
-contracts/verification/go/                 eventual request/result association, if needed
-verification/files/go/                     explicit whole-claim orchestration
-verification/files/source/horos/go/         authoritative source facts to statements
-verification/files/target/golang/go/        actual native facts to model inputs
-verification/files/checker/logos/go/        direct use/adaptation of selected Logos API
-
-resolve/files/golang/go/                    native resolution when required
-analyze/files/golang/go/                    explicitly supported native judgments
-integration/go/                            TextBox/Page composition qualification
+contracts/verification/go/                 public agnostic artifact association
+verification/files/source/horos/go/         explicit authoritative source queries
+verification/files/target/golang/go/        explicit captured Go semantic projection
+verification/files/horos-to-go/go/          owning mapping and direct Logos composition
+verification/integration/go/               TextBox/Page composition qualification
 ```
 
 Files is the dimension because a claim can cover multiple generated units,
 dependencies and a module environment. Source, target and checker are
 collaborators within that role, like the existing proposed generation
 collaborators; they are not new carrier dimensions or hidden providers. Native
-semantic extraction belongs to its native semantic stages, not another analyzer
-buried in generation. Later languages follow the same matrix when implemented;
+semantic extraction is an explicit step in the owning target projection, never
+an analyzer hidden in generation or joint preparation. The limited Go projection
+does not yet implement registered `resolve/files/golang` or `analyze/files/golang`
+providers. Later languages follow the same matrix when implemented;
 no empty stubs, registry cells or compatibility aliases are added.
 
 Begin with a private composition seam; promote the shared contract only after
@@ -219,12 +216,16 @@ The checker collaborator need not become a separate public provider SPI. Direct
 composition with a supported Logos API is sufficient where it meets the claim.
 No new verifier registry, foundation catalogue or automatic discovery is selected.
 
-An optional Go package still affects its module's requirements if it imports
-Logos. Package isolation is not module isolation. A separate external integration
-module would need a concrete dependency justification and an explicit architecture
-decision; this consultation does not split Bittype or create another repository.
-The existing type-owned integration-module proposal remains independent of this
-shared orchestration layout.
+**Dependency decision, 6 November 2026:** the typed Go checker is publicly
+distributed from [logos-contract](https://github.com/Bitspark/logos-contract)
+as `github.com/Bitspark/logos-contract/contract/go/typed`. All Bittype packages
+remain in one root module. `contracts/verification/go` has no Logos imports;
+only the concrete Horos/Go composition imports the checker. The existing public
+consumer gate remains anonymous and replacement-free and exercises this surface.
+
+The direct checker call stays in the owning Horos/Go composition; a separate
+public checker adapter or registry has not demonstrated a need. Type-owned native
+representation plugins remain a separate, broader design.
 
 ## Remaining public verification SPI decisions
 
@@ -236,7 +237,9 @@ Logos production gaps and Bittype's association responsibilities. The
 lifetimes, preparation/checking split and failure behavior. The remaining public
 decision is which demonstrated agnostic surface to promote from the first
 private composition; it is not a missing proof calculus or undefined request
-semantics. Implementation and qualification remain outstanding. Semantic
+semantics. The first implementation promotes the agnostic participant/evidence/site
+association and keeps the concrete Logos contract in the owning composition. A wider
+cross-language verification provider SPI remains deferred. Semantic
 ownership, explicit composition and stage-first placement are unchanged.
 
 The fixed boundaries are: languages own judgments, Logos owns proof machinery,
@@ -424,7 +427,7 @@ proof producer can supply the first evidence. Supported claims and admitted
 package imports must still be explicit; a manifest or registration is not proof.
 
 The selected first route is the in-process Go API
-`github.com/Bitspark/logos/contract/go/typed.Check`. Bittype does not need to design
+`github.com/Bitspark/logos-contract/contract/go/typed.Check`. Bittype does not need to design
 a Rust process protocol, service deployment or portable proof decoder for this
 slice. The owner's shared/CI workload rule governs development executions; it
 does not imply a permanent remote service or a new publishing/artifact workflow.

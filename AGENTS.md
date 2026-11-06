@@ -39,7 +39,9 @@ Dimensions come from `bittype:dimension` comments on boundary type declarations;
 do not restore package-name classification or add runtime metadata methods.
 Syntax admission must accept unresolved names; analysis publishes request-bound,
 immutable facts with explicit completion, verdict and model availability.
-Only Horos implements production semantics; native analysis remains deferred.
+Only Horos supplies registered Files resolution/analysis providers. The
+`verification/files/target/golang/go` package has an explicit, scoped projection using `go/types`;
+it is not an engine capability or general native analyzer.
 
 The owner's 4 November [Syntax and Files symmetry](docs/source.md) replaces the
 separate layout proposal: `Syntax : CST : AST` and `Files : Source : Semantics`.
@@ -97,7 +99,10 @@ fail rather than selecting a weaker fallback.
   shared contracts under contracts; native implementations use the same
   syntax and dimension-qualified parse/check/format/provider matrix, with explicitly qualified
   optional resolve/analyze stages. Do not add compatibility
-  aliases or a language-first packages tree. Keep the root Go module.
+  aliases or a language-first packages tree. Keep one public root Go module
+  independent of private dependencies. The concrete verification composition
+  consumes the public Logos contract, as documented in
+  [the verification architecture](docs/type-system-architecture.md#proposed-package-roles).
 - Use explicit dimension paths for implementations: role/syntax/language/go and
   role/files/language/go; shared printers omit language. Name implementation Go
   packages by their role. Each provider/language/go composition has provider.go,
@@ -147,8 +152,10 @@ fail rather than selecting a weaker fallback.
 - Keep prior research and Nightseam as evidence, not competing specifications.
   Use Horos's declaration specification for normalization/identity and encoding;
   do not infer semantic equivalence or behavioral ownership from document pins.
-- Only the Horos frontend (including its text stages), its private model helpers
-  and source-specific transformation readers consume external Horos/Ontos model dependencies.
+- Only the Horos frontend (including its text stages), its private model helpers,
+  source-specific transformation readers and the concrete Horos verification
+  projections/composition consume external Horos/Ontos model dependencies.
+  Only the concrete verification composition imports the public Logos checker.
   Preserve the narrow package import allowances; generic infrastructure and
   native stages must remain independent of these semantic packages.
 

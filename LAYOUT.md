@@ -3,7 +3,8 @@
 **Owner decision, 31 October 2026:** organize by processing stage and enforce a
 uniform structure across languages. The stage-by-language matrix is deliberate:
 the same responsibilities occupy the same paths, making omissions and drift
-visible. There is one root Go module, with independently owned packages.
+visible. One public root Go module contains independently owned packages,
+including the [concrete verification composition](docs/type-system-architecture.md#proposed-package-roles).
 
 ## Current hierarchy
 
@@ -27,6 +28,7 @@ contracts/
   semantic/go/            common snapshots, requests, reports and publication
   resolution/go/          resolver capability and dependency contract
   analysis/go/            analysis capability and explicit resolution input
+  verification/go/        agnostic joint capture/receipt/site association
 semantics/go/             typed immutable Semantics and provider-owned facts
 engine/go/                explicit registration, planning and execution
 syntax/<language>/go/              abstract/concrete vocabulary and identity
@@ -50,6 +52,11 @@ internal/                shared private checking/parsing/tree mechanics
 transforms/horos-to-<target>/go/  analyzed Horos to native type ASTs
 internal/horosgen/        source-owned semantic reading and bounded target arenas
 integration/go/          independent consumers and cross-package qualification
+verification/            concrete static verification; public Logos contract
+  files/source/horos/go/  explicit authoritative queries bound to captured Horos
+  files/target/golang/go/ explicit Go AST to go/ast and go/types projection
+  files/horos-to-go/go/   selected mapping, prepared claim and direct Logos check
+  integration/go/        TextBox/Page, nested reuse and dependency qualification
 tools/provider-matrix/go/ development-only source-derived documentation generation
 tools/horos-module/go/    ordinary Horos source to canonical Ontos module command
 testdata/text/<language>/valid/
@@ -184,20 +191,20 @@ Existing public consumer/negative type-check cases, unfamiliar-language tests,
 route oracle, concurrency checks and compiler gates remain required. Directory
 consistency does not prove grammar or mapping correctness.
 
-## Future components
+## Verification and future components
 
 The [evaluated type-system reasoning architecture](docs/type-system-architecture.md#proposed-package-roles)
-proposes optional `verification/files` collaborators above existing captures and
-explicit providers. Its private association seam is exercised before a public
-contract; language theories and Logos proof machinery stay with their owners.
+places `verification/files` collaborators above existing captures and explicit
+providers. Its scoped composition and agnostic association are now implemented;
+language theories and Logos proof machinery stay with their owners.
 The [Logos contract map](docs/logos-verification.md#ownership-map-for-the-verification-spi)
 narrows any eventual shared contract to artifact association and explicit
 composition. A direct Logos checker call needs no second checker-provider registry.
-The [joint request/result proposal](docs/verification.md) defines that association
+The [joint request/result contract](docs/verification.md) defines that association
 and its TextBox/Page walkthroughs. Logos-specific prepared requests/results stay
 in the concrete integration; general contracts retain only agnostic association.
-The root Go module and stage-first structure remain unchanged. No proposed
-directory, checker process, dependency or new provider is created by that design.
+The implemented paths appear in the current hierarchy above. A wider verification
+provider registry and additional language interpretations remain deferred.
 
 The [agnostic semantic model](docs/semantics.md), [analysis contract](docs/analysis.md)
 and first Horos analyzer are implemented. Additional analyzers use the same

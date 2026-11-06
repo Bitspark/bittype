@@ -34,6 +34,14 @@ must upgrade together; no older dependency path or compatibility shim remains.
 See the [dependency alignment](docs/dependencies.md).
 The engine starts empty and has no built-in languages or mappings.
 
+The [joint verification composition](docs/verification.md#implemented-go-surface)
+adds immutable source/target association and an optional Logos-backed Horos/Go
+integration. Explicit Horos kind queries and a bounded Go `go/types` projection
+supply TextBox counterexamples and conditional Page representation proofs,
+including nested reuse. The owning composition imports the public Logos contract;
+all packages use the root module and its anonymous installed-consumer gate.
+Native admission enforcement and runtime bindings are separate.
+
 The [stage-first layout](LAYOUT.md) groups shared tree representations under
 trees and public interfaces under contracts. Every native language implements
 the same syntax/parse/check/format/provider matrix, enforced by architecture and
@@ -76,13 +84,13 @@ interpret these concrete type semantics.
   and concrete Horos/Go reasoning examples; documentation only.
 - [Type-system reasoning architecture](docs/type-system-architecture.md): expert-reviewed
   ownership, stage-first package roles, exact TextBox/Page statements, Logos
-  checking prerequisites and implementation sequence; documentation only.
+  checking prerequisites, implementation boundary and module isolation.
 - [Logos checking and the verification boundary](docs/logos-verification.md):
   source-traced production request, direct checking APIs, typed proposal/experiment,
-  Bittype-owned association work and remaining dependencies; documentation only.
-- [Joint verification contract](docs/verification.md): proposed immutable
+  Bittype-owned association work, scoped integration and remaining dependencies.
+- [Joint verification contract](docs/verification.md): implemented immutable
   artifact association, preparation/checking split, result/failure semantics and
-  TextBox/Page walkthroughs; no implementation.
+  TextBox/Page walkthroughs, with the supported integration subset and limits.
 - [Preserving native kind constraints](docs/native-kind-constraints.md): proposed
   direct bounds and source witnesses for all four targets, guarantees and
   unresolved limits; documentation only.

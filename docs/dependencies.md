@@ -1,7 +1,8 @@
 # Public model dependencies
 
-Bittype's [go.mod](../go.mod) pins public Horos Go 0.10.2 and
-Ontos 0.16.0. There are no local replacements, private module paths or
+Bittype's [go.mod](../go.mod) pins public Horos Go 0.10.2,
+Ontos 0.16.0 and the public Logos contract at
+`v0.24.1-0.20261106050133-fc6132c238ea`. There are no local replacements, private module paths or
 compatibility aliases. Consumers upgrade together across the declaration revision.
 
 The Horos frontend consumes revision 4: ordinary kind definitions, general kind
@@ -14,6 +15,13 @@ AST projection and adaptation into its agnostic semantic graph. Generic trees,
 contracts, shared semantics, the engine and native syntax stages retain their
 model-independent import boundaries. The native pagination readers consume
 Horos-owned facts under an explicit representation profile.
+
+The [joint verification composition](verification.md#implemented-go-surface)
+imports `github.com/Bitspark/logos-contract/contract/go/typed` directly. Its
+[public source revision](https://github.com/Bitspark/logos-contract/commit/fc6132c238eae843720acf096e884550454351c8)
+provides the check-only typed foundation. Agnostic association and native
+projection packages have no Logos imports. No hosted service, credential or
+private repository is needed to install Bittype.
 
 The ordinary `horos.kinds` prelude is bundled by Horos and exposed as a canonical
 module value and import. Its complete definitions are maintained in

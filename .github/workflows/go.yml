@@ -91,6 +91,9 @@ jobs:
       - name: Check syntax engine concurrency
         if: success() || (failure() && steps.formatting.outcome == 'failure')
         run: go test -race -count=1 -run '^TestEngineConcurrent' ./integration/go
+      - name: Check joint verification concurrency
+        if: success() || (failure() && steps.formatting.outcome == 'failure')
+        run: go test -race -count=1 -run '^TestJointConcurrentChecks$' ./verification/integration/go
       - name: Check an independently installed public consumer
         env:
           GOPROXY: https://proxy.golang.org,direct
@@ -110,10 +113,11 @@ jobs:
           cp integration/go/testdata/installed/*_test.go "$RUNNER_TEMP/installed-consumer/"
           cd "$RUNNER_TEMP/installed-consumer"
           go mod init installed.consumer
-          go get "github.com/Bitspark/bittype@$EXPECTED_REVISION" github.com/Bitspark/horos/core/go@v0.10.2 github.com/bitspark/ontos@v0.16.0
+          go get "github.com/Bitspark/bittype@$EXPECTED_REVISION" github.com/Bitspark/horos/core/go@v0.10.2 github.com/bitspark/ontos@v0.16.0 github.com/Bitspark/logos-contract/contract/go@v0.24.1-0.20261106050133-fc6132c238ea
           test "$(go mod download -json github.com/Bitspark/bittype | python3 -c 'import json,sys; print(json.load(open(json.load(sys.stdin)["Info"]))["Origin"]["Hash"])')" = "$EXPECTED_REVISION"
           test "$(go list -m -f '{{.Version}}' github.com/Bitspark/horos/core/go)" = v0.10.2
           test "$(go list -m -f '{{.Version}}' github.com/bitspark/ontos)" = v0.16.0
+          test "$(go mod download -json github.com/Bitspark/logos-contract/contract/go | python3 -c 'import json,sys; print(json.load(open(json.load(sys.stdin)["Info"]))["Origin"]["Hash"])')" = fc6132c238eae843720acf096e884550454351c8
           test -z "$(go list -m -f '{{if .Replace}}{{.Path}}{{end}}' all)"
           go test -mod=readonly -count=1 -v ./...
       - name: Fuzz native text boundaries
@@ -141,7 +145,7 @@ jobs:
       - name: Record passing revision
         shell: bash
         run: |
-          echo "PASS $EXPECTED_REVISION: Go 1.27.3 formatting, contract/dependency tests, vet, syntax engine race check and native/Horos text fuzzing." >> "$GITHUB_STEP_SUMMARY"
+          echo "PASS $EXPECTED_REVISION: Go 1.27.3 formatting, contract/dependency tests, vet, engine/joint verification race checks and native/Horos text fuzzing." >> "$GITHUB_STEP_SUMMARY"
 
   native:
     runs-on: ubuntu-latest
