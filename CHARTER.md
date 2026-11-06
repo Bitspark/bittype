@@ -85,8 +85,9 @@ Define and paired Introduce/Apply, with an explicitly driven lifecycle in
 `contracts/generation/go`. Source and target collaborators own semantic reading
 and native syntax; the configured association owner retains representation
 meaning. The runner checks identity and operation lifetimes without interpreting
-that meaning. Automatic exact selection/overrides, definition scheduling and the
-four production Dialect replacements remain future work. No canonical builtin or
+that meaning. [Automatic composition](docs/generation-composition.md) implements
+exact selection/overrides and definition scheduling. All four production
+generators use the SPI; their old private implementations are deleted. No canonical builtin or
 named-library catalogue is added to shared generation or the engine.
 
 This scope excludes application-value validators, serialization, Wire adapters,
@@ -107,7 +108,8 @@ import allowances. Removing the second frontend changes no agnostic SPI.
 A published language revision fixes its admitted syntax and meaning.
 The earlier `bittype: 1` proposal is superseded. Horos's declaration revision is
 implemented in Go and versioned with the public Horos distribution. Rust and
-TypeScript retain ground checking; bittype now supplies readable syntax; native generators remain deferred.
+TypeScript retain ground checking; Bittype supplies readable syntax and native
+backends, with Horos-owned mapping compositions in Horos's optional integration module.
 
 Canonical declaration identity, normalized value shape, generated-code
 compatibility and undeclared behavior remain distinct. A digest does not prove

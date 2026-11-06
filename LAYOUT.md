@@ -55,7 +55,10 @@ check/syntax/cst/go/               generic concrete carrier checks
 internal/<language>/     private language-specific lexical helpers
 internal/                shared private checking/parsing/tree mechanics
 transforms/horos-to-<target>/go/  analyzed Horos to native type ASTs
-internal/horosgen/        source-owned semantic reading and bounded target arenas
+generation/syntax/go/     automatic mapping selection and definition scheduling
+generation/syntax/source/horos/go/ source-owned semantic reading
+generation/syntax/target/go/       shared symbolic native storage
+generation/syntax/target/<language>/go/ native construction and assembly
 integration/go/          independent consumers and cross-package qualification
 verification/            concrete static verification; public Logos contract
   files/source/horos/go/  explicit authoritative queries bound to captured Horos
@@ -258,18 +261,18 @@ its mappings and type artifacts outside Bittype's module; the consumer selects
 defaults and explicit overrides. Adding Cell or another ordinary contract adds no
 Bittype stage, engine edge per contract or central registration entry. The first
 [public SPI and guarded invocation](docs/generation-spi.md) are implemented in
-`contracts/generation/go`. The four private pagination Dialects remain the
-production generation path until the full replacement is implemented.
+`contracts/generation/go`. [Automatic composition](docs/generation-composition.md)
+now drives all four native generators. The private pagination Dialects are deleted.
 
 The current contract package owns the minimal explicitly driven runner, as the
-semantic contract owns its guarded operation. There is no empty
-`generation/syntax/go` wrapper. The future automatic composer and concrete
-collaborators retain the proposed stage-first layout:
+semantic contract owns its guarded operation. The automatic composer and concrete
+collaborators implement the stage-first layout:
 
 ```text
 contracts/generation/go/                  implemented contracts and explicit runner
-generation/syntax/go/                     future selectors/overrides/definition scheduling
+generation/syntax/go/                     implemented selectors/overrides/definition scheduling
 generation/syntax/source/horos/go/        source semantic adapter and selectors
+generation/syntax/target/go/              shared symbolic native storage
 generation/syntax/target/typescript/go/   TypeScript fragments/symbols/assembly
 generation/syntax/target/golang/go/       Go fragments/symbols/assembly
 generation/syntax/target/rust/go/         Rust fragments/symbols/assembly
@@ -291,9 +294,9 @@ new modules inside Bittype or a required new repository. Bittype factories never
 import them. This preserves the dependency direction: integration -> Bittype,
 consumer -> integration + Bittype; Horos core remains independent of Bittype.
 
-Only the shared contract/invocation package is implemented in this first slice.
-The other generation directories above remain proposals, with no empty
-placeholders. Existing transformers are not yet configuration-only factories.
+All listed generation directories are implemented. The transformer factories
+require an explicit invocation factory; default compositions live in Horos's
+optional `tooling/bittype` module, with no Bittype-to-integration dependency.
 Syntax/Files provider registration and engine capabilities remain unchanged.
 
 The [Syntax and Files design](docs/source.md) is implemented with

@@ -10,11 +10,11 @@ and private-evidence sketches are not alternate supported contracts.
 
 The [first public SPI](generation-spi.md) implements Use, Publish, Define and
 paired Introduce/Apply with explicit collaborators and a guarded lifecycle.
-The current pagination implementation still uses its private Dialect. Its
-representation profile permits constraint erasure; its enforcement profile
-returns Unsupported. Automatic selectors/overrides, definition scheduling, the
-four production Dialect replacements and native admission profiles remain next
-steps. The earlier research used source/specification reasoning; it is distinct
+The [automatic composer](generation-composition.md) now supplies exact
+selectors/overrides and definition scheduling, replacing all four private
+Dialects. Horos's optional integration owns the mappings. Its representation
+profile permits constraint erasure; its enforcement profile returns Unsupported.
+Native admission profiles remain next steps. The earlier research used source/specification reasoning; it is distinct
 from implementation qualification.
 
 The owner's subsequent [Logos preservation proposal](logos-preservation.md)
@@ -116,7 +116,7 @@ not an existing generator capability or a required convention for other targets.
 | Selected mapping | Choose the native representation family |
 | Configured source/target convention | Introduce native formals; elaborate actual applications; preserve result associations |
 | Target tooling | Native syntax, scopes, anchors, imports and assembly |
-| Generation kernel | Invocation/scope identity, reservation, lifecycle, budgets and whole-output failure; automatic exact selection remains a future composer responsibility |
+| Generation kernel | Invocation/scope identity, reservation, lifecycle, budgets and whole-output failure; automatic exact selection belongs to the separate implemented composer |
 
 Replace the former binder-to-target-index idea with **real source binder to scoped
 representation product**. A product includes the native payload projection and
@@ -147,12 +147,13 @@ or equal IDs cannot establish either law.
 
 ### Pagination and scope
 
-This walkthrough guides the production migration to the shared plugin
-architecture; the first public SPI does not yet replace those generators.
+This walkthrough explains the shared plugin architecture now used by the
+four production generators.
 The source excerpts assume an explicit import of the ordinary
 `horos.kinds` module as `h`; module headers and import identities are omitted.
 See [Horos source syntax](horos-syntax.md) for complete module syntax. The
-examples specify intended composition, not executed new generator capabilities.
+pagination structure is implemented; stronger native constraint encodings in the
+examples remain proposals.
 
 ```text
 kind Tree = nu {
@@ -300,9 +301,9 @@ and the target configuration. For example, an external mapping could supply
 not new built-in packages. The enclosing Page uses the same open definition and
 passes that selected representation as its argument.
 
-The current pagination profile does not thereby gain Wire or Cell support. This
-is a future composition fixture requiring an explicit library mapping and its
-supported source/target contract. Function and Stream use the same supplied
+The default pagination profile does not thereby gain Wire or Cell support. The
+[composition fixture](generation-composition.md#extension-examples-and-qualification)
+adds an explicit library-owned Cell mapping and its supported native contract. Function and Stream use the same supplied
 mechanism. A capability-containing Cell still fails a Data bound regardless of
 its native representation, and choosing a native handle supplies no protocol
 behavior.
@@ -446,9 +447,9 @@ The pagination migration has three stages:
    selected associations and emitted syntax stay separate; a Go carrier cannot
    establish their semantic correctness by itself. Qualification of this surface
    is distinct from replacing production generators.
-2. **Next: compose and replace the private pagination path across all four targets.**
-   Add automatic exact selection, guarded overrides and definition scheduling.
-   Implement the
+2. **Implemented: automatic composition and all four production replacements.**
+   Exact selection, guarded overrides and definition scheduling now use the
+   [public composer](generation-composition.md). Horos's integration implements the
    shared convention over the existing proper, direct, saturated generic domain
    and supply the ordinary declaration, record, list, text, boolean and optional
    mappings.

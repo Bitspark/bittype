@@ -1,8 +1,9 @@
 # Semantic native type generation
 
-**Revision 4 implemented in Go source, 4 November 2026.** The four native
+**Revision 4 on the public generation SPI, 6 November 2026.** The four native
 pagination mappings consume general kinds through explicit target
-profiles, using public Horos Go 0.10.1. This
+profiles, using public Horos Go 0.10.2. The [automatic composer](generation-composition.md)
+now drives all four, with mappings owned by Horos's optional integration module. This
 is types/interfaces generation; it adds no runtime adapters, application-value
 validators, serialization or executable behavior.
 
@@ -35,7 +36,8 @@ resolution/analysis of its own snapshot.
 
 ## Representation and enforcement profiles
 
-Each of `transforms/horos-to-typescript/go`, `transforms/horos-to-go/go`,
+In `github.com/Bitspark/horos/tooling/bittype`, each of
+`transforms/horos-to-typescript/go`, `transforms/horos-to-go/go`,
 `transforms/horos-to-rust/go` and `transforms/horos-to-cpp/go` exports:
 
 ```go
@@ -86,9 +88,10 @@ Page body for each caller.
 The reader consumes proper-sort facts, checked bodies, named references,
 applications and bindings. It does not inspect the names Type/Data or decode a
 closed claim enum. KindDefinition entities are compile-time declarations and do
-not become native type exports. All exported TypeDefinition entities in the
-selected semantic closure remain in scope, including dependency modules. An
-unsupported type definition is not pruned because a particular root ignores it.
+not become native type exports. Every root module TypeDefinition is requested
+for publication. Imported types are demanded through selected mappings; unused
+imports and bodies represented by an exact library mapping need no native
+expansion. Source analysis still admits the complete original source.
 
 | Horos form | TypeScript | Go | Rust | C++ |
 | --- | --- | --- | --- | --- |
@@ -113,7 +116,7 @@ an explicit target contract rather than a weaker fallback.
 
 ## Generic and naming limits
 
-The complete exported type closure rejects residual constructor parameters,
+The default structural policy rejects residual constructor parameters,
 constructor-valued results or aliases, higher-order arguments and computed
 callees. It also rejects unused proper parameters. General Horos support for
 these expressions does not establish a native encoding. A closed application
@@ -132,7 +135,7 @@ names. Rust and C++ reject keyword field names. Names are not guessed from types
 
 Each mapping currently emits a one-tree ASTSet containing the checked type
 closure. Root declarations keep their exported native names. Imported declarations
-use `M<first-16-hex-of-SHA256(pin-text)>_<Name>`, with collisions rejected. This
+use `M<first-16-hex-of-module-pin>_<Name>`, with collisions rejected. This
 product spelling is not semantic identity. The configured output tree ID and Go package
 or C++ namespace remain separate from canonical module identity. This mapping
 performs no implicit filesystem or network IO.
@@ -177,12 +180,14 @@ output tree.
 
 Mappings retain real declaration/parameter links and available current source
 origins. Imported definitions are emitted once with dependencies before uses.
-The source reader and bounded target arenas live in `internal/horosgen`; each
-concrete mapping owns target AST construction. Shared contracts, engine and
+The source reader lives at `generation/syntax/source/horos/go`; bounded native
+storage lives at `generation/syntax/target/go`, with native adapters under the
+four language paths. Horos-owned mappings choose representations. Shared contracts, engine and
 printer gain no Horos/Ontos or behavioral-library imports.
 
-Generation keeps the existing limits of 100,000 target nodes, traversal depth
-128 and 800,000 visits, together with context cancellation. Formatter, carrier
+Generation uses the public SPI defaults: 100,000 operations, depth 128, 4,096
+plans/reservations/formals, 65,536 references, 200,000 output nodes and 32 MiB
+output data, together with context cancellation. Formatter, carrier
 and semantic-input limits still apply. Exhaustion returns no usable output.
 
 ## Library and runtime boundaries
@@ -190,12 +195,11 @@ and semantic-input limits still apply. Exhaustion returns no usable output.
 Function, Stream, Cell and future contracts remain ordinary library definitions.
 Their kind membership or expanded shape does not select a native binding.
 Optional recipes belong to their owning libraries and consuming configuration,
-selected by exact declaration identity and target profile. Recipe SPIs and richer
-capability representations remain separate work. The
-[type-owned generator plugin proposal](type-generation-plugins.md) describes the
-replacement for the private fixed Dialect: supplied builtin/library mappings and
-explicit consumer overrides inside one configured ASTTransformer. This page
-continues to describe the implemented pagination subset, not that proposed API.
+selected by exact declaration identity and target profile. The
+[type-owned generator design](type-generation-plugins.md) and
+[composition API](generation-composition.md) are implemented. The imported Cell
+fixture demonstrates extending the profile without changing Bittype or Wire.
+Complete production contract libraries and their behavior remain separate work.
 
 This migration preserves types-only output. It does not create serializers,
 application-value validators, executable adapters, protocol implementations or a
