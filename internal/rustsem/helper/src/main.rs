@@ -78,10 +78,11 @@ fn output(status: &str, facts: Option<Value>, diagnostics: Vec<Value>) -> Value 
 fn unsupported(unit: &Unit) -> Option<&Node> {
     unit.nodes.iter().find(|n| match n.kind.as_str() {
         "file" | "module" | "type-alias" | "struct" | "tuple-struct" | "enum" | "unit-variant"
-        | "tuple-variant" | "record-variant" | "field" | "tuple-field" | "trait" | "trait-impl"
+        | "tuple-variant" | "record-variant" | "field" | "tuple-field" | "trait"
         | "type-parameter" | "where-predicate" | "relaxed-bound" | "path-type" | "path-segment"
         | "primitive-type" | "raw-pointer-type" | "slice-type" | "array-type" | "tuple-type"
         | "never-type" => false,
+        "trait-impl" => n.children.as_deref().unwrap_or(&[]).iter().any(|c| c["Role"] == "member"),
         "reference-type" => !n
             .children
             .as_deref()
@@ -227,6 +228,9 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
     fn site(&self, id: u32) -> Value {
         json!({"Tree":self.unit.tree,"Node":id})
     }
+    fn path(&self, did: DefId) -> String {
+        format!("{}{}", self.tcx.crate_name(did.krate), self.tcx.def_path(did).to_string_no_crate_verbose())
+    }
     fn find(&self, span: Span, kind: &str) -> Option<u32> {
         let lo = self.tcx.sess.source_map().lookup_byte_offset(span.lo());
         let start = lo.pos.0 as usize;
@@ -241,7 +245,7 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
                     "variant" => n.kind.ends_with("-variant"),
                     _ => n.kind == kind,
                 };
-                matches && n.start <= start && n.end >= end
+                matches && n.start <= start && n.end >= end && (kind != "path-segment" || n.start == start)
             })
             .min_by_key(|n| n.end - n.start)
             .map(|n| n.id)
@@ -311,7 +315,7 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
             .map(|&n| vec![self.site(n)])
             .unwrap_or_default();
         self.entities
-            .push(json!({"Kind":key(kind),"Name":self.tcx.def_path_str(did),"Declarations":sites}));
+            .push(json!({"Kind":key(kind),"Name":self.path(did),"Declarations":sites}));
         if let Some(parent) = self.tcx.opt_parent(did) {
             let owner = self.entity(parent)?;
             self.entities[id as usize - 1]["Owner"] = json!(owner);
@@ -361,7 +365,7 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
                 .map(|&n| vec![self.site(n)])
                 .unwrap_or_default()
         };
-        self.entities.push(json!({"Kind":key("parameter"),"Name":format!("{}::{}",self.tcx.def_path_str(owner),p.name),"Owner":entity_owner,"Declarations":sites}));
+        self.entities.push(json!({"Kind":key("parameter"),"Name":format!("{}::{}",self.path(owner),p.name),"Owner":entity_owner,"Declarations":sites}));
         Ok(id)
     }
     fn arguments(

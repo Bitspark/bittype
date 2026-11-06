@@ -3,8 +3,8 @@ package consumer_test
 import (
 	"context"
 	"os"
-	"testing"
 	"strings"
+	"testing"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"

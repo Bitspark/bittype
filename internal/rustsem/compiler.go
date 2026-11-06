@@ -66,6 +66,9 @@ func Check(ctx context.Context, helper, sysroot string, trees []s.AST, source *f
 	if err != nil {
 		return Output{}, err
 	}
+	if len(encoded) > 2<<20 {
+		return Output{Status: "incomplete", Diagnostics: []semantic.Diagnostic{diagnostic("limit", "Rust compiler request exceeds the protocol bound")}}, nil
+	}
 	run, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	stdout := boundedBuffer{remaining: 16 << 20, cancel: cancel}
