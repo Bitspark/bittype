@@ -6,6 +6,23 @@ starting with types only. The [model boundary](docs/model.md) replaces the earli
 independent bittype type-language proposal. Horos declaration revision 4 and its
 bittype AST projection are implemented in Go source; no package release is implied.
 
+## Architectural correctness
+
+The owner's [6 November standing rule](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md)
+makes semantic ownership and additive composition part of correctness. A working
+example or passing suite is evidence for its exercised behavior, not a waiver of
+the architecture. The goal is to preserve independently owned meanings and their
+ability to evolve and compose without changes to shared orchestration or
+unrelated implementations within the declared extension boundary.
+
+A first implementation may support a small domain, but it must use the same
+extension contract available to later contributions. Scope limits and
+architectural defects are different. This applies to concrete reusable
+compositions as well as the lowest-level kernel. The current
+[Horos/Go verification composition](docs/verification.md#known-architectural-violation)
+has a known ownership/composition violation requiring replacement; its bounded
+proof outcomes remain distinct from architectural conformance.
+
 ## Ownership
 
 bittype owns:
