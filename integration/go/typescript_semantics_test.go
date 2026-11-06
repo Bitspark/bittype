@@ -14,6 +14,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
+	syntaxtext "github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/files/go"
 	p "github.com/Bitspark/bittype/provider/typescript/go"
@@ -259,6 +260,8 @@ func TestTypeScriptSemanticReports(t *testing.T) {
 		{"merging", "interface Box {x:string} interface Box {y:string}", semantic.Unsupported, semantic.Undetermined},
 		{"external", "type DateValue = Date;", semantic.Unsupported, semantic.Undetermined},
 		{"external-mapped", "type Changed = Readonly<{value: string}>;", semantic.Unsupported, semantic.Undetermined},
+		{"conditional", "type Choice<T> = T extends string ? string : boolean;", semantic.Unsupported, semantic.Undetermined},
+		{"mapped", "type Copy<T> = {[K in keyof T]: T[K]};", semantic.Unsupported, semantic.Undetermined},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			snapshot, _, _ := tsCapture(t, tc.text)
@@ -281,7 +284,50 @@ func TestTypeScriptSemanticReports(t *testing.T) {
 	}
 }
 
+func TestTypeScriptSemanticControlsCannotBypassCorrespondence(t *testing.T) {
+	ctx := context.Background()
+	definition := "type Box<T extends string> = {value:T};\n"
+	application := "type Bad = Box<boolean>;"
+	_, trees, source := tsCapture(t, definition+application)
+	for _, directive := range []string{
+		"// @ts-nocheck", "// @ts-check", "// @ts-ignore", "// @ts-expect-error",
+		"/* @ts-nocheck */",
+		"/// <reference lib=\"dom\" />", "/// <reference path=\"ambient.ts\" />",
+		"/// <reference types=\"node\" />", "/// <reference no-default-lib=\"true\" />",
+	} {
+		t.Run(directive, func(t *testing.T) {
+			text := directive + "\n" + definition + application
+			if strings.Contains(directive, "ts-ignore") || strings.Contains(directive, "ts-expect-error") {
+				text = definition + directive + "\n" + application
+			}
+			_, err := (p.Provider{}).Parse(ctx, parse.Input{Text: text, SourceID: "0", TreeID: "0"})
+			var diagnostic *syntaxtext.Diagnostic
+			if !errors.As(err, &diagnostic) || diagnostic.Code != syntaxtext.Unsupported {
+				t.Fatal("parser admitted a compiler control", err)
+			}
+			// Supplying an independently constructed AST does not bypass parsing
+			// of the original source at the semantic correspondence boundary.
+			changed := source.Clone()
+			changed.Files.Entries[0].Text = text
+			snapshot := tsCaptureTrees(t, trees, &changed)
+			resolver, err := p.NewFilesResolver(snapshot.Language(), tsCompiler(t))
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, err := resolver.Resolve(ctx, snapshot, semantic.Options{Configuration: n.Configuration()})
+			if !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
+				t.Fatal("compiler control bypassed correspondence", err)
+			}
+		})
+	}
+}
+
 func TestTypeScriptSemanticScopeAndSourceCorrespondence(t *testing.T) {
+	// Directive-looking literal values do not control the compiler.
+	literal := tsModel(t, "type Label = '@ts-nocheck';")
+	if tsType(t, literal, "Label").Term().Operator != n.Key("literal") {
+		t.Fatal("literal text mistaken for a compiler directive")
+	}
 	m := tsModel(t, "export interface Box<T> {value:T}", "export interface Box<T> {value:T}")
 	a, b := tsDecl(t, m, "0", "Box"), tsDecl(t, m, "1", "Box")
 	if a.ID() == b.ID() || a.Parameters()[0].ID() == b.Parameters()[0].ID() {
