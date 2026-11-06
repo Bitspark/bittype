@@ -21,7 +21,7 @@ func TestDocumentedProviderMatrix(t *testing.T) {
 	providerCapabilities(t, horos.Provider{}, true, true)
 	providerCapabilities(t, typescript.Provider{}, true, true)
 	providerCapabilities(t, golang.Provider{}, true, true)
-	providerCapabilities(t, rust.Provider{}, true, false)
+	providerCapabilities(t, rust.Provider{}, true, true)
 	providerCapabilities(t, cpp.Provider{}, true, false)
 }
 
