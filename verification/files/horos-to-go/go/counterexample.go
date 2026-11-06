@@ -1,13 +1,13 @@
 package verification
 
 import (
- nativequery "github.com/Bitspark/bittype/analyze/files/golang/go"
+	nativequery "github.com/Bitspark/bittype/analyze/files/golang/go"
 	"go/types"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	association "github.com/Bitspark/bittype/contracts/verification/go"
-	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
+	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	"github.com/Bitspark/logos-contract/contract/go/typed"
 )

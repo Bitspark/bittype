@@ -204,8 +204,8 @@ collaborators within that role, like the existing proposed generation
 collaborators; they are not new carrier dimensions or hidden providers. Native
 semantic extraction is an explicit step in the owning native provider, never
 an analyzer hidden in generation or joint preparation. The bounded Go semantic provider
-does not yet implement registered `resolve/files/golang` or `analyze/files/golang`
-providers. Later languages follow the same matrix when implemented;
+implements registered `resolve/files/golang` and `analyze/files/golang` roles,
+with explicit query sessions. Later languages follow the same matrix when implemented;
 no empty stubs, registry cells or compatibility aliases are added.
 
 Begin with a private composition seam; promote the shared contract only after

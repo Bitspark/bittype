@@ -87,7 +87,8 @@ Every composition package has `provider.go`, `syntax.go` and `files.go`.
 and `NewFilesPrinter` each take an explicit `representation.Language` and return
 one configured adapter plus an error. Horos additionally has `NewFilesParser`,
 `NewFilesFormatter`, `NewFilesResolver` and `NewFilesAnalyzer` with the same
-descriptor-first signature. Constructors register nothing and never select a
+descriptor-first signature. Go also supplies `NewFilesResolver` and
+`NewFilesAnalyzer`. Constructors register nothing and never select a
 profile implicitly. `Provider` remains a direct typed composition of the roles
 that actually exist; it is not an engine registration contract.
 

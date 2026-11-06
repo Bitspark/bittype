@@ -153,8 +153,9 @@ Resolver settings belong to Resolve's Options, not the analyzer's Options.
 
 Pagination retains imported Page, the caller's plain Person reference,
 distinct same-spelled binders and opaque literal data. Specialization remains an
-explicit Horos operation. Native pagination generation consumes these facts;
-no native semantic analyzer or runtime binding is added.
+explicit Horos operation. Native pagination generation consumes these facts. The separate
+[Go native providers](native-semantics.md) analyze native captures; neither
+provider introduces runtime bindings.
 
 ## Qualification
 

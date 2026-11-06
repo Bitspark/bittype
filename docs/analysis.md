@@ -342,9 +342,10 @@ Analysis does not repair input or turn stale references into new references
 silently. The explicit `resolve.Model` helper remains semantic and shares the
 same authoritative path.
 
-Native semantic analyzers, scope lookup, relation queries, partial checked graphs
-and incremental caches remain deferred. A separate test-only unknown-language
-provider qualifies the generic contract without adding a production native checker.
+[Bounded Go semantics](native-semantics.md) now uses the same resolution and
+analysis interfaces. Broader native coverage, the other native analyzers, general
+scope/relation APIs, partial checked graphs and incremental caches remain deferred.
+The independent test-only language still qualifies the agnostic contract.
 
 See the [provider matrix](providers.md) for the independently registered capabilities.
 

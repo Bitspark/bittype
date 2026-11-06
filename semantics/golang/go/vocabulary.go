@@ -21,9 +21,9 @@ var ErrUnsupported = errors.New("Go semantics outside supported fragment")
 
 // Key returns a Go-owned vocabulary key; it performs no registration.
 func Key(name string) semantics.Key { return semantics.Key{Owner: "go", Name: name} }
-func Bindings() semantics.Key { return Key("bindings") }
-func Coverage() semantics.Key { return Key("captured-type-coverage") }
-func Validity() semantics.Key { return Key("captured-type-validity") }
+func Bindings() semantics.Key       { return Key("bindings") }
+func Coverage() semantics.Key       { return Key("captured-type-coverage") }
+func Validity() semantics.Key       { return Key("captured-type-validity") }
 
 // Configuration fixes the compiler environment of this bounded provider.
 func Configuration() []semantic.Setting {

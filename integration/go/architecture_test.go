@@ -212,10 +212,10 @@ func TestProductionArchitecture(t *testing.T) {
 	// language stages. The agnostic association above never imports their models.
 	rules["verification/files/source/horos/go"] = []string{"contracts/semantic/go", "contracts/resolution/go", "internal/horosmodel", "resolve/files/horos/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
 	rules["semantics/golang/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "syntax/golang/go", "trees/ast/go", "trees/representation/go"}
- rules["internal/golangsem"] = []string{"contracts/semantic/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/ast/go"}
- rules["resolve/files/golang/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "semantics/go", "semantics/golang/go", "syntax/golang/go"}
- rules["analyze/files/golang/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "resolve/files/golang/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/representation/go"}
- rules["provider/golang/go"] = append(rules["provider/golang/go"], "contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "analyze/files/golang/go", "resolve/files/golang/go")
+	rules["internal/golangsem"] = []string{"contracts/semantic/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/ast/go"}
+	rules["resolve/files/golang/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "semantics/go", "semantics/golang/go", "syntax/golang/go"}
+	rules["analyze/files/golang/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "resolve/files/golang/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/representation/go"}
+	rules["provider/golang/go"] = append(rules["provider/golang/go"], "contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "analyze/files/golang/go", "resolve/files/golang/go")
 	rules["verification/files/horos-to-go/go"] = []string{"contracts/semantic/go", "contracts/verification/go", "semantics/go", "trees/ast/go", "verification/files/source/horos/go", "semantics/golang/go", "analyze/files/golang/go"}
 	for path, p := range packages {
 		if p.Standard || path == modulePath+"/integration/go" || path == modulePath+"/verification/integration/go" {

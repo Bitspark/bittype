@@ -2,39 +2,51 @@
 package golangsem
 
 import (
- "context"
- "fmt"
- goast "go/ast"
- "go/token"
- "go/types"
- "strconv"
- "github.com/Bitspark/bittype/contracts/semantic/go"
- n "github.com/Bitspark/bittype/semantics/golang/go"
- s "github.com/Bitspark/bittype/syntax/golang/go"
- "github.com/Bitspark/bittype/trees/ast/go"
+	"context"
+	"fmt"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
+	n "github.com/Bitspark/bittype/semantics/golang/go"
+	s "github.com/Bitspark/bittype/syntax/golang/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
+	goast "go/ast"
+	"go/token"
+	"go/types"
+	"strconv"
 )
 
 // Failure distinguishes unsupported/limited coverage from an actual type error.
-type Failure struct { Err error; At ast.NodeRef; Invalid bool }
-func (e *Failure) Error() string { return e.Err.Error() }
-func (e *Failure) Unwrap() error { return e.Err }
-func (c *converter) pos(id ast.NodeID) token.Pos { return c.positions.Pos(int(id-1)*1024) }
-func setPosition(e goast.Expr,p token.Pos) {
- switch x:=e.(type) {
- case *goast.ArrayType:x.Lbrack=p
- case *goast.StructType:x.Struct=p
- case *goast.InterfaceType:x.Interface=p
- case *goast.UnaryExpr:x.OpPos=p
- case *goast.BinaryExpr:x.OpPos=p
- case *goast.IndexListExpr:x.Lbrack=p
- }
+type Failure struct {
+	Err     error
+	At      ast.NodeRef
+	Invalid bool
 }
+
+func (e *Failure) Error() string                 { return e.Err.Error() }
+func (e *Failure) Unwrap() error                 { return e.Err }
+func (c *converter) pos(id ast.NodeID) token.Pos { return c.positions.Pos(int(id-1) * 1024) }
+func setPosition(e goast.Expr, p token.Pos) {
+	switch x := e.(type) {
+	case *goast.ArrayType:
+		x.Lbrack = p
+	case *goast.StructType:
+		x.Struct = p
+	case *goast.InterfaceType:
+		x.Interface = p
+	case *goast.UnaryExpr:
+		x.OpPos = p
+	case *goast.BinaryExpr:
+		x.OpPos = p
+	case *goast.IndexListExpr:
+		x.Lbrack = p
+	}
+}
+
 type converter struct {
-	tree    s.AST
-	origins map[*goast.Ident]ast.NodeRef
-	refs    map[*goast.Ident][]ast.Reference
- positions *token.File
- expressions map[goast.Expr]ast.NodeRef
+	tree        s.AST
+	origins     map[*goast.Ident]ast.NodeRef
+	refs        map[*goast.Ident][]ast.Reference
+	positions   *token.File
+	expressions map[goast.Expr]ast.NodeRef
 }
 
 func (c *converter) node(id ast.NodeID) s.Node { return c.tree.Nodes[id-1] }
@@ -60,7 +72,7 @@ func (c *converter) ident(id ast.NodeID) *goast.Ident {
 	x := goast.NewIdent(attribute(node, s.AttributeName))
 	c.origins[x] = ast.NodeRef{Tree: c.tree.ID, Node: id}
 	c.refs[x] = node.References
- x.NamePos = c.pos(id)
+	x.NamePos = c.pos(id)
 	return x
 }
 func (c *converter) one(node s.Node, role string, depth int) (goast.Expr, error) {
@@ -74,57 +86,114 @@ func (c *converter) one(node s.Node, role string, depth int) (goast.Expr, error)
 // Check consumes syntax-admitted trees. Token positions are synthetic addresses
 // used only to return compiler diagnostics to captured nodes, never source spans.
 func Check(ctx context.Context, inputs []s.AST) (*Checked, error) {
-	if ctx == nil || len(inputs) == 0 { return nil, semantic.ErrInvalidRequest }
-	if err:=ctx.Err(); err!=nil { return nil,err }
-	if err:=bound(inputs); err!=nil { return nil,err }
-	fset:=token.NewFileSet()
+	if ctx == nil || len(inputs) == 0 {
+		return nil, semantic.ErrInvalidRequest
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if err := bound(inputs); err != nil {
+		return nil, err
+	}
+	fset := token.NewFileSet()
 	var files []*goast.File
-	origins:=map[*goast.Ident]ast.NodeRef{}
-	refs:=map[*goast.Ident][]ast.Reference{}
-	expressions:=map[goast.Expr]ast.NodeRef{}
-	positions:=map[token.Pos]ast.NodeRef{}
-	for _,tree:=range inputs {
-		if err:=ctx.Err(); err!=nil { return nil,err }
-		file:=fset.AddFile(string(tree.ID),-1,len(tree.Nodes)*1024+1024)
-		for i:=range tree.Nodes { positions[file.Pos(i*1024)]=ast.NodeRef{Tree:tree.ID,Node:ast.NodeID(i+1)} }
-		c:=converter{tree:tree,origins:origins,refs:refs,positions:file,expressions:expressions}
-		f,err:=c.file(); if err!=nil { if _,ok:=err.(*Failure); !ok { err=&Failure{Err:err,At:ast.NodeRef{Tree:tree.ID,Node:tree.Root}} }; return nil,err }; files=append(files,f)
+	origins := map[*goast.Ident]ast.NodeRef{}
+	refs := map[*goast.Ident][]ast.Reference{}
+	expressions := map[goast.Expr]ast.NodeRef{}
+	positions := map[token.Pos]ast.NodeRef{}
+	for _, tree := range inputs {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		file := fset.AddFile(string(tree.ID), -1, len(tree.Nodes)*1024+1024)
+		for i := range tree.Nodes {
+			positions[file.Pos(i*1024)] = ast.NodeRef{Tree: tree.ID, Node: ast.NodeID(i + 1)}
+		}
+		c := converter{tree: tree, origins: origins, refs: refs, positions: file, expressions: expressions}
+		f, err := c.file()
+		if err != nil {
+			if _, ok := err.(*Failure); !ok {
+				err = &Failure{Err: err, At: ast.NodeRef{Tree: tree.ID, Node: tree.Root}}
+			}
+			return nil, err
+		}
+		files = append(files, f)
 	}
-	info:=&types.Info{Defs:map[*goast.Ident]types.Object{},Uses:map[*goast.Ident]types.Object{},Types:map[goast.Expr]types.TypeAndValue{}}
-	conf:=types.Config{GoVersion:n.LanguageVersion,Sizes:types.SizesFor("gc","amd64")}
-	pkg,err:=conf.Check(n.PackagePath,fset,files,info)
-	if e:=ctx.Err(); e!=nil { return nil,e }
-	if err!=nil {
-		var at ast.NodeRef; if e,ok:=err.(types.Error); ok { at=positions[e.Pos] }
-		return nil,&Failure{Err:err,At:at,Invalid:true}
+	info := &types.Info{Defs: map[*goast.Ident]types.Object{}, Uses: map[*goast.Ident]types.Object{}, Types: map[goast.Expr]types.TypeAndValue{}}
+	conf := types.Config{GoVersion: n.LanguageVersion, Sizes: types.SizesFor("gc", "amd64")}
+	pkg, err := conf.Check(n.PackagePath, fset, files, info)
+	if e := ctx.Err(); e != nil {
+		return nil, e
 	}
-	sites:=map[types.Object]ast.NodeRef{}
-	for id,obj:=range info.Defs { if obj!=nil { sites[obj]=origins[id] } }
-	for id,obj:=range info.Uses { for _,ref:=range refs[id] { if ref.Role!=s.RoleTarget || ref.Target!=sites[obj] { return nil,semantic.ErrInvalidRequest } } }
-	return export(ctx,pkg,info,origins,expressions,positions,inputs)
+	if err != nil {
+		var at ast.NodeRef
+		if e, ok := err.(types.Error); ok {
+			at = positions[e.Pos]
+		}
+		return nil, &Failure{Err: err, At: at, Invalid: true}
+	}
+	sites := map[types.Object]ast.NodeRef{}
+	for id, obj := range info.Defs {
+		if obj != nil {
+			sites[obj] = origins[id]
+		}
+	}
+	for id, obj := range info.Uses {
+		for _, ref := range refs[id] {
+			if ref.Role != s.RoleTarget || ref.Target != sites[obj] {
+				return nil, semantic.ErrInvalidRequest
+			}
+		}
+	}
+	return export(ctx, pkg, info, origins, expressions, positions, inputs)
 }
 
 func bound(inputs []s.AST) error {
-	if len(inputs)>16 { return semantic.ErrLimit }
-	nodes,entries,size:=0,0,0
-	for _,t:=range inputs {
-		nodes+=len(t.Nodes); size+=len(t.ID)
-		for _,v:=range t.Nodes {
-			size+=len(v.Kind); entries+=len(v.Attributes)+len(v.Children)+len(v.References)+len(v.Origin.Spans)+len(v.Origin.Nodes)
-			for _,a:=range v.Attributes { size+=len(a.Name)+len(a.Text) }
-			for _,c:=range v.Children { size+=len(c.Role) }
-			for _,r:=range v.References { size+=len(r.Role)+len(r.Target.Tree) }
-			for _,s:=range v.Origin.Spans { size+=len(s.Source) }
-			for _,o:=range v.Origin.Nodes { size+=len(o.Tree) }
+	if len(inputs) > 16 {
+		return semantic.ErrLimit
+	}
+	nodes, entries, size := 0, 0, 0
+	for _, t := range inputs {
+		nodes += len(t.Nodes)
+		size += len(t.ID)
+		for _, v := range t.Nodes {
+			size += len(v.Kind)
+			entries += len(v.Attributes) + len(v.Children) + len(v.References) + len(v.Origin.Spans) + len(v.Origin.Nodes)
+			for _, a := range v.Attributes {
+				size += len(a.Name) + len(a.Text)
+			}
+			for _, c := range v.Children {
+				size += len(c.Role)
+			}
+			for _, r := range v.References {
+				size += len(r.Role) + len(r.Target.Tree)
+			}
+			for _, s := range v.Origin.Spans {
+				size += len(s.Source)
+			}
+			for _, o := range v.Origin.Nodes {
+				size += len(o.Tree)
+			}
 		}
-		if nodes>4096 || entries>32768 || size>1<<20 { return semantic.ErrLimit }
+		if nodes > 4096 || entries > 32768 || size > 1<<20 {
+			return semantic.ErrLimit
+		}
 	}
 	return nil
 }
 func (c *converter) expression(id ast.NodeID, depth int) (out goast.Expr, err error) {
- defer func() {
- if err != nil { if _,ok:=err.(*Failure); !ok { err=&Failure{Err:err, At:ast.NodeRef{Tree:c.tree.ID,Node:id}} }; return }; if out != nil { c.expressions[out]=ast.NodeRef{Tree:c.tree.ID,Node:id}; setPosition(out,c.pos(id)) }
- }()
+	defer func() {
+		if err != nil {
+			if _, ok := err.(*Failure); !ok {
+				err = &Failure{Err: err, At: ast.NodeRef{Tree: c.tree.ID, Node: id}}
+			}
+			return
+		}
+		if out != nil {
+			c.expressions[out] = ast.NodeRef{Tree: c.tree.ID, Node: id}
+			setPosition(out, c.pos(id))
+		}
+	}()
 	if depth > 64 {
 		return nil, semantic.ErrLimit
 	}
@@ -162,7 +231,7 @@ func (c *converter) expression(id ast.NodeID, depth int) (out goast.Expr, err er
 			}
 			field := &goast.Field{Names: []*goast.Ident{c.ident(child)}, Type: ty}
 			if tag := attribute(f, s.AttributeTag); tag != "" {
-				field.Tag = &goast.BasicLit{ValuePos:c.pos(child), Kind: token.STRING, Value: strconv.Quote(tag)}
+				field.Tag = &goast.BasicLit{ValuePos: c.pos(child), Kind: token.STRING, Value: strconv.Quote(tag)}
 			}
 			fields.List = append(fields.List, field)
 		}
@@ -210,8 +279,8 @@ func (c *converter) file() (*goast.File, error) {
 	if node.Kind != s.KindFile || len(children(node, s.RoleImport)) != 0 {
 		return nil, n.ErrUnsupported
 	}
-	f := &goast.File{Name: goast.NewIdent(attribute(node, s.AttributePackage)), Package:c.pos(c.tree.Root)}
- f.Name.NamePos=c.pos(c.tree.Root)
+	f := &goast.File{Name: goast.NewIdent(attribute(node, s.AttributePackage)), Package: c.pos(c.tree.Root)}
+	f.Name.NamePos = c.pos(c.tree.Root)
 	for _, id := range children(node, s.RoleDeclaration) {
 		d := c.node(id)
 		if d.Kind != s.KindTypeDeclaration && d.Kind != s.KindTypeAlias {

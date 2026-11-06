@@ -1,9 +1,9 @@
 package integration_test
 
 import (
- nativequery "github.com/Bitspark/bittype/analyze/files/golang/go"
 	"context"
 	"errors"
+	nativequery "github.com/Bitspark/bittype/analyze/files/golang/go"
 	"go/types"
 	"reflect"
 	"slices"
@@ -22,6 +22,7 @@ import (
 	gp "github.com/Bitspark/bittype/provider/golang/go"
 	hp "github.com/Bitspark/bittype/provider/horos/go"
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
+	n "github.com/Bitspark/bittype/semantics/golang/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	hs "github.com/Bitspark/bittype/syntax/horos/go"
 	generate "github.com/Bitspark/bittype/transforms/horos-to-go/go"
@@ -30,7 +31,6 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 	v "github.com/Bitspark/bittype/verification/files/horos-to-go/go"
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
-	n "github.com/Bitspark/bittype/semantics/golang/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	"github.com/Bitspark/logos-contract/contract/go/typed"
 	core "github.com/bitspark/ontos/core/go"
@@ -179,7 +179,7 @@ func box(t *testing.T, constraint string) (h.Model, n.Model, v.Claim, error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	admission, err := nativeAdmission(t,context.Background(),g,ng,nb)
+	admission, err := nativeAdmission(t, context.Background(), g, ng, nb)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,7 +244,7 @@ func TestKindSpellingDoesNotSubstituteItsResolutionModule(t *testing.T) {
 		t.Fatal("fixture must use the same local spelling")
 	}
 	b, _ := g.Basic(types.Bool)
-	admission, err := nativeAdmission(t,context.Background(),g,native(t,g,"Box"),b)
+	admission, err := nativeAdmission(t, context.Background(), g, native(t, g, "Box"), b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -596,13 +596,30 @@ func TestJointConcurrentChecks(t *testing.T) {
 }
 
 // Each semantic role is explicit; opening the typed view compiles nothing.
-func checkedNative(ctx context.Context,snapshot semantic.Snapshot) (n.Model,error) {
- resolver,err:=gp.NewFilesResolver(snapshot.Language()); if err!=nil { return n.Model{},err }
- resolved,err:=resolver.Resolve(ctx,snapshot,semantic.Options{Configuration:n.Configuration()}); if err!=nil { return n.Model{},err }
- analyzer,err:=gp.NewFilesAnalyzer(snapshot.Language()); if err!=nil { return n.Model{},err }
- analyzed,err:=analyzer.Analyze(ctx,analysis.Input{Snapshot:snapshot,Resolution:&resolved,Options:semantic.Options{Configuration:n.Configuration()}}); if err!=nil { return n.Model{},err }
- return n.Open(analyzed)
+func checkedNative(ctx context.Context, snapshot semantic.Snapshot) (n.Model, error) {
+	resolver, err := gp.NewFilesResolver(snapshot.Language())
+	if err != nil {
+		return n.Model{}, err
+	}
+	resolved, err := resolver.Resolve(ctx, snapshot, semantic.Options{Configuration: n.Configuration()})
+	if err != nil {
+		return n.Model{}, err
+	}
+	analyzer, err := gp.NewFilesAnalyzer(snapshot.Language())
+	if err != nil {
+		return n.Model{}, err
+	}
+	analyzed, err := analyzer.Analyze(ctx, analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}})
+	if err != nil {
+		return n.Model{}, err
+	}
+	return n.Open(analyzed)
 }
-func nativeAdmission(t *testing.T,ctx context.Context,model n.Model,constructor n.Type,args ...n.Type) (nativequery.Admission,error) {
- t.Helper(); queries,err:=nativequery.NewQueries(ctx,model); if err!=nil { return nativequery.Admission{},err }; return queries.Admit(ctx,constructor,args...)
+func nativeAdmission(t *testing.T, ctx context.Context, model n.Model, constructor n.Type, args ...n.Type) (nativequery.Admission, error) {
+	t.Helper()
+	queries, err := nativequery.NewQueries(ctx, model)
+	if err != nil {
+		return nativequery.Admission{}, err
+	}
+	return queries.Admit(ctx, constructor, args...)
 }
