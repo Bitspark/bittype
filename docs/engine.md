@@ -7,7 +7,9 @@ Template lifting and its concrete transformer were removed on 4 November 2026.
 
 The [Horos frontend](horos.md) registers its syntax checker independently
 from language identity, [resolution](resolution.md) and [semantic analysis](analysis.md).
-Horos text capabilities are independently registered in the same way. Go now has [bounded native semantic providers](native-semantics.md); the other native semantic providers remain planned.
+Horos text capabilities are independently registered in the same way. Go and
+TypeScript have [bounded native semantic providers](native-semantics.md);
+Rust and C++ semantic providers remain planned.
 
 ## Public components
 

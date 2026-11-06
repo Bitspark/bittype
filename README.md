@@ -23,7 +23,8 @@ The first [semantic pagination mappings](docs/semantic-generation.md) generate
 TypeScript, Go, Rust and C++ type ASTs from explicitly supplied Horos analysis.
 The [Syntax and Files design](docs/source.md) specifies the symmetry
 `Syntax : CST : AST` and `Files : Source : Semantics`. Typed carriers, symmetric parse/format/print interfaces, multi-unit transformations
-and the Horos Files composition are implemented. Native Files semantics remain deferred.
+and the Horos Files composition are implemented. Bounded Go and TypeScript Files
+resolution/analysis providers are implemented; Rust and C++ semantics remain deferred.
 Implementations use explicit Syntax/Files stage paths and role-named Go packages.
 Each language composition package provides matching `NewSyntax...` and
 `NewFiles...` constructors for its existing capabilities, taking an explicit
@@ -150,5 +151,5 @@ interpret these concrete type semantics.
 Historical research remains in Git history, not as competing active specifications.
 
 See [native semantic providers](docs/native-semantics.md)
-for the bounded Go resolver/analyzer, immutable native facts and explicit
-admission queries. TypeScript, Rust and C++ semantic providers remain planned.
+for the bounded Go and TypeScript resolvers/analyzers, immutable native facts and
+explicit compiler queries. Rust and C++ semantic providers remain planned.
