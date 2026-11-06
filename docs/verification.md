@@ -460,6 +460,7 @@ projection. Copying or replacing an outer handle does not change retained state.
 | Prepare and check | `New(policy, limits)` captures receiver configuration. `Prepare(ctx, claim)` seals a fresh association. `Check(ctx, request, candidate)` calls the landed `typed.Check` directly and retains its unchanged outcome. |
 
 Logical dependencies are explicit integration contracts:
+`horos-go/captured-model-1` for the interpreted domains and symbols,
 `horos/declarations-4/procedure`, `go1.25/captured-types-1`, and the selected
 scalar, list/slice, optional/presence, record-field and named-representation laws.
 `MappingDependencies()` returns a new list for explicit receiver configuration;

@@ -49,7 +49,7 @@ func (p pattern) proof(h, n, witness expression) expression {
 }
 func recordBasis(prefix string, r record) []typed.Declaration {
 	count := len(r.patterns)
-	d := []typed.Declaration{assume(prefix+".h.record", domainsN(con("H"), count, con("H"))), assume(prefix+".n.record", domainsN(con("N"), count, con("N")))}
+	d := []typed.Declaration{assume(prefix+".h.record", domainsN(con("H"), count, con("H")), ModelBasis), assume(prefix+".n.record", domainsN(con("N"), count, con("N")), ModelBasis)}
 	law := quantify(con("H"), count, func(hs []expression) expression {
 		return quantify(con("N"), count, func(ns []expression) expression {
 			out := rep(app(con(prefix+".h.record"), hs...), app(con(prefix+".n.record"), ns...))
@@ -90,7 +90,7 @@ func familyResult(h, n expression) expression {
 func familyLogic(r record) ([]typed.Declaration, typed.Expr, typed.Expr) {
 	d := mappingBasis()
 	d = append(d, recordBasis("family", r)...)
-	d = append(d, assume("h.family", arrow(con("H"), con("H"))), assume("n.family", arrow(con("N"), con("N"))))
+	d = append(d, assume("h.family", arrow(con("H"), con("H")), ModelBasis), assume("n.family", arrow(con("N"), con("N")), ModelBasis))
 	source := pi(con("H"), func(h expression) expression {
 		a, _ := bodies("family", r, h, con("n.text"))
 		return arrow(member(h), sourceBody(app(con("h.family"), h), a))
@@ -118,7 +118,7 @@ func familyLogic(r record) ([]typed.Declaration, typed.Expr, typed.Expr) {
 }
 func argumentLogic(r record) ([]typed.Declaration, typed.Expr) {
 	d := recordBasis("argument", r)
-	d = append(d, assume("h.argument", con("H")), assume("n.argument", con("N")))
+	d = append(d, assume("h.argument", con("H"), ModelBasis), assume("n.argument", con("N"), ModelBasis))
 	h, n := con("h.text"), con("n.text") // no binders occur in this admitted nullary body
 	a, b := bodies("argument", r, h, n)
 	d = append(d, assume("source.argument.body", sourceBody(con("h.argument"), a), SourceBasis), assume("native.argument.body", nativeBody(con("n.argument"), b), NativeBasis), assume("argument.member", member(con("h.argument")), SourceBasis))

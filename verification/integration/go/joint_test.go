@@ -197,7 +197,7 @@ func TestTextBoxExplicitCounterexample(t *testing.T) {
 		t.Fatal("lost actual captures")
 	}
 	a, _ := r.Outcome().Accepted()
-	want := []string{v.NativeBasis, v.ScalarLaw, v.SourceBasis}
+	want := []string{v.ModelBasis, v.NativeBasis, v.ScalarLaw, v.SourceBasis}
 	slices.Sort(want)
 	if !slices.Equal(a.Dependencies(), want) {
 		t.Fatal(a.Dependencies())
@@ -286,7 +286,7 @@ func bindPage(t *testing.T, s h.Model, g n.Model) (pagination, error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f, err := v.BindFamily(d, native(t, g, "Page"), []v.FieldBinding{{"items", "Items"}, {"next", "Next"}}, v.Optional{Constructor: native(t, g, "BittypeOptional"), PresenceField: "Present", ValueField: "Value"}, k, guarantee)
+	f, err := v.BindFamily(d, native(t, g, "Page"), []v.FieldBinding{{Source: "items", Target: "Items"}, {Source: "next", Target: "Next"}}, v.Optional{Constructor: native(t, g, "BittypeOptional"), PresenceField: "Present", ValueField: "Value"}, k, guarantee)
 	if err != nil {
 		return pagination{}, err
 	}
@@ -299,7 +299,7 @@ func bindPage(t *testing.T, s h.Model, g n.Model) (pagination, error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := f.BindArgument(p, native(t, g, "Person"), []v.FieldBinding{{"name", "Name"}, {"active", "Active"}}, member)
+	a, err := f.BindArgument(p, native(t, g, "Person"), []v.FieldBinding{{Source: "name", Target: "Name"}, {Source: "active", Target: "Active"}}, member)
 	return pagination{s, g, f, k, a}, err
 }
 
@@ -382,7 +382,7 @@ func TestOrdinaryRenamedFamilyUsesSameMapping(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f, err := v.BindFamily(d, native(t, g, "Envelope"), []v.FieldBinding{{"entries", "Entries"}, {"cursor", "Cursor"}}, v.Optional{Constructor: native(t, g, "Maybe"), PresenceField: "Has", ValueField: "Item"}, k, guarantee)
+	f, err := v.BindFamily(d, native(t, g, "Envelope"), []v.FieldBinding{{Source: "entries", Target: "Entries"}, {Source: "cursor", Target: "Cursor"}}, v.Optional{Constructor: native(t, g, "Maybe"), PresenceField: "Has", ValueField: "Item"}, k, guarantee)
 	if err != nil {
 		t.Fatal(err)
 	}

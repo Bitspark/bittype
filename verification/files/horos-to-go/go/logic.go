@@ -55,8 +55,8 @@ func member(h expression) expression        { return app(con("Member"), h) }
 func sourceBody(a, b expression) expression { return app(con("SourceBodyOf"), a, b) }
 func nativeBody(a, b expression) expression { return app(con("NativeBodyOf"), a, b) }
 
-func assume(name string, typ expression, deps ...string) typed.Declaration {
-	return typed.Assume(name, typ(0), deps...)
+func assume(name string, typ expression, dependency string) typed.Declaration {
+	return typed.Assume(name, typ(0), dependency)
 }
 func define(name string, typ, value expression) typed.Declaration {
 	return typed.Define(name, typ(0), value(0))
@@ -64,17 +64,18 @@ func define(name string, typ, value expression) typed.Declaration {
 
 func domains() []typed.Declaration {
 	return []typed.Declaration{
-		assume("H", universe()), assume("N", universe()),
-		assume("Member", arrow(con("H"), universe())),
-		assume("Rep", arrow(con("H"), arrow(con("N"), universe()))),
-		assume("SourceBodyOf", arrow(con("H"), arrow(con("H"), universe()))),
-		assume("NativeBodyOf", arrow(con("N"), arrow(con("N"), universe()))),
+		assume("H", universe(), ModelBasis), assume("N", universe(), ModelBasis),
+		assume("Member", arrow(con("H"), universe()), ModelBasis),
+		assume("Rep", arrow(con("H"), arrow(con("N"), universe())), ModelBasis),
+		assume("SourceBodyOf", arrow(con("H"), arrow(con("H"), universe())), ModelBasis),
+		assume("NativeBodyOf", arrow(con("N"), arrow(con("N"), universe())), ModelBasis),
 	}
 }
 
 // Dependency names are contracts of this selected integration, not ambient trust
 // or registrations. The receiver explicitly supplies the policy allowing them.
 const (
+	ModelBasis  = "horos-go/captured-model-1"
 	SourceBasis = "horos/declarations-4/procedure"
 	NativeBasis = "go1.25/captured-types-1"
 	ScalarLaw   = "horos-go/static-scalars-1"
@@ -85,16 +86,16 @@ const (
 )
 
 func MappingDependencies() []string {
-	return []string{SourceBasis, NativeBasis, ScalarLaw, ListLaw, OptionalLaw, RecordLaw, NamedLaw}
+	return []string{ModelBasis, SourceBasis, NativeBasis, ScalarLaw, ListLaw, OptionalLaw, RecordLaw, NamedLaw}
 }
 
 func mappingBasis() []typed.Declaration {
 	d := domains()
 	for _, scalar := range []string{"text", "bool"} {
-		d = append(d, assume("h."+scalar, con("H")), assume("n."+scalar, con("N")), assume("law."+scalar, rep(con("h."+scalar), con("n."+scalar)), ScalarLaw))
+		d = append(d, assume("h."+scalar, con("H"), ModelBasis), assume("n."+scalar, con("N"), ModelBasis), assume("law."+scalar, rep(con("h."+scalar), con("n."+scalar)), ScalarLaw))
 	}
 	for _, shape := range []struct{ source, target, law, dependency string }{{"list", "slice", "list", ListLaw}, {"optional", "optional", "optional", OptionalLaw}} {
-		d = append(d, assume("h."+shape.source, arrow(con("H"), con("H"))), assume("n."+shape.target, arrow(con("N"), con("N"))))
+		d = append(d, assume("h."+shape.source, arrow(con("H"), con("H")), ModelBasis), assume("n."+shape.target, arrow(con("N"), con("N")), ModelBasis))
 		t := pi(con("H"), func(h expression) expression {
 			return pi(con("N"), func(n expression) expression {
 				return arrow(rep(h, n), rep(app(con("h."+shape.source), h), app(con("n."+shape.target), n)))

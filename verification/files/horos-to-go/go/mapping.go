@@ -211,7 +211,8 @@ func bindRecord(source h.Declaration, target n.Type, fields []FieldBinding, opti
 			return record{}, err
 		}
 		if a.Optional {
-			p = pattern{shape: "optional", element: &p}
+			element := p
+			p = pattern{shape: "optional", element: &element}
 		}
 		r.patterns = append(r.patterns, p)
 		r.sites = append(r.sites, site(sourceKey(), a.Site), site(targetKey(), b.Site))

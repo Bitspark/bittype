@@ -37,7 +37,7 @@ func Counterexample(source h.Declaration, target n.Type, nonmember h.Judgment, a
 		return Claim{}, semantic.ErrEvidenceUnavailable
 	}
 	d := domains()
-	d = append(d, assume("h.bool", con("H")), assume("n.bool", con("N")), assume("D", universe()), assume("native.declaration", con("D")), assume("Admits", arrow(con("D"), arrow(con("N"), universe()))))
+	d = append(d, assume("h.bool", con("H"), ModelBasis), assume("n.bool", con("N"), ModelBasis), assume("D", universe(), ModelBasis), assume("native.declaration", con("D"), ModelBasis), assume("Admits", arrow(con("D"), arrow(con("N"), universe())), ModelBasis))
 	empty := fixed(typed.ID(typed.Bool(), typed.True(), typed.False()))
 	d = append(d, define("Empty", universe(), empty), assume("source.nonmember", arrow(member(con("h.bool")), con("Empty")), SourceBasis), assume("native.admits", app(con("Admits"), con("native.declaration"), con("n.bool")), NativeBasis), assume("law.bool", rep(con("h.bool"), con("n.bool")), ScalarLaw))
 	expected := counterexampleType()
