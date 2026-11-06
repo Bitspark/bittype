@@ -12,8 +12,12 @@
       "codeRevision": "02489506c817a93e71878c55a254da5587791fd4",
       "cliBuild": "nightfall 0.1.0 (a8eaa9941df6, bundle 89e875e6203c) built 2026-11-06T14:18:08.944Z",
       "recordedAt": "2026-11-06T15:27:30.7382667Z",
-      "state": "prepared",
-      "ownerRule": "Frozen input and recovery fields are explicitly requested by the invoked bb-research skill; no unrelated checksum or administrative workflow."
+      "state": "submitted",
+      "ownerRule": "Frozen input and recovery fields are explicitly requested by the invoked bb-research skill; no unrelated checksum or administrative workflow.",
+      "documentId": "doc_a5dee02f-b664-406e-a746-778b5ee5f7c8",
+      "serverSha256": "96ebf4613f685c0975d49def09f9d45dc2d1f51d5d6bf3e82b0c50aae954494b",
+      "runId": "run_43b89675-3878-47ea-93fd-2452942f7f4d",
+      "submittedAt": "2026-11-06T15:28:17.4151118Z"
     }
   ]
 }
