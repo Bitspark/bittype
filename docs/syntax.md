@@ -202,7 +202,7 @@ Qualified paths and generic arguments follow the supported subset of
 
 | Kind | Attributes | Children |
 | --- | --- | --- |
-| File | — | `item*` Module/Use/TypeAlias/Struct/TupleStruct/Enum/Trait |
+| File | — | `item*` Module/Use/TypeAlias/Struct/TupleStruct/Enum/Trait/TraitImpl |
 | Module | `name`; `visibility` | `item*` |
 | Use | optional `alias` | `path` PathType without generic arguments |
 | TypeAlias | `name`; `visibility` | `generic-parameter*`; `where*`; `type` |
@@ -215,7 +215,8 @@ Qualified paths and generic arguments follow the supported subset of
 | Field | `name`; `visibility` | `type` |
 | TupleField | `visibility` | `type` |
 | Trait | `name`; `visibility` | `generic-parameter*`; `bound*`; `where*`; `member*` MethodSignature/AssociatedType |
-| AssociatedType | `name` | `bound*` |
+| TraitImpl | — | `generic-parameter*`; `trait` PathType; `subject` type; `where*`; `member*` TypeAlias |
+| AssociatedType | `name` | `generic-parameter*`; `bound*`; `where*` |
 | MethodSignature | `name` | `generic-parameter*`; `where*`; `receiver?`; `parameter*`; `result?` type |
 | Receiver | `receiver-form`: `value`, `shared` or `mutable` | `lifetime?` LifetimeReference for a borrowed receiver |
 | Parameter | `name` for a method; optional in FunctionType | `type` |
@@ -223,6 +224,7 @@ Qualified paths and generic arguments follow the supported subset of
 | LifetimeParameter | `name` without apostrophe | `bound*` LifetimeReference |
 | LifetimeReference | `name` without apostrophe | — |
 | WherePredicate | — | `subject` type/lifetime; `bound+` |
+| RelaxedBound | — | `path` PathType |
 | PathType | `absolute` | `segment+` PathSegment |
 | QualifiedPathType | — | `subject` type; `trait?` PathType; `segment+` PathSegment |
 | PathSegment | `name` | `argument*` types/LifetimeReference/AssociatedTypeBinding |
@@ -238,7 +240,12 @@ Qualified paths and generic arguments follow the supported subset of
 | TraitObjectType | — | `bound+` |
 
 Generic parameter children are TypeParameter or LifetimeParameter. Bounds are
-PathType or LifetimeReference; lifetime binders only have lifetime bounds.
+PathType or LifetimeReference. Type parameters, associated-type declarations
+and type-subject where predicates also admit RelaxedBound, which wraps the path
+in `?Sized` (or an unresolved native name). This is a native bound modifier,
+not a type expression or a special canonical kind. Lifetime binders and
+lifetime-subject where predicates only have lifetime bounds. RelaxedBound is
+not admitted in supertrait or trait-object lists.
 `visibility` is `private` (default), `public` or `crate`. Enum variant
 fields have inherited visibility, so only the default is admitted there.
 Primitive names are `bool`, `char`, `str`, `f32`, `f64`,
@@ -251,7 +258,61 @@ pointer flag denotes `*const`. Path segments may use native `crate`,
 FunctionType is a bare function-pointer signature. Trait method receivers are
 separate nodes, never ordinary first parameters. TraitObjectType represents
 explicit `dyn` bounds. Default generic types belong only where Rust allows
-them, not on method-specific parameters.
+them, not on method-specific, associated-type or impl parameters.
+
+AssociatedType declares a trait member, with optional type/lifetime parameters,
+result bounds and where predicates. A TraitImpl supplies a trait path and
+implementing subject, including any type/lifetime parameters and where predicates.
+Its members reuse TypeAlias for associated definitions. The parent context
+distinguishes these from module aliases; there is no duplicate definition node.
+An associated definition requires a RHS type, inherits visibility and cannot
+declare result bounds. The corresponding declaration has no RHS or default.
+These forms follow [Rust associated items](https://doc.rust-lang.org/reference/items/associated-items.html)
+and [type aliases](https://doc.rust-lang.org/reference/items/type-aliases.html).
+
+```rust
+trait Family {
+    type Item<T: Clone>: Clone where T: Default;
+}
+
+struct VectorFamily {}
+
+impl Family for VectorFamily {
+    type Item<T: Clone> = Vec<T> where T: Default;
+}
+
+type Bytes = <VectorFamily as Family>::Item<u8>;
+```
+
+Lifetimes and where clauses compose through the same nodes:
+
+```rust
+trait Lending {
+    type Item<'a>: 'a where Self: 'a;
+}
+
+struct Holder<T> { value: T }
+
+impl<T> Lending for Holder<T> {
+    type Item<'a> = &'a T where Self: 'a;
+}
+```
+
+AST child order for TypeAlias stays `generic-parameter*`, `where*`, `type` in both
+contexts. The formatter places an impl member's where clause after its RHS,
+while module aliases keep their existing layout. The parser also accepts Rust's
+deprecated pre-equals placement in an impl, preserves it in source CST, and
+normalizes it on formatting; two where clauses on one definition are rejected.
+Formatting builds CST from the structured children directly. Declaration and
+definition parameters have distinct node identities; existing target references
+and origins remain intact.
+
+TraitImpl admits empty impls and associated type definitions only. It accepts
+unresolved trait and subject names. Syntax checking does not establish member
+completeness, trait coherence, bound satisfaction, required GAT lifetime clauses,
+or agreement between declaration and definition. Native compiler tests qualify
+representative complete examples separately. No Rust semantic provider or
+generation SPI behavior is introduced by these syntax nodes.
 
 QualifiedPathType represents both `<T as Collection>::Item` and `<T>::Item`.
 The subject remains a complete type child; the optional trait is an ordinary
@@ -272,9 +333,9 @@ AssociatedTypeBinding is an equality argument, not a standalone type expression
 or an associated-type declaration. For `Iterator<Item = T>`, its `path` child is
 the single PathSegment `Item` and its `type` child is `T`. The single segment
 can itself carry arguments, as in `Family<Item<U> = V>` or
-`Lending<Item<'a> = &'a T>`. Generic associated-type **uses** are represented,
-including `<T as Family>::Item<U>`; generic associated-type declarations remain
-outside the current vocabulary. Raw identifiers are retained. The binding name
+`Lending<Item<'a> = &'a T>`. Generic associated-type uses, declarations and
+definitions compose directly, including `<T as Family>::Item<U>`.
+Raw identifiers are retained. The binding name
 must be an associated identifier, not `_`, `Self`, `self`, `super` or `crate`.
 Path segments, including binding names, can retain ordinary `target` references
 and origins through the existing carrier.
@@ -292,8 +353,10 @@ qualify representative formatted output, including independently authored ASTs.
 
 Unit structs have no distinct AST form and are rejected.
 Const generics, higher-ranked binders, associated-type argument bounds
-(`Iterator<Item: Clone>`), generic associated-type declarations, `impl Trait`,
-macros, attributes, impl blocks and executable bodies are outside this slice.
+(`Iterator<Item: Clone>`), associated-type defaults, `impl Trait`, macros,
+attributes, inherent/unsafe/negative/specializing impls, associated constants,
+impl methods and executable bodies are outside this slice. Type-only trait
+impls are the supported implementation form.
 
 ## C++
 

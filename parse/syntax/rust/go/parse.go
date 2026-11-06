@@ -77,8 +77,11 @@ func (p *parser) lifetime() ast.NodeID {
 func (p *parser) bounds() []ast.Child {
 	var out []ast.Child
 	for p.Err == nil {
+		start := p.Token().Start
 		var id ast.NodeID
-		if p.Token().Class == "lifetime" {
+		if p.Eat("?") {
+			id = p.Add(s.KindRelaxedBound, start, nil, tr.Child("path", p.path()))
+		} else if p.Token().Class == "lifetime" {
 			id = p.lifetime()
 		} else {
 			id = p.path()
@@ -157,6 +160,13 @@ func (p *parser) item() ast.NodeID {
 	start := p.Token().Start
 	vis := p.visibility()
 	keyword := p.Take().Text
+	if keyword == "impl" {
+		if vis != "" {
+			p.Fail(text.SyntaxError, "trait impls have no visibility qualifier")
+			return 0
+		}
+		return p.traitImpl(start)
+	}
 	if keyword == "use" {
 		if vis != "" {
 			p.Fail(text.Unsupported, "visible use declarations are outside this vocabulary")
@@ -237,12 +247,16 @@ func (p *parser) item() ast.NodeID {
 			begin := p.Token().Start
 			if p.Eat("type") {
 				member := p.Ident()
-				var bounds []ast.Child
+				declaration := p.generics()
 				if p.Eat(":") {
-					bounds = p.bounds()
+					declaration = append(declaration, p.bounds()...)
+				}
+				declaration = append(declaration, p.where()...)
+				if p.Peek() == "=" {
+					p.Fail(text.Unsupported, "associated-type defaults are unsupported")
 				}
 				p.Want(";")
-				children = append(children, tr.Child("member", p.Add(s.KindAssociatedType, begin, tr.Attrs("name", member), bounds...)))
+				children = append(children, tr.Child("member", p.Add(s.KindAssociatedType, begin, tr.Attrs("name", member), declaration...)))
 			} else {
 				children = append(children, tr.Child("member", p.method()))
 			}
@@ -251,6 +265,51 @@ func (p *parser) item() ast.NodeID {
 		return p.Add(s.KindTrait, start, attrs, children...)
 	}
 	return 0
+}
+func (p *parser) traitImpl(start int) ast.NodeID {
+	children := p.generics()
+	if p.Peek() == "!" {
+		p.Fail(text.Unsupported, "negative trait impls are unsupported")
+		return 0
+	}
+	trait := p.path()
+	if p.Err == nil && p.Peek() != "for" {
+		p.Fail(text.Unsupported, "only trait impls are supported; expected for")
+		return 0
+	}
+	p.Want("for")
+	children = append(children, tr.Child("trait", trait), tr.Child("subject", p.typ()))
+	children = append(children, p.where()...)
+	p.Want("{")
+	for p.Err == nil && !p.EOF() && p.Peek() != "}" {
+		begin := p.Token().Start
+		if !p.Eat("type") {
+			p.Fail(text.Unsupported, "type-only trait impls admit associated type definitions only")
+			return 0
+		}
+		name := p.Ident()
+		definition := p.generics()
+		if p.Peek() == ":" {
+			p.Fail(text.SyntaxError, "associated type definitions cannot declare result bounds")
+			return 0
+		}
+		where := p.where()
+		p.Want("=")
+		value := p.typ()
+		if p.Peek() == "where" {
+			if len(where) != 0 {
+				p.Fail(text.SyntaxError, "associated type definition has two where clauses")
+				return 0
+			}
+			where = p.where()
+		}
+		definition = append(definition, where...)
+		definition = append(definition, tr.Child("type", value))
+		p.Want(";")
+		children = append(children, tr.Child("member", p.Add(s.KindTypeAlias, begin, tr.Attrs("name", name), definition...)))
+	}
+	p.Want("}")
+	return p.Add(s.KindTraitImpl, start, nil, children...)
 }
 func (p *parser) fields(named, variant bool) []ast.Child {
 	open, close := "(", ")"
