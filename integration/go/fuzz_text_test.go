@@ -35,6 +35,8 @@ func FuzzNativeText(f *testing.F) {
 	f.Add(uint8(2), "type X<T> = <<T as Source>::Item as Iterator>::Item;")
 	f.Add(uint8(2), "trait X<'a, T>: Source<'a, T, Item<'a> = &'a T> {}")
 	f.Add(uint8(2), "trait X: Iterator<(Item) = u8> {}")
+	f.Add(uint8(2), "trait X { type Item<'a, T: ?Sized>: 'a where T: 'a; }")
+	f.Add(uint8(2), "impl<T> X for Vec<T> { type Item<'a> = &'a T where Self: 'a; }")
 	f.Add(uint8(3), "struct X { int (*p)[3]; };")
 	f.Add(uint8(3), "using X = int(?);")
 	cases := nativeConformanceCases()

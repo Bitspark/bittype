@@ -251,13 +251,12 @@ Some deliberate boundaries deserve explicit mention:
 - Rust: the listed type declarations and trait signatures. Unit structs
   (`struct X;`) are rejected because the current AST distinguishes named-field
   and tuple structs but has no unit-struct form. Const generics, macros,
-  attributes, implementations and higher-ranked types remain unsupported.
+  attributes, executable implementations and higher-ranked types remain unsupported.
   [Qualified projections and associated-type equality bindings](syntax.md#rust)
   are structured AST nodes: `<T as Trait>::Item`, `<T>::Item` and
   `Trait<Item = U>`. They compose with nested paths, type/lifetime arguments,
-  raw identifiers and generic associated-type uses. Generic associated-type
-  declarations and associated-type argument bounds (`Item: Bound`) remain
-  unsupported. Equality bindings require a single associated name with optional
+  raw identifiers and generic associated-type uses. Associated-type argument
+  bounds (`Item: Bound`) remain unsupported. Equality bindings require a single associated name with optional
   arguments and a type RHS; they follow positional arguments. Parsing retains
   source trivia and optional turbofish separators; formatting builds normalized
   CST directly from the structured AST, preserving references and origins.
@@ -265,6 +264,15 @@ Some deliberate boundaries deserve explicit mention:
   ordinary multi-segment paths remain PathType, and `<...>::...` uses
   QualifiedPathType. These distinctions do not perform name resolution, prove
   what a shadowing declaration denotes or check associated-type equalities.
+  Generic associated-type declarations and type-only trait impls support
+  type/lifetime parameters, trait/lifetime bounds, relaxed bounds such as
+  `?Sized`, and where clauses. Associated definitions reuse TypeAlias children
+  within TraitImpl and format their where clauses after the RHS. The parser
+  retains pre-equals where clauses in source CST and normalizes them during
+  formatting. Methods, constants, inherent/unsafe/negative impls, associated-type
+  defaults and generic defaults in these new contexts are rejected. Admission
+  does not establish coherence, completeness or bound satisfaction; those remain
+  native semantic questions, separate from the generation SPI.
 - C++: the listed declarations and declarators. Function bodies, non-type
   template arguments, arbitrary preprocessing, constructors and expression
   initializers remain unsupported. Backslash-newline splicing is rejected even
