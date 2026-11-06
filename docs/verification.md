@@ -22,6 +22,16 @@ is separate from this contract's design and implementation.
 
 ## Known architectural violation
 
+**Case [ACX-001](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/0001-bittype-verification-composition.md): identified; correction pending.**
+The primary violated rules are
+[AC-02, semantic ownership](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-02),
+[AC-03, additive extension](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-03)
+and [AC-04, the same public contribution mechanism](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-04).
+The case explains the observed implementation, why successful proofs did not
+establish this boundary, and the required correction. Update both this owning
+design and that same case when the repair is implemented and qualified; recording
+the violation does not close it.
+
 The owner's [standing architectural-correctness rule](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md)
 applies to this composition. Its current implementation has closed mapping and
 claim construction: [mapping.go](../verification/files/horos-to-go/go/mapping.go)
