@@ -2,7 +2,8 @@
 
 **ID:** 0011
 **Date:** 6 November 2026
-**Status:** submitted
+**Status:** delivering
+**Graded:** https://github.com/Bitspark/bittype/issues/102#issuecomment-6678848115
 **Run-ID:** run_971a5b3d-7108-49fe-936a-f2ce60d7c222
 **Owner:** codex-hydrated-type-design
 **Reviewed:** https://github.com/Bitspark/bittype/issues/102#issuecomment-6678276376
@@ -1192,3 +1193,36 @@ type Publication struct {
     Diagnostics []Diagnostic
 }
 ```
+## Applied
+
+Evaluated attempt 1, frozen `0011-public-generation-spi.submitted.md`, against
+baseline e13a6f4 and the completed run named above. The complete response was
+read and matched manually to the run/document. No separate checksum or
+administrative verifier workflow was added. The owner grades this table because
+Bittype has no separate architecture seat for this task.
+
+Every accepted row is owned by codex-hydrated-type-design and delivered through
+[issue 102](https://github.com/Bitspark/bittype/issues/102). Tests below are planned
+until their remote run is recorded; no local software workloads are authorized.
+
+| # | Recommendation | Verdict | Action | Owner | Link | Validation |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Retain the exact transformer snapshot directly | HOLDS | Add Request.Snapshot, including empty evidence contracts; never recapture | codex-hydrated-type-design | #102 | Exact snapshot identity and empty-evidence transformer tests |
+| 2 | Owner-qualified typed references to immutable records | NEEDS ADAPTATION | Use these for new generation records only; retain existing Snapshot/Result/AST envelopes. Add explicit configured-owner authentication for extant records, absent from the abbreviated Source sketch | codex-hydrated-type-design | #102 | Foreign owner, nonexistent record, zero and wrong-role cases |
+| 3 | Explicit source input/open/whole-use admission | HOLDS | Admit supplied receipts first; capture source records and real binder sets; keep occurrence distinct from effective subject | codex-hydrated-type-design | #102 | Foreign capture, renamed binder, effective occurrence and ignored-invalid-actual cases |
+| 4 | Separate operation tickets from lexical frames | HOLDS | Expire issuance at callback return; retain accepted products for valid same-frame composition | codex-hydrated-type-design | #102 | Formal/child survival; retained request, replay and scope-escape rejection |
+| 5 | Integration-owned token inside host-owned product | HOLDS | Authenticate through configured authority; no arbitrary payload/support constructor or candidate-selected validator | codex-hydrated-type-design | #102 | Wrong subject/support/issuer and nested-result regression tests |
+| 6 | One request completion style with narrow forwarding | HOLDS | Request.Return issues results; Apply and Bound forward only the exact admitted whole use/binder | codex-hydrated-type-design | #102 | Wrong callback return, forwarding and stale publication/definition tests |
+| 7 | Retain canonical callee and authoritative layout | HOLDS | Acquire once per selected open declaration/configuration; freeze layout before formal products; body-only Define | codex-hydrated-type-design | #102 | First-specialization order, extra native formals, changed header and duplicate definition cases |
+| 8 | Optional capabilities and explicit nongeneric route | HOLDS | Demand only the invoked capability; explicit nullary header without fake convention; no fallback | codex-hydrated-type-design | #102 | Nongeneric, external, missing User/Publish/Define and unfinished ownership tests |
+| 9 | Distinct source and native environments | HOLDS | Match actual binders using source authority; demand actual products in caller frame; retain whole-result support | codex-hydrated-type-design | #102 | Outer/Nested and same-spelling foreign binder tests |
+| 10 | Whole-use admission independent of traversal | HOLDS | Admit Ignore before mapping execution; valid ignored actual may need no representation; preserve support assumptions | codex-hydrated-type-design | #102 | Invalid ignored actual and syntactically closed support escape tests |
+| 11 | Independent native helper scopes | NEEDS ADAPTATION | Add explicit preselected native helper keys alongside declaration acquisition; never fabricate a source declaration/binder | codex-hydrated-type-design | #102 | Inline use with local native helper and caller-formal capture rejection |
+| 12 | Immutable target fragments and fresh materialization | HOLDS | Target-owned records/constructors and actual dependency checks; complete with frozen header; fresh nodes per occurrence | codex-hydrated-type-design | #102 | Mutated views, header retention, duplicate fragment containment and actual Go AST/compiler fixtures |
+| 13 | Symbolic products separate from final verification | HOLDS | Document boundary and preserve explicit actual-output capture/verification; no generation-time Logos result relabelling | codex-hydrated-type-design | #102 | Import architecture and public SPI fixture inspection; existing joint checks remain unchanged |
+| 14 | Terminal failures, cancellation and bounded work | HOLDS | Explicit invocation driver with limits and obligation ledger; single-call-stack invocation with nested callbacks; target owns bounded expansion | codex-hydrated-type-design | #102 | Pre/post-callback cancellation, operation/depth/output budgets and no partial AST set |
+| 15 | Independent packages and real target artifact | HOLDS | Public consumer fixtures, Page/Outer/Nested and non-positional convention; configured extra library rule with no core switch | codex-hydrated-type-design | #102 | Installed public consumer, Go syntax/format/print/typechecking and relevant remote CI |
+| 16 | Pure source-only erased formals with no valid native product | DEFERRED | Add only when a concrete supported mapping requires a separate erased-binding protocol; current total formal products remain required | — | — | Trigger: accepted fixture cannot supply an honest formal representation product |
+| 17 | General weakening, frame transport and cross-invocation reuse | DEFERRED | Exact frame equality now; introduce only with a specified transport law and independent fixture | — | — | Trigger: accepted mapping requires reuse across distinct frames/invocations |
+| 18 | Full selector/scheduler and replacement of four generators | DEFERRED | Next requested implementation milestone; first slice uses preselected callbacks and explicit driving | — | — | Trigger: authorization for the documented second implementation step |
+| 19 | Native enforcement, broader theories and runtime behavior | DEFERRED | Keep representation-only scope and existing Unsupported enforcement profile | — | — | Trigger: selected target/domain and separately authorized encoding or runtime task |
