@@ -34,10 +34,10 @@ checking boundaries while replacing its closed contribution path.
 
 Reference the [AC-01 through AC-08 rules](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#numbered-rules)
 when explaining architectural requirements or violations. Maintain a numbered
-[case record](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/README.md)
+[case record](docs/architecture-cases/README.md)
 for an identified violation and update it with the actual correction and its
 qualification when fixed, linking the owning design. The current verification
-case is [ACX-001](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/0001-bittype-verification-composition.md),
+case is [bittype/ACX-001](docs/architecture-cases/0001-verification-composition.md),
 still correction pending. Do not mark a case corrected on a proposal or on tests
 that do not establish the violated boundary.
 

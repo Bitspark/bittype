@@ -22,61 +22,34 @@ is separate from this contract's design and implementation.
 
 ## Known architectural violation
 
-**Case [ACX-001](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/0001-bittype-verification-composition.md): identified; correction pending.**
-The primary violated rules are
+**Case [bittype/ACX-001](architecture-cases/0001-verification-composition.md): identified; correction pending.**
+Bittype owns the maintained record; the earlier platform case is a cross-project
+reference to the same incident. The case maps the exact matcher, helper selection,
+private proof switches, law catalogue, sealed claim states and bool-only witness
+construction to their required replacements.
+
+The primary violations are
 [AC-02, semantic ownership](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-02),
 [AC-03, additive extension](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-03)
-and [AC-04, the same public contribution mechanism](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-04).
-The case explains the observed implementation, why successful proofs did not
-establish this boundary, and the required correction. Update both this owning
-design and that same case when the repair is implemented and qualified; recording
-the violation does not close it.
+and [AC-04, the same public mechanism](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-04).
+The reusable interpretation/checking path cannot receive independent mapping
+contributions through a uniform public contract. A clean agnostic kernel, bounded
+proof success or a different package location does not discharge this defect.
 
-The owner's [standing architectural-correctness rule](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md)
-applies to this composition. Its current implementation has closed mapping and
-claim construction: [mapping.go](../verification/files/horos-to-go/go/mapping.go)
-admits a fixed scalar/list/optional domain, [record_logic.go](../verification/files/horos-to-go/go/record_logic.go)
-constructs proofs through those private pattern cases, and
-[counterexample.go](../verification/files/horos-to-go/go/counterexample.go) fixes
-the witness to bool. The private [claim carrier](../verification/files/horos-to-go/go/joint.go)
-retains specific family, argument and counterexample states. Independently owned
-mapping contributions cannot enter this existing preparation/checking composition
-through a uniform public contract.
+The required correction makes interpretations, laws and candidate construction
+owner-controlled contributions selected by consumer composition. It preserves
+independently prepared expected judgments, immutable artifact/evidence association,
+identity and scope, receiver policy, limits and explicit Logos checking. The
+[replacement obligations](architecture-cases/0001-verification-composition.md#required-correction)
+exclude arbitrary formula attachment, unchecked outcome publication and another
+parallel language-specific verification path. Initial mappings must use the same
+contract as a materially different independent contribution.
 
-The defect is not that a mapping interprets its own domain or that coverage is
-bounded. It is that the reusable verification path and its available
-interpretations are coupled: extending the path requires editing its concrete
-case handling or constructing another composition. Naming it Horos/Go and keeping
-its imports outside the agnostic kernel do not satisfy the required additive
-composition boundary. This is an architectural violation, not merely missing
-type coverage, an optional optimization or a completed extensibility design.
-
-The existing scoped proof outcomes remain conditional on their explicitly
-admitted basis. This finding does not claim those derivations are invalid. It
-does mean their tests cannot establish correct ownership/composition, and the
-verification architecture must not be reported complete on their strength.
-
-The required correction is to make interpretations, representation laws and proof
-construction owner-controlled contributions selected explicitly by the consuming
-composition. Shared preparation, artifact association and checking must use that
-contract without a catalogue of the contributions. Preserve independent expected
-statement construction, separate candidates, immutable association, receiver
-policy and limits; do not obtain openness by accepting producer-selected truth
-or weakening validation. The agnostic association remains free of Logos syntax;
-Logos-specific checking remains an explicit integration.
-
-Qualify the boundary with a materially different, separately implemented mapping
-using the same public contract as the first mapping. Its addition and composition
-with an existing mapping must require no change to shared orchestration or
-unrelated mappings. Exercise invalid associations as well as successful proof
-composition. Renaming the original family or using a private test-only path is
-insufficient. Remove the superseded closed path when the replacement is qualified;
-retain no compatibility route. Additional types, languages and native admission
-encodings can remain unsupported independently of this correction.
-
-This section records the required repair; the documentation change does not
-implement it. The descriptions below document the current bounded contract and
-proof behavior, not an accepted pattern for extending the closed composition.
+The existing conditional proofs remain qualified by their admitted assumptions;
+this finding does not establish that those derivations are invalid. This note and
+the case record implement no repair. Update the owning case when the replacement
+is implemented and qualified. The descriptions below document the current bounded
+contract and proof behavior, not an accepted pattern for extending its closure.
 
 ## Existing contracts and the new boundary
 

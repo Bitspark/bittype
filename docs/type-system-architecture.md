@@ -18,6 +18,9 @@ TextBox counterexample and Page conditional theorem, including nested reuse.
 **Owner correction, 6 November 2026:** those scoped proof outcomes do not establish
 architectural conformance. The concrete Horos/Go composition has a
 [known closed-contribution violation](verification.md#known-architectural-violation).
+The owning [bittype/ACX-001 case](architecture-cases/0001-verification-composition.md)
+identifies the exact matcher, law, proof and claim sections and the required
+replacement boundaries; its correction remains pending.
 Under the [standing architectural-correctness rule](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md),
 owner-controlled interpretations and proof contributions must compose through
 the same extension contract, without changing shared orchestration. Correcting
