@@ -2,7 +2,8 @@
 
 **ID:** 0011
 **Date:** 6 November 2026
-**Status:** delivering
+**Status:** applied
+**Delivered:** https://github.com/Bitspark/bittype/pull/108
 **Graded:** https://github.com/Bitspark/bittype/issues/102#issuecomment-6678848115
 **Run-ID:** run_971a5b3d-7108-49fe-936a-f2ce60d7c222
 **Owner:** codex-hydrated-type-design
@@ -1202,27 +1203,64 @@ administrative verifier workflow was added. The owner grades this table because
 Bittype has no separate architecture seat for this task.
 
 Every accepted row is owned by codex-hydrated-type-design and delivered through
-[issue 102](https://github.com/Bitspark/bittype/issues/102). Tests below are planned
-until their remote run is recorded; no local software workloads are authorized.
+[closed issue 102](https://github.com/Bitspark/bittype/issues/102) and [merged PR 108](https://github.com/Bitspark/bittype/pull/108). The validation below passed in the [complete remote gate](https://github.com/Bitspark/bittype/actions/runs/42179144661); no local software workloads ran.
 
 | # | Recommendation | Verdict | Action | Owner | Link | Validation |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Retain the exact transformer snapshot directly | HOLDS | Add Request.Snapshot, including empty evidence contracts; never recapture | codex-hydrated-type-design | #102 | Exact snapshot identity and empty-evidence transformer tests |
-| 2 | Owner-qualified typed references to immutable records | NEEDS ADAPTATION | Use these for new generation records only; retain existing Snapshot/Result/AST envelopes. Add explicit configured-owner authentication for extant records, absent from the abbreviated Source sketch | codex-hydrated-type-design | #102 | Foreign owner, nonexistent record, zero and wrong-role cases |
-| 3 | Explicit source input/open/whole-use admission | HOLDS | Admit supplied receipts first; capture source records and real binder sets; keep occurrence distinct from effective subject | codex-hydrated-type-design | #102 | Foreign capture, renamed binder, effective occurrence and ignored-invalid-actual cases |
-| 4 | Separate operation tickets from lexical frames | HOLDS | Expire issuance at callback return; retain accepted products for valid same-frame composition | codex-hydrated-type-design | #102 | Formal/child survival; retained request, replay and scope-escape rejection |
-| 5 | Integration-owned token inside host-owned product | HOLDS | Authenticate through configured authority; no arbitrary payload/support constructor or candidate-selected validator | codex-hydrated-type-design | #102 | Wrong subject/support/issuer and nested-result regression tests |
-| 6 | One request completion style with narrow forwarding | HOLDS | Request.Return issues results; Apply and Bound forward only the exact admitted whole use/binder | codex-hydrated-type-design | #102 | Wrong callback return, forwarding and stale publication/definition tests |
-| 7 | Retain canonical callee and authoritative layout | HOLDS | Acquire once per selected open declaration/configuration; freeze layout before formal products; body-only Define | codex-hydrated-type-design | #102 | First-specialization order, extra native formals, changed header and duplicate definition cases |
-| 8 | Optional capabilities and explicit nongeneric route | HOLDS | Demand only the invoked capability; explicit nullary header without fake convention; no fallback | codex-hydrated-type-design | #102 | Nongeneric, external, missing User/Publish/Define and unfinished ownership tests |
-| 9 | Distinct source and native environments | HOLDS | Match actual binders using source authority; demand actual products in caller frame; retain whole-result support | codex-hydrated-type-design | #102 | Outer/Nested and same-spelling foreign binder tests |
-| 10 | Whole-use admission independent of traversal | HOLDS | Admit Ignore before mapping execution; valid ignored actual may need no representation; preserve support assumptions | codex-hydrated-type-design | #102 | Invalid ignored actual and syntactically closed support escape tests |
-| 11 | Independent native helper scopes | NEEDS ADAPTATION | Add explicit preselected native helper keys alongside declaration acquisition; never fabricate a source declaration/binder | codex-hydrated-type-design | #102 | Inline use with local native helper and caller-formal capture rejection |
-| 12 | Immutable target fragments and fresh materialization | HOLDS | Target-owned records/constructors and actual dependency checks; complete with frozen header; fresh nodes per occurrence | codex-hydrated-type-design | #102 | Mutated views, header retention, duplicate fragment containment and actual Go AST/compiler fixtures |
-| 13 | Symbolic products separate from final verification | HOLDS | Document boundary and preserve explicit actual-output capture/verification; no generation-time Logos result relabelling | codex-hydrated-type-design | #102 | Import architecture and public SPI fixture inspection; existing joint checks remain unchanged |
-| 14 | Terminal failures, cancellation and bounded work | HOLDS | Explicit invocation driver with limits and obligation ledger; single-call-stack invocation with nested callbacks; target owns bounded expansion | codex-hydrated-type-design | #102 | Pre/post-callback cancellation, operation/depth/output budgets and no partial AST set |
-| 15 | Independent packages and real target artifact | HOLDS | Public consumer fixtures, Page/Outer/Nested and non-positional convention; configured extra library rule with no core switch | codex-hydrated-type-design | #102 | Installed public consumer, Go syntax/format/print/typechecking and relevant remote CI |
+| 1 | Retain the exact transformer snapshot directly | HOLDS | Add Request.Snapshot, including empty evidence contracts; never recapture | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestTypedTransformationRetainsSnapshotWithoutEvidence`, `TestZeroTransformRequestHasNoSnapshot` |
+| 2 | Owner-qualified typed references to immutable records | NEEDS ADAPTATION | Use these for new generation records only; retain existing Snapshot/Result/AST envelopes. Add explicit configured-owner authentication for extant records, absent from the abbreviated Source sketch | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestSourceRejectsForeignAndAbsentRecordsBeforeMapping`, `TestAssociationAndNativeRecordsAreAuthenticated` |
+| 3 | Explicit source input/open/whole-use admission | HOLDS | Admit supplied receipts first; capture source records and real binder sets; keep occurrence distinct from effective subject | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestSourceOccurrenceAndActualBinderCoverage`, `TestIgnoredActualStillRequiresWholeUseAdmission` |
+| 4 | Separate operation tickets from lexical frames | HOLDS | Expire issuance at callback return; retain accepted products for valid same-frame composition | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestRetainedRequestCannotIssueAfterCallback`, `TestRetainedFormalRequestCannotIssueAfterIntroduction`, public nested fixture |
+| 5 | Integration-owned token inside host-owned product | HOLDS | Authenticate through configured authority; no arbitrary payload/support constructor or candidate-selected validator | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestAssociationBindingMustMatchTheWholeRequest`, `TestGenerationSPIRejectsArgumentOnlyResultSupport` |
+| 6 | One request completion style with narrow forwarding | HOLDS | Request.Return issues results; Apply and Bound forward only the exact admitted whole use/binder | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestProductsCannotReplayCallbackTickets`, `TestPublicationFromAnotherInvocationCannotBeReplayed`, `TestDefinitionCannotBeReplayedForAnotherCallee` |
+| 7 | Retain canonical callee and authoritative layout | HOLDS | Acquire once per selected open declaration/configuration; freeze layout before formal products; body-only Define | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestGenerationSPIIndependentGoComposition`, `TestInvalidOrReplacedFormalLayoutsFail`, `TestDefinitionCanOnlyFillItsReservationOnce` |
+| 8 | Optional capabilities and explicit nongeneric route | HOLDS | Demand only the invoked capability; explicit nullary header without fake convention; no fallback | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestMissingCapabilitiesFailOnlyWhenDemanded`, `TestNongenericAndExternalMappingsOmitUnneededCapabilities`, `TestFailedFinishIsTerminalAndCannotRepairMissingDefinitions` |
+| 9 | Distinct source and native environments | HOLDS | Match actual binders using source authority; demand actual products in caller frame; retain whole-result support | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestGenerationSPIIndependentGoComposition`, `TestIntroductionCoversExactSourceBinders` |
+| 10 | Whole-use admission independent of traversal | HOLDS | Admit Ignore before mapping execution; valid ignored actual may need no representation; preserve support assumptions | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestIgnoredActualStillRequiresWholeUseAdmission`, `TestAssociationBindingMustMatchTheWholeRequest` frame/environment rejection |
+| 11 | Independent native helper scopes | NEEDS ADAPTATION | Add explicit preselected native helper keys alongside declaration acquisition; never fabricate a source declaration/binder | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestNativeHelperDoesNotInheritSourceOrNativeScope`, independent Go helper fixture |
+| 12 | Immutable target fragments and fresh materialization | HOLDS | Target-owned records/constructors and actual dependency checks; complete with frozen header; fresh nodes per occurrence | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestGenerationSPINativeFragmentCapture`, `TestGenerationSPIIndependentGoComposition`, `TestGenerationSPIHostedGoCompiler` |
+| 13 | Symbolic products separate from final verification | HOLDS | Document boundary and preserve explicit actual-output capture/verification; no generation-time Logos result relabelling | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestProductionArchitecture` and unchanged joint verification qualification; explicit final-capture boundary in generation-spi.md |
+| 14 | Terminal failures, cancellation and bounded work | HOLDS | Explicit invocation driver with limits and obligation ledger; single-call-stack invocation with nested callbacks; target owns bounded expansion | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestHostLimitsAbortTheInvocation`, `TestCancellationBeforeAndAfterCollaborators`, copied-session/assembly/publication regression tests |
+| 15 | Independent packages and real target artifact | HOLDS | Public consumer fixtures, Page/Outer/Nested and non-positional convention; configured extra library rule with no core switch | codex-hydrated-type-design | [PR 108](https://github.com/Bitspark/bittype/pull/108) | `TestInstalledPublicGenerationSPI`, `TestGenerationSPIIndependentGoComposition`, `TestGenerationSPIHostedGoCompiler` |
 | 16 | Pure source-only erased formals with no valid native product | DEFERRED | Add only when a concrete supported mapping requires a separate erased-binding protocol; current total formal products remain required | — | — | Trigger: accepted fixture cannot supply an honest formal representation product |
 | 17 | General weakening, frame transport and cross-invocation reuse | DEFERRED | Exact frame equality now; introduce only with a specified transport law and independent fixture | — | — | Trigger: accepted mapping requires reuse across distinct frames/invocations |
 | 18 | Full selector/scheduler and replacement of four generators | DEFERRED | Next requested implementation milestone; first slice uses preselected callbacks and explicit driving | — | — | Trigger: authorization for the documented second implementation step |
 | 19 | Native enforcement, broader theories and runtime behavior | DEFERRED | Keep representation-only scope and existing Unsupported enforcement profile | — | — | Trigger: selected target/domain and separately authorized encoding or runtime task |
+
+### Delivered scope and qualification
+
+PR108 landed the public operation contracts and guarded runner in
+[contracts/generation/go](../contracts/generation/go), plus the exact-snapshot
+accessor on the typed transformer request. The [API guide](../docs/generation-spi.md)
+explains construction, scope, ownership and failure semantics. The existing
+four production pagination transformers retain their established path until the
+separately documented replacement step.
+
+The [hosted gate](https://github.com/Bitspark/bittype/actions/runs/42179144661)
+passed at d565dd3a411a3797d4d8c21e2157c9f771e69ed6. The merged source tree in
+PR108 is identical to that tested revision. Checks include all Go tests, vet,
+existing engine/joint race and text fuzz tests, the independently installed public
+consumer, and native compiler qualification including the SPI-generated Go fixture.
+The [documentation run](https://github.com/Bitspark/bittype/actions/runs/42179144469)
+also passed.
+
+The independent source fixture is a bounded admission table, explicitly not a
+second Horos implementation. It composes actual Go AST fragments through the
+existing formatter/printer and typechecker. It demonstrates retained open
+Page/Outer/Nested definitions, a native layout with more formals than source
+binders, authenticated whole-result support, distinct occurrences of the same
+source binder, external/inline mappings and an independently scoped native helper.
+Its faulty application candidate is rejected by the unchanged configured rule
+when it proposes argument-only support for the complete result.
+
+Review found and corrected four lifecycle defects before delivery: copied Session
+values initially split their ledgers, target assembly could reenter the active
+invocation, zero-value sessions could panic, and recursive same-root publication
+could create duplicate exposures. Private shared invocation state, a commit guard,
+initialization checks and in-progress publication tracking now enforce these
+boundaries. The public-package regression tests exercise each case, including
+swallowed reentry errors and failures through copied handles.
+
+All accepted rows are delivered; the deferral triggers above remain explicit.
+No native source-kind enforcement, runtime adapter, protocol behavior or new
+production mapping is implied by these generation and compiler tests.
