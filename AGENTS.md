@@ -9,6 +9,29 @@ unperformed checks passed. This owner rule supersedes conflicting older delivery
 instructions in this file. It does not remove the requested semantic-analysis
 behavior of the library.
 
+## Architectural correctness: standing owner rule, 6 November 2026
+
+Architecture is part of correctness from the first bounded implementation.
+Passing tests and working examples do not discharge semantic ownership or
+additive-composition requirements. Shared mechanisms own invariant guarantees;
+language and mapping meanings enter through owner-controlled contributions.
+Within the declared extension boundary, adding a case must change only its
+implementation and consumer composition, not shared orchestration, closed case
+types or unrelated implementations. Package isolation and a "plugin" label do
+not establish this. An extension must preserve scope, identity, association,
+authority and failure guarantees; arbitrary payloads or unchecked callbacks do
+not suffice. Derive through existing contracts before inventing new abstractions.
+
+Read the [general rule and its rationale](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md).
+Reason about responsibilities and change propagation; do not replace this with
+keyword heuristics, scoring or new lint gates. Limited coverage may be deferred;
+a violated extension boundary must be identified as an architectural defect,
+not described as merely future coverage or reported architecturally complete.
+The current [closed Horos/Go verification composition](docs/verification.md#known-architectural-violation)
+requires correction. Its scoped proof results do not establish compliance with
+the library-owned composition rule. Preserve the agnostic association and Logos
+checking boundaries while replacing its closed contribution path.
+
 Read [CHARTER.md](CHARTER.md), [docs/model.md](docs/model.md),
 [docs/ast.md](docs/ast.md), [docs/syntax.md](docs/syntax.md),
 [docs/generation.md](docs/generation.md) and
