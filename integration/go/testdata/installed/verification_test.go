@@ -30,7 +30,9 @@ import (
 	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 	v "github.com/Bitspark/bittype/verification/files/horos-to-go/go"
+	m "github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/go"
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
+	joint "github.com/Bitspark/bittype/verification/logos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	"github.com/Bitspark/logos-contract/contract/go/typed"
 	core "github.com/bitspark/ontos/core/go"
@@ -117,19 +119,20 @@ func TestInstalledJointTextBox(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	claim, err := v.Counterexample(box, nativeBox, nonmember, admission)
+	library := v.NewAdmissions(selectMappings(t, m.Boolean()))
+	witness, err := library.Counterexample(box, nativeBox, nonmember, admission)
 	if err != nil {
 		t.Fatal(err)
 	}
-	checker, err := v.New(typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: v.MappingDependencies()}, v.DefaultLimits())
+	checker, err := joint.New(typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: allowedLaws()}, joint.DefaultLimits(), library.Authority())
 	if err != nil {
 		t.Fatal(err)
 	}
-	request, err := checker.Prepare(ctx, claim)
+	request, err := checker.Prepare(ctx, witness.Claim)
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := checker.Check(ctx, request, v.CounterexampleCandidate())
+	result, err := checker.Check(ctx, request, witness.Candidate)
 	if err != nil || !result.Outcome().IsAccepted() {
 		t.Fatalf("joint check: %v %s %s", err, result.Outcome().Code(), result.Outcome().Detail())
 	}
@@ -162,4 +165,17 @@ func nativeAdmission(t *testing.T, ctx context.Context, model n.Model, construct
 		return nativequery.Admission{}, err
 	}
 	return queries.Admit(ctx, constructor, args...)
+}
+
+// The receiver owns this policy independently of the mapping selection.
+func allowedLaws() []string {
+	return []string{v.ModelBasis, v.SourceBasis, v.NativeBasis, m.ScalarLaw, m.ListLaw, m.OptionalLaw, m.RecordLaw, v.NamedLaw}
+}
+func selectMappings(t *testing.T, rules ...v.Rule) v.Mappings {
+	t.Helper()
+	selected, err := v.Select(rules...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return selected
 }

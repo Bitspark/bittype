@@ -142,6 +142,14 @@ func (d Declaration) Site() ast.NodeRef {
 	}
 	return d.owner.decoded.DeclarationSite(d.value.ID())
 }
+
+// BodySite identifies the expression of this declaration in its captured tree.
+func (d Declaration) BodySite() ast.NodeRef {
+	if !d.Valid() {
+		return ast.NodeRef{}
+	}
+	return d.owner.decoded.BodySite(d.value.ID())
+}
 func (d Declaration) ParameterSite(index int) ast.NodeRef {
 	if !d.Valid() {
 		return ast.NodeRef{}
@@ -249,6 +257,14 @@ func (v Value) Descriptor() (core.Value, error) {
 	return v.owner.program.Descriptor(v.value)
 }
 
+// OperandSite follows the canonical path of an operand in this captured model.
+func (m Model) OperandSite(parent ast.NodeRef, path []int) ast.NodeRef {
+	if !m.Valid() {
+		return ast.NodeRef{}
+	}
+	return m.state.decoded.OperandSite(parent, path)
+}
+
 type Field struct {
 	Name     string
 	Optional bool
@@ -300,7 +316,7 @@ func (d Declaration) Fields() ([]Field, error) {
 		if ty == nil {
 			return nil, ErrForeign
 		}
-		fields = append(fields, Field{Name: name, Optional: string(flag.Bytes()) == "opt", Type: ty, Site: d.owner.decoded.OperandSite(d.owner.decoded.BodySite(d.value.ID()), []int{i, 3})})
+		fields = append(fields, Field{Name: name, Optional: string(flag.Bytes()) == "opt", Type: ty, Site: d.owner.decoded.OperandSite(d.BodySite(), []int{i, 3})})
 	}
 	return fields, nil
 }

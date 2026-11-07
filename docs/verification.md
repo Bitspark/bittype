@@ -8,48 +8,70 @@ Horos/Go composition. The walkthroughs below specify its claim semantics;
 [integration tests](../verification/integration/go/joint_test.go) exercise actual
 captured inputs and the landed Logos checker. No runtime binding is added.
 
-**Architecture correction required, 6 November 2026:** the concrete composition
-does not yet satisfy library-owned additive extension. See the
-[known architectural violation](#known-architectural-violation); functional proof
-qualification does not establish that boundary.
-
-The first composition prepares one exact claim about actual captured artifacts,
-then passes a separate candidate to Logos's typed Go checker. Bittype owns the
-artifact association; language and mapping integrations own interpretation;
-Logos owns statement syntax and checking. The
-[Logos delivery status](logos-verification.md#concrete-typed-check-only-contract)
-is separate from this contract's design and implementation.
-
 ## Known architectural violation
 
-**Case [bittype/ACX-001](architecture-cases/0001-verification-composition.md): identified; correction pending.**
-Bittype owns the maintained record; the earlier platform case is a cross-project
-reference to the same incident. The case maps the exact matcher, helper selection,
-private proof switches, law catalogue, sealed claim states and bool-only witness
-construction to their required replacements.
+The 6 November review found that adding a mapping required editing the shared
+matcher, law table and claim carrier. The corrected Horos/Go path uses the
+public contracts below. The case records the original code, the independent
+composition test and the scope of the repair. [bittype/ACX-001](architecture-cases/0001-verification-composition.md#correction-and-qualification-status).
 
-The primary violations are
-[AC-02, semantic ownership](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-02),
-[AC-03, additive extension](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-03)
-and [AC-04, the same public mechanism](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-04).
-The reusable interpretation/checking path cannot receive independent mapping
-contributions through a uniform public contract. A clean agnostic kernel, bounded
-proof success or a different package location does not discharge this defect.
+## Library-owned verification contributions
 
-The required correction makes interpretations, laws and candidate construction
-owner-controlled contributions selected by consumer composition. It preserves
-independently prepared expected judgments, immutable artifact/evidence association,
-identity and scope, receiver policy, limits and explicit Logos checking. The
-[replacement obligations](architecture-cases/0001-verification-composition.md#required-correction)
-exclude arbitrary formula attachment, unchecked outcome publication and another
-parallel language-specific verification path. Initial mappings must use the same
-contract as a materially different independent contribution.
+The receiver selects a typed interpreter and a Logos dependency policy.
+The interpreter determines what a captured pair of artifacts means. Logos
+checks the candidate against the separately prepared statement under that policy.
 
-The existing conditional proofs remain qualified by their admitted assumptions;
-this finding does not establish that those derivations are invalid. This note and
-the case record implement no repair. Update the owning case when the replacement
-is implemented and qualified. The descriptions below document the current bounded
-contract and proof behavior, not an accepted pattern for extending its closure.
+For Horos and Go, a consumer selects mapping rules with `Select` and passes them
+to `NewFamilies` or `NewAdmissions`. A rule examines a scoped `Subject`, returns
+child occurrences from that subject, and supplies a `Law` with a dependency name.
+Each child is resolved through the same selection. Overlapping matches return
+`ErrAmbiguous`. Missing matches return `ErrCoverage`. The composer checks parent
+identity, native model and operand membership, and binds each source parameter
+to its actual native parameter. [Representation protocol](../verification/files/horos-to-go/go/representation.go) ·
+[Subject projections](../verification/files/horos-to-go/go/subject.go) · [Law contract](../verification/files/horos-to-go/go/law.go).
+
+The mapping owner supplies the Logos type of one attributed assumption and
+constructs proof syntax from that assumption and the exact child terms and
+proofs. `Congruence` implements the usual structural rule. Source and target
+symbols refer to the projected occurrence. The surrounding question determines
+the expected judgment. A library can supply a different law and proof order
+through the same contract. The law’s independent justification remains the
+responsibility of its owner and the receiver admitting it.
+
+For example, the tuple library pairs Horos `tuple<T,bool>` with Go `Pair[bool,T]`.
+It checks the selected helper’s identity, type parameters and both fields. Its
+law takes the right-hand proof first. The existing list rule requests a child
+for `list<tuple<T,bool>>` and Go `[]Pair[bool,T]`. The record rule requests that
+list judgment for a field. Withholding the tuple law prevents acceptance even
+when checking a nested application of an earlier theorem.
+[Independent mapping](../verification/integration/go/testdata/pair/pair.go) ·
+[Composition tests](../verification/integration/go/composition_test.go).
+
+At composition time the consumer supplies the actual optional helper and tuple
+helper from its captured Go model. Its separately configured `policy` must
+admit each law the candidate uses.
+
+```go
+selected, err := verification.Select(
+    mappings.Text(), mappings.Boolean(), mappings.List(), mappings.Record(),
+    optional.Rule(), pair.Rule(tupleHelper),
+)
+if err != nil {
+    return err
+}
+families := verification.NewFamilies(selected)
+checker, err := logos.New(policy, limits, families.Authorities()...)
+```
+
+A new question family uses `logos.Interpret[S]` with its own subject type and
+projection. Only the exact authority selected in `logos.New` can issue its
+questions. `Ask` freezes a single statement and its explicit diagnostic origins.
+`Prepare` admits the original receipts, checks origin positions and sites, and
+applies the receiver’s limits. `Check` passes the separately supplied candidate
+to Logos. An application requires the accepted result for its exact family claim
+and imports it as a checked definition under the new receiver’s policy.
+[Joint checker](../verification/logos/go/joint.go) ·
+[Corrected case and scope](architecture-cases/0001-verification-composition.md#correction-and-qualification-status).
 
 ## Existing contracts and the new boundary
 
@@ -93,7 +115,7 @@ concrete integration.
 
 The bound interpretation is not `any`, a bag of flags or a universal byte
 descriptor. Its concrete types belong to the chosen language/mapping integration.
-The first private composition can retain those types directly. Shared association
+Each typed question retains its owner’s concrete subjects directly. Shared association
 code deals with existing envelopes, receipt requirements and participant-local
 references; it never unpacks them as `AST[any]` or interprets native judgments.
 Strings naming a mapping are insufficient without its captured selection and
@@ -119,9 +141,7 @@ fetches dependencies or invents a compiler profile.
 
 ## Preparation and checking
 
-The first integration has two operations in its explicitly configured Horos/Go
-composition. `Claim` is an opaque, owning-integration construction, not a formula
-or verdict supplied by a proof producer. There is no generic checker-provider SPI:
+The Logos composition accepts claims issued by a selected interpreter and exposes two operations.
 
 ```go
 func (c Composition) Prepare(ctx context.Context, input Claim) (Request, error)
@@ -447,9 +467,7 @@ Follow the existing [stage-first roles](type-system-architecture.md#proposed-pac
 The agnostic association part retains captures, evidence and participant-qualified
 references. Source/native/mapping interpretations stay with their owners. The
 Logos-specific prepared request/result and direct checker call belong to the
-concrete checking integration; general contracts do not import `typed.Expr` or
-grow a proof enum. Start with the private composition, then promote only its
-demonstrated agnostic association surface to `contracts/verification/go`.
+Logos integration. The agnostic association contract lives in `contracts/verification/go`.
 
 No new LanguageProvider or checker registry is required: a joint operation has
 multiple participant languages, and explicit composition already selects its
@@ -460,8 +478,7 @@ same [library-owned selection design](type-generation-plugins.md).
 The first implementation supplies the source/query, native and mapping
 projections, bounded immutable capture and direct Logos checking described below.
 Native facts now come from the independently registered bounded Go semantic
-provider. The remaining [closed mapping/claim composition](#known-architectural-violation)
-is separate from that provider and still requires architectural correction.
+provider. Mapping owners consume those facts through the [public contribution contracts](#library-owned-verification-contributions).
 
 Qualification exercises foreign receipts/models, changed configuration and
 helpers, invalid/unsupported/exhausted checking, TextBox's counterexample and
@@ -480,32 +497,30 @@ membership. It imports no Logos or native model. `Capture` admits each receipt
 against its own exact snapshot and the receiver's requirements, with aggregate
 budgets across participants. It never invokes another semantic stage.
 
-The concrete [Horos/Go composition](../verification/files/horos-to-go/go/joint.go)
-has sealed value handles `Claim`, `Request` and `Result`. Only the owning mapping
-constructs a Claim. There is no public formula attachment or outcome publication
-API. The request retains the original projections and queries, mapping selection,
-actual helpers, and, for an application, the original theorem result and argument
-projection. Copying or replacing an outer handle does not change retained state.
+The [joint checker](../verification/logos/go/joint.go) owns sealed claim,
+request and result identities. Each [Horos/Go question](../verification/files/horos-to-go/go/family.go)
+retains its original subjects, authoritative queries, selected rules and, for an
+application, the imported theorem result. Two interpreters with identical keys
+have distinct authority.
 
 | Explicit step | Current API and meaning |
 | --- | --- |
 | Source projection | [Horos `Inspect`](../verification/files/source/horos/go/model.go) admits the existing resolution receipt and reconstructs a Program from that captured collection, checking all present annotations against Horos. Queries run explicitly through `Satisfies`; their sealed results retain the Program, value, kind, resolution module and exact Horos verdict. |
 | Native semantics | [Go providers](native-semantics.md) convert captured ASTs directly to `go/ast` and check them with `go/types` under the explicit Go 1.25 environment. Analysis reuses the exact resolution graph. Immutable native readers retain its declarations and type facts; a separately constructed query session checks generic admission. |
-| Counterexample construction | `Counterexample` requires the original source bound, an authoritative bool nonmembership result, actual native bool admission and this integration's scalar association. It constructs the existential claim independently of `CounterexampleCandidate`. |
-| Family selection | `BindFamily` takes exact source/native declarations, explicit field pairs, an optional-helper selection, a resolved ordinary kind K and an authoritative K-to-K constructor query. It checks every source and target field, the original parameter identities and the helper's actual presence/value fields. |
+| Counterexample construction | `Admissions.Counterexample` requires the original bound, a refuted Horos membership query, an admitted native query on the same constructor and a selected representation for their witness pair. It returns the existential claim and a separately checkable candidate. |
+| Family selection | `Families.Bind` takes actual declarations, field pairs, an ordinary kind K and the K-to-K query. The selected record, field and helper rules project the complete correspondence under the original parameter binding. |
 | Closed theorem | `Family.Theorem` constructs the conditional membership-and-representation claim. `Family.Candidate` constructs separate proof syntax using ordinary Logos constructors. No final family theorem is assumed. |
 | Argument and nesting | `Family.BindArgument` captures an actual nullary record and its authoritative membership query. `Family.Application` retains the earlier checked closed theorem as `typed.Define`. `Argument.Candidate(depth)` applies it using both projections of each preceding pair. Each result is checked afresh. |
-| Prepare and check | `New(policy, limits)` captures receiver configuration. `Prepare(ctx, claim)` seals a fresh association. `Check(ctx, request, candidate)` calls the landed `typed.Check` directly and retains its unchanged outcome. |
+| Prepare and check | `logos.New(policy, limits, authorities...)` captures receiver configuration. `Prepare(ctx, claim)` seals a fresh association. `Check(ctx, request, candidate)` calls the landed `typed.Check` directly and retains its unchanged outcome. |
 
 Logical dependencies are explicit integration contracts:
 `horos-go/captured-model-1` for the interpreted domains and symbols,
 `horos/declarations-4/procedure`, `go1.25/captured-types-1`, and the selected
 scalar, list/slice, optional/presence, record-field and named-representation laws.
-`MappingDependencies()` returns a new list for explicit receiver configuration;
-it installs no policy. The source/native procedure and projection correspondence
-are trusted premises, not proofs produced by Logos. Representation laws state
-the chosen static meaning of those mappings. Logos checks their composition and
-reports the actual dependency closure, including the rechecked theorem definition.
+Each selected rule declares its own dependency. Receivers explicitly supply their
+permitted names. Source and native procedure correspondence and mapping laws
+are trusted premises. Logos checks composition and reports the dependencies of
+the actual proof, including rechecked theorem definitions.
 
 The family interpretation uses private model descriptor domains H and N, not a
 new Horos type language. Record positions refer to the selected actual field
@@ -521,9 +536,7 @@ This first mapping supports a single proper-type parameter, closed records,
 text, bool, lists of supported operands and optional fields using an explicitly
 selected two-field presence/value helper. It supports nullary record arguments
 for application. It recognizes no Page, TextBox or Data name; a renamed family,
-helper and ordinary user kind use the same path. Alias unfolding, arbitrary
-Horos descriptors, higher-order parameters and alternate native representations
-remain outside this mapping's coverage. Missing coverage returns `ErrCoverage`;
+helper and ordinary user kind use the same path. Alias unfolding and higher-order parameters lie outside this family profile. Additional native representations enter through explicit rule selection. Missing coverage returns `ErrCoverage`;
 missing established semantic premises return the existing evidence-unavailable
 cause. Neither is a source refutation.
 
@@ -538,7 +551,7 @@ resolution/analysis capability with this deliberately bounded coverage; see the
 
 Source inspection uses existing semantic and Horos bounds. Native inspection
 admits at most 16 units, 4096 AST nodes, 32768 entries, 1 MiB of text and conversion
-depth 64. Mapping selection is bounded to 64 field pairs and operand depth 32;
+depth 64. Mapping selection supports up to 128 rules, 64 children per occurrence, 512 occurrences per projection, and depth 32;
 the application helper accepts depth 1 through 4. Joint association separately
 bounds aggregate input size, receipt/configuration metadata and diagnostic sites.
 The receiver supplies Logos limits explicitly; insufficient budgets produce the

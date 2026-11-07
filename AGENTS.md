@@ -27,19 +27,18 @@ Reason about responsibilities and change propagation; do not replace this with
 keyword heuristics, scoring or new lint gates. Limited coverage may be deferred;
 a violated extension boundary must be identified as an architectural defect,
 not described as merely future coverage or reported architecturally complete.
-The current [closed Horos/Go verification composition](docs/verification.md#known-architectural-violation)
-requires correction. Its scoped proof results do not establish compliance with
-the library-owned composition rule. Preserve the agnostic association and Logos
-checking boundaries while replacing its closed contribution path.
+The [Horos/Go verification path](docs/verification.md#library-owned-verification-contributions)
+takes library-owned interpretations, mapping projections and laws. Preserve the
+captured subject, receiver authority, dependency policy and Logos outcome when
+adding a contribution.
 
 Reference the [AC-01 through AC-08 rules](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#numbered-rules)
 when explaining architectural requirements or violations. Maintain a numbered
 [case record](docs/architecture-cases/README.md)
 for an identified violation and update it with the actual correction and its
 qualification when fixed, linking the owning design. The current verification
-case is [bittype/ACX-001](docs/architecture-cases/0001-verification-composition.md),
-still correction pending. Do not mark a case corrected on a proposal or on tests
-that do not establish the violated boundary.
+case is [bittype/ACX-001](docs/architecture-cases/0001-verification-composition.md).
+Maintain the record when a change affects its qualified extension boundary.
 
 Read [CHARTER.md](CHARTER.md), [docs/model.md](docs/model.md),
 [docs/ast.md](docs/ast.md), [docs/syntax.md](docs/syntax.md),
@@ -196,7 +195,7 @@ their supplied owners. None is inferred by the agnostic runner.
 - Only the Horos frontend (including its text stages), its private model helpers,
   source-specific transformation readers and the concrete Horos verification
   projections/composition consume external Horos/Ontos model dependencies.
-  Only the concrete verification composition imports the public Logos checker.
+  Only Logos-aware verification packages import the public Logos contract. The joint checker invokes it. Selected mapping libraries supply proof syntax.
   Preserve the narrow package import allowances; generic infrastructure and
   native stages must remain independent of these semantic packages.
 

@@ -18,10 +18,9 @@ unrelated implementations within the declared extension boundary.
 A first implementation may support a small domain, but it must use the same
 extension contract available to later contributions. Scope limits and
 architectural defects are different. This applies to concrete reusable
-compositions as well as the lowest-level kernel. The current
-[Horos/Go verification composition](docs/verification.md#known-architectural-violation)
-has a known ownership/composition violation requiring replacement; its bounded
-proof outcomes remain distinct from architectural conformance.
+compositions as well as the lowest-level kernel. The [Horos/Go verification case](docs/architecture-cases/0001-verification-composition.md)
+records the original closure and the qualification of an independent mapping
+through the public contribution contract.
 
 ## Ownership
 

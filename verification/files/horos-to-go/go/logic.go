@@ -78,32 +78,11 @@ const (
 	ModelBasis  = "horos-go/captured-model-1"
 	SourceBasis = "horos/declarations-4/procedure"
 	NativeBasis = "go1.25/captured-types-1"
-	ScalarLaw   = "horos-go/static-scalars-1"
-	ListLaw     = "horos-go/list-slice-1"
-	OptionalLaw = "horos-go/optional-presence-1"
-	RecordLaw   = "horos-go/record-fields-1"
 	NamedLaw    = "horos-go/named-representation-1"
 )
 
-func MappingDependencies() []string {
-	return []string{ModelBasis, SourceBasis, NativeBasis, ScalarLaw, ListLaw, OptionalLaw, RecordLaw, NamedLaw}
-}
-
-func mappingBasis() []typed.Declaration {
-	d := domains()
-	for _, scalar := range []string{"text", "bool"} {
-		d = append(d, assume("h."+scalar, con("H"), ModelBasis), assume("n."+scalar, con("N"), ModelBasis), assume("law."+scalar, rep(con("h."+scalar), con("n."+scalar)), ScalarLaw))
-	}
-	for _, shape := range []struct{ source, target, law, dependency string }{{"list", "slice", "list", ListLaw}, {"optional", "optional", "optional", OptionalLaw}} {
-		d = append(d, assume("h."+shape.source, arrow(con("H"), con("H")), ModelBasis), assume("n."+shape.target, arrow(con("N"), con("N")), ModelBasis))
-		t := pi(con("H"), func(h expression) expression {
-			return pi(con("N"), func(n expression) expression {
-				return arrow(rep(h, n), rep(app(con("h."+shape.source), h), app(con("n."+shape.target), n)))
-			})
-		})
-		d = append(d, assume("law."+shape.law, t, shape.dependency))
-	}
-	// Named declarations remain distinct from their structural bodies.
+// The named declaration interpretation consumes independently projected body evidence.
+func namedDeclaration() typed.Declaration {
 	named := pi(con("H"), func(a expression) expression {
 		return pi(con("H"), func(b expression) expression {
 			return pi(con("N"), func(x expression) expression {
@@ -113,5 +92,5 @@ func mappingBasis() []typed.Declaration {
 			})
 		})
 	})
-	return append(d, assume("law.named", named, NamedLaw))
+	return assume("law.named", named, NamedLaw)
 }
