@@ -77,8 +77,11 @@ organized units. Today the [TypeScript implementation](typescript-type-imports.m
 also constructs package import nodes and marks declarations exported during
 generation. The stricter handoff is documented, not implemented;
 [bittype/ACX-004](architecture-cases/0004-generation-file-syntax.md) records
-the remaining correction. The [generation planner](generation-planner.md#where-the-plan-stops)
-applies this distinction to plan inspection and execution.
+the remaining correction. The generation design separates semantic mapping
+from target AST construction. The planner follows the same nested reference
+from Horos resolution through TypeScript file organization and binding checks.
+[Generation stages](generation.md#semantic-mapping-and-target-ast-construction) ·
+[Page and Cell walkthrough](generation-planner.md#pagination-on-read-and-write).
 
 ## Carriers
 
