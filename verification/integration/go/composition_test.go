@@ -8,13 +8,15 @@ import (
 	"strings"
 	"testing"
 
+	association "github.com/Bitspark/bittype/contracts/verification/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	v "github.com/Bitspark/bittype/verification/files/horos-to-go/go"
 	m "github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/go"
+	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
 	"github.com/Bitspark/bittype/verification/integration/go/testdata/pair"
 	joint "github.com/Bitspark/bittype/verification/logos/go"
+	decl "github.com/Bitspark/horos/core/go/declarations"
 	"github.com/Bitspark/logos-contract/contract/go/typed"
- decl "github.com/Bitspark/horos/core/go/declarations"
 	core "github.com/bitspark/ontos/core/go"
 )
 
@@ -43,6 +45,33 @@ func TestConsumerPairComposesUnderListAndRecord(t *testing.T) {
 	checker := composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: allowed}, limits, p.authorities...)
 	theorem := checkClaim(t, checker, claim, p.family.Candidate())
 	accepted(t, theorem)
+	// The tuple law receives the actual Horos operand and the selected Go helper as origins.
+	fields, err := declaration(t, source, "Page").Fields()
+	if err != nil {
+		t.Fatal(err)
+	}
+	index := slices.IndexFunc(fields, func(f h.Field) bool { return f.Name == "items" })
+	if index < 0 {
+		t.Fatal("missing items field")
+	}
+	items := fields[index]
+	tupleSite := source.OperandSite(items.Site, items.Type.Operands()[0].Path())
+	request := theorem.Request()
+	sites := []association.Site{
+		{Participant: request.Association().Source(), Node: tupleSite},
+		{Participant: request.Association().Target(), Node: helper.Site()},
+	}
+	found := false
+	statement := request.Statement()
+	for _, origin := range request.Origins() {
+		if origin.Location.Phase != typed.DeclarationPhase || !slices.Contains(statement.Declarations[origin.Location.Index].Dependencies(), pair.Law) {
+			continue
+		}
+		found = slices.Contains(origin.Sites, sites[0]) && slices.Contains(origin.Sites, sites[1])
+	}
+	if !found {
+		t.Fatal("tuple law lost its source operand or selected helper origin")
+	}
 	for _, depth := range []int{1, 2} {
 		application, err := p.family.Application(theorem, p.argument, depth)
 		if err != nil {
@@ -93,30 +122,41 @@ func TestConsumerPairComposesUnderListAndRecord(t *testing.T) {
 }
 
 // This library supplies the correct law and deliberately applies it incorrectly.
-type wrongOrder struct{pair.ReversePremises}
-func(wrongOrder)Apply(law typed.Expr,children []v.Evidence)typed.Expr{return (v.Congruence{}).Apply(law,children)}
-func TestIndependentLawCannotCertifyItsOwnCandidate(t *testing.T){
- source:=sourceModel(t,strings.Replace(sourcePage,"list<T>","list<tuple<T,bool>>",1))
- target:=nativeModel(t,pairGo+strings.Replace(nativePage,"Items []N","Items []Pair[bool,N]",1))
- rule:=pair.Rule(native(t,target,"Pair"))
- rule.Law=wrongOrder{}
- p,err:=bindPage(t,source,target,rule);if err!=nil{t.Fatal(err)}
- claim,err:=p.family.Theorem();if err!=nil{t.Fatal(err)}
- limits:=joint.DefaultLimits()
- limits.Checker.Work=20000000
- c:=composition(t,typed.Policy{Foundation:typed.Foundation,Checker:typed.Checker,Dependencies:append(allowedLaws(),pair.Law)},limits,p.authorities...)
- bad:=checkClaim(t,c,claim,p.family.Candidate())
- if bad.Outcome().Status()!=typed.InvalidStatus{t.Fatal("incorrect proof",bad.Outcome().Status())}
+type wrongOrder struct{ pair.ReversePremises }
+
+func (wrongOrder) Apply(law typed.Expr, children []v.Evidence) typed.Expr {
+	return (v.Congruence{}).Apply(law, children)
+}
+func TestIndependentLawCannotCertifyItsOwnCandidate(t *testing.T) {
+	source := sourceModel(t, strings.Replace(sourcePage, "list<T>", "list<tuple<T,bool>>", 1))
+	target := nativeModel(t, pairGo+strings.Replace(nativePage, "Items []N", "Items []Pair[bool,N]", 1))
+	rule := pair.Rule(native(t, target, "Pair"))
+	rule.Law = wrongOrder{}
+	p, err := bindPage(t, source, target, rule)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claim, err := p.family.Theorem()
+	if err != nil {
+		t.Fatal(err)
+	}
+	limits := joint.DefaultLimits()
+	limits.Checker.Work = 20000000
+	c := composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: append(allowedLaws(), pair.Law)}, limits, p.authorities...)
+	bad := checkClaim(t, c, claim, p.family.Candidate())
+	if bad.Outcome().Status() != typed.InvalidStatus {
+		t.Fatal("incorrect proof", bad.Outcome().Status())
+	}
 }
 func TestChildBelongsToThisProjection(t *testing.T) {
 	s := sourceModel(t, sourcePage)
 	g := nativeModel(t, nativePage)
 	list := m.List()
 	var saved v.Subject
-	spy := v.Rule{Key: semantics.Key{Owner: "test", Name: "capture"}, Dependency: "test/capture", Law:v.Congruence{}, Project: func(p v.Subject) ([]v.Subject, bool, error) {
-		view:=p.Source()
-  *view=decl.Expression{}
-  children, ok, err := list.Project(p)
+	spy := v.Rule{Key: semantics.Key{Owner: "test", Name: "capture"}, Dependency: "test/capture", Law: v.Congruence{}, Project: func(p v.Subject) ([]v.Subject, bool, error) {
+		view := p.Source()
+		*view = decl.Expression{}
+		children, ok, err := list.Project(p)
 		if ok {
 			saved = children[0]
 		}
@@ -127,7 +167,7 @@ func TestChildBelongsToThisProjection(t *testing.T) {
 	}
 	// Use a distinct capture for the parent and a child saved from the first.
 	root := sourceModel(t, strings.Replace(sourcePage, "list<T>", "tuple<T,bool>", 1))
-	replay := v.Rule{Key: semantics.Key{Owner: "test", Name: "replay"}, Dependency: "test/replay", Law:v.Congruence{}, Project: func(p v.Subject) ([]v.Subject, bool, error) {
+	replay := v.Rule{Key: semantics.Key{Owner: "test", Name: "replay"}, Dependency: "test/replay", Law: v.Congruence{}, Project: func(p v.Subject) ([]v.Subject, bool, error) {
 		if p.Source().Constructor() != "tuple" {
 			return nil, false, nil
 		}
@@ -172,5 +212,20 @@ func TestCounterexampleUsesSelectedNonBooleanWitness(t *testing.T) {
 	other := v.NewAdmissions(selectMappings(t, m.Boolean()))
 	if _, err := other.Counterexample(d, box, nonmember, admitted); !errors.Is(err, v.ErrCoverage) {
 		t.Fatal(err)
+	}
+}
+
+func TestMappingCannotEraseTheOriginalBinder(t *testing.T) {
+	s := sourceModel(t, sourcePage)
+	g := nativeModel(t, strings.Replace(nativePage, "Items []N", "Items []bool", 1))
+	erasing := v.Rule{
+		Key: semantics.Key{Owner: "test", Name: "erase"}, Dependency: "test/erase", Law: v.Congruence{},
+		Project: func(p v.Subject) ([]v.Subject, bool, error) {
+			_, parameter := p.Source().Parameter()
+			return nil, parameter && p.Target().IsBasic(types.Bool), nil
+		},
+	}
+	if _, err := bindPage(t, s, g, erasing); !errors.Is(err, v.ErrCoverage) {
+		t.Fatal("mapping erased its captured parameter", err)
 	}
 }

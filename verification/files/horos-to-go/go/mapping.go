@@ -1,7 +1,6 @@
 package verification
 
 import (
-	joint "github.com/Bitspark/bittype/verification/logos/go"
 	"slices"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
@@ -10,6 +9,7 @@ import (
 	n "github.com/Bitspark/bittype/semantics/golang/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
+	joint "github.com/Bitspark/bittype/verification/logos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	"github.com/Bitspark/logos-contract/contract/go/typed"
 	core "github.com/bitspark/ontos/core/go"
@@ -22,7 +22,7 @@ type record struct {
 	body   *node
 }
 type family struct {
- guarantee h.Judgment
+	guarantee           h.Judgment
 	library             Families
 	record              record
 	kind                h.Kind
@@ -32,7 +32,7 @@ type family struct {
 }
 type Family struct{ state *family }
 type argument struct {
- member h.Judgment
+	member    h.Judgment
 	family    *family
 	sig       signature
 	body      *node
@@ -78,8 +78,10 @@ func associationInput(source h.Model, target n.Model) (association.Input, []asso
 	}
 }
 func (m Mappings) bindRecord(source h.Declaration, target n.Type, fields []FieldBinding, prefix string) (record, error) {
-	if len(fields)>64{return record{},association.ErrLimit}
- if !source.Valid() || !target.IsNamed() {
+	if len(fields) > 64 {
+		return record{}, association.ErrLimit
+	}
+	if !source.Valid() || !target.IsNamed() {
 		return record{}, ErrCoverage
 	}
 	sp, np := source.Definition().Parameters(), target.Parameters()
@@ -93,7 +95,7 @@ func (m Mappings) bindRecord(source h.Declaration, target n.Type, fields []Field
 		}
 		binder = binding{decl.ParameterID{Declaration: source.Definition().ID(), Index: 0}, np[0]}
 	}
-	root := Subject{&subject{declaration: source, sourceModel:source.Model(), expression: source.Definition().Expression(), native: target, fields: slices.Clone(fields), binder: binder, sourceSite: source.Site(), nativeSite: target.Site()}}
+	root := Subject{&subject{declaration: source, sourceModel: source.Model(), expression: source.Definition().Expression(), native: target, fields: slices.Clone(fields), binder: binder, sourceSite: source.Site(), nativeSite: target.Site()}}
 	body, err := m.project(root, prefix)
 	if err != nil {
 		return record{}, err
@@ -141,10 +143,12 @@ func (l Families) Bind(source h.Declaration, target n.Type, fields []FieldBindin
 	if err != nil {
 		return Family{}, err
 	}
-	f := &family{record: r, kind: kind, library: l, guarantee:guarantee}
+	f := &family{record: r, kind: kind, library: l, guarantee: guarantee}
 	f.sig, f.expected, f.candidate = familyLogic(r)
-	f.theorem,err=l.theorem.Ask(f)
- if err!=nil{return Family{},err}
+	f.theorem, err = l.theorem.Ask(f)
+	if err != nil {
+		return Family{}, err
+	}
 	return Family{f}, nil
 }
 func (f Family) Theorem() (joint.Claim, error) {
@@ -154,7 +158,7 @@ func (f Family) Theorem() (joint.Claim, error) {
 	return f.state.theorem, nil
 }
 func familyProblem(f *family) (joint.Problem, error) {
-	input, req := associationInput(f.guarantee.Model(),f.record.target.Model())
+	input, req := associationInput(f.guarantee.Model(), f.record.target.Model())
 	return f.sig.problem(input, req, f.expected, f.record.body.sites()), nil
 }
 
@@ -190,7 +194,7 @@ func (f Family) BindArgument(source h.Declaration, target n.Type, fields []Field
 		return Argument{}, err
 	}
 	d, proof := argumentLogic(r)
-	return Argument{&argument{membership,f.state,d,r.body,proof}}, nil
+	return Argument{&argument{membership, f.state, d, r.body, proof}}, nil
 }
 
 // Application retains the checked closed theorem as a definition and rechecks
@@ -202,7 +206,7 @@ func (f Family) Application(theorem joint.Result, arg Argument, depth int) (join
 	if depth < 1 || depth > 4 {
 		return joint.Claim{}, association.ErrLimit
 	}
-	return f.state.library.application.Ask(application{f.state,arg.state,theorem,depth})
+	return f.state.library.application.Ask(application{f.state, arg.state, theorem, depth})
 }
 func applicationProblem(a application) (joint.Problem, error) {
 	f := a.family
@@ -215,7 +219,7 @@ func applicationProblem(a application) (joint.Problem, error) {
 		h = app(con("h.family"), h)
 		n = app(con("n.family"), n)
 	}
-	input, req := associationInput(a.argument.member.Model(),f.record.target.Model())
+	input, req := associationInput(a.argument.member.Model(), f.record.target.Model())
 	return s.problem(input, req, conjunction(member(h), rep(h, n))(0), append(f.record.body.sites(), a.argument.body.sites()...)), nil
 }
 func (a Argument) Candidate(depth int) typed.Expr {

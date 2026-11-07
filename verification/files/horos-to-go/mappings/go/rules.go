@@ -2,12 +2,13 @@
 package mappings
 
 import (
+	"go/types"
+
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
 	v "github.com/Bitspark/bittype/verification/files/horos-to-go/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	core "github.com/bitspark/ontos/core/go"
-	"go/types"
 )
 
 const (
@@ -20,7 +21,7 @@ const (
 func key(name string) semantics.Key { return semantics.Key{Owner: "horos-go/static", Name: name} }
 
 func scalar(name string, kind types.BasicKind) v.Rule {
-	return v.Rule{Key: key(name), Dependency: ScalarLaw, Law:v.Congruence{}, Project: func(p v.Subject) ([]v.Subject, bool, error) {
+	return v.Rule{Key: key(name), Dependency: ScalarLaw, Law: v.Congruence{}, Project: func(p v.Subject) ([]v.Subject, bool, error) {
 		if p.Optional() || p.Source().Kind() != decl.Descriptor || p.Source().Constructor() != "scalar" {
 			return nil, false, nil
 		}
@@ -35,7 +36,9 @@ func scalar(name string, kind types.BasicKind) v.Rule {
 func Text() v.Rule    { return scalar("utf8-text", types.String) }
 func Boolean() v.Rule { return scalar("bool", types.Bool) }
 
-func List() v.Rule { return v.Rule{Key: key("list-slice"), Dependency: ListLaw, Law:v.Congruence{}, Project: list} }
+func List() v.Rule {
+	return v.Rule{Key: key("list-slice"), Dependency: ListLaw, Law: v.Congruence{}, Project: list}
+}
 func list(p v.Subject) ([]v.Subject, bool, error) {
 	element, ok := p.Target().SliceElement()
 	if p.Optional() || !ok || p.Source().Kind() != decl.Descriptor || p.Source().Constructor() != "list-of" || len(p.Source().Operands()) != 1 {
@@ -51,7 +54,7 @@ type Optional struct {
 }
 
 func (o Optional) Rule() v.Rule {
-	return v.Rule{Key: key("optional-presence"), Dependency: OptionalLaw, Law:v.Congruence{}, Project: o.project}
+	return v.Rule{Key: key("optional-presence"), Dependency: OptionalLaw, Law: v.Congruence{}, Project: o.project}
 }
 func (o Optional) project(p v.Subject) ([]v.Subject, bool, error) {
 	if !p.Optional() || !p.Target().Origin().Same(o.Constructor) {
@@ -82,7 +85,7 @@ func (o Optional) project(p v.Subject) ([]v.Subject, bool, error) {
 }
 
 func Record() v.Rule {
-	return v.Rule{Key: key("closed-record"), Dependency: RecordLaw, Law:v.Congruence{}, Project: record}
+	return v.Rule{Key: key("closed-record"), Dependency: RecordLaw, Law: v.Congruence{}, Project: record}
 }
 func record(p v.Subject) ([]v.Subject, bool, error) {
 	if p.Optional() || !p.Declaration().Valid() || !p.Target().IsNamed() {

@@ -47,7 +47,7 @@ exercise all four targets, source admission, imported identities and native comp
 The [installed consumer](../../../../integration/go/testdata/installed/horos_generation_test.go)
 uses public Bittype packages without local replacements. Existing generated-Go
 verification remains a separate [test](../../../../integration/go/horos_generation_verification_test.go),
-subject to the [documented verification limitation](../../../../docs/verification.md#known-architectural-violation).
+under the [documented verification scope](../../../../docs/verification.md#supported-domain-and-limits).
 
 Owner placement correction, 6 November 2026: these implementations moved from
 Horos into Bittype. The old Horos module and its module-only CI job are removed,

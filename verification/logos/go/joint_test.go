@@ -58,7 +58,7 @@ func TestInvalidSignatureIsAnUnchangedLogosOutcome(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err := c.Prepare(context.Background(), ask(t,claim))
+	r, err := c.Prepare(context.Background(), ask(t, claim))
 	if err != nil {
 		t.Fatal("preparation must not fake a logical precheck", err)
 	}
@@ -98,7 +98,7 @@ func TestCancellationBeforePublicationDoesNotMintResult(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err := c.Prepare(context.Background(), ask(t,claim))
+	r, err := c.Prepare(context.Background(), ask(t, claim))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,12 +115,12 @@ func TestPreparationRejectsForeignSitesAndBoundsWholeMap(t *testing.T) {
 	claim := faultyInterpretation(t, typed.Statement{Foundation: typed.Foundation, Expected: typed.Bool()})
 	c, _ := New(typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker}, DefaultLimits(), fixture.Authority())
 	claim.Origins[0].Sites[0].Participant = semantics.Key{Owner: "test", Name: "other"}
-	if r, err := c.Prepare(context.Background(), ask(t,claim)); !errors.Is(err, association.ErrInvalid) || r.Valid() {
+	if r, err := c.Prepare(context.Background(), ask(t, claim)); !errors.Is(err, association.ErrInvalid) || r.Valid() {
 		t.Fatal(err)
 	}
 	claim.Origins[0].Sites[0].Participant = src
 	claim.Origins[0].Location = typed.Location{Phase: typed.DeclarationPhase, Index: 99, HasIndex: true}
-	if r, err := c.Prepare(context.Background(), ask(t,claim)); !errors.Is(err, ErrInvalid) || r.Valid() {
+	if r, err := c.Prepare(context.Background(), ask(t, claim)); !errors.Is(err, ErrInvalid) || r.Valid() {
 		t.Fatal("accepted foreign logical location", err)
 	}
 	claim.Origins[0].Location = typed.Location{Phase: typed.ExpectedPhase}
@@ -128,32 +128,50 @@ func TestPreparationRejectsForeignSitesAndBoundsWholeMap(t *testing.T) {
 	limits.Association.Sites = 1
 	c, _ = New(typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker}, limits, fixture.Authority())
 	claim.Origins = append(claim.Origins, claim.Origins[0])
-	if r, err := c.Prepare(context.Background(), ask(t,claim)); !errors.Is(err, association.ErrLimit) || r.Valid() {
+	if r, err := c.Prepare(context.Background(), ask(t, claim)); !errors.Is(err, association.ErrLimit) || r.Valid() {
 		t.Fatal(err)
 	}
 }
 
-func ask(t *testing.T,p *Problem)Claim{
- t.Helper()
- claim,err:=fixture.Ask(p)
- if err!=nil{t.Fatal(err)}
- return claim
+func ask(t *testing.T, p *Problem) Claim {
+	t.Helper()
+	claim, err := fixture.Ask(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return claim
 }
-func TestIssuerFreezesSubjectProjectionAndRequiresExactAuthority(t *testing.T){
- p:=faultyInterpretation(t,typed.Statement{Foundation:typed.Foundation,Expected:typed.Bool()})
- claim:=ask(t,p)
- p.Origins[0].Sites[0].Node=ast.NodeRef{}
- p.Statement.Expected=typed.Nat()
- p.Input.Participants=nil
- p.Requirements[0].Key=semantics.Key{}
- other:=Interpret(src,func(*Problem)(Problem,error){return Problem{},ErrInvalid})
- // Matching the question key also cannot substitute one authority for another.
- foreign:=Interpret(fixture.Authority().id.key,func(*Problem)(Problem,error){return Problem{},ErrInvalid})
- policy:=typed.Policy{Foundation:typed.Foundation,Checker:typed.Checker}
- c,err:=New(policy,DefaultLimits(),fixture.Authority(),other.Authority());if err!=nil{t.Fatal(err)}
- req,err:=c.Prepare(context.Background(),claim);if err!=nil || !req.Answers(claim){t.Fatal(err)}
- out,err:=c.Check(context.Background(),req,typed.True());if err!=nil || !out.Outcome().IsAccepted(){t.Fatal(err)}
- c,err=New(policy,DefaultLimits(),foreign.Authority());if err!=nil{t.Fatal(err)}
- if r,err:=c.Prepare(context.Background(),claim);!errors.Is(err,ErrInvalid) || r.Valid(){t.Fatal("foreign authority",err)}
- if _,err:=New(policy,DefaultLimits(),fixture.Authority(),foreign.Authority());!errors.Is(err,ErrInvalid){t.Fatal("duplicate interpretation",err)}
+func TestIssuerFreezesSubjectProjectionAndRequiresExactAuthority(t *testing.T) {
+	p := faultyInterpretation(t, typed.Statement{Foundation: typed.Foundation, Expected: typed.Bool()})
+	claim := ask(t, p)
+	p.Origins[0].Sites[0].Node = ast.NodeRef{}
+	p.Statement.Expected = typed.Nat()
+	p.Input.Participants = nil
+	p.Requirements[0].Key = semantics.Key{}
+	other := Interpret(src, func(*Problem) (Problem, error) { return Problem{}, ErrInvalid })
+	// Matching the question key also cannot substitute one authority for another.
+	foreign := Interpret(fixture.Authority().id.key, func(*Problem) (Problem, error) { return Problem{}, ErrInvalid })
+	policy := typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker}
+	c, err := New(policy, DefaultLimits(), fixture.Authority(), other.Authority())
+	if err != nil {
+		t.Fatal(err)
+	}
+	req, err := c.Prepare(context.Background(), claim)
+	if err != nil || !req.Answers(claim) {
+		t.Fatal(err)
+	}
+	out, err := c.Check(context.Background(), req, typed.True())
+	if err != nil || !out.Outcome().IsAccepted() {
+		t.Fatal(err)
+	}
+	c, err = New(policy, DefaultLimits(), foreign.Authority())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r, err := c.Prepare(context.Background(), claim); !errors.Is(err, ErrInvalid) || r.Valid() {
+		t.Fatal("foreign authority", err)
+	}
+	if _, err := New(policy, DefaultLimits(), fixture.Authority(), foreign.Authority()); !errors.Is(err, ErrInvalid) {
+		t.Fatal("duplicate interpretation", err)
+	}
 }

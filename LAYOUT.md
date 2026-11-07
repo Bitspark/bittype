@@ -67,8 +67,10 @@ generation/syntax/composition/horos-to-<target>/go/ explicit default assembly
 integration/go/          independent consumers and cross-package qualification
 verification/            concrete static verification; public Logos contract
   files/source/horos/go/  explicit authoritative queries bound to captured Horos
-  files/horos-to-go/go/   selected mapping, prepared claim and direct Logos check
-  integration/go/        TextBox/Page, nested reuse and dependency qualification
+  files/horos-to-go/go/   scoped representation contributions and named questions
+  files/horos-to-go/mappings/go/ selectable scalar, list, optional and record laws
+  logos/go/              typed interpretation selection, receipt association, Logos checking
+  integration/go/        TextBox/Page, independent tuple composition, theorem reuse
 tools/provider-matrix/
   go/                    development command; explicit extractor/result composition
   report/go/             public discovery, association, rendering and write host
@@ -237,7 +239,7 @@ narrows any eventual shared contract to artifact association and explicit
 composition. A direct Logos checker call needs no second checker-provider registry.
 The [joint request/result contract](docs/verification.md) defines that association
 and its TextBox/Page walkthroughs. Logos-specific prepared requests/results stay
-in the concrete integration; general contracts retain only agnostic association.
+in `verification/logos/go`. General contracts retain agnostic association.
 The implemented paths appear in the current hierarchy above. A wider verification
 provider registry and additional language interpretations remain deferred.
 

@@ -64,42 +64,51 @@ func (i Interpretation[S]) Authority() Authority { return i.authority }
 
 // A question retains the typed subject supplied to its selected interpreter.
 // Its logical problem is frozen once, before any candidate can be submitted.
-type issuance interface{
- issuer() Authority
- description() Problem
+type issuance interface {
+	issuer() Authority
+	description() Problem
 }
-type issued[S any] struct{
- owner Authority
- subject S
- problem Problem
-}
-func(q *issued[S])issuer()Authority{return q.owner}
-func(q *issued[S])description()Problem{return q.problem}
-type Claim struct{state issuance}
-
-func(i Interpretation[S])Ask(subject S)(Claim,error){
- if i.authority.id==nil{return Claim{},ErrInvalid}
- p,err:=i.describe(subject)
- if err!=nil{return Claim{},err}
- return Claim{&issued[S]{i.authority,subject,p.snapshot()}},nil
+type issued[S any] struct {
+	owner   Authority
+	subject S
+	problem Problem
 }
 
-func(p Problem)snapshot()Problem{
- p.Input.Participants=slices.Clone(p.Input.Participants)
- for i:=range p.Input.Participants{
-  entry:=&p.Input.Participants[i]
-  entry.Evidence=slices.Clone(entry.Evidence)
- }
- p.Requirements=slices.Clone(p.Requirements)
- for i:=range p.Requirements{
-  req:=&p.Requirements[i]
-  req.Evidence=slices.Clone(req.Evidence)
-  for j:=range req.Evidence{req.Evidence[j]=req.Evidence[j].Clone()}
- }
- p.Statement=cloneStatement(p.Statement)
- p.Origins=cloneOrigins(p.Origins)
- return p
+func (q *issued[S]) issuer() Authority    { return q.owner }
+func (q *issued[S]) description() Problem { return q.problem }
+
+type Claim struct{ state issuance }
+
+func (i Interpretation[S]) Ask(subject S) (Claim, error) {
+	if i.authority.id == nil {
+		return Claim{}, ErrInvalid
+	}
+	p, err := i.describe(subject)
+	if err != nil {
+		return Claim{}, err
+	}
+	return Claim{&issued[S]{i.authority, subject, p.snapshot()}}, nil
 }
+
+func (p Problem) snapshot() Problem {
+	p.Input.Participants = slices.Clone(p.Input.Participants)
+	for i := range p.Input.Participants {
+		entry := &p.Input.Participants[i]
+		entry.Evidence = slices.Clone(entry.Evidence)
+	}
+	p.Requirements = slices.Clone(p.Requirements)
+	for i := range p.Requirements {
+		req := &p.Requirements[i]
+		req.Evidence = slices.Clone(req.Evidence)
+		for j := range req.Evidence {
+			req.Evidence[j] = req.Evidence[j].Clone()
+		}
+	}
+	p.Statement = cloneStatement(p.Statement)
+	p.Origins = cloneOrigins(p.Origins)
+	return p
+}
+
 // Answers identifies this particular issued question, including its subject.
 func (r Request) Answers(q Claim) bool { return r.Valid() && r.state.claim == q.state }
 
@@ -194,7 +203,7 @@ func (c Composition) Prepare(ctx context.Context, input Claim) (Request, error) 
 	if authority == nil || c.state.authorities[authority.key] != authority {
 		return Request{}, ErrInvalid
 	}
-	b:=input.state.description()
+	b := input.state.description()
 	a, err := association.Capture(ctx, b.Input, b.Requirements, c.state.limits.Association)
 	if err != nil {
 		return Request{}, err

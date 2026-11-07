@@ -1,11 +1,13 @@
 package verification
 
-import(
- "slices"
- association "github.com/Bitspark/bittype/contracts/verification/go"
- joint "github.com/Bitspark/bittype/verification/logos/go"
- "github.com/Bitspark/logos-contract/contract/go/typed"
+import (
+	"slices"
+
+	association "github.com/Bitspark/bittype/contracts/verification/go"
+	joint "github.com/Bitspark/bittype/verification/logos/go"
+	"github.com/Bitspark/logos-contract/contract/go/typed"
 )
+
 // signature records the exact sites supplied at declaration construction.
 type signature struct {
 	declarations []typed.Declaration

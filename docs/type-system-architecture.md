@@ -15,17 +15,12 @@ checking, ownership, lifetimes and failure behavior, with TextBox/Page walkthrou
 The [implemented surface](verification.md#implemented-go-surface) exercises the
 TextBox counterexample and Page conditional theorem, including nested reuse.
 
-**Owner correction, 6 November 2026:** those scoped proof outcomes do not establish
-architectural conformance. The concrete Horos/Go composition has a
-[known closed-contribution violation](verification.md#known-architectural-violation).
-The owning [bittype/ACX-001 case](architecture-cases/0001-verification-composition.md)
-identifies the exact matcher, law, proof and claim sections and the required
-replacement boundaries; its correction remains pending.
-Under the [standing architectural-correctness rule](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md),
-owner-controlled interpretations and proof contributions must compose through
-the same extension contract, without changing shared orchestration. Correcting
-that boundary is required; it is distinct from deferring further language or
-proof coverage. The agnostic association and Logos foundation remain separate.
+The Horos/Go repair gives consumers explicit ownership of the selected
+interpretations, mapping laws and receiver policy. The independent tuple
+fixture composes through an existing list inside a named record. The owning case
+records the original dependency failure, the repair and its static scope.
+[Verification contributions](verification.md#library-owned-verification-contributions) ·
+[bittype/ACX-001](architecture-cases/0001-verification-composition.md).
 
 Use Logos's semantic-package direction directly. Language integrations supply
 their meanings and judgments; mapping owners supply selected representation
@@ -250,14 +245,11 @@ Logos production gaps and Bittype's association responsibilities. The
 [joint request/result contract](verification.md) implements the association,
 lifetimes, preparation/checking split and failure behavior for the scoped
 Horos/Go composition. Its public agnostic surface covers participant/evidence/site
-association; the concrete Logos contract stays in the owning composition. A wider
-cross-language verification provider SPI remains deferred, rather than blocked
-on a missing proof calculus or undefined request semantics. That does not justify
-the current closed contribution path: the [owner's correction](verification.md#known-architectural-violation)
-requires library-owned composition for the implemented slice, without waiting
-for every language or a general provider registry. Semantic ownership, explicit
-composition and stage-first placement remain requirements, not claims that the
-current concrete composition fully satisfies them.
+association. The Logos-aware joint checker accepts typed interpretations from independent
+libraries. The Horos/Go representation SPI binds scoped child projections and
+their owners’ laws. Additional languages can supply interpretations through
+the joint contract. A cross-language provider registry remains deferred.
+[Public contribution contracts](verification.md#library-owned-verification-contributions).
 
 The fixed boundaries are: languages own judgments, Logos owns proof machinery,
 the expected statement is constructed independently of candidate evidence, and

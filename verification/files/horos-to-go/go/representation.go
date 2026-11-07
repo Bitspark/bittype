@@ -4,11 +4,12 @@ package verification
 import (
 	"errors"
 	"fmt"
+	"slices"
+
 	association "github.com/Bitspark/bittype/contracts/verification/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	joint "github.com/Bitspark/bittype/verification/logos/go"
 	"github.com/Bitspark/logos-contract/contract/go/typed"
-	"slices"
 )
 
 var ErrCoverage = errors.New("no selected representation covers the captured pair")
@@ -19,7 +20,7 @@ var ErrAmbiguous = errors.New("several selected representations cover the same p
 type Rule struct {
 	Key        semantics.Key
 	Dependency string
-	Law Law
+	Law        Law
 	Project    func(Subject) (children []Subject, applies bool, err error)
 }
 type Mappings struct{ rules []Rule }
@@ -42,7 +43,7 @@ func Select(rules ...Rule) (Mappings, error) {
 }
 
 type node struct {
- law Law
+	law                      Law
 	symbol, dependency       string
 	children                 []*node
 	sourceSites, nativeSites []association.Site
@@ -64,11 +65,15 @@ func (m Mappings) project(root Subject, prefix string) (*node, error) {
 		if loc := p.Target().Origin().Site(); loc.Node != 0 && loc != p.s.nativeSite {
 			result.nativeSites = append(result.nativeSites, site(targetKey(), loc))
 		}
-		if id, ok := p.Source().Parameter(); ok {
-			if id != p.s.binder.source || !p.s.binder.target.Valid() {
+		parameter, isParameter := p.Source().Parameter()
+		if isParameter {
+			if parameter != p.s.binder.source || !p.s.binder.target.Valid() {
 				return nil, ErrCoverage
 			}
-			if !p.Optional() && p.Target().Same(p.s.binder.target){result.bound=true;return result,nil}
+			if !p.Optional() && p.Target().Same(p.s.binder.target) {
+				result.bound = true
+				return result, nil
+			}
 		}
 		var children []Subject
 		for _, rule := range m.rules {
@@ -89,10 +94,11 @@ func (m Mappings) project(root Subject, prefix string) (*node, error) {
 			// distinct owner/name pairs from aliasing in a Logos statement.
 			result.symbol = fmt.Sprintf("%s.%d.%d.%s.%s", prefix, count, len(rule.Key.Owner), rule.Key.Owner, rule.Key.Name)
 			result.dependency = rule.Dependency
- result.law=rule.Law
+			result.law = rule.Law
 			children = slices.Clone(inputs)
 		}
-		if result.symbol == "" {
+		// A wrapper around a parameter must delegate until its original binder is reached.
+		if result.symbol == "" || (isParameter && len(children) == 0) {
 			return nil, ErrCoverage
 		}
 		for _, child := range children {
@@ -124,8 +130,8 @@ func (x *node) describe(s *signature) {
 	hs, ns, law := x.symbol+".source", x.symbol+".target", x.symbol+".law"
 	s.add(assume(hs, domainsN(con("H"), count, con("H")), ModelBasis), x.sourceSites...)
 	s.add(assume(ns, domainsN(con("N"), count, con("N")), ModelBasis), x.nativeSites...)
- spec:=Constructors{Source:hs,Target:ns,Arity:count}
- s.add(typed.Assume(law,x.law.Signature(spec),x.dependency),x.sites()...)
+	spec := Constructors{Source: hs, Target: ns, Arity: count}
+	s.add(typed.Assume(law, x.law.Signature(spec), x.dependency), x.sites()...)
 }
 func (x *node) terms(h, n expression) (expression, expression) {
 	if x.bound {
@@ -143,15 +149,19 @@ func (x *node) proof(h, n, witness expression) expression {
 	if x.bound {
 		return witness
 	}
- // Each child's terms and proof share the same lexical depth and occurrence.
- var sources,targets,proofs []expression
- for _,c:=range x.children{
-  a,b:=c.terms(h,n)
-  sources=append(sources,a);targets=append(targets,b);proofs=append(proofs,c.proof(h,n,witness))
- }
- return func(depth int)typed.Expr{
-  inputs:=make([]Evidence,len(proofs))
-  for i:=range inputs{inputs[i]=Evidence{sources[i](depth),targets[i](depth),proofs[i](depth)}}
-  return x.law.Apply(typed.Const(x.symbol+".law"),inputs)
- }
+	// Each child's terms and proof share the same lexical depth and occurrence.
+	var sources, targets, proofs []expression
+	for _, c := range x.children {
+		a, b := c.terms(h, n)
+		sources = append(sources, a)
+		targets = append(targets, b)
+		proofs = append(proofs, c.proof(h, n, witness))
+	}
+	return func(depth int) typed.Expr {
+		inputs := make([]Evidence, len(proofs))
+		for i := range inputs {
+			inputs[i] = Evidence{sources[i](depth), targets[i](depth), proofs[i](depth)}
+		}
+		return x.law.Apply(typed.Const(x.symbol+".law"), inputs)
+	}
 }

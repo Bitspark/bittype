@@ -1,6 +1,6 @@
 # bittype/ACX-001: Closed verification contributions
 
-**Status:** Identified; correction pending.
+**Status:** Corrected for the scoped static verification path, 7 November 2026.
 **Recorded:** 6 November 2026, following the owner's architectural review.
 **Scope:** Bittype's concrete Horos-to-Go static verification composition.
 
@@ -12,7 +12,7 @@ The initial observation concerned
 [a8062e3](https://github.com/Bitspark/bittype/tree/a8062e34fae156a604585fda7692b2d268a601a1/verification);
 the code-level review below inspected
 [87e9f15](https://github.com/Bitspark/bittype/tree/87e9f15930afec41cc830d45df2f85fe877a42d7/verification).
-The [verification contract](../verification.md#known-architectural-violation)
+The [verification contract](../verification.md#library-owned-verification-contributions)
 and [type-system architecture](../type-system-architecture.md) are the owning
 designs. This record does not claim the existing conditional derivations are invalid.
 
@@ -53,7 +53,7 @@ Bittype's agnostic association remains independent of Logos syntax. Logos owns
 proof syntax and checking. Neither learns Page, TextBox, a mapping's child cases
 or a behavioural contract's semantics.
 
-## Actual implementation and consequence
+## Original implementation and consequence
 
 The closure is distributed across the following cooperating sections. Fixing
 only one of them leaves the contribution path closed.
@@ -69,7 +69,7 @@ only one of them leaves the contribution path closed.
 | [counterexample.go:25, Counterexample](https://github.com/Bitspark/bittype/blob/87e9f15930afec41cc830d45df2f85fe877a42d7/verification/files/horos-to-go/go/counterexample.go#L25), [CounterexampleCandidate:57](https://github.com/Bitspark/bittype/blob/87e9f15930afec41cc830d45df2f85fe877a42d7/verification/files/horos-to-go/go/counterexample.go#L57) | Both admission and proof construction fix the witness to bool. A counterexample contribution must consume a selected source/native witness pair and matching nonmembership, admission and representation evidence. Bool remains a fixture, not a reusable-path restriction. |
 
 For example, replacing Go slices with an independently owned collection requires
-new native interpretation and a different law. Today it also requires changing
+new native interpretation and a different law. At the inspected revision it also required changing
 the private matcher and proof switches before that law can compose with a record
 proof. That additional change propagation is the architectural failure.
 
@@ -79,9 +79,9 @@ The [scoped integration tests](https://github.com/Bitspark/bittype/blob/87e9f159
 exercise TextBox's admission counterexample and Page's conditional theorem,
 including nested reuse, ordinary kinds, foreign handles and changed helpers.
 The [agnostic association](../../contracts/verification/go/association.go) checks
-actual captures and receipts; [joint checking](../../verification/files/horos-to-go/go/joint.go)
+actual captures and receipts; [original joint checking](https://github.com/Bitspark/bittype/blob/87e9f15930afec41cc830d45df2f85fe877a42d7/verification/files/horos-to-go/go/joint.go)
 calls the public Logos checker. Those are useful preserved foundations. The
-present review inspected source; it did not rerun executable tests or establish
+initial review inspected source; it did not rerun executable tests or establish
 an extensible replacement.
 
 The current laws are constructed as explicit Logos assumptions. Logos checks
@@ -137,25 +137,47 @@ path alongside the closed Go path. Native factual extraction can remain in its
 own providers; the defect concerns their composition with mapping interpretation
 and checking.
 
-## Correction and qualification status
+## Correction and qualification
 
-**Pending.** [Bittype PR123](https://github.com/Bitspark/bittype/pull/123) recorded
-the original correction requirement. This documentation update moves the owning
-case here and makes the code-level findings and replacement obligations explicit.
-It changes no executable verification code, finalizes no SPI and proves no
-mapping law. Further supported language/type features are separate from repairing
-this extension boundary.
+The Horos/Go path now takes rules selected by its consumer. Text, bool,
+list/slice, optional/presence and closed-record mappings use the public
+subject and law contracts. The record contribution verifies its field bijection
+and delegates each field. The optional rule owns its helper requirements. A
+rule supplies the law signature, declared dependency and proof application.
+The composer binds child occurrences and generic parameters, constructs the
+source/native terms, and attributes declarations to explicit captured sites.
+[Mapping protocol](../../verification/files/horos-to-go/go/representation.go) ·
+[Ordinary contributions](../../verification/files/horos-to-go/mappings/go/rules.go).
 
-Qualification must add a materially different mapping in an independently owned
-package or fixture through the same public contract, compose it with an existing
-mapping, and exercise nesting plus invalid/foreign/stale interactions. Adding it
-must require only its implementation and consumer composition, with no shared
-orchestration, private-case or unrelated-mapping edits. Explain the preserved
-guarantees and remaining limits; another renamed Page is insufficient.
+The joint Logos package accepts typed, receiver-selected interpreters. An issued
+question retains its subjects and immutable logical problem. The receiver
+validates artifact receipts, origin positions, site membership and budgets,
+then calls Logos. Family, argument and admission state live with their
+interpretations. A theorem can be imported only for the exact issued family
+question and is checked as a definition. Admission counterexamples obtain their
+witness representation through the same rule selection. The tests exercise both
+bool against a text bound and text against a bool bound.
+[Joint checker](../../verification/logos/go/joint.go) ·
+[Family interpretation](../../verification/files/horos-to-go/go/mapping.go) ·
+[Admission interpretation](../../verification/files/horos-to-go/go/counterexample.go).
 
-When the repair lands, update this same record with the actual implementation,
-qualification and remaining limits. A partial repair remains pending. The
-platform reference points here so correction status has one maintained home.
+The independent fixture maps a two-element Horos tuple to a named Go helper
+with reversed type arguments. Its law consumes the right proof first. The test
+adds this rule alongside the existing list, record and optional rules, checks
+the family, then checks two nested applications. Each accepted proof reports
+the record, list and tuple dependencies. Further tests cover a missing or
+ambiguous selection, a withheld tuple law, the wrong proof order, a foreign
+or changed helper, a child replayed from another occurrence and reuse under a
+fresh interpretation. The installed consumer uses the public interfaces.
+[Tuple fixture](../../verification/integration/go/testdata/pair/pair.go) ·
+[Composition tests](../../verification/integration/go/composition_test.go) ·
+[Installed consumer](../../integration/go/testdata/installed/verification_test.go).
+
+This qualifies the extension boundary for static Horos/Go type correspondence.
+The receiver trusts the selected semantic projections and explicitly admitted
+mapping laws. Logos checks the resulting derivation. Runtime values, native
+constraint enforcement, and representation libraries for other languages have
+separate qualification requirements. [Supported domain and limits](../verification.md#supported-domain-and-limits).
 
 ## Assessment lesson
 
