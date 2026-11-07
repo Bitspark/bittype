@@ -304,16 +304,24 @@ var modelExternalImports = map[string][]string{
 }
 
 func TestFilesDimensionStageCoverage(t *testing.T) {
-	// Files is a dimension, never a discovered language named "files".
+	fixtures := filesStageFixtures()
 	for _, stage := range []string{"parse", "format"} {
 		entries, err := os.ReadDir(filepath.Join("../..", stage, "files"))
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, entry := range entries {
-			if entry.IsDir() && entry.Name() != "horos" {
-				t.Fatalf("%s Files semantics lack a documented fixture", entry.Name())
+			if !entry.IsDir() {
+				continue
 			}
+			pkg := stagePath(stage+"/files", entry.Name())
+			if fixtures[pkg] == nil {
+				t.Errorf("Files stage %s lacks a conformance fixture", pkg)
+			}
+			delete(fixtures, pkg)
 		}
+	}
+	for pkg := range fixtures {
+		t.Errorf("Files fixture names absent stage %s", pkg)
 	}
 }

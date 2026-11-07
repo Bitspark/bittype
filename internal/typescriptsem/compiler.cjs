@@ -41,6 +41,10 @@ function main(request) {
   for (const [i, pkg] of (request.Packages || []).entries()) {
     const name = "/packages/" + i + "/entry.d.ts";
     const sf = ts.createSourceFile(name, pkg.Declaration, options.target, true, ts.ScriptKind.TS);
+    // Use the pinned compiler's parsed directives. A comment inside a literal
+    // is ordinary type data and must not be treated as a diagnostic control.
+    if ("checkJsDirective" in sf && sf.checkJsDirective || "commentDirectives" in sf && Array.isArray(sf.commentDirectives) && sf.commentDirectives.length)
+      unsupported("Package declarations must preserve native diagnostics");
     if (!ts.isExternalModule(sf) || sf.hasNoDefaultLib || sf.referencedFiles.length || sf.typeReferenceDirectives.length || sf.libReferenceDirectives.length || sf.statements.some(st => !ts.isInterfaceDeclaration(st) && !ts.isTypeAliasDeclaration(st) && !ts.isImportDeclaration(st)))
       unsupported("Package input must be a declaration module of interfaces, aliases and named type imports");
     if (sf.statements.some(st => ts.isImportDeclaration(st) && (!st.importClause?.isTypeOnly || !st.importClause.namedBindings || !ts.isNamedImports(st.importClause.namedBindings))))

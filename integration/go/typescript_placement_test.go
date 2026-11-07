@@ -324,7 +324,13 @@ func TestTypeScriptImportEnvironmentIsReceiptBound(t *testing.T) {
 	check := func(stages tsfiles.Stages) (format.FilesInput[ts.Language], error) {
 		return stages.Capture(ctx, []source.Unit[ts.Language]{u}, u.File, semantic.Limits{})
 	}
-	for _, stages := range []tsfiles.Stages{placementStages(t), placementStages(t, n.PackageTypes{Module: "@bitspark/cell", Declaration: "export interface Other {}"}), placementStages(t, n.PackageTypes{Module: "@bitspark/cell", Declaration: "export type Cell = import('./ambient').Missing;"})} {
+	for _, stages := range []tsfiles.Stages{
+		placementStages(t),
+		placementStages(t, n.PackageTypes{Module: "@bitspark/cell", Declaration: "export interface Other {}"}),
+		placementStages(t, n.PackageTypes{Module: "@bitspark/cell", Declaration: "export type Cell = import('./ambient').Missing;"}),
+		placementStages(t, n.PackageTypes{Module: "@bitspark/cell", Declaration: "// @ts-nocheck\nexport type Cell<T> = Missing<T>;"}),
+		placementStages(t, n.PackageTypes{Module: "@bitspark/cell", Declaration: "// @ts-ignore\nexport type Cell<T> = Missing<T>;"}),
+	} {
 		if in, err := check(stages); err == nil || in.Abstract.Valid() {
 			t.Fatal("unresolved dependency or export admitted")
 		}

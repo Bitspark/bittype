@@ -62,4 +62,6 @@ Move Person into `pages` in that placement and remove the empty model unit. The 
 This profile covers named type imports in nonempty, declaration-only TypeScript ESM modules. Output paths are Files-relative `.ts` paths, excluding `.d.ts` and URL delimiters `?`, `#` and `%`. Imports between output units use relative `.js` specifiers. Package declaration inputs support type aliases, interfaces and named type imports. Namespace imports, re-exports, runtime imports, ambient scripts and discovery of package files on disk are outside this profile.
 <!-- bittype:overview:end -->
 
-An incomplete placement, an unexported cross-file target, a missing dependency, or a changed binding fails the operation. Named imports are deduplicated and aliased per file when required. Both arrangements compile against a standalone package fixture that exports Cell. [Integration tests](../integration/go/typescript_placement_test.go)
+An incomplete placement, an unexported cross-file target, a missing dependency, or a changed binding fails the operation. Package declarations must preserve native diagnostics. Named imports are deduplicated and aliased per file when required. Both arrangements compile against a standalone package fixture that exports Cell. [Integration tests](../integration/go/typescript_placement_test.go)
+
+The Files stage coverage test registers this formatter alongside the Horos parser and formatter. [Bittype architectural case ACX-003](architecture-cases/0003-files-stage-coverage.md)
