@@ -130,6 +130,13 @@ func (t *constructionTicket) check() error {
 	}
 	return c.ctx.Err()
 }
+
+// The request is borrowed only during the call into provider code. Revoke the
+// borrow before interpreting the result or publishing an opened handle.
+func callProvider[V any](t *constructionTicket, open func() (V, error)) (V, error) {
+	defer func() { t.owner.mu.Lock(); t.active = false; t.owner.mu.Unlock() }()
+	return open()
+}
 func (t *constructionTicket) finish(ok bool) {
 	c := t.owner
 	c.mu.Lock()
@@ -246,14 +253,14 @@ func OpenTarget[F, T any, N Native[F, T]](c *Construction, p TargetProvider[F, T
 	if representation.IsNil(p) || representation.CheckMarker[F](c.info.From) != nil || representation.CheckMarker[T](c.info.To) != nil {
 		return out, ErrScope
 	}
-	value, err := p.Open(c.ctx, TargetRequest{t})
+	value, err := callProvider(t, func() (N, error) { return p.Open(c.ctx, TargetRequest{t}) })
 	if err != nil {
 		return out, err
 	}
 	if representation.IsNil(value) {
 		return out, ErrInvalid
 	}
-	if err = t.check(); err != nil {
+	if err = opened(c, c); err != nil {
 		return out, err
 	}
 	ok = true
@@ -261,9 +268,11 @@ func OpenTarget[F, T any, N Native[F, T]](c *Construction, p TargetProvider[F, T
 }
 func OpenMapping[F, T any, S SourceSession[F], N Native[F, T]](c *Construction, p MappingProvider[F, T, S, N], s OpenedSource[F, S], n OpenedTarget[F, T, N]) (out Contribution[F, T], err error) {
 	if err = opened(c, s.owner); err != nil {
+		c.Close()
 		return out, err
 	}
 	if err = opened(c, n.owner); err != nil {
+		c.Close()
 		return out, err
 	}
 	t, err := c.begin(constructMapping)
@@ -275,11 +284,11 @@ func OpenMapping[F, T any, S SourceSession[F], N Native[F, T]](c *Construction, 
 	if representation.IsNil(p) {
 		return out, ErrInvalid
 	}
-	out, err = p.Open(c.ctx, MappingRequest[S, N]{t, s.value, n.value})
+	out, err = callProvider(t, func() (Contribution[F, T], error) { return p.Open(c.ctx, MappingRequest[S, N]{t, s.value, n.value}) })
 	if err != nil {
 		return Contribution[F, T]{}, err
 	}
-	if err = t.check(); err != nil {
+	if err = opened(c, c); err != nil {
 		return Contribution[F, T]{}, err
 	}
 	ok = true

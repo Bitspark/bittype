@@ -257,9 +257,8 @@ func TestGenerationRejectsCrossInvocationHandles(t *testing.T) {
 		if _, err = firstSource.Value(second); !errors.Is(err, g.ErrScope) {
 			t.Fatal("foreign construction recovered source", err)
 		}
-		first.Close()
 		if _, err = firstSource.Value(first); !errors.Is(err, g.ErrScope) {
-			t.Fatal("closed construction recovered source", err)
+			t.Fatal("failed construction recovered source", err)
 		}
 		called = true
 		return ast.Set[ts.Language]{}, g.ErrScope
