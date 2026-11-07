@@ -142,6 +142,7 @@ func (d Declaration) Site() ast.NodeRef {
 	}
 	return d.owner.decoded.DeclarationSite(d.value.ID())
 }
+
 // BodySite identifies the expression of this declaration in its captured tree.
 func (d Declaration) BodySite() ast.NodeRef {
 	if !d.Valid() {
