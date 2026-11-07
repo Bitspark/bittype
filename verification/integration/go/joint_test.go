@@ -27,6 +27,8 @@ import (
 	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 	v "github.com/Bitspark/bittype/verification/files/horos-to-go/go"
+ m "github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/go"
+ joint "github.com/Bitspark/bittype/verification/logos/go"
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	"github.com/Bitspark/logos-contract/contract/go/typed"
@@ -117,21 +119,21 @@ func importedKind(t *testing.T, m h.Model, name string) h.Kind {
 	}
 	return k
 }
-func composition(t *testing.T, policy typed.Policy, limits v.Limits) v.Composition {
+func composition(t *testing.T, policy typed.Policy, limits joint.Limits, authorities ...joint.Authority) joint.Composition {
 	t.Helper()
-	c, err := v.New(policy, limits)
+	c, err := joint.New(policy, limits,authorities...)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return c
 }
-func receiver(t *testing.T) v.Composition {
+func receiver(t *testing.T,authorities ...joint.Authority) joint.Composition {
 	t.Helper()
-	limits := v.DefaultLimits()
+	limits := joint.DefaultLimits()
 	limits.Checker.Work = 20000000
-	return composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: v.MappingDependencies()}, limits)
+	return composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: allowedLaws()}, limits,authorities...)
 }
-func checkClaim(t *testing.T, c v.Composition, claim v.Claim, candidate typed.Expr) v.Result {
+func checkClaim(t *testing.T, c joint.Composition, claim joint.Claim, candidate typed.Expr) joint.Result {
 	t.Helper()
 	r, err := c.Prepare(context.Background(), claim)
 	if err != nil {
@@ -143,7 +145,7 @@ func checkClaim(t *testing.T, c v.Composition, claim v.Claim, candidate typed.Ex
 	}
 	return out
 }
-func accepted(t *testing.T, r v.Result) {
+func accepted(t *testing.T, r joint.Result) {
 	t.Helper()
 	o := r.Outcome()
 	if !r.Valid() || !o.IsAccepted() {
@@ -151,7 +153,8 @@ func accepted(t *testing.T, r v.Result) {
 	}
 }
 
-func box(t *testing.T, constraint string) (h.Model, n.Model, v.Claim, error) {
+type boxWitness struct{ v.Witness; authority joint.Authority }
+func box(t *testing.T, constraint string) (h.Model, n.Model, boxWitness, error) {
 	t.Helper()
 	s := sourceModel(t, "type TextBox<T: h.Text> = { value: T; };")
 	g := nativeModel(t, "type TextBox[T "+constraint+"] struct { Value T }")
@@ -180,8 +183,9 @@ func box(t *testing.T, constraint string) (h.Model, n.Model, v.Claim, error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	claim, err := v.Counterexample(d, ng, nonmember, admission)
-	return s, g, claim, err
+	library:=v.NewAdmissions(selectMappings(t,m.Boolean()))
+ w,err:=library.Counterexample(d,ng,nonmember,admission)
+ return s,g,boxWitness{w,library.Authority()},err
 }
 
 func TestTextBoxExplicitCounterexample(t *testing.T) {
@@ -189,13 +193,13 @@ func TestTextBoxExplicitCounterexample(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := checkClaim(t, receiver(t), claim, v.CounterexampleCandidate())
+	r := checkClaim(t, receiver(t,claim.authority),claim.Claim,claim.Candidate)
 	accepted(t, r)
 	if !r.Request().Association().Participants()[0].Snapshot.Same(s.Snapshot()) || !r.Request().Association().Participants()[1].Snapshot.Same(g.Snapshot()) {
 		t.Fatal("lost actual captures")
 	}
 	a, _ := r.Outcome().Accepted()
-	want := []string{v.ModelBasis, v.NativeBasis, v.ScalarLaw, v.SourceBasis}
+	want := []string{v.ModelBasis, v.NativeBasis, m.ScalarLaw, v.SourceBasis}
 	slices.Sort(want)
 	if !slices.Equal(a.Dependencies(), want) {
 		t.Fatal(a.Dependencies())
@@ -245,7 +249,7 @@ func TestKindSpellingDoesNotSubstituteItsResolutionModule(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := v.Counterexample(d, native(t, g, "Box"), refuted, admission); !errors.Is(err, v.ErrCoverage) {
+	if _, err := v.NewAdmissions(selectMappings(t,m.Boolean())).Counterexample(d, native(t, g, "Box"), refuted, admission); !errors.Is(err, v.ErrCoverage) {
 		t.Fatal("query was rebound by spelling", err)
 	}
 	if _, err := foreignScope.Arrow(s.Root()); !errors.Is(err, h.ErrForeign) {
@@ -257,6 +261,7 @@ const sourcePage = "type Page<T> = { items: list<T>; next?: text; }; type Person
 const nativePage = "type BittypeOptional[V any] struct { Present bool; Value V }; type Page[N any] struct { Items []N; Next BittypeOptional[string] }; type Person struct { Name string; Active bool }"
 
 type pagination struct {
+ authorities []joint.Authority
 	source   h.Model
 	target   n.Model
 	family   v.Family
@@ -268,7 +273,7 @@ func page(t *testing.T, sourceText, nativeText string) (pagination, error) {
 	t.Helper()
 	return bindPage(t, sourceModel(t, sourceText), nativeModel(t, nativeText))
 }
-func bindPage(t *testing.T, s h.Model, g n.Model) (pagination, error) {
+func bindPage(t *testing.T, s h.Model, g n.Model,extra ...v.Rule) (pagination, error) {
 	t.Helper()
 	d := declaration(t, s, "Page")
 	k := importedKind(t, s, "Data")
@@ -284,7 +289,10 @@ func bindPage(t *testing.T, s h.Model, g n.Model) (pagination, error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f, err := v.BindFamily(d, native(t, g, "Page"), []v.FieldBinding{{Source: "items", Target: "Items"}, {Source: "next", Target: "Next"}}, v.Optional{Constructor: native(t, g, "BittypeOptional"), PresenceField: "Present", ValueField: "Value"}, k, guarantee)
+	rules:=[]v.Rule{m.Text(),m.Boolean(),m.List(),m.Record(),(m.Optional{Constructor: native(t, g, "BittypeOptional"), PresenceField: "Present", ValueField: "Value"}).Rule()}
+rules=append(rules,extra...)
+library:=v.NewFamilies(selectMappings(t,rules...))
+ f,err:=library.Bind(d,native(t,g,"Page"),[]v.FieldBinding{{Source: "items", Target: "Items"}, {Source: "next", Target: "Next"}},k,guarantee)
 	if err != nil {
 		return pagination{}, err
 	}
@@ -298,7 +306,7 @@ func bindPage(t *testing.T, s h.Model, g n.Model) (pagination, error) {
 		t.Fatal(err)
 	}
 	a, err := f.BindArgument(p, native(t, g, "Person"), []v.FieldBinding{{Source: "name", Target: "Name"}, {Source: "active", Target: "Active"}}, member)
-	return pagination{s, g, f, k, a}, err
+	return pagination{library.Authorities(),s,g,f,k,a},err
 }
 
 func TestOrdinaryRenamedFamilyUsesSameMapping(t *testing.T) {
@@ -321,12 +329,14 @@ func TestOrdinaryRenamedFamilyUsesSameMapping(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f, err := v.BindFamily(d, native(t, g, "Envelope"), []v.FieldBinding{{Source: "entries", Target: "Entries"}, {Source: "cursor", Target: "Cursor"}}, v.Optional{Constructor: native(t, g, "Maybe"), PresenceField: "Has", ValueField: "Item"}, k, guarantee)
+	rules:=[]v.Rule{m.Text(),m.Boolean(),m.List(),m.Record(),(m.Optional{Constructor: native(t, g, "Maybe"), PresenceField: "Has", ValueField: "Item"}).Rule()}
+library:=v.NewFamilies(selectMappings(t,rules...))
+ f,err:=library.Bind(d,native(t,g,"Envelope"),[]v.FieldBinding{{Source: "entries", Target: "Entries"}, {Source: "cursor", Target: "Cursor"}},k,guarantee)
 	if err != nil {
 		t.Fatal(err)
 	}
 	claim, _ := f.Theorem()
-	accepted(t, checkClaim(t, receiver(t), claim, f.Candidate()))
+	accepted(t, checkClaim(t, receiver(t,library.Authorities()...), claim, f.Candidate()))
 }
 func TestPageClosedTheoremAndNestedReuse(t *testing.T) {
 	p, err := page(t, sourcePage, nativePage)
@@ -337,14 +347,14 @@ func TestPageClosedTheoremAndNestedReuse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := receiver(t)
+	c := receiver(t,p.authorities...)
 	theorem := checkClaim(t, c, claim, p.family.Candidate())
 	accepted(t, theorem)
 	if len(theorem.Request().Statement().Context) != 0 || theorem.Request().Statement().Expected.Kind() != typed.PiKind {
 		t.Fatal("not a closed quantified theorem")
 	}
 	acceptance, _ := theorem.Outcome().Accepted()
-	want := v.MappingDependencies()
+	want := allowedLaws()
 	want = slices.DeleteFunc(want, func(s string) bool { return s == "" })
 	slices.Sort(want)
 	if !slices.Equal(acceptance.Dependencies(), want) {
@@ -377,10 +387,10 @@ func TestPageClosedTheoremAndNestedReuse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dependencies := slices.DeleteFunc(v.MappingDependencies(), func(dependency string) bool { return dependency == v.OptionalLaw })
-	limits := v.DefaultLimits()
+	dependencies := slices.DeleteFunc(allowedLaws(), func(dependency string) bool { return dependency == m.OptionalLaw })
+	limits := joint.DefaultLimits()
 	limits.Checker.Work = 20000000
-	restricted := composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: dependencies}, limits)
+	restricted := composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: dependencies}, limits,p.authorities...)
 	refused := checkClaim(t, restricted, application, p.argument.Candidate(2))
 	if refused.Outcome().Status() != typed.UnsupportedStatus || refused.Outcome().Code() != typed.UnadmittedDependency {
 		t.Fatal("reused theorem bypassed the current receiver policy", refused.Outcome().Status(), refused.Outcome().Code())
@@ -426,13 +436,13 @@ func TestFreshCapturesAndForeignProjectionHandles(t *testing.T) {
 		t.Fatal(err)
 	}
 	claim, _ := p.family.Theorem()
-	theorem := checkClaim(t, receiver(t), claim, p.family.Candidate())
+	theorem := checkClaim(t, receiver(t,p.authorities...), claim, p.family.Candidate())
 	accepted(t, theorem)
-	if _, err := q.family.Application(theorem, q.argument, 1); !errors.Is(err, v.ErrInvalid) {
+	if _, err := q.family.Application(theorem, q.argument, 1); !errors.Is(err, joint.ErrInvalid) {
 		t.Fatal("retagged theorem", err)
 	}
 	fresh, _ := q.family.Theorem()
-	result := checkClaim(t, receiver(t), fresh, p.family.Candidate())
+	result := checkClaim(t, receiver(t,q.authorities...), fresh, p.family.Candidate())
 	accepted(t, result)
 	if result.Request().Association().Same(theorem.Request().Association()) {
 		t.Fatal("proof syntax reuse reused authority")
@@ -449,10 +459,10 @@ func TestJointOutcomesAndImmutability(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	policy := typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: v.MappingDependencies()}
-	limits := v.DefaultLimits()
-	c := composition(t, policy, limits)
-	request, err := c.Prepare(context.Background(), claim)
+	policy := typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: allowedLaws()}
+	limits := joint.DefaultLimits()
+	c := composition(t, policy, limits,claim.authority)
+	request, err := c.Prepare(context.Background(), claim.Claim)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -464,44 +474,44 @@ func TestJointOutcomesAndImmutability(t *testing.T) {
 	view.Dependencies[0] = "changed"
 	origins := request.Origins()
 	origins[0].Sites[0].Node = ast.NodeRef{}
-	result, err := c.Check(context.Background(), request, v.CounterexampleCandidate())
+	result, err := c.Check(context.Background(), request, claim.Candidate)
 	if err != nil {
 		t.Fatal(err)
 	}
 	accepted(t, result)
 	retained := result.Request()
-	request = v.Request{}
+	request = joint.Request{}
 	resultView := result.Outcome()
 	a, _ := resultView.Accepted()
 	a = typed.Acceptance{}
 	if a.Valid() || !retained.Valid() || !result.Request().Same(retained) {
 		t.Fatal("mutable outer handle")
 	}
-	if _, err := receiver(t).Check(context.Background(), retained, v.CounterexampleCandidate()); !errors.Is(err, v.ErrInvalid) {
+	if _, err := receiver(t,claim.authority).Check(context.Background(), retained, claim.Candidate); !errors.Is(err, joint.ErrInvalid) {
 		t.Fatal("foreign composition request", err)
 	}
-	if _, err := c.Check(context.Background(), v.Request{}, v.CounterexampleCandidate()); !errors.Is(err, v.ErrInvalid) {
+	if _, err := c.Check(context.Background(), joint.Request{}, claim.Candidate); !errors.Is(err, joint.ErrInvalid) {
 		t.Fatal(err)
 	}
-	invalid := checkClaim(t, c, claim, typed.True())
+	invalid := checkClaim(t, c, claim.Claim, typed.True())
 	if invalid.Outcome().Status() != typed.InvalidStatus || invalid.Diagnostics()[0].Location.Phase != typed.CandidatePhase || len(invalid.Diagnostics()[0].Sites) != 0 {
 		t.Fatal("invented candidate location")
 	}
-	unsupported := checkClaim(t, composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker}, limits), claim, v.CounterexampleCandidate())
+	unsupported := checkClaim(t, composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker}, limits,claim.authority), claim.Claim, claim.Candidate)
 	if unsupported.Outcome().Status() != typed.UnsupportedStatus {
 		t.Fatal(unsupported.Outcome().Status())
 	}
 	limits.Checker.Work = 1
-	incomplete := checkClaim(t, composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: v.MappingDependencies()}, limits), claim, v.CounterexampleCandidate())
+	incomplete := checkClaim(t, composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: allowedLaws()}, limits,claim.authority), claim.Claim, claim.Candidate)
 	if incomplete.Outcome().Status() != typed.IncompleteStatus {
 		t.Fatal(incomplete.Outcome().Status())
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if r, err := c.Prepare(ctx, claim); !errors.Is(err, context.Canceled) || r.Valid() {
+	if r, err := c.Prepare(ctx, claim.Claim); !errors.Is(err, context.Canceled) || r.Valid() {
 		t.Fatal(err)
 	}
-	if r, err := c.Check(ctx, retained, v.CounterexampleCandidate()); !errors.Is(err, context.Canceled) || r.Valid() {
+	if r, err := c.Check(ctx, retained, claim.Candidate); !errors.Is(err, context.Canceled) || r.Valid() {
 		t.Fatal(err)
 	}
 }
@@ -511,8 +521,8 @@ func TestJointConcurrentChecks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := receiver(t)
-	r, err := c.Prepare(context.Background(), claim)
+	c := receiver(t,claim.authority)
+	r, err := c.Prepare(context.Background(), claim.Claim)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -521,7 +531,7 @@ func TestJointConcurrentChecks(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			out, err := c.Check(context.Background(), r, v.CounterexampleCandidate())
+			out, err := c.Check(context.Background(), r, claim.Candidate)
 			if err != nil || !out.Outcome().IsAccepted() {
 				t.Error(err, out.Outcome().Status())
 			}
@@ -560,4 +570,15 @@ func nativeAdmission(t *testing.T, ctx context.Context, model n.Model, construct
 		return nativequery.Admission{}, err
 	}
 	return queries.Admit(ctx, constructor, args...)
+}
+
+// The receiver owns this policy independently of the mapping selection.
+func allowedLaws() []string {
+ return []string{v.ModelBasis,v.SourceBasis,v.NativeBasis,m.ScalarLaw,m.ListLaw,m.OptionalLaw,m.RecordLaw,v.NamedLaw}
+}
+func selectMappings(t *testing.T,rules ...v.Rule) v.Mappings {
+ t.Helper()
+ selected,err:=v.Select(rules...)
+ if err!=nil{t.Fatal(err)}
+ return selected
 }

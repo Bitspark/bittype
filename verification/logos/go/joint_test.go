@@ -1,4 +1,4 @@
-package verification
+package logos
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/check/go"
+ "github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	association "github.com/Bitspark/bittype/contracts/verification/go"
@@ -16,9 +17,11 @@ import (
 	"github.com/Bitspark/logos-contract/contract/go/typed"
 )
 
-// Inject defects at the private trusted interpretation boundary. No production
-// constructor accepts these arbitrary statements or permits this mutation.
-func faultyInterpretation(t *testing.T, statement typed.Statement) Claim {
+// Exercise checker failures using an independently supplied interpretation.
+var fixture=Interpret(semantics.Key{Owner:"test",Name:"fault"},func(p *Problem)(Problem,error){return *p,nil})
+var src=semantics.Key{Owner:"test",Name:"source"}
+
+func faultyInterpretation(t *testing.T, statement typed.Statement) *Problem {
 	t.Helper()
 	language, err := representation.NewLanguage[s.Language](p.Provider{}, "syntax/v1")
 	if err != nil {
@@ -40,22 +43,22 @@ func faultyInterpretation(t *testing.T, statement typed.Statement) Claim {
 	if err != nil {
 		t.Fatal(err)
 	}
-	input := association.Input{Source: sourceKey(), Target: sourceKey(), Participants: []association.Participant{{Key: sourceKey(), Snapshot: snapshot}}}
+	input := association.Input{Source: src, Target: src, Participants: []association.Participant{{Key: src, Snapshot: snapshot}}}
 	location := typed.Location{Phase: typed.ExpectedPhase}
 	if len(statement.Declarations) > 0 {
 		location = typed.Location{Phase: typed.DeclarationPhase, Index: 0, HasIndex: true}
 	}
-	origin := Origin{Location: location, Sites: []association.Site{site(sourceKey(), snapshot.Entry())}}
-	return Claim{&claim{input: input, requirements: []association.Requirement{{Key: sourceKey(), Language: language}}, question: question("fault-injection"), statement: statement, origins: []Origin{origin}}}
+	origin := Origin{Location: location, Sites: []association.Site{{Participant:src,Node:snapshot.Entry()}}}
+	return &Problem{Input: input, Requirements: []association.Requirement{{Key: src, Language: language}}, Statement: statement, Origins: []Origin{origin}}
 }
 func TestInvalidSignatureIsAnUnchangedLogosOutcome(t *testing.T) {
 	statement := typed.Statement{Foundation: typed.Foundation, Declarations: []typed.Declaration{typed.Define("bad", typed.Bool(), typed.Zero())}, Expected: typed.Bool()}
 	claim := faultyInterpretation(t, statement)
-	c, err := New(typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker}, DefaultLimits())
+	c, err := New(typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker}, DefaultLimits(),fixture.Authority())
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err := c.Prepare(context.Background(), claim)
+	r, err := c.Prepare(context.Background(), fixture.Ask(claim))
 	if err != nil {
 		t.Fatal("preparation must not fake a logical precheck", err)
 	}
@@ -91,11 +94,11 @@ func (c *cancelBeforePublication) Err() error {
 }
 func TestCancellationBeforePublicationDoesNotMintResult(t *testing.T) {
 	claim := faultyInterpretation(t, typed.Statement{Foundation: typed.Foundation, Expected: typed.Bool()})
-	c, err := New(typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker}, DefaultLimits())
+	c, err := New(typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker}, DefaultLimits(),fixture.Authority())
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err := c.Prepare(context.Background(), claim)
+	r, err := c.Prepare(context.Background(), fixture.Ask(claim))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,22 +113,22 @@ func TestCancellationBeforePublicationDoesNotMintResult(t *testing.T) {
 }
 func TestPreparationRejectsForeignSitesAndBoundsWholeMap(t *testing.T) {
 	claim := faultyInterpretation(t, typed.Statement{Foundation: typed.Foundation, Expected: typed.Bool()})
-	c, _ := New(typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker}, DefaultLimits())
-	claim.state.origins[0].Sites[0].Participant = targetKey()
-	if r, err := c.Prepare(context.Background(), claim); !errors.Is(err, association.ErrInvalid) || r.Valid() {
+	c, _ := New(typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker}, DefaultLimits(),fixture.Authority())
+	claim.Origins[0].Sites[0].Participant = semantics.Key{Owner:"test",Name:"other"}
+	if r, err := c.Prepare(context.Background(), fixture.Ask(claim)); !errors.Is(err, association.ErrInvalid) || r.Valid() {
 		t.Fatal(err)
 	}
-	claim.state.origins[0].Sites[0].Participant = sourceKey()
-	claim.state.origins[0].Location = typed.Location{Phase: typed.DeclarationPhase, Index: 99, HasIndex: true}
-	if r, err := c.Prepare(context.Background(), claim); !errors.Is(err, ErrInvalid) || r.Valid() {
+	claim.Origins[0].Sites[0].Participant = src
+	claim.Origins[0].Location = typed.Location{Phase: typed.DeclarationPhase, Index: 99, HasIndex: true}
+	if r, err := c.Prepare(context.Background(), fixture.Ask(claim)); !errors.Is(err, ErrInvalid) || r.Valid() {
 		t.Fatal("accepted foreign logical location", err)
 	}
-	claim.state.origins[0].Location = typed.Location{Phase: typed.ExpectedPhase}
+	claim.Origins[0].Location = typed.Location{Phase: typed.ExpectedPhase}
 	limits := DefaultLimits()
 	limits.Association.Sites = 1
-	c, _ = New(typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker}, limits)
-	claim.state.origins = append(claim.state.origins, claim.state.origins[0])
-	if r, err := c.Prepare(context.Background(), claim); !errors.Is(err, association.ErrLimit) || r.Valid() {
+	c, _ = New(typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker}, limits,fixture.Authority())
+	claim.Origins = append(claim.Origins, claim.Origins[0])
+	if r, err := c.Prepare(context.Background(), fixture.Ask(claim)); !errors.Is(err, association.ErrLimit) || r.Valid() {
 		t.Fatal(err)
 	}
 }
