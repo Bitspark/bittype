@@ -80,6 +80,7 @@ const (
 	NativeBasis = "go1.25/captured-types-1"
 	NamedLaw    = "horos-go/named-representation-1"
 )
+
 // The named declaration interpretation consumes independently projected body evidence.
 func namedDeclaration() typed.Declaration {
 	named := pi(con("H"), func(a expression) expression {

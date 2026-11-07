@@ -240,9 +240,9 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["analyze/files/rust/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/rustsem", "resolve/files/rust/go", "semantics/go", "semantics/rust/go", "syntax/rust/go", "trees/representation/go"}
 	rules["provider/rust/go"] = append(rules["provider/rust/go"], "contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "analyze/files/rust/go", "resolve/files/rust/go")
 	rules["verification/files/horos-to-go/go"] = []string{"contracts/semantic/go", "contracts/verification/go", "semantics/go", "trees/ast/go", "verification/files/source/horos/go", "semantics/golang/go", "analyze/files/golang/go"}
- rules["verification/files/horos-to-go/go"]=append(rules["verification/files/horos-to-go/go"],"verification/logos/go")
- rules["verification/logos/go"]=[]string{"contracts/verification/go","semantics/go"}
- rules["verification/files/horos-to-go/mappings/go"]=[]string{"verification/files/horos-to-go/go","semantics/golang/go","semantics/go"}
+	rules["verification/files/horos-to-go/go"] = append(rules["verification/files/horos-to-go/go"], "verification/logos/go")
+	rules["verification/logos/go"] = []string{"contracts/verification/go", "semantics/go"}
+	rules["verification/files/horos-to-go/mappings/go"] = []string{"verification/files/horos-to-go/go", "semantics/golang/go", "semantics/go"}
 	for path, p := range packages {
 		if p.Standard || len(p.GoFiles)+len(p.CgoFiles) == 0 || path == modulePath+"/integration/go" || path == modulePath+"/verification/integration/go" {
 			continue
@@ -287,16 +287,16 @@ var modelDependencies = []string{
 }
 
 var modelExternalImports = map[string][]string{
- "verification/logos/go":{"github.com/Bitspark/logos-contract/contract/go/typed"},
- "verification/files/horos-to-go/mappings/go":{"github.com/Bitspark/horos/core/go/declarations","github.com/bitspark/ontos/core/go"},
-	"tools/horos-module/go":              {"github.com/bitspark/ontos/codec/go"},
-	"generation/syntax/source/horos/go":  {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
-	"parse/syntax/horos/go":              {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
-	"format/syntax/horos/go":             {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
-	"internal/horosmodel":                {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
-	"resolve/files/horos/go":             {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
-	"verification/files/source/horos/go": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
-	"verification/files/horos-to-go/go":  {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/Bitspark/logos-contract/contract/go/typed"},
+	"verification/logos/go":                      {"github.com/Bitspark/logos-contract/contract/go/typed"},
+	"verification/files/horos-to-go/mappings/go": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
+	"tools/horos-module/go":                      {"github.com/bitspark/ontos/codec/go"},
+	"generation/syntax/source/horos/go":          {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
+	"parse/syntax/horos/go":                      {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
+	"format/syntax/horos/go":                     {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
+	"internal/horosmodel":                        {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
+	"resolve/files/horos/go":                     {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
+	"verification/files/source/horos/go":         {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
+	"verification/files/horos-to-go/go":          {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/Bitspark/logos-contract/contract/go/typed"},
 }
 
 func TestFilesDimensionStageCoverage(t *testing.T) {

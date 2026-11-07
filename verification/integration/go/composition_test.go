@@ -1,101 +1,176 @@
 package integration_test
 
 import (
- "context"
- "errors"
- "go/types"
- "slices"
- "strings"
- "testing"
+	"context"
+	"errors"
+	"go/types"
+	"slices"
+	"strings"
+	"testing"
 
- "github.com/Bitspark/bittype/semantics/go"
- v "github.com/Bitspark/bittype/verification/files/horos-to-go/go"
- m "github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/go"
- "github.com/Bitspark/bittype/verification/integration/go/testdata/pair"
- joint "github.com/Bitspark/bittype/verification/logos/go"
- "github.com/Bitspark/logos-contract/contract/go/typed"
- core "github.com/bitspark/ontos/core/go"
+	"github.com/Bitspark/bittype/semantics/go"
+	v "github.com/Bitspark/bittype/verification/files/horos-to-go/go"
+	m "github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/go"
+	"github.com/Bitspark/bittype/verification/integration/go/testdata/pair"
+	joint "github.com/Bitspark/bittype/verification/logos/go"
+	"github.com/Bitspark/logos-contract/contract/go/typed"
+ decl "github.com/Bitspark/horos/core/go/declarations"
+	core "github.com/bitspark/ontos/core/go"
 )
 
-const pairGo="type Pair[R,L any] struct { First L; Second R }; "
+const pairGo = "type Pair[R,L any] struct { First L; Second R }; "
 
-func TestConsumerPairComposesUnderListAndRecord(t *testing.T){
+func TestConsumerPairComposesUnderListAndRecord(t *testing.T) {
+	source := sourceModel(t, strings.Replace(sourcePage, "list<T>", "list<tuple<T,bool>>", 1))
+	code := pairGo + strings.Replace(nativePage, "Items []N", "Items []Pair[bool,N]", 1)
+	target := nativeModel(t, code)
+	helper := native(t, target, "Pair")
+	rule := pair.Rule(helper)
+	if _, err := bindPage(t, source, target); !errors.Is(err, v.ErrCoverage) {
+		t.Fatal("missing pair selection", err)
+	}
+	p, err := bindPage(t, source, target, rule)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claim, err := p.family.Theorem()
+	if err != nil {
+		t.Fatal(err)
+	}
+	limits := joint.DefaultLimits()
+	limits.Checker.Work = 20000000
+	allowed := append(allowedLaws(), pair.Law)
+	checker := composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: allowed}, limits, p.authorities...)
+	theorem := checkClaim(t, checker, claim, p.family.Candidate())
+	accepted(t, theorem)
+	for _, depth := range []int{1, 2} {
+		application, err := p.family.Application(theorem, p.argument, depth)
+		if err != nil {
+			t.Fatal(err)
+		}
+		result := checkClaim(t, checker, application, p.argument.Candidate(depth))
+		accepted(t, result)
+		closure, _ := result.Outcome().Accepted()
+		for _, law := range []string{m.RecordLaw, m.ListLaw, pair.Law} {
+			if !slices.Contains(closure.Dependencies(), law) {
+				t.Fatalf("missing %s in %v", law, closure.Dependencies())
+			}
+		}
+		refused := checkClaim(t, receiver(t, p.authorities...), application, p.argument.Candidate(depth))
+		if refused.Outcome().Code() != typed.UnadmittedDependency {
+			t.Fatal("import bypassed receiver policy", refused.Outcome().Code())
+		}
+	}
+	// Same artifacts and identical keys, but an independently selected interpretation.
+	fresh, err := bindPage(t, source, target, rule)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r, err := receiver(t, fresh.authorities...).Prepare(context.Background(), claim); !errors.Is(err, joint.ErrInvalid) || r.Valid() {
+		t.Fatal("accepted foreign question", err)
+	}
+	if _, err = fresh.family.Application(theorem, fresh.argument, 1); !errors.Is(err, joint.ErrInvalid) {
+		t.Fatal("rebound theorem", err)
+	}
+	other := nativeModel(t, code)
+	if _, err = bindPage(t, source, target, pair.Rule(native(t, other, "Pair"))); !errors.Is(err, v.ErrCoverage) {
+		t.Fatal("foreign helper selected by spelling", err)
+	}
+	for _, changed := range []string{strings.Replace(code, "First L", "First R", 1), strings.Replace(code, "Pair[bool,N]", "Pair[N,bool]", 1)} {
+		g := nativeModel(t, changed)
+		if _, err := bindPage(t, source, g, pair.Rule(native(t, g, "Pair"))); !errors.Is(err, v.ErrCoverage) {
+			t.Fatal("changed representation", err)
+		}
+	}
+	duplicate := rule
+	duplicate.Key = semantics.Key{Owner: "other", Name: "tuple-pair"}
+	if _, err = bindPage(t, source, target, rule, duplicate); !errors.Is(err, v.ErrAmbiguous) {
+		t.Fatal("ambiguous selection", err)
+	}
+	if _, err = v.Select(rule, rule); !errors.Is(err, joint.ErrInvalid) {
+		t.Fatal("duplicate owner", err)
+	}
+}
+
+// This library supplies the correct law and deliberately applies it incorrectly.
+type wrongOrder struct{pair.ReversePremises}
+func(wrongOrder)Apply(law typed.Expr,children []v.Evidence)typed.Expr{return (v.Congruence{}).Apply(law,children)}
+func TestIndependentLawCannotCertifyItsOwnCandidate(t *testing.T){
  source:=sourceModel(t,strings.Replace(sourcePage,"list<T>","list<tuple<T,bool>>",1))
- code:=pairGo+strings.Replace(nativePage,"Items []N","Items []Pair[bool,N]",1)
- target:=nativeModel(t,code)
- helper:=native(t,target,"Pair")
- rule:=pair.Rule(helper)
- if _,err:=bindPage(t,source,target);!errors.Is(err,v.ErrCoverage){t.Fatal("missing pair selection",err)}
- p,err:=bindPage(t,source,target,rule)
- if err!=nil{t.Fatal(err)}
+ target:=nativeModel(t,pairGo+strings.Replace(nativePage,"Items []N","Items []Pair[bool,N]",1))
+ rule:=pair.Rule(native(t,target,"Pair"))
+ rule.Law=wrongOrder{}
+ p,err:=bindPage(t,source,target,rule);if err!=nil{t.Fatal(err)}
  claim,err:=p.family.Theorem();if err!=nil{t.Fatal(err)}
  limits:=joint.DefaultLimits()
  limits.Checker.Work=20000000
- allowed:=append(allowedLaws(),pair.Law)
- checker:=composition(t,typed.Policy{Foundation:typed.Foundation,Checker:typed.Checker,Dependencies:allowed},limits,p.authorities...)
- theorem:=checkClaim(t,checker,claim,p.family.Candidate())
- accepted(t,theorem)
- for _,depth:=range []int{1,2}{
-  application,err:=p.family.Application(theorem,p.argument,depth)
-  if err!=nil{t.Fatal(err)}
-  result:=checkClaim(t,checker,application,p.argument.Candidate(depth))
-  accepted(t,result)
-  closure,_:=result.Outcome().Accepted()
-  for _,law:=range []string{m.RecordLaw,m.ListLaw,pair.Law}{
-   if !slices.Contains(closure.Dependencies(),law){t.Fatalf("missing %s in %v",law,closure.Dependencies())}
-  }
-  refused:=checkClaim(t,receiver(t,p.authorities...),application,p.argument.Candidate(depth))
-  if refused.Outcome().Code()!=typed.UnadmittedDependency{t.Fatal("import bypassed receiver policy",refused.Outcome().Code())}
- }
- // Same artifacts and identical keys, but an independently selected interpretation.
- fresh,err:=bindPage(t,source,target,rule);if err!=nil{t.Fatal(err)}
- if r,err:=receiver(t,fresh.authorities...).Prepare(context.Background(),claim);!errors.Is(err,joint.ErrInvalid)||r.Valid(){t.Fatal("accepted foreign question",err)}
- if _,err=fresh.family.Application(theorem,fresh.argument,1);!errors.Is(err,joint.ErrInvalid){t.Fatal("rebound theorem",err)}
- other:=nativeModel(t,code)
- if _,err=bindPage(t,source,target,pair.Rule(native(t,other,"Pair")));!errors.Is(err,v.ErrCoverage){t.Fatal("foreign helper selected by spelling",err)}
- for _,changed:=range []string{strings.Replace(code,"First L","First R",1),strings.Replace(code,"Pair[bool,N]","Pair[N,bool]",1)}{
-  g:=nativeModel(t,changed)
-  if _,err:=bindPage(t,source,g,pair.Rule(native(t,g,"Pair")));!errors.Is(err,v.ErrCoverage){t.Fatal("changed representation",err)}
- }
- duplicate:=rule
- duplicate.Key=semantics.Key{Owner:"other",Name:"tuple-pair"}
- if _,err=bindPage(t,source,target,rule,duplicate);!errors.Is(err,v.ErrAmbiguous){t.Fatal("ambiguous selection",err)}
- if _,err=v.Select(rule,rule);!errors.Is(err,joint.ErrInvalid){t.Fatal("duplicate owner",err)}
+ c:=composition(t,typed.Policy{Foundation:typed.Foundation,Checker:typed.Checker,Dependencies:append(allowedLaws(),pair.Law)},limits,p.authorities...)
+ bad:=checkClaim(t,c,claim,p.family.Candidate())
+ if bad.Outcome().Status()!=typed.InvalidStatus{t.Fatal("incorrect proof",bad.Outcome().Status())}
+}
+func TestChildBelongsToThisProjection(t *testing.T) {
+	s := sourceModel(t, sourcePage)
+	g := nativeModel(t, nativePage)
+	list := m.List()
+	var saved v.Subject
+	spy := v.Rule{Key: semantics.Key{Owner: "test", Name: "capture"}, Dependency: "test/capture", Law:v.Congruence{}, Project: func(p v.Subject) ([]v.Subject, bool, error) {
+		view:=p.Source()
+  *view=decl.Expression{}
+  children, ok, err := list.Project(p)
+		if ok {
+			saved = children[0]
+		}
+		return nil, false, err
+	}}
+	if _, err := bindPage(t, s, g, spy); err != nil {
+		t.Fatal(err)
+	}
+	// Use a distinct capture for the parent and a child saved from the first.
+	root := sourceModel(t, strings.Replace(sourcePage, "list<T>", "tuple<T,bool>", 1))
+	replay := v.Rule{Key: semantics.Key{Owner: "test", Name: "replay"}, Dependency: "test/replay", Law:v.Congruence{}, Project: func(p v.Subject) ([]v.Subject, bool, error) {
+		if p.Source().Constructor() != "tuple" {
+			return nil, false, nil
+		}
+		return []v.Subject{saved}, true, nil
+	}}
+	if _, err := bindPage(t, root, g, replay); !errors.Is(err, joint.ErrInvalid) {
+		t.Fatal("foreign child entered parent", err)
+	}
 }
 
-func TestChildBelongsToThisProjection(t *testing.T){
- s:=sourceModel(t,sourcePage)
- g:=nativeModel(t,nativePage)
- list:=m.List()
- var saved v.Subject
- spy:=v.Rule{Key:semantics.Key{Owner:"test",Name:"capture"},Dependency:"test/capture",Project:func(p v.Subject)([]v.Subject,bool,error){
-  children,ok,err:=list.Project(p)
-  if ok{saved=children[0]}
-  return nil,false,err
- }}
- if _,err:=bindPage(t,s,g,spy);err!=nil{t.Fatal(err)}
- // Use a distinct capture for the parent and a child saved from the first.
- root:=sourceModel(t,strings.Replace(sourcePage,"list<T>","tuple<T,bool>",1))
- replay:=v.Rule{Key:semantics.Key{Owner:"test",Name:"replay"},Dependency:"test/replay",Project:func(p v.Subject)([]v.Subject,bool,error){
-  if p.Source().Constructor()!="tuple"{return nil,false,nil}
-  return []v.Subject{saved},true,nil
- }}
- if _,err:=bindPage(t,root,g,replay);!errors.Is(err,joint.ErrInvalid){t.Fatal("foreign child entered parent",err)}
-}
-
-func TestCounterexampleUsesSelectedNonBooleanWitness(t *testing.T){
- s:=sourceModel(t,"type Box<T: h.Bool> = {value:T;};")
- g:=nativeModel(t,"type Box[T any] struct {Value T}")
- d:=declaration(t,s,"Box")
- k,err:=d.ParameterKind(0);if err!=nil{t.Fatal(err)}
- text,err:=s.Proper(core.NewTuple(core.NewAtom([]byte("horos/scalar")),core.NewAtom([]byte("utf8-text"))));if err!=nil{t.Fatal(err)}
- nonmember,err:=s.Satisfies(context.Background(),text,k);if err!=nil{t.Fatal(err)}
- nativeText,err:=g.Basic(types.String);if err!=nil{t.Fatal(err)}
- box:=native(t,g,"Box")
- admitted,err:=nativeAdmission(t,context.Background(),g,box,nativeText);if err!=nil{t.Fatal(err)}
- library:=v.NewAdmissions(selectMappings(t,m.Text()))
- w,err:=library.Counterexample(d,box,nonmember,admitted);if err!=nil{t.Fatal(err)}
- accepted(t,checkClaim(t,receiver(t,library.Authority()),w.Claim,w.Candidate))
- other:=v.NewAdmissions(selectMappings(t,m.Boolean()))
- if _,err:=other.Counterexample(d,box,nonmember,admitted);!errors.Is(err,v.ErrCoverage){t.Fatal(err)}
+func TestCounterexampleUsesSelectedNonBooleanWitness(t *testing.T) {
+	s := sourceModel(t, "type Box<T: h.Bool> = {value:T;};")
+	g := nativeModel(t, "type Box[T any] struct {Value T}")
+	d := declaration(t, s, "Box")
+	k, err := d.ParameterKind(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text, err := s.Proper(core.NewTuple(core.NewAtom([]byte("horos/scalar")), core.NewAtom([]byte("utf8-text"))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	nonmember, err := s.Satisfies(context.Background(), text, k)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nativeText, err := g.Basic(types.String)
+	if err != nil {
+		t.Fatal(err)
+	}
+	box := native(t, g, "Box")
+	admitted, err := nativeAdmission(t, context.Background(), g, box, nativeText)
+	if err != nil {
+		t.Fatal(err)
+	}
+	library := v.NewAdmissions(selectMappings(t, m.Text()))
+	w, err := library.Counterexample(d, box, nonmember, admitted)
+	if err != nil {
+		t.Fatal(err)
+	}
+	accepted(t, checkClaim(t, receiver(t, library.Authority()), w.Claim, w.Candidate))
+	other := v.NewAdmissions(selectMappings(t, m.Boolean()))
+	if _, err := other.Counterexample(d, box, nonmember, admitted); !errors.Is(err, v.ErrCoverage) {
+		t.Fatal(err)
+	}
 }

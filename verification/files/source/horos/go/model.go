@@ -249,6 +249,12 @@ func (v Value) Descriptor() (core.Value, error) {
 	return v.owner.program.Descriptor(v.value)
 }
 
+// OperandSite follows the canonical path of an operand in this captured model.
+func(m Model)OperandSite(parent ast.NodeRef,path []int)ast.NodeRef{
+ if !m.Valid(){return ast.NodeRef{}}
+ return m.state.decoded.OperandSite(parent,path)
+}
+
 type Field struct {
 	Name     string
 	Optional bool

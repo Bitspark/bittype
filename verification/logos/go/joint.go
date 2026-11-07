@@ -31,47 +31,81 @@ type Limits struct {
 func DefaultLimits() Limits { return Limits{association.DefaultLimits(), typed.DefaultLimits()} }
 
 type composition struct {
-	policy typed.Policy
-	limits Limits
+	policy      typed.Policy
+	limits      Limits
 	authorities map[semantics.Key]*identity
 }
 type Composition struct{ state *composition }
+
 // Problem is constructed by the selected interpretation from its typed subjects.
 // The receiver admits its captures and locations before checking a candidate.
 type Problem struct {
- Input association.Input
- Requirements []association.Requirement
- Statement typed.Statement
- Origins []Origin
+	Input        association.Input
+	Requirements []association.Requirement
+	Statement    typed.Statement
+	Origins      []Origin
 }
 type identity struct{ key semantics.Key }
 type Authority struct{ id *identity }
 
 // Interpretation binds one typed projection to an unforgeable receiver selection.
 type Interpretation[S any] struct {
- authority Authority
- describe func(S) (Problem,error)
+	authority Authority
+	describe  func(S) (Problem, error)
 }
-func Interpret[S any](key semantics.Key, describe func(S)(Problem,error)) Interpretation[S] {
- if !key.Valid() || describe == nil { return Interpretation[S]{} }
- return Interpretation[S]{Authority{&identity{key}}, describe}
+
+func Interpret[S any](key semantics.Key, describe func(S) (Problem, error)) Interpretation[S] {
+	if !key.Valid() || describe == nil {
+		return Interpretation[S]{}
+	}
+	return Interpretation[S]{Authority{&identity{key}}, describe}
 }
 func (i Interpretation[S]) Authority() Authority { return i.authority }
 
-type claim struct {
- authority Authority
- describe func()(Problem,error)
+// A question retains the typed subject supplied to its selected interpreter.
+// Its logical problem is frozen once, before any candidate can be submitted.
+type issuance interface{
+ issuer() Authority
+ description() Problem
 }
-type Claim struct{ state *claim }
-func (i Interpretation[S]) Ask(subject S) Claim {
- if i.authority.id==nil { return Claim{} }
- return Claim{&claim{i.authority,func()(Problem,error){ return i.describe(subject) }}}
+type issued[S any] struct{
+ owner Authority
+ subject S
+ problem Problem
+}
+func(q *issued[S])issuer()Authority{return q.owner}
+func(q *issued[S])description()Problem{return q.problem}
+type Claim struct{state issuance}
+
+func(i Interpretation[S])Ask(subject S)(Claim,error){
+ if i.authority.id==nil{return Claim{},ErrInvalid}
+ p,err:=i.describe(subject)
+ if err!=nil{return Claim{},err}
+ return Claim{&issued[S]{i.authority,subject,p.snapshot()}},nil
+}
+
+func(p Problem)snapshot()Problem{
+ p.Input.Participants=slices.Clone(p.Input.Participants)
+ for i:=range p.Input.Participants{
+  entry:=&p.Input.Participants[i]
+  entry.Evidence=slices.Clone(entry.Evidence)
+ }
+ p.Requirements=slices.Clone(p.Requirements)
+ for i:=range p.Requirements{
+  req:=&p.Requirements[i]
+  req.Evidence=slices.Clone(req.Evidence)
+  for j:=range req.Evidence{req.Evidence[j]=req.Evidence[j].Clone()}
+ }
+ p.Statement=cloneStatement(p.Statement)
+ p.Origins=cloneOrigins(p.Origins)
+ return p
 }
 // Answers identifies this particular issued question, including its subject.
-func (r Request) Answers(q Claim) bool { return r.Valid() && r.state.claim==q.state }
+func (r Request) Answers(q Claim) bool { return r.Valid() && r.state.claim == q.state }
+
 type request struct {
 	owner       *composition
-	claim       *claim
+	claim       issuance
 	association association.Association
 	statement   typed.Statement
 	origins     []Origin
@@ -133,15 +167,21 @@ func New(policy typed.Policy, limits Limits, selected ...Authority) (Composition
 	if bytes > limits.Association.MetadataBytes {
 		return Composition{}, association.ErrLimit
 	}
-	if len(selected)>limits.Association.Evidence { return Composition{}, association.ErrLimit }
- authorities:=make(map[semantics.Key]*identity,len(selected))
- for _,a:=range selected {
-  if a.id==nil || authorities[a.id.key]!=nil { return Composition{},ErrInvalid }
-  bytes+=len(a.id.key.Owner)+len(a.id.key.Name)
-  if bytes>limits.Association.MetadataBytes { return Composition{},association.ErrLimit }
-  authorities[a.id.key]=a.id
- }
- return Composition{&composition{clonePolicy(policy), limits, authorities}}, nil
+	if len(selected) > limits.Association.Evidence {
+		return Composition{}, association.ErrLimit
+	}
+	authorities := make(map[semantics.Key]*identity, len(selected))
+	for _, a := range selected {
+		if a.id == nil || authorities[a.id.key] != nil {
+			return Composition{}, ErrInvalid
+		}
+		bytes += len(a.id.key.Owner) + len(a.id.key.Name)
+		if bytes > limits.Association.MetadataBytes {
+			return Composition{}, association.ErrLimit
+		}
+		authorities[a.id.key] = a.id
+	}
+	return Composition{&composition{clonePolicy(policy), limits, authorities}}, nil
 }
 func (c Composition) Prepare(ctx context.Context, input Claim) (Request, error) {
 	if ctx == nil || c.state == nil || input.state == nil {
@@ -150,10 +190,11 @@ func (c Composition) Prepare(ctx context.Context, input Claim) (Request, error) 
 	if err := ctx.Err(); err != nil {
 		return Request{}, err
 	}
-	authority:=input.state.authority.id
- if authority==nil || c.state.authorities[authority.key]!=authority { return Request{},ErrInvalid }
- b,err:=input.state.describe()
- if err!=nil { return Request{},err }
+	authority := input.state.issuer().id
+	if authority == nil || c.state.authorities[authority.key] != authority {
+		return Request{}, ErrInvalid
+	}
+	b:=input.state.description()
 	a, err := association.Capture(ctx, b.Input, b.Requirements, c.state.limits.Association)
 	if err != nil {
 		return Request{}, err
@@ -210,7 +251,7 @@ func (r Request) Question() semantics.Key {
 	if !r.Valid() {
 		return semantics.Key{}
 	}
-	return r.state.claim.authority.id.key
+	return r.state.claim.issuer().id.key
 }
 func (r Request) Statement() typed.Statement {
 	if !r.Valid() {

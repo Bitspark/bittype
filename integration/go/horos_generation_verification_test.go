@@ -21,9 +21,9 @@ import (
 	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 	v "github.com/Bitspark/bittype/verification/files/horos-to-go/go"
- m "github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/go"
- joint "github.com/Bitspark/bittype/verification/logos/go"
+	m "github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/go"
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
+	joint "github.com/Bitspark/bittype/verification/logos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	"github.com/Bitspark/logos-contract/contract/go/typed"
 	core "github.com/bitspark/ontos/core/go"
@@ -107,17 +107,17 @@ func importedKind(t *testing.T, m h.Model, name string) h.Kind {
 }
 func composition(t *testing.T, policy typed.Policy, limits joint.Limits, authorities ...joint.Authority) joint.Composition {
 	t.Helper()
-	c, err := joint.New(policy, limits,authorities...)
+	c, err := joint.New(policy, limits, authorities...)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return c
 }
-func receiver(t *testing.T,authorities ...joint.Authority) joint.Composition {
+func receiver(t *testing.T, authorities ...joint.Authority) joint.Composition {
 	t.Helper()
 	limits := joint.DefaultLimits()
 	limits.Checker.Work = 20000000
-	return composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: allowedLaws()}, limits,authorities...)
+	return composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: allowedLaws()}, limits, authorities...)
 }
 func checkClaim(t *testing.T, c joint.Composition, claim joint.Claim, candidate typed.Expr) joint.Result {
 	t.Helper()
@@ -142,12 +142,12 @@ func accepted(t *testing.T, r joint.Result) {
 const sourcePage = "type Page<T> = { items: list<T>; next?: text; }; type Person = {name: text; active: bool;};"
 
 type pagination struct {
- authorities []joint.Authority
-	source   h.Model
-	target   n.Model
-	family   v.Family
-	kind     h.Kind
-	argument v.Argument
+	authorities []joint.Authority
+	source      h.Model
+	target      n.Model
+	family      v.Family
+	kind        h.Kind
+	argument    v.Argument
 }
 
 func bindPage(t *testing.T, s h.Model, g n.Model) (pagination, error) {
@@ -166,9 +166,9 @@ func bindPage(t *testing.T, s h.Model, g n.Model) (pagination, error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rules:=[]v.Rule{m.Text(),m.Boolean(),m.List(),m.Record(),(m.Optional{Constructor: native(t, g, "BittypeOptional"), PresenceField: "Present", ValueField: "Value"}).Rule()}
-library:=v.NewFamilies(selectMappings(t,rules...))
- f,err:=library.Bind(d,native(t,g,"Page"),[]v.FieldBinding{{Source: "items", Target: "Items"}, {Source: "next", Target: "Next"}},k,guarantee)
+	rules := []v.Rule{m.Text(), m.Boolean(), m.List(), m.Record(), (m.Optional{Constructor: native(t, g, "BittypeOptional"), PresenceField: "Present", ValueField: "Value"}).Rule()}
+	library := v.NewFamilies(selectMappings(t, rules...))
+	f, err := library.Bind(d, native(t, g, "Page"), []v.FieldBinding{{Source: "items", Target: "Items"}, {Source: "next", Target: "Next"}}, k, guarantee)
 	if err != nil {
 		return pagination{}, err
 	}
@@ -182,7 +182,7 @@ library:=v.NewFamilies(selectMappings(t,rules...))
 		t.Fatal(err)
 	}
 	a, err := f.BindArgument(p, native(t, g, "Person"), []v.FieldBinding{{Source: "name", Target: "Name"}, {Source: "active", Target: "Active"}}, member)
-	return pagination{library.Authorities(),s,g,f,k,a},err
+	return pagination{library.Authorities(), s, g, f, k, a}, err
 }
 
 func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
@@ -230,7 +230,7 @@ func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	claim, _ := p.family.Theorem()
-	c := receiver(t,p.authorities...)
+	c := receiver(t, p.authorities...)
 	theorem := checkClaim(t, c, claim, p.family.Candidate())
 	accepted(t, theorem)
 	application, err := p.family.Application(theorem, p.argument, 2)
@@ -267,11 +267,13 @@ func checkedNative(ctx context.Context, snapshot semantic.Snapshot) (n.Model, er
 
 // The receiver owns this policy independently of the mapping selection.
 func allowedLaws() []string {
- return []string{v.ModelBasis,v.SourceBasis,v.NativeBasis,m.ScalarLaw,m.ListLaw,m.OptionalLaw,m.RecordLaw,v.NamedLaw}
+	return []string{v.ModelBasis, v.SourceBasis, v.NativeBasis, m.ScalarLaw, m.ListLaw, m.OptionalLaw, m.RecordLaw, v.NamedLaw}
 }
-func selectMappings(t *testing.T,rules ...v.Rule) v.Mappings {
- t.Helper()
- selected,err:=v.Select(rules...)
- if err!=nil{t.Fatal(err)}
- return selected
+func selectMappings(t *testing.T, rules ...v.Rule) v.Mappings {
+	t.Helper()
+	selected, err := v.Select(rules...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return selected
 }
