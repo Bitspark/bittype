@@ -53,9 +53,9 @@ Bittype's agnostic association remains independent of Logos syntax. Logos owns
 proof syntax and checking. Neither learns Page, TextBox, a mapping's child cases
 or a behavioural contract's semantics.
 
-## Original implementation and consequence
+## Actual implementation and consequence
 
-The closure is distributed across the following cooperating sections. Fixing
+At the inspected revision, the closure was distributed across the following sections. Fixing
 only one of them leaves the contribution path closed.
 
 | Inspected source | Misplaced responsibility and required replacement |
@@ -137,7 +137,7 @@ path alongside the closed Go path. Native factual extraction can remain in its
 own providers; the defect concerns their composition with mapping interpretation
 and checking.
 
-## Correction and qualification
+## Correction and qualification status
 
 The Horos/Go path now takes rules selected by its consumer. Text, bool,
 list/slice, optional/presence and closed-record mappings use the public

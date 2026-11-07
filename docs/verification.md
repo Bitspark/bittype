@@ -8,6 +8,13 @@ Horos/Go composition. The walkthroughs below specify its claim semantics;
 [integration tests](../verification/integration/go/joint_test.go) exercise actual
 captured inputs and the landed Logos checker. No runtime binding is added.
 
+## Known architectural violation
+
+The 6 November review found that adding a mapping required editing the shared
+matcher, law table and claim carrier. The corrected Horos/Go path uses the
+public contracts below. The case records the original code, the independent
+composition test and the scope of the repair. [bittype/ACX-001](architecture-cases/0001-verification-composition.md#correction-and-qualification-status).
+
 ## Library-owned verification contributions
 
 The receiver selects a typed interpreter and a Logos dependency policy.
@@ -64,7 +71,7 @@ applies the receiver’s limits. `Check` passes the separately supplied candidat
 to Logos. An application requires the accepted result for its exact family claim
 and imports it as a checked definition under the new receiver’s policy.
 [Joint checker](../verification/logos/go/joint.go) ·
-[Corrected case and scope](architecture-cases/0001-verification-composition.md#correction-and-qualification).
+[Corrected case and scope](architecture-cases/0001-verification-composition.md#correction-and-qualification-status).
 
 ## Existing contracts and the new boundary
 

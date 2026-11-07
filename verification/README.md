@@ -16,7 +16,7 @@ single root Go module.
   owned tuple mapping composed with the existing list and record rules.
 
 [Verification API](../docs/verification.md#implemented-go-surface) ·
-[Architecture case and qualification](../docs/architecture-cases/0001-verification-composition.md#correction-and-qualification).
+[Architecture case and qualification](../docs/architecture-cases/0001-verification-composition.md#correction-and-qualification-status).
 
 Dependency preparation, formatting, compilation, tests, vet and race checks run
 through Bittype's existing GitHub workflow, including its anonymous installed
