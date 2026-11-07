@@ -34,13 +34,13 @@ type Source[L any] struct {}`,
 type Files struct {}`,
 		"syntax/ember/go": `package ember; import "example.test/fixture/contracts/language/go"; type Language struct{};func(Language)ID()language.ID{return "ember"};func(Language)Name()string{return "Ember"}`,
 		"syntax/ice/go":   `package ice; import "example.test/fixture/contracts/language/go"; type Language struct{};func(Language)ID()language.ID{return "ice"};func(Language)Name()string{return "Ice"}`,
-		"provider/ember/go": `package emberprovider
+		"print/syntax/ember/provider/go": `package emberprovider
 import (s "example.test/fixture/syntax/ember/go"; tree "example.test/fixture/trees/cst/go")
 type Output struct{s.Language}
 func(Output)Print(v tree.CST[s.Language])(string,error){return emit(v)}
 func emit(tree.CST[s.Language])(string,error){return "",nil}
 `,
-		"print/files/go": `package filesprint
+		"print/files/shared/provider/go": `package filesprint
 import (id "example.test/fixture/contracts/language/go"; printing "example.test/fixture/contracts/print/go"; tree "example.test/fixture/trees/cst/go"; source "example.test/fixture/source/go"; files "example.test/fixture/files/go")
 type Output[L any] struct {identity id.Provider;syntax printing.Provider[tree.CST[L],string]}
 func New[L any](identity id.Provider,syntax printing.Provider[tree.CST[L],string])(Output[L],error){return Output[L]{identity,syntax},nil}
@@ -153,7 +153,7 @@ func TestGenericFilesPrintingUsesConstructorCollaborators(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(providers, "[provider/ember/go.Output.Print](https://example.test/blob/main/provider/ember/go/implementation.go#L4)") {
+	if !strings.Contains(providers, "[print/syntax/ember/provider/go.Output.Print](https://example.test/blob/main/print/syntax/ember/provider/go/implementation.go#L4)") {
 		t.Fatal("missing public provider method source position", providers)
 	}
 	if !strings.Contains(transformers, "[transforms/example/go.New](https://example.test/blob/main/transforms/example/go/implementation.go#L3)") {
@@ -181,7 +181,7 @@ func TestRendererLinksCapabilityDetails(t *testing.T) {
 func TestMissingSyntaxPrinterDoesNotCreateFilesPrinting(t *testing.T) {
 	p := fixture(t)
 	// Remove the concrete syntax printer; the generic printer must not seed itself.
-	delete(p.packages, p.module+"/provider/ember/go")
+	delete(p.packages, p.module+"/print/syntax/ember/provider/go")
 	m, err := p.discover()
 	if err != nil {
 		t.Fatal(err)
@@ -216,11 +216,11 @@ func TestGeneratedRegionsPreserveProseAndRejectAmbiguousMarkers(t *testing.T) {
 
 func TestComposedTransformerFactoriesRetainTypedEndpoints(t *testing.T) {
 	p := fixture(t, map[string]string{
-		"generation/syntax/go": `package generation
+		"transform/syntax/shared/generation/go": `package generation
 import bridge "example.test/fixture/contracts/transform/go"
 func Compose[F,T any]()bridge.ASTTransformer{return bridge.NewTransformer[F,T]()}`,
 		"generation/relay/go": `package relay
-import (g "example.test/fixture/generation/syntax/go";bridge "example.test/fixture/contracts/transform/go")
+import (g "example.test/fixture/transform/syntax/shared/generation/go";bridge "example.test/fixture/contracts/transform/go")
 func Forward[Out,In any]()bridge.ASTTransformer{return g.Compose[In,Out]()}`,
 		"transforms/configured/go": `package configured
 import (r "example.test/fixture/generation/relay/go";bridge "example.test/fixture/contracts/transform/go";a "example.test/fixture/syntax/ember/go";b "example.test/fixture/syntax/ice/go")
@@ -334,7 +334,7 @@ func New()bridge.ASTTransformer{result:=first();_ = second();return result}
 
 func TestDiscoveryRetainsPublicMethodAndRelatedDelegateIdentity(t *testing.T) {
 	p := fixture(t, map[string]string{
-		"provider/ember/go": `package emberprovider
+		"print/syntax/ember/provider/go": `package emberprovider
 import (s "example.test/fixture/syntax/ember/go"; tree "example.test/fixture/trees/cst/go")
 type Output struct{s.Language}
 type Other struct{s.Language}
@@ -390,7 +390,7 @@ func TestDependenciesDoNotUseDisplayContractNames(t *testing.T) {
 		"contracts/elsewhere/go": `package print
 import "example.test/fixture/contracts/language/go"
 type Provider[I,O any] interface { language.Provider; Render(I)(O,error) }`,
-		"print/files/go": `package filesprint
+		"print/files/shared/provider/go": `package filesprint
 import (id "example.test/fixture/contracts/language/go"; other "example.test/fixture/contracts/elsewhere/go"; tree "example.test/fixture/trees/cst/go"; source "example.test/fixture/source/go"; files "example.test/fixture/files/go")
 type Output[L any] struct {identity id.Provider; required other.Provider[tree.CST[L],string]}
 func New[L any](identity id.Provider,required other.Provider[tree.CST[L],string])(Output[L],error){return Output[L]{identity,required},nil}
@@ -416,7 +416,25 @@ func TestCurrentRepositoryProviderDiscovery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := p.discover(); err != nil {
+	m, err := p.discover()
+	if err != nil {
 		t.Fatal(err)
 	}
+	// A selectable contribution has its own public method and typed endpoints.
+	// It is not evidence of a preconfigured transformer edge.
+	for _, id := range []string{"typescript", "go", "rust", "cpp"} {
+		n := 0
+		for _, loc := range m.edges["horos"][id] {
+			if loc.op.kind == "mapping provider" {
+				n++
+				if loc.op.public.Name() != "Open" || loc.op.from.id != "horos" || loc.op.to.id != id {
+					t.Fatal("wrong contribution", loc.op)
+				}
+			}
+		}
+		if n != 1 {
+			t.Fatalf("expected one selectable mapping provider for horos to %s, got %d", id, n)
+		}
+	}
+
 }

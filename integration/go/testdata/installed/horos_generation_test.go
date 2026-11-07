@@ -1,19 +1,29 @@
 package consumer_test
 
 import (
+	checkhoros "github.com/Bitspark/bittype/check/syntax/horos/provider/go"
+	checktypescript "github.com/Bitspark/bittype/check/syntax/typescript/provider/go"
+	formattypescript "github.com/Bitspark/bittype/format/syntax/typescript/provider/go"
+	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
+	syntaxprint "github.com/Bitspark/bittype/print/syntax/shared/provider/go"
+
 	"context"
-	analyze "github.com/Bitspark/bittype/analyze/files/horos/go"
+	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
+	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
-	generate "github.com/Bitspark/bittype/generation/syntax/composition/horos-to-typescript/go"
-	hp "github.com/Bitspark/bittype/provider/horos/go"
-	tp "github.com/Bitspark/bittype/provider/typescript/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
+	generate "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/go"
+	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
+	reader "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
+	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
+	target "github.com/Bitspark/bittype/transform/syntax/typescript/target/go"
+
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -24,7 +34,7 @@ import (
 
 func TestInstalledSemanticGeneration(t *testing.T) {
 	ctx := context.Background()
-	source, err := (hp.Provider{}).Parse(context.Background(), parse.Input{SourceID: "input.horos", TreeID: "input", Text: "module installed; type Page<T> = { items: list<T>; next?: text; }; type People = Page<text>;"})
+	source, err := parsehoros.Parse(context.Background(), parse.Input{SourceID: "input.horos", TreeID: "input", Text: "module installed; type Page<T> = { items: list<T>; next?: text; }; type People = Page<text>;"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,11 +52,11 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	hc, err := check.NewChecker[h.Language](from, hp.Provider{})
+	hc, err := check.NewChecker[h.Language](from, checkhoros.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	tc, err := check.NewChecker[ts.Language](to, tp.Provider{})
+	tc, err := check.NewChecker[ts.Language](to, checktypescript.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,25 +65,18 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	resolver, err := resolution.NewResolver[h.Language](from, resolve.Contract(), hp.Provider{})
+	resolver, err := resolution.NewResolver[h.Language](from, resolve.Contract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err = e.RegisterResolver(resolver); err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[h.Language](from, analyze.Contract(), hp.Provider{})
+	analyzer, err := analysis.NewAnalyzer[h.Language](from, analyze.Contract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err = e.RegisterAnalyzer(analyzer); err != nil {
-		t.Fatal(err)
-	}
-	mapper, err := generate.New(from, to, generate.Config{TreeID: "output", Profile: generate.RepresentationProfile})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err = e.RegisterTransformer(mapper); err != nil {
 		t.Fatal(err)
 	}
 	packed, err := representation.Pack(from, source)
@@ -92,7 +95,31 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	output, err := e.TransformTo(ctx, transform.Input{Source: snapshot, Evidence: []semantic.Result{analyzed}}, to.ID())
+	registry := e.Generation()
+	readerRef, err := c.RegisterSource[h.Language, reader.Reader](registry, from, reader.Provider{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	targetRef, err := c.RegisterTarget[h.Language, ts.Language, target.Builder[h.Language]](registry, from, to, target.Provider[h.Language]{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var refs []c.MappingRef
+	for _, provider := range generate.Providers(rules.RepresentationProfile) {
+		ref, err := c.RegisterMapping[h.Language, ts.Language, reader.Reader, target.Builder[h.Language]](registry, from, to, provider)
+		if err != nil {
+			t.Fatal(err)
+		}
+		refs = append(refs, ref)
+	}
+	var roots []ast.NodeRef
+	for i, node := range source.Abstract.Nodes {
+		if node.Kind == h.KindTypeDefinition {
+			roots = append(roots, ast.NodeRef{Tree: source.Abstract.ID, Node: ast.NodeID(i + 1)})
+		}
+	}
+	request := c.Request{Input: transform.Input{Source: snapshot, Evidence: []semantic.Result{analyzed}}, To: to, Roots: roots, Output: "generated-types", Limits: g.DefaultLimits(), Selection: c.Selection{Source: readerRef, Target: targetRef, Mappings: refs}}
+	output, err := e.Generate(ctx, request)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,11 +127,11 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	concrete, err := (tp.Provider{}).Format(context.Background(), typed)
+	concrete, err := formattypescript.Format(context.Background(), typed)
 	if err != nil {
 		t.Fatal(err)
 	}
-	text, err := (tp.Provider{}).Print(context.Background(), concrete)
+	text, err := syntaxprint.Print[ts.Language](context.Background(), concrete)
 	if err != nil {
 		t.Fatal(err)
 	}

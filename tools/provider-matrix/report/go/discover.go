@@ -445,6 +445,9 @@ func (p *program) discover() (*matrix, error) {
 			return nil, err
 		}
 	}
+	if err := p.mappingProviders(m); err != nil {
+		return nil, err
+	}
 	if err := p.transformers(m); err != nil {
 		return nil, err
 	}
@@ -452,6 +455,63 @@ func (p *program) discover() (*matrix, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+// mappingProviders reports the endpoints in actual implementations of the public
+// generation contract. A supplied mapping is available for selection. A mapping
+// alone makes no claim about a configured route, source evidence, or roots.
+func (p *program) mappingProviders(m *matrix) error {
+	if p.packages[p.module+"/contracts/generation/go"] == nil {
+		return nil
+	}
+	contract, err := p.named("contracts/generation/go", "MappingProvider")
+	if err != nil {
+		return err
+	}
+	marker := func(t types.Type) *language {
+		for i := range m.languages {
+			if types.Identical(t, m.languages[i].marker) {
+				return &m.languages[i]
+			}
+		}
+		return nil
+	}
+	for path, pkg := range p.packages {
+		if !p.implementation(path) {
+			continue
+		}
+		for _, name := range pkg.types.Scope().Names() {
+			obj, ok := pkg.types.Scope().Lookup(name).(*types.TypeName)
+			if !ok || !obj.Exported() || obj.IsAlias() {
+				continue
+			}
+			named, ok := obj.Type().(*types.Named)
+			if !ok || named.TypeParams().Len() != 0 {
+				continue
+			}
+			if _, ok := named.Underlying().(*types.Interface); ok {
+				continue
+			}
+			candidate := types.NewPointer(named)
+			bound := match(contract, candidate)
+			if bound == nil {
+				continue
+			}
+			from, to := marker(bound.TypeArgs().At(0)), marker(bound.TypeArgs().At(1))
+			if from == nil || to == nil {
+				continue
+			}
+			public := method(candidate, "Open")
+			entry, chain, stop := p.entryChain(public)
+			op := &operation{kind: "mapping provider", public: public, entry: entry, chain: chain, stop: stop, contract: bound, receiver: public.Type().(*types.Signature).Recv().Type(), from: from, to: to}
+			op.id = operationID(op.kind, public, bound, op.receiver, *from, *to)
+			if m.edges[from.id] == nil {
+				m.edges[from.id] = map[string][]location{}
+			}
+			m.edges[from.id][to.id] = append(m.edges[from.id][to.id], location{op})
+		}
+	}
+	return nil
 }
 
 func (p *program) transformers(m *matrix) error {

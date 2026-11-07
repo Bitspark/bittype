@@ -22,7 +22,7 @@ func (SourceLanguage) Name() string    { return "Independent generation fixture"
 type sourceChecker struct{ SourceLanguage }
 
 func (sourceChecker) Check(v ast.View[SourceLanguage]) error {
-	if len(v.ASTView().Nodes) != 1 || v.ASTView().Nodes[0].Kind != "program" {
+	if len(v.ASTView().Nodes) != 10 || v.ASTView().Nodes[0].Kind != "program" {
 		return g.ErrInvalid
 	}
 	return nil
@@ -69,6 +69,10 @@ func newSource(ctx context.Context) (*Source, error) {
 		return nil, err
 	}
 	tree := ast.AST[SourceLanguage]{ID: "source-fixture", Root: 1, Nodes: []ast.Node[SourceLanguage]{{Kind: "program"}}}
+	for i := 0; i < 9; i++ {
+		tree.Nodes = append(tree.Nodes, ast.Node[SourceLanguage]{Kind: "declaration"})
+		tree.Nodes[0].Children = append(tree.Nodes[0].Children, ast.Child{Role: "declaration", Node: ast.NodeID(i + 2)})
+	}
 	packed, err := representation.Pack(language, tree)
 	if err != nil {
 		return nil, err

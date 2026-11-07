@@ -3,10 +3,7 @@ package integration_test
 import (
 	"context"
 	"github.com/Bitspark/bittype/contracts/parse/go"
-	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
-	goprovider "github.com/Bitspark/bittype/provider/golang/go"
-	rustprovider "github.com/Bitspark/bittype/provider/rust/go"
-	tsprovider "github.com/Bitspark/bittype/provider/typescript/go"
+
 	"strings"
 	"testing"
 )
@@ -51,15 +48,15 @@ func FuzzNativeText(f *testing.F) {
 	})
 }
 func TestDeepSyntaxAndNativeNames(t *testing.T) {
-	reject(t, tsprovider.Provider{}, []string{"//  @ts-ignore\ntype X = string;", "//\t@ts-ignore\ntype X = string;", "/* @ts-ignore */ type X = string;"})
-	reject(t, cppprovider.Provider{}, []string{"// continued \\\nusing X = int;\n", "// continued \\\r\nusing X = int;\r\n", "// continued \\ \t\nusing X = int;\n"})
-	reject(t, tsprovider.Provider{}, []string{"type string = number;", "interface any {}", "type X<number> = number;"})
-	reject(t, rustprovider.Provider{}, []string{`type X = extern "\u{_43}" fn();`})
-	reject(t, rustprovider.Provider{}, []string{"enum X { _ }", "trait X { fn _(); }", "trait X { type _; }", "type X<_> = u8;", "type X<'static> = &'static u8;", "type X<'_> = &'_ u8;", "type X = &'fn u8;"})
-	reject(t, rustprovider.Provider{}, []string{"type X = (impl);", "type\u00a0X = u8;", "type X = extern \"\\a\" fn();"})
-	reject(t, cppprovider.Provider{}, []string{"template<typename T,> struct X {};", "using X = Box<int,>;", "struct X { int f(int,); };"})
-	reject(t, rustprovider.Provider{}, []string{"type X = " + strings.Repeat("(", 130) + "u8" + strings.Repeat(")", 130) + ";", "struct fn {}", "trait if {}", "type X = " + strings.Repeat("&", 300) + "u8;"})
-	reject(t, tsprovider.Provider{}, []string{"type if = string;", "interface X { 1e3: string }", "interface X { 0x10: string }", "interface X { 9007199254740993: string }", "type X = string" + strings.Repeat("[]", 400) + ";"})
-	reject(t, cppprovider.Provider{}, []string{"struct if {};", "using if = int;", "using X = int(?);", "using X = int(auto);", "#\ninclude \"x\"\n", "#include <x\n>\n", "using X = int(" + strings.Repeat("(", 150) + "*" + strings.Repeat(")", 150) + ");"})
-	reject(t, goprovider.Provider{}, []string{"package p; type X " + strings.Repeat("[]", 300) + "int"})
+	reject(t, typescriptText(), []string{"//  @ts-ignore\ntype X = string;", "//\t@ts-ignore\ntype X = string;", "/* @ts-ignore */ type X = string;"})
+	reject(t, cppText(), []string{"// continued \\\nusing X = int;\n", "// continued \\\r\nusing X = int;\r\n", "// continued \\ \t\nusing X = int;\n"})
+	reject(t, typescriptText(), []string{"type string = number;", "interface any {}", "type X<number> = number;"})
+	reject(t, rustText(), []string{`type X = extern "\u{_43}" fn();`})
+	reject(t, rustText(), []string{"enum X { _ }", "trait X { fn _(); }", "trait X { type _; }", "type X<_> = u8;", "type X<'static> = &'static u8;", "type X<'_> = &'_ u8;", "type X = &'fn u8;"})
+	reject(t, rustText(), []string{"type X = (impl);", "type\u00a0X = u8;", "type X = extern \"\\a\" fn();"})
+	reject(t, cppText(), []string{"template<typename T,> struct X {};", "using X = Box<int,>;", "struct X { int f(int,); };"})
+	reject(t, rustText(), []string{"type X = " + strings.Repeat("(", 130) + "u8" + strings.Repeat(")", 130) + ";", "struct fn {}", "trait if {}", "type X = " + strings.Repeat("&", 300) + "u8;"})
+	reject(t, typescriptText(), []string{"type if = string;", "interface X { 1e3: string }", "interface X { 0x10: string }", "interface X { 9007199254740993: string }", "type X = string" + strings.Repeat("[]", 400) + ";"})
+	reject(t, cppText(), []string{"struct if {};", "using if = int;", "using X = int(?);", "using X = int(auto);", "#\ninclude \"x\"\n", "#include <x\n>\n", "using X = int(" + strings.Repeat("(", 150) + "*" + strings.Repeat(")", 150) + ");"})
+	reject(t, golangText(), []string{"package p; type X " + strings.Repeat("[]", 300) + "int"})
 }

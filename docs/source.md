@@ -281,23 +281,20 @@ Files printing invokes only the chosen Syntax printer and returns each recorded
 path/text. Parse→Print preserves original bytes and trivia. Formatting can change
 organization and spelling; semantic preservation does not require old tree IDs.
 
-Each `provider/<language>/go` package supplies `NewSyntaxParser`,
-`NewSyntaxChecker`, `NewSyntaxFormatter`, `NewSyntaxPrinter` and `NewFilesPrinter`.
-Horos additionally supplies `NewFilesParser`, `NewFilesFormatter`,
-`NewFilesResolver` and `NewFilesAnalyzer`. Every constructor takes an explicit
-`representation.Language` and returns one adapter plus an error; none registers
-anything or selects a profile implicitly. For example:
+The caller supplies a language descriptor and the providers needed by the requested stage. For example, this constructs the Syntax printer and uses it to supply the Files printer.
 
 ```go
-definition, err := representation.NewLanguage[horos.Language](horos.Language{}, horos.Profile)
+p, err := syntaxprint.New[horos.Language](horos.Language{})
 if err != nil { return err }
-syntaxPrinter, err := horosprovider.NewSyntaxPrinter(definition)
+syntaxPrinter, err := print.NewSyntaxPrinter[horos.Language](definition, p)
 if err != nil { return err }
-filesPrinter, err := horosprovider.NewFilesPrinter(definition)
+fp, err := filesprint.New[horos.Language](horos.Language{}, p)
+if err != nil { return err }
+filesPrinter, err := print.NewFilesPrinter[horos.Language](definition, fp)
 if err != nil { return err }
 ```
 
-The lower-level stage constructors accept explicit syntax/check/resolution/analysis
+The Horos Files parser and formatter accept explicit syntax/check/resolution/analysis
 collaborators and semantic options. Shared printing at both dimensions uses
 `Provider[L]` and `New[L]`; the Files constructor additionally takes the selected
 Syntax printer. A native Files printer requires no semantic provider.
@@ -334,7 +331,7 @@ useful for every output tree.
 
 The [stage-first layout](../LAYOUT.md) uses explicit dimensions:
 `parse/syntax/<language>/go` and `parse/files/<language>/go`, likewise for
-formatting. Shared printers live at `print/syntax/go` and `print/files/go`.
+formatting. Shared printers live at `print/syntax/shared/provider/go` and `print/files/shared/provider/go`.
 Files resolution and analysis live at `resolve/files/<language>/go` and
 `analyze/files/<language>/go`. Only implemented capabilities have directories.
 Files depends on AST addresses; Semantics remains independent of Files.

@@ -435,11 +435,11 @@ Its source adapter and type-owned integration mappings now own lowering;
 | Owner or location | Responsibility |
 | --- | --- |
 | `internal/horosmodel/` and Horos Files providers | Expose required Horos-owned contracts, memberships and assumptions through existing semantic terms; add explicit semantic obligations if needed |
-| `generation/syntax/source/horos/go/` | Read the supplied semantic evidence, preserve environments and expose source obligations without choosing native representations |
+| `transform/syntax/horos/source/go/` | Read the supplied semantic evidence, preserve environments and expose source obligations without choosing native representations |
 | Horos-owned and other type-owned integration mappings | Construct the selected native bounds, witnesses and evidence associations; compose child mappings and reject unsupported encodings |
-| `generation/syntax/go/` | Select configured bindings and coordinate Use/Publish/Define and helper ownership; interpret no Horos kind or canonical type |
-| `generation/syntax/target/<target>/go/` | Supply native construction, symbols and assembly; interpret no canonical membership rule |
-| `transforms/horos-to-<target>/go/` | Configuration-only factories for the composed transformer, with no builtin or library mapping defaults |
+| `transform/syntax/shared/generation/go/` | Select configured bindings and coordinate Use/Publish/Define and helper ownership; interpret no Horos kind or canonical type |
+| `transform/syntax/<target>/target/go/` | Supply native construction, symbols and assembly; interpret no canonical membership rule |
+| `transform/syntax/shared/generation/go/` | Compose explicitly selected source, target and mapping registrations and construct a request-bound transformer. |
 | `syntax/<target>/go/` and its parse/check/format Syntax stages | Support the native grammatical constructs required by the encoding, without Horos semantics |
 | Shared carriers, semantic kernel, engine and printers | Keep their existing language-agnostic contracts |
 

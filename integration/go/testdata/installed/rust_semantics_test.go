@@ -1,6 +1,11 @@
 package consumer_test
 
 import (
+	analyzerust "github.com/Bitspark/bittype/analyze/files/rust/provider/go"
+	checkrust "github.com/Bitspark/bittype/check/syntax/rust/provider/go"
+	check "github.com/Bitspark/bittype/contracts/check/go"
+	parserust "github.com/Bitspark/bittype/parse/syntax/rust/provider/go"
+
 	"context"
 	"os"
 	"strings"
@@ -10,8 +15,8 @@ import (
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
-	p "github.com/Bitspark/bittype/provider/rust/go"
-	r "github.com/Bitspark/bittype/resolve/files/rust/go"
+
+	r "github.com/Bitspark/bittype/resolve/files/rust/provider/go"
 	n "github.com/Bitspark/bittype/semantics/rust/go"
 	s "github.com/Bitspark/bittype/syntax/rust/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -25,7 +30,7 @@ func TestInstalledRustSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parser, err := p.NewSyntaxParser(definition)
+	parser, err := parse.NewSyntaxParser[s.Language](definition, parserust.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +38,7 @@ func TestInstalledRustSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	checker, err := p.NewSyntaxChecker(definition)
+	checker, err := check.NewChecker[s.Language](definition, checkrust.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +51,7 @@ func TestInstalledRustSemantics(t *testing.T) {
 		t.Fatal(err)
 	}
 	compiler := r.Compiler{HelperPath: os.Getenv("BITTYPE_RUST_HELPER"), SysrootPath: os.Getenv("BITTYPE_RUST_SYSROOT")}
-	resolver, err := p.NewFilesResolver(definition, compiler)
+	resolver, err := r.New(definition, compiler)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +59,7 @@ func TestInstalledRustSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := p.NewFilesAnalyzer(definition)
+	analyzer, err := analysis.NewAnalyzer[s.Language](definition, analyzerust.Contract(), analyzerust.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}

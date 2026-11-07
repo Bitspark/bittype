@@ -1,6 +1,12 @@
 package integration_test
 
 import (
+	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
+	check "github.com/Bitspark/bittype/contracts/check/go"
+	resolution "github.com/Bitspark/bittype/contracts/resolution/go"
+	parsegolang "github.com/Bitspark/bittype/parse/syntax/golang/provider/go"
+	resolvegolang "github.com/Bitspark/bittype/resolve/files/golang/provider/go"
+
 	"context"
 	"errors"
 	"fmt"
@@ -9,12 +15,12 @@ import (
 	"sync"
 	"testing"
 
-	analyze "github.com/Bitspark/bittype/analyze/files/golang/go"
+	analyze "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/engine/go"
-	p "github.com/Bitspark/bittype/provider/golang/go"
+
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
 	s "github.com/Bitspark/bittype/syntax/golang/go"
@@ -26,7 +32,7 @@ func goCapture(t *testing.T, texts ...string) (semantic.Snapshot, []s.AST) {
 	t.Helper()
 	var trees []s.AST
 	for i, text := range texts {
-		parsed, err := (p.Provider{}).Parse(context.Background(), parse.Input{SourceID: ast.SourceID(fmt.Sprint(i)), TreeID: ast.TreeID(fmt.Sprint(i)), Text: "package example; " + text})
+		parsed, err := parsegolang.Parse(context.Background(), parse.Input{SourceID: ast.SourceID(fmt.Sprint(i)), TreeID: ast.TreeID(fmt.Sprint(i)), Text: "package example; " + text})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -40,7 +46,7 @@ func goCaptureTrees(t *testing.T, trees []s.AST) semantic.Snapshot {
 	if err != nil {
 		t.Fatal(err)
 	}
-	checker, err := p.NewSyntaxChecker(definition)
+	checker, err := check.NewChecker[s.Language](definition, checkgolang.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +67,7 @@ func goCaptureTrees(t *testing.T, trees []s.AST) semantic.Snapshot {
 func goResults(t *testing.T, snapshot semantic.Snapshot) (semantic.Result, semantic.Result) {
 	t.Helper()
 	ctx := context.Background()
-	resolver, err := p.NewFilesResolver(snapshot.Language())
+	resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +75,7 @@ func goResults(t *testing.T, snapshot semantic.Snapshot) (semantic.Result, seman
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := p.NewFilesAnalyzer(snapshot.Language())
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +115,7 @@ func qualifyGolang(t *testing.T) {
 	if _, err := registry.Resolve(ctx, snapshot, semantic.Options{}); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	resolver, err := p.NewFilesResolver(snapshot.Language())
+	resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +130,7 @@ func qualifyGolang(t *testing.T) {
 	if _, err := registry.Analyze(ctx, input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	analyzer, err := p.NewFilesAnalyzer(snapshot.Language())
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,8 +183,8 @@ func qualifyGolang(t *testing.T) {
 	}
 }
 
-// bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/go#Provider.Resolve feature=go-semantic-subset case=rejected-and-unsupported-fixtures expects=no-partial-model
-// bittype:case target=github.com/Bitspark/bittype/analyze/files/golang/go#Provider.Analyze feature=go-semantic-subset case=rejected-and-unsupported-fixtures expects=no-partial-model
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve feature=go-semantic-subset case=rejected-and-unsupported-fixtures expects=no-partial-model
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze feature=go-semantic-subset case=rejected-and-unsupported-fixtures expects=no-partial-model
 func TestGoSemanticReportsAndCoverage(t *testing.T) {
 	for _, tc := range []struct {
 		name, text string
@@ -220,8 +226,8 @@ func TestGoSemanticReceiptAndEnvironmentIsolation(t *testing.T) {
 	snapshot, trees := goCapture(t, "type Box[T any] struct {Value T}")
 	foreign := goCaptureTrees(t, trees)
 	resolved, result := goResults(t, snapshot)
-	analyzer, _ := p.NewFilesAnalyzer(snapshot.Language())
-	resolver, _ := p.NewFilesResolver(snapshot.Language())
+	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
+	resolver, _ := resolution.NewResolver[s.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
 	for name, input := range map[string]analysis.Input{
 		"missing":    {Snapshot: snapshot, Options: semantic.Options{Configuration: n.Configuration()}},
 		"foreign":    {Snapshot: foreign, Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}},
@@ -299,7 +305,7 @@ func TestGoSemanticMultiUnitReferencesAndRecursion(t *testing.T) {
 		}
 	}
 	forged := goCaptureTrees(t, trees)
-	resolver, _ := p.NewFilesResolver(forged.Language())
+	resolver, _ := resolution.NewResolver[s.Language](forged.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
 	if _, err := resolver.Resolve(context.Background(), forged, semantic.Options{Configuration: n.Configuration()}); !errors.Is(err, semantic.ErrInvalidRequest) {
 		t.Fatal("forged reference", err)
 	}

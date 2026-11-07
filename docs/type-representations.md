@@ -278,8 +278,8 @@ The existing [stage-first layout](../LAYOUT.md) remains in force:
 
 | Proposed location/owner | Responsibility |
 | --- | --- |
-| `transforms/horos-to-<native>/go` | Configuration-only factories for one directed mapping; shared generation composes supplied builtin/library plugins. No named-contract or default-bundle imports. |
-| Bittype Horos integration packages | Builtin target mappings in `generation/syntax/mapping/horos` and optional defaults in `generation/syntax/composition/horos-to-<target>/go`, separate from the shared composer. |
+| `transform/syntax/shared/generation/go` | Kernel registration and composition of supplied providers for explicit roots. |
+| Bittype Horos integration packages | Builtin target mappings in `transform/syntax/horos-to-<target>/mapping/go`, separate from the shared composer. |
 | Each independent contract library | Canonical module, optional target recipes/type artifacts and future runtime bindings. No per-library stage is added to bittype. |
 | Consuming application composition | Pin modules/dependencies, select profiles and recipes, register transformers, arrange output artifacts. |
 

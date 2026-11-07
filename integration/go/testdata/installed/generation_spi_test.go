@@ -1,13 +1,16 @@
 package consumer_test
 
 import (
+	formatgolang "github.com/Bitspark/bittype/format/syntax/golang/provider/go"
+	syntaxprint "github.com/Bitspark/bittype/print/syntax/shared/provider/go"
+
 	"context"
 	"strings"
 	"testing"
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	fixture "github.com/Bitspark/bittype/integration/go/testdata/generationfixture"
-	gp "github.com/Bitspark/bittype/provider/golang/go"
+
 	s "github.com/Bitspark/bittype/syntax/golang/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
@@ -46,11 +49,11 @@ func TestInstalledPublicGenerationSPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	concrete, err := (gp.Provider{}).Format(ctx, tree)
+	concrete, err := formatgolang.Format(ctx, tree)
 	if err != nil {
 		t.Fatal(err)
 	}
-	text, err := (gp.Provider{}).Print(ctx, concrete)
+	text, err := syntaxprint.Print[s.Language](ctx, concrete)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,6 +1,8 @@
 package integration_test
 
 import (
+	parsetypescript "github.com/Bitspark/bittype/parse/syntax/typescript/provider/go"
+
 	"context"
 	"errors"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -11,10 +13,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/print/go"
 	"github.com/Bitspark/bittype/engine/go"
-	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
-	goprovider "github.com/Bitspark/bittype/provider/golang/go"
-	rustprovider "github.com/Bitspark/bittype/provider/rust/go"
-	tsprovider "github.com/Bitspark/bittype/provider/typescript/go"
+
 	cpp "github.com/Bitspark/bittype/syntax/cpp/go"
 	golang "github.com/Bitspark/bittype/syntax/golang/go"
 	rust "github.com/Bitspark/bittype/syntax/rust/go"
@@ -102,10 +101,10 @@ func TestEngineUsesFourExistingTextProviders(t *testing.T) {
 	if len(e.Languages()) != 0 {
 		t.Fatal("hidden language registration")
 	}
-	p := nativeRegistration[ts.Language](t, e, tsprovider.Provider{}, "// retain\r\ntype Page<T> = T[];\r\n")
-	nativeRegistration[golang.Language](t, e, goprovider.Provider{}, "package p\n\ntype Page[T any] []T\n")
-	nativeRegistration[rust.Language](t, e, rustprovider.Provider{}, "type Page<T> = Vec<T>;\n")
-	nativeRegistration[cpp.Language](t, e, cppprovider.Provider{}, "template<typename T> struct Page { T value; };\n")
+	p := nativeRegistration[ts.Language](t, e, typescriptText(), "// retain\r\ntype Page<T> = T[];\r\n")
+	nativeRegistration[golang.Language](t, e, golangText(), "package p\n\ntype Page[T any] []T\n")
+	nativeRegistration[rust.Language](t, e, rustText(), "type Page<T> = Vec<T>;\n")
+	nativeRegistration[cpp.Language](t, e, cppText(), "template<typename T> struct Page { T value; };\n")
 	if err := e.RegisterLanguage(p); !errors.Is(err, engine.ErrDuplicateLanguage) {
 		t.Fatal(err)
 	}
@@ -208,16 +207,16 @@ func TestEngineASTOnlyCapabilitiesAndProfiles(t *testing.T) {
 	if _, err := representation.NewLanguage[amber](nilProvider, "v1"); !errors.Is(err, representation.ErrInvalidLanguage) {
 		t.Fatal(err)
 	}
-	p, err := representation.NewLanguage[ts.Language](tsprovider.Provider{}, "v1")
+	p, err := representation.NewLanguage[ts.Language](ts.Language{}, "v1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	other, err := representation.NewLanguage[ts.Language](tsprovider.Provider{}, "v2")
+	other, err := representation.NewLanguage[ts.Language](ts.Language{}, "v2")
 	if err != nil {
 		t.Fatal(err)
 	}
-	registerNativeStages(t, e, p, tsprovider.Provider{})
-	typedCST, err := (tsprovider.Provider{}).Parse(context.Background(), parse.Input{SourceID: "profile", TreeID: "profile", Text: "type X=string;"})
+	registerNativeStages(t, e, p, typescriptText())
+	typedCST, err := parsetypescript.Parse(context.Background(), parse.Input{SourceID: "profile", TreeID: "profile", Text: "type X=string;"})
 	if err != nil {
 		t.Fatal(err)
 	}

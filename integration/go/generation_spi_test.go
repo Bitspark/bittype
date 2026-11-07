@@ -14,7 +14,7 @@ import (
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	generationfixture "github.com/Bitspark/bittype/integration/go/testdata/generationfixture"
-	gp "github.com/Bitspark/bittype/provider/golang/go"
+
 	s "github.com/Bitspark/bittype/syntax/golang/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -76,7 +76,7 @@ func generationSPIFixture(t *testing.T, useFirst bool) (s.AST, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return tree, formatted(t, gp.Provider{}, tree)
+	return tree, formatted(t, golangText(), tree)
 }
 
 func nodeAttribute[L any](node ast.Node[L], name string) string {

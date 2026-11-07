@@ -3,7 +3,7 @@ package grammar
 
 import (
 	"fmt"
-	"github.com/Bitspark/bittype/check/syntax/ast/go"
+	"github.com/Bitspark/bittype/check/syntax/shared/ast/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"regexp"

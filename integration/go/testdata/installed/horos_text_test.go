@@ -1,19 +1,22 @@
 package consumer_test
 
 import (
+	checkhoros "github.com/Bitspark/bittype/check/syntax/horos/provider/go"
+	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
+
 	"context"
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/parse/go"
-	formatter "github.com/Bitspark/bittype/format/syntax/horos/go"
-	parser "github.com/Bitspark/bittype/parse/syntax/horos/go"
-	provider "github.com/Bitspark/bittype/provider/horos/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
+	formatter "github.com/Bitspark/bittype/format/syntax/horos/provider/go"
+	parser "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
+
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 )
 
 func TestInstalledHorosTextPagination(t *testing.T) {
-	p := provider.Provider{}
+	p := textfixture.New(parser.Provider{}, checkhoros.Provider{}, formatter.Provider{})
 	source := "module installed.source; import h from horos.kinds pin \"sha256:" + decl.PreludePin().String() + "\"; type Page<T> = { items: list<T>; next?: text; }; type DataPage<D: h.Data> = Page<D>; type People = DataPage<text>;"
 	parsed, err := (parser.Provider{}).Parse(context.Background(), parse.Input{SourceID: "installed.horos", TreeID: "installed", Text: source})
 	if err != nil {

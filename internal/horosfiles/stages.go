@@ -13,7 +13,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/source/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"

@@ -8,7 +8,7 @@ import (
 	"math/big"
 	"testing"
 
-	analyze "github.com/Bitspark/bittype/analyze/files/horos/go"
+	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/format/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
@@ -16,8 +16,8 @@ import (
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
-	provider "github.com/Bitspark/bittype/provider/horos/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
+
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -39,14 +39,14 @@ func semanticConformanceCases() []struct {
 	}{{"horos", qualifyHoros}, {"golang", qualifyGolang}, {"typescript", qualifyTypeScript}, {"rust", qualifyRust}}
 }
 
-// bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/go#Provider.Resolve feature=semantic-conformance case=independent-provider-registration expects=captured-graph-resolved
-// bittype:case target=github.com/Bitspark/bittype/analyze/files/golang/go#Provider.Analyze feature=semantic-conformance case=independent-provider-registration expects=resolution-graph-preserved
-// bittype:case target=github.com/Bitspark/bittype/resolve/files/typescript/go#Provider.Resolve feature=semantic-conformance case=independent-provider-registration expects=captured-graph-resolved
-// bittype:case target=github.com/Bitspark/bittype/analyze/files/typescript/go#Provider.Analyze feature=semantic-conformance case=independent-provider-registration expects=resolution-graph-preserved
-// bittype:case target=github.com/Bitspark/bittype/resolve/files/rust/go#Provider.Resolve feature=semantic-conformance case=independent-provider-registration expects=captured-graph-resolved
-// bittype:case target=github.com/Bitspark/bittype/analyze/files/rust/go#Provider.Analyze feature=semantic-conformance case=independent-provider-registration expects=resolution-graph-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Resolve feature=semantic-conformance case=independent-provider-registration expects=captured-graph-resolved
-// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Analyze feature=semantic-conformance case=independent-provider-registration expects=analysis-evidence-produced
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve feature=semantic-conformance case=independent-provider-registration expects=captured-graph-resolved
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze feature=semantic-conformance case=independent-provider-registration expects=resolution-graph-preserved
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/typescript/provider/go#Provider.Resolve feature=semantic-conformance case=independent-provider-registration expects=captured-graph-resolved
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/typescript/provider/go#Provider.Analyze feature=semantic-conformance case=independent-provider-registration expects=resolution-graph-preserved
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/rust/provider/go#Provider.Resolve feature=semantic-conformance case=independent-provider-registration expects=captured-graph-resolved
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze feature=semantic-conformance case=independent-provider-registration expects=resolution-graph-preserved
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve feature=semantic-conformance case=independent-provider-registration expects=captured-graph-resolved
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/horos/provider/go#Provider.Analyze feature=semantic-conformance case=independent-provider-registration expects=analysis-evidence-produced
 func TestSemanticProviders(t *testing.T) {
 	for _, fixture := range semanticConformanceCases() {
 		t.Run(fixture.directory, fixture.qualify)
@@ -54,7 +54,7 @@ func TestSemanticProviders(t *testing.T) {
 }
 
 func qualifyHoros(t *testing.T) {
-	provider := provider.Provider{}
+	provider := horosText()
 	if provider.ID() != "horos" || provider.Name() != "Horos" {
 		t.Fatal("unstable Horos identity")
 	}
@@ -114,7 +114,7 @@ func qualifyHoros(t *testing.T) {
 	if _, err := registry.Analyze(context.Background(), input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatalf("syntax registration silently installs an analyzer: %v", err)
 	}
-	analyzer, err := analysis.NewAnalyzer[h.Language](definition, analyze.Contract(), provider)
+	analyzer, err := analysis.NewAnalyzer[h.Language](definition, analyze.Contract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +124,7 @@ func qualifyHoros(t *testing.T) {
 	if _, err := registry.Resolve(context.Background(), snapshot, semantic.Options{}); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	resolver, err := resolution.NewResolver[h.Language](definition, resolve.Contract(), provider)
+	resolver, err := resolution.NewResolver[h.Language](definition, resolve.Contract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}

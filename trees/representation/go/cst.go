@@ -1,7 +1,7 @@
 package representation
 
 import (
-	cstcheck "github.com/Bitspark/bittype/check/syntax/cst/go"
+	cstcheck "github.com/Bitspark/bittype/check/syntax/shared/cst/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/internal/tree"
 	"github.com/Bitspark/bittype/trees/ast/go"
