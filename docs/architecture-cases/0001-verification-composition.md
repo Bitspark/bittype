@@ -158,7 +158,7 @@ question and is checked as a definition. Admission counterexamples obtain their
 witness representation through the same rule selection. The tests exercise both
 bool against a text bound and text against a bool bound.
 [Joint checker](../../verification/logos/go/joint.go) ·
-[Family interpretation](../../verification/files/horos-to-go/go/mapping.go) ·
+[Family interpretation](../../verification/files/horos-to-go/go/family.go) ·
 [Admission interpretation](../../verification/files/horos-to-go/go/counterexample.go).
 
 The independent fixture maps a two-element Horos tuple to a named Go helper

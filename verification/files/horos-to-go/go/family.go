@@ -16,15 +16,15 @@ import (
 	data "github.com/bitspark/ontos/data/go"
 )
 
-type record struct {
-	source h.Declaration
-	target n.Type
-	body   *node
+type namedBody struct {
+	source         h.Declaration
+	target         n.Type
+	representation *node
 }
 type family struct {
 	guarantee           h.Judgment
 	library             Families
-	record              record
+	body                namedBody
 	kind                h.Kind
 	sig                 signature
 	expected, candidate typed.Expr
@@ -77,30 +77,30 @@ func associationInput(source h.Model, target n.Model) (association.Input, []asso
 		{Key: targetKey(), Language: target.Snapshot().Language(), Evidence: []semantic.EvidenceRequirement{n.Evidence()}},
 	}
 }
-func (m Mappings) bindRecord(source h.Declaration, target n.Type, fields []FieldBinding, prefix string) (record, error) {
+func (m Mappings) bindBody(source h.Declaration, target n.Type, fields []FieldBinding, prefix string) (namedBody, error) {
 	if len(fields) > 64 {
-		return record{}, association.ErrLimit
+		return namedBody{}, association.ErrLimit
 	}
 	if !source.Valid() || !target.IsNamed() {
-		return record{}, ErrCoverage
+		return namedBody{}, ErrCoverage
 	}
 	sp, np := source.Definition().Parameters(), target.Parameters()
 	if len(sp) != len(np) || len(sp) > 1 {
-		return record{}, ErrCoverage
+		return namedBody{}, ErrCoverage
 	}
 	var binder binding
 	if len(sp) == 1 {
 		if !np[0].Unconstrained() {
-			return record{}, ErrCoverage
+			return namedBody{}, ErrCoverage
 		}
 		binder = binding{decl.ParameterID{Declaration: source.Definition().ID(), Index: 0}, np[0]}
 	}
 	root := Subject{&subject{declaration: source, sourceModel: source.Model(), expression: source.Definition().Expression(), native: target, fields: slices.Clone(fields), binder: binder, sourceSite: source.Site(), nativeSite: target.Site()}}
 	body, err := m.project(root, prefix)
 	if err != nil {
-		return record{}, err
+		return namedBody{}, err
 	}
-	return record{source, target, body}, nil
+	return namedBody{source, target, body}, nil
 }
 func sameKind(a, b *decl.Kind) bool { return a != nil && b != nil && a.Value().Equal(b.Value()) }
 func declarationValue(v h.Value, d h.Declaration) bool {
@@ -139,11 +139,11 @@ func (l Families) Bind(source h.Declaration, target n.Type, fields []FieldBindin
 	if guarantee.Kind().Module() != kind.Module() || !q.Value().Equal(want) {
 		return Family{}, ErrCoverage
 	}
-	r, err := l.mappings.bindRecord(source, target, fields, "family")
+	r, err := l.mappings.bindBody(source, target, fields, "family")
 	if err != nil {
 		return Family{}, err
 	}
-	f := &family{record: r, kind: kind, library: l, guarantee: guarantee}
+	f := &family{body: r, kind: kind, library: l, guarantee: guarantee}
 	f.sig, f.expected, f.candidate = familyLogic(r)
 	f.theorem, err = l.theorem.Ask(f)
 	if err != nil {
@@ -158,8 +158,8 @@ func (f Family) Theorem() (joint.Claim, error) {
 	return f.state.theorem, nil
 }
 func familyProblem(f *family) (joint.Problem, error) {
-	input, req := associationInput(f.guarantee.Model(), f.record.target.Model())
-	return f.sig.problem(input, req, f.expected, f.record.body.sites()), nil
+	input, req := associationInput(f.guarantee.Model(), f.body.target.Model())
+	return f.sig.problem(input, req, f.expected, f.body.representation.sites()), nil
 }
 
 // Candidate returns ordinary proof syntax. It carries no acceptance authority.
@@ -171,7 +171,7 @@ func (f Family) Candidate() typed.Expr {
 }
 
 func (f Family) BindArgument(source h.Declaration, target n.Type, fields []FieldBinding, membership h.Judgment) (Argument, error) {
-	if f.state == nil || !source.Valid() || !source.Model().Same(f.state.record.source.Model()) || !target.Model().Same(f.state.record.target.Model()) || !source.Model().Same(membership.Model()) {
+	if f.state == nil || !source.Valid() || !source.Model().Same(f.state.body.source.Model()) || !target.Model().Same(f.state.body.target.Model()) || !source.Model().Same(membership.Model()) {
 		return Argument{}, joint.ErrInvalid
 	}
 	if membership.Verdict() != decl.Proven {
@@ -189,12 +189,12 @@ func (f Family) BindArgument(source h.Declaration, target n.Type, fields []Field
 	if !descriptor.Equal(source.Definition().Expression().Value()) {
 		return Argument{}, ErrCoverage
 	}
-	r, err := f.state.library.mappings.bindRecord(source, target, fields, "argument")
+	r, err := f.state.library.mappings.bindBody(source, target, fields, "argument")
 	if err != nil {
 		return Argument{}, err
 	}
 	d, proof := argumentLogic(r)
-	return Argument{&argument{membership, f.state, d, r.body, proof}}, nil
+	return Argument{&argument{membership, f.state, d, r.representation, proof}}, nil
 }
 
 // Application retains the checked closed theorem as a definition and rechecks
@@ -212,15 +212,15 @@ func applicationProblem(a application) (joint.Problem, error) {
 	f := a.family
 	var s signature
 	s.include(f.sig)
-	s.add(typed.Define("family.theorem", a.theorem.Request().Statement().Expected, a.theorem.Candidate()), f.record.body.sites()...)
+	s.add(typed.Define("family.theorem", a.theorem.Request().Statement().Expected, a.theorem.Candidate()), f.body.representation.sites()...)
 	s.include(a.argument.sig)
 	h, n := con("h.argument"), con("n.argument")
 	for range a.depth {
 		h = app(con("h.family"), h)
 		n = app(con("n.family"), n)
 	}
-	input, req := associationInput(a.argument.member.Model(), f.record.target.Model())
-	return s.problem(input, req, conjunction(member(h), rep(h, n))(0), append(f.record.body.sites(), a.argument.body.sites()...)), nil
+	input, req := associationInput(a.argument.member.Model(), f.body.target.Model())
+	return s.problem(input, req, conjunction(member(h), rep(h, n))(0), append(f.body.representation.sites(), a.argument.body.sites()...)), nil
 }
 func (a Argument) Candidate(depth int) typed.Expr {
 	if a.state == nil || depth < 1 || depth > 4 {

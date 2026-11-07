@@ -40,6 +40,22 @@ when checking a nested application of an earlier theorem.
 [Independent mapping](../verification/integration/go/testdata/pair/pair.go) ·
 [Composition tests](../verification/integration/go/composition_test.go).
 
+At composition time the consumer supplies the actual optional helper and tuple
+helper from its captured Go model. Its separately configured `policy` must
+admit each law the candidate uses.
+
+```go
+selected, err := verification.Select(
+    mappings.Text(), mappings.Boolean(), mappings.List(), mappings.Record(),
+    optional.Rule(), pair.Rule(tupleHelper),
+)
+if err != nil {
+    return err
+}
+families := verification.NewFamilies(selected)
+checker, err := logos.New(policy, limits, families.Authorities()...)
+```
+
 A new question family uses `logos.Interpret[S]` with its own subject type and
 projection. Only the exact authority selected in `logos.New` can issue its
 questions. `Ask` freezes a single statement and its explicit diagnostic origins.
@@ -475,7 +491,7 @@ against its own exact snapshot and the receiver's requirements, with aggregate
 budgets across participants. It never invokes another semantic stage.
 
 The [joint checker](../verification/logos/go/joint.go) owns sealed claim,
-request and result identities. Each [Horos/Go question](../verification/files/horos-to-go/go/mapping.go)
+request and result identities. Each [Horos/Go question](../verification/files/horos-to-go/go/family.go)
 retains its original subjects, authoritative queries, selected rules and, for an
 application, the imported theorem result. Two interpreters with identical keys
 have distinct authority.

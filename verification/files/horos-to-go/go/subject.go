@@ -57,6 +57,9 @@ func (p Subject) Operand(index int, target n.Type) (Subject, error) {
 	}
 	site := p.s.sourceSite
 	if p.s.sourceModel.Valid() {
+		if p.Declaration().Valid() {
+			site = p.Declaration().BodySite()
+		}
 		operand := p.s.sourceModel.OperandSite(site, ops[index].Path())
 		if operand.Node == 0 {
 			return Subject{}, joint.ErrInvalid
@@ -80,16 +83,19 @@ func (p Subject) directNative(target n.Type) bool {
 	if !target.Valid() || !p.Target().Model().Same(target.Model()) {
 		return false
 	}
-	term, ok := p.Target().Model().Graph().Term(p.Target().ID())
-	if !ok {
-		return false
-	}
-	if slices.Contains(term.Arguments, target.ID()) {
-		return true
-	}
-	for _, op := range term.Operands {
-		if op.Term == target.ID() {
+	graph := p.Target().Model().Graph()
+	for _, native := range [...]n.Type{p.Target(), p.Target().Underlying()} {
+		term, ok := graph.Term(native.ID())
+		if !ok {
+			continue
+		}
+		if slices.Contains(term.Arguments, target.ID()) {
 			return true
+		}
+		for _, operand := range term.Operands {
+			if operand.Term == target.ID() {
+				return true
+			}
 		}
 	}
 	return false

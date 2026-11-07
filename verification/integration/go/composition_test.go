@@ -229,3 +229,63 @@ func TestMappingCannotEraseTheOriginalBinder(t *testing.T) {
 		t.Fatal("mapping erased its captured parameter", err)
 	}
 }
+
+// A library can project a named body's operands directly, without a record rule.
+func TestNamedTupleUsesActualBodyAndNativeFieldOperands(t *testing.T) {
+	s := sourceModel(t, "type Product<T> = tuple<T,bool>;")
+	g := nativeModel(t, "type Product[N any] struct { First N; Second bool }")
+	d := declaration(t, s, "Product")
+	target := native(t, g, "Product")
+	const dependency = "example/tuple-struct"
+	rule := v.Rule{
+		Key: semantics.Key{Owner: "example", Name: "tuple-struct"}, Dependency: dependency, Law: pair.ReversePremises{},
+		Project: func(p v.Subject) ([]v.Subject, bool, error) {
+			if p.Source().Constructor() != "tuple" || !p.Target().Same(target) || len(p.Source().Operands()) != 2 {
+				return nil, false, nil
+			}
+			fields, ok := p.Target().Fields()
+			if !ok || len(fields) != 2 || fields[0].Name != "First" || fields[1].Name != "Second" {
+				return nil, false, nil
+			}
+			var children []v.Subject
+			for i, field := range fields {
+				if field.Tag != "" || field.Embedded {
+					return nil, false, nil
+				}
+				child, err := p.Operand(i, field.Type)
+				if err != nil {
+					return nil, false, err
+				}
+				children = append(children, child)
+			}
+			return children, true, nil
+		},
+	}
+	library := v.NewFamilies(selectMappings(t, rule, m.Boolean()))
+	k := importedKind(t, s, "Data")
+	bound, err := k.Arrow(s.Root())
+	if err != nil {
+		t.Fatal(err)
+	}
+	value, err := d.Value()
+	if err != nil {
+		t.Fatal(err)
+	}
+	guarantee, err := s.Satisfies(context.Background(), value, bound)
+	if err != nil {
+		t.Fatal(err)
+	}
+	family, err := library.Bind(d, target, nil, k, guarantee)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claim, err := family.Theorem()
+	if err != nil {
+		t.Fatal(err)
+	}
+	limits := joint.DefaultLimits()
+	limits.Checker.Work = 20000000
+	policy := typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: append(allowedLaws(), dependency)}
+	checker := composition(t, policy, limits, library.Authorities()...)
+	accepted(t, checkClaim(t, checker, claim, family.Candidate()))
+}
