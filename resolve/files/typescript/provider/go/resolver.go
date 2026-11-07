@@ -48,7 +48,7 @@ func (p Provider) Resolve(ctx context.Context, request semantic.Request[s.Langua
 	if err := p.Compiler.Validate(); err != nil {
 		return semantic.Result{}, err
 	}
-	out, err := typescriptsem.Check(ctx, p.Compiler.NodePath, p.Compiler.TypeScriptPath, request.Inputs(), request.Files(), nil)
+	out, err := typescriptsem.Check(ctx, p.Compiler.NodePath, p.Compiler.TypeScriptPath, request.Inputs(), request.Files(), nil, request.Configuration())
 	if err != nil {
 		return semantic.Result{}, err
 	}

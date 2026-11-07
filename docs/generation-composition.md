@@ -75,11 +75,11 @@ regenerating Page. A deliberately failing replacement is called once and yields
 no fallback output.
 
 The same tests define an ordinary imported Cell<T> whose body is wire<T>. The
-default profile cannot lower Wire. Adding one exact library-owned mapping renders
-Cell<T> as LibraryCell<T> inside Page, without changing the composer, source
-frontend, native backend, runtime or Wire. The fixture supplies the external
-native declaration to the TypeScript compiler. This is type representation only;
-it does not implement Cell behavior or install a privileged Cell package.
+default profile cannot lower Wire. The library mapping calls the TypeScript
+builder's `ImportedType` with export `Cell` from `@bitspark/cell`. The compiler
+resolves the generated named type import against an independent package fixture.
+The mapping works inside Page and takes no file paths. The consumer's placement
+determines imports between generated units. [TypeScript type imports](typescript-type-imports.md)
 
 The [independent-source fixture](../integration/go/generation_composition_test.go)
 uses the same automatic composer without Horos. It exercises a generic with

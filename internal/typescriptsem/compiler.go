@@ -49,7 +49,7 @@ func (b *boundedBuffer) Write(data []byte) (int, error) {
 func ValidCompiler(nodePath, modulePath string) bool {
 	return filepath.IsAbs(nodePath) && filepath.IsAbs(modulePath)
 }
-func Check(ctx context.Context, nodePath, modulePath string, trees []s.AST, source *files.Context, query *Query) (Output, error) {
+func Check(ctx context.Context, nodePath, modulePath string, trees []s.AST, source *files.Context, query *Query, settings []semantic.Setting) (Output, error) {
 	if ctx == nil || !ValidCompiler(nodePath, modulePath) {
 		return Output{}, semantic.ErrInvalidRequest
 	}
@@ -66,7 +66,11 @@ func Check(ctx context.Context, nodePath, modulePath string, trees []s.AST, sour
 	if units == nil {
 		return Output{Status: "missing-context", Diagnostics: []semantic.Diagnostic{{Code: n.Key("missing-context"), Subject: n.Coverage(), Message: "TypeScript checking requires captured source files and their AST correspondence"}}}, nil
 	}
-	encoded, err := json.Marshal(input{Version: 1, Units: units, Query: query})
+	packages, enabled, err := n.Imports(settings)
+	if err != nil {
+		return Output{}, err
+	}
+	encoded, err := json.Marshal(input{Version: 1, Units: units, Query: query, NamedImports: enabled, Packages: packages})
 	if err != nil {
 		return Output{}, err
 	}

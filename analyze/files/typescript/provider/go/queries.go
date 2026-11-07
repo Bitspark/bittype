@@ -51,7 +51,7 @@ func (q Queries) Assignable(ctx context.Context, source, target n.Type) (Assigna
 		}
 		trees = append(trees, tree)
 	}
-	out, err := typescriptsem.Check(ctx, q.compiler.NodePath, q.compiler.TypeScriptPath, trees, q.model.Snapshot().Files(), &typescriptsem.Query{Source: uint32(source.ID()), Target: uint32(target.ID())})
+	out, err := typescriptsem.Check(ctx, q.compiler.NodePath, q.compiler.TypeScriptPath, trees, q.model.Snapshot().Files(), &typescriptsem.Query{Source: uint32(source.ID()), Target: uint32(target.ID())}, q.model.Receipt().Configuration())
 	if err != nil {
 		return Assignability{}, err
 	}

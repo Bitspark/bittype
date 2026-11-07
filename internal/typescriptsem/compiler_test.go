@@ -31,13 +31,13 @@ func TestCompilerFailureAndVersion(t *testing.T) {
 	if err := os.WriteFile(module, []byte("module.exports = {version: '0.0.0'};"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Check(context.Background(), node, module, trees, source, nil); !errors.Is(err, n.ErrCompiler) {
+	if _, err := Check(context.Background(), node, module, trees, source, nil, n.Configuration()); !errors.Is(err, n.ErrCompiler) {
 		t.Fatal("foreign compiler", err)
 	}
-	if _, err := Check(context.Background(), filepath.Join(t.TempDir(), "missing-node"), module, trees, source, nil); !errors.Is(err, n.ErrCompiler) {
+	if _, err := Check(context.Background(), filepath.Join(t.TempDir(), "missing-node"), module, trees, source, nil, n.Configuration()); !errors.Is(err, n.ErrCompiler) {
 		t.Fatal("missing executable", err)
 	}
-	if _, err := Check(context.Background(), node, filepath.Join(t.TempDir(), "missing.cjs"), trees, source, nil); !errors.Is(err, n.ErrCompiler) {
+	if _, err := Check(context.Background(), node, filepath.Join(t.TempDir(), "missing.cjs"), trees, source, nil, n.Configuration()); !errors.Is(err, n.ErrCompiler) {
 		t.Fatal("missing module", err)
 	}
 }

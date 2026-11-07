@@ -1,6 +1,6 @@
 # TypeScript type imports and file placement
 
-**Design, 7 November 2026.** A representation library selects a public TypeScript module and named type export. The TypeScript Files formatter owns local file organization. Consumers supply one placement for owned declarations. That placement determines both the files returned by the printer and the relative type imports between them. See [Syntax and Files](source.md) and [generation composition](kernel-composition.md).
+**Implemented, 7 November 2026.** A representation library selects a public TypeScript module and named type export. The TypeScript Files formatter owns local file organization. Consumers supply one placement for owned declarations. That placement determines both the files returned by the printer and the relative type imports between them. [Syntax and Files](source.md) · [Generation composition](kernel-composition.md)
 
 ## From generation to files
 
@@ -10,20 +10,56 @@
 4. For each use, follow its resolved symbol. A declaration placed in the same unit uses a local reference. An exported declaration placed elsewhere uses a named type import relative to the importing file. A selected dependency symbol uses its public package specifier. Allocate aliases per unit, avoiding lexical parameters and declarations. Coalesce repeated imports, rebuild reference links in the new ASTs, and format each AST directly to a CST.
 5. Establish fresh semantic evidence for the organized units and check the relocated bindings against their intended destinations. Publish `source.Source` with the units, paths and local import relations. The shared Files printer emits these paths and texts. Failed placement, ambiguity, missing dependencies or failed semantic admission produce no partial Source.
 
-The source language supplies the canonical Cell identity. The Cell mapping selects, for example, export `Cell` from `@bitspark/cell`. The TypeScript formatter derives relative imports between owned units; it uses the configured public specifier for a package export. It has no Cell rule. The shared generation contract and Files/Source carriers already express their respective operations. The implementation needs no universal layout registry.
+The source language supplies the canonical Cell identity. The Cell mapping selects export `Cell` from `@bitspark/cell` and passes its represented argument to the TypeScript builder.
+
+```go
+return builder.ImportedType("@bitspark/cell", "Cell", []generation.Fragment[typescript.Language]{arg}, origin)
+```
+
+The formatter reads each local use's compiler-resolved declaration site and each external use's package/export identity. The generation kernel and the shared Files printer operate on their existing contracts. [TypeScript builder](../transform/syntax/typescript/target/go/provider.go) · [Organization and relocation](../format/files/typescript/provider/go/placement.go)
+
+## Consumer API
+
+The build supplies the public package specifiers and their selected declaration text to `semantics/typescript.ImportConfiguration`. Pass those settings to `analyze.ContractFor` and to `format/files/typescript.Stages.Configuration`. Construct the stages with the TypeScript language, syntax formatter, printer, checker, resolver and analyzer. Format the generated AST into a logical CST, then call `stages.Capture(ctx, logicalUnits, entry, limits)`. The returned Files input owns the current TypeScript sites used below. The logical path supplies the initial compiler context. It does not prescribe the emitted path.
+
+```go
+organization := tsfiles.Organization{
+    Entry: "pages",
+    Units: []tsfiles.Placement{
+        {File: "pages", Path: "generated/pages/page.ts", Declarations: []ast.NodeRef{page, cells}},
+        {File: "model", Path: "generated/model/person.ts", Declarations: []ast.NodeRef{person}},
+    },
+}
+setting, err := organization.Setting()
+if err != nil { return err }
+input.Configuration = []semantic.Setting{setting}
+formatter, err := tsfiles.New(stages)
+if err != nil { return err }
+organized, err := formatter.Format(ctx, input)
+if err != nil { return err }
+emitted, err := filesPrinter.Print(ctx, organized)
+```
+
+`emitted.Entries` contains the output file IDs, paths and text. When using an already organized Source as input, use declaration sites in its new snapshot. Omitting the setting preserves the captured grouping and paths. The integration test includes the complete construction, both placement requests, native scope checks and compilation of a consuming TypeScript file. [Files provider](../format/files/typescript/provider/go/format.go) · [Executable example](../integration/go/typescript_placement_test.go)
 
 ## Example and scope
 
-Assign the captured TypeScript declarations Page and Cells to file ID `pages` at `generated/pages/page.ts`, and Person to `model` at `generated/model/person.ts`. For a plain ESM .ts profile using .js relative specifiers, the pages unit contains:
+Assign the captured TypeScript declarations Page and Cells to file ID `pages` at `generated/pages/page.ts`, and Person to `model` at `generated/model/person.ts`. The generated ESM declarations include the following types.
 
 ```typescript
 import type { Person } from "../model/person.js";
 import type { Cell } from "@bitspark/cell";
 
-export interface Page<T> { items: T[]; }
+export interface Page<T> { items: T[]; next?: string; }
 export type Cells = Page<Cell<Person>>;
 ```
 
-Move Person into `pages` in that placement. The file now defines Person locally. Its import disappears and the Cell package import remains. Moving only the model file's path changes the relative specifier. Actual package declarations are explicitly supplied inputs, identified by public specifier in the analysis configuration. The consuming build selects them from its dependencies. This slice covers named type imports in declaration-only ESM .ts units. Namespace imports, runtime imports, re-exports, package discovery and project-wide resolution are separate capabilities.
+<!-- bittype:overview scope=example-and-scope part=features -->
+Move Person into `pages` in that placement and remove the empty model unit. The pages file now defines Person locally. Its import disappears and the Cell package import remains. Changing the model file's path changes the relative specifier. The returned Source records a local import relation at its actual import node for each owned module dependency. External packages retain their public specifiers and are supplied by the consuming build.
+<!-- bittype:overview:end -->
 
-Qualification exercises actual generated syntax, the Files formatter, fresh target receipts and the printer, and compiles both placements as modules against a separately supplied package. Missing and duplicate placements, unresolved exports, alias conflicts and stale receipts must fail or be resolved explicitly.
+<!-- bittype:overview scope=example-and-scope part=exclusions -->
+This profile covers named type imports in nonempty, declaration-only TypeScript ESM modules. Output paths are Files-relative `.ts` paths, excluding `.d.ts` and URL delimiters `?`, `#` and `%`. Imports between output units use relative `.js` specifiers. Package declaration inputs support type aliases, interfaces and named type imports. Namespace imports, re-exports, runtime imports, ambient scripts and discovery of package files on disk are outside this profile.
+<!-- bittype:overview:end -->
+
+An incomplete placement, an unexported cross-file target, a missing dependency, or a changed binding fails the operation. Named imports are deduplicated and aliased per file when required. Both arrangements compile against a standalone package fixture that exports Cell. [Integration tests](../integration/go/typescript_placement_test.go)

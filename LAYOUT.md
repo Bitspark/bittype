@@ -49,7 +49,7 @@ parse/syntax/<language>/provider/go/           text to CST
 check/syntax/<language>/provider/go/           native syntax admission
 format/syntax/<language>/provider/go/          AST to CST
 parse/files/horos/provider/go/                 Files to Source
-format/files/horos/provider/go/                Semantics to Source
+format/files/{horos,typescript}/provider/go/   Semantics to Source
 resolve/files/<language>/provider/go/          captured reference resolution
 analyze/files/<language>/provider/go/          semantic analysis
 print/{syntax,files}/shared/provider/go/       shared printers
@@ -284,9 +284,10 @@ Consumers select source, target, mappings, declaration sites and output. The eng
 
 The [Syntax and Files design](docs/source.md) is implemented with
 `Syntax : CST : AST` and `Files : Source : Semantics`. Both dimension names are
-explicit in implementation paths. Horos composes the full Files text pipeline;
-Go, TypeScript and Rust add bounded Files resolution and analysis without Files parsing/formatting;
-applications construct a Files printer for any of the five languages from the shared printer providers.
+explicit in implementation paths. Horos composes the full Files text pipeline.
+Go, TypeScript and Rust supply bounded Files resolution and analysis. TypeScript
+also supplies [Files formatting with named type imports](docs/typescript-type-imports.md).
+Applications construct a Files printer for any of the five languages from the shared printer providers.
 
 Files depends on AST addresses. Source retains semantic capture/result handles,
 CSTs and typed Semantics. Shared semantic capture depends on Files but never

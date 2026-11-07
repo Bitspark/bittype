@@ -4,7 +4,7 @@ package typescriptsem
 import (
 	"context"
 	"fmt"
-	"reflect"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -12,6 +12,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
 	parser "github.com/Bitspark/bittype/parse/syntax/typescript/provider/go"
+	n "github.com/Bitspark/bittype/semantics/typescript/go"
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
@@ -36,9 +37,27 @@ type Query struct {
 	Target uint32
 }
 type input struct {
-	Version int
-	Units   []Unit
-	Query   *Query
+	NamedImports bool
+	Packages     []n.PackageTypes
+	Version      int
+	Units        []Unit
+	Query        *Query
+}
+
+// The syntax checker admits explicit false flags. The parser omits a flag
+// when its token is absent. All other attributes must match exactly.
+func sameAttributes(actual, parsed []ast.Attribute) bool {
+	count := 0
+	for _, a := range actual {
+		if a.Text == "false" && (a.Name == s.AttributeOptional || a.Name == s.AttributeReadonly || a.Name == s.AttributeExported || a.Name == s.AttributeRest) {
+			continue
+		}
+		if !slices.Contains(parsed, a) {
+			return false
+		}
+		count++
+	}
+	return count == len(parsed)
 }
 
 func prepare(ctx context.Context, trees []s.AST, source *files.Context) ([]Unit, error) {
@@ -89,14 +108,31 @@ func prepare(ctx context.Context, trees []s.AST, source *files.Context) ([]Unit,
 			return nil, fmt.Errorf("%w: captured source/AST mismatch: %v", semantic.ErrInvalidRequest, err)
 		}
 		expected := parsed.ASTView()
-		if expected.Root != tree.Root || len(expected.Nodes) != len(tree.Nodes) {
+		// Compare by containment position. Parser and generators can use different
+		// node numbering and attribute order for exactly the same syntax.
+		if len(expected.Nodes) != len(tree.Nodes) {
 			return nil, semantic.ErrInvalidRequest
 		}
-		for i, node := range expected.Nodes {
-			actual := tree.Nodes[i]
-			if node.Kind != actual.Kind || !reflect.DeepEqual(node.Attributes, actual.Attributes) || !reflect.DeepEqual(node.Children, actual.Children) {
-				return nil, fmt.Errorf("%w: captured source/AST mismatch at %s:%d", semantic.ErrInvalidRequest, tree.ID, i+1)
+		parsedFor := make(map[ast.NodeID]ast.NodeID, len(tree.Nodes))
+		var pair func(ast.NodeID, ast.NodeID) error
+		pair = func(actualID, parsedID ast.NodeID) error {
+			actual, parsed := tree.Nodes[actualID-1], expected.Nodes[parsedID-1]
+			if actual.Kind != parsed.Kind || !sameAttributes(actual.Attributes, parsed.Attributes) || len(actual.Children) != len(parsed.Children) {
+				return fmt.Errorf("%w: node %d (%s) differs from parsed %s in attributes %v / %v or children", semantic.ErrInvalidRequest, actualID, actual.Kind, parsed.Kind, actual.Attributes, parsed.Attributes)
 			}
+			parsedFor[actualID] = parsedID
+			for i, child := range actual.Children {
+				if child.Role != parsed.Children[i].Role {
+					return semantic.ErrInvalidRequest
+				}
+				if err := pair(child.Node, parsed.Children[i].Node); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+		if err := pair(tree.Root, expected.Root); err != nil {
+			return nil, fmt.Errorf("%w: captured source/AST mismatch in %s", err, tree.ID)
 		}
 		// TypeScript offsets use UTF-16; Bittype source spans use UTF-8 bytes.
 		offsets := make([]int, len(file.Text)+1)
@@ -110,11 +146,12 @@ func prepare(ctx context.Context, trees []s.AST, source *files.Context) ([]Unit,
 			offsets[offset+utf8.RuneLen(r)] = count
 		}
 		unit := Unit{Tree: tree.ID, Path: file.Path, Text: file.Text}
-		for i, node := range expected.Nodes {
-			if len(node.Origin.Spans) != 1 {
+		for i, node := range tree.Nodes {
+			spans := expected.Nodes[parsedFor[ast.NodeID(i+1)]-1].Origin.Spans
+			if len(spans) != 1 {
 				return nil, semantic.ErrInvalidRequest
 			}
-			span := node.Origin.Spans[0]
+			span := spans[0]
 			unit.Nodes = append(unit.Nodes, Node{ID: ast.NodeID(i + 1), Kind: node.Kind, Start: offsets[span.Start], End: offsets[span.End], Attributes: node.Attributes, Children: node.Children, References: tree.Nodes[i].References})
 		}
 		units = append(units, unit)

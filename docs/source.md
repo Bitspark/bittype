@@ -300,9 +300,10 @@ The Horos Files parser and formatter accept explicit syntax/check/resolution/ana
 collaborators and semantic options. Shared printing at both dimensions uses
 `Provider[L]` and `New[L]`; the Files constructor additionally takes the selected
 Syntax printer. A native Files printer requires no semantic provider.
-Go and TypeScript supply [bounded Files resolution and analysis](native-semantics.md),
-but native Files parsing/formatting compositions remain unimplemented for all four
-languages. Those are independent capabilities; see the [provider matrix](providers.md).
+Go, TypeScript and Rust supply [bounded Files resolution and analysis](native-semantics.md).
+The [TypeScript Files formatter](typescript-type-imports.md) organizes admitted native
+declarations into modules. Its single placement supplies output paths and determines
+local type imports. The [provider matrix](providers.md) lists the available stages.
 
 ## Bounds
 

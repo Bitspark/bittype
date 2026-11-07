@@ -3,6 +3,7 @@ package analyze
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
@@ -19,6 +20,17 @@ func Contract() analysis.Contract {
 	return analysis.Contract{Semantic: c, Resolution: &resolution.Requirement{Profile: n.ResolutionProfile, Configuration: n.Configuration()}}
 }
 
+// ContractFor binds analysis to resolution with exactly the supplied package environment.
+func ContractFor(settings []semantic.Setting) (analysis.Contract, error) {
+	evidence, err := n.EvidenceFor(settings)
+	if err != nil {
+		return analysis.Contract{}, err
+	}
+	c := Contract()
+	c.Resolution.Configuration = evidence.Configuration
+	return c, nil
+}
+
 // bittype:scope docs/native-semantics.md#first-typescript-profile
 func Analyze(ctx context.Context, request analysis.Request[s.Language]) (semantic.Result, error) {
 	if ctx == nil || request.Contract().Profile != n.AnalysisProfile || !n.MatchesConfiguration(request.Configuration()) {
@@ -28,7 +40,7 @@ func Analyze(ctx context.Context, request analysis.Request[s.Language]) (semanti
 		return semantic.Result{}, err
 	}
 	resolved, ok := request.Resolution()
-	if !ok {
+	if !ok || !reflect.DeepEqual(request.Configuration(), resolved.Configuration()) {
 		return semantic.Result{}, semantic.ErrInvalidRequest
 	}
 	publication := semantic.Publication{Diagnostics: resolved.Diagnostics()}

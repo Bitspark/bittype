@@ -143,11 +143,20 @@ installation or IO. Resolution invokes that compiler and requires version
 **5.9.3**. The caller supplies `typescript.Configuration()` in both operations;
 the configuration fixes ES2020, ESNext modules, strict checking,
 `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`, `lib.es2020.d.ts`, no
-ambient packages, and the `captured-types-1` helper profile. The helper's host
+ambient packages, and the `captured-types-1` helper profile. The baseline host
 reads only supplied source units and that compiler package's standard libraries.
-It never resolves an ambient project, imports packages, downloads dependencies
-or emits source. Compiler files are trusted, explicitly provisioned dependencies.
+Compiler files are trusted, explicitly provisioned dependencies.
 The child process receives no `NODE_OPTIONS`, `NODE_PATH` or credential environment.
+
+The named-import setting from `typescript.ImportConfiguration(packages)` additionally
+admits local `.js` specifiers resolved against captured `.ts` files and named
+exports of explicitly supplied package declaration modules. Both the package specifiers
+and their declaration text participate in receipt identity. Use `analyze.ContractFor(settings)`
+with the same configuration for resolution and analysis. The graph binds a named use
+to its compiler symbol and records the imported package type's module, export and
+generic arguments. Bittype checks the syntax link to the local import binding.
+Package-private member structure is outside the graph projection. The Files formatter
+establishes these facts again after placement. [TypeScript type imports](typescript-type-imports.md)
 
 Every supplied AST must correspond to its captured original `.ts` text. The
 private bridge reparses that text using Bittype's existing TypeScript parser,
