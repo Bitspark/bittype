@@ -3,14 +3,11 @@ package integration_test
 import (
 	"context"
 	"errors"
-	cstcheck "github.com/Bitspark/bittype/check/syntax/cst/go"
+	cstcheck "github.com/Bitspark/bittype/check/syntax/shared/cst/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
-	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
-	goprovider "github.com/Bitspark/bittype/provider/golang/go"
-	rustprovider "github.com/Bitspark/bittype/provider/rust/go"
-	tsprovider "github.com/Bitspark/bittype/provider/typescript/go"
+
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/cst/go"
@@ -103,18 +100,18 @@ func exercise[L any](t *testing.T, p nativeProvider[L], directory, extension str
 	}
 }
 
-// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Parse feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Format feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Print feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Parse feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Format feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Print feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Parse feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Format feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Print feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Parse feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Format feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Print feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/typescript/provider/go#Provider.Parse feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/format/syntax/typescript/provider/go#Provider.Format feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/print/syntax/shared/provider/go#Provider.Print feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved language=github.com/Bitspark/bittype/syntax/typescript/go#Language
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/golang/provider/go#Provider.Parse feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/format/syntax/golang/provider/go#Provider.Format feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/print/syntax/shared/provider/go#Provider.Print feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved language=github.com/Bitspark/bittype/syntax/golang/go#Language
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/rust/provider/go#Provider.Parse feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/format/syntax/rust/provider/go#Provider.Format feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/print/syntax/shared/provider/go#Provider.Print feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved language=github.com/Bitspark/bittype/syntax/rust/go#Language
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/cpp/provider/go#Provider.Parse feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/format/syntax/cpp/provider/go#Provider.Format feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/print/syntax/shared/provider/go#Provider.Print feature=native-text case=valid-fixture-round-trips expects=round-trip-preserved language=github.com/Bitspark/bittype/syntax/cpp/go#Language
 func TestNativeTextRoundTrips(t *testing.T) {
 	for _, fixture := range nativeConformanceCases() {
 		t.Run(fixture.directory, fixture.roundTrips)
@@ -133,15 +130,15 @@ func reject[L any](t *testing.T, p nativeProvider[L], sources []string) {
 	}
 }
 
-// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
-// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
-// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
-// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/typescript/provider/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/golang/provider/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/rust/provider/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/cpp/provider/go#Provider.Parse feature=source-boundary case=unsupported-and-malformed-fixtures expects=located-error-without-output
 func TestUnsupportedAndMalformedSources(t *testing.T) {
-	reject(t, tsprovider.Provider{}, []string{"const x = 1;", "type X = string; garbage", "type X = (x: string;", "type X = [a?:string,b:number];", "type X = typeof foo;", "type X = 1 + 2;", "import type {} from 'x';", "/// <reference path='x'/>\ntype X=string;"})
-	reject(t, goprovider.Provider{}, []string{"package p; var X int", "package p; type X [1+2]int", "package p; type X [N]int", "package p; type X struct {", "//go:build ignore\npackage p; type X int"})
-	reject(t, rustprovider.Provider{}, []string{"struct Unit;", "pub fn f() {}", "type X = impl Clone;", "type X<const N:usize> = [u8;N];", "type X = u8; trailing", "struct X { value: }", "type X = for<'a> fn(&'a str);", "type X = 'x';", "use std::{string,vec};"})
-	reject(t, cppprovider.Provider{}, []string{"#define X int\nusing A = X;", "using X = decltype(1);", "struct X { int a = 1; };", "struct X { int a[N]; };", "template<int N> struct X {};", "using X = int; trailing", "struct X { int (X::*f)() const; };", "struct X { X(); };", "struct X { virtual int f() = 1; };"})
+	reject(t, typescriptText(), []string{"const x = 1;", "type X = string; garbage", "type X = (x: string;", "type X = [a?:string,b:number];", "type X = typeof foo;", "type X = 1 + 2;", "import type {} from 'x';", "/// <reference path='x'/>\ntype X=string;"})
+	reject(t, golangText(), []string{"package p; var X int", "package p; type X [1+2]int", "package p; type X [N]int", "package p; type X struct {", "//go:build ignore\npackage p; type X int"})
+	reject(t, rustText(), []string{"struct Unit;", "pub fn f() {}", "type X = impl Clone;", "type X<const N:usize> = [u8;N];", "type X = u8; trailing", "struct X { value: }", "type X = for<'a> fn(&'a str);", "type X = 'x';", "use std::{string,vec};"})
+	reject(t, cppText(), []string{"#define X int\nusing A = X;", "using X = decltype(1);", "struct X { int a = 1; };", "struct X { int a[N]; };", "template<int N> struct X {};", "using X = int; trailing", "struct X { int (X::*f)() const; };", "struct X { X(); };", "struct X { virtual int f() = 1; };"})
 }
 func TestConcreteSourceTrivia(t *testing.T) {
 	cases := []struct {
@@ -149,7 +146,7 @@ func TestConcreteSourceTrivia(t *testing.T) {
 		run          func(parse.Input) (string, error)
 	}{
 		{"typescript", "\ufeff// comment\r\ntype Café = 'é';\r\n\t", func(i parse.Input) (string, error) {
-			p := tsprovider.Provider{}
+			p := typescriptText()
 			c, e := p.Parse(context.Background(), i)
 			if e != nil {
 				return "", e
@@ -157,7 +154,7 @@ func TestConcreteSourceTrivia(t *testing.T) {
 			return p.Print(context.Background(), c)
 		}},
 		{"go", "\ufeffpackage p\r\n// comment\r\ntype Café string\r\n", func(i parse.Input) (string, error) {
-			p := goprovider.Provider{}
+			p := golangText()
 			c, e := p.Parse(context.Background(), i)
 			if e != nil {
 				return "", e
@@ -165,7 +162,7 @@ func TestConcreteSourceTrivia(t *testing.T) {
 			return p.Print(context.Background(), c)
 		}},
 		{"rust", "/* one /* two */ three */\r\ntype Ref<'a> = &'a str; // end\r\n", func(i parse.Input) (string, error) {
-			p := rustprovider.Provider{}
+			p := rustText()
 			c, e := p.Parse(context.Background(), i)
 			if e != nil {
 				return "", e
@@ -173,7 +170,7 @@ func TestConcreteSourceTrivia(t *testing.T) {
 			return p.Print(context.Background(), c)
 		}},
 		{"cpp", "// comment\r\nusing X = int;\r\n\t", func(i parse.Input) (string, error) {
-			p := cppprovider.Provider{}
+			p := cppText()
 			c, e := p.Parse(context.Background(), i)
 			if e != nil {
 				return "", e
@@ -192,7 +189,7 @@ func TestConcreteSourceTrivia(t *testing.T) {
 }
 
 func TestTypeScriptUnicodeLineBoundaries(t *testing.T) {
-	p := tsprovider.Provider{}
+	p := typescriptText()
 	for _, separator := range []string{"\u2028", "\u2029"} {
 		source := "// comment" + separator + "type X = string" + separator + "type Y = number"
 		parsed, err := p.Parse(context.Background(), parse.Input{SourceID: "lines", TreeID: "lines", Text: source})
@@ -212,16 +209,16 @@ func TestTypeScriptUnicodeLineBoundaries(t *testing.T) {
 	}
 }
 func TestProviderIdentity(t *testing.T) {
-	for _, p := range []language.Provider{tsprovider.Provider{}, goprovider.Provider{}, rustprovider.Provider{}, cppprovider.Provider{}} {
+	for _, p := range []language.Provider{typescriptText(), golangText(), rustText(), cppText()} {
 		if p.ID() == "" || p.Name() == "" {
 			t.Fatal("missing provider identity")
 		}
 	}
 }
 
-// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Print feature=concrete-admission case=malformed-concrete-tree expects=rejection-without-output
+// bittype:case target=github.com/Bitspark/bittype/print/syntax/shared/provider/go#Provider.Print feature=concrete-admission case=malformed-concrete-tree expects=rejection-without-output language=github.com/Bitspark/bittype/syntax/typescript/go#Language
 func TestMalformedConcreteTree(t *testing.T) {
-	p := tsprovider.Provider{}
+	p := typescriptText()
 	parsed, err := p.Parse(context.Background(), parse.Input{SourceID: "good", TreeID: "tree", Text: "type X = string;"})
 	if err != nil {
 		t.Fatal(err)
@@ -244,7 +241,7 @@ func TestMalformedConcreteTree(t *testing.T) {
 	}
 }
 func TestParserResourceLimit(t *testing.T) {
-	p := tsprovider.Provider{}
+	p := typescriptText()
 	_, err := p.Parse(context.Background(), parse.Input{SourceID: "large", TreeID: "large-tree", Text: strings.Repeat(" ", (4<<20)+1)})
 	var d *text.Diagnostic
 	if !errors.As(err, &d) || d.Code != text.LimitExceeded {
@@ -254,7 +251,7 @@ func TestParserResourceLimit(t *testing.T) {
 
 func TestAggregateTextBudget(t *testing.T) {
 	// Distinct leaves reuse one small allocation; expanded output must never be built.
-	p := tsprovider.Provider{}
+	p := typescriptText()
 	chunk := strings.Repeat("x", 1024)
 	c := cst.CST[tsMarker]{Abstract: tsFixture(), Root: 1, Nodes: []cst.Node[tsMarker]{{Kind: "layout"}}}
 	for i := 0; i < 17000; i++ {

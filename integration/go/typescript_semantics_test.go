@@ -1,6 +1,10 @@
 package integration_test
 
 import (
+	checktypescript "github.com/Bitspark/bittype/check/syntax/typescript/provider/go"
+	check "github.com/Bitspark/bittype/contracts/check/go"
+	parsetypescript "github.com/Bitspark/bittype/parse/syntax/typescript/provider/go"
+
 	"context"
 	"errors"
 	"fmt"
@@ -10,15 +14,15 @@ import (
 	"sync"
 	"testing"
 
-	analyze "github.com/Bitspark/bittype/analyze/files/typescript/go"
+	analyze "github.com/Bitspark/bittype/analyze/files/typescript/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	syntaxtext "github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/files/go"
-	p "github.com/Bitspark/bittype/provider/typescript/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/typescript/go"
+
+	resolve "github.com/Bitspark/bittype/resolve/files/typescript/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/typescript/go"
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
@@ -40,7 +44,7 @@ func tsCapture(t *testing.T, texts ...string) (semantic.Snapshot, []s.AST, *file
 	source := &files.Context{}
 	for i, text := range texts {
 		id := fmt.Sprint(i)
-		parsed, err := (p.Provider{}).Parse(context.Background(), parse.Input{Text: text, SourceID: ast.SourceID(id), TreeID: ast.TreeID(id)})
+		parsed, err := parsetypescript.Parse(context.Background(), parse.Input{Text: text, SourceID: ast.SourceID(id), TreeID: ast.TreeID(id)})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -56,7 +60,7 @@ func tsCaptureTrees(t *testing.T, trees []s.AST, source *files.Context) semantic
 	if err != nil {
 		t.Fatal(err)
 	}
-	checker, err := p.NewSyntaxChecker(definition)
+	checker, err := check.NewChecker[s.Language](definition, checktypescript.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +80,7 @@ func tsCaptureTrees(t *testing.T, trees []s.AST, source *files.Context) semantic
 }
 func tsResults(t *testing.T, snapshot semantic.Snapshot) (semantic.Result, semantic.Result) {
 	t.Helper()
-	resolver, err := p.NewFilesResolver(snapshot.Language(), tsCompiler(t))
+	resolver, err := resolve.New(snapshot.Language(), tsCompiler(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +88,7 @@ func tsResults(t *testing.T, snapshot semantic.Snapshot) (semantic.Result, seman
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := p.NewFilesAnalyzer(snapshot.Language())
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +131,7 @@ func qualifyTypeScript(t *testing.T) {
 	if _, err := e.Resolve(ctx, snapshot, semantic.Options{}); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	resolver, err := p.NewFilesResolver(snapshot.Language(), tsCompiler(t))
+	resolver, err := resolve.New(snapshot.Language(), tsCompiler(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +146,7 @@ func qualifyTypeScript(t *testing.T) {
 	if _, err = e.Analyze(ctx, input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	analyzer, err := p.NewFilesAnalyzer(snapshot.Language())
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,8 +204,8 @@ func qualifyTypeScript(t *testing.T) {
 	}
 }
 
-// bittype:case target=github.com/Bitspark/bittype/resolve/files/typescript/go#Provider.Resolve feature=typescript-semantic-subset case=generic-and-native-facts expects=native-identity-and-substitution-preserved
-// bittype:case target=github.com/Bitspark/bittype/analyze/files/typescript/go#Provider.Analyze feature=typescript-semantic-subset case=generic-and-native-facts expects=native-identity-and-substitution-preserved
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/typescript/provider/go#Provider.Resolve feature=typescript-semantic-subset case=generic-and-native-facts expects=native-identity-and-substitution-preserved
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/typescript/provider/go#Provider.Analyze feature=typescript-semantic-subset case=generic-and-native-facts expects=native-identity-and-substitution-preserved
 func TestTypeScriptSemanticGenericsAndNativeFacts(t *testing.T) {
 	m := tsModel(t, `export type Text = string;
 export type Alias = Text;
@@ -244,8 +248,8 @@ export type StandardReadonly = ReadonlyArray<Person>;`)
 	}
 }
 
-// bittype:case target=github.com/Bitspark/bittype/resolve/files/typescript/go#Provider.Resolve feature=typescript-semantic-subset case=rejected-and-unsupported-fixtures expects=no-partial-model
-// bittype:case target=github.com/Bitspark/bittype/analyze/files/typescript/go#Provider.Analyze feature=typescript-semantic-subset case=rejected-and-unsupported-fixtures expects=no-partial-model
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/typescript/provider/go#Provider.Resolve feature=typescript-semantic-subset case=rejected-and-unsupported-fixtures expects=no-partial-model
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/typescript/provider/go#Provider.Analyze feature=typescript-semantic-subset case=rejected-and-unsupported-fixtures expects=no-partial-model
 func TestTypeScriptSemanticReports(t *testing.T) {
 	for _, tc := range []struct {
 		name, text string
@@ -304,7 +308,7 @@ func TestTypeScriptSemanticControlsCannotBypassCorrespondence(t *testing.T) {
 			if strings.Contains(directive, "ts-ignore") || strings.Contains(directive, "ts-expect-error") {
 				text = definition + directive + "\n" + application
 			}
-			_, err := (p.Provider{}).Parse(ctx, parse.Input{Text: text, SourceID: "0", TreeID: "0"})
+			_, err := parsetypescript.Parse(ctx, parse.Input{Text: text, SourceID: "0", TreeID: "0"})
 			var diagnostic *syntaxtext.Diagnostic
 			if !errors.As(err, &diagnostic) || diagnostic.Code != syntaxtext.Unsupported {
 				t.Fatal("parser admitted a compiler control", err)
@@ -314,7 +318,7 @@ func TestTypeScriptSemanticControlsCannotBypassCorrespondence(t *testing.T) {
 			changed := source.Clone()
 			changed.Files.Entries[0].Text = text
 			snapshot := tsCaptureTrees(t, trees, &changed)
-			resolver, err := p.NewFilesResolver(snapshot.Language(), tsCompiler(t))
+			resolver, err := resolve.New(snapshot.Language(), tsCompiler(t))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -347,7 +351,7 @@ func TestTypeScriptSemanticScopeAndSourceCorrespondence(t *testing.T) {
 	if !result.HasSemantics() {
 		t.Fatal(result.Diagnostics())
 	}
-	resolver, _ := p.NewFilesResolver(snapshot.Language(), tsCompiler(t))
+	resolver, _ := resolve.New(snapshot.Language(), tsCompiler(t))
 	changed := source.Clone()
 	changed.Files.Entries[0].Text = strings.ReplaceAll(changed.Files.Entries[0].Text, "string", "boolean")
 	forged := tsCaptureTrees(t, trees, &changed)
@@ -378,8 +382,8 @@ func TestTypeScriptSemanticScopeAndSourceCorrespondence(t *testing.T) {
 func TestTypeScriptSemanticReceiptsAndLimits(t *testing.T) {
 	snapshot, trees, source := tsCapture(t, "type Box<T> = {value:T};")
 	resolved, result := tsResults(t, snapshot)
-	analyzer, _ := p.NewFilesAnalyzer(snapshot.Language())
-	resolver, _ := p.NewFilesResolver(snapshot.Language(), tsCompiler(t))
+	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
+	resolver, _ := resolve.New(snapshot.Language(), tsCompiler(t))
 	for name, input := range map[string]analysis.Input{
 		"missing":    {Snapshot: snapshot, Options: semantic.Options{Configuration: n.Configuration()}},
 		"foreign":    {Snapshot: tsCaptureTrees(t, trees, source), Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}},
@@ -404,7 +408,7 @@ func TestTypeScriptSemanticReceiptsAndLimits(t *testing.T) {
 			t.Fatal("foreign environment", err)
 		}
 	}
-	if _, err := p.NewFilesResolver(snapshot.Language(), resolve.Compiler{}); err == nil {
+	if _, err := resolve.New(snapshot.Language(), resolve.Compiler{}); err == nil {
 		t.Fatal("implicit compiler")
 	}
 	canceled, cancel := context.WithCancel(context.Background())

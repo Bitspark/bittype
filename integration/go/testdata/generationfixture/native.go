@@ -1,6 +1,8 @@
 package generationfixture
 
 import (
+	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
+
 	"context"
 	"fmt"
 	"maps"
@@ -8,7 +10,7 @@ import (
 	"slices"
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
-	gp "github.com/Bitspark/bittype/provider/golang/go"
+
 	s "github.com/Bitspark/bittype/syntax/golang/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -433,7 +435,7 @@ func (n *Native) Assemble(ctx context.Context, pubs []g.Publication[SourceLangua
 		return representation.ASTSet{}, err
 	}
 	tree.Root = root
-	if err := (gp.Provider{}).Check(tree); err != nil {
+	if err := checkgolang.Check(tree); err != nil {
 		return representation.ASTSet{}, err
 	}
 	return representation.PackSet(n.language, ast.Set[s.Language]{Entry: ast.NodeRef{Tree: tree.ID, Node: root}, Trees: []s.AST{tree}})

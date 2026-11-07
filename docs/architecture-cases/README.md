@@ -9,6 +9,7 @@ rules do not transfer ownership of these cases to the platform repository.
 | Case | Status | Primary violated rules |
 | --- | --- | --- |
 | [bittype/ACX-001: Closed verification contributions](0001-verification-composition.md) | Corrected for scoped static verification | AC-02, AC-03, AC-04 |
+| [bittype/ACX-002: Generation assembly escaped the kernel](0002-generation-assembly.md) | Corrected and qualified | AC-02, AC-03, AC-05 |
 
 ACX-001 continues the same incident first recorded as
 [platform/ACX-001](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/0001-bittype-verification-composition.md).

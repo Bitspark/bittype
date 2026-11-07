@@ -5,11 +5,12 @@ import (
 	"errors"
 	"testing"
 
+	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	association "github.com/Bitspark/bittype/contracts/verification/go"
-	p "github.com/Bitspark/bittype/provider/golang/go"
+	parsegolang "github.com/Bitspark/bittype/parse/syntax/golang/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	s "github.com/Bitspark/bittype/syntax/golang/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -23,15 +24,15 @@ var src = semantics.Key{Owner: "test", Name: "source"}
 
 func faultyInterpretation(t *testing.T, statement typed.Statement) *Problem {
 	t.Helper()
-	language, err := representation.NewLanguage[s.Language](p.Provider{}, "syntax/v1")
+	language, err := representation.NewLanguage[s.Language](s.Language{}, "syntax/v1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	checker, err := check.NewChecker[s.Language](language, p.Provider{})
+	checker, err := check.NewChecker[s.Language](language, checkgolang.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	tree, err := (p.Provider{}).Parse(context.Background(), parse.Input{SourceID: "input", TreeID: "input", Text: "package example; type Text string"})
+	tree, err := parsegolang.Parse(context.Background(), parse.Input{SourceID: "input", TreeID: "input", Text: "package example; type Text string"})
 	if err != nil {
 		t.Fatal(err)
 	}

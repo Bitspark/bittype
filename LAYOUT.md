@@ -6,6 +6,11 @@ the same responsibilities occupy the same paths, making omissions and drift
 visible. One public root Go module contains independently owned packages,
 including the [concrete verification composition](docs/type-system-architecture.md#proposed-package-roles).
 
+**Owner decision, 6 November 2026:** the accepted
+[kernel-owned composition and uniform layout](docs/kernel-composition.md)
+uses `<stage>/<dimension>/<scope>/<component>/go`, with generic factories in
+kernel/contracts and no per-pair assembly or presets. This hierarchy is implemented.
+
 ## Current hierarchy
 
 ```text
@@ -39,31 +44,23 @@ semantics/rust/go/        Rust vocabulary and immutable native type readers
 internal/rustsem/         private captured-source compiler bridge
   helper/                private pinned rustc_driver executable (Rust/Cargo)
 engine/go/                explicit registration, planning and execution
-syntax/<language>/go/              abstract/concrete vocabulary and identity
-parse/syntax/<language>/go/        text to CST
-check/syntax/<language>/go/        AST syntax admission
-format/syntax/<language>/go/       AST to CST
-parse/files/<language>/go/         Files to Source (Horos implemented)
-resolve/files/<language>/go/       reference resolution (Horos and bounded Go/TypeScript/Rust)
-analyze/files/<language>/go/       semantic analysis (Horos and bounded Go/TypeScript/Rust)
-format/files/<language>/go/        Semantics to Source (Horos implemented)
-print/syntax/go/                   shared CST to text
-print/files/go/                    shared Source to Files
-provider/<language>/go/
-  provider.go                     identity and direct typed composition
-  syntax.go                       Syntax delegates and constructors
-  files.go                        Files delegates and constructors
-check/syntax/ast/go/               generic abstract carrier checks
-check/syntax/cst/go/               generic concrete carrier checks
-internal/<language>/     private language-specific lexical helpers
-internal/                shared private checking/parsing/tree mechanics
-transforms/horos-to-<target>/go/  analyzed Horos to native type ASTs
-generation/syntax/go/     automatic mapping selection and definition scheduling
-generation/syntax/source/horos/go/ source-owned semantic reading
-generation/syntax/target/go/       shared symbolic native storage
-generation/syntax/target/<language>/go/ native construction and assembly
-generation/syntax/mapping/horos/       supplied builtin mappings and structural policy
-generation/syntax/composition/horos-to-<target>/go/ explicit default assembly
+syntax/<language>/go/                          vocabulary and identity
+parse/syntax/<language>/provider/go/           text to CST
+check/syntax/<language>/provider/go/           native syntax admission
+format/syntax/<language>/provider/go/          AST to CST
+parse/files/horos/provider/go/                 Files to Source
+format/files/horos/provider/go/                Semantics to Source
+resolve/files/<language>/provider/go/          captured reference resolution
+analyze/files/<language>/provider/go/          semantic analysis
+print/{syntax,files}/shared/provider/go/       shared printers
+check/syntax/shared/{ast,cst}/go/              carrier structure
+transform/syntax/shared/generation/go/         registry, adapter and scheduler
+transform/syntax/shared/target/go/             symbolic native storage
+transform/syntax/horos/source/go/              Horos semantic reader
+transform/syntax/horos/mapping/go/             common Horos mapping policy
+transform/syntax/<native>/target/go/           native builders
+transform/syntax/horos-to-<native>/mapping/go/ selectable representation providers
+internal/<language>/                           private lexical helpers
 integration/go/          independent consumers and cross-package qualification
 verification/            concrete static verification; public Logos contract
   files/source/horos/go/  explicit authoritative queries bound to captured Horos
@@ -88,28 +85,7 @@ The final `go` directory denotes implementation language, not target:
 `syntax/rust/go` is Go code describing Rust syntax. `ast` and `cst` in the check
 stage are reserved generic-carrier components, not native language names.
 
-**Owner cleanup, 5 November 2026:** implementation paths follow
-`<role>/<dimension>/<language>/go`; shared implementations omit the language.
-Both `syntax` and `files` are explicit dimension segments. Language vocabularies
-remain at `syntax/<language>/go`; composition packages span both dimensions and
-remain at `provider/<language>/go`. No empty directories represent missing roles.
-
-Implementation Go packages are named by their role: `parse`, `check`, `format`,
-`print`, `resolve`, `analyze` and `provider`, for every language and dimension.
-Language vocabulary packages retain their language names. Consumers choose local
-import aliases when importing a contract and implementation with the same name.
-Those import aliases are not exported compatibility APIs.
-
-Every composition package has `provider.go`, `syntax.go` and `files.go`.
-`NewSyntaxParser`, `NewSyntaxChecker`, `NewSyntaxFormatter`, `NewSyntaxPrinter`
-and `NewFilesPrinter` each take an explicit `representation.Language` and return
-one configured adapter plus an error. Horos additionally has `NewFilesParser`,
-`NewFilesFormatter`, `NewFilesResolver` and `NewFilesAnalyzer` with the same
-descriptor-first signature. Go also supplies `NewFilesResolver` and
-`NewFilesAnalyzer`. TypeScript and Rust supply both, with an explicit compiler collaborator
-on `NewFilesResolver`. Constructors register nothing and never select a
-profile implicitly. `Provider` remains a direct typed composition of the roles
-that actually exist; it is not an engine registration contract.
+Implementations use the same stage, dimension, scope, component and implementation-language order. A scope identifies one language, an ordered pair or shared machinery. Go packages use their role name. Syntax vocabularies retain their language names. Applications construct independent stage adapters through their contracts. A configured resolver belongs to its language's resolve stage. See [kernel-owned composition](docs/kernel-composition.md).
 
 Stateless language stages expose a free operation and a zero-value `Provider`.
 Both shared printer packages expose `Provider[L]` and `New[L]`; Files printing
@@ -175,7 +151,7 @@ The parse, check, format and print interfaces are independent; their configured
 adapters use representations for owned heterogeneous inputs/outputs. The engine
 registers them separately after identity/profile registration. Representation
 depends on generic carrier checks and diagnostic records, never a stage-provider
-contract. Source input is `parse.Input`; `text` contains diagnostics only. The shared implementation remains under `print/syntax/go`, separate
+contract. Source input is `parse.Input`; `text` contains diagnostics only. The shared implementation remains under `print/syntax/shared/provider/go`, separate
 from `contracts/print/go`. Imports may use a local alias when both packages are
 needed. No compatibility interfaces or input aliases remain under text.
 
@@ -249,35 +225,34 @@ optional analyze stage with an explicitly tested capability profile. Native
 semantic analysis is not implied by native text tooling.
 
 The [Horos declaration integration](docs/horos.md) implements
-`syntax/horos/go`, `check/syntax/horos/go`, `analyze/files/horos/go`, `provider/horos/go` and
-`resolve/files/horos/go`, with private projection/correspondence in `internal/horosmodel`.
-Readable syntax now implements `parse/syntax/horos/go` and
-`format/syntax/horos/go` under the same stage matrix. These replace the former proposed
+`syntax/horos/go`, `check/syntax/horos/provider/go`, `analyze/files/horos/provider/go` and
+`resolve/files/horos/provider/go`, with private projection/correspondence in `internal/horosmodel`.
+Readable syntax now implements `parse/syntax/horos/provider/go` and
+`format/syntax/horos/provider/go` under the same stage matrix. These replace the former proposed
 `canonical` paths; there are no compatibility aliases.
 
-Directed pagination mappings live under `transforms/horos-to-<native>/go`; later
-partial reverse mappings would use `transforms/<native>-to-horos/go`. Application
+Directed pagination mappings live under `transform/syntax/horos-to-<native>/mapping/go`. A partial reverse implementation would use the reverse ordered pair. Application
 composition and IO are proposed under `cmd/bittype/go`. Horos owns the declaration semantics and
 encoding; these packages supply tooling projections and native representations.
 New dependency rules and qualification accompany further implementation, with no
 empty packages created now. All five current languages have qualified text stages;
 new AST-only providers still require an explicit tested capability profile.
 
-Adding a native language supplies the five stages, any private lexical helpers,
+Adding a native language supplies its implemented stages, any private lexical helpers,
 conformance fixtures and compiler qualification. It requires no change to the
 generic carriers, engine or production registration catalogue: there is no such
 catalogue. Applications choose their registrations. Adding Function, Stream,
 Cell or another library declaration does not add a stage, language or core kind.
 
 The [unified declaration model](docs/horos.md) uses one `horos` family under
-syntax/check/resolve/analyze/provider. Private syntax framing remains in
+syntax/check/resolve/analyze. Private syntax framing remains in
 `internal/declsyntax`; model projection, correspondence and export remain in
 `internal/horosmodel`. No `horoswire` stage or compatibility alias remains.
 Bounds are explicit syntax and provider-owned semantic facts, not kernel kinds.
 
 Model dependency allowances cover only this frontend and its private bridge.
 Architecture checks preserve the agnostic and native-stage boundaries. Native
-pagination mappings use `transforms/horos-to-<native>/go`.
+pagination mappings use `transform/syntax/horos-to-<native>/mapping/go`.
 Template lifting and its exclusive dependency allowances remain removed.
 
 The [native representation design](docs/type-representations.md) and
@@ -297,48 +272,21 @@ collaborators implement the stage-first layout:
 
 ```text
 contracts/generation/go/                  implemented contracts and explicit runner
-generation/syntax/go/                     implemented selectors/overrides/definition scheduling
-generation/syntax/source/horos/go/        source semantic adapter and selectors
-generation/syntax/target/go/              shared symbolic native storage
-generation/syntax/target/typescript/go/   TypeScript fragments/symbols/assembly
-generation/syntax/target/golang/go/       Go fragments/symbols/assembly
-generation/syntax/target/rust/go/         Rust fragments/symbols/assembly
-generation/syntax/target/cpp/go/          C++ fragments/symbols/assembly
-transforms/horos-to-<target>/go/          configuration-only transformer factories
+transform/syntax/shared/generation/go/      registry, checked adapter and scheduling
+transform/syntax/horos/source/go/           receipt-backed source reader
+transform/syntax/horos/mapping/go/          structural policy and association rules
+transform/syntax/shared/target/go/          shared symbolic native storage
+transform/syntax/<native>/target/go/        native assembly and grammar
+transform/syntax/horos-to-<native>/mapping/go/  independently selected mappings
 ```
 
-The source/target subdirectories distinguish collaborators within Syntax
-generation, not additional dimensions or registered providers. Their identical
-package structure is specified in the proposal. Existing transformer path names
-remain `horos-to-typescript`, `horos-to-go`, `horos-to-rust` and `horos-to-cpp`;
-native vocabulary/implementation directories use `golang` for Go as elsewhere.
-
-**Owner placement correction, 6 November 2026:** builtin Horos mappings and
-explicit default assembly live in Bittype's existing root Go module:
-
-```text
-generation/syntax/mapping/horos/go/             structural policy and associations
-generation/syntax/mapping/horos/typescript/go/  TypeScript mappings and bindings
-generation/syntax/mapping/horos/golang/go/      Go mappings and optional helper
-generation/syntax/mapping/horos/rust/go/        Rust mappings and bindings
-generation/syntax/mapping/horos/cpp/go/         C++ mappings and bindings
-generation/syntax/composition/horos-to-<target>/go/ explicit default assembly
-```
-
-Mapping packages implement the same public SPI available to independent libraries.
-The shared composer, source reader, native backends and thin transformer factories
-cannot import them or their default compositions. The defaults supply those
-collaborators explicitly; they register nothing. No separate Horos generation
-module or compatibility import remains. Horos owns canonical semantics without
-acquiring a repository dependency on Bittype's generator implementation.
-
-Syntax/Files provider registration and engine capabilities remain unchanged.
+Consumers select source, target, mappings, declaration sites and output. The engine opens the providers and runs the composition. The [construction SPI](docs/kernel-composition.md) gives the public interfaces and a Horos to TypeScript example.
 
 The [Syntax and Files design](docs/source.md) is implemented with
 `Syntax : CST : AST` and `Files : Source : Semantics`. Both dimension names are
 explicit in implementation paths. Horos composes the full Files text pipeline;
 Go, TypeScript and Rust add bounded Files resolution and analysis without Files parsing/formatting;
-all five language composition packages construct Files printers.
+applications construct a Files printer for any of the five languages from the shared printer providers.
 
 Files depends on AST addresses. Source retains semantic capture/result handles,
 CSTs and typed Semantics. Shared semantic capture depends on Files but never

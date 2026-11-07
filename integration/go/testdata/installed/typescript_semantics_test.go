@@ -1,17 +1,21 @@
 package consumer_test
 
 import (
+	checktypescript "github.com/Bitspark/bittype/check/syntax/typescript/provider/go"
+	check "github.com/Bitspark/bittype/contracts/check/go"
+	parsetypescript "github.com/Bitspark/bittype/parse/syntax/typescript/provider/go"
+
 	"context"
 	"os"
 	"testing"
 
-	analyze "github.com/Bitspark/bittype/analyze/files/typescript/go"
+	analyze "github.com/Bitspark/bittype/analyze/files/typescript/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
-	p "github.com/Bitspark/bittype/provider/typescript/go"
-	r "github.com/Bitspark/bittype/resolve/files/typescript/go"
+
+	r "github.com/Bitspark/bittype/resolve/files/typescript/provider/go"
 	n "github.com/Bitspark/bittype/semantics/typescript/go"
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -25,7 +29,7 @@ func TestInstalledTypeScriptSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parser, err := p.NewSyntaxParser(definition)
+	parser, err := parse.NewSyntaxParser[s.Language](definition, parsetypescript.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +37,7 @@ func TestInstalledTypeScriptSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	checker, err := p.NewSyntaxChecker(definition)
+	checker, err := check.NewChecker[s.Language](definition, checktypescript.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +50,7 @@ func TestInstalledTypeScriptSemantics(t *testing.T) {
 		t.Fatal(err)
 	}
 	compiler := r.Compiler{NodePath: os.Getenv("BITTYPE_TYPESCRIPT_NODE"), TypeScriptPath: os.Getenv("BITTYPE_TYPESCRIPT_MODULE")}
-	resolver, err := p.NewFilesResolver(definition, compiler)
+	resolver, err := r.New(definition, compiler)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +58,7 @@ func TestInstalledTypeScriptSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := p.NewFilesAnalyzer(definition)
+	analyzer, err := analysis.NewAnalyzer[s.Language](definition, analyze.Contract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}

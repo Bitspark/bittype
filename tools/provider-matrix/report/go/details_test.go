@@ -14,7 +14,7 @@ func TestDelegateCasesAreRelatedRatherThanWrapperQualification(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	target := capability.Symbol{Package: p.module + "/provider/ember/go", Name: "emit"}
+	target := capability.Symbol{Package: p.module + "/print/syntax/ember/provider/go", Name: "emit"}
 	a := &annotations{operations: map[capability.Symbol][]authored{}, cases: []caseAssociation{{target: target, directive: directive{values: map[string]string{"feature": "printing", "case": "example", "expects": "shape-preserved"}}, test: testDeclaration{id: "test-id", name: "TestEmit", file: "emit_test.go", variant: "internal"}}}}
 	if err := associateCases(m, a); err != nil {
 		t.Fatal(err)

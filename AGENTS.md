@@ -104,19 +104,12 @@ type exports. Keep semantic sort separate from declaration parameter count.
 The first [public generation SPI](docs/generation-spi.md) and guarded invocation
 are implemented in `contracts/generation/go`, alongside the contracts. Keep that
 minimal runner here. The [automatic composer](docs/generation-composition.md)
-lives at `generation/syntax/go`; source/native collaborators are separate. All
+lives at `transform/syntax/shared/generation/go`; source/native collaborators are separate. All
 four generators now use it, and the private pagination Dialects are deleted. Libraries own optional mappings; the
 composer selects exact declaration identities in consuming configuration.
 Builtin mappings use the same supplied mechanism. Explicit overrides must replace
 existing exact bindings without order-dependent selection or error-triggered
-fallback. Owner correction, 6 November 2026: builtin Horos mappings live in
-`generation/syntax/mapping/horos` and optional default compositions in
-`generation/syntax/composition/horos-to-<target>/go`, inside Bittype's root module.
-Semantic ownership does not require placing generator code in Horos's repository.
-Horos owns the type model and has no generator module depending back on Bittype.
-The shared composer, source reader, native backends and thin transformer factories
-must not import these mappings or defaults. Independent libraries can supply
-their mappings through the same public SPI from their chosen packages.
+fallback. The [kernel construction contract](docs/kernel-composition.md) puts registration, request validation and assembly in the kernel. Supply source, target and mapping providers independently. Horos mapping implementations belong to Bittype's root module under transform/syntax/horos/mapping/go and transform/syntax/horos-to-&lt;native&gt;/mapping/go. The kernel, source and target packages cannot import concrete mapping packages. Consumers own selection and request explicit root sites. Remove complete-pipeline factories, per-pair presets and compatibility aliases.
 Replacement transformers must consume plugins uniformly; no
 contract-specific engine registrations, named-library imports in general
 transformers or raw-source recipes. Missing/conflicting required representations
@@ -155,12 +148,7 @@ their supplied owners. None is inferred by the agnostic runner.
   independent of private dependencies. The concrete verification composition
   consumes the public Logos contract, as documented in
   [the verification architecture](docs/type-system-architecture.md#proposed-package-roles).
-- Use explicit dimension paths for implementations: role/syntax/language/go and
-  role/files/language/go; shared printers omit language. Name implementation Go
-  packages by their role. Each provider/language/go composition has provider.go,
-  syntax.go and files.go, with NewSyntax/Files constructors for existing roles.
-  Constructors take an explicit representation.Language, return one adapter and
-  register nothing. Missing capabilities have no stubs or compatibility aliases.
+- Implementations use stage/dimension/scope/component/go. Keep shared printers at print/{syntax,files}/shared/provider/go. Vocabularies use syntax/language/go. Construct stage adapters through their individual contracts. The [layout](LAYOUT.md) gives the implemented paths.
 - Add every language to the shared conformance fixtures; AST-only providers
   require an explicit tested capability profile. Architecture checks
   discover stage directories and enforce complete coverage and directed imports.

@@ -11,9 +11,9 @@ explicit native queries alongside its separate Horos evidence.
 
 ```text
 captured, syntax-admitted ASTs
-  -> resolve/files/golang/go -> go/ast -> go/types
+  -> resolve/files/golang/provider/go -> go/ast -> go/types
   -> immutable declarations, bindings, type terms, facts and reports
-  -> analyze/files/golang/go (explicit resolution receipt; reuses the graph)
+  -> analyze/files/golang/provider/go (explicit resolution receipt; reuses the graph)
   -> semantics/golang/go (typed read-only view)
   -> explicit native query session, when a consumer needs admission checking
 ```
@@ -22,8 +22,7 @@ Resolution and type checking are coupled inside `go/types`. The resolver declare
 both responsibilities; analysis consumes its exact compatible receipt without
 running the compiler again. Syntax admission still permits unresolved names.
 There is no language switch in the engine and no automatic registration.
-`provider/golang/go` supplies independent `NewFilesResolver` and
-`NewFilesAnalyzer` constructors, as well as direct typed delegates.
+Use resolution.NewResolver and analysis.NewAnalyzer with their respective Go contracts and providers.
 
 The package layout is:
 
@@ -31,9 +30,8 @@ The package layout is:
 | --- | --- |
 | `semantics/golang/go` | Go-owned vocabulary, environment identity and immutable typed graph readers |
 | `internal/golangsem` | Direct AST bridge, bounded compiler invocation and fact export |
-| `resolve/files/golang/go` | Configured resolution, coverage and native validity reports |
-| `analyze/files/golang/go` | Receipt-consuming analysis and explicit compiler-backed admission queries |
-| `provider/golang/go` | Independent role composition |
+| `resolve/files/golang/provider/go` | Configured resolution, coverage and native validity reports |
+| `analyze/files/golang/provider/go` | Receipt-consuming analysis and explicit compiler-backed admission queries |
 | `integration/go` | Provider, environment, coverage and graph qualification |
 | `verification/files/horos-to-go/go` | Joint representation claims using the native provider results |
 
@@ -127,16 +125,15 @@ generation support and representation-preservation claims.
 
 ```text
 syntax-admitted TypeScript ASTs + captured Files and links
-  -> resolve/files/typescript/go
+  -> resolve/files/typescript/provider/go
   -> private source/AST correspondence check + pinned TypeScript compiler
   -> immutable symbols, native type terms, bindings and reports
-  -> analyze/files/typescript/go (explicit receipt; reuses the exact graph)
+  -> analyze/files/typescript/provider/go (explicit receipt; reuses the exact graph)
   -> semantics/typescript/go (typed read-only view)
 ```
 
 The package roles mirror Go. `internal/typescriptsem` owns the compiler bridge,
-including its embedded CommonJS helper. `provider/typescript/go` composes each
-role independently. No TypeScript types, rules or compiler handles enter the
+including its embedded CommonJS helper. Each TypeScript stage supplies its own provider. No TypeScript types, rules or compiler handles enter the
 agnostic kernel; no native stage imports Horos, Logos or generation packages.
 
 The resolver constructor requires a `resolve.Compiler` containing absolute
@@ -255,16 +252,16 @@ semantic checking without changing generation or runtime behavior.
 
 ```text
 syntax-admitted Rust AST + captured Files and links
-  -> resolve/files/rust/go
+  -> resolve/files/rust/provider/go
   -> original-source/AST correspondence + pinned rustc_driver helper
   -> immutable native declarations, types, bindings, predicates and reports
-  -> analyze/files/rust/go (explicit receipt; reuses the exact graph)
+  -> analyze/files/rust/provider/go (explicit receipt; reuses the exact graph)
   -> semantics/rust/go (typed read-only view)
 ```
 
 The public adapters and orchestration are Go. The private helper at
 `internal/rustsem/helper` uses Rust's compiler APIs, pinned to **1.90.0**.
-Its Cargo package is unpublished. `provider/rust/go.NewFilesResolver` takes a
+Its Cargo package is unpublished. `resolve/files/rust/provider/go.New` takes a
 `resolve.Compiler` with absolute `HelperPath` and `SysrootPath`. Constructors
 perform no IO, discovery or installation. The caller provisions that helper and
 the matching compiler sysroot explicitly. Both operations require

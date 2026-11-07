@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-var nativeStages = []string{"syntax", "parse/syntax", "check/syntax", "format/syntax", "provider"}
+var nativeStages = []string{"syntax", "parse/syntax", "check/syntax", "format/syntax"}
 
 type productionPackage struct {
 	ImportPath string
@@ -55,13 +55,16 @@ func stageLanguages(t *testing.T) []string {
 			t.Fatal(err)
 		}
 		for _, entry := range entries {
-			if !entry.IsDir() || entry.Name() == "files" {
+			if !entry.IsDir() || entry.Name() == "shared" {
 				continue
 			}
-			if stage == "check/syntax" && (entry.Name() == "ast" || entry.Name() == "cst") {
-				continue
+			files, err := filepath.Glob(filepath.Join("../..", strings.TrimPrefix(stagePath(stage, entry.Name()), modulePath+"/"), "*.go"))
+			if err != nil {
+				t.Fatal(err)
 			}
-			names[entry.Name()] = true
+			if len(files) > 0 {
+				names[entry.Name()] = true
+			}
 		}
 	}
 	var result []string
@@ -70,6 +73,13 @@ func stageLanguages(t *testing.T) []string {
 	}
 	slices.Sort(result)
 	return result
+}
+
+func stagePath(stage, name string) string {
+	if stage == "syntax" {
+		return modulePath + "/syntax/" + name + "/go"
+	}
+	return modulePath + "/" + stage + "/" + name + "/provider/go"
 }
 
 func TestLanguageStageMatrix(t *testing.T) {
@@ -94,17 +104,17 @@ func TestLanguageStageMatrix(t *testing.T) {
 		}
 		qualified[fixture.directory] = true
 		semanticQualified[fixture.directory] = true
-		profiles[fixture.directory] = []string{"syntax", "parse/syntax", "resolve/files", "check/syntax", "analyze/files", "format/syntax", "provider"}
+		profiles[fixture.directory] = []string{"syntax", "parse/syntax", "resolve/files", "check/syntax", "analyze/files", "format/syntax"}
 	}
 	for _, name := range languages {
 		for _, stage := range profiles[name] {
-			path := modulePath + "/" + stage + "/" + name + "/go"
+			path := stagePath(stage, name)
 			if p, ok := packages[path]; !ok || len(p.GoFiles) == 0 {
 				t.Errorf("missing implemented stage %s", path)
 			}
 		}
 		for _, stage := range append(slices.Clone(nativeStages), "resolve/files", "analyze/files") {
-			if _, ok := packages[modulePath+"/"+stage+"/"+name+"/go"]; ok && !slices.Contains(profiles[name], stage) {
+			if _, ok := packages[stagePath(stage, name)]; ok && !slices.Contains(profiles[name], stage) {
 				t.Errorf("%s has an unqualified capability stage: %s", name, stage)
 			}
 		}
@@ -129,7 +139,7 @@ func TestProductionArchitecture(t *testing.T) {
 		"tools/provider-matrix/capability/go":      {},
 		"tools/provider-matrix/observation/go":     {},
 		"tools/provider-matrix/extract/grammar/go": {"tools/provider-matrix/capability/go"},
-		"tools/horos-module/go":                    {"contracts/parse/go", "internal/horosmodel", "internal/lex", "parse/syntax/horos/go", "trees/ast/go"},
+		"tools/horos-module/go":                    {"contracts/parse/go", "internal/horosmodel", "internal/lex", "parse/syntax/horos/provider/go", "trees/ast/go"},
 		"trees/ast/go":                             {},
 		"semantics/go":                             {"trees/ast/go"},
 		"trees/cst/go":                             {"trees/ast/go"},
@@ -140,32 +150,32 @@ func TestProductionArchitecture(t *testing.T) {
 		"contracts/format/go":                      {"trees/representation/go", "trees/ast/go", "trees/cst/go", "contracts/language/go"},
 		"contracts/print/go":                       {"trees/representation/go", "trees/cst/go", "contracts/language/go"},
 		"contracts/text/go":                        {"trees/ast/go"},
-		"check/syntax/ast/go":                      {"trees/ast/go", "contracts/text/go"},
-		"check/syntax/cst/go":                      {"trees/ast/go", "trees/cst/go", "check/syntax/ast/go", "contracts/text/go"},
-		"print/syntax/go":                          {"trees/cst/go", "check/syntax/cst/go", "contracts/language/go", "contracts/print/go", "trees/representation/go"},
-		"trees/representation/go":                  {"trees/ast/go", "trees/cst/go", "contracts/language/go", "check/syntax/ast/go", "check/syntax/cst/go", "internal/tree"},
+		"check/syntax/shared/ast/go":               {"trees/ast/go", "contracts/text/go"},
+		"check/syntax/shared/cst/go":               {"trees/ast/go", "trees/cst/go", "check/syntax/shared/ast/go", "contracts/text/go"},
+		"print/syntax/shared/provider/go":          {"trees/cst/go", "check/syntax/shared/cst/go", "contracts/language/go", "contracts/print/go", "trees/representation/go"},
+		"trees/representation/go":                  {"trees/ast/go", "trees/cst/go", "contracts/language/go", "check/syntax/shared/ast/go", "check/syntax/shared/cst/go", "internal/tree"},
 		"contracts/transform/go":                   {"trees/ast/go", "trees/representation/go", "contracts/language/go", "contracts/semantic/go", "internal/tree"},
 		"contracts/semantic/go":                    {"contracts/check/go", "trees/ast/go", "trees/representation/go", "contracts/language/go", "semantics/go", "internal/tree"},
 		"contracts/verification/go":                {"contracts/semantic/go", "semantics/go", "trees/ast/go", "trees/representation/go"},
-		"contracts/generation/go":                  {"contracts/semantic/go", "trees/representation/go"},
+		"contracts/generation/go":                  {"contracts/transform/go", "trees/ast/go", "contracts/semantic/go", "trees/representation/go"},
 		"contracts/resolution/go":                  {"trees/representation/go", "contracts/language/go", "contracts/semantic/go", "semantics/go"},
 		"contracts/analysis/go":                    {"trees/representation/go", "contracts/language/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"},
 		"engine/go":                                {"trees/ast/go", "trees/representation/go", "contracts/language/go", "contracts/parse/go", "contracts/check/go", "contracts/format/go", "contracts/print/go", "contracts/transform/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go"},
 		"internal/tree":                            {"trees/ast/go"},
-		"internal/grammar":                         {"trees/ast/go", "check/syntax/ast/go", "contracts/text/go"},
+		"internal/grammar":                         {"trees/ast/go", "check/syntax/shared/ast/go", "contracts/text/go"},
 		"internal/lex":                             {"trees/ast/go", "contracts/parse/go", "contracts/text/go"},
-		"internal/parseutil":                       {"trees/ast/go", "check/syntax/ast/go", "contracts/parse/go", "contracts/text/go", "internal/lex"},
-		"internal/concrete":                        {"trees/ast/go", "trees/cst/go", "check/syntax/cst/go", "contracts/parse/go", "contracts/text/go", "internal/lex", "internal/tree"},
+		"internal/parseutil":                       {"trees/ast/go", "check/syntax/shared/ast/go", "contracts/parse/go", "contracts/text/go", "internal/lex"},
+		"internal/concrete":                        {"trees/ast/go", "trees/cst/go", "check/syntax/shared/cst/go", "contracts/parse/go", "contracts/text/go", "internal/lex", "internal/tree"},
 	}
 	for _, name := range languages {
 		syntax := "syntax/" + name + "/go"
-		checker := "check/syntax/" + name + "/go"
+		checker := "check/syntax/" + name + "/provider/go"
 		helper := "internal/" + name
 		rules[syntax] = []string{"trees/ast/go", "trees/cst/go", "contracts/language/go"}
 		base := []string{"trees/ast/go", "trees/cst/go", "contracts/language/go", "contracts/text/go", syntax}
 		for _, stage := range []string{"check", "parse", "format"} {
 			allowed := append([]string{}, base...)
-			allowed = append(allowed, "check/syntax/ast/go", "internal/tree", "internal/grammar", helper)
+			allowed = append(allowed, "check/syntax/shared/ast/go", "internal/tree", "internal/grammar", helper)
 			allowed = append(allowed, "contracts/"+stage+"/go")
 			if stage != "check" {
 				allowed = append(allowed, checker, "internal/concrete")
@@ -173,35 +183,31 @@ func TestProductionArchitecture(t *testing.T) {
 			if stage == "parse" {
 				allowed = append(allowed, "internal/lex", "internal/parseutil")
 			}
-			rules[stage+"/syntax/"+name+"/go"] = allowed
+			rules[stage+"/syntax/"+name+"/provider/go"] = allowed
 		}
-		rules["provider/"+name+"/go"] = append(append([]string{}, base...), "contracts/parse/go", "contracts/check/go", "contracts/format/go", "contracts/print/go", checker, "parse/syntax/"+name+"/go", "format/syntax/"+name+"/go", "print/syntax/go", "print/files/go", "trees/representation/go")
 		// Language-specific lexical helpers cannot depend on stages or another language.
 		rules[helper] = []string{"trees/ast/go", "contracts/text/go", "internal/grammar", "internal/lex", "internal/tree"}
 	}
 	// The Horos frontend uses private mechanics, not a language registry.
-	rules["internal/declsyntax"] = []string{"trees/ast/go", "check/syntax/ast/go", "contracts/text/go", "internal/grammar"}
-	rules["internal/horosmodel"] = []string{"trees/ast/go", "check/syntax/ast/go", "contracts/text/go", "internal/declsyntax", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"}
+	rules["internal/declsyntax"] = []string{"trees/ast/go", "check/syntax/shared/ast/go", "contracts/text/go", "internal/grammar"}
+	rules["internal/horosmodel"] = []string{"trees/ast/go", "check/syntax/shared/ast/go", "contracts/text/go", "internal/declsyntax", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"}
 	for _, name := range []string{"horos"} {
-		rules["resolve/files/"+name+"/go"] = []string{"trees/ast/go", "syntax/" + name + "/go", "check/syntax/" + name + "/go", "internal/horosmodel", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"}
-		rules["check/syntax/"+name+"/go"] = []string{"trees/ast/go", "syntax/" + name + "/go", "internal/declsyntax", "contracts/check/go"}
-		rules["analyze/files/"+name+"/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go", "syntax/" + name + "/go", "resolve/files/" + name + "/go"}
-		rules["provider/"+name+"/go"] = append(rules["provider/"+name+"/go"], []string{"trees/ast/go", "contracts/check/go", "contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "syntax/" + name + "/go", "check/syntax/" + name + "/go", "analyze/files/" + name + "/go", "resolve/files/" + name + "/go"}...)
+		rules["resolve/files/"+name+"/provider/go"] = []string{"trees/ast/go", "syntax/" + name + "/go", "check/syntax/" + name + "/provider/go", "internal/horosmodel", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"}
+		rules["check/syntax/"+name+"/provider/go"] = []string{"trees/ast/go", "syntax/" + name + "/go", "internal/declsyntax", "contracts/check/go"}
+		rules["analyze/files/"+name+"/provider/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go", "syntax/" + name + "/go", "resolve/files/" + name + "/provider/go"}
 		for _, stage := range []string{"parse", "format"} {
-			rules[stage+"/syntax/"+name+"/go"] = append(rules[stage+"/syntax/"+name+"/go"], "internal/horosmodel", "internal/lex")
+			rules[stage+"/syntax/"+name+"/provider/go"] = append(rules[stage+"/syntax/"+name+"/provider/go"], "internal/horosmodel", "internal/lex")
 		}
 	}
-	rules["generation/syntax/go"] = []string{"contracts/generation/go", "contracts/semantic/go", "contracts/transform/go", "trees/ast/go", "trees/representation/go"}
-	rules["generation/syntax/source/horos/go"] = []string{"analyze/files/horos/go", "contracts/analysis/go", "contracts/generation/go", "contracts/semantic/go", "contracts/text/go", "contracts/transform/go", "generation/syntax/go", "resolve/files/horos/go", "semantics/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
-	rules["generation/syntax/target/go"] = []string{"contracts/generation/go", "trees/ast/go", "trees/representation/go"}
-	rules["generation/syntax/mapping/horos/go"] = []string{"contracts/generation/go", "contracts/text/go", "contracts/transform/go", "generation/syntax/go", "generation/syntax/source/horos/go", "generation/syntax/target/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
-	for target, syntax := range map[string]string{"typescript": "typescript", "go": "golang", "rust": "rust", "cpp": "cpp"} {
-		rules["transforms/horos-to-"+target+"/go"] = []string{"contracts/transform/go", "generation/syntax/go", "generation/syntax/source/horos/go", "syntax/horos/go", "syntax/" + syntax + "/go", "trees/representation/go"}
-		rules["generation/syntax/target/"+syntax+"/go"] = []string{"contracts/generation/go", "generation/syntax/target/go", "internal/" + syntax, "check/syntax/" + syntax + "/go", "syntax/" + syntax + "/go", "trees/ast/go", "trees/representation/go"}
+	rules["transform/syntax/shared/generation/go"] = []string{"contracts/text/go", "contracts/generation/go", "contracts/semantic/go", "contracts/transform/go", "trees/ast/go", "trees/representation/go"}
+	rules["transform/syntax/horos/source/go"] = []string{"analyze/files/horos/provider/go", "contracts/analysis/go", "contracts/generation/go", "contracts/semantic/go", "contracts/text/go", "contracts/transform/go", "resolve/files/horos/provider/go", "semantics/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
+	rules["transform/syntax/shared/target/go"] = []string{"contracts/generation/go", "trees/ast/go", "trees/representation/go"}
+	rules["transform/syntax/horos/mapping/go"] = []string{"contracts/generation/go", "contracts/text/go", "contracts/transform/go", "transform/syntax/horos/source/go", "transform/syntax/shared/target/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
+	for _, syntax := range []string{"typescript", "golang", "rust", "cpp"} {
+		rules["transform/syntax/"+syntax+"/target/go"] = []string{"contracts/generation/go", "transform/syntax/shared/target/go", "internal/" + syntax, "check/syntax/" + syntax + "/provider/go", "syntax/" + syntax + "/go", "trees/ast/go", "trees/representation/go"}
 		// These are supplied Horos integrations. The shared composer, source
 		// reader, target backends and thin transformer factories cannot import them.
-		rules["generation/syntax/mapping/horos/"+syntax+"/go"] = []string{"contracts/generation/go", "generation/syntax/go", "generation/syntax/mapping/horos/go", "generation/syntax/source/horos/go", "generation/syntax/target/go", "generation/syntax/target/" + syntax + "/go", "syntax/horos/go", "syntax/" + syntax + "/go", "trees/ast/go"}
-		rules["generation/syntax/composition/horos-to-"+target+"/go"] = []string{"contracts/generation/go", "contracts/transform/go", "generation/syntax/go", "generation/syntax/mapping/horos/go", "generation/syntax/mapping/horos/" + syntax + "/go", "generation/syntax/source/horos/go", "generation/syntax/target/" + syntax + "/go", "syntax/horos/go", "syntax/" + syntax + "/go", "transforms/horos-to-" + target + "/go", "trees/ast/go", "trees/representation/go"}
+		rules["transform/syntax/horos-to-"+syntax+"/mapping/go"] = []string{"contracts/generation/go", "transform/syntax/horos/mapping/go", "transform/syntax/horos/source/go", "transform/syntax/shared/target/go", "transform/syntax/" + syntax + "/target/go", "syntax/horos/go", "syntax/" + syntax + "/go", "trees/ast/go"}
 	}
 	// The Files dimension has explicit stage paths and a separate sealed carrier.
 	rules["files/go"] = []string{"trees/ast/go"}
@@ -212,35 +218,30 @@ func TestProductionArchitecture(t *testing.T) {
 		key := "contracts/" + stage + "/go"
 		rules[key] = append(rules[key], "files/go", "source/go", "semantics/go", "contracts/semantic/go")
 	}
-	rules["engine/go"] = append(rules["engine/go"], "files/go", "source/go")
-	rules["print/files/go"] = []string{"contracts/language/go", "contracts/print/go", "files/go", "source/go", "trees/cst/go", "trees/representation/go"}
+	rules["engine/go"] = append(rules["engine/go"], "contracts/generation/go", "transform/syntax/shared/generation/go", "files/go", "source/go")
+	rules["print/files/shared/provider/go"] = []string{"contracts/language/go", "contracts/print/go", "files/go", "source/go", "trees/cst/go", "trees/representation/go"}
 	composition := []string{"contracts/analysis/go", "contracts/check/go", "contracts/format/go", "contracts/parse/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go", "files/go", "source/go", "semantics/go", "syntax/horos/go", "trees/ast/go", "trees/cst/go", "trees/representation/go"}
 	// Files composition uses the public Horos prelude identity from the resolver.
-	rules["internal/horosfiles"] = append(append([]string{}, composition...), "internal/tree", "resolve/files/horos/go")
+	rules["internal/horosfiles"] = append(append([]string{}, composition...), "internal/tree", "resolve/files/horos/provider/go")
 	for _, stage := range []string{"parse", "format"} {
-		rules[stage+"/files/horos/go"] = append(append([]string{}, composition...), "internal/horosfiles")
+		rules[stage+"/files/horos/provider/go"] = append(append([]string{}, composition...), "internal/horosfiles")
 	}
-	rules["provider/horos/go"] = append(rules["provider/horos/go"], "parse/files/horos/go", "format/files/horos/go", "print/files/go", "trees/representation/go")
 	// Verification projections are explicit concrete compositions, not registered
 	// language stages. The agnostic association above never imports their models.
-	rules["verification/files/source/horos/go"] = []string{"contracts/semantic/go", "contracts/resolution/go", "internal/horosmodel", "resolve/files/horos/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
+	rules["verification/files/source/horos/go"] = []string{"contracts/semantic/go", "contracts/resolution/go", "internal/horosmodel", "resolve/files/horos/provider/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
 	rules["semantics/golang/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "syntax/golang/go", "trees/ast/go", "trees/representation/go"}
 	rules["internal/golangsem"] = []string{"contracts/semantic/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/ast/go"}
-	rules["resolve/files/golang/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "semantics/go", "semantics/golang/go", "syntax/golang/go"}
-	rules["analyze/files/golang/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "resolve/files/golang/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/representation/go"}
-	rules["provider/golang/go"] = append(rules["provider/golang/go"], "contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "analyze/files/golang/go", "resolve/files/golang/go")
+	rules["resolve/files/golang/provider/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "semantics/go", "semantics/golang/go", "syntax/golang/go"}
+	rules["analyze/files/golang/provider/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "resolve/files/golang/provider/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/representation/go"}
 	rules["semantics/typescript/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "syntax/typescript/go", "trees/ast/go", "trees/representation/go"}
-	rules["internal/typescriptsem"] = []string{"contracts/parse/go", "contracts/semantic/go", "files/go", "parse/syntax/typescript/go", "semantics/go", "semantics/typescript/go", "syntax/typescript/go", "trees/ast/go"}
-	rules["resolve/files/typescript/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/typescriptsem", "semantics/go", "semantics/typescript/go", "syntax/typescript/go"}
-	rules["analyze/files/typescript/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/typescriptsem", "resolve/files/typescript/go", "semantics/go", "semantics/typescript/go", "syntax/typescript/go", "trees/representation/go"}
-	rules["provider/typescript/go"] = append(rules["provider/typescript/go"], "contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "analyze/files/typescript/go", "resolve/files/typescript/go")
+	rules["internal/typescriptsem"] = []string{"contracts/parse/go", "contracts/semantic/go", "files/go", "parse/syntax/typescript/provider/go", "semantics/go", "semantics/typescript/go", "syntax/typescript/go", "trees/ast/go"}
+	rules["resolve/files/typescript/provider/go"] = []string{"trees/representation/go", "contracts/resolution/go", "contracts/semantic/go", "internal/typescriptsem", "semantics/go", "semantics/typescript/go", "syntax/typescript/go"}
+	rules["analyze/files/typescript/provider/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/typescriptsem", "resolve/files/typescript/provider/go", "semantics/go", "semantics/typescript/go", "syntax/typescript/go", "trees/representation/go"}
 	rules["semantics/rust/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "syntax/rust/go", "trees/ast/go", "trees/representation/go"}
-	rules["internal/rustsem"] = []string{"contracts/parse/go", "contracts/semantic/go", "files/go", "parse/syntax/rust/go", "semantics/go", "semantics/rust/go", "syntax/rust/go", "trees/ast/go"}
-	rules["resolve/files/rust/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/rustsem", "semantics/go", "semantics/rust/go", "syntax/rust/go"}
-	rules["analyze/files/rust/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/rustsem", "resolve/files/rust/go", "semantics/go", "semantics/rust/go", "syntax/rust/go", "trees/representation/go"}
-	rules["provider/rust/go"] = append(rules["provider/rust/go"], "contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "analyze/files/rust/go", "resolve/files/rust/go")
-	rules["verification/files/horos-to-go/go"] = []string{"contracts/semantic/go", "contracts/verification/go", "semantics/go", "trees/ast/go", "verification/files/source/horos/go", "semantics/golang/go", "analyze/files/golang/go"}
-	rules["verification/files/horos-to-go/go"] = append(rules["verification/files/horos-to-go/go"], "verification/logos/go")
+	rules["internal/rustsem"] = []string{"contracts/parse/go", "contracts/semantic/go", "files/go", "parse/syntax/rust/provider/go", "semantics/go", "semantics/rust/go", "syntax/rust/go", "trees/ast/go"}
+	rules["resolve/files/rust/provider/go"] = []string{"trees/representation/go", "contracts/resolution/go", "contracts/semantic/go", "internal/rustsem", "semantics/go", "semantics/rust/go", "syntax/rust/go"}
+	rules["analyze/files/rust/provider/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/rustsem", "resolve/files/rust/provider/go", "semantics/go", "semantics/rust/go", "syntax/rust/go", "trees/representation/go"}
+	rules["verification/files/horos-to-go/go"] = []string{"contracts/semantic/go", "contracts/verification/go", "semantics/go", "trees/ast/go", "verification/files/source/horos/go", "semantics/golang/go", "analyze/files/golang/provider/go", "verification/logos/go"}
 	rules["verification/logos/go"] = []string{"contracts/verification/go", "semantics/go"}
 	rules["verification/files/horos-to-go/mappings/go"] = []string{"verification/files/horos-to-go/go", "semantics/golang/go", "semantics/go"}
 	for path, p := range packages {
@@ -290,11 +291,11 @@ var modelExternalImports = map[string][]string{
 	"verification/logos/go":                      {"github.com/Bitspark/logos-contract/contract/go/typed"},
 	"verification/files/horos-to-go/mappings/go": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
 	"tools/horos-module/go":                      {"github.com/bitspark/ontos/codec/go"},
-	"generation/syntax/source/horos/go":          {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
-	"parse/syntax/horos/go":                      {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
-	"format/syntax/horos/go":                     {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
+	"transform/syntax/horos/source/go":           {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
+	"parse/syntax/horos/provider/go":             {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
+	"format/syntax/horos/provider/go":            {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"internal/horosmodel":                        {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
-	"resolve/files/horos/go":                     {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
+	"resolve/files/horos/provider/go":            {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
 	"verification/files/source/horos/go":         {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"verification/files/horos-to-go/go":          {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/Bitspark/logos-contract/contract/go/typed"},
 }

@@ -187,7 +187,7 @@ jobs:
           python3 tools/provider-matrix/capture.py run --root "$GITHUB_WORKSPACE"
           --output "$RUNNER_TEMP/capability-observations/horos-fuzz" --command-id horos-fuzz
           --env GOMAXPROCS
-          -- go test -json -run='^$' -fuzz=FuzzSourceRoundTrip -fuzztime=20s ./parse/syntax/horos/go
+          -- go test -json -run='^$' -fuzz=FuzzSourceRoundTrip -fuzztime=20s ./parse/syntax/horos/provider/go
       - name: Save failing fuzz cases
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
@@ -195,7 +195,7 @@ jobs:
           name: native-fuzz-corpus
           path: |
             integration/go/testdata/fuzz/
-            parse/syntax/horos/go/testdata/fuzz/
+            parse/syntax/horos/provider/go/testdata/fuzz/
           if-no-files-found: ignore
           retention-days: 7
       - name: Verify committed dependency metadata

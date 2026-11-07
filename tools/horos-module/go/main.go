@@ -13,7 +13,7 @@ import (
 	parsecontract "github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/internal/horosmodel"
 	"github.com/Bitspark/bittype/internal/lex"
-	horosparse "github.com/Bitspark/bittype/parse/syntax/horos/go"
+	horosparse "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	codec "github.com/bitspark/ontos/codec/go"
 )

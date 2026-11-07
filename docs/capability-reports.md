@@ -172,7 +172,7 @@ package and type information:
 - `parse.Parse` uses that file's existing import alias.
 - `Provider.Check` names a method in the current package;
   `parse.Provider.Parse` uses an imported receiver type.
-- `github.com/Bitspark/bittype/parse/syntax/typescript/go#Parse` is the fully
+- `github.com/Bitspark/bittype/parse/syntax/typescript/provider/go#Parse` is the fully
   qualified form. A method uses `import/path#Receiver.Method`.
 
 The qualified form needs no otherwise-unused Go import. Pointer receivers and
@@ -431,8 +431,8 @@ support-depth entry point; [the matrices](providers.md) show availability. Sourc
 generation adds a `details` link beside each implemented operation/factory:
 
 ```text
-Provider cell:     check/syntax/horos/go.Provider.Check · details
-Transformer cell: transforms/horos-to-go/go.New · details
+Provider cell:     check/syntax/horos/provider/go.Provider.Check · details
+Mapping cell: transform/syntax/horos-to-golang/mapping/go.Provider.Open · details
 Unavailable cell: /
 ```
 

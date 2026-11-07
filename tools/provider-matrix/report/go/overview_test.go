@@ -24,7 +24,7 @@ func TestOverviewScopesProfilesAndCaseDeduplication(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(p.root, "docs/scope.md"), []byte(scope), 0600); err != nil {
 		t.Fatal(err)
 	}
-	target := capability.Symbol{Package: p.module + "/provider/ember/go", Name: "emit"}
+	target := capability.Symbol{Package: p.module + "/print/syntax/ember/provider/go", Name: "emit"}
 	a := &annotations{operations: map[capability.Symbol][]authored{target: {
 		{directive: directive{name: "scope"}, document: "docs/scope.md#scope"},
 		{directive: directive{name: "scope", profile: profile{present: true, value: "strict"}}, document: "docs/scope.md#scope"},

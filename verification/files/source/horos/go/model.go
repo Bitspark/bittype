@@ -9,7 +9,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	bridge "github.com/Bitspark/bittype/internal/horosmodel"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"

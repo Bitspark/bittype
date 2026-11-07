@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/parse/go"
-	rustprovider "github.com/Bitspark/bittype/provider/rust/go"
+
 	rust "github.com/Bitspark/bittype/syntax/rust/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
@@ -37,10 +37,10 @@ func rustDeclarationsFixture() ast.AST[rust.Language] {
 	return f.tree
 }
 
-// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Format feature=generic-associated-declarations case=independent-ast-formatting expects=ast-preserved-and-golden-text
+// bittype:case target=github.com/Bitspark/bittype/format/syntax/rust/provider/go#Provider.Format feature=generic-associated-declarations case=independent-ast-formatting expects=ast-preserved-and-golden-text
 func TestIndependentRustDeclarationFormatter(t *testing.T) {
 	a := rustDeclarationsFixture()
-	p := rustprovider.Provider{}
+	p := rustText()
 	c, err := p.Format(context.Background(), a)
 	if err != nil {
 		t.Fatal(err)
@@ -71,7 +71,7 @@ func TestRustDeclarationFormatting(t *testing.T) {
 		{"mod nested{impl Trait for (){type r#type<T>=T;}}", "mod nested {\n    impl Trait for () {\n        type r#type<T> = T;\n    }\n}\n"},
 	} {
 		t.Run(tc.source, func(t *testing.T) {
-			p := rustprovider.Provider{}
+			p := rustText()
 			c, err := p.Parse(context.Background(), parse.Input{SourceID: "source", TreeID: "tree", Text: tc.source})
 			if err != nil {
 				t.Fatal(err)

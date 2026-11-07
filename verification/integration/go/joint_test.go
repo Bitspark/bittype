@@ -1,9 +1,18 @@
 package integration_test
 
 import (
+	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
+	checkhoros "github.com/Bitspark/bittype/check/syntax/horos/provider/go"
+	formatgolang "github.com/Bitspark/bittype/format/syntax/golang/provider/go"
+	formathoros "github.com/Bitspark/bittype/format/syntax/horos/provider/go"
+	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
+	parsegolang "github.com/Bitspark/bittype/parse/syntax/golang/provider/go"
+	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
+	resolvegolang "github.com/Bitspark/bittype/resolve/files/golang/provider/go"
+
 	"context"
 	"errors"
-	nativequery "github.com/Bitspark/bittype/analyze/files/golang/go"
+	nativequery "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
 	"go/types"
 	"reflect"
 	"slices"
@@ -17,9 +26,8 @@ import (
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
-	gp "github.com/Bitspark/bittype/provider/golang/go"
-	hp "github.com/Bitspark/bittype/provider/horos/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
+
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	hs "github.com/Bitspark/bittype/syntax/horos/go"
@@ -71,8 +79,8 @@ func capture[L any](t *testing.T, p syntaxProvider[L], profile, text string) sem
 func sourceModel(t *testing.T, text string) h.Model {
 	t.Helper()
 	text = "module example; import h from horos.kinds pin \"sha256:" + decl.PreludePin().String() + "\"; " + text
-	s := capture[hs.Language](t, hp.Provider{}, hs.Profile, text)
-	r, err := resolution.NewResolver[hs.Language](s.Language(), resolve.Contract(), hp.Provider{})
+	s := capture[hs.Language](t, textfixture.New(parsehoros.Provider{}, checkhoros.Provider{}, formathoros.Provider{}), hs.Profile, text)
+	r, err := resolution.NewResolver[hs.Language](s.Language(), resolve.Contract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +96,7 @@ func sourceModel(t *testing.T, text string) h.Model {
 }
 func nativeModel(t *testing.T, text string) n.Model {
 	t.Helper()
-	s := capture[gs.Language](t, gp.Provider{}, "go-syntax-1", "package example; "+text)
+	s := capture[gs.Language](t, textfixture.New(parsegolang.Provider{}, checkgolang.Provider{}, formatgolang.Provider{}), "go-syntax-1", "package example; "+text)
 	m, err := checkedNative(context.Background(), s)
 	if err != nil {
 		t.Fatal(err)
@@ -549,7 +557,7 @@ func TestJointConcurrentChecks(t *testing.T) {
 
 // Each semantic role is explicit; opening the typed view compiles nothing.
 func checkedNative(ctx context.Context, snapshot semantic.Snapshot) (n.Model, error) {
-	resolver, err := gp.NewFilesResolver(snapshot.Language())
+	resolver, err := resolution.NewResolver[gs.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
 	if err != nil {
 		return n.Model{}, err
 	}
@@ -557,7 +565,7 @@ func checkedNative(ctx context.Context, snapshot semantic.Snapshot) (n.Model, er
 	if err != nil {
 		return n.Model{}, err
 	}
-	analyzer, err := gp.NewFilesAnalyzer(snapshot.Language())
+	analyzer, err := analysis.NewAnalyzer[gs.Language](snapshot.Language(), nativequery.Contract(), nativequery.Provider{})
 	if err != nil {
 		return n.Model{}, err
 	}

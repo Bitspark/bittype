@@ -1,6 +1,11 @@
 package integration_test
 
 import (
+	analyzerust "github.com/Bitspark/bittype/analyze/files/rust/provider/go"
+	checkrust "github.com/Bitspark/bittype/check/syntax/rust/provider/go"
+	check "github.com/Bitspark/bittype/contracts/check/go"
+	parserust "github.com/Bitspark/bittype/parse/syntax/rust/provider/go"
+
 	"context"
 	"errors"
 	"fmt"
@@ -15,8 +20,8 @@ import (
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/files/go"
-	p "github.com/Bitspark/bittype/provider/rust/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/rust/go"
+
+	resolve "github.com/Bitspark/bittype/resolve/files/rust/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/rust/go"
 	s "github.com/Bitspark/bittype/syntax/rust/go"
@@ -38,7 +43,7 @@ func rsCapture(t *testing.T, texts ...string) (semantic.Snapshot, []s.AST, *file
 	source := &files.Context{}
 	for i, text := range texts {
 		id := fmt.Sprint(i)
-		parsed, err := (p.Provider{}).Parse(context.Background(), parse.Input{Text: text, SourceID: ast.SourceID(id), TreeID: ast.TreeID(id)})
+		parsed, err := parserust.Parse(context.Background(), parse.Input{Text: text, SourceID: ast.SourceID(id), TreeID: ast.TreeID(id)})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -54,7 +59,7 @@ func rsCaptureTrees(t *testing.T, trees []s.AST, source *files.Context) semantic
 	if err != nil {
 		t.Fatal(err)
 	}
-	checker, err := p.NewSyntaxChecker(definition)
+	checker, err := check.NewChecker[s.Language](definition, checkrust.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +79,7 @@ func rsCaptureTrees(t *testing.T, trees []s.AST, source *files.Context) semantic
 }
 func rsResults(t *testing.T, snapshot semantic.Snapshot) (semantic.Result, semantic.Result) {
 	t.Helper()
-	resolver, err := p.NewFilesResolver(snapshot.Language(), rsCompiler(t))
+	resolver, err := resolve.New(snapshot.Language(), rsCompiler(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +87,7 @@ func rsResults(t *testing.T, snapshot semantic.Snapshot) (semantic.Result, seman
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := p.NewFilesAnalyzer(snapshot.Language())
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyzerust.Contract(), analyzerust.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +130,7 @@ func qualifyRust(t *testing.T) {
 	if _, err := e.Resolve(ctx, snapshot, semantic.Options{}); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	resolver, err := p.NewFilesResolver(snapshot.Language(), rsCompiler(t))
+	resolver, err := resolve.New(snapshot.Language(), rsCompiler(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +145,7 @@ func qualifyRust(t *testing.T) {
 	if _, err = e.Analyze(ctx, input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	analyzer, err := p.NewFilesAnalyzer(snapshot.Language())
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyzerust.Contract(), analyzerust.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,8 +197,8 @@ func qualifyRust(t *testing.T) {
 	}
 }
 
-// bittype:case target=github.com/Bitspark/bittype/resolve/files/rust/go#Provider.Resolve feature=rust-semantic-subset case=native-types-and-generics expects=native-identity-and-substitution-preserved
-// bittype:case target=github.com/Bitspark/bittype/analyze/files/rust/go#Provider.Analyze feature=rust-semantic-subset case=native-types-and-generics expects=native-identity-and-substitution-preserved
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/rust/provider/go#Provider.Resolve feature=rust-semantic-subset case=native-types-and-generics expects=native-identity-and-substitution-preserved
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze feature=rust-semantic-subset case=native-types-and-generics expects=native-identity-and-substitution-preserved
 func TestRustSemanticNativeTypes(t *testing.T) {
 	m := rsModel(t, `pub struct Person {pub name: String}
 pub struct Page<T=Person> {pub items: Vec<T>}
@@ -254,8 +259,8 @@ func TestRustSemanticNamespaceAndCoordinates(t *testing.T) {
 	}
 }
 
-// bittype:case target=github.com/Bitspark/bittype/resolve/files/rust/go#Provider.Resolve feature=rust-semantic-subset case=bounds-and-profile-outcomes expects=qualified-reports-without-partial-model
-// bittype:case target=github.com/Bitspark/bittype/analyze/files/rust/go#Provider.Analyze feature=rust-semantic-subset case=bounds-and-profile-outcomes expects=qualified-reports-without-partial-model
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/rust/provider/go#Provider.Resolve feature=rust-semantic-subset case=bounds-and-profile-outcomes expects=qualified-reports-without-partial-model
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze feature=rust-semantic-subset case=bounds-and-profile-outcomes expects=qualified-reports-without-partial-model
 func TestRustSemanticBoundsAndOutcomes(t *testing.T) {
 	m := rsModel(t, `pub trait Marker {} pub struct Person {} impl Marker for Person {} pub struct Boxed<T: Marker> {pub value: T} pub type Good = Boxed<Person>;`)
 	b := rsDecl(t, m, "0", "Boxed")
@@ -307,8 +312,8 @@ func TestRustSemanticCaptureAndReceipts(t *testing.T) {
 	ctx := context.Background()
 	snapshot, trees, source := rsCapture(t, "pub struct A {} pub struct B {} pub type Alias = A;")
 	resolved, _ := rsResults(t, snapshot)
-	resolver, _ := p.NewFilesResolver(snapshot.Language(), rsCompiler(t))
-	analyzer, _ := p.NewFilesAnalyzer(snapshot.Language())
+	resolver, _ := resolve.New(snapshot.Language(), rsCompiler(t))
+	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyzerust.Contract(), analyzerust.Provider{})
 	other := rsCaptureTrees(t, trees, source)
 	if _, err := analyzer.Analyze(ctx, analysis.Input{Snapshot: other, Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}}); err == nil {
 		t.Fatal("foreign receipt")
@@ -354,8 +359,8 @@ func TestRustSemanticCaptureAndReceipts(t *testing.T) {
 
 func TestRustSemanticConcurrent(t *testing.T) {
 	snapshot, _, _ := rsCapture(t, "pub struct Page<T> {pub item:T} pub type Bytes = Page<u8>;")
-	resolver, _ := p.NewFilesResolver(snapshot.Language(), rsCompiler(t))
-	analyzer, _ := p.NewFilesAnalyzer(snapshot.Language())
+	resolver, _ := resolve.New(snapshot.Language(), rsCompiler(t))
+	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyzerust.Contract(), analyzerust.Provider{})
 	resolved, err := resolver.Resolve(context.Background(), snapshot, semantic.Options{Configuration: n.Configuration()})
 	if err != nil {
 		t.Fatal(err)

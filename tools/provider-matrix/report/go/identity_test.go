@@ -9,12 +9,12 @@ import (
 
 func TestReviewAnonymousArgumentOwnerIsNotDisplayIdentity(t *testing.T) {
 	p := fixture(t, map[string]string{
-		"provider/ember/go": `package emberprovider
+		"print/syntax/ember/provider/go": `package emberprovider
 import (s "example.test/fixture/syntax/ember/go"; tree "example.test/fixture/trees/cst/go")
 type Output struct{s.Language}
 func(Output)Print(tree.CST[s.Language])(struct{value int},error){return struct{value int}{},nil}
 `,
-		"print/files/go": `package filesprint
+		"print/files/shared/provider/go": `package filesprint
 import (id "example.test/fixture/contracts/language/go"; printing "example.test/fixture/contracts/print/go"; tree "example.test/fixture/trees/cst/go"; source "example.test/fixture/source/go"; files "example.test/fixture/files/go")
 type Output[L any] struct {identity id.Provider;syntax printing.Provider[tree.CST[L],struct{value int}]}
 func New[L any](identity id.Provider,syntax printing.Provider[tree.CST[L],struct{value int}])(Output[L],error){return Output[L]{identity,syntax},nil}
@@ -51,11 +51,11 @@ func TestDependencyArgumentsKeepGoStructuralIdentity(t *testing.T) {
 			}
 			p := fixture(t, map[string]string{
 				"shared": `package shared; type Payload = struct{value int}`,
-				"provider/ember/go": `package emberprovider
+				"print/syntax/ember/provider/go": `package emberprovider
 import(s "example.test/fixture/syntax/ember/go"; tree "example.test/fixture/trees/cst/go"` + extra + `)
 type Output struct{s.Language}
 func(Output)Print(tree.CST[s.Language])(` + test.output + `,error){panic("source only")}`,
-				"print/files/go": `package filesprint
+				"print/files/shared/provider/go": `package filesprint
 import(id "example.test/fixture/contracts/language/go"; printing "example.test/fixture/contracts/print/go"; tree "example.test/fixture/trees/cst/go"; source "example.test/fixture/source/go"; files "example.test/fixture/files/go"` + extra + `)
 type Output[L any] struct{identity id.Provider}
 func New[L any](identity id.Provider, syntax printing.Provider[tree.CST[L],` + test.output + `])(Output[L],error){return Output[L]{identity},nil}
