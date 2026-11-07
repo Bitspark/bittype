@@ -1,5 +1,7 @@
 # Syntax and Files
 
+The [TypeScript type-import design](typescript-type-imports.md) applies the existing Files/Source contracts to generated declarations.
+
 **4 November 2026. Implemented Go contracts and Horos composition.**
 
 ```text

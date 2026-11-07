@@ -1,5 +1,7 @@
 # Kernel-owned generation composition
 
+The [TypeScript type-import design](typescript-type-imports.md) applies the existing Files/Source contracts to generated declarations.
+
 **Implemented in Bittype. Owner decision of 6 November 2026.** The kernel composes
 supplied source, target and mapping providers from an explicit request. Libraries
 construct their own invocation state and own representation meaning. Consumers
