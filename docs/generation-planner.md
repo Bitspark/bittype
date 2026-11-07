@@ -1,8 +1,8 @@
 # Planning and running type generation
 
-**Draft proposal · 7 November 2026**
+**Draft proposal · 8 November 2026**
 
-A caller should be able to ask Bittype to generate `pagination.Page` for
+A caller should be able to ask Bittype to generate `example.pagination.Page` for
 TypeScript, inspect which mappings the engine chose, and run that plan. The
 project configures its generation libraries and representation preferences once.
 The engine assembles the pipeline. During planning, mapping libraries choose
@@ -17,7 +17,7 @@ TypeScript builder allocates an array node.
 | `Engine.Plan(from, to)` finds a language route through registered AST transformers. | Add `PlanGeneration` for decisions about particular source declarations. |
 | `Registry.Transformer(request)` captures an explicit provider selection and ties it to the exact source snapshot. Its execution opens the providers and collects their bindings. | The planner resolves the reachable mapping choices before returning a runnable plan. |
 | A mapping provider's `Open` can supply exact bindings, a structural declaration policy, and helper plans. The TypeScript list mapping calls `Child` on its element and builds an array node in Go. | Advertise bindings at registration and express the list rule as an executable input pattern and target expression. |
-| `Engine.Generate` takes the analyzed input, roots, target, output identity, provider handles and limits. It returns a syntax-checked AST set. | Use configured providers and default limits. Keep `Generate` as the convenience call that plans and then runs. |
+| `Engine.Generate` takes the analyzed input, roots, target, output identity, provider handles and limits. It returns a syntax-checked AST set. | `Run` returns a `generation.Output` with the target snapshot, exposed declarations and external uses. `Generate` would plan and run in one call and return the same result type. |
 | The TypeScript target already emits package imports and marks declarations exported in its logical AST. Its Files formatter rebuilds imports after placement. | Plan bound target uses and publication intent. Files formatting is the first stage that constructs concrete import/export syntax for generated declarations. |
 
 The existing `generation.Plan[F,T]` describes the operations for one mapping or
@@ -30,55 +30,97 @@ correction recorded in ACX-002. [Current generation lifecycle](kernel-compositio
 
 ## Caller interface
 
-The first public operation would plan against an analyzed source and explicit
-roots. For example, the module below has one declaration to publish.
+The caller requests the public declarations `Page`, `Person` and `Cells` from
+the [pagination example](#pagination-on-read-and-write). In Horos, the body of
+`Cells` is `pages.Page<cells.Cell<Person>>`.
 
-```horos
-module pagination;
-type Page<T> = { items: list<T>; };
-```
-
-The proposed public surface has three operations. Only the engine can issue a
-runnable plan. Inspection exposes decisions that callers can read.
+The engine would issue a runnable plan. In these Go examples, `compose` is
+the [generation registry package](../transform/syntax/shared/generation/go/registry.go),
+which owns `Request`, and `generation` is the [shared generation contract](../contracts/generation/go/contracts.go),
+which would own `Output`. Files can consume that contract independently of the
+registry.
 
 ```go
-func (e *Engine) PlanGeneration(ctx context.Context, r generation.Request) (GenerationPlan, error)
+func (e *Engine) PlanGeneration(ctx context.Context, r compose.Request) (GenerationPlan, error)
 func (p GenerationPlan) Steps() []GenerationStep
-func (p GenerationPlan) Run(ctx context.Context) (representation.ASTSet, error)
+func (p GenerationPlan) Run(ctx context.Context) (generation.Output, error)
 ```
 
 The call uses the declared target language and its profile. The source
 language comes from the snapshot. A file-based frontend would parse, resolve
-and analyze the supplied module and imports, then resolve `pagination.Page` to
-the exact declaration site in that snapshot.
+and analyze the supplied modules, then select the three declaration sites
+from that same source snapshot.
 
 ```go
-plan, err := eng.PlanGeneration(ctx, generation.Request{
+plan, err := eng.PlanGeneration(ctx, compose.Request{
     Input: transform.Input{
         Source:   snapshot,
         Evidence: []semantic.Result{horosAnalysis},
     },
-    Roots:  []ast.NodeRef{pageSite},
+    Roots:  []ast.NodeRef{pageSite, personSite, cellsSite},
     To:     typescriptLanguage,
     Output: "pagination-types",
 })
 if err != nil {
-    return representation.ASTSet{}, err
+    return generation.Output{}, err
 }
 return plan.Run(ctx)
 ```
 
-`Output` identifies the generated tree independently of any file. `plan.Steps()`
-would return a read-only view of the requested publications, selected bindings,
-scoped operands and dependency edges.
-`Run` would return a `representation.ASTSet`. The same plan could be run again
-against the captured input with a fresh execution context.
+The request's `Output` field names the generated tree. `plan.Steps()` shows the
+chosen bindings, publications and dependencies before execution. Each successful
+`Run` returns a fresh target capture for those decisions.
 
 Supplying just the two language descriptors would allow the engine to assemble
 a reusable pipeline of compatible providers and configured preferences. Selecting
 the rule for a particular field or imported declaration requires the source
 snapshot and roots. The first API exposes the source-bound plan. An endpoint-only
 pipeline could later bind separate requests through that same planning operation.
+
+### The result of Run
+
+These are the proposed Go declarations in package `generation`.
+
+```go
+type Output struct { /* private state from one successful run */ }
+
+func (o Output) Snapshot() semantic.Snapshot
+func (o Output) Exposed() []ast.NodeRef
+func (o Output) ExternalUses() []ExternalUse
+
+type ExternalUse struct {
+    At     semantics.Occurrence
+    Symbol ExternalSymbol
+}
+
+type ExternalSymbol struct { /* immutable reference issued by the target provider */ }
+```
+
+`Snapshot().Inputs()` contains the syntax-checked target ASTs, and
+`Snapshot().Entry()` selects the entry. A named use of a generated declaration
+or lexical parameter already has an `ast.Reference` to its target node.
+`Exposed()` lists the **target declaration sites** selected by `Publish`.
+Generating a dependency or helper does not by itself request publication.
+[AST references](../trees/ast/go/node.go) · [Snapshot accessors](../contracts/semantic/go/evidence.go).
+
+`ExternalUses()` supplies a destination for each named use whose declaration
+is outside the generated ASTs. `At` identifies the target node, its
+provider-defined role and its ordinal within that role. The selected target
+provider owns the meaning of `Symbol`. For TypeScript it identifies a public
+module and its named export. The output retains the immutable symbol after
+the builder session ends. The target provider must recognize the symbol's
+issuer and profile before interpreting it in the supplied dependency environment.
+[Semantic occurrences](../semantics/go/model.go) · [TypeScript type imports](typescript-type-imports.md).
+
+All sites belong to this output's snapshot. On a successful run, the builder
+has assigned each name that requires binding exactly one destination. The
+engine seals the successful `Publish` results against their generated
+declaration sites. The accessors return copies of the two lists. Files accepts
+the whole output so addresses from a different run cannot stand in for its
+bindings. Failure returns the zero, unusable output. The engine already
+captures a checked target AST set today. The proposed result would retain
+that capture. Native analysis supplies the semantic evidence about the
+organized units. [Current engine capture](../engine/go/generation.go).
 
 ## Semantic mapping and AST construction
 
@@ -94,8 +136,8 @@ choices as native declaration nodes and retains the destination of each named us
 | --- | --- | --- |
 | Read A | The application supplies source files and the selected dependencies. | Syntax parsing yields CSTs with `AST[A]` views. The A resolver binds occurrences in their scopes. The A analyzer uses that resolution to publish `Semantics[A]` for the captured program. |
 | Map to B | Captured A sites and facts, requested roots and registered mappings. | The planner selects rules and records the B declarations, expressions and bound uses they prescribe. |
-| Construct B | A run of the plan with the selected target builder. | A syntax-checked `AST[B]` set realizes the declarations. Bound uses and the requested public surface must survive this step. |
-| Organize B | The intended bindings, requested public surface, selected dependencies and one consumer placement. | The B Files formatter applies that placement and realizes the appropriate imports, exports and local names in each unit. |
+| Construct B | A run of the plan with the selected target builder. | `generation.Output` owns the checked `AST[B]` snapshot, exposed declaration sites and external use bindings. |
+| Organize B | The complete `generation.Output`, selected dependencies and one consumer placement. | The B Files formatter follows the output's bindings and realizes the appropriate imports, exports and local names in each unit. |
 | Check and write B | The organized units in their target environment. | The B resolver and analyzer establish `Semantics[B]` for this capture. Files checks the actual bindings and publishes `Source[B]`. The Files printer returns paths and text for the application to write. |
 
 The plan describes what the selected mappings intend. Only analysis of the
@@ -171,12 +213,19 @@ type-alias Cells
       argument    → type-reference to generated Person
 ```
 
-A syntax check admits these node kinds, roles and containment. The builder
-retains the associations through construction so Files can later compare
-each reference with the target the compiler finds. [TypeScript AST vocabulary](syntax.md#typescript).
+A syntax check admits these node kinds, roles and containment. Call the result
+of `plan.Run(ctx)` for these roots `out`. The generated declaration names
+below stand for sites in its target snapshot. [TypeScript AST vocabulary](syntax.md#typescript).
 
-**Organize the output.** Run once. Put `Page` and `Cells` in `pages/page.ts`
-and the public `Person` in `model/person.ts`. Given the selected Cell package,
+| Go accessor | Value for `Cells = Page<Cell<Person>>` |
+| --- | --- |
+| `out.Snapshot()` | The two interfaces and the alias shown above. The uses of `Page` and `Person` link to their declarations. The element `T` links to the parameter on `Page`. |
+| `out.Exposed()` | The declaration sites of `Page`, `Person` and `Cells`. |
+| `out.ExternalUses()` | One entry. Its occurrence is the constructor reference of the **inner** application in `Cells`. Its symbol identifies the public export `Cell` from `@bitspark/cell`. |
+
+**Organize the output.** Run once and reuse that `out` for each placement.
+Put `Page` and `Cells` in `pages/page.ts` and the public `Person` in
+`model/person.ts`. Given the selected Cell package,
 TypeScript Files produces the following module.
 
 ```typescript
@@ -191,18 +240,24 @@ Change only the placement to put `Person` beside `Page`. The pages module now
 also contains `export interface Person { name: string; }`. Its relative import
 disappears. The package import and the alias body stay the same.
 
-**Check the bindings before writing.** Before publishing either organized `Source`,
-resolve and analyze its units in the selected TypeScript package environment.
-Compare the `Page` and `Person` uses with their declarations at their new
-sites, the `T` use with the binder on that `Page`, and the `Cell` use with the
-package export. Each capture has its own entity IDs. The comparison follows
-the declaration into its new unit or identifies the selected package and export.
-Reading TypeScript that spells the import as
-`import type { Cell as C } from "@bitspark/cell"` must recover that same export
-from the `C` in `Page<C<Person>>`. If a use binds to a different same-named
-type, or the package export is unavailable, Files must reject the result.
-The printer receives the checked `Source` and the application chooses where
-to write it. [TypeScript placement and binding checks](typescript-type-imports.md#from-generation-to-files) ·
+**Check the bindings after placement.** As Files organizes the units, it keeps
+the correspondence from each generated use and declaration to its new site.
+For each layout it then resolves and analyzes the organized units in the
+selected TypeScript environment. Each analysis has its own entity IDs. Files
+compares its findings with the destinations and publication requests in `out`:
+
+| Intended binding or publication | Check in the organized units |
+| --- | --- |
+| The outer constructor and inner argument refer to `Page` and `Person`. | Resolve both uses. They must reach the relocated declarations, whether `Person` is reached through the relative import or directly in the same module. |
+| The element `T` in `items` refers to the binder on `Page`. | Resolve the element reference and compare its declaration with that specific parameter on the relocated `Page`. |
+| The inner constructor refers to the selected package export. | If imported as `Cell as C`, the `C` in `Page<C<Person>>` must resolve to the public `Cell` from `@bitspark/cell`. |
+| `Page`, `Person` and `Cells` were requested as public declarations. | Check the module exports against the corresponding relocated sites. An inaccessible dependency cannot silently become public to make a placement work. |
+
+A missing export, an inaccessible target or a same-named declaration capturing
+a use causes formatting to fail without publishing a partial `Source`. After
+the checks pass, Files publishes the `Source` for that layout with its fresh
+native evidence. The printer emits the paths and text.
+[TypeScript placement and binding checks](typescript-type-imports.md#from-generation-to-files) ·
 [Placement and alias fixtures](../integration/go/typescript_placement_test.go).
 
 ### Where the plan stops
@@ -212,16 +267,18 @@ identity of its owned declaration, lexical parameter or external public symbol.
 A change of placement uses the same plan. Selecting a different external type
 for Cell changes a mapping decision and requires a new plan.
 
-The proposal still needs a way to carry the bound uses and publication intent
-from a run into target semantic admission. The proposed `ASTSet` return type
-alone leaves that association unspecified. Today's TypeScript target emits
-package imports and export modifiers into a logical unit, which is resolved
-and analyzed to supply the existing Files formatter's input graph, snapshot
-and receipt. After placement the formatter obtains a fresh analysis and checks
-the relocated bindings before it publishes `Source`. Under the proposed split,
-the intent from the plan must reach target admission directly. Analysis of a
-logical unit, where available, establishes facts only for that unit. The
-organized units still need their own binding checks.
+The proposed handoff is the [complete output of `Run`](#the-result-of-run).
+Files takes the intended destinations and requested publications from that
+output. Placement and the selected dependencies come from the consumer.
+The target resolver and analyzer establish the actual destinations for each
+placement.
+
+Today the TypeScript target emits imports and export modifiers in a logical
+unit. Its analysis supplies the graph, snapshot and receipt required by the
+current Files formatter. The formatter analyzes the organized units again before
+publishing `Source`. Accepting `generation.Output` at this boundary remains
+implementation work. An earlier logical unit's receipt, if available, applies
+only to its own capture. [Current Files input](../contracts/format/go/files.go) ·
 [Generation and Files boundary](source.md#from-generated-declarations-to-files) ·
 [Current TypeScript behavior](typescript-type-imports.md) ·
 [Open architectural case](architecture-cases/0004-generation-file-syntax.md).
@@ -300,15 +357,17 @@ handle a declaration with no exact binding. An exact binding that fails ends
 the request. A missing demanded representation or an ambiguous choice is
 reported at the requesting source occurrence.
 
-An inspection of the example would expose these decisions.
+Inspecting the `Page` portion of the three-root pagination plan would show
+these decisions.
 
 ```text
-Publish pagination.Page       TypeScript interface Page<T>
+Publish example.pagination.Page   TypeScript interface Page<T>
   Introduce Page.T            target parameter bound to this declaration
   Define field items          Horos list whose element refers to Page.T
     Select list/typescript/1  Array(mapped(E))
     Bind E                    this occurrence of Page.T
     Map E                     use Page's target parameter
+  Define optional field next  Horos text represented as TypeScript string
 ```
 
 The plan requests publication of `Page`. If the consumer places it in a
@@ -317,6 +376,7 @@ TypeScript module as a named export, Files formatting and printing produce:
 ```typescript
 export interface Page<T> {
   items: T[];
+  next?: string;
 }
 ```
 
@@ -407,12 +467,14 @@ a different type. Cross-language proofs use the verification contract.
    `Generate` as the one-call entry. This changes the public provider contract
    and the requests made by installed consumers.
 4. Carry bound external uses and publication intent across the generation/Files
-   handoff. Remove early import/export emission from TypeScript generation.
-   Format one run of `Cells` with both pagination placements. Check each
-   organized use against its intended declaration and compile both layouts
-   against the selected package. An inaccessible binding must fail even if a
-   different declaration shares its name. Apply the same boundary when migrating
-   other targets that already emit includes or module visibility.
+   handoff in `generation.Output`. Remove early import/export emission from
+   TypeScript generation. Format the same output for `Cells` with both
+   placements. Check the relocated uses and exports, including an aliased
+   `Cell`, and compile both layouts against the selected package. Reject
+   external bindings or exposed sites taken from a different output. An
+   inaccessible binding must fail even if a different declaration shares its
+   name. Apply the same boundary when migrating other targets that already emit
+   includes or module visibility.
 
 Qualification should compare planned and one-call output, exercise fresh runs
 of one plan after a registry change, and reject ambiguous, stale or foreign
