@@ -29,8 +29,8 @@ func familyLogic(r namedBody) (signature, typed.Expr, typed.Expr) {
 	d := signature{declarations: domains()}
 	d.add(namedDeclaration(), r.representation.sites()...)
 	r.representation.describe(&d)
-	d.add(assume("h.family", arrow(con("H"), con("H")), ModelBasis), r.representation.sourceSites...)
-	d.add(assume("n.family", arrow(con("N"), con("N")), ModelBasis), r.representation.nativeSites...)
+	d.add(assume("h.family", arrow(con("H"), con("H")), ModelBasis), r.representation.sourceSite())
+	d.add(assume("n.family", arrow(con("N"), con("N")), ModelBasis), r.representation.nativeSites()...)
 	source := pi(con("H"), func(h expression) expression {
 		a, _ := r.representation.terms(h, nil)
 		return arrow(member(h), sourceBody(app(con("h.family"), h), a))
@@ -40,8 +40,8 @@ func familyLogic(r namedBody) (signature, typed.Expr, typed.Expr) {
 		return nativeBody(app(con("n.family"), n), b)
 	})
 	guarantee := pi(con("H"), func(h expression) expression { return arrow(member(h), member(app(con("h.family"), h))) })
-	d.add(assume("source.family.body", source, SourceBasis), r.representation.sourceSites...)
-	d.add(assume("native.family.body", native, NativeBasis), r.representation.nativeSites...)
+	d.add(assume("source.family.body", source, SourceBasis), r.representation.sourceSite())
+	d.add(assume("native.family.body", native, NativeBasis), r.representation.nativeSites()...)
 	d.add(assume("source.family.kind", guarantee, SourceBasis), site(sourceKey(), r.source.ParameterSite(0)))
 	expected := pi(con("H"), func(h expression) expression {
 		return pi(con("N"), func(n expression) expression { return arrow(member(h), arrow(rep(h, n), familyResult(h, n))) })
@@ -61,13 +61,13 @@ func familyLogic(r namedBody) (signature, typed.Expr, typed.Expr) {
 func argumentLogic(r namedBody) (signature, typed.Expr) {
 	var d signature
 	r.representation.describe(&d)
-	d.add(assume("h.argument", con("H"), ModelBasis), r.representation.sourceSites...)
-	d.add(assume("n.argument", con("N"), ModelBasis), r.representation.nativeSites...)
+	d.add(assume("h.argument", con("H"), ModelBasis), r.representation.sourceSite())
+	d.add(assume("n.argument", con("N"), ModelBasis), r.representation.nativeSites()...)
 	// A nullary argument has no binder. Its projected tree is closed.
 	a, b := r.representation.terms(nil, nil)
-	d.add(assume("source.argument.body", sourceBody(con("h.argument"), a), SourceBasis), r.representation.sourceSites...)
-	d.add(assume("native.argument.body", nativeBody(con("n.argument"), b), NativeBasis), r.representation.nativeSites...)
-	d.add(assume("argument.member", member(con("h.argument")), SourceBasis), r.representation.sourceSites...)
+	d.add(assume("source.argument.body", sourceBody(con("h.argument"), a), SourceBasis), r.representation.sourceSite())
+	d.add(assume("native.argument.body", nativeBody(con("n.argument"), b), NativeBasis), r.representation.nativeSites()...)
+	d.add(assume("argument.member", member(con("h.argument")), SourceBasis), r.representation.sourceSite())
 	proof := namedProof(r, nil, nil, nil, con("h.argument"), con("n.argument"), con("source.argument.body"), con("native.argument.body"))
 	return d, proof(0)
 }

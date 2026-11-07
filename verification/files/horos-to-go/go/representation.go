@@ -42,12 +42,14 @@ func Select(rules ...Rule) (Mappings, error) {
 	return Mappings{slices.Clone(rules)}, nil
 }
 
+// Each proof node retains the exact issued occurrence, including its binder,
+// source expression, native type and parent. Locations are views of that capture.
 type node struct {
-	law                      Law
-	symbol, dependency       string
-	children                 []*node
-	sourceSites, nativeSites []association.Site
-	bound                    bool
+	subject            Subject
+	law                Law
+	symbol, dependency string
+	children           []*node
+	bound              bool
 }
 
 func (m Mappings) project(root Subject, prefix string) (*node, error) {
@@ -61,10 +63,7 @@ func (m Mappings) project(root Subject, prefix string) (*node, error) {
 		if p.s == nil || p.Source() == nil || !p.Target().Valid() {
 			return nil, joint.ErrInvalid
 		}
-		result := &node{sourceSites: []association.Site{site(sourceKey(), p.s.sourceSite)}, nativeSites: []association.Site{site(targetKey(), p.s.nativeSite)}}
-		if loc := p.Target().Origin().Site(); loc.Node != 0 && loc != p.s.nativeSite {
-			result.nativeSites = append(result.nativeSites, site(targetKey(), loc))
-		}
+		result := &node{subject: p}
 		parameter, isParameter := p.Source().Parameter()
 		if isParameter {
 			if parameter != p.s.binder.source || !p.s.binder.target.Valid() {
@@ -116,8 +115,19 @@ func (m Mappings) project(root Subject, prefix string) (*node, error) {
 	return visit(root, 0)
 }
 
+func (x *node) sourceSite() association.Site {
+	return site(sourceKey(), x.subject.s.sourceSite)
+}
+func (x *node) nativeSites() []association.Site {
+	field := x.subject.s.nativeSite
+	sites := []association.Site{site(targetKey(), field)}
+	if origin := x.subject.Target().Origin().Site(); origin.Node != 0 && origin != field {
+		sites = append(sites, site(targetKey(), origin))
+	}
+	return sites
+}
 func (x *node) sites() []association.Site {
-	return append(slices.Clone(x.sourceSites), x.nativeSites...)
+	return append([]association.Site{x.sourceSite()}, x.nativeSites()...)
 }
 func (x *node) describe(s *signature) {
 	if x.bound {
@@ -128,8 +138,8 @@ func (x *node) describe(s *signature) {
 	}
 	count := len(x.children)
 	hs, ns, law := x.symbol+".source", x.symbol+".target", x.symbol+".law"
-	s.add(assume(hs, domainsN(con("H"), count, con("H")), ModelBasis), x.sourceSites...)
-	s.add(assume(ns, domainsN(con("N"), count, con("N")), ModelBasis), x.nativeSites...)
+	s.add(assume(hs, domainsN(con("H"), count, con("H")), ModelBasis), x.sourceSite())
+	s.add(assume(ns, domainsN(con("N"), count, con("N")), ModelBasis), x.nativeSites()...)
 	spec := Constructors{Source: hs, Target: ns, Arity: count}
 	s.add(typed.Assume(law, x.law.Signature(spec), x.dependency), x.sites()...)
 }

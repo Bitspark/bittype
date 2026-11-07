@@ -219,7 +219,7 @@ func applicationProblem(a application) (joint.Problem, error) {
 		h = app(con("h.family"), h)
 		n = app(con("n.family"), n)
 	}
-	input, req := associationInput(a.argument.member.Model(), f.body.target.Model())
+	input, req := associationInput(a.argument.member.Model(), a.argument.body.subject.Target().Model())
 	return s.problem(input, req, conjunction(member(h), rep(h, n))(0), append(f.body.representation.sites(), a.argument.body.sites()...)), nil
 }
 func (a Argument) Candidate(depth int) typed.Expr {

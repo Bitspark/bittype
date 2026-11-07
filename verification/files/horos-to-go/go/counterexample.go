@@ -67,8 +67,8 @@ func witnessProblem(w *witness) (joint.Problem, error) {
 	d.add(assume("native.declaration", con("D"), ModelBasis), site(targetKey(), w.target.Site()))
 	d.add(assume("Admits", arrow(con("D"), arrow(con("N"), universe())), ModelBasis))
 	d.add(define("Empty", universe(), fixed(typed.ID(typed.Bool(), typed.True(), typed.False()))))
-	d.add(assume("source.nonmember", arrow(member(h), con("Empty")), SourceBasis), w.pair.sourceSites...)
-	d.add(assume("native.admits", app(con("Admits"), con("native.declaration"), n), NativeBasis), w.pair.nativeSites...)
+	d.add(assume("source.nonmember", arrow(member(h), con("Empty")), SourceBasis), w.pair.sourceSite())
+	d.add(assume("native.admits", app(con("Admits"), con("native.declaration"), n), NativeBasis), w.pair.nativeSites()...)
 	input, req := associationInput(w.nonmember.Model(), w.admission.Model())
 	sites := append(w.pair.sites(), site(sourceKey(), w.source.Site()), site(targetKey(), w.target.Site()))
 	return d.problem(input, req, counterexampleType()(0), sites), nil
