@@ -99,7 +99,7 @@ type ExternalSymbol struct { /* immutable reference issued by the target provide
 `Snapshot().Inputs()` contains the syntax-checked target ASTs, and
 `Snapshot().Entry()` selects the entry. A named use of a generated declaration
 or lexical parameter already has an `ast.Reference` to its target node.
-`Exposed()` lists the **target declaration sites** selected by `Publish`.
+`Exposed()` lists the **target declaration sites** that fulfill the caller's publication requests.
 Generating a dependency or helper does not by itself request publication.
 [AST references](../trees/ast/go/node.go) · [Snapshot accessors](../contracts/semantic/go/evidence.go).
 
@@ -114,8 +114,8 @@ issuer and profile before interpreting it in the supplied dependency environment
 
 All sites belong to this output's snapshot. On a successful run, the builder
 has assigned each name that requires binding exactly one destination. The
-engine seals the successful `Publish` results against their generated
-declaration sites. The accessors return copies of the two lists. Files accepts
+engine seals each requested exposure against its generated declaration site.
+The accessors return copies of the two lists. Files accepts
 the whole output so addresses from a different run cannot stand in for its
 bindings. Failure returns the zero, unusable output. The engine already
 captures a checked target AST set today. The proposed result would retain
@@ -262,7 +262,8 @@ native evidence. The printer emits the paths and text.
 
 ### Where the plan stops
 
-`Publish` records which declarations to expose. Each named use retains the
+The caller requests roots to expose, the plan identifies their target
+declarations, and the run records the realized sites. Each named use retains the
 identity of its owned declaration, lexical parameter or external public symbol.
 A change of placement uses the same plan. Selecting a different external type
 for Cell changes a mapping decision and requires a new plan.
@@ -285,24 +286,28 @@ only to its own capture. [Current Files input](../contracts/format/go/files.go) 
 
 ## What a mapper declares
 
-Registration would call `Describe` once and capture the declared endpoints,
-generation profile and offers. An exact offer contains a provider-local binding
-ID, a source-owned pattern and a target-owned expression. The pattern supplies
-an exact selector for lookup. The expression specifies the output and refers to
-the recursively mapped children. Go signatures below illustrate the proposal.
+Derive the public interface from what a mapping library needs to express. A
+use such as `Cell<Person>` needs a target type expression. Emitting an owned
+`Page<T>` also needs its declaration body. A caller who requests `Cells` as
+public needs to know which target declaration fulfills that request. An open
+generic needs one convention that relates its declared binders to actual
+arguments at every use. These requirements determine the interface independently
+of the current Go SPI. [AC-09](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-09) ·
+[Bittype design case](architecture-cases/0005-generation-interface-design.md).
+
+The consumer registers a **mapping description** supplied by its library.
+Registration captures an immutable copy. An exact rule combines an identity
+local to that library, a source-owned pattern and a target-owned expression.
+Libraries may also supply recipes for owned declarations and native helpers.
+The Go sketch illustrates the information supplied at registration.
 
 ```go
-type MappingProvider[F, T any, S SourceSession[F], N Native[F, T]] interface {
-    Describe() (MappingDescription[F, T], error)
-    Open(context.Context, MappingRequest[S, N]) (Contribution[F, T], error)
-}
-
 type MappingDescription[F, T any] struct {
     From, To          representation.Language
     GenerationProfile string
     Bindings          []BindingDescription[F, T]
-    StructuralID      string   // Optional structural declaration policy.
-    HelperKeys        []string // Helpers this provider can supply.
+    Declarations      []DeclarationRecipe[F, T]
+    Helpers           []HelperRecipe[T]
 }
 
 type BindingDescription[F, T any] struct {
@@ -311,6 +316,16 @@ type BindingDescription[F, T any] struct {
     Output TargetExpression[T]
 }
 ```
+
+A declaration recipe identifies the source declarations it handles, including
+an explicitly selected structural policy, and describes the target declaration
+and body. A helper recipe describes a target-owned declaration under a key
+qualified by its contributing library. A generic recipe binds each real source
+parameter in the declaration's lexical scope and describes the complete
+application in the caller's scope. The same convention applies if target
+arguments are reordered or an extra target parameter is required. A use
+mapping for an external generic can refer to the convention supplied by
+the library that owns its declaration.
 
 For the list mapper the entire type rule is **`Horos.list<E> → TypeScript.Array(mapped(E))`**.
 The same slot occurs on both sides of the library's declaration.
@@ -361,13 +376,13 @@ Inspecting the `Page` portion of the three-root pagination plan would show
 these decisions.
 
 ```text
-Publish example.pagination.Page   TypeScript interface Page<T>
-  Introduce Page.T            target parameter bound to this declaration
-  Define field items          Horos list whose element refers to Page.T
-    Select list/typescript/1  Array(mapped(E))
-    Bind E                    this occurrence of Page.T
-    Map E                     use Page's target parameter
-  Define optional field next  Horos text represented as TypeScript string
+Expose example.pagination.Page   TypeScript interface Page<T>
+  Parameter Page.T               target parameter bound to this declaration
+  Field items                    Horos list whose element refers to Page.T
+    Selected list/typescript/1   Array(mapped(E))
+    Capture E                    this occurrence of Page.T
+    Target element               Page's target parameter
+  Optional field next            Horos text represented as TypeScript string
 ```
 
 The plan requests publication of `Page`. If the consumer places it in a
@@ -433,29 +448,33 @@ configuration at registration and register a new instance for a change. The
 kernel snapshots the registry under its lock and invokes owner code after
 releasing it. Only successful planning issues a runnable handle.
 
-Each `Run` opens fresh sessions against the captured inputs. The executor binds
-the plan's symbolic references to that run's source and target handles and
-checks the opened contributions against the selected offers. Construction
-tickets, association tokens and native fragments belong to that run.
+Each `Run` creates fresh execution state and realizes the target expressions
+already fixed by the plan, including any source-dependent expansion completed
+during planning. Execution must preserve the selected form as well as its
+dependencies. For example, a plan selecting a mutable array must produce that
+array even if a readonly array would refer to exactly the same element.
+Target-language builders own the construction of those forms.
 
-The executor uses the existing `Publish`, `Introduce`, `Use`, `Apply` and `Define`
-operations. It preserves lexical environments, authenticates returned products,
-allocates native symbols and nodes, and admits the finished target tree. An
+The executor allocates symbols for owned declarations, fills their bodies,
+binds formal parameters in their declarations and actual arguments at each
+use, and records the sites requested for exposure. It authenticates references
+and products in the current run and admits the finished target syntax. An
 unplanned dependency, foreign handle, provider failure, cancellation, exhausted
 limit or invalid target tree fails that run as a whole. The same plan remains
 available for another run. A successful run guarantees no particular file
 organization. Files formatting must preserve the target bindings and requested
 public surface or reject the arrangement; it cannot ask the generator to select
 a different type. Cross-language proofs use the verification contract.
-[Guarded operations](generation-spi.md#five-operations) ·
+[Implemented SPI](generation-spi.md#five-operations) ·
 [Engine generation entry](../engine/go/generation.go) ·
 [TypeScript file placement](typescript-type-imports.md) · [Verification](verification.md).
 
 ## Migration and qualification
 
-1. Introduce typed source captures and target expressions over the existing
-   generation SPI. Migrate the TypeScript list rule so its declared expression
-   produces the output. Exercise open, concrete and nested elements.
+1. Represent typed source captures and target expressions in the public rule
+   descriptions. Use the TypeScript list rule to exercise open, concrete and
+   nested elements. A run that substitutes `ReadonlyArray` for the planned
+   mutable array must fail, even when its binding ID and dependencies match.
 2. Extend registration with immutable offers and move selection into
    `PlanGeneration`. Implement `Steps` and `Run` for a named `Page` root,
    including structural field traversal, binder identity, and an explicit

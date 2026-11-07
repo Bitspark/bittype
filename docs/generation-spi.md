@@ -1,5 +1,9 @@
 # Public generation operations
 
+This page describes the implemented Go contracts. The proposed mapper
+interface is derived independently from the information that a library needs
+to supply. [Planner design](generation-planner.md#what-a-mapper-declares).
+
 The [kernel-owned construction SPI](kernel-composition.md) supplies the source, target and mapping providers that the engine opens for each generation request.
 
 This implements the
