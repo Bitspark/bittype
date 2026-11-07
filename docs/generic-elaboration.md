@@ -412,8 +412,7 @@ nodes or source semantic facts.
 The [public generation SPI](generation-spi.md) is implemented in
 [`contracts/generation/go`](../contracts/generation/go/contracts.go), including
 its minimal guarded Session. As with the existing semantic operation contract,
-the runner belongs beside the contracts; there is no empty `generation/syntax`
-wrapper. It implements these construction and lifetime decisions:
+the guarded runner lives beside its contracts and the kernel composes registered providers. It implements these construction and lifetime decisions:
 
 1. Owner-qualified record addresses and authenticated source views, with guarded
    product issuance and host-owned invocation/signature identities. Independent

@@ -1,31 +1,36 @@
 package integration_test
 
 import (
+	checkhoros "github.com/Bitspark/bittype/check/syntax/horos/provider/go"
+	formathoros "github.com/Bitspark/bittype/format/syntax/horos/provider/go"
+	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
+	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
+
 	"context"
 	"testing"
 
-	analyze "github.com/Bitspark/bittype/analyze/files/horos/go"
+	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/engine/go"
-	provider "github.com/Bitspark/bittype/provider/horos/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
+
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 )
 
-// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Parse feature=independent-engine-stages case=pagination-source expects=independently-composable
-// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Check feature=independent-engine-stages case=pagination-source expects=independently-composable
-// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Format feature=independent-engine-stages case=pagination-source expects=independently-composable
-// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Print feature=independent-engine-stages case=pagination-source expects=independently-composable
-// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Resolve feature=independent-engine-stages case=pagination-source expects=independently-composable
-// bittype:case target=github.com/Bitspark/bittype/provider/horos/go#Provider.Analyze feature=independent-engine-stages case=pagination-source expects=independently-composable
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/horos/provider/go#Provider.Parse feature=independent-engine-stages case=pagination-source expects=independently-composable
+// bittype:case target=github.com/Bitspark/bittype/check/syntax/horos/provider/go#Provider.Check feature=independent-engine-stages case=pagination-source expects=independently-composable
+// bittype:case target=github.com/Bitspark/bittype/format/syntax/horos/provider/go#Provider.Format feature=independent-engine-stages case=pagination-source expects=independently-composable
+// bittype:case target=github.com/Bitspark/bittype/print/syntax/shared/provider/go#Provider.Print feature=independent-engine-stages case=pagination-source expects=independently-composable language=github.com/Bitspark/bittype/syntax/horos/go#Language
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve feature=independent-engine-stages case=pagination-source expects=independently-composable
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/horos/provider/go#Provider.Analyze feature=independent-engine-stages case=pagination-source expects=independently-composable
 func TestHorosSourceThroughIndependentEngineStages(t *testing.T) {
-	p := provider.Provider{}
+	p := textfixture.New(parsehoros.Provider{}, checkhoros.Provider{}, formathoros.Provider{})
 	definition, err := representation.NewLanguage[s.Language](p, s.Profile)
 	if err != nil {
 		t.Fatal(err)
@@ -56,11 +61,11 @@ func TestHorosSourceThroughIndependentEngineStages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolver, err := resolution.NewResolver[s.Language](definition, resolve.Contract(), p)
+	resolver, err := resolution.NewResolver[s.Language](definition, resolve.Contract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](definition, analyze.Contract(), p)
+	analyzer, err := analysis.NewAnalyzer[s.Language](definition, analyze.Contract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}

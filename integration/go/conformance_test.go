@@ -1,6 +1,20 @@
 package integration_test
 
 import (
+	checkcpp "github.com/Bitspark/bittype/check/syntax/cpp/provider/go"
+	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
+	checkrust "github.com/Bitspark/bittype/check/syntax/rust/provider/go"
+	checktypescript "github.com/Bitspark/bittype/check/syntax/typescript/provider/go"
+	formatcpp "github.com/Bitspark/bittype/format/syntax/cpp/provider/go"
+	formatgolang "github.com/Bitspark/bittype/format/syntax/golang/provider/go"
+	formatrust "github.com/Bitspark/bittype/format/syntax/rust/provider/go"
+	formattypescript "github.com/Bitspark/bittype/format/syntax/typescript/provider/go"
+	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
+	parsecpp "github.com/Bitspark/bittype/parse/syntax/cpp/provider/go"
+	parsegolang "github.com/Bitspark/bittype/parse/syntax/golang/provider/go"
+	parserust "github.com/Bitspark/bittype/parse/syntax/rust/provider/go"
+	parsetypescript "github.com/Bitspark/bittype/parse/syntax/typescript/provider/go"
+
 	"context"
 	"errors"
 	"reflect"
@@ -9,10 +23,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/internal/tree"
-	cppprovider "github.com/Bitspark/bittype/provider/cpp/go"
-	goprovider "github.com/Bitspark/bittype/provider/golang/go"
-	rustprovider "github.com/Bitspark/bittype/provider/rust/go"
-	tsprovider "github.com/Bitspark/bittype/provider/typescript/go"
+
 	"github.com/Bitspark/bittype/trees/cst/go"
 )
 
@@ -27,10 +38,10 @@ type nativeConformanceCase struct {
 // The directory-discovery test requires coverage for every implemented language.
 func nativeConformanceCases() []nativeConformanceCase {
 	return []nativeConformanceCase{
-		nativeCase(tsprovider.Provider{}, "typescript", "ts", "type Page<T> = T[];"),
-		nativeCase(goprovider.Provider{}, "golang", "go", "package p; type Page[T any] []T"),
-		nativeCase(rustprovider.Provider{}, "rust", "rs", "type Page<T> = Vec<T>;"),
-		nativeCase(cppprovider.Provider{}, "cpp", "hpp", "template<typename T> struct Page { T value; };"),
+		nativeCase(textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), "typescript", "ts", "type Page<T> = T[];"),
+		nativeCase(textfixture.New(parsegolang.Provider{}, checkgolang.Provider{}, formatgolang.Provider{}), "golang", "go", "package p; type Page[T any] []T"),
+		nativeCase(textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{}), "rust", "rs", "type Page<T> = Vec<T>;"),
+		nativeCase(textfixture.New(parsecpp.Provider{}, checkcpp.Provider{}, formatcpp.Provider{}), "cpp", "hpp", "template<typename T> struct Page { T value; };"),
 	}
 }
 
@@ -43,22 +54,22 @@ func nativeCase[L any](provider nativeProvider[L], directory, extension, source 
 	}
 }
 
-// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Parse feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Check feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Format feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/typescript/go#Provider.Print feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Parse feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Check feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Format feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/golang/go#Provider.Print feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Parse feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Check feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Format feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Print feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Parse feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Check feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Format feature=provider-contract case=native-fixture-contract expects=contract-preserved
-// bittype:case target=github.com/Bitspark/bittype/provider/cpp/go#Provider.Print feature=provider-contract case=native-fixture-contract expects=contract-preserved
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/typescript/provider/go#Provider.Parse feature=provider-contract case=native-fixture-contract expects=contract-preserved
+// bittype:case target=github.com/Bitspark/bittype/check/syntax/typescript/provider/go#Provider.Check feature=provider-contract case=native-fixture-contract expects=contract-preserved
+// bittype:case target=github.com/Bitspark/bittype/format/syntax/typescript/provider/go#Provider.Format feature=provider-contract case=native-fixture-contract expects=contract-preserved
+// bittype:case target=github.com/Bitspark/bittype/print/syntax/shared/provider/go#Provider.Print feature=provider-contract case=native-fixture-contract expects=contract-preserved language=github.com/Bitspark/bittype/syntax/typescript/go#Language
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/golang/provider/go#Provider.Parse feature=provider-contract case=native-fixture-contract expects=contract-preserved
+// bittype:case target=github.com/Bitspark/bittype/check/syntax/golang/provider/go#Provider.Check feature=provider-contract case=native-fixture-contract expects=contract-preserved
+// bittype:case target=github.com/Bitspark/bittype/format/syntax/golang/provider/go#Provider.Format feature=provider-contract case=native-fixture-contract expects=contract-preserved
+// bittype:case target=github.com/Bitspark/bittype/print/syntax/shared/provider/go#Provider.Print feature=provider-contract case=native-fixture-contract expects=contract-preserved language=github.com/Bitspark/bittype/syntax/golang/go#Language
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/rust/provider/go#Provider.Parse feature=provider-contract case=native-fixture-contract expects=contract-preserved
+// bittype:case target=github.com/Bitspark/bittype/check/syntax/rust/provider/go#Provider.Check feature=provider-contract case=native-fixture-contract expects=contract-preserved
+// bittype:case target=github.com/Bitspark/bittype/format/syntax/rust/provider/go#Provider.Format feature=provider-contract case=native-fixture-contract expects=contract-preserved
+// bittype:case target=github.com/Bitspark/bittype/print/syntax/shared/provider/go#Provider.Print feature=provider-contract case=native-fixture-contract expects=contract-preserved language=github.com/Bitspark/bittype/syntax/rust/go#Language
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/cpp/provider/go#Provider.Parse feature=provider-contract case=native-fixture-contract expects=contract-preserved
+// bittype:case target=github.com/Bitspark/bittype/check/syntax/cpp/provider/go#Provider.Check feature=provider-contract case=native-fixture-contract expects=contract-preserved
+// bittype:case target=github.com/Bitspark/bittype/format/syntax/cpp/provider/go#Provider.Format feature=provider-contract case=native-fixture-contract expects=contract-preserved
+// bittype:case target=github.com/Bitspark/bittype/print/syntax/shared/provider/go#Provider.Print feature=provider-contract case=native-fixture-contract expects=contract-preserved language=github.com/Bitspark/bittype/syntax/cpp/go#Language
 func TestNativeProviderConformance(t *testing.T) {
 	for _, fixture := range nativeConformanceCases() {
 		t.Run(fixture.directory, fixture.conformance)

@@ -36,22 +36,7 @@ resolution/analysis of its own snapshot.
 
 ## Representation and enforcement profiles
 
-In `github.com/Bitspark/bittype`, each of
-`generation/syntax/composition/horos-to-typescript/go`,
-`generation/syntax/composition/horos-to-go/go`,
-`generation/syntax/composition/horos-to-rust/go` and
-`generation/syntax/composition/horos-to-cpp/go` exports:
-
-```go
-const RepresentationProfile = "pagination-representation/1"
-const EnforcementProfile = "pagination-enforcement/1"
-```
-
-Their `Config.Profile` is required. `New(from, to, Config)` rejects an empty or
-unknown profile with `transform.ErrInvalidTransformer`. `TreeID` remains explicit;
-Go also takes its package configuration and C++ its namespace configuration.
-The language/profile/marker of both endpoints must match the concrete mapping.
-Applications register languages, checkers and transformer edges themselves.
+The [Horos mapping library](../transform/syntax/horos/mapping/go/mapping.go) defines RepresentationProfile and EnforcementProfile. The four native mapping packages expose individual rules and a Providers(profile) collection. Each consumer selects a source, target and mappings and passes the root declaration sites, output tree ID, receipts and limits to Engine.Generate. Go's target provider takes Package and C++ takes Namespace. The [TypeScript example](kernel-composition.md#horos-to-typescript) shows registration and execution.
 
 | Selected profile | Promise and behavior |
 | --- | --- |
@@ -90,8 +75,7 @@ Page body for each caller.
 The reader consumes proper-sort facts, checked bodies, named references,
 applications and bindings. It does not inspect the names Type/Data or decode a
 closed claim enum. KindDefinition entities are compile-time declarations and do
-not become native type exports. Every root module TypeDefinition is requested
-for publication. Imported types are demanded through selected mappings; unused
+not become native type exports. The caller requests explicit declaration sites. The pagination example requests the entry module’s type definitions. Imported types are demanded through selected mappings; unused
 imports and bodies represented by an exact library mapping need no native
 expansion. Source analysis still admits the complete original source.
 
@@ -182,9 +166,9 @@ output tree.
 
 Mappings retain real declaration/parameter links and available current source
 origins. Imported definitions are emitted once with dependencies before uses.
-The source reader lives at `generation/syntax/source/horos/go`; bounded native
-storage lives at `generation/syntax/target/go`, with native adapters under the
-four language paths. The packages under `generation/syntax/mapping/horos` choose representations. Shared contracts, engine and
+The source reader lives at `transform/syntax/horos/source/go`; bounded native
+storage lives at `transform/syntax/shared/target/go`, with native adapters under the
+four language paths. The packages under `transform/syntax/horos-to-<native>/mapping/go` choose representations. Shared contracts, engine and
 printer gain no Horos/Ontos or behavioral-library imports.
 
 Generation uses the public SPI defaults: 100,000 operations, depth 128, 4,096

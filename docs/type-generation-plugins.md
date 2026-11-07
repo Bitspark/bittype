@@ -183,7 +183,7 @@ Choosing direct bounds or witnesses is part of the explicitly selected
 representation profile and mapping configuration. It is not another kind-based
 dispatch pass, and failure to enforce a bound cannot select a weaker encoding.
 
-The consumer assembles exact bindings from supplied defaults and selected
+The kernel assembles exact bindings from supplied providers and selected
 libraries, then supplies a separate override set:
 
 1. Reject duplicate selectors in the assembled bindings and in the override set.
@@ -633,7 +633,7 @@ profile after a plugin, native bound or evidence requirement fails.
 
 ## Composition through the existing pipeline
 
-The proposed consumer constructs one transformer for each desired source/target pair:
+The kernel runs the selected providers for a generation request.
 
 1. Supply the source and target language/profile descriptors, source adapter,
    target backend, builtin bundle, selected library plugins and overrides.
@@ -642,7 +642,7 @@ The proposed consumer constructs one transformer for each desired source/target 
    resolver or analyzer implicitly.
 3. Select each requested root's mapping and invoke Publish before expanding its
    body. Acquisition reserves symbols/parameters through the shared convention;
-   the future composer queues immutable definition requests for owned outputs.
+   the composer queues immutable definition requests for owned outputs.
    It does not run Define recursively; publication records the exposed destination.
 4. Compose child mappings under the same configuration. A list mapping requests
    its element's representation; a structural Page mapping composes its field
@@ -658,8 +658,7 @@ The proposed consumer constructs one transformer for each desired source/target 
    placement and actual IO remain consumer responsibilities; generation does not
    fabricate the native semantic-provider receipt required by a Files formatter.
 
-There is one engine edge per language pair. Alternative mapping configurations
-use separate configured engine instances under the current registry policy.
+Calls to Engine.Generate can select different mappings in the same engine. A request-bound transformer is also available through the registry.
 Adding a plugin neither adds an engine edge nor registers another language.
 There is no mandatory public Plan method: the reservation queue provides the
 needed planning discipline. Any error discards the entire invocation output.
@@ -678,7 +677,7 @@ Page-specific Cell handling is needed.
 
 The first slice implements the contract and minimal guarded runner together in
 `contracts/generation/go`, like the existing semantic operation contract. It adds
-no empty `generation/syntax` wrapper. The actual files are:
+the construction providers live alongside the operation contracts. The actual files are:
 
 ```text
 bittype/
@@ -697,28 +696,24 @@ and language-specific implementations alongside the minimal runner:
 
 ```text
 bittype/
-  generation/syntax/go/
+  transform/syntax/shared/generation/go/
     bindings.go                 exact selection and guarded replacement
     definitions.go              automatic deferred definition scheduling
-    transform.go                existing ASTTransformer bridge
-  generation/syntax/source/horos/go/
+    registry.go adapter.go       typed registrations and request-bound ASTTransformer
+  transform/syntax/horos/source/go/
     source.go                   source view and captured environments
     identity.go                 builtin/declaration selector construction
     read.go                     Horos operands, fields and evidence queries
-  generation/syntax/target/go/
+  transform/syntax/shared/target/go/
     builder.go symbols.go assemble.go   shared symbolic storage, no native grammar
-  generation/syntax/target/typescript/go/
-  generation/syntax/target/golang/go/
-  generation/syntax/target/rust/go/
-  generation/syntax/target/cpp/go/
+  transform/syntax/typescript/target/go/
+  transform/syntax/golang/target/go/
+  transform/syntax/rust/target/go/
+  transform/syntax/cpp/target/go/
     builder.go                  native construction helpers
     symbols.go                  native scopes, imports and reservations
     assemble.go                 symbolic expansion and AST-set assembly
-  transforms/horos-to-typescript/go/transform.go
-  transforms/horos-to-go/go/transform.go
-  transforms/horos-to-rust/go/transform.go
-  transforms/horos-to-cpp/go/transform.go
-                                implemented thin configuration-only replacements
+  transform/syntax/horos-to-<native>/mapping/go/  selectable native representations
 ```
 
 Every concrete target directory has the same construction/symbol/assembly split.
@@ -738,30 +733,16 @@ The same public SPI remains available to independently packaged library mappings
 
 ```text
 bittype/                                 one root Go module
-  generation/syntax/mapping/horos/
-    go/                                  structural policy and associations
-    typescript/go/                       TypeScript mappings and bindings
-    golang/go/                           Go mappings and optional helper
-    rust/go/                             Rust mappings and bindings
-    cpp/go/                              C++ mappings and bindings
-  generation/syntax/composition/
-    horos-to-typescript/go/               explicit default assembly
-    horos-to-go/go/
-    horos-to-rust/go/
-    horos-to-cpp/go/
+  transform/syntax/horos/mapping/go/       structural policy and associations
+  transform/syntax/horos-to-<native>/mapping/go/  native representations
+  transform/syntax/shared/generation/go/  registry and composition
   integration/go/                         generation and native compiler tests
 
 consumer/
   generation/configuration.go            select bindings, overrides and artifacts
 ```
 
-These are optional packages within Bittype's existing module, not a second
-module or a mandatory builtin catalogue. Default compositions import mappings,
-source/native collaborators and thin transformer factories. The shared composer,
-source reader, native backends and thin factories do not import the mappings or
-defaults. Horos core and its repository contain no generator module depending on
-Bittype. Independent Function, Stream and Cell integrations continue to use the
-same public contract; their repository placement is a separate ownership choice.
+Consumers supply these packages through the [kernel-owned generation SPI](kernel-composition.md). Adding a library mapping changes its package and the consuming request. Horos owns its canonical type semantics independently.
 
 Dependencies follow the ownership boundaries:
 
@@ -772,22 +753,21 @@ integration mapping -> generation contracts + source readers + target helpers
 source adapter -> Horos model/front-end facts + shared contracts
 target adapter -> own native syntax + shared contracts/carriers
 shared generation -> contracts/carriers only
-engine -> existing shared transformer contract only
+engine -> shared generation registry and transformer contract
 ```
 
 Consumer construction supplies the source adapter, target backend, selected
 builtin/library mappings, structural policy, explicit guarded overrides,
 artifact contracts and the compatible association/convention protocol. For
 example, replacing the configured text-to-string binding must name its expected
-BindingID and supply the new wrapper mapping and compatible association rules.
+provider and binding ID and supply the new provider and binding ID together with compatible association rules.
 It must fail on a missing/revised expected binding or an incompatible imported
 fixed dependency. The [automatic configuration layer](generation-composition.md) implements
 guarded overrides over the [Config and Plan contracts](generation-spi.md). It
 does not discover dependencies or prove imported artifact compatibility; these
 remain supplied integration obligations.
 
-After construction, the consumer registers one configured ASTTransformer with
-the existing engine. Other targets use the same ownership and operation roles
+The consumer calls Engine.Generate with the selected registrations, roots, capture and receipts. Other targets use the same ownership and operation roles
 with their own integrations and native backends.
 
 The private fixed Dialect and its builtin native mapping switch are deleted.

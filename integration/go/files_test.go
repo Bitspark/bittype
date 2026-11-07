@@ -1,6 +1,19 @@
 package integration_test
 
 import (
+	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
+	checkhoros "github.com/Bitspark/bittype/check/syntax/horos/provider/go"
+	checkerapi "github.com/Bitspark/bittype/contracts/check/go"
+	printapi "github.com/Bitspark/bittype/contracts/print/go"
+	checkfiles "github.com/Bitspark/bittype/contracts/resolution/go"
+	formathoros "github.com/Bitspark/bittype/format/syntax/horos/provider/go"
+	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
+	filesparse "github.com/Bitspark/bittype/parse/files/horos/provider/go"
+	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
+	filesprint "github.com/Bitspark/bittype/print/files/shared/provider/go"
+	syntaxprint "github.com/Bitspark/bittype/print/syntax/shared/provider/go"
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
+
 	"context"
 	"encoding/json"
 	"errors"
@@ -12,8 +25,8 @@ import (
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/files/go"
-	filesformat "github.com/Bitspark/bittype/format/files/horos/go"
-	h "github.com/Bitspark/bittype/provider/horos/go"
+	filesformat "github.com/Bitspark/bittype/format/files/horos/provider/go"
+
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/source/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
@@ -23,10 +36,26 @@ import (
 	"testing"
 )
 
+func fileStages(t *testing.T, def representation.Language) (checkerapi.Checker, checkfiles.Resolver, analysis.Analyzer) {
+	t.Helper()
+	checker, err := checkerapi.NewChecker[s.Language](def, checkhoros.Provider{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolver, err := checkfiles.NewResolver[s.Language](def, resolve.Contract(), resolve.Provider{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	analyzer, err := analysis.NewAnalyzer[s.Language](def, analyze.Contract(), analyze.Provider{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return checker, resolver, analyzer
+}
 func filePagination(t *testing.T) (parse.FilesInput, string, string) {
 	t.Helper()
 	ctx := context.Background()
-	p := h.Provider{}
+	p := textfixture.New(parsehoros.Provider{}, checkhoros.Provider{}, formathoros.Provider{})
 	page := "// shared pagination\r\nmodule example.pagination;\r\ntype Page<T> = { items: list<T>; next?: text; };\r\n"
 	pinOf := func(text string) string {
 		concrete, err := p.Parse(ctx, parse.Input{SourceID: "fixture", TreeID: "fixture", Text: text})
@@ -50,9 +79,9 @@ func filePagination(t *testing.T) (parse.FilesInput, string, string) {
 	return parse.FilesInput{Entry: "people", Files: files.Files{Entries: []files.File{{ID: "page", Path: "lib/page.horos", Text: page}, {ID: "people", Path: "people.horos", Text: people}}}}, pagePin, pinOf(people)
 }
 
-// bittype:case target=github.com/Bitspark/bittype/parse/files/horos/go#Provider.Parse feature=multi-file-pagination case=receipt-preserving-round-trips expects=module-context-preserved
-// bittype:case target=github.com/Bitspark/bittype/format/files/horos/go#Provider.Format feature=multi-file-pagination case=receipt-preserving-round-trips expects=fresh-output-and-receipt
-// bittype:case target=github.com/Bitspark/bittype/print/files/go#Provider.Print feature=multi-file-pagination case=receipt-preserving-round-trips expects=file-content-and-placement-preserved language=github.com/Bitspark/bittype/syntax/horos/go#Language
+// bittype:case target=github.com/Bitspark/bittype/parse/files/horos/provider/go#Provider.Parse feature=multi-file-pagination case=receipt-preserving-round-trips expects=module-context-preserved
+// bittype:case target=github.com/Bitspark/bittype/format/files/horos/provider/go#Provider.Format feature=multi-file-pagination case=receipt-preserving-round-trips expects=fresh-output-and-receipt
+// bittype:case target=github.com/Bitspark/bittype/print/files/shared/provider/go#Provider.Print feature=multi-file-pagination case=receipt-preserving-round-trips expects=file-content-and-placement-preserved language=github.com/Bitspark/bittype/syntax/horos/go#Language
 func TestFilesPaginationAndReceiptPreservingRoundTrips(t *testing.T) {
 	ctx := context.Background()
 	input, pagePin, peoplePin := filePagination(t)
@@ -60,15 +89,21 @@ func TestFilesPaginationAndReceiptPreservingRoundTrips(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parser, err := h.NewFilesParser(definition)
+	c, r, a := fileStages(t, definition)
+	syntaxPrinter := textfixture.Printing[s.Language](s.Language{})
+	parser, err := filesparse.New(definition, parsehoros.Provider{}, syntaxPrinter, c, r, a, semantic.Options{}, semantic.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	formatter, err := h.NewFilesFormatter(definition)
+	formatter, err := filesformat.New(definition, parsehoros.Provider{}, formathoros.Provider{}, syntaxPrinter, c, r, a, semantic.Options{}, semantic.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	printer, err := h.NewFilesPrinter(definition)
+	filesPrinter, err := filesprint.New[s.Language](s.Language{}, syntaxPrinter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	printer, err := printapi.NewFilesPrinter[s.Language](definition, filesPrinter)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +186,9 @@ func TestFilesCapabilitiesAreIndependentAndRejectStalePublications(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	parser, err := h.NewFilesParser(definition)
+	c, r, a := fileStages(t, definition)
+	syntaxPrinter := textfixture.Printing[s.Language](s.Language{})
+	parser, err := filesparse.New(definition, parsehoros.Provider{}, syntaxPrinter, c, r, a, semantic.Options{}, semantic.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,7 +197,7 @@ func TestFilesCapabilitiesAreIndependentAndRejectStalePublications(t *testing.T)
 		t.Fatal(err)
 	}
 	e := engine.New()
-	registerNativeStages(t, e, parser.Language(), h.Provider{})
+	registerNativeStages(t, e, parser.Language(), textfixture.New(parsehoros.Provider{}, checkhoros.Provider{}, formathoros.Provider{}))
 	if _, err := e.ParseFiles(ctx, parser.ID(), input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal("Files fell back to Syntax", err)
 	}
@@ -178,7 +215,7 @@ func TestFilesCapabilitiesAreIndependentAndRejectStalePublications(t *testing.T)
 		t.Fatal(err)
 	}
 	result := parsed.Evidence()
-	contract := parse.FilesContract[s.Language]{Evidence: semantic.EvidenceRequirement{Operation: analysis.Kind(), Profile: result.Contract().Profile, Reports: result.Contract().SemanticsRequirements, Semantics: true}, Print: (h.Provider{}).Print, Check: func(context.Context, parse.FilesInput, source.Publication[s.Language]) error { return nil }}
+	contract := parse.FilesContract[s.Language]{Evidence: semantic.EvidenceRequirement{Operation: analysis.Kind(), Profile: result.Contract().Profile, Reports: result.Contract().SemanticsRequirements, Semantics: true}, Print: syntaxprint.Print[s.Language], Check: func(context.Context, parse.FilesInput, source.Publication[s.Language]) error { return nil }}
 	replay, err := parse.NewFilesParser(parser.Language(), contract, replayFiles{saved: parsed})
 	if err != nil {
 		t.Fatal(err)

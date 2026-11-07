@@ -1,12 +1,17 @@
 package integration_test
 
 import (
+	checkrust "github.com/Bitspark/bittype/check/syntax/rust/provider/go"
+	formatrust "github.com/Bitspark/bittype/format/syntax/rust/provider/go"
+	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
+	parserust "github.com/Bitspark/bittype/parse/syntax/rust/provider/go"
+
 	"context"
 	"reflect"
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/parse/go"
-	rustprovider "github.com/Bitspark/bittype/provider/rust/go"
+
 	rust "github.com/Bitspark/bittype/syntax/rust/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
@@ -36,10 +41,10 @@ func rustAssociatedFixture() ast.AST[rust.Language] {
 	return f.tree
 }
 
-// bittype:case target=github.com/Bitspark/bittype/provider/rust/go#Provider.Format feature=associated-type-projections case=independent-ast-formatting expects=ast-preserved-and-golden-text
+// bittype:case target=github.com/Bitspark/bittype/format/syntax/rust/provider/go#Provider.Format feature=associated-type-projections case=independent-ast-formatting expects=ast-preserved-and-golden-text
 func TestIndependentRustAssociatedFormatter(t *testing.T) {
 	a := rustAssociatedFixture()
-	p := rustprovider.Provider{}
+	p := textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{})
 	c, err := p.Format(context.Background(), a)
 	if err != nil {
 		t.Fatal(err)
@@ -71,7 +76,7 @@ func TestRustAssociatedFormatting(t *testing.T) {
 		{"type X=<&(dyn A+B) as Trait>::Item;", "type X = <&(dyn A + B) as Trait>::Item;\n"},
 	} {
 		t.Run(tc.source, func(t *testing.T) {
-			p := rustprovider.Provider{}
+			p := textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{})
 			c, err := p.Parse(context.Background(), parse.Input{SourceID: "source", TreeID: "tree", Text: tc.source})
 			if err != nil {
 				t.Fatal(err)

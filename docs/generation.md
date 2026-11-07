@@ -80,12 +80,9 @@ existing Wire/runtime layers.
 The [native representation design](type-representations.md) explains optional
 library representations. The [type-owned generator plugin proposal](type-generation-plugins.md)
 extends that design to builtin mappings and explicit overrides, using the same
-supplied plugin mechanism. The consuming build configures one concrete transformer
-per language pair. Function, Cell and Stream are resolved module declarations,
+supplied plugin mechanism. The consuming build supplies source, target and mapping registrations for the requested roots. Function, Cell and Stream are resolved module declarations,
 never individual engine registrations. No contract-specific change to
-ASTTransformer is required. The public plugin contracts and automatic composer are implemented. Horos
-builtin mappings live in `generation/syntax/mapping/horos`, with explicit defaults
-in `generation/syntax/composition/horos-to-<target>/go`, inside Bittype's root module.
+ASTTransformer is required. The public plugin contracts and automatic composer are implemented. Horos mappings live in the source-owned and pair-specific mapping packages inside Bittype’s root module. The [kernel](kernel-composition.md) assembles the request.
 These packages are separate from the agnostic composer; Horos retains only the
 canonical model and does not depend on Bittype for generation.
 
@@ -184,25 +181,23 @@ contracts/analysis/go/                   present: analysis with explicit resolut
 semantics/go/                            present: immutable shared semantic facts
 engine/go/                               present: registry, planning, execution
 syntax/<language>/go/                    present for all four native languages
-parse/syntax/<language>/go/                     present: source to CST
-check/syntax/<language>/go/                     present: native syntax checks
-format/syntax/<language>/go/                    present: AST view to CST
-provider/<language>/go/                  present: explicit capability composition
+parse/syntax/<language>/provider/go/                     present: source to CST
+check/syntax/<language>/provider/go/                     present: native syntax checks
+format/syntax/<language>/provider/go/                    present: AST view to CST
 check/{ast,cst}/go/                      present: carrier checks
-print/syntax/go/                                present: CST to text
+print/syntax/shared/provider/go/                                present: CST to text
 integration/go/                          present: contracts, conformance, architecture,
                                                  graph, ownership and compiler checks
 testdata/text/<language>/valid/          present: native source fixtures
 
 syntax/horos/go/                        present: Horos declaration AST projection
-parse/syntax/horos/go/                         present: readable source to CST
-resolve/files/horos/go/                       present: Horos references and binders
-check/syntax/horos/go/                         present: syntax-only AST admission
-analyze/files/horos/go/                       present: Horos semantics to shared facts
-format/syntax/horos/go/                        present: readable Horos CST
-provider/horos/go/                      present: text and semantic capability composition
-transforms/horos-to-<native>/go/         present: directed pagination generation
-transforms/<native>-to-horos/go/         proposed: partial migration mapping
+parse/syntax/horos/provider/go/                         present: readable source to CST
+resolve/files/horos/provider/go/                       present: Horos references and binders
+check/syntax/horos/provider/go/                         present: syntax-only AST admission
+analyze/files/horos/provider/go/                       present: Horos semantics to shared facts
+format/syntax/horos/provider/go/                        present: readable Horos CST
+transform/syntax/horos-to-<native>/mapping/go/         present: directed pagination generation
+transform/syntax/<native>-to-horos/mapping/go/         proposed: partial migration mapping
 cmd/bittype/go/                          planned: application composition and IO
 testdata/{horos,transforms}/             planned: semantic/adoption fixtures
 ```

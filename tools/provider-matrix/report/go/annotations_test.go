@@ -43,7 +43,7 @@ func addTestFile(t *testing.T, p *program, relative, name, text string, external
 
 func TestTestDeclarationsStayOutsideProductionDiscovery(t *testing.T) {
 	p := fixture(t)
-	addTestFile(t, p, "provider/ember/go", "internal_test.go", `package emberprovider
+	addTestFile(t, p, "print/syntax/ember/provider/go", "internal_test.go", `package emberprovider
 import t "testing"
 // bittype:case target=emit feature=printing case=internal expects=round-trip
 func TestSame(v *t.T) {}
@@ -52,8 +52,8 @@ func(TestOnly)ID()string{return "ice"}
 func(TestOnly)Name()string{return "Ice"}
 func(TestOnly)Parse(string)(string,error){return "",nil}
 `, false)
-	addTestFile(t, p, "provider/ember/go", "external_test.go", `package emberprovider_test
-import("testing";ep "example.test/fixture/provider/ember/go")
+	addTestFile(t, p, "print/syntax/ember/provider/go", "external_test.go", `package emberprovider_test
+import("testing";ep "example.test/fixture/print/syntax/ember/provider/go")
 // bittype:case target=ep.Output.Print feature=printing case=external expects=round-trip
 func TestSame(t *testing.T) {_ = ep.Output{}}
 `, true)
@@ -82,15 +82,15 @@ func TestExternalTestReferencesAndSignatures(t *testing.T) {
 	for _, body := range []string{
 		`// bittype:case target=emit feature=f case=c expects=ok
 func TestCase(t *testing.T){}`,
-		`// bittype:case target=example.test/fixture/provider/ember/go#emit feature=f case=c expects=ok
+		`// bittype:case target=example.test/fixture/print/syntax/ember/provider/go#emit feature=f case=c expects=ok
 func TestCase(t,u *testing.T){}`,
 		`type Alias = testing.T
-// bittype:case target=example.test/fixture/provider/ember/go#emit feature=f case=c expects=ok
+// bittype:case target=example.test/fixture/print/syntax/ember/provider/go#emit feature=f case=c expects=ok
 func TestCase(t *Alias){}`,
 	} {
 		t.Run(body[:min(35, len(body))], func(t *testing.T) {
 			p := fixture(t)
-			addTestFile(t, p, "provider/ember/go", "bad_test.go", "package emberprovider_test\nimport \"testing\"\n"+body, true)
+			addTestFile(t, p, "print/syntax/ember/provider/go", "bad_test.go", "package emberprovider_test\nimport \"testing\"\n"+body, true)
 			if _, err := p.readAnnotations(); err == nil {
 				t.Fatal("unsupported/ambiguous annotation accepted")
 			}
@@ -116,7 +116,7 @@ func(Output)Print(tree.CST[s.Language])(string,error){return "",nil}
 	if err != nil {
 		t.Fatal(err)
 	}
-	target := capability.Symbol{Package: p.module + "/print/files/go", Receiver: "Output", Name: "Print"}
+	target := capability.Symbol{Package: p.module + "/print/files/shared/provider/go", Receiver: "Output", Name: "Print"}
 	a := &annotations{cases: []caseAssociation{{target: target, test: testDeclaration{file: "test.go"}}}}
 	if err := associateCases(m, a); err == nil {
 		t.Fatal("unqualified shared target credited across markers")
@@ -134,7 +134,7 @@ func(Output)Print(tree.CST[s.Language])(string,error){return "",nil}
 func TestQueryLeaseAndProfileIdentity(t *testing.T) {
 	p := fixture(t)
 	view := &queryView{base: newSourceView(p), ctx: context.Background(), remaining: 1}
-	symbol := capability.Symbol{Package: p.module + "/provider/ember/go", Name: "emit"}
+	symbol := capability.Symbol{Package: p.module + "/print/syntax/ember/provider/go", Name: "emit"}
 	if _, err := view.Declaration(symbol); err != nil {
 		t.Fatal(err)
 	}
@@ -165,8 +165,8 @@ func TestMarkerAliasesRetainActualGoIdentity(t *testing.T) {
 	for _, name := range []string{"Alias", "Pointer"} {
 		t.Run(name, func(t *testing.T) {
 			p := fixture(t, map[string]string{"unrelated/aliases": `package aliases; import s "example.test/fixture/syntax/ember/go"; type Alias = s.Language; type Pointer = *s.Language`})
-			text := "package emberprovider_test\nimport \"testing\"\n// bittype:case target=example.test/fixture/print/files/go#Output.Print feature=f case=c expects=ok language=example.test/fixture/unrelated/aliases#" + name + "\nfunc TestAlias(t *testing.T){}\n"
-			addTestFile(t, p, "provider/ember/go", "alias_test.go", text, true)
+			text := "package emberprovider_test\nimport \"testing\"\n// bittype:case target=example.test/fixture/print/files/shared/provider/go#Output.Print feature=f case=c expects=ok language=example.test/fixture/unrelated/aliases#" + name + "\nfunc TestAlias(t *testing.T){}\n"
+			addTestFile(t, p, "print/syntax/ember/provider/go", "alias_test.go", text, true)
 			a, err := p.readAnnotations()
 			if name == "Pointer" {
 				if err == nil {

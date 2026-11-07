@@ -1,6 +1,25 @@
 package integration_test
 
 import (
+	checkcpp "github.com/Bitspark/bittype/check/syntax/cpp/provider/go"
+	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
+	checkhoros "github.com/Bitspark/bittype/check/syntax/horos/provider/go"
+	checkrust "github.com/Bitspark/bittype/check/syntax/rust/provider/go"
+	checktypescript "github.com/Bitspark/bittype/check/syntax/typescript/provider/go"
+	formatcpp "github.com/Bitspark/bittype/format/syntax/cpp/provider/go"
+	formatgolang "github.com/Bitspark/bittype/format/syntax/golang/provider/go"
+	formatrust "github.com/Bitspark/bittype/format/syntax/rust/provider/go"
+	formattypescript "github.com/Bitspark/bittype/format/syntax/typescript/provider/go"
+	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
+	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
+	parsecpp "github.com/Bitspark/bittype/parse/syntax/cpp/provider/go"
+	parsegolang "github.com/Bitspark/bittype/parse/syntax/golang/provider/go"
+	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
+	parserust "github.com/Bitspark/bittype/parse/syntax/rust/provider/go"
+	parsetypescript "github.com/Bitspark/bittype/parse/syntax/typescript/provider/go"
+	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
+	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
+
 	"context"
 	"errors"
 	"math/big"
@@ -10,7 +29,7 @@ import (
 	"strings"
 	"testing"
 
-	analyze "github.com/Bitspark/bittype/analyze/files/horos/go"
+	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
@@ -20,16 +39,16 @@ import (
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
-	cg "github.com/Bitspark/bittype/generation/syntax/composition/horos-to-cpp/go"
-	gg "github.com/Bitspark/bittype/generation/syntax/composition/horos-to-go/go"
-	rg "github.com/Bitspark/bittype/generation/syntax/composition/horos-to-rust/go"
-	tg "github.com/Bitspark/bittype/generation/syntax/composition/horos-to-typescript/go"
-	cp "github.com/Bitspark/bittype/provider/cpp/go"
-	gp "github.com/Bitspark/bittype/provider/golang/go"
-	hp "github.com/Bitspark/bittype/provider/horos/go"
-	rp "github.com/Bitspark/bittype/provider/rust/go"
-	tp "github.com/Bitspark/bittype/provider/typescript/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
+	cgtarget "github.com/Bitspark/bittype/transform/syntax/cpp/target/go"
+	ggtarget "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
+	cg "github.com/Bitspark/bittype/transform/syntax/horos-to-cpp/mapping/go"
+	gg "github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/go"
+	rg "github.com/Bitspark/bittype/transform/syntax/horos-to-rust/mapping/go"
+	tg "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/go"
+	rgtarget "github.com/Bitspark/bittype/transform/syntax/rust/target/go"
+	tgtarget "github.com/Bitspark/bittype/transform/syntax/typescript/target/go"
+
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	cs "github.com/Bitspark/bittype/syntax/cpp/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
@@ -132,21 +151,21 @@ func generationSource(t *testing.T, source h.AST) (*engine.Engine, representatio
 	if err = e.RegisterLanguage(from); err != nil {
 		t.Fatal(err)
 	}
-	checker, err := check.NewChecker[h.Language](from, hp.Provider{})
+	checker, err := check.NewChecker[h.Language](from, checkhoros.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err = e.RegisterChecker(checker); err != nil {
 		t.Fatal(err)
 	}
-	resolver, err := resolution.NewResolver[h.Language](from, resolve.Contract(), hp.Provider{})
+	resolver, err := resolution.NewResolver[h.Language](from, resolve.Contract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err = e.RegisterResolver(resolver); err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[h.Language](from, analyze.Contract(), hp.Provider{})
+	analyzer, err := analysis.NewAnalyzer[h.Language](from, analyze.Contract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +187,7 @@ func generationSource(t *testing.T, source h.AST) (*engine.Engine, representatio
 	return e, from, transform.Input{Source: snapshot, Evidence: []semantic.Result{analyzed}}
 }
 
-func generated[L any](t *testing.T, e *engine.Engine, from representation.Language, input transform.Input, p nativeProvider[L], factory func(representation.Language, representation.Language) (transform.ASTTransformer, error)) ast.AST[L] {
+func generated[L any](t *testing.T, e *engine.Engine, from representation.Language, input transform.Input, p nativeProvider[L], factory func(transform.Input, representation.Language, representation.Language) (transform.ASTTransformer, error)) ast.AST[L] {
 	t.Helper()
 	to, err := representation.NewLanguage[L](p, "native-types-v1")
 	if err != nil {
@@ -184,7 +203,7 @@ func generated[L any](t *testing.T, e *engine.Engine, from representation.Langua
 	if err = e.RegisterChecker(checker); err != nil {
 		t.Fatal(err)
 	}
-	mapper, err := factory(from, to)
+	mapper, err := factory(input, from, to)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,17 +223,37 @@ func generated[L any](t *testing.T, e *engine.Engine, from representation.Langua
 	}
 	return result
 }
-func tsMapper(f, t representation.Language) (transform.ASTTransformer, error) {
-	return tg.New(f, t, tg.Config{TreeID: "generated-ts", Profile: tg.RepresentationProfile})
+func tsMapper(input transform.Input, f, t representation.Language) (transform.ASTTransformer, error) {
+	var registry c.Registry
+	request, err := genfixture.Request(&registry, input, t, "generated-ts", tgtarget.Provider[h.Language]{}, tg.Providers(rules.RepresentationProfile)...)
+	if err != nil {
+		return nil, err
+	}
+	return registry.Transformer(request)
 }
-func goMapper(f, t representation.Language) (transform.ASTTransformer, error) {
-	return gg.New(f, t, gg.Config{TreeID: "generated-go", Package: "pagination", Profile: gg.RepresentationProfile})
+func goMapper(input transform.Input, f, t representation.Language) (transform.ASTTransformer, error) {
+	var registry c.Registry
+	request, err := genfixture.Request(&registry, input, t, "generated-go", ggtarget.Provider[h.Language]{Package: "pagination"}, gg.Providers(rules.RepresentationProfile)...)
+	if err != nil {
+		return nil, err
+	}
+	return registry.Transformer(request)
 }
-func rustMapper(f, t representation.Language) (transform.ASTTransformer, error) {
-	return rg.New(f, t, rg.Config{TreeID: "generated-rust", Profile: rg.RepresentationProfile})
+func rustMapper(input transform.Input, f, t representation.Language) (transform.ASTTransformer, error) {
+	var registry c.Registry
+	request, err := genfixture.Request(&registry, input, t, "generated-rust", rgtarget.Provider[h.Language]{}, rg.Providers(rules.RepresentationProfile)...)
+	if err != nil {
+		return nil, err
+	}
+	return registry.Transformer(request)
 }
-func cppMapper(f, t representation.Language) (transform.ASTTransformer, error) {
-	return cg.New(f, t, cg.Config{TreeID: "generated-cpp", Namespace: "pagination", Profile: cg.RepresentationProfile})
+func cppMapper(input transform.Input, f, t representation.Language) (transform.ASTTransformer, error) {
+	var registry c.Registry
+	request, err := genfixture.Request(&registry, input, t, "generated-cpp", cgtarget.Provider[h.Language]{Namespace: "pagination"}, cg.Providers(rules.RepresentationProfile)...)
+	if err != nil {
+		return nil, err
+	}
+	return registry.Transformer(request)
 }
 func mustLanguage[L any](t *testing.T, p language.Provider) representation.Language {
 	t.Helper()
@@ -236,7 +275,7 @@ func paginationOutputs(t *testing.T, module core.Value, deps ...core.Value) pagi
 	e, from, input := generationInput(t, module, deps...)
 	model, _ := input.Evidence[0].Semantics()
 	before := model.Data()
-	out := paginationOutput{generated(t, e, from, input, tp.Provider{}, tsMapper), generated(t, e, from, input, gp.Provider{}, goMapper), generated(t, e, from, input, rp.Provider{}, rustMapper), generated(t, e, from, input, cp.Provider{}, cppMapper)}
+	out := paginationOutput{generated(t, e, from, input, textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), tsMapper), generated(t, e, from, input, textfixture.New(parsegolang.Provider{}, checkgolang.Provider{}, formatgolang.Provider{}), goMapper), generated(t, e, from, input, textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{}), rustMapper), generated(t, e, from, input, textfixture.New(parsecpp.Provider{}, checkcpp.Provider{}, formatcpp.Provider{}), cppMapper)}
 	after, _ := input.Evidence[0].Semantics()
 	if model != after || !reflect.DeepEqual(before, after.Data()) {
 		t.Fatal("mapping changed established semantic evidence")
@@ -294,10 +333,10 @@ func TestSemanticPaginationMappings(t *testing.T) {
 		source   string
 		required []string
 	}{
-		"typescript": {formatted(t, tp.Provider{}, out.ts), []string{"export interface Page<T>", "items: T[]", "next?: string", "Page<Page<Person>>", "type DataPage<D> = Page<D>"}},
-		"go":         {formatted(t, gp.Provider{}, out.goTree), []string{"type Page[T interface {}] struct", "Items []T", "Next BittypeOptional[string]", "Page[Page[Person]]", "type DataPage[D interface {}] = Page[D]"}},
-		"rust":       {formatted(t, rp.Provider{}, out.rust), []string{"pub struct Page<T>", "::std::vec::Vec<T>", "::std::option::Option<::std::string::String>", "Page<Page<Person>>"}},
-		"cpp":        {formatted(t, cp.Provider{}, out.cpp), []string{"template<typename T>", "struct Page", "::std::vector<T>", "::std::optional<::std::string>", "::pagination::Page<::pagination::Page<::pagination::Person>>"}},
+		"typescript": {formatted(t, textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), out.ts), []string{"export interface Page<T>", "items: T[]", "next?: string", "Page<Page<Person>>", "type DataPage<D> = Page<D>"}},
+		"go":         {formatted(t, textfixture.New(parsegolang.Provider{}, checkgolang.Provider{}, formatgolang.Provider{}), out.goTree), []string{"type Page[T interface {}] struct", "Items []T", "Next BittypeOptional[string]", "Page[Page[Person]]", "type DataPage[D interface {}] = Page[D]"}},
+		"rust":       {formatted(t, textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{}), out.rust), []string{"pub struct Page<T>", "::std::vec::Vec<T>", "::std::option::Option<::std::string::String>", "Page<Page<Person>>"}},
+		"cpp":        {formatted(t, textfixture.New(parsecpp.Provider{}, checkcpp.Provider{}, formatcpp.Provider{}), out.cpp), []string{"template<typename T>", "struct Page", "::std::vector<T>", "::std::optional<::std::string>", "::pagination::Page<::pagination::Page<::pagination::Person>>"}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			for _, want := range fixture.required {
@@ -322,12 +361,12 @@ func TestPaginationImportedIdentity(t *testing.T) {
 	root := genModule("root", genMap(genEntry("one", imp("first", first)), genEntry("two", imp("second", second))), genEntry("Person", genType(genPerson())), genEntry("First", genType(genImported("one", "Page", genLocal("Person")))), genEntry("Second", genType(genImported("two", "Page", genLocal("Person")))))
 	out := paginationOutputs(t, root, second, first)
 	// The same-spelled declarations produce two distinct targets and deterministic output.
-	text := formatted(t, tp.Provider{}, out.ts)
+	text := formatted(t, textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), out.ts)
 	if strings.Count(text, "_Page<T>") != 2 {
 		t.Fatal(text)
 	}
 	again := paginationOutputs(t, root, first, second)
-	if text != formatted(t, tp.Provider{}, again.ts) {
+	if text != formatted(t, textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), again.ts) {
 		t.Fatal("dependency order changed generated names")
 	}
 }
@@ -343,11 +382,11 @@ func TestPaginationRejectsUnsupportedTypes(t *testing.T) {
 			_, from, input := generationInput(t, genModule("unsupported", genMap(), genEntry("Bad", genType(body))))
 			for _, tc := range []struct {
 				to      representation.Language
-				factory func(representation.Language, representation.Language) (transform.ASTTransformer, error)
+				factory func(transform.Input, representation.Language, representation.Language) (transform.ASTTransformer, error)
 			}{
 				{mustLanguage[ts.Language](t, ts.Language{}), tsMapper}, {mustLanguage[gs.Language](t, gs.Language{}), goMapper}, {mustLanguage[rs.Language](t, rs.Language{}), rustMapper}, {mustLanguage[cs.Language](t, cs.Language{}), cppMapper},
 			} {
-				mapper, err := tc.factory(from, tc.to)
+				mapper, err := tc.factory(input, from, tc.to)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -368,7 +407,7 @@ func TestGenerationRejectsInvalidCanonicalApplications(t *testing.T) {
 		"unbound":    "module invalid; type Bad = Missing<text>;",
 	} {
 		t.Run(name, func(t *testing.T) {
-			parsed, err := (hp.Provider{}).Parse(context.Background(), parse.Input{SourceID: "invalid.horos", TreeID: "canonical", Text: source})
+			parsed, err := parsehoros.Parse(context.Background(), parse.Input{SourceID: "invalid.horos", TreeID: "canonical", Text: source})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -376,7 +415,7 @@ func TestGenerationRejectsInvalidCanonicalApplications(t *testing.T) {
 			if input.Evidence[0].HasSemantics() {
 				t.Fatal("invalid canonical application published a model")
 			}
-			mapper, err := tsMapper(from, mustLanguage[ts.Language](t, ts.Language{}))
+			mapper, err := tsMapper(input, from, mustLanguage[ts.Language](t, ts.Language{}))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -395,7 +434,7 @@ func TestGenerationNameCollisionsAndPhantomSlots(t *testing.T) {
 		"unused":       "module collision; type Phantom<T> = text;",
 	} {
 		t.Run(name, func(t *testing.T) {
-			parsed, err := (hp.Provider{}).Parse(context.Background(), parse.Input{SourceID: "names.horos", TreeID: "canonical", Text: source})
+			parsed, err := parsehoros.Parse(context.Background(), parse.Input{SourceID: "names.horos", TreeID: "canonical", Text: source})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -403,7 +442,7 @@ func TestGenerationNameCollisionsAndPhantomSlots(t *testing.T) {
 			if !input.Evidence[0].HasSemantics() {
 				t.Fatal("fixture must be semantically valid")
 			}
-			mapper, err := tsMapper(from, mustLanguage[ts.Language](t, ts.Language{}))
+			mapper, err := tsMapper(input, from, mustLanguage[ts.Language](t, ts.Language{}))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -415,7 +454,7 @@ func TestGenerationNameCollisionsAndPhantomSlots(t *testing.T) {
 		})
 	}
 	_, from, input := generationInput(t, genModule("fields", genMap(), genEntry("Record", genType(genRecord(genField("name", false, genScalar("utf8-text")), genField("Name", false, genScalar("bool")))))))
-	mapper, err := goMapper(from, mustLanguage[gs.Language](t, gs.Language{}))
+	mapper, err := goMapper(input, from, mustLanguage[gs.Language](t, gs.Language{}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -430,7 +469,7 @@ func TestGenerationTraversalLimit(t *testing.T) {
 		nested = genTuple("horos/list-of", nested)
 	}
 	_, from, input := generationInput(t, genModule("deep", genMap(), genEntry("Deep", genType(nested))))
-	mapper, err := tsMapper(from, mustLanguage[ts.Language](t, ts.Language{}))
+	mapper, err := tsMapper(input, from, mustLanguage[ts.Language](t, ts.Language{}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -454,7 +493,7 @@ func TestGeneratedPaginationCompilers(t *testing.T) {
 	}
 	t.Run("typescript", func(t *testing.T) {
 		dir := t.TempDir()
-		write(dir, "types.ts", formatted(t, tp.Provider{}, out.ts))
+		write(dir, "types.ts", formatted(t, textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), out.ts))
 		write(dir, "consumer.ts", `import type {PeoplePage, NestedPage, DataPage, Person} from './types';
 const page: PeoplePage = {items: [{name: 'Ada', active: true}]};
 const nested: NestedPage = {items: [page]};
@@ -468,7 +507,7 @@ const wrong: PeoplePage = {items: ['Ada']};
 	})
 	t.Run("go", func(t *testing.T) {
 		dir := t.TempDir()
-		write(dir, "types.go", formatted(t, gp.Provider{}, out.goTree))
+		write(dir, "types.go", formatted(t, textfixture.New(parsegolang.Provider{}, checkgolang.Provider{}, formatgolang.Provider{}), out.goTree))
 		write(dir, "go.mod", "module pagination\n\ngo 1.27.0\n")
 		write(dir, "consumer_test.go", `package pagination
 import "testing"
@@ -483,7 +522,7 @@ func TestGenerated(t *testing.T) {
 	})
 	t.Run("rust", func(t *testing.T) {
 		dir := t.TempDir()
-		write(dir, "types.rs", formatted(t, rp.Provider{}, out.rust))
+		write(dir, "types.rs", formatted(t, textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{}), out.rust))
 		write(dir, "consumer.rs", `include!("types.rs");
 pub fn qualify() -> NestedPage {
  let page: DataPage<Person> = Page { items: vec![Person {name: String::from("Ada"), active: true}], next: Some(String::new()) };
@@ -494,11 +533,11 @@ pub fn qualify() -> NestedPage {
 	})
 	t.Run("cpp", func(t *testing.T) {
 		dir := t.TempDir()
-		write(dir, "types.hpp", formatted(t, cp.Provider{}, out.cpp))
+		write(dir, "types.hpp", formatted(t, textfixture.New(parsecpp.Provider{}, checkcpp.Provider{}, formatcpp.Provider{}), out.cpp))
 		e, from, input := generationInput(t, genModule("shadow", genMap(), genEntry("Person", genType(genPerson())), genEntry("Container", genType(genRecord(genField("Person", false, genLocal("Person")))))))
-		shadow := generated(t, e, from, input, cp.Provider{}, cppMapper)
+		shadow := generated(t, e, from, input, textfixture.New(parsecpp.Provider{}, checkcpp.Provider{}, formatcpp.Provider{}), cppMapper)
 		shadowDir := t.TempDir()
-		write(shadowDir, "shadow.hpp", formatted(t, cp.Provider{}, shadow))
+		write(shadowDir, "shadow.hpp", formatted(t, textfixture.New(parsecpp.Provider{}, checkcpp.Provider{}, formatcpp.Provider{}), shadow))
 		write(shadowDir, "shadow.cpp", "#include \"shadow.hpp\"\n#include <type_traits>\nstatic_assert(std::is_same_v<decltype(pagination::Container::Person),pagination::Person>);\n")
 		command(t, shadowDir, "docker", "run", "--rm", "--network=none", "-v", shadowDir+":/work", "-w", "/work", "gcc:14.2.0", "g++", "-std=c++20", "-fsyntax-only", "shadow.cpp")
 		write(dir, "consumer.cpp", `#include "types.hpp"

@@ -1,8 +1,16 @@
 package integration_test
 
 import (
+	analyzegolang "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
+	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
+	checkhoros "github.com/Bitspark/bittype/check/syntax/horos/provider/go"
+	formathoros "github.com/Bitspark/bittype/format/syntax/horos/provider/go"
+	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
+	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
+	resolvegolang "github.com/Bitspark/bittype/resolve/files/golang/provider/go"
+
 	"context"
-	analyze "github.com/Bitspark/bittype/analyze/files/horos/go"
+	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
@@ -10,10 +18,13 @@ import (
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
-	generate "github.com/Bitspark/bittype/generation/syntax/composition/horos-to-go/go"
-	gp "github.com/Bitspark/bittype/provider/golang/go"
-	hp "github.com/Bitspark/bittype/provider/horos/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/go"
+	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
+	target "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
+	generate "github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/go"
+	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
+	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
+
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	hs "github.com/Bitspark/bittype/syntax/horos/go"
@@ -64,8 +75,8 @@ func capture[L any](t *testing.T, p syntaxProvider[L], profile, text string) sem
 func sourceModel(t *testing.T, text string) h.Model {
 	t.Helper()
 	text = "module example; import h from horos.kinds pin \"sha256:" + decl.PreludePin().String() + "\"; " + text
-	s := capture[hs.Language](t, hp.Provider{}, hs.Profile, text)
-	r, err := resolution.NewResolver[hs.Language](s.Language(), resolve.Contract(), hp.Provider{})
+	s := capture[hs.Language](t, textfixture.New(parsehoros.Provider{}, checkhoros.Provider{}, formathoros.Provider{}), hs.Profile, text)
+	r, err := resolution.NewResolver[hs.Language](s.Language(), resolve.Contract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +195,7 @@ func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
 	s := sourceModel(t, sourcePage+" type PeoplePage = Page<Person>; type NestedPage = Page<Page<Person>>;")
 	ctx := context.Background()
 	from := s.Snapshot().Language()
-	a, err := analysis.NewAnalyzer[hs.Language](from, analyze.Contract(), hp.Provider{})
+	a, err := analysis.NewAnalyzer[hs.Language](from, analyze.Contract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,19 +204,20 @@ func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	to, err := representation.NewLanguage[gs.Language](gp.Provider{}, "go-syntax-1")
+	to, err := representation.NewLanguage[gs.Language](gs.Language{}, "go-syntax-1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	mapper, err := generate.New(from, to, generate.Config{TreeID: "generated", Package: "example", Profile: generate.RepresentationProfile})
+	var registry c.Registry
+	request, err := genfixture.Request(&registry, transform.Input{Source: s.Snapshot(), Evidence: []semantic.Result{evidence}}, to, "generated", target.Provider[hs.Language]{Package: "example"}, generate.Providers(rules.RepresentationProfile)...)
 	if err != nil {
 		t.Fatal(err)
 	}
-	out, err := mapper.Transform(ctx, transform.Input{Source: s.Snapshot(), Evidence: []semantic.Result{evidence}})
+	out, err := registry.Generate(ctx, request)
 	if err != nil {
 		t.Fatal(err)
 	}
-	checker, err := check.NewChecker[gs.Language](to, gp.Provider{})
+	checker, err := check.NewChecker[gs.Language](to, checkgolang.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -241,7 +253,7 @@ func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
 
 // Each semantic role is explicit; opening the typed view compiles nothing.
 func checkedNative(ctx context.Context, snapshot semantic.Snapshot) (n.Model, error) {
-	resolver, err := gp.NewFilesResolver(snapshot.Language())
+	resolver, err := resolution.NewResolver[gs.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
 	if err != nil {
 		return n.Model{}, err
 	}
@@ -249,7 +261,7 @@ func checkedNative(ctx context.Context, snapshot semantic.Snapshot) (n.Model, er
 	if err != nil {
 		return n.Model{}, err
 	}
-	analyzer, err := gp.NewFilesAnalyzer(snapshot.Language())
+	analyzer, err := analysis.NewAnalyzer[gs.Language](snapshot.Language(), analyzegolang.Contract(), analyzegolang.Provider{})
 	if err != nil {
 		return n.Model{}, err
 	}

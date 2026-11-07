@@ -1,13 +1,21 @@
 package consumer_test
 
 import (
+	checktypescript "github.com/Bitspark/bittype/check/syntax/typescript/provider/go"
+	check "github.com/Bitspark/bittype/contracts/check/go"
+	format "github.com/Bitspark/bittype/contracts/format/go"
+	print "github.com/Bitspark/bittype/contracts/print/go"
+	formattypescript "github.com/Bitspark/bittype/format/syntax/typescript/provider/go"
+	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
+	parsetypescript "github.com/Bitspark/bittype/parse/syntax/typescript/provider/go"
+
 	"context"
 	"errors"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
-	tsprovider "github.com/Bitspark/bittype/provider/typescript/go"
+
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -19,19 +27,19 @@ func TestIndependentNativeStages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parser, err := tsprovider.NewSyntaxParser(definition)
+	parser, err := parse.NewSyntaxParser[ts.Language](definition, parsetypescript.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	checker, err := tsprovider.NewSyntaxChecker(definition)
+	checker, err := check.NewChecker[ts.Language](definition, checktypescript.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	formatter, err := tsprovider.NewSyntaxFormatter(definition)
+	formatter, err := format.NewSyntaxFormatter[ts.Language](definition, formattypescript.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	printer, err := tsprovider.NewSyntaxPrinter(definition)
+	printer, err := print.NewSyntaxPrinter[ts.Language](definition, textfixture.Printing[ts.Language](ts.Language{}))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -11,7 +11,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
-	parser "github.com/Bitspark/bittype/parse/syntax/typescript/go"
+	parser "github.com/Bitspark/bittype/parse/syntax/typescript/provider/go"
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 )

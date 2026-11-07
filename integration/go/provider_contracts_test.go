@@ -3,7 +3,7 @@ package integration_test
 import (
 	"context"
 	"github.com/Bitspark/bittype/contracts/language/go"
-	print "github.com/Bitspark/bittype/print/syntax/go"
+	print "github.com/Bitspark/bittype/print/syntax/shared/provider/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/cst/go"
 	"strings"

@@ -17,6 +17,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/print/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
+	generation "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 )
 
 var (
@@ -42,9 +43,10 @@ var (
 // and transformers must support concurrent calls if the application makes them.
 // An Engine must not be copied after use.
 type Engine struct {
-	mu        sync.RWMutex
-	languages map[language.ID]registration
-	edges     map[language.ID]map[language.ID]edge
+	mu         sync.RWMutex
+	languages  map[language.ID]registration
+	edges      map[language.ID]map[language.ID]edge
+	generation generation.Registry
 }
 type registration struct {
 	filesParser    parse.FilesRegistration

@@ -1,15 +1,10 @@
 # Syntax engine and AST transformations
 
-**Updated, 4 November 2026.** The implemented frame supports registered
-AST transformations. The engine contains no canonical or native mapping rules.
-Applications explicitly register providers and transformers. Horos pagination transformers produce TypeScript, Go, Rust and C++ type AST sets.
-Template lifting and its concrete transformer were removed on 4 November 2026.
+The engine registers explicit syntax capabilities and directed transformations. Engine.Generate composes a request from a source, target, selected mappings, receipts and declaration sites. The [generation contract and walkthrough](kernel-composition.md) show Horos to TypeScript. TransformTo independently plans routes over explicitly registered transformer edges.
 
 The [Horos frontend](horos.md) registers its syntax checker independently
 from language identity, [resolution](resolution.md) and [semantic analysis](analysis.md).
-Horos text capabilities are independently registered in the same way. Go and
-TypeScript have [bounded native semantic providers](native-semantics.md);
-Rust and C++ semantic providers remain planned.
+Horos text capabilities are independently registered in the same way. Go, TypeScript and Rust have [bounded native semantic providers](native-semantics.md). C++ supplies syntax stages.
 
 ## Public components
 

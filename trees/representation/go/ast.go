@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/Bitspark/bittype/check/syntax/ast/go"
+	"github.com/Bitspark/bittype/check/syntax/shared/ast/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/internal/tree"
 	"github.com/Bitspark/bittype/trees/ast/go"

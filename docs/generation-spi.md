@@ -1,8 +1,6 @@
 # Public generation operations
 
-The accepted [kernel-owned construction SPI](kernel-composition.md) adds source,
-target and mapping providers above these operations. Its implementation is
-pending; operation, association and scope guarantees remain unchanged.
+The [kernel-owned construction SPI](kernel-composition.md) supplies the source, target and mapping providers that the engine opens for each generation request.
 
 This implements the
 [type-owned generation design](type-generation-plugins.md) and
@@ -21,7 +19,7 @@ The public package is `github.com/Bitspark/bittype/contracts/generation/go`.
 It contains both the operation contracts and their guarded lifecycle adapter,
 following the existing semantic operation pattern. Keeping issuance with the
 opaque handles avoids an unrestricted public constructor between packages.
-The stage-owned `generation/syntax/go` composer uses this boundary for selection
+The stage-owned `transform/syntax/shared/generation/go` composer uses this boundary for selection
 and scheduling. Session also supports explicit driving; no forwarding alias or
 second issuance path is introduced.
 

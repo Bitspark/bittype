@@ -204,8 +204,8 @@ Preserve the [stage-first layout](../LAYOUT.md). The first implementation uses:
 contracts/verification/go/                 public agnostic artifact association
 verification/files/source/horos/go/         explicit authoritative source queries
 semantics/golang/go/                      immutable Go type facts and typed readers
-resolve/files/golang/go/                  bounded Go compiler-backed resolution
-analyze/files/golang/go/                  explicit analysis and admission queries
+resolve/files/golang/provider/go/                  bounded Go compiler-backed resolution
+analyze/files/golang/provider/go/                  explicit analysis and admission queries
 verification/files/horos-to-go/go/          owning mapping and direct Logos composition
 verification/integration/go/               TextBox/Page composition qualification
 ```

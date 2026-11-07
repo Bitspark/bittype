@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strconv"
 
-	structure "github.com/Bitspark/bittype/check/syntax/ast/go"
+	structure "github.com/Bitspark/bittype/check/syntax/shared/ast/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	g "github.com/Bitspark/bittype/internal/grammar"
 	"github.com/Bitspark/bittype/trees/ast/go"

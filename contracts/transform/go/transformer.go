@@ -1,5 +1,5 @@
 // Package transform defines directed AST transformations and their typed bridge.
-// Concrete mappings belong to separate transforms/<source>-to-<target> packages.
+// Native representations belong to the selected libraries in the transform stage.
 package transform
 
 import (

@@ -1,6 +1,6 @@
 # Kernel-owned generation composition
 
-**Owner decision, 6 November 2026; implementation pending.** The kernel composes
+**Implemented in Bittype. Owner decision of 6 November 2026.** The kernel composes
 supplied source, target and mapping providers from an explicit request. Libraries
 construct their own invocation state and own representation meaning. Consumers
 select capabilities and requested output. No library supplies an assembled
@@ -12,6 +12,8 @@ This replaces the whole-Composition factory in
 association owners, definition scheduling and whole-invocation failure. It does
 not repair [verification ACX-001](architecture-cases/0001-verification-composition.md),
 add native constraint enforcement, or generate runtime bindings.
+
+The [generation assembly case](architecture-cases/0002-generation-assembly.md) records the ownership failure and qualification.
 
 ## Uniform layout
 
@@ -52,7 +54,7 @@ imports only contracts and carriers, never concrete integrations.
 ## Construction SPI
 
 F/T are language markers. S/N are provider-owned APIs, not a new universal type
-algebra. The proposed surface extends existing concepts:
+algebra. The public construction contracts are defined in [construction.go](../contracts/generation/go/construction.go).
 
 ```go
 type SourceSession[F any] interface {
@@ -71,13 +73,13 @@ type MappingProvider[F, T any, S SourceSession[F], N Native[F, T]] interface {
     Open(context.Context, MappingRequest[S, N]) (Contribution[F, T], error)
 }
 type Contribution[F, T any] struct {
-    Bindings   []Binding[F, T]
+    Bindings   []RepresentationBinding[F, T]
     Structural *Mapping[F, T]
     Helpers    []Plan[F, T]
 }
 ```
 
-Catalog, selectors, mappings, bindings and plans have one public definition in
+RepresentationBinding selects a mapping by source identity. Binding records a lexical association. Both have one public definition in
 the generation contracts. Use, Publish, Define, Introduce/Apply and association
 checks keep their meanings. Providers return only their own components; they
 cannot select another provider, supply invocation roots, run the composer or
@@ -97,7 +99,7 @@ or IO. These are trusted in-process collaborators, not a sandbox.
 
 ## Registration and request
 
-The kernel exposes generic free functions (the S/N constraints are as above):
+The [registry](../transform/syntax/shared/generation/go/registry.go) exposes generic free functions with the S/N constraints above.
 
 ```go
 RegisterSource[F, S](registry, language, provider) (SourceRef, error)
@@ -116,7 +118,7 @@ selected records; all provider callbacks run outside registry locks.
 ```go
 type BindingRef struct { Provider MappingRef; ID string }
 type Replacement struct {
-    Selector Selector
+    Selector generation.Selector
     Expected BindingRef
     With BindingRef
 }
@@ -151,11 +153,8 @@ is terminal, with no fallback.
    profiles, Go markers/API types, roots and output identity before provider work.
 2. Admit supplied evidence through the existing typed transform boundary against
    the source's captured requirements. Missing evidence never runs analysis.
-3. Open source and target once. Authenticate the exact source snapshot/receipts.
-   Open each selected mapping once against these same instances, with bounded
-   work and invocation-local issuance.
-4. Collect contributions, validate replacements, resolve/authenticate roots and
-   build the internal composition. No provider returns that composition.
+3. Open the source, authenticate the snapshot and receipts, and resolve the requested declaration sites. Open the target once and each selected mapping once against these instances. Construction requests expire on return from Open.
+4. Collect contributions, validate replacements and helper keys, then build the internal composition.
 5. Publish roots, acquire definitions, introduce formals, compose child uses and
    applications, and drain definitions through the existing guarded SPI.
 6. Finish a complete AST set and apply the engine's output syntax admission.
@@ -183,6 +182,38 @@ explicit provider configuration; the existing enforcement profile stays
 unsupported. Request the captured Person/Page/People sites, output identity,
 limits and those registrations.
 
+The caller has registered Horos and TypeScript with their syntax checkers. It supplies the exact analysis receipt, three declaration sites from that capture, and its output tree ID.
+
+```go
+// c is transform/syntax/shared/generation/go. g is contracts/generation/go.
+// hs and ts are the Horos and TypeScript syntax packages.
+// src, target and maps are the Horos source, TypeScript target and Horos-to-TypeScript mapping packages.
+func generatePage(ctx context.Context, e *engine.Engine, input transform.Input,
+    to representation.Language, sites []ast.NodeRef) (representation.ASTSet, error) {
+    registry, from := e.Generation(), input.Source.Language()
+    s, err := c.RegisterSource[hs.Language, src.Reader](registry, from, src.Provider{})
+    if err != nil { return representation.ASTSet{}, err }
+    n, err := c.RegisterTarget[hs.Language, ts.Language, target.Builder[hs.Language]](
+        registry, from, to, target.Provider[hs.Language]{})
+    if err != nil { return representation.ASTSet{}, err }
+
+    var selected []c.MappingRef
+    for _, p := range maps.Providers(rules.RepresentationProfile) {
+        m, err := c.RegisterMapping[hs.Language, ts.Language, src.Reader, target.Builder[hs.Language]](
+            registry, from, to, p)
+        if err != nil { return representation.ASTSet{}, err }
+        selected = append(selected, m)
+    }
+    return e.Generate(ctx, c.Request{
+        Input: input, To: to, Roots: sites, Output: "pagination.ts",
+        Selection: c.Selection{Source: s, Target: n, Mappings: selected},
+        Limits: g.DefaultLimits(),
+    })
+}
+```
+
+The mapping library also exports Text, Bool, List, Record, Binder and Declarations individually. The Go mapping library owns the optional-field helper. Each registration returns its own reference. To replace List, keep its reference and specify both provider-qualified binding IDs in the request.
+
 The reader exposes resolved declarations, original bounds and actual binders.
 The named mapping introduces T; the record mapping requests its fields; the list
 mapping requests the element and receives T's scoped product. People applies
@@ -202,7 +233,7 @@ path. Representation generation does not establish native constraint enforcement
 
 ## Qualification
 
-Keep four-target pagination/compiler and installed-consumer tests. Exercise
+The [integration tests](../integration/go/kernel_generation_test.go), [four-target pagination](../integration/go/horos_generation_pagination_test.go) and [installed consumer](../integration/go/testdata/installed/horos_generation_test.go) exercise
 foreign handles; incompatible markers/profiles/API contracts; missing/foreign
 evidence; unknown/duplicate roots; output collisions; conflicting/stale
 replacements; helper collisions; provider failure; cancellation; expired tickets;
@@ -211,8 +242,7 @@ independent mapping, nesting and terminal failure. Test the kernel with unrelate
 language markers as well as Horos. A green example does not replace ownership
 and change-propagation review under AC-01 through AC-08.
 
-Migrate consumers, directed imports, compiler paths and current documentation
-links. Update source-derived reporting with actual layout/contracts; preserve
+The source-derived report follows actual Go contracts and public declarations. It preserves
 public-method identity, physical source links and separate delegate evidence.
 No handwritten capability catalogue, fake route or blanket discovery exemption.
 Historical research/source links remain historical.

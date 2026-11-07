@@ -1,65 +1,22 @@
 # Automatic generation composition
 
-**Owner update, 6 November 2026:** [kernel-owned construction](kernel-composition.md)
-replaces the complete-Composition factory and per-pair defaults below. Selection
-and scheduling guarantees remain; construction implementation is pending.
-
-Implemented in Go source, 6 November 2026. This is the production composition of
-[Use, Publish, Define and Introduce/Apply](generation-spi.md). The four former
-private pagination Dialects and `internal/horosgen` have been deleted. The native
-representation profile remains types and interfaces only; native constraint
-enforcement, runtime bindings and protocol behavior are separate work.
+The engine assembles a generation request from supplied source, target and mapping registrations. See the [kernel construction SPI and pagination walkthrough](kernel-composition.md) and [generation operation SPI](generation-spi.md).
 
 ## Ownership and dependencies
 
-| Component | Responsibility |
+| Package | Responsibility |
 | --- | --- |
-| `contracts/generation/go` | Typed operations, authenticated products, lexical scope and guarded invocation lifecycle |
-| `generation/syntax/go` | Exact selection, guarded overrides, requested-root publication and definition scheduling |
-| `generation/syntax/source/horos/go` | Read the supplied Horos semantic receipt; expose declaration identities, actual arguments, real binders and descriptor operands |
-| `generation/syntax/target/go` | Invocation-local symbolic native fragments, reservations, immutable layouts and bounded assembly |
-| `generation/syntax/target/{typescript,golang,rust,cpp}/go` | Native grammatical construction, symbols and output units; no canonical representation catalogue |
-| `transforms/horos-to-*/go` | Thin endpoint-qualified ASTTransformer factories requiring a configured composition |
-| `generation/syntax/mapping/horos` | Supplied Horos builtin mappings and ordinary structural declaration policy |
-| `generation/syntax/composition/horos-to-<target>/go` | Optional explicit four-target default compositions |
-| Other type libraries and consuming applications | Exact library mappings, native artifact assumptions and explicit consumer overrides |
-
-**Owner placement correction, 6 November 2026:** these [Horos mapping packages](../generation/syntax/mapping/horos/README.md)
-live in Bittype's existing root Go module. Horos owns the canonical type model;
-Bittype owns this native generation implementation. The separate Horos mapping
-module is removed, so Horos's repository has no generator dependency on Bittype.
-
-Repository placement does not change the extension contract. The shared composer,
-source reader, native backends and thin transformer factories do not import the
-mappings or defaults. Consumers explicitly select a default composition or supply
-their own mappings through the same public operations. Native backends have no
-Horos/Ontos dependency. The [architecture tests](../integration/go/architecture_test.go)
-retain these directed package boundaries.
+| contracts/generation/go | Construction and operation contracts, scoped issuance and product association |
+| transform/syntax/shared/generation/go | Registration, checked selection, exact replacement and definition scheduling |
+| transform/syntax/horos/source/go | Read the supplied semantic receipt and authenticate Horos declarations, binders and operands |
+| transform/syntax/shared/target/go | Symbolic native fragments, layouts and bounded AST assembly |
+| transform/syntax/&lt;native&gt;/target/go | Native construction, scopes and target syntax |
+| transform/syntax/horos/mapping/go | Horos structural declaration policy and associations |
+| transform/syntax/horos-to-&lt;native&gt;/mapping/go | Selectable Horos representations for each target |
 
 ## Construction and selection
 
-An invocation factory receives the existing exact `transform.Request[F]`. It
-constructs a source view, native store and fresh mapping state, then returns:
-
-```go
-Composition[F, T]{
-    Config:   generation.Config[F, T]{Source: source, Native: native,
-                  Target: target, Evidence: requirements},
-    Catalog:  source,
-    Bindings: bindings,
-    Roots:    requestedDeclarations,
-    Helpers:  nativeOnlyPlans,
-    Limits:   limits,
-}
-```
-
-This is a field-shape illustration; concrete imports and setup are in the
-[Horos defaults](../generation/syntax/composition).
-The composer supplies Config's Plans and Select; prepopulating either is invalid.
-The Catalog reports declaration selectors and eligibility for an explicitly
-supplied structural policy. Inventory does not lower a body. Source admission
-still covers the complete original application, including arguments a mapping
-may omit from its native output.
+Consumers supply providers once and select their registrations per request. The source resolves explicit declaration sites. Each mapping opens against the same source and native instances. The kernel collects the results, selects exact bindings, publishes the requested roots and schedules acquired definitions. The source authenticates applications including actual arguments omitted from the native representation. See the [registration code](../transform/syntax/shared/generation/go/registry.go) and [composition code](../transform/syntax/shared/generation/go/adapter.go).
 
 <!-- bittype:overview scope=construction-and-selection part=features -->
 A Selector combines a compatible source language/profile/Go marker with an
@@ -71,13 +28,7 @@ Data, a kind classification, or an expanded structural fingerprint.
 <!-- bittype:overview:end -->
 
 <!-- bittype:overview scope=construction-and-selection part=exclusions -->
-`NewBindings` captures an effective table. Duplicate exact bindings fail. An
-override must name the existing Mapping.ID in ExpectedID and provide a different
-new ID; missing, stale, repeated and foreign-profile overrides fail. Exact
-bindings precede the explicitly supplied structural policy. Failure of a
-selected mapping ends the invocation; no fallback or automatic specialization
-is attempted. Factories create invocation-local collaborators; their Plan and
-selection policy must remain stable and must not lower bodies speculatively.
+A replacement names the selector, the expected provider and binding ID, and the new provider and binding ID. The kernel rejects ambiguous, stale, repeated or unused replacements and conflicting helpers. It applies the selected structural policy only where the source declares eligibility. A failed mapping ends the invocation.
 <!-- bittype:overview:end -->
 
 ## Demands, generics and final output
@@ -94,7 +45,7 @@ the complete result association. Its result is not the argument's association
 relabelled. The same open Page is reused by Page<Person>, Page<Page<Person>> and
 Page<Cell<Person>>. No first-use specialization changes Page's published header.
 
-After root publication, Run drains Session.PendingDefinitions until every
+After root publication, the kernel drains Session.PendingDefinitions until every
 acquired owned declaration or helper is defined. Defining one body may demand
 more definitions. External and inline representations need no local definition.
 Native-only helpers use explicit keys and native parameters, with no synthetic
@@ -112,9 +63,8 @@ local declaration link. Integration contracts and native compiler qualification
 own the external artifact's meaning.
 
 Cancellation, missing representations, exhausted budgets, unsupported native
-syntax or failed operations return no usable output. Defaults use the SPI limits
-in [contracts.go](../contracts/generation/go/contracts.go); mapping factories can
-select stricter limits. No cache or live collaborator state crosses invocations.
+syntax or failed operations return no usable output. The request supplies explicit SPI limits
+in [contracts.go](../contracts/generation/go/contracts.go); consumers can select stricter limits. No cache or live collaborator state crosses invocations.
 
 ## Extension examples and qualification
 

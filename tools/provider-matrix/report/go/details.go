@@ -360,7 +360,9 @@ func (p *program) renderDetails(ctx context.Context, m *matrix, a *annotations, 
 			}
 			b.WriteString("\n\n")
 		}
-		if op.from != nil {
+		if op.kind == "mapping provider" {
+			fmt.Fprintf(&b, "Selectable mapping from %s to %s. Its public Go contract identifies the required source and native APIs. The consumer supplies a registration and request.\n\n", escape(typeLabel(op.from.marker)), escape(typeLabel(op.to.marker)))
+		} else if op.from != nil {
 			fmt.Fprintf(&b, "Direct endpoints: %s → %s. Typed calls in the factory body establish this discovered edge; runtime reachability, returned-value flow, configured mappings and composed routes are not inferred.\n\n", escape(typeLabel(op.from.marker)), escape(typeLabel(op.to.marker)))
 		} else {
 			fmt.Fprintf(&b, "Language marker: %s.\n\n", escape(typeLabel(op.language.marker)))
