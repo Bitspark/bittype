@@ -160,6 +160,37 @@ declaration, target profile, generic argument mapping and locked dependencies
 are explicit configuration. Page can therefore compose a Cell type without a
 Cell-specific generator case. See the [four-language configuration](type-representations.md#5-configuration-for-typescript-go-rust-and-c).
 
+### Semantic mapping and target AST construction
+
+**Design decision, 7 November 2026.** Reading starts with files and selected
+dependencies supplied by the application. For each unit the source language
+parses a CST with an AST view. Its resolver determines what each occurrence
+denotes in its scope. Its analyzer publishes facts for that captured program.
+In a Horos alias that uses `pages.Page<cells.Cell<Person>>`, those facts
+identify both imported declarations, the local `Person`, and both applications.
+
+| Operation | Responsibility and result |
+| --- | --- |
+| Semantic mapping from A to B | The caller specifies the declarations to publish. The selected mappings use the A facts to choose B declarations, type expressions and binders. Mapping ends when each named use has an intended destination and each publication request identifies the B declaration to expose. |
+| AST construction in B | The B builder realizes that choice using B's declaration and expression nodes. It associates each reference occurrence with the intended declaration, parameter or external symbol. The same builder can serve different source languages. Its checker admits the resulting syntax. |
+| File organization and target analysis in B | The consumer supplies one placement. The B Files formatter creates the necessary module syntax. The B resolver and analyzer establish what the uses denote in the organized units and their selected dependency environment. Files compares the results with the intended destinations before publishing `Source[B]`. The printer emits its paths and text. |
+
+The plan describes the B declarations the mappings intend. `Semantics[B]`
+records what the target language providers established for a particular
+capture and dependency environment. For an external `Cell`, the plan names
+the chosen public package symbol. Target analysis establishes which symbol
+the occurrence in the emitted alias denotes, even if it is imported under
+another name.
+
+Today `Engine.Generate` returns a syntax-checked AST set. The existing Files
+formatter accepts a semantic graph with its matching target snapshot and
+analysis result. In TypeScript the current path analyzes a logical unit first,
+then analyzes the organized units afresh. Carrying intended bindings from
+generation into this process without first encoding them as imports remains
+an open design requirement. The planner walks one example through each stage.
+[Page and Cell on read and write](generation-planner.md#pagination-on-read-and-write) ·
+[Files contracts](source.md#symmetric-role-contracts) · [Open case ACX-004](architecture-cases/0004-generation-file-syntax.md).
+
 ## Go layout
 
 There is one root Go module, `github.com/Bitspark/bittype`. The owner selected a

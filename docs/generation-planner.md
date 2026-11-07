@@ -95,81 +95,134 @@ choices as native declaration nodes and retains the destination of each named us
 | Read A | The application supplies source files and the selected dependencies. | Syntax parsing yields CSTs with `AST[A]` views. The A resolver binds occurrences in their scopes. The A analyzer uses that resolution to publish `Semantics[A]` for the captured program. |
 | Map to B | Captured A sites and facts, requested roots and registered mappings. | The planner selects rules and records the B declarations, expressions and bound uses they prescribe. |
 | Construct B | A run of the plan with the selected target builder. | A syntax-checked `AST[B]` set realizes the declarations. Bound uses and the requested public surface must survive this step. |
-| Analyze B | The B providers resolve and analyze the realized declarations in the selected target environment. | `Semantics[B]` records the facts those providers establish for that capture. |
-| Write B | The Files formatter receives the target snapshot, its semantic evidence and the consumer's placement. | It chooses names and imports in each module, checks the resulting bindings, and publishes `Source[B]`. The Files printer returns paths and text for the application to write. |
+| Organize B | The intended bindings, requested public surface, selected dependencies and one consumer placement. | The B Files formatter applies that placement and realizes the appropriate imports, exports and local names in each unit. |
+| Check and write B | The organized units in their target environment. | The B resolver and analyzer establish `Semantics[B]` for this capture. Files checks the actual bindings and publishes `Source[B]`. The Files printer returns paths and text for the application to write. |
 
 The plan describes what the selected mappings intend. Only analysis of the
 realized B program establishes `Semantics[B]`. Today generation consumes an
 analyzed source and returns a syntax-checked target AST set. The separation of
 mapping decisions into an inspectable plan is proposed here.
+[Current Files input and proposed handoff](#where-the-plan-stops) ·
+[Generation design](generation.md#semantic-mapping-and-target-ast-construction) ·
 [Current generation contract](semantic-generation.md#explicit-semantic-input) ·
 [Syntax and Files roles](source.md#symmetric-role-contracts).
 
 ### Pagination on read and write
 
-Take a Horos module `example.people` that imports `example.pagination` by its
-canonical pin under the name `pages`. The relevant declarations in those two
-modules are shown below. [Horos Files example](source.md#horos-composition-and-pagination).
+Suppose the caller requests `Page`, `Person` and `Cells` as public TypeScript
+declarations. The application supplies three Horos files with `people.horos`
+as the entry. Each pin placeholder stands for the 64 hexadecimal digits of its
+module's pin. The `Cell` declaration follows the independent library fixture.
+[Horos Files reading](source.md#horos-composition-and-pagination) ·
+[Cell mapping fixture](../integration/go/horos_generation_composition_test.go).
 
 ```horos
-// In example.pagination
+// pagination.horos
+module example.pagination;
 type Page<T> = { items: list<T>; next?: text; };
 
-// In example.people
+// cells.horos
+module example.cells;
+type Cell<V> = wire<V>;
+
+// people.horos
+module example.people;
+import pages from example.pagination pin "sha256:<pagination-pin>";
+import cells from example.cells pin "sha256:<cells-pin>";
 type Person = { name: text; };
-type People = pages.Page<Person>;
+type Cells = pages.Page<cells.Cell<Person>>;
 ```
 
-**On read**, the Horos resolver follows `pages` to the pinned module and binds
-`pages.Page` to its `Page` declaration. It resolves the argument `Person` in
-`example.people`. Analysis records that `People` applies that `Page` to that
-`Person`, while the element of `items` refers to the parameter declared by
-`Page`. Another declaration called `Person` in the imported module would be a
-different entity. [Pagination analysis](analysis.md#pagination-from-input-to-queries) ·
-[Files fixture](../integration/go/files_test.go).
+**Read Horos.** Syntax parsing retains the written names and nested applications.
+The resolver follows the two import pins and resolves `Person` in
+`example.people`. Analysis establishes that the inner application binds
+`Cell.V` to that `Person`, and the outer one binds `Page.T` to the whole
+`Cell<Person>` application. The `T` in `items` still belongs to the open
+`Page` declaration. These facts concern the Horos input and its scopes.
+[Pagination analysis](analysis.md#pagination-from-input-to-queries) ·
+[Horos Files fixture](../integration/go/files_test.go).
 
-**During mapping**, suppose the caller requests `Page`, `Person` and `People`
-as public TypeScript declarations. The structural mapping chooses two interfaces
-and an alias. The list rule chooses an array whose element denotes the target
-parameter of `Page`. The alias applies the target declaration for `Page` to
-the target declaration for `example.people.Person`. **During construction**,
-the TypeScript builder creates the interface, parameter, array and reference
-nodes for `items: T[]` and the type application nodes for `Page<Person>`.
-The same open `Page` serves every application.
+**Map to TypeScript.** The structural mappings select an interface for each of
+`Page` and `Person` and a type alias for `Cells`. The list mapping chooses an
+array whose element is the target parameter of `Page`. The Cell library's
+mapping matches the pinned Horos `Cell` declaration, selects the public type
+export `Cell` from `@bitspark/cell`, and uses the mapped `Person` as its
+argument. The outer application uses that entire result as the argument to
+the generated `Page`. **Semantic mapping ends here.** The representation,
+each reference destination and the three declarations to expose are fixed.
 
-**On write**, the consumer can format one run twice. These arrangements produce
-different imports in the module containing `People`.
+**Construct the TypeScript AST.** The builder now has enough information to
+construct the interfaces, type parameter, properties and alias. The outline
+shows containment and the intended destination of each reference. The
+external package identity is an association on the use.
 
-| TypeScript placement | TypeScript spelling |
-| --- | --- |
-| `Page`, `Person` and `People` share `pages/page.ts`. | `export type People = Page<Person>;` refers directly to its two local declarations. |
-| `Person` is exported from `model/person.ts`. The other two share `pages/page.ts`. | `import type { Person } from "../model/person.js";` brings the intended declaration into scope for the same `export type People = Page<Person>;`. |
+```text
+interface Page
+  type-parameter T
+  property items → array-type → type-reference to Page.T
+  optional property next → keyword-type string
+interface Person
+  property name → keyword-type string
+type-alias Cells
+  type-application
+    constructor → type-reference to generated Page
+    argument    → type-application
+      constructor → type-reference to Cell exported by @bitspark/cell
+      argument    → type-reference to generated Person
+```
 
-The Horos import makes `Page` visible on read. The second TypeScript placement
-requires an import of `Person` on write. If a local name shadows `Person`, the
-formatter can import it as `Person_1` and spell the application
-`Page<Person_1>`. Resolving that emitted use in the new module must reach the
-declaration corresponding to the planned `Person`. An inaccessible declaration
-or a use that resolves to a different one fails formatting. This check can run
-in memory before the caller writes either file.
-[TypeScript placement and alias tests](../integration/go/typescript_placement_test.go).
+A syntax check admits these node kinds, roles and containment. The builder
+retains the associations through construction so Files can later compare
+each reference with the target the compiler finds. [TypeScript AST vocabulary](syntax.md#typescript).
+
+**Organize the output.** Run once. Put `Page` and `Cells` in `pages/page.ts`
+and the public `Person` in `model/person.ts`. Given the selected Cell package,
+TypeScript Files produces the following module.
+
+```typescript
+import type { Person } from "../model/person.js";
+import type { Cell } from "@bitspark/cell";
+
+export interface Page<T> { items: T[]; next?: string; }
+export type Cells = Page<Cell<Person>>;
+```
+
+Change only the placement to put `Person` beside `Page`. The pages module now
+also contains `export interface Person { name: string; }`. Its relative import
+disappears. The package import and the alias body stay the same.
+
+**Check the bindings before writing.** Before publishing either organized `Source`,
+resolve and analyze its units in the selected TypeScript package environment.
+Compare the `Page` and `Person` uses with their declarations at their new
+sites, the `T` use with the binder on that `Page`, and the `Cell` use with the
+package export. Each capture has its own entity IDs. The comparison follows
+the declaration into its new unit or identifies the selected package and export.
+Reading TypeScript that spells the import as
+`import type { Cell as C } from "@bitspark/cell"` must recover that same export
+from the `C` in `Page<C<Person>>`. If a use binds to a different same-named
+type, or the package export is unavailable, Files must reject the result.
+The printer receives the checked `Source` and the application chooses where
+to write it. [TypeScript placement and binding checks](typescript-type-imports.md#from-generation-to-files) ·
+[Placement and alias fixtures](../integration/go/typescript_placement_test.go).
 
 ### Where the plan stops
 
 `Publish` records which declarations to expose. Each named use retains the
 identity of its owned declaration, lexical parameter or external public symbol.
-For `Cells = Page<Cell<Person>>`, the Cell library selects the external export
-`Cell` from `@bitspark/cell`. Place `Cells` beside `Page` in either arrangement
-above. In both layouts `pages/page.ts` imports `Cell` from that package.
-Bringing `Person` into the same module removes its relative import. Selecting a
-different external type for Cell changes the mapping and requires a new plan.
+A change of placement uses the same plan. Selecting a different external type
+for Cell changes a mapping decision and requires a new plan.
 
 The proposal still needs a way to carry the bound uses and publication intent
 from a run into target semantic admission. The proposed `ASTSet` return type
 alone leaves that association unspecified. Today's TypeScript target emits
-package import nodes and export modifiers while building its logical AST. The
-documented correction assigns that syntax to Files formatting for the chosen
-module arrangement. [Generation and Files boundary](source.md#from-generated-declarations-to-files) ·
+package imports and export modifiers into a logical unit, which is resolved
+and analyzed to supply the existing Files formatter's input graph, snapshot
+and receipt. After placement the formatter obtains a fresh analysis and checks
+the relocated bindings before it publishes `Source`. Under the proposed split,
+the intent from the plan must reach target admission directly. Analysis of a
+logical unit, where available, establishes facts only for that unit. The
+organized units still need their own binding checks.
+[Generation and Files boundary](source.md#from-generated-declarations-to-files) ·
 [Current TypeScript behavior](typescript-type-imports.md) ·
 [Open architectural case](architecture-cases/0004-generation-file-syntax.md).
 
