@@ -3,7 +3,6 @@ package typescript
 
 import (
 	"errors"
-	"reflect"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
@@ -29,7 +28,8 @@ func Configuration() []semantic.Setting {
 	}
 }
 func MatchesConfiguration(settings []semantic.Setting) bool {
-	return reflect.DeepEqual(settings, Configuration())
+	_, _, err := Imports(settings)
+	return err == nil
 }
 func Requirements() []semantic.Requirement {
 	return []semantic.Requirement{{Obligation: Coverage(), Verdict: semantic.Holds}, {Obligation: Bindings(), Verdict: semantic.Holds}, {Obligation: Validity(), Verdict: semantic.Holds}}

@@ -115,6 +115,45 @@ func TestSelectedMappingFailureNeverFallsBack(t *testing.T) {
 		t.Fatalf("mapping retried or partial output: %v (%d calls)", err, called)
 	}
 }
+
+func TestGeneratedNamedImportsTrackOnlyEmittedFragments(t *testing.T) {
+	root := genModule("consumer", genMap(),
+		genEntry("Box", genType(genScalar("bool"))),
+		genEntry("Batch", genType(genTuple("horos/list-of", genParam(0)), "T")),
+		genEntry("Names", genType(genTuple("horos/list-of", genScalar("utf8-text")))))
+	e, from, input := generationInput(t, root)
+	const id = "consumer/collection/1"
+	provider := tsContribution(func(src source.Reader, b target.Builder[h.Language]) (g.Contribution[h.Language, ts.Language], error) {
+		key, err := source.Builtin(from, "list-of", "")
+		if err != nil {
+			return g.Contribution[h.Language, ts.Language]{}, err
+		}
+		mapping := rules.Direct(id, src, b, func(_ context.Context, r g.UseRequest[h.Language, ts.Language]) (g.Fragment[ts.Language], error) {
+			use := r.Want().Use().Use
+			operand, err := src.Operand(use, 1)
+			if err != nil {
+				return g.Fragment[ts.Language]{}, err
+			}
+			child, err := r.Child(operand)
+			if err != nil {
+				return g.Fragment[ts.Language]{}, err
+			}
+			// Constructing an alternative fragment creates no dependency unless
+			// that fragment occurs in the returned syntax.
+			if _, err = b.ImportedType("@example/unused", "Candidate", nil, ast.NodeRef{}); err != nil {
+				return g.Fragment[ts.Language]{}, err
+			}
+			return b.ImportedType("@example/collections", "Box", []g.Fragment[ts.Language]{child.Payload()}, ast.NodeRef{})
+		})
+		return g.Contribution[h.Language, ts.Language]{Bindings: []g.RepresentationBinding[h.Language, ts.Language]{{Selector: key, Mapping: mapping}}}, nil
+	})
+	tree := generated(t, e, input, typescriptText(), selectedTS(provider, id))
+	output := formatted(t, typescriptText(), tree)
+	checkImportedUse(t, tree, "Box_1", "@example/collections", "Box")
+	if strings.Count(output, "import type") != 1 || strings.Contains(output, "@example/unused") || !strings.Contains(output, "Box_1<T>") || !strings.Contains(output, "Box_1<string>") {
+		t.Fatal(output)
+	}
+}
 func TestLibraryOwnedCellAvoidsBodyExpansion(t *testing.T) {
 	library := genModule("cells", genMap(), genEntry("Cell", genType(genTuple("horos/wire", genParam(0)), "T")))
 	pin, err := decl.Pin(library)
@@ -132,13 +171,25 @@ func TestLibraryOwnedCellAvoidsBodyExpansion(t *testing.T) {
 		t.Fatal("missing Cell mapping accepted")
 	}
 	calls := 0
-	provider := tsContribution(func(src source.Reader, b target.Builder[h.Language]) (g.Contribution[h.Language, ts.Language], error) {
-		key, err := source.Named(from, pin.String(), "Cell")
+	tree := generated(t, e, input, typescriptText(), selectedTS(cellMapping(from, pin.String(), &calls), ""))
+	output := formatted(t, typescriptText(), tree)
+	if calls != 1 || !strings.Contains(output, "Page<Cell<string>>") || strings.Contains(output, "_Cell") {
+		t.Fatal(output, calls)
+	}
+	checkImportedUse(t, tree, "Cell", "@bitspark/cell", "Cell")
+	compileTSComposition(t, output, "const cells: Cells = {items:[{value:'text'}]};\nvoid cells;\n")
+}
+
+// The independent library selects its own native package export. It receives
+// no placement or path information.
+func cellMapping(from representation.Language, pin string, calls *int) tsContribution {
+	return func(src source.Reader, b target.Builder[h.Language]) (g.Contribution[h.Language, ts.Language], error) {
+		key, err := source.Named(from, pin, "Cell")
 		if err != nil {
 			return g.Contribution[h.Language, ts.Language]{}, err
 		}
 		mapping := rules.Direct("cells/typescript/1", src, b, func(_ context.Context, r g.UseRequest[h.Language, ts.Language]) (g.Fragment[ts.Language], error) {
-			calls++
+			(*calls)++
 			use := r.Want().Use()
 			if len(use.Actuals) != 1 {
 				return g.Fragment[ts.Language]{}, g.ErrInvalid
@@ -147,21 +198,14 @@ func TestLibraryOwnedCellAvoidsBodyExpansion(t *testing.T) {
 			if err != nil {
 				return g.Fragment[ts.Language]{}, err
 			}
-			return externalTS(b, "LibraryCell", child.Payload())
+			expr, err := src.Read(use.Use)
+			if err != nil {
+				return g.Fragment[ts.Language]{}, err
+			}
+			return b.ImportedType("@bitspark/cell", "Cell", []g.Fragment[ts.Language]{child.Payload()}, expr.Origin)
 		})
 		return g.Contribution[h.Language, ts.Language]{Bindings: []g.RepresentationBinding[h.Language, ts.Language]{{Selector: key, Mapping: mapping}}}, nil
-	})
-	tree := generated(t, e, input, typescriptText(), selectedTS(provider, ""))
-	output := formatted(t, typescriptText(), tree)
-	if calls != 1 || !strings.Contains(output, "Page<LibraryCell<string>>") || strings.Contains(output, "_Cell") {
-		t.Fatal(output, calls)
 	}
-	for _, node := range tree.Nodes {
-		if nodeAttribute(node, ts.AttributeName) == "LibraryCell" && len(node.References) != 0 {
-			t.Fatal("invented local target")
-		}
-	}
-	compileTSComposition(t, output, "interface LibraryCell<T> { value: T; }\nconst cells: Cells = {items:[{value:'text'}]};\nvoid cells;\n")
 }
 func compileTSComposition(t *testing.T, source, consumer string) {
 	t.Helper()
@@ -169,8 +213,9 @@ func compileTSComposition(t *testing.T, source, consumer string) {
 		return
 	}
 	dir := t.TempDir()
+	writeCellPackage(t, dir)
 	if err := os.WriteFile(filepath.Join(dir, "types.ts"), []byte(source+"\n"+consumer), 0600); err != nil {
 		t.Fatal(err)
 	}
-	command(t, dir, "tsc", "--strict", "--noEmit", "--exactOptionalPropertyTypes", "types.ts")
+	command(t, dir, "tsc", "--strict", "--noEmit", "--module", "NodeNext", "--exactOptionalPropertyTypes", "types.ts")
 }

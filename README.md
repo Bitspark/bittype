@@ -29,6 +29,8 @@ The [Syntax and Files design](docs/source.md) specifies the symmetry
 `Syntax : CST : AST` and `Files : Source : Semantics`. Typed carriers, symmetric parse/format/print interfaces, multi-unit transformations
 and the Horos Files composition are implemented. Bounded Go, TypeScript and Rust Files
 resolution/analysis providers are implemented; C++ semantics remain deferred.
+The [TypeScript Files formatter](docs/typescript-type-imports.md) uses one declaration
+placement for emitted files and their local imports. Libraries select package exports.
 Implementations use explicit Syntax/Files stage paths and role-named Go packages.
 Each language composition package provides matching `NewSyntax...` and
 `NewFiles...` constructors for its existing capabilities, taking an explicit

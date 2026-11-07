@@ -10,6 +10,37 @@ import (
 )
 
 func (s *Store[F, T]) Assemble(ctx context.Context, publications []g.Publication[F, T], definitions []g.Definition[F, T], limits g.Limits) (representation.ASTSet, error) {
+	return s.assemble(ctx, publications, definitions, limits, nil, nil)
+}
+
+// AssembleWithSites reports precisely the emitted occurrences of fragments owned
+// by this store. A target can attach its own native unit-level syntax at these
+// sites without encoding semantic metadata in identifier text or source origins.
+func (s *Store[F, T]) AssembleWithSites(ctx context.Context, publications []g.Publication[F, T], definitions []g.Definition[F, T], limits g.Limits, watch []g.Fragment[T]) (representation.ASTSet, map[ast.NodeID]g.Fragment[T], error) {
+	if ctx == nil || !limits.Valid() {
+		return representation.ASTSet{}, nil, g.ErrInvalid
+	}
+	if err := ctx.Err(); err != nil {
+		return representation.ASTSet{}, nil, err
+	}
+	if len(watch) > limits.OutputNodes {
+		return representation.ASTSet{}, nil, g.ErrLimit
+	}
+	tracked := make(map[g.Fragment[T]]bool, len(watch))
+	for _, f := range watch {
+		if _, ok := s.fragmentRecords[f]; !ok {
+			return representation.ASTSet{}, nil, g.ErrScope
+		}
+		tracked[f] = true
+	}
+	sites := map[ast.NodeID]g.Fragment[T]{}
+	result, err := s.assemble(ctx, publications, definitions, limits, tracked, sites)
+	if err != nil {
+		return representation.ASTSet{}, nil, err
+	}
+	return result, sites, nil
+}
+func (s *Store[F, T]) assemble(ctx context.Context, publications []g.Publication[F, T], definitions []g.Definition[F, T], limits g.Limits, tracked map[g.Fragment[T]]bool, sites map[ast.NodeID]g.Fragment[T]) (representation.ASTSet, error) {
 	fail := func(err error) (representation.ASTSet, error) { return representation.ASTSet{}, err }
 	if s.Check == nil || s.Finish == nil {
 		return fail(g.ErrInvalid)
@@ -149,6 +180,9 @@ func (s *Store[F, T]) Assemble(ctx context.Context, publications []g.Publication
 		}
 		id := ast.NodeID(len(out.Nodes) + 1)
 		out.Nodes = append(out.Nodes, n)
+		if tracked[f] {
+			sites[id] = f
+		}
 		if anchor, ok := anchors[f]; ok {
 			if symbols[anchor] != 0 {
 				return 0, g.ErrInvalid

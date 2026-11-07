@@ -233,7 +233,10 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["internal/golangsem"] = []string{"contracts/semantic/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/ast/go"}
 	rules["resolve/files/golang/provider/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "semantics/go", "semantics/golang/go", "syntax/golang/go"}
 	rules["analyze/files/golang/provider/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "resolve/files/golang/provider/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/representation/go"}
-	rules["semantics/typescript/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "syntax/typescript/go", "trees/ast/go", "trees/representation/go"}
+	rules["internal/typescriptimports"] = []string{"files/go", "internal/typescript", "syntax/typescript/go", "trees/ast/go"}
+	rules["transform/syntax/typescript/target/go"] = append(rules["transform/syntax/typescript/target/go"], "internal/typescriptimports")
+	rules["format/files/typescript/provider/go"] = []string{"contracts/analysis/go", "contracts/check/go", "contracts/format/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go", "files/go", "internal/typescriptimports", "semantics/go", "semantics/typescript/go", "source/go", "syntax/typescript/go", "trees/ast/go", "trees/cst/go", "trees/representation/go"}
+	rules["semantics/typescript/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "internal/typescript", "semantics/go", "syntax/typescript/go", "trees/ast/go", "trees/representation/go"}
 	rules["internal/typescriptsem"] = []string{"contracts/parse/go", "contracts/semantic/go", "files/go", "parse/syntax/typescript/provider/go", "semantics/go", "semantics/typescript/go", "syntax/typescript/go", "trees/ast/go"}
 	rules["resolve/files/typescript/provider/go"] = []string{"trees/representation/go", "contracts/resolution/go", "contracts/semantic/go", "internal/typescriptsem", "semantics/go", "semantics/typescript/go", "syntax/typescript/go"}
 	rules["analyze/files/typescript/provider/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/typescriptsem", "resolve/files/typescript/provider/go", "semantics/go", "semantics/typescript/go", "syntax/typescript/go", "trees/representation/go"}
@@ -301,16 +304,24 @@ var modelExternalImports = map[string][]string{
 }
 
 func TestFilesDimensionStageCoverage(t *testing.T) {
-	// Files is a dimension, never a discovered language named "files".
+	fixtures := filesStageFixtures()
 	for _, stage := range []string{"parse", "format"} {
 		entries, err := os.ReadDir(filepath.Join("../..", stage, "files"))
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, entry := range entries {
-			if entry.IsDir() && entry.Name() != "horos" {
-				t.Fatalf("%s Files semantics lack a documented fixture", entry.Name())
+			if !entry.IsDir() {
+				continue
 			}
+			pkg := stagePath(stage+"/files", entry.Name())
+			if fixtures[pkg] == nil {
+				t.Errorf("Files stage %s lacks a conformance fixture", pkg)
+			}
+			delete(fixtures, pkg)
 		}
+	}
+	for pkg := range fixtures {
+		t.Errorf("Files fixture names absent stage %s", pkg)
 	}
 }

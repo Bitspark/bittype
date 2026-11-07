@@ -1,6 +1,6 @@
 // @ts-check
 // Private compiler helper. Input is captured text plus independently checked AST
-// correspondence, never generated source or an ambient TypeScript project.
+// correspondence. Inputs may be generated and always belong to an explicit capture.
 const fs = require("node:fs");
 const path = require("node:path");
 /** @type {typeof import("typescript")} */
@@ -21,6 +21,7 @@ function unwrap(node) { while (ts.isParenthesizedTypeNode(node)) node = node.typ
 function main(request) {
   if (request.Version !== 1 || ts.version !== "5.9.3") throw new Failure("environment", "Expected helper protocol 1 and TypeScript 5.9.3");
   const supported = new Set(["source-file", "type-alias", "interface", "type-parameter", "type-reference", "type-application", "keyword-type", "literal-type", "array-type", "tuple-type", "tuple-element", "object-type", "union-type", "intersection-type", "property", "type-operator"]);
+  if (request.NamedImports) { supported.add("import"); supported.add("import-binding"); }
   for (const unit of request.Units) for (const node of unit.Nodes) {
     if (!supported.has(node.Kind) || node.Kind === "type-operator" && attr(node, "operator") !== "readonly" || node.Kind === "keyword-type" && attr(node, "name") === "this") unsupported(`Syntax kind ${node.Kind} is outside captured-types-1`, site(unit, node));
     if (children(node, "default").length) unsupported("Generic defaults are outside captured-types-1", site(unit, node));
@@ -33,6 +34,33 @@ function main(request) {
     const name = "/input/" + unit.Path;
     sourceFiles.set(name, ts.createSourceFile(name, unit.Text, options.target, true, ts.ScriptKind.TS));
     unitByFile.set(name, unit);
+  }
+  // Package declarations are receipt-bound inputs. They have their own virtual
+  // filenames and never enter the inventory of owned units that will be printed.
+  const packages = new Map(), packageByFile = new Map();
+  for (const [i, pkg] of (request.Packages || []).entries()) {
+    const name = "/packages/" + i + "/entry.d.ts";
+    const sf = ts.createSourceFile(name, pkg.Declaration, options.target, true, ts.ScriptKind.TS);
+    // Use the pinned compiler's parsed directives. A comment inside a literal
+    // is ordinary type data and must not be treated as a diagnostic control.
+    if ("checkJsDirective" in sf && sf.checkJsDirective || "commentDirectives" in sf && Array.isArray(sf.commentDirectives) && sf.commentDirectives.length)
+      unsupported("Package declarations must preserve native diagnostics");
+    if (!ts.isExternalModule(sf) || sf.hasNoDefaultLib || sf.referencedFiles.length || sf.typeReferenceDirectives.length || sf.libReferenceDirectives.length || sf.statements.some(st => !ts.isInterfaceDeclaration(st) && !ts.isTypeAliasDeclaration(st) && !ts.isImportDeclaration(st)))
+      unsupported("Package input must be a declaration module of interfaces, aliases and named type imports");
+    if (sf.statements.some(st => ts.isImportDeclaration(st) && (!st.importClause?.isTypeOnly || !st.importClause.namedBindings || !ts.isNamedImports(st.importClause.namedBindings))))
+      unsupported("Package imports must be named type imports");
+    sourceFiles.set(name, sf); packages.set(pkg.Module, name); packageByFile.set(name, pkg.Module);
+  }
+  function resolveImport(spec, importer) {
+    if (!request.NamedImports) return undefined;
+    const pkg = packages.get(spec);
+    if (pkg) return { resolvedFileName: pkg, extension: ts.Extension.Dts, isExternalLibraryImport: true };
+    if (!importer.startsWith("/input/") || !/^(?:\.\.?\/).*\.js$/.test(spec)) return undefined;
+    const file = path.posix.resolve(path.posix.dirname(importer), spec.slice(0, -3) + ".ts");
+    if (!file.startsWith("/input/") || !unitByFile.has(file)) return undefined;
+    let canonical = path.posix.relative(path.posix.dirname(importer), file).slice(0, -3) + ".js";
+    if (!canonical.startsWith("../")) canonical = "./" + canonical;
+    return spec === canonical ? { resolvedFileName: file, extension: ts.Extension.Ts } : undefined;
   }
   const libDir = path.dirname(process.argv[1]);
   const libraries = new Map(fs.readdirSync(libDir).filter(name => /^lib\.[a-zA-Z0-9.]+\.d\.ts$/.test(name)).map(name => ["/compiler/" + name, path.join(libDir, name)]));
@@ -54,7 +82,7 @@ function main(request) {
     readFile: textFor,
     directoryExists: name => name === "/input" || name === "/compiler",
     getDirectories: () => [],
-    resolveModuleNames: names => names.map(() => undefined),
+    resolveModuleNames: (names, importer) => names.map(spec => resolveImport(spec, importer)),
   };
   const program = ts.createProgram([...sourceFiles.keys()], options, host);
   const checker = program.getTypeChecker();
@@ -64,6 +92,8 @@ function main(request) {
   function compatible(kind, raw) {
     const node = unwrap(raw);
     switch (kind) {
+      case "import": return ts.isImportDeclaration(node);
+      case "import-binding": return ts.isImportSpecifier(node);
       case "type-alias": return ts.isTypeAliasDeclaration(node);
       case "interface": return ts.isInterfaceDeclaration(node);
       case "type-parameter": return ts.isTypeParameterDeclaration(node);
@@ -99,14 +129,14 @@ function main(request) {
       nativeByNode.set(unit.Tree + ":" + node.ID, unwrap(native));
       // Only declaration sites participate in symbol identity. Expressions and
       // tuple wrappers can share compiler nodes without replacing those sites.
-      if (["type-alias", "interface", "type-parameter", "property"].includes(node.Kind)) nodeSites.set(unwrap(native), site(unit, node));
+      if (["type-alias", "interface", "type-parameter", "property", "import-binding"].includes(node.Kind)) nodeSites.set(unwrap(native), site(unit, node));
     }
   }
   const diagnostics = [...program.getOptionsDiagnostics(), ...program.getGlobalDiagnostics(), ...program.getSyntacticDiagnostics(), ...program.getSemanticDiagnostics()];
   if (diagnostics.length) {
     const d = diagnostics[0]; const unit = d.file && unitByFile.get(d.file.fileName);
     const at = unit && unit.Nodes.filter(n => n.Start <= d.start && n.End >= d.start).sort((a, b) => a.End - a.Start - (b.End - b.Start))[0];
-    const status = unit ? "invalid" : "environment";
+    const status = unit || d.file && packageByFile.has(d.file.fileName) ? "invalid" : "environment";
     return { Version: 1, Status: status, Diagnostics: [diagnostic(status, `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, "\n")}`, at && site(unit, at))] };
   }
 
@@ -127,6 +157,17 @@ function main(request) {
     graph.Entities.push({ Kind: key(ts.isExternalModule(sf) ? "module" : "script"), Name: unit.Path, Owner: 1, Declarations: [site(unit, unit.Nodes.find(n => n.Kind === "source-file"))], Parameters: [] });
     fileOwners.set(sf, graph.Entities.length);
   }
+  for (const [file, specifier] of packageByFile) {
+    graph.Entities.push({ Kind: key("package"), Name: specifier, Owner: 1, Declarations: [], Parameters: [] });
+    fileOwners.set(sourceFiles.get(file), graph.Entities.length);
+  }
+  function packageSymbol(symbol) {
+    return symbol?.getDeclarations()?.some(d => packageByFile.has(d.getSourceFile().fileName));
+  }
+  function namedPackageType(symbol) {
+    return packageSymbol(symbol) && symbol.getDeclarations().some(d => ts.isInterfaceDeclaration(d) || ts.isTypeAliasDeclaration(d));
+  }
+  function resolvedSymbol(symbol) { return symbol && symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol; }
   function captured(declaration) { return nodeSites.get(declaration); }
   function entity(symbol) {
     if (!symbol) throw new Failure("mismatch", "Missing compiler symbol");
@@ -139,6 +180,7 @@ function main(request) {
     let kind = "builtin";
     if (declared.length) kind = ts.isTypeAliasDeclaration(first) ? "alias" : ts.isInterfaceDeclaration(first) ? "interface" : ts.isTypeParameterDeclaration(first) ? "parameter" : "property";
     else if (first && ts.isTypeParameterDeclaration(first)) kind = "parameter";
+    else if (packageSymbol(symbol)) kind = "package-type";
     const id = graph.Entities.length + 1; entityBySymbol.set(symbol, id); symbolByEntity.set(id, symbol);
     graph.Entities.push({ Kind: key(kind), Name: symbol.getName(), Owner: 0, Declarations: declared.map(captured), Parameters: [] });
     if (first) {
@@ -171,10 +213,10 @@ function main(request) {
   function ownSymbol(symbol) { return symbol?.getDeclarations()?.some(d => captured(d)); }
   // External mapped/utility types can synthesize modifiers whose meaning is not
   // captured by declaration-owned property metadata. Admit only compiler-known
-  // array constructors from the standard library in this bounded profile.
+  // array constructors from the standard library and explicitly supplied package types.
   for (const unit of request.Units) for (const node of unit.Nodes) if (node.Kind === "type-reference") {
-    const symbol = symbolFor(nativeByNode.get(unit.Tree + ":" + node.ID));
-    if (!ownSymbol(symbol) && !checker.isArrayType(checker.getDeclaredTypeOfSymbol(symbol))) unsupported("External type references other than array constructors are outside captured-types-1", site(unit, node));
+    const symbol = resolvedSymbol(symbolFor(nativeByNode.get(unit.Tree + ":" + node.ID)));
+    if (!ownSymbol(symbol) && !packageSymbol(symbol) && !checker.isArrayType(checker.getDeclaredTypeOfSymbol(symbol))) unsupported("External type references other than array constructors are outside captured-types-1", site(unit, node));
   }
   function properties(type) {
     if (checker.getSignaturesOfType(type, ts.SignatureKind.Call).length || checker.getSignaturesOfType(type, ts.SignatureKind.Construct).length || checker.getIndexInfosOfType(type).length) unsupported("Callable and indexed object types are outside captured-types-1");
@@ -196,7 +238,11 @@ function main(request) {
     /** @type {[number,string][]} */
     const primitives = [[ts.TypeFlags.Any, "any"], [ts.TypeFlags.Unknown, "unknown"], [ts.TypeFlags.Never, "never"], [ts.TypeFlags.Void, "void"], [ts.TypeFlags.Undefined, "undefined"], [ts.TypeFlags.Null, "null"], [ts.TypeFlags.String, "string"], [ts.TypeFlags.Number, "number"], [ts.TypeFlags.Boolean, "boolean"], [ts.TypeFlags.BigInt, "bigint"], [ts.TypeFlags.ESSymbol, "symbol"], [ts.TypeFlags.NonPrimitive, "object"]];
     const primitive = primitives.find(([flag]) => f & flag);
-    const owner = ownSymbol(type.aliasSymbol) ? type.aliasSymbol : ownSymbol(type.symbol) ? type.symbol : declaredOwners.get(type);
+    // A captured alias may name an instantiation of a package type. Use the
+    // package constructor to retain its effective arguments. The syntax graph
+    // independently retains the binding to the local alias at each named use.
+    const owner = [type.aliasSymbol, type.symbol].find(namedPackageType)
+      || [type.aliasSymbol, type.symbol].find(ownSymbol) || declaredOwners.get(type);
     let structure;
     if (primitive) value = expression("primitive", primitive[1]);
     else if (f & (ts.TypeFlags.StringLiteral | ts.TypeFlags.NumberLiteral | ts.TypeFlags.BooleanLiteral | ts.TypeFlags.BigIntLiteral)) value = expression("literal", checker.typeToString(type));
@@ -212,14 +258,20 @@ function main(request) {
           value = { Kind: 2, Callee: reference(entity(owner)), Arguments: args.map(nativeType) };
         } else value = { Kind: 1, Target: entity(owner) };
       }
-      if (checker.isTupleType(type)) structure = term(expression("tuple", { Flags: type.target.elementFlags, Readonly: type.target.readonly }, checker.getTypeArguments(type).map(nativeType)));
-      else if (checker.isArrayType(type)) structure = term(expression("array", { Readonly: type.symbol?.getName() === "ReadonlyArray" }, checker.getTypeArguments(type).map(nativeType)));
-      else if (f & ts.TypeFlags.Union) structure = term(expression("union", null, type.types.map(nativeType)));
-      else if (f & ts.TypeFlags.Intersection) structure = term(expression("intersection", null, type.types.map(nativeType)));
-      else if (f & ts.TypeFlags.Object) { structure = properties(type); fact({ Term: id }, "properties", structure); }
-      else unsupported(`Native type is outside captured-types-1: ${checker.typeToString(type)}`);
-      if (value) fact({ Term: id }, "structure", structure);
-      else value = graph.Terms[structure - 1];
+      // A selected package type retains its compiler identity, arguments and
+      // checked uses. Its private structural graph is outside this profile.
+      if (packageSymbol(owner) || packageSymbol(type.symbol)) {
+        if (!value) unsupported("Anonymous package structure has no captured type representation");
+      } else {
+        if (checker.isTupleType(type)) structure = term(expression("tuple", { Flags: type.target.elementFlags, Readonly: type.target.readonly }, checker.getTypeArguments(type).map(nativeType)));
+        else if (checker.isArrayType(type)) structure = term(expression("array", { Readonly: type.symbol?.getName() === "ReadonlyArray" }, checker.getTypeArguments(type).map(nativeType)));
+        else if (f & ts.TypeFlags.Union) structure = term(expression("union", null, type.types.map(nativeType)));
+        else if (f & ts.TypeFlags.Intersection) structure = term(expression("intersection", null, type.types.map(nativeType)));
+        else if (f & ts.TypeFlags.Object) { structure = properties(type); fact({ Term: id }, "properties", structure); }
+        else unsupported(`Native type is outside captured-types-1: ${checker.typeToString(type)}`);
+        if (value) fact({ Term: id }, "structure", structure);
+        else value = graph.Terms[structure - 1];
+      }
     }
     graph.Terms[id - 1] = value;
     fact({ Term: id }, "native-type", term(expression("boolean", true)));
@@ -230,9 +282,9 @@ function main(request) {
     const native = nativeByNode.get(unit.Tree + ":" + node.ID);
     const type = nativeType(checker.getTypeAtLocation(native));
     let symbolic = type;
-    if (node.Kind === "type-reference") symbolic = reference(entity(symbolFor(native)));
+    if (node.Kind === "type-reference") symbolic = reference(entity(resolvedSymbol(symbolFor(native))));
     else if (node.Kind === "type-application") {
-      const target = entity(symbolFor(native));
+      const target = entity(resolvedSymbol(symbolFor(native)));
       const args = children(node, "argument").map(id => nativeType(checker.getTypeAtLocation(nativeByNode.get(unit.Tree + ":" + id))));
       if (args.length !== graph.Entities[target - 1].Parameters.length) unsupported("Application does not have complete effective arguments", site(unit, node));
       symbolic = term({ Kind: 2, Callee: reference(target), Arguments: args });
@@ -246,9 +298,14 @@ function main(request) {
   const expressions = new Set(["type-reference", "type-application", "keyword-type", "literal-type", "array-type", "tuple-type", "object-type", "union-type", "intersection-type", "type-operator"]);
   for (const unit of request.Units) for (const node of unit.Nodes) {
     const native = nativeByNode.get(unit.Tree + ":" + node.ID);
+    if (node.Kind === "import-binding") {
+      const target = entity(resolvedSymbol(checker.getSymbolAtLocation(native.name)));
+      graph.Bindings.push({ At: { Site: site(unit, node), Role: key("import"), Ordinal: 0 }, Target: target });
+    }
     if (node.Kind === "type-reference") {
-      const target = entity(symbolFor(native)); const declarations = graph.Entities[target - 1].Declarations;
-      for (const ref of node.References || []) if (ref.Role !== "target" || !declarations.some(d => d.Tree === ref.Target.Tree && d.Node === ref.Target.Node)) throw new Failure("mismatch", "Supplied reference disagrees with the compiler", site(unit, node));
+      const symbol = symbolFor(native), actual = resolvedSymbol(symbol), target = entity(actual);
+      const sites = symbol?.flags & ts.SymbolFlags.Alias ? symbol.getDeclarations().map(captured).filter(Boolean) : graph.Entities[target - 1].Declarations;
+      for (const ref of node.References || []) if (ref.Role !== "target" || !sites.some(d => d.Tree === ref.Target.Tree && d.Node === ref.Target.Node)) throw new Failure("mismatch", "Supplied reference disagrees with the compiler", site(unit, node));
       graph.Bindings.push({ At: { Site: site(unit, node), Role: key("name"), Ordinal: 0 }, Target: target });
     }
     if (expressions.has(node.Kind)) expressionType(unit, node);

@@ -42,7 +42,11 @@ type PropertyInfo struct {
 
 // Open admits the exact analysis receipt without running a compiler.
 func Open(result semantic.Result) (Model, error) {
-	if _, err := semantic.AdmitEvidence(result.Snapshot(), []semantic.EvidenceRequirement{Evidence()}, []semantic.Result{result}); err != nil {
+	requirement, err := EvidenceFor(result.Configuration())
+	if err != nil {
+		return Model{}, err
+	}
+	if _, err := semantic.AdmitEvidence(result.Snapshot(), []semantic.EvidenceRequirement{requirement}, []semantic.Result{result}); err != nil {
 		return Model{}, err
 	}
 	envelope, _ := result.Semantics()

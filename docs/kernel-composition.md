@@ -1,5 +1,7 @@
 # Kernel-owned generation composition
 
+The [TypeScript type-import design](typescript-type-imports.md) applies the existing Files/Source contracts to generated declarations.
+
 **Implemented in Bittype. Owner decision of 6 November 2026.** The kernel composes
 supplied source, target and mapping providers from an explicit request. Libraries
 construct their own invocation state and own representation meaning. Consumers
@@ -31,7 +33,7 @@ parse/files/horos/provider/go/
 check/syntax/<language>/provider/go/
 check/syntax/shared/{ast,cst}/go/
 format/syntax/<language>/provider/go/
-format/files/horos/provider/go/
+format/files/{horos,typescript}/provider/go/
 print/{syntax,files}/shared/provider/go/
 resolve/files/<language>/provider/go/
 analyze/files/<language>/provider/go/
