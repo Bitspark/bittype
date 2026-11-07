@@ -20,7 +20,13 @@ implementation and consumer composition, not shared orchestration, closed case
 types or unrelated implementations. Package isolation and a "plugin" label do
 not establish this. An extension must preserve scope, identity, association,
 authority and failure guarantees; arbitrary payloads or unchecked callbacks do
-not suffice. Derive through existing contracts before inventing new abstractions.
+not suffice. Derive from domain concepts and composition before adding abstractions.
+
+For interface design and redesign, derive the best public surface from domain
+requirements, ownership and guarantees. Incumbent signatures, available code
+and implementation or migration effort must have zero influence on the design.
+Decide how to implement the selected contract afterward.
+[AC-09](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-09).
 
 Read the [general rule and its rationale](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md).
 Reason about responsibilities and change propagation; do not replace this with
@@ -32,7 +38,7 @@ takes library-owned interpretations, mapping projections and laws. Preserve the
 captured subject, receiver authority, dependency policy and Logos outcome when
 adding a contribution.
 
-Reference the [AC-01 through AC-08 rules](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#numbered-rules)
+Reference the [numbered architecture rules](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#numbered-rules)
 when explaining architectural requirements or violations. Maintain a numbered
 [case record](docs/architecture-cases/README.md)
 for an identified violation and update it with the actual correction and its
