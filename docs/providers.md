@@ -2,7 +2,7 @@
 
 For support depth, start with the generated
 [language-by-language overview](language-support.md), including declared features,
-exclusions, per-language provider matrices, direct transformers and associated test
+exclusions, per-language provider matrices, direct transformer factories, selectable mapping providers and associated test
 evidence. These tables describe availability.
 
 The tables below are generated from implemented stage providers, typed transformer factories and mapping providers. Mapping links identify a selectable source/target contribution. Provider-qualified source links lead to public methods; details retain

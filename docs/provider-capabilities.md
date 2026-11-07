@@ -627,8 +627,8 @@ Authored scope: [docs/syntax.md#go](https://github.com/Bitspark/bittype/blob/mai
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| ast-admission | malformed-carriers | reject | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L202) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| ast-admission | malformed-carriers | reject | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L193) (external) |
 
 <a id="cap-ODpwcm92aWRlcjc0OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9mb3JtYXQvZmlsZXMvaG9yb3MvcHJvdmlkZXIvZ28jUHJvdmlkZXIuRm9ybWF0MjcyOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jb250cmFjdHMvZm9ybWF0L2dvLlByb3ZpZGVyW2dpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jb250cmFjdHMvZm9ybWF0L2dvLkZpbGVzUmVxdWVzdFtnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvc3ludGF4L2hvcm9zL2dvLkxhbmd1YWdlXSwgZ2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3NvdXJjZS9nby5Tb3VyY2VbZ2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3N5bnRheC9ob3Jvcy9nby5MYW5ndWFnZV1dNjc6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2Zvcm1hdC9maWxlcy9ob3Jvcy9wcm92aWRlci9nby5Qcm92aWRlcjUyOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9zeW50YXgvaG9yb3MvZ28jTGFuZ3VhZ2U1Omhvcm9z"></a>
 
@@ -684,13 +684,13 @@ Authored scope: [docs/syntax.md#rust](https://github.com/Bitspark/bittype/blob/m
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L115) (external) |
-| ast-admission | malformed-carriers | rejection-without-output | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L202) (external) |
-| native-compiler-qualification | formatted-fixture-contract | compiler-fixture-contract | unspecified (authored profile absent) | [TestNativeCompilerFixtures](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L274) (external) |
-| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L129) (external) |
-| associated-type-projections | independent-ast-formatting | ast-preserved-and-golden-text | unspecified (authored profile absent) | [TestIndependentRustAssociatedFormatter](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_associated_types_test.go#L45) (external) |
-| generic-associated-declarations | independent-ast-formatting | ast-preserved-and-golden-text | unspecified (authored profile absent) | [TestIndependentRustDeclarationFormatter](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_declarations_test.go#L46) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L106) (external) |
+| ast-admission | malformed-carriers | rejection-without-output | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L193) (external) |
+| native-compiler-qualification | formatted-fixture-contract | compiler-fixture-contract | unspecified (authored profile absent) | [TestNativeCompilerFixtures](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L265) (external) |
+| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L115) (external) |
+| associated-type-projections | independent-ast-formatting | ast-preserved-and-golden-text | unspecified (authored profile absent) | [TestIndependentRustAssociatedFormatter](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_associated_types_test.go#L40) (external) |
+| generic-associated-declarations | independent-ast-formatting | ast-preserved-and-golden-text | unspecified (authored profile absent) | [TestIndependentRustDeclarationFormatter](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_declarations_test.go#L41) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -728,9 +728,9 @@ Authored scope: [docs/syntax.md#go](https://github.com/Bitspark/bittype/blob/mai
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L129) (external) |
-| source-boundary | unsupported-and-malformed-fixtures | located-error-without-output | unspecified (authored profile absent) | [TestUnsupportedAndMalformedSources](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L151) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L115) (external) |
+| source-boundary | unsupported-and-malformed-fixtures | located-error-without-output | unspecified (authored profile absent) | [TestUnsupportedAndMalformedSources](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L137) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -768,9 +768,9 @@ Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://gith
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L115) (external) |
-| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L129) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L106) (external) |
+| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L115) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -804,10 +804,10 @@ Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://gith
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L115) (external) |
-| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L129) (external) |
-| concrete-admission | malformed-concrete-tree | rejection-without-output | unspecified (authored profile absent) | [TestMalformedConcreteTree](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L234) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L106) (external) |
+| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L115) (external) |
+| concrete-admission | malformed-concrete-tree | rejection-without-output | unspecified (authored profile absent) | [TestMalformedConcreteTree](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L220) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -841,9 +841,9 @@ Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://gith
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L115) (external) |
-| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L129) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L106) (external) |
+| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L115) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -877,9 +877,9 @@ Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://gith
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L115) (external) |
-| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L129) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L106) (external) |
+| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L115) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -914,7 +914,7 @@ Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://gith
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
 | horos-modules-and-generics | pagination-and-imported-library | canonical-identity-preserved | unspecified (authored profile absent) | [TestCanonicalPaginationAndImportedLibraryRoundTrip](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format_test.go#L59) (external) |
-| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L32) (external) |
+| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L27) (external) |
 | horos-text-vocabulary | declared-constructor-fixtures | canonical-round-trip-preserved | unspecified (authored profile absent) | [TestCompleteSourceVocabulary](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L85) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -949,7 +949,7 @@ Authored scope: [docs/native-semantics.md#first-rust-profile](https://github.com
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L55) (external) |
+| semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
 | rust-semantic-subset | native-types-and-generics | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestRustSemanticNativeTypes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L202) (external) |
 | rust-semantic-subset | bounds-and-profile-outcomes | qualified-reports-without-partial-model | unspecified (authored profile absent) | [TestRustSemanticBoundsAndOutcomes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L264) (external) |
 
@@ -990,7 +990,7 @@ Authored scope: [docs/horos-syntax.md#pipeline-and-limits](https://github.com/Bi
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
 | horos-modules-and-generics | pagination-and-imported-library | canonical-identity-preserved | unspecified (authored profile absent) | [TestCanonicalPaginationAndImportedLibraryRoundTrip](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format_test.go#L59) (external) |
-| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L32) (external) |
+| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L27) (external) |
 | horos-text-vocabulary | declared-constructor-fixtures | canonical-round-trip-preserved | unspecified (authored profile absent) | [TestCompleteSourceVocabulary](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L85) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -1015,7 +1015,7 @@ Authored scope: [docs/native-semantics.md#first-rust-profile](https://github.com
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L55) (external) |
+| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
 | rust-semantic-subset | native-types-and-generics | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestRustSemanticNativeTypes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L202) (external) |
 | rust-semantic-subset | bounds-and-profile-outcomes | qualified-reports-without-partial-model | unspecified (authored profile absent) | [TestRustSemanticBoundsAndOutcomes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L264) (external) |
 
@@ -1051,8 +1051,8 @@ Authored scope: [docs/analysis.md#horos-profile](https://github.com/Bitspark/bit
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | analysis-evidence-produced | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L55) (external) |
-| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L32) (external) |
+| semantic-conformance | independent-provider-registration | analysis-evidence-produced | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
+| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L27) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -1090,11 +1090,11 @@ Authored scope: [docs/syntax.md#go](https://github.com/Bitspark/bittype/blob/mai
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L115) (external) |
-| ast-admission | malformed-carriers | rejection-without-output | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L202) (external) |
-| native-compiler-qualification | formatted-fixture-contract | compiler-fixture-contract | unspecified (authored profile absent) | [TestNativeCompilerFixtures](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L274) (external) |
-| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L129) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L106) (external) |
+| ast-admission | malformed-carriers | rejection-without-output | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L193) (external) |
+| native-compiler-qualification | formatted-fixture-contract | compiler-fixture-contract | unspecified (authored profile absent) | [TestNativeCompilerFixtures](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L265) (external) |
+| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L115) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -1120,8 +1120,8 @@ Traversal boundary: callee is dynamic or outside implementation source.
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L55) (external) |
-| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L32) (external) |
+| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
+| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L27) (external) |
 
 ### Declared target [github.com/Bitspark/bittype/resolve/files/horos/provider/go#ResolveReferences](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L50)
 
@@ -1163,7 +1163,7 @@ Authored scope: [docs/native-semantics.md#first-go-profile](https://github.com/B
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L55) (external) |
+| semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
 | go-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestGoSemanticReportsAndCoverage](https://github.com/Bitspark/bittype/blob/main/integration/go/native_semantics_test.go#L188) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -1190,7 +1190,7 @@ Traversal boundary: not a single-return static call.
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L55) (external) |
+| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
 | go-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestGoSemanticReportsAndCoverage](https://github.com/Bitspark/bittype/blob/main/integration/go/native_semantics_test.go#L188) (external) |
 
 ### Declared target [github.com/Bitspark/bittype/resolve/files/golang/provider/go#Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/provider/go/resolver.go#L25)
@@ -1665,8 +1665,8 @@ Authored scope: [docs/syntax.md#typescript](https://github.com/Bitspark/bittype/
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| ast-admission | malformed-carriers | reject | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L202) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| ast-admission | malformed-carriers | reject | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L193) (external) |
 
 <a id="cap-ODpwcm92aWRlcjc4OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9wYXJzZS9zeW50YXgvdHlwZXNjcmlwdC9wcm92aWRlci9nbyNQcm92aWRlci5QYXJzZTIxNDpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY29udHJhY3RzL3BhcnNlL2dvLlByb3ZpZGVyW2dpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jb250cmFjdHMvcGFyc2UvZ28uSW5wdXQsIGdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS90cmVlcy9jc3QvZ28uQ1NUW2dpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9zeW50YXgvdHlwZXNjcmlwdC9nby5MYW5ndWFnZV1dNzI6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3BhcnNlL3N5bnRheC90eXBlc2NyaXB0L3Byb3ZpZGVyL2dvLlByb3ZpZGVyNTc6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3N5bnRheC90eXBlc2NyaXB0L2dvI0xhbmd1YWdlMTA6dHlwZXNjcmlwdA"></a>
 
@@ -1704,9 +1704,9 @@ Authored scope: [docs/syntax.md#typescript](https://github.com/Bitspark/bittype/
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L129) (external) |
-| source-boundary | unsupported-and-malformed-fixtures | located-error-without-output | unspecified (authored profile absent) | [TestUnsupportedAndMalformedSources](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L151) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L115) (external) |
+| source-boundary | unsupported-and-malformed-fixtures | located-error-without-output | unspecified (authored profile absent) | [TestUnsupportedAndMalformedSources](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L137) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -2085,8 +2085,8 @@ Authored scope: [docs/syntax.md#c](https://github.com/Bitspark/bittype/blob/main
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| ast-admission | malformed-carriers | reject | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L202) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| ast-admission | malformed-carriers | reject | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L193) (external) |
 
 <a id="cap-ODpwcm92aWRlcjcxOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9wYXJzZS9zeW50YXgvY3BwL3Byb3ZpZGVyL2dvI1Byb3ZpZGVyLlBhcnNlMjA3OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jb250cmFjdHMvcGFyc2UvZ28uUHJvdmlkZXJbZ2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NvbnRyYWN0cy9wYXJzZS9nby5JbnB1dCwgZ2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3RyZWVzL2NzdC9nby5DU1RbZ2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3N5bnRheC9jcHAvZ28uTGFuZ3VhZ2VdXTY1OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9wYXJzZS9zeW50YXgvY3BwL3Byb3ZpZGVyL2dvLlByb3ZpZGVyNTA6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3N5bnRheC9jcHAvZ28jTGFuZ3VhZ2UzOmNwcA"></a>
 
@@ -2118,9 +2118,9 @@ Authored scope: [docs/syntax.md#c](https://github.com/Bitspark/bittype/blob/main
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L129) (external) |
-| source-boundary | unsupported-and-malformed-fixtures | located-error-without-output | unspecified (authored profile absent) | [TestUnsupportedAndMalformedSources](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L151) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L115) (external) |
+| source-boundary | unsupported-and-malformed-fixtures | located-error-without-output | unspecified (authored profile absent) | [TestUnsupportedAndMalformedSources](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L137) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -2722,8 +2722,8 @@ Authored scope: [docs/syntax.md#rust](https://github.com/Bitspark/bittype/blob/m
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| ast-admission | malformed-carriers | reject | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L202) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| ast-admission | malformed-carriers | reject | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L193) (external) |
 
 <a id="cap-ODpwcm92aWRlcjcyOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9wYXJzZS9maWxlcy9ob3Jvcy9wcm92aWRlci9nbyNQcm92aWRlci5QYXJzZTI3MDpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY29udHJhY3RzL3BhcnNlL2dvLlByb3ZpZGVyW2dpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jb250cmFjdHMvcGFyc2UvZ28uRmlsZXNSZXF1ZXN0W2dpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9zeW50YXgvaG9yb3MvZ28uTGFuZ3VhZ2VdLCBnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvc291cmNlL2dvLlNvdXJjZVtnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvc3ludGF4L2hvcm9zL2dvLkxhbmd1YWdlXV02NjpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvcGFyc2UvZmlsZXMvaG9yb3MvcHJvdmlkZXIvZ28uUHJvdmlkZXI1MjpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvc3ludGF4L2hvcm9zL2dvI0xhbmd1YWdlNTpob3Jvcw"></a>
 
@@ -2790,9 +2790,9 @@ Authored scope: [docs/syntax.md#rust](https://github.com/Bitspark/bittype/blob/m
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L129) (external) |
-| source-boundary | unsupported-and-malformed-fixtures | located-error-without-output | unspecified (authored profile absent) | [TestUnsupportedAndMalformedSources](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L151) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L115) (external) |
+| source-boundary | unsupported-and-malformed-fixtures | located-error-without-output | unspecified (authored profile absent) | [TestUnsupportedAndMalformedSources](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L137) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -3278,7 +3278,7 @@ Authored scope: [docs/horos.md#syntax-vocabulary](https://github.com/Bitspark/bi
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L32) (external) |
+| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L27) (external) |
 | horos-text-vocabulary | declared-constructor-fixtures | canonical-round-trip-preserved | unspecified (authored profile absent) | [TestCompleteSourceVocabulary](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L85) (external) |
 | syntax-semantics-boundary | semantically-invalid-syntax-fixtures | syntax-accepted | unspecified (authored profile absent) | [TestSyntaxDoesNotResolveOrCheckContracts](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L176) (external) |
 
@@ -3312,11 +3312,11 @@ Authored scope: [docs/syntax.md#c](https://github.com/Bitspark/bittype/blob/main
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L115) (external) |
-| ast-admission | malformed-carriers | rejection-without-output | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L202) (external) |
-| native-compiler-qualification | formatted-fixture-contract | compiler-fixture-contract | unspecified (authored profile absent) | [TestNativeCompilerFixtures](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L274) (external) |
-| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L129) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L106) (external) |
+| ast-admission | malformed-carriers | rejection-without-output | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L193) (external) |
+| native-compiler-qualification | formatted-fixture-contract | compiler-fixture-contract | unspecified (authored profile absent) | [TestNativeCompilerFixtures](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L265) (external) |
+| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L115) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -3351,7 +3351,7 @@ Authored scope: [docs/horos-syntax.md#pipeline-and-limits](https://github.com/Bi
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
 | horos-modules-and-generics | pagination-and-imported-library | canonical-identity-preserved | unspecified (authored profile absent) | [TestCanonicalPaginationAndImportedLibraryRoundTrip](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format_test.go#L59) (external) |
-| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L32) (external) |
+| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L27) (external) |
 | horos-text-vocabulary | declared-constructor-fixtures | canonical-round-trip-preserved | unspecified (authored profile absent) | [TestCompleteSourceVocabulary](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L85) (external) |
 | syntax-semantics-boundary | semantically-invalid-syntax-fixtures | syntax-accepted | unspecified (authored profile absent) | [TestSyntaxDoesNotResolveOrCheckContracts](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L176) (external) |
 | source-boundary | whole-input-rejection | located-error-without-output | unspecified (authored profile absent) | [TestRejectWholeInput](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L197) (external) |
@@ -3500,13 +3500,13 @@ Authored scope: [docs/syntax.md#typescript](https://github.com/Bitspark/bittype/
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L73) (external) |
-| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L115) (external) |
-| snapshot-ownership | input-mutation-after-format | output-unchanged | unspecified (authored profile absent) | [TestFormatterSnapshotOwnership](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L132) (external) |
-| ast-admission | malformed-carriers | rejection-without-output | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L202) (external) |
-| native-compiler-qualification | formatted-fixture-contract | compiler-fixture-contract | unspecified (authored profile absent) | [TestNativeCompilerFixtures](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L274) (external) |
-| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L129) (external) |
-| conditional-mapped-syntax | independent-ast-formatting | ast-preserved-and-golden-text | unspecified (authored profile absent) | [TestIndependentTypeScriptMappedFormatter](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_conditional_mapped_test.go#L42) (external) |
+| provider-contract | native-fixture-contract | contract-preserved | unspecified (authored profile absent) | [TestNativeProviderConformance](https://github.com/Bitspark/bittype/blob/main/integration/go/conformance_test.go#L59) (external) |
+| independent-ast-formatting | independent-ast-goldens | golden-text | unspecified (authored profile absent) | [TestIndependentFormatterGoldens](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L106) (external) |
+| snapshot-ownership | input-mutation-after-format | output-unchanged | unspecified (authored profile absent) | [TestFormatterSnapshotOwnership](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L123) (external) |
+| ast-admission | malformed-carriers | rejection-without-output | unspecified (authored profile absent) | [TestMalformedASTs](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L193) (external) |
+| native-compiler-qualification | formatted-fixture-contract | compiler-fixture-contract | unspecified (authored profile absent) | [TestNativeCompilerFixtures](https://github.com/Bitspark/bittype/blob/main/integration/go/formatter_fixtures_test.go#L265) (external) |
+| native-text | valid-fixture-round-trips | round-trip-preserved | unspecified (authored profile absent) | [TestNativeTextRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/native_text_test.go#L115) (external) |
+| conditional-mapped-syntax | independent-ast-formatting | ast-preserved-and-golden-text | unspecified (authored profile absent) | [TestIndependentTypeScriptMappedFormatter](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_conditional_mapped_test.go#L37) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -3540,7 +3540,7 @@ Authored scope: [docs/native-semantics.md#first-typescript-profile](https://gith
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L55) (external) |
+| semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
 | typescript-semantic-subset | generic-and-native-facts | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestTypeScriptSemanticGenericsAndNativeFacts](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L209) (external) |
 | typescript-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestTypeScriptSemanticReports](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L253) (external) |
 
@@ -3566,7 +3566,7 @@ Authored scope: [docs/native-semantics.md#first-typescript-profile](https://gith
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L55) (external) |
+| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
 | typescript-semantic-subset | generic-and-native-facts | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestTypeScriptSemanticGenericsAndNativeFacts](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L209) (external) |
 | typescript-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestTypeScriptSemanticReports](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L253) (external) |
 

@@ -1,11 +1,6 @@
 package integration_test
 
 import (
-	checkrust "github.com/Bitspark/bittype/check/syntax/rust/provider/go"
-	formatrust "github.com/Bitspark/bittype/format/syntax/rust/provider/go"
-	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
-	parserust "github.com/Bitspark/bittype/parse/syntax/rust/provider/go"
-
 	"context"
 	"reflect"
 	"testing"
@@ -45,7 +40,7 @@ func rustDeclarationsFixture() ast.AST[rust.Language] {
 // bittype:case target=github.com/Bitspark/bittype/format/syntax/rust/provider/go#Provider.Format feature=generic-associated-declarations case=independent-ast-formatting expects=ast-preserved-and-golden-text
 func TestIndependentRustDeclarationFormatter(t *testing.T) {
 	a := rustDeclarationsFixture()
-	p := textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{})
+	p := rustText()
 	c, err := p.Format(context.Background(), a)
 	if err != nil {
 		t.Fatal(err)
@@ -76,7 +71,7 @@ func TestRustDeclarationFormatting(t *testing.T) {
 		{"mod nested{impl Trait for (){type r#type<T>=T;}}", "mod nested {\n    impl Trait for () {\n        type r#type<T> = T;\n    }\n}\n"},
 	} {
 		t.Run(tc.source, func(t *testing.T) {
-			p := textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{})
+			p := rustText()
 			c, err := p.Parse(context.Background(), parse.Input{SourceID: "source", TreeID: "tree", Text: tc.source})
 			if err != nil {
 				t.Fatal(err)

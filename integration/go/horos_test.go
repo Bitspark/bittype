@@ -1,11 +1,6 @@
 package integration_test
 
 import (
-	checkhoros "github.com/Bitspark/bittype/check/syntax/horos/provider/go"
-	formathoros "github.com/Bitspark/bittype/format/syntax/horos/provider/go"
-	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
-	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
-
 	"context"
 	"errors"
 	checkcontract "github.com/Bitspark/bittype/contracts/check/go"
@@ -59,7 +54,7 @@ func TestSemanticProviders(t *testing.T) {
 }
 
 func qualifyHoros(t *testing.T) {
-	provider := textfixture.New(parsehoros.Provider{}, checkhoros.Provider{}, formathoros.Provider{})
+	provider := horosText()
 	if provider.ID() != "horos" || provider.Name() != "Horos" {
 		t.Fatal("unstable Horos identity")
 	}

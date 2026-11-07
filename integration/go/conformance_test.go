@@ -1,20 +1,6 @@
 package integration_test
 
 import (
-	checkcpp "github.com/Bitspark/bittype/check/syntax/cpp/provider/go"
-	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
-	checkrust "github.com/Bitspark/bittype/check/syntax/rust/provider/go"
-	checktypescript "github.com/Bitspark/bittype/check/syntax/typescript/provider/go"
-	formatcpp "github.com/Bitspark/bittype/format/syntax/cpp/provider/go"
-	formatgolang "github.com/Bitspark/bittype/format/syntax/golang/provider/go"
-	formatrust "github.com/Bitspark/bittype/format/syntax/rust/provider/go"
-	formattypescript "github.com/Bitspark/bittype/format/syntax/typescript/provider/go"
-	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
-	parsecpp "github.com/Bitspark/bittype/parse/syntax/cpp/provider/go"
-	parsegolang "github.com/Bitspark/bittype/parse/syntax/golang/provider/go"
-	parserust "github.com/Bitspark/bittype/parse/syntax/rust/provider/go"
-	parsetypescript "github.com/Bitspark/bittype/parse/syntax/typescript/provider/go"
-
 	"context"
 	"errors"
 	"reflect"
@@ -38,10 +24,10 @@ type nativeConformanceCase struct {
 // The directory-discovery test requires coverage for every implemented language.
 func nativeConformanceCases() []nativeConformanceCase {
 	return []nativeConformanceCase{
-		nativeCase(textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), "typescript", "ts", "type Page<T> = T[];"),
-		nativeCase(textfixture.New(parsegolang.Provider{}, checkgolang.Provider{}, formatgolang.Provider{}), "golang", "go", "package p; type Page[T any] []T"),
-		nativeCase(textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{}), "rust", "rs", "type Page<T> = Vec<T>;"),
-		nativeCase(textfixture.New(parsecpp.Provider{}, checkcpp.Provider{}, formatcpp.Provider{}), "cpp", "hpp", "template<typename T> struct Page { T value; };"),
+		nativeCase(typescriptText(), "typescript", "ts", "type Page<T> = T[];"),
+		nativeCase(golangText(), "golang", "go", "package p; type Page[T any] []T"),
+		nativeCase(rustText(), "rust", "rs", "type Page<T> = Vec<T>;"),
+		nativeCase(cppText(), "cpp", "hpp", "template<typename T> struct Page { T value; };"),
 	}
 }
 

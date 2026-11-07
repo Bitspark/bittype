@@ -33,21 +33,13 @@ func (s *Source) ResolveRoots(ctx context.Context, sites []ast.NodeRef) ([]g.Dec
 	if ctx == nil || len(sites) == 0 {
 		return nil, g.ErrInvalid
 	}
-	bySite := map[ast.NodeRef]g.Declaration[h.Language]{}
-	for _, d := range s.order {
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-		info, err := s.Declaration(d)
-		if err != nil {
-			return nil, err
-		}
-		bySite[info.Origin] = d
-	}
 	out := make([]g.Declaration[h.Language], 0, len(sites))
 	seen := map[ast.NodeRef]bool{}
 	for _, site := range sites {
-		d, ok := bySite[site]
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		d, ok := s.bySite[site]
 		if !ok || seen[site] {
 			return nil, g.ErrScope
 		}

@@ -55,7 +55,7 @@ func fileStages(t *testing.T, def representation.Language) (checkerapi.Checker, 
 func filePagination(t *testing.T) (parse.FilesInput, string, string) {
 	t.Helper()
 	ctx := context.Background()
-	p := textfixture.New(parsehoros.Provider{}, checkhoros.Provider{}, formathoros.Provider{})
+	p := horosText()
 	page := "// shared pagination\r\nmodule example.pagination;\r\ntype Page<T> = { items: list<T>; next?: text; };\r\n"
 	pinOf := func(text string) string {
 		concrete, err := p.Parse(ctx, parse.Input{SourceID: "fixture", TreeID: "fixture", Text: text})
@@ -197,7 +197,7 @@ func TestFilesCapabilitiesAreIndependentAndRejectStalePublications(t *testing.T)
 		t.Fatal(err)
 	}
 	e := engine.New()
-	registerNativeStages(t, e, parser.Language(), textfixture.New(parsehoros.Provider{}, checkhoros.Provider{}, formathoros.Provider{}))
+	registerNativeStages(t, e, parser.Language(), horosText())
 	if _, err := e.ParseFiles(ctx, parser.ID(), input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal("Files fell back to Syntax", err)
 	}

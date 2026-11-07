@@ -1,11 +1,6 @@
 package integration_test
 
 import (
-	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
-	formatgolang "github.com/Bitspark/bittype/format/syntax/golang/provider/go"
-	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
-	parsegolang "github.com/Bitspark/bittype/parse/syntax/golang/provider/go"
-
 	"context"
 	"errors"
 	goast "go/ast"
@@ -81,7 +76,7 @@ func generationSPIFixture(t *testing.T, useFirst bool) (s.AST, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return tree, formatted(t, textfixture.New(parsegolang.Provider{}, checkgolang.Provider{}, formatgolang.Provider{}), tree)
+	return tree, formatted(t, golangText(), tree)
 }
 
 func nodeAttribute[L any](node ast.Node[L], name string) string {

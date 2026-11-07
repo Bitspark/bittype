@@ -1,6 +1,6 @@
 // Package generation supplies Horos representation rules through the public
 // generation SPI. The shared composer does not depend on these mappings.
-package generation
+package mapping
 
 import (
 	"context"

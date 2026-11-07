@@ -2,7 +2,6 @@ package generation
 
 import (
 	"context"
-
 	"slices"
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"

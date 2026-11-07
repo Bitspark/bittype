@@ -718,12 +718,7 @@ bittype/
 
 Every concrete target directory has the same construction/symbol/assembly split.
 Rust and C++ additionally keep their native path construction in path.go.
-Syntax is explicit as in the existing stage hierarchy. Source/target are collaborators of
-Syntax generation, not new dimensions. Go uses `golang` in native implementation
-paths and the existing `horos-to-go` transformer edge path remains unchanged.
-Go package names are `generation` for the shared contract/composer,
-`source` for source adapters and `target` for native adapters; consumers use local
-import aliases when needed. Neither adapter is an engine-registered provider.
+The transform stage uses syntax as its dimension. The shared Go contract and composer packages are named generation. Source, target and mapping packages are named for their components. Go uses golang in both single-language and ordered-pair directory names. Consumers register the three providers through the engine’s generation registry.
 
 **Owner placement correction, 6 November 2026:** semantic ownership does not
 require generator implementations to live in the type model's repository.

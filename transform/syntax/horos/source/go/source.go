@@ -38,7 +38,8 @@ type Source struct {
 	sites          map[semantics.TermID]ast.NodeRef
 	termOwners     map[semantics.TermID]semantics.EntityID
 	order          []g.Declaration[h.Language]
-	roots          []g.Declaration[h.Language]
+	bySite         map[ast.NodeRef]g.Declaration[h.Language]
+	roots          map[g.Declaration[h.Language]]bool
 	rootModule     ast.NodeRef
 }
 
@@ -61,7 +62,7 @@ func New(ctx context.Context, r transform.Request[h.Language]) (*Source, error) 
 	if !ok {
 		return nil, semantic.ErrEvidenceUnavailable
 	}
-	s := &Source{snapshot: r.Snapshot(), evidence: e, facts: model.Data(), declarations: g.NewSpace[g.DeclarationRole[h.Language]](), binders: g.NewSpace[g.BinderRole[h.Language]](), uses: g.NewSpace[g.UseRole[h.Language]](), environments: g.NewSpace[g.EnvironmentRole[h.Language]](), entities: map[uint64]semantics.EntityID{}, decls: map[semantics.EntityID]g.Declaration[h.Language]{}, bound: map[semantics.EntityID]g.Binder[h.Language]{}, formalSubjects: map[semantics.EntityID]g.Use[h.Language]{}, sorts: map[semantics.Subject]semantics.TermID{}, results: map[semantics.EntityID]semantics.TermID{}, identities: map[semantics.EntityID]semantics.TermID{}, sites: map[semantics.TermID]ast.NodeRef{}, termOwners: map[semantics.TermID]semantics.EntityID{}}
+	s := &Source{bySite: map[ast.NodeRef]g.Declaration[h.Language]{}, roots: map[g.Declaration[h.Language]]bool{}, snapshot: r.Snapshot(), evidence: e, facts: model.Data(), declarations: g.NewSpace[g.DeclarationRole[h.Language]](), binders: g.NewSpace[g.BinderRole[h.Language]](), uses: g.NewSpace[g.UseRole[h.Language]](), environments: g.NewSpace[g.EnvironmentRole[h.Language]](), entities: map[uint64]semantics.EntityID{}, decls: map[semantics.EntityID]g.Declaration[h.Language]{}, bound: map[semantics.EntityID]g.Binder[h.Language]{}, formalSubjects: map[semantics.EntityID]g.Use[h.Language]{}, sorts: map[semantics.Subject]semantics.TermID{}, results: map[semantics.EntityID]semantics.TermID{}, identities: map[semantics.EntityID]semantics.TermID{}, sites: map[semantics.TermID]ast.NodeRef{}, termOwners: map[semantics.TermID]semantics.EntityID{}}
 	for _, ref := range input.Nodes[input.Root-1].References {
 		if ref.Role == h.RoleRoot {
 			s.rootModule = ref.Target
@@ -105,13 +106,18 @@ func New(ctx context.Context, r transform.Request[h.Language]) (*Source, error) 
 		d, _ := s.declarations.Ref(uint64(id))
 		s.entities[uint64(id)] = id
 		s.decls[id] = d
+		site := e.Declarations[0]
+		if _, exists := s.bySite[site]; exists {
+			return nil, semantic.ErrInvalidRequest
+		}
+		s.bySite[site] = d
 		s.order = append(s.order, d)
 		owner := s.facts.Entities[e.Owner-1]
 		if len(owner.Declarations) != 1 {
 			return nil, semantic.ErrInvalidRequest
 		}
 		if owner.Declarations[0] == s.rootModule {
-			s.roots = append(s.roots, d)
+			s.roots[d] = true
 		}
 		for _, p := range e.Parameters {
 			b, _ := s.binders.Ref(uint64(p.Entity))

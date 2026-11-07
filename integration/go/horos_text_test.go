@@ -1,11 +1,6 @@
 package integration_test
 
 import (
-	checkhoros "github.com/Bitspark/bittype/check/syntax/horos/provider/go"
-	formathoros "github.com/Bitspark/bittype/format/syntax/horos/provider/go"
-	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
-	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
-
 	"context"
 	"testing"
 
@@ -30,7 +25,7 @@ import (
 // bittype:case target=github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve feature=independent-engine-stages case=pagination-source expects=independently-composable
 // bittype:case target=github.com/Bitspark/bittype/analyze/files/horos/provider/go#Provider.Analyze feature=independent-engine-stages case=pagination-source expects=independently-composable
 func TestHorosSourceThroughIndependentEngineStages(t *testing.T) {
-	p := textfixture.New(parsehoros.Provider{}, checkhoros.Provider{}, formathoros.Provider{})
+	p := horosText()
 	definition, err := representation.NewLanguage[s.Language](p, s.Profile)
 	if err != nil {
 		t.Fatal(err)

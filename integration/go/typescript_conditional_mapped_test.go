@@ -1,11 +1,6 @@
 package integration_test
 
 import (
-	checktypescript "github.com/Bitspark/bittype/check/syntax/typescript/provider/go"
-	formattypescript "github.com/Bitspark/bittype/format/syntax/typescript/provider/go"
-	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
-	parsetypescript "github.com/Bitspark/bittype/parse/syntax/typescript/provider/go"
-
 	"context"
 	"reflect"
 	"testing"
@@ -41,7 +36,7 @@ func tsMappedFixture() ast.AST[ts.Language] {
 // bittype:case target=github.com/Bitspark/bittype/format/syntax/typescript/provider/go#Provider.Format feature=conditional-mapped-syntax case=independent-ast-formatting expects=ast-preserved-and-golden-text
 func TestIndependentTypeScriptMappedFormatter(t *testing.T) {
 	a := tsMappedFixture()
-	p := textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{})
+	p := typescriptText()
 	c, err := p.Format(context.Background(), a)
 	if err != nil {
 		t.Fatal(err)
@@ -84,7 +79,7 @@ func TestTypeScriptConditionalMappedFormatting(t *testing.T) {
 		{"type X={ [K in keyof T]: { [P in keyof T[K]]?: T[K][P] } };", "type X = {\n  [K in keyof T]: {\n    [P in keyof T[K]]?: T[K][P];\n  };\n};\n"},
 	} {
 		t.Run(tc.source, func(t *testing.T) {
-			p := textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{})
+			p := typescriptText()
 			c, err := p.Parse(context.Background(), parse.Input{SourceID: "source", TreeID: "tree", Text: tc.source})
 			if err != nil {
 				t.Fatal(err)

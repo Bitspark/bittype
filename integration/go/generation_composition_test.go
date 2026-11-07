@@ -1,11 +1,6 @@
 package integration_test
 
 import (
-	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
-	formatgolang "github.com/Bitspark/bittype/format/syntax/golang/provider/go"
-	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
-	parsegolang "github.com/Bitspark/bittype/parse/syntax/golang/provider/go"
-
 	"context"
 	"errors"
 	generationfixture "github.com/Bitspark/bittype/integration/go/testdata/generationfixture"
@@ -29,7 +24,7 @@ func TestAutomaticGenerationIndependentComposition(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	text := formatted(t, textfixture.New(parsegolang.Provider{}, checkgolang.Provider{}, formatgolang.Provider{}), tree)
+	text := formatted(t, golangText(), tree)
 	for _, want := range []string{"type Page[", "type Outer[", "type Nested[", "type Cursor ", "ExternalBox["} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q:\n%s", want, text)

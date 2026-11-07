@@ -132,6 +132,9 @@ func (r *Registry) Transformer(request Request) (transform.ASTTransformer, error
 	if r == nil || !request.Input.Source.Valid() || request.To.Validate() != nil || !request.Limits.Valid() || request.Output == "" || len(request.Roots) == 0 || len(request.Selection.Mappings) == 0 {
 		return nil, g.ErrInvalid
 	}
+	if len(request.Input.Evidence) > semantic.DefaultLimits().MaxInputs {
+		return nil, semantic.ErrLimit
+	}
 	if len(request.Roots) > request.Limits.References || len(request.Selection.Mappings) > request.Limits.Plans || len(request.Selection.Replace) > request.Limits.Plans {
 		return nil, g.ErrLimit
 	}

@@ -1,11 +1,6 @@
 package integration_test
 
 import (
-	checktypescript "github.com/Bitspark/bittype/check/syntax/typescript/provider/go"
-	formattypescript "github.com/Bitspark/bittype/format/syntax/typescript/provider/go"
-	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
-	parsetypescript "github.com/Bitspark/bittype/parse/syntax/typescript/provider/go"
-
 	"context"
 	"errors"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
@@ -62,27 +57,28 @@ func (p tsContribution) Open(_ context.Context, r g.MappingRequest[source.Reader
 	}
 	return p(src, b)
 }
-func selectedTS(input transform.Input, to representation.Language, p tsContribution, replacementID string) (transform.ASTTransformer, error) {
-	var registry c.Registry
-	request, err := genfixture.Request(&registry, input, to, "selected-ts", target.Provider[h.Language]{}, mappings.Text(rules.RepresentationProfile), mappings.Bool(rules.RepresentationProfile), mappings.Record(rules.RepresentationProfile), mappings.Binder(rules.RepresentationProfile), mappings.Declarations(rules.RepresentationProfile))
-	if err != nil {
-		return nil, err
+func selectedTS(p tsContribution, replacementID string) requestBuilder {
+	return func(registry *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
+		request, err := genfixture.Request(registry, input, to, "selected-ts", target.Provider[h.Language]{}, mappings.Text(rules.RepresentationProfile), mappings.Bool(rules.RepresentationProfile), mappings.Record(rules.RepresentationProfile), mappings.Binder(rules.RepresentationProfile), mappings.Declarations(rules.RepresentationProfile))
+		if err != nil {
+			return c.Request{}, err
+		}
+		selected, err := c.RegisterMapping[h.Language, ts.Language, source.Reader, target.Builder[h.Language]](registry, input.Source.Language(), to, p)
+		if err != nil {
+			return c.Request{}, err
+		}
+		base, err := c.RegisterMapping[h.Language, ts.Language, source.Reader, target.Builder[h.Language]](registry, input.Source.Language(), to, mappings.List(rules.RepresentationProfile))
+		if err != nil {
+			return c.Request{}, err
+		}
+		request.Selection.Mappings = append(request.Selection.Mappings, base)
+		request.Selection.Mappings = append(request.Selection.Mappings, selected)
+		if replacementID != "" {
+			key, _ := source.Builtin(input.Source.Language(), "list-of", "")
+			request.Selection.Replace = []c.Replacement{{Selector: key, Expected: c.BindingRef{Provider: base, ID: "list/typescript/1"}, With: c.BindingRef{Provider: selected, ID: replacementID}}}
+		}
+		return request, nil
 	}
-	selected, err := c.RegisterMapping[h.Language, ts.Language, source.Reader, target.Builder[h.Language]](&registry, input.Source.Language(), to, p)
-	if err != nil {
-		return nil, err
-	}
-	base, err := c.RegisterMapping[h.Language, ts.Language, source.Reader, target.Builder[h.Language]](&registry, input.Source.Language(), to, mappings.List(rules.RepresentationProfile))
-	if err != nil {
-		return nil, err
-	}
-	request.Selection.Mappings = append(request.Selection.Mappings, base)
-	request.Selection.Mappings = append(request.Selection.Mappings, selected)
-	if replacementID != "" {
-		key, _ := source.Builtin(input.Source.Language(), "list-of", "")
-		request.Selection.Replace = []c.Replacement{{Selector: key, Expected: c.BindingRef{Provider: base, ID: "list/typescript/1"}, With: c.BindingRef{Provider: selected, ID: replacementID}}}
-	}
-	return registry.Transformer(request)
 }
 func TestListOverrideComposesThroughGenericPage(t *testing.T) {
 	e, from, input := generationInput(t, paginationModule())
@@ -90,10 +86,8 @@ func TestListOverrideComposesThroughGenericPage(t *testing.T) {
 		key, _ := source.Builtin(from, "list-of", "")
 		return g.Contribution[h.Language, ts.Language]{Bindings: []g.RepresentationBinding[h.Language, ts.Language]{{Selector: key, Mapping: readonlyList(src, b)}}}, nil
 	})
-	tree := generated(t, e, from, input, textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), func(input transform.Input, f, to representation.Language) (transform.ASTTransformer, error) {
-		return selectedTS(input, to, provider, "consumer/readonly-list/1")
-	})
-	output := formatted(t, textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), tree)
+	tree := generated(t, e, input, typescriptText(), selectedTS(provider, "consumer/readonly-list/1"))
+	output := formatted(t, typescriptText(), tree)
 	if !strings.Contains(output, "items: ReadonlyArray<T>") || !strings.Contains(output, "Page<Page<Person>>") || strings.Contains(output, "T[]") {
 		t.Fatal(output)
 	}
@@ -112,7 +106,7 @@ func TestSelectedMappingFailureNeverFallsBack(t *testing.T) {
 		})
 		return g.Contribution[h.Language, ts.Language]{Bindings: []g.RepresentationBinding[h.Language, ts.Language]{{Selector: key, Mapping: mapping}}}, nil
 	})
-	mapper, err := selectedTS(input, mustLanguage[ts.Language](t, ts.Language{}), provider, "consumer/failure/1")
+	mapper, err := requestedTransformer(input, mustLanguage[ts.Language](t, ts.Language{}), selectedTS(provider, "consumer/failure/1"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +124,7 @@ func TestLibraryOwnedCellAvoidsBodyExpansion(t *testing.T) {
 	imported := genTuple("horos/decl/import", data.MustEncodeText("cells"), core.NewAtom(pin[:]))
 	root := genModule("consumer", genMap(genEntry("cells", imported)), genEntry("Page", genType(genPage(), "T")), genEntry("Cells", genType(genLocal("Page", genImported("cells", "Cell", genScalar("utf8-text"))))))
 	e, from, input := generationInput(t, root, library)
-	plain, err := tsMapper(input, from, mustLanguage[ts.Language](t, ts.Language{}))
+	plain, err := requestedTransformer(input, mustLanguage[ts.Language](t, ts.Language{}), tsRequest)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,10 +151,8 @@ func TestLibraryOwnedCellAvoidsBodyExpansion(t *testing.T) {
 		})
 		return g.Contribution[h.Language, ts.Language]{Bindings: []g.RepresentationBinding[h.Language, ts.Language]{{Selector: key, Mapping: mapping}}}, nil
 	})
-	tree := generated(t, e, from, input, textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), func(input transform.Input, f, to representation.Language) (transform.ASTTransformer, error) {
-		return selectedTS(input, to, provider, "")
-	})
-	output := formatted(t, textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), tree)
+	tree := generated(t, e, input, typescriptText(), selectedTS(provider, ""))
+	output := formatted(t, typescriptText(), tree)
 	if calls != 1 || !strings.Contains(output, "Page<LibraryCell<string>>") || strings.Contains(output, "_Cell") {
 		t.Fatal(output, calls)
 	}

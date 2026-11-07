@@ -3,10 +3,6 @@ package integration_test
 import (
 	analyzegolang "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
 	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
-	checkhoros "github.com/Bitspark/bittype/check/syntax/horos/provider/go"
-	formathoros "github.com/Bitspark/bittype/format/syntax/horos/provider/go"
-	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
-	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
 	resolvegolang "github.com/Bitspark/bittype/resolve/files/golang/provider/go"
 
 	"context"
@@ -75,7 +71,7 @@ func capture[L any](t *testing.T, p syntaxProvider[L], profile, text string) sem
 func sourceModel(t *testing.T, text string) h.Model {
 	t.Helper()
 	text = "module example; import h from horos.kinds pin \"sha256:" + decl.PreludePin().String() + "\"; " + text
-	s := capture[hs.Language](t, textfixture.New(parsehoros.Provider{}, checkhoros.Provider{}, formathoros.Provider{}), hs.Profile, text)
+	s := capture[hs.Language](t, horosText(), hs.Profile, text)
 	r, err := resolution.NewResolver[hs.Language](s.Language(), resolve.Contract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)

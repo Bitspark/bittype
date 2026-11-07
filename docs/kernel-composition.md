@@ -91,8 +91,7 @@ the actual S/N instances opened for this invocation. It cannot be constructed
 by attaching unrelated values to a claimed ticket. Zero, expired and foreign
 construction requests fail. No public arbitrary object map or AST[any] is added.
 
-Provider-specific settings are configured at registration: Go owns Package,
-C++ owns Namespace. Registration captures descriptors and evidence requirements.
+Go’s target provider owns Package and C++’s owns Namespace. Callers configure these settings when registering each provider. Registration captures descriptors and evidence requirements.
 Providers must keep their configuration stable; copying a Go interface does not
 freeze its object. Open creates fresh invocation state, with no hidden analysis
 or IO. These are trusted in-process collaborators, not a sandbox.
@@ -233,16 +232,6 @@ path. Representation generation does not establish native constraint enforcement
 
 ## Qualification
 
-The [integration tests](../integration/go/kernel_generation_test.go), [four-target pagination](../integration/go/horos_generation_pagination_test.go) and [installed consumer](../integration/go/testdata/installed/horos_generation_test.go) exercise
-foreign handles; incompatible markers/profiles/API contracts; missing/foreign
-evidence; unknown/duplicate roots; output collisions; conflicting/stale
-replacements; helper collisions; provider failure; cancellation; expired tickets;
-concurrent invocations; and bounded work. Qualify a materially different
-independent mapping, nesting and terminal failure. Test the kernel with unrelated
-language markers as well as Horos. A green example does not replace ownership
-and change-propagation review under AC-01 through AC-08.
+Four-target pagination goes through Engine.Generate with explicit declaration roots. The integration suite replaces List through Page, supplies an imported Cell with its own native type, and exercises the same registry from an unrelated source language. Negative cases cover foreign registrations and receipts, mismatched Go APIs, conflicting replacements and helpers, root selection, output collisions, expired construction requests, cancellation and resource limits. Concurrent calls open independent state. [Engine and construction tests](../integration/go/kernel_generation_test.go) · [Pagination](../integration/go/horos_generation_pagination_test.go) · [Library extensions](../integration/go/horos_generation_composition_test.go) · [Installed public consumer](../integration/go/testdata/installed/horos_generation_test.go)
 
-The source-derived report follows actual Go contracts and public declarations. It preserves
-public-method identity, physical source links and separate delegate evidence.
-No handwritten capability catalogue, fake route or blanket discovery exemption.
-Historical research/source links remain historical.
+The source-derived report links selectable mappings to their actual Go declarations. Its source-by-target matrix distinguishes available contributions from consumer-configured routes. Delegate evidence stays associated with the declaration the test exercised. [Provider matrix](providers.md)

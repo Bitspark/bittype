@@ -54,7 +54,7 @@ func (s *Source) Declaration(d g.Declaration[h.Language]) (Declaration, error) {
 	if err != nil {
 		return Declaration{}, err
 	}
-	return Declaration{Name: e.Name, ModulePin: pin, Root: slices.Contains(s.roots, d), Origin: e.Declarations[0], Body: s.use(e.Body)}, nil
+	return Declaration{Name: e.Name, ModulePin: pin, Root: s.roots[d], Origin: e.Declarations[0], Body: s.use(e.Body)}, nil
 }
 func (s *Source) Parameter(b g.Binder[h.Language]) (Parameter, error) {
 	i, ok := s.binders.Index(b)

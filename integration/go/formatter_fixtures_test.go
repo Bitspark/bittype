@@ -1,17 +1,8 @@
 package integration_test
 
 import (
-	checkcpp "github.com/Bitspark/bittype/check/syntax/cpp/provider/go"
-	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
 	checkrust "github.com/Bitspark/bittype/check/syntax/rust/provider/go"
 	checktypescript "github.com/Bitspark/bittype/check/syntax/typescript/provider/go"
-	formatcpp "github.com/Bitspark/bittype/format/syntax/cpp/provider/go"
-	formatgolang "github.com/Bitspark/bittype/format/syntax/golang/provider/go"
-	formatrust "github.com/Bitspark/bittype/format/syntax/rust/provider/go"
-	formattypescript "github.com/Bitspark/bittype/format/syntax/typescript/provider/go"
-	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
-	parsecpp "github.com/Bitspark/bittype/parse/syntax/cpp/provider/go"
-	parsegolang "github.com/Bitspark/bittype/parse/syntax/golang/provider/go"
 	parserust "github.com/Bitspark/bittype/parse/syntax/rust/provider/go"
 	parsetypescript "github.com/Bitspark/bittype/parse/syntax/typescript/provider/go"
 
@@ -114,10 +105,10 @@ func formatted[L any](t *testing.T, p nativeProvider[L], a ast.AST[L]) string {
 // bittype:case target=github.com/Bitspark/bittype/print/syntax/shared/provider/go#Provider.Print feature=independent-ast-formatting case=independent-ast-goldens expects=golden-text language=github.com/Bitspark/bittype/syntax/cpp/go#Language
 func TestIndependentFormatterGoldens(t *testing.T) {
 	cases := map[string]struct{ got, want string }{
-		"typescript": {formatted(t, textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), tsFixture()), "export type Strings = (string | null)[];\n"},
-		"go":         {formatted(t, textfixture.New(parsegolang.Provider{}, checkgolang.Provider{}, formatgolang.Provider{}), goFixture()), "package fixture\n\ntype Names = []string\n"},
-		"rust":       {formatted(t, textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{}), rustFixture()), "pub type Name = &'static str;\n"},
-		"cpp":        {formatted(t, textfixture.New(parsecpp.Provider{}, checkcpp.Provider{}, formatcpp.Provider{}), cppFixture()), "using MatrixPtr = int (*)[3];\n\nclass AccessFixture {\n  public:\n  int visible;\n  private:\n  int hidden;\n};\n"},
+		"typescript": {formatted(t, typescriptText(), tsFixture()), "export type Strings = (string | null)[];\n"},
+		"go":         {formatted(t, golangText(), goFixture()), "package fixture\n\ntype Names = []string\n"},
+		"rust":       {formatted(t, rustText(), rustFixture()), "pub type Name = &'static str;\n"},
+		"cpp":        {formatted(t, cppText(), cppFixture()), "using MatrixPtr = int (*)[3];\n\nclass AccessFixture {\n  public:\n  int visible;\n  private:\n  int hidden;\n};\n"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -136,7 +127,7 @@ func TestFormatterSnapshotOwnership(t *testing.T) {
 	a.Nodes[0].Kind = ts.KindTypeReference
 	a.Nodes[0].Attributes = attr("name", "External")
 	a.Nodes[0].References = []ast.Reference{{Role: "target", Target: ast.NodeRef{Tree: "external", Node: 2}}}
-	p := textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{})
+	p := typescriptText()
 	c, err := p.Format(context.Background(), a)
 	if err != nil {
 		t.Fatal(err)
@@ -200,10 +191,10 @@ func invalidAST[L any](t *testing.T, p nativeProvider[L], makeTree func() ast.AS
 // bittype:case target=github.com/Bitspark/bittype/check/syntax/cpp/provider/go#Provider.Check feature=ast-admission case=malformed-carriers expects=reject
 // bittype:case target=github.com/Bitspark/bittype/format/syntax/cpp/provider/go#Provider.Format feature=ast-admission case=malformed-carriers expects=rejection-without-output
 func TestMalformedASTs(t *testing.T) {
-	invalidAST(t, textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), tsFixture)
-	invalidAST(t, textfixture.New(parsegolang.Provider{}, checkgolang.Provider{}, formatgolang.Provider{}), goFixture)
-	invalidAST(t, textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{}), rustFixture)
-	invalidAST(t, textfixture.New(parsecpp.Provider{}, checkcpp.Provider{}, formatcpp.Provider{}), cppFixture)
+	invalidAST(t, typescriptText(), tsFixture)
+	invalidAST(t, golangText(), goFixture)
+	invalidAST(t, rustText(), rustFixture)
+	invalidAST(t, cppText(), cppFixture)
 }
 
 func TestPrimitiveSyntaxPositions(t *testing.T) {
@@ -276,15 +267,15 @@ func TestNativeCompilerFixtures(t *testing.T) {
 		t.Skip("native compiler qualification runs in the dedicated remote job")
 	}
 	t.Run("typescript", func(t *testing.T) {
-		dir := nativeFiles(t, textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), "typescript", "ts", tsFixture())
-		if err := os.WriteFile(filepath.Join(dir, "independent_mapped.ts"), []byte(formatted(t, textfixture.New(parsetypescript.Provider{}, checktypescript.Provider{}, formattypescript.Provider{}), tsMappedFixture())), 0600); err != nil {
+		dir := nativeFiles(t, typescriptText(), "typescript", "ts", tsFixture())
+		if err := os.WriteFile(filepath.Join(dir, "independent_mapped.ts"), []byte(formatted(t, typescriptText(), tsMappedFixture())), 0600); err != nil {
 			t.Fatal(err)
 		}
 		command(t, dir, "tsc", "--version")
 		command(t, dir, "tsc", "--noEmit", "--strict", "--target", "ES2020", "--lib", "ES2020", "--module", "ESNext", "--moduleResolution", "node", "types.ts", "external.ts", "independent.ts", "conditional_mapped.ts", "independent_mapped.ts")
 	})
 	t.Run("go", func(t *testing.T) {
-		dir := nativeFiles(t, textfixture.New(parsegolang.Provider{}, checkgolang.Provider{}, formatgolang.Provider{}), "golang", "go", goFixture())
+		dir := nativeFiles(t, golangText(), "golang", "go", goFixture())
 		// The independent example has its own package and is compiled separately.
 		independent := t.TempDir()
 		b, err := os.ReadFile(filepath.Join(dir, "independent.go"))
@@ -305,18 +296,18 @@ func TestNativeCompilerFixtures(t *testing.T) {
 		}
 	})
 	t.Run("rust", func(t *testing.T) {
-		dir := nativeFiles(t, textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{}), "rust", "rs", rustFixture())
-		if err := os.WriteFile(filepath.Join(dir, "independent_associated.rs"), []byte(formatted(t, textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{}), rustAssociatedFixture())), 0600); err != nil {
+		dir := nativeFiles(t, rustText(), "rust", "rs", rustFixture())
+		if err := os.WriteFile(filepath.Join(dir, "independent_associated.rs"), []byte(formatted(t, rustText(), rustAssociatedFixture())), 0600); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(dir, "independent_declarations.rs"), []byte(formatted(t, textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{}), rustDeclarationsFixture())), 0600); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, "independent_declarations.rs"), []byte(formatted(t, rustText(), rustDeclarationsFixture())), 0600); err != nil {
 			t.Fatal(err)
 		}
 		uses, err := parserust.Parse(context.Background(), parse.Input{SourceID: "associated-use", TreeID: "associated-use", Text: "pub trait Family { type Item<T>; } pub type Applied<T: Family> = <T as Family>::Item<u8>; pub trait Selected: Family<Item<u8> = u16> {}"})
 		if err != nil {
 			t.Fatal(err)
 		}
-		genericUse := formatted(t, textfixture.New(parserust.Provider{}, checkrust.Provider{}, formatrust.Provider{}), uses.Abstract)
+		genericUse := formatted(t, rustText(), uses.Abstract)
 		if err := os.WriteFile(filepath.Join(dir, "generic_associated_use.rs"), []byte(genericUse), 0600); err != nil {
 			t.Fatal(err)
 		}
@@ -330,7 +321,7 @@ func TestNativeCompilerFixtures(t *testing.T) {
 		}
 	})
 	t.Run("cpp", func(t *testing.T) {
-		dir := nativeFiles(t, textfixture.New(parsecpp.Provider{}, checkcpp.Provider{}, formatcpp.Provider{}), "cpp", "hpp", cppFixture())
+		dir := nativeFiles(t, cppText(), "cpp", "hpp", cppFixture())
 		probe := "#include <type_traits>\n#include \"types.hpp\"\n#include \"independent.hpp\"\nstatic_assert(std::is_same_v<MatrixPtr, int (*)[3]>);\nstatic_assert(std::is_same_v<decltype(api::Shapes::array), int *[3]>);\nstatic_assert(std::is_same_v<decltype(api::Shapes::pointer), int (*)[3]>);\nstatic_assert(std::is_same_v<decltype(api::Shapes::callback), int (*)(double) noexcept>);\nstatic_assert(std::is_same_v<decltype(api::Shapes::member), int api::Person::*>);\n"
 		if err := os.WriteFile(filepath.Join(dir, "probe.cpp"), []byte(probe), 0600); err != nil {
 			t.Fatal(err)
