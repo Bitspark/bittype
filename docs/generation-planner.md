@@ -5,8 +5,10 @@
 A caller should be able to ask Bittype to generate `pagination.Page` for
 TypeScript, inspect which mappings the engine chose, and run that plan. The
 project configures its generation libraries and representation preferences once.
-The engine assembles the pipeline. Mapping libraries declare how source types
-become target types, including how a generic element is mapped.
+The engine assembles the pipeline. During planning, mapping libraries choose
+the target types and bind their uses. A run constructs those choices as target
+ASTs. A caller can therefore inspect what `list<T>` will become before the
+TypeScript builder allocates an array node.
 
 ## What exists today
 
@@ -78,39 +80,98 @@ the rule for a particular field or imported declaration requires the source
 snapshot and roots. The first API exposes the source-bound plan. An endpoint-only
 pipeline could later bind separate requests through that same planning operation.
 
+## Semantic mapping and AST construction
+
+For a source language A and target language B, the proposed `PlanGeneration`
+would perform **semantic mapping**. Its inputs are the captured A declarations,
+the facts established about them, the requested roots and the configured
+mapping libraries. Its inspectable result describes the intended B declarations,
+type expressions, generic binders, reference destinations and declarations to
+expose. `Run` would perform **AST construction**. The B builder realizes those
+choices as native declaration nodes and retains the destination of each named use.
+
+| Stage | Input | Result |
+| --- | --- | --- |
+| Read A | The application supplies source files and the selected dependencies. | Syntax parsing yields CSTs with `AST[A]` views. The A resolver binds occurrences in their scopes. The A analyzer uses that resolution to publish `Semantics[A]` for the captured program. |
+| Map to B | Captured A sites and facts, requested roots and registered mappings. | The planner selects rules and records the B declarations, expressions and bound uses they prescribe. |
+| Construct B | A run of the plan with the selected target builder. | A syntax-checked `AST[B]` set realizes the declarations. Bound uses and the requested public surface must survive this step. |
+| Analyze B | The B providers resolve and analyze the realized declarations in the selected target environment. | `Semantics[B]` records the facts those providers establish for that capture. |
+| Write B | The Files formatter receives the target snapshot, its semantic evidence and the consumer's placement. | It chooses names and imports in each module, checks the resulting bindings, and publishes `Source[B]`. The Files printer returns paths and text for the application to write. |
+
+The plan describes what the selected mappings intend. Only analysis of the
+realized B program establishes `Semantics[B]`. Today generation consumes an
+analyzed source and returns a syntax-checked target AST set. The separation of
+mapping decisions into an inspectable plan is proposed here.
+[Current generation contract](semantic-generation.md#explicit-semantic-input) ·
+[Syntax and Files roles](source.md#symmetric-role-contracts).
+
+### Pagination on read and write
+
+Take a Horos module `example.people` that imports `example.pagination` by its
+canonical pin under the name `pages`. The relevant declarations in those two
+modules are shown below. [Horos Files example](source.md#horos-composition-and-pagination).
+
+```horos
+// In example.pagination
+type Page<T> = { items: list<T>; next?: text; };
+
+// In example.people
+type Person = { name: text; };
+type People = pages.Page<Person>;
+```
+
+**On read**, the Horos resolver follows `pages` to the pinned module and binds
+`pages.Page` to its `Page` declaration. It resolves the argument `Person` in
+`example.people`. Analysis records that `People` applies that `Page` to that
+`Person`, while the element of `items` refers to the parameter declared by
+`Page`. Another declaration called `Person` in the imported module would be a
+different entity. [Pagination analysis](analysis.md#pagination-from-input-to-queries) ·
+[Files fixture](../integration/go/files_test.go).
+
+**During mapping**, suppose the caller requests `Page`, `Person` and `People`
+as public TypeScript declarations. The structural mapping chooses two interfaces
+and an alias. The list rule chooses an array whose element denotes the target
+parameter of `Page`. The alias applies the target declaration for `Page` to
+the target declaration for `example.people.Person`. **During construction**,
+the TypeScript builder creates the interface, parameter, array and reference
+nodes for `items: T[]` and the type application nodes for `Page<Person>`.
+The same open `Page` serves every application.
+
+**On write**, the consumer can format one run twice. These arrangements produce
+different imports in the module containing `People`.
+
+| TypeScript placement | TypeScript spelling |
+| --- | --- |
+| `Page`, `Person` and `People` share `pages/page.ts`. | `export type People = Page<Person>;` refers directly to its two local declarations. |
+| `Person` is exported from `model/person.ts`. The other two share `pages/page.ts`. | `import type { Person } from "../model/person.js";` brings the intended declaration into scope for the same `export type People = Page<Person>;`. |
+
+The Horos import makes `Page` visible on read. The second TypeScript placement
+requires an import of `Person` on write. If a local name shadows `Person`, the
+formatter can import it as `Person_1` and spell the application
+`Page<Person_1>`. Resolving that emitted use in the new module must reach the
+declaration corresponding to the planned `Person`. An inaccessible declaration
+or a use that resolves to a different one fails formatting. This check can run
+in memory before the caller writes either file.
+[TypeScript placement and alias tests](../integration/go/typescript_placement_test.go).
+
 ### Where the plan stops
 
-`PlanGeneration` chooses representations and binds uses; `Run` constructs
-target declarations. Neither operation assigns output paths or imports. The
-information that must survive the run is the **intended target of each use**
-and **which declarations to expose**. `Publish` expresses the latter; it does
-not decide whether a particular file contains an `export` modifier or statement.
-Generic parameters keep their lexical identity. A reference to an external
-public symbol keeps its dependency and export identity without a fictitious
-local declaration or a file inside that dependency.
+`Publish` records which declarations to expose. Each named use retains the
+identity of its owned declaration, lexical parameter or external public symbol.
+For `Cells = Page<Cell<Person>>`, the Cell library selects the external export
+`Cell` from `@bitspark/cell`. Place `Cells` beside `Page` in either arrangement
+above. In both layouts `pages/page.ts` imports `Cell` from that package.
+Bringing `Person` into the same module removes its relative import. Selecting a
+different external type for Cell changes the mapping and requires a new plan.
 
-Planning `Page<T>` alone reaches its list and binder. Planning the separate
-alias `Cells = Page<Cell<Person>>` also selects the owned `Person` and the
-library mapping for the external `@bitspark/cell` export `Cell`. Inspection
-can explain all three references without predicting any import statements.
-Run the plan once. Place `Person` in `model/person.ts` and `Cells` beside
-`Page` in `pages/page.ts`: TypeScript Files formatting needs both a relative
-type import and a package type import. Move only `Person` into `pages/page.ts`
-and format the same generation result again: only the package import remains.
-Changing which external type represents Cell, by contrast, changes the mapping
-selection and requires a new plan.
-
-The consumer supplies the placement. The Files formatter uses it with the
-target bindings and admitted semantic environment to choose per-unit spelling
-and aliases and express the requested visibility. The printer emits the completed
-`Source`. A syntax-only render can show a declaration but cannot establish a
-module's public surface or imports. The proposal still needs a way to carry
-external bindings and publication intent from a run into target semantic
-admission without manufacturing concrete import nodes. Returning an `ASTSet`
-alone does not specify that association. This is a handoff to the existing
-[Syntax and Files stages](source.md#from-generated-declarations-to-files), not
-a second organization model. [Current TypeScript behavior](typescript-type-imports.md)
-· [Open architectural case](architecture-cases/0004-generation-file-syntax.md).
+The proposal still needs a way to carry the bound uses and publication intent
+from a run into target semantic admission. The proposed `ASTSet` return type
+alone leaves that association unspecified. Today's TypeScript target emits
+package import nodes and export modifiers while building its logical AST. The
+documented correction assigns that syntax to Files formatting for the chosen
+module arrangement. [Generation and Files boundary](source.md#from-generated-declarations-to-files) ·
+[Current TypeScript behavior](typescript-type-imports.md) ·
+[Open architectural case](architecture-cases/0004-generation-file-syntax.md).
 
 ## What a mapper declares
 
@@ -155,9 +216,10 @@ listArray := gen.BindingDescription[horos.Language, ts.Language]{
 
 `E` is a slot owned by this rule. `ListOf` identifies the Horos constructor and
 locates its element occurrence. `Mapped` requests the selected target representation
-of that exact occurrence. `ArrayOf` describes a TypeScript array node with the
-result in its element position. Running this expression drives the existing
-child-generation and target-builder operations. For `list<bool>` this yields
+of that exact occurrence. During planning, `ArrayOf` selects an array of that
+mapped element. During construction, the TypeScript builder creates the array
+node with the realized child in its element position. The same expression drives
+both stages. For `list<bool>` this yields
 `boolean[]`. For `list<list<bool>>` it yields `boolean[][]`. Reusing a slot from
 another rule or referencing an uncaptured slot is an invalid declaration.
 [Current list mapper](../transform/syntax/horos-to-typescript/mapping/go/mapping.go) ·
@@ -284,7 +346,8 @@ a different type. Cross-language proofs use the verification contract.
 2. Extend registration with immutable offers and move selection into
    `PlanGeneration`. Implement `Steps` and `Run` for a named `Page` root,
    including structural field traversal, binder identity, and an explicit
-   readonly-list override.
+   readonly-list override. Compare the planned element of `items` with the
+   reference to the target parameter in the constructed AST.
 3. Migrate the remaining providers and callers, including helper, external and
    declaration operations for the four targets. Replace the per-request mapping
    list and superseded procedural rules on the normal generation path. Keep
@@ -292,12 +355,11 @@ a different type. Cross-language proofs use the verification contract.
    and the requests made by installed consumers.
 4. Carry bound external uses and publication intent across the generation/Files
    handoff. Remove early import/export emission from TypeScript generation.
-   Qualify one run of `Cells` against both placements above: inspect the same
-   declaration bindings before formatting, then compile both emitted layouts
-   against the selected package. An inaccessible binding must fail, never
-   resolve by coincidence to another declaration of the same name. Apply the
-   same boundary when migrating other targets that already emit includes or
-   module visibility.
+   Format one run of `Cells` with both pagination placements. Check each
+   organized use against its intended declaration and compile both layouts
+   against the selected package. An inaccessible binding must fail even if a
+   different declaration shares its name. Apply the same boundary when migrating
+   other targets that already emit includes or module visibility.
 
 Qualification should compare planned and one-call output, exercise fresh runs
 of one plan after a registry change, and reject ambiguous, stale or foreign
