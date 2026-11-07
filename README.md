@@ -152,6 +152,9 @@ interpret these concrete type semantics.
 - [Syntax engine](docs/engine.md): registration, typed boundaries, path finding,
   execution and text-stage composition.
 - [Generation design](docs/generation.md): AST-to-AST pipeline and future mappings.
+- [Generation planner](docs/generation-planner.md#where-the-plan-stops): proposed
+  planning and execution for declaration ASTs, followed by the
+  [Files formatter](docs/source.md#from-generated-declarations-to-files) for concrete imports and exports.
 - [Syntax and Files](docs/source.md): Source/Semantics carriers, symmetric
   parse/format/print roles, multi-unit transformations and source-base parsing.
 - [Charter](CHARTER.md), [contributor instructions](AGENTS.md) and

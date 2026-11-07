@@ -1,6 +1,8 @@
 # Kernel-owned generation composition
 
-The [TypeScript type-import design](typescript-type-imports.md) applies the existing Files/Source contracts to generated declarations.
+The [generation/Files boundary](source.md#from-generated-declarations-to-files)
+separates binding types from organizing modules. The [TypeScript type-import
+guide](typescript-type-imports.md) describes the implemented path and its remaining gap.
 
 **Implemented in Bittype. Owner decision of 6 November 2026.** The kernel composes
 supplied source, target and mapping providers from an explicit request. Libraries

@@ -1,7 +1,5 @@
 # Syntax and Files
 
-The [TypeScript type-import design](typescript-type-imports.md) applies the existing Files/Source contracts to generated declarations.
-
 **4 November 2026. Implemented Go contracts and Horos composition.**
 
 ```text
@@ -32,6 +30,55 @@ architectural grouping, not a requirement to open physical files. Source-owned
 uses `bittype:shared`. These annotations introduce no runtime methods or registry;
 the generator reads declared operation boundaries, never storage fields or
 package names, using the [metadata rules](../tools/provider-matrix/README.md#dimension-metadata).
+
+## From generated declarations to files
+
+**Design decision, 7 November 2026.** Type generation uses the source semantics
+and selected mappings to build a target declaration and bind its type references.
+Files formatting decides how to express
+those bindings and the requested public surface in a particular arrangement of
+native modules. It can do that entirely in memory, before anything is written.
+
+| Owner | Decision |
+| --- | --- |
+| Selected mapping and generation target | Build declaration bodies and type expressions. Bind each named use to its intended target declaration, lexical parameter, or selected external public symbol. `Publish` records which declaration the caller requested to expose. A generated tree ID identifies syntax; it does not assign a file. |
+| Consumer | Supply one placement for the declarations being emitted: output files and the native scopes they belong to. Supply the selected external dependencies in the target environment. There is no second table of imports. |
+| Target-language Files formatter | Follow those bindings under that placement. Choose the local spelling, qualification or alias, and construct the necessary import, export or other module syntax. Realize the requested visibility under the language's rules and establish that uses still resolve to their intended targets. |
+| Shared Files printer | Emit the paths and text already represented by `Source`. The caller decides whether and where to write them. |
+
+For example, generate the alias `Cells = Page<Cell<Person>>`. `Page` and
+`Person` refer to declarations in this output; the Cell library's selected
+mapping identifies the public TypeScript export `Cell` from `@bitspark/cell`.
+That identifies *which type* is needed. It specifies neither an import
+statement nor the file inside that package. The generator needs no destination
+path for any of the three names. A spelling alone is insufficient: two distinct
+types named `Person` must not become interchangeable when placement changes.
+
+| TypeScript placement for the same generated declarations | What Files puts in the module containing `Cells` |
+| --- | --- |
+| `Page` and `Cells` in `pages/page.ts`; `Person` in `model/person.ts` | A type import of `Person` from `../model/person.js` and a type import of `Cell` from `@bitspark/cell`. |
+| Move `Person` into `pages/page.ts` | `Person` is in scope. Its import disappears; the Cell package import remains. |
+
+Both placements use the same generated declarations, bindings and publication
+intent. Files must preserve those bindings and the requested public surface;
+moving a declaration cannot authorize exposing a private type or substituting
+another type of the same name.
+If it cannot express the placement with the supplied dependencies and visibility,
+it must fail without returning a partial `Source`. Native scope matters: two
+files in one Go package need no import between them, while two Rust modules can
+occupy one file. A file boundary alone is never an import rule.
+
+The distinction is about module visibility. A member's accessibility, when it
+is part of the chosen type representation, still belongs to the declaration.
+
+This is the boundary for **generating declarations**. Native ASTs can still
+represent imports and exports when parsing existing source or constructing
+organized units. Today the [TypeScript implementation](typescript-type-imports.md)
+also constructs package import nodes and marks declarations exported during
+generation. The stricter handoff is documented, not implemented;
+[bittype/ACX-004](architecture-cases/0004-generation-file-syntax.md) records
+the remaining correction. The [generation planner](generation-planner.md#where-the-plan-stops)
+applies this distinction to plan inspection and execution.
 
 ## Carriers
 

@@ -16,6 +16,7 @@ become target types, including how a generic element is mapped.
 | `Registry.Transformer(request)` captures an explicit provider selection and ties it to the exact source snapshot. Its execution opens the providers and collects their bindings. | The planner resolves the reachable mapping choices before returning a runnable plan. |
 | A mapping provider's `Open` can supply exact bindings, a structural declaration policy, and helper plans. The TypeScript list mapping calls `Child` on its element and builds an array node in Go. | Advertise bindings at registration and express the list rule as an executable input pattern and target expression. |
 | `Engine.Generate` takes the analyzed input, roots, target, output identity, provider handles and limits. It returns a syntax-checked AST set. | Use configured providers and default limits. Keep `Generate` as the convenience call that plans and then runs. |
+| The TypeScript target already emits package imports and marks declarations exported in its logical AST. Its Files formatter rebuilds imports after placement. | Plan bound target uses and publication intent. Files formatting is the first stage that constructs concrete import/export syntax for generated declarations. |
 
 The existing `generation.Plan[F,T]` describes the operations for one mapping or
 declaration. A `GenerationPlan` in this proposal covers a complete request and
@@ -60,19 +61,14 @@ plan, err := eng.PlanGeneration(ctx, generation.Request{
     Output: "pagination-types",
 })
 if err != nil {
-    return "", err
+    return representation.ASTSet{}, err
 }
-
-out, err := plan.Run(ctx)
-if err != nil {
-    return "", err
-}
-return eng.RenderSyntax(ctx, out.EntryAST())
+return plan.Run(ctx)
 ```
 
-`Output` identifies the generated tree. The caller chooses a file path when it
-writes the rendered text. `plan.Steps()` would return a read-only view of the
-requested publications, selected bindings, scoped operands and dependency edges.
+`Output` identifies the generated tree independently of any file. `plan.Steps()`
+would return a read-only view of the requested publications, selected bindings,
+scoped operands and dependency edges.
 `Run` would return a `representation.ASTSet`. The same plan could be run again
 against the captured input with a fresh execution context.
 
@@ -81,6 +77,40 @@ a reusable pipeline of compatible providers and configured preferences. Selectin
 the rule for a particular field or imported declaration requires the source
 snapshot and roots. The first API exposes the source-bound plan. An endpoint-only
 pipeline could later bind separate requests through that same planning operation.
+
+### Where the plan stops
+
+`PlanGeneration` chooses representations and binds uses; `Run` constructs
+target declarations. Neither operation assigns output paths or imports. The
+information that must survive the run is the **intended target of each use**
+and **which declarations to expose**. `Publish` expresses the latter; it does
+not decide whether a particular file contains an `export` modifier or statement.
+Generic parameters keep their lexical identity. A reference to an external
+public symbol keeps its dependency and export identity without a fictitious
+local declaration or a file inside that dependency.
+
+Planning `Page<T>` alone reaches its list and binder. Planning the separate
+alias `Cells = Page<Cell<Person>>` also selects the owned `Person` and the
+library mapping for the external `@bitspark/cell` export `Cell`. Inspection
+can explain all three references without predicting any import statements.
+Run the plan once. Place `Person` in `model/person.ts` and `Cells` beside
+`Page` in `pages/page.ts`: TypeScript Files formatting needs both a relative
+type import and a package type import. Move only `Person` into `pages/page.ts`
+and format the same generation result again: only the package import remains.
+Changing which external type represents Cell, by contrast, changes the mapping
+selection and requires a new plan.
+
+The consumer supplies the placement. The Files formatter uses it with the
+target bindings and admitted semantic environment to choose per-unit spelling
+and aliases and express the requested visibility. The printer emits the completed
+`Source`. A syntax-only render can show a declaration but cannot establish a
+module's public surface or imports. The proposal still needs a way to carry
+external bindings and publication intent from a run into target semantic
+admission without manufacturing concrete import nodes. Returning an `ASTSet`
+alone does not specify that association. This is a handoff to the existing
+[Syntax and Files stages](source.md#from-generated-declarations-to-files), not
+a second organization model. [Current TypeScript behavior](typescript-type-imports.md)
+· [Open architectural case](architecture-cases/0004-generation-file-syntax.md).
 
 ## What a mapper declares
 
@@ -166,7 +196,8 @@ Publish pagination.Page       TypeScript interface Page<T>
     Map E                     use Page's target parameter
 ```
 
-Executing and rendering the plan would produce the following declaration.
+The plan requests publication of `Page`. If the consumer places it in a
+TypeScript module as a named export, Files formatting and printing produce:
 
 ```typescript
 export interface Page<T> {
@@ -237,10 +268,10 @@ operations. It preserves lexical environments, authenticates returned products,
 allocates native symbols and nodes, and admits the finished target tree. An
 unplanned dependency, foreign handle, provider failure, cancellation, exhausted
 limit or invalid target tree fails that run as a whole. The same plan remains
-available for another run. Formatting and printing operate on the completed
-AST. For multi-file TypeScript output, generation fixes the external module and
-export, and the Files formatter uses the caller's placement to compute relative
-imports between local files. Cross-language proofs use the verification contract.
+available for another run. A successful run guarantees no particular file
+organization. Files formatting must preserve the target bindings and requested
+public surface or reject the arrangement; it cannot ask the generator to select
+a different type. Cross-language proofs use the verification contract.
 [Guarded operations](generation-spi.md#five-operations) ·
 [Engine generation entry](../engine/go/generation.go) ·
 [TypeScript file placement](typescript-type-imports.md) · [Verification](verification.md).
@@ -259,6 +290,14 @@ imports between local files. Cross-language proofs use the verification contract
    list and superseded procedural rules on the normal generation path. Keep
    `Generate` as the one-call entry. This changes the public provider contract
    and the requests made by installed consumers.
+4. Carry bound external uses and publication intent across the generation/Files
+   handoff. Remove early import/export emission from TypeScript generation.
+   Qualify one run of `Cells` against both placements above: inspect the same
+   declaration bindings before formatting, then compile both emitted layouts
+   against the selected package. An inaccessible binding must fail, never
+   resolve by coincidence to another declaration of the same name. Apply the
+   same boundary when migrating other targets that already emit includes or
+   module visibility.
 
 Qualification should compare planned and one-call output, exercise fresh runs
 of one plan after a registry change, and reject ambiguous, stale or foreign

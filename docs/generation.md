@@ -122,11 +122,15 @@ Canonical-to-native is one direction of AST transformation. Each such transforme
 transforms a semantically validated canonical input into a target-language AST.
 An admitted syntax envelope alone is insufficient: a transformer must explicitly
 require the semantic obligations it needs through the analyzer or owning resolver.
-It chooses native type representations, names, imports, generic syntax and
-recursive indirection according to an explicit target configuration.
-It does not emit source strings.
+Selected mappings choose native type representations and any external public
+symbols they use; target generation constructs names, bound references, generic
+syntax and recursive indirection. It preserves which declarations to expose.
+No output file, import alias or export statement is needed to generate a type.
+The target's Files formatter realizes those bindings and that public surface
+from one consumer placement. See [the generation/Files boundary](source.md#from-generated-declarations-to-files)
+and its consequences for [generation planning](generation-planner.md#where-the-plan-stops).
 
-Each formatter consumes a target AST view and constructs a CST. It owns escaping,
+Each Syntax formatter consumes a target AST view and constructs a CST. It owns escaping,
 lexical spelling, layout and precedence. The generic printer emits supplied
 leaves. The formatter does not resolve
 canonical declarations or decide how a canonical nullable field should be

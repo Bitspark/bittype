@@ -65,7 +65,7 @@ handle. Neither choice changes the canonical Function declaration.
 | --- | --- |
 | Source adapter | Interpret admitted source semantics, preserve binders, and supply exact mapping selectors. |
 | Type-owned plugin | Choose and construct the native representation of its builtin or named declaration. Compose selected mappings of child types. |
-| Target-language tooling | Supply native AST construction, symbols, imports and output-unit assembly. It has no canonical type catalogue. |
+| Target-language tooling | The generation target constructs native declarations and bound type uses. The [Files formatter](source.md#from-generated-declarations-to-files) realizes imports and exports under the consumer's placement. Neither needs a canonical type catalogue. |
 | Shared generation composition | Select configured mappings and coordinate invocation and ownership. It interprets neither source descriptors nor native types. |
 | Consumer | Supply dependencies and select defaults, library plugins, explicit overrides and representation profiles. |
 | Existing engine | Register the resulting ASTTransformer as one directed language edge. It never registers individual type plugins. |
@@ -489,9 +489,10 @@ helpers have explicit parameters and no inherited source-binder environment.
 
 Reusable fragments remain immutable native syntax templates with symbolic names
 and references. Materialized uses receive fresh containment nodes; owned symbols
-and parameters have their own anchors and valid scopes. The target owns grammar,
-name/import allocation and assembly, not canonical mapping decisions. An external
-reference is not a fabricated resolved AST NodeRef.
+and parameters have their own anchors and valid scopes. Target generation owns
+declaration grammar, symbols and assembly. A use of an external symbol retains
+its identity without a fabricated resolved AST NodeRef. Files chooses its local
+name or qualification in each organized unit.
 
 Public owner-qualified references, source admission, product issuance, frozen
 layouts and host-mediated Apply now let independent integrations operate without
@@ -652,11 +653,13 @@ The kernel runs the selected providers for a generation request.
    constraints, then running each selected Define once in that context.
    Definitions can reserve further helpers. After the queue closes,
    assemble target AST units with distinct containment nodes for each occurrence
-   and symbolic references to owned declarations or explicit native imports.
+   and symbolic references to owned declarations or selected external symbols.
    The result is the existing `ast.Set[T]` through the ASTTransformer bridge.
-6. Use the existing target Syntax formatter and shared printer. Source-file
-   placement and actual IO remain consumer responsibilities; generation does not
-   fabricate the native semantic-provider receipt required by a Files formatter.
+6. To realize output files, supply one placement to the target Files formatter,
+   which arranges declarations and constructs the required module syntax. The
+   Syntax formatter builds each unit's CST; the shared Files printer emits the
+   organized units. Generation does not fabricate the native semantic receipt
+   required by Files. The consumer owns actual IO.
 
 Calls to Engine.Generate can select different mappings in the same engine. A request-bound transformer is also available through the registry.
 Adding a plugin neither adds an engine edge nor registers another language.
@@ -711,7 +714,7 @@ bittype/
   transform/syntax/rust/target/go/
   transform/syntax/cpp/target/go/
     builder.go                  native construction helpers
-    symbols.go                  native scopes, imports and reservations
+    symbols.go                  native declaration scopes and reservations
     assemble.go                 symbolic expansion and AST-set assembly
   transform/syntax/horos-to-<native>/mapping/go/  selectable native representations
 ```
