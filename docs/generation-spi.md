@@ -116,7 +116,8 @@ when adding a library. Missing compatible support is an error.
 | Source integration | Interpret supplied semantic receipts and explicit query results; establish applicability, effective arguments and original assumptions |
 | Selected mapping | Choose the representation and establish its association with the effective source use |
 | Generic convention | Introduce native formals and elaborate complete applications using one retained convention |
-| Target integration | Own native grammar, symbols, constraints, imports and assembly |
+| Generation target | Own native declaration grammar, symbols, constraints, bound type references and declaration assembly |
+| Target Files formatter | Realize those references and requested visibility as module syntax under the consumer's placement |
 | Shared generation host | Associate requests, products and scopes; preserve lifecycle, limits and whole-invocation failure |
 | Final verification composition | Check claims about the actual assembled target using its captured semantics and the selected Logos contract |
 
@@ -128,7 +129,9 @@ implements invocation, streaming, hydration or application-value conversion.
 ## Five operations
 
 **Use** obtains the selected representation of an admitted source use.
-**Publish** exposes a requested native declaration. **Define** fills a locally
+**Publish** identifies the native declaration to expose. The
+[Files stage](source.md#from-generated-declarations-to-files) decides how to
+express that intent in the chosen module. **Define** fills a locally
 owned reservation. These are independently demanded capabilities: an inline
 mapping can supply Use without Publish or Define, and an external generic need
 not define its callee locally. A requested publication cannot silently disappear.

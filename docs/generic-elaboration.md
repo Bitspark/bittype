@@ -115,7 +115,7 @@ not an existing generator capability or a required convention for other targets.
 | Source provider/adapter | Establish and expose admitted uses, memberships and original assumptions |
 | Selected mapping | Choose the native representation family |
 | Configured source/target convention | Introduce native formals; elaborate actual applications; preserve result associations |
-| Target tooling | Native syntax, scopes, anchors, imports and assembly |
+| Generation target | Native declaration syntax, lexical scopes, anchors and bound uses; the [Files formatter](source.md#from-generated-declarations-to-files) owns concrete imports and exports |
 | Generation kernel | Invocation/scope identity, reservation, lifecycle, budgets and whole-output failure; automatic exact selection belongs to the separate implemented composer |
 
 Replace the former binder-to-target-index idea with **real source binder to scoped

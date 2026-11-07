@@ -165,11 +165,12 @@ an implemented Go interface:
 | Target | Target language ID, syntax/profile compatibility and the selected native representation profile/version. These are distinct from source identity. |
 | Native type | Either an external named generic type or a type-only target AST recipe. No raw source string or executable body. |
 | Arguments | Explicit mapping from resolved source parameter slots to target type operands. Source kind contracts and their native enforcement limits must be explicit. Native constraints, extra parameters or indirections must be declared by the profile. |
-| Imports and dependencies | Target import/header/crate identity and exported symbol path; exact package artifacts supplied by the consuming dependency lock. |
+| External symbols and dependencies | Public module, package, crate or header and the symbol supplied there; exact artifacts supplied by the consuming dependency lock. |
 | Qualification | Supported applications/constraints and native representation limits. An unsupported argument fails explicitly. |
 
-An external-type recipe emits a reference and required imports; it does not
-redefine the external type. A declaration recipe emits owned type/interface AST
+An external-type recipe binds a use to the selected public symbol. The
+[Files formatter](source.md#from-generated-declarations-to-files) determines
+how a placed declaration refers to it. A declaration recipe emits owned type/interface AST
 nodes when building the library's type artifact. Consumers reference that
 artifact. A structural mapping recursively uses the selected representations of
 referenced declarations and arguments. All three preserve origins and generic
@@ -202,8 +203,8 @@ including its module pin and source profile. It is not a lookup by the text
 
 | Target | Library-owned recipe configuration | Emitted type use |
 | --- | --- | --- |
-| TypeScript (`typescript`) | Type-only module import `@example/function-types`, exported symbol Function, arguments slots 0 then 1; selected TypeScript syntax and module-resolution profiles. | `Function<A, B>` through a generated type-only import/alias. |
-| Go (`go`) | Import path `example.org/contracts/function/types`, exported identifier Function, arguments slots 0 then 1; selected Go profile and generic constraints. The import alias is allocated without collisions. | `fn.Function[A, B]` when fn is the allocated alias. |
+| TypeScript (`typescript`) | Public module `@example/function-types`, exported symbol Function, argument slots 0 then 1; selected TypeScript syntax and module-resolution profiles. | `Function<A, B>` when Files uses an unaliased type import. |
+| Go (`go`) | Package path `example.org/contracts/function/types`, exported identifier Function, argument slots 0 then 1; selected Go profile and generic constraints. | `fn.Function[A, B]` when Files allocates the alias `fn`. |
 | Rust (`rust`) | Locked crate package and local crate name `example_function_types`, exported path Function, arguments slots 0 then 1; edition, ownership/lifetime and trait-bound choices explicitly supplied by the profile. | `example_function_types::Function<A, B>`. |
 | C++ (`cpp`) | Locked library artifact, header `example/function_types.hpp`, qualified template `example::function::Function`, arguments slots 0 then 1; selected C++ standard and ownership/completeness constraints. | `example::function::Function<A, B>`. |
 
@@ -219,10 +220,10 @@ representation and ordinary type mappings. If Cell or Stream selects a custom
 surface, its own library supplies the same fields in a recipe for each supported
 target. Neither contract receives a privileged registration route.
 
-The recipe's logical symbol and dependency are stable inputs; local import
-aliases and qualification are allocated by the native transformer. Conflicting
-symbols/dependencies must be diagnosed or resolved by explicit configuration.
-The formatter handles spelling, escaping and layout after these choices; the
+The recipe's logical symbol and dependency are stable inputs. The target Files
+formatter selects local aliases and qualification in the placed scope; a conflict
+must be resolved without changing the intended symbol, or reported. The Syntax
+formatter handles spelling, escaping and layout for each resulting unit; the
 printer only emits CST leaves. Missing AST vocabulary is an unsupported-target
 error, not permission to print source and parse it back.
 

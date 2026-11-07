@@ -2,6 +2,13 @@
 
 **Implemented, 7 November 2026.** A representation library selects a public TypeScript module and named type export. The TypeScript Files formatter owns local file organization. Consumers supply one placement for owned declarations. That placement determines both the files returned by the printer and the relative type imports between them. [Syntax and Files](source.md) · [Generation composition](kernel-composition.md)
 
+**Design correction, same day.** The steps below describe the implemented path.
+Under the [generation/Files boundary](source.md#from-generated-declarations-to-files),
+the mapping still selects the same package and export, but generation must carry
+that binding and publication intent without creating package imports, local
+aliases or `export` modifiers. Files formatting first realizes that syntax for
+an actual module. This part is pending in [bittype/ACX-004](architecture-cases/0004-generation-file-syntax.md).
+
 ## From generation to files
 
 1. A library opens against the registered TypeScript builder and requests an imported type by module specifier, exported identifier, represented type arguments and source origin. The target constructs an ordinary type application. It emits named type imports, binds each use to the real import binding and allocates local aliases deterministically. A request can reuse an imported symbol. Generation produces a logical TypeScript AST, with true local declaration and binder links and package references that survive formatting.
