@@ -1,14 +1,13 @@
 package consumer_test
 
 import (
+	"context"
+	"strings"
+	"testing"
+
+	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
 	checkhoros "github.com/Bitspark/bittype/check/syntax/horos/provider/go"
 	checktypescript "github.com/Bitspark/bittype/check/syntax/typescript/provider/go"
-	formattypescript "github.com/Bitspark/bittype/format/syntax/typescript/provider/go"
-	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
-	syntaxprint "github.com/Bitspark/bittype/print/syntax/shared/provider/go"
-
-	"context"
-	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
@@ -17,19 +16,19 @@ import (
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
+	formattypescript "github.com/Bitspark/bittype/format/syntax/typescript/provider/go"
+	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
+	syntaxprint "github.com/Bitspark/bittype/print/syntax/shared/provider/go"
+	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
+	h "github.com/Bitspark/bittype/syntax/horos/go"
+	ts "github.com/Bitspark/bittype/syntax/typescript/go"
 	generate "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	reader "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	target "github.com/Bitspark/bittype/transform/syntax/typescript/target/go"
-
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
-	h "github.com/Bitspark/bittype/syntax/horos/go"
-	ts "github.com/Bitspark/bittype/syntax/typescript/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
-	"strings"
-	"testing"
 )
 
 func TestInstalledSemanticGeneration(t *testing.T) {
@@ -96,21 +95,17 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 		t.Fatal(err)
 	}
 	registry := e.Generation()
-	readerRef, err := c.RegisterSource[h.Language, reader.Reader](registry, from, reader.Provider{})
-	if err != nil {
+
+	if err = c.RegisterSource[h.Language, reader.Reader](registry, from, reader.Provider{}); err != nil {
 		t.Fatal(err)
 	}
-	targetRef, err := c.RegisterTarget[h.Language, ts.Language, target.Builder[h.Language]](registry, from, to, target.Provider[h.Language]{})
-	if err != nil {
+	if err = c.RegisterTarget(registry, to, target.Provider{}); err != nil {
 		t.Fatal(err)
 	}
-	var refs []c.MappingRef
-	for _, provider := range generate.Providers(rules.RepresentationProfile) {
-		ref, err := c.RegisterMapping[h.Language, ts.Language, reader.Reader, target.Builder[h.Language]](registry, from, to, provider)
-		if err != nil {
+	for _, library := range generate.Libraries(rules.RepresentationProfile) {
+		if _, err := c.RegisterMapping(registry, from, to, library); err != nil {
 			t.Fatal(err)
 		}
-		refs = append(refs, ref)
 	}
 	var roots []ast.NodeRef
 	for i, node := range source.Abstract.Nodes {
@@ -118,8 +113,15 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 			roots = append(roots, ast.NodeRef{Tree: source.Abstract.ID, Node: ast.NodeID(i + 1)})
 		}
 	}
-	request := c.Request{Input: transform.Input{Source: snapshot, Evidence: []semantic.Result{analyzed}}, To: to, Roots: roots, Output: "generated-types", Limits: g.DefaultLimits(), Selection: c.Selection{Source: readerRef, Target: targetRef, Mappings: refs}}
-	output, err := e.Generate(ctx, request)
+	request := c.Request{Input: transform.Input{Source: snapshot, Evidence: []semantic.Result{analyzed}}, To: to, Roots: roots, Output: "generated-types", Limits: g.DefaultLimits(), Profile: rules.RepresentationProfile}
+	plan, err := e.PlanGeneration(ctx, request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Steps()) == 0 {
+		t.Fatal("empty plan")
+	}
+	output, err := plan.Run(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

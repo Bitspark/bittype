@@ -612,7 +612,7 @@ Function contract to Horos/Bittype.
 Apply the theorem to established Person membership and representation. Its pair
 of results supplies membership and representation for the inner Page; those
 results become the premises for the outer application. The
-[Introduce/Apply composition](generic-elaboration.md#one-generic-convention-for-formals-and-applications)
+[Generic declaration/application composition](generic-elaboration.md#one-generic-convention-for-formals-and-applications)
 retains real binder association and whole-application result support.
 
 An actual DataPage use still obeys that declaration's original argument contract

@@ -2,84 +2,80 @@ package mapping
 
 import (
 	"context"
+
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
-	m "github.com/Bitspark/bittype/transform/syntax/shared/target/go"
-	target "github.com/Bitspark/bittype/transform/syntax/typescript/target/go"
-	"strconv"
+	model "github.com/Bitspark/bittype/transform/syntax/typescript/model/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-func textMapping(src source.Reader, b target.Builder[h.Language]) g.Mapping[h.Language, s.Language] {
-	return rules.Direct("text/typescript/1", src, b, func(_ context.Context, r g.UseRequest[h.Language, s.Language]) (g.Fragment[s.Language], error) {
-		view, err := src.Read(r.Want().Use().Use)
+func primitive(profile, sourceName, targetName string) rules.Library[s.Language] {
+	return rules.Library[s.Language]{Profile: profile, DescribeRules: func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
+		pattern, err := rules.Pattern(from, "scalar", sourceName)
 		if err != nil {
-			return g.Fragment[s.Language]{}, err
+			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
 		}
-		return b.Node(m.Node(s.KindKeywordType, m.Attributes("name", "string"), view.Origin))
-	})
+		return g.MappingDescription[h.Language, s.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: sourceName + "/typescript/1", Input: pattern, Output: model.Primitive(targetName)}}}, nil
+	}}
 }
-func boolMapping(src source.Reader, b target.Builder[h.Language]) g.Mapping[h.Language, s.Language] {
-	return rules.Direct("bool/typescript/1", src, b, func(_ context.Context, r g.UseRequest[h.Language, s.Language]) (g.Fragment[s.Language], error) {
-		view, err := src.Read(r.Want().Use().Use)
+func Text(profile string) rules.Library[s.Language] { return primitive(profile, "utf8-text", "string") }
+func Bool(profile string) rules.Library[s.Language] { return primitive(profile, "bool", "bool") }
+func List(profile string) rules.Library[s.Language] {
+	slot := g.TypeSlot("E")
+	return rules.Library[s.Language]{Profile: profile, DescribeRules: func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
+		pattern, err := rules.Element(from, slot)
 		if err != nil {
-			return g.Fragment[s.Language]{}, err
+			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
 		}
-		return b.Node(m.Node(s.KindKeywordType, m.Attributes("name", "boolean"), view.Origin))
-	})
+		return g.MappingDescription[h.Language, s.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "list/typescript/1", Input: pattern, Output: model.Collection(g.Mapped[s.Language](slot))}}}, nil
+	}}
 }
-func listMapping(src source.Reader, b target.Builder[h.Language]) g.Mapping[h.Language, s.Language] {
-	return rules.Direct("list/typescript/1", src, b, func(_ context.Context, r g.UseRequest[h.Language, s.Language]) (g.Fragment[s.Language], error) {
-		view, err := src.Read(r.Want().Use().Use)
+func Record(profile string) rules.Library[s.Language] {
+	return rules.Library[s.Language]{Profile: profile, DescribeRules: func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
+		pattern, err := rules.Pattern(from, "record", "closed")
 		if err != nil {
-			return g.Fragment[s.Language]{}, err
+			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
 		}
-		operand, err := src.Operand(r.Want().Use().Use, 1)
-		if err != nil {
-			return g.Fragment[s.Language]{}, err
-		}
-		child, err := r.Child(operand)
-		if err != nil {
-			return g.Fragment[s.Language]{}, err
-		}
-		return b.Node(m.Node(s.KindArrayType, nil, view.Origin), m.Child[s.Language]{Role: s.RoleElement, Fragment: child.Payload()})
-	})
-}
-func recordMapping(src source.Reader, b target.Builder[h.Language]) g.Mapping[h.Language, s.Language] {
-	return rules.Direct("record/typescript/1", src, b, func(_ context.Context, r g.UseRequest[h.Language, s.Language]) (g.Fragment[s.Language], error) {
-		use := r.Want().Use()
-		if !src.IsBody(use.Environment, use.Use) {
-			return g.Fragment[s.Language]{}, src.Unsupported(use.Use, "nested records require a named declaration in this profile")
-		}
-		view, err := src.Read(use.Use)
-		if err != nil {
-			return g.Fragment[s.Language]{}, err
-		}
-		fields, err := src.Fields(use.Use)
-		if err != nil {
-			return g.Fragment[s.Language]{}, err
-		}
-		var children []m.Child[s.Language]
-		names := map[string]bool{}
-		for _, field := range fields {
+		return g.MappingDescription[h.Language, s.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "record/typescript/1", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, s.Language, source.Reader]) (g.Expression[s.Language], error) {
+			src, err := r.Source()
+			if err != nil {
+				return g.Expression[s.Language]{}, err
+			}
+			use, err := r.Use()
+			if err != nil {
+				return g.Expression[s.Language]{}, err
+			}
+			if !src.IsBody(use.Environment, use.Use) {
+				return g.Expression[s.Language]{}, src.Unsupported(use.Use, "nested records require a named declaration in this profile")
+			}
+			view, err := src.Read(use.Use)
+			if err != nil {
+				return g.Expression[s.Language]{}, err
+			}
+			fields, err := src.Fields(use.Use)
+			if err != nil {
+				return g.Expression[s.Language]{}, err
+			}
+			var members []g.Expression[s.Language]
+			for _, f := range fields {
 
-			if names[field.Name] {
-				return g.Fragment[s.Language]{}, src.Unsupported(use.Use, "native field name collision")
+				ty, err := r.Mapped(f.Use)
+				if err != nil {
+					return g.Expression[s.Language]{}, err
+				}
+
+				members = append(members, g.At(model.Field(f.Name, f.Optional, ty), f.Origin))
 			}
-			names[field.Name] = true
-			child, err := r.Child(field.Use)
-			if err != nil {
-				return g.Fragment[s.Language]{}, err
-			}
-			ty := child.Payload()
-			member, err := b.Node(m.Node(s.KindProperty, m.Attributes("name", field.Name, "optional", strconv.FormatBool(field.Optional)), field.Origin), m.Child[s.Language]{Role: s.RoleType, Fragment: ty})
-			if err != nil {
-				return member, err
-			}
-			children = append(children, m.Child[s.Language]{Role: s.RoleMember, Fragment: member})
-		}
-		return b.Node(m.Node(s.KindObjectType, nil, view.Origin), children...)
-	})
+			return g.At(model.Record(members...), view.Origin), nil
+		}}}}, nil
+	}}
+}
+func Declarations(profile string) rules.Library[s.Language] {
+	return rules.Declarations(profile, model.Form("interface"), model.Form("alias"))
+}
+func Libraries(profile string) []g.MappingLibrary[h.Language, s.Language, source.Reader] {
+	return []g.MappingLibrary[h.Language, s.Language, source.Reader]{Text(profile), Bool(profile), List(profile), Record(profile), Declarations(profile)}
 }

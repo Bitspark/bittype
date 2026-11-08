@@ -1,15 +1,8 @@
 package integration_test
 
 import (
-	checkhoros "github.com/Bitspark/bittype/check/syntax/horos/provider/go"
-	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
-	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
-	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
-	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
-
 	"context"
 	"errors"
-	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -18,8 +11,10 @@ import (
 	"testing"
 
 	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
+	checkhoros "github.com/Bitspark/bittype/check/syntax/horos/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
+	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
@@ -27,21 +22,24 @@ import (
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
-	cgtarget "github.com/Bitspark/bittype/transform/syntax/cpp/target/go"
-	ggtarget "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
-	cg "github.com/Bitspark/bittype/transform/syntax/horos-to-cpp/mapping/go"
-	gg "github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/go"
-	rg "github.com/Bitspark/bittype/transform/syntax/horos-to-rust/mapping/go"
-	tg "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/go"
-	rgtarget "github.com/Bitspark/bittype/transform/syntax/rust/target/go"
-	tgtarget "github.com/Bitspark/bittype/transform/syntax/typescript/target/go"
-
+	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
+	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	cs "github.com/Bitspark/bittype/syntax/cpp/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	rs "github.com/Bitspark/bittype/syntax/rust/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
+	cgtarget "github.com/Bitspark/bittype/transform/syntax/cpp/target/go"
+	ggtarget "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
+	cg "github.com/Bitspark/bittype/transform/syntax/horos-to-cpp/mapping/go"
+	gg "github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/go"
+	rg "github.com/Bitspark/bittype/transform/syntax/horos-to-rust/mapping/go"
+	tg "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/go"
+	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
+	rgtarget "github.com/Bitspark/bittype/transform/syntax/rust/target/go"
+	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
+	tgtarget "github.com/Bitspark/bittype/transform/syntax/typescript/target/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
@@ -222,16 +220,16 @@ func outputTree[L any](t *testing.T, out g.Output) ast.AST[L] {
 type requestBuilder func(*c.Registry, transform.Input, representation.Language) (c.Request, error)
 
 func tsRequest(reg *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-	return genfixture.Request(reg, input, to, "generated-ts", tgtarget.Provider[h.Language]{}, tg.Providers(rules.RepresentationProfile)...)
+	return genfixture.Request(reg, input, to, "generated-ts", tgtarget.Provider{}, tg.Libraries(rules.RepresentationProfile)...)
 }
 func goRequest(reg *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-	return genfixture.Request(reg, input, to, "generated-go", ggtarget.Provider[h.Language]{Package: "pagination"}, gg.Providers(rules.RepresentationProfile)...)
+	return genfixture.Request(reg, input, to, "generated-go", ggtarget.Provider{Package: "pagination"}, gg.Libraries(rules.RepresentationProfile)...)
 }
 func rustRequest(reg *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-	return genfixture.Request(reg, input, to, "generated-rust", rgtarget.Provider[h.Language]{}, rg.Providers(rules.RepresentationProfile)...)
+	return genfixture.Request(reg, input, to, "generated-rust", rgtarget.Provider{}, rg.Libraries(rules.RepresentationProfile)...)
 }
 func cppRequest(reg *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-	return genfixture.Request(reg, input, to, "generated-cpp", cgtarget.Provider[h.Language]{Namespace: "pagination"}, cg.Providers(rules.RepresentationProfile)...)
+	return genfixture.Request(reg, input, to, "generated-cpp", cgtarget.Provider{Namespace: "pagination"}, cg.Libraries(rules.RepresentationProfile)...)
 }
 
 func nativeChecker[L any](t *testing.T, p nativeProvider[L]) check.Checker {

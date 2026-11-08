@@ -3,6 +3,8 @@ package source
 import (
 	"context"
 	"fmt"
+	"slices"
+
 	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
@@ -13,7 +15,6 @@ import (
 	"github.com/Bitspark/bittype/semantics/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
-	"slices"
 )
 
 func Contract() transform.Contract {
@@ -314,3 +315,28 @@ func (s *Source) proper(sortID, term semantics.TermID) error {
 	return nil
 }
 func (s *Source) String() string { return fmt.Sprintf("Horos source (%d declarations)", len(s.order)) }
+
+func (s *Source) CheckChild(ctx context.Context, env g.Environment[h.Language], parent, child g.Use[h.Language]) error {
+	p, err := s.Admit(ctx, env, parent)
+	if err != nil {
+		return err
+	}
+	if _, err = s.Admit(ctx, env, child); err != nil {
+		return err
+	}
+	for _, a := range p.Actuals {
+		if a.Use == child {
+			return nil
+		}
+	}
+	v, err := s.Read(parent)
+	if err != nil {
+		return err
+	}
+	for _, o := range v.Operands {
+		if o.Use == child {
+			return nil
+		}
+	}
+	return g.ErrScope
+}

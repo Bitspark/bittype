@@ -30,7 +30,7 @@ contracts/
   print/go/               symmetric Syntax/Files print contracts and adapters
   text/go/                shared source and syntax diagnostics only
   transform/go/           ASTTransformer contract and typed registration bridge
-  generation/go/          public mapping operations and guarded explicit invocation
+  generation/go/          declarative mappings, immutable native programs and guarded planning
   semantic/go/            common snapshots, requests, reports and publication
   resolution/go/          resolver capability and dependency contract
   analysis/go/            analysis capability and explicit resolution input
@@ -54,13 +54,14 @@ resolve/files/<language>/provider/go/          captured reference resolution
 analyze/files/<language>/provider/go/          semantic analysis
 print/{syntax,files}/shared/provider/go/       shared printers
 check/syntax/shared/{ast,cst}/go/              carrier structure
-transform/syntax/shared/generation/go/         registry, adapter and scheduler
-transform/syntax/shared/target/go/             symbolic native storage
+transform/syntax/shared/generation/go/         registry and request composition
+transform/syntax/shared/target/go/             native construction and scoped symbol storage
 transform/syntax/horos/source/go/              Horos semantic reader
 transform/syntax/horos/mapping/go/             common Horos mapping policy
-transform/syntax/<native>/target/go/           native builders
+transform/syntax/<native>/model/go/            native semantic forms and validation
+transform/syntax/<native>/target/go/           AST construction from native forms
 transform/syntax/typescript/symbol/go/        public type symbols for generation and Files
-transform/syntax/horos-to-<native>/mapping/go/ selectable representation providers
+transform/syntax/horos-to-<native>/mapping/go/ selectable mapping descriptions
 internal/<language>/                           private lexical helpers
 integration/go/          independent consumers and cross-package qualification
 verification/            concrete static verification; public Logos contract
@@ -125,7 +126,10 @@ same dependency level. The package boundaries are:
 | Carrier checks and printer | Generic tree structure and shared diagnostic contracts; no native grammar or formatting choices |
 | Structurally checked representation | Carriers, identity and generic carrier checks; no engine or transformer dependency |
 | Transformer contract/bridge | Typed requests, shared semantic evidence admission, checked representations and endpoint identity; no concrete mapping |
-| Generation contracts/invocation | Shared semantic evidence admission, representations, scoped identities and operation lifecycle; configured source/association/native collaborators own meaning; no concrete language, Logos or mapping imports |
+| Generation contracts/planner | Scoped substitution, immutable native programs, semantic evidence admission and whole-output failure; no concrete language, Logos or mapping imports |
+| Native generation model | Own native forms and their admission; no AST allocation or source-language interpretation |
+| Generation mapping | Source meaning and native model; no native AST constructor dependency |
+| Native generation target | Own native forms to AST construction; no source reader or mapping callback |
 | Semantic facts | Generic AST addresses; graph integrity and owned storage, no language rules |
 | Shared semantic contract/bridge | Semantic facts, Files context, representations, explicit checker and identity; no Source dependency |
 | Resolution contract/bridge | Shared semantic contract and identity; binding coverage and typed invocation |
@@ -276,7 +280,7 @@ contracts/generation/go/                  implemented contracts and explicit run
 transform/syntax/shared/generation/go/      registry, checked adapter and scheduling
 transform/syntax/horos/source/go/           receipt-backed source reader
 transform/syntax/horos/mapping/go/          structural policy and association rules
-transform/syntax/shared/target/go/          shared symbolic native storage
+transform/syntax/shared/target/go/          shared native construction and scoped symbol storage
 transform/syntax/<native>/target/go/        native assembly and grammar
 transform/syntax/horos-to-<native>/mapping/go/  independently selected mappings
 ```

@@ -2,8 +2,11 @@ package generation
 
 import (
 	"context"
-	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"slices"
+
+	"github.com/Bitspark/bittype/contracts/semantic/go"
+	"github.com/Bitspark/bittype/contracts/transform/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 type Formal[F any] struct {
@@ -71,4 +74,20 @@ type Source[F any] interface {
 	// Use identifies the occurrence; Subject is the source-certified effective
 	// subject. Missing evidence must fail, never trigger hidden analysis.
 	Admit(context.Context, Environment[F], Use[F]) (UseData[F], error)
+	// CheckChild authenticates a direct semantic operand or generic actual of parent.
+	CheckChild(context.Context, Environment[F], Use[F], Use[F]) error
+}
+
+// SourceSession consumes one captured semantic context. Its traversal split is a
+// separate proposal; neither planning nor construction performs hidden analysis.
+type SourceSession[F any] interface {
+	Source[F]
+	Catalog[F]
+	ResolveRoots(context.Context, []ast.NodeRef) ([]Declaration[F], error)
+}
+
+// bittype:dimension Syntax
+type SourceProvider[F any, S SourceSession[F]] interface {
+	Contract() transform.Contract
+	Open(context.Context, transform.Request[F]) (S, error)
 }

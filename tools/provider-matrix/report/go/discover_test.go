@@ -425,15 +425,15 @@ func TestCurrentRepositoryProviderDiscovery(t *testing.T) {
 	for _, id := range []string{"typescript", "go", "rust", "cpp"} {
 		n := 0
 		for _, loc := range m.edges["horos"][id] {
-			if loc.op.kind == "mapping provider" {
+			if loc.op.kind == "mapping library" {
 				n++
-				if loc.op.public.Name() != "Open" || loc.op.from.id != "horos" || loc.op.to.id != id {
+				if loc.op.public.Name() != "Describe" || loc.op.from.id != "horos" || loc.op.to.id != id {
 					t.Fatal("wrong contribution", loc.op)
 				}
 			}
 		}
 		if n != 1 {
-			t.Fatalf("expected one selectable mapping provider for horos to %s, got %d", id, n)
+			t.Fatalf("expected one selectable mapping library for horos to %s, got %d", id, n)
 		}
 	}
 

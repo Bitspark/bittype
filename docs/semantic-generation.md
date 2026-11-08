@@ -1,6 +1,6 @@
 # Semantic native type generation
 
-**Revision 4 on the public generation SPI, 6 November 2026.** The four native
+**Declarative generation SPI, 8 November 2026.** The four native
 pagination mappings consume general kinds through explicit target
 profiles, using public Horos Go 0.10.2. The [automatic composer](generation-composition.md)
 now drives all four, with Horos mappings in Bittype's root Go module. This
@@ -11,7 +11,7 @@ validators, serialization or executable behavior.
 
 Capture admitted Horos syntax once, resolve it explicitly, and analyze that exact
 resolution result. Supply the same snapshot and explicit analysis evidence to
-selected transformers. Equal bytes or matching tree addresses from another
+the generation request. Equal bytes or matching tree addresses from another
 capture do not substitute for that association. Configuration, dependency context,
 operation/profile, required obligations and available typed Semantics are part of
 the input contract.
@@ -23,7 +23,8 @@ consumes resolution evidence; no mapping invokes a hidden resolver or analyzer.
 
 ```text
 Horos AST collection + explicit resolution/analysis evidence
-  -> generation.Output: checked target syntax, exposures and external uses
+  -> PlanGeneration: closed native types and bound references
+  -> Run -> generation.Output: checked target syntax, exposures and external uses
   -> TypeScript Files placement and native analysis -> Source -> files
 ```
 
@@ -36,12 +37,12 @@ resolution/analysis of its own snapshot.
 
 ## Representation and enforcement profiles
 
-The [Horos mapping library](../transform/syntax/horos/mapping/go/mapping.go) defines RepresentationProfile and EnforcementProfile. The four native mapping packages expose individual rules and a Providers(profile) collection. Each consumer selects a source, target and mappings and passes the root declaration sites, output tree ID, receipts and limits to Engine.Generate. Go's target provider takes Package and C++ takes Namespace. The [TypeScript example](kernel-composition.md#horos-to-typescript) shows registration and execution.
+The [Horos mapping library](../transform/syntax/horos/mapping/go/mapping.go) defines RepresentationProfile and EnforcementProfile. The four native mapping packages expose individual rules and a Libraries(profile) collection. Each consumer registers a source, target and mapping libraries and passes the root declaration sites, output tree ID, receipts, profile and limits to Engine.Generate (or PlanGeneration then Run). Go's target provider takes Package and C++ takes Namespace. The [TypeScript example](kernel-composition.md#horos-to-typescript) shows registration and execution.
 
 | Selected profile | Promise and behavior |
 | --- | --- |
 | RepresentationProfile | Native declarations represent uses already admitted by Horos. The profile expressly permits erasing ordinary proper-kind contracts from target parameter declarations. |
-| EnforcementProfile | Native clients would have to be prevented from violating the source constraint. No such target encoding is implemented; Transform returns `text.Unsupported` at the request entry and no output. |
+| EnforcementProfile | Native clients would have to be prevented from violating the source constraint. No such target encoding is implemented; the library rejects registration of this profile with generation.ErrUnsupported. |
 
 The profile selection is part of the configured mapping, not inferred from a kind
 name. Representation does not advertise arbitrary native instantiations as
@@ -52,7 +53,7 @@ representation instead.
 The [native kind-constraint proposal](native-kind-constraints.md) describes a
 future enforcing route using direct bounds or source type witnesses, with
 language-specific limits. It is documentation only: the representation profile
-still permits erasure and the enforcement profile still returns Unsupported.
+still permits erasure and the enforcement profile is still rejected as unsupported.
 
 ## Pagination subset
 
@@ -146,7 +147,7 @@ Arbitrary later Horos queries do not mutate the captured source evidence.
 
 The mapping requires the current Horos analysis profile, its validity and
 required enumeration reports, an available typed semantic graph, and compatible
-configuration. The adapter admits capture/evidence association before mapping.
+configuration. The planner admits capture/evidence association before mapping.
 The source-specific reader decodes published terms; it does not rerun Horos
 resolution, query a different Program or restore a Data-summary fallback.
 

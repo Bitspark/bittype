@@ -155,14 +155,14 @@ implementations, adapters and transport behavior are outside this milestone.
 
 Native type generation preserves open generics; ground specialization is not
 required first. Library-owned representation recipes may select an external
-native type or construct type-only target AST nodes. Their exact source
+native type or describe owned native type declarations. Their exact source
 declaration, target profile, generic argument mapping and locked dependencies
 are explicit configuration. Page can therefore compose a Cell type without a
 Cell-specific generator case. See the [four-language configuration](type-representations.md#5-configuration-for-typescript-go-rust-and-c).
 
 ### Semantic mapping and target AST construction
 
-**Design decision, 7 November 2026.** Reading starts with files and selected
+**Design decision, implemented 8 November 2026.** Reading starts with files and selected
 dependencies supplied by the application. For each unit the source language
 parses a CST with an AST view. Its resolver determines what each occurrence
 denotes in its scope. Its analyzer publishes facts for that captured program.

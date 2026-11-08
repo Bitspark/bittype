@@ -3,6 +3,8 @@
 package horosgeneration
 
 import (
+	"sync"
+
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
@@ -48,28 +50,28 @@ func Roots(input transform.Input) ([]ast.NodeRef, error) {
 	}
 	return nil, g.ErrInvalid
 }
-func Request[T any, N g.Native[h.Language, T]](registry *c.Registry, input transform.Input, to representation.Language, output ast.TreeID, target g.TargetProvider[h.Language, T, N], mappings ...g.MappingProvider[h.Language, T, source.Reader, N]) (c.Request, error) {
+
+var configuredSources sync.Map
+
+func Request[T any](registry *c.Registry, input transform.Input, to representation.Language, output ast.TreeID, target g.Target[T], mappings ...g.MappingLibrary[h.Language, T, source.Reader]) (c.Request, error) {
 	zero := c.Request{}
 	from := input.Source.Language()
-	s, err := c.RegisterSource[h.Language, source.Reader](registry, from, source.Provider{})
-	if err != nil {
-		return zero, err
-	}
-	n, err := c.RegisterTarget[h.Language, T, N](registry, from, to, target)
-	if err != nil {
-		return zero, err
-	}
-	var refs []c.MappingRef
-	for _, p := range mappings {
-		ref, err := c.RegisterMapping[h.Language, T, source.Reader, N](registry, from, to, p)
-		if err != nil {
+	if _, loaded := configuredSources.LoadOrStore(registry, true); !loaded {
+		if err := c.RegisterSource[h.Language, source.Reader](registry, from, source.Provider{}); err != nil {
 			return zero, err
 		}
-		refs = append(refs, ref)
+	}
+	if err := c.RegisterTarget(registry, to, target); err != nil {
+		return zero, err
+	}
+	for _, p := range mappings {
+		if _, err := c.RegisterMapping(registry, from, to, p); err != nil {
+			return zero, err
+		}
 	}
 	roots, err := Roots(input)
 	if err != nil {
 		return zero, err
 	}
-	return c.Request{Input: input, To: to, Output: output, Roots: roots, Selection: c.Selection{Source: s, Target: n, Mappings: refs}, Limits: g.DefaultLimits()}, nil
+	return c.Request{Input: input, To: to, Output: output, Roots: roots, Profile: "pagination-representation/1", Limits: g.DefaultLimits()}, nil
 }

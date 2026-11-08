@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	generation "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 )
@@ -10,10 +11,10 @@ import (
 // providers remain explicitly supplied through its typed registration functions.
 func (e *Engine) Generation() *generation.Registry { return &e.generation }
 
-// Generate checks both endpoints, composes the selected providers once, then
-// admits the complete output. It performs no resolution, analysis or routing.
-func (e *Engine) Generate(ctx context.Context, r generation.Request) (g.Output, error) {
-	zero := g.Output{}
+// PlanGeneration checks both endpoints and resolves the selected descriptions
+// into native intent. It performs no AST construction or implicit analysis.
+func (e *Engine) PlanGeneration(ctx context.Context, r generation.Request) (g.GenerationPlan, error) {
+	zero := g.GenerationPlan{}
 	if ctx == nil {
 		return zero, g.ErrInvalid
 	}
@@ -38,5 +39,14 @@ func (e *Engine) Generate(ctx context.Context, r generation.Request) (g.Output, 
 			return zero, err
 		}
 	}
-	return e.generation.Generate(ctx, r, *to.checker)
+	return e.generation.PlanGeneration(ctx, r, *to.checker)
+}
+
+// Generate is the one-call composition of semantic planning and target construction.
+func (e *Engine) Generate(ctx context.Context, r generation.Request) (g.Output, error) {
+	plan, err := e.PlanGeneration(ctx, r)
+	if err != nil {
+		return g.Output{}, err
+	}
+	return plan.Run(ctx)
 }

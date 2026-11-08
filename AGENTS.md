@@ -107,29 +107,39 @@ reserved Type/Data names. Scalar, List, Record, Data and user-defined kinds use
 the same Horos machinery. Kind definitions are compile-time entities, not native
 type exports. Keep semantic sort separate from declaration parameter count.
 
-The first [public generation SPI](docs/generation-spi.md) and guarded invocation
-are implemented in `contracts/generation/go`, alongside the contracts. Keep that
-minimal runner here. The [automatic composer](docs/generation-composition.md)
-lives at `transform/syntax/shared/generation/go`; source/native collaborators are separate. All
-four generators now use it, and the private pagination Dialects are deleted. Libraries own optional mappings; the
-composer selects exact declaration identities in consuming configuration.
-Builtin mappings use the same supplied mechanism. Explicit overrides must replace
-existing exact bindings without order-dependent selection or error-triggered
-fallback. The [kernel construction contract](docs/kernel-composition.md) puts registration, request validation and assembly in the kernel. Supply source, target and mapping providers independently. Horos mapping implementations belong to Bittype's root module under transform/syntax/horos/mapping/go and transform/syntax/horos-to-&lt;native&gt;/mapping/go. The kernel, source and target packages cannot import concrete mapping packages. Consumers own selection and request explicit root sites. Remove complete-pipeline factories, per-pair presets and compatibility aliases.
-TypeScript generation carries exposed sites and external symbol occurrences in the checked `generation.Output`. Its [Files formatter](docs/typescript-type-imports.md) decides imports and module exports after placement and checks fresh native bindings. Preserve the distinct input for formatting already analyzed files.
-Replacement transformers must consume plugins uniformly; no
-contract-specific engine registrations, named-library imports in general
-transformers or raw-source recipes. Missing/conflicting required representations
-fail rather than selecting a weaker fallback.
+The [declarative generation SPI](docs/generation-spi.md) and invariant planner
+live in contracts/generation/go. The [registry](docs/kernel-composition.md)
+lives at transform/syntax/shared/generation/go. Register source, target and mapping
+libraries independently. Libraries describe native types and scoped child demands;
+the planner resolves them into a closed native program. Target construction
+receives that program without a source reader or mapping callback. Do not restore
+the procedural operations, association-product tickets, per-pair assembly,
+per-request mapping tables or compatibility aliases.
 
-Keep lexical association scope separate from a callback's operation ticket.
-Retained formal products survive Introduce for use in Define; callback issuance
-expires when that callback returns. The configured association owner authenticates
-immutable records before the host seals a product; attaching a requested binding
-to an unrelated payload/token is forbidden. Native-only helpers use configured
-helper keys, never fabricated source declarations or inherited caller binders.
-Source admission, native syntax/scoping and representation meaning remain with
-their supplied owners. None is inferred by the agnostic runner.
+Builtin and independent library mappings use the same contract. Exact overrides
+identify both expected and replacement bindings; ambiguity and selected-rule
+failure never trigger a weaker fallback. Native semantic forms belong under
+transform/syntax/<native>/model/go, their AST interpretation under
+transform/syntax/<native>/target/go. Horos mappings live under
+transform/syntax/horos/mapping/go and transform/syntax/horos-to-<native>/mapping/go.
+The kernel, source and target packages cannot import concrete mapping packages.
+Mapping packages depend on native models, never target AST constructors.
+
+Preserve real binder identity and one convention for native formals and complete
+applications. Admit every source argument even if native mapping omits it.
+Native helpers use owner-qualified keys and their own parameters, never fabricated
+source declarations or inherited caller binders. Scoped expansion requests expire
+on return. A run uses fresh authenticated symbols and cannot select new mappings.
+Source admission, native syntax and representation meaning remain separately
+owned; no agnostic mechanism infers their semantics.
+
+TypeScript generation carries exposures and external occurrences in the checked
+generation.Output. Its [Files formatter](docs/typescript-type-imports.md) decides
+imports and exports after placement and checks fresh native bindings. Formatting
+already analyzed files retains its distinct input. The
+[three SPI changes](docs/generation-planner.md#three-spi-changes) distinguish the
+implemented output/planning boundaries from proposed common source traversal.
+Cross-language verification and native admission enforcement remain separate.
 
 - Readable Horos syntax and native pagination transformers are implemented;
   read [Horos syntax](docs/horos-syntax.md) and [semantic generation](docs/semantic-generation.md).

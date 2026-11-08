@@ -1,140 +1,87 @@
 # Planning and running type generation
 
-**Planner proposal · 8 November 2026. The generation output and TypeScript Files handoff are implemented.**
-
-A caller should be able to ask Bittype to generate `example.pagination.Page` for
-TypeScript, inspect which mappings the engine chose, and run that plan. The
-project configures its generation libraries and representation preferences once.
-The engine assembles the pipeline. During planning, mapping libraries choose
-the target types and bind their uses. A run constructs those choices as target
-ASTs. A caller can therefore inspect what `list<T>` will become before the
-TypeScript builder allocates an array node.
-
-## What exists today
-
-| On main | Proposed change |
-| --- | --- |
-| `Engine.Plan(from, to)` finds a language route through registered AST transformers. | Add `PlanGeneration` for decisions about particular source declarations. |
-| `Registry.Generate(ctx, request, checker)` admits the exact source snapshot and evidence. It opens the providers and collects their bindings. | The planner resolves the reachable mapping choices before returning a runnable plan. |
-| A mapping provider's `Open` can supply exact bindings, a structural declaration policy, and helper plans. The TypeScript list mapping calls `Child` on its element and builds an array node in Go. | Advertise bindings at registration and express the list rule as an executable input pattern and target expression. |
-| `Engine.Generate` takes the analyzed input, roots, target, output identity, provider handles and limits. It returns a sealed `generation.Output` with a syntax-checked snapshot. | `Run` returns a `generation.Output` with the target snapshot, exposed declarations and external uses. `Generate` would plan and run in one call and return the same result type. |
-| The TypeScript target records bound uses and exposed sites. Files constructs and checks imports and exports under each placement. | The proposed planner would determine those destinations before AST construction. |
-
-The existing `generation.Plan[F,T]` describes the operations for one mapping or
-declaration. A `GenerationPlan` in this proposal covers a complete request and
-the dependencies of its roots. The engine already owns assembly, following the
-correction recorded in ACX-002. [Current generation lifecycle](kernel-composition.md#kernel-lifecycle) ·
-[Language route planner](../engine/go/path.go) ·
-[Generation registry](../transform/syntax/shared/generation/go/registry.go) ·
-[Generation assembly case](architecture-cases/0002-generation-assembly.md).
+**Implemented, 8 November 2026.** Planning resolves source meanings to intended
+native types. A run constructs the resulting target ASTs. Files then organizes
+and checks those declarations under a placement and dependency environment.
 
 ## Three SPI changes
 
-1. **Carry generation intent into Files.** The target records requested public
-   declaration sites and the external destination of each emitted use. The
-   engine captures checked declaration ASTs and seals those sites into one
-   `generation.Output`. Files accepts that complete output, a consumer
-   placement and a target dependency environment. It constructs module syntax
-   and checks the real bindings before publishing `Source[T]`. Formatting an
-   already analyzed program still consumes its own semantic result.
-2. **Separate semantic mapping from target construction.** Mapping libraries
-   supply `BindingDescription[F,T]` values, declaration and helper recipes,
-   and generic conventions. The kernel selects and composes them into a plan.
-   The target builder realizes planned expressions and binders at AST sites.
-   These contracts replace the responsibilities currently combined in
-   `MappingProvider.Open` and the procedural mapping operations. This is the
-   proposed planner redesign. [Mapping declarations](#what-a-mapper-declares)
-3. **Read common structure from established semantics.** The kernel can follow
-   captured entities, references and complete arguments directly. Languages
-   supply the identities, operand meanings and applicability judgments their
-   rules establish. For `Page<Cell<Person>>` the shared graph pairs two
-   applications, while Horos owns kind admission and the identity of its Cell
-   declaration. This narrows the proposed responsibilities of `Source[F]`,
-   `Catalog[F]` and `SourceSession[F]`. [Semantic queries](semantics.md)
+1. **Carry generation intent into Files — implemented for TypeScript.**
+   A sealed generation.Output holds checked declaration ASTs, requested exposed
+   sites and external use destinations. Files receives that output, one placement
+   and the selected native dependencies, builds module syntax and checks its
+   bindings before publishing Source.
+2. **Separate semantic mapping from target construction — implemented.**
+   Libraries register descriptions, declaration recipes and generic conventions.
+   Planning resolves every reachable choice, source capture and helper into a
+   closed native Program. Run receives that program, without source readers or
+   mapping callbacks. The procedural operations and per-request mapping lists
+   have been removed. [SPI](generation-spi.md)
+3. **Read common structure from established semantics — still proposed.**
+   The current Source/Catalog reader supplies traversal as well as source-owned
+   interpretation. A later change should let the kernel follow the shared
+   semantic graph and retain language-owned identity, operand meaning and
+   applicability judgments. This task does not claim that separation is complete.
+   [Contexts and matrix](abstraction-levels.md#agnostic-kernel-and-language-specific-rules)
 
-The output handoff uses the following implemented Go method signatures. The
-application invokes the engine or the typed Files formatter. The selected
-target implements the assembly method, returning construction records in
-publication order. The kernel admits them and seals the output.
-
-```go
-// engine; compose is the shared generation registry package
-func (e *Engine) Generate(ctx context.Context, r compose.Request) (generation.Output, error)
-
-// generation.Native[F,T] (method excerpt)
-Assemble(context.Context, []Publication[F,T], []Definition[F,T], Limits) (Assembly, error)
-
-// format
-func (p GeneratedFilesFormatter[L]) Format(ctx context.Context, input GeneratedFilesInput) (source.Source[L], error)
-```
-
-For the proposed source split, the shared graph's
-`DirectParameterBindings(id TermID) ([]ArgumentBinding, bool)` pairs direct
-applications. The present `Source.Admit` also checks the use under its actual
-environment. The kernel can consume the structural pairs once, and a language
-can supply the required source interpretation from the captured analysis.
-[Source contract](../contracts/generation/go/source.go) · [Graph query](../semantics/go/model.go)
-
-The first slice implements the generation result and TypeScript Files. The
-other two changes describe subsequent work. The [context matrix](abstraction-levels.md#agnostic-kernel-and-language-specific-rules)
-explains where language rules enter each transition.
+The C++ include and Rust visibility cases remain open in
+[ACX-004](architecture-cases/0004-generation-file-syntax.md). Language route
+planning through ASTTransformer remains a separate operation; it is not the
+source-bound generation plan documented here.
 
 ## Caller interface
 
-The caller requests the public declarations `Page`, `Person` and `Cells` from
-the [pagination example](#pagination-on-read-and-write). In Horos, the body of
-`Cells` is `pages.Page<cells.Cell<Person>>`.
-
-The engine would issue a runnable plan. In these Go examples, `compose` is
-the [generation registry package](../transform/syntax/shared/generation/go/registry.go),
-which owns `Request`, and `generation` is the [shared generation contract](../contracts/generation/go/contracts.go),
-which would own `Output`. Files can consume that contract independently of the
-registry.
+Implemented Go signatures, with compose denoting the shared generation registry
+and generation denoting the public contract package:
 
 ```go
-func (e *Engine) PlanGeneration(ctx context.Context, r compose.Request) (GenerationPlan, error)
-func (p GenerationPlan) Steps() []GenerationStep
-func (p GenerationPlan) Run(ctx context.Context) (generation.Output, error)
+func (e *Engine) PlanGeneration(ctx context.Context, r compose.Request) (generation.GenerationPlan, error)
+func (e *Engine) Generate(ctx context.Context, r compose.Request) (generation.Output, error)
+
+type Request struct {
+    Input   transform.Input
+    To      representation.Language
+    Roots   []ast.NodeRef
+    Output  ast.TreeID
+    Profile string
+    Limits  generation.Limits
+}
+
+func (p GenerationPlan) Steps() []Step
+func (p GenerationPlan) Run(context.Context) (Output, error)
+
+type Step struct {
+    Binding, Source, Declaration, Form string
+    Expression string
+}
 ```
 
-The call uses the declared target language and its profile. The source
-language comes from the snapshot. A file-based frontend would parse, resolve
-and analyze the supplied modules, then select the three declaration sites
-from that same source snapshot.
+The consumer registers its available source, target and mapping libraries once.
+The kernel selects compatible descriptions and exact replacements for the
+requested profile. The request carries source evidence and explicit public roots;
+it does not choose an imperative pipeline. [Complete registration example](kernel-composition.md)
 
 ```go
 plan, err := eng.PlanGeneration(ctx, compose.Request{
-    Input: transform.Input{
-        Source:   snapshot,
-        Evidence: []semantic.Result{horosAnalysis},
-    },
-    Roots:  []ast.NodeRef{pageSite, personSite, cellsSite},
-    To:     typescriptLanguage,
-    Output: "pagination-types",
+    Input: transform.Input{Source: snapshot, Evidence: []semantic.Result{horosAnalysis}},
+    Roots: []ast.NodeRef{pageSite, personSite, cellsSite},
+    To: typescriptLanguage, Output: "pagination-types",
+    Profile: rules.RepresentationProfile, Limits: generation.DefaultLimits(),
 })
-if err != nil {
-    return generation.Output{}, err
-}
+if err != nil { return generation.Output{}, err }
 return plan.Run(ctx)
 ```
 
-The request's `Output` field names the generated tree. `plan.Steps()` shows the
-chosen bindings, publications and dependencies before execution. Each successful
-`Run` returns a fresh target capture for those decisions.
-
-Supplying just the two language descriptors would allow the engine to assemble
-a reusable pipeline of compatible providers and configured preferences. Selecting
-the rule for a particular field or imported declaration requires the source
-snapshot and roots. The first API exposes the source-bound plan. An endpoint-only
-pipeline could later bind separate requests through that same planning operation.
+This calling fragment assumes the registered engine and source sites from that
+example. Steps returns copied inspection summaries. Execution uses the private
+typed program, never parses these display strings. Each Run returns a fresh
+capture. Registering another binding changes future plans, not an issued plan.
 
 ### The result of Run
 
-These are the implemented accessors in package `generation`. `Engine.Generate` returns this result today. The proposed plan would return it from `Run`.
+Implemented accessors supplied by generation and consumed by Files:
 
 ```go
-type Output struct { /* private state from one successful run */ }
-
 func (o Output) Snapshot() semantic.Snapshot
 func (o Output) Exposed() []ast.NodeRef
 func (o Output) ExternalUses() []ExternalUse
@@ -143,62 +90,42 @@ type ExternalUse struct {
     At     semantics.Occurrence
     Symbol ExternalSymbol
 }
-
-type ExternalSymbol struct { /* immutable reference issued by the target provider */ }
 ```
 
-`Snapshot().Inputs()` contains the syntax-checked target ASTs, and
-`Snapshot().Entry()` selects the entry. A named use of a generated declaration
-or lexical parameter already has an `ast.Reference` to its target node.
-`Exposed()` lists the **target declaration sites** that fulfill the caller's publication requests.
-Generating a dependency or helper does not by itself request publication.
-[AST references](../trees/ast/go/node.go) · [Snapshot accessors](../contracts/semantic/go/evidence.go).
+Snapshot owns syntax-checked target ASTs. References to generated declarations
+and lexical parameters already identify their destination nodes. Exposed lists
+the realized sites requested by the consumer, not every dependency or helper.
+ExternalUses binds emitted occurrences to target-owned immutable public symbols.
+TypeScript's symbol identifies a module and its named export, without choosing
+a local import name. The sealed output associates all these addresses with one
+capture; zero output represents failure. [Output contract](../contracts/generation/go/output.go)
 
-`ExternalUses()` supplies a destination for each named use whose declaration
-is outside the generated ASTs. `At` identifies the target node, its
-provider-defined role and its ordinal within that role. The selected target
-provider owns the meaning of `Symbol`. For TypeScript it identifies a public
-module and its named export. The output retains the immutable symbol after
-the builder session ends. The target provider must recognize the symbol's
-issuer and profile before interpreting it in the supplied dependency environment.
-[Semantic occurrences](../semantics/go/model.go) · [TypeScript type imports](typescript-type-imports.md).
+The typed Files boundary remains:
 
-All sites belong to this output's snapshot. On a successful run, the builder
-has assigned each name that requires binding exactly one destination. The
-engine seals each requested exposure against its generated declaration site.
-The accessors return copies of the two lists. Files accepts
-the whole output so addresses from a different run cannot stand in for its
-bindings. Failure returns the zero, unusable output. The engine seals the checked target snapshot and the bindings together. Native analysis supplies the semantic evidence about the organized units. [Output contract](../contracts/generation/go/output.go)
+```go
+func (p GeneratedFilesFormatter[L]) Format(ctx context.Context, input GeneratedFilesInput) (source.Source[L], error)
+```
+
+The application invokes it with the complete output, placement and environment.
+The selected Files implementation relocates declarations, spells imports and
+exports and compares fresh native bindings with the output's intent.
+[TypeScript handoff](typescript-type-imports.md#from-generation-to-files)
 
 ## Semantic mapping and AST construction
 
-For a source language A and target language B, the proposed `PlanGeneration`
-would perform **semantic mapping**. Its inputs are the captured A declarations,
-the facts established about them, the requested roots and the configured
-mapping libraries. Its inspectable result describes the intended B declarations,
-type expressions, generic binders, reference destinations and declarations to
-expose. `Run` would perform **AST construction**. The B builder realizes those
-choices as native declaration nodes and retains the destination of each named use.
-
-| Stage | Input | Result |
+| Stage | Input | Result and authority |
 | --- | --- | --- |
-| Read A | The application supplies source files and the selected dependencies. | Syntax parsing yields CSTs with `AST[A]` views. The A resolver binds occurrences in their scopes. The A analyzer uses that resolution to publish `Semantics[A]` for the captured program. |
-| Map to B | Captured A sites and facts, requested roots and registered mappings. | The planner selects rules and records the B declarations, expressions and bound uses they prescribe. |
-| Construct B | A run of the plan with the selected target builder. | `generation.Output` owns the checked `AST[B]` snapshot, exposed declaration sites and external use bindings. |
-| Organize B | The complete `generation.Output`, selected dependencies and one consumer placement. | The B Files formatter follows the output's bindings and realizes the appropriate imports, exports and local names in each unit. |
-| Check and write B | The organized units in their target environment. | The B resolver and analyzer establish `Semantics[B]` for this capture. Files checks the actual bindings and publishes `Source[B]`. The Files printer returns paths and text for the application to write. |
+| Read A | Files and selected source dependencies | Parsing, resolution and analysis establish captured syntax and Semantics[A]. |
+| Map to B | Captured A facts, roots, registered descriptions and a profile | A closed native program: declarations, expressions, binders, complete applications and requested exposures. Mapping libraries own representation choices. |
+| Construct B | The closed program and target construction rules | A syntax-checked generation.Output. The target realizes each native form and binds its generated uses. |
+| Organize B | Output, one placement and target dependencies | Files supplies module syntax and local names. |
+| Check and write B | Organized units in their native environment | Native resolution/analysis establishes Semantics[B]. Files verifies destinations and publication, then the printer returns paths and text. |
 
-The plan describes what the selected mappings intend. Only analysis of the
-realized B program establishes `Semantics[B]`. Today generation consumes an
-analyzed source and returns a checked snapshot with publication and binding intent. The separation of
-mapping decisions into an inspectable plan is proposed here.
-The [two Page tables](abstraction-levels.md#page-across-the-five-levels) show
-how written occurrences relate to binders and why an effective argument may
-have no argument syntax at the use.
-[Current Files input and proposed handoff](#where-the-plan-stops) ·
-[Generation design](generation.md#semantic-mapping-and-target-ast-construction) ·
-[Current generation contract](semantic-generation.md#explicit-semantic-input) ·
-[Syntax and Files roles](source.md#symmetric-role-contracts).
+The planned native program is intent, not a fabricated semantic-analysis result.
+Only analysis of the realized target program establishes native semantic facts.
+Cross-language representation proofs use the separate verification contract.
+[Abstraction tables](abstraction-levels.md#page-across-the-five-levels) ·
+[Generation](generation.md#semantic-mapping-and-target-ast-construction)
 
 ### Pagination on read and write
 
@@ -329,215 +256,103 @@ The implemented TypeScript path consumes the whole generation output. Files cons
 
 ## What a mapper declares
 
-Derive the public interface from what a mapping library needs to express. A
-use such as `Cell<Person>` needs a target type expression. Emitting an owned
-`Page<T>` also needs its declaration body. A caller who requests `Cells` as
-public needs to know which target declaration fulfills that request. An open
-generic needs one convention that relates its declared binders to actual
-arguments at every use. These requirements determine the interface independently
-of the current Go SPI. [AC-09](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-09) ·
-[Bittype design case](architecture-cases/0005-generation-interface-design.md).
+The [implemented SPI](generation-spi.md#mapping-descriptions) replaces the
+description-plus-executable-authority proposal recorded in
+[ACX-005](architecture-cases/0005-generation-interface-design.md).
 
-The consumer registers a **mapping description** supplied by its library.
-Registration captures an immutable copy. An exact rule combines an identity
-local to that library, a source-owned pattern and a target-owned expression.
-Libraries may also supply recipes for owned declarations and native helpers.
-The Go sketch illustrates the information supplied at registration.
+For a fixed rule, a library supplies a source selector, authenticated captures
+and an immutable target expression. This is the TypeScript list rule's body
+(fragment inside Describe, using the actual public types):
 
 ```go
-type MappingDescription[F, T any] struct {
-    From, To          representation.Language
-    GenerationProfile string
-    Bindings          []BindingDescription[F, T]
-    Declarations      []DeclarationRecipe[F, T]
-    Helpers           []HelperRecipe[T]
-}
-
-type BindingDescription[F, T any] struct {
-    ID     string
-    Input  SourcePattern[F]
-    Output TargetExpression[T]
+element := generation.TypeSlot("E")
+pattern, err := rules.Element(from, element)
+if err != nil { return description, err }
+binding := generation.BindingDescription[horos.Language, typescript.Language, source.Reader]{
+    ID: "list/typescript/1",
+    Input: pattern,
+    Output: model.Collection(generation.Mapped[typescript.Language](element)),
 }
 ```
 
-A declaration recipe identifies the source declarations it handles, including
-an explicitly selected structural policy, and describes the target declaration
-and body. A helper recipe describes a target-owned declaration under a key
-qualified by its contributing library. A generic recipe binds each real source
-parameter in the declaration's lexical scope and describes the complete
-application in the caller's scope. The same convention applies if target
-arguments are reordered or an extra target parameter is required. A use
-mapping for an external generic can refer to the convention supplied by
-the library that owns its declaration.
+The Horos rule owns the constructor and element occurrence. The native model
+owns the array form. The kernel owns capture identity, substitution and scope.
+The target later constructs an array AST with the planned child. Neither the
+kernel nor the native target learns a Cell kind: the Cell library selects an
+external type form with its mapped argument through the same contract.
 
-For the list mapper the entire type rule is **`Horos.list<E> → TypeScript.Array(mapped(E))`**.
-The same slot occurs on both sides of the library's declaration.
+A variable-field record uses the implemented expansion boundary:
 
 ```go
-element := rule.TypeSlot("E")
-listArray := gen.BindingDescription[horos.Language, ts.Language]{
-    ID:     "list/typescript/1",
-    Input:  horosPattern.ListOf(element.Capture()),
-    Output: tsType.ArrayOf(element.Mapped()),
-}
+Expand func(context.Context, generation.Expansion[F,T,S]) (generation.Expression[T], error)
 ```
 
-`E` is a slot owned by this rule. `ListOf` identifies the Horos constructor and
-locates its element occurrence. `Mapped` requests the selected target representation
-of that exact occurrence. During planning, `ArrayOf` selects an array of that
-mapped element. During construction, the TypeScript builder creates the array
-node with the realized child in its element position. The same expression drives
-both stages. For `list<bool>` this yields
-`boolean[]`. For `list<list<bool>>` it yields `boolean[][]`. Reusing a slot from
-another rule or referencing an uncaptured slot is an invalid declaration.
-[Current list mapper](../transform/syntax/horos-to-typescript/mapping/go/mapping.go) ·
-[Target fragment builder](../transform/syntax/shared/target/go/builder.go).
-
-The source library owns selector identity and operand interpretation. The target
-library owns native forms and syntax. The mapping owner chooses the representation.
-The kernel matches opaque selectors and manages scoped captures and substitution.
-A `Cell<T>` library can use the same interface with an exact module pin and
-declaration identity and choose an external target type. A project can replace
-the list binding with `ReadonlyArray<mapped(E)>` in its profile. The preference
-identifies both the expected and replacement bindings by provider and binding ID.
-An unresolved exact conflict at a demanded occurrence is a planning error.
-[Source selectors](../transform/syntax/horos/source/go/identity.go) ·
-[Existing readonly and Cell examples](../integration/go/horos_generation_composition_test.go).
+Its library reads its own fields and calls the scoped request's Mapped method
+to record child demands. The kernel authenticates those children, completes
+them during planning and revokes the request after expansion. It never retains
+that callback in the runnable plan. An exact rule that fails does not fall back
+to structural generation. Structural declaration recipes are explicitly supplied
+and apply only when no exact binding claims the declaration.
 
 ## What the plan contains
 
-Planning snapshots the configured provider registrations, their compatible
-language and Go API identities, generation profile, replacements, output
-identity and limits. It admits the supplied semantic receipts against the
-exact source snapshot, authenticates the requested declaration sites, and
-walks dependencies starting at those sites. An eligible structural policy can
-handle a declaration with no exact binding. An exact binding that fails ends
-the request. A missing demanded representation or an ambiguous choice is
-reported at the requesting source occurrence.
+Planning admits exact snapshot evidence, authenticates roots and source
+environments, resolves demanded rules and captures complete applications.
+A single GenericConvention describes native parameters, the representation of
+each source binder and arguments at each use. Extra or reordered native
+parameters use the same convention; helpers have their own parameter scope.
+Every source argument is admitted, even when native syntax omits it.
+[Generic contract](generation-spi.md#source-and-representation-environments)
 
-Inspecting the `Page` portion of the three-root pagination plan would show
-these decisions.
-
-```text
-Expose example.pagination.Page   TypeScript interface Page<T>
-  Parameter Page.T               target parameter bound to this declaration
-  Field items                    Horos list whose element refers to Page.T
-    Selected list/typescript/1   Array(mapped(E))
-    Capture E                    this occurrence of Page.T
-    Target element               Page's target parameter
-  Optional field next            Horos text represented as TypeScript string
-```
-
-The plan requests publication of `Page`. If the consumer places it in a
-TypeScript module as a named export, Files formatting and printing produce:
-
-```typescript
-export interface Page<T> {
-  items: T[];
-  next?: string;
-}
-```
-
-A plan for an alias such as `Nested = Page<Page<Person>>` would include the
-required named declarations and both applications. Each use refers to the same
-open `Page` declaration. The inner application's result supplies the argument to
-the outer one. Rule slots, source generic binders and target parameters each
-keep their own identities. The source still admits every actual argument against
-its original contract, including an argument the target representation omits.
-[Generation operations and binder scopes](generation-spi.md#source-and-representation-environments).
-
-A complete bound plan fixes each reachable representation choice and records
-the required child, declaration and helper dependencies. It may store shared
-dependencies once and refer to them from several steps. Planning admits only
-owner-authenticated references from the captured input, respects the existing
-resource bounds, and checks cyclic dependencies against the selected target's
-supported domain. Inspection returns copies or immutable views. Edits to the
-registry or a different source snapshot require a new plan to take effect.
-
-### Making dependencies visible
-
-Today callbacks such as `Child` and `RequireHelper` can discover work while a
-mapping runs. For fixed-shape rules, `mapped(E)` makes the child visible in the
-declaration. A record with a variable number of fields needs a source-owned
-projection to enumerate the fields of the actual declaration. A Go optional-field
-mapping can determine at that point whether it needs the registered presence/value
-helper. A binding to an external type can declare the external target reference
-and its required children while keeping the source body opaque.
-
-For a source-dependent part of a rule the owner would supply an `Expand`
-operation on that part of the registered expression. For example, a record
-mapper can declare an object type with repeated members. Its expansion would
-read the fields of the captured record and fill those member positions with
-references to the mapped field occurrences. The target object form is declared
-once. A fixed expression such as `ArrayOf(element.Mapped())` expands directly
-from its declaration.
-
-Expansion would use a kernel-issued request scoped to the selected rule and
-source occurrence. It would return a target expression with references to its
-child uses, owned or external declarations and helper keys. The kernel would
-check that each child came from the requested parent, authenticate declaration
-and binder identities, and resolve helper keys to their configured owners.
-Structural policies and helper-only providers follow the same rules. An offer
-that cannot expose its reachable dependencies would report unsupported planning
-when selected. Execution may materialize a planned helper on demand.
-[Current definition scheduler](../transform/syntax/shared/generation/go/definitions.go) ·
-[Go helper use](../transform/syntax/horos-to-golang/mapping/go/mapping.go).
+Owned declarations and helpers are resolved once by identity. References retain
+their destination, not just a spelling. The current profile rejects cyclic
+declaration dependencies. Missing demanded rules, ambiguous exact choices,
+foreign slots, unsupported forms and scope failures prevent a runnable plan.
 
 ## Execution guarantees
 
-The plan retains immutable descriptions, source occurrences, provider-qualified
-bindings and stable provider configuration. Each provider must capture its
-configuration at registration and register a new instance for a change. The
-kernel snapshots the registry under its lock and invokes owner code after
-releasing it. Only successful planning issues a runnable handle.
+The selected native target implements this exact construction boundary:
 
-Each `Run` creates fresh execution state and realizes the target expressions
-already fixed by the plan, including any source-dependent expansion completed
-during planning. Execution must preserve the selected form as well as its
-dependencies. For example, a plan selecting a mutable array must produce that
-array even if a readonly array would refer to exactly the same element.
-Target-language builders own the construction of those forms.
+```go
+Build(context.Context, generation.BuildInput[T]) (generation.Assembly, error)
 
-The executor allocates symbols for owned declarations, fills their bodies,
-binds formal parameters in their declarations and actual arguments at each
-use, and records the sites requested for exposure. It authenticates references
-and products in the current run and admits the finished target syntax. An
-unplanned dependency, foreign handle, provider failure, cancellation, exhausted
-limit or invalid target tree fails that run as a whole. The same plan remains
-available for another run. A successful run guarantees no particular file
-organization. Files formatting must preserve the target bindings and requested
-public surface or reject the arrangement; it cannot ask the generator to select
-a different type. Cross-language proofs use the verification contract.
-[Implemented SPI](generation-spi.md#five-operations) ·
-[Engine generation entry](../engine/go/generation.go) ·
-[TypeScript file placement](typescript-type-imports.md) · [Verification](verification.md).
+type BuildInput[T any] struct {
+    Program  Program[T]
+    Language representation.Language
+    Output   ast.TreeID
+    Limits   Limits
+}
+```
 
-## Migration and qualification
+The kernel invokes Build with the frozen native program. The target interprets
+its own forms and uses fresh fragment/symbol storage for each run. The constructor
+has neither a source reader nor mapping expansion code. The kernel then checks
+syntax and seals exposure and external-use records into Output.
 
-1. Represent typed source captures and target expressions in the public rule
-   descriptions. Use the TypeScript list rule to exercise open, concrete and
-   nested elements. A run that substitutes `ReadonlyArray` for the planned
-   mutable array must fail, even when its binding ID and dependencies match.
-2. Extend registration with immutable offers and move selection into
-   `PlanGeneration`. Implement `Steps` and `Run` for a named `Page` root,
-   including structural field traversal, binder identity, and an explicit
-   readonly-list override. Compare the planned element of `items` with the
-   reference to the target parameter in the constructed AST.
-3. Migrate the remaining providers and callers, including helper, external and
-   declaration operations for the four targets. Replace the per-request mapping
-   list and superseded procedural rules on the normal generation path. Keep
-   `Generate` as the one-call entry. This changes the public provider contract
-   and the requests made by installed consumers.
-4. The `generation.Output` handoff and TypeScript placement checks are implemented. The integration suite formats one output twice, compiles both placements with a local `Cell` and checks package identity, inaccessible dependencies and missing exports. C++ includes and Rust visibility remain in [ACX-004](architecture-cases/0004-generation-file-syntax.md).
+Changing mutable callback state after planning cannot change an array into a
+ReadonlyArray at construction. Target implementations are trusted interpreters
+of their own native forms; syntax admission is not a proof of faithful lowering
+or a sandbox for arbitrary Go code. Target configuration must remain stable
+after registration. Cancellation, limits, invalid target syntax and foreign
+references return zero output. [Complete SPI and trust limits](generation-spi.md)
 
-Qualification should compare planned and one-call output, exercise fresh runs
-of one plan after a registry change, and reject ambiguous, stale or foreign
-bindings, cross-rule slots and undeclared helper demands. An independent library
-should compose a materially different rule, such as a two-operand mapping with
-reversed target arguments, inside the existing list and record mappings through
-its own declaration and consumer configuration. The installed-consumer fixture
-and native compiler tests can exercise the migrated public path. These are
-proposed tests for the implementation.
-[Kernel fixtures](../integration/go/kernel_generation_test.go) ·
-[Pagination fixtures](../integration/go/horos_generation_pagination_test.go) ·
-[Installed consumer](../integration/go/testdata/installed/horos_generation_test.go).
+## Qualification
+
+- Page<Cell<Person>> exercises a library-owned external type whose Wire body is
+  never expanded. A two-argument Pair mapping reverses its native arguments
+  inside Page through the same public contract.
+- Plan inspection precedes any AST construction. Repeated and concurrent runs
+  use fresh state; a later ambiguous registration affects only new plans.
+- A non-Horos source fixture composes an extra native generic parameter and a
+  helper, and its generated Go is checked by the Go compiler.
+- Negative cases cover wrong receipts, roots, scopes, foreign slots/forms,
+  expired expansion requests, missing helpers, budgets and cancellation.
+- The existing Files fixture places one Page<Cell> output twice with a conflicting
+  local Cell: moving Person removes only its relative import; the package
+  Cell remains correctly bound through an alias.
+
+[Plan and independent mapping tests](../integration/go/generation_planning_test.go) ·
+[Independent source](../integration/go/generation_independent_test.go) ·
+[Four-target pagination](../integration/go/horos_generation_pagination_test.go) ·
+[Files placement](../integration/go/typescript_placement_test.go) ·
+[Installed consumer](../integration/go/testdata/installed/generation_planning_test.go)
