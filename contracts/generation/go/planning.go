@@ -61,9 +61,10 @@ type SelectedDescription[F, T, R any] struct {
 
 // PlanningInput is one generation request: the source language and input, the
 // source integration that interprets it, the requested root declaration sites
-// and the selected mapping descriptions. Plan admits the input against the
-// source's contract and opens the source over exactly that capture, so the
-// interpretation always reads the evidence the kernel walks.
+// and the selected mapping descriptions. Plan checks the descriptions, admits
+// the input against the source's contract and opens the source over exactly
+// that capture. Handles resolve only against that capture; interpreting it is
+// the provider's responsibility.
 type PlanningInput[F, T, R any] struct {
 	From      representation.Language
 	Input     transform.Input

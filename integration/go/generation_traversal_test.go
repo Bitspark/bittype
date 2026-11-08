@@ -314,39 +314,98 @@ func TestKernelSelectorsAreQualified(t *testing.T) {
 	}
 }
 
-// TestKernelLocatesUseFailuresAtTheUse: when a use reaches a callee the source
-// does not generate, or one whose selector is outside the source language, the
-// failure belongs to the use and is reported in the declaration it occurs in,
-// not at the callee.
+// TestKernelLocatesUseFailuresAtTheUse: a use whose callee the source does not
+// generate, or whose callee or expression selector is outside the source
+// language, fails as that use. The failure is reported at the use's own term
+// site when the graph records one, else at the declaration it occurs in, and
+// never at the callee.
 func TestKernelLocatesUseFailuresAtTheUse(t *testing.T) {
 	ctx := context.Background()
-	fixture := independent(t)
-	p, err := fixture.PlanSource(ctx, f.SourceVariant{Foreign: "declaration/Page"}, fixture.Input(), "Lend")
-	var callee *g.SiteError
-	if !errors.Is(err, g.ErrScope) || p.Valid() || !errors.As(err, &callee) || callee.Site != fixture.Site("Lend") {
-		t.Fatalf("foreign callee selector at %v, want Lend %v (Page is %v): %v", callee, fixture.Site("Lend"), fixture.Site("Page"), err)
+	recorded, err := f.NewRecording(ctx, f.Record{Body: "UsesKind"}, f.Record{Body: "Lend"}, f.Record{Body: "Person"})
+	if err != nil {
+		t.Fatal(err)
 	}
-	err = independentFails(t, fixture, f.Standard, "UsesKind")
-	var located *g.SiteError
-	if !errors.Is(err, g.ErrUnsupported) || !errors.As(err, &located) || located.Site != fixture.Site("UsesKind") || !strings.Contains(err.Error(), "the source does not generate this declaration") {
-		t.Fatalf("ungenerated callee at %v, want UsesKind %v (Kindish is %v): %v", located, fixture.Site("UsesKind"), fixture.Site("Kindish"), err)
+	for _, fixture := range []*f.Fixture{independent(t), recorded} {
+		at := func(declaration string) ast.NodeRef {
+			if fixture == recorded {
+				return fixture.Site("") // the use's single recorded site
+			}
+			return fixture.Site(declaration)
+		}
+		for _, tc := range []struct{ root, foreign, callee string }{
+			{"Lend", "declaration/Page", "Page"},
+			{"Person", "expression/person-body", ""},
+		} {
+			p, err := fixture.PlanSource(ctx, f.SourceVariant{Foreign: tc.foreign}, fixture.Input(), tc.root)
+			var located *g.SiteError
+			if !errors.Is(err, g.ErrScope) || p.Valid() || !errors.As(err, &located) || located.Site != at(tc.root) {
+				t.Fatalf("%s outside the source language at %v, want %v (callee %v): %v", tc.foreign, located, at(tc.root), fixture.Site(tc.callee), err)
+			}
+		}
+		err := independentFails(t, fixture, f.Standard, "UsesKind")
+		var located *g.SiteError
+		if !errors.Is(err, g.ErrUnsupported) || !errors.As(err, &located) || located.Site != at("UsesKind") || !strings.Contains(err.Error(), "the source does not generate this declaration") {
+			t.Fatalf("ungenerated callee at %v, want %v (Kindish is %v): %v", located, at("UsesKind"), fixture.Site("Kindish"), err)
+		}
+	}
+}
+
+// TestKernelChecksDescriptionsBeforeEvidence: through the registry and through
+// the exported planner, a description over its limits fails before the
+// evidence is admitted, so both paths report the same failure.
+func TestKernelChecksDescriptionsBeforeEvidence(t *testing.T) {
+	ctx := context.Background()
+	fixture := independent(t)
+	unevidenced := transform.Input{Source: fixture.Input().Source}
+	limits := g.DefaultLimits()
+	limits.Plans = 2
+	for name, plan := range map[string]func(g.Limits) (g.GenerationPlan, error){
+		"registry": func(l g.Limits) (g.GenerationPlan, error) {
+			return fixture.PlanSourceWithin(ctx, f.SourceVariant{}, l, unevidenced, "Person")
+		},
+		"direct": func(l g.Limits) (g.GenerationPlan, error) {
+			return fixture.PlanDirectWithin(ctx, f.SourceVariant{}, l, unevidenced, "Person")
+		},
+	} {
+		if p, err := plan(g.DefaultLimits()); !errors.Is(err, semantic.ErrInvalidRequest) || p.Valid() {
+			t.Fatal(name, "control, missing evidence:", err)
+		}
+		if p, err := plan(limits); !errors.Is(err, g.ErrLimit) || errors.Is(err, semantic.ErrInvalidRequest) || p.Valid() {
+			t.Fatal(name, "description limit after evidence:", err)
+		}
 	}
 }
 
 // TestKernelLocatesSharedTermsAtTheirDeclaration: when the graph records a term
 // at several syntax sites, the kernel cannot tell which one an occurrence is
-// and reports the declaration the occurrence is in.
+// and reports the declaration the occurrence is in, whichever site is recorded
+// first or last. Two records of the term at one site are one site.
 func TestKernelLocatesSharedTermsAtTheirDeclaration(t *testing.T) {
-	fixture, err := f.NewSharedSites(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if p, err := fixture.PlanRoots(context.Background(), f.Standard, "Lend"); err != nil || !p.Valid() {
-		t.Fatal("control:", err)
-	}
-	err = independentFails(t, fixture, f.Standard, "Borrow")
-	var located *g.SiteError
-	if !foreignBinder(err) || !errors.As(err, &located) || located.Site != fixture.Site("Borrow") {
-		t.Fatalf("site %v, want Borrow %v (Lend is %v): %v", located, fixture.Site("Borrow"), fixture.Site("Lend"), err)
+	ctx := context.Background()
+	// Borrow reaches Lend's binder through the reference both bodies share.
+	shared := f.Record{Body: "Lend", FirstArgument: true}
+	for _, tc := range []struct {
+		name    string
+		records []f.Record
+		want    string // "" is the program node
+	}{
+		{"two sites", []f.Record{{Body: shared.Body, FirstArgument: true, At: ""}, {Body: shared.Body, FirstArgument: true, At: "Kindish"}}, "Borrow"},
+		{"two sites reversed", []f.Record{{Body: shared.Body, FirstArgument: true, At: "Kindish"}, {Body: shared.Body, FirstArgument: true, At: ""}}, "Borrow"},
+		{"one site twice", []f.Record{{Body: shared.Body, FirstArgument: true, At: ""}, {Body: shared.Body, FirstArgument: true, At: ""}}, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fixture, err := f.NewRecording(ctx, tc.records...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if p, err := fixture.PlanRoots(ctx, f.Standard, "Lend"); err != nil || !p.Valid() {
+				t.Fatal("control:", err)
+			}
+			err = independentFails(t, fixture, f.Standard, "Borrow")
+			var located *g.SiteError
+			if !foreignBinder(err) || !errors.As(err, &located) || located.Site != fixture.Site(tc.want) {
+				t.Fatalf("site %v, want %q %v (Lend is %v): %v", located, tc.want, fixture.Site(tc.want), fixture.Site("Lend"), err)
+			}
+		})
 	}
 }

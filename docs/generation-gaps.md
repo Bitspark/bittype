@@ -116,6 +116,10 @@ For `People = Page<Cell<Person>>`:
      same graph, through the registry and the exported planner;
    - selectors whose language differs only in profile, identity or Go marker,
      for an exact binding, an exact recipe and the default recipe;
+
+   The evidence-pairing and selector-identity negatives run against the
+   independent source, through the kernel paths horos also uses; horos adds
+   its reader's refusal of foreign handles.
    - horos applied constructor aliases and curried forms, now Unsupported.
 5. The superseded surface is removed with no aliases:
    - `Source.Open`, `Admit`, `CheckChild`, `Authenticate`, `CheckInput`, `Owners`
@@ -159,8 +163,9 @@ in dispatch, and criterion 3 lacked an exact capture association at the exported
   today. Unsupported and Undetermined are its outcomes.
 - **Diagnostic sites.** A kernel failure is reported at its term's syntax site
   when the graph records exactly one. A term recorded at several sites is
-  reported at the declaration the occurrence is in. A callee failure is
-  reported at the use. A shared term recorded at
+  reported at the declaration the occurrence is in. A use whose callee the
+  source does not generate, or whose callee selector is outside the source
+  language, is reported as that use. A shared term recorded at
   only one site is reported there.
 - **Out of scope.** Recursive generation remains unsupported
   ([#164](https://github.com/Bitspark/bittype/issues/164)). Native enforcement of

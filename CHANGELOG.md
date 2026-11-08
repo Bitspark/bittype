@@ -30,7 +30,8 @@ Changes since the previously recorded module-encoding entry:
   exported). Handles resolve with `In(Captured)` against the exact capture. A
   source selector outside the capture's source language fails as `ErrScope`. A
   term recorded at several syntax sites is reported at the occurrence's
-  declaration, and a callee failure at the use. `Plan` checks mapping
+  declaration. A use whose callee is not generated or whose callee selector is
+  foreign is reported as that use. `Plan` checks mapping
   descriptions before it admits evidence, as the registry does. ACX-006 and
   GEN-01 stay open until the correction is verified.
 - Reconcile active architecture/API guides, Horos graph examples and dependency

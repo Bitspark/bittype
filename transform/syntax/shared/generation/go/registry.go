@@ -80,6 +80,8 @@ func RegisterSource[F, R any](r *Registry, lang representation.Language, p g.Sou
 		// The kernel walks exactly the graph one admitted result publishes.
 		return g.ErrInvalid
 	}
+	// This rejects an unusable contract early. Each Plan admits the evidence
+	// against the provider's Contract at that time and checks it again.
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.sources == nil {

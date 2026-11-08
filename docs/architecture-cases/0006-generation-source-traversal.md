@@ -3,7 +3,7 @@
 **Status: correction pending independent verification, 8 November 2026.** [#191](https://github.com/Bitspark/bittype/pull/191) delivered the
 kernel-owned traversal, but independent verification by `codex-hydrated-type-design` (board claim `bittype-source-traversal-20261108`, record 000003) rejected it: the public planning
 boundary still let a source interpret other evidence, and planning ignored a
-selector's language. [#192](https://github.com/Bitspark/bittype/pull/192) corrects both. The case stays open until that
+selector's language. [#192](https://github.com/Bitspark/bittype/pull/192) corrects both, and a diagnostic-site defect. The case stays open until that
 correction is independently verified. The generation kernel owns traversal of
 the shared semantic graph. Source integrations contribute only interpretation
 and judgments. [GEN-01](../generation-gaps.md#gen-01) records the delivered
@@ -167,7 +167,7 @@ source now publishes an ordinary graph through its own analysis.
 - a shared term recorded at two syntax sites, and failures of a use reported at
   the use rather than at its callee.
 
-Two independent reviews found gaps, and both are fixed.
+Before #191 merged, two independent reviews found gaps, and both were fixed.
 
 - The first revision let omitted actuals skip the structural scope check and left
   content nested in them unjudged. Admission now covers whole subtrees.
@@ -207,8 +207,12 @@ failures were still reported at the callee's site. It also found that the docs
 claimed the kernel guarantees the provider's interpretation, that the site index
 had become quadratic, and that the registry and the exported planner ordered
 description and evidence errors differently. All are fixed in the same PR, which
-also tests every part of a selector's language identity. The case stays open
-until the correction is independently verified.
+also tests every part of a selector's language identity. A second review of
+the fixes found tests that could not tell a use's own term site from its
+declaration, or the declaration fallback from the last recorded site, and an
+untested check order and horos handle checks. Those tests are added, and the
+remaining overclaims are corrected. The case stays open until the correction
+is independently verified.
 
 Each kernel check was seeded with a mutant that turned its test red. Covered
 checks:
@@ -228,7 +232,10 @@ checks:
 - selector qualification, for declaration and expression selectors, and over
   the whole language identity rather than its profile or identity alone;
 - reporting at a single recorded term site, at the declaration for a term with
-  several, and at the use for a callee failure.
+  several (whichever is recorded last), with repeated records at one site as one
+  site, and at the use for a callee or selector failure;
+- description checks before evidence admission, on both paths;
+- the horos reader's handle checks.
 [Traversal qualification](../../integration/go/generation_traversal_test.go) ·
 [Planning tests](../../integration/go/generation_planning_test.go)
 
@@ -253,7 +260,8 @@ occurrence under another declaration.
 **Provider integrity.** The kernel opens the provider over its capture and
 resolves handles only against it. It cannot check where a provider's answers
 come from. A provider that serves a cached interpretation unchanged cannot
-resolve the run's handles and fails with `ErrScope`. A provider that rebinds a
+resolve the run's handles: `In` reports false, and a source that checks it, as
+horos and the independent source do, fails with `ErrScope`. A provider that rebinds a
 cached interpretation to the new capture while keeping verdicts from earlier
 evidence is a defect of that provider, and the kernel does not detect it.
 

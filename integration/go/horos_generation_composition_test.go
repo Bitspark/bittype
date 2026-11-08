@@ -26,6 +26,74 @@ import (
 	data "github.com/bitspark/ontos/data/go"
 )
 
+// TestHorosReaderRefusesForeignHandles: the horos reader resolves every handle
+// against its own capture, including the operands of a view that a library
+// assembles itself and a handle kept from an earlier run.
+func TestHorosReaderRefusesForeignHandles(t *testing.T) {
+	_, _, input := generationInput(t, paginationModule())
+	var kept g.Use[h.Language]
+	var refusals []error
+	run := 0
+	record := tsContribution(func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
+		pattern, err := rules.Pattern(from, "record", "closed")
+		return g.MappingDescription[h.Language, ts.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, source.Reader]{{ID: "record/foreign", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, ts.Language, source.Reader]) (g.Expression[ts.Language], error) {
+			view, err := r.Use()
+			if err != nil {
+				return g.Expression[ts.Language]{}, err
+			}
+			s, err := r.Reader()
+			if err != nil {
+				return g.Expression[ts.Language]{}, err
+			}
+			fields, err := s.Fields(view)
+			if err != nil || len(fields) == 0 {
+				return g.Expression[ts.Language]{}, errors.Join(errors.New("own fields"), err)
+			}
+			if run == 1 {
+				kept = fields[0].Use
+			} else {
+				doctored := view.Clone()
+				for i := range doctored.Operands {
+					doctored.Operands[i].Use = kept
+				}
+				_, foreign := s.Fields(doctored)
+				refusals = append(refusals, foreign, s.Unsupported(kept, "kept from an earlier run"))
+			}
+			var members []g.Expression[ts.Language]
+			for _, field := range fields {
+				ty, err := r.Mapped(field.Use)
+				if err != nil {
+					return g.Expression[ts.Language]{}, err
+				}
+				members = append(members, model.Field(field.Name, field.Optional, ty))
+			}
+			return model.Record(members...), nil
+		}}}}, err
+	})
+	plan := func() error {
+		run++
+		var registry c.Registry
+		to := nativeChecker(t, typescriptText()).Language()
+		q, err := genfixture.Request(&registry, input, to, "foreign-reader", target.Provider{}, mappings.Text(rules.RepresentationProfile), mappings.Bool(rules.RepresentationProfile), record, mappings.List(rules.RepresentationProfile), mappings.Declarations(rules.RepresentationProfile))
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = registry.PlanGeneration(context.Background(), q, nativeChecker(t, typescriptText()))
+		return err
+	}
+	if err := plan(); err != nil || !kept.Valid() {
+		t.Fatal("first run:", err)
+	}
+	if err := plan(); err != nil || len(refusals) == 0 {
+		t.Fatal("second run:", err, len(refusals))
+	}
+	for _, err := range refusals {
+		if !errors.Is(err, g.ErrScope) {
+			t.Fatal("foreign handle read:", err)
+		}
+	}
+}
+
 // Independent libraries advertise data at registration. Expansion is planning only.
 type tsContribution func(representation.Language, representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error)
 

@@ -372,19 +372,42 @@ var Roots = []string{"Person", "Page", "Outer", "Nested", "People", "Cells"}
 
 func New(ctx context.Context) (*Fixture, error) { return newFixture(ctx, program()) }
 
-// NewSharedSites is the fixture whose analysis records the binder reference
-// that Lend and Borrow share at the syntax of both declarations, so the graph
-// does not say which site an occurrence of that term is.
-func NewSharedSites(ctx context.Context) (*Fixture, error) {
+// Record makes the fixture analysis record a term at a syntax site. The term is
+// the body of the declaration Body or, with FirstArgument, the first argument
+// of that body's application. At names the entity whose site is recorded; ""
+// is the program node. Each record has its own role, so two records of one
+// term at one site are one site.
+type Record struct {
+	Body          string
+	FirstArgument bool
+	At            string
+}
+
+// NewRecording is the fixture whose analysis also records the given term
+// sites. The standard fixture records none.
+func NewRecording(ctx context.Context, records ...Record) (*Fixture, error) {
 	p := program()
-	lend := p.data.Entities[p.names["Lend"]-1]
-	borrow := p.data.Entities[p.names["Borrow"]-1]
-	if lend.Body != borrow.Body {
-		return nil, errors.New("Lend and Borrow no longer share a body")
-	}
-	shared := p.data.Terms[lend.Body-1].Arguments[0]
-	for _, e := range []semantics.Entity{lend, borrow} {
-		p.data.Expressions = append(p.data.Expressions, semantics.Expression{At: semantics.Occurrence{Site: e.Declarations[0], Role: key("body-argument")}, Term: shared})
+	for i, r := range records {
+		id, ok := p.names[r.Body]
+		if !ok {
+			return nil, fmt.Errorf("unknown fixture declaration %q", r.Body)
+		}
+		term := p.data.Entities[id-1].Body
+		if r.FirstArgument {
+			if term == 0 || len(p.data.Terms[term-1].Arguments) == 0 {
+				return nil, fmt.Errorf("%s has no body argument", r.Body)
+			}
+			term = p.data.Terms[term-1].Arguments[0]
+		}
+		site := ast.NodeRef{Tree: programTree, Node: 1}
+		if r.At != "" {
+			at, ok := p.names[r.At]
+			if !ok {
+				return nil, fmt.Errorf("unknown fixture entity %q", r.At)
+			}
+			site = p.data.Entities[at-1].Declarations[0]
+		}
+		p.data.Expressions = append(p.data.Expressions, semantics.Expression{At: semantics.Occurrence{Site: site, Role: key(fmt.Sprintf("record-%d", i))}, Term: term})
 	}
 	return newFixture(ctx, p)
 }
@@ -420,13 +443,27 @@ func (f *Fixture) PlanSites(ctx context.Context, sites ...ast.NodeRef) (g.Genera
 // PlanSource generates the named declarations from input through the public
 // registry, with a source variant.
 func (f *Fixture) PlanSource(ctx context.Context, variant SourceVariant, input transform.Input, names ...string) (g.GenerationPlan, error) {
-	return f.plan(ctx, Standard, variant, input, names...)
+	return f.PlanSourceWithin(ctx, variant, g.DefaultLimits(), input, names...)
+}
+
+// PlanSourceWithin is PlanSource under the given limits.
+func (f *Fixture) PlanSourceWithin(ctx context.Context, variant SourceVariant, limits g.Limits, input transform.Input, names ...string) (g.GenerationPlan, error) {
+	roots, err := f.roots(names)
+	if err != nil {
+		return g.GenerationPlan{}, err
+	}
+	return f.planWithin(ctx, Standard, variant, limits, input, roots)
 }
 
 // PlanDirect generates the named declarations from input through the exported
 // planner, without the registry, so a test reaches the public planning
 // boundary itself.
 func (f *Fixture) PlanDirect(ctx context.Context, variant SourceVariant, input transform.Input, names ...string) (g.GenerationPlan, error) {
+	return f.PlanDirectWithin(ctx, variant, g.DefaultLimits(), input, names...)
+}
+
+// PlanDirectWithin is PlanDirect under the given limits.
+func (f *Fixture) PlanDirectWithin(ctx context.Context, variant SourceVariant, limits g.Limits, input transform.Input, names ...string) (g.GenerationPlan, error) {
 	roots, err := f.roots(names)
 	if err != nil {
 		return g.GenerationPlan{}, err
@@ -442,7 +479,7 @@ func (f *Fixture) PlanDirect(ctx context.Context, variant SourceVariant, input t
 	return g.Plan(ctx, g.PlanningInput[SourceLanguage, s.Language, Reader]{
 		From: f.captured.language, Input: input, Source: sourceProvider{variant}, Roots: roots,
 		Mappings:  []g.SelectedDescription[SourceLanguage, s.Language, Reader]{{ID: "fixture", Description: d}},
-		Execution: g.Execution[s.Language]{Target: target.Provider{Package: "generated"}, Checker: checker, Language: f.target, Output: "independent", Limits: g.DefaultLimits()},
+		Execution: g.Execution[s.Language]{Target: target.Provider{Package: "generated"}, Checker: checker, Language: f.target, Output: "independent", Limits: limits},
 	})
 }
 
@@ -504,6 +541,10 @@ func (f *Fixture) plan(ctx context.Context, mode Mode, variant SourceVariant, in
 }
 
 func (f *Fixture) planAt(ctx context.Context, mode Mode, variant SourceVariant, input transform.Input, roots []ast.NodeRef) (g.GenerationPlan, error) {
+	return f.planWithin(ctx, mode, variant, g.DefaultLimits(), input, roots)
+}
+
+func (f *Fixture) planWithin(ctx context.Context, mode Mode, variant SourceVariant, limits g.Limits, input transform.Input, roots []ast.NodeRef) (g.GenerationPlan, error) {
 	var registry c.Registry
 	from := f.captured.language
 	if err := c.RegisterSource[SourceLanguage, Reader](&registry, from, sourceProvider{variant}); err != nil {
@@ -519,5 +560,5 @@ func (f *Fixture) planAt(ctx context.Context, mode Mode, variant SourceVariant, 
 	if err != nil {
 		return g.GenerationPlan{}, err
 	}
-	return registry.PlanGeneration(ctx, c.Request{Input: input, To: f.target, Roots: roots, Output: "independent", Profile: "independent/1", Limits: g.DefaultLimits()}, checker)
+	return registry.PlanGeneration(ctx, c.Request{Input: input, To: f.target, Roots: roots, Output: "independent", Profile: "independent/1", Limits: limits}, checker)
 }

@@ -179,7 +179,10 @@ over exactly that capture. No caller supplies an opened source or a graph.
 Handles resolve only against that capture. Interpreting that capture is the provider's responsibility: the
 kernel cannot check where a provider's answers come from.
 `Plan` checks the mapping descriptions and limits before it admits the
-evidence, in the same order as the registry. The kernel reads only structure:
+evidence. The registry checks the request's evidence count and root sites
+first, then the descriptions, then calls `Plan`. `RegisterSource` rejects an
+unusable contract early; each run admits against the provider's `Contract` at
+that time and checks it again. The kernel reads only structure:
 
 - a root site's declaring entity;
 - a declaration's body and real binders;
