@@ -14,7 +14,6 @@ import (
 // and facts are never read.
 type walk[F any] struct {
 	graph     semantics.Semantics[F]
-	data      semantics.Data
 	sites     map[ast.NodeRef][]semantics.EntityID
 	binders   map[semantics.EntityID]semantics.EntityID // parameter -> declaring entity
 	termSites map[semantics.TermID]ast.NodeRef
@@ -22,8 +21,9 @@ type walk[F any] struct {
 }
 
 func newWalk[F any](graph semantics.Semantics[F]) *walk[F] {
-	w := &walk[F]{graph: graph, data: graph.Data(), sites: map[ast.NodeRef][]semantics.EntityID{}, binders: map[semantics.EntityID]semantics.EntityID{}, termSites: map[semantics.TermID]ast.NodeRef{}, roots: map[semantics.EntityID]*occurrence[F]{}}
-	for i, e := range w.data.Entities {
+	data := graph.Data()
+	w := &walk[F]{graph: graph, sites: map[ast.NodeRef][]semantics.EntityID{}, binders: map[semantics.EntityID]semantics.EntityID{}, termSites: map[semantics.TermID]ast.NodeRef{}, roots: map[semantics.EntityID]*occurrence[F]{}}
+	for i, e := range data.Entities {
 		id := semantics.EntityID(i + 1)
 		for _, site := range e.Declarations {
 			w.sites[site] = append(w.sites[site], id)
@@ -32,7 +32,7 @@ func newWalk[F any](graph semantics.Semantics[F]) *walk[F] {
 			w.binders[p.Entity] = id
 		}
 	}
-	for _, e := range w.data.Expressions {
+	for _, e := range data.Expressions {
 		if _, ok := w.termSites[e.Term]; !ok {
 			w.termSites[e.Term] = e.At.Site
 		}
