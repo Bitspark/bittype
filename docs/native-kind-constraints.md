@@ -31,11 +31,13 @@ named kind specially. It extends the proposed [native representation design](typ
 and uses the existing [semantic transformation boundary](semantic-generation.md).
 
 The companion [type-owned generator plugin design](type-generation-plugins.md)
-owns exact binding selection, overrides and Use/Publish/Define. This document
-owns the guarantees and limits of constraint encodings. Their
+owns declarative mapping selection, requested public roots and owned declaration
+recipes. This document owns the guarantees and limits of constraint encodings. Their
 [composition contract](type-generation-plugins.md#constraint-preservation-in-plugin-composition)
 keeps those responsibilities together without adding kind-based dispatch or
-claiming that the proposed plugin SPI already implements witnesses.
+claiming that the implemented mapping SPI already implements witnesses.
+[GEN-02](generation-gaps.md#gen-02) records the missing construction contract,
+current guarantee and completion criteria; source-reader correction is separate.
 
 The intended rule is: emit an encoding that preserves the requested constraint,
 or return a located `Unsupported` diagnostic. Never silently erase a constraint
@@ -55,8 +57,11 @@ The [implemented composer](generation-composition.md) separates source
 assumptions, representation conventions and native construction. The Horos-owned
 representation policy currently requests bare native parameters, so TypeScript
 emits no kind constraint.
-The proposal changes that source-to-target lowering, not `ASTTransformer`, the
-engine's registry or the shared semantic carrier.
+The proposal requires source-to-target lowering and native-plan expressiveness
+for the selected enforcing encoding. Today `NativeParameter` carries only a name
+and origin. Its generic argument templates alone cannot express native bounds.
+The exact enforcement contract is not finalized; any general extension must be
+justified by that capability, without named-kind handling in shared orchestration.
 
 The private fixed Dialect has been removed. Source-owned integration mappings
 and source/target collaborators are the implemented generation path; native

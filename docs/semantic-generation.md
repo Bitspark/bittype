@@ -48,7 +48,8 @@ The profile selection is part of the configured mapping, not inferred from a kin
 name. Representation does not advertise arbitrary native instantiations as
 Horos-admitted values. Native strings, records and generic parameters do not
 prove every source invariant. An enforcement request never silently selects
-representation instead.
+representation instead. [GEN-02](generation-gaps.md#gen-02) records the missing
+native-plan capability, target encodings and completion criteria.
 
 The [native kind-constraint proposal](native-kind-constraints.md) describes a
 future enforcing route using direct bounds or source type witnesses, with
@@ -148,6 +149,8 @@ Arbitrary later Horos queries do not mutate the captured source evidence.
 The mapping requires the current Horos analysis profile, its validity and
 required enumeration reports, an available typed semantic graph, and compatible
 configuration. The planner admits capture/evidence association before mapping.
+The common-traversal responsibility still exposed through this source reader is
+the open architectural correction [GEN-01](generation-gaps.md#gen-01).
 The source-specific reader decodes published terms; it does not rerun Horos
 resolution, query a different Program or restore a Data-summary fallback.
 

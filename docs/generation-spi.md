@@ -167,7 +167,8 @@ retagging. Generation is not a proof of source/native type equivalence.
 
 The source integration consumes an already admitted capture and its explicit
 evidence. Its existing Source and Catalog contracts remain; narrowing their
-traversal responsibilities is a separate proposed change. The new child check
+traversal responsibilities is an open architectural correction, tracked with
+completion criteria in [GEN-01](generation-gaps.md#gen-01). The new child check
 authenticates the relation needed by declarative captures.
 [Complete source SPI](../contracts/generation/go/source.go) ·
 [Catalog SPI](../contracts/generation/go/mapping.go)
@@ -270,5 +271,7 @@ native bindings. [Output handoff](typescript-type-imports.md) ·
 [Planning tests](../integration/go/generation_planning_test.go)
 
 Native kind enforcement, executable code, adapters and runtime behavior remain
-outside this slice. The separate ASTTransformer routing API remains available
+outside this slice. [GEN-02](generation-gaps.md#gen-02) records the absent native
+bound contract and the work required before an enforcing profile can be claimed.
+The separate ASTTransformer routing API remains available
 for independent syntax transformations.
