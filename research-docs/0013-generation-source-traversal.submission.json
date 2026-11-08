@@ -18,11 +18,12 @@
       "serverSha256": "695dae3d45d35c2ff65559ba5a7f028537239d03ecc6053a958442eb7d7b7d8c",
       "runId": "run_f7cfb3b5-7cf2-40d8-8884-ce150a7adcf7",
       "submittedAt": "2026-11-08T12:47:07Z",
-      "state": "submitted",
+      "state": "completed",
       "failureCode": null,
-      "resultSha256": null,
-      "verify": null,
-      "note": "First research add at about 11:37Z returned Server unavailable: Docker Desktop was down on the host (nothing listening on localhost:3099; Nightfall incident class #425). Retried with the same key after the controller answered at 12:46:41Z."
+      "resultSha256": "76a2e70c501c38382d9543236942079114c05d7371afe0ba33062d5bec831392",
+      "verify": "nightfall consult verify --output: rc=0 (all checks passed); local advice sha256 equals the run status result.sha256",
+      "note": "First research add at about 11:37Z returned Server unavailable: Docker Desktop was down on the host (nothing listening on localhost:3099; Nightfall incident class #425). Retried with the same key after the controller answered at 12:46:41Z.",
+      "receivedAt": "2026-11-08T12:55:26.217Z"
     }
   ]
 }
