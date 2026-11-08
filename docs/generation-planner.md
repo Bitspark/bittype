@@ -30,6 +30,34 @@ correction recorded in ACX-002. [Current generation lifecycle](kernel-compositio
 
 ## Caller interface
 
+### Three SPI changes
+
+1. **Carry generation intent into Files.** The target records requested public
+   declaration sites and the external destination of each emitted use. The
+   engine captures checked declaration ASTs and seals those sites into one
+   `generation.Output`. Files accepts that complete output, a consumer
+   placement and a target dependency environment. It constructs module syntax
+   and checks the real bindings before publishing `Source[T]`. Formatting an
+   already analyzed program still consumes its own semantic result.
+2. **Separate semantic mapping from target construction.** Mapping libraries
+   supply `BindingDescription[F,T]` values, declaration and helper recipes,
+   and generic conventions. The kernel selects and composes them into a plan.
+   The target builder realizes planned expressions and binders at AST sites.
+   These contracts replace the responsibilities currently combined in
+   `MappingProvider.Open` and the procedural mapping operations. This is the
+   proposed planner redesign. [Mapping declarations](#what-a-mapper-declares)
+3. **Read common structure from established semantics.** The kernel can follow
+   captured entities, references and complete arguments directly. Languages
+   supply the identities, operand meanings and applicability judgments their
+   rules establish. For `Page<Cell<Person>>` the shared graph pairs two
+   applications, while Horos owns kind admission and the identity of its Cell
+   declaration. This narrows the proposed responsibilities of `Source[F]`,
+   `Catalog[F]` and `SourceSession[F]`. [Semantic queries](semantics.md)
+
+The first implementation slice concerns the generation result and Files. The
+other two changes describe subsequent work. The [context matrix](abstraction-levels.md#agnostic-kernel-and-language-specific-rules)
+explains where language rules enter each transition.
+
 The caller requests the public declarations `Page`, `Person` and `Cells` from
 the [pagination example](#pagination-on-read-and-write). In Horos, the body of
 `Cells` is `pages.Page<cells.Cell<Person>>`.
