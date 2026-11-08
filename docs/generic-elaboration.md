@@ -1,6 +1,6 @@
 # Generic generation and native admission
 
-**Evaluated design with first public SPI implemented in Go source, 6 November 2026.**
+**Generic requirements with declarative generation implemented, 8 November 2026.**
 This reconciles the
 independent consultations [0008](../research-docs/0008-generic-generation-protocol.md)
 on composition and [0009](../research-docs/0009-native-kind-constraint-soundness.md)
@@ -8,14 +8,14 @@ on native soundness. It refines [plugin generation](type-generation-plugins.md)
 and [native constraints](native-kind-constraints.md). Their earlier binder-to-slot
 and private-evidence sketches are not alternate supported contracts.
 
-The [first public SPI](generation-spi.md) implements Use, Publish, Define and
-paired Introduce/Apply with explicit collaborators and a guarded lifecycle.
-The [automatic composer](generation-composition.md) now supplies exact
-selectors/overrides and definition scheduling, replacing all four private
-Dialects. Bittype's supplied Horos integration packages own the mappings. Their representation
-profile permits constraint erasure; its enforcement profile returns Unsupported.
-Native admission profiles remain next steps. The earlier research used source/specification reasoning; it is distinct
-from implementation qualification.
+The [public SPI](generation-spi.md) now expresses mapping rules, owned
+declaration recipes, public root requests and a single generic convention as
+data. Planning resolves those descriptions before native AST construction.
+The four generators use this boundary; the former procedural operations,
+products and tickets are removed. The representation profile permits constraint
+erasure; native enforcement remains unsupported. Research conclusions concerning
+stronger admission encodings below remain design requirements, not claims that
+the generation SPI implements their proofs.
 
 The owner's subsequent [Logos preservation proposal](logos-preservation.md)
 expresses preservation under symbolic assumptions, with native admission proved
@@ -35,8 +35,8 @@ example; it does not supply the missing native theories by itself.
 The [evaluated architecture](type-system-architecture.md) refines that prerequisite:
 consume Logos semantic packages and exercise two exact statements and their actual
 generation associations. The scoped integration now uses the landed narrow typed
-checker. Introduce/Apply connects source/native binders and whole
-application results to that evidence; it does not become a proof foundation.
+checker. A convention connects source/native binders and whole application
+results; the generation plan does not become a proof foundation.
 Horos already supports the constructor-arrow query needed for the source guarantee.
 
 ## What is preserved
@@ -116,34 +116,44 @@ not an existing generator capability or a required convention for other targets.
 | Selected mapping | Choose the native representation family |
 | Configured source/target convention | Introduce native formals; elaborate actual applications; preserve result associations |
 | Generation target | Native declaration syntax, lexical scopes, anchors and bound uses; the [Files formatter](source.md#from-generated-declarations-to-files) owns concrete imports and exports |
-| Generation kernel | Invocation/scope identity, reservation, lifecycle, budgets and whole-output failure; automatic exact selection belongs to the separate implemented composer |
+| Generation kernel | Capture and scope identity, substitution, budgets and whole-output failure; the registry supplies exact selection and the invariant planner resolves dependencies |
 
-Replace the former binder-to-target-index idea with **real source binder to scoped
-representation product**. A product includes the native payload projection and
-integration-owned support for the chosen association. Support is not necessarily
-a public native proof parameter; some profiles need no such parameter.
+One immutable convention belongs to the open declaration under the selected
+configuration. The implemented contract is:
 
-One immutable convention belongs to the canonical open declaration under the
-fixed configuration. Its paired operations are:
+```go
+type GenericConvention[T any] struct {
+    Parameters []ParameterDescription
+    Bindings   []Expression[T]
+    Arguments  []Expression[T]
+}
+```
 
-- **Introduce:** use reserved native symbols to construct formal products and
-  native parameter/constraint syntax. Bind each real source binder exactly once.
-  Additional native parameters create no additional Horos binders.
-- **Apply:** consume an admitted effective use in the caller's environment and
-  construct the complete native application **and its result association**.
+The mapping library supplies it. The planner pairs Bindings with real source
+formals, substitutes Argument(i) expressions using effective actuals and
+constructs the complete native application. Parameters owns the native parameter
+list; adding a native parameter creates no additional source binder.
+An external mapping can instead directly describe its complete native
+application using captured source slots, without defining the library type.
 
-Use, Publish and Define share this convention. Apply may reference an owned or
-external declaration, or construct inline syntax; it does not imply that every
-use must own a local definition. Publication and deferred definition remain
-optional capabilities required only when their operation is demanded.
-Nongeneric source definitions use the public SPI's explicit `Nullary` layout
-route when no Convention is supplied, without an artificial generic capability.
+For example, a source parameter T may bind to native Parameter(0), while
+Arguments supplies both Argument(0) and a native collection of Argument(0).
+That selects NativePage<T, Collection<T>> consistently for open and nested uses.
+The independent-source fixture exercises exactly this additional-parameter case.
+[Independent fixture](../integration/go/testdata/generationfixture/fixture.go)
 
-The formal/application law is that substituting represented actuals into the
-introduced products agrees with representing the corresponding source
-substitution. The result law also covers the complete application, assumptions,
-required membership support and profile's alias/wrapper promise. Equal type text
-or equal IDs cannot establish either law.
+A stronger enforcing convention may also require integration-owned support for
+membership and source/native association. That is not supplied by an arbitrary
+native expression or inferred from a Go carrier. Its representation and proof
+contract require separate qualified implementation. The current program retains
+scope and the complete represented result, not a universal source/native/proof
+tuple or an untyped support bag.
+
+The formal/application law remains: substituting represented actuals in the
+open native family must agree with representing the corresponding admitted
+source substitution. Equal names or equal rendered type text do not prove it.
+Native constraint encodings must additionally retain the profile's assumptions,
+membership support and alias/wrapper promise.
 
 ### Pagination and scope
 
@@ -206,65 +216,24 @@ a present value. The TypeScript choice retains the existing strict-null and
 exact-optional-property settings. This table concerns representations; it does
 not make arbitrary native applications satisfy Tree.
 
-#### Introduce, define and apply
+#### Plan the declaration and apply its convention
 
-The same configured convention governs the open declaration and every use:
+1. The declaration recipe selects Page's native parameters and binds the real
+   source Page.T to its native parameter expression.
+2. The record expansion records its fields. The list rule selects the native
+   collection of that scoped parameter; optional text composes its supplied rules.
+3. An application admits all source actuals, maps those demanded by the native
+   convention and substitutes their complete representations. Person and nested
+   Page results remain distinct expressions.
+4. The requested People alias refers to that application. The planner retains
+   one open Page definition; no concrete caller selects its signature.
+5. Run allocates symbols, constructs all planned declarations and binds each
+   use to its intended parameter, owned declaration or public external symbol.
 
-1. **Reserve Page and introduce its formals.** Acquisition reserves the native
-   declaration and parameter symbols. Introduce uses those reserved symbols to associate the
-   real source binder Page.T with a scoped representation product whose payload
-   is the native parameter T. A simple Page convention introduces one native
-   parameter.
-2. **Define Page's body.** The record mapping requests the selected list mapping
-   for `list<T>`. That mapping consumes Page.T's product and constructs the native
-   list type. Text and optional-field representation are composed the same way.
-   Define fills the reserved declaration with those AST nodes and the already
-   chosen native formals.
-3. **Apply TreePage to Person.** The source adapter supplies the admitted use
-   under its real arguments and assumptions. The selected Person mapping supplies
-   its representation. TreePage's convention constructs the complete native
-   application using the same layout as its published declaration. It returns
-   the result association as well as the native type expression.
-4. **Publish People.** Expose the requested named application using that product.
-   Retain the open Page and TreePage declarations; the first Person use neither
-   chooses their generic signatures nor creates a specialized copy of Page.
-
-Use obtains a representation product; Publish exposes a requested declaration;
-Define fills an owned reservation. Introduce and Apply supply the shared generic
-convention used by those operations. A mapping selecting an external native
-declaration can apply its compatible supplied convention without defining that
-declaration locally.
-
-A representation product has two conceptual parts:
-
-| Part | Meaning during generation |
-| --- | --- |
-| Native payload | Target AST expression for the selected representation |
-| Integration-owned support | Information connecting that payload to the effective source use, its assumptions and selected association, including the result support required by composition |
-
-The integration owns the support vocabulary and establishes its association.
-In the public SPI, each preselected plan supplies an `Associations` owner. It
-authenticates an immutable stored token and returns its actual payload and binding;
-the host checks that binding before sealing a Product. A record address alone
-does not establish existence or authorize attaching a different source subject.
-The host owns invocation and scope rules; it does not interpret kind proofs or
-accept an arbitrary pair as valid merely because its fields have the right Go
-types. This is not a universal source/native/proof tuple or a dictionary of named
-kinds. Support stays in generation state. An enforcing encoding may additionally
-emit native descriptor or constraint types; neither operation creates runtime
-adapters or values.
-
-The retained lexical scope is distinct from an operation ticket. `Binding`
-records the run/configuration, issuer, subject/environment, native frame and
-signature. `Ticket` governs one callback's return and issuance lifetime.
-Introduce's formal products survive for later Define operations in the same
-frame, while the completed Introduce callback loses issuance authority. A fresh
-callback return envelope does not change a product's semantic association.
-
-Native-only helpers are configured with a local helper key and no source
-Declaration. They do not need dummy canonical declarations, source binders or
-the caller's source environment. Their explicit native layout and body remain
-the target's responsibility.
+The scoped expansion request expires when its callback returns. The resulting
+closed program retains parameter/declaration identities independently of that
+callback's lifetime. Helpers use their own opaque key and parameter scope.
+[Exact declaration and expansion contracts](generation-spi.md)
 
 #### Caller scope and nested results
 
@@ -273,11 +242,11 @@ type Outer<T: Tree>: Tree = TreePage<T>;
 type Nested<T: Tree>: Tree = TreePage<TreePage<T>>;
 ```
 
-When defining Outer, TreePage's actual argument is **Outer.T**. Apply consumes
-Outer's scoped product; it must not use TreePage's own formal symbols or discard
+When defining Outer, TreePage's actual argument is **Outer.T**. Substitution consumes
+Outer's scoped expression; it must not use TreePage's own formal symbols or discard
 Outer's assumption. A selected enforcing convention might represent a source
 parameter with one descriptor and a payload projection, or with several linked
-native parameters. Introduce and Apply must agree on that arrangement.
+native parameters. The formal and application templates must agree on that arrangement.
 
 Nested requires support for the inner **result**. Its inner application produces
 the selected native representation of TreePage<T> and the supported result
@@ -312,7 +281,7 @@ For `Ignore<T: Tree> = text`, source admission must retain T's obligation even
 when payload lowering never visits T. Native publication must retain the chosen
 admission gate or fail when enforcement is requested. A representation-only
 profile must keep its stated source-checking guarantee distinct from native
-enforcement. The current backend rejects unused proper parameters; this example
+enforcement. The default structural recipe rejects unused proper parameters; this example
 specifies a future requirement, not current support.
 
 ### Admission and products do not manufacture proofs
@@ -328,17 +297,17 @@ judgments require an explicitly implemented provider/profile capability and
 corresponding receipts; changing a transformer requirement alone creates no fact.
 No hidden resolver/analyzer or second Horos evaluator belongs in generation.
 
-The integration must establish the payload/support association before a host
-issues a product. Attaching a requested source Ref to an arbitrary pair cannot
-make it valid. Host checks concern scope/lifetime; integration checks concern
-its own association contract. Trusted Go code and IDs are not a universal
-semantic or native-compiler proof.
+An enforcing integration must establish its representation/support association;
+attaching a source reference to arbitrary data cannot make that association true.
+The generation kernel checks scope and captured identity. Native interpretation
+and proof meaning remain independently owned.
 
-Products and signatures belong in invocation-local generation state, not the
-immutable source Semantics graph. Product reuse must include its target formal
-environment. Deferred helpers receive explicit native parameters and their own
-scope; retaining an immutable reference to a caller's binder still captures it.
-Reservation solves symbol ownership and emission order, not recursive legality.
+Native expressions and declaration IDs belong to the planned program, not to the
+immutable source Semantics graph. Substitution preserves the target parameter's
+declaration scope. Native helpers receive explicit parameters; immutable
+references to a caller's binder would still be an illegal capture. Reserving a
+symbol does not establish recursive type legality; cycles remain unsupported
+in the implemented generation profile.
 
 ## Native limits found by the consultations
 
@@ -409,89 +378,34 @@ nodes or source semantic facts.
 
 ## Go SPI status and next scope
 
-The [public generation SPI](generation-spi.md) is implemented in
-[`contracts/generation/go`](../contracts/generation/go/contracts.go), including
-its minimal guarded Session. As with the existing semantic operation contract,
-the guarded runner lives beside its contracts and the kernel composes registered providers. It implements these construction and lifetime decisions:
-
-1. Owner-qualified record addresses and authenticated source views, with guarded
-   product issuance and host-owned invocation/signature identities. Independent
-   integrations need no private Bittype imports.
-2. One frozen native layout, exact real-binder coverage and retained formal
-   products. Lexical association scope survives callback boundaries; issuance
-   authority tied to the operation ticket expires when each callback returns.
-3. Host-mediated Apply and explicit owned/external destination acquisition.
-   Native-only helpers have configured keys and no fabricated source declarations.
-   Inline use does not require ownership; an external callee requires no local Define.
-4. A configured association owner authenticates immutable support records and
-   their actual payload/binding. The host checks identity and lifetime without
-   interpreting kind semantics or accepting a caller's arbitrary payload/support pair.
-5. Separate optional capabilities, an explicit nongeneric layout route, bounded
-   invocation and whole-output failure. Finish is the only output commit; callbacks
-   and their record stores remain trusted collaborators with stable policy.
-
-The implementation accepts already selected plans and explicit driving of
-acquisition, publication and definition. It does not supply automatic exact
-selection/overrides, a definition queue, language-specific mappings or native
-admission encodings. There is no universal evidence bag or automatic cloning of
-arbitrary integration state. The [joint verification composition](verification.md)
-continues to own actual-artifact claims and Logos checking separately.
+The [current public contract](generation-spi.md) is declarative.
+The invariant interpreter lives beside its immutable Program contract; registry
+selection lives in the shared transform stage. Mapping libraries depend on native
+semantic forms; targets consume those forms without a source reader or mapping
+callbacks. [Implemented boundaries](generation-planner.md#three-spi-changes)
 
 ### Implementation sequence
 
-The pagination migration has three stages:
+1. **Implemented:** immutable mapping descriptions and source-scoped expansion,
+   automatic exact selection/explicit replacements, generic substitution and
+   helper planning. A runnable plan contains every reachable target expression.
+2. **Implemented:** separate native construction for TypeScript, Go, Rust and C++,
+   Output sealing, and TypeScript Files placement from that output. Page<Cell>,
+   a reversed two-operand external mapping and an independent source with an
+   extra native parameter exercise the public contracts.
+3. **Deferred:** native constraint encodings, independently qualified for each
+   supported domain, issuer model and checking point. The representation profile
+   does not enforce arbitrary handwritten native applications.
+4. **Deferred:** narrowing common Source/Catalog traversal around established
+   semantics and the remaining native Files cases.
 
-1. **Implemented in source: public operations and guarded lifecycle.** The first
-   SPI supplies product/convention contracts and explicit invocation. Source facts,
-   selected associations and emitted syntax stay separate; a Go carrier cannot
-   establish their semantic correctness by itself. Qualification of this surface
-   is distinct from replacing production generators.
-2. **Implemented: automatic composition and all four production replacements.**
-   Exact selection, guarded overrides and definition scheduling now use the
-   [public composer](generation-composition.md). Horos's integration implements the
-   shared convention over the existing proper, direct, saturated generic domain
-   and supply the ordinary declaration, record, list, text, boolean and optional
-   mappings.
-   Preserve the existing representation profile's behavior and remove the
-   superseded private generation path in the completed replacement. No compatibility
-   implementation or implicit fallback remains. Existing unsupported cases stay
-   explicit until their own mappings/contracts are implemented. Extend composition
-   through ordinary library fixtures such as Cell without adding core cases.
-3. **Deferred: add supported native constraint encodings.** For each selected target/domain,
-   specify the admitted arguments, consumer operations, issuer assumptions,
-   checking points and identity/alias promises. Exercise the counterexamples in
-   the [constraint proposal](native-kind-constraints.md). An unavailable enforcing
-   representation returns Unsupported; no weaker output satisfies that request.
+[Plan tests](../integration/go/generation_planning_test.go) ·
+[Independent source](../integration/go/generation_independent_test.go) ·
+[Four-target pagination](../integration/go/horos_generation_pagination_test.go)
 
-The production migration initially retains today's explicit representation-only
-guarantee. The first SPI preserves associations needed for stronger encodings
-without supplying those encodings. The [joint verification composition](verification.md)
-already checks the scoped TextBox/Page claims using actual captured artifacts.
-The product/convention API is not that proof and imports no Logos checker or
-native analyzer implicitly.
-
-Qualification of the complete production migration should cover:
-
-| Case | Required outcome |
-| --- | --- |
-| Page and People in each target | One open definition and correctly substituted applications; preserve the selected list and optional representations |
-| Outer with renamed source parameters | Resolve the caller's real binder and retain its assumptions; no captured callee formal or name-based substitution |
-| Nested constrained application | Compose the inner result's association and required support, not its argument's support |
-| Missing source admission or incompatible support | Located failure with no partial output or retry through a weaker mapping |
-| Ignore's unused constrained argument | Preserve source admission independently of payload traversal; an enforcing encoding must retain its gate or reject the request |
-| Supplied Cell mapping | Compose through the ordinary Page/list mappings without a host, engine, runtime or Wire change |
-| Imported generic with compatible/incompatible fixed choices | Reuse only supported parameter substitutions; an element override cannot rewrite a baked-in list or optional representation |
-| Requested native enforcing API | Target-specific positive and negative typechecking demonstrates the stated domain and checking point; a few accepted concrete uses do not establish an open guarantee |
-
-These are acceptance criteria for the full migration, not a claim that the first
-SPI already generates each example. Public contract qualification and production
-native typechecking remain separate. Run applicable checks through the repository's
-maintained execution paths; the first SPI does not add target-language capabilities.
-Higher-order/computed generics, automatic convention adaptation, mixed native
-binders, unrestricted recursion and cross-invocation caches remain deferred
-until a concrete supported case requires them.
-
-Any absent admission, incompatible association, omitted bound, illegal scope,
-unsupported publication or forbidden wrapper change fails the entire invocation.
-There is no retry through an erasing profile or weaker mapping. The engine,
-runtime, Wire and hydration gain no knowledge of these library contracts.
+Qualification of stronger native admission must still cover ignored source
+arguments, nested result support, fixed dependencies of external generics,
+alias/wrapper promises, and both rejected and admitted native consumers.
+The [joint verification composition](verification.md) checks scoped TextBox/Page
+claims using actual captured artifacts; neither a generation plan nor its native
+parameter count is that proof. No runtime, Wire or hydration contract changes.

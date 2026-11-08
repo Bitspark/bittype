@@ -49,12 +49,15 @@ including nested reuse. The owning composition imports the public Logos contract
 all packages use the root module and its anonymous installed-consumer gate.
 Native admission enforcement and runtime bindings are separate.
 
-The first [public generation SPI](docs/generation-spi.md) is implemented in Go
-source: independent Use, Publish and Define capabilities, paired Introduce/Apply,
-and a guarded invocation with explicitly supplied collaborators. The runner lives
-with its contracts in `contracts/generation/go`. [Automatic composition](docs/generation-composition.md)
-selects exact mappings and guarded overrides, publishes roots and schedules
-definitions. All four generators use this SPI. The engine composes explicit source, target and mapping registrations for each request. Its [generation output](docs/generation-planner.md#the-result-of-run) carries exposed sites and external destinations into [TypeScript Files placement](docs/typescript-type-imports.md#from-generation-to-files). The [construction SPI and example](docs/kernel-composition.md) show a complete Horos to TypeScript request.
+The [declarative generation SPI](docs/generation-spi.md) separates library-owned
+mapping descriptions from native AST construction. Engine.PlanGeneration selects
+and freezes the complete native program; GenerationPlan.Run constructs a fresh
+checked output. Engine.Generate performs both. All four native generators use
+this contract, with scoped generic substitution and kernel-owned composition.
+The superseded procedural operations have been removed.
+The [registration example](docs/kernel-composition.md) shows Horos to TypeScript.
+The output carries exposed sites and external destinations into
+[TypeScript Files placement](docs/typescript-type-imports.md#from-generation-to-files).
 
 The [stage-first layout](LAYOUT.md) groups shared tree representations under
 trees and public interfaces under contracts. Every native language implements
@@ -154,7 +157,7 @@ interpret these concrete type semantics.
 - [Syntax engine](docs/engine.md): registration, typed boundaries, path finding,
   execution and text-stage composition.
 - [Generation design](docs/generation.md): AST-to-AST pipeline and future mappings.
-- [Generation planner](docs/generation-planner.md#where-the-plan-stops): proposed
+- [Generation planner](docs/generation-planner.md#where-the-plan-stops): implemented
   planning and execution for declaration ASTs, followed by the
   [Files formatter](docs/source.md#from-generated-declarations-to-files) for concrete imports and exports.
 - [Syntax and Files](docs/source.md): Source/Semantics carriers, symmetric

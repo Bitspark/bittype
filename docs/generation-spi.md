@@ -1,205 +1,274 @@
-# Public generation operations
+# Declarative generation SPI
 
-This page describes the implemented Go contracts. The proposed mapper
-interface is derived independently from the information that a library needs
-to supply. [Planner design](generation-planner.md#what-a-mapper-declares).
+**Implemented, 8 November 2026.** Mapping libraries describe intended native
+types. Planning resolves those descriptions. Construction receives the closed
+native program and builds ASTs. The procedural User, Publisher, Definer,
+Convention, Plan, Session and MappingProvider interfaces have been removed,
+including their tokens and operation tickets. There is no compatibility path.
 
-The [kernel-owned construction SPI](kernel-composition.md) supplies the source, target and mapping providers that the engine opens for each generation request.
+This design preserves the responsibilities and scope guarantees without
+prescribing their former interfaces. The architectural correction is recorded in
+[bittype/ACX-005](architecture-cases/0005-generation-interface-design.md).
+[Kernel registration](kernel-composition.md) supplies the complete calling example.
 
-This implements the
-[type-owned generation design](type-generation-plugins.md) and
-[generic elaboration protocol](generic-elaboration.md). Its scope is public
-operation contracts and the machinery needed to exercise them safely with
-explicitly selected collaborators. [Automatic composition](generation-composition.md)
-now selects mappings, publishes roots and schedules definitions; all four native
-generators use this SPI. Native constraint enforcement and runtime bindings are separate work.
+## Mapping descriptions
 
-The [expert review](../research-docs/0011-public-generation-spi.md) addresses
-construction, ownership and generic scope. The existing
-[joint verification contract](verification.md) concerns completed captured
-source/target artifacts. A generation product is not a final-output proof.
-
-The public package is `github.com/Bitspark/bittype/contracts/generation/go`.
-It contains both the operation contracts and their guarded lifecycle adapter,
-following the existing semantic operation pattern. Keeping issuance with the
-opaque handles avoids an unrestricted public constructor between packages.
-The stage-owned `transform/syntax/shared/generation/go` composer uses this boundary for selection
-and scheduling. Session also supports explicit driving; no forwarding alias or
-second issuance path is introduced.
-
-## Construction and driving
-
-The consumer supplies `Config[F,T]`: a `Source[F]`, `Native[F,T]`, target language
-descriptor, receipt requirements, preselected `Plan[F,T]` records and an explicit
-selection callback over already admitted source uses. `Begin` captures plan
-records and source-owner identities, admits the exact supplied snapshot/receipts,
-and calls the configured source's `CheckInput`. It runs no semantic provider.
-`transform.Request.Snapshot()` preserves this original capture even when the
-transformer requires no receipts; recapturing equal syntax is a different input.
-
-The sequence is explicit:
+These are implemented signatures in package generation. F and T identify
+languages; S is the source owner's reading API. The application registers a
+MappingLibrary. The registry calls Describe once, outside its lock, and copies
+the returned containers. Describe receives no source instance or AST builder.
+[Definitions](../contracts/generation/go/description.go)
 
 ```go
-run, err := generation.Begin[F, T](ctx, input, config, limits)
-// Handle every error; any failed operation prevents successful Finish.
-product, err := run.Use(use)
-publication, err := run.Publish(declaration)
-callee, err := run.Acquire(declaration)
-definition, err := run.Define(callee)
-output, err := run.Finish()
+type MappingLibrary[F, T any, S SourceSession[F]] interface {
+    Describe(from, to representation.Language) (MappingDescription[F,T,S], error)
+}
+
+type MappingDescription[F, T any, S SourceSession[F]] struct {
+    Profile      string
+    Bindings     []BindingDescription[F,T,S]
+    Declarations []DeclarationRecipe[F,T,S]
+    Helpers      []HelperRecipe[T]
+}
+
+type BindingDescription[F, T any, S SourceSession[F]] struct {
+    ID     string
+    Input  Pattern[F,S]
+    Output Expression[T]
+    Expand func(context.Context, Expansion[F,T,S]) (Expression[T], error)
+}
+
+type Pattern[F any, S SourceSession[F]] struct {
+    Selector Selector
+    Slots    []Slot
+    Capture  func(context.Context, S, UseData[F]) ([]Capture[F], error)
+}
+type Capture[F any] struct {
+    Slot Slot
+    Use  Use[F]
+}
 ```
 
-These are alternative demands in a larger consumer workflow, not a requirement
-that every mapping implement every operation. Acquire is idempotent for the
-same selected declaration within the invocation. A local owned reservation must
-be defined exactly once before Finish. Publication is separate and may precede
-definition; each requested root must be exposed through its publisher. Only
-Finish returns a sealed generation output using the target syntax checker in the session configuration. It fails if required definitions are
-unfinished, a callback failed, cancellation occurred or a budget was exceeded.
+An exact selector belongs to the source language. The kernel compares identity,
+never the spelling Cell, Page or Data. A fixed rule supplies Output. A
+source-dependent rule supplies Expand instead, for example to enumerate record
+fields. Capture and Expand run only during planning. They do not recursively
+invoke the planner or construct AST nodes.
 
-`Plan.Header` supplies a target layout when no source convention is needed.
-Source formals must be empty on that route. `AcquireHelper(key)` and
-`UseRequest.RequireHelper(key)` address explicitly supplied native-only plans.
-Their source declaration/environment are zero; a helper cannot inherit a
-caller's source binders. Its target-owned header may still have explicit native
-parameters. Helper keys are local to the captured configuration and are not
-synthetic source identities.
+This is the TypeScript list rule, with error handling abbreviated. The Horos
+pattern owns the element operand; the mapping chooses an array; the TypeScript
+model owns that native form. [Implemented mapping](../transform/syntax/horos-to-typescript/mapping/go/mapping.go)
 
-A Session permits nested callbacks on one call stack. Copies share its entire
-private invocation state; consumers serialize calls across all copies. Finish
-freezes the obligation ledger before target assembly and rejects reentrant
-operations. Recursive publication of the same root is also rejected. Separate
-sessions can run concurrently when their collaborators support
-that use. The host copies its owned slices and records; collaborators must keep
-their private records and policy stable. Copying a Go interface cannot freeze a
-mutable implementation.
+```go
+element := generation.TypeSlot("E")
+pattern, err := rules.Element(from, element)
 
-## Typed addresses and authenticated products
+binding := generation.BindingDescription[horos.Language, ts.Language, source.Reader]{
+    ID:     "list/typescript/1",
+    Input:  pattern,
+    Output: model.Collection(generation.Mapped[ts.Language](element)),
+}
+```
 
-`Space[K]` belongs to an integration storing immutable records. Its `Ref[K]`
-contains a nonempty private owner identity and a slot; `Owner[K]` permits ownership
-checks without issuing addresses. Roles distinguish declarations, real binders,
-source uses/environments, target destinations/layouts/fragments and associations.
-These are record locators, not a second semantic graph or a type algebra. A
-nonzero reference alone proves neither existence nor applicability.
+Slot identity is distinct from its label. The registry rejects undeclared slots.
+The planner authenticates every captured occurrence as a direct operand or actual
+of the selected parent. A same-named foreign slot cannot stand in for it.
+Dynamic expansion receives these implemented methods. The kernel creates and
+revokes the request; a retained request is unusable. A rejected capture poisons
+that expansion even if its callback swallows the error.
 
-The source supplies read-only owners for its roles. The host checks these exact
-owners and invokes `Source.Authenticate` for existing records. `Open` supplies
-canonical binders and assumptions; `Admit` supplies a complete applicable use.
-An occurrence and its effective subject remain separate, so two occurrences of
-the same binder can reuse its product without pretending their AST addresses
-are equal. Existing Snapshot, semantic Result and AST envelopes remain direct
-inputs rather than being translated into new record spaces.
+```go
+func (r Expansion[F,T,S]) Source() (S, error)
+func (r Expansion[F,T,S]) Use() (UseData[F], error)
+func (r Expansion[F,T,S]) Mapped(use Use[F]) (Expression[T], error)
+```
 
-Mappings issue tokens into their own immutable association stores. A request's
-`Return(token)` calls the authority fixed by its plan, then checks the returned
-binding and asks the configured target to admit the actual payload fragment.
-The public `Captured` construction record is only a callback result: there is no
-public `AcceptCaptured` or free source/payload/support product constructor.
-The candidate cannot select its own validator. `Product.Binding`, `Payload` and
-`Token` expose immutable identities, not a mutable proof tree or a delayed reader
-of whatever scope happens to be current.
+Mapped records a dependency. It does not execute another mapping. Native
+expressions contain target-owned forms, immutable scalar metadata and child
+expressions. The shared interpreter understands substitution and references,
+not the meanings of these forms. There is no AST kind, source string or
+arbitrary payload field in an expression.
+[Expression contract](../contracts/generation/go/expression.go)
 
-`Binding` retains run, configuration, issuer, effective source subject,
-assumption environment, native frame and applicable signature. A separate
-callback ticket controls issuance/return. Formal products survive Introduce
-into Define, and child products survive into parent Apply, while old requests
-cannot issue and old publications/definitions cannot satisfy new callbacks.
-The first slice requires exact frame equality. Even closed native syntax may
-carry assumptions from another frame; lack of free native symbols is insufficient.
+## Declarations, publication and helpers
 
-Each library can own a distinct association store. A convention consumes an
-accepted argument through explicitly configured compatible premise readers.
-There is no central product variant or string-keyed evidence dictionary to edit
-when adding a library. Missing compatible support is an error.
+The application requests source roots. A declaration recipe describes each
+owned declaration. The planner records the corresponding target identity and
+the constructor emits its AST site into Output.Exposed. An external use rule
+alone cannot satisfy a publication request.
 
-## Responsibility boundaries
+```go
+type DeclarationRecipe[F, T any, S SourceSession[F]] struct {
+    ID       string
+    Selector Selector
+    Expand   func(context.Context, DeclarationRequest[F,T,S]) (DeclarationDescription[T], error)
+}
+type DeclarationDescription[T any] struct {
+    Name    string
+    Form    Form[T]
+    Origin  ast.NodeRef
+    Generic GenericConvention[T]
+    Body    Expression[T]
+}
+type HelperRecipe[T any] struct {
+    Key         HelperKey
+    Declaration NativeDeclaration[T]
+}
+```
 
-| Owner | Responsibility |
-| --- | --- |
-| Source integration | Interpret supplied semantic receipts and explicit query results; establish applicability, effective arguments and original assumptions |
-| Selected mapping | Choose the representation and establish its association with the effective source use |
-| Generic convention | Introduce native formals and elaborate complete applications using one retained convention |
-| Generation target | Own native declaration grammar, symbols, constraints, bound type references and declaration assembly |
-| Target Files formatter | Realize those references and requested visibility as module syntax under the consumer's placement |
-| Shared generation host | Associate requests, products and scopes; preserve lifecycle, limits and whole-invocation failure |
-| Final verification composition | Check claims about the actual assembled target using its captured semantics and the selected Logos contract |
-
-The shared code interprets no Horos constructor, kind or named library contract.
-Function, Stream and Cell have the same extension path as any other library.
-Builtin mappings also belong to supplied integrations. None of these operations
-implements invocation, streaming, hydration or application-value conversion.
-
-## Five operations
-
-**Use** obtains the selected representation of an admitted source use.
-**Publish** identifies the native declaration to expose. The
-[Files stage](source.md#from-generated-declarations-to-files) decides how to
-express that intent in the chosen module. **Define** fills a locally
-owned reservation. These are independently demanded capabilities: an inline
-mapping can supply Use without Publish or Define, and an external generic need
-not define its callee locally. A requested publication cannot silently disappear.
-
-**Introduce** establishes the native formal layout and products for the real
-binders of one canonical open declaration. **Apply** uses that retained convention
-in the caller's environment and returns the complete application's representation
-and support. Native formal count need not equal source binder count. An extra
-native descriptor or witness parameter creates no additional source binder.
-
-These names are scoped to generation. Generation Publish does not publish a
-semantic verdict, and generation Define is not the Logos logical-definition
-constructor.
+A zero recipe selector explicitly supplies a structural declaration policy.
+An exact binding takes precedence, and its failure never falls back to that
+policy. The declaration request exposes Source, Open and Mapped. Its Mapped
+operation accepts that declaration's body. Helpers have owner-issued keys and
+their own native parameters. They have no synthetic source declaration or
+inherited source environment.
 
 ## Source and representation environments
 
-The source substitution environment maps real source binders to effective source
-arguments. The representation environment maps those binders to scoped native
-products. These are different environments: names and positional argument indexes
-cannot replace binder identity or retained assumptions.
+One declarative convention supplies both sides of a generic. Bindings is
+indexed by the source declaration's authenticated parameters. Arguments is
+indexed by the native parameters. The names do not establish either relation.
 
-For `Outer<U> = Page<U>`, the application consumes Outer.U's product. Page's own
-formal cannot escape its definition environment. For
-`Nested<U> = Page<Page<U>>`, the outer application consumes support for the inner
-Page result; support for U alone does not describe that result. Admission also
-covers unused arguments, as in `Ignore<T: K> = text`.
+```go
+type GenericConvention[T any] struct {
+    Parameters []ParameterDescription
+    Bindings   []Expression[T]
+    Arguments  []Expression[T]
+}
+type ParameterDescription struct {
+    Name        string
+    Origin      ast.NodeRef
+    RequiredUse bool
+}
+func Parameter[T any](index int) Expression[T]
+func Argument[T any](index int) Expression[T]
+```
 
-A helper has its own scope and explicit formals. Keeping an immutable handle to a
-caller's binder does not make capturing that binder legal. Reusable syntax must
-materialize fresh containment nodes; shared symbols remain references.
+For Page<T>, Bindings contains Parameter(0), and Arguments contains Argument(0).
+Reordering native parameters changes both arrays. An extra native parameter
+can have an argument expression such as Collection(Argument(0)). The independent
+Go fixture uses this to generate Page<T, Storage> with Storage supplied as []T.
 
-## What successful generation establishes
+The planner substitutes complete mapped actuals into Arguments. Thus the
+additional argument for Page<Page<Person>> is []Page<Person, []Person>, not
+[]Person. Every source actual still requires admission, including an actual
+omitted by the native convention. Only demanded native actuals need mappings.
+RequiredUse expresses the selected recipe's requirement that a target parameter
+occur in its body; the default Horos structural recipe requires this.
 
-The host enforces association and lifecycle rules. Semantic correctness of a
-mapping, applicability of a source use and adequacy of a native representation
-remain explicit integration obligations. Trusted Go collaborators are not a
-sandbox. Generic typing and struct copies do not establish immutable ownership.
+Parameter references carry the owning planned declaration. Native construction
+checks that they occur in that scope. A helper cannot capture a caller's
+parameter. These guarantees replace mutable operation tickets and payload
+retagging. Generation is not a proof of source/native type equivalence.
+[Independent fixture](../integration/go/generation_independent_test.go) ·
+[Verification](verification.md)
 
-Generation support may describe a symbolic representation under assumptions.
-After assembly, final verification must capture the actual target, project its
-native semantics and prepare the requested claim. An earlier receipt about a
-different target cannot be relabelled onto newly emitted syntax. The existing
-Horos/Go verification composition and public Logos checker remain separately
-invoked; generation performs no hidden resolution, analysis or proof search.
+## Source admission
 
-## Qualification cases
+The source integration consumes an already admitted capture and its explicit
+evidence. Its existing Source and Catalog contracts remain; narrowing their
+traversal responsibilities is a separate proposed change. The new child check
+authenticates the relation needed by declarative captures.
+[Complete source SPI](../contracts/generation/go/source.go) ·
+[Catalog SPI](../contracts/generation/go/mapping.go)
 
-The first slice must be usable from independent public consumers, including an
-installed consumer with no private imports or local module replacements. Its
-fixtures distinguish host checks from the supplied integrations' semantics.
+```go
+type SourceSession[F any] interface {
+    Source[F]
+    Catalog[F]
+    ResolveRoots(context.Context, []ast.NodeRef) ([]Declaration[F], error)
+}
+type SourceProvider[F any, S SourceSession[F]] interface {
+    Contract() transform.Contract
+    Open(context.Context, transform.Request[F]) (S, error)
+}
+// Source method excerpts
+CheckInput(context.Context, semantic.Snapshot, []semantic.Result) error
+Admit(context.Context, Environment[F], Use[F]) (UseData[F], error)
+CheckChild(context.Context, Environment[F], Use[F], Use[F]) error
+```
 
-| Case | Required behavior |
-| --- | --- |
-| Page and a concrete Person application | One retained open layout; the application uses its selected argument product |
-| Outer and renamed binders | Apply retains the caller's actual binder and assumptions |
-| Nested application | The outer use consumes the inner result association |
-| More native formals than source binders | Exact source-binder coverage without positional one-to-one native matching |
-| Nongeneric definition | Publish and Define work without an unnecessary generic capability |
-| External generic | Apply works without owning or defining the external callee |
-| Inline representation with a helper | Inline and owned effects can compose |
-| Wrong support, foreign scope or changed layout | The invocation fails; no successful partial output |
-| Missing requested capability | Explicit failure, with no fallback mapping or omitted root |
-| Cancellation or exhausted limits | No successful completion or output publication |
+The kernel invokes these methods. Horos supplies them from its captured
+declaration semantics; the independent fixture supplies another source.
+Generation never invokes an implicit resolver or analyzer.
 
-Native compilation qualifies emitted syntax in the tested domain. It does not
-establish source applicability, universal native admission, runtime conformance
-or the correctness of every possible integration.
+## Target construction
+
+A target integration implements this interface. The planner invokes its checks
+against intended native forms and the completed program. Run invokes Build.
+Build receives no source reader, mapping callback or selector. It also receives no
+source-binder or application templates. Those remain in the planner's convention
+state. Its declarations are target-only:
+
+```go
+type NativeDeclaration[T any] struct {
+    Name       string
+    Form       Form[T]
+    Origin     ast.NodeRef
+    Parameters []NativeParameter
+    Body       Expression[T]
+}
+type NativeParameter struct {
+    Name   string
+    Origin ast.NodeRef
+}
+```
+
+[Target contract](../contracts/generation/go/contracts.go)
+
+```go
+type Target[T any] interface {
+    CheckExpression(context.Context, Expression[T]) error
+    CheckDeclaration(context.Context, NativeDeclaration[T]) error
+    CheckProgram(context.Context, Program[T]) error
+    Build(context.Context, BuildInput[T]) (Assembly, error)
+}
+type BuildInput[T any] struct {
+    Program  Program[T]
+    Language representation.Language
+    Output   ast.TreeID
+    Limits   Limits
+}
+```
+
+The four integrations delegate AST scheduling, fresh containment, scoped symbols,
+relocation and publication association to the shared constructor. Their native
+lowering methods supply grammar. Their model packages describe native intent
+without constructing syntax. Native symbols and fragments belong to one run;
+a foreign symbol cannot bind merely because its name or numeric position matches.
+[Constructor](../transform/syntax/shared/target/go/compile.go) ·
+[TypeScript target](../transform/syntax/typescript/target/go/provider.go)
+
+Targets are trusted native semantic compilers. The kernel checks captures,
+scopes, limits and resulting syntax; it does not prove an arbitrary target
+implementation's semantics. Native analysis and the verification SPI remain
+separate evidence.
+
+## Plan and output
+
+The engine exposes PlanGeneration and Generate. The latter plans and runs once.
+Only successful planning returns a usable GenerationPlan. It retains a closed,
+immutable native program and target configuration. Steps returns copies.
+
+```go
+func (e *Engine) PlanGeneration(context.Context, compose.Request) (generation.GenerationPlan, error)
+func (e *Engine) Generate(context.Context, compose.Request) (generation.Output, error)
+func (p GenerationPlan) Steps() []Step
+func (p GenerationPlan) Run(context.Context) (Output, error)
+```
+
+Each Run creates fresh construction state and a fresh checked snapshot. There is
+no mapping callback during Run, so a mutable array selected during planning
+cannot become a readonly array through a second mapping operation. Changing
+registered libraries affects later plans. Failure, cancellation or a limit
+returns no usable output. Recursion is explicitly unsupported by the current
+native construction profiles.
+
+Output carries checked syntax, requested public sites and external destinations
+into Files. Files chooses placement and module syntax, then checks the actual
+native bindings. [Output handoff](typescript-type-imports.md) ·
+[Planning tests](../integration/go/generation_planning_test.go)
+
+Native kind enforcement, executable code, adapters and runtime behavior remain
+outside this slice. The separate ASTTransformer routing API remains available
+for independent syntax transformations.

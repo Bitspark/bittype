@@ -1,95 +1,82 @@
 # Automatic generation composition
 
-The engine assembles a generation request from supplied source, target and mapping registrations. See the [kernel construction SPI and pagination walkthrough](kernel-composition.md) and [generation operation SPI](generation-spi.md).
+The kernel selects registered descriptions, closes their dependencies into a
+semantic plan, and constructs that plan's native ASTs. Consumers register
+libraries once and request a source capture, roots, target and generation
+profile. [Registration SPI](kernel-composition.md#registration-and-request) ·
+[Mapping SPI](generation-spi.md)
 
 ## Ownership and dependencies
 
-| Package | Responsibility |
+| Owner | Responsibility |
 | --- | --- |
-| contracts/generation/go | Construction and operation contracts, scoped issuance and product association |
-| transform/syntax/shared/generation/go | Registration, checked selection, exact replacement and definition scheduling |
-| transform/syntax/horos/source/go | Read the supplied semantic receipt and authenticate Horos declarations, binders and operands |
-| transform/syntax/shared/target/go | Symbolic native fragments, layouts and bounded AST assembly |
-| transform/syntax/&lt;native&gt;/target/go | Native construction, scopes and target syntax |
-| transform/syntax/horos/mapping/go | Horos structural declaration policy and associations |
-| transform/syntax/horos-to-&lt;native&gt;/mapping/go | Selectable Horos representations for each target |
+| Source reader | Authenticate captured declarations, binders, uses and child relations; interpret source meanings |
+| Mapping library | Declare exact source patterns, chosen native forms, declaration/helper recipes and generic conventions |
+| Kernel planner | Selection, replacement, scoped substitution, dependency closure, limits and whole-request failure |
+| Native model | Native form identity and validity, without AST syntax |
+| Native target and shared constructor | Realize those forms with fresh syntax, local binder links and requested exposures |
+| Target Files formatter | Placement, module syntax and checking actual bindings |
+| Verification composition | Separate judgments over captured source and target artifacts |
 
 ## Construction and selection
 
-Consumers supply providers once and select their registrations per request. The source resolves explicit declaration sites. Each mapping opens against the same source and native instances. The kernel collects the results, selects exact bindings, publishes the requested roots and schedules acquired definitions. The source authenticates applications including actual arguments omitted from the native representation. See the [registration code](../transform/syntax/shared/generation/go/registry.go) and [composition code](../transform/syntax/shared/generation/go/adapter.go).
-
 <!-- bittype:overview scope=construction-and-selection part=features -->
-A Selector combines a compatible source language/profile/Go marker with an
-opaque key. Display names and graph-local IDs are not selector identity. The
-Horos adapter constructs keys for exact module-pin/declaration pairs, builtin
-constructors with literal discriminators, and bound variables. Only that adapter
-interprets Horos identity. Native choices never follow a name such as Cell or
-Data, a kind classification, or an expanded structural fingerprint.
+A Selector combines a source language/profile/Go marker with an opaque key.
+Only the source owner interprets that key. The registry freezes descriptions
+at registration. The planner selects exact identities and explicit replacements
+before expanding a declaration body. Builtin and independent library mappings
+use the same public contract.
 <!-- bittype:overview:end -->
 
 <!-- bittype:overview scope=construction-and-selection part=exclusions -->
-A replacement names the selector, the expected provider and binding ID, and the new provider and binding ID. The kernel rejects ambiguous, stale, repeated or unused replacements and conflicting helpers. It applies the selected structural policy only where the source declares eligibility. A failed mapping ends the invocation.
+A missing or ambiguous demanded representation fails. Exact mapping errors do
+not invoke a structural fallback. Source admission remains required for all
+actuals, including those the native convention omits. Mapping callbacks run
+only during planning, and cannot access native construction state.
 <!-- bittype:overview:end -->
+
+[Registry implementation](../transform/syntax/shared/generation/go/registry.go) ·
+[Guarded planner](../contracts/generation/go/planning.go)
 
 ## Demands, generics and final output
 
-The composer publishes every requested root. A mapping lacking Publish cannot
-silently drop that root, even if it can represent a use inline. Imported source
-declarations are emitted only when selected rules demand them. An exact external
-or inline library mapping can avoid expanding an unsupported source body; source
-semantic admission and identity are still required.
+Requested roots need declaration recipes; an external use rule cannot silently
+drop a requested publication. Dependencies and helpers are emitted once, without
+automatically becoming public. A selected external Cell representation can keep
+its Horos Wire body opaque. The source analyzer still admits that original body.
 
-Acquisition reserves a destination and freezes its single Introduce layout.
-Apply receives the caller's actual arguments and formal environment and returns
-the complete result association. Its result is not the argument's association
-relabelled. The same open Page is reused by Page<Person>, Page<Page<Person>> and
-Page<Cell<Person>>. No first-use specialization changes Page's published header.
+One GenericConvention relates source binders, native parameters and complete
+application arguments. The planner uses that convention for every ordinary
+application. It does not specialize Page from its first use. The independent
+Go fixture adds a native parameter computed from the complete mapped actual and
+composes it through nested applications.
 
-After root publication, the kernel drains Session.PendingDefinitions until every
-acquired owned declaration or helper is defined. Defining one body may demand
-more definitions. External and inline representations need no local definition.
-Native-only helpers use explicit keys and native parameters, with no synthetic
-source declaration or borrowed caller binder. Session's explicit driving API
-remains available; PendingDefinitions is scheduling data, not an eager Define.
-
-The native store authenticates fragments and symbols and materializes fresh AST
-occurrences with real local references. Formal visibility follows lexical frame,
-not the current callback's target signature. It captures parameter layouts once,
-rejects native name collisions, orders demanded definitions by their references,
-and runs the native syntax checker before returning the sealed syntax snapshot and binding intent. The
-current native stores reject cyclic definition dependencies; they do not invent
-indirection. External native syntax references remain external, with no fabricated
-local declaration link. Integration contracts and native compiler qualification
-own the external artifact's meaning.
-
-Cancellation, missing representations, exhausted budgets, unsupported native
-syntax or failed operations return no usable output. The request supplies explicit SPI limits
-in [contracts.go](../contracts/generation/go/contracts.go); consumers can select stricter limits. No cache or live collaborator state crosses invocations.
+GenerationPlan contains no source reader or mapping expansion. Its Run constructs
+fresh syntax from captured target expressions. Native symbols and fragments are
+bound to that run. Scope, foreign-reference, cancellation and budget failures
+produce no output. Current native profiles reject cyclic definition dependencies.
+[Plan/result contracts](generation-spi.md#plan-and-output)
 
 ## Extension examples and qualification
 
+The [planning tests](../integration/go/generation_planning_test.go) demonstrate
+that planning performs no AST construction, repeated runs do not repeat mapping,
+registration changes cannot alter a captured plan, and foreign slots or child
+captures fail. An independently supplied two-argument Pair reverses its native
+arguments inside Page. The same TypeScript target and shared planner handle it.
+
 The [Horos composition tests](../integration/go/horos_generation_composition_test.go)
-exercise replacing the exact list mapping with ReadonlyArray in TypeScript.
-Page<T>'s body composes that choice under T, and nested uses preserve it without
-regenerating Page. A deliberately failing replacement is called once and yields
-no fallback output.
+replace list with ReadonlyArray and select a package-owned Cell. The
+[independent source fixture](../integration/go/generation_independent_test.go)
+uses another source language, an extra native parameter and a native-only helper.
 
-The same tests define an ordinary imported Cell<T> whose body is wire<T>. The
-default profile cannot lower Wire. The library mapping calls the TypeScript
-builder's `PackageType` with export `Cell` from `@bitspark/cell`. The compiler
-resolves the generated named type import against an independent package fixture.
-The mapping works inside Page and takes no file paths. The consumer's placement
-determines imports between generated units. [TypeScript type imports](typescript-type-imports.md)
+The existing four-language pagination, compiler and
+[generated Go verification](../integration/go/horos_generation_verification_test.go)
+tests remain. The [TypeScript placement tests](../integration/go/typescript_placement_test.go)
+reuse one output with Person separated or colocated and a conflicting local Cell.
+They check both local references and the actual external package identity.
 
-The [independent-source fixture](../integration/go/generation_composition_test.go)
-uses the same automatic composer without Horos. It exercises a generic with
-additional native formals, nested whole-result associations, external ownership
-and a native helper acquired while defining another declaration. Existing SPI
-negative tests retain scope, replay, incomplete-root and mutation checks.
-
-Bittype's integration suite retains four-target pagination, imported identity,
-source bound rejection, naming limits, native compilation, installed-consumer
-qualification and [verification of actual generated Go output](../integration/go/horos_generation_verification_test.go),
-including nested Page reuse through the landed Logos checker. Generation products
-are not those verification results. Source analysis, native analysis, mapping
-meaning and final-output checking remain separately owned and invoked.
+Generation does not establish native kind enforcement or source/native
+equivalence. Those retain their separate profiles and verification contracts.
+C++ includes and Rust visibility remain the documented
+[open Files boundary](architecture-cases/0004-generation-file-syntax.md).

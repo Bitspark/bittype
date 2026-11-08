@@ -1,4 +1,4 @@
-package target_test
+package target
 
 import (
 	"context"
@@ -6,70 +6,33 @@ import (
 	"testing"
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
-	"github.com/Bitspark/bittype/contracts/language/go"
-	m "github.com/Bitspark/bittype/transform/syntax/shared/target/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
-	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-type native struct{}
+type fixtureLanguage struct{}
 
-func (native) ID() language.ID { return "independent-native" }
-func (native) Name() string    { return "Independent native" }
-
-func TestNativeStorageCapturesWithoutSharing(t *testing.T) {
-	language, _ := representation.NewLanguage[native](native{}, "v1")
-	store, err := m.New[native, native](context.Background(), language, "output", g.DefaultLimits())
+func TestConstructionFragmentsAndSymbolsBelongToTheirRun(t *testing.T) {
+	a := New[fixtureLanguage](context.Background(), g.DefaultLimits())
+	b := New[fixtureLanguage](context.Background(), g.DefaultLimits())
+	af, err := a.Node(ast.Node[fixtureLanguage]{Kind: "name"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	node := m.Node(ast.Kind[native]("type"), m.Attributes("name", "Original"), ast.NodeRef{Tree: "source", Node: 1})
-	fragment, err := store.Node(node)
+	bf, err := b.Node(ast.Node[fixtureLanguage]{Kind: "name"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	node.Attributes[0].Text = "Mutated"
-	node.Origin.Nodes[0].Node = 2
-	first, _, err := store.Inspect(fragment)
-	if err != nil || first.Attributes[0].Text != "Original" || first.Origin.Nodes[0].Node != 1 {
-		t.Fatal("captured storage changed", err)
+	symbol := Symbol[fixtureLanguage]{owner: a, declaration: 1, parameter: -1, name: "Example"}
+	if _, err = a.Link(af, symbol, "target"); err != nil {
+		t.Fatal(err)
 	}
-	first.Attributes[0].Text = "Again"
-	second, _, _ := store.Inspect(fragment)
-	if second.Attributes[0].Text != "Original" {
-		t.Fatal("inspection exposed retained storage")
+	if _, err = b.Link(bf, symbol, "target"); !errors.Is(err, g.ErrScope) {
+		t.Fatal("foreign symbol accepted", err)
 	}
-	foreign, _ := m.New[native, native](context.Background(), language, "other", g.DefaultLimits())
-	if _, err := foreign.Node(m.Node(ast.Kind[native]("container"), nil, ast.NodeRef{}), m.Child[native]{Role: "element", Fragment: fragment}); !errors.Is(err, g.ErrScope) {
+	if _, err = b.Node(ast.Node[fixtureLanguage]{Kind: "array"}, Child[fixtureLanguage]{Role: "element", Fragment: af}); !errors.Is(err, g.ErrScope) {
 		t.Fatal("foreign fragment accepted", err)
 	}
-	node.References = []ast.Reference{{Role: "target", Target: ast.NodeRef{Tree: "invented", Node: 1}}}
-	if _, err := store.Node(node); !errors.Is(err, g.ErrInvalid) {
-		t.Fatal("raw arena reference accepted", err)
-	}
-}
-
-func TestNativeStorageLimitsAndCancellation(t *testing.T) {
-	language, _ := representation.NewLanguage[native](native{}, "v1")
-	limits := g.DefaultLimits()
-	limits.OutputNodes = 1
-	store, _ := m.New[native, native](context.Background(), language, "output", limits)
-	node := m.Node(ast.Kind[native]("type"), nil, ast.NodeRef{})
-	if _, err := store.Node(node); err != nil {
-		t.Fatal(err)
-	}
-	if fragment, err := store.Node(node); fragment.Valid() || !errors.Is(err, g.ErrLimit) {
-		t.Fatal("node limit accepted output", err)
-	}
-	limits.OutputBytes = 1
-	small, _ := m.New[native, native](context.Background(), language, "small", limits)
-	if fragment, err := small.Node(node); fragment.Valid() || !errors.Is(err, g.ErrLimit) {
-		t.Fatal("byte limit accepted output", err)
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	canceled, _ := m.New[native, native](ctx, language, "canceled", g.DefaultLimits())
-	cancel()
-	if fragment, err := canceled.Node(node); fragment.Valid() || !errors.Is(err, context.Canceled) {
-		t.Fatal("canceled allocation succeeded", err)
+	if _, err = a.Node(ast.Node[fixtureLanguage]{Kind: "name", References: []ast.Reference{{Role: "target", Target: ast.NodeRef{Tree: "fake", Node: 1}}}}); !errors.Is(err, g.ErrInvalid) {
+		t.Fatal("unplanned reference accepted", err)
 	}
 }

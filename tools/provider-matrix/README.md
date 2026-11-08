@@ -66,6 +66,13 @@ are still read to discover the interfaces being implemented.
   flow. A factory without transformer inputs or recoverable typed endpoints
   stops generation rather than silently omitting an edge.
 
+Concrete mapping-library implementations are discovered from their actual
+MappingLibrary method sets and typed endpoints. An exported factory's concrete
+result can instantiate a generic library; multiple factories returning the same
+instantiated implementation identify one contribution. An interface-valued
+factory result does not establish an implementation. These entries are selectable
+descriptions, not preconfigured routes or a claim that a particular request works.
+
 ## Dimension metadata
 
 The doc comment on a defined boundary type can contain one of these directives:

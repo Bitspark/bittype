@@ -1,12 +1,14 @@
+// Package generation composes registered mapping descriptions into semantic plans.
 package generation
 
 import (
 	"context"
-	"github.com/Bitspark/bittype/contracts/check/go"
+	"fmt"
 	"reflect"
 	"slices"
 	"sync"
 
+	"github.com/Bitspark/bittype/contracts/check/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
@@ -14,15 +16,6 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-// References identify registrations in one registry, not names or claimed IDs.
-type SourceRef struct {
-	owner *Registry
-	id    uint64
-}
-type TargetRef struct {
-	owner *Registry
-	id    uint64
-}
 type MappingRef struct {
 	owner *Registry
 	id    uint64
@@ -35,30 +28,13 @@ type Replacement struct {
 	Selector       g.Selector
 	Expected, With BindingRef
 }
-type Selection struct {
-	Source   SourceRef
-	Target   TargetRef
-	Mappings []MappingRef
-	Replace  []Replacement
-}
 type Request struct {
-	Input     transform.Input
-	To        representation.Language
-	Roots     []ast.NodeRef
-	Output    ast.TreeID
-	Selection Selection
-	Limits    g.Limits
-}
-
-// Registry is additive, safe for concurrent registration and invocation, and
-// must not be copied after use. Callbacks never run under its lock. Private
-// erased storage is accessible only through typed adapters checked before use.
-type Registry struct {
-	mu       sync.RWMutex
-	next     uint64
-	sources  map[uint64]sourceEntry
-	targets  map[uint64]targetEntry
-	mappings map[uint64]mappingEntry
+	Input   transform.Input
+	To      representation.Language
+	Roots   []ast.NodeRef
+	Output  ast.TreeID
+	Profile string
+	Limits  g.Limits
 }
 type sourceEntry struct {
 	language representation.Language
@@ -67,155 +43,245 @@ type sourceEntry struct {
 	provider any
 }
 type targetEntry struct {
-	from, to representation.Language
-	api      reflect.Type
+	language representation.Language
 	provider any
 }
-type runner func(context.Context, transform.Input) (g.Output, error)
-
 type mappingEntry struct {
-	from, to             representation.Language
-	sourceAPI, targetAPI reflect.Type
-	provider             any
-	adapter              func(Request, sourceEntry, targetEntry, []mappingEntry, check.Checker) (runner, error)
+	from, to representation.Language
+	api      reflect.Type
+	profile  string
+	value    any
+	plan     func(context.Context, Request, sourceEntry, targetEntry, []mappingEntry, []Replacement, check.Checker) (g.GenerationPlan, error)
+	ref      MappingRef
+}
+type Registry struct {
+	mu           sync.RWMutex
+	next         uint64
+	sources      map[string]sourceEntry
+	targets      map[string]targetEntry
+	mappings     []mappingEntry
+	replacements []Replacement
 }
 
-func RegisterSource[F any, S g.SourceSession[F]](r *Registry, language representation.Language, p g.SourceProvider[F, S]) (SourceRef, error) {
-	if r == nil || representation.IsNil(p) || representation.CheckMarker[F](language) != nil {
-		return SourceRef{}, g.ErrInvalid
+func RegisterSource[F any, S g.SourceSession[F]](r *Registry, lang representation.Language, p g.SourceProvider[F, S]) error {
+	if r == nil || representation.IsNil(p) || representation.CheckMarker[F](lang) != nil {
+		return g.ErrInvalid
 	}
-	contract := p.Contract()
-	if err := semantic.ValidateEvidenceRequirements(contract.Evidence); err != nil {
-		return SourceRef{}, err
+	c := p.Contract()
+	if err := semantic.ValidateEvidenceRequirements(c.Evidence); err != nil {
+		return err
 	}
-	contract.Evidence = slices.Clone(contract.Evidence)
-	for i := range contract.Evidence {
-		contract.Evidence[i] = contract.Evidence[i].Clone()
+	c.Evidence = slices.Clone(c.Evidence)
+	for i := range c.Evidence {
+		c.Evidence[i] = c.Evidence[i].Clone()
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.sources == nil {
-		r.sources = map[uint64]sourceEntry{}
+		r.sources = map[string]sourceEntry{}
 	}
-	r.next++
-	r.sources[r.next] = sourceEntry{language, reflect.TypeFor[S](), contract, p}
-	return SourceRef{r, r.next}, nil
+	if _, ok := r.sources[string(lang.ID())]; ok {
+		return g.ErrAmbiguous
+	}
+	r.sources[string(lang.ID())] = sourceEntry{lang, reflect.TypeFor[S](), c, p}
+	return nil
 }
-func RegisterTarget[F, T any, N g.Native[F, T]](r *Registry, from, to representation.Language, p g.TargetProvider[F, T, N]) (TargetRef, error) {
-	if r == nil || representation.IsNil(p) || representation.CheckMarker[F](from) != nil || representation.CheckMarker[T](to) != nil {
-		return TargetRef{}, g.ErrInvalid
+func RegisterTarget[T any](r *Registry, lang representation.Language, p g.Target[T]) error {
+	if r == nil || representation.IsNil(p) || representation.CheckMarker[T](lang) != nil {
+		return g.ErrInvalid
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.targets == nil {
-		r.targets = map[uint64]targetEntry{}
+		r.targets = map[string]targetEntry{}
 	}
-	r.next++
-	r.targets[r.next] = targetEntry{from, to, reflect.TypeFor[N](), p}
-	return TargetRef{r, r.next}, nil
+	if _, ok := r.targets[string(lang.ID())]; ok {
+		return g.ErrAmbiguous
+	}
+	r.targets[string(lang.ID())] = targetEntry{lang, p}
+	return nil
 }
-func RegisterMapping[F, T any, S g.SourceSession[F], N g.Native[F, T]](r *Registry, from, to representation.Language, p g.MappingProvider[F, T, S, N]) (MappingRef, error) {
+func RegisterMapping[F, T any, S g.SourceSession[F]](r *Registry, from, to representation.Language, p g.MappingLibrary[F, T, S]) (MappingRef, error) {
 	if r == nil || representation.IsNil(p) || representation.CheckMarker[F](from) != nil || representation.CheckMarker[T](to) != nil {
 		return MappingRef{}, g.ErrInvalid
 	}
+	// Provider code runs outside the registry lock and only at registration.
+	desc, err := p.Describe(from, to)
+	if err != nil {
+		return MappingRef{}, err
+	}
+	desc, err = g.FreezeDescription(from, desc, g.DefaultLimits())
+	if err != nil {
+		return MappingRef{}, err
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if r.mappings == nil {
-		r.mappings = map[uint64]mappingEntry{}
-	}
 	r.next++
-	r.mappings[r.next] = mappingEntry{from, to, reflect.TypeFor[S](), reflect.TypeFor[N](), p, adapter[F, T, S, N]}
-	return MappingRef{r, r.next}, nil
+	ref := MappingRef{r, r.next}
+	r.mappings = append(r.mappings, mappingEntry{from, to, reflect.TypeFor[S](), desc.Profile, desc, plan[F, T, S], ref})
+	return ref, nil
 }
-
-func (r *Registry) selectRun(request Request, checker check.Checker) (runner, error) {
-	if checker.Validate() != nil || !checker.Language().Compatible(request.To) {
-		return nil, g.ErrScope
+func (r *Registry) Replace(v Replacement) error {
+	if r == nil || !v.Selector.Valid() || v.Expected.Provider.owner != r || v.With.Provider.owner != r || v.Expected.ID == "" || v.With.ID == "" || v.Expected == v.With {
+		return g.ErrScope
 	}
-	if r == nil || !request.Input.Source.Valid() || request.To.Validate() != nil || !request.Limits.Valid() || request.Output == "" || len(request.Roots) == 0 || len(request.Selection.Mappings) == 0 {
-		return nil, g.ErrInvalid
-	}
-	if len(request.Input.Evidence) > semantic.DefaultLimits().MaxInputs {
-		return nil, semantic.ErrLimit
-	}
-	if len(request.Roots) > request.Limits.References || len(request.Selection.Mappings) > request.Limits.Plans || len(request.Selection.Replace) > request.Limits.Plans {
-		return nil, g.ErrLimit
-	}
-	request.Input.Evidence = slices.Clone(request.Input.Evidence)
-	request.Roots = slices.Clone(request.Roots)
-	request.Selection.Mappings = slices.Clone(request.Selection.Mappings)
-	request.Selection.Replace = slices.Clone(request.Selection.Replace)
-	trees := map[ast.TreeID]int{}
-	for _, tree := range request.Input.Source.Inputs() {
-		info, err := tree.Inspect()
-		if err != nil {
-			return nil, err
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	// Chained/overlapping policy is ambiguous rather than registration-order based.
+	for _, old := range r.replacements {
+		if old.Selector.Key() == v.Selector.Key() && old.Selector.Language().Compatible(v.Selector.Language()) {
+			return g.ErrAmbiguous
 		}
-		if info.ID == request.Output {
-			return nil, g.ErrScope
+	}
+	r.replacements = append(r.replacements, v)
+	return nil
+}
+func (r *Registry) PlanGeneration(ctx context.Context, q Request, checker check.Checker) (g.GenerationPlan, error) {
+	fail := func(err error) (g.GenerationPlan, error) { return g.GenerationPlan{}, err }
+	if r == nil || ctx == nil || !q.Input.Source.Valid() || q.Profile == "" || q.Output == "" || len(q.Roots) == 0 || !q.Limits.Valid() {
+		return fail(g.ErrInvalid)
+	}
+	if err := ctx.Err(); err != nil {
+		return fail(err)
+	}
+	if checker.Validate() != nil || !checker.Language().Compatible(q.To) {
+		return fail(g.ErrScope)
+	}
+	if len(q.Roots) > q.Limits.References || len(q.Input.Evidence) > semantic.DefaultLimits().MaxInputs {
+		return fail(g.ErrLimit)
+	}
+	q.Input.Evidence = slices.Clone(q.Input.Evidence)
+	q.Roots = slices.Clone(q.Roots)
+	trees := map[ast.TreeID]int{}
+	seen := map[ast.NodeRef]bool{}
+	for _, t := range q.Input.Source.Inputs() {
+		info, err := t.Inspect()
+		if err != nil {
+			return fail(err)
+		}
+		if info.ID == q.Output {
+			return fail(g.ErrScope)
 		}
 		trees[info.ID] = info.Nodes
 	}
-	seenRoots := map[ast.NodeRef]bool{}
-	for _, root := range request.Roots {
-		if root.Node == 0 || int(root.Node) > trees[root.Tree] || seenRoots[root] {
-			return nil, g.ErrScope
+	for _, root := range q.Roots {
+		if root.Node == 0 || int(root.Node) > trees[root.Tree] || seen[root] {
+			return fail(g.ErrScope)
 		}
-		seenRoots[root] = true
+		seen[root] = true
 	}
-	sref, tref := request.Selection.Source, request.Selection.Target
 	r.mu.RLock()
-	src, sok := r.sources[sref.id]
-	target, tok := r.targets[tref.id]
-	var mappings []mappingEntry
-	seen := map[MappingRef]bool{}
-	valid := sref.owner == r && tref.owner == r && sok && tok
-	for _, ref := range request.Selection.Mappings {
-		entry, exists := r.mappings[ref.id]
-		if ref.owner != r || !exists || seen[ref] {
-			valid = false
+	src, sok := r.sources[string(q.Input.Source.LanguageID())]
+	target, tok := r.targets[string(q.To.ID())]
+	mappings := []mappingEntry{}
+	for _, m := range r.mappings {
+		if m.profile == q.Profile && m.from.Compatible(q.Input.Source.Language()) && m.to.Compatible(q.To) {
+			mappings = append(mappings, m)
 		}
-		seen[ref] = true
-		mappings = append(mappings, entry)
 	}
+	replacements := slices.Clone(r.replacements)
 	r.mu.RUnlock()
-	if !valid {
-		return nil, g.ErrScope
+	if !sok || !tok || !src.language.Compatible(q.Input.Source.Language()) || !target.language.Compatible(q.To) {
+		return fail(g.ErrScope)
 	}
-	from := request.Input.Source.Language()
-	if !from.Compatible(src.language) || !from.Compatible(target.from) || !request.To.Compatible(target.to) {
-		return nil, g.ErrScope
+	if len(mappings) == 0 {
+		return fail(g.ErrUnsupported)
+	}
+	if len(mappings) > q.Limits.Plans {
+		return fail(g.ErrLimit)
 	}
 	for _, m := range mappings {
-		if !from.Compatible(m.from) || !request.To.Compatible(m.to) || src.api != m.sourceAPI || target.api != m.targetAPI {
-			return nil, g.ErrScope
+		if m.api != src.api {
+			return fail(g.ErrScope)
 		}
 	}
-	for _, replacement := range request.Selection.Replace {
-		if !replacement.Selector.Valid() || !from.Compatible(replacement.Selector.Language()) || !seen[replacement.Expected.Provider] || !seen[replacement.With.Provider] || replacement.Expected.ID == "" || replacement.With.ID == "" || replacement.Expected == replacement.With {
-			return nil, g.ErrInvalid
-		}
+	p, err := mappings[0].plan(ctx, q, src, target, mappings, replacements, checker)
+	if err != nil {
+		return fail(diagnostic(q.Input, err))
 	}
-	// All adapters have the same checked F/T/S/N instantiation. Choosing one here
-	// chooses no representation and captures no mapping-provider policy.
-	return mappings[0].adapter(request, src, target, mappings, checker)
+	return p, nil
 }
-
-// Generate uses the supplied target syntax checker to seal the complete result.
-func (r *Registry) Generate(ctx context.Context, request Request, checker check.Checker) (g.Output, error) {
-	if ctx == nil {
-		return g.Output{}, g.ErrInvalid
-	}
-	if err := ctx.Err(); err != nil {
-		return g.Output{}, err
-	}
-	run, err := r.selectRun(request, checker)
+func (r *Registry) Generate(ctx context.Context, q Request, checker check.Checker) (g.Output, error) {
+	p, err := r.PlanGeneration(ctx, q, checker)
 	if err != nil {
 		return g.Output{}, err
 	}
-	out, err := run(ctx, request.Input)
+	out, err := p.Run(ctx)
 	if err != nil {
-		return g.Output{}, diagnostic(request.Input, err)
+		return g.Output{}, diagnostic(q.Input, err)
 	}
 	return out, nil
+}
+func plan[F, T any, S g.SourceSession[F]](ctx context.Context, q Request, src sourceEntry, target targetEntry, entries []mappingEntry, replacements []Replacement, checker check.Checker) (g.GenerationPlan, error) {
+	fail := func(err error) (g.GenerationPlan, error) { return g.GenerationPlan{}, err }
+	provider, ok := src.provider.(g.SourceProvider[F, S])
+	if !ok {
+		return fail(g.ErrScope)
+	}
+	native, ok := target.provider.(g.Target[T])
+	if !ok {
+		return fail(g.ErrScope)
+	}
+	request, err := transform.AdmitRequest[F](src.language, src.contract, q.Input)
+	if err != nil {
+		return fail(err)
+	}
+	var parts []g.SelectedDescription[F, T, S]
+	for _, e := range entries {
+		d, ok := e.value.(g.MappingDescription[F, T, S])
+		if !ok {
+			return fail(g.ErrScope)
+		}
+		d, err = g.FreezeDescription(src.language, d, q.Limits)
+		if err != nil {
+			return fail(err)
+		}
+		parts = append(parts, g.SelectedDescription[F, T, S]{ID: fmt.Sprintf("library-%d", e.ref.id), Description: d})
+	}
+	// Explicit replacements refer to both original and replacement offers.
+	for _, v := range replacements {
+		if !v.Selector.Language().Compatible(src.language) {
+			continue
+		}
+		expected, with := -1, -1
+		oldIndex, newIndex := -1, -1
+		for i, e := range entries {
+			for j, b := range parts[i].Description.Bindings {
+				if b.Input.Selector.Key() != v.Selector.Key() {
+					continue
+				}
+				if e.ref == v.Expected.Provider && b.ID == v.Expected.ID {
+					expected, oldIndex = i, j
+				}
+				if e.ref == v.With.Provider && b.ID == v.With.ID {
+					with, newIndex = i, j
+				}
+			}
+		}
+		if expected < 0 && with < 0 {
+			continue
+		}
+		if expected < 0 || with < 0 || oldIndex < 0 || newIndex < 0 {
+			return fail(g.ErrScope)
+		}
+		parts[expected].Description.Bindings = append(parts[expected].Description.Bindings[:oldIndex:oldIndex], parts[expected].Description.Bindings[oldIndex+1:]...)
+	}
+	source, err := provider.Open(ctx, request)
+	if err != nil {
+		return fail(err)
+	}
+	if representation.IsNil(source) {
+		return fail(g.ErrInvalid)
+	}
+	if err = source.CheckInput(ctx, q.Input.Source, q.Input.Evidence); err != nil {
+		return fail(err)
+	}
+	roots, err := source.ResolveRoots(ctx, slices.Clone(q.Roots))
+	if err != nil {
+		return fail(err)
+	}
+	if len(roots) != len(q.Roots) {
+		return fail(g.ErrScope)
+	}
+	return g.Plan(ctx, g.PlanningInput[F, T, S]{Source: source, Snapshot: q.Input.Source, Evidence: q.Input.Evidence, Roots: roots, Mappings: parts, Execution: g.Execution[T]{Target: native, Checker: checker, Language: q.To, Output: q.Output, Limits: q.Limits}})
 }

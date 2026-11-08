@@ -1,21 +1,17 @@
 # Type-owned generator plugins
 
-**Design with first public SPI implemented in Go source, 6 November 2026.**
-This extends the
-[native representation design](type-representations.md) to builtin mappings and
-explicit consumer overrides. The [automatic composer](generation-composition.md)
-and all four migrated generators are implemented. The [public generation SPI](generation-spi.md) implements
-Use, Publish, Define and paired Introduce/Apply with a minimal guarded invocation
-over selected collaborators. Automatic exact selectors/overrides and definition
-scheduling use that boundary; the four private Dialects are deleted.
+**Declarative generation implemented, 8 November 2026.** Libraries own
+native representation choices, including builtin mappings. The kernel selects
+and composes descriptions; the target constructs the closed native program.
+All four native generators use the [public SPI](generation-spi.md). The
+procedural Use/Publish/Define and Introduce/Apply interfaces, products and tickets
+have been removed. Their required responsibilities are expressed by mapping
+rules, requested roots, declaration recipes and one generic convention.
 
-The [paired consultation synthesis](generic-elaboration.md) refines this design.
-It replaces the earlier binder-to-slot concept with scoped representation
-products and paired formal/application conventions. The old full Go SPI sketch
-is withdrawn as a candidate interface; it survives only in frozen research
-inputs. Its replacement is now the
-[implemented public contract](generation-spi.md); the remaining composition work
-uses that contract. No alternative compatibility API is retained.
+The [paired consultation synthesis](generic-elaboration.md) retains the generic
+coherence and native-admission requirements. Its earlier procedural surface is
+not an alternative API. [ACX-005](architecture-cases/0005-generation-interface-design.md)
+records why implementation reuse could not justify retaining that interface.
 
 The later [Logos preservation proposal](logos-preservation.md) explains how
 mapping-owned representation laws could compose into symbolic preservation
@@ -30,12 +26,11 @@ library-owned; selecting a mapping or constructing a product does not install
 native semantics or prove a constraint-preservation claim.
 
 The [evaluated architecture](type-system-architecture.md) places these theories
-in language-owned Logos semantic packages. The generator retains the existing
-transformer boundary; explicit composition binds the actual output, selected
+in language-owned Logos semantic packages. Generation returns a sealed output; explicit verification composition binds the actual output, selected
 mappings and independently chosen statement to its checking result. Mapping
 ownership supplies the law, not its truth. The scoped
 [TextBox/Page integration](verification.md#implemented-go-surface) uses the landed
-Logos typed checker; generation products do not themselves certify those claims.
+Logos typed checker; generation plans do not themselves certify those claims.
 
 The baseline design is scoped to native types and interfaces. The subsequent
 [Go admission proposal](go-native-admission.md) requires empty private marker
@@ -51,7 +46,7 @@ Read this together with [native kind-constraint preservation](native-kind-constr
 This document owns mapping selection, generation operations and resource ownership;
 the companion owns the guarantees and limits of native constraint encodings.
 The [composition contract below](#constraint-preservation-in-plugin-composition)
-connects them without claiming that either proposal is implemented.
+connects implemented generation to still-proposed native enforcement encodings.
 
 ## Responsibility and ownership
 
@@ -101,13 +96,13 @@ agnostic generation kernel
   + source semantic adapter
   + selected builtin and library mappings
   + target syntax backend
-  = one configured ASTTransformer
+  = one configured generation request
 ```
 
 An individual mapping is selected for a canonical constructor or declaration and
 a target language/profile. For example, the Horos list mapping for TypeScript
-constructs an array type; its Go counterpart constructs a slice type. Each asks
-Context.Lower for its element under the same effective configuration. The shared
+describes an array type; its Go counterpart describes a slice type. Each uses
+a captured element slot under the same configuration. The shared
 kernel coordinates selection, binding contexts and owned definitions, then asks
 the target backend to assemble the output. It contains neither a canonical type
 catalogue nor native representation cases.
@@ -120,7 +115,7 @@ as an existing Cell type. All these choices use the same plugin boundary.
 
 Select a declaration's mapping before expanding its body. The selected plugin
 chooses which source type operands it needs and requests their representations
-through Lower. An external Cell representation can use its argument without
+through authenticated captures. An external Cell representation can use its argument without
 expanding Cell's implementation shape; a structural Cell representation lowers
 its fields. The kernel does not eagerly flatten every declaration into primitives
 or require a complete child traversal before dispatch. Source adapters preserve
@@ -130,8 +125,8 @@ Here "kind-specific generator" means a mapping for a source constructor or named
 type. Horos constraint kinds such as Data still govern applicability; their
 overlapping memberships do not select a unique plugin. The same kernel is used
 for TypeScript, Go, Rust and C++; their native grammar and scope rules remain in
-their target backends. The existing engine interface remains; the generic elaboration seam below
-supplies the shared composition convention.
+their target integrations. The generic convention below supplies both the
+formal and application templates.
 
 ### Canonical declarations, native types and later adapters
 
@@ -256,23 +251,19 @@ representation contract from an external declaration's shape.
 
 ## Expert recommendation and chosen proposal
 
-The expert endorses type-owned mappings, supplied builtin mappings, consumer
-choice and the unchanged ASTTransformer boundary. The adopted refinements are:
+The historical [expert evaluation](../research-docs/0007-type-owned-generator-plugins.md)
+endorsed type-owned mappings, supplied builtin mappings, consumer choice and
+coherent generic families. Its operation-based sketch is evidence of that
+consultation, not the current SPI. The subsequent owner decision to inspect
+semantic choices before construction led to declarative descriptions and a
+source-bound GenerationPlan. AC-09 requires that redesign to follow requirements
+without incumbent API influence.
+[Design correction](architecture-cases/0005-generation-interface-design.md)
 
-- Exact bindings plus guarded overrides; structural declaration handling stays
-  a separate policy. An override names the configured BindingID it replaces.
-- Separate type use, API publication and deferred definition. Inline, external
-  and owned effects can coexist, so no Mode enum is proposed.
-- Reserve symbols immediately and queue definitions. A mandatory public Plan
-  method is unnecessary for the cases in this proposal.
-- Require a coherent generic representation family. Exact selectors alone do
-  not prevent an argument-sensitive plugin from breaking generic substitution.
-
-The documented choice accepts those recommendations. It adds an explicit stable
-ordering accessor for opaque resource keys, keeps the existing Syntax path
-convention, and makes native syntax classification target-owned. The shared
-fragment layer supplies ownership and relocation, not a second native grammar.
-The proposal remains experimental until implementation is separately authorized.
+Exact replacements and structural policy remain separately configured.
+Type use, requested publication and owned definitions remain distinct
+responsibilities, now expressed as rules, roots and recipes. The shared
+constructor owns symbol scope and relocation; each native target owns grammar.
 
 For consumers, the result is one place to choose native representations. A new
 Cell mapping changes its library integration and consumer composition. Existing
@@ -333,13 +324,13 @@ The Go text mapping can use a generated wrapper rather than a plain native strin
 type Text string
 ```
 
-In this proposed mapping, Use calls `RequireHelper("text-wrapper")` and returns
-a named type fragment. The helper key selects a native-only configured plan;
-it is not a synthetic Horos declaration. The driver invokes Define explicitly;
-automatic scheduling belongs to the future composer. Define emits the backing
-native `string` directly; representing Horos text again would reselect the same
-override and cause a cycle. The ordinary list plugin still lowers its element through the
-selected mappings, so list-of(text) becomes `[]Text`.
+In this proposed mapping, the library registers a HelperRecipe under its own
+HelperKey and uses Helper(key) as the representation of text. The recipe's body
+selects the native string form directly; mapping Horos text again would
+reselect the override and create a cycle. The planner resolves the helper once.
+The ordinary list rule still uses a mapped element slot, so list-of(text)
+becomes []Text. No synthetic Horos declaration is needed.
+[Exact helper contract](generation-spi.md#source-and-representation-environments)
 
 The same distinction applies to a generic presence helper:
 
@@ -353,12 +344,12 @@ type Presence[T any] struct {
 The implementation flag uses native bool directly. A boolean field in the
 canonical source still uses the configured Horos boolean mapping. The selected
 plugin owns its mechanical native representation; canonical child types always
-compose through Lower.
+compose through declared captures or scoped Mapped demands.
 
 ### Pagination keeps its generic structure
 
 The [worked generic-generation walkthrough](generic-elaboration.md#pagination-and-scope)
-connects this composition to Introduce/Apply, scoped products, all four target
+connects this composition to a single generic convention, scopes, all four target
 representations and the [implementation sequence](generic-elaboration.md#implementation-sequence).
 
 Consider this explanatory Horos source, with library imports and Person's body
@@ -414,102 +405,65 @@ language.
 
 ## Go contracts
 
-The earlier complete interface sketch did not express witness-dependent payload
-projections, extra actual arguments or result associations. The
-[paired convention/product design](generic-elaboration.md#one-generic-convention-for-formals-and-applications)
-now has a first public implementation in
-[`contracts/generation/go`](../contracts/generation/go/contracts.go). The frozen
-inputs for research 0007/0008 retain what those experts reviewed; neither earlier
-sketch is an alternative SPI. See [the public surface](generation-spi.md) for
-operation ownership and invocation rules.
+The current exact declarations are in the [public SPI](generation-spi.md).
+Their ownership is:
 
-The implemented roles and the remaining composition boundary are:
+| Contract | Supplied by | Invoked or consumed by |
+| --- | --- | --- |
+| MappingLibrary.Describe | Mapping library | Registry at registration; returns copied descriptions, not source-dependent AST code |
+| Pattern selector and Capture | Source/mapping owner | Planner; captures only authenticated children of the selected use |
+| BindingDescription.Output or Expand | Mapping owner | Planner; fixes an expression in the target-owned semantic vocabulary |
+| DeclarationRecipe | Mapping owner | Planner for an owned declaration; returns name, form, generic convention and body |
+| HelperRecipe | Owning library | Planner on demand by opaque helper identity; independent parameter scope |
+| Target checks and Build | Native target integration | Planner admits native forms, then Run constructs ASTs from the closed program |
+| SourceSession | Source integration | Planner authenticates evidence, binders, applications and child scope |
 
-| Surface | Required meaning |
-| --- | --- |
-| Configured mapping | A preselected Plan with explicit optional capabilities and association owner; automatic exact selectors and guarded overrides now compose those plans |
-| Source adapter | Source admits supplied evidence and authenticates existing uses, canonical open declarations and effective applications; it performs no hidden analysis |
-| Representation product | Host-sealed Product containing the authenticated native payload and immutable association token, scoped to the source use and target formal environment |
-| Generic convention | One immutable open-declaration convention with paired Introduce and Apply operations |
-| Introduce | Bind real source formals to products and construct native formals/constraint clauses from reserved symbols |
-| Apply | Construct the complete native use and its result association under the caller's actual arguments/assumptions |
-| Use | Produce the selected representation product; a generic use follows its convention |
-| Publish | Expose the requested open API declaration, using the same convention |
-| Acquisition | Acquire an owned or external destination and retain its frozen layout; RequireOwned and RequireHelper demand local ownership without scheduling Define automatically |
-| Define | Fill the reservation in its introduced formal environment; preserve the authoritative native formals and constraints |
-| Represent / payload projection | One admitted association path; requesting only the payload does not bypass admission |
-| External reference | Native artifact/export identity accompanied by its supplied generic/representation contract |
+Implemented boundary excerpts (full fields and methods are in the linked SPI):
 
-The public contract uses typed, owner-qualified addresses for immutable records.
-The configured `Associations` collaborator authenticates an existing token and
-returns its stored payload and binding; the host compares that binding with the
-requested association before sealing a Product. A nonzero address does not prove
-record existence, and copying a Go interface does not freeze its private state.
-Owners must retain immutable records and stable policy for the invocation. The
-kernel cannot bless an arbitrary payload/support pair by attaching the requested
-source reference. It imposes no universal native source/payload/proof tuple.
-
-Generic conventions, publication and definition remain separately demanded
-capabilities. Inline, external and owned effects can coexist. Apply must have an
-explicit route to its callee without forcing every application to own a local
-definition. A requested root cannot silently disappear. Nongeneric definitions
-use the explicit `Nullary` layout route when no Convention is supplied.
-
-Lexical scope and callback lifetime are separate. `Binding` retains the run,
-configuration, configured issuer, source subject/environment, native frame and
-signature. An operation `Ticket` identifies the shorter callback-return window.
-Formal products retained from Introduce remain available in Define's same frame;
-the earlier callback cannot issue another result after returning. A new callback
-envelope never grants permission to retag the underlying association.
+```go
+type MappingLibrary[F, T any, S SourceSession[F]] interface {
+    Describe(from, to representation.Language) (MappingDescription[F,T,S], error)
+}
+type GenericConvention[T any] struct {
+    Parameters []ParameterDescription
+    Bindings   []Expression[T]
+    Arguments  []Expression[T]
+}
+type Target[T any] interface {
+    CheckExpression(context.Context, Expression[T]) error
+    CheckDeclaration(context.Context, NativeDeclaration[T]) error
+    CheckProgram(context.Context, Program[T]) error
+    Build(context.Context, BuildInput[T]) (Assembly, error)
+}
+```
 
 ### Source interpretation and semantic input
 
-Keep two environments distinct: source binder to effective source argument, and
-source binder to scoped native product. Use real binder identities, not parameter
-names or positions alone. Source references retain lexical, substitution and
-captured-assumption context. Projection only enters actual designated type
-operands; literal data in exact descriptions remains opaque. Crossing a named
-declaration uses its explicit boundary, rather than flattening it before selection.
+The source retains real binder identities, effective arguments and captured
+assumptions. The native convention separately maps those binders to target
+expressions and supplies complete native arguments. Source admission happens
+before native projection, including omitted arguments. Literal data remains
+opaque. No mapping invokes an implicit analyzer or resolver.
 
-The source adapter admits coverage already established by the supplied semantic
-receipts. Coarse proper/constructor sorts are not kind contracts. Additional
-judgments require an implemented provider/profile capability and corresponding
-receipts; configuration changes do not manufacture new facts. Generation invokes
-no hidden analyzer or resolver. Association products do not enter source Semantics.
+Common structural traversal is still supplied through Source/Catalog. Narrowing
+that contract around established Semantics is the third proposed SPI change,
+not part of this completed mapping/construction split.
+[Three changes](generation-planner.md#three-spi-changes)
 
 ### Ownership and target construction
 
-A source definition belongs to its configured mapping and canonical open
-declaration for one invocation. Native-only helpers use keys local to the captured
-configuration and a plan with no source Declaration; they need no fabricated
-canonical declaration. The first concrete application cannot choose a generic
-signature or capture its caller's symbols.
-Repeated reservations must agree on one authoritative native layout. Native
-helpers have explicit parameters and no inherited source-binder environment.
+The plan contains immutable native expressions, declaration identities and
+bound parameters. Source expansions finish before the target constructor runs.
+Owned definitions are scoped by source identity; native helpers use opaque
+owner keys without fabricated source identities or inherited binders.
+External forms designate public symbols without claiming local ownership.
 
-Reusable fragments remain immutable native syntax templates with symbolic names
-and references. Materialized uses receive fresh containment nodes; owned symbols
-and parameters have their own anchors and valid scopes. Target generation owns
-declaration grammar, symbols and assembly. A use of an external symbol retains
-its identity without a fabricated resolved AST NodeRef. Files chooses its local
-name or qualification in each organized unit.
-
-Public owner-qualified references, source admission, product issuance, frozen
-layouts and host-mediated Apply now let independent integrations operate without
-private Bittype imports. Source and native owners authenticate their records;
-configured association owners retain support meaning. The guarded Session is
-driven explicitly through acquisition, publication and definition to Finish.
-Automatic selection/overrides, a definition scheduler and concrete production
-integrations remain separate work. See the
-[implemented boundary and next scope](generic-elaboration.md#go-spi-status-and-next-scope).
-
-The generation host bounds operations, nesting, plans, source references, formals,
-reservations and expanded output. Any future product caching must include the
-target formal environment; cross-invocation caching remains deferred.
-Configured plugins are trusted Go code, not a sandbox. Error or cancellation
-discards the entire output; Finish is the only output commit. The existing
-ASTTransformer bridge returns an ast.Set; it does not publish file placement,
-a native semantic receipt or an export manifest.
+The constructor allocates fresh symbols and containment nodes. It records
+exposures and external uses in the sealed generation.Output. Files supplies
+local names and import/export syntax under the consumer's placement.
+Construction failure returns no usable output. Stable target configuration
+and faithful native-form interpretation remain trusted contracts, not consequences
+of syntax checks. Cross-language verification stays separately supplied.
 
 ## Generics and representation promises
 
@@ -579,9 +533,9 @@ requirements. Neither the shared host nor a plugin invokes analysis on demand.
 
 | Generation operation | Obligation when an enforcing profile is selected |
 | --- | --- |
-| Use | Preserve admission of the effective source arguments, including ignored arguments; compose their selected representations and required evidence without widening the source/representation association |
-| Publish | Expose the requested open declaration under its original parameter assumptions and result contract; select one supported public parameter/header encoding rather than specializing from the first concrete use |
-| Define | Fill the reserved header consistently with Use and Publish; emit the required bounds and supported helpers while retaining their source assumptions and representation associations |
+| Use mapping | Preserve admission of the effective source arguments, including ignored arguments; compose their selected representations and required evidence without widening the source/representation association |
+| Public root request | Expose the requested open declaration under its original parameter assumptions and result contract; select one supported public parameter/header encoding rather than specializing from the first concrete use |
+| Owned declaration recipe | Fill the reserved header consistently with Use and Publish; emit the required bounds and supported helpers while retaining their source assumptions and representation associations |
 
 Witness/evidence helpers use the same ownership and deferred-definition mechanism
 as other generated declarations. Reservation gives a helper a symbol; it does not
@@ -590,15 +544,11 @@ integration, and their syntax with the selected target mapping. Helper ownership
 must keep different source obligations and representation configurations distinct;
 matching display names cannot merge them. Unrestricted cross-package issuance
 remains unqualified; explicit dependency contracts and consumer-owned composition
-remain part of the broader [paired synthesis](generic-elaboration.md). The first
-SPI supplies native-only helper acquisition and explicit definition, not those
-native evidence encodings or an automatic definition queue.
+remain part of the broader [paired synthesis](generic-elaboration.md). The current SPI supplies declarative native helpers and automatic planning, not those native evidence encodings.
 
 The generic-coherence requirement includes bounds, witness arguments, evidence
 arguments and result representations, as well as payload storage. A future witness
-profile must define how all of those substitute together. The paired
-convention/product
-direction replaces BinderLink; the complete support API remains undecided.
+profile must define how all of those substitute together. The single generic convention fixes both formal and actual substitutions. The complete native support/evidence encoding remains unimplemented.
 The companion's language encodings remain target-specific candidates, with the
 TypeScript and Go issuance flaws corrected after research 0009. An unsupported encoding
 fails; extra header slots are not an implicit solution.
@@ -634,144 +584,41 @@ profile after a plugin, native bound or evidence requirement fails.
 
 ## Composition through the existing pipeline
 
-The kernel runs the selected providers for a generation request.
+1. The consumer registers a source, native target, mapping libraries and explicit
+   replacements. Registration copies descriptions; no private assembly exists
+   for a particular source/target pair.
+2. A request supplies the source snapshot and semantic evidence, public roots,
+   native language, generation profile, output identity and limits.
+3. The kernel selects exact rules before structural expansion, authenticates
+   captures and binds the complete generic convention.
+4. Planning resolves reachable children and helpers and checks the closed native
+   program. Run constructs that program without source or mapping callbacks.
+5. The kernel admits the syntax and seals Output. Files organizes declarations
+   from that output, checks bindings and publishes Source. Printing emits text.
 
-1. Supply the source and target language/profile descriptors, source adapter,
-   target backend, builtin bundle, selected library plugins and overrides.
-2. Supply the already captured source collection and explicit semantic receipts.
-   The existing typed transformer bridge admits them. Generation invokes no
-   resolver or analyzer implicitly.
-3. Select each requested root's mapping and invoke Publish before expanding its
-   body. Acquisition reserves symbols/parameters through the shared convention;
-   the composer queues immutable definition requests for owned outputs.
-   It does not run Define recursively; publication records the exposed destination.
-4. Compose child mappings under the same configuration. A list mapping requests
-   its element's representation; a structural Page mapping composes its field
-   representations. An exact library mapping is selected before expanding that
-   library declaration's body.
-5. Drain the definition queue, introducing formal products and preserved native
-   constraints, then running each selected Define once in that context.
-   Definitions can reserve further helpers. After the queue closes,
-   assemble target AST units with distinct containment nodes for each occurrence
-   and symbolic references to owned declarations or selected external symbols.
-   The result is the existing `ast.Set[T]` through the ASTTransformer bridge.
-6. To realize output files, supply one placement to the target Files formatter,
-   which arranges declarations and constructs the required module syntax. The
-   Syntax formatter builds each unit's CST; the shared Files printer emits the
-   organized units. Generation does not fabricate the native semantic receipt
-   required by Files. The consumer owns actual IO.
+[Exact registration and request signatures](kernel-composition.md) ·
+[Page<Cell> reading and writing](generation-planner.md#pagination-on-read-and-write)
 
-Calls to Engine.Generate can select different mappings in the same engine. A request-bound transformer is also available through the registry.
-Adding a plugin neither adds an engine edge nor registers another language.
-There is no mandatory public Plan method: the reservation queue provides the
-needed planning discipline. Any error discards the entire invocation output.
-Inline expansion cycles fail. The initial profile may keep generated recursion
-unsupported, but must inspect demanded representation dependencies after selection;
-an external mapping may avoid expanding a recursive source body. Reserved symbols
-do not establish native recursive-type legality.
+### File layout
 
-For pagination, selecting a custom text representation affects the generated
-Next field and other text occurrences consistently. Selecting a generic list
-representation affects Items while preserving its T binder. Selecting a Cell
-representation composes at the Cell application in `Page<Cell<Person>>`; no
-Page-specific Cell handling is needed.
-
-## Proposed file layout and dependencies
-
-The first slice implements the contract and minimal guarded runner together in
-`contracts/generation/go`, like the existing semantic operation contract. It adds
-the construction providers live alongside the operation contracts. The actual files are:
+The uniform stage/dimension/scope/component layout is implemented:
 
 ```text
-bittype/
-  contracts/generation/go/
-    reference.go                owner-qualified addresses and invocation identities
-    source.go                   source admission and authenticated views
-    contracts.go                operations, collaborators, preselected plans and limits
-    handles.go                  sealed requests, products and lifecycle handles
-    session.go                  explicit invocation and final output commit
-    product.go                  association admission and guarded Use/Apply
-    callee.go                   acquisition, Introduce, Publish and Define
+contracts/generation/go/                         declarations and invariant planner
+transform/syntax/shared/generation/go/           registry and request composition
+transform/syntax/shared/target/go/               native construction mechanics
+transform/syntax/<native>/model/go/              native semantic forms
+transform/syntax/<native>/target/go/             form-to-AST construction
+transform/syntax/horos/source/go/                source interpretation
+transform/syntax/horos/mapping/go/               common source declaration policy
+transform/syntax/horos-to-<native>/mapping/go/    representation descriptions
 ```
 
-The fuller replacement is implemented. These paths add substantive composition
-and language-specific implementations alongside the minimal runner:
-
-```text
-bittype/
-  transform/syntax/shared/generation/go/
-    bindings.go                 exact selection and guarded replacement
-    definitions.go              automatic deferred definition scheduling
-    registry.go adapter.go       typed registrations and request-bound ASTTransformer
-  transform/syntax/horos/source/go/
-    source.go                   source view and captured environments
-    identity.go                 builtin/declaration selector construction
-    read.go                     Horos operands, fields and evidence queries
-  transform/syntax/shared/target/go/
-    builder.go symbols.go assemble.go   shared symbolic storage, no native grammar
-  transform/syntax/typescript/target/go/
-  transform/syntax/golang/target/go/
-  transform/syntax/rust/target/go/
-  transform/syntax/cpp/target/go/
-    builder.go                  native construction helpers
-    symbols.go                  native declaration scopes and reservations
-    assemble.go                 symbolic expansion and AST-set assembly
-  transform/syntax/horos-to-<native>/mapping/go/  selectable native representations
-```
-
-Every concrete target directory has the same construction/symbol/assembly split.
-Rust and C++ additionally keep their native path construction in path.go.
-The transform stage uses syntax as its dimension. The shared Go contract and composer packages are named generation. Source, target and mapping packages are named for their components. Go uses golang in both single-language and ordered-pair directory names. Consumers register the three providers through the engine’s generation registry.
-
-**Owner placement correction, 6 November 2026:** semantic ownership does not
-require generator implementations to live in the type model's repository.
-Horos owns canonical meaning; Bittype owns the builtin Horos-to-native generation
-implementations. The former `horos/tooling/bittype` module is removed completely.
-The same public SPI remains available to independently packaged library mappings.
-
-```text
-bittype/                                 one root Go module
-  transform/syntax/horos/mapping/go/       structural policy and associations
-  transform/syntax/horos-to-<native>/mapping/go/  native representations
-  transform/syntax/shared/generation/go/  registry and composition
-  integration/go/                         generation and native compiler tests
-
-consumer/
-  generation/configuration.go            select bindings, overrides and artifacts
-```
-
-Consumers supply these packages through the [kernel-owned generation SPI](kernel-composition.md). Adding a library mapping changes its package and the consuming request. Horos owns its canonical type semantics independently.
-
-Dependencies follow the ownership boundaries:
-
-```text
-consumer -> generation composer + source adapter + target adapter
-consumer -> selected Horos/library integration packages
-integration mapping -> generation contracts + source readers + target helpers
-source adapter -> Horos model/front-end facts + shared contracts
-target adapter -> own native syntax + shared contracts/carriers
-shared generation -> contracts/carriers only
-engine -> shared generation registry and transformer contract
-```
-
-Consumer construction supplies the source adapter, target backend, selected
-builtin/library mappings, structural policy, explicit guarded overrides,
-artifact contracts and the compatible association/convention protocol. For
-example, replacing the configured text-to-string binding must name its expected
-provider and binding ID and supply the new provider and binding ID together with compatible association rules.
-It must fail on a missing/revised expected binding or an incompatible imported
-fixed dependency. The [automatic configuration layer](generation-composition.md) implements
-guarded overrides over the [Config and Plan contracts](generation-spi.md). It
-does not discover dependencies or prove imported artifact compatibility; these
-remain supplied integration obligations.
-
-The consumer calls Engine.Generate with the selected registrations, roots, capture and receipts. Other targets use the same ownership and operation roles
-with their own integrations and native backends.
-
-The private fixed Dialect and its builtin native mapping switch are deleted.
-All four production generators use this composition. No compatibility aliases,
-duplicated builtin mode or hidden defaults remain. Native enforcement and runtime
-bindings remain separate work.
+A real Cell library implements MappingLibrary in its own integration package.
+Consumers register it; neither shared orchestration nor native targets import it.
+The test fixture and the materially different reversed Pair rule use this public
+boundary. [Layout and dependency rules](../LAYOUT.md) ·
+[Independent composition](../integration/go/generation_planning_test.go)
 
 ## Forbidden shortcuts
 
@@ -787,6 +634,7 @@ bindings remain separate work.
 - Treating native syntax acceptance as proof of canonical equivalence or runtime
   behavior.
 
-The existing ASTTransformer remains the public engine operation. This proposal
-adds no engine capability, runtime registry or provider-matrix cell. The matrices
-continue to describe implemented source, not proposed packages.
+ASTTransformer remains the separate syntax-route contract. Engine.PlanGeneration
+and Generate use the declarative generation registry and checked Output handoff.
+The matrices report actual MappingLibrary implementations; they do not infer
+which requests or configurations succeed.

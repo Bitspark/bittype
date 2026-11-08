@@ -3,83 +3,71 @@ package integration_test
 import (
 	"context"
 	"errors"
-	g "github.com/Bitspark/bittype/contracts/generation/go"
-	"github.com/Bitspark/bittype/contracts/transform/go"
-	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
-	n "github.com/Bitspark/bittype/semantics/typescript/go"
-	mappings "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/go"
-	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
-	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
-	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
-	target "github.com/Bitspark/bittype/transform/syntax/typescript/target/go"
-
-	h "github.com/Bitspark/bittype/syntax/horos/go"
-	ts "github.com/Bitspark/bittype/syntax/typescript/go"
-	"github.com/Bitspark/bittype/trees/ast/go"
-	"github.com/Bitspark/bittype/trees/representation/go"
-	decl "github.com/Bitspark/horos/core/go/declarations"
-	core "github.com/bitspark/ontos/core/go"
-	data "github.com/bitspark/ontos/data/go"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	g "github.com/Bitspark/bittype/contracts/generation/go"
+	"github.com/Bitspark/bittype/contracts/transform/go"
+	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
+	n "github.com/Bitspark/bittype/semantics/typescript/go"
+	h "github.com/Bitspark/bittype/syntax/horos/go"
+	ts "github.com/Bitspark/bittype/syntax/typescript/go"
+	mappings "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/go"
+	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
+	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
+	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
+	model "github.com/Bitspark/bittype/transform/syntax/typescript/model/go"
+	target "github.com/Bitspark/bittype/transform/syntax/typescript/target/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
+	decl "github.com/Bitspark/horos/core/go/declarations"
+	core "github.com/bitspark/ontos/core/go"
+	data "github.com/bitspark/ontos/data/go"
 )
 
-func readonlyList(src source.Reader, b target.Builder[h.Language]) g.Mapping[h.Language, ts.Language] {
-	return rules.Direct("consumer/readonly-list/1", src, b, func(_ context.Context, r g.UseRequest[h.Language, ts.Language]) (g.Fragment[ts.Language], error) {
-		operand, err := src.Operand(r.Want().Use().Use, 1)
-		if err != nil {
-			return g.Fragment[ts.Language]{}, err
-		}
-		child, err := r.Child(operand)
-		if err != nil {
-			return g.Fragment[ts.Language]{}, err
-		}
-		return b.GlobalType("ReadonlyArray", []g.Fragment[ts.Language]{child.Payload()}, ast.NodeRef{})
-	})
-}
+// Independent libraries advertise data at registration. Expansion is planning only.
+type tsContribution func(representation.Language, representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error)
 
-// This independent consumer receives only its selected source/target APIs.
-type tsContribution func(source.Reader, target.Builder[h.Language]) (g.Contribution[h.Language, ts.Language], error)
-
-func (p tsContribution) Open(_ context.Context, r g.MappingRequest[source.Reader, target.Builder[h.Language]]) (g.Contribution[h.Language, ts.Language], error) {
-	src, b, err := r.Opened()
-	if err != nil {
-		return g.Contribution[h.Language, ts.Language]{}, err
-	}
-	return p(src, b)
+func (p tsContribution) Describe(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
+	d, err := p(from, to)
+	d.Profile = rules.RepresentationProfile
+	return d, err
 }
 func selectedTS(p tsContribution, replacementID string) requestBuilder {
 	return func(registry *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-		request, err := genfixture.Request(registry, input, to, "selected-ts", target.Provider[h.Language]{}, mappings.Text(rules.RepresentationProfile), mappings.Bool(rules.RepresentationProfile), mappings.Record(rules.RepresentationProfile), mappings.Binder(rules.RepresentationProfile), mappings.Declarations(rules.RepresentationProfile))
+		request, err := genfixture.Request(registry, input, to, "selected-ts", target.Provider{}, mappings.Text(rules.RepresentationProfile), mappings.Bool(rules.RepresentationProfile), mappings.Record(rules.RepresentationProfile), mappings.Declarations(rules.RepresentationProfile))
 		if err != nil {
 			return c.Request{}, err
 		}
-		selected, err := c.RegisterMapping[h.Language, ts.Language, source.Reader, target.Builder[h.Language]](registry, input.Source.Language(), to, p)
+		selected, err := c.RegisterMapping(registry, input.Source.Language(), to, p)
 		if err != nil {
 			return c.Request{}, err
 		}
-		base, err := c.RegisterMapping[h.Language, ts.Language, source.Reader, target.Builder[h.Language]](registry, input.Source.Language(), to, mappings.List(rules.RepresentationProfile))
+		base, err := c.RegisterMapping(registry, input.Source.Language(), to, mappings.List(rules.RepresentationProfile))
 		if err != nil {
 			return c.Request{}, err
 		}
-		request.Selection.Mappings = append(request.Selection.Mappings, base)
-		request.Selection.Mappings = append(request.Selection.Mappings, selected)
 		if replacementID != "" {
 			key, _ := source.Builtin(input.Source.Language(), "list-of", "")
-			request.Selection.Replace = []c.Replacement{{Selector: key, Expected: c.BindingRef{Provider: base, ID: "list/typescript/1"}, With: c.BindingRef{Provider: selected, ID: replacementID}}}
+			err = registry.Replace(c.Replacement{Selector: key, Expected: c.BindingRef{Provider: base, ID: "list/typescript/1"}, With: c.BindingRef{Provider: selected, ID: replacementID}})
+			if err != nil {
+				return c.Request{}, err
+			}
 		}
 		return request, nil
 	}
 }
+func listContribution(id, module, name string) tsContribution {
+	return func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
+		slot := g.TypeSlot("E")
+		pattern, err := rules.Element(from, slot)
+		return g.MappingDescription[h.Language, ts.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, source.Reader]{{ID: id, Input: pattern, Output: model.External(module, name, g.Mapped[ts.Language](slot))}}}, err
+	}
+}
 func TestListOverrideComposesThroughGenericPage(t *testing.T) {
-	e, from, input := generationInput(t, paginationModule())
-	provider := tsContribution(func(src source.Reader, b target.Builder[h.Language]) (g.Contribution[h.Language, ts.Language], error) {
-		key, _ := source.Builtin(from, "list-of", "")
-		return g.Contribution[h.Language, ts.Language]{Bindings: []g.RepresentationBinding[h.Language, ts.Language]{{Selector: key, Mapping: readonlyList(src, b)}}}, nil
-	})
-	tree := generated(t, e, input, typescriptText(), selectedTS(provider, "consumer/readonly-list/1"))
+	e, _, input := generationInput(t, paginationModule())
+	tree := generated(t, e, input, typescriptText(), selectedTS(listContribution("consumer/readonly-list/1", "", "ReadonlyArray"), "consumer/readonly-list/1"))
 	output := formatted(t, typescriptText(), tree)
 	if !strings.Contains(output, "items: ReadonlyArray<T>") || !strings.Contains(output, "Page<Page<Person>>") || strings.Contains(output, "T[]") {
 		t.Fatal(output)
@@ -88,62 +76,32 @@ func TestListOverrideComposesThroughGenericPage(t *testing.T) {
 	compileTSComposition(t, output, "const page: NestedPage = {items: [{items: [{name: 'Ada', active: true}]}]};\nvoid page;\n")
 }
 func TestSelectedMappingFailureNeverFallsBack(t *testing.T) {
-	_, from, input := generationInput(t, paginationModule())
+	_, _, input := generationInput(t, paginationModule())
 	sentinel := errors.New("selected mapping failed")
 	called := 0
-	provider := tsContribution(func(src source.Reader, b target.Builder[h.Language]) (g.Contribution[h.Language, ts.Language], error) {
-		key, _ := source.Builtin(from, "list-of", "")
-		mapping := rules.Direct("consumer/failure/1", src, b, func(context.Context, g.UseRequest[h.Language, ts.Language]) (g.Fragment[ts.Language], error) {
+	provider := tsContribution(func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
+		pattern, err := rules.Pattern(from, "list-of", "")
+		return g.MappingDescription[h.Language, ts.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, source.Reader]{{ID: "consumer/failure/1", Input: pattern, Expand: func(context.Context, g.Expansion[h.Language, ts.Language, source.Reader]) (g.Expression[ts.Language], error) {
 			called++
-			return g.Fragment[ts.Language]{}, sentinel
-		})
-		return g.Contribution[h.Language, ts.Language]{Bindings: []g.RepresentationBinding[h.Language, ts.Language]{{Selector: key, Mapping: mapping}}}, nil
+			return g.Expression[ts.Language]{}, sentinel
+		}}}}, err
 	})
 	out, err := runGeneration(t, input, nativeChecker(t, typescriptText()), selectedTS(provider, "consumer/failure/1"))
 	if !errors.Is(err, sentinel) || out.Snapshot().Valid() || called != 1 {
-		t.Fatalf("mapping retried or partial output: %v (%d calls)", err, called)
+		t.Fatal(err, called)
 	}
 }
-
 func TestGeneratedNamedImportsTrackOnlyEmittedFragments(t *testing.T) {
-	root := genModule("consumer", genMap(),
-		genEntry("Box", genType(genScalar("bool"))),
-		genEntry("Batch", genType(genTuple("horos/list-of", genParam(0)), "T")),
-		genEntry("Names", genType(genTuple("horos/list-of", genScalar("utf8-text")))))
-	e, from, input := generationInput(t, root)
-	const id = "consumer/collection/1"
-	provider := tsContribution(func(src source.Reader, b target.Builder[h.Language]) (g.Contribution[h.Language, ts.Language], error) {
-		key, err := source.Builtin(from, "list-of", "")
-		if err != nil {
-			return g.Contribution[h.Language, ts.Language]{}, err
-		}
-		mapping := rules.Direct(id, src, b, func(_ context.Context, r g.UseRequest[h.Language, ts.Language]) (g.Fragment[ts.Language], error) {
-			use := r.Want().Use().Use
-			operand, err := src.Operand(use, 1)
-			if err != nil {
-				return g.Fragment[ts.Language]{}, err
-			}
-			child, err := r.Child(operand)
-			if err != nil {
-				return g.Fragment[ts.Language]{}, err
-			}
-			// Constructing an alternative fragment creates no dependency unless
-			// that fragment occurs in the returned syntax.
-			if _, err = b.PackageType("@example/unused", "Candidate", nil, ast.NodeRef{}); err != nil {
-				return g.Fragment[ts.Language]{}, err
-			}
-			return b.PackageType("@example/collections", "Box", []g.Fragment[ts.Language]{child.Payload()}, ast.NodeRef{})
-		})
-		return g.Contribution[h.Language, ts.Language]{Bindings: []g.RepresentationBinding[h.Language, ts.Language]{{Selector: key, Mapping: mapping}}}, nil
-	})
-	out := generatedOutput(t, e, input, typescriptText(), selectedTS(provider, id))
+	root := genModule("consumer", genMap(), genEntry("Box", genType(genScalar("bool"))), genEntry("Batch", genType(genTuple("horos/list-of", genParam(0)), "T")), genEntry("Names", genType(genTuple("horos/list-of", genScalar("utf8-text")))))
+	e, _, input := generationInput(t, root)
+	out := generatedOutput(t, e, input, typescriptText(), selectedTS(listContribution("consumer/collection/1", "@example/collections", "Box"), "consumer/collection/1"))
 	if len(out.ExternalUses()) != 2 {
-		t.Fatal("expected only two emitted external uses", out.ExternalUses())
+		t.Fatal(out.ExternalUses())
 	}
 	tree := placedTS(t, out, n.PackageTypes{Module: "@example/collections", Declaration: "export interface Box<T> { value:T }"})
 	output := formatted(t, typescriptText(), tree)
 	checkImportedUse(t, tree, "Box_1", "@example/collections", "Box")
-	if strings.Count(output, "import type") != 1 || strings.Contains(output, "@example/unused") || !strings.Contains(output, "Box_1<T>") || !strings.Contains(output, "Box_1<string>") {
+	if strings.Count(output, "import type") != 1 || !strings.Contains(output, "Box_1<T>") || !strings.Contains(output, "Box_1<string>") {
 		t.Fatal(output)
 	}
 }
@@ -168,32 +126,21 @@ func TestLibraryOwnedCellAvoidsBodyExpansion(t *testing.T) {
 	checkImportedUse(t, tree, "Cell", "@bitspark/cell", "Cell")
 	compileTSComposition(t, output, "const cells: Cells = {items:[{value:'text'}]};\nvoid cells;\n")
 }
-
-// The independent library selects its own native package export. It receives
-// no placement or path information.
 func cellMapping(from representation.Language, pin string, calls *int) tsContribution {
-	return func(src source.Reader, b target.Builder[h.Language]) (g.Contribution[h.Language, ts.Language], error) {
+	return func(_, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
 		key, err := source.Named(from, pin, "Cell")
 		if err != nil {
-			return g.Contribution[h.Language, ts.Language]{}, err
+			return g.MappingDescription[h.Language, ts.Language, source.Reader]{}, err
 		}
-		mapping := rules.Direct("cells/typescript/1", src, b, func(_ context.Context, r g.UseRequest[h.Language, ts.Language]) (g.Fragment[ts.Language], error) {
+		slot := g.TypeSlot("V")
+		pattern := g.Pattern[h.Language, source.Reader]{Selector: key, Slots: []g.Slot{slot}, Capture: func(ctx context.Context, src source.Reader, use g.UseData[h.Language]) ([]g.Capture[h.Language], error) {
 			(*calls)++
-			use := r.Want().Use()
 			if len(use.Actuals) != 1 {
-				return g.Fragment[ts.Language]{}, g.ErrInvalid
+				return nil, g.ErrScope
 			}
-			child, err := r.Child(use.Actuals[0].Use)
-			if err != nil {
-				return g.Fragment[ts.Language]{}, err
-			}
-			expr, err := src.Read(use.Use)
-			if err != nil {
-				return g.Fragment[ts.Language]{}, err
-			}
-			return b.PackageType("@bitspark/cell", "Cell", []g.Fragment[ts.Language]{child.Payload()}, expr.Origin)
-		})
-		return g.Contribution[h.Language, ts.Language]{Bindings: []g.RepresentationBinding[h.Language, ts.Language]{{Selector: key, Mapping: mapping}}}, nil
+			return []g.Capture[h.Language]{{Slot: slot, Use: use.Actuals[0].Use}}, nil
+		}}
+		return g.MappingDescription[h.Language, ts.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, source.Reader]{{ID: "cells/typescript/1", Input: pattern, Output: model.External("@bitspark/cell", "Cell", g.Mapped[ts.Language](slot))}}}, nil
 	}
 }
 func compileTSComposition(t *testing.T, source, consumer string) {

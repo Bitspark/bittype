@@ -226,10 +226,10 @@ descriptor parameter, or several linked parameters, rather than one arbitrary
 native type. The profile must state this change. Generated named applications
 can hide the extra parameters without duplicating the generic definition.
 
-The [paired convention/product direction](generic-elaboration.md#one-generic-convention-for-formals-and-applications)
-replaces the earlier binder-to-slot sketch. Introduce and Apply share a
-convention for native formals, payload projections, actual arguments and result
-associations. The complete support API and its target-specific authority remain
+The [single generic convention](generic-elaboration.md#one-generic-convention-for-formals-and-applications)
+replaces the earlier binder-to-slot sketch. Its declaration and application
+templates share a convention for native formals and complete actual arguments.
+A stronger enforcing profile must additionally retain payload/result support. The complete support API and its target-specific authority remain
 unfinalized. Additional native parameters create no additional source binders,
 and a successfully reserved helper is not membership evidence.
 
@@ -443,7 +443,7 @@ Its source adapter and type-owned integration mappings now own lowering;
 | `syntax/<target>/go/` and its parse/check/format Syntax stages | Support the native grammatical constructs required by the encoding, without Horos semantics |
 | Shared carriers, semantic kernel, engine and printers | Keep their existing language-agnostic contracts |
 
-These are the [plugin proposal's target locations](type-generation-plugins.md#proposed-file-layout-and-dependencies),
+These are the [plugin proposal's target locations](type-generation-plugins.md#file-layout),
 implemented for representation, with enforcement still proposed. Type-owned integration modules
 depend on Bittype; Bittype factories do not import their default bundles. The
 private fixed Dialect is deleted.

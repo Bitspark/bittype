@@ -134,7 +134,7 @@ jobs:
           --output "$RUNNER_TEMP/capability-observations/syntax-race" --command-id syntax-race
           --env BITTYPE_TYPESCRIPT_NODE --env BITTYPE_TYPESCRIPT_MODULE
           --env BITTYPE_RUST_HELPER --env BITTYPE_RUST_SYSROOT
-          -- go test -race -count=1 -json -run '^(TestEngineConcurrent|TestGoSemanticConcurrent|TestTypeScriptSemanticConcurrent|TestRustSemanticConcurrent)' ./integration/go
+          -- go test -race -count=1 -json -run '^(TestGenerationPlanConcurrent|TestEngineConcurrent|TestGoSemanticConcurrent|TestTypeScriptSemanticConcurrent|TestRustSemanticConcurrent)' ./integration/go
       - name: Check joint verification concurrency
         if: success() || (failure() && steps.formatting.outcome == 'failure')
         run: >-
@@ -279,7 +279,7 @@ jobs:
           python3 tools/provider-matrix/capture.py run --root "$GITHUB_WORKSPACE"
           --output "$RUNNER_TEMP/capability-observations/native" --command-id native
           --env BITTYPE_NATIVE --env BITTYPE_TYPESCRIPT_NODE --env BITTYPE_TYPESCRIPT_MODULE
-          -- go test -count=1 -json -run '^(TestNativeCompilerFixtures|TestGenerationSPIHostedGoCompiler|TestGeneratedPaginationCompilers|TestListOverrideComposesThroughGenericPage|TestLibraryOwnedCellAvoidsBodyExpansion)$' ./integration/go
+          -- go test -count=1 -json -run '^(TestNativeCompilerFixtures|TestDeclarativeIndependentHostedGoCompiler|TestGeneratedPaginationCompilers|TestListOverrideComposesThroughGenericPage|TestLibraryOwnedCellAvoidsBodyExpansion)$' ./integration/go
       - name: Render native invocation capability observations
         if: ${{ !cancelled() }}
         shell: bash

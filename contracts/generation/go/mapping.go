@@ -20,19 +20,6 @@ func (s Selector) Key() string                       { return s.key }
 func (s Selector) Valid() bool                       { return s.language.Validate() == nil && s.key != "" }
 func (s Selector) Language() representation.Language { return s.language }
 
-// Mapping creates a plan for a real declaration, or a direct expression when
-// declaration is zero. Factories allocate invocation-local collaborators only;
-// representation work is demanded through the returned SPI operations.
-type Mapping[F, T any] struct {
-	ID       string
-	PluginID string
-	Plan     func(Declaration[F]) (Plan[F, T], error)
-}
-type RepresentationBinding[F, T any] struct {
-	Selector Selector
-	Mapping  Mapping[F, T]
-}
-
 // Catalog is source-owned interpretation; enumeration does not demand expansion.
 type Catalog[F any] interface {
 	Declarations() []Declaration[F]

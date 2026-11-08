@@ -55,7 +55,7 @@ func (p *program) links(locations []location, sourceURL string, detailPaths ...s
 		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 			return "", fmt.Errorf("implementation is outside the repository: %s", pos.Filename)
 		}
-		if loc.op.kind == "mapping provider" {
+		if loc.op.kind == "mapping library" {
 			label = "mapping " + label
 		}
 		parts := strings.Split(filepath.ToSlash(rel), "/")

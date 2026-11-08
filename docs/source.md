@@ -45,7 +45,7 @@ native modules. It can do that entirely in memory, before anything is written.
 
 | Owner | Decision |
 | --- | --- |
-| Selected mapping and generation target | Build declaration bodies and type expressions. Bind each named use to its intended target declaration, lexical parameter, or selected external public symbol. `Publish` records which declaration the caller requested to expose. A generated tree ID identifies syntax; it does not assign a file. |
+| Selected mapping and generation target | Build declaration bodies and type expressions. Bind each named use to its intended target declaration, lexical parameter, or selected external public symbol. The plan records which declaration the caller requested to expose. A generated tree ID identifies syntax; it does not assign a file. |
 | Consumer | Supply one placement for the declarations being emitted: output files and the native scopes they belong to. Supply the selected external dependencies in the target environment. There is no second table of imports. |
 | Target-language Files formatter | Follow those bindings under that placement. Choose the local spelling, qualification or alias, and construct the necessary import, export or other module syntax. Realize the requested visibility under the language's rules and establish that uses still resolve to their intended targets. |
 | Shared Files printer | Emit the paths and text already represented by `Source`. The caller decides whether and where to write them. |

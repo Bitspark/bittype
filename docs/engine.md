@@ -325,3 +325,22 @@ admits and captures all output units and preserves the explicit entry. Receipt
 requirements at subsequent legs are never satisfied by carrying old evidence.
 `EntryAST()` selects the explicit entry for consumers that deliberately want one
 unit; consumers emitting a source set should traverse all `Trees`.
+
+
+## Declarative generation
+
+Semantic generation has a separate registry from ASTTransformer route planning.
+The application registers source interpretation, a native target and mapping
+libraries; the kernel selects descriptions for the source capture and requested
+profile. Implemented engine signatures are:
+
+```go
+func (e *Engine) PlanGeneration(ctx context.Context, r generation.Request) (g.GenerationPlan, error)
+func (e *Engine) Generate(ctx context.Context, r generation.Request) (g.Output, error)
+```
+
+Here generation is transform/syntax/shared/generation/go and g is
+contracts/generation/go. PlanGeneration resolves semantic choices without AST
+construction. The returned plan's Run constructs fresh syntax. Generate performs
+both and returns the same sealed output. Registration does not create language
+route edges. [Exact contracts and consumer example](kernel-composition.md)

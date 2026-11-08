@@ -4,20 +4,20 @@
 assigns concrete import and export syntax to the language's Files formatter.
 
 **Original behavior, 7 November.** The Cell mapping correctly requests the public type
-`@bitspark/cell` exports as `Cell`. The [TypeScript target](../../transform/syntax/typescript/target/go/builder.go)
+`@bitspark/cell` exports as `Cell`. The [TypeScript target](https://github.com/Bitspark/bittype/blob/dbb7ff2/transform/syntax/typescript/target/go/builder.go)
 then calls `imports.Emit` while assembling the logical AST, allocating a local
 import binding before the consumer has placed a declaration. Its
-[declaration builder](../../transform/syntax/typescript/target/go/symbols.go)
+[declaration builder](https://github.com/Bitspark/bittype/blob/dbb7ff2/transform/syntax/typescript/target/go/symbols.go)
 also marks each reserved interface or alias `exported: true`. Later, the
 [Files formatter](../../format/files/typescript/provider/go/relocate.go)
 discards the old imports, allocates bindings per output unit and consults
 export visibility when a use crosses units. The logical unit's syntax is
 doing double duty as the record of which dependency was intended.
 
-The same distinction applies outside TypeScript. The [C++ target](../../transform/syntax/cpp/target/go/assemble.go)
+The same distinction applies outside TypeScript. The [C++ target](https://github.com/Bitspark/bittype/blob/dbb7ff2/transform/syntax/cpp/target/go/assemble.go)
 materializes registered headers as include nodes during declaration assembly;
 knowing the required public header is distinct from placing its directive in
-an output unit. The [Rust target](../../transform/syntax/rust/target/go/symbols.go)
+an output unit. The [Rust target](https://github.com/Bitspark/bittype/blob/dbb7ff2/transform/syntax/rust/target/go/symbols.go)
 sets module visibility to public on its reserved structs and aliases. These
 are further instances to address, not evidence that native Files placement
 has been implemented for those targets.
@@ -44,4 +44,4 @@ describes this qualification.
 
 **Implemented TypeScript correction.** Generation retains exposed sites and emitted external use occurrences. Files allocates imports and aliases after placement and checks the compiler's named exports and each relocated destination. The qualification uses one output with a local Cell and an external use of Cell. With Person in a second unit, the relative import is present. Moving Person alongside Page removes its relative import and retains the package import with the alias `Cell_1`. Missing or inaccessible destinations fail publication. [Output](../../contracts/generation/go/output.go) · [Generated Files input](../../format/files/typescript/provider/go/generated.go) · [Placement tests](../../integration/go/typescript_placement_test.go)
 
-The C++ header directives and Rust module visibility described above require separate target and Files work. The wider planner and mapping redesign are proposals.
+The C++ header directives and Rust module visibility described above require separate target and Files work. The declarative planner and mapping redesign are implemented; they do not resolve these separate Files ownership cases.

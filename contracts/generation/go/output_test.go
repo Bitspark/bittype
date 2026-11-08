@@ -1,4 +1,4 @@
-package generation_test
+package generation
 
 import (
 	"context"
@@ -6,87 +6,81 @@ import (
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/check/go"
-	gen "github.com/Bitspark/bittype/contracts/generation/go"
+	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-type assemblyNative struct {
-	*nativeStore
-	assemble func(gen.Assembly) gen.Assembly
-}
+type outputLanguage struct{}
 
-func (n *assemblyNative) Assemble(ctx context.Context, pubs []gen.Publication[sourceLanguage, nativeLanguage], defs []gen.Definition[sourceLanguage, nativeLanguage], limits gen.Limits) (gen.Assembly, error) {
-	out, err := n.nativeStore.Assemble(ctx, pubs, defs, limits)
-	if err != nil {
-		return gen.Assembly{}, err
-	}
-	return n.assemble(out), nil
-}
+func (outputLanguage) ID() language.ID { return "output-test" }
+func (outputLanguage) Name() string    { return "Output test" }
 
-func TestOutputRejectsUnassociatedAssembly(t *testing.T) {
-	for _, tc := range []struct {
-		name  string
-		want  error
-		alter func(gen.Assembly, gen.ExternalUse) gen.Assembly
-	}{
-		{"unrequested-exposure", gen.ErrIncomplete, func(out gen.Assembly, u gen.ExternalUse) gen.Assembly {
-			out.Exposed = []ast.NodeRef{u.At.Site}
-			return out
-		}},
-		{"foreign-use-site", gen.ErrScope, func(out gen.Assembly, u gen.ExternalUse) gen.Assembly {
-			u.At.Site.Tree = "foreign"
-			out.ExternalUses = []gen.ExternalUse{u}
-			return out
-		}},
-		{"duplicate-destination", gen.ErrScope, func(out gen.Assembly, u gen.ExternalUse) gen.Assembly {
-			out.ExternalUses = []gen.ExternalUse{u, u}
-			return out
-		}},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			f := newFixture(t)
-			external, err := gen.NewSymbolIssuer().Issue(f.target, "owner/type")
-			if err != nil {
-				t.Fatal(err)
-			}
-			use := gen.ExternalUse{At: semantics.Occurrence{Site: ast.NodeRef{Tree: "native", Node: 2}, Role: semantics.Key{Owner: "test", Name: "type-use"}}, Symbol: external}
-			c := f.configuration(nil)
-			c.Native = &assemblyNative{f.native, func(out gen.Assembly) gen.Assembly { return tc.alter(out, use) }}
-			run := begin(t, context.Background(), f, c, gen.DefaultLimits())
-			if out, err := run.Finish(); !errors.Is(err, tc.want) || out.Snapshot().Valid() {
-				t.Fatal("invalid assembly sealed", err)
-			}
-		})
-	}
-}
+type outputChecker struct{ outputLanguage }
 
-type checkingNative struct {
-	fixtureIdentity
-	inspect func()
-}
-
-func (c checkingNative) Check(ast.View[nativeLanguage]) error { c.inspect(); return nil }
-
-func TestTargetSyntaxCheckerCannotReenterFinish(t *testing.T) {
-	f := newFixture(t)
-	var session *session
-	var nested error
-	calls := 0
-	checker, err := check.NewChecker[nativeLanguage](f.target, checkingNative{fixtureIdentity("generation-target"), func() {
-		calls++
-		if calls == 1 {
-			_, nested = session.Finish()
-		}
-	}})
+func (outputChecker) Check(ast.View[outputLanguage]) error { return nil }
+func outputAssembly(t *testing.T) (check.Checker, Assembly) {
+	t.Helper()
+	lang, err := representation.NewLanguage[outputLanguage](outputLanguage{}, "one")
 	if err != nil {
 		t.Fatal(err)
 	}
-	config := f.configuration(nil)
-	config.Checker = checker
-	session = begin(t, context.Background(), f, config, gen.DefaultLimits())
-	failedFinish(t, session, gen.ErrInvalid)
-	if calls != 1 || !errors.Is(nested, gen.ErrInvalid) {
-		t.Fatal("checker escaped commit boundary", calls, nested)
+	checker, err := check.NewChecker[outputLanguage](lang, outputChecker{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree := ast.AST[outputLanguage]{ID: "output", Root: 1, Nodes: []ast.Node[outputLanguage]{{Kind: "unit", Children: []ast.Child{{Role: "declaration", Node: 2}}}, {Kind: "declaration"}}}
+	packed, err := representation.PackSet(lang, ast.Set[outputLanguage]{Entry: ast.NodeRef{Tree: tree.ID, Node: 1}, Trees: []ast.AST[outputLanguage]{tree}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return checker, Assembly{Syntax: packed, Exposed: []ast.NodeRef{{Tree: tree.ID, Node: 2}}}
+}
+func TestSealOwnsItsSitesAndRejectsIncompleteMetadata(t *testing.T) {
+	checker, assembly := outputAssembly(t)
+	out, err := seal(context.Background(), checker, assembly, 1, DefaultLimits())
+	if err != nil {
+		t.Fatal(err)
+	}
+	assembly.Exposed[0] = ast.NodeRef{Tree: "foreign", Node: 1}
+	sites := out.Exposed()
+	sites[0] = ast.NodeRef{}
+	if out.Exposed()[0].Tree != "output" {
+		t.Fatal("mutable exposure metadata")
+	}
+	if bad, err := seal(context.Background(), checker, assembly, 1, DefaultLimits()); !errors.Is(err, ErrScope) || bad.Snapshot().Valid() {
+		t.Fatal(err)
+	}
+	_, assembly = outputAssembly(t)
+	if bad, err := seal(context.Background(), checker, assembly, 2, DefaultLimits()); !errors.Is(err, ErrIncomplete) || bad.Snapshot().Valid() {
+		t.Fatal(err)
+	}
+}
+func TestSealRejectsForeignDuplicateAndOversizedExternalUses(t *testing.T) {
+	checker, base := outputAssembly(t)
+	symbol, err := NewSymbolIssuer().Issue(checker.Language(), "module/type")
+	if err != nil {
+		t.Fatal(err)
+	}
+	at := semantics.Occurrence{Site: base.Exposed[0], Role: semantics.Key{Owner: "fixture", Name: "type"}}
+	for name, uses := range map[string][]ExternalUse{
+		"foreign":   {{At: semantics.Occurrence{Site: ast.NodeRef{Tree: "other", Node: 2}, Role: at.Role}, Symbol: symbol}},
+		"duplicate": {{At: at, Symbol: symbol}, {At: at, Symbol: symbol}},
+		"unissued":  {{At: at}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			a := base
+			a.ExternalUses = uses
+			if out, err := seal(context.Background(), checker, a, 1, DefaultLimits()); err == nil || out.Snapshot().Valid() {
+				t.Fatal("invalid external use accepted")
+			}
+		})
+	}
+	base.ExternalUses = []ExternalUse{{At: at, Symbol: symbol}}
+	limits := DefaultLimits()
+	limits.OutputBytes = 2
+	if out, err := seal(context.Background(), checker, base, 1, limits); !errors.Is(err, ErrLimit) || out.Snapshot().Valid() {
+		t.Fatal(err)
 	}
 }

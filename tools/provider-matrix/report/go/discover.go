@@ -445,7 +445,7 @@ func (p *program) discover() (*matrix, error) {
 			return nil, err
 		}
 	}
-	if err := p.mappingProviders(m); err != nil {
+	if err := p.mappingLibraries(m); err != nil {
 		return nil, err
 	}
 	if err := p.transformers(m); err != nil {
@@ -457,14 +457,14 @@ func (p *program) discover() (*matrix, error) {
 	return m, nil
 }
 
-// mappingProviders reports the endpoints in actual implementations of the public
-// generation contract. A supplied mapping is available for selection. A mapping
-// alone makes no claim about a configured route, source evidence, or roots.
-func (p *program) mappingProviders(m *matrix) error {
+// mappingLibraries reports concrete implementations of the declaration contract.
+// Factory result types can instantiate a generic library. A returned interface,
+// an unbound parameter, or a supplied library alone does not establish a route.
+func (p *program) mappingLibraries(m *matrix) error {
 	if p.packages[p.module+"/contracts/generation/go"] == nil {
 		return nil
 	}
-	contract, err := p.named("contracts/generation/go", "MappingProvider")
+	contract, err := p.named("contracts/generation/go", "MappingLibrary")
 	if err != nil {
 		return err
 	}
@@ -476,39 +476,65 @@ func (p *program) mappingProviders(m *matrix) error {
 		}
 		return nil
 	}
+	seen := map[string]bool{}
+	add := func(candidate types.Type) {
+		base := candidate
+		if ptr, ok := base.(*types.Pointer); ok {
+			base = ptr.Elem()
+		}
+		named, ok := base.(*types.Named)
+		if !ok {
+			return
+		}
+		if _, ok := named.Underlying().(*types.Interface); ok {
+			return
+		}
+		candidate = types.NewPointer(named)
+		bound := match(contract, candidate)
+		if bound == nil {
+			return
+		}
+		from, to := marker(bound.TypeArgs().At(0)), marker(bound.TypeArgs().At(1))
+		if from == nil || to == nil {
+			return
+		}
+		public := method(candidate, "Describe")
+		entry, chain, stop := p.entryChain(public)
+		op := &operation{kind: "mapping library", public: public, entry: entry, chain: chain, stop: stop, contract: bound, receiver: public.Type().(*types.Signature).Recv().Type(), from: from, to: to}
+		op.id = operationID(op.kind, public, bound, op.receiver, *from, *to)
+		if seen[op.id] {
+			return
+		}
+		seen[op.id] = true
+		if m.edges[from.id] == nil {
+			m.edges[from.id] = map[string][]location{}
+		}
+		m.edges[from.id][to.id] = append(m.edges[from.id][to.id], location{op})
+	}
 	for path, pkg := range p.packages {
 		if !p.implementation(path) {
 			continue
 		}
 		for _, name := range pkg.types.Scope().Names() {
-			obj, ok := pkg.types.Scope().Lookup(name).(*types.TypeName)
-			if !ok || !obj.Exported() || obj.IsAlias() {
+			obj := pkg.types.Scope().Lookup(name)
+			if !obj.Exported() {
 				continue
 			}
-			named, ok := obj.Type().(*types.Named)
-			if !ok || named.TypeParams().Len() != 0 {
-				continue
+			switch obj := obj.(type) {
+			case *types.TypeName:
+				if obj.IsAlias() {
+					continue
+				}
+				named, ok := obj.Type().(*types.Named)
+				if ok && named.TypeParams().Len() == 0 {
+					add(named)
+				}
+			case *types.Func:
+				signature := obj.Type().(*types.Signature)
+				for i := 0; i < signature.Results().Len(); i++ {
+					add(signature.Results().At(i).Type())
+				}
 			}
-			if _, ok := named.Underlying().(*types.Interface); ok {
-				continue
-			}
-			candidate := types.NewPointer(named)
-			bound := match(contract, candidate)
-			if bound == nil {
-				continue
-			}
-			from, to := marker(bound.TypeArgs().At(0)), marker(bound.TypeArgs().At(1))
-			if from == nil || to == nil {
-				continue
-			}
-			public := method(candidate, "Open")
-			entry, chain, stop := p.entryChain(public)
-			op := &operation{kind: "mapping provider", public: public, entry: entry, chain: chain, stop: stop, contract: bound, receiver: public.Type().(*types.Signature).Recv().Type(), from: from, to: to}
-			op.id = operationID(op.kind, public, bound, op.receiver, *from, *to)
-			if m.edges[from.id] == nil {
-				m.edges[from.id] = map[string][]location{}
-			}
-			m.edges[from.id][to.id] = append(m.edges[from.id][to.id], location{op})
 		}
 	}
 	return nil

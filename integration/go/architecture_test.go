@@ -202,12 +202,12 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["transform/syntax/shared/generation/go"] = []string{"contracts/text/go", "contracts/generation/go", "contracts/semantic/go", "contracts/transform/go", "trees/ast/go", "trees/representation/go"}
 	rules["transform/syntax/horos/source/go"] = []string{"analyze/files/horos/provider/go", "contracts/analysis/go", "contracts/generation/go", "contracts/semantic/go", "contracts/text/go", "contracts/transform/go", "resolve/files/horos/provider/go", "semantics/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
 	rules["transform/syntax/shared/target/go"] = []string{"contracts/generation/go", "trees/ast/go", "trees/representation/go"}
-	rules["transform/syntax/horos/mapping/go"] = []string{"contracts/generation/go", "contracts/text/go", "contracts/transform/go", "transform/syntax/horos/source/go", "transform/syntax/shared/target/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
+	rules["transform/syntax/horos/mapping/go"] = []string{"contracts/generation/go", "contracts/text/go", "contracts/transform/go", "transform/syntax/horos/source/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
 	for _, syntax := range []string{"typescript", "golang", "rust", "cpp"} {
 		rules["transform/syntax/"+syntax+"/target/go"] = []string{"contracts/generation/go", "transform/syntax/shared/target/go", "internal/" + syntax, "check/syntax/" + syntax + "/provider/go", "syntax/" + syntax + "/go", "trees/ast/go", "trees/representation/go"}
 		// These are supplied Horos integrations. The shared composer, source
 		// reader, target backends and thin transformer factories cannot import them.
-		rules["transform/syntax/horos-to-"+syntax+"/mapping/go"] = []string{"contracts/generation/go", "transform/syntax/horos/mapping/go", "transform/syntax/horos/source/go", "transform/syntax/shared/target/go", "transform/syntax/" + syntax + "/target/go", "syntax/horos/go", "syntax/" + syntax + "/go", "trees/ast/go"}
+		rules["transform/syntax/horos-to-"+syntax+"/mapping/go"] = []string{"contracts/generation/go", "syntax/horos/go", "syntax/" + syntax + "/go", "transform/syntax/horos/source/go", "transform/syntax/horos/mapping/go", "transform/syntax/" + syntax + "/model/go", "trees/ast/go", "trees/representation/go"}
 	}
 	// The Files dimension has explicit stage paths and a separate sealed carrier.
 	rules["files/go"] = []string{"trees/ast/go"}
@@ -234,6 +234,12 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["resolve/files/golang/provider/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "semantics/go", "semantics/golang/go", "syntax/golang/go"}
 	rules["analyze/files/golang/provider/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "resolve/files/golang/provider/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/representation/go"}
 	rules["internal/typescriptimports"] = []string{"files/go", "internal/typescript", "syntax/typescript/go", "trees/ast/go"}
+	for _, syntax := range []string{"typescript", "golang", "rust", "cpp"} {
+		rules["transform/syntax/"+syntax+"/model/go"] = []string{"contracts/generation/go", "syntax/" + syntax + "/go"}
+		rules["transform/syntax/"+syntax+"/target/go"] = append(rules["transform/syntax/"+syntax+"/target/go"], "transform/syntax/"+syntax+"/model/go")
+	}
+	rules["transform/syntax/shared/target/go"] = append(rules["transform/syntax/shared/target/go"], "semantics/go")
+
 	rules["transform/syntax/typescript/target/go"] = append(rules["transform/syntax/typescript/target/go"], "transform/syntax/typescript/symbol/go")
 	rules["format/files/typescript/provider/go"] = []string{"contracts/analysis/go", "contracts/check/go", "contracts/format/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go", "files/go", "internal/typescriptimports", "semantics/go", "semantics/typescript/go", "source/go", "syntax/typescript/go", "trees/ast/go", "trees/cst/go", "trees/representation/go"}
 	rules["contracts/generation/go"] = append(rules["contracts/generation/go"], "contracts/check/go", "semantics/go")

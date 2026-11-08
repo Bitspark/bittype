@@ -1,12 +1,12 @@
 package integration_test
 
 import (
-	analyzegolang "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
-	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
-	resolvegolang "github.com/Bitspark/bittype/resolve/files/golang/provider/go"
-
 	"context"
+	"testing"
+
+	analyzegolang "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
 	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
+	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
@@ -15,15 +15,15 @@ import (
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
-	target "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
-	generate "github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/go"
-	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
-	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
-
+	resolvegolang "github.com/Bitspark/bittype/resolve/files/golang/provider/go"
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	hs "github.com/Bitspark/bittype/syntax/horos/go"
+	target "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
+	generate "github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/go"
+	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
+	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -35,7 +35,6 @@ import (
 	"github.com/Bitspark/logos-contract/contract/go/typed"
 	core "github.com/bitspark/ontos/core/go"
 	data "github.com/bitspark/ontos/data/go"
-	"testing"
 )
 
 type syntaxProvider[L any] interface {
@@ -210,7 +209,7 @@ func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	var registry c.Registry
-	request, err := genfixture.Request(&registry, transform.Input{Source: s.Snapshot(), Evidence: []semantic.Result{evidence}}, to, "generated", target.Provider[hs.Language]{Package: "example"}, generate.Providers(rules.RepresentationProfile)...)
+	request, err := genfixture.Request(&registry, transform.Input{Source: s.Snapshot(), Evidence: []semantic.Result{evidence}}, to, "generated", target.Provider{Package: "example"}, generate.Libraries(rules.RepresentationProfile)...)
 	if err != nil {
 		t.Fatal(err)
 	}
