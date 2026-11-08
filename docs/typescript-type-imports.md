@@ -4,13 +4,18 @@
 
 ## From generation to files
 
-1. The library calls the TypeScript builder’s `PackageType` with the public module, export and represented arguments. The builder records emitted occurrences of that symbol. Local uses carry references to their declaration or binder.
+1. The library supplies a declarative external-type expression with the public module, export and mapped arguments. The native target constructs the reference and records its external occurrence. Local uses retain their intended declaration or binder. No mapping receives an AST builder.
 2. `Engine.Generate` returns a `generation.Output`. Its syntax snapshot, exposed sites and external uses belong to one run. The consumer supplies one placement and configures the target dependency environment.
 3. Files chooses local names and imports, applies the requested visibility, and captures the organized units. It verifies the compiler’s binding at each relocated use and the module’s named exports before publishing `Source[TypeScript]`.
 
 ```go
-return builder.PackageType("@bitspark/cell", "Cell", []generation.Fragment[typescript.Language]{arg}, origin)
+// Mapping expression excerpt: model is transform/syntax/typescript/model/go.
+return model.External("@bitspark/cell", "Cell", arg)
 ```
+
+The [complete consumer walkthrough](page-cell-example.md) links the executable
+fixture, exact compiler setup, registration and both placements. The
+[other native placement proposals](native-file-placement.md) have separate status.
 
 ## Consumer API
 

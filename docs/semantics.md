@@ -174,14 +174,16 @@ people.PeoplePage = pagination.Page<people.Person>
 ```
 
 Keep distinct entities for both modules, Page, Page's T, Person and PeoplePage.
-PeoplePage's body is an application targeting Page. Its argument is itself the
-checked zero-argument application of Person. The T in Page's list operand is a
+PeoplePage's body is an application with a Reference to Page as its callee.
+Its argument is a Reference to Person. The T in Page's list operand is a
 Reference to Page's parameter entity. For `Outer<T> = Page<T>`, the argument
 references Outer's T while the application binds Page's T; equal spelling does
 not merge the binders.
 
 The application remains inspectable without expansion. Horos's separate
-`Specialize` operation can produce a ground descriptor on explicit request.
+`Program.Value`/`Apply` operations obtain and apply Program-owned values;
+`Program.GroundDescriptor` requests ground descriptor extraction explicitly.
+The [Horos API guide](horos.md) describes this boundary.
 Analysis does not automatically specialize, choose native representations, or
 generate runtime behavior.
 
@@ -193,7 +195,10 @@ publication and caller mutation of an accessor result cannot change the model.
 Producers must not mutate construction storage concurrently with capture.
 
 Validation checks IDs, term variants, unique occurrence associations, parameter
-ownership, effective arity, sites and configured record/edge/byte/depth budgets.
+ownership, sites and configured record/edge/byte/depth budgets. Applicability,
+arity and saturation belong to the language judgment, not graph admission.
+`DirectParameterBindings` is a structural query for direct applications; a
+returned pairing is not a proof of those judgments.
 Term containment through arguments and operands must be a DAG. Entity references
 and declaration dependencies may cycle; the core imposes no universal semantic
 recursion prohibition. A provider may impose its own language's stricter rules.

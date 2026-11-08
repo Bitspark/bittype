@@ -1,5 +1,9 @@
 # Research: optional Wire value and type extensions without losing the existing design
 
+> Historical consultation and dated evaluation. See the [research map](README.md)
+> for current contracts and subsequent decisions; original advice/submissions
+> retain their inspected baseline.
+
 **ID:** 0003
 **Date:** 3 November 2026
 **Status:** applied

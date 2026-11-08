@@ -138,13 +138,13 @@ same dependency level. The package boundaries are:
 | Native syntax | Carriers and identity; no implementation stage or other language |
 | Native checker | Own syntax, shared checking mechanics and own lexical helpers |
 | Native parser/formatter | Own syntax/checker and appropriate shared mechanics; neither imports the other |
-| Native provider | Own syntax and stages plus the shared printer; composition only |
+| Native stage provider | Own stage implementation and identity; independent parse/check/format/resolve/analyze contracts |
 | Horos syntax | Generic AST/CST and identity; no semantic-model imports |
 | Horos checker | Own syntax and generic structural/grammar checks; no semantic resolution |
 | Horos resolver | Own syntax, private projection/correspondence helper, Horos Go model and Ontos values/codec |
 | Horos analyzer | Own syntax, Horos resolver contract and shared semantic evidence; no direct external model imports |
 | Horos parser/formatter | Own syntax/checker, private spelling and canonical-value helpers, Ontos values; no semantic resolution |
-| Horos provider | Own text/checker/resolver/analyzer stages and shared printer; composition only |
+| Horos Files composition | Explicit text/checker/resolver/analyzer collaborators and shared contracts; no implicit stage registration |
 | Horos module command | Existing Horos parser, private module lowering and Ontos encoder; no semantic resolution or prelude-specific logic |
 | Capability extraction contract | Tooling-only selectors, captured source/fact queries and fixed structural records; no runtime provider or report destination authority |
 | Capability report host | Selected-module source discovery, annotations, validated association and rendering; depends on extraction/observation contracts, never concrete extractors |
@@ -183,7 +183,7 @@ language or a stage. This keeps the rule enforceable through indirect imports.
 ## Enforced consistency
 
 The [architecture checks](integration/go/architecture_test.go) discover the
-union of language directories across syntax, provider, Syntax stages and Files semantic stages
+union of language directories across syntax, Syntax stages and Files semantic stages
 and require each language to have every stage in its tested capability profile.
 The four native languages retain all five native text stages; Horos requires
 the same Syntax stages plus Files resolve/analyze, with explicit qualification.
@@ -191,7 +191,8 @@ Generic carrier check directories
 are excluded explicitly. An orphan parser and an incomplete syntax package both
 fail. The checks also classify every production package and enforce its directed
 dependencies, including private helpers and narrow external-model allowances
-only for the Horos frontend and source-owned transformation reader. Generic carriers,
+for the Horos frontend/text stages, source reader, module encoder and concrete
+verification integrations. The exact package allowances live in the test. Generic carriers,
 contracts, engine and printer must remain independent of Horos/ontos, and native
 syntax/text stages must remain independent of the canonical frontend.
 
@@ -255,7 +256,8 @@ syntax/check/resolve/analyze. Private syntax framing remains in
 `internal/horosmodel`. No `horoswire` stage or compatibility alias remains.
 Bounds are explicit syntax and provider-owned semantic facts, not kernel kinds.
 
-Model dependency allowances cover only this frontend and its private bridge.
+Model dependency allowances cover the concrete owners listed above, including
+Horos source reading and verification. They do not extend to agnostic contracts.
 Architecture checks preserve the agnostic and native-stage boundaries. Native
 pagination mappings use `transform/syntax/horos-to-<native>/mapping/go`.
 Template lifting and its exclusive dependency allowances remain removed.
@@ -271,21 +273,21 @@ Bittype stage, engine edge per contract or central registration entry. The first
 `contracts/generation/go`. [Automatic composition](docs/generation-composition.md)
 now drives all four native generators. The private pagination Dialects are deleted.
 
-The current contract package owns the minimal explicitly driven runner, as the
-semantic contract owns its guarded operation. The automatic composer and concrete
-collaborators implement the stage-first layout:
+The contract package owns native descriptions, scoped planning and the sealed
+plan/output. The registry and concrete integrations follow the stage-first layout:
 
 ```text
-contracts/generation/go/                  implemented contracts and explicit runner
-transform/syntax/shared/generation/go/      registry, checked adapter and scheduling
+contracts/generation/go/                  descriptions, invariant planner and output
+transform/syntax/shared/generation/go/      registry, selection and composition
 transform/syntax/horos/source/go/           receipt-backed source reader
-transform/syntax/horos/mapping/go/          structural policy and association rules
+transform/syntax/horos/mapping/go/          patterns and declaration recipes
 transform/syntax/shared/target/go/          shared native construction and scoped symbol storage
-transform/syntax/<native>/target/go/        native assembly and grammar
+transform/syntax/<native>/model/go/         intended native forms
+transform/syntax/<native>/target/go/        native intent to AST construction
 transform/syntax/horos-to-<native>/mapping/go/  independently selected mappings
 ```
 
-Consumers select source, target, mappings, declaration sites and output. The engine opens the providers and runs the composition. The [construction SPI](docs/kernel-composition.md) gives the public interfaces and a Horos to TypeScript example.
+Consumers register source, target and mapping libraries, then request source roots and an output identity. The kernel plans fixed native intent; Run constructs ASTs without invoking a mapping. The [construction SPI](docs/kernel-composition.md) gives the public interfaces and a Horos to TypeScript example.
 
 The [Syntax and Files design](docs/source.md) is implemented with
 `Syntax : CST : AST` and `Files : Source : Semantics`. Both dimension names are

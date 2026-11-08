@@ -1,5 +1,9 @@
 # Research: Compositional generic generation without semantic kernel cases
 
+> Historical consultation and dated evaluation. See the [research map](README.md)
+> for current contracts and subsequent decisions; original advice/submissions
+> retain their inspected baseline.
+
 **ID:** 0008
 **Date:** 5 November 2026
 **Status:** applied (documentation only; implementation deferred)

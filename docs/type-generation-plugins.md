@@ -59,11 +59,11 @@ handle. Neither choice changes the canonical Function declaration.
 | Component | Responsibility |
 | --- | --- |
 | Source adapter | Interpret admitted source semantics, preserve binders, and supply exact mapping selectors. |
-| Type-owned plugin | Choose and construct the native representation of its builtin or named declaration. Compose selected mappings of child types. |
+| Type-owned plugin | Describe the native representation of its builtin or named declaration and the child mapping demands. The kernel composes the descriptions. |
 | Target-language tooling | The generation target constructs native declarations and bound type uses. The [Files formatter](source.md#from-generated-declarations-to-files) realizes imports and exports under the consumer's placement. Neither needs a canonical type catalogue. |
 | Shared generation composition | Select configured mappings and coordinate invocation and ownership. It interprets neither source descriptors nor native types. |
 | Consumer | Supply dependencies and select defaults, library plugins, explicit overrides and representation profiles. |
-| Existing engine | Register the resulting ASTTransformer as one directed language edge. It never registers individual type plugins. |
+| Engine and generation registry | Register source, target and mapping libraries separately; plan requested roots and construct the selected native program. These registrations create no ASTTransformer edge. |
 
 Builtins are ordinary supplied mappings. Bittype's Horos integration packages provide
 text, boolean, list and record mappings; it is outside the language-neutral
@@ -178,30 +178,33 @@ Choosing direct bounds or witnesses is part of the explicitly selected
 representation profile and mapping configuration. It is not another kind-based
 dispatch pass, and failure to enforce a bound cannot select a weaker encoding.
 
-The kernel assembles exact bindings from supplied providers and selected
-libraries, then supplies a separate override set:
+The consumer registers mapping libraries; planning selects compatible offers
+for the requested endpoints/profile and demanded occurrences. Registration order
+is never a preference. More than one applicable demanded offer is ambiguous.
+An exact use binding takes precedence over a structural declaration recipe; a
+failure of that selected binding is final, with no structural fallback.
 
-1. Reject duplicate selectors in the assembled bindings and in the override set.
-2. Each override must name an existing exact binding and its expected BindingID.
-   A missing binding or mismatched ID is an error. Overrides do not form an
-   order-dependent replacement chain.
-3. An exact declaration binding takes precedence over the separately configured
-   structural declaration policy. Adding such a binding is how a consumer selects
-   a custom representation for an otherwise structural declaration; it does not
-   replace a virtual entry in the exact table.
-4. At use time, select the exact binding if present, otherwise the structural
-   policy for an eligible ordinary declaration, otherwise fail.
-5. A selected plugin's failure is final. Unsupported input or missing evidence
-   never causes a retry with a replaced mapping or the structural policy.
+An explicit replacement names both actual registered offers. These are the
+implemented composition contracts (the full registry owns MappingRef issuance):
 
-BindingID identifies a particular configured mapping, including its revision and
-options. PluginID identifies its implementation for diagnostics; it is too weak a
-replacement guard. Composition supplies IDs explicitly, without fingerprinting
-Go closures. Changing a mapping's configuration requires a new BindingID.
-Mapping IDs are unique in the effective configuration; one structural
-mapping can serve many declarations, whose identities keep their resources apart.
-Configuration is captured per transformer and invocation state is separate.
-Recursive child mapping uses the same effective configuration.
+```go
+type BindingRef struct { Provider MappingRef; ID string }
+type Replacement struct {
+    Selector generation.Selector
+    Expected, With BindingRef
+}
+func (r *Registry) Replace(Replacement) error
+```
+
+The application supplies the replacement; the registry authenticates its handles
+and the planner checks it against applicable offers. Both bindings retain the
+same exact selector. Replacements cannot form an order-dependent chain.
+
+A binding's ID is local to its mapping registration. It is not a semantic proof,
+a globally unique implementation revision or a configuration digest. There is no
+PluginID API. The registry freezes the supplied descriptions; a plan retains its
+selected configuration independently of subsequent registrations. Recursive
+child demands use that same selection. See the [implemented selection contract](kernel-composition.md#registration-and-request).
 
 Exact identity controls selection, not source equality. If the source language
 makes an alias interchangeable with its target, choosing incompatible native
@@ -558,7 +561,7 @@ fails; extra header slots are not an implicit solution.
 An override does not change the source fact `S : K`, but can change the selected
 association `S -> N`. Source membership may remain usable; generated evidence or
 a native bound tied to the old N must not be carried over as though the new
-representation had already been justified. A changed BindingID distinguishes
+representation had already been justified. A changed binding registration distinguishes
 configuration; it is not proof that the replacement preserves the requested
 guarantee. Derive compatible output under the new configuration or reject it.
 

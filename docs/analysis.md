@@ -81,7 +81,7 @@ names and behavior do not become kernel kinds or dispatch cases.
 
 ### 1. Supply the AST and its context
 
-The [canonical pagination example](model.md#pagination-first) has this meaning:
+The [canonical pagination example](model.md#pagination-and-general-constraints) has this meaning:
 
 ```text
 module example.pagination
@@ -97,8 +97,8 @@ This is explanatory notation, not implemented Horos source syntax. The analyzer
 receives an AST, not this text. Its Program node contains both modules and has a
 root reference selecting `example.people`. Within the tree, Page has a parameter
 declaration; its body's parameter use stores slot 0. PeoplePage's body is an
-imported Application of Page whose argument is a local, zero-argument Application
-of Person. Descriptor nodes retain record/list structure and their operands.
+Application whose callee is an imported Reference to Page and whose argument
+is a local Reference to Person. Descriptor nodes retain record/list structure and their operands.
 
 The application packs this tree with the Horos identity/profile descriptor.
 Packing validates generic carrier structure. Capture invokes the independently
@@ -134,8 +134,8 @@ Person and PeoplePage. The significant term links can be read as follows;
 the notation labels records, rather than specifying a serialization:
 
 ```text
-PeoplePage.Body -> Application(target: Page,
-                              arguments: [Application(target: Person, arguments: [])])
+PeoplePage.Body -> Application(callee: Reference(target: Page),
+                              arguments: [Reference(target: Person)])
 Page.Parameters -> [Page.T]
 Page.Body       -> ProviderExpression(record descriptor, located operands ...)
 items operand  -> ProviderExpression(list-of descriptor,
@@ -147,27 +147,30 @@ encoded descriptor bytes and the operand locations supplied by Horos's model;
 the kernel does not decode records or search literal bytes for possible bindings.
 
 `DirectParameterBindings` pairs Page's parameter list with the application's arguments:
-Page.T binds to the zero-argument Person application. The open Page declaration
+Page.T binds to the Person reference term. The open Page declaration
 is preserved. In `Outer<T> = Page<T>`, Page.T instead binds to a Reference to
 Outer's distinct T entity. Analysis does not expand these declarations. Explicit
-Horos `Specialize` can separately produce a ground descriptor; native generation
+Horos `Program.Value`, `Program.Apply` and `Program.GroundDescriptor` can
+separately obtain and apply values and request ground descriptor extraction; native generation
 and runtime behavior are separate operations.
 
 ### 4. Read coverage before using the model
 
 The application supplies the resolution result and the same snapshot to Analyze.
 Horos analysis consumes that evidence and reuses its model without resolving again.
-On success, `program-validity` reports Complete / Holds. The other four reports
-are Complete / Undetermined: they enumerate declarations, occurrence bindings,
-expressions/applications and application dependencies, without asserting a truth
-verdict. All five are requirements for publishing this profile's model.
+On success, `program-validity` reports Complete / Holds. The other five reports
+are Complete / Undetermined: `declaration-index`, `occurrence-bindings`,
+`applications`, `reference-dependencies` and `type-facts`. All six are
+requirements for publishing this analysis profile's model. Resolution additionally
+requires `reference-resolution`; analysis consumes its receipt rather than
+repeating that operation.
 
 Expected outcomes differ even when the call returns a nil Go error:
 
 | Situation | Validity report | Enumeration reports | Semantics |
 | --- | --- | --- | --- |
 | Valid pagination input, sufficient resources | Complete / Holds | Complete / Undetermined | Available |
-| Page receives the wrong number of arguments | Complete / Rejected | Incomplete / Undetermined | Absent |
+| Page receives more arguments than its constructor admits | Complete / Rejected | Incomplete / Undetermined | Absent |
 | The pinned pagination dependency is missing, or resolution exhausts its budget | Incomplete / Undetermined | Incomplete / Undetermined | Absent |
 | Resolution and annotation checks succeed, but graph export exhausts its budget | Complete / Holds | Incomplete / Undetermined | Absent |
 
@@ -179,22 +182,22 @@ error and no usable result; they do not use the table's diagnostic-result path.
 
 ### 5. Query the published facts
 
-At the current Page application node, the Horos profile exposes two occurrences:
-`pageTarget` uses `resolve.TargetRole()` and `pageExpression` uses
-`resolve.ExpressionRole()`, both with ordinal 0. The following query arguments
+At the Page callee reference, `pageTarget` uses `resolve.TargetRole()`. At
+the containing application, `pageExpression` uses `resolve.ExpressionRole()`.
+Both ordinals are 0, but their AST sites differ. The following query arguments
 are symbolic labels for actual occurrences and IDs in this result:
 
 | Consumer question | Generic model query | Answer for this example |
 | --- | --- | --- |
 | Which declaration does this use denote? | `Resolve(pageTarget)` | Page's entity ID |
 | Which expression was established here? | `TermAt(pageExpression)` | The term ID of the Page application shown above |
-| What fills each generic slot? | `DirectParameterBindings(pageApplicationTermID)` | One pair: Page.T's entity ID and the Person application's term ID |
-| Which declarations does PeoplePage apply? | `DependenciesFrom(peoplePageID, resolve.ApplicationDependency())` | Edges to Page and Person, each with its current application occurrence |
+| What fills each generic slot? | `DirectParameterBindings(pageApplicationTermID)` | One pair: Page.T's entity ID and the Person reference's term ID |
+| Which declarations does PeoplePage reference? | `DependenciesFrom(peoplePageID, resolve.ReferenceDependency())` | Edges to Page and Person, each with its reference occurrence |
 
 `Entity(id)` and `Term(id)` inspect the referenced records. Consumers can also
 enumerate the established occurrences in `Semantics.Data()` instead of constructing
 provider-specific occurrences. A failed lookup means no recorded answer at that
-occurrence; it does not establish that the source is invalid. Application
+occurrence; it does not establish that the source is invalid. Reference
 dependencies are explicit edges, not an inferred import or runtime-effect graph.
 
 These queries need no external Horos model import and do not mutate the AST or

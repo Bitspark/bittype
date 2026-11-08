@@ -16,8 +16,8 @@ contracts, shared semantics, the engine and native syntax stages retain their
 model-independent import boundaries. The native pagination readers consume
 Horos-owned facts under an explicit representation profile.
 
-The [joint verification composition](verification.md#implemented-go-surface)
-imports `github.com/Bitspark/logos-contract/contract/go/typed` directly. Its
+The [joint checker](../verification/logos/go/joint.go) invokes the typed checker;
+Logos-aware verification interpretations and mapping laws also use `github.com/Bitspark/logos-contract/contract/go/typed` directly. Its
 [public source revision](https://github.com/Bitspark/logos-contract/commit/eef2c26467bee408f36a8efee38ad99d89ea5b6b)
 provides the check-only typed foundation. Agnostic association and native
 projection packages have no Logos imports. No hosted service, credential or
@@ -42,6 +42,6 @@ existing owners.
 Existing consumer fixtures use the public declaration API: obtain a Program-owned
 value, apply it to admitted arguments, and materialize its descriptor or request
 ground-descriptor extraction. Package pins describe source dependencies, not
-service deployment state. No validation or provenance workflow is a prerequisite
-under the owner's current delivery rule, and unrun checks are not reported as
-passing.
+service deployment state. No extra administrative validation or provenance workflow is an implicit
+prerequisite. Relevant software tests and typechecking still apply under the
+owner's clarified rule; unrun checks are never reported as passing.

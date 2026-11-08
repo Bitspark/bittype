@@ -207,8 +207,8 @@ binders; display names or equal-looking native layouts are insufficient.
 An override may preserve the source fact `S : K` while changing `S -> N`.
 Evidence and native bounds tied to the old representation cannot simply be
 reused for the new one. The [plugin composition contract](type-generation-plugins.md#overrides-and-external-representations)
-requires a compatible association under the selected configuration; BindingID
-or PluginID alone establishes no semantic guarantee.
+requires a compatible association under the selected configuration; a registry-qualified
+binding reference alone establishes no semantic guarantee.
 
 There are two distinct products:
 
@@ -442,9 +442,9 @@ Its source adapter and type-owned integration mappings now own lowering;
 | `internal/horosmodel/` and Horos Files providers | Expose required Horos-owned contracts, memberships and assumptions through existing semantic terms; add explicit semantic obligations if needed |
 | `transform/syntax/horos/source/go/` | Read the supplied semantic evidence, preserve environments and expose source obligations without choosing native representations |
 | Horos-owned and other type-owned integration mappings | Construct the selected native bounds, witnesses and evidence associations; compose child mappings and reject unsupported encodings |
-| `transform/syntax/shared/generation/go/` | Select configured bindings and coordinate Use/Publish/Define and helper ownership; interpret no Horos kind or canonical type |
+| `transform/syntax/shared/generation/go/` | Select descriptions, compose closed native intent and preserve requested roots/helper ownership; interpret no Horos kind or canonical type |
 | `transform/syntax/<target>/target/go/` | Supply native construction, symbols and assembly; interpret no canonical membership rule |
-| `transform/syntax/shared/generation/go/` | Compose explicitly selected source, target and mapping registrations and construct a request-bound transformer. |
+| `transform/syntax/shared/generation/go/` | Admit independently registered source/target/mapping contributions and plan the requested roots; create no ASTTransformer edge. |
 | `syntax/<target>/go/` and its parse/check/format Syntax stages | Support the native grammatical constructs required by the encoding, without Horos semantics |
 | Shared carriers, semantic kernel, engine and printers | Keep their existing language-agnostic contracts |
 

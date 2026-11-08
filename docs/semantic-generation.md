@@ -122,9 +122,11 @@ Go fields also capitalize their initial letter; TypeScript retains property
 names. Rust and C++ reject keyword field names. Names are not guessed from types.
 
 Each mapping currently produces one declaration tree containing the checked type
-closure. Root declarations keep their exported native names. Imported declarations
+closure. Declarations belonging to the entry module keep their native names (subject to
+the naming rules above). Declarations from imported modules
 use `M<first-16-hex-of-module-pin>_<Name>`, with collisions rejected. This
-product spelling is not semantic identity. The configured output tree ID and Go package
+product spelling is not semantic identity. Here entry-module membership is
+distinct from a consumer explicitly requesting a declaration as a public root. The configured output tree ID and Go package
 or C++ namespace remain separate from canonical module identity. This mapping
 performs no implicit filesystem or network IO.
 

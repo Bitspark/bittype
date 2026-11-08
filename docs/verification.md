@@ -8,7 +8,7 @@ Horos/Go composition. The walkthroughs below specify its claim semantics;
 [integration tests](../verification/integration/go/joint_test.go) exercise actual
 captured inputs and the landed Logos checker. No runtime binding is added.
 
-## Known architectural violation
+## Corrected architectural violation
 
 The 6 November review found that adding a mapping required editing the shared
 matcher, law table and claim carrier. The corrected Horos/Go path uses the
@@ -73,6 +73,93 @@ and imports it as a checked definition under the new receiver’s policy.
 [Joint checker](../verification/logos/go/joint.go) ·
 [Corrected case and scope](architecture-cases/0001-verification-composition.md#correction-and-qualification-status).
 
+### Contribution contracts
+
+These are implemented excerpts, not a new universal type algebra. The first
+contracts belong to `verification/files/horos-to-go/go`. A mapping library
+supplies Rule and Law; the Horos/Go composer invokes Project recursively and
+constructs candidate evidence through Law. The receiver separately admits each
+law's dependency through Logos policy.
+
+```go
+type Rule struct {
+    Key        semantics.Key
+    Dependency string
+    Law        Law
+    Project    func(Subject) (children []Subject, applies bool, err error)
+}
+func Select(rules ...Rule) (Mappings, error)
+
+type Constructors struct {
+    Source, Target string
+    Arity          int
+}
+type Evidence struct{ Source, Target, Proof typed.Expr }
+type Law interface {
+    Signature(Constructors) typed.Expr
+    Apply(assumption typed.Expr, children []Evidence) typed.Expr
+}
+```
+
+Subject is an opaque, composition-issued captured pair. Its implemented accessor
+and projection signatures are below. Here decl is Horos declarations, n is
+Bittype's Go semantic model, and h is the Horos verification source projection.
+The mapping calls these methods; it cannot construct a foreign child occurrence
+by supplying lookalike source/native values.
+
+```go
+type FieldBinding struct{ Source, Target string }
+func (p Subject) Source() *decl.Expression
+func (p Subject) Target() n.Type
+func (p Subject) Optional() bool
+func (p Subject) Declaration() h.Declaration
+func (p Subject) Bindings() []FieldBinding
+func (p Subject) Operand(index int, target n.Type) (Subject, error)
+func (p Subject) Payload(target n.Type) (Subject, error)
+func (p Subject) Field(source, target string) (Subject, error)
+```
+
+The shared Logos integration has a separate boundary. The question-family owner
+supplies an interpretation over its own subject type S. The consumer selects that
+exact interpretation's Authority when constructing Composition. Ask invokes the
+interpretation once and freezes the resulting Problem before any proof candidate
+is supplied. Prepare admits the original participant captures and origins; Check
+invokes Logos. Implemented signatures from `verification/logos/go`:
+
+```go
+type Problem struct {
+    Input        association.Input
+    Requirements []association.Requirement
+    Statement    typed.Statement
+    Origins      []Origin
+}
+func Interpret[S any](key semantics.Key, describe func(S) (Problem, error)) Interpretation[S]
+func (i Interpretation[S]) Authority() Authority
+func (i Interpretation[S]) Ask(subject S) (Claim, error)
+func New(policy typed.Policy, limits Limits, selected ...Authority) (Composition, error)
+func (c Composition) Prepare(ctx context.Context, input Claim) (Request, error)
+func (c Composition) Check(ctx context.Context, r Request, candidate typed.Expr) (Result, error)
+```
+
+For Page, the record rule projects the actual source/native field pairs. The
+list rule projects the items element; the presence rule projects the optional
+payload. An original parameter occurrence reaches its established native binder.
+Their laws build a conditional representation argument under the original source
+membership assumption. Person supplies an independently admitted argument;
+nested reuse imports the exact checked theorem and is checked again. The
+[walkthrough](#page-walkthrough) explains those statements. The independent
+[reversed Pair contribution](../verification/integration/go/testdata/pair/pair.go)
+uses the same public contracts with a different child/proof order.
+
+Generation mappings and verification rules are separately supplied today. A
+`MappingRef`, matching spelling, or generation profile does not select a Law or
+prove it justifies emitted code. Verification inspects the actual captures,
+selected helper identities and scoped correspondence. Changed mappings can
+require different rules and new preparation. Automatic association of arbitrary
+generation descriptions with justified verification laws is not implemented;
+missing coverage must remain visible. Generation can still produce types without
+making that stronger verification claim.
+
 ## Existing contracts and the new boundary
 
 Reuse these existing types and operations:
@@ -100,8 +187,8 @@ separate questions; there is no implicit all-obligations success flag.
 The following is the complete logical construction record. These are contract
 fields for the concrete Logos composition, not a serialization schema or a new
 generic type-system algebra. Only the agnostic participant/evidence/site
-association is a candidate shared contract; the logical fields stay in the
-concrete integration.
+association is the implemented shared contract in `contracts/verification/go`;
+logical fields stay in `verification/logos/go` and the selected interpretations.
 
 | Field | Required content and authority |
 | --- | --- |

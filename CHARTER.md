@@ -88,7 +88,9 @@ Generic AST/CST carriers,
 typed views and pipeline contracts, four native type vocabularies, native parsers,
 AST-to-CST formatters, syntax checks and the shared CST printer are implemented.
 The [native text design](docs/parsing-formatting.md) defines their ownership and
-qualification limits. Specialized providers all extend language.Provider.
+qualification limits. Parse/check/format/print and semantic-stage contracts extend language.Provider.
+Generation contracts have separately registered endpoints; they are not a
+single-language text-stage interface.
 
 The ASTTransformer boundary and syntax engine now provide checked heterogeneous
 registration, route planning/execution and native text composition. Pagination AST-to-AST mappings are implemented; public builders and application CLI remain deferred. Native parsing does not make a target language the
@@ -113,14 +115,17 @@ This scope excludes application-value validators, serialization, Wire adapters,
 RPC/streaming implementations and service migrations. The unified declaration
 cut includes maintained frontend consumers and the required public Horos release.
 Function, Stream, Cell and future behavioral contracts remain ordinary library
-declarations with no privileged cases in shared infrastructure. Only the Horos
-frontend depends on the Horos Go declaration model and Ontos values. Architecture
-checks enforce that narrow boundary; generic carriers, contracts, engine, printer
-and native text stages have no external Horos/Ontos imports. The engine depends
+declarations with no privileged cases in shared infrastructure. Concrete Horos model dependencies belong to the Horos frontend and its private
+helpers, its text/encoding tools, source-specific generation integration and
+Horos verification projections/composition. Logos imports belong to explicitly
+Logos-aware verification packages. The [dependency rules](LAYOUT.md#dependency-direction)
+and [model dependencies](docs/dependencies.md) describe those owners. Generic
+carriers, contracts, engine, printer and native syntax stages have no external
+Horos/Ontos imports. The engine depends
 on the generic analysis contract, whose graph does not encode language rules.
 
-The one Horos frontend and its private helpers have the only concrete model
-import allowances. Removing the second frontend changes no agnostic SPI.
+The single Horos frontend serves both data and optional Wire declarations.
+Neither declaration category creates a second language or an agnostic model rule.
 
 ## Versioning and evidence
 
@@ -138,9 +143,9 @@ content before implementing an encoding or publishing digests. Horos's specifica
 specifies document pins separately from semantic equivalence; bittype consumes
 that specification rather than inventing one.
 
-A generation manifest records the input revision, target configuration and
-generator version. Once an identity encoding exists, it records that version
-too; no placeholder digest stands in for unresolved declarations.
+Generation retains the capture and binding association required by its public
+contracts. It emits no generation manifest, provenance ledger or additional
+identity encoding. Such artifacts are not implicit delivery requirements.
 
 Independent semantic examples must cover generic scope/application, recursion,
 absence and null, numeric domains and invalid input. Each language's output
@@ -156,4 +161,6 @@ callables, adapters or migration gates to this milestone.
 
 The unified [Horos frontend](docs/horos.md) implements the existing stage
 interfaces. Template lifting and separate profiles are removed without aliases.
-Canonical semantics stay in Horos; no native generator or runtime binding is added.
+That frontend replacement added no native generator or runtime binding. Native
+generation subsequently landed through the declarative SPI described above;
+canonical semantics remain Horos-owned and runtime bindings remain outside scope.

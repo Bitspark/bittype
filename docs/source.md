@@ -70,7 +70,9 @@ another type of the same name.
 If it cannot express the placement with the supplied dependencies and visibility,
 it must fail without returning a partial `Source`. Native scope matters: two
 files in one Go package need no import between them, while two Rust modules can
-occupy one file. A file boundary alone is never an import rule.
+occupy one file. A file boundary alone is never an import rule. The [native placement proposal](native-file-placement.md)
+walks Page/Cell through Go, Rust and C++, including same-package and
+same-file/different-scope cases; those Files implementations remain absent.
 
 The distinction is about module visibility. A member's accessibility, when it
 is part of the chosen type representation, still belongs to the declaration.
@@ -381,10 +383,10 @@ the engine never discovers an analyzer. No unit is silently dropped.
 Generation returns a checked snapshot and binding intent. TypeScript Files takes that output and establishes native semantics for the organized files. Syntax formatting and printing are also available for individual trees.
 
 The [stage-first layout](../LAYOUT.md) uses explicit dimensions:
-`parse/syntax/<language>/go` and `parse/files/<language>/go`, likewise for
+`parse/syntax/<language>/provider/go` and `parse/files/<language>/provider/go`, likewise for
 formatting. Shared printers live at `print/syntax/shared/provider/go` and `print/files/shared/provider/go`.
-Files resolution and analysis live at `resolve/files/<language>/go` and
-`analyze/files/<language>/go`. Only implemented capabilities have directories.
+Files resolution and analysis live at `resolve/files/<language>/provider/go` and
+`analyze/files/<language>/provider/go`. Only implemented capabilities have directories.
 Files depends on AST addresses; Semantics remains independent of Files.
 Source depends on the semantic capture/result contract to retain receipts.
 Semantic capture may depend on Files but never Source. Tree representation admits

@@ -469,9 +469,11 @@ Script files share global scope; exported declarations give each file module
 scope. Binders and declarations with the same spelling remain distinct symbols.
 Named recursive types retain entity/fact links without cyclic term containment.
 
-**Exclusions / limits:** Imports and qualified names, callable/method/index signatures, indexed access,
+**Exclusions / limits:** Without the named-import configuration, imports and external package types are
+unsupported. With it, named local/package imports and their supplied declarations
+are admitted as described above. Qualified names, callable/method/index signatures, indexed access,
 `keyof`, `unique`, `this`, generic defaults, interface declaration merging and
-external type references other than compiler-recognized array constructors remain
+external types outside that explicit import environment or compiler-recognized array constructors remain
 outside this first profile. Standard arrays and readonly arrays are supported;
 mapped utility types such as `Readonly<T>` are not. Their synthesized modifiers
 need a separate extension of native fact export. Authored conditional and mapped

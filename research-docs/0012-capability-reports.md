@@ -1,5 +1,9 @@
 # Research: Truthful capability reports from owned definitions and tests
 
+> Historical consultation and dated evaluation. See the [research map](README.md)
+> for current contracts and subsequent decisions; original advice/submissions
+> retain their inspected baseline.
+
 **ID:** 0012
 **Date:** 6 November 2026
 **Status:** applied

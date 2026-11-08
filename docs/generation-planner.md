@@ -249,7 +249,7 @@ identity of its owned declaration, lexical parameter or external public symbol.
 A change of placement uses the same plan. Selecting a different external type
 for Cell changes a mapping decision and requires a new plan.
 
-The proposed handoff is the [complete output of `Run`](#the-result-of-run).
+The implemented TypeScript handoff is the [complete output of `Run`](#the-result-of-run).
 Files takes the intended destinations and requested publications from that
 output. Placement and the selected dependencies come from the consumer.
 The target resolver and analyzer establish the actual destinations for each

@@ -286,9 +286,10 @@ term algebra, generic theorem checker, foundation registry or automatic checker
 discovery. No separate public checker-provider interface is required merely to
 call `Check`; any shared SPI is promoted only for a demonstrated association or
 composition requirement. The [joint contract](verification.md) now defines the
-private composition's construction record and prepared request/result behavior;
-promotion of a shared public association surface awaits implementation and
-qualification. Logos-specific logical types remain in the concrete integration.
+implemented construction record and prepared request/result behavior.
+`contracts/verification/go` now owns the public agnostic association, and
+`verification/logos/go` owns Logos-specific interpretation and checking.
+Language/mapping contributions remain in their owning integrations.
 
 The existing [semantic request/result](../contracts/semantic/go/request.go)
 contract seals a result against its capture. `Result.Valid()` means the result

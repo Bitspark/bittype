@@ -7,7 +7,11 @@ implicit task or delivery prerequisites. Deletion means deletion within the
 authorized scope; do not replace it with retained copies or archives. Do not claim
 unperformed checks passed. This owner rule supersedes conflicting older delivery
 instructions in this file. It does not remove the requested semantic-analysis
-behavior of the library.
+behavior of the library. The owner clarified that ordinary automated software
+tests and typechecking remain required for affected changes; a build alone is
+not a test result. Use the relevant existing checks and repository resource
+rules. Documentation changes require local-link and whitespace checks under
+the platform contribution instructions, not a new validation workflow.
 
 ## Architectural correctness: standing owner rule, 6 November 2026
 

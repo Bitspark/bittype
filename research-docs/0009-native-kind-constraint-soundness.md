@@ -1,5 +1,9 @@
 # Research: Native kind constraint soundness across representations and packages
 
+> Historical consultation and dated evaluation. See the [research map](README.md)
+> for current contracts and subsequent decisions; original advice/submissions
+> retain their inspected baseline.
+
 **ID:** 0009
 **Date:** 5 November 2026
 **Status:** applied (documentation only; implementation deferred)

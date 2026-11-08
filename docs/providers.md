@@ -102,8 +102,9 @@ including ordinary parameterized and recursive kind definitions. Kind meanings
 remain Horos-owned; the generic semantic graph carries their facts.
 Wire expressions do not create a second language or registered profile.
 
-ASTTransformer relates two languages and consumes explicit semantic input.
-The following table derives direct edges from their implemented factories.
+The following table discovers both ASTTransformer factories and declarative
+mapping libraries from their actual Go contracts. Mapping entries are selectable
+descriptions, not registered transformation edges.
 The [pagination profile](semantic-generation.md) explains the native representation
 scope and its semantic requirements.
 
@@ -119,18 +120,21 @@ scope and its semantic requirements.
 
 <!-- generated:transformers:end -->
 
-Transformer cells show direct implemented edges, not paths inferred by the engine.
+Factory entries describe direct ASTTransformer candidates; mapping entries
+describe supplied MappingLibrary implementations. Neither establishes that a
+particular request succeeds, and mappings create no ASTTransformer route.
 They do not imply support for every representation profile or every input type.
 
-Reverse and same-language cells require actual transformer implementations; a
+Reverse and same-language cells require actual mapping/transformer implementations; a
 checked snapshot alone is not a generation or canonicalization mapping.
 
 The [Syntax and Files design](source.md) is implemented: the same generic role
 interfaces serve Syntax/CST/AST and Files/Source/Semantics. Methods take a context.
 The engine registers Syntax and Files capabilities independently. Horos Files
-compositions are constructed explicitly with `provider/horos.NewFilesParser`,
-`NewFilesFormatter` and `NewFilesPrinter`; they do not install engine capabilities.
-Go independently supplies `NewFilesResolver` and `NewFilesAnalyzer` under its
+parser/formatter packages each expose `New` with explicit collaborators. The
+shared Files printer is constructed independently and adapted through
+`contracts/print/go.NewFilesPrinter`; none installs engine capabilities.
+Go independently supplies resolution and analysis under its
 [bounded native profile](native-semantics.md); this does not add Files
 parsing or formatting. Files parsing and formatting compositions require their language's semantic
 collaborators. Missing collaborators do not disable Files printing: the generic

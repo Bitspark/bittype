@@ -173,3 +173,37 @@ the former under the actual target environment. Neither the spelling nor the
 absence of an import establishes that the two agree. See the
 [planner's pagination walkthrough](generation-planner.md#pagination-on-read-and-write)
 and the [Files placement example](source.md#from-generated-declarations-to-files).
+
+## Correspondence with the current implementation
+
+The contexts above are a conceptual model, not five implemented context classes.
+These current carriers implement parts of that model. Their identities and
+relations must not be collapsed into filenames or same-spelled identifiers.
+
+| Conceptual context/relation | Current carrier or contract | Established meaning and remaining limit |
+| --- | --- | --- |
+| Artifacts and supplied dependency environment | Application configuration and `files.Files` | Files carries selected paths/text; package-registry discovery and dependency fetching remain application-owned. |
+| Text document and positions | `parse.Input`, `ast.SourceID`, source spans | Identifies supplied text and positions; a filename is not a semantic declaration identity. |
+| Concrete tree context | `cst.CST[L]` with its retained abstract tree | Owns tokens/trivia and concrete/abstract links. Parsing retains source spelling; formatting selects new spelling. |
+| Abstract tree collection | `ast.AST[L]`, `ast.Set[L]`, `representation.ASTSet` | Owns nodes and typed references. `ast.NodeRef` includes tree identity and local address; packing establishes carrier structure, not binding truth. |
+| Captured program context | `semantic.Snapshot` | Retains the admitted tree collection, entry, language/profile and optional Files context. It is not itself a successful semantic judgment. |
+| Established declaration semantics | `Semantics[L]` plus `semantic.Result` | Stores entities, terms, facts and bindings; result receipts associate coverage and judgments with the exact capture/settings. Language rules establish their meaning. |
+| Concrete/abstract relation | CST abstract links and node origins | Structural correspondence and positions; arbitrary origins are not proof of semantic equivalence. Native compiler bridges check their required source/AST correspondence. |
+| AST occurrence to semantic entity/term | Occurrence bindings and `TermAt`/`Resolve` queries | Only recorded answers are established. A missing required binding is unresolved/unsupported, not an intentional absent counterpart. |
+| Source semantics to intended native declarations | `generation.GenerationPlan` and closed `generation.Program[L]` | Selected mappings and scoped substitutions fix native intent. This is not an analyzed target `Semantics[L]`. Common source navigation still needs [GEN-01](generation-gaps.md#gen-01). |
+| Intended declaration/use to emitted syntax | `generation.Output` snapshot, exposed sites and external occurrences | Construction records actual sites. These are intention associations and checked syntax, not a cross-language correctness proof. |
+| Generated syntax to placed native program | TypeScript generated Files formatting and fresh native evidence | Rebuilds imports/exports under placement and checks destinations and exposure. Other native Files stages remain [proposed](native-file-placement.md). |
+| Semantic program and units to concrete output | `source.Source[L]`, its units, relations and receipts | Associates organization, CSTs and semantics; printing emits Files without choosing another scope or import policy. |
+| Source/native claim association | `contracts/verification/go` and explicit Logos interpretation | Relates actual captures and sites under receiver requirements. Optional verification is distinct from target analysis and from generation. |
+
+The language kernels invoke the relevant contracts at each boundary: parse/check
+for syntax, resolution/analysis for meaning, declarative mapping for native intent,
+Target.Build for syntax construction, and Files formatting for organization.
+Their exact interfaces and suppliers are in [text stages](parsing-formatting.md),
+[semantic stages](analysis.md), [generation SPI](generation-spi.md),
+[Files handoff](typescript-type-imports.md) and [verification](verification.md#contribution-contracts).
+There is no implemented universal cross-level relation registry or generic
+"previous context" pointer. Cardinality and authority come from each operation's
+contract. The absent/unresolved distinction in the tables remains a requirement
+when extending these contracts, not a claim that one common relation-status enum
+already exists.
