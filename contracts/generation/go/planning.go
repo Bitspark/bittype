@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/Bitspark/bittype/contracts/semantic/go"
+	"github.com/Bitspark/bittype/semantics/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
@@ -34,7 +35,7 @@ type Step struct {
 }
 
 // GenerationPlan is issued only after all reachable rules and dependencies have
-// been resolved. Run does not retain a source reader or mapping expansion.
+// been resolved. Run does not retain a source, reader or mapping expansion.
 type GenerationPlan struct {
 	steps []Step
 	run   func(context.Context) (Output, error)
@@ -52,28 +53,41 @@ func (p GenerationPlan) Run(ctx context.Context) (Output, error) {
 	return p.run(ctx)
 }
 
-type SelectedDescription[F, T any, S SourceSession[F]] struct {
+type SelectedDescription[F, T, R any] struct {
 	ID          string
-	Description MappingDescription[F, T, S]
+	Description MappingDescription[F, T, R]
 }
-type PlanningInput[F, T any, S SourceSession[F]] struct {
-	Source    S
-	Snapshot  semantic.Snapshot
-	Evidence  []semantic.Result
-	Roots     []Declaration[F]
-	Mappings  []SelectedDescription[F, T, S]
+
+// PlanningInput is one capture, the source opened over it, the requested root
+// declaration sites and the selected mapping descriptions.
+type PlanningInput[F, T, R any] struct {
+	Captured  Captured[F]
+	Source    Source[F, R]
+	Roots     []ast.NodeRef
+	Mappings  []SelectedDescription[F, T, R]
 	Execution Execution[T]
 }
-type planner[F, T any, S SourceSession[F]] struct {
+
+// frame is the declaration being planned: its entity, planned ID and the native
+// meaning of each of its real binders.
+type frame[T any] struct {
+	declaration semantics.EntityID
+	scope       uint32
+	env         map[semantics.EntityID]Expression[T]
+}
+
+type planner[F, T, R any] struct {
 	ctx          context.Context
-	source       S
+	walk         *walk[F]
+	source       Interpretation[F]
+	reader       R
 	execution    Execution[T]
-	bindings     map[string][]selectedBinding[F, T, S]
-	recipes      map[string][]selectedRecipe[F, T, S]
+	bindings     map[string][]selectedBinding[F, T, R]
+	recipes      map[string][]selectedRecipe[F, T, R]
 	helpers      map[HelperKey]HelperRecipe[T]
-	declarations map[Declaration[F]]uint32
+	declarations map[semantics.EntityID]uint32
 	helperIDs    map[HelperKey]uint32
-	opens        map[Declaration[F]]OpenData[F]
+	formals      map[uint32][]Binder[F]
 	conventions  map[uint32]GenericConvention[T]
 	active       map[uint32]bool
 	program      Program[T]
@@ -81,27 +95,24 @@ type planner[F, T any, S SourceSession[F]] struct {
 	ops          int
 	bytes        int
 }
-type selectedBinding[F, T any, S SourceSession[F]] struct {
+type selectedBinding[F, T, R any] struct {
 	name    string
-	binding BindingDescription[F, T, S]
+	binding BindingDescription[F, T, R]
 }
-type selectedRecipe[F, T any, S SourceSession[F]] struct {
+type selectedRecipe[F, T, R any] struct {
 	name   string
-	recipe DeclarationRecipe[F, T, S]
+	recipe DeclarationRecipe[F, T, R]
 }
 
-func Plan[F, T any, S SourceSession[F]](ctx context.Context, in PlanningInput[F, T, S]) (GenerationPlan, error) {
+func Plan[F, T, R any](ctx context.Context, in PlanningInput[F, T, R]) (GenerationPlan, error) {
 	fail := func(e error) (GenerationPlan, error) { return GenerationPlan{}, e }
-	if ctx == nil || representation.IsNil(in.Source) || !in.Source.Owners().Valid() || !in.Snapshot.Valid() || representation.CheckMarker[F](in.Snapshot.Language()) != nil || !in.Execution.Limits.Valid() || representation.IsNil(in.Execution.Target) || representation.CheckMarker[T](in.Execution.Language) != nil || in.Execution.Output == "" || in.Execution.Checker.Validate() != nil || !in.Execution.Language.Compatible(in.Execution.Checker.Language()) || len(in.Roots) == 0 {
+	if ctx == nil || !in.Captured.Valid() || representation.IsNil(in.Source.Interpretation) || representation.CheckMarker[F](in.Captured.Request().Snapshot().Language()) != nil || !in.Execution.Limits.Valid() || representation.IsNil(in.Execution.Target) || representation.CheckMarker[T](in.Execution.Language) != nil || in.Execution.Output == "" || in.Execution.Checker.Validate() != nil || !in.Execution.Language.Compatible(in.Execution.Checker.Language()) || len(in.Roots) == 0 {
 		return fail(ErrInvalid)
 	}
 	if err := ctx.Err(); err != nil {
 		return fail(err)
 	}
-	if err := in.Source.CheckInput(ctx, in.Snapshot, in.Evidence); err != nil {
-		return fail(err)
-	}
-	p := &planner[F, T, S]{ctx: ctx, source: in.Source, execution: in.Execution, bindings: map[string][]selectedBinding[F, T, S]{}, recipes: map[string][]selectedRecipe[F, T, S]{}, helpers: map[HelperKey]HelperRecipe[T]{}, declarations: map[Declaration[F]]uint32{}, helperIDs: map[HelperKey]uint32{}, opens: map[Declaration[F]]OpenData[F]{}, conventions: map[uint32]GenericConvention[T]{}, active: map[uint32]bool{}}
+	p := &planner[F, T, R]{ctx: ctx, walk: newWalk(in.Captured.Graph()), source: in.Source.Interpretation, reader: in.Source.Reader, execution: in.Execution, bindings: map[string][]selectedBinding[F, T, R]{}, recipes: map[string][]selectedRecipe[F, T, R]{}, helpers: map[HelperKey]HelperRecipe[T]{}, declarations: map[semantics.EntityID]uint32{}, helperIDs: map[HelperKey]uint32{}, formals: map[uint32][]Binder[F]{}, conventions: map[uint32]GenericConvention[T]{}, active: map[uint32]bool{}}
 	selected := map[string]bool{}
 	entries := 0
 	if len(in.Roots) > in.Execution.Limits.References || len(in.Mappings) > in.Execution.Limits.Plans {
@@ -112,7 +123,7 @@ func Plan[F, T any, S SourceSession[F]](ctx context.Context, in PlanningInput[F,
 			return fail(ErrInvalid)
 		}
 		selected[part.ID] = true
-		d, err := FreezeDescription(in.Snapshot.Language(), part.Description, in.Execution.Limits)
+		d, err := FreezeDescription(in.Captured.Request().Snapshot().Language(), part.Description, in.Execution.Limits)
 		if err != nil {
 			return fail(err)
 		}
@@ -122,10 +133,10 @@ func Plan[F, T any, S SourceSession[F]](ctx context.Context, in PlanningInput[F,
 			return fail(ErrLimit)
 		}
 		for _, b := range part.Description.Bindings {
-			p.bindings[b.Input.Selector.Key()] = append(p.bindings[b.Input.Selector.Key()], selectedBinding[F, T, S]{part.ID + "/" + b.ID, b})
+			p.bindings[b.Input.Selector.Key()] = append(p.bindings[b.Input.Selector.Key()], selectedBinding[F, T, R]{part.ID + "/" + b.ID, b})
 		}
 		for _, r := range part.Description.Declarations {
-			p.recipes[r.Selector.Key()] = append(p.recipes[r.Selector.Key()], selectedRecipe[F, T, S]{part.ID + "/" + r.ID, r})
+			p.recipes[r.Selector.Key()] = append(p.recipes[r.Selector.Key()], selectedRecipe[F, T, R]{part.ID + "/" + r.ID, r})
 		}
 		for _, h := range part.Description.Helpers {
 			if _, ok := p.helpers[h.Key]; ok {
@@ -134,15 +145,22 @@ func Plan[F, T any, S SourceSession[F]](ctx context.Context, in PlanningInput[F,
 			p.helpers[h.Key] = h
 		}
 	}
-	seen := map[Declaration[F]]bool{}
-	for _, root := range in.Roots {
-		if seen[root] {
+	seen := map[ast.NodeRef]bool{}
+	for _, site := range in.Roots {
+		if seen[site] {
 			return fail(ErrScope)
 		}
-		seen[root] = true
+		seen[site] = true
+		root, err := p.root(site)
+		if err != nil {
+			return fail(err)
+		}
 		id, err := p.declare(root, 0)
 		if err != nil {
 			return fail(err)
+		}
+		if p.program.declarations[id-1].Exposed {
+			return fail(ErrScope)
 		}
 		p.program.exposed = append(p.program.exposed, id)
 		p.program.declarations[id-1].Exposed = true
@@ -174,7 +192,7 @@ func Plan[F, T any, S SourceSession[F]](ctx context.Context, in PlanningInput[F,
 		return out, nil
 	}}, nil
 }
-func (p *planner[F, T, S]) tick(depth int) error {
+func (p *planner[F, T, R]) tick(depth int) error {
 	if err := p.ctx.Err(); err != nil {
 		return err
 	}
@@ -184,20 +202,52 @@ func (p *planner[F, T, S]) tick(depth int) error {
 	}
 	return nil
 }
-func (p *planner[F, T, S]) declarationKey(d Declaration[F]) (string, error) {
-	if err := p.source.Authenticate(p.ctx, References[F]{Declarations: []Declaration[F]{d}}); err != nil {
-		return "", err
+
+// root resolves a requested syntax site to the one entity that declares it and
+// requires the source to classify that entity as a generatable declaration.
+func (p *planner[F, T, R]) root(site ast.NodeRef) (Declaration[F], error) {
+	entities := p.walk.sites[site]
+	if len(entities) != 1 {
+		return Declaration[F]{}, ErrScope
 	}
-	key, ok, err := p.source.DeclarationSelector(d)
+	d := Declaration[F]{p.walk, entities[0]}
+	if _, ok, err := p.source.Declaration(p.ctx, d); err != nil {
+		return Declaration[F]{}, err
+	} else if !ok {
+		return Declaration[F]{}, ErrScope
+	}
+	return d, nil
+}
+
+// selector is the source's stable identity for a declaration the walk reached.
+func (p *planner[F, T, R]) selector(d Declaration[F]) (string, error) {
+	key, ok, err := p.source.Declaration(p.ctx, d)
 	if err != nil {
 		return "", err
 	}
-	if !ok || !key.Valid() {
+	if !ok {
+		return "", p.walk.unsupported(0, d.entity, "the source does not generate this declaration")
+	}
+	if !key.Valid() {
 		return "", ErrScope
 	}
 	return key.Key(), nil
 }
-func (p *planner[F, T, S]) reserve() (uint32, error) {
+
+// judge records the source's judgment of one occurrence. Every occurrence is
+// judged at most once per run.
+func (p *planner[F, T, R]) judge(o *occurrence[F]) error {
+	if !o.judged {
+		j, err := p.source.JudgeUse(p.ctx, Use[F]{o})
+		if err == nil {
+			err = verdict(j)
+		}
+		o.judged, o.judgment = true, err
+	}
+	return o.judgment
+}
+
+func (p *planner[F, T, R]) reserve() (uint32, error) {
 	if len(p.program.declarations) >= p.execution.Limits.Reservations {
 		return 0, ErrLimit
 	}
@@ -206,17 +256,17 @@ func (p *planner[F, T, S]) reserve() (uint32, error) {
 	p.active[id] = true
 	return id, nil
 }
-func (p *planner[F, T, S]) declare(d Declaration[F], depth int) (uint32, error) {
+func (p *planner[F, T, R]) declare(d Declaration[F], depth int) (uint32, error) {
 	if err := p.tick(depth); err != nil {
 		return 0, err
 	}
-	if id := p.declarations[d]; id != 0 {
+	if id := p.declarations[d.entity]; id != 0 {
 		if p.active[id] {
 			return 0, fmt.Errorf("%w: recursive native declaration", ErrUnsupported)
 		}
 		return id, nil
 	}
-	key, err := p.declarationKey(d)
+	key, err := p.selector(d)
 	if err != nil {
 		return 0, err
 	}
@@ -235,28 +285,28 @@ func (p *planner[F, T, S]) declare(d Declaration[F], depth int) (uint32, error) 
 		return 0, ErrAmbiguous
 	}
 	choice := choices[0]
-	open, err := p.source.Open(p.ctx, d)
+	view, err := p.walk.declaration(d)
 	if err != nil {
 		return 0, err
 	}
-	open = open.Clone()
-	if open.Declaration != d || !open.Body.Valid() || !open.Environment.Valid() {
-		return 0, ErrScope
-	}
-	if len(open.Formals) > p.execution.Limits.Formals {
+	if len(view.Formals) > p.execution.Limits.Formals {
 		return 0, ErrLimit
 	}
-	if err = p.source.Authenticate(p.ctx, References[F]{Uses: []Use[F]{open.Body}, Environments: []Environment[F]{open.Environment}}); err != nil {
+	j, err := p.source.JudgeDeclaration(p.ctx, d)
+	if err == nil {
+		err = verdict(j)
+	}
+	if err != nil {
 		return 0, err
 	}
 	id, err := p.reserve()
 	if err != nil {
 		return 0, err
 	}
-	p.declarations[d] = id
-	p.opens[d] = open
-	state := &expansionState[F, T, S]{active: true, ctx: p.ctx, source: p.source, open: open, captures: map[Slot]Use[F]{}, limits: p.execution.Limits}
-	desc, err := choice.recipe.Expand(p.ctx, DeclarationRequest[F, T, S]{Expansion[F, T, S]{state}})
+	p.declarations[d.entity] = id
+	p.formals[id] = view.Formals
+	state := &expansionState[F, T, R]{active: true, ctx: p.ctx, reader: p.reader, declaration: &view, captures: map[Slot]Use[F]{}, limits: p.execution.Limits}
+	desc, err := choice.recipe.Expand(p.ctx, DeclarationRequest[F, T, R]{Expansion[F, T, R]{state}})
 	state.mu.Lock()
 	state.active = false
 	failure := state.failure
@@ -268,35 +318,32 @@ func (p *planner[F, T, S]) declare(d Declaration[F], depth int) (uint32, error) 
 		return 0, failure
 	}
 	desc = desc.Clone()
-	if len(desc.Generic.Bindings) != len(open.Formals) || len(desc.Generic.Arguments) != len(desc.Generic.Parameters) {
+	if len(desc.Generic.Bindings) != len(view.Formals) || len(desc.Generic.Arguments) != len(desc.Generic.Parameters) {
 		return 0, ErrScope
 	}
 	if len(desc.Generic.Parameters) > p.execution.Limits.Formals {
 		return 0, ErrLimit
 	}
-	env := map[Binder[F]]Expression[T]{}
-	for i, f := range open.Formals {
-		if !f.Binder.Valid() || env[f.Binder].kind != 0 {
+	f := frame[T]{declaration: d.entity, scope: id, env: map[semantics.EntityID]Expression[T]{}}
+	for i, binder := range view.Formals {
+		if _, dup := f.env[binder.entity]; dup {
 			return 0, ErrScope
-		}
-		if err = p.source.Authenticate(p.ctx, References[F]{Binders: []Binder[F]{f.Binder}, Uses: []Use[F]{f.Subject}}); err != nil {
-			return 0, err
 		}
 		value, err := p.template(desc.Generic.Bindings[i], id, len(desc.Generic.Parameters), nil, depth+1)
 		if err != nil {
 			return 0, err
 		}
-		env[f.Binder] = value
+		f.env[binder.entity] = value
 	}
 	// Validate all application expressions now, before a use is encountered.
 	for _, arg := range desc.Generic.Arguments {
-		if err = p.convention(arg, len(open.Formals), depth+1); err != nil {
+		if err = p.convention(arg, len(view.Formals), depth+1); err != nil {
 			return 0, err
 		}
 	}
 	p.program.declarations[id-1].Description = nativeDeclaration(desc)
 	p.conventions[id] = desc.Generic
-	desc.Body, err = p.resolve(desc.Body, state.captures, open.Environment, env, id, depth+1)
+	desc.Body, err = p.resolve(desc.Body, state.captures, f, depth+1)
 	if err != nil {
 		return 0, err
 	}
@@ -311,116 +358,74 @@ func (p *planner[F, T, S]) declare(d Declaration[F], depth int) (uint32, error) 
 	p.steps = append(p.steps, Step{Binding: choice.name, Source: key, Declaration: desc.Name, Form: desc.Form.Name(), Expression: describe(desc.Body)})
 	return id, nil
 }
-func (p *planner[F, T, S]) use(use Use[F], environment Environment[F], env map[Binder[F]]Expression[T], scope uint32, depth int) (Expression[T], error) {
+
+// use plans one occurrence: the kernel reads its structure, the source judges
+// it (and every actual it has), then a binding or the callee's declaration
+// represents it.
+func (p *planner[F, T, R]) use(u Use[F], f frame[T], depth int) (Expression[T], error) {
 	if err := p.tick(depth); err != nil {
 		return Expression[T]{}, err
 	}
-	data, err := p.source.Admit(p.ctx, environment, use)
+	if !p.walk.owns(u) || u.o.declaration != f.declaration {
+		return Expression[T]{}, ErrScope
+	}
+	view, err := p.walk.structure(u.o)
 	if err != nil {
 		return Expression[T]{}, err
 	}
-	if data.Use != use || data.Environment != environment {
-		return Expression[T]{}, ErrScope
+	if err = p.judge(u.o); err != nil {
+		return Expression[T]{}, err
 	}
-	if data.Bound.Valid() {
-		value, ok := env[data.Bound]
+	var key string
+	switch view.Kind {
+	case BoundUse:
+		value, ok := f.env[view.Bound.entity]
 		if !ok {
 			return Expression[T]{}, ErrScope
 		}
 		return value, nil
-	}
-	// Whole-source admission applies even to arguments a representation omits.
-	for _, a := range data.Actuals {
-		if err = p.source.Authenticate(p.ctx, References[F]{Binders: []Binder[F]{a.Binder}, Uses: []Use[F]{a.Use}}); err != nil {
-			return Expression[T]{}, err
-		}
-		if _, err = p.source.Admit(p.ctx, environment, a.Use); err != nil {
-			return Expression[T]{}, err
-		}
-	}
-	selector, err := p.source.UseSelector(data)
-	if data.Callee.Valid() {
-		var ok bool
-		selector, ok, err = p.source.DeclarationSelector(data.Callee)
-		if err == nil && !ok {
-			err = ErrScope
-		}
-	}
-	if err != nil {
-		return Expression[T]{}, err
-	}
-	choices := p.bindings[selector.Key()]
-	if len(choices) > 1 {
-		return Expression[T]{}, fmt.Errorf("%w: %s", ErrAmbiguous, selector.Key())
-	}
-	if len(choices) == 1 {
-		b := choices[0]
-		captures := map[Slot]Use[F]{}
-		if b.binding.Input.Capture != nil {
-			values, err := b.binding.Input.Capture(p.ctx, p.source, data.Clone())
-			if err != nil {
+	case DeclarationUse:
+		// Whole-use admission covers every actual, including those the
+		// selected representation omits.
+		for _, a := range view.Actuals {
+			if err = p.judge(a.Use.o); err != nil {
 				return Expression[T]{}, err
 			}
-			if len(values) != len(b.binding.Input.Slots) {
-				return Expression[T]{}, ErrScope
-			}
-			allowed := map[Slot]bool{}
-			for _, slot := range b.binding.Input.Slots {
-				allowed[slot] = true
-			}
-			for _, v := range values {
-				if !allowed[v.Slot] || captures[v.Slot].Valid() {
-					return Expression[T]{}, ErrScope
-				}
-				if err = p.source.CheckChild(p.ctx, environment, use, v.Use); err != nil {
-					return Expression[T]{}, err
-				}
-				captures[v.Slot] = v.Use
-			}
 		}
-		expression := b.binding.Output
-		if b.binding.Expand != nil {
-			state := &expansionState[F, T, S]{active: true, ctx: p.ctx, source: p.source, use: data.Clone(), captures: captures, limits: p.execution.Limits}
-			expression, err = b.binding.Expand(p.ctx, Expansion[F, T, S]{state})
-			state.mu.Lock()
-			state.active = false
-			failure := state.failure
-			state.mu.Unlock()
-			if err != nil {
-				return Expression[T]{}, err
-			}
-			if failure != nil {
-				return Expression[T]{}, failure
-			}
+		if key, err = p.selector(view.Callee); err != nil {
+			return Expression[T]{}, err
 		}
-		out, err := p.resolve(expression, captures, environment, env, scope, depth+1)
+	case ExpressionUse:
+		selector, err := p.source.Expression(p.ctx, u)
 		if err != nil {
 			return Expression[T]{}, err
 		}
-		p.steps = append(p.steps, Step{Binding: b.name, Source: selector.Key(), Form: out.form.Name(), Expression: describe(out)})
-		return out, nil
+		if !selector.Valid() {
+			return Expression[T]{}, ErrScope
+		}
+		key = selector.Key()
+	default:
+		return Expression[T]{}, ErrInvalid
 	}
-	if !data.Callee.Valid() {
-		return Expression[T]{}, fmt.Errorf("%w: %s", ErrUnsupported, selector.Key())
+	choices := p.bindings[key]
+	if len(choices) > 1 {
+		return Expression[T]{}, fmt.Errorf("%w: %s", ErrAmbiguous, key)
 	}
-	id, err := p.declare(data.Callee, depth+1)
+	if len(choices) == 1 {
+		return p.bind(choices[0], key, view, f, depth)
+	}
+	if view.Kind != DeclarationUse {
+		return Expression[T]{}, p.walk.unsupported(u.o.term, 0, "no mapping for "+key)
+	}
+	id, err := p.declare(view.Callee, depth+1)
 	if err != nil {
 		return Expression[T]{}, err
 	}
 	convention := p.conventions[id]
-	open := p.opens[data.Callee]
-	if len(data.Actuals) != len(open.Formals) {
+	formals := p.formals[id]
+	if len(view.Actuals) != len(formals) {
 		return Expression[T]{}, ErrScope
 	}
-	actuals := make([]Expression[T], len(open.Formals))
-	byBinder := map[Binder[F]]Use[F]{}
-	for _, a := range data.Actuals {
-		if byBinder[a.Binder].Valid() {
-			return Expression[T]{}, ErrScope
-		}
-		byBinder[a.Binder] = a.Use
-	}
-
 	needed := map[int]bool{}
 	var neededArguments func(Expression[T])
 	neededArguments = func(e Expression[T]) {
@@ -434,29 +439,74 @@ func (p *planner[F, T, S]) use(use Use[F], environment Environment[F], env map[B
 	for _, arg := range convention.Arguments {
 		neededArguments(arg)
 	}
-	for i, f := range open.Formals {
-		a := byBinder[f.Binder]
-		if !a.Valid() {
+	actuals := make([]Expression[T], len(formals))
+	for i, binder := range formals {
+		a, ok := view.Actual(binder)
+		if !ok {
 			return Expression[T]{}, ErrScope
 		}
 		if needed[i] {
-			actuals[i], err = p.use(a, environment, env, scope, depth+1)
-			if err != nil {
+			if actuals[i], err = p.use(a, f, depth+1); err != nil {
 				return Expression[T]{}, err
 			}
 		}
 	}
-
 	args := make([]Expression[T], len(convention.Arguments))
 	for i, arg := range convention.Arguments {
-		args[i], err = p.template(arg, 0, 0, actuals, depth+1)
-		if err != nil {
+		if args[i], err = p.template(arg, 0, 0, actuals, depth+1); err != nil {
 			return Expression[T]{}, err
 		}
 	}
 	return Expression[T]{kind: DeclarationExpression, declaration: id, args: args}, nil
 }
-func (p *planner[F, T, S]) resolve(e Expression[T], captures map[Slot]Use[F], environment Environment[F], env map[Binder[F]]Expression[T], scope uint32, depth int) (Expression[T], error) {
+
+// bind applies an exact binding: its captures must be children of the view.
+func (p *planner[F, T, R]) bind(b selectedBinding[F, T, R], key string, view UseView[F], f frame[T], depth int) (Expression[T], error) {
+	captures := map[Slot]Use[F]{}
+	if b.binding.Input.Capture != nil {
+		values, err := b.binding.Input.Capture(p.ctx, p.reader, view.Clone())
+		if err != nil {
+			return Expression[T]{}, err
+		}
+		if len(values) != len(b.binding.Input.Slots) {
+			return Expression[T]{}, ErrScope
+		}
+		allowed := map[Slot]bool{}
+		for _, slot := range b.binding.Input.Slots {
+			allowed[slot] = true
+		}
+		for _, v := range values {
+			if !allowed[v.Slot] || captures[v.Slot].Valid() || !childOf(v.Use, view.Use) {
+				return Expression[T]{}, ErrScope
+			}
+			captures[v.Slot] = v.Use
+		}
+	}
+	expression := b.binding.Output
+	if b.binding.Expand != nil {
+		v := view.Clone()
+		state := &expansionState[F, T, R]{active: true, ctx: p.ctx, reader: p.reader, use: &v, captures: captures, limits: p.execution.Limits}
+		var err error
+		expression, err = b.binding.Expand(p.ctx, Expansion[F, T, R]{state})
+		state.mu.Lock()
+		state.active = false
+		failure := state.failure
+		state.mu.Unlock()
+		if err != nil {
+			return Expression[T]{}, err
+		}
+		if failure != nil {
+			return Expression[T]{}, failure
+		}
+	}
+	out, err := p.resolve(expression, captures, f, depth+1)
+	if err != nil {
+		return Expression[T]{}, err
+	}
+	p.steps = append(p.steps, Step{Binding: b.name, Source: key, Form: out.form.Name(), Expression: describe(out)})
+	return out, nil
+}
+func (p *planner[F, T, R]) resolve(e Expression[T], captures map[Slot]Use[F], f frame[T], depth int) (Expression[T], error) {
 	if err := p.tick(depth); err != nil {
 		return Expression[T]{}, err
 	}
@@ -474,11 +524,11 @@ func (p *planner[F, T, S]) resolve(e Expression[T], captures map[Slot]Use[F], en
 		if !use.Valid() {
 			return Expression[T]{}, ErrScope
 		}
-		return p.use(use, environment, env, scope, depth+1)
+		return p.use(use, f, depth+1)
 	case NativeExpression, HelperExpression:
 		args := make([]Expression[T], len(e.args))
 		for i, a := range e.args {
-			v, err := p.resolve(a, captures, environment, env, scope, depth+1)
+			v, err := p.resolve(a, captures, f, depth+1)
 			if err != nil {
 				return Expression[T]{}, err
 			}
@@ -493,16 +543,16 @@ func (p *planner[F, T, S]) resolve(e Expression[T], captures map[Slot]Use[F], en
 		}
 		return e, nil
 	case ParameterExpression:
-		if scope == 0 || e.index < 0 || e.index >= len(p.program.declarations[scope-1].Description.Parameters) {
+		if f.scope == 0 || e.index < 0 || e.index >= len(p.program.declarations[f.scope-1].Description.Parameters) {
 			return Expression[T]{}, ErrScope
 		}
-		e.declaration = scope
+		e.declaration = f.scope
 		return e, nil
 	default:
 		return Expression[T]{}, ErrScope
 	}
 }
-func (p *planner[F, T, S]) template(e Expression[T], scope uint32, count int, actuals []Expression[T], depth int) (Expression[T], error) {
+func (p *planner[F, T, R]) template(e Expression[T], scope uint32, count int, actuals []Expression[T], depth int) (Expression[T], error) {
 	if err := p.tick(depth); err != nil {
 		return Expression[T]{}, err
 	}
@@ -539,7 +589,7 @@ func (p *planner[F, T, S]) template(e Expression[T], scope uint32, count int, ac
 		return Expression[T]{}, ErrScope
 	}
 }
-func (p *planner[F, T, S]) convention(e Expression[T], count, depth int) error {
+func (p *planner[F, T, R]) convention(e Expression[T], count, depth int) error {
 	if err := p.tick(depth); err != nil {
 		return err
 	}
@@ -569,7 +619,7 @@ func (p *planner[F, T, S]) convention(e Expression[T], count, depth int) error {
 	}
 	return p.execution.Target.CheckExpression(p.ctx, e)
 }
-func (p *planner[F, T, S]) helperUse(e Expression[T], depth int) (Expression[T], error) {
+func (p *planner[F, T, R]) helperUse(e Expression[T], depth int) (Expression[T], error) {
 	recipe, ok := p.helpers[e.helper]
 	if !ok {
 		return Expression[T]{}, ErrUnsupported

@@ -2,92 +2,169 @@ package generation
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
+	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-type Formal[F any] struct {
-	Binder  Binder[F]
-	Subject Use[F]
-}
-type Actual[F any] struct {
-	Binder Binder[F]
-	Use    Use[F]
-}
+// Captured is the evidence context of one generation request: the admitted
+// request (snapshot, entry tree and evidence) and the typed semantic graph that
+// the designated evidence published. Only AdmitInput creates it. The kernel walks
+// this graph and no other; a source is opened over the same value.
+type Captured[F any] struct{ state *captured[F] }
 
-// These are provider construction records. Only the configured source can admit
-// them; writing a literal is not a route to a host-owned product or request.
-type OpenData[F any] struct {
-	Declaration Declaration[F]
-	Environment Environment[F]
-	Body        Use[F]
-	Formals     []Formal[F]
+type captured[F any] struct {
+	request transform.Request[F]
+	graph   semantics.Semantics[F]
 }
 
-func (o OpenData[F]) Clone() OpenData[F] { o.Formals = slices.Clone(o.Formals); return o }
-
-type UseData[F any] struct {
-	Use         Use[F]
-	Subject     Use[F]
-	Environment Environment[F]
-	Callee      Declaration[F]
-	Bound       Binder[F]
-	Actuals     []Actual[F]
+// AdmitInput admits input against a source contract. The contract must designate
+// exactly one evidence requirement that publishes a semantic graph; the kernel
+// unpacks that result's graph itself instead of accepting one from a source.
+func AdmitInput[F any](language representation.Language, contract transform.Contract, input transform.Input) (Captured[F], error) {
+	index := -1
+	for i, requirement := range contract.Evidence {
+		if requirement.Semantics {
+			if index >= 0 {
+				return Captured[F]{}, fmt.Errorf("%w: several evidence requirements publish a graph", ErrInvalid)
+			}
+			index = i
+		}
+	}
+	if index < 0 {
+		return Captured[F]{}, fmt.Errorf("%w: no evidence requirement publishes a graph", ErrInvalid)
+	}
+	request, err := transform.AdmitRequest[F](language, contract, input)
+	if err != nil {
+		return Captured[F]{}, err
+	}
+	result, ok := request.Evidence(index)
+	if !ok {
+		return Captured[F]{}, semantic.ErrEvidenceUnavailable
+	}
+	envelope, ok := result.Semantics()
+	if !ok {
+		return Captured[F]{}, semantic.ErrEvidenceUnavailable
+	}
+	graph, err := representation.UnpackSemantics[F](request.Snapshot().Language(), envelope)
+	if err != nil {
+		return Captured[F]{}, err
+	}
+	return Captured[F]{&captured[F]{request: request, graph: graph}}, nil
 }
 
-func (u UseData[F]) Clone() UseData[F] { u.Actuals = slices.Clone(u.Actuals); return u }
+func (c Captured[F]) Valid() bool { return c.state != nil && c.state.graph.Valid() }
 
-type SourceOwners[F any] struct {
-	Declarations Owner[DeclarationRole[F]]
-	Binders      Owner[BinderRole[F]]
-	Uses         Owner[UseRole[F]]
-	Environments Owner[EnvironmentRole[F]]
+// Request is the admitted transform request; its evidence is the exact admitted set.
+func (c Captured[F]) Request() transform.Request[F] {
+	if c.state == nil {
+		return transform.Request[F]{}
+	}
+	return c.state.request
+}
+func (c Captured[F]) Graph() semantics.Semantics[F] {
+	if c.state == nil {
+		return semantics.Semantics[F]{}
+	}
+	return c.state.graph
 }
 
-func (o SourceOwners[F]) Valid() bool {
-	return o.Declarations.Valid() && o.Binders.Valid() && o.Uses.Valid() && o.Environments.Valid()
+// Verdict is the outcome of a source judgment over the captured evidence.
+type Verdict uint8
+
+const (
+	// Admitted: the evidence establishes that the subject may be represented.
+	Admitted Verdict = iota + 1
+	// Unsupported: valid source that this generation integration cannot represent.
+	Unsupported
+	// Rejected: the evidence refutes the subject's admissibility.
+	Rejected
+	// Undetermined: the evidence does not establish the judgment either way.
+	Undetermined
+)
+
+// Judgment is a source-owned conclusion. Diagnostic optionally explains a
+// non-admitted verdict at a source site; the kernel never interprets it.
+type Judgment struct {
+	Verdict    Verdict
+	Diagnostic error
 }
 
-// References requests authentication of existing, correctly typed source
-// records. An owner match alone does not establish existence or applicability.
-type References[F any] struct {
-	Declarations []Declaration[F]
-	Binders      []Binder[F]
-	Uses         []Use[F]
-	Environments []Environment[F]
+// Interpretation is a source integration's reading of one captured graph. The
+// kernel calls it with handles it issued for that graph and performs every
+// structural step itself. An interpretation uses only the captured evidence:
+// it never resolves, analyzes or traverses on the kernel's behalf.
+type Interpretation[F any] interface {
+	// Declaration classifies a declaration entity the walk reached. ok is false
+	// for an entity this source does not generate (for example a kind or module).
+	Declaration(context.Context, Declaration[F]) (Selector, bool, error)
+	// Expression returns the selector of a provider-expression occurrence.
+	Expression(context.Context, Use[F]) (Selector, error)
+	// JudgeDeclaration judges a declaration before its body is planned.
+	JudgeDeclaration(context.Context, Declaration[F]) (Judgment, error)
+	// JudgeUse judges one whole occurrence under the assumptions of the
+	// declaration it occurs in. The kernel judges every occurrence it plans and
+	// every actual of a use, including actuals a native convention omits.
+	JudgeUse(context.Context, Use[F]) (Judgment, error)
 }
 
-// Source consumes already supplied receipts/queries. It performs no hidden
-// resolution or analysis. Its records and policy remain immutable during a run.
-type Source[F any] interface {
-	CheckInput(context.Context, semantic.Snapshot, []semantic.Result) error
-	Owners() SourceOwners[F]
-	RootEnvironment() Environment[F]
-	Authenticate(context.Context, References[F]) error
-	Open(context.Context, Declaration[F]) (OpenData[F], error)
-	// Admit establishes the whole use's applicability under its original
-	// assumptions using supplied evidence, including actuals the mapping may
-	// never represent. Authenticate only checks record ownership/existence.
-	// Use identifies the occurrence; Subject is the source-certified effective
-	// subject. Missing evidence must fail, never trigger hidden analysis.
-	Admit(context.Context, Environment[F], Use[F]) (UseData[F], error)
-	// CheckChild authenticates a direct semantic operand or generic actual of parent.
-	CheckChild(context.Context, Environment[F], Use[F], Use[F]) error
-}
-
-// SourceSession consumes one captured semantic context. Its traversal split is a
-// separate proposal; neither planning nor construction performs hidden analysis.
-type SourceSession[F any] interface {
-	Source[F]
-	Catalog[F]
-	ResolveRoots(context.Context, []ast.NodeRef) ([]Declaration[F], error)
+// Source is what a provider opens over one capture: the kernel-facing
+// interpretation and the reader that mapping libraries use to interpret source
+// payloads. R reads kernel handles; it supplies no navigation.
+type Source[F, R any] struct {
+	Interpretation Interpretation[F]
+	Reader         R
 }
 
 // bittype:dimension Syntax
-type SourceProvider[F any, S SourceSession[F]] interface {
+type SourceProvider[F, R any] interface {
+	// Contract declares the required evidence; exactly one requirement
+	// publishes the semantic graph.
 	Contract() transform.Contract
-	Open(context.Context, transform.Request[F]) (S, error)
+	Open(context.Context, Captured[F]) (Source[F, R], error)
+}
+
+// SiteError is a kernel failure at a source syntax site, for diagnostics.
+type SiteError struct {
+	Err     error
+	Site    ast.NodeRef
+	Message string
+}
+
+func (e *SiteError) Error() string { return e.Message + ": " + e.Err.Error() }
+func (e *SiteError) Unwrap() error { return e.Err }
+
+// verdict converts a judgment into the kernel's failure meaning.
+func verdict(j Judgment) error {
+	wrap := func(kind error) error {
+		if j.Diagnostic != nil {
+			return fmt.Errorf("%w: %w", kind, j.Diagnostic)
+		}
+		return kind
+	}
+	switch j.Verdict {
+	case Admitted:
+		return nil
+	case Unsupported:
+		return wrap(ErrUnsupported)
+	case Rejected:
+		return wrap(ErrRejected)
+	case Undetermined:
+		return wrap(semantic.ErrEvidenceUnavailable)
+	default:
+		return fmt.Errorf("%w: invalid judgment", ErrInvalid)
+	}
+}
+
+func cloneOperands[F any](o []Operand[F]) []Operand[F] {
+	out := slices.Clone(o)
+	for i := range out {
+		out[i].Locator = slices.Clone(out[i].Locator)
+	}
+	return out
 }

@@ -99,3 +99,8 @@ func (e Expression[T]) Helper() HelperKey          { return e.helper }
 
 func At[T any](e Expression[T], origin ast.NodeRef) Expression[T] { e.origin = origin; return e }
 func (e Expression[T]) Origin() ast.NodeRef                       { return e.origin }
+
+// identity is an allocation-unique owner for issuer-scoped values.
+type identity struct{ value byte }
+
+func fresh() *identity { return &identity{value: 1} }

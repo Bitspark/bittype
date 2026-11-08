@@ -17,6 +17,8 @@ var (
 	ErrLimit       = errors.New("generation limit exhausted")
 	ErrIncomplete  = errors.New("generation obligations incomplete")
 	ErrAmbiguous   = errors.New("ambiguous generation mapping")
+	// ErrRejected: a source judgment refuted a use from the captured evidence.
+	ErrRejected = errors.New("source judgment rejected the use")
 )
 
 type Limits struct {

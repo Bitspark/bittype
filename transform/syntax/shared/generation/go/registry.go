@@ -63,13 +63,23 @@ type Registry struct {
 	replacements []Replacement
 }
 
-func RegisterSource[F any, S g.SourceSession[F]](r *Registry, lang representation.Language, p g.SourceProvider[F, S]) error {
+func RegisterSource[F, R any](r *Registry, lang representation.Language, p g.SourceProvider[F, R]) error {
 	if r == nil || representation.IsNil(p) || representation.CheckMarker[F](lang) != nil {
 		return g.ErrInvalid
 	}
 	c := p.Contract()
 	if err := semantic.ValidateEvidenceRequirements(c.Evidence); err != nil {
 		return err
+	}
+	graphs := 0
+	for _, requirement := range c.Evidence {
+		if requirement.Semantics {
+			graphs++
+		}
+	}
+	if graphs != 1 {
+		// The kernel walks exactly the graph one admitted result publishes.
+		return g.ErrInvalid
 	}
 	c.Evidence = slices.Clone(c.Evidence)
 	for i := range c.Evidence {
@@ -83,7 +93,7 @@ func RegisterSource[F any, S g.SourceSession[F]](r *Registry, lang representatio
 	if _, ok := r.sources[string(lang.ID())]; ok {
 		return g.ErrAmbiguous
 	}
-	r.sources[string(lang.ID())] = sourceEntry{lang, reflect.TypeFor[S](), c, p}
+	r.sources[string(lang.ID())] = sourceEntry{lang, reflect.TypeFor[R](), c, p}
 	return nil
 }
 func RegisterTarget[T any](r *Registry, lang representation.Language, p g.Target[T]) error {
@@ -101,7 +111,7 @@ func RegisterTarget[T any](r *Registry, lang representation.Language, p g.Target
 	r.targets[string(lang.ID())] = targetEntry{lang, p}
 	return nil
 }
-func RegisterMapping[F, T any, S g.SourceSession[F]](r *Registry, from, to representation.Language, p g.MappingLibrary[F, T, S]) (MappingRef, error) {
+func RegisterMapping[F, T, R any](r *Registry, from, to representation.Language, p g.MappingLibrary[F, T, R]) (MappingRef, error) {
 	if r == nil || representation.IsNil(p) || representation.CheckMarker[F](from) != nil || representation.CheckMarker[T](to) != nil {
 		return MappingRef{}, g.ErrInvalid
 	}
@@ -118,7 +128,7 @@ func RegisterMapping[F, T any, S g.SourceSession[F]](r *Registry, from, to repre
 	defer r.mu.Unlock()
 	r.next++
 	ref := MappingRef{r, r.next}
-	r.mappings = append(r.mappings, mappingEntry{from, to, reflect.TypeFor[S](), desc.Profile, desc, plan[F, T, S], ref})
+	r.mappings = append(r.mappings, mappingEntry{from, to, reflect.TypeFor[R](), desc.Profile, desc, plan[F, T, R], ref})
 	return ref, nil
 }
 func (r *Registry) Replace(v Replacement) error {
@@ -212,9 +222,9 @@ func (r *Registry) Generate(ctx context.Context, q Request, checker check.Checke
 	}
 	return out, nil
 }
-func plan[F, T any, S g.SourceSession[F]](ctx context.Context, q Request, src sourceEntry, target targetEntry, entries []mappingEntry, replacements []Replacement, checker check.Checker) (g.GenerationPlan, error) {
+func plan[F, T, R any](ctx context.Context, q Request, src sourceEntry, target targetEntry, entries []mappingEntry, replacements []Replacement, checker check.Checker) (g.GenerationPlan, error) {
 	fail := func(err error) (g.GenerationPlan, error) { return g.GenerationPlan{}, err }
-	provider, ok := src.provider.(g.SourceProvider[F, S])
+	provider, ok := src.provider.(g.SourceProvider[F, R])
 	if !ok {
 		return fail(g.ErrScope)
 	}
@@ -222,13 +232,13 @@ func plan[F, T any, S g.SourceSession[F]](ctx context.Context, q Request, src so
 	if !ok {
 		return fail(g.ErrScope)
 	}
-	request, err := transform.AdmitRequest[F](src.language, src.contract, q.Input)
+	captured, err := g.AdmitInput[F](src.language, src.contract, q.Input)
 	if err != nil {
 		return fail(err)
 	}
-	var parts []g.SelectedDescription[F, T, S]
+	var parts []g.SelectedDescription[F, T, R]
 	for _, e := range entries {
-		d, ok := e.value.(g.MappingDescription[F, T, S])
+		d, ok := e.value.(g.MappingDescription[F, T, R])
 		if !ok {
 			return fail(g.ErrScope)
 		}
@@ -236,7 +246,7 @@ func plan[F, T any, S g.SourceSession[F]](ctx context.Context, q Request, src so
 		if err != nil {
 			return fail(err)
 		}
-		parts = append(parts, g.SelectedDescription[F, T, S]{ID: fmt.Sprintf("library-%d", e.ref.id), Description: d})
+		parts = append(parts, g.SelectedDescription[F, T, R]{ID: fmt.Sprintf("library-%d", e.ref.id), Description: d})
 	}
 	// Explicit replacements refer to both original and replacement offers.
 	for _, v := range replacements {
@@ -266,22 +276,12 @@ func plan[F, T any, S g.SourceSession[F]](ctx context.Context, q Request, src so
 		}
 		parts[expected].Description.Bindings = append(parts[expected].Description.Bindings[:oldIndex:oldIndex], parts[expected].Description.Bindings[oldIndex+1:]...)
 	}
-	source, err := provider.Open(ctx, request)
+	source, err := provider.Open(ctx, captured)
 	if err != nil {
 		return fail(err)
 	}
-	if representation.IsNil(source) {
+	if representation.IsNil(source.Interpretation) {
 		return fail(g.ErrInvalid)
 	}
-	if err = source.CheckInput(ctx, q.Input.Source, q.Input.Evidence); err != nil {
-		return fail(err)
-	}
-	roots, err := source.ResolveRoots(ctx, slices.Clone(q.Roots))
-	if err != nil {
-		return fail(err)
-	}
-	if len(roots) != len(q.Roots) {
-		return fail(g.ErrScope)
-	}
-	return g.Plan(ctx, g.PlanningInput[F, T, S]{Source: source, Snapshot: q.Input.Source, Evidence: q.Input.Evidence, Roots: roots, Mappings: parts, Execution: g.Execution[T]{Target: native, Checker: checker, Language: q.To, Output: q.Output, Limits: q.Limits}})
+	return g.Plan(ctx, g.PlanningInput[F, T, R]{Captured: captured, Source: source, Roots: slices.Clone(q.Roots), Mappings: parts, Execution: g.Execution[T]{Target: native, Checker: checker, Language: q.To, Output: q.Output, Limits: q.Limits}})
 }

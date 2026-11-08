@@ -2,29 +2,24 @@ package source
 
 import (
 	"fmt"
+
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/bitspark/ontos/codec/go"
 	core "github.com/bitspark/ontos/core/go"
 	data "github.com/bitspark/ontos/data/go"
-	"slices"
-	"strings"
 )
 
-// Expression is a source-owned reading of descriptor operands. Native rules
-// live in supplied mappings. Literal payloads are never traversed as types.
-type Expression struct {
+// Descriptor is a source-owned reading of a built-in descriptor occurrence.
+// Native rules live in supplied mappings. Literal payloads are never traversed.
+type Descriptor struct {
 	Constructor   string
 	Discriminator string
 	Origin        ast.NodeRef
-	Operands      []Operand
-}
-type Operand struct {
-	Path []uint32
-	Use  g.Use[h.Language]
 }
 type Field struct {
 	Name     string
@@ -37,94 +32,56 @@ type Declaration struct {
 	ModulePin string
 	Root      bool
 	Origin    ast.NodeRef
-	Body      g.Use[h.Language]
 }
 type Parameter struct {
 	Name   string
 	Origin ast.NodeRef
 }
 
-func (s *Source) Declaration(d g.Declaration[h.Language]) (Declaration, error) {
-	i, ok := s.declarations.Index(d)
-	if !ok || s.entities[i] == 0 {
-		return Declaration{}, g.ErrScope
-	}
-	e := s.facts.Entities[i-1]
-	pin, err := s.modulePin(e.Owner)
+// reader is the only value representation libraries receive. It exposes the
+// interpretation's reading methods, not its kernel-facing judgments.
+type reader struct{ s *interpretation }
+
+func (r reader) Declaration(d g.Declaration[h.Language]) (Declaration, error) {
+	e, ok, err := r.s.definition(d)
 	if err != nil {
 		return Declaration{}, err
 	}
-	return Declaration{Name: e.Name, ModulePin: pin, Root: s.roots[d], Origin: e.Declarations[0], Body: s.use(e.Body)}, nil
+	if !ok {
+		return Declaration{}, g.ErrScope
+	}
+	pin, err := r.s.modulePin(e.Owner)
+	if err != nil {
+		return Declaration{}, err
+	}
+	module := r.s.data.Entities[e.Owner-1]
+	if len(module.Declarations) != 1 {
+		return Declaration{}, semantic.ErrInvalidRequest
+	}
+	return Declaration{Name: e.Name, ModulePin: pin, Root: module.Declarations[0] == r.s.rootModule, Origin: e.Declarations[0]}, nil
 }
-func (s *Source) Parameter(b g.Binder[h.Language]) (Parameter, error) {
-	i, ok := s.binders.Index(b)
-	if !ok || s.bound[semantics.EntityID(i)] != b {
+func (r reader) Parameter(b g.Binder[h.Language]) (Parameter, error) {
+	id, ok := b.In(r.s.graph)
+	if !ok {
 		return Parameter{}, g.ErrScope
 	}
-	e := s.facts.Entities[i-1]
+	e := r.s.data.Entities[id-1]
 	if len(e.Declarations) != 1 {
 		return Parameter{}, semantic.ErrInvalidRequest
 	}
 	return Parameter{e.Name, e.Declarations[0]}, nil
 }
-func (s *Source) IsBody(env g.Environment[h.Language], use g.Use[h.Language]) bool {
-	i, ok := s.environments.Index(env)
-	if !ok || i <= 1 || s.entities[i-1] == 0 {
-		return false
-	}
-	return s.use(s.facts.Entities[i-2].Body) == use
-}
-func (s *Source) Read(use g.Use[h.Language]) (Expression, error) {
-	i, formal, err := s.useIndex(use)
-	if err != nil {
-		return Expression{}, err
-	}
-	if formal != 0 {
-		return Expression{}, g.ErrUnsupported
-	}
-	t := s.facts.Terms[i-1]
-	v := Expression{Origin: s.sites[semantics.TermID(i)]}
-	if t.Kind == semantics.Reference || t.Kind == semantics.Application {
-		v.Constructor = "reference"
-		return v, nil
-	}
-	if t.Kind != semantics.ProviderExpression || t.Operator.Owner != "horos" {
-		return v, semantic.ErrInvalidRequest
-	}
-	v.Constructor = strings.TrimPrefix(t.Operator.Name, "descriptor/")
-	for _, o := range t.Operands {
-		v.Operands = append(v.Operands, Operand{Path: slices.Clone(o.Locator), Use: s.use(o.Term)})
-	}
-	if v.Constructor == "scalar" || v.Constructor == "record" {
-		p, err := s.payload(semantics.TermID(i))
-		if err != nil {
-			return v, err
-		}
-		if p.Len() < 2 {
-			return v, semantic.ErrInvalidRequest
-		}
-		v.Discriminator = atom(p.At(1))
-	}
-	return v, nil
-}
-func (s *Source) Operand(use g.Use[h.Language], path ...uint32) (g.Use[h.Language], error) {
-	v, err := s.Read(use)
-	if err != nil {
-		return g.Use[h.Language]{}, err
-	}
-	for _, o := range v.Operands {
-		if slices.Equal(o.Path, path) {
-			return o.Use, nil
-		}
-	}
-	return g.Use[h.Language]{}, semantic.ErrInvalidRequest
-}
-func (s *Source) Fields(use g.Use[h.Language]) ([]Field, error) {
-	i, formal, err := s.useIndex(use)
-	if err != nil || formal != 0 {
+func (r reader) Descriptor(u g.Use[h.Language]) (Descriptor, bool, error) { return r.s.descriptor(u) }
+
+// Fields reads a closed or open record payload (horos/record, kind, field...).
+// Each field is (horos/field, name, req|opt, type); field k's type is the
+// operand at locator [k+2, 3].
+func (r reader) Fields(v g.UseView[h.Language]) ([]Field, error) {
+	id, ok := v.Use.In(r.s.graph)
+	if !ok || v.Kind != g.ExpressionUse {
 		return nil, g.ErrScope
 	}
-	p, err := s.payload(semantics.TermID(i))
+	p, err := r.s.payload(id)
 	if err != nil {
 		return nil, err
 	}
@@ -141,18 +98,33 @@ func (s *Source) Fields(use g.Use[h.Language]) ([]Field, error) {
 		if err != nil {
 			return nil, err
 		}
-		u, err := s.Operand(use, uint32(n), 3)
-		if err != nil {
-			return nil, err
+		u, ok := v.Operand(uint32(n), 3)
+		if !ok {
+			return nil, semantic.ErrInvalidRequest
 		}
-		view, err := s.Read(u)
-		if err != nil {
-			return nil, err
-		}
-		fields = append(fields, Field{Name: name, Optional: atom(f.At(2)) == "opt", Use: u, Origin: view.Origin})
+		term, _ := u.In(r.s.graph)
+		fields = append(fields, Field{Name: name, Optional: atom(f.At(2)) == "opt", Use: u, Origin: r.s.sites[term]})
 	}
 	return fields, nil
 }
+
+// Element is the operand at locator [1] of a collection descriptor.
+func (r reader) Element(v g.UseView[h.Language]) (g.Use[h.Language], error) {
+	if _, ok := v.Use.In(r.s.graph); !ok || v.Kind != g.ExpressionUse {
+		return g.Use[h.Language]{}, g.ErrScope
+	}
+	u, ok := v.Operand(1)
+	if !ok {
+		return g.Use[h.Language]{}, semantic.ErrInvalidRequest
+	}
+	return u, nil
+}
+func (r reader) Unsupported(u g.Use[h.Language], message string) error {
+	id, _ := u.In(r.s.graph)
+	site := r.s.sites[id]
+	return &text.Diagnostic{Code: text.Unsupported, Message: message, Node: &site}
+}
+
 func atom(v core.Value) string {
 	a, ok := v.(core.Atom)
 	if !ok {
@@ -160,8 +132,8 @@ func atom(v core.Value) string {
 	}
 	return string(a.Bytes())
 }
-func (s *Source) payload(id semantics.TermID) (core.Tuple, error) {
-	t := s.facts.Terms[id-1]
+func (s *interpretation) payload(id semantics.TermID) (core.Tuple, error) {
+	t := s.data.Terms[id-1]
 	if t.Encoding != (semantics.Key{Owner: "ontos", Name: "codec-v1"}) {
 		return core.Tuple{}, semantic.ErrInvalidRequest
 	}
@@ -175,12 +147,12 @@ func (s *Source) payload(id semantics.TermID) (core.Tuple, error) {
 	}
 	return p, nil
 }
-func (s *Source) modulePin(id semantics.EntityID) (string, error) {
+func (s *interpretation) modulePin(id semantics.EntityID) (string, error) {
 	term := s.identities[id]
 	if term == 0 {
 		return "", semantic.ErrInvalidRequest
 	}
-	t := s.facts.Terms[term-1]
+	t := s.data.Terms[term-1]
 	if t.Operator != (semantics.Key{Owner: "horos", Name: "identity/module"}) || t.Encoding != (semantics.Key{Owner: "ontos", Name: "codec-v1"}) {
 		return "", semantic.ErrInvalidRequest
 	}

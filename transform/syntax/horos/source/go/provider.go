@@ -2,51 +2,43 @@ package source
 
 import (
 	"context"
+
 	g "github.com/Bitspark/bittype/contracts/generation/go"
-	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
-	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
-// Reader is the Horos interpretation API consumed by representation libraries.
-// Neither the kernel nor native target implementations interpret these values.
+// Reader is the horos interpretation API for representation libraries. It
+// reads kernel handles against the captured horos graph and supplies no
+// navigation: declarations, binders, actuals and children come from the
+// kernel's views. Neither the kernel nor native targets interpret these values.
 type Reader interface {
-	g.SourceSession[h.Language]
-	Snapshot() semantic.Snapshot
+	// Declaration reads a horos type definition's name, module pin, root-module
+	// membership and declaration site.
 	Declaration(g.Declaration[h.Language]) (Declaration, error)
+	// Parameter reads a binder's name and declaration site.
 	Parameter(g.Binder[h.Language]) (Parameter, error)
-	IsBody(g.Environment[h.Language], g.Use[h.Language]) bool
-	Read(g.Use[h.Language]) (Expression, error)
-	Operand(g.Use[h.Language], ...uint32) (g.Use[h.Language], error)
-	Fields(g.Use[h.Language]) ([]Field, error)
+	// Descriptor reads a built-in descriptor occurrence. ok is false for a
+	// reference or application, which has no descriptor.
+	Descriptor(g.Use[h.Language]) (Descriptor, bool, error)
+	// Fields reads a record descriptor's fields; each field type is the
+	// kernel's operand occurrence at the horos field locator.
+	Fields(g.UseView[h.Language]) ([]Field, error)
+	// Element is a collection descriptor's element operand.
+	Element(g.UseView[h.Language]) (g.Use[h.Language], error)
+	// Unsupported is a diagnostic at an occurrence's horos syntax site.
 	Unsupported(g.Use[h.Language], string) error
 }
+
 type Provider struct{}
 
 func (Provider) Contract() transform.Contract { return Contract() }
-func (Provider) Open(ctx context.Context, r transform.Request[h.Language]) (Reader, error) {
-	return New(ctx, r)
-}
-
-func (s *Source) ResolveRoots(ctx context.Context, sites []ast.NodeRef) ([]g.Declaration[h.Language], error) {
-	if ctx == nil || len(sites) == 0 {
-		return nil, g.ErrInvalid
+func (Provider) Open(ctx context.Context, c g.Captured[h.Language]) (g.Source[h.Language, Reader], error) {
+	s, err := open(ctx, c)
+	if err != nil {
+		return g.Source[h.Language, Reader]{}, err
 	}
-	out := make([]g.Declaration[h.Language], 0, len(sites))
-	seen := map[ast.NodeRef]bool{}
-	for _, site := range sites {
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-		d, ok := s.bySite[site]
-		if !ok || seen[site] {
-			return nil, g.ErrScope
-		}
-		seen[site] = true
-		out = append(out, d)
-	}
-	return out, nil
+	return g.Source[h.Language, Reader]{Interpretation: s, Reader: reader{s}}, nil
 }
 
 var _ g.SourceProvider[h.Language, Reader] = Provider{}

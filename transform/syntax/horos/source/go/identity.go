@@ -1,4 +1,5 @@
-// Package source reads established Horos semantics for supplied native mappings.
+// Package source interprets established horos semantics for the generation
+// kernel and for horos representation libraries.
 package source
 
 import (
@@ -23,31 +24,4 @@ func Named(language representation.Language, modulePin, name string) (g.Selector
 		return g.Selector{}, g.ErrInvalid
 	}
 	return g.NewSelector(language, "declaration/"+modulePin+"/"+name)
-}
-func Bound(language representation.Language) (g.Selector, error) {
-	return g.NewSelector(language, "bound")
-}
-
-func (s *Source) DeclarationSelector(d g.Declaration[h.Language]) (g.Selector, bool, error) {
-	i, ok := s.declarations.Index(d)
-	if !ok || s.entities[i] == 0 {
-		return g.Selector{}, false, g.ErrScope
-	}
-	e := s.facts.Entities[s.entities[i]-1]
-	pin, err := s.modulePin(e.Owner)
-	if err != nil {
-		return g.Selector{}, false, err
-	}
-	key, err := Named(s.snapshot.Language(), pin, e.Name)
-	return key, true, err
-}
-func (s *Source) UseSelector(use g.UseData[h.Language]) (g.Selector, error) {
-	if use.Bound.Valid() {
-		return Bound(s.snapshot.Language())
-	}
-	view, err := s.Read(use.Use)
-	if err != nil {
-		return g.Selector{}, err
-	}
-	return Builtin(s.snapshot.Language(), view.Constructor, view.Discriminator)
 }
