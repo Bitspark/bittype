@@ -9,8 +9,8 @@ import (
 // FreezeDescription captures mutable container fields and checks the composition
 // grammar. Owner callbacks must capture stable configuration; they are trusted
 // implementations, and are never retained by a finished plan.
-func FreezeDescription[F, T any, S SourceSession[F]](from representation.Language, d MappingDescription[F, T, S], limits Limits) (MappingDescription[F, T, S], error) {
-	fail := func(err error) (MappingDescription[F, T, S], error) { return MappingDescription[F, T, S]{}, err }
+func FreezeDescription[F, T, R any](from representation.Language, d MappingDescription[F, T, R], limits Limits) (MappingDescription[F, T, R], error) {
+	fail := func(err error) (MappingDescription[F, T, R], error) { return MappingDescription[F, T, R]{}, err }
 	if d.Profile == "" || !limits.Valid() {
 		return fail(ErrInvalid)
 	}

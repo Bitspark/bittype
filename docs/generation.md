@@ -63,8 +63,8 @@ registers libraries and a target; registration invokes Describe, the planner
 invokes target checks, and Run invokes Build. Excerpts use the generation package.
 
 ```go
-type MappingLibrary[F, T any, S SourceSession[F]] interface {
-    Describe(from, to representation.Language) (MappingDescription[F,T,S], error)
+type MappingLibrary[F, T, R any] interface {
+    Describe(from, to representation.Language) (MappingDescription[F,T,R], error)
 }
 type Target[T any] interface {
     CheckExpression(context.Context, Expression[T]) error
@@ -204,8 +204,8 @@ needed.
 
 ## Evidence and next increments
 
-[GEN-01](generation-gaps.md#gen-01) records the open architectural correction to
-common semantic navigation. [GEN-02](generation-gaps.md#gen-02) records absent
+[GEN-01](generation-gaps.md#gen-01) records the delivered correction to common
+semantic navigation and its scope. [GEN-02](generation-gaps.md#gen-02) records absent
 native constraint enforcement. The representation profile explicitly permits
 constraint erasure; requesting the enforcement profile fails Unsupported.
 [Native placement](native-file-placement.md) records the remaining Files work.

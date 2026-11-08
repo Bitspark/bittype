@@ -71,6 +71,10 @@ jobs:
                   except ValueError as error:
                       errors.append(f"{name}: invalid JSON example: {error}")
               prose = re.sub(r"^```[^\n]*\n.*?^```\s*$", "", content, flags=re.M | re.S)
+              # Frozen consultation inputs and verbatim advice are historical
+              # records; their links describe the revision they were written for.
+              if name.endswith((".submitted.md", ".advice.md")):
+                  continue
               for target in re.findall(r"\[[^\]]*\]\(([^)\s]+)\)", prose):
                   parsed = urlsplit(target)
                   if parsed.scheme or parsed.netloc or not parsed.path:

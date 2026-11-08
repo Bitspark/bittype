@@ -40,7 +40,7 @@ func Record(profile string) rules.Library[s.Language] {
 			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
 		}
 		return g.MappingDescription[h.Language, s.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "record/typescript/1", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, s.Language, source.Reader]) (g.Expression[s.Language], error) {
-			src, err := r.Source()
+			src, err := r.Reader()
 			if err != nil {
 				return g.Expression[s.Language]{}, err
 			}
@@ -48,14 +48,14 @@ func Record(profile string) rules.Library[s.Language] {
 			if err != nil {
 				return g.Expression[s.Language]{}, err
 			}
-			if !src.IsBody(use.Environment, use.Use) {
+			if !use.Body {
 				return g.Expression[s.Language]{}, src.Unsupported(use.Use, "nested records require a named declaration in this profile")
 			}
-			view, err := src.Read(use.Use)
+			view, _, err := src.Descriptor(use.Use)
 			if err != nil {
 				return g.Expression[s.Language]{}, err
 			}
-			fields, err := src.Fields(use.Use)
+			fields, err := src.Fields(use)
 			if err != nil {
 				return g.Expression[s.Language]{}, err
 			}

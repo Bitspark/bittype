@@ -41,8 +41,8 @@ func Element(from representation.Language, slot g.Slot) (g.Pattern[h.Language, s
 		return p, err
 	}
 	p.Slots = []g.Slot{slot}
-	p.Capture = func(ctx context.Context, src source.Reader, u g.UseData[h.Language]) ([]g.Capture[h.Language], error) {
-		operand, err := src.Operand(u.Use, 1)
+	p.Capture = func(ctx context.Context, src source.Reader, u g.UseView[h.Language]) ([]g.Capture[h.Language], error) {
+		operand, err := src.Element(u)
 		if err != nil {
 			return nil, err
 		}
@@ -54,11 +54,11 @@ func Declarations[T any](profile string, record, alias g.Form[T]) Library[T] {
 	return Library[T]{profile, func(from, to representation.Language) (g.MappingDescription[h.Language, T, source.Reader], error) {
 		return g.MappingDescription[h.Language, T, source.Reader]{Declarations: []g.DeclarationRecipe[h.Language, T, source.Reader]{{ID: "declarations", Expand: func(ctx context.Context, r g.DeclarationRequest[h.Language, T, source.Reader]) (g.DeclarationDescription[T], error) {
 			zero := g.DeclarationDescription[T]{}
-			src, err := r.Source()
+			src, err := r.Reader()
 			if err != nil {
 				return zero, err
 			}
-			open, err := r.Open()
+			open, err := r.Declaration()
 			if err != nil {
 				return zero, err
 			}
@@ -73,17 +73,17 @@ func Declarations[T any](profile string, record, alias g.Form[T]) Library[T] {
 			if !decl.Root {
 				name = "M" + decl.ModulePin[:16] + "_" + name
 			}
-			body, err := src.Read(open.Body)
+			body, descriptor, err := src.Descriptor(open.Body)
 			if err != nil {
 				return zero, err
 			}
 			form := alias
-			if body.Constructor == "record" {
+			if descriptor && body.Constructor == "record" {
 				form = record
 			}
 			desc := g.DeclarationDescription[T]{Name: name, Form: form, Origin: decl.Origin}
 			for i, f := range open.Formals {
-				parameter, err := src.Parameter(f.Binder)
+				parameter, err := src.Parameter(f)
 				if err != nil {
 					return zero, err
 				}

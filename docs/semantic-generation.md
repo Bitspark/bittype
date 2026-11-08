@@ -151,9 +151,9 @@ Arbitrary later Horos queries do not mutate the captured source evidence.
 The mapping requires the current Horos analysis profile, its validity and
 required enumeration reports, an available typed semantic graph, and compatible
 configuration. The planner admits capture/evidence association before mapping.
-The common-traversal responsibility still exposed through this source reader is
-the open architectural correction [GEN-01](generation-gaps.md#gen-01).
-The source-specific reader decodes published terms; it does not rerun Horos
+The kernel walks the published graph itself
+([GEN-01](generation-gaps.md#gen-01)). The horos interpretation and reader
+decode published facts and terms; they do not rerun horos
 resolution, query a different Program or restore a Data-summary fallback.
 
 The bundled prelude can have authoritative source-less entities when its exact
@@ -167,7 +167,7 @@ Generation outputs retain syntax-checked declaration sites and intended bindings
 
 Mappings retain real declaration/parameter links and available current source
 origins. Imported definitions are emitted once with dependencies before uses.
-The source reader lives at `transform/syntax/horos/source/go`; bounded native
+The horos interpretation and reader live at `transform/syntax/horos/source/go`; bounded native
 storage lives at `transform/syntax/shared/target/go`, with native adapters under the
 four language paths. The packages under `transform/syntax/horos-to-<native>/mapping/go` choose representations. Shared contracts, engine and
 printer gain no Horos/Ontos or behavioral-library imports.

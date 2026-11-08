@@ -133,12 +133,17 @@ func cellMapping(from representation.Language, pin string, calls *int) tsContrib
 			return g.MappingDescription[h.Language, ts.Language, source.Reader]{}, err
 		}
 		slot := g.TypeSlot("V")
-		pattern := g.Pattern[h.Language, source.Reader]{Selector: key, Slots: []g.Slot{slot}, Capture: func(ctx context.Context, src source.Reader, use g.UseData[h.Language]) ([]g.Capture[h.Language], error) {
+		pattern := g.Pattern[h.Language, source.Reader]{Selector: key, Slots: []g.Slot{slot}, Capture: func(ctx context.Context, src source.Reader, use g.UseView[h.Language]) ([]g.Capture[h.Language], error) {
 			(*calls)++
-			if len(use.Actuals) != 1 {
-				return nil, g.ErrScope
+			// Select the actual for Cell's own binder T, never a position.
+			for _, a := range use.Actuals {
+				if p, err := src.Parameter(a.Binder); err != nil {
+					return nil, err
+				} else if p.Name == "T" {
+					return []g.Capture[h.Language]{{Slot: slot, Use: a.Use}}, nil
+				}
 			}
-			return []g.Capture[h.Language]{{Slot: slot, Use: use.Actuals[0].Use}}, nil
+			return nil, g.ErrScope
 		}}
 		return g.MappingDescription[h.Language, ts.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, source.Reader]{{ID: "cells/typescript/1", Input: pattern, Output: model.External("@bitspark/cell", "Cell", g.Mapped[ts.Language](slot))}}}, nil
 	}

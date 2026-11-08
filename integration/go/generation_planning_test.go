@@ -144,11 +144,22 @@ func TestGenerationPlanReversedLibraryArguments(t *testing.T) {
 			return g.MappingDescription[h.Language, ts.Language, src.Reader]{}, err
 		}
 		left, right := g.TypeSlot("L"), g.TypeSlot("R")
-		pattern := g.Pattern[h.Language, src.Reader]{Selector: key, Slots: []g.Slot{left, right}, Capture: func(ctx context.Context, s src.Reader, u g.UseData[h.Language]) ([]g.Capture[h.Language], error) {
-			if len(u.Actuals) != 2 {
-				return nil, g.ErrScope
+		pattern := g.Pattern[h.Language, src.Reader]{Selector: key, Slots: []g.Slot{left, right}, Capture: func(ctx context.Context, s src.Reader, u g.UseView[h.Language]) ([]g.Capture[h.Language], error) {
+			// Actuals are selected by the real binder, never by position.
+			var captures []g.Capture[h.Language]
+			for _, a := range u.Actuals {
+				p, err := s.Parameter(a.Binder)
+				if err != nil {
+					return nil, err
+				}
+				switch p.Name {
+				case "L":
+					captures = append(captures, g.Capture[h.Language]{Slot: left, Use: a.Use})
+				case "R":
+					captures = append(captures, g.Capture[h.Language]{Slot: right, Use: a.Use})
+				}
 			}
-			return []g.Capture[h.Language]{{Slot: left, Use: u.Actuals[0].Use}, {Slot: right, Use: u.Actuals[1].Use}}, nil
+			return captures, nil
 		}}
 		return g.MappingDescription[h.Language, ts.Language, src.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, src.Reader]{{
 			ID: "reverse-pair", Input: pattern, Output: model.External("@example/pairs", "Pair", g.Mapped[ts.Language](right), g.Mapped[ts.Language](left)),
@@ -276,11 +287,11 @@ func TestPlanningExpansionScopeAndNoFallback(t *testing.T) {
 					case "missing-helper":
 						return g.Helper[ts.Language](g.NewHelperKey("absent")), nil
 					default:
-						s, err := r.Source()
+						s, err := r.Reader()
 						if err != nil {
 							return g.Expression[ts.Language]{}, err
 						}
-						operand, err := s.Operand(u.Use, 1)
+						operand, err := s.Element(u)
 						if err != nil {
 							return g.Expression[ts.Language]{}, err
 						}
@@ -299,7 +310,7 @@ func TestPlanningExpansionScopeAndNoFallback(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if _, err = saved.Source(); !errors.Is(err, g.ErrScope) {
+				if _, err = saved.Reader(); !errors.Is(err, g.ErrScope) {
 					t.Fatal("retained expansion is live", err)
 				}
 				if _, err = plan.Run(context.Background()); err != nil {
@@ -323,7 +334,7 @@ func TestPlanFreezesExpandedNativeRepresentation(t *testing.T) {
 		pattern, err := rules.Pattern(from, "list-of", "")
 		return g.MappingDescription[h.Language, ts.Language, src.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, src.Reader]{{ID: "chosen", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, ts.Language, src.Reader]) (g.Expression[ts.Language], error) {
 			calls++
-			source, err := r.Source()
+			source, err := r.Reader()
 			if err != nil {
 				return g.Expression[ts.Language]{}, err
 			}
@@ -331,7 +342,7 @@ func TestPlanFreezesExpandedNativeRepresentation(t *testing.T) {
 			if err != nil {
 				return g.Expression[ts.Language]{}, err
 			}
-			element, err := source.Operand(use.Use, 1)
+			element, err := source.Element(use)
 			if err != nil {
 				return g.Expression[ts.Language]{}, err
 			}
@@ -385,7 +396,7 @@ func TestGenerationPlanOmittedNativeArgument(t *testing.T) {
 		return g.MappingDescription[h.Language, ts.Language, src.Reader]{Declarations: []g.DeclarationRecipe[h.Language, ts.Language, src.Reader]{{
 			ID: "erase-ignored-parameter", Selector: key,
 			Expand: func(ctx context.Context, r g.DeclarationRequest[h.Language, ts.Language, src.Reader]) (g.DeclarationDescription[ts.Language], error) {
-				open, err := r.Open()
+				open, err := r.Declaration()
 				if err != nil {
 					return g.DeclarationDescription[ts.Language]{}, err
 				}

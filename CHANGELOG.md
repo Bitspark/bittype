@@ -15,7 +15,15 @@ Changes since the previously recorded module-encoding entry:
 - Carry generation.Output into TypeScript Files; decide imports/exports after
   placement and check external symbols, public roots and conflicting local names.
 - Record open source traversal ownership (GEN-01), native enforcement (GEN-02)
-  and Rust/C++ Files ownership (ACX-004). These remain unfinished.
+  and Rust/C++ Files ownership (ACX-004).
+- Correct GEN-01 (ACX-006, research 0013): the kernel admits the evidence graph and
+  walks declarations, references, applications and children itself, with
+  run-scoped occurrence handles and binder-keyed actuals. Sources supply
+  classification, descriptor selectors and judgments (admitted, unsupported,
+  rejected, undetermined) plus a reader for their libraries. Every actual is
+  judged, including omitted ones. The Open/Admit/CheckChild/Catalog reader is
+  removed without aliases; horos and the independent source, which now publishes
+  its own graph, drive the same walk. GEN-02 and ACX-004 remain unfinished.
 - Reconcile active architecture/API guides, Horos graph examples and dependency
   versions; add a documentation map, runnable Page/Cell fixture walkthrough,
   native placement proposal, exact verification contribution reference and

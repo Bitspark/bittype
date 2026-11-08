@@ -17,20 +17,21 @@ and checks those declarations under a placement and dependency environment.
    closed native Program. Run receives that program, without source readers or
    mapping callbacks. The procedural operations and per-request mapping lists
    have been removed. [SPI](generation-spi.md)
-3. **Read common structure from established semantics — still proposed.**
-   The current Source/Catalog reader supplies traversal as well as source-owned
-   interpretation. A later change should let the kernel follow the shared
-   semantic graph and retain language-owned identity, operand meaning and
-   applicability judgments. This task does not claim that separation is complete.
-   [Contexts and matrix](abstraction-levels.md#agnostic-kernel-and-language-specific-rules) ·
-   [GEN-01: work and completion criteria](generation-gaps.md#gen-01)
+3. **Read common structure from established semantics — implemented.**
+   The kernel admits the graph from the evidence and walks declarations,
+   references, applications and children itself. Sources keep language-owned
+   identity, operand meaning and applicability judgments through a narrow
+   interpretation contract and a reader for their mapping libraries.
+   [SPI](generation-spi.md#semantic-traversal-and-source-interpretation) ·
+   [GEN-01: correction and scope](generation-gaps.md#gen-01)
 
 The C++ include and Rust visibility cases remain open in
 [ACX-004](architecture-cases/0004-generation-file-syntax.md). Language route
 planning through ASTTransformer remains a separate operation; it is not the
 source-bound generation plan documented here. [GEN-02](generation-gaps.md#gen-02)
 separately records missing native enforcement, including the native parameter
-contract limitation. Neither gap was closed by the declarative planning change.
+contract limitation. Neither of those was closed by the declarative planning or
+traversal changes.
 
 ## Caller interface
 

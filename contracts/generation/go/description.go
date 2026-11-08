@@ -2,6 +2,7 @@ package generation
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"sync"
 
@@ -14,18 +15,19 @@ type Capture[F any] struct {
 	Use  Use[F]
 }
 
-// Pattern fixes selection and declares its captures. Capture interprets the
-// selected source meaning only; the kernel checks each child relation.
-type Pattern[F any, S SourceSession[F]] struct {
+// Pattern fixes selection and declares its captures. Capture reads the source
+// meaning of the kernel's view through the source reader R and names children
+// of that view; the kernel checks that each captured use is one of them.
+type Pattern[F, R any] struct {
 	Selector Selector
 	Slots    []Slot
-	Capture  func(context.Context, S, UseData[F]) ([]Capture[F], error)
+	Capture  func(context.Context, R, UseView[F]) ([]Capture[F], error)
 }
-type BindingDescription[F, T any, S SourceSession[F]] struct {
+type BindingDescription[F, T, R any] struct {
 	ID     string
-	Input  Pattern[F, S]
+	Input  Pattern[F, R]
 	Output Expression[T]
-	Expand func(context.Context, Expansion[F, T, S]) (Expression[T], error)
+	Expand func(context.Context, Expansion[F, T, R]) (Expression[T], error)
 }
 type ParameterDescription struct {
 	Name        string
@@ -56,64 +58,82 @@ func (d DeclarationDescription[T]) Clone() DeclarationDescription[T] {
 	return d
 }
 
-type DeclarationRecipe[F, T any, S SourceSession[F]] struct {
+type DeclarationRecipe[F, T, R any] struct {
 	ID string
 	// A zero selector explicitly supplies the structural declaration policy.
 	Selector Selector
-	Expand   func(context.Context, DeclarationRequest[F, T, S]) (DeclarationDescription[T], error)
+	Expand   func(context.Context, DeclarationRequest[F, T, R]) (DeclarationDescription[T], error)
 }
 type HelperRecipe[T any] struct {
 	Key         HelperKey
 	Declaration NativeDeclaration[T]
 }
 
-type MappingDescription[F, T any, S SourceSession[F]] struct {
+type MappingDescription[F, T, R any] struct {
 	Profile      string
-	Bindings     []BindingDescription[F, T, S]
-	Declarations []DeclarationRecipe[F, T, S]
+	Bindings     []BindingDescription[F, T, R]
+	Declarations []DeclarationRecipe[F, T, R]
 	Helpers      []HelperRecipe[T]
 }
 
 // Describe is called at registration. The registry freezes all returned data.
 // No provider receives a target AST builder or is called during Run.
 // bittype:dimension Syntax
-type MappingLibrary[F, T any, S SourceSession[F]] interface {
-	Describe(from, to representation.Language) (MappingDescription[F, T, S], error)
+type MappingLibrary[F, T, R any] interface {
+	Describe(from, to representation.Language) (MappingDescription[F, T, R], error)
 }
 
-type expansionState[F, T any, S SourceSession[F]] struct {
-	mu       sync.Mutex
-	active   bool
-	ctx      context.Context
-	source   S
-	use      UseData[F]
-	open     OpenData[F]
-	captures map[Slot]Use[F]
-	limits   Limits
-	failure  error
+// expansionState is one callback's capability. It is active only while the
+// callback runs; afterwards every accessor and capture fails.
+type expansionState[F, T, R any] struct {
+	mu          sync.Mutex
+	active      bool
+	ctx         context.Context
+	reader      R
+	use         *UseView[F]
+	declaration *DeclarationView[F]
+	captures    map[Slot]Use[F]
+	limits      Limits
+	failure     error
 }
-type Expansion[F, T any, S SourceSession[F]] struct{ state *expansionState[F, T, S] }
+type Expansion[F, T, R any] struct{ state *expansionState[F, T, R] }
 
-func (r Expansion[F, T, S]) Source() (S, error) {
+func (r Expansion[F, T, R]) live() error {
 	if r.state == nil {
-		var z S
-		return z, ErrScope
+		return ErrScope
 	}
 	r.state.mu.Lock()
 	defer r.state.mu.Unlock()
 	if !r.state.active {
-		var z S
-		return z, ErrScope
+		return ErrScope
 	}
-	return r.state.source, nil
+	return nil
 }
-func (r Expansion[F, T, S]) Use() (UseData[F], error) {
-	if _, err := r.Source(); err != nil {
-		return UseData[F]{}, err
+
+// Reader is the source's interpretation reader, available during the callback.
+func (r Expansion[F, T, R]) Reader() (R, error) {
+	if err := r.live(); err != nil {
+		var z R
+		return z, err
+	}
+	return r.state.reader, nil
+}
+
+// Use is the kernel's view of the occurrence a binding rule maps.
+func (r Expansion[F, T, R]) Use() (UseView[F], error) {
+	if err := r.live(); err != nil {
+		return UseView[F]{}, err
+	}
+	if r.state.use == nil {
+		return UseView[F]{}, ErrScope
 	}
 	return r.state.use.Clone(), nil
 }
-func (r Expansion[F, T, S]) Mapped(use Use[F]) (Expression[T], error) {
+
+// Mapped captures a use for the planner to represent after the callback. A
+// binding rule may capture only children of its occurrence; a declaration
+// recipe only its body.
+func (r Expansion[F, T, R]) Mapped(use Use[F]) (Expression[T], error) {
 	s := r.state
 	if s == nil {
 		return Expression[T]{}, ErrScope
@@ -131,15 +151,17 @@ func (r Expansion[F, T, S]) Mapped(use Use[F]) (Expression[T], error) {
 		s.failure = ErrLimit
 		return Expression[T]{}, ErrLimit
 	}
-	var err error
-	if s.open.Declaration.Valid() {
-		if use != s.open.Body {
-			err = ErrScope
-		} // declaration recipes can map their body only
-	} else {
-		err = s.source.CheckChild(s.ctx, s.use.Environment, s.use.Use, use)
+	allowed := false
+	if s.declaration != nil {
+		allowed = use == s.declaration.Body
+	} else if s.use != nil {
+		allowed = childOf(use, s.use.Use)
 	}
-	if err != nil {
+	if !allowed {
+		err := errNotChild
+		if s.declaration != nil {
+			err = errNotBody
+		}
 		s.failure = err
 		return Expression[T]{}, err
 	}
@@ -148,11 +170,26 @@ func (r Expansion[F, T, S]) Mapped(use Use[F]) (Expression[T], error) {
 	return Mapped[T](slot), nil
 }
 
-type DeclarationRequest[F, T any, S SourceSession[F]] struct{ Expansion[F, T, S] }
+type DeclarationRequest[F, T, R any] struct{ Expansion[F, T, R] }
 
-func (r DeclarationRequest[F, T, S]) Open() (OpenData[F], error) {
-	if _, err := r.Source(); err != nil {
-		return OpenData[F]{}, err
+// Declaration is the kernel's view of the declaration being planned.
+func (r DeclarationRequest[F, T, R]) Declaration() (DeclarationView[F], error) {
+	if err := r.live(); err != nil {
+		return DeclarationView[F]{}, err
 	}
-	return r.state.open.Clone(), nil
+	if r.state.declaration == nil {
+		return DeclarationView[F]{}, ErrScope
+	}
+	return r.state.declaration.Clone(), nil
+}
+
+// The two capture refusals, distinguished for diagnosis.
+var (
+	errNotChild = fmt.Errorf("%w: a capture must be a child the kernel minted for the mapped occurrence", ErrScope)
+	errNotBody  = fmt.Errorf("%w: a declaration recipe may map only its body", ErrScope)
+)
+
+// childOf reports whether child is a structural child the kernel minted for parent.
+func childOf[F any](child, parent Use[F]) bool {
+	return child.o != nil && parent.o != nil && child.o.parent == parent.o
 }

@@ -1,9 +1,10 @@
 # Unfinished generation boundaries
 
-**Open work, recorded 8 November 2026.** The declarative generation change
+**Recorded 8 November 2026.** The declarative generation change
 ([PR #155](https://github.com/Bitspark/bittype/pull/155)) separates semantic
-planning from native AST construction. It does not complete the source-reader
-responsibility split or native enforcement of source kind constraints.
+planning from native AST construction. The kernel-owned semantic traversal
+corrects the source responsibility split (GEN-01). Native enforcement of source
+kind constraints (GEN-02) remains open.
 
 Keep these references stable and update their status and completion criteria in
 place when implementation changes. A successful `Page<Cell>` example or an unrelated
@@ -11,104 +12,135 @@ generation improvement does not close either item.
 
 | Reference | Status | Classification |
 | --- | --- | --- |
-| [GEN-01](#gen-01) | Open; replacement SPI not finalized | Architectural responsibility split; recorded as [bittype/ACX-006](architecture-cases/0006-generation-source-traversal.md) |
+| [GEN-01](#gen-01) | Corrected 8 November 2026: kernel-owned traversal with source judgments | Architectural responsibility split; recorded as [bittype/ACX-006](architecture-cases/0006-generation-source-traversal.md) |
 | [GEN-02](#gen-02) | Open; no native enforcement route implemented | Unsupported guarantee with missing native-plan expressiveness and target encodings |
 
 The implemented [mapping SPI](generation-spi.md) resolves representation choices
 before construction. The native constructor receives a closed program with no
 source reader, mapping callbacks or source-substitution templates. TypeScript
 Files consumes its checked output and verifies bindings after placement. These
-delivered boundaries remain distinct from the open items below.
+delivered boundaries remain distinct from the open item GEN-02.
 The remaining Rust/C++ Files ownership defects retain their own
 [ACX-004 record](architecture-cases/0004-generation-file-syntax.md).
 
 ## GEN-01
 
-**Move common semantic navigation from source integrations into the kernel.**
+**Common semantic navigation is kernel-owned. Corrected 8 November 2026 in [#191](https://github.com/Bitspark/bittype/pull/191).**
 
-### Current contract and concrete problem
+### What was wrong
 
-The following are implemented method excerpts, not the proposed replacement.
-Horos's generation integration implements them; the planner invokes them.
-[Source](../contracts/generation/go/source.go) and
-[Catalog](../contracts/generation/go/mapping.go) define the full interfaces.
+The planner used to ask each source integration for navigation of the
+established semantic graph as well as source interpretation. horos's `Open`
+enumerated a declaration's parameters and body. Its `Admit` followed references
+and applications and paired actuals with callee binders, alongside horos sort
+and scope checks. `CheckChild` re-derived the child relation. The independent
+test source reproduced the same navigation from hand-built tables. Each new
+source integration would have had to re-implement traversal of facts that the
+shared graph already records. [bittype/ACX-006](architecture-cases/0006-generation-source-traversal.md)
+records the defect. [Research 0013](../research-docs/0013-generation-source-traversal.md)
+derived the replacement.
 
-```go
-// Source[F] excerpts
-Open(context.Context, Declaration[F]) (OpenData[F], error)
-Admit(context.Context, Environment[F], Use[F]) (UseData[F], error)
-CheckChild(context.Context, Environment[F], Use[F], Use[F]) error
+### Delivered division
 
-type Catalog[F any] interface {
-    Declarations() []Declaration[F]
-    DeclarationSelector(Declaration[F]) (Selector, bool, error)
-    UseSelector(UseData[F]) (Selector, error)
-}
-```
+The kernel and the source now divide the work as follows.
+[SPI](generation-spi.md#semantic-traversal-and-source-interpretation)
 
-The reader currently supplies both navigation of established semantic structure
-and interpretation of source meanings. In particular, Horos's `Open` enumerates
-the declaration's parameters and body; Admit follows references/applications
-and pairs actuals with callee formals, alongside Horos-specific sort and scope
-checks. [Current implementation](../transform/syntax/horos/source/go/source.go)
+**Kernel**, in `contracts/generation/go`:
 
-The shared semantic model already represents entities, references, applications
-and argument bindings. One relevant implemented query is:
+1. It admits the request and unpacks the one graph that the designated evidence
+   publishes.
+2. It resolves root sites to their declaring entities.
+3. It opens declarations from their body and real binders.
+4. It follows references, and pairs application arguments with real binders
+   through `DirectParameterBindings`.
+5. It mints occurrence, declaration and binder handles for one run, and checks
+   that every capture is a structural child of the current occurrence.
+6. It enforces direct-binder scope.
 
-```go
-func (m Semantics[L]) DirectParameterBindings(id TermID) ([]ArgumentBinding, bool)
-```
+**Source**, through `Interpretation` and its own reader:
 
-The shared model implements this query; a common traversal can consume it.
-It pairs direct applications structurally. It does not prove applicability,
-interpret kinds, handle every possible application form, or authorize a use
-under arbitrary assumptions. [Query and limits](../semantics/go/model.go)
+- classifies the entities it generates and gives each a stable selector;
+- names its provider expressions;
+- judges declarations and whole occurrences from the captured evidence, with the
+  verdict Admitted, Unsupported, Rejected or Undetermined;
+- interprets payloads and operand meanings for its own mapping libraries.
 
-For `Page<Cell<Person>>`, the intended division is:
+For `People = Page<Cell<Person>>`:
 
-| Decision | Intended owner |
+| Decision | Owner |
 | --- | --- |
-| Follow established references to Page, Cell and Person | Kernel over the captured semantic graph |
-| Follow `Page.T` to `Cell<Person>` and `Cell.V` to Person | Kernel over established application bindings |
-| Interpret Horos constructors, kind judgments and pinned identity | Horos integration |
-| Select a native representation of Cell | Cell's mapping library |
-| Admit source evidence and preserve capture/scope association | Shared contract guarantees with source-owned judgments |
+| Follow the references to Page, Cell and Person | Kernel, over the captured graph |
+| Follow `Page.T` to `Cell<Person>` and `Cell.V` to Person | Kernel, over `DirectParameterBindings` |
+| Interpret horos constructors, proper sorts and module-pinned identity | horos interpretation |
+| Represent Cell natively, selecting its actual by Cell's binder | Cell's mapping library |
+| Admit evidence, preserve scope, and admit every occurrence in a use's subtree | Kernel mechanism with source judgments |
 
-This is an unfinished architectural correction, not an optional simplification
-or a missing output feature. The kernel has no Horos-specific dispatch, but
-making each source integration reproduce common graph navigation is still the
-wrong responsibility boundary. Source checking exists today; it must survive
-the correction.
+### Completion criteria
 
-### Remaining design and completion criteria
+1. The kernel consumes declaration, reference and application structure through
+   the shared graph. No source supplies a traversal:
+   - horos's interpretation reads only facts and payloads;
+   - the independent source publishes an ordinary graph through its own analysis.
+2. The source-owned contract is narrow. It covers classification and selectors,
+   descriptor selectors, and judgments. Undetermined, meaning uncovered evidence,
+   fails as `semantic.ErrEvidenceUnavailable` and Rejected as `ErrRejected`.
+   horos reports a missing sort fact as Undetermined; it is no longer a malformed
+   request. There is no hidden analysis.
+3. These guarantees stay enforced:
+   - capture identity, through `AdmitInput`;
+   - real binders and source environments, through occurrences that carry their
+     declaration;
+   - foreign-reference rejection, through handles valid only in their run and
+     graph;
+   - limits and whole-output failure.
 
-The narrower SPI is not finalized. Define which operations are graph mechanics
-and which questions require source-owned interpretation. Do not preserve the
-existing method names, handles or division of work merely because they exist.
-Do not move `Admit` wholesale into the kernel: its current responsibilities need
-to be separated, including the evidence and assumption checks.
+   An occurrence is admitted with its whole subtree before any binding or
+   convention represents it. That includes actuals the convention omits, content
+   nested in them, and operands no mapping captures. A generated declaration's
+   body is admitted even if its recipe does not represent it.
+4. horos and the independent source drive the same walk. The independent source
+   covers nested `Page<Page<T>>` and a library-owned `Cell<Person>`. horos covers
+   `Page<Cell<Person>>`. The negative cases cover both sources:
+   - omitted actuals: refuted, uncovered and admitted;
+   - binders of another declaration, including through a shared term;
+   - non-child captures, and handles kept from another run;
+   - recursion, parameter-headed and unapplied applications;
+   - foreign evidence;
+   - horos applied constructor aliases and curried forms, now Unsupported.
+5. The superseded surface is removed with no aliases:
+   - `Source.Open`, `Admit`, `CheckChild`, `Authenticate`, `CheckInput`, `Owners`
+     and `RootEnvironment`;
+   - `Catalog`, `SourceSession`, `ResolveRoots`, `OpenData` and `UseData`;
+   - the source address spaces and the effective-subject and formal-subject uses;
+   - the horos pre-walk and its reader navigation.
 
-Completion requires:
+[Qualification](../integration/go/generation_traversal_test.go) ·
+[Independent source](../integration/go/testdata/generationfixture/fixture.go)
 
-1. The kernel consumes established declaration/reference/application structure
-   through the shared semantic context. A source integration no longer has to
-   supply a parallel traversal of those same facts.
-2. Narrow source-owned contracts retain constructor/operand interpretation,
-   stable selector identity and applicability judgments. Unknown or uncovered
-   facts remain distinct from failed judgments; there is no hidden analysis.
-3. Capture identity, real binders, source environments, foreign-reference
-   rejection, limits and whole-output failure remain enforced. Omitted native
-   arguments still require source admission.
-4. Horos and an independent source exercise the same traversal, including nested
-   `Page<Cell<Person>>` composition and invalid scope/evidence cases. Inspection
-   of the change establishes ownership; tests alone do not establish it.
-5. Superseded reader interfaces and duplicated traversal are removed. Update
-   this item and ACX-006 with the correction and its actual supported scope.
+### Supported scope and limits
 
-The existing independent-source fixture qualifies today's public composition;
-it still implements the broad reader and therefore does not close GEN-01.
-[Fixture](../integration/go/testdata/generationfixture/fixture.go) ·
-[Context matrix](abstraction-levels.md#agnostic-kernel-and-language-specific-rules)
+- **Scope** is direct binder ownership by the declaration being planned. Nested
+  generic scopes are not supported. A language that needs them must contribute its
+  own scope judgment; the kernel adds no `Owner`-chain rule.
+- **No structural view.** The following are unsupported at their site:
+  - applications without a direct declaration callee and complete arguments;
+  - a generic declaration referenced without arguments.
+
+  Type-level constructor values still need an explicit representation.
+- **Operands.** Every provider-expression operand is admitted, structurally
+  and by judgment. It is represented only when a mapping captures it. For horos,
+  the analysis also checks every operand's formation contract.
+- **Callees.** The judgment of a use covers that use. A callee declaration is
+  classified when one of its uses is represented, and judged when it is
+  generated.
+- **Memoization.** Occurrences are distinguished by path, and no effective-subject
+  equivalence is defined. Judgments are memoized per occurrence and declarations
+  per entity.
+- **Rejection.** horos reads no membership facts, so it has no Rejected path
+  today. Unsupported and Undetermined are its outcomes.
+- **Out of scope.** Recursive generation remains unsupported
+  ([#164](https://github.com/Bitspark/bittype/issues/164)). Native enforcement of
+  source bounds is [GEN-02](#gen-02).
 
 ## GEN-02
 

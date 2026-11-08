@@ -23,7 +23,7 @@ the implemented scope, not complete language coverage.
 | What broader reasoning is proposed? | [Type-system model](type-system-model.md), [preservation reasoning](logos-preservation.md) | Language-owned theories; no new Bittype proof foundation |
 | What belongs above static types? | [Runtime values](runtime-values.md), [optional extensions](hydrated-types.md), [concept inventory](wire-extension-preservation.md) | Existing ownership and explicitly proposed later adapter work |
 | What is implemented and what has evidence? | [Provider matrix](providers.md), [language overview](language-support.md), [capability reports](capability-reports.md) | Generated source-derived reports; execution evidence is separate |
-| What architectural corrections remain? | [Generation gaps](generation-gaps.md), [case index](architecture-cases/README.md) | GEN-01 and Rust/C++ Files ownership remain open; GEN-02 is an unsupported guarantee |
+| What architectural corrections remain? | [Generation gaps](generation-gaps.md), [case index](architecture-cases/README.md) | GEN-01 is corrected; Rust/C++ Files ownership remains open; GEN-02 is an unsupported guarantee |
 
 The exact implemented SPI belongs in its contract guide, with its source link.
 Conceptual guides explain responsibilities and refer to that definition rather

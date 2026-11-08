@@ -19,10 +19,3 @@ func NewSelector(language representation.Language, key string) (Selector, error)
 func (s Selector) Key() string                       { return s.key }
 func (s Selector) Valid() bool                       { return s.language.Validate() == nil && s.key != "" }
 func (s Selector) Language() representation.Language { return s.language }
-
-// Catalog is source-owned interpretation; enumeration does not demand expansion.
-type Catalog[F any] interface {
-	Declarations() []Declaration[F]
-	DeclarationSelector(Declaration[F]) (Selector, bool, error)
-	UseSelector(UseData[F]) (Selector, error)
-}

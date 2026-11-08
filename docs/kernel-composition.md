@@ -20,7 +20,7 @@ contracts/generation/go/                     descriptions, scopes, planning and 
 engine/go/                                  endpoint checks and public entry points
 transform/syntax/shared/generation/go/       registration, selection and composition
 transform/syntax/shared/target/go/           scoped AST construction and relocation
-transform/syntax/horos/source/go/            supplied semantic reader
+transform/syntax/horos/source/go/            horos interpretation and reader
 transform/syntax/horos/mapping/go/           Horos patterns and declaration policy
 transform/syntax/<native>/model/go/          intended native forms, no AST construction
 transform/syntax/<native>/target/go/         native grammar and construction
@@ -30,9 +30,10 @@ format/files/typescript/provider/go/        placement, imports, exports and bind
 
 Parsing, checking, formatting, resolution and analysis keep their existing stage
 paths. The [full layout](../LAYOUT.md) documents those capabilities. Mappings
-depend on source reading and target models, never AST construction packages.
-Targets depend on their model and shared constructor, never source readers or
-mapping libraries. The shared kernel imports neither.
+depend on their source's reader and target models, never AST construction
+packages. Targets depend on their model and shared constructor, never source
+readers or mapping libraries. The shared kernel imports neither; it reads the
+shared semantic graph itself.
 
 The guarded planner in contracts/generation owns issuance of the closed Program,
 scoped substitutions and GenerationPlan. The stage registry supplies selected
@@ -47,9 +48,9 @@ marker and source API identities, freezes descriptions and invokes no provider
 under its lock. [Registry](../transform/syntax/shared/generation/go/registry.go)
 
 ```go
-func RegisterSource[F any, S generation.SourceSession[F]](
+func RegisterSource[F, R any](
     r *Registry, language representation.Language,
-    p generation.SourceProvider[F,S],
+    p generation.SourceProvider[F,R],
 ) error
 
 func RegisterTarget[T any](
@@ -57,9 +58,9 @@ func RegisterTarget[T any](
     p generation.Target[T],
 ) error
 
-func RegisterMapping[F,T any, S generation.SourceSession[F]](
+func RegisterMapping[F, T, R any](
     r *Registry, from, to representation.Language,
-    p generation.MappingLibrary[F,T,S],
+    p generation.MappingLibrary[F,T,R],
 ) (MappingRef, error)
 
 type Request struct {
@@ -100,10 +101,14 @@ recipe applies only when no exact use binding displaces it.
 
 1. Copy the request and snapshot compatible registrations, profile and explicit
    replacements. Check roots, output identity, limits and language/API identities.
-2. Admit supplied evidence against the exact source snapshot. Open the source
-   reader and authenticate the requested declaration sites.
-3. Select descriptions and expand their source-dependent parts. Authenticate
-   captured child relations. Substitute lexical binders and complete actuals.
+2. Admit supplied evidence against the exact source snapshot and unpack the one
+   graph its designated evidence publishes. Open the source over that capture.
+   Resolve the requested sites to their declaring entities; the source
+   classifies them.
+3. Walk the graph: open declarations, follow references and applications, and
+   judge every occurrence and actual through the source. Select descriptions and
+   expand their source-dependent parts. Check that captures are structural
+   children. Substitute lexical binders and complete actuals.
 4. Close every demanded declaration/helper dependency and check the native
    program. Return an inspectable plan. No target AST has been constructed.
 5. On Run, construct fresh ASTs from that fixed native program, check their

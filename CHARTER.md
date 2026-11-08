@@ -105,11 +105,11 @@ from that construction input. All four generators use this contract, and the
 superseded procedural interfaces are removed. No canonical builtin or
 named-library catalogue is added to shared generation or the engine.
 
-The [unfinished generation boundaries](docs/generation-gaps.md) remain open.
-GEN-01 corrects the source reader's mix of common semantic navigation and
-source-owned interpretation. GEN-02 concerns preserving constraints for native
+The [generation boundaries](docs/generation-gaps.md) record GEN-01, corrected:
+the kernel walks the shared semantic graph and sources supply interpretation
+and judgments. GEN-02 remains open and concerns preserving constraints for native
 consumers; the current representation profile permits erasure and the enforcing
-profile is unsupported. Passing Page<Cell> tests does not close either gap.
+profile is unsupported. Passing Page<Cell> tests does not close it.
 
 This scope excludes application-value validators, serialization, Wire adapters,
 RPC/streaming implementations and service migrations. The unified declaration

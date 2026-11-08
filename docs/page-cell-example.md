@@ -75,7 +75,7 @@ input := transform.Input{Source: snapshot, Evidence: []semantic.Result{analyzed}
 
 The source registration implements `SourceProvider` and the language stages
 implement the independently registered resolution/analysis contracts. Their exact
-SPIs are in [generation source admission](generation-spi.md#source-admission),
+SPIs are in [generation source admission](generation-spi.md#semantic-traversal-and-source-interpretation),
 [resolution](resolution.md) and [analysis](analysis.md). The engine invokes the
 selected stages; the generation reader admits their receipts. A nil error alone
 does not establish complete semantics; the receiving generation contract checks
@@ -91,8 +91,8 @@ Neither name equality nor expansion of Page supplies those bindings.
 The library implements the following public contract; registration invokes it:
 
 ```go
-type MappingLibrary[F, T any, S SourceSession[F]] interface {
-    Describe(from, to representation.Language) (MappingDescription[F,T,S], error)
+type MappingLibrary[F, T, R any] interface {
+    Describe(from, to representation.Language) (MappingDescription[F,T,R], error)
 }
 ```
 
@@ -109,9 +109,15 @@ slot := g.TypeSlot("V")
 pattern := g.Pattern[h.Language, source.Reader]{
     Selector: key,
     Slots: []g.Slot{slot},
-    Capture: func(ctx context.Context, src source.Reader, use g.UseData[h.Language]) ([]g.Capture[h.Language], error) {
-        if len(use.Actuals) != 1 { return nil, g.ErrScope }
-        return []g.Capture[h.Language]{{Slot: slot, Use: use.Actuals[0].Use}}, nil
+    Capture: func(ctx context.Context, src source.Reader, use g.UseView[h.Language]) ([]g.Capture[h.Language], error) {
+        for _, a := range use.Actuals { // select Cell's own binder T, never a position
+            if p, err := src.Parameter(a.Binder); err != nil {
+                return nil, err
+            } else if p.Name == "T" {
+                return []g.Capture[h.Language]{{Slot: slot, Use: a.Use}}, nil
+            }
+        }
+        return nil, g.ErrScope
     },
 }
 binding := g.BindingDescription[h.Language, ts.Language, source.Reader]{
@@ -121,8 +127,9 @@ binding := g.BindingDescription[h.Language, ts.Language, source.Reader]{
 ```
 
 Describe returns that binding in a MappingDescription with the selected
-`pagination-representation/1` profile. The kernel authenticates the captured
-actual before substituting its mapped representation. The mapping chooses a
+`pagination-representation/1` profile. The kernel pairs Cell's binder with its
+actual from the graph, judges that actual, and accepts the capture only as a
+child it minted for this use. Cell's body is never opened. The mapping chooses a
 public symbol; it cannot build an import or invoke an AST builder.
 
 [`selectedTS`](../integration/go/horos_generation_composition_test.go) and the
@@ -166,9 +173,9 @@ external occurrence identifies `@bitspark/cell`'s Cell. The TypeScript tree has
 no imports or exported modifiers yet. The fixture asserts those properties.
 
 The target SPI and output accessors are documented in
-[generation-spi.md](generation-spi.md#target-construction). Common source
-navigation remains the open [GEN-01](generation-gaps.md#gen-01) correction; this
-example does not close it.
+[generation-spi.md](generation-spi.md#target-construction). The kernel walks the
+graph for this example; [GEN-01](generation-gaps.md#gen-01) records that
+correction and its scope.
 
 ## 5. Supply the native environment and one placement
 
