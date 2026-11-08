@@ -258,12 +258,12 @@ endpoint acquisition. Generation registrations are not ASTTransformer edges.
 
 The existing [stage-first layout](../LAYOUT.md) remains in force:
 
-| Proposed location/owner | Responsibility |
+| Owner/location | Responsibility |
 | --- | --- |
 | `transform/syntax/shared/generation/go` | Kernel registration and composition of supplied providers for explicit roots. |
 | Bittype Horos integration packages | Builtin target mappings in `transform/syntax/horos-to-<target>/mapping/go`, separate from the shared composer. |
 | Each independent contract library | Canonical module, optional target recipes/type artifacts and future runtime bindings. No per-library stage is added to bittype. |
-| Consuming application composition | Pin modules/dependencies, select profiles and recipes, register transformers, arrange output artifacts. |
+| Consuming application composition | Supply dependencies, register source/target/mapping libraries, request roots/profile and arrange output artifacts. |
 
 Here `<native>` is `typescript`, `golang`, `rust` or `cpp`; Go's language ID
 is `go`. No placeholder packages or registration SPI are created by this
@@ -276,7 +276,7 @@ did: a container receives the element's interpretation. That inspected source
 also had a built-in callable kind. It is evidence for parameter composition,
 not a specification for our kernel, type language or runtime.
 
-Types-only generation emits no adapter factories, sends, exports, proxy
+Types-only generation emits no adapter factories, sends, runtime capability exports, proxy
 creation or behavior. Later generated consuming bindings can import selected
 library adapters statically. Function owns invocation; Stream owns its stream
 laws; Cell owns mutation. Wire/hydration retain their existing responsibilities
@@ -304,11 +304,14 @@ Future fixtures must establish:
   qualify TypeScript, Go, Rust and C++ against the selected external type
   artifacts. Native precision limits are explicit. No runtime behavior is
   claimed from those tests.
-- Architecture checks prove no named-contract knowledge in generic trees,
-  semantics infrastructure, engine, Wire or hydration, and no runtime loading
-  or implicit IO during generation.
+- Review actual ownership, dependency direction and change propagation to establish
+  the extension boundary. Architecture tests check selected imports and fixtures;
+  they cannot alone prove the absence of named-contract knowledge or certify the
+  whole architecture. Runtime loading and implicit IO remain forbidden here.
 
-This documentation task adds no such implementation or conformance tests. It
-forbids silent domain widening, raw-source recipes, shape-selected behavior,
+The [composition qualification](generation-composition.md#extension-examples-and-qualification)
+records the implemented bounded cases. The broader library combinations above
+remain requirements, not claims of delivered coverage. [GEN-02](generation-gaps.md#gen-02)
+separates native enforcement from representation. The design forbids silent domain widening, raw-source recipes, shape-selected behavior,
 central Function/Cell/Stream switches or defaults, and any compatibility route
 that retains those forbidden special cases.

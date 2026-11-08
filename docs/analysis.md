@@ -170,7 +170,7 @@ Expected outcomes differ even when the call returns a nil Go error:
 | Situation | Validity report | Enumeration reports | Semantics |
 | --- | --- | --- | --- |
 | Valid pagination input, sufficient resources | Complete / Holds | Complete / Undetermined | Available |
-| Page receives the wrong number of arguments | Complete / Rejected | Incomplete / Undetermined | Absent |
+| Page receives more arguments than its constructor admits | Complete / Rejected | Incomplete / Undetermined | Absent |
 | The pinned pagination dependency is missing, or resolution exhausts its budget | Incomplete / Undetermined | Incomplete / Undetermined | Absent |
 | Resolution and annotation checks succeed, but graph export exhausts its budget | Complete / Holds | Incomplete / Undetermined | Absent |
 
