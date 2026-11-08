@@ -3,8 +3,9 @@
 **2 November 2026. Implemented in Go source.** The
 [semantic model](../semantics/go/model.go) records facts established by language
 providers. The separate [analysis contract](analysis.md) captures a request,
-reports coverage and publishes an immutable result. Horos supplies the first
-production analyzer; the four native languages still supply syntax tooling only.
+reports coverage and publishes an immutable result. Horos supplied the first
+production analyzer; see [native semantic providers](native-semantics.md)
+for current native coverage.
 
 The [Syntax and Files design](source.md) uses typed `Semantics[L]` as the abstract
 representation and sealed Source as its concrete realization. This replaces the
@@ -149,6 +150,10 @@ set. `TermAt` returns an established term association. Absence is no recorded
 answer; it does not prove a failed lookup. A dependency is an explicit directed,
 labeled declaration edge. Consumers do not infer dependencies by guessing from
 payloads or syntax shape.
+
+The [Page example](abstraction-levels.md#absent-counterpart-or-unresolved-binding)
+shows why a space with no AST counterpart, a type name that failed lookup,
+and a use that has not been analyzed are three different cases.
 
 `Data.Facts` stores multivalued provider-owned relations on entities or terms.
 `Facts(subject, relation)` retrieves all recorded terms; no unique meaning,

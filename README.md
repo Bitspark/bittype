@@ -135,6 +135,8 @@ interpret these concrete type semantics.
   native instances, existing Wire/runtime carriers and future typed/dynamic
   adapters; documentation only, with pinned implementation evidence.
 - [Horos AST](docs/horos.md): model projection, binding references, checking and registration.
+- [Abstraction levels and typed relations](docs/abstraction-levels.md): two views of
+  TypeScript's `Page`, from source bytes to binders and effective type arguments.
 - [Semantic facts](docs/semantics.md): immutable entities, terms, occurrences and dependencies.
 - [Resolution capability](docs/resolution.md): shared snapshots, explicit prerequisites
   and immutable model reuse.

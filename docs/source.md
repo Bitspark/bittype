@@ -22,6 +22,10 @@ dimensions, not language IDs. File placement, grouping and concrete import route
 belong to Source; their construction belongs to Files formatting. There is no
 separate layout carrier, layout provider or combined Source provider.
 
+The [abstraction levels guide](abstraction-levels.md) follows one declaration
+from bytes to established bindings. It distinguishes the level of a name or
+binder from the file and scope used to interpret it.
+
 Resolution and analysis operate on the semantic side of the Files dimension.
 They remain independently callable on captured ASTs; the dimension is an
 architectural grouping, not a requirement to open physical files. Source-owned
