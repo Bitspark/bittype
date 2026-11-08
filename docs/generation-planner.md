@@ -22,12 +22,15 @@ and checks those declarations under a placement and dependency environment.
    interpretation. A later change should let the kernel follow the shared
    semantic graph and retain language-owned identity, operand meaning and
    applicability judgments. This task does not claim that separation is complete.
-   [Contexts and matrix](abstraction-levels.md#agnostic-kernel-and-language-specific-rules)
+   [Contexts and matrix](abstraction-levels.md#agnostic-kernel-and-language-specific-rules) ·
+   [GEN-01: work and completion criteria](generation-gaps.md#gen-01)
 
 The C++ include and Rust visibility cases remain open in
 [ACX-004](architecture-cases/0004-generation-file-syntax.md). Language route
 planning through ASTTransformer remains a separate operation; it is not the
-source-bound generation plan documented here.
+source-bound generation plan documented here. [GEN-02](generation-gaps.md#gen-02)
+separately records missing native enforcement, including the native parameter
+contract limitation. Neither gap was closed by the declarative planning change.
 
 ## Caller interface
 

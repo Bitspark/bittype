@@ -140,6 +140,10 @@ already analyzed files retains its distinct input. The
 [three SPI changes](docs/generation-planner.md#three-spi-changes) distinguish the
 implemented output/planning boundaries from proposed common source traversal.
 Cross-language verification and native admission enforcement remain separate.
+Use [GEN-01 and GEN-02](docs/generation-gaps.md) when describing unfinished
+generation work. Update those statuses and the owning architecture case when
+a correction lands; working examples do not close either gap. The source-reader
+issue is an architectural correction, not merely deferred feature coverage.
 
 - Readable Horos syntax and native pagination transformers are implemented;
   read [Horos syntax](docs/horos-syntax.md) and [semantic generation](docs/semantic-generation.md).

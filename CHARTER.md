@@ -30,8 +30,8 @@ bittype owns:
 - Frontend parsing, resolution tooling and located diagnostics implementing
   horos's declaration/binding rules, without a second semantic specification.
 - Native type generation for TypeScript, Go, Rust and C++.
-- The [public generation SPI](docs/generation-spi.md) and its minimal guarded
-  invocation, with language and mapping interpretation supplied explicitly.
+- The [public generation SPI](docs/generation-spi.md) and guarded declarative
+  planning, with language and mapping interpretation supplied explicitly.
 - Native AST vocabularies and an agnostic language identity/registration
   boundary, independent of particular language providers.
 - Native representation profiles and independent generation/round-trip fixtures.
@@ -95,16 +95,19 @@ registration, route planning/execution and native text composition. Pagination A
 canonical authority. The [generation design](docs/generation.md) remains separate.
 
 The [type-owned generator plugin design](docs/type-generation-plugins.md)
-places builtin and library native mappings behind one supplied contract. Its first
-[public SPI](docs/generation-spi.md) is implemented in Go source: Use, Publish,
-Define and paired Introduce/Apply, with an explicitly driven lifecycle in
-`contracts/generation/go`. Source and target collaborators own semantic reading
-and native syntax; the configured association owner retains representation
-meaning. The runner checks identity and operation lifetimes without interpreting
-that meaning. [Automatic composition](docs/generation-composition.md) implements
-exact selection/overrides and definition scheduling. All four production
-generators use the SPI; their old private implementations are deleted. No canonical builtin or
+places builtin and library native mappings behind one supplied contract.
+The [public SPI](docs/generation-spi.md) uses declarative descriptions and
+kernel-owned planning. A closed native program supplies target construction;
+source readers, mapping callbacks and source-substitution templates are absent
+from that construction input. All four generators use this contract, and the
+superseded procedural interfaces are removed. No canonical builtin or
 named-library catalogue is added to shared generation or the engine.
+
+The [unfinished generation boundaries](docs/generation-gaps.md) remain open.
+GEN-01 corrects the source reader's mix of common semantic navigation and
+source-owned interpretation. GEN-02 concerns preserving constraints for native
+consumers; the current representation profile permits erasure and the enforcing
+profile is unsupported. Passing Page<Cell> tests does not close either gap.
 
 This scope excludes application-value validators, serialization, Wire adapters,
 RPC/streaming implementations and service migrations. The unified declaration
