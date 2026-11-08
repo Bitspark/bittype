@@ -13,16 +13,18 @@ import (
 // sites of terms. Entity kinds, names, operators, payloads, locator meanings
 // and facts are never read.
 type walk[F any] struct {
+	capture   *captured[F]
 	graph     semantics.Semantics[F]
 	sites     map[ast.NodeRef][]semantics.EntityID
 	binders   map[semantics.EntityID]semantics.EntityID // parameter -> declaring entity
-	termSites map[semantics.TermID]ast.NodeRef
+	termSites map[semantics.TermID][]ast.NodeRef        // distinct recorded sites
 	roots     map[semantics.EntityID]*occurrence[F]
 }
 
-func newWalk[F any](graph semantics.Semantics[F]) *walk[F] {
+func newWalk[F any](c Captured[F]) *walk[F] {
+	graph := c.Graph()
 	data := graph.Data()
-	w := &walk[F]{graph: graph, sites: map[ast.NodeRef][]semantics.EntityID{}, binders: map[semantics.EntityID]semantics.EntityID{}, termSites: map[semantics.TermID]ast.NodeRef{}, roots: map[semantics.EntityID]*occurrence[F]{}}
+	w := &walk[F]{capture: c.state, graph: graph, sites: map[ast.NodeRef][]semantics.EntityID{}, binders: map[semantics.EntityID]semantics.EntityID{}, termSites: map[semantics.TermID][]ast.NodeRef{}, roots: map[semantics.EntityID]*occurrence[F]{}}
 	for i, e := range data.Entities {
 		id := semantics.EntityID(i + 1)
 		for _, site := range e.Declarations {
@@ -33,8 +35,8 @@ func newWalk[F any](graph semantics.Semantics[F]) *walk[F] {
 		}
 	}
 	for _, e := range data.Expressions {
-		if _, ok := w.termSites[e.Term]; !ok {
-			w.termSites[e.Term] = e.At.Site
+		if !slices.Contains(w.termSites[e.Term], e.At.Site) {
+			w.termSites[e.Term] = append(w.termSites[e.Term], e.At.Site)
 		}
 	}
 	return w
@@ -72,23 +74,24 @@ func (d Declaration[F]) Valid() bool { return d.walk != nil && d.entity != 0 }
 func (b Binder[F]) Valid() bool      { return b.walk != nil && b.entity != 0 }
 func (u Use[F]) Valid() bool         { return u.o != nil }
 
-// In resolves a handle against the graph its holder reads. It succeeds only if
-// the handle was issued for exactly that graph, so a source can reject handles
-// from a run over different evidence.
-func (d Declaration[F]) In(graph semantics.Semantics[F]) (semantics.EntityID, bool) {
-	if !d.Valid() || d.walk.graph != graph {
+// In resolves a handle against the capture its holder was opened over. It
+// succeeds only if the handle was issued by a run over exactly that capture.
+// Two captures that share a graph but differ in evidence are different, so a
+// source can refuse handles from a run over other evidence.
+func (d Declaration[F]) In(c Captured[F]) (semantics.EntityID, bool) {
+	if !d.Valid() || c.state == nil || d.walk.capture != c.state {
 		return 0, false
 	}
 	return d.entity, true
 }
-func (b Binder[F]) In(graph semantics.Semantics[F]) (semantics.EntityID, bool) {
-	if !b.Valid() || b.walk.graph != graph {
+func (b Binder[F]) In(c Captured[F]) (semantics.EntityID, bool) {
+	if !b.Valid() || c.state == nil || b.walk.capture != c.state {
 		return 0, false
 	}
 	return b.entity, true
 }
-func (u Use[F]) In(graph semantics.Semantics[F]) (semantics.TermID, bool) {
-	if !u.Valid() || u.o.walk.graph != graph {
+func (u Use[F]) In(c Captured[F]) (semantics.TermID, bool) {
+	if !u.Valid() || c.state == nil || u.o.walk.capture != c.state {
 		return 0, false
 	}
 	return u.o.term, true
@@ -264,10 +267,16 @@ func (w *walk[F]) unsupported(term semantics.TermID, entity semantics.EntityID, 
 	return w.located(ErrUnsupported, term, entity, message)
 }
 
-// located attaches the term's syntax site, else the declaring site of the
-// entity (for an occurrence, its declaration), to a kernel failure.
+// located attaches a syntax site to a kernel failure: the term's site when the
+// graph records exactly one, else the declaring site of the entity (for an
+// occurrence, the declaration it occurs in). A term recorded at several sites is
+// shared, and the graph does not say which of them this occurrence is.
 func (w *walk[F]) located(kind error, term semantics.TermID, entity semantics.EntityID, message string) error {
-	site, ok := w.termSites[term]
+	var site ast.NodeRef
+	ok := false
+	if sites := w.termSites[term]; len(sites) == 1 {
+		site, ok = sites[0], true
+	}
 	if !ok && entity != 0 {
 		if e, found := w.graph.Entity(entity); found && len(e.Declarations) > 0 {
 			site, ok = e.Declarations[0], true

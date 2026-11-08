@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -58,11 +59,15 @@ type SelectedDescription[F, T, R any] struct {
 	Description MappingDescription[F, T, R]
 }
 
-// PlanningInput is one capture, the source opened over it, the requested root
-// declaration sites and the selected mapping descriptions.
+// PlanningInput is one generation request: the source language and input, the
+// source integration that interprets it, the requested root declaration sites
+// and the selected mapping descriptions. Plan admits the input against the
+// source's contract and opens the source over exactly that capture, so the
+// interpretation always reads the evidence the kernel walks.
 type PlanningInput[F, T, R any] struct {
-	Captured  Captured[F]
-	Source    Source[F, R]
+	From      representation.Language
+	Input     transform.Input
+	Source    SourceProvider[F, R]
 	Roots     []ast.NodeRef
 	Mappings  []SelectedDescription[F, T, R]
 	Execution Execution[T]
@@ -78,6 +83,7 @@ type frame[T any] struct {
 
 type planner[F, T, R any] struct {
 	ctx          context.Context
+	language     representation.Language // the capture's source language
 	walk         *walk[F]
 	source       Interpretation[F]
 	reader       R
@@ -106,13 +112,21 @@ type selectedRecipe[F, T, R any] struct {
 
 func Plan[F, T, R any](ctx context.Context, in PlanningInput[F, T, R]) (GenerationPlan, error) {
 	fail := func(e error) (GenerationPlan, error) { return GenerationPlan{}, e }
-	if ctx == nil || !in.Captured.Valid() || representation.IsNil(in.Source.Interpretation) || representation.CheckMarker[F](in.Captured.Request().Snapshot().Language()) != nil || !in.Execution.Limits.Valid() || representation.IsNil(in.Execution.Target) || representation.CheckMarker[T](in.Execution.Language) != nil || in.Execution.Output == "" || in.Execution.Checker.Validate() != nil || !in.Execution.Language.Compatible(in.Execution.Checker.Language()) || len(in.Roots) == 0 {
+	if ctx == nil || representation.IsNil(in.Source) || representation.CheckMarker[F](in.From) != nil || !in.Execution.Limits.Valid() || representation.IsNil(in.Execution.Target) || representation.CheckMarker[T](in.Execution.Language) != nil || in.Execution.Output == "" || in.Execution.Checker.Validate() != nil || !in.Execution.Language.Compatible(in.Execution.Checker.Language()) || len(in.Roots) == 0 {
 		return fail(ErrInvalid)
 	}
 	if err := ctx.Err(); err != nil {
 		return fail(err)
 	}
-	p := &planner[F, T, R]{ctx: ctx, walk: newWalk(in.Captured.Graph()), source: in.Source.Interpretation, reader: in.Source.Reader, execution: in.Execution, bindings: map[string][]selectedBinding[F, T, R]{}, recipes: map[string][]selectedRecipe[F, T, R]{}, helpers: map[HelperKey]HelperRecipe[T]{}, declarations: map[semantics.EntityID]uint32{}, helperIDs: map[HelperKey]uint32{}, formals: map[uint32][]Binder[F]{}, conventions: map[uint32]GenericConvention[T]{}, active: map[uint32]bool{}}
+	// The kernel admits the evidence and opens the source over it; no caller
+	// pairs an opened source with a capture. Admission requires the input in
+	// the From language.
+	captured, err := admitInput[F](in.From, in.Source.Contract(), in.Input)
+	if err != nil {
+		return fail(err)
+	}
+	from := captured.Request().Snapshot().Language()
+	p := &planner[F, T, R]{ctx: ctx, language: from, walk: newWalk(captured), execution: in.Execution, bindings: map[string][]selectedBinding[F, T, R]{}, recipes: map[string][]selectedRecipe[F, T, R]{}, helpers: map[HelperKey]HelperRecipe[T]{}, declarations: map[semantics.EntityID]uint32{}, helperIDs: map[HelperKey]uint32{}, formals: map[uint32][]Binder[F]{}, conventions: map[uint32]GenericConvention[T]{}, active: map[uint32]bool{}}
 	selected := map[string]bool{}
 	entries := 0
 	if len(in.Roots) > in.Execution.Limits.References || len(in.Mappings) > in.Execution.Limits.Plans {
@@ -123,7 +137,7 @@ func Plan[F, T, R any](ctx context.Context, in PlanningInput[F, T, R]) (Generati
 			return fail(ErrInvalid)
 		}
 		selected[part.ID] = true
-		d, err := FreezeDescription(in.Captured.Request().Snapshot().Language(), part.Description, in.Execution.Limits)
+		d, err := FreezeDescription(from, part.Description, in.Execution.Limits)
 		if err != nil {
 			return fail(err)
 		}
@@ -145,6 +159,14 @@ func Plan[F, T, R any](ctx context.Context, in PlanningInput[F, T, R]) (Generati
 			p.helpers[h.Key] = h
 		}
 	}
+	source, err := in.Source.Open(ctx, captured)
+	if err != nil {
+		return fail(err)
+	}
+	if representation.IsNil(source.Interpretation) {
+		return fail(ErrInvalid)
+	}
+	p.source, p.reader = source.Interpretation, source.Reader
 	seen := map[ast.NodeRef]bool{}
 	for _, site := range in.Roots {
 		if seen[site] {
@@ -228,10 +250,21 @@ func (p *planner[F, T, R]) selector(d Declaration[F]) (string, error) {
 	if !ok {
 		return "", p.walk.unsupported(0, d.entity, "the source does not generate this declaration")
 	}
-	if !key.Valid() {
+	return p.qualified(key, 0, d.entity, "declaration selector")
+}
+
+// qualified is the key of a selector the source returned. Mapping selectors
+// are frozen in the capture's source language, so requiring the same language
+// here makes every rule lookup exact: a selector of another language or profile
+// is outside the run and chooses neither an exact nor a default rule.
+func (p *planner[F, T, R]) qualified(s Selector, term semantics.TermID, entity semantics.EntityID, what string) (string, error) {
+	if !s.Valid() {
 		return "", ErrScope
 	}
-	return key.Key(), nil
+	if !s.Language().Compatible(p.language) {
+		return "", p.walk.located(ErrScope, term, entity, what+" outside the source language")
+	}
+	return s.Key(), nil
 }
 
 // admit establishes an occurrence and its whole subtree before any mapping
@@ -418,10 +451,9 @@ func (p *planner[F, T, R]) use(u Use[F], f frame[T], depth int) (Expression[T], 
 		if err != nil {
 			return Expression[T]{}, err
 		}
-		if !selector.Valid() {
-			return Expression[T]{}, ErrScope
+		if key, err = p.qualified(selector, u.o.term, u.o.declaration, "expression selector"); err != nil {
+			return Expression[T]{}, err
 		}
-		key = selector.Key()
 	default:
 		return Expression[T]{}, ErrInvalid
 	}

@@ -3,7 +3,8 @@
 **Recorded 8 November 2026.** The declarative generation change
 ([PR #155](https://github.com/Bitspark/bittype/pull/155)) separates semantic
 planning from native AST construction. The kernel-owned semantic traversal
-corrects the source responsibility split (GEN-01). Native enforcement of source
+corrects the source responsibility split (GEN-01); that correction awaits
+independent verification. Native enforcement of source
 kind constraints (GEN-02) remains open.
 
 Keep these references stable and update their status and completion criteria in
@@ -12,7 +13,7 @@ generation improvement does not close either item.
 
 | Reference | Status | Classification |
 | --- | --- | --- |
-| [GEN-01](#gen-01) | Corrected 8 November 2026: kernel-owned traversal with source judgments | Architectural responsibility split; recorded as [bittype/ACX-006](architecture-cases/0006-generation-source-traversal.md) |
+| [GEN-01](#gen-01) | Correction pending independent verification: #191 rejected 8 November 2026; exact evidence and selector identity corrected in #PRNUM | Architectural responsibility split; recorded as [bittype/ACX-006](architecture-cases/0006-generation-source-traversal.md) |
 | [GEN-02](#gen-02) | Open; no native enforcement route implemented | Unsupported guarantee with missing native-plan expressiveness and target encodings |
 
 The implemented [mapping SPI](generation-spi.md) resolves representation choices
@@ -25,7 +26,7 @@ The remaining Rust/C++ Files ownership defects retain their own
 
 ## GEN-01
 
-**Common semantic navigation is kernel-owned. Corrected 8 November 2026 in [#191](https://github.com/Bitspark/bittype/pull/191).**
+**Common semantic navigation is kernel-owned. Delivered on 8 November 2026 in [#191](https://github.com/Bitspark/bittype/pull/191). Independent verification rejected that delivery; the correction in [#PRNUM](https://github.com/Bitspark/bittype/pull/PRNUM) awaits verification.**
 
 ### What was wrong
 
@@ -47,8 +48,9 @@ The kernel and the source now divide the work as follows.
 
 **Kernel**, in `contracts/generation/go`:
 
-1. It admits the request and unpacks the one graph that the designated evidence
-   publishes.
+1. It admits the request against the source's own contract, unpacks the one
+   graph that the designated evidence publishes, and opens the source over
+   exactly that capture.
 2. It resolves root sites to their declaring entities.
 3. It opens declarations from their body and real binders.
 4. It follows references, and pairs application arguments with real binders
@@ -56,6 +58,8 @@ The kernel and the source now divide the work as follows.
 5. It mints occurrence, declaration and binder handles for one run, and checks
    that every capture is a structural child of the current occurrence.
 6. It enforces direct-binder scope.
+7. It requires every selector the source returns to be in the capture's source
+   language and profile.
 
 **Source**, through `Interpretation` and its own reader:
 
@@ -87,11 +91,14 @@ For `People = Page<Cell<Person>>`:
    horos reports a missing sort fact as Undetermined; it is no longer a malformed
    request. There is no hidden analysis.
 3. These guarantees stay enforced:
-   - capture identity, through `AdmitInput`;
+   - capture identity: `Plan` admits the input and opens the source itself, and
+     handles resolve only against their exact capture;
+   - selector identity: a source selector of another language or profile
+     chooses no rule;
    - real binders and source environments, through occurrences that carry their
      declaration;
    - foreign-reference rejection, through handles valid only in their run and
-     graph;
+     capture;
    - limits and whole-output failure.
 
    An occurrence is admitted with its whole subtree before any binding or
@@ -105,7 +112,10 @@ For `People = Page<Cell<Person>>`:
    - binders of another declaration, including through a shared term;
    - non-child captures, and handles kept from another run;
    - recursion, parameter-headed and unapplied applications;
-   - foreign evidence;
+   - foreign evidence, and an interpretation opened over other evidence of the
+     same graph, through the registry and the exported planner;
+   - foreign-profile selectors for an exact binding, an exact recipe and the
+     default recipe;
    - horos applied constructor aliases and curried forms, now Unsupported.
 5. The superseded surface is removed with no aliases:
    - `Source.Open`, `Admit`, `CheckChild`, `Authenticate`, `CheckInput`, `Owners`
@@ -116,6 +126,15 @@ For `People = Page<Cell<Person>>`:
 
 [Qualification](../integration/go/generation_traversal_test.go) ·
 [Independent source](../integration/go/testdata/generationfixture/fixture.go)
+
+### Independent verification
+
+Independent verification by `codex-hydrated-type-design` (board claim `bittype-source-traversal-20261108`, record 000003) rejected #191 at
+`49114c5`. Criteria 1 and 4 qualified. Criterion 2 lacked selector qualification
+in dispatch, and criterion 3 lacked an exact capture association at the exported
+`Plan`. A shared term could also be reported at the other declaration's site.
+[#PRNUM](https://github.com/Bitspark/bittype/pull/PRNUM) corrects all three and adds the reviewer's regressions. See
+[bittype/ACX-006](architecture-cases/0006-generation-source-traversal.md#verification-of-the-first-delivery).
 
 ### Supported scope and limits
 
@@ -138,6 +157,10 @@ For `People = Page<Cell<Person>>`:
   per entity.
 - **Rejection.** horos reads no membership facts, so it has no Rejected path
   today. Unsupported and Undetermined are its outcomes.
+- **Diagnostic sites.** A kernel failure is reported at its term's syntax site
+  when the graph records exactly one. A term recorded at several sites is
+  reported at the declaration the occurrence is in. A shared term recorded at
+  only one site is reported there.
 - **Out of scope.** Recursive generation remains unsupported
   ([#164](https://github.com/Bitspark/bittype/issues/164)). Native enforcement of
   source bounds is [GEN-02](#gen-02).

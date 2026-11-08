@@ -1,6 +1,10 @@
 # bittype/ACX-006 — Common semantic traversal delegated to source integrations
 
-**Status: corrected, 8 November 2026, in [#191](https://github.com/Bitspark/bittype/pull/191).** The generation kernel owns traversal of
+**Status: correction pending independent verification, 8 November 2026.** [#191](https://github.com/Bitspark/bittype/pull/191) delivered the
+kernel-owned traversal, but independent verification by `codex-hydrated-type-design` (board claim `bittype-source-traversal-20261108`, record 000003) rejected it: the public planning
+boundary still let a source interpret other evidence, and planning ignored a
+selector's language. [#PRNUM](https://github.com/Bitspark/bittype/pull/PRNUM) corrects both. The case stays open until that
+correction is independently verified. The generation kernel owns traversal of
 the shared semantic graph. Source integrations contribute only interpretation
 and judgments. [GEN-01](../generation-gaps.md#gen-01) records the delivered
 division, its completion criteria and its supported scope.
@@ -44,12 +48,21 @@ planning from AST construction in PR #155 did not repair this different boundary
   and [AC-09](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-09)
   governed the replacement. Guarantees are preserved through composition, and the
   interface was derived from the domain rather than from the incumbent methods.
+- [AC-05](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-05)
+  and [AC-07](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-07)
+  were violated by the first delivery itself. Its exported planner accepted a
+  capture and an already opened source as separate fields, and its rule lookup
+  dropped the selector's language. Both composed guarantees therefore failed at
+  the public boundary, while the case already claimed the correction. Green
+  tests over the registry path did not establish that claim.
 
 ## Correction
 
-**Admission.** The kernel admits the request against the source contract. It
-requires exactly one evidence requirement that publishes a graph, and unpacks that
-graph itself (`generation.AdmitInput`).
+**Admission.** `Plan` admits the input against the source provider's own
+contract. It requires exactly one evidence requirement that publishes a graph,
+unpacks that graph itself, and opens the provider over exactly the resulting
+capture. No public value pairs an opened source with a capture, so a source
+always interprets the evidence the kernel walks.
 
 **The walk.** The kernel walks the graph directly:
 
@@ -63,7 +76,10 @@ It reads no entity kind, name, operator, payload, locator meaning or fact.
 
 **Handles.** Occurrence, declaration and binder handles are kernel-issued and
 valid for one run. An occurrence carries its declaration, and two paths to a
-shared term are two occurrences.
+shared term are two occurrences. A source resolves a handle against its capture
+(`In(Captured)`), not just the graph. Two captures that share a graph but differ
+in evidence are different, so an interpretation opened over other evidence
+cannot read this run's handles.
 
 **Scope and captures.** Scope is direct binder ownership: a reference to another
 declaration's binder is `ErrScope`. A capture must be a child the kernel minted
@@ -79,6 +95,16 @@ for the current occurrence.
 It also supplies a reader that its own mapping libraries use. Mapping callbacks
 receive the kernel's views and that reader, never the graph or the
 interpretation.
+
+**Selectors.** Mapping selectors are frozen in the capture's source language.
+Every selector the source returns must have that same language and profile.
+Otherwise planning fails with `ErrScope` before any exact or default rule is
+chosen, so key comparison is exact.
+
+**Diagnostic sites.** A kernel failure is reported at its term's syntax site when
+the graph records exactly one. A term recorded at several sites is shared, and
+the graph does not say which of them this occurrence is, so the failure is
+reported at the declaration the occurrence is in.
 
 **Whole-use admission.** The kernel admits an occurrence with its whole subtree
 before any binding or convention represents it. Every occurrence in the subtree
@@ -129,7 +155,12 @@ source now publishes an ordinary graph through its own analysis.
 - foreign and missing evidence;
 - horos applied constructor aliases, curried applications and
   constructor-sorted parameters, which now report Unsupported at their site
-  rather than malformed input.
+  rather than malformed input;
+- an interpretation opened over other evidence of the same graph, through the
+  registry and through the exported planner;
+- a source selector of another profile for an exact binding, an exact
+  declaration recipe and the default recipe;
+- a shared term recorded at two syntax sites.
 
 Two independent reviews found gaps, and both are fixed.
 
@@ -137,6 +168,35 @@ Two independent reviews found gaps, and both are fixed.
   content nested in them unjudged. Admission now covers whole subtrees.
 - A later revision did not admit a body the recipe never represents. Generated
   bodies are now always admitted.
+
+## Verification of the first delivery
+
+Independent verification by `codex-hydrated-type-design` (board claim `bittype-source-traversal-20261108`, record 000003) rejected #191 at
+`49114c5`. It found criteria 1 and 4 of GEN-01 qualified, and three defects:
+
+1. **Evidence (blocking).** `PlanningInput` carried the capture and an already
+   opened source as independent fields. Two captures shared one snapshot and
+   graph and differed only in a second report. A source opened over the holding
+   report planned the rejecting capture, and the output was valid. Checking
+   graph identity cannot tell these evidence sets apart.
+2. **Selectors (blocking).** A selector whose language profile differed, with
+   the same key, still chose the local descriptor binding, Cell binding and Ignore
+   recipe. Registration checked mapping selectors, but planning compared keys
+   only.
+3. **Diagnostic site.** The index kept the first syntax site of a term. A failure
+   while planning Borrow through the term it shares with Lend pointed to Lend.
+
+[#PRNUM](https://github.com/Bitspark/bittype/pull/PRNUM) corrects each defect:
+
+1. `Plan` takes the input and the source provider, admits the evidence and opens
+   the provider itself. Handles resolve only against their exact capture.
+2. A source selector outside the capture's source language fails as `ErrScope`.
+3. A term recorded at several sites is reported at the occurrence's declaration.
+
+The reviewer's regressions are part of the suite: `TestKernelPlansExactlyTheAdmittedEvidence`,
+`TestKernelSelectorsAreQualified` and `TestKernelLocatesSharedTermsAtTheirDeclaration`.
+Each has a correctly composed control. The case stays open until the correction
+is independently verified.
 
 Each kernel check was seeded with a mutant that turned its test red. Covered
 checks:
@@ -150,7 +210,12 @@ checks:
 - the declaration judgment;
 - the zero verdict;
 - diagnostic class isolation;
-- located horos diagnostics.
+- located horos diagnostics;
+- handle resolution against the exact capture, and a source opened over a
+  second admission of the same input;
+- selector qualification, for declaration and expression selectors;
+- reporting at a single recorded term site, and at the declaration for a term
+  with several.
 [Traversal qualification](../../integration/go/generation_traversal_test.go) ·
 [Planning tests](../../integration/go/generation_planning_test.go)
 
@@ -167,6 +232,14 @@ arguments. Type-level constructor values still need an explicit representation.
 only when a mapping captures it.
 
 **Identity.** Effective-subject equivalence is not defined.
+
+**Diagnostic sites.** The graph does not relate syntax sites to declarations. A
+shared term recorded at only one site is therefore reported there, even for an
+occurrence under another declaration.
+
+**Provider integrity.** The kernel pairs a source with its capture. A provider
+that ignores the capture it is given, for example by serving a cached
+interpretation, cannot resolve the run's handles and fails with `ErrScope`.
 
 **horos judgments.** horos reads no membership facts, so its only non-admitted
 judgments are Unsupported and Undetermined.

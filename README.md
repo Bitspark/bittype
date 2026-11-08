@@ -59,8 +59,9 @@ The superseded procedural operations have been removed.
 The [registration example](docs/kernel-composition.md) shows Horos to TypeScript.
 The output carries exposed sites and external destinations into
 [TypeScript Files placement](docs/typescript-type-imports.md#from-generation-to-files).
-The [generation boundaries](docs/generation-gaps.md) stay explicit: GEN-01,
-corrected, moved common source traversal into the kernel; GEN-02, open, adds
+The [generation boundaries](docs/generation-gaps.md) stay explicit: GEN-01 moved
+common source traversal into the kernel, and its correction awaits independent
+verification; GEN-02, open, adds
 native constraint enforcement. They include current guarantees and scope.
 
 The [stage-first layout](LAYOUT.md) groups shared tree representations under

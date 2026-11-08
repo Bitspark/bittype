@@ -39,7 +39,6 @@ type Request struct {
 type sourceEntry struct {
 	language representation.Language
 	api      reflect.Type
-	contract transform.Contract
 	provider any
 }
 type targetEntry struct {
@@ -81,10 +80,6 @@ func RegisterSource[F, R any](r *Registry, lang representation.Language, p g.Sou
 		// The kernel walks exactly the graph one admitted result publishes.
 		return g.ErrInvalid
 	}
-	c.Evidence = slices.Clone(c.Evidence)
-	for i := range c.Evidence {
-		c.Evidence[i] = c.Evidence[i].Clone()
-	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.sources == nil {
@@ -93,7 +88,7 @@ func RegisterSource[F, R any](r *Registry, lang representation.Language, p g.Sou
 	if _, ok := r.sources[string(lang.ID())]; ok {
 		return g.ErrAmbiguous
 	}
-	r.sources[string(lang.ID())] = sourceEntry{lang, reflect.TypeFor[R](), c, p}
+	r.sources[string(lang.ID())] = sourceEntry{lang, reflect.TypeFor[R](), p}
 	return nil
 }
 func RegisterTarget[T any](r *Registry, lang representation.Language, p g.Target[T]) error {
@@ -232,17 +227,13 @@ func plan[F, T, R any](ctx context.Context, q Request, src sourceEntry, target t
 	if !ok {
 		return fail(g.ErrScope)
 	}
-	captured, err := g.AdmitInput[F](src.language, src.contract, q.Input)
-	if err != nil {
-		return fail(err)
-	}
 	var parts []g.SelectedDescription[F, T, R]
 	for _, e := range entries {
 		d, ok := e.value.(g.MappingDescription[F, T, R])
 		if !ok {
 			return fail(g.ErrScope)
 		}
-		d, err = g.FreezeDescription(src.language, d, q.Limits)
+		d, err := g.FreezeDescription(src.language, d, q.Limits)
 		if err != nil {
 			return fail(err)
 		}
@@ -276,12 +267,5 @@ func plan[F, T, R any](ctx context.Context, q Request, src sourceEntry, target t
 		}
 		parts[expected].Description.Bindings = append(parts[expected].Description.Bindings[:oldIndex:oldIndex], parts[expected].Description.Bindings[oldIndex+1:]...)
 	}
-	source, err := provider.Open(ctx, captured)
-	if err != nil {
-		return fail(err)
-	}
-	if representation.IsNil(source.Interpretation) {
-		return fail(g.ErrInvalid)
-	}
-	return g.Plan(ctx, g.PlanningInput[F, T, R]{Captured: captured, Source: source, Roots: slices.Clone(q.Roots), Mappings: parts, Execution: g.Execution[T]{Target: native, Checker: checker, Language: q.To, Output: q.Output, Limits: q.Limits}})
+	return g.Plan(ctx, g.PlanningInput[F, T, R]{From: src.language, Input: q.Input, Source: provider, Roots: slices.Clone(q.Roots), Mappings: parts, Execution: g.Execution[T]{Target: native, Checker: checker, Language: q.To, Output: q.Output, Limits: q.Limits}})
 }

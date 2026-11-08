@@ -204,8 +204,8 @@ needed.
 
 ## Evidence and next increments
 
-[GEN-01](generation-gaps.md#gen-01) records the delivered correction to common
-semantic navigation and its scope. [GEN-02](generation-gaps.md#gen-02) records absent
+[GEN-01](generation-gaps.md#gen-01) records the correction to common semantic
+navigation, its scope and its pending independent verification. [GEN-02](generation-gaps.md#gen-02) records absent
 native constraint enforcement. The representation profile explicitly permits
 constraint erasure; requesting the enforcement profile fails Unsupported.
 [Native placement](native-file-placement.md) records the remaining Files work.

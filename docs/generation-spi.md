@@ -49,8 +49,11 @@ type Capture[F any] struct {
 }
 ```
 
-An exact selector belongs to the source language. The kernel compares identity,
-never the spelling Cell, Page or Data. A fixed rule supplies Output. A
+An exact selector belongs to the source language. Mapping selectors are frozen
+in the capture's source language, and every selector the source returns must
+have the same language and profile. Otherwise planning fails with `ErrScope`
+before any exact or default rule is chosen. Within that language the kernel
+compares keys exactly, never the spelling Cell, Page or Data. A fixed rule supplies Output. A
 source-dependent rule supplies Expand instead, for example to enumerate record
 fields. Capture and Expand run only during planning. They do not recursively
 invoke the planner or construct AST nodes.
@@ -170,8 +173,11 @@ retagging. Generation is not a proof of source/native type equivalence.
 
 The kernel admits the request and walks the semantic graph itself. Its source
 contract designates exactly one evidence requirement that publishes a graph.
-`AdmitInput` admits the snapshot and evidence, then unpacks that result's graph
-as `Semantics[F]`. A source cannot supply a different graph. The kernel reads
+`Plan` admits the input's snapshot and evidence against the provider's
+contract, unpacks that result's graph as `Semantics[F]`, and opens the provider
+over exactly that capture. No caller supplies an opened source. A source
+therefore cannot supply a different graph or interpret evidence other than the
+evidence the kernel walks. The kernel reads
 only structure:
 
 - a root site's declaring entity;
@@ -185,6 +191,14 @@ facts. [Contract](../contracts/generation/go/source.go) ·
 [Walk and handles](../contracts/generation/go/occurrence.go)
 
 ```go
+type PlanningInput[F, T, R any] struct {
+    From      representation.Language
+    Input     transform.Input
+    Source    SourceProvider[F, R] // Plan admits Input against it and opens it
+    Roots     []ast.NodeRef
+    Mappings  []SelectedDescription[F, T, R]
+    Execution Execution[T]
+}
 type SourceProvider[F, R any] interface {
     Contract() transform.Contract // exactly one requirement publishes the graph
     Open(context.Context, Captured[F]) (Source[F, R], error)
@@ -227,8 +241,9 @@ An uncovered fact is therefore never reported as a rejection.
 **Handles.** The kernel issues `Declaration[F]`, `Binder[F]` and `Use[F]` for one
 run. A `Use[F]` is an *occurrence*: a graph term reached under one declaration
 along one structural path. A term shared by two bodies is two occurrences. A
-holder resolves a handle with `In(graph)`, which succeeds only for the graph the
-handle was issued against.
+holder resolves a handle with `In(captured)`, which succeeds only for the
+capture that the handle's run walks. Two captures that share a graph but differ
+in evidence are different.
 
 **Scope.** A reference to a parameter of the declaration being planned is a bound
 use. A reference to another declaration's parameter is `ErrScope`. Two kinds of
@@ -254,9 +269,11 @@ when a use of it is represented, and judged only when it is generated. A source
 that does not admit some uses of an entity must say so in `JudgeUse`.
 Declarations are memoized per entity, and recursion is detected there.
 
-A source diagnostic only explains a verdict. A diagnostic that wraps a kernel
-error class is reduced to its message, so the verdict alone determines the
-failure class. A capture that is not a child the kernel minted, or a declaration
+A source diagnostic only explains a verdict. It cannot add an error class:
+`errors.Is` sees only the verdict's class, while `errors.As` still reaches the
+diagnostic and any site it carries. A kernel failure is reported at its term's
+syntax site when the graph records exactly one. A term recorded at several sites
+is reported at the declaration the occurrence is in. A capture that is not a child the kernel minted, or a declaration
 recipe mapping anything but its body, fails as `ErrScope` with its own message.
 
 Mapping callbacks receive the kernel's views and the source reader, never the

@@ -30,6 +30,7 @@ var (
 // It classifies declarations, names descriptors and judges proper sorts from
 // the analysis facts. It never walks the graph on the kernel's behalf.
 type interpretation struct {
+	captured   g.Captured[h.Language] // handles resolve against this capture only
 	graph      semantics.Semantics[h.Language]
 	language   representation.Language
 	data       semantics.Data
@@ -52,7 +53,7 @@ func open(ctx context.Context, c g.Captured[h.Language]) (*interpretation, error
 	if request.Entry() != (ast.NodeRef{Tree: input.ID, Node: input.Root}) {
 		return nil, semantic.ErrInvalidRequest
 	}
-	s := &interpretation{graph: c.Graph(), language: request.Snapshot().Language(), data: c.Graph().Data(), sorts: map[semantics.Subject]semantics.TermID{}, results: map[semantics.EntityID]semantics.TermID{}, identities: map[semantics.EntityID]semantics.TermID{}, sites: map[semantics.TermID]ast.NodeRef{}}
+	s := &interpretation{captured: c, graph: c.Graph(), language: request.Snapshot().Language(), data: c.Graph().Data(), sorts: map[semantics.Subject]semantics.TermID{}, results: map[semantics.EntityID]semantics.TermID{}, identities: map[semantics.EntityID]semantics.TermID{}, sites: map[semantics.TermID]ast.NodeRef{}}
 	for _, ref := range input.Nodes[input.Root-1].References {
 		if ref.Role == h.RoleRoot {
 			s.rootModule = ref.Target
@@ -92,7 +93,7 @@ func open(ctx context.Context, c g.Captured[h.Language]) (*interpretation, error
 // definition is a horos type definition the kernel reached, or ok=false for any
 // other entity (a kind definition, module or parameter).
 func (s *interpretation) definition(d g.Declaration[h.Language]) (semantics.Entity, bool, error) {
-	id, ok := d.In(s.graph)
+	id, ok := d.In(s.captured)
 	if !ok {
 		return semantics.Entity{}, false, g.ErrScope
 	}
@@ -142,7 +143,7 @@ func (s *interpretation) JudgeDeclaration(ctx context.Context, d g.Declaration[h
 	if err := ctx.Err(); err != nil {
 		return g.Judgment{}, err
 	}
-	id, _ := d.In(s.graph)
+	id, _ := d.In(s.captured)
 	e, ok, err := s.definition(d)
 	if err != nil {
 		return g.Judgment{}, err
@@ -170,7 +171,7 @@ func (s *interpretation) JudgeUse(ctx context.Context, u g.Use[h.Language]) (g.J
 	if err := ctx.Err(); err != nil {
 		return g.Judgment{}, err
 	}
-	term, ok := u.In(s.graph)
+	term, ok := u.In(s.captured)
 	if !ok {
 		return g.Judgment{}, g.ErrScope
 	}
@@ -196,7 +197,7 @@ func (s *interpretation) diagnostic(site ast.NodeRef, message string) error {
 }
 
 func (s *interpretation) descriptor(u g.Use[h.Language]) (Descriptor, bool, error) {
-	id, ok := u.In(s.graph)
+	id, ok := u.In(s.captured)
 	if !ok {
 		return Descriptor{}, false, g.ErrScope
 	}

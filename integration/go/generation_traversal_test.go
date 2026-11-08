@@ -15,6 +15,7 @@ import (
 	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
 	s "github.com/Bitspark/bittype/syntax/golang/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
@@ -207,9 +208,11 @@ func TestHorosUnsupportedFormsAtTheirSite(t *testing.T) {
 			if !input.Evidence[0].HasSemantics() {
 				t.Fatal("valid horos published no model")
 			}
+			var root ast.NodeRef
 			last := func(reg *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
 				q, err := tsRequest(reg, input, to)
 				q.Roots = q.Roots[len(q.Roots)-1:]
+				root = q.Roots[0]
 				return q, err
 			}
 			output, err := runGeneration(t, input, nativeChecker(t, typescriptText()), last)
@@ -222,6 +225,102 @@ func TestHorosUnsupportedFormsAtTheirSite(t *testing.T) {
 			if *diagnostic.Node == input.Source.Entry() || !strings.Contains(diagnostic.Message, messages[name]) {
 				t.Fatal("unlocated diagnostic:", diagnostic.Node, diagnostic.Message)
 			}
+			// The form is inside the root's body: a term with one recorded site
+			// is reported there, not at its declaration.
+			if *diagnostic.Node == root {
+				t.Fatal("diagnostic at the declaration, not the form:", diagnostic.Node)
+			}
 		})
+	}
+}
+
+// The regressions below come from the independent review that rejected the
+// first GEN-01 delivery (board claim bittype-source-traversal-20261108, record
+// 000003). Each has a correctly composed control.
+
+// TestKernelPlansExactlyTheAdmittedEvidence: the source always interprets the
+// evidence the kernel admitted. Two inputs share a snapshot and graph and
+// differ only in a second report. Through the registry and through the
+// exported planner, each input is judged by its own report, because Plan opens
+// the source itself. A source that serves an interpretation opened over the
+// other input cannot resolve this run's handles, though the graph is the same.
+func TestKernelPlansExactlyTheAdmittedEvidence(t *testing.T) {
+	ctx := context.Background()
+	fixture := independent(t)
+	holds, err := fixture.AdmissionInput(ctx, semantic.Holds)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rejected, err := fixture.AdmissionInput(ctx, semantic.Rejected)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if holds.Evidence[0] != rejected.Evidence[0] || holds.Evidence[1] == rejected.Evidence[1] {
+		t.Fatal("the inputs must share the graph evidence and differ in the report")
+	}
+	admission := f.SourceVariant{Admission: true}
+	for name, plan := range map[string]func(f.SourceVariant, transform.Input) (g.GenerationPlan, error){
+		"registry": func(v f.SourceVariant, in transform.Input) (g.GenerationPlan, error) {
+			return fixture.PlanSource(ctx, v, in, "Person")
+		},
+		"direct": func(v f.SourceVariant, in transform.Input) (g.GenerationPlan, error) {
+			return fixture.PlanDirect(ctx, v, in, "Person")
+		},
+	} {
+		if p, err := plan(admission, holds); err != nil || !p.Valid() {
+			t.Fatal(name, "holding report:", err)
+		}
+		if p, err := plan(admission, rejected); !errors.Is(err, g.ErrRejected) || p.Valid() {
+			t.Fatal(name, "rejecting report:", err)
+		}
+		reusing := admission.Reusing()
+		if p, err := plan(reusing, holds); err != nil || !p.Valid() {
+			t.Fatal(name, "first capture:", err)
+		}
+		if p, err := plan(reusing, rejected); !errors.Is(err, g.ErrScope) || errors.Is(err, g.ErrRejected) || p.Valid() {
+			t.Fatal(name, "handles resolved against another capture of the same graph:", err)
+		}
+	}
+}
+
+// TestKernelSelectorsAreQualified: a source selector of another source profile
+// with an otherwise identical key is outside the run. It chooses neither an
+// exact binding, an exact declaration recipe nor the default recipe.
+func TestKernelSelectorsAreQualified(t *testing.T) {
+	ctx := context.Background()
+	for _, example := range []struct{ root, selector string }{
+		{"Person", "expression/person-body"}, // exact descriptor binding
+		{"Cells", "declaration/Cell"},        // exact application binding
+		{"Kept", "declaration/Ignore"},       // exact declaration recipe
+		{"Person", "declaration/Person"},     // default declaration recipe
+	} {
+		t.Run(example.selector, func(t *testing.T) {
+			fixture := independent(t)
+			if p, err := fixture.PlanSource(ctx, f.SourceVariant{}, fixture.Input(), example.root); err != nil || !p.Valid() {
+				t.Fatal("control:", err)
+			}
+			p, err := fixture.PlanSource(ctx, f.SourceVariant{Foreign: example.selector}, fixture.Input(), example.root)
+			if !errors.Is(err, g.ErrScope) || p.Valid() || !strings.Contains(err.Error(), "selector outside the source language") {
+				t.Fatal("foreign selector:", err)
+			}
+		})
+	}
+}
+
+// TestKernelLocatesSharedTermsAtTheirDeclaration: when the graph records a term
+// at several syntax sites, the kernel cannot tell which one an occurrence is
+// and reports the declaration the occurrence is in.
+func TestKernelLocatesSharedTermsAtTheirDeclaration(t *testing.T) {
+	fixture, err := f.NewSharedSites(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p, err := fixture.PlanRoots(context.Background(), f.Standard, "Lend"); err != nil || !p.Valid() {
+		t.Fatal("control:", err)
+	}
+	err = independentFails(t, fixture, f.Standard, "Borrow")
+	var located *g.SiteError
+	if !foreignBinder(err) || !errors.As(err, &located) || located.Site != fixture.Site("Borrow") {
+		t.Fatalf("site %v, want Borrow %v (Lend is %v): %v", located, fixture.Site("Borrow"), fixture.Site("Lend"), err)
 	}
 }

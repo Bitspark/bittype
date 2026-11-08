@@ -61,7 +61,7 @@ func (r reader) Declaration(d g.Declaration[h.Language]) (Declaration, error) {
 	return Declaration{Name: e.Name, ModulePin: pin, Root: module.Declarations[0] == r.s.rootModule, Origin: e.Declarations[0]}, nil
 }
 func (r reader) Parameter(b g.Binder[h.Language]) (Parameter, error) {
-	id, ok := b.In(r.s.graph)
+	id, ok := b.In(r.s.captured)
 	if !ok {
 		return Parameter{}, g.ErrScope
 	}
@@ -77,7 +77,7 @@ func (r reader) Descriptor(u g.Use[h.Language]) (Descriptor, bool, error) { retu
 // Each field is (horos/field, name, req|opt, type); field k's type is the
 // operand at locator [k+2, 3].
 func (r reader) Fields(v g.UseView[h.Language]) ([]Field, error) {
-	id, ok := v.Use.In(r.s.graph)
+	id, ok := v.Use.In(r.s.captured)
 	if !ok || v.Kind != g.ExpressionUse {
 		return nil, g.ErrScope
 	}
@@ -102,7 +102,7 @@ func (r reader) Fields(v g.UseView[h.Language]) ([]Field, error) {
 		if !ok {
 			return nil, semantic.ErrInvalidRequest
 		}
-		term, _ := u.In(r.s.graph)
+		term, _ := u.In(r.s.captured)
 		fields = append(fields, Field{Name: name, Optional: atom(f.At(2)) == "opt", Use: u, Origin: r.s.sites[term]})
 	}
 	return fields, nil
@@ -110,7 +110,7 @@ func (r reader) Fields(v g.UseView[h.Language]) ([]Field, error) {
 
 // Element is the operand at locator [1] of a collection descriptor.
 func (r reader) Element(v g.UseView[h.Language]) (g.Use[h.Language], error) {
-	if _, ok := v.Use.In(r.s.graph); !ok || v.Kind != g.ExpressionUse {
+	if _, ok := v.Use.In(r.s.captured); !ok || v.Kind != g.ExpressionUse {
 		return g.Use[h.Language]{}, g.ErrScope
 	}
 	u, ok := v.Operand(1)
@@ -120,7 +120,7 @@ func (r reader) Element(v g.UseView[h.Language]) (g.Use[h.Language], error) {
 	return u, nil
 }
 func (r reader) Unsupported(u g.Use[h.Language], message string) error {
-	id, _ := u.In(r.s.graph)
+	id, _ := u.In(r.s.captured)
 	site := r.s.sites[id]
 	return &text.Diagnostic{Code: text.Unsupported, Message: message, Node: &site}
 }

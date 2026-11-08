@@ -24,6 +24,13 @@ Changes since the previously recorded module-encoding entry:
   judged, including omitted ones. The Open/Admit/CheckChild/Catalog reader is
   removed without aliases; horos and the independent source, which now publishes
   its own graph, drive the same walk. GEN-02 and ACX-004 remain unfinished.
+- Correct the GEN-01 delivery after independent verification rejected it:
+  `PlanningInput` takes the source language, input and provider, and `Plan`
+  admits the evidence and opens the source itself (`AdmitInput` is no longer
+  exported). Handles resolve with `In(Captured)` against the exact capture. A
+  source selector outside the capture's source language fails as `ErrScope`. A
+  term recorded at several syntax sites is reported at the occurrence's
+  declaration. ACX-006 and GEN-01 stay open until the correction is verified.
 - Reconcile active architecture/API guides, Horos graph examples and dependency
   versions; add a documentation map, runnable Page/Cell fixture walkthrough,
   native placement proposal, exact verification contribution reference and
