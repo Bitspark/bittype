@@ -396,8 +396,8 @@ callbacks. [Implemented boundaries](generation-planner.md#three-spi-changes)
 3. **Deferred:** native constraint encodings, independently qualified for each
    supported domain, issuer model and checking point. The representation profile
    does not enforce arbitrary handwritten native applications.
-4. **Implemented:** kernel-owned traversal of established semantics
-   ([GEN-01](generation-gaps.md#gen-01)). **Deferred:** the remaining native
+4. **Implemented, pending independent verification:** kernel-owned traversal
+   of established semantics ([GEN-01](generation-gaps.md#gen-01)). **Deferred:** the remaining native
    Files cases.
 
 [Plan tests](../integration/go/generation_planning_test.go) ·

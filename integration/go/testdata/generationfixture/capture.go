@@ -102,8 +102,11 @@ func program() *graph {
 	// A recipe that erases its body must still have that body admitted.
 	p.declare("Shadow", "T")
 	p.body("Shadow", p.expression("opaque", p.ref(p.parameter("Page", 0))))
-	// An entity with a site that the source does not generate.
-	p.other("Kindish")
+	// An entity with a site that the source does not generate, and a
+	// declaration that uses it.
+	kindish := p.other("Kindish")
+	p.declare("UsesKind")
+	p.body("UsesKind", p.ref(kindish))
 	return p
 }
 

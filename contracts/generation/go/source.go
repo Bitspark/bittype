@@ -14,9 +14,11 @@ import (
 )
 
 // Captured is the evidence context of one generation request: the admitted
-// request (snapshot, entry tree and evidence) and the typed semantic graph that
-// the designated evidence published. Only AdmitInput creates it. The kernel walks
-// this graph and no other; a source is opened over the same value.
+// request (snapshot, entry tree and the exact ordered evidence) and the typed
+// semantic graph that the designated evidence published. Only Plan creates it,
+// by admitting its input against the source's own contract, and Plan opens that
+// source over exactly this value. The kernel walks this graph and no other.
+// Two captures are different evidence even when they share one graph.
 type Captured[F any] struct{ state *captured[F] }
 
 type captured[F any] struct {
@@ -24,10 +26,10 @@ type captured[F any] struct {
 	graph   semantics.Semantics[F]
 }
 
-// AdmitInput admits input against a source contract. The contract must designate
+// admitInput admits input against a source contract. The contract must designate
 // exactly one evidence requirement that publishes a semantic graph; the kernel
 // unpacks that result's graph itself instead of accepting one from a source.
-func AdmitInput[F any](language representation.Language, contract transform.Contract, input transform.Input) (Captured[F], error) {
+func admitInput[F any](language representation.Language, contract transform.Contract, input transform.Input) (Captured[F], error) {
 	index := -1
 	for i, requirement := range contract.Evidence {
 		if requirement.Semantics {
@@ -104,6 +106,10 @@ type Judgment struct {
 type Interpretation[F any] interface {
 	// Declaration classifies a declaration entity the walk reached. ok is false
 	// for an entity this source does not generate (for example a kind or module).
+	// Every selector the interpretation returns is qualified by the capture's
+	// source language. A selector in another language or profile is outside the
+	// run: planning fails with ErrScope before any exact or default rule is
+	// chosen.
 	Declaration(context.Context, Declaration[F]) (Selector, bool, error)
 	// Expression returns the selector of a provider-expression occurrence.
 	Expression(context.Context, Use[F]) (Selector, error)
@@ -120,7 +126,10 @@ type Interpretation[F any] interface {
 
 // Source is what a provider opens over one capture: the kernel-facing
 // interpretation and the reader that mapping libraries use to interpret source
-// payloads. R reads kernel handles; it supplies no navigation.
+// payloads. R reads kernel handles; it supplies no navigation. Only Plan opens
+// a source, over the capture it walks. Interpreting that capture is the
+// provider's responsibility: the kernel cannot check where a provider's
+// answers come from.
 type Source[F, R any] struct {
 	Interpretation Interpretation[F]
 	Reader         R
@@ -131,6 +140,9 @@ type SourceProvider[F, R any] interface {
 	// Contract declares the required evidence; exactly one requirement
 	// publishes the semantic graph.
 	Contract() transform.Contract
+	// Open interprets the capture Plan admitted against Contract, and only that
+	// capture. A source resolves kernel handles against it (see
+	// Declaration.In), so it can refuse handles from a run over other evidence.
 	Open(context.Context, Captured[F]) (Source[F, R], error)
 }
 
