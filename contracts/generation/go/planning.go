@@ -415,7 +415,7 @@ func (p *planner[F, T, R]) use(u Use[F], f frame[T], depth int) (Expression[T], 
 		return p.bind(choices[0], key, view, f, depth)
 	}
 	if view.Kind != DeclarationUse {
-		return Expression[T]{}, p.walk.unsupported(u.o.term, 0, "no mapping for "+key)
+		return Expression[T]{}, p.walk.unsupported(u.o.term, u.o.declaration, "no mapping for "+key)
 	}
 	id, err := p.declare(view.Callee, depth+1)
 	if err != nil {

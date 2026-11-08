@@ -234,13 +234,13 @@ func (w *walk[F]) structure(o *occurrence[F]) (UseView[F], error) {
 			return UseView[F]{}, ErrScope
 		}
 		if len(callee.Parameters) != 0 {
-			return UseView[F]{}, w.unsupported(o.term, 0, "generic declaration used without arguments")
+			return UseView[F]{}, w.unsupported(o.term, o.declaration, "generic declaration used without arguments")
 		}
 		view.Kind, view.Callee = DeclarationUse, Declaration[F]{w, t.Target}
 	case semantics.Application:
 		bindings, ok := w.graph.DirectParameterBindings(o.term)
 		if !ok {
-			return UseView[F]{}, w.unsupported(o.term, 0, "application without a direct declaration callee and complete arguments")
+			return UseView[F]{}, w.unsupported(o.term, o.declaration, "application without a direct declaration callee and complete arguments")
 		}
 		callee, _ := w.graph.Term(t.Callee)
 		view.Kind, view.Callee = DeclarationUse, Declaration[F]{w, callee.Target}
@@ -259,7 +259,8 @@ func (w *walk[F]) structure(o *occurrence[F]) (UseView[F], error) {
 	return view, nil
 }
 
-// unsupported locates a kernel limitation at the term's or entity's syntax site.
+// unsupported locates a kernel limitation at the term's syntax site, else at
+// the declaring site of the entity (for an occurrence, its declaration).
 func (w *walk[F]) unsupported(term semantics.TermID, entity semantics.EntityID, message string) error {
 	site, ok := w.termSites[term]
 	if !ok && entity != 0 {
