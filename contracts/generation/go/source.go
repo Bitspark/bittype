@@ -90,8 +90,8 @@ const (
 )
 
 // Judgment is a source-owned conclusion. Diagnostic optionally explains a
-// non-admitted verdict at a source site; the kernel never interprets it, and a
-// diagnostic that wraps a kernel error class is reduced to its message.
+// non-admitted verdict at a source site. The kernel never interprets it, and a
+// diagnostic cannot add an error class: only the verdict classifies.
 type Judgment struct {
 	Verdict    Verdict
 	Diagnostic error
@@ -112,7 +112,9 @@ type Interpretation[F any] interface {
 	// JudgeUse judges one occurrence under the assumptions of the declaration
 	// it occurs in. Before representing an occurrence the kernel judges it and
 	// every occurrence in its subtree, including omitted actuals and uncaptured
-	// operands.
+	// operands. The judgment of a use covers that use: a callee declaration is
+	// classified only when a use of it is represented, and judged only when it
+	// is generated.
 	JudgeUse(context.Context, Use[F]) (Judgment, error)
 }
 
@@ -139,12 +141,21 @@ type SiteError struct {
 	Message string
 }
 
-func (e *SiteError) Error() string { return e.Message + ": " + e.Err.Error() }
+func (e *SiteError) Error() string {
+	if e.Site.Tree == "" {
+		return e.Message + ": " + e.Err.Error()
+	}
+	return fmt.Sprintf("%s#%d: %s: %v", e.Site.Tree, e.Site.Node, e.Message, e.Err)
+}
 func (e *SiteError) Unwrap() error { return e.Err }
 
-// classes are the failure meanings the kernel assigns. A source diagnostic
-// explains a verdict; it cannot add a second class.
-var classes = []error{ErrInvalid, ErrUnsupported, ErrScope, ErrLimit, ErrIncomplete, ErrAmbiguous, ErrRejected, semantic.ErrEvidenceUnavailable, semantic.ErrInvalidRequest}
+// explanation carries a source diagnostic. It does not unwrap, so a diagnostic
+// cannot add a failure class to the verdict; As still reaches the diagnostic
+// and any site it carries.
+type explanation struct{ err error }
+
+func (e explanation) Error() string      { return e.err.Error() }
+func (e explanation) As(target any) bool { return errors.As(e.err, target) }
 
 // verdict converts a judgment into the kernel's failure meaning.
 func verdict(j Judgment) error {
@@ -152,14 +163,7 @@ func verdict(j Judgment) error {
 		if j.Diagnostic == nil {
 			return kind
 		}
-		diagnostic := j.Diagnostic
-		for _, class := range classes {
-			if errors.Is(diagnostic, class) {
-				diagnostic = errors.New(diagnostic.Error())
-				break
-			}
-		}
-		return fmt.Errorf("%w: %w", kind, diagnostic)
+		return fmt.Errorf("%w: %w", kind, explanation{j.Diagnostic})
 	}
 	switch j.Verdict {
 	case Admitted:

@@ -244,8 +244,14 @@ These are not source judgments.
 occurrence, the kernel admits the occurrence and its whole subtree. Every
 occurrence in the subtree needs a structural reading in its declaration's scope
 and an Admitted judgment. That covers actuals the native convention omits,
-content nested inside them, and operands no mapping captures. Representation
-stays demand-driven; admission does not. Admissions are memoized per occurrence.
+content nested inside them, and operands no mapping captures. A generated
+declaration's body is admitted before its recipe runs, even if the recipe does
+not represent it. Representation stays demand-driven; admission does not.
+Admissions are memoized per occurrence.
+
+The judgment of a use covers that use. A callee declaration is classified only
+when a use of it is represented, and judged only when it is generated. A source
+that does not admit some uses of an entity must say so in `JudgeUse`.
 Declarations are memoized per entity, and recursion is detected there.
 
 A source diagnostic only explains a verdict. A diagnostic that wraps a kernel

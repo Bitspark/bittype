@@ -82,11 +82,14 @@ func TestKernelAdmitsOmittedActuals(t *testing.T) {
 	if err := independentFails(t, fixture, f.Standard, "Smuggle"); !foreignBinder(err) {
 		t.Fatal("foreign binder as an omitted actual:", err)
 	}
-	if err := independentFails(t, fixture, f.Standard, "SmuggleLoose"); !errors.Is(err, g.ErrUnsupported) {
+	if err := independentFails(t, fixture, f.Standard, "SmuggleLoose"); !errors.Is(err, g.ErrUnsupported) || !strings.Contains(err.Error(), "generic declaration used without arguments") {
 		t.Fatal("unapplied generic as an omitted actual:", err)
 	}
 	if err := independentFails(t, fixture, f.Standard, "Hidden"); !foreignBinder(err) {
 		t.Fatal("foreign binder in an uncaptured operand:", err)
+	}
+	if err := independentFails(t, fixture, f.Standard, "Shadow"); !foreignBinder(err) {
+		t.Fatal("foreign binder in a body the recipe never represents:", err)
 	}
 }
 
@@ -189,6 +192,7 @@ func TestKernelRootsAndEvidence(t *testing.T) {
 // constructor-sorted parameter is a declaration the horos judgment refuses to
 // represent. Each is unsupported at its site, not malformed input.
 func TestHorosUnsupportedFormsAtTheirSite(t *testing.T) {
+	messages := map[string]string{"constructor-parameter": "constructor-valued types require an explicit representation", "applied-alias": "application without a direct declaration callee", "curried": "application without a direct declaration callee"}
 	for name, source := range map[string]string{
 		"constructor-parameter": "module aliases; type Wrap<F: top(P) -> top(P)> = text;",
 		"applied-alias":         "module aliases; type ListType<T> = list<T>; type Alias: top(P) -> top(P) = ListType; type Texts = Alias<text>;",
@@ -212,6 +216,11 @@ func TestHorosUnsupportedFormsAtTheirSite(t *testing.T) {
 			var diagnostic *text.Diagnostic
 			if !errors.Is(err, g.ErrUnsupported) || errors.Is(err, semantic.ErrInvalidRequest) || !errors.As(err, &diagnostic) || diagnostic.Code != text.Unsupported || diagnostic.Node == nil || output.Snapshot().Valid() {
 				t.Fatal(err)
+			}
+			// The diagnostic is the one located at the form, not the registry's
+			// entry-node fallback.
+			if *diagnostic.Node == input.Source.Entry() || !strings.Contains(diagnostic.Message, messages[name]) {
+				t.Fatal("unlocated diagnostic:", diagnostic.Node, diagnostic.Message)
 			}
 		})
 	}

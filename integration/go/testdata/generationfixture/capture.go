@@ -99,6 +99,9 @@ func program() *graph {
 	void := p.expression("person-body")
 	p.mark(semantics.Subject{Term: void}, zero)
 	p.body("Void", void)
+	// A recipe that erases its body must still have that body admitted.
+	p.declare("Shadow", "T")
+	p.body("Shadow", p.expression("opaque", p.ref(p.parameter("Page", 0))))
 	// An entity with a site that the source does not generate.
 	p.other("Kindish")
 	return p

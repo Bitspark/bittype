@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 // A source diagnostic explains a verdict; it cannot add a second error class.
@@ -16,6 +17,12 @@ func TestVerdictKeepsOneFailureClass(t *testing.T) {
 		if !errors.Is(err, want) || errors.Is(err, ErrLimit) || err.Error() != want.Error()+": site 3: "+ErrLimit.Error() {
 			t.Fatal(verdictValue, err)
 		}
+	}
+	// A located diagnostic keeps its site even when it carries a kernel class.
+	site := &SiteError{Err: ErrLimit, Message: "deep", Site: ast.NodeRef{Tree: "source", Node: 7}}
+	var atSite *SiteError
+	if err := verdict(Judgment{Verdict: Unsupported, Diagnostic: site}); !errors.As(err, &atSite) || atSite.Site.Node != 7 || errors.Is(err, ErrLimit) {
+		t.Fatal(err)
 	}
 	if err := verdict(Judgment{Verdict: Admitted, Diagnostic: impostor}); err != nil {
 		t.Fatal(err)

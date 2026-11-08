@@ -84,7 +84,8 @@ interpretation.
 before any binding or convention represents it. Every occurrence in the subtree
 needs a structural reading in scope and an Admitted judgment. That covers actuals
 the native convention omits, content nested in them, and operands no mapping
-captures. Undetermined fails as missing evidence and Rejected as `ErrRejected`, so
+captures. A generated declaration's body is admitted even if its recipe does not
+represent it. Undetermined fails as missing evidence and Rejected as `ErrRejected`, so
 an uncovered fact is never reported as a rejection.
 
 **Removed with no aliases:**
@@ -118,7 +119,8 @@ source now publishes an ordinary graph through its own analysis.
 
 - omitted actuals that are refuted, uncovered or admitted; refuted content
   nested in an omitted actual; a foreign binder or unapplied generic as an
-  omitted actual; a foreign binder in an uncaptured operand;
+  omitted actual; a foreign binder in an uncaptured operand, and in a body the
+  recipe never represents;
 - a declaration the source rejects, and a zero verdict;
 - a binder of another declaration, including through a shared term;
 - a capture that is not a child (through both `Mapped` and `Pattern.Capture`),
@@ -129,14 +131,17 @@ source now publishes an ordinary graph through its own analysis.
   constructor-sorted parameters, which now report Unsupported at their site
   rather than malformed input.
 
-An independent review of the first revision found that omitted actuals skipped
-the structural scope check, and that nested content inside them was not judged.
-Admission now covers whole subtrees.
+Two independent reviews found gaps, and both are fixed.
+
+- The first revision let omitted actuals skip the structural scope check and left
+  content nested in them unjudged. Admission now covers whole subtrees.
+- A later revision did not admit a body the recipe never represents. Generated
+  bodies are now always admitted.
 
 Each kernel check was seeded with a mutant that turned its test red. Covered
 checks:
 
-- admission of actuals and of operands;
+- admission of actuals, of operands and of unrepresented bodies;
 - binder ownership;
 - child captures through `Mapped` and `Pattern.Capture`;
 - body-only recipes;
@@ -144,7 +149,8 @@ checks:
 - the structural application check;
 - the declaration judgment;
 - the zero verdict;
-- diagnostic class isolation.
+- diagnostic class isolation;
+- located horos diagnostics.
 [Traversal qualification](../../integration/go/generation_traversal_test.go) ·
 [Planning tests](../../integration/go/generation_planning_test.go)
 

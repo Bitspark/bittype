@@ -148,6 +148,7 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 	page, _ := g.NewSelector(from, "expression/page-body")
 	cell, _ := g.NewSelector(from, "declaration/Cell")
 	ignore, _ := g.NewSelector(from, "declaration/Ignore")
+	shadow, _ := g.NewSelector(from, "declaration/Shadow")
 	v := g.TypeSlot("V")
 	return g.MappingDescription[SourceLanguage, s.Language, Reader]{
 		Profile: "independent/1",
@@ -231,12 +232,19 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 				return d, err
 			}},
 			// Ignore omits its source parameter natively; uses must still admit it.
-			{ID: "erase", Selector: ignore, Expand: func(ctx context.Context, q g.DeclarationRequest[SourceLanguage, s.Language, Reader]) (g.DeclarationDescription[s.Language], error) {
-				return g.DeclarationDescription[s.Language]{Name: "Ignore", Form: model.Form("alias"), Body: model.Primitive("string"), Generic: g.GenericConvention[s.Language]{Bindings: []g.Expression[s.Language]{model.Primitive("string")}}}, nil
-			}},
+			{ID: "erase", Selector: ignore, Expand: erase("Ignore")},
+			// Shadow's recipe never represents its body; the kernel still admits it.
+			{ID: "erase-shadow", Selector: shadow, Expand: erase("Shadow")},
 		},
 		Helpers: []g.HelperRecipe[s.Language]{{Key: cursor, Declaration: g.NativeDeclaration[s.Language]{Name: "Cursor", Form: model.Form("alias"), Body: model.Primitive("string")}}},
 	}, nil
+}
+
+// erase describes a declaration as string, omitting its parameter and body.
+func erase(name string) func(context.Context, g.DeclarationRequest[SourceLanguage, s.Language, Reader]) (g.DeclarationDescription[s.Language], error) {
+	return func(ctx context.Context, q g.DeclarationRequest[SourceLanguage, s.Language, Reader]) (g.DeclarationDescription[s.Language], error) {
+		return g.DeclarationDescription[s.Language]{Name: name, Form: model.Form("alias"), Body: model.Primitive("string"), Generic: g.GenericConvention[s.Language]{Bindings: []g.Expression[s.Language]{model.Primitive("string")}}}, nil
+	}
 }
 
 // Fixture is one captured fixture program and its Go target.

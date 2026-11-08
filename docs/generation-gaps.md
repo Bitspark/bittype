@@ -96,7 +96,8 @@ For `People = Page<Cell<Person>>`:
 
    An occurrence is admitted with its whole subtree before any binding or
    convention represents it. That includes actuals the convention omits, content
-   nested in them, and operands no mapping captures.
+   nested in them, and operands no mapping captures. A generated declaration's
+   body is admitted even if its recipe does not represent it.
 4. horos and the independent source drive the same walk. The independent source
    covers nested `Page<Page<T>>` and a library-owned `Cell<Person>`. horos covers
    `Page<Cell<Person>>`. The negative cases cover both sources:
@@ -129,6 +130,9 @@ For `People = Page<Cell<Person>>`:
 - **Operands.** Every provider-expression operand is admitted, structurally
   and by judgment. It is represented only when a mapping captures it. For horos,
   the analysis also checks every operand's formation contract.
+- **Callees.** The judgment of a use covers that use. A callee declaration is
+  classified when one of its uses is represented, and judged when it is
+  generated.
 - **Memoization.** Occurrences are distinguished by path, and no effective-subject
   equivalence is defined. Judgments are memoized per occurrence and declarations
   per entity.

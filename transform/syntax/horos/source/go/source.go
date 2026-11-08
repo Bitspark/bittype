@@ -2,7 +2,6 @@ package source
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
@@ -183,7 +182,7 @@ func (s *interpretation) JudgeUse(ctx context.Context, u g.Use[h.Language]) (g.J
 func (s *interpretation) proper(sort semantics.TermID, site ast.NodeRef) g.Judgment {
 	if sort == 0 || int(sort) > len(s.data.Terms) {
 		// Not an unsupported form: the evidence simply does not cover it.
-		return g.Judgment{Verdict: g.Undetermined, Diagnostic: fmt.Errorf("%s#%d: no established sort", site.Tree, site.Node)}
+		return g.Judgment{Verdict: g.Undetermined, Diagnostic: &g.SiteError{Err: semantic.ErrEvidenceUnavailable, Site: site, Message: "no established sort"}}
 	}
 	t := s.data.Terms[sort-1]
 	if t.Kind == semantics.ProviderExpression && t.Operator == properSort {

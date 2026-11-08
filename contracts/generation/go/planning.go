@@ -317,6 +317,11 @@ func (p *planner[F, T, R]) declare(d Declaration[F], depth int) (uint32, error) 
 	if err == nil {
 		err = verdict(j)
 	}
+	// A generated declaration's body is admitted even if its recipe does not
+	// represent it, and before the recipe reads it.
+	if err == nil {
+		err = p.admit(view.Body.o, depth+1)
+	}
 	if err != nil {
 		return 0, err
 	}
