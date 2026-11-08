@@ -123,7 +123,8 @@ recover canonical identities, constraints or later validation/binding choices.
 
 The [complete proposed module equations](hydrated-types.md#4-library-owned-function-cell-and-stream)
 declare Function over Wire, Cell as get/set functions and a pull Stream as
-next/cancel functions with an ordinary Step union. Their readable forms are:
+next/cancel functions with an ordinary Step union. Their schematic equations
+(not parseable Horos source) are:
 
 ```text
 Unit          = H("tuple")

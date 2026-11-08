@@ -161,4 +161,6 @@ callables, adapters or migration gates to this milestone.
 
 The unified [Horos frontend](docs/horos.md) implements the existing stage
 interfaces. Template lifting and separate profiles are removed without aliases.
-Canonical semantics stay in Horos; no native generator or runtime binding is added.
+That frontend replacement added no native generator or runtime binding. Native
+generation subsequently landed through the declarative SPI described above;
+canonical semantics remain Horos-owned and runtime bindings remain outside scope.
