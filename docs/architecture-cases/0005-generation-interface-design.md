@@ -2,8 +2,8 @@
 
 **Scope and status.** The 8 November 2026 correction concerns the generation
 planner design. The declarative mapping SPI and the separation of planning from
-AST construction are implemented and qualified. Source-reader narrowing remains
-a separate proposed change.
+AST construction are implemented and qualified. The separate source-reader
+correction is recorded in [ACX-006](0006-generation-source-traversal.md).
 
 **Decision that violated AC-09.** The original proposal required the executor
 to use the five existing generation operations. It also gave a mapper two
@@ -45,5 +45,6 @@ an additional native parameter and a helper under the same convention.
 **Limits.** The native target remains the trusted interpreter of its own forms.
 This establishes a single mapping authority and separation of stages, not a
 cross-language proof of every native lowering. Kind enforcement and the third
-source-traversal SPI change are not claimed by this correction. The old
+source-traversal SPI change are not claimed by this correction; the latter was
+corrected separately under ACX-006. The old
 procedural SPI, second mapping authority and operation tickets were removed.

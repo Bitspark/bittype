@@ -141,13 +141,16 @@ TypeScript generation carries exposures and external occurrences in the checked
 generation.Output. Its [Files formatter](docs/typescript-type-imports.md) decides
 imports and exports after placement and checks fresh native bindings. Formatting
 already analyzed files retains its distinct input. The
-[three SPI changes](docs/generation-planner.md#three-spi-changes) distinguish the
-implemented output/planning boundaries from proposed common source traversal.
+[three SPI changes](docs/generation-planner.md#three-spi-changes) are implemented:
+the kernel walks the admitted semantic graph, and sources supply interpretation,
+judgments and a reader for their mapping libraries. Do not restore source-owned
+navigation (Open/Admit/CheckChild or reader records).
 Cross-language verification and native admission enforcement remain separate.
-Use [GEN-01 and GEN-02](docs/generation-gaps.md) when describing unfinished
-generation work. Update those statuses and the owning architecture case when
-a correction lands; working examples do not close either gap. The source-reader
-issue is an architectural correction, not merely deferred feature coverage.
+Use [GEN-02](docs/generation-gaps.md#gen-02) when describing unfinished
+generation work, and [GEN-01](docs/generation-gaps.md#gen-01) for the delivered
+traversal correction and its supported scope. Update those statuses and the
+owning architecture case when a correction lands; working examples do not
+close a gap.
 
 - Readable Horos syntax and native pagination transformers are implemented;
   read [Horos syntax](docs/horos-syntax.md) and [semantic generation](docs/semantic-generation.md).

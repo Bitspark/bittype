@@ -112,7 +112,7 @@ not an existing generator capability or a required convention for other targets.
 
 | Component | Responsibility |
 | --- | --- |
-| Source provider/adapter | Establish and expose admitted uses, memberships and original assumptions |
+| Source interpretation | Classify declarations, name descriptors and judge declarations and whole uses from supplied evidence |
 | Selected mapping | Choose the native representation family |
 | Configured source/target convention | Introduce native formals; elaborate actual applications; preserve result associations |
 | Generation target | Native declaration syntax, lexical scopes, anchors and bound uses; the [Files formatter](source.md#from-generated-declarations-to-files) owns concrete imports and exports |
@@ -286,7 +286,7 @@ specifies a future requirement, not current support.
 
 ### Admission and products do not manufacture proofs
 
-The source adapter's admitted-use operation exposes coverage already established in supplied
+The source's use judgment reports coverage already established in supplied
 provider results. The current transformer receipt admission establishes
 snapshot/profile/configuration/report association. DirectParameterBindings
 establishes structural argument correspondence. Neither proves every contextual
@@ -396,8 +396,9 @@ callbacks. [Implemented boundaries](generation-planner.md#three-spi-changes)
 3. **Deferred:** native constraint encodings, independently qualified for each
    supported domain, issuer model and checking point. The representation profile
    does not enforce arbitrary handwritten native applications.
-4. **Deferred:** narrowing common Source/Catalog traversal around established
-   semantics and the remaining native Files cases.
+4. **Implemented:** kernel-owned traversal of established semantics
+   ([GEN-01](generation-gaps.md#gen-01)). **Deferred:** the remaining native
+   Files cases.
 
 [Plan tests](../integration/go/generation_planning_test.go) ·
 [Independent source](../integration/go/generation_independent_test.go) ·

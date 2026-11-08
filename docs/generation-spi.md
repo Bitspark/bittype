@@ -14,34 +14,34 @@ prescribing their former interfaces. The architectural correction is recorded in
 ## Mapping descriptions
 
 These are implemented signatures in package generation. F and T identify
-languages; S is the source owner's reading API. The application registers a
+languages; R is the source owner's reading API. The application registers a
 MappingLibrary. The registry calls Describe once, outside its lock, and copies
 the returned containers. Describe receives no source instance or AST builder.
 [Definitions](../contracts/generation/go/description.go)
 
 ```go
-type MappingLibrary[F, T any, S SourceSession[F]] interface {
-    Describe(from, to representation.Language) (MappingDescription[F,T,S], error)
+type MappingLibrary[F, T, R any] interface {
+    Describe(from, to representation.Language) (MappingDescription[F,T,R], error)
 }
 
-type MappingDescription[F, T any, S SourceSession[F]] struct {
+type MappingDescription[F, T, R any] struct {
     Profile      string
-    Bindings     []BindingDescription[F,T,S]
-    Declarations []DeclarationRecipe[F,T,S]
+    Bindings     []BindingDescription[F,T,R]
+    Declarations []DeclarationRecipe[F,T,R]
     Helpers      []HelperRecipe[T]
 }
 
-type BindingDescription[F, T any, S SourceSession[F]] struct {
+type BindingDescription[F, T, R any] struct {
     ID     string
-    Input  Pattern[F,S]
+    Input  Pattern[F,R]
     Output Expression[T]
-    Expand func(context.Context, Expansion[F,T,S]) (Expression[T], error)
+    Expand func(context.Context, Expansion[F,T,R]) (Expression[T], error)
 }
 
-type Pattern[F any, S SourceSession[F]] struct {
+type Pattern[F, R any] struct {
     Selector Selector
     Slots    []Slot
-    Capture  func(context.Context, S, UseData[F]) ([]Capture[F], error)
+    Capture  func(context.Context, R, UseView[F]) ([]Capture[F], error)
 }
 type Capture[F any] struct {
     Slot Slot
@@ -71,16 +71,18 @@ binding := generation.BindingDescription[horos.Language, ts.Language, source.Rea
 ```
 
 Slot identity is distinct from its label. The registry rejects undeclared slots.
-The planner authenticates every captured occurrence as a direct operand or actual
-of the selected parent. A same-named foreign slot cannot stand in for it.
+The planner accepts a captured occurrence only if the kernel minted it as a
+direct operand or actual of the selected occurrence in this run. A same-named
+foreign slot, the occurrence itself, or a handle kept from another run cannot
+stand in for it.
 Dynamic expansion receives these implemented methods. The kernel creates and
 revokes the request; a retained request is unusable. A rejected capture poisons
 that expansion even if its callback swallows the error.
 
 ```go
-func (r Expansion[F,T,S]) Source() (S, error)
-func (r Expansion[F,T,S]) Use() (UseData[F], error)
-func (r Expansion[F,T,S]) Mapped(use Use[F]) (Expression[T], error)
+func (r Expansion[F,T,R]) Reader() (R, error)
+func (r Expansion[F,T,R]) Use() (UseView[F], error)
+func (r Expansion[F,T,R]) Mapped(use Use[F]) (Expression[T], error)
 ```
 
 Mapped records a dependency. It does not execute another mapping. Native
@@ -98,10 +100,10 @@ the constructor emits its AST site into Output.Exposed. An external use rule
 alone cannot satisfy a publication request.
 
 ```go
-type DeclarationRecipe[F, T any, S SourceSession[F]] struct {
+type DeclarationRecipe[F, T, R any] struct {
     ID       string
     Selector Selector
-    Expand   func(context.Context, DeclarationRequest[F,T,S]) (DeclarationDescription[T], error)
+    Expand   func(context.Context, DeclarationRequest[F,T,R]) (DeclarationDescription[T], error)
 }
 type DeclarationDescription[T any] struct {
     Name    string
@@ -118,15 +120,16 @@ type HelperRecipe[T any] struct {
 
 A zero recipe selector explicitly supplies a structural declaration policy.
 An exact binding takes precedence, and its failure never falls back to that
-policy. The declaration request exposes Source, Open and Mapped. Its Mapped
-operation accepts that declaration's body. Helpers have owner-issued keys and
+policy. The declaration request exposes Reader, Declaration (the kernel's
+DeclarationView) and Mapped. Its Mapped operation accepts that declaration's
+body occurrence only. Helpers have owner-issued keys and
 their own native parameters. They have no synthetic source declaration or
 inherited source environment.
 
 ## Source and representation environments
 
 One declarative convention supplies both sides of a generic. Bindings is
-indexed by the source declaration's authenticated parameters. Arguments is
+indexed by the source declaration's real binders, in parameter order. Arguments is
 indexed by the native parameters. The names do not establish either relation.
 
 ```go
@@ -163,35 +166,117 @@ retagging. Generation is not a proof of source/native type equivalence.
 [Independent fixture](../integration/go/generation_independent_test.go) ·
 [Verification](verification.md)
 
-## Source admission
+## Semantic traversal and source interpretation
 
-The source integration consumes an already admitted capture and its explicit
-evidence. Its existing Source and Catalog contracts remain; narrowing their
-traversal responsibilities is an open architectural correction, tracked with
-completion criteria in [GEN-01](generation-gaps.md#gen-01). The new child check
-authenticates the relation needed by declarative captures.
-[Complete source SPI](../contracts/generation/go/source.go) ·
-[Catalog SPI](../contracts/generation/go/mapping.go)
+The kernel admits the request and walks the semantic graph itself. Its source
+contract designates exactly one evidence requirement that publishes a graph.
+`AdmitInput` admits the snapshot and evidence, then unpacks that result's graph
+as `Semantics[F]`. A source cannot supply a different graph. The kernel reads
+only structure:
+
+- a root site's declaring entity;
+- a declaration's body and real binders;
+- term variants, reference targets, application callees and arguments, paired
+  with real binders by `DirectParameterBindings`;
+- provider-expression operands, with locators passed through unread.
+
+It never reads entity kinds, names, operators, payloads, locator meanings or
+facts. [Contract](../contracts/generation/go/source.go) ·
+[Walk and handles](../contracts/generation/go/occurrence.go)
 
 ```go
-type SourceSession[F any] interface {
-    Source[F]
-    Catalog[F]
-    ResolveRoots(context.Context, []ast.NodeRef) ([]Declaration[F], error)
+type SourceProvider[F, R any] interface {
+    Contract() transform.Contract // exactly one requirement publishes the graph
+    Open(context.Context, Captured[F]) (Source[F, R], error)
 }
-type SourceProvider[F any, S SourceSession[F]] interface {
-    Contract() transform.Contract
-    Open(context.Context, transform.Request[F]) (S, error)
+type Source[F, R any] struct {
+    Interpretation Interpretation[F]
+    Reader         R // the reading API that this source's mapping libraries use
 }
-// Source method excerpts
-CheckInput(context.Context, semantic.Snapshot, []semantic.Result) error
-Admit(context.Context, Environment[F], Use[F]) (UseData[F], error)
-CheckChild(context.Context, Environment[F], Use[F], Use[F]) error
+type Interpretation[F any] interface {
+    Declaration(context.Context, Declaration[F]) (Selector, bool, error)
+    Expression(context.Context, Use[F]) (Selector, error)
+    JudgeDeclaration(context.Context, Declaration[F]) (Judgment, error)
+    JudgeUse(context.Context, Use[F]) (Judgment, error)
+}
+type Judgment struct {
+    Verdict    Verdict // Admitted, Unsupported, Rejected or Undetermined
+    Diagnostic error
+}
 ```
 
-The kernel invokes these methods. Horos supplies them from its captured
-declaration semantics; the independent fixture supplies another source.
-Generation never invokes an implicit resolver or analyzer.
+The source owns three things:
+
+- **Classification:** whether an entity is a declaration it generates, and that
+  declaration's stable selector.
+- **Descriptor selectors:** the selector for each provider expression.
+- **Judgments:** whether a declaration, or a whole occurrence, is admissible under
+  its declaration's assumptions. A judgment uses only the captured evidence.
+
+The kernel maps each verdict to one failure meaning:
+
+| Verdict | Kernel failure |
+| --- | --- |
+| Unsupported | `ErrUnsupported` |
+| Rejected | `ErrRejected` |
+| Undetermined | `semantic.ErrEvidenceUnavailable` |
+| zero value | `ErrInvalid` |
+
+An uncovered fact is therefore never reported as a rejection.
+
+**Handles.** The kernel issues `Declaration[F]`, `Binder[F]` and `Use[F]` for one
+run. A `Use[F]` is an *occurrence*: a graph term reached under one declaration
+along one structural path. A term shared by two bodies is two occurrences. A
+holder resolves a handle with `In(graph)`, which succeeds only for the graph the
+handle was issued against.
+
+**Scope.** A reference to a parameter of the declaration being planned is a bound
+use. A reference to another declaration's parameter is `ErrScope`. Two kinds of
+form are unsupported at their site, because the structure cannot form a complete
+native application:
+
+- an application without a direct declaration callee and complete arguments;
+- a generic declaration used without arguments.
+
+These are not source judgments.
+
+**Whole-use admission.** The kernel judges every occurrence it plans, and every
+actual of a declaration use, before any binding or convention represents the use.
+That includes actuals the native convention omits. Judgments are memoized per
+occurrence. Declarations are memoized per entity, and recursion is detected
+there.
+
+Mapping callbacks receive the kernel's views and the source reader, never the
+graph or the interpretation:
+
+```go
+type UseView[F any] struct {
+    Use      Use[F]
+    Kind     UseKind        // BoundUse, DeclarationUse or ExpressionUse
+    Bound    Binder[F]
+    Callee   Declaration[F]
+    Actuals  []Actual[F]    // {Binder, Use}, in the callee's parameter order
+    Operands []Operand[F]   // {Locator, Use}
+    Body     bool           // the occurrence is its declaration's whole body
+}
+func (v UseView[F]) Actual(Binder[F]) (Use[F], bool)
+func (v UseView[F]) Operand(locator ...uint32) (Use[F], bool)
+type DeclarationView[F any] struct {
+    Declaration Declaration[F]
+    Formals     []Binder[F]
+    Body        Use[F]
+}
+```
+
+The horos reader interprets descriptors, record fields, declaration identity and
+binder names over these handles. Its field and element readers select operand
+occurrences from the kernel's view by horos locator. The independent fixture
+publishes its own graph through its own analysis and supplies only its own
+interpretation, reader and library. Both drive the same kernel walk. Generation
+never invokes an implicit resolver or analyzer.
+[horos source](../transform/syntax/horos/source/go/provider.go) ·
+[Independent source](../integration/go/testdata/generationfixture/fixture.go) ·
+[Traversal qualification](../integration/go/generation_traversal_test.go)
 
 ## Target construction
 

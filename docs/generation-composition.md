@@ -10,7 +10,8 @@ profile. [Registration SPI](kernel-composition.md#registration-and-request) ·
 
 | Owner | Responsibility |
 | --- | --- |
-| Source reader | Authenticate captured declarations, binders, uses and child relations; interpret source meanings |
+| Source interpretation and reader | Classify declarations, name descriptors and judge uses from supplied evidence; interpret payloads for its mapping libraries |
+| Kernel walk | Admit the graph, resolve roots, open declarations, follow references and applications, check child captures and binder scope |
 | Mapping library | Declare exact source patterns, chosen native forms, declaration/helper recipes and generic conventions |
 | Kernel planner | Selection, replacement, scoped substitution, dependency closure, limits and whole-request failure |
 | Native model | Native form identity and validity, without AST syntax |

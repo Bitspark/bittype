@@ -19,6 +19,7 @@ what the expert or submitting author said at the time.
 | [0010: reasoning architecture](0010-type-system-model-architecture.md) | [Verification architecture](../docs/type-system-architecture.md), [joint contract](../docs/verification.md); public association and composable interpretations are implemented for the bounded route. |
 | [0011: public generation SPI](0011-public-generation-spi.md) | [Declarative SPI](../docs/generation-spi.md), [ACX-005](../docs/architecture-cases/0005-generation-interface-design.md); the delivered procedural surface was subsequently removed. |
 | [0012: capability reports](0012-capability-reports.md) | [Capability reporting](../docs/capability-reports.md), [matrix identity correction](../docs/architecture-cases/0007-matrix-contract-identity.md). |
+| [0013: source traversal](0013-generation-source-traversal.md) | [Semantic traversal and source interpretation](../docs/generation-spi.md#semantic-traversal-and-source-interpretation), [GEN-01](../docs/generation-gaps.md#gen-01), [ACX-006](../docs/architecture-cases/0006-generation-source-traversal.md); kernel-owned traversal replaced the 0011 Open/Admit reader. |
 
 There is no implication of a missing current feature merely because a historical
 submission names a different API. Conversely, later working examples do not close

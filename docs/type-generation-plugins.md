@@ -419,13 +419,13 @@ Their ownership is:
 | DeclarationRecipe | Mapping owner | Planner for an owned declaration; returns name, form, generic convention and body |
 | HelperRecipe | Owning library | Planner on demand by opaque helper identity; independent parameter scope |
 | Target checks and Build | Native target integration | Planner admits native forms, then Run constructs ASTs from the closed program |
-| SourceSession | Source integration | Planner authenticates evidence, binders, applications and child scope |
+| Interpretation and reader | Source integration | Planner walks the admitted graph itself; the source classifies declarations, names descriptors and judges uses; mappings read payloads through the reader |
 
 Implemented boundary excerpts (full fields and methods are in the linked SPI):
 
 ```go
-type MappingLibrary[F, T any, S SourceSession[F]] interface {
-    Describe(from, to representation.Language) (MappingDescription[F,T,S], error)
+type MappingLibrary[F, T, R any] interface {
+    Describe(from, to representation.Language) (MappingDescription[F,T,R], error)
 }
 type GenericConvention[T any] struct {
     Parameters []ParameterDescription
@@ -448,10 +448,10 @@ expressions and supplies complete native arguments. Source admission happens
 before native projection, including omitted arguments. Literal data remains
 opaque. No mapping invokes an implicit analyzer or resolver.
 
-Common structural traversal is still supplied through Source/Catalog. Narrowing
-that contract around established Semantics is the third proposed SPI change,
-not part of this completed mapping/construction split.
-[Three changes](generation-planner.md#three-spi-changes)
+Common structural traversal is kernel-owned: the kernel walks the established
+Semantics, and the source contributes classification, descriptor selectors and
+judgments. [Three changes](generation-planner.md#three-spi-changes) ·
+[GEN-01](generation-gaps.md#gen-01)
 
 ### Ownership and target construction
 
