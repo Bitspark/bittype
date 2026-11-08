@@ -116,6 +116,7 @@ composer selects exact declaration identities in consuming configuration.
 Builtin mappings use the same supplied mechanism. Explicit overrides must replace
 existing exact bindings without order-dependent selection or error-triggered
 fallback. The [kernel construction contract](docs/kernel-composition.md) puts registration, request validation and assembly in the kernel. Supply source, target and mapping providers independently. Horos mapping implementations belong to Bittype's root module under transform/syntax/horos/mapping/go and transform/syntax/horos-to-&lt;native&gt;/mapping/go. The kernel, source and target packages cannot import concrete mapping packages. Consumers own selection and request explicit root sites. Remove complete-pipeline factories, per-pair presets and compatibility aliases.
+TypeScript generation carries exposed sites and external symbol occurrences in the checked `generation.Output`. Its [Files formatter](docs/typescript-type-imports.md) decides imports and module exports after placement and checks fresh native bindings. Preserve the distinct input for formatting already analyzed files.
 Replacement transformers must consume plugins uniformly; no
 contract-specific engine registrations, named-library imports in general
 transformers or raw-source recipes. Missing/conflicting required representations

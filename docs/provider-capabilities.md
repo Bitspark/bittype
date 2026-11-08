@@ -3,7 +3,7 @@
 Generated from selected production declarations and explicit test associations.
 These reports describe bounded implementation scope, not language completeness.
 
-Inspection build: go1.27.3, linux/amd64; Go flags ; explicit build flags .
+Inspection build: go1.27.0, windows/amd64; Go flags -mod=readonly; explicit build flags .
 
 Definitions describe selected initializers; mutation, operation bodies and procedural semantics are not inferred. Profiles and expectations are authored assertions. A test function's observation is not separate execution of every associated case, nor evidence that a wrapper or every branch ran.
 
@@ -1716,13 +1716,13 @@ No structural definition attached. Operation source and authored scope remain th
 
 Contract: github.com/Bitspark/bittype/contracts/format/go.Provider&#91;github.com/Bitspark/bittype/contracts/format/go.FilesRequest&#91;github.com/Bitspark/bittype/syntax/typescript/go.Language&#93;, github.com/Bitspark/bittype/source/go.Source&#91;github.com/Bitspark/bittype/syntax/typescript/go.Language&#93;&#93;.
 
-Public operation: [github.com/Bitspark/bittype/format/files/typescript/provider/go#Provider.Format](https://github.com/Bitspark/bittype/blob/main/format/files/typescript/provider/go/format.go#L149). Receiver: github.com/Bitspark/bittype/format/files/typescript/provider/go.Provider.
+Public operation: [github.com/Bitspark/bittype/format/files/typescript/provider/go#Provider.Format](https://github.com/Bitspark/bittype/blob/main/format/files/typescript/provider/go/format.go#L148). Receiver: github.com/Bitspark/bittype/format/files/typescript/provider/go.Provider.
 
 Language marker: github.com/Bitspark/bittype/syntax/typescript/go.Language.
 
 Construction alternatives: no provider collaborators.
 
-### Declared target [github.com/Bitspark/bittype/format/files/typescript/provider/go#Provider.Format](https://github.com/Bitspark/bittype/blob/main/format/files/typescript/provider/go/format.go#L149)
+### Declared target [github.com/Bitspark/bittype/format/files/typescript/provider/go#Provider.Format](https://github.com/Bitspark/bittype/blob/main/format/files/typescript/provider/go/format.go#L148)
 
 <a id="binding-NzAyOk9EcHdjbTkyYVdSbGNqYzVPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYjNKdFlYUXZabWxzWlhNdmRIbHdaWE5qY21sd2RDOXdjbTkyYVdSbGNpOW5ieU5RY205MmFXUmxjaTVHYjNKdFlYUXlPREk2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJOdmJuUnlZV04wY3k5bWIzSnRZWFF2WjI4dVVISnZkbWxrWlhKYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTnZiblJ5WVdOMGN5OW1iM0p0WVhRdloyOHVSbWxzWlhOU1pYRjFaWE4wVzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2ZEhsd1pYTmpjbWx3ZEM5bmJ5NU1ZVzVuZFdGblpWMHNJR2RwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6YjNWeVkyVXZaMjh1VTI5MWNtTmxXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZkSGx3WlhOamNtbHdkQzluYnk1TVlXNW5kV0ZuWlYxZE56STZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMlp2Y20xaGRDOW1hV3hsY3k5MGVYQmxjMk55YVhCMEwzQnliM1pwWkdWeUwyZHZMbEJ5YjNacFpHVnlOVGM2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzkwZVhCbGMyTnlhWEIwTDJkdkkweGhibWQxWVdkbE1UQTZkSGx3WlhOamNtbHdkQTc5OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9mb3JtYXQvZmlsZXMvdHlwZXNjcmlwdC9wcm92aWRlci9nbyNQcm92aWRlci5Gb3JtYXQ1OnNjb3BlMTojNDk6ZG9jcy90eXBlc2NyaXB0LXR5cGUtaW1wb3J0cy5tZCNleGFtcGxlLWFuZC1zY29wZTU6ZmFsc2UwOg"></a>
 
@@ -1730,8 +1730,7 @@ Authored scope: [docs/typescript-type-imports.md#example-and-scope](https://gith
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| type-import-placement | relocate-person-in-page | local-import-removed-package-import-retained | unspecified (authored profile absent) | [TestTypeScriptTypeImportPlacement](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_placement_test.go#L149) (external) |
-| type-import-placement | same-export-name-and-lexical-binder | distinct-aliases-and-deduplicated-imports | unspecified (authored profile absent) | [TestTypeScriptTypeImportAliases](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_placement_test.go#L291) (external) |
+| type-import-placement | same-export-name-and-lexical-binder | distinct-aliases-and-deduplicated-imports | unspecified (authored profile absent) | [TestTypeScriptTypeImportAliases](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_placement_test.go#L388) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -3494,6 +3493,30 @@ Authored scope: [docs/source.md#symmetric-role-contracts](https://github.com/Bit
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
 No associated cases found in the selected test sources. This does not establish absence of tests.
+
+<a id="cap-ODpwcm92aWRlcjg4OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9mb3JtYXQvZmlsZXMvdHlwZXNjcmlwdC9wcm92aWRlci9nbyNHZW5lcmF0ZWRQcm92aWRlci5Gb3JtYXQyOTE6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NvbnRyYWN0cy9mb3JtYXQvZ28uUHJvdmlkZXJbZ2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2NvbnRyYWN0cy9mb3JtYXQvZ28uR2VuZXJhdGVkRmlsZXNSZXF1ZXN0W2dpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9zeW50YXgvdHlwZXNjcmlwdC9nby5MYW5ndWFnZV0sIGdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9zb3VyY2UvZ28uU291cmNlW2dpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9zeW50YXgvdHlwZXNjcmlwdC9nby5MYW5ndWFnZV1dODE6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2Zvcm1hdC9maWxlcy90eXBlc2NyaXB0L3Byb3ZpZGVyL2dvLkdlbmVyYXRlZFByb3ZpZGVyNTc6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3N5bnRheC90eXBlc2NyaXB0L2dvI0xhbmd1YWdlMTA6dHlwZXNjcmlwdA"></a>
+
+## TypeScript / github.com/Bitspark/bittype/format/files/typescript/provider/go#GeneratedProvider.Format
+
+Contract: github.com/Bitspark/bittype/contracts/format/go.Provider&#91;github.com/Bitspark/bittype/contracts/format/go.GeneratedFilesRequest&#91;github.com/Bitspark/bittype/syntax/typescript/go.Language&#93;, github.com/Bitspark/bittype/source/go.Source&#91;github.com/Bitspark/bittype/syntax/typescript/go.Language&#93;&#93;.
+
+Public operation: [github.com/Bitspark/bittype/format/files/typescript/provider/go#GeneratedProvider.Format](https://github.com/Bitspark/bittype/blob/main/format/files/typescript/provider/go/generated.go#L36). Receiver: github.com/Bitspark/bittype/format/files/typescript/provider/go.GeneratedProvider.
+
+Language marker: github.com/Bitspark/bittype/syntax/typescript/go.Language.
+
+Construction alternatives: no provider collaborators.
+
+### Declared target [github.com/Bitspark/bittype/format/files/typescript/provider/go#GeneratedProvider.Format](https://github.com/Bitspark/bittype/blob/main/format/files/typescript/provider/go/generated.go#L36)
+
+<a id="binding-NzM4Ok9EcHdjbTkyYVdSbGNqZzRPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzltYjNKdFlYUXZabWxzWlhNdmRIbHdaWE5qY21sd2RDOXdjbTkyYVdSbGNpOW5ieU5IWlc1bGNtRjBaV1JRY205MmFXUmxjaTVHYjNKdFlYUXlPVEU2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDJOdmJuUnlZV04wY3k5bWIzSnRZWFF2WjI4dVVISnZkbWxrWlhKYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTnZiblJ5WVdOMGN5OW1iM0p0WVhRdloyOHVSMlZ1WlhKaGRHVmtSbWxzWlhOU1pYRjFaWE4wVzJkcGRHaDFZaTVqYjIwdlFtbDBjM0JoY21zdlltbDBkSGx3WlM5emVXNTBZWGd2ZEhsd1pYTmpjbWx3ZEM5bmJ5NU1ZVzVuZFdGblpWMHNJR2RwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6YjNWeVkyVXZaMjh1VTI5MWNtTmxXMmRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl6ZVc1MFlYZ3ZkSGx3WlhOamNtbHdkQzluYnk1TVlXNW5kV0ZuWlYxZE9ERTZaMmwwYUhWaUxtTnZiUzlDYVhSemNHRnlheTlpYVhSMGVYQmxMMlp2Y20xaGRDOW1hV3hsY3k5MGVYQmxjMk55YVhCMEwzQnliM1pwWkdWeUwyZHZMa2RsYm1WeVlYUmxaRkJ5YjNacFpHVnlOVGM2WjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzkwZVhCbGMyTnlhWEIwTDJkdkkweGhibWQxWVdkbE1UQTZkSGx3WlhOamNtbHdkQTg4OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9mb3JtYXQvZmlsZXMvdHlwZXNjcmlwdC9wcm92aWRlci9nbyNHZW5lcmF0ZWRQcm92aWRlci5Gb3JtYXQ1OnNjb3BlMTojNDk6ZG9jcy90eXBlc2NyaXB0LXR5cGUtaW1wb3J0cy5tZCNleGFtcGxlLWFuZC1zY29wZTU6ZmFsc2UwOg"></a>
+
+Authored scope: [docs/typescript-type-imports.md#example-and-scope](https://github.com/Bitspark/bittype/blob/main/docs/typescript-type-imports.md#example-and-scope); profile: unspecified (authored profile absent).
+
+| Feature | Case | Authored expectation | Authored profile | Test declaration |
+| --- | --- | --- | --- | --- |
+| generated-placement | relocate-person-and-shadow-cell | local-import-removed-external-cell-aliased | unspecified (authored profile absent) | [TestTypeScriptTypeImportPlacement](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_placement_test.go#L167) (external) |
+
+No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
 <a id="cap-ODpwcm92aWRlcjgwOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9mb3JtYXQvc3ludGF4L3R5cGVzY3JpcHQvcHJvdmlkZXIvZ28jUHJvdmlkZXIuRm9ybWF0MjY3OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jb250cmFjdHMvZm9ybWF0L2dvLlByb3ZpZGVyW2dpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS90cmVlcy9hc3QvZ28uVmlld1tnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvc3ludGF4L3R5cGVzY3JpcHQvZ28uTGFuZ3VhZ2VdLCBnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvdHJlZXMvY3N0L2dvLkNTVFtnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvc3ludGF4L3R5cGVzY3JpcHQvZ28uTGFuZ3VhZ2VdXTczOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9mb3JtYXQvc3ludGF4L3R5cGVzY3JpcHQvcHJvdmlkZXIvZ28uUHJvdmlkZXI1NzpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvc3ludGF4L3R5cGVzY3JpcHQvZ28jTGFuZ3VhZ2UxMDp0eXBlc2NyaXB0"></a>
 

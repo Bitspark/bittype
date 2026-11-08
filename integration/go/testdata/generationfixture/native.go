@@ -338,9 +338,9 @@ func (n *Native) record(fields ...nativeField) (g.Fragment[s.Language], error) {
 	return n.compose(s.KindStructType, nil, members...)
 }
 
-func (n *Native) Assemble(ctx context.Context, pubs []g.Publication[SourceLanguage, s.Language], defs []g.Definition[SourceLanguage, s.Language], limits g.Limits) (representation.ASTSet, error) {
+func (n *Native) Assemble(ctx context.Context, pubs []g.Publication[SourceLanguage, s.Language], defs []g.Definition[SourceLanguage, s.Language], limits g.Limits) (g.Assembly, error) {
 	if err := ctx.Err(); err != nil {
-		return representation.ASTSet{}, err
+		return g.Assembly{}, err
 	}
 	tree := s.AST{ID: "generated-fixture"}
 	declarations := make(map[g.Destination[s.Language]]ast.NodeID)
@@ -357,7 +357,7 @@ func (n *Native) Assemble(ctx context.Context, pubs []g.Publication[SourceLangua
 		d, ok := n.destinationRecords[c.Destination()]
 		l, found := n.layoutRecords[c.Layout()]
 		if !ok || !found || !d.owned || declarations[c.Destination()] != 0 {
-			return representation.ASTSet{}, g.ErrScope
+			return g.Assembly{}, g.ErrScope
 		}
 		kind := s.KindTypeDeclaration
 		if d.alias {
@@ -365,17 +365,17 @@ func (n *Native) Assemble(ctx context.Context, pubs []g.Publication[SourceLangua
 		}
 		id, err := add(s.Node{Kind: kind, Attributes: []ast.Attribute{{Name: s.AttributeName, Text: d.name}}})
 		if err != nil {
-			return representation.ASTSet{}, err
+			return g.Assembly{}, err
 		}
 		declarations[c.Destination()] = id
 		for _, name := range l.parameters {
 			constraint, err := add(s.Node{Kind: s.KindInterfaceType})
 			if err != nil {
-				return representation.ASTSet{}, err
+				return g.Assembly{}, err
 			}
 			parameter, err := add(s.Node{Kind: s.KindTypeParameter, Attributes: []ast.Attribute{{Name: s.AttributeName, Text: name}}, Children: []ast.Child{{Role: s.RoleConstraint, Node: constraint}}})
 			if err != nil {
-				return representation.ASTSet{}, err
+				return g.Assembly{}, err
 			}
 			formals[c.Layout()] = append(formals[c.Layout()], parameter)
 			tree.Nodes[id-1].Children = append(tree.Nodes[id-1].Children, ast.Child{Role: s.RoleTypeParameter, Node: parameter})
@@ -383,22 +383,22 @@ func (n *Native) Assemble(ctx context.Context, pubs []g.Publication[SourceLangua
 	}
 	for _, pub := range pubs {
 		if declarations[pub.Callee().Destination()] == 0 {
-			return representation.ASTSet{}, g.ErrIncomplete
+			return g.Assembly{}, g.ErrIncomplete
 		}
 	}
 	var roots []ast.Child
 	for _, def := range defs {
 		if err := n.CheckBody(ctx, def.Callee(), def.Body()); err != nil {
-			return representation.ASTSet{}, err
+			return g.Assembly{}, err
 		}
 		r := n.fragmentRecords[def.Body()]
 		if len(r.tree.Nodes) > limits.OutputNodes-len(tree.Nodes) {
-			return representation.ASTSet{}, g.ErrLimit
+			return g.Assembly{}, g.ErrLimit
 		}
 		offset := ast.NodeID(len(tree.Nodes))
 		for i, node := range r.tree.Nodes {
 			if err := ctx.Err(); err != nil {
-				return representation.ASTSet{}, err
+				return g.Assembly{}, err
 			}
 			copy := cloneNode(node)
 			for j := range copy.Children {
@@ -409,13 +409,13 @@ func (n *Native) Assemble(ctx context.Context, pubs []g.Publication[SourceLangua
 				if link.layout.Valid() {
 					parameters := formals[link.layout]
 					if link.formal >= len(parameters) {
-						return representation.ASTSet{}, g.ErrScope
+						return g.Assembly{}, g.ErrScope
 					}
 					target = parameters[link.formal]
 				} else if n.destinationRecords[link.destination].owned {
 					target = declarations[link.destination]
 					if target == 0 {
-						return representation.ASTSet{}, g.ErrIncomplete
+						return g.Assembly{}, g.ErrIncomplete
 					}
 				}
 				if target != 0 {
@@ -423,7 +423,7 @@ func (n *Native) Assemble(ctx context.Context, pubs []g.Publication[SourceLangua
 				}
 			}
 			if _, err := add(copy); err != nil {
-				return representation.ASTSet{}, err
+				return g.Assembly{}, err
 			}
 		}
 		id := declarations[def.Callee().Destination()]
@@ -432,11 +432,19 @@ func (n *Native) Assemble(ctx context.Context, pubs []g.Publication[SourceLangua
 	}
 	root, err := add(s.Node{Kind: s.KindFile, Attributes: []ast.Attribute{{Name: s.AttributePackage, Text: "fixture"}}, Children: roots})
 	if err != nil {
-		return representation.ASTSet{}, err
+		return g.Assembly{}, err
 	}
 	tree.Root = root
 	if err := checkgolang.Check(tree); err != nil {
-		return representation.ASTSet{}, err
+		return g.Assembly{}, err
 	}
-	return representation.PackSet(n.language, ast.Set[s.Language]{Entry: ast.NodeRef{Tree: tree.ID, Node: root}, Trees: []s.AST{tree}})
+	syntax, err := representation.PackSet(n.language, ast.Set[s.Language]{Entry: ast.NodeRef{Tree: tree.ID, Node: root}, Trees: []s.AST{tree}})
+	if err != nil {
+		return g.Assembly{}, err
+	}
+	output := g.Assembly{Syntax: syntax}
+	for _, pub := range pubs {
+		output.Exposed = append(output.Exposed, ast.NodeRef{Tree: tree.ID, Node: declarations[pub.Callee().Destination()]})
+	}
+	return output, nil
 }

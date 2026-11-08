@@ -152,27 +152,32 @@ func (p FilesFormatter[L]) Format(ctx context.Context, input FilesInput[L]) (sou
 		return source.Source[L]{}, err
 	}
 	input.Configuration = settings
-	publisher, err := source.NewPublisher(ctx, p.definition, source.Policy[L]{Evidence: p.contract.Evidence, SemanticLimits: limits.Semantic, Limits: limits.Source, Print: p.contract.Print, Check: func(ctx context.Context, output source.Publication[L]) error {
-
+	policy := source.Policy[L]{Evidence: p.contract.Evidence, SemanticLimits: limits.Semantic, Limits: limits.Source, Print: p.contract.Print, Check: func(ctx context.Context, output source.Publication[L]) error {
 		if input.Snapshot.Same(output.Snapshot) {
 			return source.ErrStale
 		}
 		guardInput := input
 		guardInput.Configuration, _ = semantic.CaptureSettings(input.Configuration, limits.Semantic)
 		return p.contract.Check(ctx, guardInput, output)
-	}})
+	}}
+	return publishFiles(ctx, p.definition, policy, func(publisher source.Publisher[L]) (source.Source[L], error) {
+		return p.provider.Format(ctx, FilesRequest[L]{&filesRequestState[L]{input, publisher}})
+	})
+}
+func publishFiles[L any](ctx context.Context, language representation.Language, policy source.Policy[L], run func(source.Publisher[L]) (source.Source[L], error)) (source.Source[L], error) {
+	publisher, err := source.NewPublisher(ctx, language, policy)
 	if err != nil {
 		return source.Source[L]{}, err
 	}
 	defer publisher.Close()
-	output, err := p.provider.Format(ctx, FilesRequest[L]{&filesRequestState[L]{input, publisher}})
+	out, err := run(publisher)
 	if err != nil {
 		return source.Source[L]{}, err
 	}
-	if err := publisher.Accept(output); err != nil {
+	if err = publisher.Accept(out); err != nil {
 		return source.Source[L]{}, err
 	}
-	return output, nil
+	return out, nil
 }
 func (p FilesFormatter[L]) FormatFiles(ctx context.Context, input FilesValue) (source.Envelope, error) {
 	abstract, err := representation.UnpackSemantics[L](p.definition, input.Abstract)

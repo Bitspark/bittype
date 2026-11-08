@@ -316,6 +316,18 @@ function main(request) {
       graph.Entities[id - 1].Body = type;
     }
   }
+  // Record the actual public declarations of each captured module.
+  for (const unit of request.Units) {
+    const sf = sourceFiles.get("/input/" + unit.Path);
+    const moduleSymbol = checker.getSymbolAtLocation(sf);
+    if (!moduleSymbol) continue;
+    for (const exported of checker.getExportsOfModule(moduleSymbol)) {
+      const symbol = resolvedSymbol(exported);
+      if (symbol.getDeclarations()?.some(d => d.getSourceFile() === sf && captured(d))) {
+        fact({ Entity: fileOwners.get(sf) }, "named-export", reference(entity(symbol)));
+      }
+    }
+  }
   // Property entities share the compiler's declared non-missing value type.
   // Presence and readonly flags remain separate object metadata. These are not
   // flow-sensitive read types or writable acceptance judgments.

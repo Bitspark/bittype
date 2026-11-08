@@ -7,7 +7,6 @@ import (
 
 	gen "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
-	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 func TestSourceRetainsOriginalSnapshotWithoutEvidence(t *testing.T) {
@@ -529,11 +528,11 @@ func TestAssemblyFailureAndSuccessfulFinishAreBothTerminal(t *testing.T) {
 				failedFinish(t, s, errRecord)
 			} else {
 				out, err := s.Finish()
-				if err != nil || len(out.Trees) == 0 {
+				if err != nil || !out.Snapshot().Valid() {
 					t.Fatal(err)
 				}
 				again, err := s.Finish()
-				if !errors.Is(err, gen.ErrInvalid) || len(again.Trees) != 0 || again.Entry != (ast.NodeRef{}) {
+				if !errors.Is(err, gen.ErrInvalid) || again.Snapshot().Valid() {
 					t.Fatalf("completed invocation published twice: %v", err)
 				}
 			}

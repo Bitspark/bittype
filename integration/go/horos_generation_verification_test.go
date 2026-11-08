@@ -214,18 +214,15 @@ func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	out, err := registry.Generate(ctx, request)
-	if err != nil {
-		t.Fatal(err)
-	}
 	checker, err := check.NewChecker[gs.Language](to, checkgolang.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	snapshot, err := semantic.Capture(ctx, checker, semantic.Input{Entry: out.Entry, Trees: out.Trees})
+	out, err := registry.Generate(ctx, request, checker)
 	if err != nil {
 		t.Fatal(err)
 	}
+	snapshot := out.Snapshot()
 	g, err := checkedNative(ctx, snapshot)
 	if err != nil {
 		t.Fatal(err)

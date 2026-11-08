@@ -54,7 +54,7 @@ that every mapping implement every operation. Acquire is idempotent for the
 same selected declaration within the invocation. A local owned reservation must
 be defined exactly once before Finish. Publication is separate and may precede
 definition; each requested root must be exposed through its publisher. Only
-Finish returns a usable complete AST set. It fails if required definitions are
+Finish returns a sealed generation output using the target syntax checker in the session configuration. It fails if required definitions are
 unfinished, a callback failed, cancellation occurred or a budget was exceeded.
 
 `Plan.Header` supplies a target layout when no source convention is needed.

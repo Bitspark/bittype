@@ -20,8 +20,8 @@ type composition[F, T any] struct {
 // Run selects exact mappings once, publishes roots, drains acquired definitions
 // to a fixed point, and commits the complete output. It never interprets syntax,
 // invokes analysis or retries a failed mapping.
-func run[F, T any](ctx context.Context, input g.Input, c composition[F, T]) (representation.ASTSet, error) {
-	fail := func(err error) (representation.ASTSet, error) { return representation.ASTSet{}, err }
+func run[F, T any](ctx context.Context, input g.Input, c composition[F, T]) (g.Output, error) {
+	fail := func(err error) (g.Output, error) { return g.Output{}, err }
 	if ctx == nil || ctx.Err() != nil {
 		if ctx != nil {
 			return fail(ctx.Err())

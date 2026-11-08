@@ -54,7 +54,7 @@ source: independent Use, Publish and Define capabilities, paired Introduce/Apply
 and a guarded invocation with explicitly supplied collaborators. The runner lives
 with its contracts in `contracts/generation/go`. [Automatic composition](docs/generation-composition.md)
 selects exact mappings and guarded overrides, publishes roots and schedules
-definitions. All four generators use this SPI. The engine composes explicit source, target and mapping registrations for each request. The [construction SPI and example](docs/kernel-composition.md) show a complete Horos to TypeScript request.
+definitions. All four generators use this SPI. The engine composes explicit source, target and mapping registrations for each request. Its [generation output](docs/generation-planner.md#the-result-of-run) carries exposed sites and external destinations into [TypeScript Files placement](docs/typescript-type-imports.md#from-generation-to-files). The [construction SPI and example](docs/kernel-composition.md) show a complete Horos to TypeScript request.
 
 The [stage-first layout](LAYOUT.md) groups shared tree representations under
 trees and public interfaces under contracts. Every native language implements

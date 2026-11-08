@@ -1,9 +1,9 @@
 # bittype/ACX-004 — Generation emits file syntax before placement
 
-**Status: open, 7 November 2026.** The [generation/Files decision](../source.md#from-generated-declarations-to-files)
+**TypeScript corrected on 8 November 2026. The C++ and Rust cases remain open.** The [generation/Files decision](../source.md#from-generated-declarations-to-files)
 assigns concrete import and export syntax to the language's Files formatter.
 
-**Observed behavior.** The Cell mapping correctly requests the public type
+**Original behavior, 7 November.** The Cell mapping correctly requests the public type
 `@bitspark/cell` exports as `Cell`. The [TypeScript target](../../transform/syntax/typescript/target/go/builder.go)
 then calls `imports.Emit` while assembling the logical AST, allocating a local
 import binding before the consumer has placed a declaration. Its
@@ -40,4 +40,8 @@ moving `Person` into the file containing `Cells` must remove only the relative
 import. Both outputs must preserve bindings and intended visibility, including
 in the presence of a conflicting local name; an inaccessible target must fail
 instead of being rebound or silently exported. The [planner](../generation-planner.md#where-the-plan-stops)
-describes this qualification. No implementation repair is claimed here.
+describes this qualification.
+
+**Implemented TypeScript correction.** Generation retains exposed sites and emitted external use occurrences. Files allocates imports and aliases after placement and checks the compiler's named exports and each relocated destination. The qualification uses one output with a local Cell and an external use of Cell. With Person in a second unit, the relative import is present. Moving Person alongside Page removes its relative import and retains the package import with the alias `Cell_1`. Missing or inaccessible destinations fail publication. [Output](../../contracts/generation/go/output.go) · [Generated Files input](../../format/files/typescript/provider/go/generated.go) · [Placement tests](../../integration/go/typescript_placement_test.go)
+
+The C++ header directives and Rust module visibility described above require separate target and Files work. The wider planner and mapping redesign are proposals.

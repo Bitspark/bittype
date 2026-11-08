@@ -20,7 +20,7 @@ func TestAutomaticGenerationIndependentComposition(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tree, err := representation.Unpack[s.Language](f.Target(), out.EntryAST())
+	tree, err := representation.Unpack[s.Language](f.Target(), out.Snapshot().Inputs()[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestAutomaticGenerationKeepsWholeResultAssociation(t *testing.T) {
 		t.Fatal(err)
 	}
 	out, err := f.Automatic(context.Background())
-	if err == nil || out.LanguageID() != "" {
+	if err == nil || out.Snapshot().LanguageID() != "" {
 		t.Fatalf("incorrect nested support accepted: %v", err)
 	}
 }
@@ -53,7 +53,7 @@ func TestAutomaticGenerationCancellationReturnsNoOutput(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	out, err := f.Automatic(ctx)
-	if !errors.Is(err, context.Canceled) || out.LanguageID() != "" {
+	if !errors.Is(err, context.Canceled) || out.Snapshot().LanguageID() != "" {
 		t.Fatal("canceled invocation produced output", err)
 	}
 }

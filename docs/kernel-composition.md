@@ -160,14 +160,11 @@ is terminal, with no fallback.
 4. Collect contributions, validate replacements and helper keys, then build the internal composition.
 5. Publish roots, acquire definitions, introduce formals, compose child uses and
    applications, and drain definitions through the existing guarded SPI.
-6. Finish a complete AST set and apply the engine's output syntax admission.
+6. Seal the assembled syntax, exposed sites and external uses with the engine’s target syntax checker.
    Errors/cancellation invalidate the invocation. Construction tickets expire
    when their Open call returns; generation tickets retain their existing rules.
 
-Engine.Generate is the direct generation entry. A generic adapter constructs a
-request-bound ASTTransformer, without per-pair factories or global registration
-per request. Existing TransformTo route planning stays separate. Generation
-does not invent receipts for subsequent legs. Formatting/printing remain explicit.
+The registry admits the captured input and opens the selected source, target and mapping providers for one generation invocation. The engine supplies its registered target checker. `Engine.Generate` returns a sealed `generation.Output`. Generic `TransformTo` routes still return AST sets. [Generation output](generation-planner.md#the-result-of-run)
 
 ## Horos to TypeScript
 
@@ -192,19 +189,19 @@ The caller has registered Horos and TypeScript with their syntax checkers. It su
 // hs and ts are the Horos and TypeScript syntax packages.
 // src, target and maps are the Horos source, TypeScript target and Horos-to-TypeScript mapping packages.
 func generatePage(ctx context.Context, e *engine.Engine, input transform.Input,
-    to representation.Language, sites []ast.NodeRef) (representation.ASTSet, error) {
+    to representation.Language, sites []ast.NodeRef) (g.Output, error) {
     registry, from := e.Generation(), input.Source.Language()
     s, err := c.RegisterSource[hs.Language, src.Reader](registry, from, src.Provider{})
-    if err != nil { return representation.ASTSet{}, err }
+    if err != nil { return g.Output{}, err }
     n, err := c.RegisterTarget[hs.Language, ts.Language, target.Builder[hs.Language]](
         registry, from, to, target.Provider[hs.Language]{})
-    if err != nil { return representation.ASTSet{}, err }
+    if err != nil { return g.Output{}, err }
 
     var selected []c.MappingRef
     for _, p := range maps.Providers(rules.RepresentationProfile) {
         m, err := c.RegisterMapping[hs.Language, ts.Language, src.Reader, target.Builder[hs.Language]](
             registry, from, to, p)
-        if err != nil { return representation.ASTSet{}, err }
+        if err != nil { return g.Output{}, err }
         selected = append(selected, m)
     }
     return e.Generate(ctx, c.Request{

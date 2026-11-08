@@ -123,7 +123,7 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	typed, err := representation.Unpack[ts.Language](to, output.EntryAST())
+	typed, err := representation.Unpack[ts.Language](to, output.Snapshot().Inputs()[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +135,7 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(text, "export interface Page<T>") || !strings.Contains(text, "next?: string;") || !strings.Contains(text, "export type People = Page<string>;") {
+	if !strings.Contains(text, "interface Page<T>") || !strings.Contains(text, "next?: string;") || !strings.Contains(text, "type People = Page<string>;") {
 		t.Fatal(text)
 	}
 }

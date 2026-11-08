@@ -2,6 +2,7 @@ package generation
 
 import (
 	"context"
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"reflect"
 	"slices"
 	"sync"
@@ -70,11 +71,13 @@ type targetEntry struct {
 	api      reflect.Type
 	provider any
 }
+type runner func(context.Context, transform.Input) (g.Output, error)
+
 type mappingEntry struct {
 	from, to             representation.Language
 	sourceAPI, targetAPI reflect.Type
 	provider             any
-	adapter              func(Request, sourceEntry, targetEntry, []mappingEntry) (transform.ASTTransformer, error)
+	adapter              func(Request, sourceEntry, targetEntry, []mappingEntry, check.Checker) (runner, error)
 }
 
 func RegisterSource[F any, S g.SourceSession[F]](r *Registry, language representation.Language, p g.SourceProvider[F, S]) (SourceRef, error) {
@@ -125,10 +128,10 @@ func RegisterMapping[F, T any, S g.SourceSession[F], N g.Native[F, T]](r *Regist
 	return MappingRef{r, r.next}, nil
 }
 
-// Transformer captures a checked explicit selection. It is bound to the exact
-// source snapshot; registering it as a reusable route would not authorize other
-// snapshots. Generate is the normal one-shot entry.
-func (r *Registry) Transformer(request Request) (transform.ASTTransformer, error) {
+func (r *Registry) selectRun(request Request, checker check.Checker) (runner, error) {
+	if checker.Validate() != nil || !checker.Language().Compatible(request.To) {
+		return nil, g.ErrScope
+	}
 	if r == nil || !request.Input.Source.Valid() || request.To.Validate() != nil || !request.Limits.Valid() || request.Output == "" || len(request.Roots) == 0 || len(request.Selection.Mappings) == 0 {
 		return nil, g.ErrInvalid
 	}
@@ -195,22 +198,24 @@ func (r *Registry) Transformer(request Request) (transform.ASTTransformer, error
 	}
 	// All adapters have the same checked F/T/S/N instantiation. Choosing one here
 	// chooses no representation and captures no mapping-provider policy.
-	t, err := mappings[0].adapter(request, src, target, mappings)
-	if err != nil {
-		return nil, err
-	}
-	return withDiagnostics(t, from, request.To), nil
+	return mappings[0].adapter(request, src, target, mappings, checker)
 }
-func (r *Registry) Generate(ctx context.Context, request Request) (representation.ASTSet, error) {
+
+// Generate uses the supplied target syntax checker to seal the complete result.
+func (r *Registry) Generate(ctx context.Context, request Request, checker check.Checker) (g.Output, error) {
 	if ctx == nil {
-		return representation.ASTSet{}, g.ErrInvalid
+		return g.Output{}, g.ErrInvalid
 	}
 	if err := ctx.Err(); err != nil {
-		return representation.ASTSet{}, err
+		return g.Output{}, err
 	}
-	t, err := r.Transformer(request)
+	run, err := r.selectRun(request, checker)
 	if err != nil {
-		return representation.ASTSet{}, err
+		return g.Output{}, err
 	}
-	return t.Transform(ctx, request.Input)
+	out, err := run(ctx, request.Input)
+	if err != nil {
+		return g.Output{}, diagnostic(request.Input, err)
+	}
+	return out, nil
 }

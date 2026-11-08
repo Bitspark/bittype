@@ -268,6 +268,8 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_REVISION"
           npm install --prefix "$RUNNER_TEMP/bittype-tools" --ignore-scripts --no-audit --no-fund typescript@5.9.3
           echo "$RUNNER_TEMP/bittype-tools/node_modules/.bin" >> "$GITHUB_PATH"
+          echo "BITTYPE_TYPESCRIPT_NODE=$(command -v node)" >> "$GITHUB_ENV"
+          echo "BITTYPE_TYPESCRIPT_MODULE=$RUNNER_TEMP/bittype-tools/node_modules/typescript/lib/typescript.js" >> "$GITHUB_ENV"
           docker pull rust:1.90.0
           docker pull gcc:14.2.0
           docker run --rm --network=none rust:1.90.0 rustc --version
@@ -276,7 +278,7 @@ jobs:
         run: >-
           python3 tools/provider-matrix/capture.py run --root "$GITHUB_WORKSPACE"
           --output "$RUNNER_TEMP/capability-observations/native" --command-id native
-          --env BITTYPE_NATIVE
+          --env BITTYPE_NATIVE --env BITTYPE_TYPESCRIPT_NODE --env BITTYPE_TYPESCRIPT_MODULE
           -- go test -count=1 -json -run '^(TestNativeCompilerFixtures|TestGenerationSPIHostedGoCompiler|TestGeneratedPaginationCompilers|TestListOverrideComposesThroughGenericPage|TestLibraryOwnedCellAvoidsBodyExpansion)$' ./integration/go
       - name: Render native invocation capability observations
         if: ${{ !cancelled() }}

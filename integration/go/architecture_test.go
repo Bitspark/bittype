@@ -234,8 +234,13 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["resolve/files/golang/provider/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "semantics/go", "semantics/golang/go", "syntax/golang/go"}
 	rules["analyze/files/golang/provider/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "resolve/files/golang/provider/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/representation/go"}
 	rules["internal/typescriptimports"] = []string{"files/go", "internal/typescript", "syntax/typescript/go", "trees/ast/go"}
-	rules["transform/syntax/typescript/target/go"] = append(rules["transform/syntax/typescript/target/go"], "internal/typescriptimports")
+	rules["transform/syntax/typescript/target/go"] = append(rules["transform/syntax/typescript/target/go"], "transform/syntax/typescript/symbol/go")
 	rules["format/files/typescript/provider/go"] = []string{"contracts/analysis/go", "contracts/check/go", "contracts/format/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go", "files/go", "internal/typescriptimports", "semantics/go", "semantics/typescript/go", "source/go", "syntax/typescript/go", "trees/ast/go", "trees/cst/go", "trees/representation/go"}
+	rules["contracts/generation/go"] = append(rules["contracts/generation/go"], "contracts/check/go", "semantics/go")
+	rules["contracts/format/go"] = append(rules["contracts/format/go"], "contracts/generation/go")
+	rules["transform/syntax/shared/generation/go"] = append(rules["transform/syntax/shared/generation/go"], "contracts/check/go")
+	rules["format/files/typescript/provider/go"] = append(rules["format/files/typescript/provider/go"], "contracts/generation/go", "transform/syntax/typescript/symbol/go")
+	rules["transform/syntax/typescript/symbol/go"] = []string{"contracts/generation/go", "internal/typescript", "semantics/go", "syntax/typescript/go", "trees/ast/go", "trees/representation/go"}
 	rules["semantics/typescript/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "internal/typescript", "semantics/go", "syntax/typescript/go", "trees/ast/go", "trees/representation/go"}
 	rules["internal/typescriptsem"] = []string{"contracts/parse/go", "contracts/semantic/go", "files/go", "parse/syntax/typescript/provider/go", "semantics/go", "semantics/typescript/go", "syntax/typescript/go", "trees/ast/go"}
 	rules["resolve/files/typescript/provider/go"] = []string{"trees/representation/go", "contracts/resolution/go", "contracts/semantic/go", "internal/typescriptsem", "semantics/go", "semantics/typescript/go", "syntax/typescript/go"}

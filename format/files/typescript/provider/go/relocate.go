@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"slices"
 
 	fm "github.com/Bitspark/bittype/contracts/format/go"
@@ -26,6 +27,7 @@ type result struct {
 	units     []placed
 	moved     map[ast.NodeRef]ast.NodeRef
 	relations []source.Relation
+	public    map[ast.NodeRef]bool
 }
 
 func materialize(ctx context.Context, input fm.FilesInput[s.Language]) (*result, error) {
@@ -33,28 +35,31 @@ func materialize(ctx context.Context, input fm.FilesInput[s.Language]) (*result,
 	if err != nil {
 		return nil, err
 	}
-	organization, err := program.organization(input.Configuration, input.Limits.Source)
+	return placeProgram(ctx, program, input.Configuration, input.Limits.Source)
+}
+func placeProgram(ctx context.Context, program *program, settings []semantic.Setting, limits source.Limits) (*result, error) {
+	organization, err := program.organization(settings, limits)
 	if err != nil {
 		return nil, err
 	}
-	layout := &result{entry: organization.Entry, moved: map[ast.NodeRef]ast.NodeRef{}}
+	layout := &result{public: map[ast.NodeRef]bool{}, entry: organization.Entry, moved: map[ast.NodeRef]ast.NodeRef{}}
 	filesByTree := map[ast.TreeID]Placement{}
 	for _, placement := range organization.Units {
 		tree := s.AST{ID: ast.TreeID("typescript/files/" + string(placement.File))}
 		layout.units = append(layout.units, placed{placement: placement, tree: tree, expected: map[ast.NodeID]symbol{}})
 		filesByTree[tree.ID] = placement
 	}
-	if err := layout.copyDeclarations(ctx, program, input.Limits.Source); err != nil {
+	if err := layout.copyDeclarations(ctx, program, limits); err != nil {
 		return nil, err
 	}
-	nodesLeft := input.Limits.Source.MaxNodes
+	nodesLeft := limits.MaxNodes
 	for _, unit := range layout.units {
 		nodesLeft -= len(unit.tree.Nodes)
 	}
 	for i := range layout.units {
 		unit := &layout.units[i]
 		before := len(unit.tree.Nodes)
-		if err := layout.bindUnit(ctx, program, unit, filesByTree, before+nodesLeft, input.Limits.Source.MaxBytes); err != nil {
+		if err := layout.bindUnit(ctx, program, unit, filesByTree, before+nodesLeft, limits.MaxBytes); err != nil {
 			return nil, err
 		}
 		nodesLeft -= len(unit.tree.Nodes) - before
@@ -81,8 +86,14 @@ func (layout *result) copyDeclarations(ctx context.Context, program *program, li
 		node.Children = nil
 		node.References = nil
 		node.Attributes = slices.Clone(node.Attributes)
+		if program.tops[old] && program.public[old] && imports.Attr(node, s.AttributeExported) != "true" {
+			node.Attributes = append(node.Attributes, ast.Attribute{Name: s.AttributeExported, Text: "true"})
+		}
 		id := imports.AddNode(&unit.tree, node)
 		layout.moved[old] = ref(unit.tree.ID, id)
+		if program.tops[old] {
+			layout.public[ref(unit.tree.ID, id)] = program.public[old]
+		}
 		if node.Kind == s.KindTypeReference {
 			dest, ok := program.bindings[old]
 			if !ok {
@@ -149,7 +160,7 @@ func (layout *result) bindUnit(ctx context.Context, program *program, unit *plac
 			node.References = []ast.Reference{{Role: s.RoleTarget, Target: moved}}
 			continue
 		}
-		if !program.tops[dest.site] || imports.Attr(original, s.AttributeExported) != "true" {
+		if !program.tops[dest.site] || !program.public[dest.site] {
 			return fmt.Errorf("%w: cross-unit type %s must be exported", source.ErrInvalid, name)
 		}
 		target := filesByTree[moved.Tree]

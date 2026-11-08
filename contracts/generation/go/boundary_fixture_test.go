@@ -42,9 +42,9 @@ type fixtureIdentity string
 func (i fixtureIdentity) ID() language.ID { return language.ID(i) }
 func (i fixtureIdentity) Name() string    { return string(i) }
 
-type fixtureChecker struct{ fixtureIdentity }
+type fixtureChecker[L any] struct{ fixtureIdentity }
 
-func (fixtureChecker) Check(ast.View[sourceLanguage]) error { return nil }
+func (fixtureChecker[L]) Check(ast.View[L]) error { return nil }
 
 func ref[K any](space gen.Space[K], slot uint64) gen.Ref[K] {
 	r, ok := space.Ref(slot)
@@ -241,14 +241,18 @@ func (n *nativeStore) CheckExposure(_ context.Context, _ site, _ declaration, c 
 	}
 	return nil
 }
-func (n *nativeStore) Assemble(_ context.Context, _ []gen.Publication[sourceLanguage, nativeLanguage], _ []gen.Definition[sourceLanguage, nativeLanguage], _ gen.Limits) (representation.ASTSet, error) {
+func (n *nativeStore) Assemble(_ context.Context, pubs []gen.Publication[sourceLanguage, nativeLanguage], _ []gen.Definition[sourceLanguage, nativeLanguage], _ gen.Limits) (gen.Assembly, error) {
 	n.assemblies++
 	if n.assemblyHook != nil {
 		if err := n.assemblyHook(); err != nil {
-			return representation.ASTSet{}, err
+			return gen.Assembly{}, err
 		}
 	}
-	return n.output, nil
+	out := gen.Assembly{Syntax: n.output}
+	for range pubs {
+		out.Exposed = append(out.Exposed, ast.NodeRef{Tree: "native", Node: 2})
+	}
+	return out, nil
 }
 
 type useFunc func(context.Context, gen.UseRequest[sourceLanguage, nativeLanguage]) (product, error)
@@ -282,6 +286,7 @@ func (f publishFunc) Publish(ctx context.Context, r gen.PublishRequest[sourceLan
 }
 
 type fixture struct {
+	targetChecker                                                   check.Checker
 	source                                                          *sourceStore
 	native                                                          *nativeStore
 	associations                                                    *associationStore
@@ -305,7 +310,7 @@ func newFixture(t *testing.T) *fixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	checker, err := check.NewChecker[sourceLanguage](from, fixtureChecker{fixtureIdentity("generation-source")})
+	checker, err := check.NewChecker[sourceLanguage](from, fixtureChecker[sourceLanguage]{fixtureIdentity("generation-source")})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -320,7 +325,11 @@ func newFixture(t *testing.T) *fixture {
 	}
 	s := &sourceStore{snapshot: snapshot, declarations: gen.NewSpace[gen.DeclarationRole[sourceLanguage]](), binders: gen.NewSpace[gen.BinderRole[sourceLanguage]](), uses: gen.NewSpace[gen.UseRole[sourceLanguage]](), environments: gen.NewSpace[gen.EnvironmentRole[sourceLanguage]](), openRecords: make(map[declaration]openData), useRecords: make(map[use]useData), binderRecords: make(map[binder]bool), environmentRecords: make(map[environment]bool), invalidUses: make(map[use]bool)}
 	n := &nativeStore{destinations: gen.NewSpace[gen.DestinationRole[nativeLanguage]](), layouts: gen.NewSpace[gen.LayoutRole[nativeLanguage]](), fragments: gen.NewSpace[gen.FragmentRole[nativeLanguage]](), destinationRecords: make(map[gen.Destination[nativeLanguage]]bool), layoutRecords: make(map[gen.Layout[nativeLanguage]]gen.Destination[nativeLanguage]), fragmentRecords: make(map[fragment]gen.FrameID)}
-	f := &fixture{source: s, native: n, associations: newAssociations(), target: to, input: input, checker: checker, generic: ref(s.declarations, 1), plain: ref(s.declarations, 2), first: ref(s.binders, 1), second: ref(s.binders, 2), spare: ref(s.binders, 3), scalar: ref(s.uses, 1), alternate: ref(s.uses, 2), application: ref(s.uses, 3), body: ref(s.uses, 4), formalFirst: ref(s.uses, 5), formalSecond: ref(s.uses, 6), root: ref(s.environments, 1), genericEnv: ref(s.environments, 2)}
+	targetChecker, err := check.NewChecker[nativeLanguage](to, fixtureChecker[nativeLanguage]{fixtureIdentity("generation-target")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := &fixture{targetChecker: targetChecker, source: s, native: n, associations: newAssociations(), target: to, input: input, checker: checker, generic: ref(s.declarations, 1), plain: ref(s.declarations, 2), first: ref(s.binders, 1), second: ref(s.binders, 2), spare: ref(s.binders, 3), scalar: ref(s.uses, 1), alternate: ref(s.uses, 2), application: ref(s.uses, 3), body: ref(s.uses, 4), formalFirst: ref(s.uses, 5), formalSecond: ref(s.uses, 6), root: ref(s.environments, 1), genericEnv: ref(s.environments, 2)}
 	s.root = f.root
 	s.environmentRecords[f.root], s.environmentRecords[f.genericEnv] = true, true
 	s.binderRecords[f.first], s.binderRecords[f.second], s.binderRecords[f.spare] = true, true, true
@@ -346,7 +355,7 @@ func (f *fixture) configuration(user useFunc) config {
 			return r.Return(f.associations.issue(r.Want(), f.closed, nil))
 		}
 	}
-	return config{Source: f.source, Native: f.native, Target: f.target, Plans: []plan{{Key: "direct", User: user, Associations: f.associations}}, Select: func(useData) (string, error) { return "direct", nil }}
+	return config{Checker: f.targetChecker, Source: f.source, Native: f.native, Target: f.target, Plans: []plan{{Key: "direct", User: user, Associations: f.associations}}, Select: func(useData) (string, error) { return "direct", nil }}
 }
 
 func (f *fixture) genericPlan(owned bool, alter func([]formalBinding) []formalBinding) plan {
@@ -420,7 +429,7 @@ func begin(t *testing.T, ctx context.Context, f *fixture, c config, limits gen.L
 func failedFinish(t *testing.T, s *session, expected error) {
 	t.Helper()
 	out, err := s.Finish()
-	if !errors.Is(err, expected) || len(out.Trees) != 0 || out.Entry != (ast.NodeRef{}) {
+	if !errors.Is(err, expected) || out.Snapshot().Valid() {
 		t.Fatalf("failed invocation published output or lost its failure: output=%v error=%v, want %v", out, err, expected)
 	}
 }

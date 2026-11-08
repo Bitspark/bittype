@@ -72,7 +72,7 @@ func generationSPIFixture(t *testing.T, useFirst bool) (s.AST, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tree, err := representation.Unpack[s.Language](f.Target(), output.EntryAST())
+	tree, err := representation.Unpack[s.Language](f.Target(), output.Snapshot().Inputs()[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +173,7 @@ func TestGenerationSPIRejectsArgumentOnlyResultSupport(t *testing.T) {
 	if product, err := session.Use(f.Use("NestedPage")); !errors.Is(err, g.ErrScope) || product.Valid() {
 		t.Fatalf("argument-only support was accepted as Page result support: %v", err)
 	}
-	if output, err := session.Finish(); !errors.Is(err, g.ErrScope) || output.LanguageID() != "" {
+	if output, err := session.Finish(); !errors.Is(err, g.ErrScope) || output.Snapshot().LanguageID() != "" {
 		t.Fatalf("failed relation produced usable output: %v", err)
 	}
 }

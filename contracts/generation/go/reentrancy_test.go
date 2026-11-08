@@ -6,8 +6,6 @@ import (
 	"testing"
 
 	gen "github.com/Bitspark/bittype/contracts/generation/go"
-	"github.com/Bitspark/bittype/trees/ast/go"
-	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 type ledgerNative struct {
@@ -16,7 +14,7 @@ type ledgerNative struct {
 	definitions  []gen.Definition[sourceLanguage, nativeLanguage]
 }
 
-func (n *ledgerNative) Assemble(ctx context.Context, publications []gen.Publication[sourceLanguage, nativeLanguage], definitions []gen.Definition[sourceLanguage, nativeLanguage], limits gen.Limits) (representation.ASTSet, error) {
+func (n *ledgerNative) Assemble(ctx context.Context, publications []gen.Publication[sourceLanguage, nativeLanguage], definitions []gen.Definition[sourceLanguage, nativeLanguage], limits gen.Limits) (gen.Assembly, error) {
 	n.publications = append([]gen.Publication[sourceLanguage, nativeLanguage](nil), publications...)
 	n.definitions = append([]gen.Definition[sourceLanguage, nativeLanguage](nil), definitions...)
 	return n.nativeStore.Assemble(ctx, publications, definitions, limits)
@@ -48,7 +46,7 @@ func TestCopiedSessionHandlesShareTheCompleteInvocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	out, err := s.Finish()
-	if err != nil || len(out.Trees) == 0 {
+	if err != nil || !out.Snapshot().Valid() {
 		t.Fatalf("original handle could not commit the shared invocation: %v", err)
 	}
 	if len(native.publications) != 1 || native.publications[0].Root() != f.plain || native.publications[0].Callee().Signature() != owned.Signature() {
@@ -130,9 +128,9 @@ func TestAssemblyCannotReenterTheInvocation(t *testing.T) {
 					out, reentryErr = copied.Publish(f.plain)
 					published = out.Valid()
 				case "finish":
-					var out representation.ASTSet
+					var out gen.Output
 					out, reentryErr = copied.Finish()
-					published = len(out.Trees) != 0 || out.Entry != (ast.NodeRef{})
+					published = out.Snapshot().Valid()
 				}
 				// Swallow the nested failure and return the ordinary valid AST.
 				// The host must still prevent the outer commit from succeeding.
@@ -177,7 +175,7 @@ func TestZeroSessionHandlesReturnErrorsWithoutOutput(t *testing.T) {
 		}},
 		{"finish", func(s *session) (bool, error) {
 			out, err := s.Finish()
-			return len(out.Trees) != 0 || out.Entry != (ast.NodeRef{}), err
+			return out.Snapshot().Valid(), err
 		}},
 	}
 	for _, operation := range operations {

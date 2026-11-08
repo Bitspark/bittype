@@ -1,6 +1,6 @@
 # Planning and running type generation
 
-**Draft proposal · 8 November 2026**
+**Planner proposal · 8 November 2026. The generation output and TypeScript Files handoff are implemented.**
 
 A caller should be able to ask Bittype to generate `example.pagination.Page` for
 TypeScript, inspect which mappings the engine chose, and run that plan. The
@@ -15,10 +15,10 @@ TypeScript builder allocates an array node.
 | On main | Proposed change |
 | --- | --- |
 | `Engine.Plan(from, to)` finds a language route through registered AST transformers. | Add `PlanGeneration` for decisions about particular source declarations. |
-| `Registry.Transformer(request)` captures an explicit provider selection and ties it to the exact source snapshot. Its execution opens the providers and collects their bindings. | The planner resolves the reachable mapping choices before returning a runnable plan. |
+| `Registry.Generate(ctx, request, checker)` admits the exact source snapshot and evidence. It opens the providers and collects their bindings. | The planner resolves the reachable mapping choices before returning a runnable plan. |
 | A mapping provider's `Open` can supply exact bindings, a structural declaration policy, and helper plans. The TypeScript list mapping calls `Child` on its element and builds an array node in Go. | Advertise bindings at registration and express the list rule as an executable input pattern and target expression. |
-| `Engine.Generate` takes the analyzed input, roots, target, output identity, provider handles and limits. It returns a syntax-checked AST set. | `Run` returns a `generation.Output` with the target snapshot, exposed declarations and external uses. `Generate` would plan and run in one call and return the same result type. |
-| The TypeScript target already emits package imports and marks declarations exported in its logical AST. Its Files formatter rebuilds imports after placement. | Plan bound target uses and publication intent. Files formatting is the first stage that constructs concrete import/export syntax for generated declarations. |
+| `Engine.Generate` takes the analyzed input, roots, target, output identity, provider handles and limits. It returns a sealed `generation.Output` with a syntax-checked snapshot. | `Run` returns a `generation.Output` with the target snapshot, exposed declarations and external uses. `Generate` would plan and run in one call and return the same result type. |
+| The TypeScript target records bound uses and exposed sites. Files constructs and checks imports and exports under each placement. | The proposed planner would determine those destinations before AST construction. |
 
 The existing `generation.Plan[F,T]` describes the operations for one mapping or
 declaration. A `GenerationPlan` in this proposal covers a complete request and
@@ -27,6 +27,57 @@ correction recorded in ACX-002. [Current generation lifecycle](kernel-compositio
 [Language route planner](../engine/go/path.go) ·
 [Generation registry](../transform/syntax/shared/generation/go/registry.go) ·
 [Generation assembly case](architecture-cases/0002-generation-assembly.md).
+
+## Three SPI changes
+
+1. **Carry generation intent into Files.** The target records requested public
+   declaration sites and the external destination of each emitted use. The
+   engine captures checked declaration ASTs and seals those sites into one
+   `generation.Output`. Files accepts that complete output, a consumer
+   placement and a target dependency environment. It constructs module syntax
+   and checks the real bindings before publishing `Source[T]`. Formatting an
+   already analyzed program still consumes its own semantic result.
+2. **Separate semantic mapping from target construction.** Mapping libraries
+   supply `BindingDescription[F,T]` values, declaration and helper recipes,
+   and generic conventions. The kernel selects and composes them into a plan.
+   The target builder realizes planned expressions and binders at AST sites.
+   These contracts replace the responsibilities currently combined in
+   `MappingProvider.Open` and the procedural mapping operations. This is the
+   proposed planner redesign. [Mapping declarations](#what-a-mapper-declares)
+3. **Read common structure from established semantics.** The kernel can follow
+   captured entities, references and complete arguments directly. Languages
+   supply the identities, operand meanings and applicability judgments their
+   rules establish. For `Page<Cell<Person>>` the shared graph pairs two
+   applications, while Horos owns kind admission and the identity of its Cell
+   declaration. This narrows the proposed responsibilities of `Source[F]`,
+   `Catalog[F]` and `SourceSession[F]`. [Semantic queries](semantics.md)
+
+The output handoff uses the following implemented Go method signatures. The
+application invokes the engine or the typed Files formatter. The selected
+target implements the assembly method, returning construction records in
+publication order. The kernel admits them and seals the output.
+
+```go
+// engine; compose is the shared generation registry package
+func (e *Engine) Generate(ctx context.Context, r compose.Request) (generation.Output, error)
+
+// generation.Native[F,T] (method excerpt)
+Assemble(context.Context, []Publication[F,T], []Definition[F,T], Limits) (Assembly, error)
+
+// format
+func (p GeneratedFilesFormatter[L]) Format(ctx context.Context, input GeneratedFilesInput) (source.Source[L], error)
+```
+
+For the proposed source split, the shared graph's
+`DirectParameterBindings(id TermID) ([]ArgumentBinding, bool)` pairs direct
+applications. The present `Source.Admit` also checks the use under its actual
+environment. The kernel can consume the structural pairs once, and a language
+can supply the required source interpretation from the captured analysis.
+[Source contract](../contracts/generation/go/source.go) · [Graph query](../semantics/go/model.go)
+
+The first slice implements the generation result and TypeScript Files. The
+other two changes describe subsequent work. The [context matrix](abstraction-levels.md#agnostic-kernel-and-language-specific-rules)
+explains where language rules enter each transition.
 
 ## Caller interface
 
@@ -79,7 +130,7 @@ pipeline could later bind separate requests through that same planning operation
 
 ### The result of Run
 
-These are the proposed Go declarations in package `generation`.
+These are the implemented accessors in package `generation`. `Engine.Generate` returns this result today. The proposed plan would return it from `Run`.
 
 ```go
 type Output struct { /* private state from one successful run */ }
@@ -117,10 +168,7 @@ has assigned each name that requires binding exactly one destination. The
 engine seals each requested exposure against its generated declaration site.
 The accessors return copies of the two lists. Files accepts
 the whole output so addresses from a different run cannot stand in for its
-bindings. Failure returns the zero, unusable output. The engine already
-captures a checked target AST set today. The proposed result would retain
-that capture. Native analysis supplies the semantic evidence about the
-organized units. [Current engine capture](../engine/go/generation.go).
+bindings. Failure returns the zero, unusable output. The engine seals the checked target snapshot and the bindings together. Native analysis supplies the semantic evidence about the organized units. [Output contract](../contracts/generation/go/output.go)
 
 ## Semantic mapping and AST construction
 
@@ -142,7 +190,7 @@ choices as native declaration nodes and retains the destination of each named us
 
 The plan describes what the selected mappings intend. Only analysis of the
 realized B program establishes `Semantics[B]`. Today generation consumes an
-analyzed source and returns a syntax-checked target AST set. The separation of
+analyzed source and returns a checked snapshot with publication and binding intent. The separation of
 mapping decisions into an inspectable plan is proposed here.
 The [two Page tables](abstraction-levels.md#page-across-the-five-levels) show
 how written occurrences relate to binders and why an effective argument may
@@ -277,15 +325,7 @@ output. Placement and the selected dependencies come from the consumer.
 The target resolver and analyzer establish the actual destinations for each
 placement.
 
-Today the TypeScript target emits imports and export modifiers in a logical
-unit. Its analysis supplies the graph, snapshot and receipt required by the
-current Files formatter. The formatter analyzes the organized units again before
-publishing `Source`. Accepting `generation.Output` at this boundary remains
-implementation work. An earlier logical unit's receipt, if available, applies
-only to its own capture. [Current Files input](../contracts/format/go/files.go) ·
-[Generation and Files boundary](source.md#from-generated-declarations-to-files) ·
-[Current TypeScript behavior](typescript-type-imports.md) ·
-[Open architectural case](architecture-cases/0004-generation-file-syntax.md).
+The implemented TypeScript path consumes the whole generation output. Files constructs import and export syntax for the selected placement, then checks the relocated destinations and named exports before publishing Source. A separate path formats programs with established semantics. [Generated Files input](../contracts/format/go/generated.go) · [TypeScript example](typescript-type-imports.md)
 
 ## What a mapper declares
 
@@ -488,15 +528,7 @@ a different type. Cross-language proofs use the verification contract.
    list and superseded procedural rules on the normal generation path. Keep
    `Generate` as the one-call entry. This changes the public provider contract
    and the requests made by installed consumers.
-4. Carry bound external uses and publication intent across the generation/Files
-   handoff in `generation.Output`. Remove early import/export emission from
-   TypeScript generation. Format the same output for `Cells` with both
-   placements. Check the relocated uses and exports, including an aliased
-   `Cell`, and compile both layouts against the selected package. Reject
-   external bindings or exposed sites taken from a different output. An
-   inaccessible binding must fail even if a different declaration shares its
-   name. Apply the same boundary when migrating other targets that already emit
-   includes or module visibility.
+4. The `generation.Output` handoff and TypeScript placement checks are implemented. The integration suite formats one output twice, compiles both placements with a local `Cell` and checks package identity, inaccessible dependencies and missing exports. C++ includes and Rust visibility remain in [ACX-004](architecture-cases/0004-generation-file-syntax.md).
 
 Qualification should compare planned and one-call output, exercise fresh runs
 of one plan after a registry change, and reject ambiguous, stale or foreign

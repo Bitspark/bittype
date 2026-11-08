@@ -3,14 +3,13 @@ package target
 
 import (
 	"context"
-	"errors"
 
 	check "github.com/Bitspark/bittype/check/syntax/typescript/provider/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	lit "github.com/Bitspark/bittype/internal/typescript"
-	imports "github.com/Bitspark/bittype/internal/typescriptimports"
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
 	m "github.com/Bitspark/bittype/transform/syntax/shared/target/go"
+	"github.com/Bitspark/bittype/transform/syntax/typescript/symbol/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
@@ -20,7 +19,7 @@ type Backend[F any] struct {
 	*m.Store[F, s.Language]
 	config   Config
 	language representation.Language
-	imports  map[g.Fragment[s.Language]]imports.Export
+	external map[g.Fragment[s.Language]]symbol.Type
 }
 
 func New[F any](ctx context.Context, to representation.Language, config Config, limits g.Limits) (*Backend[F], error) {
@@ -31,7 +30,7 @@ func New[F any](ctx context.Context, to representation.Language, config Config, 
 	if err != nil {
 		return nil, err
 	}
-	b := &Backend[F]{Store: store, config: config, language: to, imports: map[g.Fragment[s.Language]]imports.Export{}}
+	b := &Backend[F]{Store: store, config: config, language: to, external: map[g.Fragment[s.Language]]symbol.Type{}}
 	store.Check = check.Check
 	store.Finish = b.assemble
 	return b, nil
@@ -66,46 +65,64 @@ func edges(role string, fragments []g.Fragment[s.Language]) []m.Child[s.Language
 	return out
 }
 
-// ImportedType refers to a named type from a selected public package export.
-func (b *Backend[F]) ImportedType(module, export string, args []g.Fragment[s.Language], origin ast.NodeRef) (g.Fragment[s.Language], error) {
+// PackageType refers to a named export of a selected package.
+func (b *Backend[F]) PackageType(module, export string, args []g.Fragment[s.Language], origin ast.NodeRef) (g.Fragment[s.Language], error) {
 	if !lit.PackageSpecifier(module) || !lit.TypeName(export) {
 		return g.Fragment[s.Language]{}, g.ErrInvalid
 	}
+	return b.externalType(module, export, args, origin)
+}
+
+// GlobalType identifies a public type supplied by the target library environment.
+func (b *Backend[F]) GlobalType(name string, args []g.Fragment[s.Language], origin ast.NodeRef) (g.Fragment[s.Language], error) {
+	if !lit.TypeName(name) {
+		return g.Fragment[s.Language]{}, g.ErrInvalid
+	}
+	return b.externalType("", name, args, origin)
+}
+func (b *Backend[F]) externalType(module, export string, args []g.Fragment[s.Language], origin ast.NodeRef) (g.Fragment[s.Language], error) {
 	ref, err := b.Node(m.Node(s.KindTypeReference, m.Attributes("name", export), origin))
 	if err != nil {
 		return ref, err
 	}
-	b.imports[ref] = imports.Export{Module: module, Name: export}
+	b.external[ref] = symbol.Type{Module: module, Name: export}
 	return b.apply(ref, args, origin)
 }
-func (b *Backend[F]) Assemble(ctx context.Context, p []g.Publication[F, s.Language], d []g.Definition[F, s.Language], limits g.Limits) (representation.ASTSet, error) {
-	if len(b.imports) == 0 {
-		return b.Store.Assemble(ctx, p, d, limits)
-	}
-	watched := make([]g.Fragment[s.Language], 0, len(b.imports))
-	for f := range b.imports {
+func (b *Backend[F]) Assemble(ctx context.Context, p []g.Publication[F, s.Language], d []g.Definition[F, s.Language], limits g.Limits) (g.Assembly, error) {
+	watched := make([]g.Fragment[s.Language], 0, len(b.external))
+	for f := range b.external {
 		watched = append(watched, f)
 	}
 	result, sites, err := b.Store.AssembleWithSites(ctx, p, d, limits, watched)
 	if err != nil {
-		return representation.ASTSet{}, err
+		return g.Assembly{}, err
 	}
-	tree, err := representation.Unpack[s.Language](b.language, result.EntryAST())
+
+	tree, err := representation.Unpack[s.Language](b.language, result.Syntax.EntryAST())
 	if err != nil {
-		return representation.ASTSet{}, err
+		return g.Assembly{}, err
 	}
-	uses := map[ast.NodeID]imports.Export{}
-	for id, f := range sites {
-		uses[id] = b.imports[f]
+	for i, node := range tree.Nodes {
+		if err := ctx.Err(); err != nil {
+			return g.Assembly{}, err
+		}
+		if node.Kind != s.KindTypeReference {
+			continue
+		}
+		id := ast.NodeID(i + 1)
+		f, external := sites[id]
+		if external {
+			if len(node.References) != 0 {
+				return g.Assembly{}, g.ErrScope
+			}
+			use, err := symbol.ExternalUse(b.language, ast.NodeRef{Tree: tree.ID, Node: id}, b.external[f])
+			if err != nil {
+				return g.Assembly{}, err
+			}
+			result.ExternalUses = append(result.ExternalUses, use)
+		} else if len(node.References) != 1 || node.References[0].Role != s.RoleTarget {
+			return g.Assembly{}, g.ErrIncomplete
+		}
 	}
-	if err = imports.Emit(ctx, &tree, uses, limits.OutputNodes, limits.OutputBytes); errors.Is(err, imports.ErrLimit) {
-		return representation.ASTSet{}, g.ErrLimit
-	}
-	if err != nil {
-		return representation.ASTSet{}, err
-	}
-	if err = check.Check(tree); err != nil {
-		return representation.ASTSet{}, err
-	}
-	return representation.PackSet(b.language, ast.Set[s.Language]{Entry: result.Entry, Trees: []s.AST{tree}})
+	return result, nil
 }

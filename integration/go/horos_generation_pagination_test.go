@@ -9,6 +9,7 @@ import (
 
 	"context"
 	"errors"
+	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -174,7 +175,7 @@ func generationSource(t *testing.T, source h.AST) (*engine.Engine, representatio
 	return e, from, transform.Input{Source: snapshot, Evidence: []semantic.Result{analyzed}}
 }
 
-func generated[L any](t *testing.T, e *engine.Engine, input transform.Input, p nativeProvider[L], configure requestBuilder) ast.AST[L] {
+func generatedOutput[L any](t *testing.T, e *engine.Engine, input transform.Input, p nativeProvider[L], configure requestBuilder) g.Output {
 	t.Helper()
 	to, err := representation.NewLanguage[L](p, "native-types-v1")
 	if err != nil {
@@ -198,14 +199,24 @@ func generated[L any](t *testing.T, e *engine.Engine, input transform.Input, p n
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := representation.Unpack[L](to, out.EntryAST())
+	return out
+}
+func generated[L any](t *testing.T, e *engine.Engine, input transform.Input, p nativeProvider[L], configure requestBuilder) ast.AST[L] {
+	t.Helper()
+	out := generatedOutput(t, e, input, p, configure)
+	return outputTree[L](t, out)
+}
+func outputTree[L any](t *testing.T, out g.Output) ast.AST[L] {
+	t.Helper()
+	entry, err := out.Snapshot().EntryTree()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = p.Check(result); err != nil {
+	tree, err := representation.Unpack[L](out.Snapshot().Language(), entry)
+	if err != nil {
 		t.Fatal(err)
 	}
-	return result
+	return tree
 }
 
 type requestBuilder func(*c.Registry, transform.Input, representation.Language) (c.Request, error)
@@ -223,14 +234,22 @@ func cppRequest(reg *c.Registry, input transform.Input, to representation.Langua
 	return genfixture.Request(reg, input, to, "generated-cpp", cgtarget.Provider[h.Language]{Namespace: "pagination"}, cg.Providers(rules.RepresentationProfile)...)
 }
 
-// The adapter can also be used directly for negative diagnostics tests.
-func requestedTransformer(input transform.Input, to representation.Language, configure requestBuilder) (transform.ASTTransformer, error) {
-	var registry c.Registry
-	request, err := configure(&registry, input, to)
+func nativeChecker[L any](t *testing.T, p nativeProvider[L]) check.Checker {
+	t.Helper()
+	checker, err := check.NewChecker[L](mustLanguage[L](t, p), p)
 	if err != nil {
-		return nil, err
+		t.Fatal(err)
 	}
-	return registry.Transformer(request)
+	return checker
+}
+func runGeneration(t *testing.T, input transform.Input, checker check.Checker, configure requestBuilder) (g.Output, error) {
+	t.Helper()
+	var registry c.Registry
+	request, err := configure(&registry, input, checker.Language())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return registry.Generate(context.Background(), request, checker)
 }
 func mustLanguage[L any](t *testing.T, p language.Provider) representation.Language {
 	t.Helper()
@@ -252,7 +271,7 @@ func paginationOutputs(t *testing.T, module core.Value, deps ...core.Value) pagi
 	e, _, input := generationInput(t, module, deps...)
 	model, _ := input.Evidence[0].Semantics()
 	before := model.Data()
-	out := paginationOutput{generated(t, e, input, typescriptText(), tsRequest), generated(t, e, input, golangText(), goRequest), generated(t, e, input, rustText(), rustRequest), generated(t, e, input, cppText(), cppRequest)}
+	out := paginationOutput{placedTS(t, generatedOutput(t, e, input, typescriptText(), tsRequest)), generated(t, e, input, golangText(), goRequest), generated(t, e, input, rustText(), rustRequest), generated(t, e, input, cppText(), cppRequest)}
 	after, _ := input.Evidence[0].Semantics()
 	if model != after || !reflect.DeepEqual(before, after.Data()) {
 		t.Fatal("mapping changed established semantic evidence")
@@ -358,18 +377,15 @@ func TestPaginationRejectsUnsupportedTypes(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			_, _, input := generationInput(t, genModule("unsupported", genMap(), genEntry("Bad", genType(body))))
 			for _, tc := range []struct {
-				to      representation.Language
+				checker check.Checker
 				factory requestBuilder
 			}{
-				{mustLanguage[ts.Language](t, ts.Language{}), tsRequest}, {mustLanguage[gs.Language](t, gs.Language{}), goRequest}, {mustLanguage[rs.Language](t, rs.Language{}), rustRequest}, {mustLanguage[cs.Language](t, cs.Language{}), cppRequest},
+				{nativeChecker(t, typescriptText()), tsRequest}, {nativeChecker(t, golangText()), goRequest},
+				{nativeChecker(t, rustText()), rustRequest}, {nativeChecker(t, cppText()), cppRequest},
 			} {
-				mapper, err := requestedTransformer(input, tc.to, tc.factory)
-				if err != nil {
-					t.Fatal(err)
-				}
-				output, err := mapper.Transform(context.Background(), input)
+				output, err := runGeneration(t, input, tc.checker, tc.factory)
 				var diagnostic *text.Diagnostic
-				if !errors.As(err, &diagnostic) || diagnostic.Code != text.Unsupported || diagnostic.Node == nil || diagnostic.Node.Node == 0 || output.LanguageID() != "" {
+				if !errors.As(err, &diagnostic) || diagnostic.Code != text.Unsupported || diagnostic.Node == nil || diagnostic.Node.Node == 0 || output.Snapshot().Valid() {
 					t.Fatalf("unsupported output: %+v %v", output, err)
 				}
 			}
@@ -392,12 +408,8 @@ func TestGenerationRejectsInvalidCanonicalApplications(t *testing.T) {
 			if input.Evidence[0].HasSemantics() {
 				t.Fatal("invalid canonical application published a model")
 			}
-			mapper, err := requestedTransformer(input, mustLanguage[ts.Language](t, ts.Language{}), tsRequest)
-			if err != nil {
-				t.Fatal(err)
-			}
-			output, err := mapper.Transform(context.Background(), input)
-			if !errors.Is(err, semantic.ErrEvidenceUnavailable) || output.LanguageID() != "" {
+			output, err := runGeneration(t, input, nativeChecker(t, typescriptText()), tsRequest)
+			if !errors.Is(err, semantic.ErrEvidenceUnavailable) || output.Snapshot().Valid() {
 				t.Fatalf("invalid semantic input mapped: %v", err)
 			}
 		})
@@ -419,23 +431,15 @@ func TestGenerationNameCollisionsAndPhantomSlots(t *testing.T) {
 			if !input.Evidence[0].HasSemantics() {
 				t.Fatal("fixture must be semantically valid")
 			}
-			mapper, err := requestedTransformer(input, mustLanguage[ts.Language](t, ts.Language{}), tsRequest)
-			if err != nil {
-				t.Fatal(err)
-			}
-			output, err := mapper.Transform(context.Background(), input)
+			output, err := runGeneration(t, input, nativeChecker(t, typescriptText()), tsRequest)
 			var diagnostic *text.Diagnostic
-			if !errors.As(err, &diagnostic) || diagnostic.Code != text.Unsupported || output.LanguageID() != "" {
+			if !errors.As(err, &diagnostic) || diagnostic.Code != text.Unsupported || output.Snapshot().Valid() {
 				t.Fatalf("unsupported names mapped: %v", err)
 			}
 		})
 	}
 	_, _, input := generationInput(t, genModule("fields", genMap(), genEntry("Record", genType(genRecord(genField("name", false, genScalar("utf8-text")), genField("Name", false, genScalar("bool")))))))
-	mapper, err := requestedTransformer(input, mustLanguage[gs.Language](t, gs.Language{}), goRequest)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if output, err := mapper.Transform(context.Background(), input); err == nil || output.LanguageID() != "" {
+	if output, err := runGeneration(t, input, nativeChecker(t, golangText()), goRequest); err == nil || output.Snapshot().Valid() {
 		t.Fatal("Go field capitalization collision accepted")
 	}
 }
@@ -446,13 +450,9 @@ func TestGenerationTraversalLimit(t *testing.T) {
 		nested = genTuple("horos/list-of", nested)
 	}
 	_, _, input := generationInput(t, genModule("deep", genMap(), genEntry("Deep", genType(nested))))
-	mapper, err := requestedTransformer(input, mustLanguage[ts.Language](t, ts.Language{}), tsRequest)
-	if err != nil {
-		t.Fatal(err)
-	}
-	output, err := mapper.Transform(context.Background(), input)
+	output, err := runGeneration(t, input, nativeChecker(t, typescriptText()), tsRequest)
 	var diagnostic *text.Diagnostic
-	if !errors.As(err, &diagnostic) || diagnostic.Code != text.LimitExceeded || output.LanguageID() != "" {
+	if !errors.As(err, &diagnostic) || diagnostic.Code != text.LimitExceeded || output.Snapshot().Valid() {
 		t.Fatalf("deep mapping escaped limit: %v", err)
 	}
 }
