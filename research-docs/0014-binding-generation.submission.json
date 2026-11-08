@@ -1,0 +1,28 @@
+{
+  "doc": "research-docs/0014-binding-generation.md",
+  "ownerRule": "bittype owner rule of 4 November 2026: no checksum, validation or provenance workflow is a delivery prerequisite. The service-returned digest is recorded as part of the submission record only.",
+  "attempts": [
+    {
+      "attempt": 1,
+      "idempotencyKey": "bittype-research-0014-ac3b85de-f27a-4de4-b4ab-a5226ca97cce",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0014-binding-generation",
+      "submittedPath": "research-docs/0014-binding-generation.submitted.md",
+      "docSha256": "c57419f4f2f6ad31f6d5e7e196d2365ec27adad704c04187c5100797b6aebbeb",
+      "docBytes": 66824,
+      "codeRevision": "e492263291f0265386b08a145bf487e9c721fbfe",
+      "codeBaseline": "bittype 6132170e394f2261d6a24c8efd7839c93299fdcc; the research branch changes only research-docs/",
+      "cliBuild": "nightfall 0.1.0 (d4769c3ab502, bundle 5577e9e3b0e8) built 2026-11-08T04:13:04.014Z",
+      "preparedAt": "2026-11-08T23:43:51Z",
+      "documentId": null,
+      "serverSha256": null,
+      "runId": null,
+      "submittedAt": null,
+      "state": null,
+      "failureCode": null,
+      "resultSha256": null,
+      "verify": null
+    }
+  ]
+}
