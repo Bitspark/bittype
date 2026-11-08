@@ -43,8 +43,8 @@ contract. Bitruntime 0.8.0 uses its immutable tuple factory with runtime-owned
 handle recognition; sends do not copy every value into a second heap of Deixis
 nodes. Runtime admission of a capability remains distinct from structural
 profile admission. See [runtime values](runtime-values.md) for the actual current
-Go types, exports, proxies and lifetime ownership. The static frontend is moving
-to Horos declaration revision 4; Bittype does not import the live carrier or runtime.
+Go types, exports, proxies and lifetime ownership. The static frontend implements
+Horos declaration revision 4; Bittype does not import the live carrier or runtime.
 
 Every type description is itself ground data. Describing a Wire does not create
 one, and loading, resolving or analyzing a description performs no sends,
@@ -157,7 +157,7 @@ remain separate from historical provenance.
 
 Ground conformance, general kind membership, mixed structural admission, live
 runtime recognition, authority and protocol behavior remain different judgments.
-The revision-4 source migration uses public Horos Go 0.10.1.
+The revision-4 source migration uses public Horos Go 0.10.2.
 
 Forbidden: old-profile aliases/readers, widening ground any or values, guessing
 behavior from library names/structure, core Function/Stream/Cell switches or

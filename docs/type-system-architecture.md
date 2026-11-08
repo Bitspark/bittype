@@ -155,23 +155,27 @@ state or establish formatter/printer correspondence with the actual files.
 
 ## Explicit composition
 
-Keep the existing ASTTransformer boundary initially. An explicitly selected
-composition performs:
+Generation and verification are distinct operations over associated captures:
 
-1. Admit the supplied source and semantic reports using existing contracts.
-2. Fix actual mapping choices, including helper/import dependencies.
-3. Invoke the configured transformation.
-4. Capture its actual output collection and relevant helpers.
-5. Explicitly invoke any required native resolution/analysis stages that exist
-   for the chosen fragment; missing capability is not filled by hidden analysis.
-6. Build the expected statement and ask the selected checker to assess evidence.
-7. Publish the outcome associated with this invocation and its assumptions.
+1. Admit source syntax and explicitly obtain the required semantic evidence.
+2. Register source, native target and mapping libraries; request public roots.
+3. Plan native intent and construct `generation.Output` through the
+   [generation SPI](generation-spi.md). This creates no ASTTransformer edge.
+4. For TypeScript, realize Files placement and check bindings. For the current
+   Go proof fixtures, construct/capture the actual Go program and explicitly run
+   native resolution/analysis. No verification step invents native facts.
+5. Supply source/native captures, selected verification laws, helpers and an
+   owning interpretation to the [joint verification contract](verification.md).
+6. Prepare the expected statement independently of the candidate; check the
+   candidate through the selected Logos dependency policy.
 
-Evidence about one generation leg is not automatically target semantic evidence
-or evidence about the next leg. The current engine deliberately discards a
-previous leg's evidence when capturing the next input. This remains correct.
+Native semantic evidence belongs to the actual native capture. A generation plan
+or successful syntax check is not that evidence. A changed placement, helper or
+dependency environment can require fresh native evidence and fresh preparation.
+The separate ASTTransformer routing engine likewise does not carry source
+receipts into a different output capture.
 
-The private integration binds the following inputs; this is a responsibility
+The public joint integration binds the following inputs; this is a responsibility
 map, not a new Go struct or serialized schema:
 
 | Input | Construction and ownership |
@@ -201,7 +205,9 @@ verification/files/source/horos/go/         explicit authoritative source querie
 semantics/golang/go/                      immutable Go type facts and typed readers
 resolve/files/golang/provider/go/                  bounded Go compiler-backed resolution
 analyze/files/golang/provider/go/                  explicit analysis and admission queries
-verification/files/horos-to-go/go/          owning mapping and direct Logos composition
+verification/files/horos-to-go/go/          scoped Horos/Go subjects and law composition
+verification/files/horos-to-go/mappings/go/  selected builtin representation laws
+verification/logos/go/                     typed interpretations and direct Logos checking
 verification/integration/go/               TextBox/Page composition qualification
 ```
 
@@ -229,12 +235,16 @@ No new verifier registry, foundation catalogue or automatic discovery is selecte
 distributed from [logos-contract](https://github.com/Bitspark/logos-contract)
 as `github.com/Bitspark/logos-contract/contract/go/typed`. All Bittype packages
 remain in one root module. `contracts/verification/go` has no Logos imports;
-only the concrete Horos/Go composition imports the checker. The existing public
+Logos-aware verification packages import its types and selected laws, and
+`verification/logos/go` owns the direct checker call. The existing public
 consumer gate remains anonymous and replacement-free and exercises this surface.
 
-The direct checker call stays in the owning Horos/Go composition; a separate
-public checker adapter or registry has not demonstrated a need. Type-owned native
-representation plugins remain a separate, broader design.
+The shared Logos integration accepts explicitly selected interpretations through
+`Interpret[S]`; it has no Horos/Go case catalogue or checker registry. The
+[public verification contribution reference](verification.md#contribution-contracts)
+shows this contract alongside the Horos/Go law protocol. Declarative generation
+mappings and verification laws are separate contributions; selecting one does not
+automatically select or justify the other.
 
 ## Remaining public verification SPI decisions
 
@@ -276,10 +286,11 @@ resolution requires reconstruction and fresh preparation/checking. See
 No Bittype proof-term algebra or serialization is required. Arbitrary bytes,
 unqualified names and a producer-selected conclusion do not establish compatibility.
 
-**Integration dependency:** admit the landed typed Go implementation in Bittype.
-Claim/evidence syntax and the in-process call no longer need an invented Bittype
-equivalent. The language projections and defined association still need
-implementation; public promotion does not authorize another checking framework.
+**Implemented boundary:** Bittype consumes the landed typed Go checker and
+implements the bounded Horos/Go projections and public participant association.
+Broader language theories and source/native admission proofs remain incomplete;
+they do not require another checking framework. See the
+[current supported domain](verification.md#supported-domain-and-limits).
 
 ### 2. Immutable requests spanning source and target
 
@@ -783,5 +794,6 @@ or fall back silently to erased constraints. Current representation generation
 and its Unsupported enforcement profile remain unchanged.
 
 See [native semantic providers](native-semantics.md)
-for the bounded Go resolver/analyzer, immutable native facts and explicit
-admission queries. TypeScript, Rust and C++ semantic providers remain planned.
+for the bounded Go, TypeScript and Rust resolution/analysis contracts, immutable
+native facts and supported queries. C++ semantics remain deferred; these bounded
+profiles do not establish complete native-language coverage.

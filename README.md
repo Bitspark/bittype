@@ -11,7 +11,8 @@ provider and transformer matrices, and expandable test evidence for each languag
 contracts, native syntax vocabularies, parsers, formatters, checks and a shared
 printer are implemented in Go. The syntax engine registers languages and
 ASTTransformer implementations, plans routes and composes existing text stages.
-Specialized providers extend language.Provider. The engine registers parsing,
+Parse/check/format/print and semantic-stage providers extend language.Provider;
+generation source/target/mapping contracts receive endpoint identity at registration. The engine registers parsing,
 checking, formatting and printing independently; identity registration installs
 no capability. See the [engine composition API](docs/engine.md#registration). Horos's Go declaration model now
 supplies module resolution, generic binding, general structural kinds and specialization. Bittype
@@ -32,8 +33,8 @@ resolution/analysis providers are implemented; C++ semantics remain deferred.
 The [TypeScript Files formatter](docs/typescript-type-imports.md) uses one declaration
 placement for emitted files and their local imports. Libraries select package exports.
 Implementations use explicit Syntax/Files stage paths and role-named Go packages.
-Each language composition package provides matching `NewSyntax...` and
-`NewFiles...` constructors for its existing capabilities, taking an explicit
+Each stage supplies its own implementation. The role contracts adapt these with
+`NewSyntax...`/`NewFiles...` functions; concrete Files compositions receive an explicit
 language/profile descriptor. See [naming, placement and construction](LAYOUT.md).
 Package releases remain deferred.
 The concrete Horos frontend uses the Horos Go module pinned in go.mod and Ontos 0.16.0. Consumers
@@ -96,6 +97,11 @@ interpret these concrete type semantics.
 
 ## Read first
 
+The [documentation map](docs/README.md) distinguishes current contracts,
+implementation limits, proposals and historical research. Start with the
+[runnable Page/Cell walkthrough](docs/page-cell-example.md) for generation and
+placement; [Go/Rust/C++ placement](docs/native-file-placement.md) remains proposed.
+
 - [Horos canonical input](docs/model.md): ownership, declarations and native representation plan.
 - [General kinds](docs/kinds.md): structural families, ordinary Data, constructor
   contracts and the semantic/native generation boundary.
@@ -129,8 +135,8 @@ interpret these concrete type semantics.
   direct generic pagination and library-owned type recipes configured for
   TypeScript, Go, Rust and C++; exact library mappings and pagination compositions
   use the public SPI.
-- [Public generation SPI](docs/generation-spi.md): implemented operations,
-  association ownership, scope and callback lifetimes, and explicit invocation.
+- [Public generation SPI](docs/generation-spi.md): implemented descriptions,
+  scoped planning, native construction and immutable output handoff.
 - [Type-owned generator plugins](docs/type-generation-plugins.md): implemented
   public contracts, automatic selectors, guarded overrides and the four migrated
   production mappings; native constraint enforcement remains proposed.
@@ -168,7 +174,10 @@ interpret these concrete type semantics.
 - [Charter](CHARTER.md), [contributor instructions](AGENTS.md) and
   [source layout](LAYOUT.md): ownership, delivery and package boundaries.
 
-Historical research remains in Git history, not as competing active specifications.
+Original research submissions and advice remain in `research-docs/` as historical
+evidence. Their maintained evaluation records link the current contracts; they
+are not competing specifications. The [documentation map](docs/README.md) identifies
+current contract owners, proposals and historical research.
 
 See [native semantic providers](docs/native-semantics.md)
 for the bounded Go, TypeScript and Rust resolvers/analyzers, immutable native facts and

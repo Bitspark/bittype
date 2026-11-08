@@ -1,6 +1,6 @@
 # Detailed capability reports
 
-The [ACX-007 identity correction](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/0007-bittype-matrix-contract-identity.md)
+The [ACX-007 identity correction](architecture-cases/0007-matrix-contract-identity.md)
 records the existing matrix bug found during implementation: short display names
 could satisfy an unrelated constructor dependency. The initial report implementation
 landed in [PR126](https://github.com/Bitspark/bittype/pull/126), but independent review
@@ -432,7 +432,7 @@ generation adds a `details` link beside each implemented operation/factory:
 
 ```text
 Provider cell:     check/syntax/horos/provider/go.Provider.Check · details
-Mapping cell: transform/syntax/horos-to-golang/mapping/go.Provider.Open · details
+Mapping cell: transform/syntax/horos/mapping/go.Library[golang.Language].Describe · details
 Unavailable cell: /
 ```
 

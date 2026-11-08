@@ -1,5 +1,9 @@
 # Research: Type-system model architecture and modular reasoning
 
+> Historical consultation and dated evaluation. See the [research map](README.md)
+> for current contracts and subsequent decisions; original advice/submissions
+> retain their inspected baseline.
+
 **ID:** 0010
 **Date:** 5 November 2026
 **Status:** applied

@@ -7,7 +7,7 @@ are implemented in Go on the [generic AST](ast.md). Each package supplies
 The shared language.Provider interface, native text providers, parsers,
 AST-to-CST formatters, checks and generic printer are implemented. The
 [Horos profile](horos.md) adds canonical declarations and [readable syntax](horos-syntax.md);
-actual language mappings and public builders remain deferred. The syntax engine
+[native pagination mappings](semantic-generation.md) are implemented; public builders remain deferred. The syntax engine
 now provides [explicit registration and route execution](engine.md).
 See the [native text design](parsing-formatting.md).
 
@@ -81,7 +81,8 @@ their actual string values; the packages export their corresponding
 - An optional reference with role `target` on a named type use, name segment
   or lifetime use can retain its resolved declaration/import/binder. It is a
   qualified `ast.NodeRef`, not a containment edge. Omitting it means no resolved
-  link is supplied, not an invented target. Resolution is not implemented.
+  link is supplied, not an invented target. Syntax checking performs no resolution; independently registered resolution
+capabilities are described in [native semantics](native-semantics.md).
 - Generic parameter declarations and their uses remain separate nodes.
   Same-spelled parameters in different scopes can point to different binders.
   Applications retain their constructor/path and ordered arguments.
@@ -538,5 +539,6 @@ establish executable behavior, registry operation or canonical equivalence.
 The pipeline contract is unchanged; AST adds a borrowed view interface.
 
 See [native semantic providers](native-semantics.md)
-for the bounded Go resolver/analyzer, immutable native facts and explicit
-admission queries. TypeScript, Rust and C++ semantic providers remain planned.
+for the bounded Go, TypeScript and Rust resolution/analysis contracts, immutable
+native facts and supported queries. C++ semantics remain deferred; these bounded
+profiles do not establish complete native-language coverage.

@@ -4,14 +4,16 @@
 Horos has one declaration language for data and capability types. The replacement
 uses [general structural kinds](kinds.md), with ordinary named/parameterized
 definitions, unions/intersections, structural patterns, guarded recursive groups
-and constructor contracts. Bittype consumes public Horos Go 0.10.1.
+and constructor contracts. Bittype consumes public Horos Go 0.10.2.
 
 ## One language and one authority
 
 Horos owns the [canonical grammar](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md),
 membership, inclusion, application and ground extraction. Bittype owns
 `syntax/horos`, `parse/syntax/horos`, `check/syntax/horos`, `resolve/files/horos`, `analyze/files/horos`,
-`format/syntax/horos` and `provider/horos`, with their private bridge. The language ID
+`format/syntax/horos` with independent `provider/go` stages and a private
+model bridge. Files parsing/formatting live under `parse/files/horos/provider/go`
+and `format/files/horos/provider/go`; there is no aggregate provider package. The language ID
 stays `horos`; its syntax and semantic profiles advance together.
 
 Revision 4 retains the existing module envelope and ordinary imports. One

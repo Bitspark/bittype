@@ -6,7 +6,8 @@ declarations and composes the target program. Run constructs ASTs; Files realize
 their placement. No library supplies a complete pipeline or learns its consumers.
 
 [Declarative SPI](generation-spi.md) · [Planner walkthrough](generation-planner.md) ·
-[Generation assembly correction](architecture-cases/0002-generation-assembly.md)
+[Generation assembly correction](architecture-cases/0002-generation-assembly.md) ·
+[Runnable Page/Cell walkthrough](page-cell-example.md)
 
 ## Uniform layout
 

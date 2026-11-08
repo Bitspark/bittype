@@ -1,5 +1,9 @@
 # Research: An agnostic semantic-analysis kernel and Horos provider
 
+> Historical consultation and dated evaluation. See the [research map](README.md)
+> for current contracts and subsequent decisions; original advice/submissions
+> retain their inspected baseline.
+
 **ID:** 0002
 **Date:** 2 November 2026
 **Status:** applied

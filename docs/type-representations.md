@@ -1,19 +1,20 @@
 # Library-owned native type representations
 
-**Owner direction updated 5 November 2026. Status: direct declaration frontends and pagination transformers implemented; custom native representations proposed.**
+**Current ownership, 8 November 2026.** Direct declaration frontends, four native
+pagination mappings and independent custom mapping composition are implemented.
+The broader library examples and native enforcement encodings remain proposals.
 This refines the [unified Horos tooling design](hydrated-types.md) and
 [generation pipeline](generation.md). Ground values/checks remain data-only;
 Ontos/wire owns mixed values and the one Horos language describes their types.
 Bittype consumes that model; Function, Cell and Stream remain ordinary libraries.
 
-The existing ASTTransformer interface and syntax engine need no new operation
-for a named library contract. The unified Horos frontend is [implemented](horos.md).
-The [pagination transformers](semantic-generation.md) are implemented; custom
-representation configuration below remains proposed. The
-[type-owned generator plugin design](type-generation-plugins.md) is the current
-proposal for Go contracts, builtin mappings, explicit overrides and composition.
-It supersedes this page's earlier open-declaration-only selection scope. Recipe
-examples below explain representations, not executable APIs.
+A named library contract adds its mapping and consumer registration, not an engine
+operation. The [unified Horos frontend](horos.md) and
+[pagination mappings](semantic-generation.md) use the implemented
+[declarative mapping contracts](generation-spi.md). This page explains native
+representation choices; [kernel composition](kernel-composition.md) owns the
+registration API. Broader Function/Stream/Cell library examples below are
+illustrative and do not claim those production libraries already exist.
 No runtime adapter, validator, callable implementation or transport is added.
 
 The separate [runtime value explanation](runtime-values.md) connects this static
@@ -125,7 +126,7 @@ declare Function over Wire, Cell as get/set functions and a pull Stream as
 next/cancel functions with an ordinary Step union. Their readable forms are:
 
 ```text
-Unit          = Data(H("tuple"))
+Unit          = H("tuple")
 Function<A,B> = Wire<tuple(A, Wire<B>)>
 Cell<T>       = record { get: Function<Unit,T>, set: Function<T,Unit> }
 Step<T>       = compound("item", T) | compound("end")
@@ -156,22 +157,23 @@ The generator does not infer one from a name, record shape or native signature.
 
 ### Recipe contract
 
-This is the proposed information a recipe carries, not a serialized schema or
-an implemented Go interface:
+The table states the responsibilities of a recipe. The implemented
+[MappingDescription and declaration contracts](generation-spi.md#mapping-descriptions)
+carry these choices; it is not a separate serialized schema:
 
 | Field | Required meaning |
 | --- | --- |
 | Source | Exact source language/profile, module pin and declaration identity; ordered canonical type parameters. |
 | Target | Target language ID, syntax/profile compatibility and the selected native representation profile/version. These are distinct from source identity. |
-| Native type | Either an external named generic type or a type-only target AST recipe. No raw source string or executable body. |
+| Native type | An intended native expression or declaration recipe, interpreted by the target during construction. No raw source string or executable body. |
 | Arguments | Explicit mapping from resolved source parameter slots to target type operands. Source kind contracts and their native enforcement limits must be explicit. Native constraints, extra parameters or indirections must be declared by the profile. |
 | External symbols and dependencies | Public module, package, crate or header and the symbol supplied there; exact artifacts supplied by the consuming dependency lock. |
 | Qualification | Supported applications/constraints and native representation limits. An unsupported argument fails explicitly. |
 
 An external-type recipe binds a use to the selected public symbol. The
 [Files formatter](source.md#from-generated-declarations-to-files) determines
-how a placed declaration refers to it. A declaration recipe emits owned type/interface AST
-nodes when building the library's type artifact. Consumers reference that
+how a placed declaration refers to it. A declaration recipe describes an owned
+type/interface; target construction emits its AST when building the library's artifact. Consumers reference that
 artifact. A structural mapping recursively uses the selected representations of
 referenced declarations and arguments. All three preserve origins and generic
 bindings, and return no usable partial output on error.
@@ -229,49 +231,27 @@ error, not permission to print source and parse it back.
 
 ### Composition with the existing engine
 
-The consuming build performs three operations:
-
-1. Supply directly authored, pinned declarations to the
-   appropriate resolver/provider. Resolve imports, slots and applications.
-2. Construct one concrete native transformer per requested language pair, with
-   its target profile, dependency lock and selected library recipes. Capture
-   immutable configuration; there are no mutable process-global registrations.
-3. Register those transformers with the existing engine and select the intended
-   route. Format their target ASTs and print the resulting CSTs normally.
-
-For example, in deliberately schematic Go notation:
+The consumer registers a source integration, native target and selected mapping
+libraries separately, then supplies captured source evidence, roots and a profile
+to `Engine.PlanGeneration` or `Engine.Generate`. The kernel owns composition.
+The implemented [registration SPI and example](kernel-composition.md#registration-and-request)
+replace per-language-pair factories and ASTTransformer route assembly.
 
 ```go
-tsMapping := horosToTypeScript.New(tsProfile, modules, libraries.TypeScriptTypes())
-goMapping := horosToGo.New(goProfile, modules, libraries.GoTypes())
-rustMapping := horosToRust.New(rustProfile, modules, libraries.RustTypes())
-cppMapping := horosToCPP.New(cppProfile, modules, libraries.CPPTypes())
-
-engine.RegisterTransformer(tsMapping)
-engine.RegisterTransformer(goMapping)
-engine.RegisterTransformer(rustMapping)
-engine.RegisterTransformer(cppMapping)
+func (e *Engine) PlanGeneration(ctx context.Context, r compose.Request) (generation.GenerationPlan, error)
+func (e *Engine) Generate(ctx context.Context, r compose.Request) (generation.Output, error)
 ```
 
-These constructors/methods are proposed composition notation, not current APIs;
-real composition must handle construction and registration errors. The selected
-library set is assembled by the application, not a built-in library catalogue.
-Concrete transformers consume uniform recipe contracts and must not import
-specific Function/Cell/Stream libraries. Application composition depends on the
-selected library recipes; recipes depend on target AST/configuration APIs.
+These are implemented engine signatures; compose denotes the shared generation
+registry package. Mapping descriptions choose native intent before Run constructs
+ASTs. External symbols remain bound intentions until Files applies placement.
+[Complete consumer walkthrough](page-cell-example.md) ·
+[Native placement proposals](native-file-placement.md)
 
-The implemented [ASTTransformer](../contracts/transform/go/transformer.go)
-continues to expose FromID, ToID and Transform. Its configuration is captured
-by the concrete implementation. No contract-specific method or callback is
-added to the engine. There is one edge per language pair, not one edge per
-library; alternative profiles use separate configured engine instances under
-the current [registry policy](engine.md). Language-provider registration and
-module resolution are also distinct from native recipe selection.
-
-Native profile/recipe metadata is generation configuration, not a new Horos
-constructor or a runtime registry. No init-time discovery, built-in default
-contract set, dynamic import by contract name or live endpoint acquisition
-occurs during static tooling.
+Libraries supply declarations, native models and mapping descriptions under their
+own ownership. Consumers supply dependency environments. Neither introduces a
+Horos constructor, process-global registry, implicit default bundle or runtime
+endpoint acquisition. Generation registrations are not ASTTransformer edges.
 
 ## 6. Ownership, layout and later runtime work
 

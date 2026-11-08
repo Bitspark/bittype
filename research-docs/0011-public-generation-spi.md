@@ -1,5 +1,9 @@
 # Research: Public generation operations and scoped association products
 
+> Historical consultation and dated evaluation. See the [research map](README.md)
+> for current contracts and subsequent decisions; original advice/submissions
+> retain their inspected baseline.
+
 **ID:** 0011
 **Date:** 6 November 2026
 **Status:** applied

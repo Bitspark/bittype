@@ -2,7 +2,7 @@
 
 **Revision 4 implemented in Go source, 4 November 2026.** One Horos frontend
 projects general kind definitions and type definitions, including constructor
-results. It consumes public Horos Go 0.10.1. Horos owns the
+results. It consumes public Horos Go 0.10.2. Horos owns the
 [canonical format](https://github.com/Bitspark/horos/blob/main/docs/spec/declarations.md).
 Bittype owns its [readable spelling](horos-syntax.md), AST projection and provider
 composition. The [kind design](kinds.md) supplies the semantic overview.

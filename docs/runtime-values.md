@@ -321,7 +321,8 @@ checking, formatting and compiler qualification. This proposal does not extend
 those profiles or permit raw-source injection to bypass them.
 
 The static [library type recipes](type-representations.md#4-ordinary-libraries-and-optional-native-representations)
-select native types/imports and build type-only ASTs. They are not executable
+select intended native types and external public symbols. Native construction
+builds type ASTs; Files spells imports after placement. They are not executable
 value adapters. Future binding generation can emit static imports and compose
 the matching library adapter factories, preserving the selected contract and
 representation identities. Recipes for types and for runtime behavior must be

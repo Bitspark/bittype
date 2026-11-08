@@ -11,7 +11,8 @@ levels: Syntax/CST/AST and Files/Source/Semantics. Files parsing explicitly
 composes per-file Syntax parsing with resolution/analysis and publishes Source
 only with established Semantics. No parser opens files or concatenates a project
 into one text. The Files stages and multi-file Horos resolution are implemented;
-Go has [bounded native semantic providers](native-semantics.md); the other native semantic providers remain planned.
+Go, TypeScript and Rust have [bounded native semantic providers](native-semantics.md);
+C++ semantics remain deferred. Only TypeScript currently has native Files formatting.
 
 ## Pipeline
 
@@ -200,15 +201,24 @@ establish equal Go marker types or compatible grammars.
 For example:
 
 ```go
-p := typescriptprovider.Provider{}
+// tsparse/tsformat are the individual TypeScript stage packages.
+// sharedprint is print/syntax/shared/provider/go.
+p := tsparse.Provider{}
+f := tsformat.Provider{}
+printer, err := sharedprint.New[typescript.Language](typescript.Language{})
+if err != nil { return err }
 parsed, err := p.Parse(ctx, parse.Input{
     SourceID: "input", TreeID: "tree",
     Text: "type Names = string[];",
 })
-// Handle err before using parsed.
-original, err := p.Print(ctx, parsed)  // original concrete spelling
-formatted, err := p.Format(ctx, parsed)
-output, err := p.Print(ctx, formatted) // newly selected layout
+if err != nil { return err }
+original, err := printer.Print(ctx, parsed) // retained concrete spelling
+if err != nil { return err }
+formatted, err := f.Format(ctx, parsed)
+if err != nil { return err }
+output, err := printer.Print(ctx, formatted) // newly selected layout
+if err != nil { return err }
+_, _ = original, output
 ```
 
 These signatures fit the existing typed pipeline Stage contract. The engine
@@ -321,7 +331,10 @@ AST, pipeline and language identity remain independent. CST depends on AST.
 Native syntax depends on these generic carriers and identity, never another
 language. Native parsers/formatters/checkers depend on their own syntax and shared
 mechanics. The printer depends only on generic concrete structure/checks.
-Production has no external Go module or foreign compiler dependency.
+The native Syntax parser/checker/formatter stages have no foreign compiler or
+external model dependency. This does not describe all production packages:
+Horos tooling consumes Horos/Ontos, and native semantic stages use the dependencies
+listed in [native semantics](native-semantics.md) and [dependencies](dependencies.md).
 
 ## Qualification
 

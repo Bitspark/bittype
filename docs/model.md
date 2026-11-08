@@ -139,7 +139,8 @@ extraction/proof route is replaced, not retained as a fallback.
 ```text
 canonical Horos modules -> authoritative Horos resolution
   -> Horos ASTs + explicit typed Semantics
-  -> target ASTSet -> target CSTs -> native source
+  -> selected mappings -> closed native intent -> checked generation.Output
+  -> target Files organization where implemented -> CSTs -> native source
 ```
 
 Readable Syntax parsing supplies CSTs and AST views. The implemented
@@ -157,10 +158,14 @@ arbitrary native instantiations.
 
 The subset remains text, bool, lists, named closed records, optionals and ordinary
 proper generic parameters/applications. Kind definitions are compile-time
-declarations. Every exported type definition remains in scope. Canonical integers,
+declarations. The consumer explicitly selects public roots; native output follows their demanded
+representation closure. Canonical integers,
 residual constructor parameters/results/aliases, unused proper parameters, open
 records and unsupported forms produce located diagnostics and no usable output.
-There is no hidden specialization or omission of unsupported declarations.
+There is no hidden specialization or omission of a failed requested root or
+demanded representation. Source admission still checks the supplied reachable
+module closure; a valid declaration outside the native demand closure need not
+have a native mapping. See [selection and roots](kernel-composition.md#registration-and-request).
 
 ## Boundaries
 

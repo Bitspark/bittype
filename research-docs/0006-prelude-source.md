@@ -1,5 +1,9 @@
 # Research: Authoring the Horos prelude in Horos
 
+> Historical consultation and dated evaluation. See the [research map](README.md)
+> for current contracts and subsequent decisions; original advice/submissions
+> retain their inspected baseline.
+
 **ID:** 0006
 **Date:** 4 November 2026
 **Status:** implemented — 5 November 2026; no validation/check workflow run

@@ -105,5 +105,5 @@ and protocol adherence remain different operations. A successful kind query does
 not answer the others. Native representation also differs from enforcement for
 arbitrary native clients.
 
-The source uses public Horos Go 0.10.1. Existing historical research and
+The source uses public Horos Go 0.10.2. Existing historical research and
 reported implementation states do not establish delivery of this replacement.

@@ -1,5 +1,28 @@
 # Changelog
 
+## Generation, semantics and documentation — 8 November 2026
+
+Changes since the previously recorded module-encoding entry:
+
+- Add bounded Go, TypeScript and Rust semantic integrations with explicit compiler
+  configuration and capture-bound facts; C++ semantics remain deferred.
+- Implement public joint verification association, direct Logos checking and
+  library-owned Horos/Go projections/laws, including independent reversed Pair
+  composition and checked nested theorem reuse.
+- Replace per-pair generation assembly and procedural mapping operations with
+  independently registered descriptions, kernel-owned planning, one generic
+  convention and separate native AST construction for all four targets.
+- Carry generation.Output into TypeScript Files; decide imports/exports after
+  placement and check external symbols, public roots and conflicting local names.
+- Record open source traversal ownership (GEN-01), native enforcement (GEN-02)
+  and Rust/C++ Files ownership (ACX-004). These remain unfinished.
+- Reconcile active architecture/API guides, Horos graph examples and dependency
+  versions; add a documentation map, runnable Page/Cell fixture walkthrough,
+  native placement proposal, exact verification contribution reference and
+  current-carrier context table. Repair section links and clarify historical
+  consultation authority. Move the maintained matrix identity case into Bittype.
+
+
 ## Horos module encoding — 5 November 2026
 
 - Add the general `horos-module` command: one Horos source module to canonical

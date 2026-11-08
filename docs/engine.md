@@ -233,9 +233,11 @@ definition, err := representation.NewLanguage[typescript.Language](
     typescript.Language{}, "native-types-v1",
 )
 if err != nil { return err }
-parser, err := typescriptprovider.NewSyntaxParser(definition)
+parser, err := parse.NewSyntaxParser[typescript.Language](definition, tsparse.Provider{})
 if err != nil { return err }
-printer, err := typescriptprovider.NewSyntaxPrinter(definition)
+printerProvider, err := sharedprint.New[typescript.Language](typescript.Language{})
+if err != nil { return err }
+printer, err := print.NewSyntaxPrinter[typescript.Language](definition, printerProvider)
 if err != nil { return err }
 syntax := engine.New()
 if err := syntax.RegisterLanguage(definition); err != nil { return err }
@@ -251,9 +253,13 @@ if err != nil { return err }
 _ = original // retained source bytes; Check and Render are not registered
 ```
 
-Register a `typescriptprovider.NewSyntaxFormatter` adapter to enable Render, and a
-`typescriptprovider.NewSyntaxChecker` adapter to enable Check, semantic Capture and checked
-transformation execution. `semantic.Capture(ctx, checker, input)` also accepts an
+Here tsparse denotes `parse/syntax/typescript/provider/go`, sharedprint denotes
+`print/syntax/shared/provider/go`, and parse/print are the role contract packages.
+Register `format.NewSyntaxFormatter[typescript.Language](definition, tsformat.Provider{})`
+to enable Render and `check.NewChecker[typescript.Language](definition, tscheck.Provider{})`
+to enable Check, semantic Capture and checked
+transformation execution. tsformat and tscheck denote the corresponding
+`format/syntax/typescript/provider/go` and `check/syntax/typescript/provider/go` packages. `semantic.Capture(ctx, checker, input)` also accepts an
 explicit configured checker outside an engine. Capture preserves budget,
 cancellation, catalogue and snapshot checks before semantic providers run.
 
@@ -289,8 +295,9 @@ independent of transformer contracts and the engine. Shared conformance tests
 and discovered stage/dependency checks enforce this boundary. The moved APIs
 have no aliases at the former package paths.
 
-The [Horos AST frontend](horos.md) is implemented; actual language transformers
-remain deferred. The [agnostic semantic model](semantics.md) and separate
+The [Horos frontend](horos.md) and [declarative native generation](generation-spi.md)
+are implemented. Their registration is separate from ASTTransformer routing;
+production reverse canonicalizers remain deferred. The [agnostic semantic model](semantics.md) and separate
 [resolution SPI](resolution.md) and [analysis SPI](analysis.md) are implemented.
 Capture admits a shared syntax snapshot; Resolve and Analyze return reports and
 optional shared facts through independent explicit registrations.

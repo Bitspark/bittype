@@ -336,7 +336,7 @@ membership are distinct domains.
 
 ## Identity, overrides and imported artifacts
 
-Keep source identity, exact mapping selector, configured BindingID,
+Keep source identity, exact mapping selector, registry-qualified binding reference,
 representation-association identity and convention/support-contract identity
 separate. Start with conservative source-owned identity: pinned declarations,
 effective ordered applications and real binders. Different keys do not imply

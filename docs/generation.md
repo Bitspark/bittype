@@ -1,324 +1,159 @@
 # AST transformation and pipeline design
 
-The [paired generic-generation consultations](generic-elaboration.md) refine
-type-owned plugin composition and native admission. A shared formal/application
-convention and scoped representation products replace the earlier binder-to-slot
-proposal. The [public generation SPI and explicitly driven lifecycle](generation-spi.md)
-and [automatic composition](generation-composition.md) are implemented. The four
-production generators now use supplied mappings and the old private Dialects are
-deleted; target-specific enforcement remains proposed.
+**Current architecture, 8 November 2026.** Generation maps admitted source
+semantics to intended native types, then constructs their ASTs. File organization
+is a later operation. Horos-to-TypeScript, Go, Rust and C++ representation mappings
+are implemented through the [declarative SPI](generation-spi.md) and
+[kernel-owned composition](kernel-composition.md). They do not register
+ASTTransformer edges. [Documentation map](README.md) identifies the owning guides.
 
-The [type-system modeling proposal](type-system-model.md) supplies the design basis:
-describe Horos and native judgments, binding and inference rules before finalizing
-preservation-facing generation interfaces. The Horos/Go examples distinguish
-argument admission from result representation; TypeScript, Rust and C++ exercise
-the same modeling structure through their own theories. No model or proof bridge
-is implemented by that document.
-
-The [evaluated architecture and package roles](type-system-architecture.md) consume
-Logos's semantic-package direction directly. Keep ASTTransformer returning
-syntax and use explicit optional composition for actual-output/claim association;
-do not introduce a Bittype proof foundation. The TextBox/Page statements determine
-the minimum integration seam and typed-checker requirements.
-The [remaining verification SPI gaps](type-system-architecture.md#remaining-public-verification-spi-decisions)
-are narrowed by the [Logos request trace and contract map](logos-verification.md):
-Bittype owns joint artifact association and language/mapping integration; Logos
-supplies direct ground checking and the landed typed check-only implementation.
-The [scoped Horos/Go integration](verification.md#implemented-go-surface) now
-connects explicit source/native projections and selected mapping laws to actual
-captures, then calls that checker directly for TextBox/Page and nested reuse.
-Claim construction, proof production and checking remain distinct. Broader native
-theories and native admission enforcement remain separate work; no second
-checking-provider registry is introduced.
-
-The [pagination walkthrough](generic-elaboration.md#pagination-and-scope) shows
-the proposed first end-to-end replacement: one open Page, selected mappings for
-four targets, caller-scoped parameter products and nested result support. Its
-[implementation sequence](generic-elaboration.md#implementation-sequence)
-separates the shared representation path from target-specific enforcement.
-
-The [Logos preservation proposal](logos-preservation.md) adds a documentation-only
-design for deriving generic preservation from source facts, actual target ASTs
-and mapping laws. Its symbolic Go pagination proof assumes `T : Data` and a valid
-selected representation; native admission is a separate theorem. The proof
-encoding in that document remains proposed. The scoped
-[joint verification](verification.md) integration and
-[Go semantic providers](native-semantics.md) are implemented; broader native
-semantic coverage and generation enforcement remain proposed.
-
-The [Go admission encoding](go-native-admission.md) proposes function-shaped,
-privately marked certificate types and tests them directly with the Go compiler.
-This qualification does not implement generation or establish general source
-judgments, representation laws or a formal native-admission proof.
-Its admission claim concerns the complete `(S,N,E)` argument tuple. Empty
-marker-method bodies require the proposed
-[emission scope extension](type-system-architecture.md#go-marker-method-scope-extension)
-beyond native types and interfaces; production support remains deferred.
-
-**Updated: 6 November 2026.** The toolchain is implemented in Go. Generic AST/CST
-carriers, typed stages, language.Provider and four native text pipelines are
-implemented. The [native text design](parsing-formatting.md) owns parser,
-formatter, printer and checking details. The owner's later 31 October direction
-unifies generation and native-to-canonical migration under ASTTransformer. Its
-typed boundary and syntax engine with explicit registration, path finding and
-execution are implemented; see the [engine reference](engine.md). The Horos AST
-and readable Horos syntax are implemented. The first [semantic native mappings](semantic-generation.md)
-cover pagination; public builders and application CLI remain deferred.
-
-Horos owns the data model and [declaration semantics](model.md).
-Bittype implements the [Horos projection](horos.md) and the first types-only native transformations. [Resolution](resolution.md) exports Horos's checked model
-to shared facts; [analysis](analysis.md) consumes that evidence explicitly.
-Text stages are documented in [Horos source syntax](horos-syntax.md).
-
-The [unified declaration design](hydrated-types.md) has one generation path:
-`AST[Horos] -> AST[Native] -> CST[Native] -> source`. General kind contracts
-preserve restrictions within that language. The [frontend](horos.md) is
-implemented; native transformers cover the explicit pagination subset. There is no cross-profile
-transformer, template lifting or second Page. Hydration remains separate in the
-existing Wire/runtime layers.
-
-The [native representation design](type-representations.md) explains optional
-library representations. The [type-owned generator plugin proposal](type-generation-plugins.md)
-extends that design to builtin mappings and explicit overrides, using the same
-supplied plugin mechanism. The consuming build supplies source, target and mapping registrations for the requested roots. Function, Cell and Stream are resolved module declarations,
-never individual engine registrations. No contract-specific change to
-ASTTransformer is required. The public plugin contracts and automatic composer are implemented. Horos mappings live in the source-owned and pair-specific mapping packages inside Bittype’s root module. The [kernel](kernel-composition.md) assembles the request.
-These packages are separate from the agnostic composer; Horos retains only the
-canonical model and does not depend on Bittype for generation.
-
-The implemented structure is an [agnostic generation kernel with recursive plugin
-composition](type-generation-plugins.md#agnostic-kernel-and-recursive-composition).
-Each language-specific generator is assembled from that kernel, a source semantic
-adapter, supplied builtin/library mappings and a native syntax backend. All
-representation rules, including the structural declaration policy, belong to
-those mappings. Ordinary compositions need no custom plugin per declaration:
-Page<T> uses record/list mappings, and Page<Cell<Person>> supplies the selected
-Cell<Person> representation without regenerating Page or adding a Cell case.
-Selection precedes body expansion; the chosen plugin requests its child mappings
-under the same configuration. Existing ASTTransformer registration remains the
-whole-language boundary. The [composition reference](generation-composition.md)
-describes its public construction and supported limits.
-
-The [runtime value boundary](runtime-values.md) is distinct from this static
-pipeline. Runtime adapters would convert existing hydrated values to/from a
-compiled native T; hydration itself already belongs to bitruntime. A target AST
-describes source, not a live application value. Future executable adapter
-generation requires its own syntax/profile qualification and does not follow
-from the current types-only ASTs or a dynamically received type description.
+The output scope is types and interfaces, including open generics and applications.
+Executable bodies, value adapters, serialization and protocol implementations
+remain outside this work. Function, Stream and Cell are ordinary libraries;
+neither the generation kernel nor Wire/runtime learns their names.
 
 ## Target pipeline
 
 ```text
-canonical Horos module values
-    -> resolve and check using Horos declaration semantics
-    -> AST[Horos]
-         -> AST[TypeScript] -> CST[TypeScript] -> TypeScript source
-         -> AST[Go]         -> CST[Go]         -> Go source
-         -> AST[Rust]       -> CST[Rust]       -> Rust source
-         -> AST[C++]        -> CST[C++]        -> C++ source
+supplied Horos text or canonical module values + supplied dependencies
+  -> Horos ASTs and explicit resolution/analysis
+  -> captured source Semantics + receipts
+  -> PlanGeneration: selected mappings -> closed native Program
+  -> GenerationPlan.Run: target construction -> checked generation.Output
+  -> TypeScript Files: placement + dependency environment -> checked Source
+  -> shared Files printer -> paths and text
 ```
 
-Canonical-to-native is one direction of AST transformation. Each such transformer
-transforms a semantically validated canonical input into a target-language AST.
-An admitted syntax envelope alone is insufficient: a transformer must explicitly
-require the semantic obligations it needs through the analyzer or owning resolver.
-Selected mappings choose native type representations and any external public
-symbols they use; target generation constructs names, bound references, generic
-syntax and recursive indirection. It preserves which declarations to expose.
-No output file, import alias or export statement is needed to generate a type.
-The target's Files formatter realizes those bindings and that public surface
-from one consumer placement. See [the generation/Files boundary](source.md#from-generated-declarations-to-files)
-and its consequences for [generation planning](generation-planner.md#where-the-plan-stops).
+The application owns IO, dependency acquisition and target configuration. Horos
+owns declaration meaning, kinds, binding, application and ground extraction.
+Bittype's Horos stages project those meanings into the shared fact model.
+Generation does not invoke an implicit resolver or analyzer.
 
-Each Syntax formatter consumes a target AST view and constructs a CST. It owns escaping,
-lexical spelling, layout and precedence. The generic printer emits supplied
-leaves. The formatter does not resolve
-canonical declarations or decide how a canonical nullable field should be
-represented. Those choices must already be explicit in the target AST.
+All four targets construct ASTs and have Syntax formatting/printing. The complete
+generated-output handoff to Files currently exists for TypeScript. Go/Rust/C++
+placement remains [proposed](native-file-placement.md). Rust visibility and C++
+include emission still violate the intended Files boundary; their correction is
+tracked in [ACX-004](architecture-cases/0004-generation-file-syntax.md).
 
-The Horos frontend supplies AST projection/checking and located AST errors,
-using Horos-owned resolution, binding and specialization rules. The
-[readable authoring syntax](horos-syntax.md) adds text -> CST[Horos] with its AST
-view; canonical document identity is still defined by Horos.
-Native parsers remain separate text-to-CST stages. File IO, dependency retrieval,
-configuration and the destination root belong to the application. The implemented
-[Files pipeline](source.md) realizes established Semantics as Source, including
-file organization and per-unit CSTs, then prints Files. It mirrors Syntax's
-AST-to-CST-to-text pipeline. These carriers, the paired stage contracts and
-multi-unit transformation output are implemented. Native target semantics must
-be established before the full Files pipeline can be used. A Syntax formatter is usable
-with a target AST from another producer, without a canonical input dependency.
+The [pagination profile](semantic-generation.md) maps text, bool, lists, named
+closed records, optional fields and ordinary proper generic parameters and
+applications. The application selects public roots. Native construction follows
+the representation dependencies demanded by those roots; source admission covers
+the source profile's reachable module closure. Unsupported demanded mappings fail
+without usable output. An exact external mapping need not expand its source body.
 
-The output scope is native types and interfaces, including generic declarations
-and applications. Executable bodies, value validators, serialization, callable
-implementations, adapters and transport behavior are outside this milestone.
-
-Native type generation preserves open generics; ground specialization is not
-required first. Library-owned representation recipes may select an external
-native type or describe owned native type declarations. Their exact source
-declaration, target profile, generic argument mapping and locked dependencies
-are explicit configuration. Page can therefore compose a Cell type without a
-Cell-specific generator case. See the [four-language configuration](type-representations.md#5-configuration-for-typescript-go-rust-and-c).
+Open generics remain open; ground specialization is not a prerequisite. A single
+generic convention relates source binders, native parameters and complete mapped
+actuals. It can reorder, omit or add native arguments while preserving their
+scope. Omitted source arguments still require source admission. See
+[generic elaboration](generic-elaboration.md).
 
 ### Semantic mapping and target AST construction
 
-**Design decision, implemented 8 November 2026.** Reading starts with files and selected
-dependencies supplied by the application. For each unit the source language
-parses a CST with an AST view. Its resolver determines what each occurrence
-denotes in its scope. Its analyzer publishes facts for that captured program.
-In a Horos alias that uses `pages.Page<cells.Cell<Person>>`, those facts
-identify both imported declarations, the local `Person`, and both applications.
-
-| Operation | Responsibility and result |
+| Operation | Owner and product |
 | --- | --- |
-| Semantic mapping from A to B | The caller specifies the declarations to publish. The selected mappings use the A facts to choose B declarations, type expressions and binders. Mapping ends when each named use has an intended destination and each publication request identifies the B declaration to expose. |
-| AST construction in B | The B builder realizes that choice using B's declaration and expression nodes. It associates each reference occurrence with the intended declaration, parameter or external symbol. The same builder can serve different source languages. Its checker admits the resulting syntax. |
-| File organization and target analysis in B | The consumer supplies one placement. The B Files formatter creates the necessary module syntax. The B resolver and analyzer establish what the uses denote in the organized units and their selected dependency environment. Files compares the results with the intended destinations before publishing `Source[B]`. The printer emits its paths and text. |
+| Source resolution/analysis | Source-language stages establish references, applications and facts for an exact capture and environment. |
+| Semantic mapping | Supplied mapping libraries choose native expressions, declarations and generic conventions. The kernel selects and composes them into a closed native Program. |
+| AST construction | The native target realizes that Program with fresh AST sites and bound references. Syntax checking admits the result. |
+| File organization | The native Files stage uses one consumer placement to choose module syntax, aliases and visibility, then checks realized native bindings. |
+| Text emission | Syntax formatting constructs CSTs; the shared printer emits their leaves. |
 
-The plan describes the B declarations the mappings intend. `Semantics[B]`
-records what the target language providers established for a particular
-capture and dependency environment. For an external `Cell`, the plan names
-the chosen public package symbol. Target analysis establishes which symbol
-the occurrence in the emitted alias denotes, even if it is imported under
-another name.
+These implemented interfaces delimit planning and construction. The consumer
+registers libraries and a target; registration invokes Describe, the planner
+invokes target checks, and Run invokes Build. Excerpts use the generation package.
 
-The generation result carries the checked syntax snapshot, actual exposed declaration sites and bound external occurrences. TypeScript Files applies the consumer’s placement and checks the organized units’ bindings and exports. [Output contract](generation-planner.md#the-result-of-run) · [TypeScript placement](typescript-type-imports.md)
+```go
+type MappingLibrary[F, T any, S SourceSession[F]] interface {
+    Describe(from, to representation.Language) (MappingDescription[F,T,S], error)
+}
+type Target[T any] interface {
+    CheckExpression(context.Context, Expression[T]) error
+    CheckDeclaration(context.Context, NativeDeclaration[T]) error
+    CheckProgram(context.Context, Program[T]) error
+    Build(context.Context, BuildInput[T]) (Assembly, error)
+}
+```
+
+Build receives no source reader or mapping callback. Native intent is not an
+analyzed `Semantics[T]`: target analysis establishes facts about the actual
+constructed/organized program. An external Cell use identifies its public package
+symbol before any import exists. TypeScript Files later verifies that the emitted
+occurrence resolves to that symbol even if an alias is necessary.
+
+The engine entry points are implemented as follows (`compose` denotes
+`transform/syntax/shared/generation/go`):
+
+```go
+func (e *Engine) PlanGeneration(ctx context.Context, r compose.Request) (generation.GenerationPlan, error)
+func (e *Engine) Generate(ctx context.Context, r compose.Request) (generation.Output, error)
+func (p GenerationPlan) Run(context.Context) (Output, error)
+```
+
+Generate plans and runs once. Output retains its checked snapshot, requested
+public declaration sites and external occurrences. It establishes neither
+native kind enforcement nor a proof that the chosen representation is correct.
+The [Page/Cell walkthrough](page-cell-example.md) follows the complete consumer
+composition; the [context matrix](abstraction-levels.md) distinguishes the products.
 
 ## Go layout
 
-There is one root Go module, `github.com/Bitspark/bittype`. The owner selected a
-stage-first matrix to make every language follow the same structure. The
-[repository layout](../LAYOUT.md) is the authoritative current hierarchy and
-dependency policy. The final `go` component denotes implementation language.
+One root Go module contains a stage-first matrix. [LAYOUT.md](../LAYOUT.md) owns
+the complete hierarchy and import rules. The generation slice is:
 
 ```text
-trees/ast/go/                            present: carrier and borrowed view
-trees/cst/go/                            present: concrete carrier
-trees/representation/go/                 present: structurally checked AST/CST and descriptors
-contracts/language/go/                   present: identity interface
-contracts/pipeline/go/                   present: typed Stage
-contracts/parse/go/                      present: source input and parsing contract
-contracts/check/go/                      present: independent AST syntax admission
-contracts/format/go/                     present: AST-to-CST contract
-contracts/print/go/                      present: CST-to-text contract
-contracts/text/go/                       present: shared diagnostics only
-contracts/transform/go/                  present: ASTTransformer and typed bridge
-contracts/semantic/go/                   present: shared capture/publication
-contracts/resolution/go/                 present: resolver SPI
-contracts/analysis/go/                   present: analysis with explicit resolution input
-semantics/go/                            present: immutable shared semantic facts
-engine/go/                               present: registry, planning, execution
-syntax/<language>/go/                    present for all four native languages
-parse/syntax/<language>/provider/go/                     present: source to CST
-check/syntax/<language>/provider/go/                     present: native syntax checks
-format/syntax/<language>/provider/go/                    present: AST view to CST
-check/{ast,cst}/go/                      present: carrier checks
-print/syntax/shared/provider/go/                                present: CST to text
-integration/go/                          present: contracts, conformance, architecture,
-                                                 graph, ownership and compiler checks
-testdata/text/<language>/valid/          present: native source fixtures
-
-syntax/horos/go/                        present: Horos declaration AST projection
-parse/syntax/horos/provider/go/                         present: readable source to CST
-resolve/files/horos/provider/go/                       present: Horos references and binders
-check/syntax/horos/provider/go/                         present: syntax-only AST admission
-analyze/files/horos/provider/go/                       present: Horos semantics to shared facts
-format/syntax/horos/provider/go/                        present: readable Horos CST
-transform/syntax/horos-to-<native>/mapping/go/         present: directed pagination generation
-transform/syntax/<native>-to-horos/mapping/go/         proposed: partial migration mapping
-cmd/bittype/go/                          planned: application composition and IO
-testdata/{horos,transforms}/             planned: semantic/adoption fixtures
+contracts/generation/go/                      descriptions, invariant planner, output
+engine/go/                                   public operations and endpoint admission
+transform/syntax/shared/generation/go/        registry and selected composition
+transform/syntax/shared/target/go/            shared AST construction mechanics
+transform/syntax/horos/source/go/             Horos evidence reader
+transform/syntax/horos/mapping/go/            source patterns and declaration policy
+transform/syntax/horos-to-<native>/mapping/go/ representation choices
+transform/syntax/<native>/model/go/           native intent vocabulary
+transform/syntax/<native>/target/go/          native intent to AST
+format/files/typescript/provider/go/          implemented generated Files handoff
 ```
 
-The native directory names are typescript, golang, rust and cpp. Horos replaces
-the earlier proposed canonical directory name; no implementation aliases are
-needed. Planned paths are not placeholder packages. The Horos provider now has
-explicitly qualified text and semantic stages in the same language-stage matrix. Public builders, generic traversal and a typed
-Stage composition helper remain deferred. Package-level tests belong beside
-their implementation; independent consumer fixtures and composition qualification
-remain under integration. Language coverage is discovered and checked in tests,
-never installed as a known-language list in the engine.
-
-The [target vocabularies](syntax.md) cover a native type-declaration subset.
-They are not full programming-language parsers. A concrete unsupported type
-case should identify a missing grammatical form; it must not lead to a raw
-code-string escape hatch. Their supported shapes have separate native checks. Public builders remain
-deferred.
+Mappings depend on source interpretation and native models. Targets depend on
+native models and construction mechanics. Neither the kernel nor a target imports
+concrete mapping libraries. There are no per-pair assembly factories or presets.
+The consumer supplies implementations; the kernel performs their composition.
 
 ## Language identity and registration
 
-Each target package supplies a zero-value `Language` implementing
-`language.Provider`, with stable `ID() language.ID` and `Name() string`
-methods. It also supplies aliases over `ast.AST[Language]`,
-`ast.Node[Language]` and `ast.Kind[Language]`. The carrier now exposes ASTView; the stage API
-remains unchanged and does not import the language identity interface.
+Language markers implement the existing language package contract:
 
-The owner clarified on 31 October that a central agnostic language AST registry
-will exist. The earlier no-language-registry direction is superseded. The
-implemented syntax engine accepts configured descriptors and native providers
-through typed registration adapters, without a concrete language import, switch or builtin
-list. Application composition owns the selected provider instances. Language metadata
-and parse/check/format/print capabilities are registered independently; no
-aggregate text provider is required. Execution requires a checker at every route
-endpoint, while parsing and rendering require only their selected stages.
+```go
+type Provider interface {
+    ID() ID
+    Name() string
+}
+```
 
-Identity methods do not discover packages, initialize resources or register
-anything. A shared ID is not proof of equal Go marker types, syntax versions or
-grammar compatibility. The identity interface neither erases `AST[L]` nor
-implements construction, checking or transformations. See [the syntax
-contract](syntax.md) for the IDs, provider contract and extension example.
+A registered representation captures language ID, profile and actual Go marker
+identity. Syntax/Files stage adapters also capture their explicitly supplied
+collaborators. Matching strings alone do not authorize a foreign typed payload.
+MappingLibrary and Target are different contracts: they do not pretend to be
+single-language parse/format providers. Their endpoint identities are supplied
+at registration. See [registration signatures](kernel-composition.md#registration-and-request)
+and [independent text stages](engine.md).
 
 ## Typed stage contract
 
-The [pipeline package](../contracts/pipeline/go/stage.go) defines:
+The small pipeline package defines the implemented function type:
 
 ```go
 type Stage[I, O any] func(context.Context, I) (O, error)
 ```
 
-A generator will satisfy a stage from one AST type to another; a formatter
-satisfies a stage from a target AST view to CST, and a printer from CST to text. The planned relationships
-are shown below; all language markers exist, but the Horos-to-native stage does not:
-
-```text
-Stage[AST[Horos], AST[TypeScript]]
-Stage[ast.View[TypeScript], CST[TypeScript]]
-Stage[CST[TypeScript], string]
-```
-
-`Stage` imports nothing and does not know that ASTs or languages exist.
-The function type remains sufficient for statically composed producers and
-consumers. Dynamic registration adds the separate ASTTransformer boundary below;
-it does not replace Stage. Concrete stage factories can close over explicit
-mapping and target configuration.
-
-A stage treats input and reachable storage as read-only. It owns mutable
-output storage it creates. On error, callers must discard the output.
-The zero/nil stage means no configured stage and must not be invoked.
-These behavioral requirements are documented contracts, not enforcement
-provided by the function type.
-
-The following signature describes future composition, **not a present API**:
-
-```go
-func Then[A, B, C any](first Stage[A, B], next Stage[B, C]) Stage[A, C]
-```
-
-It would connect stages only when the intermediate type agrees and propagate
-the first failure. There is no `Then` implementation or stub in this slice.
-Scheduling, caching and diagnostic aggregation remain deferred. Semantic transformation requests carry context cancellation.
+It imports context from the standard library, not ASTs or languages. A stage must
+respect input ownership and error semantics; this type alone does not enforce
+those guarantees. Shared generic carriers admit structure. Language checkers own
+syntax, and semantic stages own their language judgments. A shape-compatible
+function is not automatically a registered generation or semantic capability.
 
 ## ASTTransformer and syntax engine
 
-Generation and canonicalization are names for directions of one operation:
-
-```text
-AST[Horos] -> AST[TypeScript]        generation
-AST[TypeScript] -> AST[Horos]       canonicalization/adoption
-AST[TypeScript] -> AST[Horos] -> AST[Rust]       composed transformation
-```
-
-The implemented registry-facing interface is:
+ASTTransformer remains an independent syntax-transformation contract:
 
 ```go
 type ASTTransformer interface {
@@ -326,161 +161,64 @@ type ASTTransformer interface {
     ToID() language.ID
     Transform(context.Context, transform.Input) (representation.ASTSet, error)
 }
-
 func (e *Engine) TransformTo(ctx context.Context, input transform.Input, targetID language.ID) (representation.ASTSet, error)
 ```
 
-Output uses the implemented representation.AST envelope: a language identity plus
-an opaque, structurally checked native AST
-payload. It is not ast.AST[any]; different generic instantiations are not
-interchangeable. Typed adapters invoke functions from transform.Request[From] to ast.Set[To],
-admit explicit semantic evidence, and validate the actual payload type and endpoint identities
-at the dynamic boundary. No generic AST kind, language switch or reflective
-syntax conversion is needed. CST input can supply its existing AST view when
-wrapped; transformation does not preserve concrete source spelling.
-This registration adapter only bridges typed AST calls; it generates no
-application, service or runtime bindings.
+The application supplies edges and the engine invokes them. Typed adapters admit
+explicit semantic evidence and return owned AST sets, not an AST[any] payload.
+The engine rejects missing or ambiguous shortest routes, duplicate edges and
+endpoint mismatches. Each leg admits its output and requires fresh evidence for
+a later semantic operation. Failure never retries a weaker route. A same-language
+request returns a checked snapshot, not implicit normalization.
 
-language.Provider still identifies a single language. A transformer relates two
-languages, so it identifies its endpoints with FromID/ToID rather than pretending
-to have one language ID. The engine registers language capabilities and directed
-transformer edges explicitly. Application composition supplies every instance.
-Horos is an ordinary language provider; the engine has no built-in canonical
-name or route. Adding a language or transformation changes its implementation
-and application registration, not engine source.
-
-Initial route policy:
-
-- Reject duplicate language identities and duplicate directed edges. Alternate
-  mapping profiles use separately composed engine instances initially.
-- Plan a unique shortest directed route, without cycles; expose the selected
-  route through a Plan operation. Missing paths and tied shortest routes are
-  errors. Allow callers to provide an explicit route when desired.
-- FromID/ToID establish candidate connectivity, not applicability to every AST.
-  Each edge validates its admitted input, checks its output, and returns located
-  diagnostics for unsupported syntax or missing semantic information.
-- Execute the selected route once. Do not silently retry another route after a
-  semantic rejection or substitute a weaker mapping. Return no usable partial
-  result on failure. Input remains read-only and results own their storage.
-- A same-language request validates and returns a deep snapshot. It does not
-  implicitly normalize or migrate a schema revision.
-
-Language IDs remain stable family keys. Registered providers and configured
-transformer endpoints must agree on the supported syntax revision/profile;
-matching strings alone is insufficient. An engine instance fixes that profile
-per language. Version/profile negotiation is not hidden in graph traversal.
-
-Canonicalization is a partial semantic mapping, not the inverse of formatting
-or a promise to recover an original definition. For example, a native numeric
-type alone may not identify the intended canonical numeric domain; a nullable
-pointer alone may not distinguish optional presence from an explicit null value.
-The mapper must obtain that choice from configured migration rules or report
-that it cannot decide. It must not silently select a narrower domain. Ordinary
-successful canonical-to-native mappings also retain their documented native
-representation limits; the route planner does not prove semantic equivalence.
-
-The adoption flow is native text -> native CST/AST view -> checked canonical AST
--> canonical CST -> canonical source. Reviewing and adopting that source makes
-it authoritative for subsequent generation. Native source does not become a
-permanent second source of truth. Generic binders, declaration references and
-origin links survive the mapping; comments and formatting require separate
-metadata if a migration needs them.
-
-Implement and qualify canonical-to-native mappings first. Add reverse mappings
-for explicitly supported migration cases afterwards, using the same interface.
-Path tests must cover an unknown third-party language, duplicate registration,
-missing/ambiguous routes, typed endpoint mismatches, unsupported input, metadata
-and input ownership. Semantic fixtures must establish each edge's meaning; a
-path that merely reaches the right language ID is not sufficient evidence.
+Generation registrations do not add these edges. There are no production native
+canonicalizers or automatic TypeScript -> Horos -> Rust generation routes. Future
+canonicalization needs explicit semantic choices: native numeric and nullable
+forms do not uniquely identify source domains or absence semantics. Reviewing an
+adopted canonical definition can make it authoritative; parsing native syntax
+alone cannot. The [engine reference](engine.md) owns routing details.
 
 ## Composition and dependencies
 
-The application root will explicitly compose selected concrete stages.
-It resolves input once and passes the resulting canonical AST to independently
-selected target generators. Each formatter receives the corresponding target
-AST. Shared inputs remain read-only by contract; outputs have separate storage.
-Whether targets run sequentially or concurrently is an application decision,
-not a requirement imposed by the AST model.
-
-Arrows in the table mean a direct package dependency is allowed:
-
-| Component | Dependencies |
+| Component | Allowed responsibility/dependencies |
 | --- | --- |
-| Generic AST | Standard library only; currently no imports |
-| Generic pipeline | Standard library only; currently no imports, including no AST dependency |
-| Language identity interface | Standard library only; currently no imports |
-| Syntax engine and registry | Language/provider, transformation and analysis contracts; no concrete syntax imports |
-| Semantic facts and analysis | Generic AST addresses, checked representations and identity; no language rules |
-| Transformation boundary | Generic AST/checks, language identity, typed stage contracts; no concrete syntax imports |
-| Generic CST | Generic AST |
-| Each syntax package | Generic AST/CST, language identity interface |
-| Horos frontend | Own syntax, generic AST, Horos declaration semantics and Ontos document representation |
-| Each transformer | Source/destination syntax/checkers, generic AST, pipeline/transform contracts; Horos model when relevant |
-| Each formatter | Own syntax/checker, AST/CST carriers, private concrete construction |
-| Shared printer | Generic CST/checks only; no concrete language imports |
-| Application composition root | Explicitly selected language providers, engine, frontend, transformers and pipeline |
-| Integration tests | The APIs under test and native compiler/checker tooling |
+| Generic AST/CST and representation | Standard-library storage/identity plus their shared carrier contracts; no language rules |
+| Generic pipeline | context; no AST or language dependency |
+| Language identity | Stable ID/name contract; no language catalogue |
+| Semantic graph and capture | Generic addresses, evidence and ownership; no source/native theory |
+| Generation planner and registry | Generic captures, scoped substitution, selection and native intent; no concrete language mappings |
+| Horos integration | Horos-owned meanings and Ontos module values under explicit package allowances |
+| Native generation model/target | Its native forms and syntax; no Horos/library semantics |
+| Native Files integration | Placement, dependency environment and native binding checks |
+| Optional verification | Agnostic artifact association, library-owned interpretations/laws and explicit Logos checking |
 
-Standard-library utilities are permitted in every layer. The Horos frontend
-consumes the public Horos Go declaration model and Ontos values through narrowly
-qualified package dependencies. Future transforms need their own explicit rules;
-Horos must not depend on bittype. This does not permit external Horos/Ontos imports in generic
-trees, contracts, engine or printer. The AST, pipeline and language identity packages do
-not import each other or concrete syntax packages. Syntax packages do not import
-one another, generators or formatters. A formatter does not import the canonical
-grammar or its generator.
+The [dependency guide](dependencies.md) records module versions. Package isolation
+inside the root module does not erase module-level dependencies. TypeScript and
+Rust semantic integrations use explicitly provisioned compiler helpers; their
+Syntax-only parsing/formatting remains independent of those helpers.
 
-Go's parser uses the standard go/parser representation internally. All four
-formatters construct CST directly in Go; no source-print-and-reparse shortcut
-is used. Native compilers are remote test dependencies, not production dependencies.
-
-The language registry is distinct from a behavioral contract catalogue.
-Registration is explicit; no automatic discovery or hidden default registration
-is introduced. The generic AST, pipeline, language identity interface and
-registry must never acquire Function, Stream, Cell, Wire or runtime
-imports, special kinds, semantic name switches or structural fingerprint matching.
-Native function-signature syntax remains language-owned. Later library-owned
-runtime realizations require separate scoped work; this slice supplies no
-binding extension registry. Proposed native type plugins are static inputs to
-configured transformers, selected by consuming applications. This includes builtin
-mappings supplied by source-owned integration packages. A selected override replaces
-an existing exact binding explicitly; failures do not retry that default. Shared
-generation depends on uniform contracts, not named contract libraries, and target
-tooling owns syntax without choosing canonical representations. Plugin selection
-is independent of language registration and module resolution. See the
-[proposed Go contracts and composition](type-generation-plugins.md).
+Generating several targets means separate requests with explicit target
+configuration. Applications choose scheduling; input captures remain read-only
+and runs own their output storage. No central target or contract catalogue is
+needed.
 
 ## Evidence and next increments
 
-The present Go module targets Go 1.27.0 language features; CI uses the pinned
-Go 1.27.3 toolchain. The [Go workflow](../.github/workflows/go.yml) checks the
-exact committed revision on a GitHub runner: formatting, tests and vet.
-[Documentation checks](../.github/workflows/docs.yml) also run remotely.
-No compilation or formatting workload is run on the workstation.
+[GEN-01](generation-gaps.md#gen-01) records the open architectural correction to
+common semantic navigation. [GEN-02](generation-gaps.md#gen-02) records absent
+native constraint enforcement. The representation profile explicitly permits
+constraint erasure; requesting the enforcement profile fails Unsupported.
+[Native placement](native-file-placement.md) records the remaining Files work.
 
-Public API fixtures establish that an independent consumer can supply a
-language identity implementation without changing the foundation, and that
-incompatible language/stage types are rejected. Four authored target examples
-include open/applied pagination and native reader signatures. Tests exercise
-metadata through the common interface and enforce the production dependency
-boundary. Native text syntax and compiler fixtures now provide separately scoped evidence.
-The engine's independent tests qualify registration, the typed boundary, graph
-planning and checked execution. The production Horos-to-native pagination maps
-consume explicit semantic evidence and retain open generics.
+Generation, source membership, native compiler acceptance and cross-language
+verification answer different questions. [Verification](verification.md) uses
+captured artifacts and separately selected mapping laws; it is not automatically
+performed by Generate. The [type-system model](type-system-model.md),
+[constraint proposal](native-kind-constraints.md), [Logos preservation proposal](logos-preservation.md)
+and [Go admission proposal](go-native-admission.md) retain their explicit limits.
+Marker-method emission is a proposed scope extension, not implemented type output.
 
-Delivery status and subsequent increments:
-
-1. Completed: qualify the Horos declaration model and independent semantic fixtures;
-   implement its AST projection/checker and AST-only registration.
-2. Completed: implement explicit semantic transformation input and four native
-   pagination maps, including imported declarations and generic applications.
-3. Next: qualify additional native representation profiles and library-owned
-   recipes. Add reverse transformers for migration as separately scoped work.
-
-Native text stages and compiler fixtures are implemented separately; they do not
-depend on the transformation implementations.
-
-Generator tests inspect target ASTs, binder references and source origins.
-Formatter tests accept independently authored target ASTs. End-to-end tests
-compile and use open/applied pagination and optional-field presence in all four
-languages. Compiler success alone does not prove all canonical value invariants.
+Use the existing Go/native and documentation workflows for relevant qualification.
+No extra manifest or provenance workflow is required. Public builders, a general
+application CLI, runtime bindings and arbitrary native-language adoption remain
+outside the implemented scope.

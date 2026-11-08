@@ -43,10 +43,10 @@ It does not select LF or another new dependency as an implementation.
 | --- | --- | --- |
 | AST/CST | Language syntax, references, layout and source emission | None in this document |
 | Bittype Semantics | Immutable provider-owned facts, entities, terms and bindings | Explicit bridges to the judgments needed by a selected type-system model |
-| Language providers | Horos resolution/analysis; native syntax tooling | Native semantic models and explicitly supported reasoning capabilities |
+| Language providers | Horos and bounded Go/TypeScript/Rust resolution/analysis; native syntax tooling | Broader native semantic models and explicitly supported reasoning capabilities |
 | Type-system theories | No native type theories are implemented here | Language-owned semantic packages using the proposed Logos model |
-| Mapping integrations | Proposed representation selection and composition | Representation laws relating the actual source and target terms |
-| Logos integration | Proposed consumer of facts and laws | Evaluation and checking of supported claims under the supplied theories |
+| Mapping integrations | Declarative generation selection/composition; separate bounded Horos/Go law contributions | Broader laws relating actual source and target terms |
+| Logos integration | Public joint association, selected interpretations and direct typed checking | Broader language theories and admission claims |
 
 The [current semantic graph](semantics.md) is a fact carrier, not a type-system
 interpreter. Its common storage does not establish the facts' truth. This
@@ -175,8 +175,9 @@ general host.
 
 Concrete theories and the optional association/checking adapters remain separate
 from generic carriers and registrations. The [package-role plan](type-system-architecture.md#proposed-package-roles)
-preserves the root Go module and stage-first matrix. Begin with a private seam
-exercised by the two exact statements, then design the public contract. This
+preserves the root Go module and stage-first matrix. The bounded statements now exercise the public association and interpretation
+contracts. Further contract changes must follow independently justified domain
+requirements; neither that initial slice nor its API prescribes the wider design. This
 document requires no repository split or dependency change; optional Go packages
 do not by themselves isolate module dependencies.
 
