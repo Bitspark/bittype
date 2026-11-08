@@ -14,14 +14,15 @@
       "codeRevision": "f7500144ee075e89bd151f1d1f80420544862c61",
       "cliBuild": "nightfall 0.1.0 (d4769c3ab502, bundle 5577e9e3b0e8) built 2026-11-08T04:13:04.014Z",
       "preparedAt": "2026-11-08T11:36:57Z",
-      "documentId": null,
-      "serverSha256": null,
-      "runId": null,
-      "submittedAt": null,
-      "state": null,
+      "documentId": "doc_0eea29f2-5250-4c7d-89ce-608d96fd1b2f",
+      "serverSha256": "695dae3d45d35c2ff65559ba5a7f028537239d03ecc6053a958442eb7d7b7d8c",
+      "runId": "run_f7cfb3b5-7cf2-40d8-8884-ce150a7adcf7",
+      "submittedAt": "2026-11-08T12:47:07Z",
+      "state": "submitted",
       "failureCode": null,
       "resultSha256": null,
-      "verify": null
+      "verify": null,
+      "note": "First research add at about 11:37Z returned Server unavailable: Docker Desktop was down on the host (nothing listening on localhost:3099; Nightfall incident class #425). Retried with the same key after the controller answered at 12:46:41Z."
     }
   ]
 }
