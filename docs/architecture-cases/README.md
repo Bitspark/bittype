@@ -13,7 +13,7 @@ rules do not transfer ownership of these cases to the platform repository.
 | [bittype/ACX-003: Files stage coverage assumed Horos](0003-files-stage-coverage.md) | Corrected in stage coverage and test composition | AC-03, AC-06 |
 | [bittype/ACX-004: Generation emits file syntax before placement](0004-generation-file-syntax.md) | TypeScript corrected; C++ and Rust remain open | AC-02, AC-06 |
 | [bittype/ACX-005: Existing callbacks prescribed the redesigned interface](0005-generation-interface-design.md) | Corrected and qualified by declarative planning and native construction | AC-09 |
-| [bittype/ACX-006: Common semantic traversal delegated to source integrations](0006-generation-source-traversal.md) | Correction pending independent verification: the first delivery, #191, was rejected on 8 November 2026; exact evidence and selector identity corrected in #PRNUM | AC-02, AC-06, AC-01, AC-05, AC-07, AC-09 |
+| [bittype/ACX-006: Common semantic traversal delegated to source integrations](0006-generation-source-traversal.md) | Correction pending independent verification: the first delivery, #191, was rejected on 8 November 2026; exact evidence and selector identity corrected in #192 | AC-02, AC-06, AC-01, AC-05, AC-07, AC-09 |
 | [bittype/ACX-007: Matrix dependencies keyed by display names](0007-matrix-contract-identity.md) | Corrected, including unnamed argument identity | AC-05, AC-07 |
 
 ACX-001 continues the same incident first recorded as

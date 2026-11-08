@@ -127,8 +127,9 @@ type Interpretation[F any] interface {
 // Source is what a provider opens over one capture: the kernel-facing
 // interpretation and the reader that mapping libraries use to interpret source
 // payloads. R reads kernel handles; it supplies no navigation. Only Plan opens
-// a source, so no caller can pair a source with a capture it was not opened
-// over.
+// a source, over the capture it walks. Interpreting that capture is the
+// provider's responsibility: the kernel cannot check where a provider's
+// answers come from.
 type Source[F, R any] struct {
 	Interpretation Interpretation[F]
 	Reader         R
@@ -139,9 +140,9 @@ type SourceProvider[F, R any] interface {
 	// Contract declares the required evidence; exactly one requirement
 	// publishes the semantic graph.
 	Contract() transform.Contract
-	// Open interprets the capture Plan admitted against Contract. A source
-	// resolves kernel handles against this capture (see Declaration.In), so it
-	// can refuse handles from a run over other evidence.
+	// Open interprets the capture Plan admitted against Contract, and only that
+	// capture. A source resolves kernel handles against it (see
+	// Declaration.In), so it can refuse handles from a run over other evidence.
 	Open(context.Context, Captured[F]) (Source[F, R], error)
 }
 

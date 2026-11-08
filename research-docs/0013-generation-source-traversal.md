@@ -3,7 +3,7 @@
 **ID:** 0013
 **Date:** 8 November 2026
 **Status:** applied
-**Delivered:** https://github.com/Bitspark/bittype/pull/191, corrected in https://github.com/Bitspark/bittype/pull/PRNUM
+**Delivered:** https://github.com/Bitspark/bittype/pull/191, corrected in https://github.com/Bitspark/bittype/pull/192
 **Run-ID:** run_f7cfb3b5-7cf2-40d8-8884-ce150a7adcf7
 **Reviewed:** https://github.com/Bitspark/bittype/issues/158#issuecomment-6720989325
 **Owner:** claude-bittype-gaps
@@ -1033,7 +1033,7 @@ The judgment of a use covers that use. A callee declaration is classified when o
 - **Selector identity.** Rule lookup compared selector keys and dropped the language. A selector the source returns must now be in the capture's source language and profile.
 - **Diagnostic site.** A term recorded at several syntax sites is reported at the occurrence's declaration.
 
-The correction is [#PRNUM](https://github.com/Bitspark/bittype/pull/PRNUM).
+The correction is [#192](https://github.com/Bitspark/bittype/pull/192).
 
 | Rows | Validation (red → green) |
 | --- | --- |
@@ -1046,7 +1046,7 @@ The correction is [#PRNUM](https://github.com/Bitspark/bittype/pull/PRNUM).
 | 15, 26 (narrow reader, capability split) | Mapping libraries are typed by the reader `R` and receive views plus that reader. The horos reader and the fixture reader are unexported values. All horos target suites stay green on the reader. |
 | 17, 19 (binder-keyed actuals; Cell body unopened) | `TestGenerationPlanReversedLibraryArguments` selects Pair's actuals by binder names `L` and `R`. `TestLibraryOwnedCellAvoidsBodyExpansion` and `TestGenerationPlanPageCellSnapshot` select by Cell's binder, with one capture call. |
 | 18 (generic convention) | Unchanged. `TestDeclarativeIndependentSourceAndExtraParameter` covers the extra Storage parameter. |
-| 20 (evidence context) | `TestKernelRootsAndEvidence` covers foreign and missing evidence (`semantic.ErrInvalidRequest`), plus roots that are not a generated declaration (`ErrScope`). `TestGenerationPlanPreflightAndSourceEvidence` stays green. After verification: `TestKernelPlansExactlyTheAdmittedEvidence` plans two inputs that share a graph and differ in one report, through the registry and the exported planner. It also checks that an interpretation opened over the other input cannot resolve the run's handles. Red: M13 (handles resolve by graph) and M17 (source opened over a second admission). `TestKernelSelectorsAreQualified`. Red: M14 and M14b. `TestKernelLocatesSharedTermsAtTheirDeclaration`. Red: M15 (first site wins); the strengthened `TestHorosUnsupportedFormsAtTheirSite` is red on M16 (term sites never used). |
+| 20 (evidence context) | `TestKernelRootsAndEvidence` covers foreign and missing evidence (`semantic.ErrInvalidRequest`), plus roots that are not a generated declaration (`ErrScope`). `TestGenerationPlanPreflightAndSourceEvidence` stays green. After verification: `TestKernelPlansExactlyTheAdmittedEvidence` plans two inputs that share a graph and differ in one report, through the registry and the exported planner. It also checks that an interpretation opened over the other input cannot resolve the run's handles. Red: M13 (handles resolve by graph) and M17 (source opened over a second admission). `TestKernelSelectorsAreQualified` varies the profile, the identity and the Go marker. Red: M14, M14b, M19 (profile only) and M20 (identity only). `TestKernelLocatesSharedTermsAtTheirDeclaration`. Red: M15 (first site wins). The strengthened `TestHorosUnsupportedFormsAtTheirSite` is red on M16 (term sites never used). `TestKernelLocatesUseFailuresAtTheUse`. Red: M18 (callee failures at the callee). |
 | 21 (graph queries) | The kernel run index is built in `occurrence.go` (`newWalk`). The `semantics` package is unchanged. |
 | 24 (recursion distinctions) | `TestKernelStructuralLimits` (Rec reports recursive native declaration). |
 | 27 (negative tests as acceptance) | `integration/go/generation_traversal_test.go`. |

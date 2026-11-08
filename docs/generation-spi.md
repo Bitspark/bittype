@@ -175,10 +175,11 @@ The kernel admits the request and walks the semantic graph itself. Its source
 contract designates exactly one evidence requirement that publishes a graph.
 `Plan` admits the input's snapshot and evidence against the provider's
 contract, unpacks that result's graph as `Semantics[F]`, and opens the provider
-over exactly that capture. No caller supplies an opened source. A source
-therefore cannot supply a different graph or interpret evidence other than the
-evidence the kernel walks. The kernel reads
-only structure:
+over exactly that capture. No caller supplies an opened source or a graph.
+Handles resolve only against that capture. Interpreting that capture is the provider's responsibility: the
+kernel cannot check where a provider's answers come from.
+`Plan` checks the mapping descriptions and limits before it admits the
+evidence, in the same order as the registry. The kernel reads only structure:
 
 - a root site's declaring entity;
 - a declaration's body and real binders;
@@ -271,10 +272,16 @@ Declarations are memoized per entity, and recursion is detected there.
 
 A source diagnostic only explains a verdict. It cannot add an error class:
 `errors.Is` sees only the verdict's class, while `errors.As` still reaches the
-diagnostic and any site it carries. A kernel failure is reported at its term's
-syntax site when the graph records exactly one. A term recorded at several sites
-is reported at the declaration the occurrence is in. A capture that is not a child the kernel minted, or a declaration
-recipe mapping anything but its body, fails as `ErrScope` with its own message.
+diagnostic and any site it carries.
+
+A kernel failure of an occurrence is reported at its term's syntax site when the
+graph records exactly one. A term recorded at several sites is reported at the
+declaration the occurrence is in. A use whose callee the source does not
+generate, or whose callee selector is outside the source language, is a failure
+of that use, not of the callee.
+
+A capture that is not a child the kernel minted, or a declaration recipe mapping
+anything but its body, fails as `ErrScope` with its own message.
 
 Mapping callbacks receive the kernel's views and the source reader, never the
 graph or the interpretation:

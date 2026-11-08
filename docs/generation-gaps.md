@@ -13,7 +13,7 @@ generation improvement does not close either item.
 
 | Reference | Status | Classification |
 | --- | --- | --- |
-| [GEN-01](#gen-01) | Correction pending independent verification: #191 rejected 8 November 2026; exact evidence and selector identity corrected in #PRNUM | Architectural responsibility split; recorded as [bittype/ACX-006](architecture-cases/0006-generation-source-traversal.md) |
+| [GEN-01](#gen-01) | Correction pending independent verification: #191 rejected 8 November 2026; exact evidence and selector identity corrected in #192 | Architectural responsibility split; recorded as [bittype/ACX-006](architecture-cases/0006-generation-source-traversal.md) |
 | [GEN-02](#gen-02) | Open; no native enforcement route implemented | Unsupported guarantee with missing native-plan expressiveness and target encodings |
 
 The implemented [mapping SPI](generation-spi.md) resolves representation choices
@@ -26,7 +26,7 @@ The remaining Rust/C++ Files ownership defects retain their own
 
 ## GEN-01
 
-**Common semantic navigation is kernel-owned. Delivered on 8 November 2026 in [#191](https://github.com/Bitspark/bittype/pull/191). Independent verification rejected that delivery; the correction in [#PRNUM](https://github.com/Bitspark/bittype/pull/PRNUM) awaits verification.**
+**Common semantic navigation is kernel-owned. Delivered on 8 November 2026 in [#191](https://github.com/Bitspark/bittype/pull/191). Independent verification rejected that delivery; the correction in [#192](https://github.com/Bitspark/bittype/pull/192) awaits verification.**
 
 ### What was wrong
 
@@ -114,8 +114,8 @@ For `People = Page<Cell<Person>>`:
    - recursion, parameter-headed and unapplied applications;
    - foreign evidence, and an interpretation opened over other evidence of the
      same graph, through the registry and the exported planner;
-   - foreign-profile selectors for an exact binding, an exact recipe and the
-     default recipe;
+   - selectors whose language differs only in profile, identity or Go marker,
+     for an exact binding, an exact recipe and the default recipe;
    - horos applied constructor aliases and curried forms, now Unsupported.
 5. The superseded surface is removed with no aliases:
    - `Source.Open`, `Admit`, `CheckChild`, `Authenticate`, `CheckInput`, `Owners`
@@ -133,7 +133,7 @@ Independent verification by `codex-hydrated-type-design` (board claim `bittype-s
 `49114c5`. Criteria 1 and 4 qualified. Criterion 2 lacked selector qualification
 in dispatch, and criterion 3 lacked an exact capture association at the exported
 `Plan`. A shared term could also be reported at the other declaration's site.
-[#PRNUM](https://github.com/Bitspark/bittype/pull/PRNUM) corrects all three and adds the reviewer's regressions. See
+[#192](https://github.com/Bitspark/bittype/pull/192) corrects all three and adds the reviewer's regressions. See
 [bittype/ACX-006](architecture-cases/0006-generation-source-traversal.md#verification-of-the-first-delivery).
 
 ### Supported scope and limits
@@ -159,7 +159,8 @@ in dispatch, and criterion 3 lacked an exact capture association at the exported
   today. Unsupported and Undetermined are its outcomes.
 - **Diagnostic sites.** A kernel failure is reported at its term's syntax site
   when the graph records exactly one. A term recorded at several sites is
-  reported at the declaration the occurrence is in. A shared term recorded at
+  reported at the declaration the occurrence is in. A callee failure is
+  reported at the use. A shared term recorded at
   only one site is reported there.
 - **Out of scope.** Recursive generation remains unsupported
   ([#164](https://github.com/Bitspark/bittype/issues/164)). Native enforcement of

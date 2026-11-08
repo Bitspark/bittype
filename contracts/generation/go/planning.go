@@ -118,15 +118,7 @@ func Plan[F, T, R any](ctx context.Context, in PlanningInput[F, T, R]) (Generati
 	if err := ctx.Err(); err != nil {
 		return fail(err)
 	}
-	// The kernel admits the evidence and opens the source over it; no caller
-	// pairs an opened source with a capture. Admission requires the input in
-	// the From language.
-	captured, err := admitInput[F](in.From, in.Source.Contract(), in.Input)
-	if err != nil {
-		return fail(err)
-	}
-	from := captured.Request().Snapshot().Language()
-	p := &planner[F, T, R]{ctx: ctx, language: from, walk: newWalk(captured), execution: in.Execution, bindings: map[string][]selectedBinding[F, T, R]{}, recipes: map[string][]selectedRecipe[F, T, R]{}, helpers: map[HelperKey]HelperRecipe[T]{}, declarations: map[semantics.EntityID]uint32{}, helperIDs: map[HelperKey]uint32{}, formals: map[uint32][]Binder[F]{}, conventions: map[uint32]GenericConvention[T]{}, active: map[uint32]bool{}}
+	p := &planner[F, T, R]{ctx: ctx, language: in.From, execution: in.Execution, bindings: map[string][]selectedBinding[F, T, R]{}, recipes: map[string][]selectedRecipe[F, T, R]{}, helpers: map[HelperKey]HelperRecipe[T]{}, declarations: map[semantics.EntityID]uint32{}, helperIDs: map[HelperKey]uint32{}, formals: map[uint32][]Binder[F]{}, conventions: map[uint32]GenericConvention[T]{}, active: map[uint32]bool{}}
 	selected := map[string]bool{}
 	entries := 0
 	if len(in.Roots) > in.Execution.Limits.References || len(in.Mappings) > in.Execution.Limits.Plans {
@@ -137,7 +129,7 @@ func Plan[F, T, R any](ctx context.Context, in PlanningInput[F, T, R]) (Generati
 			return fail(ErrInvalid)
 		}
 		selected[part.ID] = true
-		d, err := FreezeDescription(from, part.Description, in.Execution.Limits)
+		d, err := FreezeDescription(in.From, part.Description, in.Execution.Limits)
 		if err != nil {
 			return fail(err)
 		}
@@ -159,6 +151,15 @@ func Plan[F, T, R any](ctx context.Context, in PlanningInput[F, T, R]) (Generati
 			p.helpers[h.Key] = h
 		}
 	}
+	// Mapping descriptions are checked before the evidence, as the registry
+	// checks them before it calls Plan. Then the kernel admits the evidence and
+	// opens the source over exactly that capture; no caller pairs an opened
+	// source with a capture. Admission requires the input in the From language.
+	captured, err := admitInput[F](in.From, in.Source.Contract(), in.Input)
+	if err != nil {
+		return fail(err)
+	}
+	p.walk = newWalk(captured)
 	source, err := in.Source.Open(ctx, captured)
 	if err != nil {
 		return fail(err)
@@ -242,15 +243,18 @@ func (p *planner[F, T, R]) root(site ast.NodeRef) (Declaration[F], error) {
 }
 
 // selector is the source's stable identity for a declaration the walk reached.
-func (p *planner[F, T, R]) selector(d Declaration[F]) (string, error) {
+// term and at locate a failure: the use that reaches the declaration and the
+// declaration that use occurs in, or for a generated declaration itself, no
+// term and that declaration.
+func (p *planner[F, T, R]) selector(d Declaration[F], term semantics.TermID, at semantics.EntityID) (string, error) {
 	key, ok, err := p.source.Declaration(p.ctx, d)
 	if err != nil {
 		return "", err
 	}
 	if !ok {
-		return "", p.walk.unsupported(0, d.entity, "the source does not generate this declaration")
+		return "", p.walk.unsupported(term, at, "the source does not generate this declaration")
 	}
-	return p.qualified(key, 0, d.entity, "declaration selector")
+	return p.qualified(key, term, at, "declaration selector")
 }
 
 // qualified is the key of a selector the source returned. Mapping selectors
@@ -320,7 +324,7 @@ func (p *planner[F, T, R]) declare(d Declaration[F], depth int) (uint32, error) 
 		}
 		return id, nil
 	}
-	key, err := p.selector(d)
+	key, err := p.selector(d, 0, d.entity)
 	if err != nil {
 		return 0, err
 	}
@@ -443,7 +447,7 @@ func (p *planner[F, T, R]) use(u Use[F], f frame[T], depth int) (Expression[T], 
 		}
 		return value, nil
 	case DeclarationUse:
-		if key, err = p.selector(view.Callee); err != nil {
+		if key, err = p.selector(view.Callee, u.o.term, u.o.declaration); err != nil {
 			return Expression[T]{}, err
 		}
 	case ExpressionUse:

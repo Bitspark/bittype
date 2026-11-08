@@ -3,7 +3,7 @@
 **Status: correction pending independent verification, 8 November 2026.** [#191](https://github.com/Bitspark/bittype/pull/191) delivered the
 kernel-owned traversal, but independent verification by `codex-hydrated-type-design` (board claim `bittype-source-traversal-20261108`, record 000003) rejected it: the public planning
 boundary still let a source interpret other evidence, and planning ignored a
-selector's language. [#PRNUM](https://github.com/Bitspark/bittype/pull/PRNUM) corrects both. The case stays open until that
+selector's language. [#192](https://github.com/Bitspark/bittype/pull/192) corrects both. The case stays open until that
 correction is independently verified. The generation kernel owns traversal of
 the shared semantic graph. Source integrations contribute only interpretation
 and judgments. [GEN-01](../generation-gaps.md#gen-01) records the delivered
@@ -61,8 +61,9 @@ planning from AST construction in PR #155 did not repair this different boundary
 **Admission.** `Plan` admits the input against the source provider's own
 contract. It requires exactly one evidence requirement that publishes a graph,
 unpacks that graph itself, and opens the provider over exactly the resulting
-capture. No public value pairs an opened source with a capture, so a source
-always interprets the evidence the kernel walks.
+capture. No public value pairs an opened source with a capture, and handles
+resolve only against that capture. Interpreting that capture is the provider's responsibility: the
+kernel cannot check where a provider's answers come from.
 
 **The walk.** The kernel walks the graph directly:
 
@@ -104,7 +105,9 @@ chosen, so key comparison is exact.
 **Diagnostic sites.** A kernel failure is reported at its term's syntax site when
 the graph records exactly one. A term recorded at several sites is shared, and
 the graph does not say which of them this occurrence is, so the failure is
-reported at the declaration the occurrence is in.
+reported at the declaration the occurrence is in. A use whose callee the source
+does not generate, or whose callee selector is outside the source language, is
+a failure of that use, not of the callee.
 
 **Whole-use admission.** The kernel admits an occurrence with its whole subtree
 before any binding or convention represents it. Every occurrence in the subtree
@@ -158,9 +161,11 @@ source now publishes an ordinary graph through its own analysis.
   rather than malformed input;
 - an interpretation opened over other evidence of the same graph, through the
   registry and through the exported planner;
-- a source selector of another profile for an exact binding, an exact
-  declaration recipe and the default recipe;
-- a shared term recorded at two syntax sites.
+- a source selector that differs only in its language's profile, identity or
+  Go marker, for an exact binding, an exact declaration recipe and the default
+  recipe;
+- a shared term recorded at two syntax sites, and failures of a use reported at
+  the use rather than at its callee.
 
 Two independent reviews found gaps, and both are fixed.
 
@@ -186,7 +191,7 @@ Independent verification by `codex-hydrated-type-design` (board claim `bittype-s
 3. **Diagnostic site.** The index kept the first syntax site of a term. A failure
    while planning Borrow through the term it shares with Lend pointed to Lend.
 
-[#PRNUM](https://github.com/Bitspark/bittype/pull/PRNUM) corrects each defect:
+[#192](https://github.com/Bitspark/bittype/pull/192) corrects each defect:
 
 1. `Plan` takes the input and the source provider, admits the evidence and opens
    the provider itself. Handles resolve only against their exact capture.
@@ -195,8 +200,15 @@ Independent verification by `codex-hydrated-type-design` (board claim `bittype-s
 
 The reviewer's regressions are part of the suite: `TestKernelPlansExactlyTheAdmittedEvidence`,
 `TestKernelSelectorsAreQualified` and `TestKernelLocatesSharedTermsAtTheirDeclaration`.
-Each has a correctly composed control. The case stays open until the correction
-is independently verified.
+Each has a correctly composed control.
+
+An independent code review of the correction before merge found that two callee
+failures were still reported at the callee's site. It also found that the docs
+claimed the kernel guarantees the provider's interpretation, that the site index
+had become quadratic, and that the registry and the exported planner ordered
+description and evidence errors differently. All are fixed in the same PR, which
+also tests every part of a selector's language identity. The case stays open
+until the correction is independently verified.
 
 Each kernel check was seeded with a mutant that turned its test red. Covered
 checks:
@@ -213,9 +225,10 @@ checks:
 - located horos diagnostics;
 - handle resolution against the exact capture, and a source opened over a
   second admission of the same input;
-- selector qualification, for declaration and expression selectors;
-- reporting at a single recorded term site, and at the declaration for a term
-  with several.
+- selector qualification, for declaration and expression selectors, and over
+  the whole language identity rather than its profile or identity alone;
+- reporting at a single recorded term site, at the declaration for a term with
+  several, and at the use for a callee failure.
 [Traversal qualification](../../integration/go/generation_traversal_test.go) ·
 [Planning tests](../../integration/go/generation_planning_test.go)
 
@@ -237,9 +250,12 @@ only when a mapping captures it.
 shared term recorded at only one site is therefore reported there, even for an
 occurrence under another declaration.
 
-**Provider integrity.** The kernel pairs a source with its capture. A provider
-that ignores the capture it is given, for example by serving a cached
-interpretation, cannot resolve the run's handles and fails with `ErrScope`.
+**Provider integrity.** The kernel opens the provider over its capture and
+resolves handles only against it. It cannot check where a provider's answers
+come from. A provider that serves a cached interpretation unchanged cannot
+resolve the run's handles and fails with `ErrScope`. A provider that rebinds a
+cached interpretation to the new capture while keeping verdicts from earlier
+evidence is a defect of that provider, and the kernel does not detect it.
 
 **horos judgments.** horos reads no membership facts, so its only non-admitted
 judgments are Unsupported and Undetermined.

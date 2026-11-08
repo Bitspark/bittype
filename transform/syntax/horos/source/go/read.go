@@ -102,7 +102,10 @@ func (r reader) Fields(v g.UseView[h.Language]) ([]Field, error) {
 		if !ok {
 			return nil, semantic.ErrInvalidRequest
 		}
-		term, _ := u.In(r.s.captured)
+		term, ok := u.In(r.s.captured)
+		if !ok {
+			return nil, g.ErrScope
+		}
 		fields = append(fields, Field{Name: name, Optional: atom(f.At(2)) == "opt", Use: u, Origin: r.s.sites[term]})
 	}
 	return fields, nil
@@ -120,7 +123,10 @@ func (r reader) Element(v g.UseView[h.Language]) (g.Use[h.Language], error) {
 	return u, nil
 }
 func (r reader) Unsupported(u g.Use[h.Language], message string) error {
-	id, _ := u.In(r.s.captured)
+	id, ok := u.In(r.s.captured)
+	if !ok {
+		return g.ErrScope
+	}
 	site := r.s.sites[id]
 	return &text.Diagnostic{Code: text.Unsupported, Message: message, Node: &site}
 }

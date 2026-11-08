@@ -283,27 +283,53 @@ func TestKernelPlansExactlyTheAdmittedEvidence(t *testing.T) {
 	}
 }
 
-// TestKernelSelectorsAreQualified: a source selector of another source profile
-// with an otherwise identical key is outside the run. It chooses neither an
-// exact binding, an exact declaration recipe nor the default recipe.
+// TestKernelSelectorsAreQualified: a source selector whose language differs in
+// its profile, its identity or its Go marker, with an otherwise identical key,
+// is outside the run. It chooses neither an exact binding, an exact declaration
+// recipe nor the default recipe.
 func TestKernelSelectorsAreQualified(t *testing.T) {
 	ctx := context.Background()
+	foreign, err := independent(t).ForeignLanguages()
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, example := range []struct{ root, selector string }{
 		{"Person", "expression/person-body"}, // exact descriptor binding
 		{"Cells", "declaration/Cell"},        // exact application binding
 		{"Kept", "declaration/Ignore"},       // exact declaration recipe
 		{"Person", "declaration/Person"},     // default declaration recipe
 	} {
-		t.Run(example.selector, func(t *testing.T) {
-			fixture := independent(t)
-			if p, err := fixture.PlanSource(ctx, f.SourceVariant{}, fixture.Input(), example.root); err != nil || !p.Valid() {
-				t.Fatal("control:", err)
-			}
-			p, err := fixture.PlanSource(ctx, f.SourceVariant{Foreign: example.selector}, fixture.Input(), example.root)
-			if !errors.Is(err, g.ErrScope) || p.Valid() || !strings.Contains(err.Error(), "selector outside the source language") {
-				t.Fatal("foreign selector:", err)
-			}
-		})
+		for differs, language := range foreign {
+			t.Run(example.selector+"/"+differs, func(t *testing.T) {
+				fixture := independent(t)
+				if p, err := fixture.PlanSource(ctx, f.SourceVariant{}, fixture.Input(), example.root); err != nil || !p.Valid() {
+					t.Fatal("control:", err)
+				}
+				p, err := fixture.PlanSource(ctx, f.SourceVariant{Foreign: example.selector, ForeignIn: language}, fixture.Input(), example.root)
+				if !errors.Is(err, g.ErrScope) || p.Valid() || !strings.Contains(err.Error(), "selector outside the source language") {
+					t.Fatal("foreign selector:", err)
+				}
+			})
+		}
+	}
+}
+
+// TestKernelLocatesUseFailuresAtTheUse: when a use reaches a callee the source
+// does not generate, or one whose selector is outside the source language, the
+// failure belongs to the use and is reported in the declaration it occurs in,
+// not at the callee.
+func TestKernelLocatesUseFailuresAtTheUse(t *testing.T) {
+	ctx := context.Background()
+	fixture := independent(t)
+	p, err := fixture.PlanSource(ctx, f.SourceVariant{Foreign: "declaration/Page"}, fixture.Input(), "Lend")
+	var callee *g.SiteError
+	if !errors.Is(err, g.ErrScope) || p.Valid() || !errors.As(err, &callee) || callee.Site != fixture.Site("Lend") {
+		t.Fatalf("foreign callee selector at %v, want Lend %v (Page is %v): %v", callee, fixture.Site("Lend"), fixture.Site("Page"), err)
+	}
+	err = independentFails(t, fixture, f.Standard, "UsesKind")
+	var located *g.SiteError
+	if !errors.Is(err, g.ErrUnsupported) || !errors.As(err, &located) || located.Site != fixture.Site("UsesKind") || !strings.Contains(err.Error(), "the source does not generate this declaration") {
+		t.Fatalf("ungenerated callee at %v, want UsesKind %v (Kindish is %v): %v", located, fixture.Site("UsesKind"), fixture.Site("Kindish"), err)
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
+	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/semantics/go"
@@ -131,8 +132,10 @@ func (r reader) ParameterName(b g.Binder[SourceLanguage]) (string, error) {
 // SourceVariant varies the fixture's source integration for negative
 // qualification. The zero value is the standard source.
 type SourceVariant struct {
-	// Foreign is a selector key the source qualifies in another source profile.
-	Foreign string
+	// Foreign is a selector key the source qualifies in ForeignIn, which
+	// defaults to another profile of the source language.
+	Foreign   string
+	ForeignIn representation.Language
 	// Admission makes the contract require a second analysis report; a
 	// Rejected report rejects every declaration.
 	Admission bool
@@ -168,9 +171,12 @@ func (p sourceProvider) Open(ctx context.Context, captured g.Captured[SourceLang
 	if p.variant.reuse != nil && p.variant.reuse.Interpretation != nil {
 		return *p.variant.reuse, nil
 	}
-	foreign, err := representation.NewLanguage[SourceLanguage](SourceLanguage{}, "fixture-foreign")
-	if err != nil {
-		return g.Source[SourceLanguage, Reader]{}, err
+	foreign := p.variant.ForeignIn
+	if foreign.Validate() != nil {
+		var err error
+		if foreign, err = representation.NewLanguage[SourceLanguage](SourceLanguage{}, "fixture-foreign"); err != nil {
+			return g.Source[SourceLanguage, Reader]{}, err
+		}
 	}
 	graph := captured.Graph()
 	i := interpretation{captured: captured, graph: graph, language: captured.Request().Snapshot().Language(), foreign: foreign, variant: p.variant}
@@ -190,6 +196,33 @@ func (p sourceProvider) Open(ctx context.Context, captured g.Captured[SourceLang
 		*p.variant.reuse = source
 	}
 	return source, nil
+}
+
+// otherSource is a different source language identity.
+type otherSource struct{}
+
+func (otherSource) ID() language.ID { return "generation-fixture-other" }
+func (otherSource) Name() string    { return "Other generation fixture" }
+
+// otherMarker is a different Go marker for the fixture's language identity.
+type otherMarker struct{}
+
+// ForeignLanguages are languages that differ from the fixture's source language
+// in exactly one part of its identity: "profile", "id" or "marker".
+func (f *Fixture) ForeignLanguages() (map[string]representation.Language, error) {
+	profile, err := representation.NewLanguage[SourceLanguage](SourceLanguage{}, "fixture-foreign")
+	if err != nil {
+		return nil, err
+	}
+	id, err := representation.NewLanguage[SourceLanguage](otherSource{}, f.captured.language.Profile())
+	if err != nil {
+		return nil, err
+	}
+	marker, err := representation.NewLanguage[otherMarker](SourceLanguage{}, f.captured.language.Profile())
+	if err != nil {
+		return nil, err
+	}
+	return map[string]representation.Language{"profile": profile, "id": id, "marker": marker}, nil
 }
 
 // admission publishes the second report a SourceVariant with Admission reads.

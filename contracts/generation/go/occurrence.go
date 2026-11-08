@@ -17,14 +17,15 @@ type walk[F any] struct {
 	graph     semantics.Semantics[F]
 	sites     map[ast.NodeRef][]semantics.EntityID
 	binders   map[semantics.EntityID]semantics.EntityID // parameter -> declaring entity
-	termSites map[semantics.TermID][]ast.NodeRef        // distinct recorded sites
+	termSites map[semantics.TermID]ast.NodeRef          // first recorded site
+	shared    map[semantics.TermID]bool                 // recorded at several sites
 	roots     map[semantics.EntityID]*occurrence[F]
 }
 
 func newWalk[F any](c Captured[F]) *walk[F] {
 	graph := c.Graph()
 	data := graph.Data()
-	w := &walk[F]{capture: c.state, graph: graph, sites: map[ast.NodeRef][]semantics.EntityID{}, binders: map[semantics.EntityID]semantics.EntityID{}, termSites: map[semantics.TermID][]ast.NodeRef{}, roots: map[semantics.EntityID]*occurrence[F]{}}
+	w := &walk[F]{capture: c.state, graph: graph, sites: map[ast.NodeRef][]semantics.EntityID{}, binders: map[semantics.EntityID]semantics.EntityID{}, termSites: map[semantics.TermID]ast.NodeRef{}, shared: map[semantics.TermID]bool{}, roots: map[semantics.EntityID]*occurrence[F]{}}
 	for i, e := range data.Entities {
 		id := semantics.EntityID(i + 1)
 		for _, site := range e.Declarations {
@@ -35,8 +36,10 @@ func newWalk[F any](c Captured[F]) *walk[F] {
 		}
 	}
 	for _, e := range data.Expressions {
-		if !slices.Contains(w.termSites[e.Term], e.At.Site) {
-			w.termSites[e.Term] = append(w.termSites[e.Term], e.At.Site)
+		if site, ok := w.termSites[e.Term]; !ok {
+			w.termSites[e.Term] = e.At.Site
+		} else if site != e.At.Site {
+			w.shared[e.Term] = true
 		}
 	}
 	return w
@@ -272,11 +275,8 @@ func (w *walk[F]) unsupported(term semantics.TermID, entity semantics.EntityID, 
 // occurrence, the declaration it occurs in). A term recorded at several sites is
 // shared, and the graph does not say which of them this occurrence is.
 func (w *walk[F]) located(kind error, term semantics.TermID, entity semantics.EntityID, message string) error {
-	var site ast.NodeRef
-	ok := false
-	if sites := w.termSites[term]; len(sites) == 1 {
-		site, ok = sites[0], true
-	}
+	site, ok := w.termSites[term]
+	ok = ok && !w.shared[term]
 	if !ok && entity != 0 {
 		if e, found := w.graph.Entity(entity); found && len(e.Declarations) > 0 {
 			site, ok = e.Declarations[0], true
