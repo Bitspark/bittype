@@ -56,7 +56,7 @@ The native store authenticates fragments and symbols and materializes fresh AST
 occurrences with real local references. Formal visibility follows lexical frame,
 not the current callback's target signature. It captures parameter layouts once,
 rejects native name collisions, orders demanded definitions by their references,
-and runs the native syntax checker before returning a complete ASTSet. The
+and runs the native syntax checker before returning the sealed syntax snapshot and binding intent. The
 current native stores reject cyclic definition dependencies; they do not invent
 indirection. External native syntax references remain external, with no fabricated
 local declaration link. Integration contracts and native compiler qualification
@@ -76,7 +76,7 @@ no fallback output.
 
 The same tests define an ordinary imported Cell<T> whose body is wire<T>. The
 default profile cannot lower Wire. The library mapping calls the TypeScript
-builder's `ImportedType` with export `Cell` from `@bitspark/cell`. The compiler
+builder's `PackageType` with export `Cell` from `@bitspark/cell`. The compiler
 resolves the generated named type import against an independent package fixture.
 The mapping works inside Page and takes no file paths. The consumer's placement
 determines imports between generated units. [TypeScript type imports](typescript-type-imports.md)

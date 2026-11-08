@@ -2,6 +2,7 @@ package generation
 
 import (
 	"context"
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 	"slices"
@@ -28,6 +29,7 @@ type sessionState[F, T any] struct {
 	source                                      Source[F]
 	owners                                      SourceOwners[F]
 	native                                      Native[F, T]
+	checker                                     check.Checker
 	target                                      representation.Language
 	selectPlan                                  func(UseData[F]) (string, error)
 	plans                                       map[string]*planState[F, T]
@@ -47,7 +49,7 @@ type sessionState[F, T any] struct {
 }
 
 func Begin[F, T any](ctx context.Context, input Input, config Config[F, T], limits Limits) (*Session[F, T], error) {
-	if ctx == nil || !limits.Valid() || representation.IsNil(config.Source) || representation.IsNil(config.Native) || config.Select == nil || len(config.Plans) == 0 || len(config.Plans) > limits.Plans {
+	if ctx == nil || config.Checker.Validate() != nil || !config.Checker.Language().Compatible(config.Target) || !limits.Valid() || representation.IsNil(config.Source) || representation.IsNil(config.Native) || config.Select == nil || len(config.Plans) == 0 || len(config.Plans) > limits.Plans {
 		return nil, ErrInvalid
 	}
 	if err := ctx.Err(); err != nil {
@@ -68,7 +70,7 @@ func Begin[F, T any](ctx context.Context, input Input, config Config[F, T], limi
 		return nil, err
 	}
 	s := &Session[F, T]{&sessionState[F, T]{ctx: ctx, id: RunID{fresh()}, configuration: ConfigID{fresh()}, snapshot: input.Snapshot,
-		source: config.Source, owners: config.Source.Owners(), native: config.Native, target: config.Target, selectPlan: config.Select,
+		source: config.Source, owners: config.Source.Owners(), native: config.Native, checker: config.Checker, target: config.Target, selectPlan: config.Select,
 		plans: make(map[string]*planState[F, T]), declarations: make(map[Declaration[F]]*planState[F, T]), opens: make(map[Declaration[F]]OpenData[F]),
 		frames: make(map[FrameID]map[Binder[F]]Product[F, T]), publishing: make(map[Declaration[F]]bool), root: config.Source.RootEnvironment(), frame: FrameID{fresh()}, limits: limits}}
 	if !s.owners.Valid() {
@@ -327,58 +329,40 @@ func (s *Session[F, T]) use(env Environment[F], frame FrameID, u Use[F]) (Produc
 	return out, nil
 }
 
-// Finish checks the obligation ledger and returns an owned complete AST set.
+// Finish checks the obligation ledger and seals the target output against a fresh syntax capture.
 // All failures return the zero set. The target owns grammar/expansion checks;
 // the host independently bounds the actual returned output and endpoint marker.
-func (s *Session[F, T]) Finish() (representation.ASTSet, error) {
+func (s *Session[F, T]) Finish() (Output, error) {
 	if err := s.step(); err != nil {
-		return representation.ASTSet{}, err
+		return Output{}, err
 	}
 	if s.depth != 0 {
-		return representation.ASTSet{}, s.fail(ErrInvalid)
+		return Output{}, s.fail(ErrInvalid)
 	}
 	for _, p := range s.plans {
 		if c := p.callee; c != nil && (c.phase < ready || c.owned && c.phase != defined) {
-			return representation.ASTSet{}, s.fail(ErrIncomplete)
+			return Output{}, s.fail(ErrIncomplete)
 		}
 	}
 	// Freeze the ledger before crossing the target callback. Reentrant public
 	// operations poison the invocation even if the callback ignores their error.
 	s.committing = true
-	output, err := func() (representation.ASTSet, error) {
+	owned, err := func() (Output, error) {
 		defer func() { s.committing = false }()
-		return s.native.Assemble(s.ctx, slices.Clone(s.publications), slices.Clone(s.definitions), s.limits)
+		assembly, err := s.native.Assemble(s.ctx, slices.Clone(s.publications), slices.Clone(s.definitions), s.limits)
+		if err != nil {
+			return Output{}, err
+		}
+		if s.failed != nil {
+			return Output{}, s.failed
+		}
+		return seal(s.ctx, s.checker, assembly, len(s.publications), s.limits)
 	}()
 	if err != nil {
-		return representation.ASTSet{}, s.fail(err)
+		return Output{}, s.fail(err)
 	}
 	if err := s.check(); err != nil {
-		return representation.ASTSet{}, err
-	}
-	if len(output.Trees) == 0 || len(output.Trees) > 256 {
-		return representation.ASTSet{}, s.fail(ErrInvalid)
-	}
-	nodes, bytes := 0, 0
-	for _, envelope := range output.Trees {
-		info, err := envelope.Inspect()
-		if err != nil {
-			return representation.ASTSet{}, s.fail(err)
-		}
-		if info.Nodes > s.limits.OutputNodes-nodes || info.TextBytes > s.limits.OutputBytes-bytes {
-			return representation.ASTSet{}, s.fail(ErrLimit)
-		}
-		nodes += info.Nodes
-		bytes += info.TextBytes
-		if _, err := representation.Unpack[T](s.target, envelope); err != nil {
-			return representation.ASTSet{}, s.fail(err)
-		}
-	}
-	owned, err := output.Snapshot()
-	if err != nil {
-		return representation.ASTSet{}, s.fail(err)
-	}
-	if err := s.check(); err != nil {
-		return representation.ASTSet{}, err
+		return Output{}, err
 	}
 	s.finished = true
 	return owned, nil

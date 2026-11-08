@@ -2,6 +2,8 @@ package generationfixture
 
 import (
 	"context"
+	checkgo "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"slices"
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
@@ -197,7 +199,11 @@ func newFixture(ctx context.Context, argumentOnlySupport bool) (*Fixture, error)
 			return r.CompleteBody(text)
 		}),
 	})
-	f.config = g.Config[SourceLanguage, s.Language]{Source: source, Native: native, Target: native.language, Plans: plans, Select: source.selectPlan}
+	checker, err := check.NewChecker[s.Language](native.language, checkgo.Provider{})
+	if err != nil {
+		return nil, err
+	}
+	f.config = g.Config[SourceLanguage, s.Language]{Checker: checker, Source: source, Native: native, Target: native.language, Plans: plans, Select: source.selectPlan}
 	return f, nil
 }
 

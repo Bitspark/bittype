@@ -7,7 +7,6 @@ import (
 	s "github.com/Bitspark/bittype/syntax/golang/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
-	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 type catalog struct{ f *Fixture }
@@ -118,25 +117,25 @@ func (p mappingProvider) Open(_ context.Context, r g.MappingRequest[*automaticSo
 
 // Automatic uses the same registry for an unrelated source language, independent
 // association owners, an external generic and a native-only helper.
-func (f *Fixture) Automatic(ctx context.Context) (representation.ASTSet, error) {
+func (f *Fixture) Automatic(ctx context.Context) (g.Output, error) {
 	var registry c.Registry
 	from, to := f.source.snapshot.Language(), f.Target()
 	source, err := c.RegisterSource[SourceLanguage, *automaticSource](&registry, from, sourceProvider{f})
 	if err != nil {
-		return representation.ASTSet{}, err
+		return g.Output{}, err
 	}
 	target, err := c.RegisterTarget[SourceLanguage, s.Language, *Native](&registry, from, to, targetProvider{f})
 	if err != nil {
-		return representation.ASTSet{}, err
+		return g.Output{}, err
 	}
 	mapping, err := c.RegisterMapping[SourceLanguage, s.Language, *automaticSource, *Native](&registry, from, to, mappingProvider{f})
 	if err != nil {
-		return representation.ASTSet{}, err
+		return g.Output{}, err
 	}
 	var roots []ast.NodeRef
 	for _, d := range f.Roots() {
 		index, _ := f.source.declarations.Index(d)
 		roots = append(roots, ast.NodeRef{Tree: f.source.snapshot.Entry().Tree, Node: ast.NodeID(index + 1)})
 	}
-	return registry.Generate(ctx, c.Request{Input: transform.Input{Source: f.source.snapshot}, To: to, Output: "generated-fixture", Roots: roots, Selection: c.Selection{Source: source, Target: target, Mappings: []c.MappingRef{mapping}}, Limits: g.DefaultLimits()})
+	return registry.Generate(ctx, c.Request{Input: transform.Input{Source: f.source.snapshot}, To: to, Output: "generated-fixture", Roots: roots, Selection: c.Selection{Source: source, Target: target, Mappings: []c.MappingRef{mapping}}, Limits: g.DefaultLimits()}, f.config.Checker)
 }

@@ -2,6 +2,7 @@ package generation
 
 import (
 	"context"
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"slices"
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
@@ -11,7 +12,7 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-func adapter[F, T any, S g.SourceSession[F], N g.Native[F, T]](request Request, src sourceEntry, target targetEntry, mappings []mappingEntry) (transform.ASTTransformer, error) {
+func adapter[F, T any, S g.SourceSession[F], N g.Native[F, T]](request Request, src sourceEntry, target targetEntry, mappings []mappingEntry, checker check.Checker) (runner, error) {
 	sp, ok := src.provider.(g.SourceProvider[F, S])
 	if !ok {
 		return nil, g.ErrScope
@@ -27,8 +28,12 @@ func adapter[F, T any, S g.SourceSession[F], N g.Native[F, T]](request Request, 
 			return nil, g.ErrScope
 		}
 	}
-	return transform.NewTransformer[F, T](src.language, request.To, src.contract, func(ctx context.Context, r transform.Request[F]) (ast.Set[T], error) {
-		zero := ast.Set[T]{}
+	return func(ctx context.Context, input transform.Input) (g.Output, error) {
+		zero := g.Output{}
+		r, err := transform.AdmitRequest[F](src.language, src.contract, input)
+		if err != nil {
+			return zero, err
+		}
 		if !r.Snapshot().Same(request.Input.Source) {
 			return zero, g.ErrScope
 		}
@@ -114,11 +119,11 @@ func adapter[F, T any, S g.SourceSession[F], N g.Native[F, T]](request Request, 
 			}
 			evidence = append(evidence, e)
 		}
-		output, err := run(ctx, g.Input{Snapshot: r.Snapshot(), Evidence: evidence}, composition[F, T]{Config: g.Config[F, T]{Source: source, Native: native, Target: request.To, Evidence: src.contract.Evidence}, Catalog: source, Bindings: bindings, Roots: roots, Helpers: helpers, Limits: request.Limits})
+		output, err := run(ctx, g.Input{Snapshot: r.Snapshot(), Evidence: evidence}, composition[F, T]{Config: g.Config[F, T]{Source: source, Native: native, Checker: checker, Target: request.To, Evidence: src.contract.Evidence}, Catalog: source, Bindings: bindings, Roots: roots, Helpers: helpers, Limits: request.Limits})
 		if err != nil {
 			return zero, err
 		}
-		if output.Entry.Tree != request.Output {
+		if output.Snapshot().Entry().Tree != request.Output {
 			return zero, g.ErrScope
 		}
 		inputTrees := map[ast.TreeID]bool{}
@@ -129,19 +134,17 @@ func adapter[F, T any, S g.SourceSession[F], N g.Native[F, T]](request Request, 
 			}
 			inputTrees[info.ID] = true
 		}
-		result := ast.Set[T]{Entry: output.Entry}
-		for _, envelope := range output.Trees {
-			tree, err := representation.Unpack[T](request.To, envelope)
+		for _, tree := range output.Snapshot().Inputs() {
+			info, err := tree.Inspect()
 			if err != nil {
 				return zero, err
 			}
-			if inputTrees[tree.ID] {
+			if inputTrees[info.ID] {
 				return zero, g.ErrScope
 			}
-			result.Trees = append(result.Trees, tree)
 		}
-		return result, nil
-	})
+		return output, nil
+	}, nil
 }
 
 func collect[F, T any](from representation.Language, selection Selection, parts []g.Contribution[F, T]) (bindingTable[F, T], []g.Plan[F, T], error) {

@@ -45,7 +45,7 @@ func TestInstalledPublicGenerationSPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tree, err := representation.Unpack[s.Language](f.Target(), output.EntryAST())
+	tree, err := representation.Unpack[s.Language](f.Target(), output.Snapshot().Inputs()[0])
 	if err != nil {
 		t.Fatal(err)
 	}

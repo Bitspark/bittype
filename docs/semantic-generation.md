@@ -23,12 +23,12 @@ consumes resolution evidence; no mapping invokes a hidden resolver or analyzer.
 
 ```text
 Horos AST collection + explicit resolution/analysis evidence
-  -> target ASTSet
-  -> target Syntax formatter -> CST -> Syntax printer -> native source
+  -> generation.Output: checked target syntax, exposures and external uses
+  -> TypeScript Files placement and native analysis -> Source -> files
 ```
 
 `ASTTransformer` retains FromID/ToID and returns `representation.ASTSet`.
-The typed bridge carries a language-specific request and output set; it does not
+Syntax routes use that contract. Generation uses `Engine.Generate` and its sealed output. The typed bridge carries a language-specific request and output set; it does not
 convert syntax to `AST[any]` or semantics to `Semantics[any]`. Each engine route
 leg admits its output and creates a new capture. Evidence from an earlier leg is
 not automatically valid for changed syntax. A later semantic leg needs explicit
@@ -119,7 +119,7 @@ parameter shadowing of a declaration and unsupported field spellings fail.
 Go fields also capitalize their initial letter; TypeScript retains property
 names. Rust and C++ reject keyword field names. Names are not guessed from types.
 
-Each mapping currently emits a one-tree ASTSet containing the checked type
+Each mapping currently produces one declaration tree containing the checked type
 closure. Root declarations keep their exported native names. Imported declarations
 use `M<first-16-hex-of-module-pin>_<Name>`, with collisions rejected. This
 product spelling is not semantic identity. The configured output tree ID and Go package
@@ -157,12 +157,7 @@ normally. The prelude's kind definitions remain compile-time declarations.
 
 ## Syntax and Files
 
-Target ASTSet is syntax, not Source. The implemented [Syntax and Files
-composition](source.md) keeps typed Semantics, file organization and exact
-receipts separate from syntax output. Native pagination mappings do not establish
-target-language Semantics. Native Files formatting therefore requires a native
-semantic provider; target Syntax formatting and printing remain usable for every
-output tree.
+Generation outputs retain syntax-checked declaration sites and intended bindings. TypeScript Files applies placement and establishes target semantics before publishing Source. Syntax formatting and printing can also operate directly on individual output trees. [Generation handoff](typescript-type-imports.md#from-generation-to-files)
 
 Mappings retain real declaration/parameter links and available current source
 origins. Imported definitions are emitted once with dependencies before uses.

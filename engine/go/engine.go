@@ -49,16 +49,17 @@ type Engine struct {
 	generation generation.Registry
 }
 type registration struct {
-	filesParser    parse.FilesRegistration
-	filesFormatter format.FilesRegistration
-	filesPrinter   print.FilesRegistration
-	language       representation.Language
-	parser         *parse.SyntaxParser
-	checker        *check.Checker
-	formatter      *format.SyntaxFormatter
-	printer        *print.SyntaxPrinter
-	analyzer       *analysis.Analyzer
-	resolver       *resolution.Resolver
+	filesParser             parse.FilesRegistration
+	filesFormatter          format.FilesRegistration
+	generatedFilesFormatter format.GeneratedFilesRegistration
+	filesPrinter            print.FilesRegistration
+	language                representation.Language
+	parser                  *parse.SyntaxParser
+	checker                 *check.Checker
+	formatter               *format.SyntaxFormatter
+	printer                 *print.SyntaxPrinter
+	analyzer                *analysis.Analyzer
+	resolver                *resolution.Resolver
 }
 type edge struct {
 	from, to    language.ID

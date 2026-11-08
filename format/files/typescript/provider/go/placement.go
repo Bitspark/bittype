@@ -48,6 +48,7 @@ type program struct {
 	trees    map[ast.TreeID]s.AST
 	tops     map[ast.NodeRef]bool
 	bindings map[ast.NodeRef]symbol
+	public   map[ast.NodeRef]bool
 	original Organization
 }
 
@@ -75,7 +76,7 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 	if fileContext == nil {
 		return nil, fmt.Errorf("%w: TypeScript placement requires captured files", source.ErrInvalid)
 	}
-	p := &program{trees: map[ast.TreeID]s.AST{}, tops: map[ast.NodeRef]bool{}, bindings: map[ast.NodeRef]symbol{}}
+	p := &program{public: map[ast.NodeRef]bool{}, trees: map[ast.TreeID]s.AST{}, tops: map[ast.NodeRef]bool{}, bindings: map[ast.NodeRef]symbol{}}
 	byFile := map[files.ID]ast.TreeID{}
 	for _, link := range fileContext.Links {
 		byFile[link.File] = link.Tree
@@ -115,6 +116,24 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 		if !modules[ref(tree.ID, tree.Root)] {
 			return nil, fmt.Errorf("%w: placement requires TypeScript modules with file-local scope", source.ErrInvalid)
 		}
+	}
+	for _, fact := range data.Facts {
+		if fact.Relation != n.Key("named-export") {
+			continue
+		}
+		if fact.Subject.Entity == 0 {
+			return nil, source.ErrInvalid
+		}
+		owner := data.Entities[fact.Subject.Entity-1]
+		term := data.Terms[fact.Term-1]
+		if term.Kind != semantics.Reference || owner.Kind != n.Key("module") || len(owner.Declarations) != 1 {
+			return nil, source.ErrInvalid
+		}
+		declaration := data.Entities[term.Target-1]
+		if len(declaration.Declarations) != 1 || declaration.Owner != fact.Subject.Entity || !p.tops[declaration.Declarations[0]] {
+			return nil, source.ErrInvalid
+		}
+		p.public[declaration.Declarations[0]] = true
 	}
 	for _, b := range data.Bindings {
 		if err := ctx.Err(); err != nil {

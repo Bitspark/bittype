@@ -2,6 +2,11 @@ package integration_test
 
 import (
 	"context"
+	g "github.com/Bitspark/bittype/contracts/generation/go"
+	"github.com/Bitspark/bittype/contracts/transform/go"
+	"github.com/Bitspark/bittype/engine/go"
+	h "github.com/Bitspark/bittype/syntax/horos/go"
+	compose "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -115,7 +120,7 @@ func placementStages(t *testing.T, packages ...n.PackageTypes) tsfiles.Stages {
 	return tsfiles.Stages{Language: def, Syntax: text, Printer: text, Checker: checker, Resolver: resolver, Analyzer: analyzer, Configuration: settings}
 }
 
-func generatedCellPage(t *testing.T) ts.AST {
+func generatedCellPage(t *testing.T) g.Output {
 	t.Helper()
 	library := genModule("cells", genMap(), genEntry("Cell", genType(genTuple("horos/wire", genParam(0)), "T")))
 	pin, err := decl.Pin(library)
@@ -124,33 +129,73 @@ func generatedCellPage(t *testing.T) ts.AST {
 	}
 	imported := genTuple("horos/decl/import", data.MustEncodeText("cells"), core.NewAtom(pin[:]))
 	root := genModule("consumer", genMap(genEntry("cells", imported)),
-		genEntry("Page", genType(genPage(), "T")), genEntry("Person", genType(genPerson())),
+		genEntry("Cell", genType(genScalar("utf8-text"))), genEntry("Page", genType(genPage(), "T")), genEntry("Person", genType(genPerson())),
 		genEntry("Cells", genType(genLocal("Page", genImported("cells", "Cell", genLocal("Person"))))))
 	e, from, input := generationInput(t, root, library)
 	calls := 0
-	return generated(t, e, input, typescriptText(), selectedTS(cellMapping(from, pin.String(), &calls), ""))
+	out := generatedOutput(t, e, input, typescriptText(), selectedTS(cellMapping(from, pin.String(), &calls), ""))
+	if calls != 1 {
+		t.Fatalf("Cell mapping invoked %d times", calls)
+	}
+	return out
 }
 
-func captureGenerated(t *testing.T, stages tsfiles.Stages, tree ts.AST) format.FilesInput[ts.Language] {
+// Place a complete generated result in one module for native compiler tests.
+func placedTS(t *testing.T, output g.Output, packages ...n.PackageTypes) ts.AST {
 	t.Helper()
-	syntax, err := stages.Syntax.Format(context.Background(), tree)
+	tree := outputTree[ts.Language](t, output)
+	placement := tsfiles.Placement{File: "types", Path: "types.ts"}
+	for _, child := range tree.Nodes[tree.Root-1].Children {
+		placement.Declarations = append(placement.Declarations, ast.NodeRef{Tree: tree.ID, Node: child.Node})
+	}
+	setting, err := (tsfiles.Organization{Entry: placement.File, Units: []tsfiles.Placement{placement}}).Setting()
 	if err != nil {
 		t.Fatal(err)
 	}
-	u := source.Unit[ts.Language]{File: "logical", Path: "logical.ts", Source: "logical", Syntax: syntax}
-	input, err := stages.Capture(context.Background(), []source.Unit[ts.Language]{u}, u.File, semantic.Limits{})
+	formatter, err := tsfiles.NewGenerated(placementStages(t, packages...))
 	if err != nil {
 		t.Fatal(err)
 	}
-	return input
+	result, err := formatter.Format(context.Background(), format.GeneratedFilesInput{Output: output, Configuration: []semantic.Setting{setting}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return result.Units()[0].Syntax.Abstract
 }
 
-// bittype:case target=github.com/Bitspark/bittype/format/files/typescript/provider/go#Provider.Format feature=type-import-placement case=relocate-person-in-page expects=local-import-removed-package-import-retained
+// bittype:case target=github.com/Bitspark/bittype/format/files/typescript/provider/go#GeneratedProvider.Format feature=generated-placement case=relocate-person-and-shadow-cell expects=local-import-removed-external-cell-aliased
 func TestTypeScriptTypeImportPlacement(t *testing.T) {
 	ctx := context.Background()
-	tree := generatedCellPage(t)
+	output := generatedCellPage(t)
+	tree := outputTree[ts.Language](t, output)
 	stages := placementStages(t, n.PackageTypes{Module: "@bitspark/cell", Declaration: cellDeclarations})
-	input := captureGenerated(t, stages, tree)
+	input := format.GeneratedFilesInput{Output: output}
+	for _, node := range tree.Nodes {
+		if node.Kind == ts.KindImport || nodeAttribute(node, ts.AttributeExported) != "" {
+			t.Fatalf("file decision in generation: %+v", node)
+		}
+	}
+	uses := output.ExternalUses()
+	if len(uses) != 1 || uses[0].At.Site.Tree != tree.ID || nodeAttribute(tree.Nodes[uses[0].At.Site.Node-1], ts.AttributeName) != "Cell" {
+		t.Fatal("expected one external Cell", uses)
+	}
+	uses[0] = g.ExternalUse{}
+	exposures := output.Exposed()
+	if len(exposures) != 4 {
+		t.Fatal("expected four published roots", exposures)
+	}
+	exposures[0] = ast.NodeRef{}
+	generatedFormatter, err := tsfiles.NewGenerated(stages)
+	if err != nil {
+		t.Fatal(err)
+	}
+	kernel := engine.New()
+	if err = kernel.RegisterLanguage(stages.Language); err != nil {
+		t.Fatal(err)
+	}
+	if err = kernel.RegisterGeneratedFilesFormatter(generatedFormatter); err != nil {
+		t.Fatal(err)
+	}
 	formatter, err := tsfiles.New(stages)
 	if err != nil {
 		t.Fatal(err)
@@ -169,7 +214,7 @@ func TestTypeScriptTypeImportPlacement(t *testing.T) {
 			sites[nodeAttribute(tree.Nodes[child.Node-1], ts.AttributeName)] = ast.NodeRef{Tree: tree.ID, Node: child.Node}
 		}
 	}
-	page := tsfiles.Placement{File: "pages", Path: "generated/pages/page.ts", Declarations: []ast.NodeRef{sites["Page"], sites["Cells"]}}
+	page := tsfiles.Placement{File: "pages", Path: "generated/pages/page.ts", Declarations: []ast.NodeRef{sites["Page"], sites["Cells"], sites["Cell"]}}
 	person := tsfiles.Placement{File: "model", Path: "generated/model/person.ts", Declarations: []ast.NodeRef{sites["Person"]}}
 	for _, split := range []bool{true, false} {
 		org := tsfiles.Organization{Entry: page.File, Units: []tsfiles.Placement{page}}
@@ -183,11 +228,15 @@ func TestTypeScriptTypeImportPlacement(t *testing.T) {
 			t.Fatal(err)
 		}
 		input.Configuration = []semantic.Setting{setting}
-		out, err := formatter.Format(ctx, input)
+		boxed, err := kernel.FormatGeneratedFiles(ctx, input)
 		if err != nil {
 			t.Fatalf("split=%v: %v", split, err)
 		}
-		if out.Snapshot().Same(input.Snapshot) || !out.Evidence().Snapshot().Same(out.Snapshot()) {
+		out, err := source.Unpack[ts.Language](stages.Language, boxed)
+		if err != nil {
+			t.Fatalf("split=%v: %v", split, err)
+		}
+		if out.Snapshot().Same(output.Snapshot()) || !out.Evidence().Snapshot().Same(out.Snapshot()) {
 			t.Fatal("expected fresh TypeScript evidence")
 		}
 		emitted, err := printer.Print(ctx, out)
@@ -199,10 +248,10 @@ func TestTypeScriptTypeImportPlacement(t *testing.T) {
 		}
 		unit := out.Units()[0]
 		pages := emitted.Entries[0]
-		if pages.Path != page.Path || !strings.Contains(pages.Text, `from "@bitspark/cell"`) || !strings.Contains(pages.Text, "Page<Cell<Person>>") {
+		if pages.Path != page.Path || !strings.Contains(pages.Text, `from "@bitspark/cell"`) || !strings.Contains(pages.Text, "Page<Cell_1<Person>>") {
 			t.Fatal(pages)
 		}
-		checkImportedUse(t, unit.Syntax.Abstract, "Cell", "@bitspark/cell", "Cell")
+		checkImportedUse(t, unit.Syntax.Abstract, "Cell_1", "@bitspark/cell", "Cell")
 		if split {
 			if emitted.Entries[1].Path != person.Path || !strings.Contains(emitted.Entries[1].Text, "interface Person") || strings.Contains(pages.Text, "interface Person") || !strings.Contains(pages.Text, `from "../model/person.js"`) {
 				t.Fatal(emitted)
@@ -236,7 +285,7 @@ func TestTypeScriptTypeImportPlacement(t *testing.T) {
 		for _, file := range emitted.Entries {
 			writeText(t, dir, string(file.Path), file.Text)
 		}
-		writeText(t, dir, "use.ts", "import type { Cells } from './generated/pages/page.js';\nconst cells: Cells = {items:[{value:{name:'Ada', active:true}}]};\nvoid cells;\n")
+		writeText(t, dir, "use.ts", "import type { Cells, Cell } from './generated/pages/page.js';\nconst cells: Cells = {items:[{value:{name:'Ada', active:true}}]};\nvoid cells;\n")
 		compiler := tsCompiler(t)
 		command(t, dir, compiler.NodePath, filepath.Join(filepath.Dir(compiler.TypeScriptPath), "tsc.js"), "--module", "NodeNext", "--strict", "--exactOptionalPropertyTypes", "--noEmit", "use.ts")
 
@@ -248,33 +297,81 @@ func TestTypeScriptTypeImportPlacement(t *testing.T) {
 		if err != nil || !reflect.DeepEqual(reprinted, emitted) {
 			t.Fatal("placement did not round-trip", err)
 		}
-		stale := input
-		stale.Snapshot = out.Snapshot()
+		stale := format.FilesInput[ts.Language]{Abstract: out.SemanticsView(), Snapshot: output.Snapshot(), Evidence: out.Evidence()}
 		if bad, err := formatter.Format(ctx, stale); err == nil || len(bad.Units()) != 0 {
 			t.Fatal("stale receipt accepted")
 		}
-		if split {
-			// Move the already imported Person from the actual two-file Source.
-			// The new placement names sites from that Source's own receipt.
-			for _, u := range out.Units() {
-				tree := u.Syntax.Abstract
-				for _, child := range tree.Nodes[tree.Root-1].Children {
-					if child.Role == ts.RoleDeclaration {
-						sites[nodeAttribute(tree.Nodes[child.Node-1], ts.AttributeName)] = ast.NodeRef{Tree: tree.ID, Node: child.Node}
-					}
-				}
-			}
-			page.Declarations = []ast.NodeRef{sites["Page"], sites["Cells"]}
-			person.Declarations = []ast.NodeRef{sites["Person"]}
-			input = format.FilesInput[ts.Language]{Abstract: out.SemanticsView(), Snapshot: out.Snapshot(), Evidence: out.Evidence()}
-		}
+
+	}
+	// A same-named local declaration cannot satisfy a missing package export.
+	unavailable, err := tsfiles.NewGenerated(placementStages(t, n.PackageTypes{Module: "@bitspark/cell", Declaration: "export interface Other {}"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bad, err := unavailable.Format(ctx, input); err == nil || bad.Valid() {
+		t.Fatal("local Cell captured an unavailable export")
 	}
 	for _, units := range [][]tsfiles.Placement{{page}, {page, person, person}, {{File: page.File, Path: page.Path, Declarations: []ast.NodeRef{{Tree: "foreign", Node: 1}}}}} {
 		setting, _ := (tsfiles.Organization{Entry: page.File, Units: units}).Setting()
 		input.Configuration = []semantic.Setting{setting}
-		if bad, err := formatter.Format(ctx, input); err == nil || len(bad.Units()) != 0 {
+		if bad, err := generatedFormatter.Format(ctx, input); err == nil || len(bad.Units()) != 0 {
 			t.Fatal("invalid placement accepted")
 		}
+	}
+}
+
+func TestGeneratedFilesPreservePublicationIntent(t *testing.T) {
+	ctx := context.Background()
+	root := genModule("visibility", genMap(), genEntry("Hidden", genType(genPerson())), genEntry("Visible", genType(genLocal("Hidden"))))
+	e, _, input := generationInput(t, root)
+	output := generatedOutput(t, e, input, typescriptText(), func(reg *compose.Registry, input transform.Input, to representation.Language) (compose.Request, error) {
+		request, err := tsRequest(reg, input, to)
+		if err != nil {
+			return request, err
+		}
+		treeEnvelope, err := input.Source.EntryTree()
+		if err != nil {
+			return request, err
+		}
+		tree, err := representation.Unpack[h.Language](input.Source.Language(), treeEnvelope)
+		if err != nil {
+			return request, err
+		}
+		for _, site := range request.Roots {
+			if nodeAttribute(tree.Nodes[site.Node-1], h.AttributeName) == "Visible" {
+				request.Roots = []ast.NodeRef{site}
+				return request, nil
+			}
+		}
+		t.Fatal("Visible root missing")
+		return request, nil
+	})
+	tree := outputTree[ts.Language](t, output)
+	sites := map[string]ast.NodeRef{}
+	for _, c := range tree.Nodes[tree.Root-1].Children {
+		sites[nodeAttribute(tree.Nodes[c.Node-1], ts.AttributeName)] = ast.NodeRef{Tree: tree.ID, Node: c.Node}
+	}
+	if got := output.Exposed(); len(got) != 1 || got[0] != sites["Visible"] {
+		t.Fatal("wrong public declarations", got)
+	}
+	placed := placedTS(t, output)
+	for _, c := range placed.Nodes[placed.Root-1].Children {
+		n := placed.Nodes[c.Node-1]
+		name := nodeAttribute(n, ts.AttributeName)
+		if (name == "Visible") != (nodeAttribute(n, ts.AttributeExported) == "true") {
+			t.Fatal("public exposure changed", name)
+		}
+	}
+	formatter, err := tsfiles.NewGenerated(placementStages(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	setting, err := (tsfiles.Organization{Entry: "visible", Units: []tsfiles.Placement{{File: "visible", Path: "visible.ts", Declarations: []ast.NodeRef{sites["Visible"]}}, {File: "hidden", Path: "hidden.ts", Declarations: []ast.NodeRef{sites["Hidden"]}}}}).Setting()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bad, err := formatter.Format(ctx, format.GeneratedFilesInput{Output: output, Configuration: []semantic.Setting{setting}}); err == nil || bad.Valid() {
+		t.Fatal("private dependency exported to satisfy placement")
 	}
 }
 

@@ -203,6 +203,7 @@ The `typescript` vocabulary is:
 | `program`, `script`, `module`, `alias`, `interface`, `parameter`, `property`, `builtin` entities | Compiler symbol identities; declaration sites and real generic binder owners |
 | `name` bindings | Native lookup results at captured reference nodes |
 | `type-expression` occurrences | Source reference/application structure, preserving constructor identity even when aliases disappear from native types |
+| `named-export` fact on a module | A reference term for each named type the compiler exports from the captured module. Files checks requested public sites against these facts after placement. |
 | `native-type` occurrences and marker facts | Native compiler types; model-local handles, not serialized shape identity |
 | `declared-type`, `constraint` facts | Declaration types and explicit generic bounds |
 | `structure`, `properties` facts | Native structural descriptions and substituted declared property value types |

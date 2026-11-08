@@ -59,6 +59,7 @@ transform/syntax/shared/target/go/             symbolic native storage
 transform/syntax/horos/source/go/              Horos semantic reader
 transform/syntax/horos/mapping/go/             common Horos mapping policy
 transform/syntax/<native>/target/go/           native builders
+transform/syntax/typescript/symbol/go/        public type symbols for generation and Files
 transform/syntax/horos-to-<native>/mapping/go/ selectable representation providers
 internal/<language>/                           private lexical helpers
 integration/go/          independent consumers and cross-package qualification

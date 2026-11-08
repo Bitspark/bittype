@@ -107,14 +107,14 @@ func TestGenerationPreflightAndEvidence(t *testing.T) {
 			bad := r
 			change(&bad)
 			out, err := e.Generate(context.Background(), bad)
-			if err == nil || len(out.Trees) != 0 || opened.Load() != 0 {
-				t.Fatalf("output %v, error %v, source openings %d", out.Entry, err, opened.Load())
+			if err == nil || out.Snapshot().Valid() || opened.Load() != 0 {
+				t.Fatalf("output %v, error %v, source openings %d", out.Snapshot().Entry(), err, opened.Load())
 			}
 		})
 	}
 	q := r
 	q.Roots = []ast.NodeRef{r.Input.Source.Entry()}
-	if out, err := e.Generate(context.Background(), q); !errors.Is(err, g.ErrScope) || len(out.Trees) != 0 || opened.Load() != 1 {
+	if out, err := e.Generate(context.Background(), q); !errors.Is(err, g.ErrScope) || out.Snapshot().Valid() || opened.Load() != 1 {
 		t.Fatalf("non-declaration root: %v", err)
 	}
 	if _, err := c.RegisterTarget[h.Language, ts.Language, target.Builder[h.Language]](e.Generation(), r.To, from, target.Provider[h.Language]{}); err == nil {
@@ -177,7 +177,7 @@ func TestGenerationConstructionScopeAndFailure(t *testing.T) {
 		t.Fatal("retained mapping request", err)
 	}
 	failure = errors.New("provider failed")
-	if out, err := e.Generate(context.Background(), r); !errors.Is(err, failure) || len(out.Trees) != 0 {
+	if out, err := e.Generate(context.Background(), r); !errors.Is(err, failure) || out.Snapshot().Valid() {
 		t.Fatal("failed construction published", err)
 	}
 	if _, err := observed.Info(); !errors.Is(err, g.ErrScope) {
@@ -197,7 +197,7 @@ func TestGenerationConstructionScopeAndFailure(t *testing.T) {
 			t.Fatal(err)
 		}
 		q.Selection.Mappings = append([]c.MappingRef{ref}, r.Selection.Mappings[:len(r.Selection.Mappings)-1]...)
-		if out, err := e.Generate(context.Background(), q); !errors.Is(err, g.ErrInvalid) || len(out.Trees) != 0 {
+		if out, err := e.Generate(context.Background(), q); !errors.Is(err, g.ErrInvalid) || out.Snapshot().Valid() {
 			t.Fatal("conflicting contribution", err)
 		}
 	}
@@ -211,8 +211,8 @@ func TestEngineConcurrentGeneration(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			out, err := e.Generate(context.Background(), r)
-			if err != nil || out.Entry.Tree != r.Output {
-				t.Errorf("concurrent generation: %v %v", out.Entry, err)
+			if err != nil || out.Snapshot().Entry().Tree != r.Output {
+				t.Errorf("concurrent generation: %v %v", out.Snapshot().Entry(), err)
 			}
 		}()
 	}
@@ -291,7 +291,7 @@ func TestGenerationPublishesOnlyRequestedPage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tree, err := representation.Unpack[ts.Language](r.To, output.EntryAST())
+	tree, err := representation.Unpack[ts.Language](r.To, output.Snapshot().Inputs()[0])
 	if err != nil {
 		t.Fatal(err)
 	}

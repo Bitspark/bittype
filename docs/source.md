@@ -77,11 +77,8 @@ is part of the chosen type representation, still belongs to the declaration.
 
 This is the boundary for **generating declarations**. Native ASTs can still
 represent imports and exports when parsing existing source or constructing
-organized units. Today the [TypeScript implementation](typescript-type-imports.md)
-also constructs package import nodes and marks declarations exported during
-generation. The stricter handoff is documented, not implemented;
-[bittype/ACX-004](architecture-cases/0004-generation-file-syntax.md) records
-the remaining correction. The generation design separates semantic mapping
+organized units. The TypeScript Files stage constructs imports and export modifiers using the sealed generation output and its placement. The compiler checks the relocated declaration sites, external package symbols and actual module exports. [TypeScript implementation](typescript-type-imports.md) · [ACX-004](architecture-cases/0004-generation-file-syntax.md).
+The generation design separates semantic mapping
 from target AST construction. The planner follows the same nested reference
 from Horos resolution through TypeScript file organization and binding checks.
 [Generation stages](generation.md#semantic-mapping-and-target-ast-construction) ·
@@ -381,10 +378,7 @@ sets. Each engine route leg admits every output tree, captures the whole collect
 afresh and discards preceding semantic receipts. New evidence is explicit;
 the engine never discovers an analyzer. No unit is silently dropped.
 
-ASTSet is syntax, not Source. Native pagination transformers still provide syntax
-guarantees only. Their complete output must acquire target-language semantics
-before entering Files formatting. Syntax formatting/printing remain independently
-useful for every output tree.
+Generation returns a checked snapshot and binding intent. TypeScript Files takes that output and establishes native semantics for the organized files. Syntax formatting and printing are also available for individual trees.
 
 The [stage-first layout](../LAYOUT.md) uses explicit dimensions:
 `parse/syntax/<language>/go` and `parse/files/<language>/go`, likewise for

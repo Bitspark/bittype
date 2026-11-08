@@ -11,7 +11,8 @@ import (
 // Builder is the native syntax API exposed to independently supplied mappings.
 type Builder[F any] interface {
 	m.Builder[F, s.Language]
-	ImportedType(module, export string, args []g.Fragment[s.Language], origin ast.NodeRef) (g.Fragment[s.Language], error)
+	PackageType(module, export string, args []g.Fragment[s.Language], origin ast.NodeRef) (g.Fragment[s.Language], error)
+	GlobalType(name string, args []g.Fragment[s.Language], origin ast.NodeRef) (g.Fragment[s.Language], error)
 }
 type Provider[F any] struct{}
 

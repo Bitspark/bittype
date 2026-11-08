@@ -11,7 +11,7 @@ rules do not transfer ownership of these cases to the platform repository.
 | [bittype/ACX-001: Closed verification contributions](0001-verification-composition.md) | Corrected for scoped static verification | AC-02, AC-03, AC-04 |
 | [bittype/ACX-002: Generation assembly escaped the kernel](0002-generation-assembly.md) | Corrected and qualified | AC-02, AC-03, AC-05 |
 | [bittype/ACX-003: Files stage coverage assumed Horos](0003-files-stage-coverage.md) | Corrected in stage coverage and test composition | AC-03, AC-06 |
-| [bittype/ACX-004: Generation emits file syntax before placement](0004-generation-file-syntax.md) | Open; generation/Files boundary documented | AC-02, AC-06 |
+| [bittype/ACX-004: Generation emits file syntax before placement](0004-generation-file-syntax.md) | TypeScript corrected; C++ and Rust remain open | AC-02, AC-06 |
 | [bittype/ACX-005: Existing callbacks prescribed the redesigned interface](0005-generation-interface-design.md) | Corrected in the proposal. Implementation pending. | AC-09 |
 
 ACX-001 continues the same incident first recorded as

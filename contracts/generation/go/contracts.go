@@ -3,6 +3,7 @@ package generation
 import (
 	"context"
 	"errors"
+	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
@@ -70,7 +71,7 @@ type Native[F, T any] interface {
 	CheckProduct(context.Context, Want[F, T], Fragment[T]) error
 	CheckBody(context.Context, Callee[F, T], Fragment[T]) error
 	CheckExposure(context.Context, Site[F, T], Declaration[F], Callee[F, T]) error
-	Assemble(context.Context, []Publication[F, T], []Definition[F, T], Limits) (representation.ASTSet, error)
+	Assemble(context.Context, []Publication[F, T], []Definition[F, T], Limits) (Assembly, error)
 }
 
 // The independent capability interfaces are Syntax-generation operations.
@@ -115,6 +116,7 @@ type Plan[F, T any] struct {
 }
 
 type Config[F, T any] struct {
+	Checker  check.Checker
 	Source   Source[F]
 	Native   Native[F, T]
 	Target   representation.Language

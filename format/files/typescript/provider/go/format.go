@@ -48,8 +48,7 @@ func (p Stages) capture() (Stages, error) {
 	return p, err
 }
 
-// Capture establishes the native input to Files formatting. For generated code,
-// use the logical AST formatted to a CST with its own provisional source path.
+// Capture establishes facts for existing TypeScript files.
 func (p Stages) Capture(ctx context.Context, units []source.Unit[s.Language], entry files.ID, limits semantic.Limits) (f.FilesInput[s.Language], error) {
 	stages, err := p.capture()
 	if err != nil {
@@ -152,19 +151,22 @@ func (p Provider) Format(ctx context.Context, r f.FilesRequest[s.Language]) (sou
 	if err != nil {
 		return source.Source[s.Language]{}, err
 	}
+	return p.stages.organize(ctx, layout, input.Limits.Semantic, r.Publish)
+}
+func (p Stages) organize(ctx context.Context, layout *result, limits semantic.Limits, publish func(source.Publication[s.Language]) (source.Source[s.Language], error)) (source.Source[s.Language], error) {
 	var units []source.Unit[s.Language]
 	for _, u := range layout.units {
-		syntax, err := p.stages.Syntax.Format(ctx, u.tree)
+		syntax, err := p.Syntax.Format(ctx, u.tree)
 		if err != nil {
 			return source.Source[s.Language]{}, err
 		}
 		units = append(units, source.Unit[s.Language]{File: u.placement.File, Path: u.placement.Path, Source: ast.SourceID(u.placement.File), Syntax: syntax})
 	}
-	fresh, err := p.stages.establish(ctx, units, layout.entry, input.Limits.Semantic)
+	fresh, err := p.establish(ctx, units, layout.entry, limits)
 	if err != nil {
 		return source.Source[s.Language]{}, err
 	}
-	return r.Publish(source.Publication[s.Language]{Snapshot: fresh.Snapshot, Analysis: fresh.Evidence, Units: units, Groups: layout.groups(), Relations: layout.relations})
+	return publish(source.Publication[s.Language]{Snapshot: fresh.Snapshot, Analysis: fresh.Evidence, Units: units, Groups: layout.groups(), Relations: layout.relations})
 }
 func (x *result) groups() []source.Group {
 	groups := make([]source.Group, 0, len(x.units))
@@ -178,6 +180,9 @@ func checkPublication(ctx context.Context, input f.FilesInput[s.Language], out s
 	if err != nil {
 		return err
 	}
+	return checkLayout(ctx, expected, out)
+}
+func checkLayout(ctx context.Context, expected *result, out source.Publication[s.Language]) error {
 	if len(expected.units) != len(out.Units) || !reflect.DeepEqual(expected.groups(), out.Groups) || !reflect.DeepEqual(expected.relations, out.Relations) {
 		return source.ErrInvalid
 	}
@@ -192,6 +197,11 @@ func checkPublication(ctx context.Context, input f.FilesInput[s.Language], out s
 	realized, err := readProgram(ctx, out.Snapshot, graph)
 	if err != nil {
 		return err
+	}
+	for site, want := range expected.public {
+		if !realized.tops[site] || realized.public[site] != want {
+			return fmt.Errorf("%w: public exposure changed at %v", source.ErrInvalid, site)
+		}
 	}
 	for i, u := range expected.units {
 		actual := out.Units[i]

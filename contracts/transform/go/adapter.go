@@ -74,19 +74,11 @@ func (b bound[F, T]) Transform(ctx context.Context, input Input) (representation
 	if err := ctx.Err(); err != nil {
 		return representation.ASTSet{}, err
 	}
-	evidence, err := semantic.AdmitEvidence(input.Source, b.requirements, input.Evidence)
+	request, err := AdmitRequest[F](b.from, Contract{Evidence: b.requirements}, input)
 	if err != nil {
 		return representation.ASTSet{}, err
 	}
-	envelope, err := input.Source.EntryTree()
-	if err != nil {
-		return representation.ASTSet{}, err
-	}
-	source, err := representation.Unpack[F](b.from, envelope)
-	if err != nil {
-		return representation.ASTSet{}, err
-	}
-	result, err := b.stage(ctx, Request[F]{snapshot: input.Source, source: source, entry: input.Source.Entry(), evidence: evidence, inputs: input.Source.Inputs()})
+	result, err := b.stage(ctx, request)
 	if err != nil {
 		return representation.ASTSet{}, err
 	}
@@ -94,4 +86,22 @@ func (b bound[F, T]) Transform(ctx context.Context, input Input) (representation
 		return representation.ASTSet{}, err
 	}
 	return representation.PackSet(b.to, result)
+}
+
+// AdmitRequest binds the typed source view and the requested evidence to the
+// exact input snapshot for a transformation or generation invocation.
+func AdmitRequest[L any](language representation.Language, contract Contract, input Input) (Request[L], error) {
+	evidence, err := semantic.AdmitEvidence(input.Source, contract.Evidence, input.Evidence)
+	if err != nil {
+		return Request[L]{}, err
+	}
+	envelope, err := input.Source.EntryTree()
+	if err != nil {
+		return Request[L]{}, err
+	}
+	source, err := representation.Unpack[L](language, envelope)
+	if err != nil {
+		return Request[L]{}, err
+	}
+	return Request[L]{snapshot: input.Source, source: source, entry: input.Source.Entry(), evidence: evidence, inputs: input.Source.Inputs()}, nil
 }

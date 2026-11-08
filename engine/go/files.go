@@ -42,6 +42,21 @@ func (e *Engine) RegisterFilesFormatter(p format.FilesRegistration) error {
 		return nil
 	})
 }
+func (e *Engine) RegisterGeneratedFilesFormatter(p format.GeneratedFilesRegistration) error {
+	if representation.IsNil(p) {
+		return format.ErrInvalidFormatter
+	}
+	if err := p.Validate(); err != nil {
+		return err
+	}
+	return e.attach(p.Language(), func(r *registration) error {
+		if r.generatedFilesFormatter != nil {
+			return ErrDuplicateFilesFormatter
+		}
+		r.generatedFilesFormatter = p
+		return nil
+	})
+}
 func (e *Engine) RegisterFilesPrinter(p print.FilesRegistration) error {
 	if representation.IsNil(p) {
 		return print.ErrInvalidPrinter
@@ -88,6 +103,24 @@ func (e *Engine) FormatFiles(ctx context.Context, input format.FilesValue) (sour
 	}
 	if !output.Valid() || !r.language.Compatible(output.Language()) {
 		return source.Envelope{}, representation.ErrLanguageMismatch
+	}
+	return output, nil
+}
+func (e *Engine) FormatGeneratedFiles(ctx context.Context, input format.GeneratedFilesInput) (source.Envelope, error) {
+	language := input.Output.Snapshot().Language()
+	r, err := e.lookup(language.ID())
+	if err != nil {
+		return source.Envelope{}, err
+	}
+	if r.generatedFilesFormatter == nil {
+		return source.Envelope{}, fmt.Errorf("%w: generated Files formatting for %s", ErrMissingCapability, language.ID())
+	}
+	output, err := r.generatedFilesFormatter.FormatGeneratedFiles(ctx, input)
+	if err != nil {
+		return source.Envelope{}, err
+	}
+	if !output.Valid() || !output.Language().Compatible(language) {
+		return source.Envelope{}, source.ErrInvalid
 	}
 	return output, nil
 }

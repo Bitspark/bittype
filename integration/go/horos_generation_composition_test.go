@@ -6,11 +6,11 @@ import (
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
+	n "github.com/Bitspark/bittype/semantics/typescript/go"
 	mappings "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
-	m "github.com/Bitspark/bittype/transform/syntax/shared/target/go"
 	target "github.com/Bitspark/bittype/transform/syntax/typescript/target/go"
 
 	h "github.com/Bitspark/bittype/syntax/horos/go"
@@ -26,13 +26,6 @@ import (
 	"testing"
 )
 
-func externalTS(b target.Builder[h.Language], name string, argument g.Fragment[ts.Language]) (g.Fragment[ts.Language], error) {
-	node, err := b.Node(m.Node(ts.KindTypeReference, m.Attributes("name", name), ast.NodeRef{}))
-	if err != nil {
-		return node, err
-	}
-	return b.Node(m.Node(ts.KindTypeApplication, nil, ast.NodeRef{}), m.Child[ts.Language]{Role: ts.RoleConstructor, Fragment: node}, m.Child[ts.Language]{Role: ts.RoleArgument, Fragment: argument})
-}
 func readonlyList(src source.Reader, b target.Builder[h.Language]) g.Mapping[h.Language, ts.Language] {
 	return rules.Direct("consumer/readonly-list/1", src, b, func(_ context.Context, r g.UseRequest[h.Language, ts.Language]) (g.Fragment[ts.Language], error) {
 		operand, err := src.Operand(r.Want().Use().Use, 1)
@@ -43,7 +36,7 @@ func readonlyList(src source.Reader, b target.Builder[h.Language]) g.Mapping[h.L
 		if err != nil {
 			return g.Fragment[ts.Language]{}, err
 		}
-		return externalTS(b, "ReadonlyArray", child.Payload())
+		return b.GlobalType("ReadonlyArray", []g.Fragment[ts.Language]{child.Payload()}, ast.NodeRef{})
 	})
 }
 
@@ -106,12 +99,8 @@ func TestSelectedMappingFailureNeverFallsBack(t *testing.T) {
 		})
 		return g.Contribution[h.Language, ts.Language]{Bindings: []g.RepresentationBinding[h.Language, ts.Language]{{Selector: key, Mapping: mapping}}}, nil
 	})
-	mapper, err := requestedTransformer(input, mustLanguage[ts.Language](t, ts.Language{}), selectedTS(provider, "consumer/failure/1"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	out, err := mapper.Transform(context.Background(), input)
-	if !errors.Is(err, sentinel) || out.LanguageID() != "" || called != 1 {
+	out, err := runGeneration(t, input, nativeChecker(t, typescriptText()), selectedTS(provider, "consumer/failure/1"))
+	if !errors.Is(err, sentinel) || out.Snapshot().Valid() || called != 1 {
 		t.Fatalf("mapping retried or partial output: %v (%d calls)", err, called)
 	}
 }
@@ -140,14 +129,18 @@ func TestGeneratedNamedImportsTrackOnlyEmittedFragments(t *testing.T) {
 			}
 			// Constructing an alternative fragment creates no dependency unless
 			// that fragment occurs in the returned syntax.
-			if _, err = b.ImportedType("@example/unused", "Candidate", nil, ast.NodeRef{}); err != nil {
+			if _, err = b.PackageType("@example/unused", "Candidate", nil, ast.NodeRef{}); err != nil {
 				return g.Fragment[ts.Language]{}, err
 			}
-			return b.ImportedType("@example/collections", "Box", []g.Fragment[ts.Language]{child.Payload()}, ast.NodeRef{})
+			return b.PackageType("@example/collections", "Box", []g.Fragment[ts.Language]{child.Payload()}, ast.NodeRef{})
 		})
 		return g.Contribution[h.Language, ts.Language]{Bindings: []g.RepresentationBinding[h.Language, ts.Language]{{Selector: key, Mapping: mapping}}}, nil
 	})
-	tree := generated(t, e, input, typescriptText(), selectedTS(provider, id))
+	out := generatedOutput(t, e, input, typescriptText(), selectedTS(provider, id))
+	if len(out.ExternalUses()) != 2 {
+		t.Fatal("expected only two emitted external uses", out.ExternalUses())
+	}
+	tree := placedTS(t, out, n.PackageTypes{Module: "@example/collections", Declaration: "export interface Box<T> { value:T }"})
 	output := formatted(t, typescriptText(), tree)
 	checkImportedUse(t, tree, "Box_1", "@example/collections", "Box")
 	if strings.Count(output, "import type") != 1 || strings.Contains(output, "@example/unused") || !strings.Contains(output, "Box_1<T>") || !strings.Contains(output, "Box_1<string>") {
@@ -163,15 +156,11 @@ func TestLibraryOwnedCellAvoidsBodyExpansion(t *testing.T) {
 	imported := genTuple("horos/decl/import", data.MustEncodeText("cells"), core.NewAtom(pin[:]))
 	root := genModule("consumer", genMap(genEntry("cells", imported)), genEntry("Page", genType(genPage(), "T")), genEntry("Cells", genType(genLocal("Page", genImported("cells", "Cell", genScalar("utf8-text"))))))
 	e, from, input := generationInput(t, root, library)
-	plain, err := requestedTransformer(input, mustLanguage[ts.Language](t, ts.Language{}), tsRequest)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if out, err := plain.Transform(context.Background(), input); err == nil || out.LanguageID() != "" {
+	if out, err := runGeneration(t, input, nativeChecker(t, typescriptText()), tsRequest); err == nil || out.Snapshot().Valid() {
 		t.Fatal("missing Cell mapping accepted")
 	}
 	calls := 0
-	tree := generated(t, e, input, typescriptText(), selectedTS(cellMapping(from, pin.String(), &calls), ""))
+	tree := placedTS(t, generatedOutput(t, e, input, typescriptText(), selectedTS(cellMapping(from, pin.String(), &calls), "")), n.PackageTypes{Module: "@bitspark/cell", Declaration: cellDeclarations})
 	output := formatted(t, typescriptText(), tree)
 	if calls != 1 || !strings.Contains(output, "Page<Cell<string>>") || strings.Contains(output, "_Cell") {
 		t.Fatal(output, calls)
@@ -202,7 +191,7 @@ func cellMapping(from representation.Language, pin string, calls *int) tsContrib
 			if err != nil {
 				return g.Fragment[ts.Language]{}, err
 			}
-			return b.ImportedType("@bitspark/cell", "Cell", []g.Fragment[ts.Language]{child.Payload()}, expr.Origin)
+			return b.PackageType("@bitspark/cell", "Cell", []g.Fragment[ts.Language]{child.Payload()}, expr.Origin)
 		})
 		return g.Contribution[h.Language, ts.Language]{Bindings: []g.RepresentationBinding[h.Language, ts.Language]{{Selector: key, Mapping: mapping}}}, nil
 	}

@@ -21,10 +21,10 @@ func (b *Backend[F]) Reserve(site g.Site[F, s.Language], name string, record boo
 				return body, g.ErrInvalid
 			}
 			children = append(children, fields...)
-			return b.Node(m.Node(s.KindInterface, m.Attributes("name", name, "exported", "true"), origin), children...)
+			return b.Node(m.Node(s.KindInterface, m.Attributes("name", name), origin), children...)
 		}
 		children = append(children, m.Child[s.Language]{Role: s.RoleType, Fragment: body})
-		return b.Node(m.Node(s.KindTypeAlias, m.Attributes("name", name, "exported", "true"), origin), children...)
+		return b.Node(m.Node(s.KindTypeAlias, m.Attributes("name", name), origin), children...)
 	})
 }
 func (b *Backend[F]) Header(site g.Site[F, s.Language], d g.Destination[s.Language], names []string, origins []ast.NodeRef) (g.Layout[s.Language], error) {

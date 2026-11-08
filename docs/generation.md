@@ -182,16 +182,7 @@ the chosen public package symbol. Target analysis establishes which symbol
 the occurrence in the emitted alias denotes, even if it is imported under
 another name.
 
-Today `Engine.Generate` returns a syntax-checked AST set. The existing Files
-formatter accepts a semantic graph with its matching target snapshot and
-analysis result. In TypeScript the current path analyzes a logical unit first,
-then analyzes the organized units afresh. The planner proposes that
-`Run` return a [`generation.Output`](generation-planner.md#the-result-of-run)
-with the generated snapshot, exposed declaration sites and external symbol
-uses. Files would use it to check the bindings and exports after placement.
-This handoff still awaits implementation.
-[Page and Cell on read and write](generation-planner.md#pagination-on-read-and-write) ·
-[Files contracts](source.md#symmetric-role-contracts) · [Open case ACX-004](architecture-cases/0004-generation-file-syntax.md).
+The generation result carries the checked syntax snapshot, actual exposed declaration sites and bound external occurrences. TypeScript Files applies the consumer’s placement and checks the organized units’ bindings and exports. [Output contract](generation-planner.md#the-result-of-run) · [TypeScript placement](typescript-type-imports.md)
 
 ## Go layout
 
