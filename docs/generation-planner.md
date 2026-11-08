@@ -144,6 +144,9 @@ The plan describes what the selected mappings intend. Only analysis of the
 realized B program establishes `Semantics[B]`. Today generation consumes an
 analyzed source and returns a syntax-checked target AST set. The separation of
 mapping decisions into an inspectable plan is proposed here.
+The [two Page tables](abstraction-levels.md#page-across-the-five-levels) show
+how written occurrences relate to binders and why an effective argument may
+have no argument syntax at the use.
 [Current Files input and proposed handoff](#where-the-plan-stops) ·
 [Generation design](generation.md#semantic-mapping-and-target-ast-construction) ·
 [Current generation contract](semantic-generation.md#explicit-semantic-input) ·
