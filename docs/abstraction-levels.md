@@ -2,30 +2,42 @@
 
 **Design note · 8 November 2026.** A level of abstraction determines which
 distinctions we can express. Its **data model** says what exists at that level.
-A **typed relation** says how particular elements at different levels correspond,
-in what context and with what cardinality. These are conceptual contracts, not
-new Bittype APIs.
+A **context** identifies a particular document, tree or program together with
+the information needed to interpret its entities. A **typed relation** says
+which contexts or elements correspond, under which conditions and with what
+cardinality. This guide describes the proposed architecture.
 
 ## The data model at each level
 
-From the spelling of a document to the meaning of a declaration:
+An element reference consists of **a context identity and a local address of
+the appropriate kind**. A byte range belongs to one document. A type-use
+occurrence belongs to one tree. The binding established for that occurrence
+belongs to one analyzed program. The same tree can participate in a different
+program with different dependencies. The abstraction level follows what the
+model expresses. A JSON document and a table of nodes can both encode the same
+abstract tree.
 
-| Level | Elements in its data model | What the level can express |
-| --- | --- | --- |
-| Encoding | A byte sequence and spans in one captured document | Which bytes occupy which offsets. The character encoding is needed to interpret them as text. |
-| Text | A sequence of characters and spans in that text | The spelling at a position. Two occurrences of the same letter have distinct positions. |
-| Concrete syntax (CST) | Groups, tokens and trivia such as spaces and comments | How the spelling is grouped by the grammar, including punctuation and trivia. |
-| Abstract syntax (AST) | Declarations, formal parameters, fields and type-use occurrences | That a field has a named type or a parameter has a default. The spelling alone does not identify the declaration a name denotes. |
-| Declaration semantics | Entities, binders, terms and established bindings in a captured environment | Which binder a use denotes and which effective argument an application supplies, including an argument omitted in the text. |
+### Agnostic kernel and language-specific rules
 
-These levels describe different observations of a program. Storing an AST as
-JSON or as a table of nodes changes its encoding, not its abstraction level.
-File paths, native modules and dependency selections also matter: a file path
-locates text; a module and its lexical scopes determine which names are visible.
-Those are different identities even in a language where file layout affects
-module membership. Bittype's [Syntax and Files dimensions](source.md) describe
-how whole units are organized; they are not extra columns that every token must
-pass through.
+The kernel owns the guarantees shared across languages. It invokes a supplied
+interpretation when a result depends on a language or encoding. A grammar,
+for example, can supply declarative rules. The matrix assigns these
+responsibilities independently of package layout.
+
+| Abstraction level | Context and entities | Agnostic kernel responsibility | What the language, codec or tool supplies |
+| --- | --- | --- | --- |
+| Encoding | One byte document, its length, offsets and ranges | Address the bytes in that document and check span bounds. | The selected codec interprets byte sequences. UTF-8 can serve many programming languages. |
+| Text | One character sequence, its positions and its coordinate convention | Locate an occurrence in the specified document and units. Two identical letters at different positions remain distinct. | A consumer can specify UTF-16 code-unit offsets, as the TypeScript compiler does. Ordinary text addressing requires only that convention. |
+| Concrete syntax (CST) | One concrete tree of groups, tokens and trivia, with links to text spans or to syntax being formatted | Retain occurrence identity, order and typed links to their contexts. | The language supplies its grammar and layout rules. In the `Page` declaration, TypeScript interprets `<` as opening the parameter list. |
+| Abstract syntax (AST) | One tree of nodes, containment roles, type uses and references | Qualify addresses by tree and distinguish containment from reference. A node can link to its contributing syntax. | The language defines node kinds and the permitted children of each role. A TypeScript type parameter can have a default type. |
+| Declaration semantics | A program with its AST units, selected dependencies and settings, and the entities, binders, terms and bindings established under them | Associate each fact with the program and its typed endpoints. Preserve the result and coverage of the language judgment. | TypeScript supplies the rules for lexical scope, type lookup and default arguments. Horos supplies its rules for pinned declarations and kind constraints. |
+
+Context dependencies follow the operation. One semantic program can depend on
+several AST units. A parsed concrete tree belongs to a text document, while a
+formatted concrete tree can originate from an AST before any output text exists.
+Within a single semantic program, two occurrences can also have different
+lexical scopes. A file path locates text. A module and its scopes determine
+which names are visible at a use. [Syntax and Files dimensions](source.md)
 
 ## Page across the five levels
 
@@ -36,6 +48,10 @@ Consider these TypeScript declarations, with no outer declaration also named
 type Page<T = string> = { first: T; last: T };
 type TextPage = Page;
 ```
+
+This example uses TypeScript's language semantics. Bittype's current TypeScript
+analysis profile reports generic defaults as unsupported.
+[TypeScript profile](native-semantics.md#first-typescript-profile)
 
 Read a row across for one occurrence or fact. An **empty cell** means that this
 level has **no distinct counterpart at that site** in this model. It never means
@@ -65,15 +81,13 @@ different binder.
 
 ## Typed relations between levels
 
-Each signature below names its two endpoint types, in reading order. The
-cardinality is for the indicated endpoints **under the stated conditions**.
-These signatures describe facts, not Go methods or a universal lookup API.
-Reading syntax establishes spelling and grammatical roles. TypeScript name
-resolution and type analysis establish the binding and defaulting facts that
-generation can consume.
+Each schematic signature names its two endpoint types. Its cardinality holds
+**under the stated conditions**. The first row relates whole contexts. The
+remaining rows relate elements addressed within those contexts.
 
 | Relation | Cardinality for this example | Required context | What the relation establishes |
 | --- | --- | --- | --- |
+| `analyzedFrom(SemanticProgram, ASTUnit)` | One program can include several units, and one unit can participate in different programs. | The inputs of this analysis. | The AST containing `Page` contributed to this program's semantic facts. |
 | `encodedBy(CharacterOccurrence, ByteSpan)` | Each Unicode scalar occurrence has one contiguous span of 1–4 bytes. | One document, decoded as valid UTF-8. | Which bytes encode that occurrence. The four letters of `Page` cover four such spans. |
 | `spelledBy(ConcreteTokenOrTrivia, TextSpan)` | Each original token or trivia leaf has one contiguous span. | The parsed text and its coordinate system; this claim is about original leaves. | Where the token or space was written. A synthetic token need not have an original span. |
 | `nameToken(SyntaxNameOccurrence, IdentifierToken)` | Each simple written name has one token. | The AST and CST for the same parse. | Which token spelled this particular name occurrence, irrespective of what the name denotes. |
@@ -81,11 +95,45 @@ generation can consume.
 | `denotes(TypeNameUse, SemanticEntity)` | Each successfully resolved simple use denotes one entity here; many uses may denote it. | The use's lexical scope, selected dependencies and type namespace in that capture. | Both field uses denote `Page.T`; their spelling alone cannot establish this. |
 | `usesDefaultFrom(EffectiveArgumentOccurrence, DefaultTypeSyntax)` | This defaulted argument has one written default; many applications can use that default. | The resolved callee, its formal and the language's defaulting rules at the application. | The effective string argument at `TextPage` comes from the default on `Page.T`, at a different site. |
 
-A relation can be followed in either direction, but it need not have a unique
-inverse. Starting at the binder finds both field uses; starting at either
-field use finds one binder. A relation is also allowed to cross sites: there
-is no reason to fabricate an argument node at `TextPage` to make a row look
-complete.
+In the facts below, `element@context` qualifies a local address. Follow the
+`T` in the first field through the byte document, text, concrete tree and
+declaration tree. `program` is the semantic context that includes `pageAST`.
+
+```text
+analyzedFrom(program, pageAST)
+encodedBy(firstFieldT@pageText, firstFieldBytes@pageBytes)
+spelledBy(firstFieldToken@pageCST, firstFieldSpan@pageText)
+nameToken(firstTypeUse@pageAST, firstFieldToken@pageCST)
+introduces(formalT@pageAST, Page.T@program)
+denotes(firstTypeUse@pageAST, Page.T@program)
+denotes(lastTypeUse@pageAST, Page.T@program)
+usesDefaultFrom(TextPageArgument@program, writtenStringDefault@pageAST)
+```
+
+`analyzedFrom` identifies a whole input unit. The spelling relations locate
+the first field's occurrence. Both `denotes` facts point to one binder, so
+following that relation back from the binder finds two uses. The last fact
+connects the effective argument at `TextPage` to the declaration where its
+default was written.
+
+## Where the kernel invokes rules for Page
+
+The kernel invokes supplied rules at transitions between contexts. These are
+schematic input and result contracts for reading the example.
+
+| Transition | Rule the kernel invokes | Result for `Page` |
+| --- | --- | --- |
+| `decode(byte document, encoding) → text` | The selected UTF-8 codec decodes the document. | Byte `54` at each field type spells one `T` at that position. |
+| `parse(text, language) → CST with AST view` | TypeScript grammar identifies the formal, its default and both field types. | `nameToken` connects each written type use to its token. The space before `=` remains concrete trivia. |
+| `resolve(AST units, environment) → binding result` | TypeScript name lookup uses the lexical scope and type namespace at each occurrence. | `introduces` identifies the formal's binder. Each field use has a `denotes` relation to that binder. The use in `TextPage` denotes the declared `Page`. |
+| `analyze(AST units, environment, binding result) → semantic result` | TypeScript's generic application rules supply the declared default for an omitted argument. | `Page.T` receives the string type at `TextPage`. `usesDefaultFrom` identifies the written default. |
+
+The kernel can check that the two field occurrences are in the supplied AST,
+that the binder is in the resulting program and that each successful simple use
+has one destination here. TypeScript establishes **which** destination it is.
+With the same field syntax under `Other<T>`, TypeScript would establish a
+binding to `Other.T`. Looking up a byte range or following an already
+established binding can use the shared data model directly.
 
 ## Absent counterpart or unresolved binding?
 
@@ -111,13 +159,13 @@ and diagnostics; a missing graph edge alone cannot distinguish these cases.
 
 ## Reading and writing
 
-On reading, a token can establish a name's spelling; establishing its binding
-requires the captured scope and environment. On writing, a selected mapping
-can specify the *intended* target of a use
-before its spelling or file has been chosen. For `Page<Cell<Person>>`, moving
-`Person` into the file containing the alias can remove its import without
-changing which `Person` the alias must denote. The external `Cell` still
-needs its package import in that TypeScript example.
+On reading, a token establishes a spelling and the language interprets the
+name in its captured scope. On writing `Page<Cell<Person>>`, the kernel
+selects the Cell library's mapping, which names the intended TypeScript type
+exported by `@bitspark/cell`. TypeScript supplies the syntax for the bound
+use. Files formatting chooses its import spelling under the consumer's
+placement. Moving `Person` into the file containing the alias removes its
+relative import and preserves the Cell package import in this example.
 
 The intended destination and the binding established for the organized
 target program answer different questions. The latter must be checked against
