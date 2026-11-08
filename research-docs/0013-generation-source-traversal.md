@@ -2,249 +2,350 @@
 
 **ID:** 0013
 **Date:** 8 November 2026
-**Status:** draft
+**Status:** reviewed
+**Reviewed:** https://github.com/Bitspark/bittype/issues/158#issuecomment-6720989325
 **Owner:** claude-bittype-gaps
 **Issue:** https://github.com/Bitspark/bittype/issues/158
 **Code baseline:** bittype 57187bcb0621c8da3ac1ef12e12887d4d079cd94; horos Go core 0.10.2
 
 ## Question
 
-A type generator turns declarations in a source language into type declarations in
-native programming languages. Its generation kernel is language-agnostic. Today the
-kernel asks each *source integration* (the plug-in for one source language) for two
-different things through one interface:
+A type generator turns declarations written in a source language into type
+declarations in native programming languages. Its generation kernel is meant to be
+language-agnostic. Today the kernel asks each *source integration* (the plug-in for one
+source language) for two different things through one interface:
 
 - **Navigation** of an already established semantic graph: which declaration a use
-  names, a declaration's parameters and body, and which argument of an application
-  belongs to which parameter.
+  names, a declaration's parameters and body, which argument of an application belongs
+  to which parameter, and whether one term is a child of another.
 - **Interpretation** of source-specific meaning: stable declaration identity, the
-  meaning of language-specific expression forms, and whether a use is admissible
-  (well-kinded, within bounds) under the declaration's assumptions.
+  meaning of language-specific expression forms and their operands, and whether a use
+  is admissible under the declaration's assumptions.
 
-The navigation facts are already recorded in a shared, language-agnostic semantic
-graph that every source integration consumes. So every new source integration has to
-re-implement the same graph walk. The project's architecture rules treat this as a
-defect: a shared mechanism should own the invariant mechanics, and a language owner
-should contribute only its meanings.
+The navigation facts are already recorded in a shared, language-agnostic semantic graph.
+A source integration that consumes that graph has to re-walk it to answer the kernel's
+navigation questions. The project's architecture rules treat this as a defect: a shared
+mechanism should own the invariant mechanics, and a language owner should contribute
+only its meanings.
 
 **The decision we need help with:** how should the boundary between the generation
 kernel and a source integration be drawn, so that the kernel follows declaration,
 reference and application structure through the shared graph, while source-owned
-contracts keep interpretation and applicability judgments? The answer must keep a set
-of guarantees (listed under [Guarantees that must survive](#guarantees-that-must-survive)).
-It must also say how mapping libraries, which today read the source integration's
-records directly, see the kernel's structural view.
+contracts keep interpretation and applicability judgments? The design must keep the
+guarantees listed below, and it must say what mapping libraries, which today read the
+source integration's records directly, see instead.
+
+**How to read the code below.** The project rule for interface design (called AC-09)
+gives the existing interface *zero weight*, including as a tiebreaker, and gives
+migration effort zero weight as well. A retained element needs the same independent
+justification as a new one. The code excerpts are evidence of who does what today. They
+are not an interface to preserve.
+
+The owner's intended division, for the running example `People = Page<Cell<Person>>`:
+
+| Decision | Intended owner |
+| --- | --- |
+| Follow established references to Page, Cell and Person | Kernel, over the captured graph |
+| Follow `Page.T` to `Cell<Person>` and `Cell.V` to Person | Kernel, over established application bindings |
+| Interpret horos constructors, kind judgments and pinned identity | horos integration |
+| Select a native representation of Cell | Cell's mapping library |
+| Admit source evidence and preserve capture and scope association | Shared contract guarantees, with source-owned judgments |
 
 ## Context
 
 ### System overview
 
-**bittype** is a Go library. It parses, checks and prints source code (syntax), and
-it generates native type declarations for TypeScript, Go, Rust and C++. Its input
-language is **horos**, a small declaration language for data types. A horos module
-declares named type definitions, which may be generic (have type parameters) and may
-constrain them with *kinds*, which are classifications of types similar to type
-classes or bounds. For example:
+**bittype** is a Go library. It parses, checks and prints source code, and it generates
+native type declarations for TypeScript, Go, Rust and C++. Its input language is
+**horos**, a small declaration language for data types. A horos module declares named
+type definitions, which may be generic. The running example spans two modules:
 
 ```horos
-type Person = { name: h.Text; };
-type Cell<V> = ...;            // owned by a separate library
-type Page<T> = { items: List<T>; cursor: h.Text; };
-type People = Page<Cell<Person>>;
+module cells;
+type Cell<V> = wire<V>;      // wire: an opaque transport descriptor with no default native form
+
+module consumer;
+import cells from cells pin "sha256:<module pin>";
+type Person = { name: text; };
+type Page<T> = { items: list<T>; next?: text; };
+type People = Page<cells.Cell<Person>>;
 ```
 
-Here `h` is an imported standard prelude module that defines kinds such as `h.Text`
-and `h.Data`. A bound is written `type TextBox<T: h.Text> = { value: T; };`.
+`text`, `bool`, `list<T>`, `wire<T>` and record braces are built-in *descriptors*.
+Expected TypeScript output, with a mapping library that owns Cell and represents it by
+an imported native `Cell`:
 
-Several independently owned parts cooperate:
+```typescript
+import type { Cell } from "@bitspark/cell";
+export interface Person { name: string; }
+export interface Page<T> { items: T[]; next?: string; }
+export type People = Page<Cell<Person>>;
+```
+
+Cell's horos body (`wire<V>`) is never generated. Its library supplies the
+representation, but `Person` must still be admitted and generated.
+
+**Terminology warning.** horos uses "kind" and "sort" the other way round from much of
+the type-theory literature. A horos **kind** is a classification of types, close to a
+type class or a bound: a parameter written `T: h.Text` must be a type that `h.Text`
+admits, and `h` is the standard *prelude* module that defines kinds such as `h.Text`
+and `h.Data`. A horos **sort** is what Haskell calls a kind: `proper` (an ordinary type,
+`*`) or an `arrow` (a type constructor such as `* -> *`). Kinds appear only as bounds,
+never as field types.
+
+Independently owned parts cooperate:
 
 | Part | Owns |
 | --- | --- |
-| horos **analysis provider** | Name resolution, kind checking and the semantic facts of horos. It publishes them as one immutable semantic graph per captured input. |
-| **Generation kernel** (`contracts/generation/go`) | Planning: selection of mappings, reservation of native declarations, substitution of native type arguments, scope checks, limits, and all-or-nothing output. It is meant to interpret no source or native rules. |
-| **Source integration** (for horos: `transform/syntax/horos/source/go`) | Today: navigation of the graph *and* horos interpretation (the subject of this document). |
-| **Mapping libraries** | One per source type family and target (for example horos `List` to TypeScript arrays, or a library that owns `Cell<V>` and maps it to an imported native `Cell<T>`). They describe native representations declaratively. |
+| horos **analysis provider** | Name resolution, sort and kind checking, and horos's semantic facts. It publishes them as one immutable semantic graph per captured input. |
+| **Generation kernel** (Go package `generation`, `contracts/generation/go`) | Planning: selection of mappings, reservation of native declarations, substitution of native type arguments, scope checks, limits, and all-or-nothing output. It is meant to interpret no source or native rules. |
+| **Source integration** (for horos: package `source`, `transform/syntax/horos/source/go`) | Today: navigation of the graph *and* horos interpretation. This is the subject of the document. |
+| **Mapping libraries** | Declarative descriptions of native representations, one per source type family and target. Examples: horos lists to TypeScript arrays, horos records to TypeScript interfaces, and a library that owns `Cell<V>` and maps it to an imported native `Cell<T>`. |
 | **Target** (one per native language) | Checks native expressions and declarations, and builds native syntax trees from a closed native program. |
 
-Vocabulary used throughout:
+**Scale and consumers.** The repository has five horos mapping libraries per target
+(text, bool, list, record, declarations), four targets, and test-only libraries such as
+the Cell mapping. Mapping libraries are meant to be written by the owners of type
+families, so other people's code will implement this interface. Only horos publishes a
+graph today. No second production source language is planned. An independent test
+source (described below) stands in for one, so the cost of re-implementing navigation
+is prospective, but it is the extension the architecture promises.
 
-- **Snapshot:** an immutable capture of input syntax trees. Capturing equal bytes
-  twice yields two different snapshots; identity is by allocation, not content.
-- **Result** or **evidence:** an immutable output of an analysis operation (resolution
-  or analysis) bound to exactly one snapshot. It carries *reports* (named obligations,
-  each with a completion status and a verdict), diagnostics and, optionally, a semantic
-  graph.
-- **Semantic graph** (`semantics.Semantics[L]`): the shared, language-agnostic store of
-  established facts for one snapshot (described next). `L` is a compile-time marker
-  type for the language.
-- **Declaration**, **binder**, **use**, **environment:** a declaration is a named type
-  definition. A binder is one of its real type parameters. A use is one type occurrence
-  in a body. An environment is the set of binders and assumptions under which a use is
-  interpreted; today it is the enclosing declaration.
-- **Selector:** a stable, source-owned identity string qualified by language and
-  profile, for example `declaration/<module pin>/Cell` or
-  `builtin/6:scalar/9:utf8-text`. Mapping libraries register rules against selectors;
-  the kernel compares selectors and never interprets them.
-- **Native program:** the closed list of planned native declarations that a target
-  turns into syntax trees. Planning resolves every choice before construction runs.
-- **Profile:** a named configuration that selects which mapping libraries apply (for
-  example `pagination-representation/1`).
+### Vocabulary
+
+- **Generic parameters.** `F` is the source-language marker type, `T` the
+  target-language marker type, and `S` the source integration's concrete session type.
+  `L` is a language marker in general. Markers are compile-time types only.
+- **Package names.** `generation` (alias `g`) is the kernel contract. `semantics` holds
+  the graph. `semantic` (singular) holds snapshots, evidence and reports. `source` and
+  `rules` are horos's integration and generic horos mapping rules. `model` is a target's
+  native model. `representation`, `transform` and `ast` are shared plumbing for typed
+  language envelopes, typed requests and syntax-node references.
+- **Snapshot.** An immutable capture of input syntax trees. Capturing equal bytes twice
+  yields two different snapshots: identity is by allocation, not content.
+- **Result** or **evidence.** The immutable output of an analysis operation, bound to
+  exactly one snapshot. It carries *reports* (named obligations, each with a completion
+  status and a verdict), diagnostics and, optionally, a semantic graph.
+- **Declaration, binder, use, environment.** A declaration is a named type definition.
+  A binder is one of its real type parameters. A use is one type occurrence in a body.
+  An environment is the set of binders and assumptions under which a use is
+  interpreted. Today that is the enclosing declaration.
+- **"Subject" has three senses.**
+  - The graph's `semantics.Subject` names an entity or a term that a fact is about.
+  - `UseData.Subject` is the source-certified *effective subject*. Two different
+    occurrences may denote the same subject, and only the source may say so.
+  - A *formal subject* is a synthetic use that stands for a binder, because a binder
+    has no term of its own.
+- **"Profile" has three senses.** A *generation profile* (for example
+  `pagination-representation/1`) selects which mapping libraries apply. A *provider
+  profile* names an analysis configuration inside an evidence requirement. A *language
+  profile* qualifies a language identity, and therefore a selector.
+- **Selector.** A stable identity string, owned by the source and qualified by
+  language. Mapping libraries register rules against selectors. The kernel compares
+  them and never interprets them. horos has three forms:
+  - `declaration/<module pin>/<name>` for a named declaration. The *module pin* is the
+    SHA-256 hash of the module's canonical encoding.
+  - `builtin/<constructor>/<discriminator>`, length-prefixed, for a built-in
+    descriptor. The discriminator distinguishes variants, for example `utf8-text` for a
+    scalar or `closed` for a record.
+  - `bound` for a use of a parameter.
+- **Native program.** The closed list of planned native declarations that a target
+  turns into syntax trees. Planning resolves every choice before construction (`Run`)
+  starts. "A run" means one generation invocation.
+- **Error outcomes.**
+
+  | Error | Meaning |
+  | --- | --- |
+  | `ErrScope` | An address, record or relation outside its admitted scope: a foreign record, a wrong environment, a non-child. |
+  | `ErrUnsupported` | Valid input outside supported coverage. Reported as a diagnostic with code Unsupported at a syntax site. |
+  | `ErrInvalid` | A malformed request or description. |
+  | `ErrLimit` | A work or size limit was exhausted. |
+  | `ErrAmbiguous` | More than one mapping applies, or more than one recipe. |
+  | `semantic.ErrInvalidRequest` | Malformed or mismatched semantic input. |
+  | `semantic.ErrEvidenceUnavailable` | Required evidence is not established. |
+
+- **Tracking identifiers.** GEN-01 (this gap), GEN-02 (missing native enforcement of
+  source constraints) and ACX-006 (the architecture case record for this defect) are
+  internal tracking identifiers.
+
+### Guarantees that must survive
+
+These come from earlier consultations and from the delivered interface. Each one is a
+requirement on the replacement, independent of the current method names.
+
+| Guarantee | Meaning |
+| --- | --- |
+| Capture identity | Planning consumes exactly the admitted snapshot and evidence. A recapture of equal bytes, or evidence from another snapshot, is rejected. |
+| Real binders | A source binder is the declared parameter itself, never a name or position. Native conventions may reorder, omit or add native parameters, so binder *i* is not native parameter *i*. |
+| Environments and assumptions | A use is interpreted under its own declaration's assumptions (for example `D: h.Data`). Native results built while planning a callee's body, which refer to the callee's own parameters, must not leak into a caller. An assumption must not become an unconditional fact. |
+| Foreign-reference rejection | Records, handles or terms from another run, source or graph cannot be passed off as belonging to this run. Possessing an address is not admission. |
+| Whole-use admission | A use is admitted as a whole, including every actual, before any mapping represents it. An actual that the native convention omits, such as a phantom parameter, still needs admission. Otherwise a rule that emits constant text could bypass a source bound by never traversing its argument. |
+| No hidden analysis | Generation never runs a resolver or an analyzer. Missing evidence fails; it is never computed on demand. |
+| Unknown is not false | An uncovered or absent fact is distinct from a failed judgment. |
+| Bounded lifetimes | A mapping callback's access to the source and the kernel ends when the callback returns. Anything retained and used later fails. |
+| Limits and whole-output failure | Work, depth, references, formals, reservations and output size are bounded. Any failure, cancellation or exhausted limit yields no usable output, and never triggers a weaker fallback mapping. |
+| Selector ownership | Stable selector identity belongs to the source. The kernel compares selector identity, never spellings or graph-local IDs. |
+
+### Why the current boundary is a defect, and what "done" means
+
+Four project architecture rules apply, paraphrased:
+
+- **AC-02.** Meanings stay with their semantic owners. A shared mechanism owns its
+  invariant guarantees, and language owners contribute interpretations.
+- **AC-05.** Composition preserves guarantees. Openness may not be bought with arbitrary
+  payloads, unchecked claims, or callbacks that discard guarantees.
+- **AC-06.** Limited coverage does not redefine the architecture. Working examples
+  through today's interface do not make the wrong split acceptable.
+- **AC-09.** As above: interfaces are derived from the domain, owners and guarantees.
+
+Completion criteria set by the owner:
+
+1. The kernel consumes declaration, reference and application structure through the
+   shared semantic context. No source integration supplies a parallel traversal of the
+   same facts.
+2. Narrow source-owned contracts keep constructor and operand interpretation, stable
+   selector identity and applicability judgments. Unknown or uncovered facts stay
+   distinct from failed judgments, and there is no hidden analysis.
+3. Every guarantee above stays enforced.
+4. horos and an independent source exercise the same kernel traversal, including nested
+   `Page<Cell<Person>>` and invalid scope and evidence cases.
+5. The superseded reader interfaces and duplicated traversal are removed. No
+   compatibility aliases remain.
+
+### Constraints: what is fixed and what may change
+
+| Area | Status |
+| --- | --- |
+| Generation contract (source interface, catalogue, mapping-library interface, expansion handles) | **May change freely.** This is what is being redesigned. |
+| The horos source integration, its reading API, and the horos and native mapping libraries | May change, as consumers of the new contract |
+| The independent test source | May change. It must publish a graph and supply only its own interpretation. |
+| The graph data model (`semantics`) | Its meaning is fixed. Language-agnostic structural queries or indexes may be added if they interpret no provider vocabulary. |
+| The horos analysis provider and its facts | Fixed vocabulary, owned by horos. Generation must not trigger more analysis. |
+| Snapshots, evidence admission, reports | Fixed |
+| Native program, targets, construction (`Run`), file placement | Fixed. This change should not touch them. |
+
+**What the kernel may read and must not read** (our reading of the rules, for critique):
+
+- **May read:** `Entity.Owner`, `Entity.Parameters` (as binder identities),
+  `Entity.Body`, `Entity.Declarations` (syntax sites); `Term.Kind`, `Term.Target`,
+  `Term.Callee`, `Term.Arguments`, and `Operand.Term` (as a child relation);
+  `DirectParameterBindings`.
+- **Must not read:** `Entity.Kind`, `Entity.Name`, `Parameter.Sort`, `Term.Operator`,
+  `Term.Encoding`, `Term.Data`, the meaning of an operand `Locator`, and any fact
+  relation or fact term.
+
+**Out of scope:** native enforcement of source bounds in generated code (GEN-02), and
+recursive types, which are rejected today. The design should not make either harder.
 
 ### The shared semantic graph
 
-The graph is the shared context that both the kernel and the source integration hold.
-It stores entities (declarations, parameters, modules and so on), terms (the
-expression trees of bodies), occurrence associations and provider-owned facts. Its
-constructor validates only graph integrity, such as addresses, parameter ownership and
-acyclic term containment. It does not check language rules. Excerpts from
-`semantics/go/model.go`:
+The graph is the shared context. It stores entities (declarations, parameters, modules
+and so on), terms (the expression trees of bodies), occurrence associations (which term
+or entity a syntax position denotes) and provider-owned facts. Its constructor validates
+graph integrity only: addresses, parameter ownership, acyclic term containment. It does
+not check language rules. IDs are one-based addresses local to one graph. Excerpt from
+`semantics/go/model.go`; comments beginning with `//>` are annotations added for this
+document:
 
 ```go
-// IDs are one-based addresses local to one Semantics[L], never persistent identities.
 type EntityID uint32
 type TermID uint32
-
-// Key names vocabulary owned by a provider. It causes no registration or lookup.
-type Key struct{ Owner, Name string }
+type Key struct{ Owner, Name string } // provider-owned vocabulary, e.g. {horos, type-definition}
 
 type Entity struct {
-	Kind         Key           // provider-owned, e.g. {horos, type-definition}
+	Kind         Key
 	Name         string
-	Owner        EntityID      // enclosing entity (for a parameter: its declaration)
-	Declarations []ast.NodeRef // syntax sites that declare it
-	Parameters   []Parameter   // real binders, in declaration order
+	Owner        EntityID      //> enclosing entity; for a parameter, its declaration
+	Declarations []ast.NodeRef //> syntax sites that declare it (ast.NodeRef = tree ID + node ID)
+	Parameters   []Parameter   //> real binders, in declaration order
 	Body         TermID
 }
-
-// Parameter retains a real binder and its coarse provider-owned sort.
 type Parameter struct {
 	Entity EntityID
-	Sort   Key
+	Sort   Key //> coarse provider-owned sort, e.g. {horos, proper} or {horos, constructor}
 }
 
-type TermKind uint8
-
-const (
-	Reference TermKind = iota + 1
-	Application
-	ProviderExpression
-)
-
-// Term has exactly one variant. Application arguments are effective positional
-// arguments, not a mixture of written, inferred, defaulted or packed arguments.
-// Reference owns Target; Application owns Callee and Arguments. Applicability,
-// arity and saturation belong to the provider, not graph admission.
-// A provider expression's encoding defines its bytes and operand locators.
+// Term has exactly one variant (Reference, Application or ProviderExpression).
+// Application arguments are effective positional arguments, not a mixture of
+// written, inferred, defaulted or packed arguments. Reference owns Target;
+// Application owns Callee and Arguments. Applicability, arity and saturation
+// belong to the provider, not graph admission. A provider expression's encoding
+// defines its bytes and operand locators.
 type Term struct {
 	Kind      TermKind
-	Target    EntityID   // Reference
-	Callee    TermID     // Application
-	Arguments []TermID   // Application
-	Operator  Key        // ProviderExpression, e.g. {horos, descriptor/list-of}
-	Encoding  Key        // ProviderExpression payload encoding
-	Data      []byte     // ProviderExpression payload
-	Operands  []Operand  // ProviderExpression children
+	Target    EntityID  //> Reference
+	Callee    TermID    //> Application
+	Arguments []TermID  //> Application
+	Operator  Key       //> ProviderExpression, e.g. {horos, descriptor/list-of}
+	Encoding  Key       //> ProviderExpression payload encoding
+	Data      []byte    //> ProviderExpression payload
+	Operands  []Operand //> ProviderExpression children
 }
-
 type Operand struct {
-	Locator []uint32 // provider-defined path inside the payload
+	Locator []uint32 //> provider-defined path inside the payload
 	Term    TermID
 }
-
-// Subject selects exactly one model-local entity or term.
-type Subject struct {
-	Entity EntityID
-	Term   TermID
-}
-
-// Fact associates a subject with a provider-owned fact term. A relation may have
-// several values; its meaning and cardinality belong to the provider.
-type Fact struct {
-	Subject  Subject
-	Relation Key
-	Term     TermID
-}
+type Subject struct{ Entity EntityID; Term TermID }          //> exactly one is set
+type Fact struct{ Subject Subject; Relation Key; Term TermID } //> several values per relation allowed
 ```
 
 Graph admission enforces, among other things, that each parameter entity is listed by
-exactly one entity and names that entity as its `Owner`, that a reference names an
-existing entity, and that term *containment* (callee, arguments, operands) is acyclic.
-Entity references may form cycles. Containment may form a DAG: one term may be shared.
+exactly one entity and names it as its `Owner`, that a reference names an existing
+entity, and that term containment (callee, arguments, operands) is acyclic. Entity
+references may form cycles. Containment may form a DAG: one term may be shared.
 
 The graph offers point queries: `Entity(id)`, `Term(id)`, `Facts(subject, relation)`,
-occurrence lookups, and one structural pairing query:
+`Resolve(occurrence)` and `TermAt(occurrence)` for syntax positions,
+`DependenciesFrom(entity, relation)`, `Data()` (a full copy), and one structural pairing
+query:
 
 ```go
-type ArgumentBinding struct {
-	Parameter EntityID
-	Argument  TermID
-}
-
 // DirectParameterBindings pairs the real parameters of a direct Reference
 // callee with an equally sized argument list. Parameter-headed applications,
 // other callees and arity mismatches have no such view. This structural query
 // does not establish applicability.
 // A direct zero-parameter application returns an empty successful view.
-func (m Semantics[L]) DirectParameterBindings(id TermID) ([]ArgumentBinding, bool) {
-	...
-	term := m.state.Terms[id-1]
-	if term.Kind != Application { return nil, false }
-	callee := m.state.Terms[term.Callee-1]
-	if callee.Kind != Reference { return nil, false }
-	entity := m.state.Entities[callee.Target-1]
-	if entity.Owner != 0 {               // callee is itself a parameter: no view
-		for _, parameter := range m.state.Entities[entity.Owner-1].Parameters {
-			if parameter.Entity == callee.Target { return nil, false }
-		}
-	}
-	parameters := entity.Parameters
-	if len(parameters) != len(term.Arguments) { return nil, false }
-	result := make([]ArgumentBinding, len(parameters))
-	for i, parameter := range parameters {
-		result[i] = ArgumentBinding{Parameter: parameter.Entity, Argument: term.Arguments[i]}
-	}
-	return result, true
-}
+func (m Semantics[L]) DirectParameterBindings(id TermID) ([]ArgumentBinding, bool)
+type ArgumentBinding struct { Parameter EntityID; Argument TermID }
 ```
 
-There are no reverse or indexed queries (for example "terms owned by a declaration" or
-"entity declared at a syntax site"). A consumer builds those indexes itself.
+It applies to Application terms only. A plain `Reference` such as `Person` has no
+view. There are no reverse or indexed queries, such as "terms in a declaration's body"
+or "entity declared at a site". A consumer builds those indexes itself.
 
 ### Evidence and capture identity
 
-The graph reaches generation inside evidence. A source integration declares which
-evidence it needs as an `EvidenceRequirement`:
+The graph reaches generation inside evidence. A source integration declares the
+evidence it needs:
 
 ```go
-// EvidenceRequirement is a consumer-owned compatibility requirement, not a
-// request to run a provider. Semantics additionally requires a published graph.
 type EvidenceRequirement struct {
-	Operation     semantics.Key   // e.g. {bittype, analysis}
-	Profile       string          // provider profile
-	Configuration []Setting
-	Reports       []Requirement   // each: obligation key + required verdict
-	Semantics     bool
+	Operation     semantics.Key // e.g. {bittype, analysis}
+	Profile       string        // provider profile
+	Configuration []Setting     // exact key/value settings
+	Reports       []Requirement // each: obligation key + required verdict
+	Semantics     bool          // a graph must be published
 }
 ```
 
-`semantic.AdmitEvidence(snapshot, requirements, results)` matches requirement *i* to
-result *i*. It rejects a result produced from a different snapshot (pointer identity),
-a different operation, profile or configuration, a report that is not complete with
-exactly the required verdict, and a missing graph when `Semantics` is true. A
-**completion** is one of Complete, Incomplete or Unsupported. A **verdict** is one of
-Holds, Rejected or Undetermined. "Complete/Undetermined" means a completed enumeration
-that asserts no truth value. The horos generation source requires, among others,
-`program-validity` Complete/Holds and `type-facts`, `applications`,
-`occurrence-bindings` Complete/Undetermined.
+Evidence admission matches requirement *i* to result *i*. It rejects a result from a
+different snapshot (pointer identity), any mismatch of operation, profile or
+configuration, a required report that is not complete with exactly the required
+verdict, and a missing graph when `Semantics` is set. Completion is Complete,
+Incomplete or Unsupported. A verdict is Holds, Rejected or Undetermined.
+"Complete/Undetermined" is a completed enumeration that asserts no truth value. The
+horos source requires `program-validity` Complete/Holds, plus Complete/Undetermined
+for its enumeration reports: declarations, occurrence bindings, applications,
+reference dependencies and type facts.
 
-A result returns its graph as an untyped envelope. A consumer obtains the typed graph
-with `representation.UnpackSemantics[L](snapshot.Language(), envelope)`, which checks
-the language identity, profile and marker type. A graph holds no pointer back to its
-snapshot. The only binding between graph and snapshot is the result that published it.
+A result returns its graph as an untyped envelope.
+`representation.UnpackSemantics[L](snapshot.Language(), envelope)` produces the typed
+graph after checking the language identity, profile and marker. A graph has no pointer
+back to its snapshot. The only binding between them is the result that published it.
 
 ### What horos records and what its analysis judges
 
-The horos analysis provider emits five entity kinds into the graph:
+Entity kinds emitted by horos:
 
 | Entity kind | Owner | Parameters | Body |
 | --- | --- | --- | --- |
@@ -254,73 +355,84 @@ The horos analysis provider emits five entity kinds into the graph:
 | `{horos, type-parameter}` | its type-definition | none | none |
 | `{horos, kind-parameter}` | its kind-definition | none | none |
 
-Imported modules and the always-loaded prelude (which declares kinds such as `Text`
-and `Data`, and no type-definitions) are ordinary module entities in the same graph.
-An import creates no entity; a reference to an imported declaration simply targets
-that declaration's entity. horos has no nested generic declarations: every
-type-definition is owned by a module.
+Imported modules and the prelude are ordinary module entities in the same graph. An
+import creates no entity: a reference to an imported declaration targets that
+declaration's entity. horos has no nested generic declarations. Every type-definition
+is owned by a module.
 
 Type-definition bodies use the three term variants as follows:
 
 | horos expression | Term |
 | --- | --- |
-| A parameter, e.g. `T` | `Reference` whose target is the type-parameter entity |
-| A named type with no arguments, e.g. `Person` | `Reference` whose target is the type-definition (never a zero-argument application) |
-| An application, e.g. `Page<Cell<Person>>` | `Application` whose callee is a term (normally a `Reference`) and whose arguments are terms |
-| A built-in descriptor, e.g. `List<T>`, `{ name: h.Text; }`, a scalar | `ProviderExpression` with operator `{horos, descriptor/<constructor>}`, payload encoding `{ontos, codec-v1}`, and the nested type terms as operands |
+| A parameter, `T` | `Reference` to the type-parameter entity |
+| A named type with no arguments, `Person` | `Reference` to the type-definition. It is never a zero-argument application. |
+| An application, `Page<Cell<Person>>` | `Application` with a callee term (normally a `Reference`) and argument terms |
+| A descriptor: `list<T>`, `text`, `{ ... }`, `wire<V>` | `ProviderExpression`. Operator `{horos, descriptor/<constructor>}`, payload in the encoding `{ontos, codec-v1}` (a canonical binary value encoding), nested type terms as operands. |
 
-Operand locators are paths into the encoded descriptor tuple, defined by horos. For
-example, a list element is at `[1]`, and record field *i* has its type at `[i+1, 3]`.
-Record field names and the optional flag are only in the payload.
+Operand locators are paths into the encoded descriptor tuple, defined by horos. A list
+element is at `[1]`. A record payload is the tuple `(horos/record, closed|open,
+field…)`, where each field is the tuple `(horos/field, name, req|opt, type)`. The type
+of zero-based field *k* is therefore at `[k+2, 3]`, and field names exist only in the
+payload.
 
-Facts used by generation (all owner `horos`): `sort` (on every type term, declaration
-and parameter; the value is a sort term `{horos, sort/proper}` or `{horos, sort/arrow}`,
-an arrow being a type constructor such as `* -> *`), `result-sort` (on declarations),
-`canonical-identity` (on modules, as a 32-byte content hash called the *module pin*;
-also on declarations and parameters), `declared-kind` (a parameter's bound, as a kind
-term) and `membership` (a proven kind membership, with its assumptions, on every type
-term). There is no separate "bounds" relation: a bound is the `declared-kind` fact on
-the parameter. A missing fact asserts nothing.
+horos publishes several facts. Generation reads three of them:
 
-The analysis judges the whole module closure before it reports
-`program-validity` Complete/Holds. Under each declaration's own parameter assumptions:
+- `sort`, on every type term, declaration and parameter. Its value is a sort term
+  `{horos, sort/proper}` or `{horos, sort/arrow}`.
+- `result-sort`, on declarations.
+- `canonical-identity`, on modules. Its value is a term `{horos, identity/module}`
+  holding the 32-byte module pin.
+
+It also reads the occurrence associations, for diagnostic sites. horos additionally
+publishes `declared-kind` (a parameter's bound, as a kind term) and `membership` (a
+proven kind membership with its assumptions, on every type term), but generation does
+not read them today. A missing fact asserts nothing.
+
+The analysis judges the whole module closure before it reports `program-validity`
+Complete/Holds. Under each declaration's own parameter assumptions:
 
 - every application exactly saturates its callee and has sort-correct arguments;
 - every argument provably satisfies the callee's declared parameter kind;
-- every descriptor operand satisfies its formation contract;
-- the body satisfies the declared result kind.
+- every descriptor operand satisfies its formation contract, horos's well-formedness
+  rule for that descriptor's operands;
+- the body satisfies its declared result kind.
 
-When a judgment fails, no graph is published. A refuted bound yields
-`program-validity` Complete/Rejected; an unprovable bound yields Incomplete/Undetermined.
-The analysis does **not** require types to be *proper* (non-constructor). Generation adds
-that as a profile restriction: constructor-valued types have no default native
-representation. horos therefore accepts several forms that generation must reject, and
-today it rejects them inconsistently:
+When a judgment fails, no graph is published. The analysis does **not** require types
+to be proper, that is, not type constructors. The horos generation integration adds
+that restriction in every generation profile today, because constructor-valued types
+have no default native form. horos therefore accepts forms that generation must reject,
+and today it rejects some of them with the wrong kind of error:
 
-| horos-valid form | Graph shape | Today's generation error |
+| horos-valid form | Graph shape | Today's generation outcome |
 | --- | --- | --- |
-| Constructor-valued declaration or parameter | sort `sort/arrow` | Unsupported diagnostic (correct) |
-| Curried application `Later<Alias><text>` | application whose callee is an application | Unsupported diagnostic (correct) |
-| Parameter-headed application `F<A>` | application whose callee references a parameter | scope error (wrong kind of error) |
-| Applying a zero-parameter constructor alias, `Alias<text>` | application with one argument whose callee has no parameters | invalid-request error (wrong kind of error) |
+| Constructor-valued declaration, or constructor-sorted parameter | sort `sort/arrow` | Unsupported diagnostic when the declaration is opened (correct) |
+| Parameter-headed application `F<A>` in `type Later<F: ...> = F<text>` | Application whose callee references a parameter | Unsupported at open, because `F` has an arrow sort. A later scope-error branch is unreachable but would misreport the case. |
+| Curried application `Later<Alias><text>` | Application whose callee is an application | Unsupported diagnostic (correct) |
+| Applying a zero-parameter constructor alias: `type Alias: ... = ListType; type X = Alias<text>;` | One-argument application whose callee has no parameters | Invalid-request error (wrong: should be Unsupported) |
 
-These misclassifications illustrate why "no structural view", "rejected judgment",
-"uncovered fact" and "malformed input" need distinct outcomes.
+The misclassifications show why "no structural view", "rejected judgment", "uncovered
+fact" and "malformed input" need distinct outcomes.
 
 ### The current generation contract
 
-The public contract (`contracts/generation/go/source.go` and `mapping.go`), complete:
+The public contract, from `contracts/generation/go/source.go`, `mapping.go`,
+`reference.go` and `description.go`. Handles are owner-qualified addresses:
 
 ```go
-// Owner-qualified addresses. A Space allocates refs; only refs from the configured
-// owner's space are accepted. A Ref is an address, not a proof of existence.
+// A Space issues addresses for one owner. Space.Ref(n) returns the address
+// numbered n (n > 0); Space.Index(r) returns n only if r came from this Space.
+// A Ref is an address, not a proof that a record exists.
+type Space[K any] struct{ /* private owner identity */ }
+type Ref[K any] struct{ /* private owner pointer, slot uint64 */ }
+type Owner[K any] struct{ /* identity check only: Owns(r) */ }
+
 type Declaration[F any] = Ref[DeclarationRole[F]]
 type Binder[F any]      = Ref[BinderRole[F]]
 type Use[F any]         = Ref[UseRole[F]]
 type Environment[F any] = Ref[EnvironmentRole[F]]
 
-type Formal[F any] struct { Binder Binder[F]; Subject Use[F] }
-type Actual[F any] struct { Binder Binder[F]; Use Use[F] }
+type Formal[F any] struct{ Binder Binder[F]; Subject Use[F] } //> Subject: the formal subject
+type Actual[F any] struct{ Binder Binder[F]; Use Use[F] }
 
 // These are provider construction records. Only the configured source can admit them.
 type OpenData[F any] struct {
@@ -329,271 +441,294 @@ type OpenData[F any] struct {
 	Body        Use[F]
 	Formals     []Formal[F]
 }
-
 type UseData[F any] struct {
-	Use         Use[F]          // the occurrence
-	Subject     Use[F]          // the source-certified effective subject
+	Use         Use[F]          //> the occurrence
+	Subject     Use[F]          //> the effective subject
 	Environment Environment[F]
-	Callee      Declaration[F]  // set for a use of a declaration
-	Bound       Binder[F]       // set for a use of a bound formal
-	Actuals     []Actual[F]     // callee binders paired with argument uses
+	Callee      Declaration[F]  //> set for a use of a declaration
+	Bound       Binder[F]       //> set for a use of a parameter in scope
+	Actuals     []Actual[F]     //> callee binders paired with argument uses
 }
 
-type SourceOwners[F any] struct {
-	Declarations Owner[DeclarationRole[F]]
-	Binders      Owner[BinderRole[F]]
-	Uses         Owner[UseRole[F]]
-	Environments Owner[EnvironmentRole[F]]
-}
-
-// References requests authentication of existing, correctly typed source records.
-type References[F any] struct {
-	Declarations []Declaration[F]
-	Binders      []Binder[F]
-	Uses         []Use[F]
-	Environments []Environment[F]
-}
-
-// Source consumes already supplied receipts/queries. It performs no hidden
-// resolution or analysis. Its records and policy remain immutable during a run.
 type Source[F any] interface {
-	CheckInput(context.Context, semantic.Snapshot, []semantic.Result) error
-	Owners() SourceOwners[F]
-	RootEnvironment() Environment[F]
+	CheckInput(context.Context, semantic.Snapshot, []semantic.Result) error //> same snapshot and evidence as the source was opened with
+	Owners() SourceOwners[F]          //> the four Owner values
+	RootEnvironment() Environment[F]  //> no kernel or test caller
+	// Authenticate checks that each address belongs to this source's spaces and names
+	// an existing record. It does not establish applicability.
 	Authenticate(context.Context, References[F]) error
 	Open(context.Context, Declaration[F]) (OpenData[F], error)
 	// Admit establishes the whole use's applicability under its original
 	// assumptions using supplied evidence, including actuals the mapping may
-	// never represent. Missing evidence must fail, never trigger hidden analysis.
+	// never represent. Use identifies the occurrence; Subject is the
+	// source-certified effective subject. Missing evidence must fail, never
+	// trigger hidden analysis.
 	Admit(context.Context, Environment[F], Use[F]) (UseData[F], error)
 	// CheckChild authenticates a direct semantic operand or generic actual of parent.
 	CheckChild(context.Context, Environment[F], Use[F], Use[F]) error
 }
-
-// Catalog is source-owned interpretation; enumeration does not demand expansion.
 type Catalog[F any] interface {
-	Declarations() []Declaration[F]
-	DeclarationSelector(Declaration[F]) (Selector, bool, error)
+	Declarations() []Declaration[F] //> no kernel caller
+	DeclarationSelector(Declaration[F]) (Selector, bool, error) //> bool: has a selector
 	UseSelector(UseData[F]) (Selector, error)
 }
-
 type SourceSession[F any] interface {
 	Source[F]
 	Catalog[F]
-	ResolveRoots(context.Context, []ast.NodeRef) ([]Declaration[F], error)
+	ResolveRoots(context.Context, []ast.NodeRef) ([]Declaration[F], error) //> syntax sites to declarations
 }
-
 type SourceProvider[F any, S SourceSession[F]] interface {
-	Contract() transform.Contract   // the evidence requirements above
-	Open(context.Context, transform.Request[F]) (S, error)
+	Contract() transform.Contract // {Evidence []EvidenceRequirement}
+	Open(context.Context, transform.Request[F]) (S, error) // request: snapshot, entry tree, admitted evidence
 }
 ```
 
-Mapping libraries are typed by the concrete session type `S`, so they can call the
-source integration's own reading API in addition to the contract:
+The kernel never checks address ownership itself. It checks only that `Owners()` is
+valid. Every rejection of foreign or forged addresses happens inside the source's
+`Authenticate`.
+
+Mapping libraries are typed by the session type `S`, so they can call the source's own
+reading API as well as the contract:
 
 ```go
-// Pattern fixes selection and declares its captures. Capture interprets the
-// selected source meaning only; the kernel checks each child relation.
+type Slot struct{ /* unique identity */ }              //> a named hole in an output expression
+type Capture[F any] struct{ Slot Slot; Use Use[F] }
+
 type Pattern[F any, S SourceSession[F]] struct {
 	Selector Selector
 	Slots    []Slot
-	Capture  func(context.Context, S, UseData[F]) ([]Capture[F], error)
+	// Capture interprets the selected source meaning only; the kernel checks each child relation.
+	Capture func(context.Context, S, UseData[F]) ([]Capture[F], error)
 }
-type BindingDescription[F, T any, S SourceSession[F]] struct {
+type BindingDescription[F, T any, S SourceSession[F]] struct { //> a rule for uses matching Selector
 	ID     string
 	Input  Pattern[F, S]
-	Output Expression[T]                                             // fixed output, or
-	Expand func(context.Context, Expansion[F, T, S]) (Expression[T], error) // computed output
+	Output Expression[T]                                                     //> fixed output, or
+	Expand func(context.Context, Expansion[F, T, S]) (Expression[T], error) //> computed output
 }
-type DeclarationRecipe[F, T any, S SourceSession[F]] struct {
+type DeclarationRecipe[F, T any, S SourceSession[F]] struct { //> how to emit a declaration
 	ID       string
-	Selector Selector // zero selector: the structural declaration policy
+	Selector Selector //> zero: the default recipe for any declaration
 	Expand   func(context.Context, DeclarationRequest[F, T, S]) (DeclarationDescription[T], error)
 }
-// GenericConvention: Bindings is indexed by source parameter (what each source
-// binder means inside the native declaration); Arguments is indexed by native
-// parameter (how a use fills each native parameter from the source actuals).
+type DeclarationDescription[T any] struct {
+	Name    string
+	Form    Form[T]        //> target-owned declaration form, e.g. interface or alias
+	Origin  ast.NodeRef
+	Generic GenericConvention[T]
+	Body    Expression[T]
+}
+// GenericConvention: Bindings[i] is what source binder i means inside the native
+// declaration; Arguments[j] says how a use fills native parameter j from the source
+// actuals. Parameters may be reordered, omitted or added.
 type GenericConvention[T any] struct {
-	Parameters []ParameterDescription
+	Parameters []ParameterDescription // {Name, Origin, RequiredUse}; RequiredUse: must appear in the body
 	Bindings   []Expression[T]
 	Arguments  []Expression[T]
 }
 type MappingLibrary[F, T any, S SourceSession[F]] interface {
-	Describe(from, to representation.Language) (MappingDescription[F, T, S], error)
+	Describe(from, to representation.Language) (MappingDescription[F, T, S], error) // {Profile, Bindings, Declarations, Helpers}
 }
 ```
 
 `Expression[T]` is a native expression tree with a few kernel-owned placeholders:
-`Mapped(slot)` (substitute the mapped representation of a captured source use),
-`Parameter(i)` (a native type parameter of the declaration being planned),
-`Argument(i)` (the native representation of the *i*-th source actual at a use site),
-and `Helper(key)` (a library-owned helper declaration).
 
-During an expansion, a mapping library holds an `Expansion` value whose methods expire
-when the callback returns:
+- `Mapped(slot)` is replaced by the planned representation of the use captured in that
+  slot.
+- `Parameter(i)` is native type parameter *i* of the declaration being planned.
+- `Argument(i)` is the representation of source actual *i* at a use site.
+- `Helper(key)` refers to a library-owned helper declaration.
+
+While a callback runs, a library holds an `Expansion`. Its methods fail after the
+callback returns:
 
 ```go
-func (r Expansion[F, T, S]) Source() (S, error)        // the session, while active
-func (r Expansion[F, T, S]) Use() (UseData[F], error)  // the admitted use being mapped
-func (r Expansion[F, T, S]) Mapped(use Use[F]) (Expression[T], error) {
-	...
-	if s.open.Declaration.Valid() {
-		if use != s.open.Body { err = ErrScope } // declaration recipes can map their body only
-	} else {
-		err = s.source.CheckChild(s.ctx, s.use.Environment, s.use.Use, use)
-	}
-	...
-}
-func (r DeclarationRequest[F, T, S]) Open() (OpenData[F], error)
+func (r Expansion[F, T, S]) Source() (S, error)       // the session
+func (r Expansion[F, T, S]) Use() (UseData[F], error) // the admitted use being mapped
+// Mapped records use as a capture under a fresh slot and returns the placeholder
+// Mapped(slot); the planner resolves it after the callback. A declaration recipe may
+// capture only its body; a binding rule only a child accepted by Source.CheckChild.
+// Each call counts against the References limit.
+func (r Expansion[F, T, S]) Mapped(use Use[F]) (Expression[T], error)
+func (r DeclarationRequest[F, T, S]) Open() (OpenData[F], error) // DeclarationRequest embeds Expansion
 ```
 
-### How the planner drives the source today
+### Today's planner on the running example
 
-The planner (`contracts/generation/go/planning.go`) starts at requested root
-declarations, declares each one, and walks uses depth-first. Condensed excerpts:
+The planner declares each requested root and resolves uses depth-first. Each step is
+tagged **N** (navigation of structure the graph already holds) or **I**
+(interpretation). Graph terms: `u0 = App(u1=Ref(Page), [u2])`,
+`u2 = App(u3=Ref(Cell), [u4])`, `u4 = Ref(Person)`. Page's body is a record `g0` whose
+field types are `g1 = list<g2>` with `g2 = Ref(Page.T)`, and `g3 = text`.
+
+1. `declare(People)`: `Authenticate`, then `DeclarationSelector(People)` (**I**:
+   module pin + name). There is no exact recipe, so the default recipe applies.
+2. `Open(People)` returns body `u0` and no formals (**N**). It checks that
+   People's result sort is proper (**I**).
+3. The recipe calls `Declaration(People)` for name, pin and root-module flag (**I**),
+   reads `u0`'s constructor to pick the alias form (**I**), and captures `u0` as its
+   body.
+4. `Admit(People, u0)`:
+   - checks that `u0` lies in People's body (**N**: a pre-built term-to-declaration
+     map);
+   - checks that `u0`'s sort is proper (**I**);
+   - finds callee Page through the Reference callee and pairs `Page.T` with `u2` (**N**).
+5. `Admit(People, u2)` is the whole-use admission of the actual (**N**+**I**).
+6. `DeclarationSelector(Page)` (**I**) finds no exact binding, so the planner calls
+   `declare(Page)`. `Open(Page)` gives body `g0` and formal `T` (**N**) and checks that
+   both are proper (**I**).
+7. The recipe calls `Parameter(T)` for the name (**I**) and records the convention
+   `T ↦ Parameter(0)`.
+8. `Admit(Page, g0)`, then `UseSelector(g0)` (**I**: `builtin/record/closed`), selects
+   the record rule.
+   - The record rule calls `IsBody` (**N**) and `Fields(g0)` (**I**: names, optional
+     flags, and field-type uses found through payload locators).
+   - It captures `g1` and `g3`. Each capture passes `CheckChild` (**N**: is it an operand
+     of `g0`?).
+9. `use(Page, g1)`: `UseSelector` selects the list rule. Its capture reads the
+   operand at `[1]`, which is `g2` (**I**), and `CheckChild(g1, g2)` passes (**N**).
+10. `use(Page, g2)`: `Admit` reports that `g2` references `Page.T`, owned by Page, so the
+    use is bound (**N**). The planner substitutes `Parameter(0)`.
+11. Back at `u0`, the convention needs argument 0, so the planner calls
+    `use(People, u2)`. `Admit` finds callee Cell and pairs `Cell.V` with `u4` (**N**).
+    `DeclarationSelector(Cell)` (**I**) matches the Cell library's exact binding.
+12. The Cell library's capture reads `use.Actuals[0].Use`, which is `u4`. That is the
+    pairing the source computed in step 11 (**N**). `CheckChild(u2, u4)` passes (**N**).
+    Cell's body is never opened.
+13. `use(People, u4)`: `Admit` reports a reference to Person with no actuals (**N**).
+    There is no exact binding, so the planner calls `declare(Person)`, which works like
+    steps 1 to 8.
+14. The result is `People = Page<Cell<Person>>`.
+
+Every **N** step is answered by the source from structure already in the graph.
+
+### The planner's use resolution (condensed)
 
 ```go
 func (p *planner[F, T, S]) declare(d Declaration[F], depth int) (uint32, error) {
 	if id := p.declarations[d]; id != 0 {
 		if p.active[id] { return 0, fmt.Errorf("%w: recursive native declaration", ErrUnsupported) }
-		return id, nil
+		return id, nil // declarations are memoized; uses are not
 	}
-	key, err := p.declarationKey(d) // Authenticate + DeclarationSelector
-	choices := p.recipes[key]       // exact recipe, else the structural recipe
-	...
+	// selector, then exactly one recipe (exact, else the default; several: ErrAmbiguous;
+	// an exact use binding without a recipe: ErrUnsupported)
 	open, err := p.source.Open(p.ctx, d)
-	if open.Declaration != d || !open.Body.Valid() || !open.Environment.Valid() { return 0, ErrScope }
-	p.source.Authenticate(... open.Body, open.Environment ...)
 	id, _ := p.reserve()
-	desc, err := choice.recipe.Expand(ctx, DeclarationRequest{...open...})
+	p.declarations[d], p.opens[d] = id, open // recorded before Expand, so recursion is detected
+	desc, err := recipe.Expand(ctx, request)
 	if len(desc.Generic.Bindings) != len(open.Formals) { return 0, ErrScope }
-	env := map[Binder[F]]Expression[T]{}
-	for i, f := range open.Formals {          // real binder -> its native meaning
-		p.source.Authenticate(... f.Binder, f.Subject ...)
-		env[f.Binder], _ = p.template(desc.Generic.Bindings[i], id, ...)
-	}
+	env := map[Binder[F]]Expression[T]{} // real binder -> its native meaning
+	for i, f := range open.Formals { env[f.Binder] = /* desc.Generic.Bindings[i] */ }
 	desc.Body, err = p.resolve(desc.Body, captures, open.Environment, env, id, depth+1)
-	...
+	// RequiredUse parameters must occur in the body; the target checks the declaration
 }
+
+// resolve replaces each Mapped(slot) placeholder by p.use(capturedUse, ...) in the
+// caller's environment. Operands no mapping captures are never visited.
 
 func (p *planner[F, T, S]) use(use Use[F], environment Environment[F], env map[Binder[F]]Expression[T], scope uint32, depth int) (Expression[T], error) {
 	data, err := p.source.Admit(p.ctx, environment, use)
 	if data.Use != use || data.Environment != environment { return Expression[T]{}, ErrScope }
-	if data.Bound.Valid() {                   // a formal in scope
-		value, ok := env[data.Bound]
-		if !ok { return Expression[T]{}, ErrScope }
-		return value, nil
-	}
+	if data.Bound.Valid() { return env[data.Bound], nil } // missing entry: ErrScope
 	// Whole-source admission applies even to arguments a representation omits.
-	for _, a := range data.Actuals {
-		p.source.Authenticate(... a.Binder, a.Use ...)
-		if _, err = p.source.Admit(p.ctx, environment, a.Use); err != nil { return ..., err }
-	}
-	selector, err := p.source.UseSelector(data)
-	if data.Callee.Valid() { selector, _, err = p.source.DeclarationSelector(data.Callee) }
-	if choice, ok := single(p.bindings[selector.Key()]); ok {
-		// an exact binding: capture children, each checked with CheckChild, then map
-		...
+	// (One Admit per actual; the actual's own subtree is not admitted here.)
+	for _, a := range data.Actuals { p.source.Admit(p.ctx, environment, a.Use) }
+	selector := /* DeclarationSelector(callee) if a callee, else UseSelector(data) */
+	switch choices := p.bindings[selector.Key()]; len(choices) {
+	case 0: // fall through to the callee's declaration
+	case 1: // exact binding: run Capture, CheckChild each capture, Expand, resolve
+		return ...
+	default:
+		return Expression[T]{}, ErrAmbiguous // never a fallback
 	}
 	if !data.Callee.Valid() { return Expression[T]{}, ErrUnsupported }
-	id, err := p.declare(data.Callee, depth+1)       // generic or plain declaration
-	open := p.opens[data.Callee]
-	if len(data.Actuals) != len(open.Formals) { return Expression[T]{}, ErrScope }
-	// pair actuals with the callee's real binders; map only those the native
-	// convention needs, then fill native arguments from the convention
-	...
+	id, err := p.declare(data.Callee, depth+1)
+	// pair actuals with the callee's real binders; map only the actuals the native
+	// convention references; build native arguments from convention.Arguments
 	return Expression[T]{kind: DeclarationExpression, declaration: id, args: args}, nil
 }
 ```
 
-Construction (`Run`) later receives only the closed native program. It has no source
-access and no mapping callbacks.
+Construction later receives only the closed native program. It has no source access
+and no mapping callbacks.
 
 ### The horos source integration
 
-At open time (`New`), the horos integration copies the whole graph and pre-walks every
-type-definition body to build a term-to-declaration ownership map. It also indexes the
-facts it interprets: `sort` (on parameters and terms), `result-sort` (on declarations)
-and `identity` (a module's content pin, a 32-byte hash).
+The horos source is the concrete `S`. Its addresses encode graph positions:
+
+| Address | Slot number |
+| --- | --- |
+| Declaration | the entity ID |
+| Binder | the parameter's entity ID |
+| Use | a term ID; for a formal subject, the term count plus the parameter's entity ID |
+| Environment | 1 for the root; for a declaration, its entity ID plus 1 |
+
+At open time, the horos source copies the graph. It indexes the three facts it reads
+(rejecting a second value on one subject, which the graph itself would allow) and
+pre-walks every type-definition body:
 
 ```go
-for i, e := range s.facts.Entities {
+for i, e := range facts.Entities {
 	id := semantics.EntityID(i + 1)
 	if e.Kind != (semantics.Key{Owner: "horos", Name: "type-definition"}) { continue }
-	if e.Owner == 0 || e.Body == 0 || len(e.Declarations) != 1 { return nil, semantic.ErrInvalidRequest }
-	d, _ := s.declarations.Ref(uint64(id))
-	...
-	for _, p := range e.Parameters {
-		b, _ := s.binders.Ref(uint64(p.Entity))
-		s.bound[p.Entity] = b
-		u, _ := s.uses.Ref(uint64(len(s.facts.Terms)) + uint64(p.Entity)) // a fabricated "formal subject" use
-		s.formalSubjects[p.Entity] = u
-	}
-	// The graph owns lexical term sites. Callee references are not expanded.
+	// register the declaration, its binders and one synthetic formal-subject use per binder
 	var walk func(semantics.TermID, int) error
 	walk = func(t semantics.TermID, depth int) error {
-		if old := s.termOwners[t]; old != 0 {
-			if old != id { return semantic.ErrInvalidRequest } // a term shared by two declarations is rejected
+		if depth > 512 { return ErrLimit }
+		if old := termOwners[t]; old != 0 {
+			if old != id { return semantic.ErrInvalidRequest } // a term shared by two bodies fails the whole session
 			return nil
 		}
-		s.termOwners[t] = id
-		term := s.facts.Terms[t-1]
-		for _, a := range term.Arguments { walk(a, depth+1) }
-		for _, a := range term.Operands  { walk(a.Term, depth+1) }
+		termOwners[t] = id
+		for _, a := range terms[t-1].Arguments { walk(a, depth+1) }
+		for _, o := range terms[t-1].Operands  { walk(o.Term, depth+1) } // callees are not walked
 		return nil
 	}
 	walk(e.Body, 0)
 }
 ```
 
-`Open` and `Admit` then combine graph navigation with horos judgments:
+`Open` and `Admit` combine navigation with horos judgments. In the excerpt, `i`, `e`,
+`ti` and `formal` are the slot numbers decoded from the addresses:
 
 ```go
 func (s *Source) Open(ctx context.Context, d g.Declaration[h.Language]) (g.OpenData[h.Language], error) {
-	// authenticate d ...
 	e := s.facts.Entities[i-1]
-	if err := s.proper(s.results[semantics.EntityID(i)], e.Body); err != nil { ... } // horos judgment
-	env, _ := s.environments.Ref(i + 1)
-	o := g.OpenData[h.Language]{Declaration: d, Environment: env, Body: s.use(e.Body)} // navigation
-	for _, p := range e.Parameters {                                                  // navigation
-		if err := s.proper(s.sorts[semantics.Subject{Entity: p.Entity}], e.Body); err != nil { ... } // judgment
-		o.Formals = append(o.Formals, g.Formal[h.Language]{Binder: s.bound[p.Entity], Subject: s.formalSubjects[p.Entity]})
+	if err := s.proper(s.results[i], e.Body); err != nil { ... }            // I: result sort proper
+	o := g.OpenData[h.Language]{Declaration: d, Environment: env(i+1), Body: s.use(e.Body)} // N
+	for _, p := range e.Parameters {
+		if err := s.proper(s.sorts[Subject{Entity: p.Entity}], e.Body); err != nil { ... } // I
+		o.Formals = append(o.Formals, g.Formal[h.Language]{Binder: s.bound[p.Entity], Subject: s.formalSubjects[p.Entity]}) // N
 	}
 	return o, nil
 }
 
 func (s *Source) Admit(ctx context.Context, env g.Environment[h.Language], use g.Use[h.Language]) (g.UseData[h.Language], error) {
 	u := g.UseData[h.Language]{Use: use, Subject: use, Environment: env}
-	// authenticate use and env ...
-	if formal != 0 {                                      // the fabricated formal-subject use
-		if s.facts.Entities[formal-1].Owner != semantics.EntityID(e-1) { return u, g.ErrScope }
+	if formal != 0 { // the synthetic formal-subject use
+		if s.facts.Entities[formal-1].Owner != EntityID(e-1) { return u, g.ErrScope } // N
 		u.Bound = s.bound[formal]
 		return u, nil
 	}
-	id := semantics.TermID(ti)
-	if s.termOwners[id] != semantics.EntityID(e-1) { return u, g.ErrScope }       // scope (navigation)
-	if err := s.proper(s.sorts[semantics.Subject{Term: id}], id); err != nil { return u, err } // judgment
-	t := s.facts.Terms[id-1]
-	if t.Kind == semantics.Reference || t.Kind == semantics.Application {         // navigation
+	if s.termOwners[ti] != EntityID(e-1) { return u, g.ErrScope }               // N: scope
+	if err := s.proper(s.sorts[Subject{Term: ti}], ti); err != nil { return u, err } // I
+	t := s.facts.Terms[ti-1]
+	if t.Kind == Reference || t.Kind == Application {                            // N
 		target := t.Target
-		if t.Kind == semantics.Application {
+		if t.Kind == Application {
 			callee := s.facts.Terms[t.Callee-1]
-			if callee.Kind != semantics.Reference { return u, s.Unsupported(use, "computed constructor application") }
+			if callee.Kind != Reference { return u, s.Unsupported(use, "computed constructor application") }
 			target = callee.Target
 		}
-		if b := s.bound[target]; b.Valid() {               // a reference to a parameter
-			if t.Kind != semantics.Reference || s.facts.Entities[target-1].Owner != semantics.EntityID(e-1) { return u, g.ErrScope }
-			u.Bound = b
-			u.Subject = s.formalSubjects[target]
+		if b := s.bound[target]; b.Valid() { // a parameter
+			if t.Kind != Reference || s.facts.Entities[target-1].Owner != EntityID(e-1) { return u, g.ErrScope }
+			u.Bound, u.Subject = b, s.formalSubjects[target]
 			return u, nil
 		}
-		d := s.decls[target]
-		if !d.Valid() { return u, s.Unsupported(use, "constructor-valued application") }
-		u.Callee = d
+		u.Callee = s.decls[target]
 		parameters := s.facts.Entities[target-1].Parameters
 		if len(parameters) != len(t.Arguments) { return u, semantic.ErrInvalidRequest }
-		for i, p := range parameters {                     // pairing actuals with real binders
+		for i, p := range parameters { // pairing actuals with real binders
 			u.Actuals = append(u.Actuals, g.Actual[h.Language]{Binder: s.bound[p.Entity], Use: s.use(t.Arguments[i])})
 		}
 	}
@@ -602,94 +737,65 @@ func (s *Source) Admit(ctx context.Context, env g.Environment[h.Language], use g
 	return u, nil
 }
 
-// proper: the sort fact must be the horos provider expression {horos, sort/proper}.
-// Constructor-valued types (sorts like * -> *) need an explicit representation.
-func (s *Source) proper(sortID, term semantics.TermID) error {
-	if sortID == 0 || int(sortID) > len(s.facts.Terms) { return semantic.ErrInvalidRequest }
-	t := s.facts.Terms[sortID-1]
-	if t.Kind != semantics.ProviderExpression || t.Operator != (semantics.Key{Owner: "horos", Name: "sort/proper"}) {
-		return s.Unsupported(s.use(term), "constructor-valued types require an explicit representation")
-	}
-	return nil
-}
+// proper (I): the sort fact must be the term {horos, sort/proper}; an absent fact is
+// reported as semantic.ErrInvalidRequest, an arrow sort as an Unsupported diagnostic.
 
 func (s *Source) CheckChild(ctx context.Context, env g.Environment[h.Language], parent, child g.Use[h.Language]) error {
-	p, err := s.Admit(ctx, env, parent)
-	if _, err = s.Admit(ctx, env, child); err != nil { return err }
-	for _, a := range p.Actuals { if a.Use == child { return nil } }       // a generic actual
-	v, err := s.Read(parent)
-	for _, o := range v.Operands { if o.Use == child { return nil } }      // a provider operand
+	p, _ := s.Admit(ctx, env, parent)
+	if _, err := s.Admit(ctx, env, child); err != nil { return err }
+	for _, a := range p.Actuals { if a.Use == child { return nil } }  // N: a generic actual
+	v, _ := s.Read(parent)
+	for _, o := range v.Operands { if o.Use == child { return nil } } // N: a descriptor operand
 	return g.ErrScope
 }
 ```
 
-Its catalogue functions are horos interpretation:
-
-```go
-func Named(language representation.Language, modulePin, name string) (g.Selector, error) {
-	return g.NewSelector(language, "declaration/"+modulePin+"/"+name)
-}
-func Builtin(language representation.Language, constructor, discriminator string) (g.Selector, error) {
-	return g.NewSelector(language, fmt.Sprintf("builtin/%d:%s/%d:%s", len(constructor), constructor, len(discriminator), discriminator))
-}
-func (s *Source) DeclarationSelector(d g.Declaration[h.Language]) (g.Selector, bool, error) {
-	e := s.facts.Entities[...]
-	pin, err := s.modulePin(e.Owner)          // reads the module's identity fact
-	key, err := Named(s.snapshot.Language(), pin, e.Name)
-	return key, true, err
-}
-func (s *Source) UseSelector(use g.UseData[h.Language]) (g.Selector, error) {
-	if use.Bound.Valid() { return Bound(s.snapshot.Language()) }
-	view, err := s.Read(use.Use)              // decodes {horos, descriptor/<constructor>} and its payload
-	return Builtin(s.snapshot.Language(), view.Constructor, view.Discriminator)
-}
-```
-
-Beyond the contract, the horos session type exposes a reading API that horos mapping
-libraries use:
+`DeclarationSelector` reads the module's identity fact and builds
+`declaration/<pin>/<name>` (**I**). `UseSelector` decodes the descriptor operator and
+payload discriminator (**I**). Beyond the contract, the horos session exposes a reading
+API for horos mapping libraries:
 
 ```go
 type Reader interface {
 	g.SourceSession[h.Language]
-	Snapshot() semantic.Snapshot
-	Declaration(g.Declaration[h.Language]) (Declaration, error) // name, module pin, root-module flag, origin site, body
-	Parameter(g.Binder[h.Language]) (Parameter, error)         // name and declaration site
-	IsBody(g.Environment[h.Language], g.Use[h.Language]) bool  // is this use the declaration's body?
-	Read(g.Use[h.Language]) (Expression, error)                // constructor, discriminator, origin, operands
-	Operand(g.Use[h.Language], ...uint32) (g.Use[h.Language], error) // operand at a payload locator
-	Fields(g.Use[h.Language]) ([]Field, error)                 // record field name, optional flag, type use, origin
-	Unsupported(g.Use[h.Language], string) error               // a diagnostic at the use's site
+	Declaration(g.Declaration[h.Language]) (Declaration, error)       // name, module pin, root-module flag, site, body
+	Parameter(g.Binder[h.Language]) (Parameter, error)               // name and site
+	IsBody(g.Environment[h.Language], g.Use[h.Language]) bool        // is the use the declaration's body? (N)
+	Read(g.Use[h.Language]) (Expression, error)                      // constructor, discriminator, site, operands
+	Operand(g.Use[h.Language], ...uint32) (g.Use[h.Language], error) // the operand at a locator
+	Fields(g.Use[h.Language]) ([]Field, error)                       // record fields: name, optional, type use, site
+	Unsupported(g.Use[h.Language], string) error                     // a diagnostic at the use's site
 }
 ```
 
-### How mapping libraries use the source today
+### How mapping libraries use the source
 
-The horos declaration recipe (shared by every horos-to-native target):
+The default horos declaration recipe, shared by all four targets:
 
 ```go
 Expand: func(ctx context.Context, r g.DeclarationRequest[h.Language, T, source.Reader]) (g.DeclarationDescription[T], error) {
 	src, _ := r.Source()
 	open, _ := r.Open()
-	decl, err := src.Declaration(open.Declaration)       // horos identity
-	name, err := Exported(decl.Name)
-	if !decl.Root { name = "M" + decl.ModulePin[:16] + "_" + name } // imported module
-	body, err := src.Read(open.Body)
+	decl, _ := src.Declaration(open.Declaration)
+	name, _ := Exported(decl.Name) // a native-safe identifier
+	if !decl.Root { name = "M" + decl.ModulePin[:16] + "_" + name } // a declaration from an imported module
+	body, _ := src.Read(open.Body)
 	form := alias
 	if body.Constructor == "record" { form = record }
 	desc := g.DeclarationDescription[T]{Name: name, Form: form, Origin: decl.Origin}
 	for i, f := range open.Formals {
-		parameter, err := src.Parameter(f.Binder)
-		pname, err := Exported(parameter.Name)
+		parameter, _ := src.Parameter(f.Binder)
+		pname, _ := Exported(parameter.Name)
 		desc.Generic.Parameters = append(desc.Generic.Parameters, g.ParameterDescription{Name: pname, Origin: parameter.Origin, RequiredUse: true})
 		desc.Generic.Bindings = append(desc.Generic.Bindings, g.Parameter[T](i))
 		desc.Generic.Arguments = append(desc.Generic.Arguments, g.Argument[T](i))
 	}
-	desc.Body, err = r.Mapped(open.Body)
-	return desc, err
+	desc.Body, _ = r.Mapped(open.Body)
+	return desc, nil
 }
 ```
 
-The record rule for TypeScript (Go, Rust and C++ are analogous):
+The TypeScript record rule (Go, Rust and C++ are analogous):
 
 ```go
 Expand: func(ctx context.Context, r g.Expansion[h.Language, s.Language, source.Reader]) (g.Expression[s.Language], error) {
@@ -702,254 +808,166 @@ Expand: func(ctx context.Context, r g.Expansion[h.Language, s.Language, source.R
 	fields, _ := src.Fields(use.Use)
 	var members []g.Expression[s.Language]
 	for _, f := range fields {
-		ty, err := r.Mapped(f.Use)          // kernel checks f.Use is a child via CheckChild
-		members = append(members, g.At(model.Field(f.Name, f.Optional, ty), f.Origin))
+		ty, _ := r.Mapped(f.Use)
+		members = append(members, g.At(model.Field(f.Name, f.Optional, ty), f.Origin)) // At: attach a source site
 	}
 	return g.At(model.Record(members...), view.Origin), nil
 }
 ```
 
-The list element capture reads the operand at payload locator `[1]`:
+The list rule's capture reads the operand at locator `[1]`:
 
 ```go
-p.Capture = func(ctx context.Context, src source.Reader, u g.UseData[h.Language]) ([]g.Capture[h.Language], error) {
+Capture: func(ctx context.Context, src source.Reader, u g.UseData[h.Language]) ([]g.Capture[h.Language], error) {
 	operand, err := src.Operand(u.Use, 1)
-	return []g.Capture[h.Language]{{Slot: slot, Use: operand}}, nil
+	return []g.Capture[h.Language]{{Slot: slot, Use: operand}}, err
 }
 ```
 
-A library that owns `Cell<V>` maps every use of that declaration to an imported native
-type. It is keyed by the declaration selector and captures the actual through the
-source's pairing:
+The Cell library is keyed by Cell's declaration selector. It captures the actual
+through the source's pairing:
 
 ```go
-key, _ := source.Named(from, pin, "Cell")
+key, _ := source.Named(from, cellsModulePin, "Cell")
 pattern := g.Pattern[h.Language, source.Reader]{Selector: key, Slots: []g.Slot{slot},
 	Capture: func(ctx context.Context, src source.Reader, use g.UseData[h.Language]) ([]g.Capture[h.Language], error) {
 		if len(use.Actuals) != 1 { return nil, g.ErrScope }
-		return []g.Capture[h.Language]{{Slot: slot, Use: use.Actuals[0].Use}}, nil
+		return []g.Capture[h.Language]{{Slot: slot, Use: use.Actuals[0].Use}}, nil // by position
 	}}
-// Output: model.External("@bitspark/cell", "Cell", g.Mapped(slot))  =>  TypeScript Page<Cell<string>>
+// Output: model.External("@bitspark/cell", "Cell", g.Mapped(slot))
 ```
 
 ### The independent source
 
 To show that the kernel is not horos-specific, the repository has an independent test
-source (`integration/go/testdata/generationfixture`). It has its own toy language and
-its own mapping library. It does **not** publish a semantic graph. It constructs
-`OpenData` and `UseData` records by hand in tables and returns them from `Open` and
-`Admit`:
-
-```go
-func (s *Source) Admit(ctx context.Context, env g.Environment[SourceLanguage], u g.Use[SourceLanguage]) (g.UseData[SourceLanguage], error) {
-	r, ok := s.useRecords[u]
-	if !ok || r.data.Environment != env { return g.UseData[SourceLanguage]{}, g.ErrScope }
-	for _, a := range r.data.Actuals {
-		actual, exists := s.useRecords[a.Use]
-		if !exists || actual.data.Environment != env { return g.UseData[SourceLanguage]{}, g.ErrScope }
-	}
-	return r.data.Clone(), nil
-}
-```
-
-Its `CheckChild` also accepts a declaration's formal subjects as children of the body,
-and it builds a second occurrence with the same effective subject to show that the
-kernel must not equate occurrences by handle. It therefore proves composability through
+source with its own toy language and its own mapping library. It publishes **no**
+graph and requires no evidence. Its `Open` and `Admit` return `OpenData` and `UseData`
+records built by hand in tables. Its `CheckChild` accepts a declaration's formal
+subjects as children of the body, because its Page rule captures the formal subject
+directly. It also builds a second occurrence with the same effective subject, to show
+that the kernel must not equate occurrences by handle. It proves composability through
 today's interface, but it re-implements the same navigation responsibility in a
-different form. Under the target design it has to publish a semantic graph and supply
-only its own interpretation.
+different form. Under the target design it has to publish a graph and supply only its
+own interpretation.
 
 ### Existing qualification
 
-All planning tests enter through the public registry. They cover the nested
-Page/Cell output, a library-owned Cell, reversed native arguments, a native convention
-that omits an argument, ambiguous mappings, failing mappings without fallback,
-expired expansion requests, unsupported horos forms, invalid horos programs
-(rejected because their evidence is unavailable), name collisions, and a depth
-limit. Several guarantees have no negative test that reaches the planner: the
-omitted-argument case fails earlier, at evidence admission, so the planner's
-admission of an omitted actual has never been seen to fail. Foreign or forged
-records, a wrong environment, a capture that returns a non-child, and recursion are
-also untested. The replacement should be qualified against those cases directly.
+Several guarantees have no negative test that reaches the planner:
 
-### Guarantees that must survive
+- The omitted-actual test fails earlier, at evidence admission. The planner's admission
+  of an omitted actual has never been seen to fail.
+- Foreign or forged records are untested.
+- A wrong environment is untested.
+- A `Capture` that returns a non-child is untested. `Expansion.Mapped` with a non-child
+  is tested.
+- Recursion is untested.
 
-These come from earlier consultations and the delivered SPI. Each is a requirement on
-the replacement, independent of the current method names.
-
-| Guarantee | Meaning |
-| --- | --- |
-| Capture identity | Planning consumes exactly the admitted snapshot and evidence. A recapture of equal bytes, or evidence from another snapshot, is rejected. |
-| Real binders | A source binder is the actual declared parameter, never a name or position. Native conventions may reorder, omit or add native parameters, so binder *i* is not native parameter *i*. |
-| Environments and assumptions | A use is interpreted under its declaration's own assumptions (for example `D: h.Data`). A product built while defining a callee must not cross into a caller, and an assumption must not become an unconditional fact. |
-| Foreign-reference rejection | Records, handles or terms from another run, another source or another graph cannot be passed off as belonging to this run. Possession of an address is not admission. |
-| Whole-use admission | A use is admitted as a whole, including every actual, before any mapping represents it. An actual that the native convention omits (for example a phantom parameter) still needs admission. Otherwise a rule that emits constant text could bypass a source bound by never traversing its argument. |
-| No hidden analysis | Generation never runs a resolver or analyzer. Missing evidence fails; it is never computed on demand. |
-| Unknown is not false | An uncovered or absent fact is distinct from a failed judgment. Absence of a fact is not a negative answer. |
-| Limits and whole-output failure | Work, depth, references, formals, reservations and output size are bounded. Any failure, cancellation or exhausted limit yields no usable output and never triggers a weaker fallback mapping. |
-| Selector ownership | Stable selector identity belongs to the source language. The kernel compares selector identity and never spellings or graph-local IDs. |
-
-### Why the current boundary is a defect
-
-The project records this as architecture case ACX-006 and gap GEN-01. The relevant
-architecture rules (paraphrased):
-
-- **AC-02: meanings remain with their semantic owners.** Independently owned parts
-  supply their interpretations; a shared mechanism owns its invariant guarantees.
-- **AC-05: composition preserves guarantees.** Openness may not be bought with
-  arbitrary payloads, unchecked claims, or callbacks that discard guarantees.
-- **AC-06: limited coverage does not redefine the architecture.** Working examples
-  through the first reader do not make the wrong responsibility split acceptable.
-- **AC-09: design interfaces independently of the implemented surface and the effort
-  to change it.** The current methods, handles and records have zero weight, including
-  as a tiebreaker. A retained element needs the same independent justification as a
-  new one.
-
-The intended division for `People = Page<Cell<Person>>`:
-
-| Decision | Intended owner |
-| --- | --- |
-| Follow established references to Page, Cell and Person | Kernel, over the captured graph |
-| Follow `Page.T` to `Cell<Person>` and `Cell.V` to Person | Kernel, over established application bindings |
-| Interpret horos constructors, kind judgments and pinned identity | horos integration |
-| Select a native representation of Cell | Cell's mapping library |
-| Admit source evidence and preserve capture/scope association | Shared contract guarantees, with source-owned judgments |
-
-The completion criteria the correction must meet:
-
-1. The kernel consumes declaration, reference and application structure through the
-   shared semantic context. No source integration supplies a parallel traversal.
-2. Narrow source-owned contracts keep constructor/operand interpretation, stable
-   selector identity and applicability judgments. Unknown or uncovered facts stay
-   distinct from failed judgments; there is no hidden analysis.
-3. Capture identity, real binders, source environments, foreign-reference rejection,
-   limits and whole-output failure stay enforced. Omitted native arguments still
-   require source admission.
-4. horos and an independent source exercise the same traversal, including nested
-   `Page<Cell<Person>>` and invalid scope and evidence cases.
-5. The superseded reader interfaces and duplicated traversal are removed.
-
-### Constraints
-
-- **No hidden analysis, no new semantic algebra.** The shared graph has "no scope
-  graph, substitution map, universal type algebra or conditional proof system", and
-  the kernel must not add one. Operand locators are provider-defined paths that the
-  kernel does not decode.
-- **Kernel interprets nothing language-specific.** No horos names, operators, entity
-  kinds, fact relations or sort terms may appear in the kernel. A new source language
-  is added by contributing its own interpretation and mapping libraries, without
-  changing the kernel.
-- **Mapping libraries stay declarative and source-typed.** A horos mapping library may
-  use horos's own reading API (that is horos interpretation). Libraries describe native
-  representations; the planner resolves them before construction, and construction
-  never sees the source.
-- **No compatibility aliases or retained superseded interfaces.** The replacement
-  removes the old reader surface; there are no deprecated shims.
-- **Single process, trusted code.** Mapping libraries and source integrations are
-  trusted in-process Go code, but the contract still has to make scope and identity
-  mistakes detectable rather than silently wrong.
-- **Scale.** Inputs are bounded by explicit limits (default graph caps: 100,000 records,
-  800,000 edges; default planning caps: 100,000 operations, depth 128). Correctness and
-  clear ownership matter more than speed.
-- **Out of scope here:** native enforcement of source constraints in generated APIs
-  (a separate gap, GEN-02), recursive types (currently rejected), and file placement.
-  The design should not make those harder.
+The replacement should be tested against those cases directly.
 
 ### What we've considered
 
-**Earlier consultations did not consider kernel-owned traversal.** The 2026 consultation
-that produced `Open`/`Admit` framed the constraint as "without turning the agnostic host
-into a semantic evaluator". Its expert wrote: "The source integration is responsible for
-the meaning of the substitution, arity, saturation, applicability, and required
-judgments. The driver does not infer any of those from the shape of `semantics.Term`."
-An earlier consultation said a structural binding query "establishes correspondence,
-not applicability". We read those as compatible with kernel traversal *if* the kernel
-follows structural correspondence only and asks the source for every judgment. We
-would like that reading confirmed or corrected.
+**Earlier consultations did not consider kernel-owned traversal.** The consultation of
+6 November 2026 that produced `Open`/`Admit` framed its constraint as "without turning
+the agnostic host [kernel] into a semantic evaluator". Its expert wrote: "The source
+integration is responsible for the meaning of the substitution, arity, saturation,
+applicability, and required judgments. The driver [kernel] does not infer any of those
+from the shape of `semantics.Term`." The consultation of 5 November 2026 said a
+structural binding query "establishes correspondence, not applicability". We read both
+as compatible with a kernel that follows structural correspondence and asks the source
+for every judgment. Question 1 asks whether that reading holds.
 
-**A candidate split** (ours, for critique; not a decision):
+**A candidate split.** This is ours, for critique, not a decision. It refines the
+owner's intended division at the top of this document:
 
 | Concern | Candidate owner | Notes |
 | --- | --- | --- |
-| Take the graph from the evidence entry whose requirement sets `Semantics: true` (exactly one), and unpack it as `Semantics[F]` | Kernel | Generic. Rules out a source supplying a different graph than the admitted one. |
-| Resolve a requested root syntax site to the entity that declares it | Kernel (`Entity.Declarations`) | The source still classifies whether that entity is a generatable declaration. |
-| Open a declaration: its body term and real binders (`Entity.Parameters`) | Kernel | |
-| Walk a body: Reference to an own parameter is a bound formal; Reference to another entity's parameter is a scope error; Reference or Application to another entity is a use of that callee, paired with real binders by `DirectParameterBindings`; no structural view (computed callee, parameter-headed application, unpaired arity) is *unsupported*, not a failed judgment | Kernel | Arity, applicability and saturation *meaning* stay source-owned. The kernel only notices that it cannot build a complete native application from the structure. |
-| Child relation: a captured child must be an operand or argument of the current term | Kernel | Replaces `CheckChild`. |
-| Classify an entity as a generatable declaration and give its stable selector | Source | horos: kind `{horos, type-definition}`, selector from module pin and name. |
-| Give a provider expression's selector (constructor and discriminator) | Source | horos: `{horos, descriptor/...}` plus payload discriminator. |
-| Judge each declaration, formal and subject admissible under its declaration's assumptions, using only supplied evidence; distinguish holds / rejected / uncovered | Source | horos: the `sort/proper` checks on result, parameters and terms. |
-| Read payloads and operand meanings for mapping libraries | Source (per-language reading API) | horos: record fields, list element at locator `[1]`. |
+| Take the graph from the one evidence entry whose requirement sets `Semantics`, and unpack it typed | Kernel | Rules out a source consulting a different graph than the admitted one. |
+| Resolve a requested root syntax site to the entity declaring it (`Entity.Declarations`) | Kernel | The source still classifies whether that entity is a generatable declaration. |
+| Open a declaration: body term and real binders (`Entity.Parameters`) | Kernel | |
+| Walk a body. A Reference to the declaration's own parameter is a bound use; to another declaration's parameter, a scope error. A Reference to a declaration entity is a zero-argument use of it. An Application with a direct Reference callee is a use of that callee, paired by `DirectParameterBindings`. | Kernel | |
+| An application with no structural view (computed callee, parameter callee, unpaired arity), or a bare Reference to a declaration that has parameters | Kernel reports "no structural view", not a failed judgment | Arity and saturation *meaning* stay with the source. The kernel only notes that it cannot build a complete native application from the structure. |
+| Child relation: a captured child must be an argument or operand of the current term (or the body of the declaration being opened) | Kernel | Replaces `CheckChild`. |
+| Classify an entity as a generatable declaration and give its selector | Source | horos: kind `{horos, type-definition}`, pin plus name. |
+| Give a descriptor's selector (constructor and discriminator) | Source | |
+| Judge each declaration, formal and subject admissible under its declaration's assumptions, using supplied evidence only | Source | horos: the proper-sort checks. |
+| Read payloads and operand meanings for mapping libraries | Source (its reading API) | horos: record fields, the list element at `[1]`. |
 
-**Open points within that split:**
+**Open points within that split** (each mapped to a question):
 
-1. **The admission judgment's grain.** Per term, per whole use (term plus all actuals),
-   or per declaration plus per term? The horos analyzer has already judged the entire
-   body when it reports success, so horos's per-term re-check today mainly enforces a
-   *profile* restriction (proper sorts only). For an omitted actual, should the kernel
-   ask the source to judge the actual as one whole subject, or walk its subtree and ask
-   for each term?
-2. **Outcome shape.** A three-valued result (holds, rejected with a diagnostic,
-   uncovered) versus distinct error kinds. Today absence of a sort fact surfaces as a
-   generic invalid-request error, which conflates "uncovered" with "malformed".
-3. **Handles.** Mapping libraries and the source's reading API could exchange
+1. **Grain and coverage of admission** (Question 2). Should the source judge per term,
+   per whole use (a term with all its actuals), or per declaration plus per term? The
+   horos analysis has already judged the entire body when it reports success, so
+   horos's per-term check today mainly enforces the proper-sort restriction. The walk is
+   *demand-driven*: operands no mapping captures are never visited. For an omitted
+   actual, should the kernel ask for one judgment of the whole actual, or walk its
+   subtree? And does an operand that a mapping ignores need admission, as an omitted
+   actual does?
+2. **Outcome shape** (Question 2). There are four outcomes to keep apart: no structural
+   view, rejected judgment, uncovered fact, and malformed input. Which are values and
+   which are errors, and which belong to the kernel? Today an absent sort fact surfaces
+   as an invalid-request error, which conflates "uncovered" with "malformed".
+3. **Handles** (Question 3). Mapping libraries and the reading API could exchange
    graph-local term IDs that the kernel validates as structural children of the current
-   subject. That makes foreign *content* impossible, because the output can only contain
-   this graph's structure, but not foreign *handles* detectable. Alternatively the kernel
-   could mint owner-qualified, run-scoped handles that the reading API must resolve
-   through the kernel. Which identity model fits?
-4. **Environment model.** horos has no nested generic declarations, so "the enclosing
-   declaration's parameters" suffices. Should the kernel define scope as parameter
-   ownership by the declaration being opened, or as an `Owner`-chain rule? And should a
-   term shared between two declarations' bodies (the graph permits sharing) be
-   accepted, with the environment taken from the walk path, or rejected as horos does
-   today?
-5. **Occurrence versus effective subject.** Today `UseData` carries both the occurrence
-   and a source-certified effective subject. The planner never compares subjects. With
-   graph terms, is a separate effective subject still needed, for example for a future
-   memoization or recursion rule, and who would own the equivalence?
-6. **The mapping library's view.** A library's `Capture` and `Expand` need the current
-   subject, the declaration being opened, the formals, and for a declaration-keyed rule
-   such as `Cell<V>` the actuals by binder. Should the kernel pass a structural view
-   value, and should libraries identify actuals by binder (via the source's parameter
-   API) or by position?
+   subject. The output could then contain only this graph's structure, but a foreign
+   handle would not be detectable as foreign. Alternatively, the kernel could mint
+   run-scoped, owner-qualified handles that the reading API resolves through the
+   kernel.
+4. **Environment and scope** (Questions 1 and 3). Is scope "parameters owned by the
+   declaration being opened" or an `Owner`-chain rule? A term may be shared between two
+   bodies, and the graph permits that. Should such a term be accepted, with its
+   environment taken from the walk path, or rejected as horos does today?
+5. **Occurrence versus effective subject** (Question 3). Today `UseData` carries both,
+   but the planner never compares effective subjects. Is a separate effective subject
+   still needed, for example for future memoization or recursion, and who would own the
+   equivalence?
+6. **The mapping library's view** (Question 4). `Capture` and `Expand` need the current
+   subject, the declaration being opened, the formals, and, for a declaration-keyed
+   rule such as `Cell<V>`, the actuals. Should actuals be identified by real binder or by
+   position?
 
 **Rejected directions:**
 
 - Moving `Admit` wholesale into the kernel. It mixes navigation with evidence and
   assumption checks that the kernel must not perform.
-- Keeping `Open`/`Admit` and adding a shared helper package that sources may call.
-  The kernel would still depend on a source-supplied traversal, and nothing would stop
+- Keeping `Open`/`Admit` and adding a shared helper that sources may call. The kernel
+  would still depend on a source-supplied traversal, and nothing would prevent
   divergent implementations.
-- Unrestricted callbacks (for example, "the source walks and calls back into the
-  kernel"). This inverts control but keeps the traversal source-owned and weakens the
-  child-relation and scope checks.
-- A package move of the current reader. It changes the location, not the
+- Callbacks that let the source walk and call back into the kernel. That inverts
+  control but leaves the traversal source-owned and weakens the child and scope checks.
+- Moving the current reader to another package. That changes its location, not its
   responsibility.
 
 ## Questions for the Expert
 
-1. **Where is the principled line?** Given a shared graph with exactly three term
-   variants (reference, application, provider expression with provider-defined operand
+1. **Where is the principled line?** Given a shared graph with three term variants
+   (reference, application, provider expression with provider-defined operand
    locators) and provider-owned facts, how would you divide the generation walk between
-   a language-agnostic kernel and a source-owned interpretation contract? Are there
-   patterns from comparable systems you would draw on, such as compilers with a shared
-   intermediate representation plus language hooks, or multi-language code-intelligence
-   graphs? We are particularly interested in how such systems keep "follow the
-   structure" from quietly becoming "judge the structure".
-2. **How should admission judgments be shaped?** How would you model the source's
-   judgments, including their grain (declaration, whole use, term) and outcome (holds,
-   rejected, uncovered), so that whole-use admission still covers actuals a native
-   convention omits, unknown facts stay distinct from failures, and the kernel never
-   interprets what a judgment means?
-3. **What identity model for subjects?** What handle and identity design would you use
-   for the subjects passed between the kernel, a source's reading API and mapping
-   libraries, so that capture identity, foreign-reference rejection and expiry of scoped
-   expansion requests are preserved without the source re-supplying navigation records?
-4. **What should mapping libraries see?** How should source-typed mapping libraries
-   receive the kernel's structural view (current subject, declaration, formals, actuals
-   by real binder) alongside the source's own reading API, including declaration-keyed
-   rules such as a library-owned `Cell<V>` that captures its actual?
-5. **What else would you watch for?** Looking at this design as a whole, including later
-   work on recursive types and on carrying source constraints into native output, what
-   risks, missing concepts or simplifications do you see that we have not asked about?
+   a language-agnostic kernel and a source-owned interpretation contract? That
+   includes who owns scope: parameter ownership by the opened declaration, or an
+   `Owner` chain. Please draw your own line before weighing our candidate. If yours
+   resembles today's `Open`/`Admit` shape, the independent reason is what we need.
+   Does our reading of the earlier advice ("correspondence, not applicability") hold?
+   Which patterns from comparable systems, such as shared intermediate representations
+   with language hooks or multi-language code-intelligence graphs, keep "follow the
+   structure" from turning into "judge the structure"?
+2. **How should admission judgments be shaped?** How would you model the grain of the
+   source's judgments (declaration, whole use, term) and the outcomes (no structural
+   view, rejected, uncovered, malformed)? Which of those outcomes does the kernel own,
+   and does each suit a value or an error? The aims are that actuals a native convention
+   omits are still admitted, that unknown stays distinct from failure, and that the
+   kernel never interprets what a judgment means.
+3. **What is a subject, and how is it identified?** Is a subject a graph term, an
+   occurrence (a term reached under an environment, given that terms may be shared), or
+   an effective subject whose equivalence the source owns? What handle design would you
+   use so that capture identity and foreign-reference rejection hold, mapping callbacks
+   cannot use subjects after their scope ends, and the source no longer re-supplies
+   navigation records?
+4. **What should mapping libraries see?** What structural view (current subject,
+   declaration, formals, actuals) should source-typed mapping libraries receive
+   alongside the source's own reading API? For a declaration-keyed rule such as a
+   library-owned `Cell<V>`, should actuals be identified by real binder or by position,
+   and what does each choice cost?
+5. **What else would you watch for?** Looking at the design as a whole, including later
+   work on recursive types and on carrying source bounds into native output, what risks,
+   missing concepts or simplifications do you see? That includes any guarantee or
+   constraint above that you think is wrong or missing.
