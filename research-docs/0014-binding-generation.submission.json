@@ -19,10 +19,11 @@
       "serverSha256": "c57419f4f2f6ad31f6d5e7e196d2365ec27adad704c04187c5100797b6aebbeb",
       "runId": "run_250b7afe-dcac-4972-a8b2-4d3962226188",
       "submittedAt": "2026-11-08T23:44:11Z",
-      "state": null,
+      "state": "completed",
       "failureCode": null,
-      "resultSha256": null,
-      "verify": null
+      "resultSha256": "92bd1ee7d2bd8741c154328bab3a9de5cbc3b5179b0e3cd13281a8fd03af2b90",
+      "verify": "nightfall consult verify --output: rc=0 (all checks passed); local advice sha256 equals the run status result.sha256",
+      "receivedAt": "2026-11-08T23:55:11Z"
     }
   ]
 }
