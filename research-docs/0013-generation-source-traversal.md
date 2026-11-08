@@ -340,8 +340,8 @@ for its enumeration reports: declarations, occurrence bindings, applications,
 reference dependencies and type facts.
 
 A result returns its graph as an untyped envelope.
-`representation.UnpackSemantics[L](snapshot.Language(), envelope)` produces the typed
-graph after checking the language identity, profile and marker. A graph has no pointer
+`representation.UnpackSemantics`, called with the snapshot language and the
+envelope, produces the typed graph after checking the language identity, profile and marker. A graph has no pointer
 back to its snapshot. The only binding between them is the result that published it.
 
 ### What horos records and what its analysis judges
