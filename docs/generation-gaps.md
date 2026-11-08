@@ -25,7 +25,7 @@ The remaining Rust/C++ Files ownership defects retain their own
 
 ## GEN-01
 
-**Common semantic navigation is kernel-owned. Corrected 8 November 2026.**
+**Common semantic navigation is kernel-owned. Corrected 8 November 2026 in [#191](https://github.com/Bitspark/bittype/pull/191).**
 
 ### What was wrong
 
@@ -73,7 +73,7 @@ For `People = Page<Cell<Person>>`:
 | Follow `Page.T` to `Cell<Person>` and `Cell.V` to Person | Kernel, over `DirectParameterBindings` |
 | Interpret horos constructors, proper sorts and module-pinned identity | horos interpretation |
 | Represent Cell natively, selecting its actual by Cell's binder | Cell's mapping library |
-| Admit evidence, preserve scope, and judge every actual | Kernel mechanism with source judgments |
+| Admit evidence, preserve scope, and admit every occurrence in a use's subtree | Kernel mechanism with source judgments |
 
 ### Completion criteria
 
@@ -94,8 +94,9 @@ For `People = Page<Cell<Person>>`:
      graph;
    - limits and whole-output failure.
 
-   Every actual of a declaration use is judged before any binding or convention
-   represents it, including actuals the convention omits.
+   An occurrence is admitted with its whole subtree before any binding or
+   convention represents it. That includes actuals the convention omits, content
+   nested in them, and operands no mapping captures.
 4. horos and the independent source drive the same walk. The independent source
    covers nested `Page<Page<T>>` and a library-owned `Cell<Person>`. horos covers
    `Page<Cell<Person>>`. The negative cases cover both sources:
@@ -125,9 +126,9 @@ For `People = Page<Cell<Person>>`:
   - a generic declaration referenced without arguments.
 
   Type-level constructor values still need an explicit representation.
-- **Operands.** Provider-expression operands are visited only when a mapping
-  captures them. The source's judgment of the whole occurrence covers its
-  operands. For horos, the analysis checks every operand's formation contract.
+- **Operands.** Every provider-expression operand is admitted, structurally
+  and by judgment. It is represented only when a mapping captures it. For horos,
+  the analysis also checks every operand's formation contract.
 - **Memoization.** Occurrences are distinguished by path, and no effective-subject
   equivalence is defined. Judgments are memoized per occurrence and declarations
   per entity.

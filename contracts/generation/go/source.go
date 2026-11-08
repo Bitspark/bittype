@@ -2,6 +2,7 @@ package generation
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -89,7 +90,8 @@ const (
 )
 
 // Judgment is a source-owned conclusion. Diagnostic optionally explains a
-// non-admitted verdict at a source site; the kernel never interprets it.
+// non-admitted verdict at a source site; the kernel never interprets it, and a
+// diagnostic that wraps a kernel error class is reduced to its message.
 type Judgment struct {
 	Verdict    Verdict
 	Diagnostic error
@@ -107,9 +109,10 @@ type Interpretation[F any] interface {
 	Expression(context.Context, Use[F]) (Selector, error)
 	// JudgeDeclaration judges a declaration before its body is planned.
 	JudgeDeclaration(context.Context, Declaration[F]) (Judgment, error)
-	// JudgeUse judges one whole occurrence under the assumptions of the
-	// declaration it occurs in. The kernel judges every occurrence it plans and
-	// every actual of a use, including actuals a native convention omits.
+	// JudgeUse judges one occurrence under the assumptions of the declaration
+	// it occurs in. Before representing an occurrence the kernel judges it and
+	// every occurrence in its subtree, including omitted actuals and uncaptured
+	// operands.
 	JudgeUse(context.Context, Use[F]) (Judgment, error)
 }
 
@@ -139,13 +142,24 @@ type SiteError struct {
 func (e *SiteError) Error() string { return e.Message + ": " + e.Err.Error() }
 func (e *SiteError) Unwrap() error { return e.Err }
 
+// classes are the failure meanings the kernel assigns. A source diagnostic
+// explains a verdict; it cannot add a second class.
+var classes = []error{ErrInvalid, ErrUnsupported, ErrScope, ErrLimit, ErrIncomplete, ErrAmbiguous, ErrRejected, semantic.ErrEvidenceUnavailable, semantic.ErrInvalidRequest}
+
 // verdict converts a judgment into the kernel's failure meaning.
 func verdict(j Judgment) error {
 	wrap := func(kind error) error {
-		if j.Diagnostic != nil {
-			return fmt.Errorf("%w: %w", kind, j.Diagnostic)
+		if j.Diagnostic == nil {
+			return kind
 		}
-		return kind
+		diagnostic := j.Diagnostic
+		for _, class := range classes {
+			if errors.Is(diagnostic, class) {
+				diagnostic = errors.New(diagnostic.Error())
+				break
+			}
+		}
+		return fmt.Errorf("%w: %w", kind, diagnostic)
 	}
 	switch j.Verdict {
 	case Admitted:

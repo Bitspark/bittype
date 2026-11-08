@@ -47,9 +47,9 @@ func program() *graph {
 	p.declare("Kept")
 	p.body("Kept", p.apply("Ignore", p.ref(p.names["Person"])))
 	p.declare("Leak")
-	refuted := p.expression("person-body")
-	p.refute(refuted, false)
-	p.body("Leak", p.apply("Ignore", refuted))
+	rejected := p.expression("person-body")
+	p.refute(rejected, false)
+	p.body("Leak", p.apply("Ignore", rejected))
 	p.declare("Blind")
 	uncovered := p.expression("person-body")
 	p.refute(uncovered, true)
@@ -78,6 +78,29 @@ func program() *graph {
 	same := p.apply("Page", p.ref(p.names["Person"]))
 	p.body("SameA", same)
 	p.body("SameB", same)
+
+	// Admission covers whole subtrees, whatever the representation omits:
+	// omitted actuals, content nested in them, and operands no rule captures.
+	p.declare("Smuggle")
+	p.body("Smuggle", p.apply("Ignore", p.ref(p.parameter("Page", 0))))
+	p.declare("SmuggleLoose")
+	p.body("SmuggleLoose", p.apply("Ignore", p.ref(p.names["Page"])))
+	p.declare("Deep")
+	nested := p.expression("person-body")
+	p.refute(nested, false)
+	p.body("Deep", p.apply("Ignore", p.apply("Page", nested)))
+	p.declare("Hidden")
+	p.body("Hidden", p.expression("person-body", p.ref(p.parameter("Page", 0))))
+	// A declaration the source refuses, and a judgment with no verdict.
+	p.declare("Refused")
+	p.body("Refused", p.expression("person-body"))
+	p.mark(semantics.Subject{Entity: p.names["Refused"]}, refuted)
+	p.declare("Void")
+	void := p.expression("person-body")
+	p.mark(semantics.Subject{Term: void}, zero)
+	p.body("Void", void)
+	// An entity with a site that the source does not generate.
+	p.other("Kindish")
 	return p
 }
 

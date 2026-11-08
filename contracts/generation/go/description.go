@@ -2,6 +2,7 @@ package generation
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"sync"
 
@@ -157,8 +158,12 @@ func (r Expansion[F, T, R]) Mapped(use Use[F]) (Expression[T], error) {
 		allowed = childOf(use, s.use.Use)
 	}
 	if !allowed {
-		s.failure = ErrScope
-		return Expression[T]{}, ErrScope
+		err := errNotChild
+		if s.declaration != nil {
+			err = errNotBody
+		}
+		s.failure = err
+		return Expression[T]{}, err
 	}
 	slot := TypeSlot("capture")
 	s.captures[slot] = use
@@ -177,6 +182,12 @@ func (r DeclarationRequest[F, T, R]) Declaration() (DeclarationView[F], error) {
 	}
 	return r.state.declaration.Clone(), nil
 }
+
+// The two capture refusals, distinguished for diagnosis.
+var (
+	errNotChild = fmt.Errorf("%w: a capture must be a child the kernel minted for the mapped occurrence", ErrScope)
+	errNotBody  = fmt.Errorf("%w: a declaration recipe may map only its body", ErrScope)
+)
 
 // childOf reports whether child is a structural child the kernel minted for parent.
 func childOf[F any](child, parent Use[F]) bool {

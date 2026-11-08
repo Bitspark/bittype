@@ -23,6 +23,8 @@ var (
 	// one it judged inadmissible. A term with neither is outside its coverage.
 	judged  = key("judged")
 	refuted = key("refuted")
+	// zero marks a term whose fixture judgment is the invalid zero value.
+	zero = key("zero-verdict")
 )
 
 const analysisProfile = "generation-fixture-analysis-v1"
@@ -93,6 +95,20 @@ func (g *graph) declare(name string, parameters ...string) semantics.EntityID {
 	g.names[name] = id
 	g.order = append(g.order, name)
 	return id
+}
+
+// other declares an entity with a site that is not a fixture declaration.
+func (g *graph) other(name string) semantics.EntityID {
+	id := semantics.EntityID(len(g.data.Entities) + 1)
+	site := ast.NodeRef{Tree: g.tree, Node: ast.NodeID(len(g.order) + 2)}
+	g.data.Entities = append(g.data.Entities, semantics.Entity{Kind: key("kind"), Name: name, Owner: 1, Declarations: []ast.NodeRef{site}})
+	g.names[name] = id
+	g.order = append(g.order, name)
+	return id
+}
+
+func (g *graph) mark(subject semantics.Subject, relation semantics.Key) {
+	g.data.Facts = append(g.data.Facts, semantics.Fact{Subject: subject, Relation: relation, Term: marker})
 }
 
 func (g *graph) parameter(declaration string, i int) semantics.EntityID {

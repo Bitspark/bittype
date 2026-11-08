@@ -53,6 +53,13 @@ func (i interpretation) Expression(ctx context.Context, u g.Use[SourceLanguage])
 	return g.NewSelector(i.language, "expression/"+t.Operator.Name)
 }
 func (i interpretation) JudgeDeclaration(ctx context.Context, d g.Declaration[SourceLanguage]) (g.Judgment, error) {
+	id, ok := d.In(i.graph)
+	if !ok {
+		return g.Judgment{}, g.ErrScope
+	}
+	if len(i.graph.Facts(semantics.Subject{Entity: id}, refuted)) > 0 {
+		return g.Judgment{Verdict: g.Rejected, Diagnostic: fmt.Errorf("fixture declaration %d is refuted", id)}, nil
+	}
 	return g.Judgment{Verdict: g.Admitted}, ctx.Err()
 }
 
@@ -67,6 +74,8 @@ func (i interpretation) JudgeUse(ctx context.Context, u g.Use[SourceLanguage]) (
 	switch {
 	case len(i.graph.Facts(subject, refuted)) > 0:
 		return g.Judgment{Verdict: g.Rejected, Diagnostic: fmt.Errorf("fixture term %d is refuted", id)}, nil
+	case len(i.graph.Facts(subject, zero)) > 0:
+		return g.Judgment{}, nil
 	case len(i.graph.Facts(subject, judged)) > 0:
 		return g.Judgment{Verdict: g.Admitted}, nil
 	default:
@@ -122,6 +131,10 @@ const (
 	StrayCapture
 	// ForeignHandle maps a handle kept from an earlier plan.
 	ForeignHandle
+	// PatternStray captures the Cell occurrence itself instead of its actual.
+	PatternStray
+	// RecipeStray maps a kept non-body use from Outer's declaration recipe.
+	RecipeStray
 )
 
 type library struct {
@@ -158,6 +171,8 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 					} else {
 						*l.kept = element
 					}
+				case RecipeStray:
+					*l.kept = element
 				}
 				value, err := q.Mapped(element)
 				if err != nil {
@@ -167,6 +182,9 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 			}},
 			// Cell's library represents every Cell use natively; Cell's body is never opened.
 			{ID: "cell", Input: g.Pattern[SourceLanguage, Reader]{Selector: cell, Slots: []g.Slot{v}, Capture: func(ctx context.Context, r Reader, view g.UseView[SourceLanguage]) ([]g.Capture[SourceLanguage], error) {
+				if l.mode == PatternStray {
+					return []g.Capture[SourceLanguage]{{Slot: v, Use: view.Use}}, nil
+				}
 				for _, a := range view.Actuals {
 					if name, err := r.ParameterName(a.Binder); err != nil {
 						return nil, err
@@ -205,7 +223,11 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 					d.Generic.Parameters = append(d.Generic.Parameters, g.ParameterDescription{Name: "Storage"})
 					d.Generic.Arguments = append(d.Generic.Arguments, model.Collection(g.Argument[s.Language](0)))
 				}
-				d.Body, err = q.Mapped(view.Body)
+				body := view.Body
+				if l.mode == RecipeStray && name == "Outer" && l.kept.Valid() {
+					body = *l.kept
+				}
+				d.Body, err = q.Mapped(body)
 				return d, err
 			}},
 			// Ignore omits its source parameter natively; uses must still admit it.
@@ -250,6 +272,19 @@ func (f *Fixture) PlanRoots(ctx context.Context, mode Mode, names ...string) (g.
 	return f.plan(ctx, mode, transform.Input{Source: f.captured.snapshot, Evidence: []semantic.Result{f.captured.evidence}}, names...)
 }
 
+// PlanSites generates the declarations at the given syntax sites.
+func (f *Fixture) PlanSites(ctx context.Context, sites ...ast.NodeRef) (g.GenerationPlan, error) {
+	return f.planAt(ctx, Standard, f.Input(), sites)
+}
+
+// Site is the syntax site of a fixture entity, or the program node for "".
+func (f *Fixture) Site(name string) ast.NodeRef {
+	if name == "" {
+		return ast.NodeRef{Tree: programTree, Node: 1}
+	}
+	return f.captured.sites[name]
+}
+
 // PlanInput generates the named declarations from caller-supplied input, for
 // evidence and snapshot negative cases.
 func (f *Fixture) PlanInput(ctx context.Context, input transform.Input, names ...string) (g.GenerationPlan, error) {
@@ -262,6 +297,18 @@ func (f *Fixture) Input() transform.Input {
 }
 
 func (f *Fixture) plan(ctx context.Context, mode Mode, input transform.Input, names ...string) (g.GenerationPlan, error) {
+	var roots []ast.NodeRef
+	for _, name := range names {
+		site, ok := f.captured.sites[name]
+		if !ok {
+			return g.GenerationPlan{}, fmt.Errorf("unknown fixture declaration %q", name)
+		}
+		roots = append(roots, site)
+	}
+	return f.planAt(ctx, mode, input, roots)
+}
+
+func (f *Fixture) planAt(ctx context.Context, mode Mode, input transform.Input, roots []ast.NodeRef) (g.GenerationPlan, error) {
 	var registry c.Registry
 	from := f.captured.language
 	if err := c.RegisterSource[SourceLanguage, Reader](&registry, from, sourceProvider{}); err != nil {
@@ -272,14 +319,6 @@ func (f *Fixture) plan(ctx context.Context, mode Mode, input transform.Input, na
 	}
 	if _, err := c.RegisterMapping(&registry, from, f.target, library{mode: mode, kept: &f.kept}); err != nil {
 		return g.GenerationPlan{}, err
-	}
-	var roots []ast.NodeRef
-	for _, name := range names {
-		site, ok := f.captured.sites[name]
-		if !ok {
-			return g.GenerationPlan{}, fmt.Errorf("unknown fixture declaration %q", name)
-		}
-		roots = append(roots, site)
 	}
 	checker, err := check.NewChecker[s.Language](f.target, checkgo.Provider{})
 	if err != nil {

@@ -75,21 +75,45 @@ func TestKernelAdmitsOmittedActuals(t *testing.T) {
 	if err := independentFails(t, fixture, f.Standard, "Blind"); !errors.Is(err, semantic.ErrEvidenceUnavailable) || errors.Is(err, g.ErrRejected) {
 		t.Fatal("uncovered actual:", err)
 	}
+	// Admission covers the whole omitted subtree, and operands no rule captures.
+	if err := independentFails(t, fixture, f.Standard, "Deep"); !errors.Is(err, g.ErrRejected) {
+		t.Fatal("refuted content nested in an omitted actual:", err)
+	}
+	if err := independentFails(t, fixture, f.Standard, "Smuggle"); !foreignBinder(err) {
+		t.Fatal("foreign binder as an omitted actual:", err)
+	}
+	if err := independentFails(t, fixture, f.Standard, "SmuggleLoose"); !errors.Is(err, g.ErrUnsupported) {
+		t.Fatal("unapplied generic as an omitted actual:", err)
+	}
+	if err := independentFails(t, fixture, f.Standard, "Hidden"); !foreignBinder(err) {
+		t.Fatal("foreign binder in an uncaptured operand:", err)
+	}
+}
+
+// foreignBinder: the kernel classified the reference itself, at a site; it is
+// not left to fail later for want of a native binding.
+func foreignBinder(err error) bool {
+	var located *g.SiteError
+	return errors.Is(err, g.ErrScope) && errors.As(err, &located) && located.Message == "reference to a binder of another declaration" && located.Site.Node != 0
+}
+
+func TestKernelMapsEveryVerdict(t *testing.T) {
+	fixture := independent(t)
+	if err := independentFails(t, fixture, f.Standard, "Refused"); !errors.Is(err, g.ErrRejected) {
+		t.Fatal("rejected declaration:", err)
+	}
+	if err := independentFails(t, fixture, f.Standard, "Void"); !errors.Is(err, g.ErrInvalid) || errors.Is(err, g.ErrRejected) || errors.Is(err, semantic.ErrEvidenceUnavailable) {
+		t.Fatal("zero verdict:", err)
+	}
 }
 
 func TestKernelScopeIsDirectBinderOwnership(t *testing.T) {
 	fixture := independent(t)
-	// The kernel classifies the reference itself; it is not left to fail later
-	// for want of a native binding.
-	foreign := func(err error) bool {
-		var located *g.SiteError
-		return errors.Is(err, g.ErrScope) && errors.As(err, &located) && located.Message == "reference to a binder of another declaration"
-	}
-	if err := independentFails(t, fixture, f.Standard, "Stray"); !foreign(err) {
+	if err := independentFails(t, fixture, f.Standard, "Stray"); !foreignBinder(err) {
 		t.Fatal("foreign binder:", err)
 	}
 	// One shared term reached through two bodies is two occurrences.
-	if err := independentFails(t, fixture, f.Standard, "Borrow"); !foreign(err) {
+	if err := independentFails(t, fixture, f.Standard, "Borrow"); !foreignBinder(err) {
 		t.Fatal("borrowed binder:", err)
 	}
 	if text := independentText(t, fixture, "Lend"); !strings.Contains(text, "type Lend[T0 interface {}] = Page[T0, []T0]") {
@@ -116,15 +140,26 @@ func TestKernelStructuralLimits(t *testing.T) {
 
 func TestKernelCapturesAreChildrenOfThisRun(t *testing.T) {
 	fixture := independent(t)
-	if err := independentFails(t, fixture, f.StrayCapture, "Page"); !errors.Is(err, g.ErrScope) {
+	notChild := func(err error) bool {
+		return errors.Is(err, g.ErrScope) && strings.Contains(err.Error(), "a capture must be a child")
+	}
+	if err := independentFails(t, fixture, f.StrayCapture, "Page"); !notChild(err) {
 		t.Fatal("non-child capture:", err)
+	}
+	if err := independentFails(t, fixture, f.PatternStray, "Cells"); !notChild(err) {
+		t.Fatal("pattern capture of the occurrence itself:", err)
+	}
+	// A declaration recipe may map only its own body.
+	if err := independentFails(t, fixture, f.RecipeStray, "Page", "Outer"); !errors.Is(err, g.ErrScope) || !strings.Contains(err.Error(), "may map only its body") {
+		t.Fatal("recipe mapped a non-body use:", err)
 	}
 	// The first plan keeps a handle; a second plan over the same capture is a
 	// different run, and the kept handle is foreign there.
-	if _, err := fixture.PlanRoots(context.Background(), f.ForeignHandle, "Page"); err != nil {
+	keeper := independent(t)
+	if _, err := keeper.PlanRoots(context.Background(), f.ForeignHandle, "Page"); err != nil {
 		t.Fatal(err)
 	}
-	if err := independentFails(t, fixture, f.ForeignHandle, "Page"); !errors.Is(err, g.ErrScope) {
+	if err := independentFails(t, keeper, f.ForeignHandle, "Page"); !notChild(err) {
 		t.Fatal("foreign handle:", err)
 	}
 }
@@ -135,21 +170,29 @@ func TestKernelRootsAndEvidence(t *testing.T) {
 	// Evidence published for another snapshot is not admitted.
 	input := fixture.Input()
 	input.Evidence = other.Input().Evidence
-	if plan, err := fixture.PlanInput(context.Background(), input, "Person"); err == nil || plan.Valid() {
-		t.Fatal("foreign evidence admitted")
+	if plan, err := fixture.PlanInput(context.Background(), input, "Person"); !errors.Is(err, semantic.ErrInvalidRequest) || plan.Valid() {
+		t.Fatal("foreign evidence admitted:", err)
 	}
-	if plan, err := fixture.PlanInput(context.Background(), transform.Input{Source: fixture.Input().Source}, "Person"); err == nil || plan.Valid() {
-		t.Fatal("missing evidence admitted")
+	if plan, err := fixture.PlanInput(context.Background(), transform.Input{Source: fixture.Input().Source}, "Person"); !errors.Is(err, semantic.ErrInvalidRequest) || plan.Valid() {
+		t.Fatal("missing evidence admitted:", err)
+	}
+	// A root must be the site of exactly one entity the source generates.
+	for _, site := range []string{"Kindish", ""} {
+		if plan, err := fixture.PlanSites(context.Background(), fixture.Site(site)); !errors.Is(err, g.ErrScope) || plan.Valid() {
+			t.Fatalf("root %q: %v", site, err)
+		}
 	}
 }
 
-// A zero-parameter constructor alias applied to an argument, and a curried
-// application, are valid horos with no direct structural reading. They are
-// unsupported at their site, not malformed input.
-func TestHorosNoStructuralViewIsUnsupported(t *testing.T) {
+// A zero-parameter constructor alias applied to an argument and a curried
+// application are valid horos with no direct structural reading; a
+// constructor-sorted parameter is a declaration the horos judgment refuses to
+// represent. Each is unsupported at its site, not malformed input.
+func TestHorosUnsupportedFormsAtTheirSite(t *testing.T) {
 	for name, source := range map[string]string{
-		"applied-alias": "module aliases; type ListType<T> = list<T>; type Alias: top(P) -> top(P) = ListType; type Texts = Alias<text>;",
-		"curried":       "module aliases; type ListType<T> = list<T>; type Alias: top(P) -> top(P) = ListType; type Later<F: top(P) -> top(P)>: top(P) -> top(P) = F; type Texts = Later<Alias><text>;",
+		"constructor-parameter": "module aliases; type Wrap<F: top(P) -> top(P)> = text;",
+		"applied-alias":         "module aliases; type ListType<T> = list<T>; type Alias: top(P) -> top(P) = ListType; type Texts = Alias<text>;",
+		"curried":               "module aliases; type ListType<T> = list<T>; type Alias: top(P) -> top(P) = ListType; type Later<F: top(P) -> top(P)>: top(P) -> top(P) = F; type Texts = Later<Alias><text>;",
 	} {
 		t.Run(name, func(t *testing.T) {
 			parsed, err := parsehoros.Parse(context.Background(), parse.Input{SourceID: "aliases.horos", TreeID: "canonical", Text: source})

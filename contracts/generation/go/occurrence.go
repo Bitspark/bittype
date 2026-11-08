@@ -64,8 +64,8 @@ type occurrence[F any] struct {
 	parent      *occurrence[F]
 	children    map[int]*occurrence[F]
 	view        *UseView[F]
-	judged      bool
-	judgment    error
+	admitted    bool
+	admission   error
 }
 
 func (d Declaration[F]) Valid() bool { return d.walk != nil && d.entity != 0 }
@@ -224,7 +224,7 @@ func (w *walk[F]) structure(o *occurrence[F]) (UseView[F], error) {
 	case semantics.Reference:
 		if owner, binder := w.binders[t.Target]; binder {
 			if owner != o.declaration {
-				return UseView[F]{}, &SiteError{Err: ErrScope, Site: w.termSites[o.term], Message: "reference to a binder of another declaration"}
+				return UseView[F]{}, w.located(ErrScope, o.term, o.declaration, "reference to a binder of another declaration")
 			}
 			view.Kind, view.Bound = BoundUse, Binder[F]{w, t.Target}
 			break
@@ -259,9 +259,14 @@ func (w *walk[F]) structure(o *occurrence[F]) (UseView[F], error) {
 	return view, nil
 }
 
-// unsupported locates a kernel limitation at the term's syntax site, else at
-// the declaring site of the entity (for an occurrence, its declaration).
+// unsupported locates a kernel limitation; see located.
 func (w *walk[F]) unsupported(term semantics.TermID, entity semantics.EntityID, message string) error {
+	return w.located(ErrUnsupported, term, entity, message)
+}
+
+// located attaches the term's syntax site, else the declaring site of the
+// entity (for an occurrence, its declaration), to a kernel failure.
+func (w *walk[F]) located(kind error, term semantics.TermID, entity semantics.EntityID, message string) error {
 	site, ok := w.termSites[term]
 	if !ok && entity != 0 {
 		if e, found := w.graph.Entity(entity); found && len(e.Declarations) > 0 {
@@ -269,9 +274,9 @@ func (w *walk[F]) unsupported(term semantics.TermID, entity semantics.EntityID, 
 		}
 	}
 	if !ok {
-		return fmt.Errorf("%w: %s", ErrUnsupported, message)
+		return fmt.Errorf("%w: %s", kind, message)
 	}
-	return &SiteError{Err: ErrUnsupported, Site: site, Message: message}
+	return &SiteError{Err: kind, Site: site, Message: message}
 }
 
 // owns reports whether an occurrence handle was issued by this walk.

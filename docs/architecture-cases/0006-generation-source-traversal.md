@@ -1,6 +1,6 @@
 # bittype/ACX-006 — Common semantic traversal delegated to source integrations
 
-**Status: corrected, 8 November 2026.** The generation kernel owns traversal of
+**Status: corrected, 8 November 2026, in [#191](https://github.com/Bitspark/bittype/pull/191).** The generation kernel owns traversal of
 the shared semantic graph. Source integrations contribute only interpretation
 and judgments. [GEN-01](../generation-gaps.md#gen-01) records the delivered
 division, its completion criteria and its supported scope.
@@ -80,9 +80,11 @@ It also supplies a reader that its own mapping libraries use. Mapping callbacks
 receive the kernel's views and that reader, never the graph or the
 interpretation.
 
-**Whole-use admission.** The kernel judges every actual of a use before any
-binding or convention represents it, including actuals the native convention
-omits. Undetermined fails as missing evidence and Rejected as `ErrRejected`, so
+**Whole-use admission.** The kernel admits an occurrence with its whole subtree
+before any binding or convention represents it. Every occurrence in the subtree
+needs a structural reading in scope and an Admitted judgment. That covers actuals
+the native convention omits, content nested in them, and operands no mapping
+captures. Undetermined fails as missing evidence and Rejected as `ErrRejected`, so
 an uncovered fact is never reported as a rejection.
 
 **Removed with no aliases:**
@@ -114,17 +116,35 @@ source now publishes an ordinary graph through its own analysis.
 
 **Negative cases:**
 
-- omitted actuals that are refuted, uncovered or admitted;
+- omitted actuals that are refuted, uncovered or admitted; refuted content
+  nested in an omitted actual; a foreign binder or unapplied generic as an
+  omitted actual; a foreign binder in an uncaptured operand;
+- a declaration the source rejects, and a zero verdict;
 - a binder of another declaration, including through a shared term;
-- a capture that is not a child, and a handle kept from another run;
+- a capture that is not a child (through both `Mapped` and `Pattern.Capture`),
+  a declaration recipe mapping a non-body use, and a handle kept from another run;
 - recursion, parameter-headed applications, and unapplied generic declarations;
 - foreign and missing evidence;
-- horos applied constructor aliases and curried applications, which now report
-  Unsupported at their site rather than malformed input.
+- horos applied constructor aliases, curried applications and
+  constructor-sorted parameters, which now report Unsupported at their site
+  rather than malformed input.
+
+An independent review of the first revision found that omitted actuals skipped
+the structural scope check, and that nested content inside them was not judged.
+Admission now covers whole subtrees.
 
 Each kernel check was seeded with a mutant that turned its test red. Covered
-checks: actual admission, binder ownership, child captures, the
-undetermined/rejected distinction, and the structural application check.
+checks:
+
+- admission of actuals and of operands;
+- binder ownership;
+- child captures through `Mapped` and `Pattern.Capture`;
+- body-only recipes;
+- the undetermined/rejected distinction;
+- the structural application check;
+- the declaration judgment;
+- the zero verdict;
+- diagnostic class isolation.
 [Traversal qualification](../../integration/go/generation_traversal_test.go) ·
 [Planning tests](../../integration/go/generation_planning_test.go)
 
@@ -137,8 +157,8 @@ judgment, and the kernel infers no `Owner`-chain rule.
 **Structural reading.** Applications need a direct declaration callee and complete
 arguments. Type-level constructor values still need an explicit representation.
 
-**Operands.** Provider-expression operands are visited only when a mapping
-captures them. The source's whole-occurrence judgment covers them.
+**Operands.** Every provider-expression operand is admitted, but represented
+only when a mapping captures it.
 
 **Identity.** Effective-subject equivalence is not defined.
 

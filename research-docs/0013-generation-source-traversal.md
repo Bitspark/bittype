@@ -2,7 +2,8 @@
 
 **ID:** 0013
 **Date:** 8 November 2026
-**Status:** evaluated
+**Status:** applied
+**Delivered:** https://github.com/Bitspark/bittype/pull/191
 **Run-ID:** run_f7cfb3b5-7cf2-40d8-8884-ce150a7adcf7
 **Reviewed:** https://github.com/Bitspark/bittype/issues/158#issuecomment-6720989325
 **Owner:** claude-bittype-gaps
@@ -1010,3 +1011,29 @@ The verdicts are checked against the current code. "Kernel" means `contracts/gen
 | 26 | Split mapping capabilities: declaration recipes, descriptor rules and application rules get only what each needs, not the whole session. (5.7) | NEEDS ADAPTATION | Callbacks receive the kernel view for their case (`DeclarationView` or `UseView`) plus the source reader `R`, a pure interpretation interface over kernel handles. They no longer receive the session or its interpretation. A separate reader per rule kind would duplicate one horos reading surface without removing any authority. |
 | 27 | Test the invariants directly; the negative-test table is acceptance. (5.8) | HOLDS | The implementation PR adds those cases for horos and for the independent source, which publishes a real graph through its own analysis. |
 | 28 | Implement in stages and migrate mapping libraries after the contracts settle. Finally remove `Open`, `Admit`, `CheckChild`, the source traversal indexes, source pairing and mapping access to navigation records, with no aliases. (6) | NEEDS ADAPTATION | One implementation PR, staged commit by commit in the advised order. The removal list is adopted in full, together with `Authenticate`, `CheckInput`, `Owners`, `RootEnvironment`, `Catalog.Declarations` and `ResolveRoots`. |
+
+### Delivery
+
+Owner of every accepted row: `claude-bittype-gaps`. Every accepted row is delivered by [bittype#191](https://github.com/Bitspark/bittype/pull/191).
+
+**Validation method.** Validation names the test that fails on the broken behaviour. "Red" names the mutant seeded into that kernel check, which turned the test red in a local run. "Green" means the test passes on the PR head in CI: [checks of #191](https://github.com/Bitspark/bittype/pull/191/checks).
+
+**Adaptation after review.** An independent code review of the first revision found that omitted actuals skipped the structural scope check, and that content nested in them was not judged. That fell short of rows 7 and 8, which say an omitted part must not evade admission. The kernel now admits each occurrence with its whole subtree before representing it: actuals, nested content and uncaptured operands. Representation stays demand-driven.
+
+| Rows | Validation (red → green) |
+| --- | --- |
+| 1, 2, 5, 14 (kernel walk, structure-only reads, separate judgment, kernel views) | `TestKernelTraversalIndependentNestedLibraryCell` and `TestDeclarativeIndependentSourceAndExtraParameter`. The independent source publishes a graph through its own analysis and drives the same walk as horos. The horos pagination, composition and placement suites stay green. The architecture test now allows `contracts/generation/go` to import `semantics/go`, and only that. |
+| 3, 13 (direct binder scope; shared terms as distinct occurrences) | `TestKernelScopeIsDirectBinderOwnership`, which covers Stray, Borrow through a shared term, Lend, and SameA/SameB. Red: mutant M2, which treats any binder as bound. |
+| 4, 7, 8, 9 (whole-use judgment, omitted actuals, operands, horos outcomes) | `TestKernelAdmitsOmittedActuals`: Kept is admitted, Leak is rejected, Blind is uncovered, Deep has nested refuted content, Smuggle and SmuggleLoose pass a foreign binder and an unapplied generic as omitted actuals, Hidden has a foreign binder in an uncaptured operand. Red: M1 (admission skips actuals), M1b (admission skips operands) and M4 (undetermined counted as admitted). `TestHorosUnsupportedFormsAtTheirSite` covers a constructor-sorted parameter. |
+| 6, 22 (outcome model, error ownership) | `TestKernelAdmitsOmittedActuals` checks `ErrRejected` against `semantic.ErrEvidenceUnavailable`. `TestKernelStructuralLimits` and `TestHorosNoStructuralViewIsUnsupported` check that an applied alias and a curried application are Unsupported diagnostics, not malformed input. `TestKernelMapsEveryVerdict` covers a rejected declaration (Refused) and a zero verdict (Void). `TestVerdictKeepsOneFailureClass` covers a diagnostic that wraps a kernel class. Red: M5 (rejected reported as undetermined), M6 (structural application check removed), M7 (declaration judgment skipped), M8 (zero verdict admitted) and M9 (a diagnostic may add a class). |
+| 10, 12, 16 (kernel occurrence handles, callback lifetimes, `CheckChild` removed) | `TestKernelCapturesAreChildrenOfThisRun` covers non-child captures through `Mapped` and `Pattern.Capture`, a recipe mapping a non-body use, and a handle kept from an earlier run. `TestPlanningExpansionScopeAndNoFallback` (`stale`, `swallowed-scope-error`) covers lifetimes. Red: M3 (`Mapped` accepts non-children), M3b (pattern captures unchecked) and M3c (a recipe may map any valid use). |
+| 11, 23 (no effective subject; memoization policy) | `UseData.Subject` and the formal-subject uses are removed. Judgments are memoized per occurrence, declarations per entity. `TestKernelScopeIsDirectBinderOwnership` shows that one shared term is valid in SameA and SameB but a scope error through Borrow. |
+| 15, 26 (narrow reader, capability split) | Mapping libraries are typed by the reader `R` and receive views plus that reader. The horos reader and the fixture reader are unexported values. All horos target suites stay green on the reader. |
+| 17, 19 (binder-keyed actuals; Cell body unopened) | `TestGenerationPlanReversedLibraryArguments` selects Pair's actuals by binder names `L` and `R`. `TestLibraryOwnedCellAvoidsBodyExpansion` and `TestGenerationPlanPageCellSnapshot` select by Cell's binder, with one capture call. |
+| 18 (generic convention) | Unchanged. `TestDeclarativeIndependentSourceAndExtraParameter` covers the extra Storage parameter. |
+| 20 (evidence context) | `TestKernelRootsAndEvidence` covers foreign and missing evidence (`semantic.ErrInvalidRequest`), plus roots that are not a generated declaration (`ErrScope`). `TestGenerationPlanPreflightAndSourceEvidence` stays green. |
+| 21 (graph queries) | The kernel run index is built in `occurrence.go` (`newWalk`). The `semantics` package is unchanged. |
+| 24 (recursion distinctions) | `TestKernelStructuralLimits` (Rec reports recursive native declaration). |
+| 27 (negative tests as acceptance) | `integration/go/generation_traversal_test.go`. |
+| 28 (staging and removal) | The commits of #191, in the advised order: contract and migration, qualification, then docs. The removal list is in the PR description. |
+| 25 | DEFERRED. Trigger: GEN-02 (bittype#162) work starts. |

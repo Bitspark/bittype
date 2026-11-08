@@ -240,11 +240,18 @@ native application:
 
 These are not source judgments.
 
-**Whole-use admission.** The kernel judges every occurrence it plans, and every
-actual of a declaration use, before any binding or convention represents the use.
-That includes actuals the native convention omits. Judgments are memoized per
-occurrence. Declarations are memoized per entity, and recursion is detected
-there.
+**Whole-use admission.** Before any binding or convention represents an
+occurrence, the kernel admits the occurrence and its whole subtree. Every
+occurrence in the subtree needs a structural reading in its declaration's scope
+and an Admitted judgment. That covers actuals the native convention omits,
+content nested inside them, and operands no mapping captures. Representation
+stays demand-driven; admission does not. Admissions are memoized per occurrence.
+Declarations are memoized per entity, and recursion is detected there.
+
+A source diagnostic only explains a verdict. A diagnostic that wraps a kernel
+error class is reduced to its message, so the verdict alone determines the
+failure class. A capture that is not a child the kernel minted, or a declaration
+recipe mapping anything but its body, fails as `ErrScope` with its own message.
 
 Mapping callbacks receive the kernel's views and the source reader, never the
 graph or the interpretation:

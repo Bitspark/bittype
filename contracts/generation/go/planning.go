@@ -234,17 +234,38 @@ func (p *planner[F, T, R]) selector(d Declaration[F]) (string, error) {
 	return key.Key(), nil
 }
 
-// judge records the source's judgment of one occurrence. Every occurrence is
-// judged at most once per run.
-func (p *planner[F, T, R]) judge(o *occurrence[F]) error {
-	if !o.judged {
-		j, err := p.source.JudgeUse(p.ctx, Use[F]{o})
-		if err == nil {
+// admit establishes an occurrence and its whole subtree before any mapping
+// represents it. Every occurrence in the subtree needs a structural reading in
+// its declaration's scope and an Admitted source judgment, including actuals a
+// native convention omits and operands no mapping captures. Representation stays
+// demand-driven; admission is not. Each occurrence is admitted once per run.
+func (p *planner[F, T, R]) admit(o *occurrence[F], depth int) error {
+	if o.admitted {
+		return o.admission
+	}
+	err := p.tick(depth)
+	var view UseView[F]
+	if err == nil {
+		view, err = p.walk.structure(o)
+	}
+	if err == nil {
+		var j Judgment
+		if j, err = p.source.JudgeUse(p.ctx, Use[F]{o}); err == nil {
 			err = verdict(j)
 		}
-		o.judged, o.judgment = true, err
 	}
-	return o.judgment
+	for _, a := range view.Actuals {
+		if err == nil {
+			err = p.admit(a.Use.o, depth+1)
+		}
+	}
+	for _, operand := range view.Operands {
+		if err == nil {
+			err = p.admit(operand.Use.o, depth+1)
+		}
+	}
+	o.admitted, o.admission = true, err
+	return err
 }
 
 func (p *planner[F, T, R]) reserve() (uint32, error) {
@@ -359,9 +380,8 @@ func (p *planner[F, T, R]) declare(d Declaration[F], depth int) (uint32, error) 
 	return id, nil
 }
 
-// use plans one occurrence: the kernel reads its structure, the source judges
-// it (and every actual it has), then a binding or the callee's declaration
-// represents it.
+// use plans one occurrence: the kernel admits it with its whole subtree, then a
+// binding or the callee's declaration represents it.
 func (p *planner[F, T, R]) use(u Use[F], f frame[T], depth int) (Expression[T], error) {
 	if err := p.tick(depth); err != nil {
 		return Expression[T]{}, err
@@ -369,11 +389,11 @@ func (p *planner[F, T, R]) use(u Use[F], f frame[T], depth int) (Expression[T], 
 	if !p.walk.owns(u) || u.o.declaration != f.declaration {
 		return Expression[T]{}, ErrScope
 	}
-	view, err := p.walk.structure(u.o)
-	if err != nil {
+	if err := p.admit(u.o, depth); err != nil {
 		return Expression[T]{}, err
 	}
-	if err = p.judge(u.o); err != nil {
+	view, err := p.walk.structure(u.o)
+	if err != nil {
 		return Expression[T]{}, err
 	}
 	var key string
@@ -385,13 +405,6 @@ func (p *planner[F, T, R]) use(u Use[F], f frame[T], depth int) (Expression[T], 
 		}
 		return value, nil
 	case DeclarationUse:
-		// Whole-use admission covers every actual, including those the
-		// selected representation omits.
-		for _, a := range view.Actuals {
-			if err = p.judge(a.Use.o); err != nil {
-				return Expression[T]{}, err
-			}
-		}
 		if key, err = p.selector(view.Callee); err != nil {
 			return Expression[T]{}, err
 		}
@@ -476,8 +489,11 @@ func (p *planner[F, T, R]) bind(b selectedBinding[F, T, R], key string, view Use
 			allowed[slot] = true
 		}
 		for _, v := range values {
-			if !allowed[v.Slot] || captures[v.Slot].Valid() || !childOf(v.Use, view.Use) {
+			if !allowed[v.Slot] || captures[v.Slot].Valid() {
 				return Expression[T]{}, ErrScope
+			}
+			if !childOf(v.Use, view.Use) {
+				return Expression[T]{}, errNotChild
 			}
 			captures[v.Slot] = v.Use
 		}
