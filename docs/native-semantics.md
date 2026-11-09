@@ -123,14 +123,28 @@ own module layout:
   library paths, which this profile does not provide. Nothing is read from a
   module cache, `GOPATH` or the network.
 
-Packages are checked in import order through a closed importer. The results
-are classified as follows:
+**The go tool's layout rules apply to captured files:**
+
+- test files (`_test.go`), files and directories starting with `_` or `.`, and
+  `testdata` directories are not part of a package, and are unsupported;
+- an import of a path with an `internal` element is allowed only from within the
+  tree rooted at its parent;
+- a package named `main` cannot be imported.
+
+Build constraints, including GOOS and GOARCH file-name suffixes, are not
+interpreted: every captured file belongs to its directory's package.
+
+**Classification.** The environment is validated completely before any captured
+code is judged: the Files layout of every tree, then every supplied package,
+parsed and checked in its own import order. Then captured code is judged:
+unsupported layouts and imports first, then import rules, then the type check in
+import order through a closed importer.
 
 | Case | Result |
 | --- | --- |
-| A captured type error, an unused import, an unexported cross-package use, an import cycle through a captured package, inconsistent package clauses | Rejected validity, with a diagnostic at the captured node |
-| An import outside the environment, a dot or blank import, a package directory that is not a valid import path | Unsupported coverage at the import or file |
-| A supplied package that fails to parse or type-check, imports outside the environment; a missing Files layout or a captured file that is not a `.go` path | `ErrInvalidRequest`; no judgment of the captured code |
+| A supplied package that fails to parse or type-check, imports outside the supplied packages, breaks the `internal` rule, imports a `main` package or forms an import cycle; a missing Files layout, or a captured file that is not a `.go` path | `ErrInvalidRequest`; no judgment of the captured code |
+| An import outside the environment, a dot or blank import, a test or ignored file, a package directory that is not a valid import path | Unsupported coverage at the import or file |
+| A captured type error, an unused import, an unexported cross-package use, an import cycle through a captured package (including a self-import), an `internal` violation, an import of a `main` package, inconsistent package clauses | Rejected validity, with a diagnostic at the captured node |
 
 The graph gains:
 
@@ -140,13 +154,26 @@ The graph gains:
   entity;
 - `name` bindings from qualified type references to the imported declarations.
 
-Supplied declarations are exported by identity only: their reference,
-application and display terms, never `underlying`, `alias-target` or
-`constraint` facts. Their internals may lie outside this profile.
-`Model.LookupIn(importPath, name)` reads a package-qualified declaration.
-`Model.Lookup` refuses a name that more than one package declares. Use
-`analyze.ContractFor(settings)` and `golang.EvidenceFor(settings)` with the
-same configuration for resolution and analysis.
+**Supplied structure stays outside the graph.** A supplied declaration
+contributes its identity only: reference, application and display terms. This
+also holds when a captured declaration is built directly on supplied structure:
+a captured alias of a supplied type, a captured declaration whose right-hand side
+is one (directly or through other captured declarations), or a type parameter
+constrained by one. Their `underlying` facts are not exported, and supplied
+aliases and parameters export no `alias-target` or `constraint` facts. Supplied
+internals may therefore lie outside this profile.
+
+**Lookups.** `Model.Lookup(name)` considers captured packages only, and refuses a
+name that more than one of them declares. `Model.LookupIn(importPath, name)`
+reads a package-qualified declaration. A supplied declaration is present only
+where captured code uses it.
+
+**One environment end to end.** Analysis refuses a configuration that differs
+from its resolution's. Use `analyze.ContractFor(settings)` and
+`golang.EvidenceFor(settings)` with the same configuration for resolution and
+analysis. `ImportConfiguration` refuses an environment that the analysis
+evidence budget could not carry. An export-time limit or unsupported construct is
+reported at the captured declaration or use being exported.
 
 A consumer explicitly constructs both adapters, resolves with
 `semantic.Options{Configuration: golang.Configuration()}`, and calls the analyzer
