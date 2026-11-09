@@ -280,6 +280,12 @@ func TestGoImportsRejectAndRefuse(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+	t.Run("not a Go file path", func(t *testing.T) {
+		snapshot, _ := goPackageCapture(t, map[string]string{"a/a.txt": valid["a/a.go"]}, true)
+		if _, _, err := goImportResults(t, snapshot, goImportSettings(t, cellPackage)); !errors.Is(err, semantic.ErrInvalidRequest) {
+			t.Fatal(err)
+		}
+	})
 }
 
 // bittype:case target=github.com/Bitspark/bittype/semantics/golang/go#ImportConfiguration feature=go-imported-packages case=normalized-receipt-environment expects=equal-environments-equal-settings
