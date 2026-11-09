@@ -230,7 +230,7 @@ func TestProductionArchitecture(t *testing.T) {
 	// language stages. The agnostic association above never imports their models.
 	rules["verification/files/source/horos/go"] = []string{"contracts/semantic/go", "contracts/resolution/go", "internal/horosmodel", "resolve/files/horos/provider/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
 	rules["semantics/golang/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "syntax/golang/go", "trees/ast/go", "trees/representation/go"}
-	rules["internal/golangsem"] = []string{"contracts/semantic/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/ast/go"}
+	rules["internal/golangsem"] = []string{"contracts/semantic/go", "files/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/ast/go"}
 	rules["resolve/files/golang/provider/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "semantics/go", "semantics/golang/go", "syntax/golang/go"}
 	rules["analyze/files/golang/provider/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "resolve/files/golang/provider/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/representation/go"}
 	rules["internal/typescriptimports"] = []string{"files/go", "internal/typescript", "syntax/typescript/go", "trees/ast/go"}
