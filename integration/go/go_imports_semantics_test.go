@@ -294,7 +294,7 @@ func TestGoImportsRejectAndRefuse(t *testing.T) {
 	})
 }
 
-// bittype:case target=github.com/Bitspark/bittype/semantics/golang/go#ImportConfiguration feature=go-imported-packages case=normalized-receipt-environment expects=equal-environments-equal-settings
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve feature=go-imported-packages case=normalized-receipt-environment expects=equal-environments-equal-settings
 func TestGoImportConfigurationIsNormalizedAndBound(t *testing.T) {
 	two := n.Package{ImportPath: "example.org/two", Files: []n.PackageFile{{Name: "b.go", Text: "package two\n"}, {Name: "a.go", Text: "package two\n\ntype T string\n"}}}
 	a, err := n.ImportConfiguration(n.ImportEnvironment{Module: goImportModule, Packages: []n.Package{two, cellPackage}})

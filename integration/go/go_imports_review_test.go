@@ -204,7 +204,7 @@ func TestGoImportsClassifyIndependentlyOfOrder(t *testing.T) {
 	}
 }
 
-// bittype:case target=github.com/Bitspark/bittype/semantics/golang/go#Model.Lookup feature=go-imported-packages case=captured-lookup-and-base-parity expects=captured-ambiguity-only
+// bittype:case target=github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze feature=go-imported-packages case=captured-lookup-and-base-parity expects=captured-ambiguity-only
 func TestGoImportsLookupAndBaseParity(t *testing.T) {
 	// Base parity: one package entity 1 named "captured".
 	base := goModel(t, "type Text string")
@@ -271,7 +271,7 @@ func TestGoImportsLookupAndBaseParity(t *testing.T) {
 // Every configuration ImportConfiguration accepts can be carried by analysis
 // contracts and model admission.
 //
-// bittype:case target=github.com/Bitspark/bittype/semantics/golang/go#ImportConfiguration feature=go-imported-packages case=configuration-at-the-evidence-budget expects=accepted-environments-admissible
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve feature=go-imported-packages case=configuration-at-the-evidence-budget expects=accepted-environments-admissible
 func TestGoImportConfigurationFitsEvidence(t *testing.T) {
 	environment := func(size int) n.ImportEnvironment {
 		// JSON escapes '<', so the encoded setting grows six bytes per character.
