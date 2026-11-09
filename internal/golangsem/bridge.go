@@ -125,6 +125,9 @@ func Check(ctx context.Context, inputs []s.AST, captured *files.Context, setting
 		}
 		inputs = slices.Clone(inputs)
 		sort.SliceStable(inputs, func(i, j int) bool { return env.paths[inputs[i].ID] < env.paths[inputs[j].ID] })
+		if err := checkLayout(env, inputs); err != nil {
+			return nil, err
+		}
 	}
 	if err := bound(inputs); err != nil {
 		return nil, err

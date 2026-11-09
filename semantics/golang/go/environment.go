@@ -119,7 +119,7 @@ func normalizeEnvironment(e ImportEnvironment) (ImportEnvironment, error) {
 	size := len(e.Module)
 	for _, p := range e.Packages {
 		lower, module := strings.ToLower(p.ImportPath), strings.ToLower(e.Module)
-		if !ValidImportPath(p.ImportPath) || lower == module || strings.HasPrefix(lower, module+"/") {
+		if !ValidImportPath(p.ImportPath) || lower == module || strings.HasPrefix(lower, module+"/") || slices.Contains(strings.Split(p.ImportPath, "/"), "vendor") {
 			// A supplied package must not claim the captured module's paths.
 			return ImportEnvironment{}, semantic.ErrInvalidRequest
 		}

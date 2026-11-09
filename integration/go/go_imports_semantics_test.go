@@ -50,6 +50,20 @@ func goPackageCapture(t *testing.T, sources map[string]string, withFiles bool) (
 	return goPackageCaptureIn(t, paths, sources, withFiles)
 }
 
+// goTreeID gives each file a stable tree ID that sorts opposite to its path:
+// lowercase letters are mirrored (a↔z, b↔y, ...). Results that follow file-path
+// order therefore cannot be produced by sorting tree IDs.
+func goTreeID(path string) ast.TreeID {
+	id := []rune("tree:")
+	for _, r := range path {
+		if r >= 'a' && r <= 'z' {
+			r = 'a' + 'z' - r
+		}
+		id = append(id, r)
+	}
+	return ast.TreeID(string(id))
+}
+
 // goPackageCaptureIn captures the trees in exactly the given order.
 func goPackageCaptureIn(t *testing.T, paths []string, sources map[string]string, withFiles bool) (semantic.Snapshot, map[string]s.AST) {
 	t.Helper()
@@ -65,7 +79,7 @@ func goPackageCaptureIn(t *testing.T, paths []string, sources map[string]string,
 	var envelopes []representation.AST
 	layout := &files.Context{}
 	for _, p := range paths {
-		id := ast.TreeID(p)
+		id := goTreeID(p)
 		parsed, err := parsegolang.Parse(context.Background(), parse.Input{SourceID: ast.SourceID(p), TreeID: id, Text: sources[p]})
 		if err != nil {
 			t.Fatal(err)

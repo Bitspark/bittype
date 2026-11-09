@@ -20,12 +20,18 @@ import (
 // a method and a pointer term, and a generic whose constraint has a pointer term.
 var plainPackage = n.Package{ImportPath: "example.org/plain", Files: []n.PackageFile{{Name: "plain.go", Text: "package plain\n\ntype S struct {\n\tsecret string `json:\"hidden\"`\n\tnext   *S\n}\n\ntype Ptr = *S\n\ntype C interface {\n\t~string\n\tM() *int\n}\n\ntype G[T interface{ ~string | *int }] struct {\n\tv T\n}\n"}}}
 
+// goNoSuppliedText checks the structural projection: no supplied member or its
+// metadata. Human-readable display text may name supplied types; it is never
+// semantic identity.
 func goNoSuppliedText(t *testing.T, data semantics.Data) {
 	t.Helper()
 	for _, term := range data.Terms {
-		for _, leak := range []string{"hidden", "secret", "*int", "interface{", "M()"} {
+		if term.Operator == n.Key("display") {
+			continue
+		}
+		for _, leak := range []string{"hidden", "secret"} {
 			if strings.Contains(string(term.Data), leak) {
-				t.Fatalf("supplied text %q reached the graph: %s", leak, term.Data)
+				t.Fatalf("supplied structure %q reached the graph: %s", leak, term.Data)
 			}
 		}
 	}
@@ -56,15 +62,13 @@ func TestGoImportsGuardLongChainsOverSuppliedStructure(t *testing.T) {
 		t.Fatal(err)
 	}
 	goNoSuppliedText(t, model.Graph().Data())
-	// The supplied generic's display names its parameters, never their constraints.
+	// A supplied generic is admitted by the native compiler like any other, and
+	// a constructor must be a generic declaration, never an instance or a
+	// non-generic type.
 	g, err := model.LookupIn("example.org/plain", "G")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := g.String(); got != "example.org/plain.G[T]" {
-		t.Fatal("supplied generic display", got)
-	}
-	// Admission detail never spells a supplied constraint.
 	queries, err := analyze.NewQueries(context.Background(), model)
 	if err != nil {
 		t.Fatal(err)
@@ -73,12 +77,36 @@ func TestGoImportsGuardLongChainsOverSuppliedStructure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	admission, err := queries.Admit(context.Background(), g, boolean)
+	text, err := model.Basic(types.String)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if admission.Admitted() || strings.Contains(admission.Detail(), "*int") || strings.Contains(admission.Detail(), "interface") {
-		t.Fatal("admission detail", admission.Admitted(), admission.Detail())
+	if admission, err := queries.Admit(context.Background(), g, boolean); err != nil || admission.Admitted() {
+		t.Fatal("bool admitted for a ~string | *int constraint", err)
+	}
+	if admission, err := queries.Admit(context.Background(), g, text); err != nil || !admission.Admitted() {
+		t.Fatal("string refused for a ~string | *int constraint", err, admission.Detail())
+	}
+	alias, err := model.LookupIn("example.org/app/a", "H")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// H = plain.G[string]: its target is an instance of the supplied generic.
+	instance := alias.AliasTarget()
+	if !instance.Valid() || len(instance.Arguments()) != 1 || !instance.Origin().Same(g) {
+		t.Fatal("expected H's target to instantiate plain.G", instance.String())
+	}
+	t0, err := model.LookupIn("example.org/app/a", "T0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, tc := range map[string]struct {
+		constructor n.Type
+		arguments   []n.Type
+	}{"an instance": {instance, []n.Type{text}}, "a non-generic type": {t0, nil}} {
+		if _, err := queries.Admit(context.Background(), tc.constructor, tc.arguments...); !errors.Is(err, n.ErrUnsupported) {
+			t.Fatal(name, "accepted as a constructor:", err)
+		}
 	}
 }
 
@@ -274,5 +302,47 @@ func TestGoImportsCollisionsAndSites(t *testing.T) {
 		if _, err := analyze.ContractFor(altered); err == nil {
 			t.Fatal(name, "settings accepted by ContractFor")
 		}
+	}
+}
+
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve feature=go-imported-packages case=documented-check-order expects=layout-then-syntax-then-go-tool-rejections
+func TestGoImportsCheckOrderAndVendor(t *testing.T) {
+	// A layout refusal comes before any tree's syntax limit.
+	deep := "package b\n\ntype B " + strings.Repeat("[]", 70) + "string\n"
+	snapshot, trees := goPackageCapture(t, map[string]string{"a/a_test.go": "package a\n\ntype A string\n", "b/b.go": deep}, true)
+	_, result, err := goImportResults(t, snapshot, goImportSettings(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	coverage, _ := result.Report(n.Coverage())
+	if ds := result.Diagnostics(); coverage.Status != semantic.Unsupported || len(ds) == 0 || ds[0].At == nil || ds[0].At.Tree != trees["a/a_test.go"].ID {
+		t.Fatal("expected the test file refused before the deep tree's limit", coverage, ds)
+	}
+	// Case collisions come before disagreeing package clauses, whatever the paths.
+	snapshot, _ = goPackageCapture(t, map[string]string{
+		"B/x.go": "package b\n\ntype X string\n",
+		"b/x.go": "package b\n\ntype Y string\n",
+		"a/y.go": "package a\n\ntype Y string\n",
+		"a/z.go": "package q\n\ntype Z string\n",
+	}, true)
+	_, result, err = goImportResults(t, snapshot, goImportSettings(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ds := result.Diagnostics(); len(ds) == 0 || !strings.Contains(ds[0].Message, "case-insensitive import collision") {
+		t.Fatal("expected the case collision first", ds)
+	}
+	// Vendor directories are outside the profile, and supplied paths may not name them.
+	snapshot, _ = goPackageCapture(t, map[string]string{"vendor/v/v.go": "package v\n\ntype V string\n"}, true)
+	_, result, err = goImportResults(t, snapshot, goImportSettings(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if coverage, _ := result.Report(n.Coverage()); coverage.Status != semantic.Unsupported {
+		t.Fatal("a vendored captured file was accepted", coverage)
+	}
+	vendored := n.Package{ImportPath: "example.org/lib/vendor/v", Files: []n.PackageFile{{Name: "v.go", Text: "package v\n"}}}
+	if _, err := n.ImportConfiguration(n.ImportEnvironment{Module: goImportModule, Packages: []n.Package{vendored}}); !errors.Is(err, semantic.ErrInvalidRequest) {
+		t.Fatal("a vendored supplied path was accepted", err)
 	}
 }

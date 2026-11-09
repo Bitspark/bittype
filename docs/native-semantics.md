@@ -127,6 +127,8 @@ own module layout:
 
 - test files (`_test.go`), files and directories starting with `_` or `.`, and
   `testdata` directories are not part of a package, and are unsupported;
+- `vendor` directories, whose import paths Go resolves differently, are
+  unsupported, and a supplied import path may not contain a `vendor` element;
 - an import of a path with an `internal` element is allowed only from within the
   tree rooted at its parent;
 - a package named `main` cannot be imported;
@@ -138,19 +140,25 @@ source files only, never test or ignored files.
 Build constraints, including GOOS and GOARCH file-name suffixes, are not
 interpreted: every captured file belongs to its directory's package.
 
-**Classification.** The environment is validated completely before any captured
-code is judged, including captured resource limits: the Files layout of every
-tree, then every supplied package, parsed and checked in its own import order.
-Captured trees are then processed in file-path order, so no result or diagnostic
-depends on capture order. Unsupported layouts and imports come first, then the go
-tool's rejections (case collisions, disagreeing package clauses, `internal` and
-`main` rules, import cycles), then the type check in import order through a
-closed importer.
+**Classification.** The checks run in a fixed order, so no result or diagnostic
+depends on capture order:
+
+1. The environment: the Files layout of every tree, then every supplied package,
+   parsed and checked in its own import order.
+2. Captured file paths, in file-path order: test, ignored and vendored files and
+   invalid package directories. These come before any captured resource limit.
+3. Captured resource limits, then each tree's syntax, in file-path order:
+   unsupported constructs, including dot and blank imports.
+4. Imports outside the environment.
+5. The go tool's rejections: case collisions of import paths and file names,
+   then disagreeing package clauses, then the `internal` and `main` rules and
+   import cycles.
+6. The type check, in import order through a closed importer.
 
 | Case | Result |
 | --- | --- |
-| A supplied package that fails to parse or type-check, imports outside the supplied packages, breaks the `internal` rule, imports a `main` package or forms an import cycle; supplied paths or file names that differ only in case, or a supplied test or ignored file; a missing Files layout, or a captured file that is not a `.go` path | `ErrInvalidRequest`; no judgment of the captured code |
-| An import outside the environment, a dot or blank import, a test or ignored file, a package directory that is not a valid import path | Unsupported coverage at the import or file |
+| A supplied package that fails to parse or type-check, imports outside the supplied packages, breaks the `internal` rule, imports a `main` package or forms an import cycle; supplied paths or file names that differ only in case, a supplied test or ignored file, or a supplied path with a `vendor` element; a missing Files layout, or a captured file that is not a `.go` path | `ErrInvalidRequest`; no judgment of the captured code |
+| An import outside the environment, a dot or blank import, a test, ignored or vendored file, a package directory that is not a valid import path | Unsupported coverage at the import or file |
 | A captured type error, an unused import, an unexported cross-package use, an import cycle through a captured package (including a self-import), an `internal` violation, an import of a `main` package, inconsistent package clauses, captured import paths or file names that differ only in case | Rejected validity, with a diagnostic at the captured node |
 
 The graph gains:
@@ -161,19 +169,30 @@ The graph gains:
   entity;
 - `name` bindings from qualified type references to the imported declarations.
 
-**Supplied structure stays outside the graph.** A supplied declaration
-contributes its identity only: reference, application and display terms. This
-also holds when a captured declaration is built directly on supplied structure:
-a captured alias of a supplied type, a captured declaration whose right-hand side
-is one (through chains of any length), or a type parameter constrained by one.
-Their `underlying` facts are not exported, and supplied aliases and parameters
-export no `alias-target` or `constraint` facts. A supplied generic declaration is
-displayed with its parameter names only, and an admission query against it does
-not spell its constraints. Supplied internals may therefore lie outside this
-profile. Native identity is still go/types identity: an `identical` fact can
-relate a supplied alias to its target when that target also appears in the graph.
+**Supplied structure stays outside the graph's projection.** The graph projects
+captured code; supplied packages take part by identity. A supplied declaration
+contributes its entity and its reference and application terms, never its
+structure: no fields, no `underlying`, `alias-target` or `constraint` facts.
+This also holds when a captured declaration is built directly on supplied
+structure: a captured alias of a supplied type, a captured declaration whose
+right-hand side is one (through chains of any length), or a type parameter
+constrained by one. So supplied internals may lie outside this profile without
+failing a captured result.
+
+The purpose is that containment, not secrecy: the consumer supplies these
+packages itself. Two kinds of output may therefore depend on supplied
+declarations:
+
+- **Compiler-established properties of captured types**, such as the comparability
+  or emptiness of a captured constraint that embeds a supplied interface, and
+  go/types identity in `identical` facts.
+- **Human-readable text**: diagnostics, `display` facts and admission detail may
+  name supplied types and spell their constraints. This text is never semantic
+  identity.
+
 `Type.Unconstrained` reports only what the graph establishes, so a supplied
-parameter is never reported unconstrained.
+parameter is never reported unconstrained. An admission query's constructor must
+be a generic declaration, never an instance or a non-generic type.
 
 **Lookups.** `Model.Lookup(name)` considers captured packages only, and refuses a
 name that more than one of them declares. `Model.LookupIn(importPath, name)`

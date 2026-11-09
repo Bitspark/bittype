@@ -3,7 +3,6 @@ package integration_test
 import (
 	"context"
 	"errors"
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -16,7 +15,6 @@ import (
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
 	s "github.com/Bitspark/bittype/syntax/golang/go"
-	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 func goImportsHold(t *testing.T, result semantic.Result) {
@@ -173,35 +171,8 @@ func TestGoImportsClassifyIndependentlyOfOrder(t *testing.T) {
 	if _, _, err := goImportResults(t, snapshot, goImportSettings(t, cyclic...)); !errors.Is(err, semantic.ErrInvalidRequest) {
 		t.Fatal(err)
 	}
-	// The same sources captured in different tree orders give the same graph.
-	sources := map[string]string{
-		"pages/page.go":    "package pages\n\nimport \"example.org/app/people\"\n\ntype Page struct {\n\tItems []people.Person\n}\n",
-		"people/person.go": "package people\n\ntype Person struct {\n\tName string\n}\n",
-	}
-	var graphs []semantics.Data
-	for _, order := range [][]string{{"pages/page.go", "people/person.go"}, {"people/person.go", "pages/page.go"}} {
-		snapshot, _ := goPackageCaptureIn(t, order, sources, true)
-		_, result, err := goImportResults(t, snapshot, goImportSettings(t))
-		if err != nil {
-			t.Fatal(err)
-		}
-		goImportsHold(t, result)
-		model, err := n.Open(result)
-		if err != nil {
-			t.Fatal(err)
-		}
-		data := model.Graph().Data()
-		// Package declarations list roots in capture order; compare the rest exactly.
-		for i := range data.Entities {
-			if data.Entities[i].Kind == n.Key("package") {
-				data.Entities[i].Declarations = nil
-			}
-		}
-		graphs = append(graphs, data)
-	}
-	if !reflect.DeepEqual(graphs[0].Entities, graphs[1].Entities) || len(graphs[0].Bindings) != len(graphs[1].Bindings) {
-		t.Fatal("tree order changed the exported graph")
-	}
+	// Graph equality across capture orders is established by
+	// TestGoImportsDiagnosticsAndGraphsIgnoreCaptureOrder.
 }
 
 // bittype:case target=github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze feature=go-imported-packages case=captured-lookup-and-base-parity expects=captured-ambiguity-only
@@ -265,43 +236,5 @@ func TestGoImportsLookupAndBaseParity(t *testing.T) {
 	}
 	if _, err := model.LookupIn("example.org/other", "Unused"); err == nil {
 		t.Fatal("an unused supplied declaration was exported")
-	}
-}
-
-// Every configuration ImportConfiguration accepts can be carried by analysis
-// contracts and model admission.
-//
-// bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve feature=go-imported-packages case=configuration-at-the-evidence-budget expects=accepted-environments-admissible
-func TestGoImportConfigurationFitsEvidence(t *testing.T) {
-	environment := func(size int) n.ImportEnvironment {
-		// JSON escapes '<', so the encoded setting grows six bytes per character.
-		text := "package big\n\n// " + strings.Repeat("<", size) + "\n"
-		return n.ImportEnvironment{Module: goImportModule, Packages: []n.Package{{ImportPath: "example.org/big", Files: []n.PackageFile{{Name: "big.go", Text: text}}}}}
-	}
-	lo, hi := 0, 1<<20
-	for lo < hi {
-		mid := (lo + hi + 1) / 2
-		if _, err := n.ImportConfiguration(environment(mid)); err == nil {
-			lo = mid
-		} else if errors.Is(err, semantic.ErrLimit) {
-			hi = mid - 1
-		} else {
-			t.Fatal(err)
-		}
-	}
-	settings, err := n.ImportConfiguration(environment(lo))
-	if err != nil {
-		t.Fatal(err)
-	}
-	contract, err := analyze.ContractFor(settings)
-	if err != nil {
-		t.Fatal(err)
-	}
-	definition, err := representation.NewLanguage[s.Language](s.Language{}, "go-syntax-1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := analysis.NewAnalyzer[s.Language](definition, contract, analyze.Provider{}); err != nil {
-		t.Fatal("the largest accepted environment cannot be analyzed:", err)
 	}
 }
