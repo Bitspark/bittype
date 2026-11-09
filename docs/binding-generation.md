@@ -60,7 +60,10 @@ Distribution follows from this interface. Neither an existing generator nor the 
 - union discrimination and construction;
 - numeric range and exactness;
 - recursive references;
-- the selected adapter factories, their argument slots and their resource requirements.
+- the selected adapter factories, their argument slots and their resource requirements;
+- the selected root contract, such as `Service<Ops>`, which the author declares at the root of the contract and which is selected like any other contribution.
+
+The serialized plan carries an explicit format version, which bittype owns. A backend consumes a pinned version and refuses an unknown one.
 
 **Form.** These are typed references and target-owned expressions, the same principle as bittype's native intent (the [generation SPI](generation-spi.md)). They are not a universal schema and not another type algebra.
 
@@ -88,11 +91,12 @@ A library publishes, for one declaration and one supported target representation
 | Source selector | Exact module digest and declaration identity |
 | Representation context | Target and supported profile |
 | Native facet | Its bittype recipe or native intent |
-| Adapter facet | Run-time factory reference and typed argument-adapter slots |
+| Value adapter facet | Run-time factory reference and typed argument-adapter slots, converting the value inside a message |
+| Root (attachment) facet | Serving the value as one routed endpoint; Function's is `functionBinding`, its value facet `functionAdapter` |
 | Requirements | Adapter-interface compatibility, resource facilities, supported scope |
 | Optional product facets | For example an operation facet, through which a callable contract exposes its argument, result and failure positions |
 
-**Selection.** The two facets are selected as a pair. A native mapping without an adapter facet still supports types, but a request for bindings fails explicitly. There is never a fallback to structural conversion, in the same way that an exact use mapping never silently becomes a structural publication today.
+**Selection.** A native facet and the facets a binding product needs are selected together. A native mapping without an adapter facet still supports types, but a request for bindings that needs a missing facet fails explicitly. There is never a fallback to structural conversion, in the same way that an exact use mapping never silently becomes a structural publication today.
 
 **Ownership.** Contributions belong to their library's owner, outside canonical horos bytes. Native package paths and export names are not part of declaration identity.
 
@@ -199,12 +203,20 @@ Libraries implement native↔abstract conversion once, and each format implement
 
 **`Function<A, B, E>`** is designed by the Function library ([bitspark-service#35](https://github.com/Bitspark/bitspark-service/issues/35)):
 
-- A completed answer is `Ok(B) | DomainError(E)`.
-- Invocation failures travel on a separate channel: local non-admission, an unknown outcome after admission, an undecodable reply, cancellation.
-- Remote protocol replies belong to the Function library's full declared reply protocol.
-- Converting a domain error is explicit, never a guess from a `code` property.
+- A completed answer is `Ok(B) | DomainError(E)`, and `E` must be ground. Function's declaration states that requirement.
+- The full reply protocol is Function's: `ok(B) | error(E) | protocol(message) | unknown(reason, message)`. `protocol` means the peer refused before invoking. `unknown` means a failure after invocation, an unusable result, or an answer over the limit.
+- Invocation failures travel on a separate channel: local non-admission, an unknown outcome after admission, an undecodable reply, ended observation. Function supplies no remote cancellation.
+- A provider returns a domain error as a value. A thrown exception is `unknown`, and nothing is recognised by a `code` or `family` property. The native representation of `E` is the domain's own contribution.
+- The protocol is incompatible with today's. libraries/service introduces it under new profiles with a coordinated cutover. Decided by libraries/service in [bitspark-service#35, comment 6729151207](https://github.com/Bitspark/bitspark-service/issues/35#issuecomment-6729151207).
 
-**The service root must be decided before a pilot.** A service declared as a record of Function values is a different contract from a single capability that dispatches by path, which is today's platform `serviceBinding`. By default, the declared record is exported. A dispatcher, if required, is an explicit library-owned root protocol. The generator never infers that adaptation.
+**The service root is a declared root contract.** A service declared as a record of Function values is a different contract from a single capability that dispatches by path. The advice's default was to export the declared record, with a dispatcher allowed only as an explicit library-owned root protocol. libraries/service took that alternative ([bitspark-service#35, comment 6729151207](https://github.com/Bitspark/bitspark-service/issues/35#issuecomment-6729151207)), for four reasons:
+
+- a routed location attaches exactly one endpoint, so a record would still need a bootstrap root protocol;
+- per-operation exports multiply endpoints and lifetimes;
+- path dispatch lets a provider add operations without changing what callers decode;
+- authority is decided per request, not by holding an endpoint.
+
+So `@bitspark/service-contracts` declares `Service<Ops>`, whose `Ops` is a record, with nested records as namespaces, of `Function<A, B, E>` leaves. The service author writes `Service<…>` at the root of the contract. The plan selects it like any other contribution, through its root facet. Each operation's argument, result and failure positions come from Function's operation facet, so outcomes stay Function's. Service rejects any other leaf at composition. The generator never infers a dispatcher, and a plain record of Functions stays a record value.
 
 ## Order of work and qualification
 
