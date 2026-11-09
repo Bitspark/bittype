@@ -34,9 +34,9 @@ func goImportsHold(t *testing.T, result semantic.Result) {
 //
 // bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve feature=go-imported-packages case=captured-types-on-supplied-structure expects=supplied-structure-not-exported
 func TestGoImportsDoNotExportSuppliedStructureThroughCapturedTypes(t *testing.T) {
-	box := n.Package{ImportPath: "example.org/box", Files: []n.PackageFile{{Name: "box.go", Text: "package box\n\ntype Box struct {\n\tsecret string `json:\"hidden\"`\n\tnext   *Box\n}\n\ntype C interface {\n\t~string\n\tM() *int\n}\n"}}}
+	box := n.Package{ImportPath: "example.org/box", Files: []n.PackageFile{{Name: "box.go", Text: "package box\n\ntype Box struct {\n\tsecret string `json:\"hidden\"`\n\tnext   *Box\n}\n\ntype C interface {\n\t~string\n\tM() *int\n}\n\ntype Ptr = *Box\n\ntype G[T interface{ ~string | *int }] struct {\n\tv T\n}\n"}}}
 	snapshot, _ := goPackageCapture(t, map[string]string{
-		"a/a.go": "package a\n\nimport (\n\t\"example.org/box\"\n\t\"example.org/cell\"\n)\n\ntype A = cell.Cell[string]\n\ntype B box.Box\n\ntype D B\n\ntype W[T any] cell.Cell[T]\n\ntype P[T box.C] struct {\n\tV T\n}\n",
+		"a/a.go": "package a\n\nimport (\n\t\"example.org/box\"\n\t\"example.org/cell\"\n)\n\ntype A = cell.Cell[string]\n\ntype B box.Box\n\ntype D B\n\ntype W[T any] cell.Cell[T]\n\ntype P[T box.C] struct {\n\tV T\n}\n\ntype E = box.Ptr\n\ntype H = box.G[string]\n",
 	}, true)
 	_, result, err := goImportResults(t, snapshot, goImportSettings(t, box, cellPackage))
 	if err != nil {
@@ -58,7 +58,7 @@ func TestGoImportsDoNotExportSuppliedStructureThroughCapturedTypes(t *testing.T)
 			t.Fatal("supplied structure reached the graph", string(term.Data))
 		}
 	}
-	for _, name := range []string{"A", "B", "D", "W"} {
+	for _, name := range []string{"A", "B", "D", "W", "E", "H"} {
 		ty, err := model.LookupIn("example.org/app/a", name)
 		if err != nil {
 			t.Fatal(name, err)
