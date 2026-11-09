@@ -21,6 +21,7 @@ what the expert or submitting author said at the time.
 | [0012: capability reports](0012-capability-reports.md) | [Capability reporting](../docs/capability-reports.md), [matrix identity correction](../docs/architecture-cases/0007-matrix-contract-identity.md). |
 | [0013: source traversal](0013-generation-source-traversal.md) | [Semantic traversal and source interpretation](../docs/generation-spi.md#semantic-traversal-and-source-interpretation), [GEN-01](../docs/generation-gaps.md#gen-01), [ACX-006](../docs/architecture-cases/0006-generation-source-traversal.md); kernel-owned traversal replaced the 0011 Open/Admit reader. |
 | [0014: binding generation](0014-binding-generation.md) | [Binding generation](../docs/binding-generation.md); bittype publishes a selected representation plan and per-target backends compose paired library contributions. Accepted direction; not implemented. |
+| [0015: representation families](0015-representation-families.md) | [Representation families](../docs/representation-families.md); each family is one representation contract instantiated once per use, delivered with its plan payload, conversion and qualification. Accepted design; not implemented. |
 
 There is no implication of a missing current feature merely because a historical
 submission names a different API. Conversely, later working examples do not close

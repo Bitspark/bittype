@@ -144,7 +144,7 @@ It must also establish:
 | Capability preservation | Authority, identity and reuse rules, scope and lifetime remain valid |
 | Cross-target agreement | Different native representations agree on abstract values and protocol observations |
 
-**Coverage** is never weakened to "what this implementation happens to accept".
+**Coverage** is never weakened to "what this implementation happens to accept". [Research 0015](../research-docs/0015-representation-families.md) refines `V_T` into four sets and makes narrower coverage a declared, reported restriction: see [representation families](representation-families.md#domains).
 
 **Capture in practice.** Both ontos implementations copy bytes when an atom is built (Go `NewAtom`, the TypeScript `Atom` constructor). Conversion into ontos atoms therefore discharges capture for byte buffers. Adapters that keep native references, views or capabilities must discharge it themselves.
 
@@ -155,7 +155,7 @@ It must also establish:
 - Two native branches can encode to the same canonical value, as with an overlapping union.
 - Two abstract alternatives can collapse into one native form.
 
-Neither can bind unless a library-owned representation supplies the missing information. "Every valid type has an automatic adapter" is not a promise this design makes.
+**Corrected by research 0015.** The obstruction is information loss, not overlap. The round-trip law implies `E(n1) = E(n2) ⇒ n1 ≈ n2`, so a representation fails only where two native values that its equivalence distinguishes encode to the same canonical value. An overlap without branch provenance binds. A library-owned representation cannot recover erased information. It can share a native form, admit a normal form, define the equivalence, or change the source contract so the distinction becomes canonical data. See [unions](representation-families.md#families). "Every valid type has an automatic adapter" is not a promise this design makes.
 
 ## Message form and validation
 
@@ -275,4 +275,4 @@ The unit of implementation is library × target.
 | Service root, `Function<A, B, E>`, ownership and lifetime contract, per-operation presentation, TypeScript backend | platform `libraries/service` | [bitspark-service#35](https://github.com/Bitspark/bitspark-service/issues/35) |
 | Lossless JSON projection; mixed-structure checking | ontos | [ontos#33](https://github.com/Bitspark/ontos/issues/33) |
 | Go-descriptor through TypeScript-checker test; integer refinements (optional) | horos | [horos#36](https://github.com/Bitspark/horos/issues/36) |
-| Representation families the services need | bittype | [#163](https://github.com/Bitspark/bittype/issues/163), [#164](https://github.com/Bitspark/bittype/issues/164), [#165](https://github.com/Bitspark/bittype/issues/165) |
+| Representation families the services need, each delivered complete ([representation families](representation-families.md), research 0015) | bittype | [#163](https://github.com/Bitspark/bittype/issues/163), [#164](https://github.com/Bitspark/bittype/issues/164), [#165](https://github.com/Bitspark/bittype/issues/165), [#166](https://github.com/Bitspark/bittype/issues/166) |

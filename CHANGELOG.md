@@ -4,6 +4,10 @@
 
 - The first Go profile accepts an explicit import environment (#168). Captured files form packages by their paths under a module, and supplied dependency packages are given as source in receipt identity. Packages are checked in import order through a closed importer, without module or standard-library discovery. Qualified type references bind to imported declarations; supplied declarations are exported by identity only. The base configuration is unchanged.
 
+## Representation families — 9 November 2026
+
+- Record research 0015's accepted design ([representation families](docs/representation-families.md)). Each family is a representation contract, instantiated once per use, whose native type and plan entry are projections of one selected instance. The plan is a graph with a shared envelope and family-owned payloads declared in horos, five version axes and explicit generic requirements; it stays unstable until six vertical cases pass. Correct 0014's union rule: the obstruction is information loss, not overlap. Nothing is implemented yet.
+
 ## GEN-01 verified — 9 November 2026
 
 - Record the independent verification of the GEN-01 correction: #192 at
