@@ -46,5 +46,5 @@ an additional native parameter and a helper under the same convention.
 This establishes a single mapping authority and separation of stages, not a
 cross-language proof of every native lowering. Kind enforcement and the third
 source-traversal SPI change are not claimed by this correction; the latter is
-corrected separately under ACX-006, pending independent verification. The old
+corrected separately under ACX-006, since independently verified. The old
 procedural SPI, second mapping authority and operation tickets were removed.

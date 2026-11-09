@@ -1033,7 +1033,7 @@ The judgment of a use covers that use. A callee declaration is classified when o
 - **Selector identity.** Rule lookup compared selector keys and dropped the language. A selector the source returns must now be in the capture's source language and profile.
 - **Diagnostic site.** A term recorded at several syntax sites is reported at the occurrence's declaration.
 
-The correction is [#192](https://github.com/Bitspark/bittype/pull/192).
+The correction is [#192](https://github.com/Bitspark/bittype/pull/192). Independent verification by `codex-hydrated-type-design` (record 000005) accepted it at `6132170` on 9 November 2026.
 
 | Rows | Validation (red → green) |
 | --- | --- |

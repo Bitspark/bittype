@@ -3,8 +3,8 @@
 **Recorded 8 November 2026.** The declarative generation change
 ([PR #155](https://github.com/Bitspark/bittype/pull/155)) separates semantic
 planning from native AST construction. The kernel-owned semantic traversal
-corrects the source responsibility split (GEN-01); that correction awaits
-independent verification. Native enforcement of source
+corrects the source responsibility split (GEN-01), and the correction is
+independently verified. Native enforcement of source
 kind constraints (GEN-02) remains open.
 
 Keep these references stable and update their status and completion criteria in
@@ -13,7 +13,7 @@ generation improvement does not close either item.
 
 | Reference | Status | Classification |
 | --- | --- | --- |
-| [GEN-01](#gen-01) | Correction pending independent verification: #191 rejected 8 November 2026; exact evidence and selector identity corrected in #192 | Architectural responsibility split; recorded as [bittype/ACX-006](architecture-cases/0006-generation-source-traversal.md) |
+| [GEN-01](#gen-01) | Corrected and independently verified: #191 rejected 8 November 2026; #192 verified at `6132170` on 9 November 2026 | Architectural responsibility split; recorded as [bittype/ACX-006](architecture-cases/0006-generation-source-traversal.md) |
 | [GEN-02](#gen-02) | Open; no native enforcement route implemented | Unsupported guarantee with missing native-plan expressiveness and target encodings |
 
 The implemented [mapping SPI](generation-spi.md) resolves representation choices
@@ -26,7 +26,7 @@ The remaining Rust/C++ Files ownership defects retain their own
 
 ## GEN-01
 
-**Common semantic navigation is kernel-owned. Delivered on 8 November 2026 in [#191](https://github.com/Bitspark/bittype/pull/191). Independent verification rejected that delivery; the correction in [#192](https://github.com/Bitspark/bittype/pull/192) awaits verification.**
+**Common semantic navigation is kernel-owned. Delivered on 8 November 2026 in [#191](https://github.com/Bitspark/bittype/pull/191). Independent verification rejected that delivery; the correction in [#192](https://github.com/Bitspark/bittype/pull/192) was independently verified on 9 November 2026.**
 
 ### What was wrong
 
@@ -140,6 +140,11 @@ in dispatch, and criterion 3 lacked an exact capture association at the exported
 [#192](https://github.com/Bitspark/bittype/pull/192) corrects all three and adds the reviewer's regressions. See
 [bittype/ACX-006](architecture-cases/0006-generation-source-traversal.md#verification-of-the-first-delivery).
 
+Independent verification by `codex-hydrated-type-design` (board claim `bittype-source-traversal-20261108`, record 000005) accepted #192 at `6132170` on
+9 November 2026. It checked the three findings against the merged code and the
+test events of main CI run [42509242909](https://github.com/Bitspark/bittype/actions/runs/42509242909). See
+[bittype/ACX-006](architecture-cases/0006-generation-source-traversal.md#verification-of-the-correction).
+
 ### Supported scope and limits
 
 - **Scope** is direct binder ownership by the declaration being planned. Nested
@@ -167,6 +172,10 @@ in dispatch, and criterion 3 lacked an exact capture association at the exported
   source does not generate, or whose callee selector is outside the source
   language, is reported as that use. A shared term recorded at
   only one site is reported there.
+- **Provider integrity.** The kernel opens the provider over its capture and
+  resolves handles only against it. Whether a provider's answers rest on that
+  evidence is the provider's responsibility and is not yet certified;
+  [#193](https://github.com/Bitspark/bittype/issues/193) proposes checked evidence grounds.
 - **Out of scope.** Recursive generation remains unsupported
   ([#164](https://github.com/Bitspark/bittype/issues/164)). Native enforcement of
   source bounds is [GEN-02](#gen-02).

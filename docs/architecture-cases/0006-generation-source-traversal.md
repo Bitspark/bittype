@@ -1,10 +1,10 @@
 # bittype/ACX-006 — Common semantic traversal delegated to source integrations
 
-**Status: correction pending independent verification, 8 November 2026.** [#191](https://github.com/Bitspark/bittype/pull/191) delivered the
+**Status: corrected and independently verified, 9 November 2026.** [#191](https://github.com/Bitspark/bittype/pull/191) delivered the
 kernel-owned traversal, but independent verification by `codex-hydrated-type-design` (board claim `bittype-source-traversal-20261108`, record 000003) rejected it: the public planning
 boundary still let a source interpret other evidence, and planning ignored a
-selector's language. [#192](https://github.com/Bitspark/bittype/pull/192) corrects both, and a diagnostic-site defect. The case stays open until that
-correction is independently verified. The generation kernel owns traversal of
+selector's language. [#192](https://github.com/Bitspark/bittype/pull/192) corrects both, and a diagnostic-site defect. Independent verification
+accepted that correction at `6132170` (record 000005). The generation kernel owns traversal of
 the shared semantic graph. Source integrations contribute only interpretation
 and judgments. [GEN-01](../generation-gaps.md#gen-01) records the delivered
 division, its completion criteria and its supported scope.
@@ -211,8 +211,7 @@ also tests every part of a selector's language identity. A second review of
 the fixes found tests that could not tell a use's own term site from its
 declaration, or the declaration fallback from the last recorded site, and an
 untested check order and horos handle checks. Those tests are added, and the
-remaining overclaims are corrected. The case stays open until the correction
-is independently verified.
+remaining overclaims are corrected.
 
 Each kernel check was seeded with a mutant that turned its test red. Covered
 checks:
@@ -239,6 +238,30 @@ checks:
 [Traversal qualification](../../integration/go/generation_traversal_test.go) ·
 [Planning tests](../../integration/go/generation_planning_test.go)
 
+## Verification of the correction
+
+Independent verification by `codex-hydrated-type-design` (board claim `bittype-source-traversal-20261108`, record 000005) accepted #192 on 9 November 2026, at the
+submitted and merged revision `6132170`. The verdict applies to that revision.
+Record 000003 remains the result for #191.
+
+The verifier checked each counterexample from record 000003 against the merged
+code and the ordinary integration tests, and inspected the Go test events of
+main CI run [42509242909](https://github.com/Bitspark/bittype/actions/runs/42509242909):
+
+1. **Evidence.** The planner admits the ordered evidence itself and opens the
+   provider over that exact capture. The registry calls the same planner, and
+   a source that serves its previous interpretation fails with `ErrScope`.
+2. **Selectors.** Declaration and expression lookups reach the common
+   qualification check before exact or default mapping selection. The four
+   selectors crossed with the three identity differences give 12 passing
+   subtests.
+3. **Sites.** A term with several recorded syntax sites is reported at the
+   current declaration in either order. A uniquely located use is reported at
+   its own site.
+
+The verification used source inspection and actual CI results, not a repeat of
+the author's mutation runs. The limits below still apply.
+
 ## Limits
 
 **Scope.** Only direct binder ownership is supported; there are no nested generic
@@ -263,7 +286,10 @@ come from. A provider that serves a cached interpretation unchanged cannot
 resolve the run's handles: `In` reports false, and a source that checks it, as
 horos and the independent source do, fails with `ErrScope`. A provider that rebinds a
 cached interpretation to the new capture while keeping verdicts from earlier
-evidence is a defect of that provider, and the kernel does not detect it.
+evidence is a defect of that provider, and the kernel does not detect it. Grounding is
+therefore not yet certified: no source shows the kernel which admitted facts
+each judgment rests on. [#193](https://github.com/Bitspark/bittype/issues/193) proposes source judgments that carry evidence
+grounds the kernel checks.
 
 **horos judgments.** horos reads no membership facts, so its only non-admitted
 judgments are Unsupported and Undetermined.
