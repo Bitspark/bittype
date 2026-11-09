@@ -29,6 +29,7 @@ type exporter struct {
 	positions map[token.Pos]ast.NodeRef
 	program   *checkedProgram
 	packages  map[*types.Package]semantics.EntityID
+	declared  map[types.Object]types.Type
 	err       error
 	depth     int
 }
@@ -45,6 +46,48 @@ func (e *exporter) external(t types.Type) bool {
 		return e.program.isSupplied(t.Obj().Pkg())
 	}
 	return false
+}
+
+// suppliedStructure reports whether t's underlying structure belongs to a
+// supplied package: a supplied type itself, a captured alias of one, a captured
+// declaration whose right-hand side is one (directly or through other captured
+// declarations), or a type parameter constrained by one. Its underlying fact is
+// not exported, because supplied internals may lie outside this profile.
+func (e *exporter) suppliedStructure(t types.Type) bool {
+	for depth := 0; depth < 64; depth++ {
+		switch u := t.(type) {
+		case *types.Named:
+			if e.program.isSupplied(u.Obj().Pkg()) {
+				return true
+			}
+			rhs := e.declared[u.Origin().Obj()]
+			if rhs == nil {
+				return false
+			}
+			t = rhs
+		case *types.Alias:
+			if e.program.isSupplied(u.Obj().Pkg()) {
+				return true
+			}
+			t = u.Rhs()
+		case *types.TypeParam:
+			if e.program.isSupplied(u.Obj().Pkg()) {
+				return true
+			}
+			t = u.Constraint()
+		default:
+			return false
+		}
+	}
+	return false
+}
+
+// located gives an export-time failure the site of the occurrence being exported.
+func (e *exporter) located(at ast.NodeRef) error {
+	if e.ctx.Err() != nil || at.Tree == "" {
+		return e.err
+	}
+	return &Failure{Err: e.err, At: at}
 }
 
 func (e *exporter) term(t semantics.Term) semantics.TermID {
@@ -226,7 +269,7 @@ func (e *exporter) typ(t types.Type) semantics.TermID {
 	if e.err != nil {
 		return id
 	}
-	if !e.external(t) {
+	if !e.suppliedStructure(t) {
 		e.fact(id, "underlying", e.typ(t.Underlying()))
 	}
 	e.fact(id, "display", e.term(semantics.Term{Kind: semantics.ProviderExpression, Operator: n.Key("display"), Encoding: n.Key("utf8"), Data: []byte(types.TypeString(t, nil))}))
@@ -245,8 +288,15 @@ func siteLess(a, b ast.NodeRef) bool {
 	}
 	return a.Node < b.Node
 }
-func export(ctx context.Context, program *checkedProgram, info *types.Info, origins map[*goast.Ident]ast.NodeRef, expressions map[goast.Expr]ast.NodeRef, positions map[token.Pos]ast.NodeRef) (*Checked, error) {
-	e := exporter{ctx: ctx, objects: map[types.Object]semantics.EntityID{}, types: map[types.Type]semantics.TermID{}, native: map[semantics.TermID]types.Type{}, positions: positions, program: program, packages: map[*types.Package]semantics.EntityID{}}
+func export(ctx context.Context, program *checkedProgram, info *types.Info, origins map[*goast.Ident]ast.NodeRef, expressions map[goast.Expr]ast.NodeRef, positions map[token.Pos]ast.NodeRef, rhs map[*goast.Ident]goast.Expr) (*Checked, error) {
+	e := exporter{ctx: ctx, objects: map[types.Object]semantics.EntityID{}, types: map[types.Type]semantics.TermID{}, native: map[semantics.TermID]types.Type{}, positions: positions, program: program, packages: map[*types.Package]semantics.EntityID{}, declared: map[types.Object]types.Type{}}
+	for name, expr := range rhs {
+		if obj := info.Defs[name]; obj != nil {
+			if tv, ok := info.Types[expr]; ok {
+				e.declared[obj] = tv.Type
+			}
+		}
+	}
 	// Captured packages come first, in import-path order, then supplied packages.
 	// The base profile has exactly one captured package, which is entity 1.
 	for _, captured := range program.captured {
@@ -273,6 +323,9 @@ func export(ctx context.Context, program *checkedProgram, info *types.Info, orig
 	sort.Slice(definitions, func(i, j int) bool { return siteLess(origins[definitions[i]], origins[definitions[j]]) })
 	for _, id := range definitions {
 		e.object(info.Defs[id])
+		if e.err != nil {
+			return nil, e.located(origins[id])
+		}
 	}
 	// Each captured import binds to the package it names.
 	for _, site := range program.imports {
@@ -288,6 +341,9 @@ func export(ctx context.Context, program *checkedProgram, info *types.Info, orig
 	sort.Slice(uses, func(i, j int) bool { return siteLess(origins[uses[i]], origins[uses[j]]) })
 	for _, id := range uses {
 		e.data.Bindings = append(e.data.Bindings, semantics.Binding{At: semantics.Occurrence{Site: origins[id], Role: n.Key("name")}, Target: e.object(info.Uses[id])})
+		if e.err != nil {
+			return nil, e.located(origins[id])
+		}
 	}
 	var exprs []goast.Expr
 	for expr := range info.Types {
@@ -298,6 +354,9 @@ func export(ctx context.Context, program *checkedProgram, info *types.Info, orig
 	sort.Slice(exprs, func(i, j int) bool { return siteLess(expressions[exprs[i]], expressions[exprs[j]]) })
 	for _, expr := range exprs {
 		e.data.Expressions = append(e.data.Expressions, semantics.Expression{At: semantics.Occurrence{Site: expressions[expr], Role: n.Key("type-expression")}, Term: e.typ(info.Types[expr].Type)})
+		if e.err != nil {
+			return nil, e.located(expressions[expr])
+		}
 	}
 	if e.err != nil {
 		return nil, e.err

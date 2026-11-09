@@ -81,13 +81,14 @@ func (m Model) Type(id semantics.TermID) (Type, error) {
 	return Type{m.state, id}, nil
 }
 
-// Lookup finds a package-level type by name. It fails when packages of an
-// import environment declare the name more than once; use LookupIn then.
+// Lookup finds a package-level type declared by captured code. It fails when
+// more than one captured package declares the name; use LookupIn then.
 func (m Model) Lookup(name string) (Type, error) {
 	return m.lookup("", name)
 }
 
-// LookupIn finds a package-level type declared by the package at importPath.
+// LookupIn finds a package-level type of the package at importPath. A supplied
+// package's declaration is present only where captured code uses it.
 func (m Model) LookupIn(importPath, name string) (Type, error) {
 	if importPath == "" {
 		return Type{}, ErrForeign
@@ -104,7 +105,8 @@ func (m Model) lookup(importPath, name string) (Type, error) {
 			continue
 		}
 		owner, _ := m.state.graph.Entity(e.Owner)
-		if owner.Kind == Key("package") && (importPath == "" || owner.Name == importPath) {
+		// Captured packages have declaration sites; supplied packages have none.
+		if owner.Kind == Key("package") && (importPath == "" && len(owner.Declarations) > 0 || importPath != "" && owner.Name == importPath) {
 			found = append(found, e.Body)
 		}
 	}

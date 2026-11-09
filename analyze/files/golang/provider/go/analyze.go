@@ -3,6 +3,7 @@ package analyze
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
@@ -39,7 +40,9 @@ func Analyze(ctx context.Context, request analysis.Request[s.Language]) (semanti
 		return semantic.Result{}, err
 	}
 	resolved, ok := request.Resolution()
-	if !ok {
+	// Analysis reuses the resolution's graph, so it must claim exactly the
+	// environment that graph was computed under.
+	if !ok || !reflect.DeepEqual(request.Configuration(), resolved.Configuration()) {
 		return semantic.Result{}, semantic.ErrInvalidRequest
 	}
 	publication := semantic.Publication{Diagnostics: resolved.Diagnostics()}

@@ -52,6 +52,9 @@ type converter struct {
 	// admits neither import declarations nor qualified types.
 	imports bool
 	sites   []importSite
+	// rhs records each declaration's right-hand side, so the exporter can tell
+	// when a captured declaration's structure comes from a supplied package.
+	rhs map[*goast.Ident]goast.Expr
 }
 
 // importSite is one captured import declaration and the path it names.
@@ -113,12 +116,20 @@ func Check(ctx context.Context, inputs []s.AST, captured *files.Context, setting
 		return nil, err
 	}
 	fset := token.NewFileSet()
+	// The environment is validated completely before any captured code is judged.
+	var env *environmentState
+	if imports {
+		if env, err = prepareEnvironment(ctx, fset, environment, inputs, captured); err != nil {
+			return nil, err
+		}
+	}
 	var goFiles []*goast.File
 	var sites []importSite
 	origins := map[*goast.Ident]ast.NodeRef{}
 	refs := map[*goast.Ident][]ast.Reference{}
 	expressions := map[goast.Expr]ast.NodeRef{}
 	positions := map[token.Pos]ast.NodeRef{}
+	rhs := map[*goast.Ident]goast.Expr{}
 	for _, tree := range inputs {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -127,7 +138,7 @@ func Check(ctx context.Context, inputs []s.AST, captured *files.Context, setting
 		for i := range tree.Nodes {
 			positions[file.Pos(i*1024)] = ast.NodeRef{Tree: tree.ID, Node: ast.NodeID(i + 1)}
 		}
-		c := converter{tree: tree, origins: origins, refs: refs, positions: file, expressions: expressions, imports: imports}
+		c := converter{tree: tree, origins: origins, refs: refs, positions: file, expressions: expressions, imports: imports, rhs: rhs}
 		f, err := c.file()
 		if err != nil {
 			if _, ok := err.(*Failure); !ok {
@@ -141,7 +152,7 @@ func Check(ctx context.Context, inputs []s.AST, captured *files.Context, setting
 	info := &types.Info{Defs: map[*goast.Ident]types.Object{}, Uses: map[*goast.Ident]types.Object{}, Types: map[goast.Expr]types.TypeAndValue{}}
 	var program *checkedProgram
 	if imports {
-		program, err = checkPackages(ctx, fset, environment, inputs, goFiles, sites, captured, info, positions)
+		program, err = checkCaptured(ctx, fset, env, inputs, goFiles, sites, info, positions)
 	} else {
 		program, err = checkSingle(fset, inputs, goFiles, info, positions)
 	}
@@ -164,7 +175,7 @@ func Check(ctx context.Context, inputs []s.AST, captured *files.Context, setting
 			}
 		}
 	}
-	return export(ctx, program, info, origins, expressions, positions)
+	return export(ctx, program, info, origins, expressions, positions, rhs)
 }
 
 func typeFailure(err error, positions map[token.Pos]ast.NodeRef) error {
@@ -244,7 +255,7 @@ func (c *converter) expression(id ast.NodeID, depth int) (out goast.Expr, err er
 		return c.ident(id), nil
 	case s.KindQualifiedType:
 		if !c.imports {
-			return nil, n.ErrUnsupported
+			return nil, fmt.Errorf("%w: %s", n.ErrUnsupported, node.Kind)
 		}
 		// The qualifier names an import of the same file; the selected identifier
 		// carries the node's origin, so the binding is the imported declaration.
@@ -349,6 +360,7 @@ func (c *converter) file() (*goast.File, error) {
 			return nil, err
 		}
 		spec := &goast.TypeSpec{Name: c.ident(id), Type: ty}
+		c.rhs[spec.Name] = ty
 		if d.Kind == s.KindTypeAlias {
 			spec.Assign = c.pos(id)
 		}

@@ -7,6 +7,7 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"path"
 	"slices"
 	"sort"
 	"strconv"
@@ -26,7 +27,7 @@ type capturedPackage struct {
 }
 
 // checkedProgram is the checked package set. Supplied packages contribute the
-// identities of the declarations captured code uses; their internals are never
+// identities of the declarations captured code uses; their structure is never
 // exported.
 type checkedProgram struct {
 	captured []capturedPackage // sorted by import path
@@ -73,16 +74,19 @@ func (c *converter) importSpec(id ast.NodeID) (*goast.ImportSpec, error) {
 	return spec, nil
 }
 
-type packageGroup struct {
-	files []*goast.File
-	roots []ast.NodeRef
+// environmentState is the validated environment: every tree's file path and
+// every supplied package, checked before any captured code is judged.
+type environmentState struct {
+	module   string
+	paths    map[ast.TreeID]string
+	supplied map[string]*types.Package
+	order    []*types.Package // sorted by import path
 }
 
-// checkPackages checks captured packages and the supplied environment in import
-// order. Captured type errors and import cycles through captured packages reject
-// validity; imports outside the environment are unsupported coverage; a broken
-// supplied package is an invalid request.
-func checkPackages(ctx context.Context, fset *token.FileSet, environment n.ImportEnvironment, inputs []s.AST, goFiles []*goast.File, sites []importSite, captured *files.Context, info *types.Info, positions map[token.Pos]ast.NodeRef) (*checkedProgram, error) {
+// prepareEnvironment validates the Files layout and checks the supplied
+// packages in their own import order. Every failure here is an invalid request:
+// it concerns the caller's environment, not the captured code.
+func prepareEnvironment(ctx context.Context, fset *token.FileSet, environment n.ImportEnvironment, inputs []s.AST, captured *files.Context) (*environmentState, error) {
 	if captured == nil {
 		return nil, semantic.ErrInvalidRequest
 	}
@@ -90,38 +94,20 @@ func checkPackages(ctx context.Context, fset *token.FileSet, environment n.Impor
 	for _, entry := range captured.Files.Entries {
 		filePaths[entry.ID] = entry.Path
 	}
-	treePaths := map[ast.TreeID]string{}
+	state := &environmentState{module: environment.Module, paths: map[ast.TreeID]string{}, supplied: map[string]*types.Package{}}
 	for _, link := range captured.Links {
-		treePaths[link.Tree] = string(filePaths[link.File])
+		state.paths[link.Tree] = string(filePaths[link.File])
 	}
-	groups := map[string]*packageGroup{}
-	treePackage := map[ast.TreeID]string{}
-	for i, tree := range inputs {
-		filePath, ok := treePaths[tree.ID]
-		if !ok || !strings.HasSuffix(filePath, ".go") {
+	for _, tree := range inputs {
+		if p, ok := state.paths[tree.ID]; !ok || !strings.HasSuffix(p, ".go") {
 			return nil, semantic.ErrInvalidRequest
 		}
-		root := ast.NodeRef{Tree: tree.ID, Node: tree.Root}
-		importPath := n.CapturedImportPath(environment.Module, filePath)
-		if !n.ValidImportPath(importPath) {
-			return nil, &Failure{Err: fmt.Errorf("%w: package directory of %s", n.ErrUnsupported, filePath), At: root}
-		}
-		g := groups[importPath]
-		if g == nil {
-			g = &packageGroup{}
-			groups[importPath] = g
-		}
-		g.files = append(g.files, goFiles[i])
-		g.roots = append(g.roots, root)
-		treePackage[tree.ID] = importPath
-	}
-	supplied := map[string]n.Package{}
-	for _, p := range environment.Packages {
-		supplied[p.ImportPath] = p
 	}
 	parsed := map[string][]*goast.File{}
 	edges := map[string][]string{}
+	var nodes []string
 	for _, p := range environment.Packages {
+		nodes = append(nodes, p.ImportPath)
 		for _, f := range p.Files {
 			if err := ctx.Err(); err != nil {
 				return nil, err
@@ -132,32 +118,102 @@ func checkPackages(ctx context.Context, fset *token.FileSet, environment n.Impor
 			}
 			parsed[p.ImportPath] = append(parsed[p.ImportPath], file)
 			for _, spec := range file.Imports {
-				path, err := strconv.Unquote(spec.Path.Value)
-				if err != nil || supplied[path].ImportPath == "" {
-					// Supplied packages close over the supplied environment only.
+				dep, err := strconv.Unquote(spec.Path.Value)
+				// Supplied packages close over the supplied environment only.
+				if err != nil || !slices.ContainsFunc(environment.Packages, func(q n.Package) bool { return q.ImportPath == dep }) || !internalAllowed(p.ImportPath, dep) {
 					return nil, semantic.ErrInvalidRequest
 				}
-				edges[p.ImportPath] = append(edges[p.ImportPath], path)
+				edges[p.ImportPath] = append(edges[p.ImportPath], dep)
 			}
 		}
 	}
+	order, cycle := importOrder(nodes, edges)
+	if cycle != nil {
+		return nil, semantic.ErrInvalidRequest
+	}
+	importer := closedImporter{}
+	conf := types.Config{GoVersion: n.LanguageVersion, Sizes: types.SizesFor("gc", "amd64"), Importer: importer}
+	for _, p := range order {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		for _, dep := range edges[p] {
+			if importer[dep].Name() == "main" {
+				return nil, semantic.ErrInvalidRequest
+			}
+		}
+		pkg, err := conf.Check(p, fset, parsed[p], nil)
+		if err != nil {
+			return nil, semantic.ErrInvalidRequest
+		}
+		importer[p] = pkg
+		state.supplied[p] = pkg
+		state.order = append(state.order, pkg)
+	}
+	sort.Slice(state.order, func(i, j int) bool { return state.order[i].Path() < state.order[j].Path() })
+	return state, nil
+}
+
+type packageGroup struct {
+	name  string
+	files []*goast.File
+	roots []ast.NodeRef
+}
+
+// checkCaptured judges the captured code against the validated environment.
+// Unsupported layouts and imports are found before any type check, so a
+// rejection never hides an unsupported construct.
+func checkCaptured(ctx context.Context, fset *token.FileSet, env *environmentState, inputs []s.AST, goFiles []*goast.File, sites []importSite, info *types.Info, positions map[token.Pos]ast.NodeRef) (*checkedProgram, error) {
+	groups := map[string]*packageGroup{}
+	treePackage := map[ast.TreeID]string{}
+	for i, tree := range inputs {
+		filePath := env.paths[tree.ID]
+		root := ast.NodeRef{Tree: tree.ID, Node: tree.Root}
+		if ignoredByGo(filePath) {
+			return nil, &Failure{Err: fmt.Errorf("%w: %s is a test or ignored file", n.ErrUnsupported, filePath), At: root}
+		}
+		importPath := n.CapturedImportPath(env.module, filePath)
+		if !n.ValidImportPath(importPath) {
+			return nil, &Failure{Err: fmt.Errorf("%w: package directory of %s", n.ErrUnsupported, filePath), At: root}
+		}
+		g := groups[importPath]
+		if g == nil {
+			g = &packageGroup{name: goFiles[i].Name.Name}
+			groups[importPath] = g
+		}
+		g.files = append(g.files, goFiles[i])
+		g.roots = append(g.roots, root)
+		treePackage[tree.ID] = importPath
+	}
+	for _, site := range sites {
+		if groups[site.Path] == nil && env.supplied[site.Path] == nil {
+			return nil, &Failure{Err: fmt.Errorf("%w: import %q is outside the supplied environment", n.ErrUnsupported, site.Path), At: site.At}
+		}
+	}
+	edges := map[string][]string{}
 	via := map[[2]string]ast.NodeRef{}
 	for _, site := range sites {
 		from := treePackage[site.At.Tree]
-		if groups[site.Path] == nil && supplied[site.Path].ImportPath == "" {
-			return nil, &Failure{Err: fmt.Errorf("%w: import %q is outside the supplied environment", n.ErrUnsupported, site.Path), At: site.At}
+		if !internalAllowed(from, site.Path) {
+			return nil, &Failure{Err: fmt.Errorf("use of internal package %q not allowed from %q", site.Path, from), At: site.At, Invalid: true}
 		}
-		edges[from] = append(edges[from], site.Path)
-		if _, ok := via[[2]string{from, site.Path}]; !ok {
-			via[[2]string{from, site.Path}] = site.At
+		name := ""
+		if g := groups[site.Path]; g != nil {
+			name = g.name
+			edges[from] = append(edges[from], site.Path)
+			if _, ok := via[[2]string{from, site.Path}]; !ok {
+				via[[2]string{from, site.Path}] = site.At
+			}
+		} else {
+			name = env.supplied[site.Path].Name()
+		}
+		if name == "main" {
+			return nil, &Failure{Err: fmt.Errorf("import %q is a program, not an importable package", site.Path), At: site.At, Invalid: true}
 		}
 	}
 	var nodes []string
-	for path := range groups {
-		nodes = append(nodes, path)
-	}
-	for path := range supplied {
-		nodes = append(nodes, path)
+	for p := range groups {
+		nodes = append(nodes, p)
 	}
 	sort.Strings(nodes)
 	order, cycle := importOrder(nodes, edges)
@@ -167,35 +223,61 @@ func checkPackages(ctx context.Context, fset *token.FileSet, environment n.Impor
 				return nil, &Failure{Err: fmt.Errorf("import cycle not allowed: %s", strings.Join(cycle, " -> ")), At: at, Invalid: true}
 			}
 		}
-		return nil, semantic.ErrInvalidRequest
+		return nil, semantic.ErrInvalidResult
 	}
 	importer := closedImporter{}
+	for p, pkg := range env.supplied {
+		importer[p] = pkg
+	}
 	conf := types.Config{GoVersion: n.LanguageVersion, Sizes: types.SizesFor("gc", "amd64"), Importer: importer}
-	program := &checkedProgram{imports: sites}
-	for _, path := range order {
+	program := &checkedProgram{imports: sites, supplied: env.order}
+	for _, p := range order {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		if _, ok := supplied[path]; ok {
-			pkg, err := conf.Check(path, fset, parsed[path], nil)
-			if err != nil {
-				return nil, semantic.ErrInvalidRequest
-			}
-			importer[path] = pkg
-			program.supplied = append(program.supplied, pkg)
-			continue
-		}
-		g := groups[path]
-		pkg, err := conf.Check(path, fset, g.files, info)
+		g := groups[p]
+		pkg, err := conf.Check(p, fset, g.files, info)
 		if err != nil {
 			return nil, typeFailure(err, positions)
 		}
-		importer[path] = pkg
+		importer[p] = pkg
 		program.captured = append(program.captured, capturedPackage{pkg: pkg, roots: g.roots})
 	}
 	sort.Slice(program.captured, func(i, j int) bool { return program.captured[i].pkg.Path() < program.captured[j].pkg.Path() })
-	sort.Slice(program.supplied, func(i, j int) bool { return program.supplied[i].Path() < program.supplied[j].Path() })
 	return program, nil
+}
+
+// ignoredByGo reports the files the go tool excludes from a package: test
+// files, files and directories starting with "_" or ".", and testdata.
+func ignoredByGo(filePath string) bool {
+	base := path.Base(filePath)
+	if strings.HasSuffix(base, "_test.go") || strings.HasPrefix(base, "_") || strings.HasPrefix(base, ".") {
+		return true
+	}
+	if dir := path.Dir(filePath); dir != "." {
+		for _, element := range strings.Split(dir, "/") {
+			if element == "testdata" || strings.HasPrefix(element, "_") || strings.HasPrefix(element, ".") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// internalAllowed applies Go's internal-package rule: a path with an "internal"
+// element may be imported only from within the tree rooted at its parent.
+func internalAllowed(importer, imported string) bool {
+	elements := strings.Split(imported, "/")
+	for i, element := range elements {
+		if element != "internal" {
+			continue
+		}
+		parent := strings.Join(elements[:i], "/")
+		if importer != parent && !strings.HasPrefix(importer, parent+"/") {
+			return false
+		}
+	}
+	return true
 }
 
 // importOrder returns dependencies before their importers, or one import cycle
@@ -228,7 +310,9 @@ func importOrder(nodes []string, edges map[string][]string) ([]string, []string)
 		order = append(order, node)
 		return true
 	}
-	for _, node := range nodes {
+	sorted := slices.Clone(nodes)
+	sort.Strings(sorted)
+	for _, node := range sorted {
 		if !visit(node) {
 			return nil, cycle
 		}

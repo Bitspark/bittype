@@ -47,6 +47,12 @@ func goPackageCapture(t *testing.T, sources map[string]string, withFiles bool) (
 		paths = append(paths, p)
 	}
 	sort.Strings(paths)
+	return goPackageCaptureIn(t, paths, sources, withFiles)
+}
+
+// goPackageCaptureIn captures the trees in exactly the given order.
+func goPackageCaptureIn(t *testing.T, paths []string, sources map[string]string, withFiles bool) (semantic.Snapshot, map[string]s.AST) {
+	t.Helper()
 	definition, err := representation.NewLanguage[s.Language](s.Language{}, "go-syntax-1")
 	if err != nil {
 		t.Fatal(err)

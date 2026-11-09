@@ -49,7 +49,18 @@ func ImportConfiguration(environment ImportEnvironment) ([]semantic.Setting, err
 	if err != nil {
 		return nil, err
 	}
-	return semantic.CaptureSettings(append(Configuration(), semantic.Setting{Key: Key(importsKey), Value: data}), semantic.DefaultLimits())
+	settings, err := semantic.CaptureSettings(append(Configuration(), semantic.Setting{Key: Key(importsKey), Value: data}), semantic.DefaultLimits())
+	if err != nil {
+		return nil, err
+	}
+	// Analysis contracts and model admission carry these settings in an evidence
+	// requirement with its own budget; refuse an environment they could not carry.
+	requirement := Evidence()
+	requirement.Configuration = settings
+	if err := semantic.ValidateEvidenceRequirements([]semantic.EvidenceRequirement{requirement}); err != nil {
+		return nil, err
+	}
+	return settings, nil
 }
 
 // Imports decodes the receipt-bound environment. The base Configuration has no
