@@ -89,6 +89,10 @@ func (q Queries) Admit(ctx context.Context, constructor n.Type, arguments ...n.T
 	result := Admission{model: q.state.model, constructor: constructor, arguments: append([]n.Type(nil), arguments...), admitted: err == nil}
 	if err != nil {
 		result.detail = err.Error()
+		if q.state.checked.Supplied[t.Obj().Pkg()] {
+			// Supplied constraints are not part of the published model.
+			result.detail = "the arguments do not satisfy the constraints of a supplied declaration"
+		}
 	}
 	return result, nil
 }

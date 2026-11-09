@@ -158,6 +158,7 @@ type packageGroup struct {
 	name  string
 	files []*goast.File
 	roots []ast.NodeRef
+	paths []string
 }
 
 // checkCaptured judges the captured code against the validated environment.
@@ -183,11 +184,38 @@ func checkCaptured(ctx context.Context, fset *token.FileSet, env *environmentSta
 		}
 		g.files = append(g.files, goFiles[i])
 		g.roots = append(g.roots, root)
+		g.paths = append(g.paths, filePath)
 		treePackage[tree.ID] = importPath
 	}
 	for _, site := range sites {
 		if groups[site.Path] == nil && env.supplied[site.Path] == nil {
 			return nil, &Failure{Err: fmt.Errorf("%w: import %q is outside the supplied environment", n.ErrUnsupported, site.Path), At: site.At}
+		}
+	}
+	// The go tool's rejections before type checking, in import-path and
+	// file-path order: case-insensitive collisions and disagreeing package clauses.
+	var groupPaths []string
+	for p := range groups {
+		groupPaths = append(groupPaths, p)
+	}
+	sort.Strings(groupPaths)
+	folded := map[string]string{}
+	for _, p := range groupPaths {
+		g := groups[p]
+		if other, ok := folded[strings.ToLower(p)]; ok {
+			return nil, &Failure{Err: fmt.Errorf("case-insensitive import collision: %q and %q", other, p), At: g.roots[0], Invalid: true}
+		}
+		folded[strings.ToLower(p)] = p
+		names := map[string]bool{}
+		for i, f := range g.files {
+			if f.Name.Name != g.name {
+				return nil, &Failure{Err: fmt.Errorf("package %s; expected package %s", f.Name.Name, g.name), At: g.roots[i], Invalid: true}
+			}
+			base := strings.ToLower(path.Base(g.paths[i]))
+			if names[base] {
+				return nil, &Failure{Err: fmt.Errorf("case-insensitive file name collision: %s", g.paths[i]), At: g.roots[i], Invalid: true}
+			}
+			names[base] = true
 		}
 	}
 	edges := map[string][]string{}

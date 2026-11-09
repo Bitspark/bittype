@@ -12,6 +12,8 @@ import (
 	goast "go/ast"
 	"go/token"
 	"go/types"
+	"slices"
+	"sort"
 	"strconv"
 )
 
@@ -112,16 +114,20 @@ func Check(ctx context.Context, inputs []s.AST, captured *files.Context, setting
 	if err != nil {
 		return nil, semantic.ErrInvalidRequest
 	}
-	if err := bound(inputs); err != nil {
-		return nil, err
-	}
 	fset := token.NewFileSet()
-	// The environment is validated completely before any captured code is judged.
+	// The environment is validated completely before any captured code is
+	// judged, and captured trees are then processed in file-path order, so no
+	// result depends on capture order.
 	var env *environmentState
 	if imports {
 		if env, err = prepareEnvironment(ctx, fset, environment, inputs, captured); err != nil {
 			return nil, err
 		}
+		inputs = slices.Clone(inputs)
+		sort.SliceStable(inputs, func(i, j int) bool { return env.paths[inputs[i].ID] < env.paths[inputs[j].ID] })
+	}
+	if err := bound(inputs); err != nil {
+		return nil, err
 	}
 	var goFiles []*goast.File
 	var sites []importSite

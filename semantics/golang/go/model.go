@@ -232,6 +232,10 @@ func (t Type) Fields() ([]Field, bool) {
 	}
 	return out, true
 }
+
+// Unconstrained reports whether the graph establishes that the parameter is
+// unconstrained. A supplied parameter's constraint is not exported, so it is
+// never reported unconstrained; callers must treat false as "not established".
 func (t Type) Unconstrained() bool {
 	if t.entity().Kind != Key("parameter") {
 		return false

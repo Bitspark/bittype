@@ -8,6 +8,7 @@ import (
 	"go/types"
 	"slices"
 	"sort"
+	"strings"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/semantics/go"
@@ -19,6 +20,8 @@ import (
 type Checked struct {
 	Facts semantics.Data
 	Types map[semantics.TermID]types.Type
+	// Supplied holds the supplied packages, whose constraints are not disclosed.
+	Supplied map[*types.Package]bool
 }
 type exporter struct {
 	ctx       context.Context
@@ -53,7 +56,14 @@ func (e *exporter) external(t types.Type) bool {
 // declarations), or a type parameter constrained by one. Its underlying fact is
 // not exported, because supplied internals may lie outside this profile.
 func (e *exporter) suppliedStructure(t types.Type) bool {
-	for depth := 0; depth < 64; depth++ {
+	// Checked Go has no declaration cycles, so the walk ends; a revisit is
+	// treated conservatively as supplied rather than as permission to export.
+	seen := map[types.Type]bool{}
+	for {
+		if seen[t] {
+			return true
+		}
+		seen[t] = true
 		switch u := t.(type) {
 		case *types.Named:
 			if e.program.isSupplied(u.Obj().Pkg()) {
@@ -78,7 +88,33 @@ func (e *exporter) suppliedStructure(t types.Type) bool {
 			return false
 		}
 	}
-	return false
+}
+
+// display is go/types' spelling, except for a supplied generic declaration,
+// whose parameter list would spell the supplied constraints.
+func (e *exporter) display(t types.Type) string {
+	var obj *types.TypeName
+	var params *types.TypeParamList
+	switch u := t.(type) {
+	case *types.Named:
+		obj, params = u.Obj(), u.TypeParams()
+		if u.TypeArgs().Len() > 0 {
+			params = nil
+		}
+	case *types.Alias:
+		obj, params = u.Obj(), u.TypeParams()
+		if u.TypeArgs().Len() > 0 {
+			params = nil
+		}
+	}
+	if obj == nil || params.Len() == 0 || !e.program.isSupplied(obj.Pkg()) {
+		return types.TypeString(t, nil)
+	}
+	names := make([]string, params.Len())
+	for i := range names {
+		names[i] = params.At(i).Obj().Name()
+	}
+	return obj.Pkg().Path() + "." + obj.Name() + "[" + strings.Join(names, ", ") + "]"
 }
 
 // located gives an export-time failure the site of the occurrence being exported.
@@ -271,7 +307,7 @@ func (e *exporter) typ(t types.Type) semantics.TermID {
 	if !e.suppliedStructure(t) {
 		e.fact(id, "underlying", e.typ(t.Underlying()))
 	}
-	e.fact(id, "display", e.term(semantics.Term{Kind: semantics.ProviderExpression, Operator: n.Key("display"), Encoding: n.Key("utf8"), Data: []byte(types.TypeString(t, nil))}))
+	e.fact(id, "display", e.term(semantics.Term{Kind: semantics.ProviderExpression, Operator: n.Key("display"), Encoding: n.Key("utf8"), Data: []byte(e.display(t))}))
 	return id
 }
 func methodNames(t *types.Interface) []string {
@@ -383,5 +419,9 @@ func export(ctx context.Context, program *checkedProgram, info *types.Info, orig
 		}
 		e.fact(id, "identical", canonical)
 	}
-	return &Checked{Facts: e.data, Types: e.native}, nil
+	supplied := map[*types.Package]bool{}
+	for _, pkg := range program.supplied {
+		supplied[pkg] = true
+	}
+	return &Checked{Facts: e.data, Types: e.native, Supplied: supplied}, nil
 }

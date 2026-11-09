@@ -60,6 +60,12 @@ func ImportConfiguration(environment ImportEnvironment) ([]semantic.Setting, err
 	if err := semantic.ValidateEvidenceRequirements([]semantic.EvidenceRequirement{requirement}); err != nil {
 		return nil, err
 	}
+	// One analysis invocation charges its own configuration and its
+	// resolution's against one budget, so two copies must fit with room for
+	// the operation, profile, report and requested keys.
+	if 2*settingsBytes(settings)+4096 > semantic.DefaultLimits().MaxConfigurationBytes || 2*len(settings) > semantic.DefaultLimits().MaxConfigurationEntries {
+		return nil, semantic.ErrLimit
+	}
 	return settings, nil
 }
 
@@ -119,7 +125,8 @@ func normalizeEnvironment(e ImportEnvironment) (ImportEnvironment, error) {
 	out := ImportEnvironment{Module: e.Module, Packages: make([]Package, 0, len(e.Packages))}
 	size := len(e.Module)
 	for _, p := range e.Packages {
-		if !ValidImportPath(p.ImportPath) || p.ImportPath == e.Module || strings.HasPrefix(p.ImportPath, e.Module+"/") {
+		lower, module := strings.ToLower(p.ImportPath), strings.ToLower(e.Module)
+		if !ValidImportPath(p.ImportPath) || lower == module || strings.HasPrefix(lower, module+"/") {
 			// A supplied package must not claim the captured module's paths.
 			return ImportEnvironment{}, semantic.ErrInvalidRequest
 		}
@@ -128,22 +135,30 @@ func normalizeEnvironment(e ImportEnvironment) (ImportEnvironment, error) {
 		}
 		files := slices.Clone(p.Files)
 		sort.Slice(files, func(i, j int) bool { return files[i].Name < files[j].Name })
-		for i, f := range files {
+		// Go refuses file names in one package that differ only in case.
+		names := map[string]bool{}
+		for _, f := range files {
 			size += len(p.ImportPath) + len(f.Name) + len(f.Text)
 			if size > 768<<10 {
 				return ImportEnvironment{}, semantic.ErrLimit
 			}
-			if !validFileName(f.Name) || !utf8.ValidString(f.Text) || i > 0 && f.Name == files[i-1].Name {
+			lower := strings.ToLower(f.Name)
+			if !validFileName(f.Name) || !utf8.ValidString(f.Text) || names[lower] {
 				return ImportEnvironment{}, semantic.ErrInvalidRequest
 			}
+			names[lower] = true
 		}
 		out.Packages = append(out.Packages, Package{ImportPath: p.ImportPath, Files: files})
 	}
 	sort.Slice(out.Packages, func(i, j int) bool { return out.Packages[i].ImportPath < out.Packages[j].ImportPath })
-	for i := 1; i < len(out.Packages); i++ {
-		if out.Packages[i].ImportPath == out.Packages[i-1].ImportPath {
+	// Go refuses import paths that differ only in case.
+	folded := map[string]bool{}
+	for _, p := range out.Packages {
+		lower := strings.ToLower(p.ImportPath)
+		if folded[lower] {
 			return ImportEnvironment{}, semantic.ErrInvalidRequest
 		}
+		folded[lower] = true
 	}
 	return out, nil
 }
@@ -174,6 +189,17 @@ func ValidImportPath(p string) bool {
 	return true
 }
 
+func settingsBytes(settings []semantic.Setting) int {
+	n := 0
+	for _, s := range settings {
+		n += len(s.Key.Owner) + len(s.Key.Name) + len(s.Value)
+	}
+	return n
+}
+
+// validFileName accepts package source files only: no test files and no names
+// the go tool ignores.
 func validFileName(name string) bool {
-	return strings.HasSuffix(name, ".go") && len(name) > 3 && len(name) <= 255 && !strings.ContainsAny(name, "/\\\x00") && !strings.HasPrefix(name, ".")
+	return strings.HasSuffix(name, ".go") && len(name) > 3 && len(name) <= 255 && !strings.ContainsAny(name, "/\\\x00") &&
+		!strings.HasPrefix(name, ".") && !strings.HasPrefix(name, "_") && !strings.HasSuffix(name, "_test.go")
 }
