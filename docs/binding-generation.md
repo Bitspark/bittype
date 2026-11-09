@@ -42,7 +42,7 @@ From these it emits static composition and typed glue.
 
 **Placement.** Each target's backend sits with the owner of that target's runtime adapter contract:
 
-- **TypeScript.** The backend belongs to platform's `libraries/service` (Bitspark/bitspark-service), whose contract-generator consumes a serialized plan. platform agreed to this on 9 November 2026.
+- **TypeScript.** The backend belongs to platform's `libraries/service` (Bitspark/bitspark-service) and consumes a serialized plan. Whether that is its contract-generator or a new package is that repository's decision. platform agreed to this on 9 November 2026.
 - **Go.** A Go backend belongs to the future Go runtime library.
 
 Distribution follows from this interface. Neither an existing generator nor the dormant bitlink repository decides it.
