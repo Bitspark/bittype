@@ -325,7 +325,9 @@ select intended native types and external public symbols. Native construction
 builds type ASTs; Files spells imports after placement. They are not executable
 value adapters. Future binding generation can emit static imports and compose
 the matching library adapter factories, preserving the selected contract and
-representation identities. Recipes for types and for runtime behavior must be
+representation identities. [Binding generation](binding-generation.md) records the
+accepted ownership (research 0014): bittype publishes a selected representation plan,
+and a binding backend per target composes paired library contributions from it. Recipes for types and for runtime behavior must be
 qualified together where behavior is required; successful compilation alone is
 insufficient.
 

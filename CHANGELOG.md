@@ -1,5 +1,13 @@
 # Changelog
 
+## Binding generation ownership — 9 November 2026
+
+- Record the accepted ownership of binding generation for horos-declared contracts
+  (research 0014, [binding generation](docs/binding-generation.md)). bittype stays
+  the representation authority and will publish a typed selected representation
+  plan. Per-target binding backends compose paired native and adapter contributions
+  from it. The charter gains the plan interface only; nothing is implemented yet.
+
 ## Generation, semantics and documentation — 8 November 2026
 
 Changes since the previously recorded module-encoding entry:
