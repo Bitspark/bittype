@@ -1,5 +1,9 @@
 # Changelog
 
+## Go imported packages — 9 November 2026
+
+- The first Go profile accepts an explicit import environment (#168). Captured files form packages by their paths under a module, and supplied dependency packages are given as source in receipt identity. Packages are checked in import order through a closed importer, without module or standard-library discovery. Qualified type references bind to imported declarations; supplied declarations are exported by identity only. The base configuration is unchanged.
+
 ## GEN-01 verified — 9 November 2026
 
 - Record the independent verification of the GEN-01 correction: #192 at

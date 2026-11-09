@@ -44,17 +44,21 @@ compatibility entry point remains. No type-generation behavior changes.
 The supported subset remains the captured type-declaration fragment: one supplied
 package across at most 16 files, defined types and aliases, generic parameters and
 applications, named/predeclared types, slices, ordinary struct fields and tags,
-embedded interface type terms, approximations and unions.
+embedded interface type terms, approximations and unions. Under an explicit
+import environment, the captured files form several packages by their file paths,
+and named and aliased imports of captured or explicitly supplied packages bind
+qualified type references to the imported declarations.
 <!-- bittype:overview:end -->
 
 <!-- bittype:overview scope=first-go-profile part=exclusions -->
-Imported packages,
-methods, embedded struct fields, pointer/array/map/function types and executable
-bodies remain unsupported. Syntax acceptance does not promise semantic coverage.
+Imports outside an explicit import environment, dot and blank imports, the
+standard library, methods, embedded struct fields, pointer/array/map/function
+types and executable bodies remain unsupported. Syntax acceptance does not
+promise semantic coverage.
 <!-- bittype:overview:end -->
 
-The language version is Go 1.25, the package path is `captured`, and the only
-external scope is the predeclared universe. The native compiler is the `go/types`
+The language version is Go 1.25. Without an import environment, the package path
+is `captured` and the only external scope is the predeclared universe. The native compiler is the `go/types`
 library linked into the process; its actual Go toolchain version is part of the
 required request configuration. Sizes are explicitly `gc/amd64`, matching the
 previous default. CI qualifies Go 1.27.3. The provider does not discover a project,
@@ -99,6 +103,50 @@ The builtin `error` interface needs signature/tuple facts internally, even thoug
 authoring method/function syntax remains unsupported. `display` facts are UTF-8
 diagnostic text, never semantic identity. Typed readers return copies or immutable
 handles; callers cannot mutate a published graph through them.
+
+### Import environment
+
+`golang.ImportConfiguration(golang.ImportEnvironment{Module, Packages})` extends
+the base configuration with one normalized `imports-1` setting. It follows Go's
+own module layout:
+
+- **Captured packages.** Each captured tree must be linked to a `.go` file in the
+  request's Files context. Its package import path is the module path joined with
+  the file's directory: `pages/page.go` under `example.org/app` belongs to
+  `example.org/app/pages`. Files in one directory form one package.
+- **Supplied packages.** Every other imported package is supplied as Go source:
+  an import path and up to 16 files. Supplied text participates in receipt
+  identity and is never an output. A supplied package may import only other
+  supplied packages, and it may not use a path under the module.
+- **No discovery.** Import paths need a first element containing a dot, Go's
+  module-path rule. That also keeps supplied packages from naming standard
+  library paths, which this profile does not provide. Nothing is read from a
+  module cache, `GOPATH` or the network.
+
+Packages are checked in import order through a closed importer. The results
+are classified as follows:
+
+| Case | Result |
+| --- | --- |
+| A captured type error, an unused import, an unexported cross-package use, an import cycle through a captured package, inconsistent package clauses | Rejected validity, with a diagnostic at the captured node |
+| An import outside the environment, a dot or blank import, a package directory that is not a valid import path | Unsupported coverage at the import or file |
+| A supplied package that fails to parse or type-check, imports outside the environment; a missing Files layout or a captured file that is not a `.go` path | `ErrInvalidRequest`; no judgment of the captured code |
+
+The graph gains:
+
+- one `package` entity per captured package, in import-path order, owning that
+  package's declarations, followed by one per supplied package;
+- an `import` binding from each captured import declaration to its package's
+  entity;
+- `name` bindings from qualified type references to the imported declarations.
+
+Supplied declarations are exported by identity only: their reference,
+application and display terms, never `underlying`, `alias-target` or
+`constraint` facts. Their internals may lie outside this profile.
+`Model.LookupIn(importPath, name)` reads a package-qualified declaration.
+`Model.Lookup` refuses a name that more than one package declares. Use
+`analyze.ContractFor(settings)` and `golang.EvidenceFor(settings)` with the
+same configuration for resolution and analysis.
 
 A consumer explicitly constructs both adapters, resolves with
 `semantic.Options{Configuration: golang.Configuration()}`, and calls the analyzer
