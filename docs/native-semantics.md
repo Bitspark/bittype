@@ -129,22 +129,29 @@ own module layout:
   `testdata` directories are not part of a package, and are unsupported;
 - an import of a path with an `internal` element is allowed only from within the
   tree rooted at its parent;
-- a package named `main` cannot be imported.
+- a package named `main` cannot be imported;
+- import paths, and file names within one package, may not differ only in case.
+
+Supplied files follow the same file rules: a supplied package lists package
+source files only, never test or ignored files.
 
 Build constraints, including GOOS and GOARCH file-name suffixes, are not
 interpreted: every captured file belongs to its directory's package.
 
 **Classification.** The environment is validated completely before any captured
-code is judged: the Files layout of every tree, then every supplied package,
-parsed and checked in its own import order. Then captured code is judged:
-unsupported layouts and imports first, then import rules, then the type check in
-import order through a closed importer.
+code is judged, including captured resource limits: the Files layout of every
+tree, then every supplied package, parsed and checked in its own import order.
+Captured trees are then processed in file-path order, so no result or diagnostic
+depends on capture order. Unsupported layouts and imports come first, then the go
+tool's rejections (case collisions, disagreeing package clauses, `internal` and
+`main` rules, import cycles), then the type check in import order through a
+closed importer.
 
 | Case | Result |
 | --- | --- |
-| A supplied package that fails to parse or type-check, imports outside the supplied packages, breaks the `internal` rule, imports a `main` package or forms an import cycle; a missing Files layout, or a captured file that is not a `.go` path | `ErrInvalidRequest`; no judgment of the captured code |
+| A supplied package that fails to parse or type-check, imports outside the supplied packages, breaks the `internal` rule, imports a `main` package or forms an import cycle; supplied paths or file names that differ only in case, or a supplied test or ignored file; a missing Files layout, or a captured file that is not a `.go` path | `ErrInvalidRequest`; no judgment of the captured code |
 | An import outside the environment, a dot or blank import, a test or ignored file, a package directory that is not a valid import path | Unsupported coverage at the import or file |
-| A captured type error, an unused import, an unexported cross-package use, an import cycle through a captured package (including a self-import), an `internal` violation, an import of a `main` package, inconsistent package clauses | Rejected validity, with a diagnostic at the captured node |
+| A captured type error, an unused import, an unexported cross-package use, an import cycle through a captured package (including a self-import), an `internal` violation, an import of a `main` package, inconsistent package clauses, captured import paths or file names that differ only in case | Rejected validity, with a diagnostic at the captured node |
 
 The graph gains:
 
@@ -158,10 +165,15 @@ The graph gains:
 contributes its identity only: reference, application and display terms. This
 also holds when a captured declaration is built directly on supplied structure:
 a captured alias of a supplied type, a captured declaration whose right-hand side
-is one (directly or through other captured declarations), or a type parameter
-constrained by one. Their `underlying` facts are not exported, and supplied
-aliases and parameters export no `alias-target` or `constraint` facts. Supplied
-internals may therefore lie outside this profile.
+is one (through chains of any length), or a type parameter constrained by one.
+Their `underlying` facts are not exported, and supplied aliases and parameters
+export no `alias-target` or `constraint` facts. A supplied generic declaration is
+displayed with its parameter names only, and an admission query against it does
+not spell its constraints. Supplied internals may therefore lie outside this
+profile. Native identity is still go/types identity: an `identical` fact can
+relate a supplied alias to its target when that target also appears in the graph.
+`Type.Unconstrained` reports only what the graph establishes, so a supplied
+parameter is never reported unconstrained.
 
 **Lookups.** `Model.Lookup(name)` considers captured packages only, and refuses a
 name that more than one of them declares. `Model.LookupIn(importPath, name)`
@@ -171,8 +183,9 @@ where captured code uses it.
 **One environment end to end.** Analysis refuses a configuration that differs
 from its resolution's. Use `analyze.ContractFor(settings)` and
 `golang.EvidenceFor(settings)` with the same configuration for resolution and
-analysis. `ImportConfiguration` refuses an environment that the analysis
-evidence budget could not carry. An export-time limit or unsupported construct is
+analysis. `ImportConfiguration` refuses an environment that one analysis
+invocation could not carry; it charges the settings twice, once for the analysis
+and once for its resolution. An export-time limit or unsupported construct is
 reported at the captured declaration or use being exported.
 
 A consumer explicitly constructs both adapters, resolves with
