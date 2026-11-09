@@ -6,12 +6,12 @@ import (
 	goast "go/ast"
 	"go/token"
 	"go/types"
+	"slices"
 	"sort"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
-	s "github.com/Bitspark/bittype/syntax/golang/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
@@ -27,8 +27,24 @@ type exporter struct {
 	types     map[types.Type]semantics.TermID
 	native    map[semantics.TermID]types.Type
 	positions map[token.Pos]ast.NodeRef
+	program   *checkedProgram
+	packages  map[*types.Package]semantics.EntityID
 	err       error
 	depth     int
+}
+
+// external reports whether t is declared by a supplied package. Such types are
+// exported by identity: reference, application and display, never structure.
+func (e *exporter) external(t types.Type) bool {
+	switch t := t.(type) {
+	case *types.Named:
+		return e.program.isSupplied(t.Obj().Pkg())
+	case *types.Alias:
+		return e.program.isSupplied(t.Obj().Pkg())
+	case *types.TypeParam:
+		return e.program.isSupplied(t.Obj().Pkg())
+	}
+	return false
 }
 
 func (e *exporter) term(t semantics.Term) semantics.TermID {
@@ -73,7 +89,7 @@ func (e *exporter) object(o types.Object) semantics.EntityID {
 			kind = "parameter"
 		}
 		if o.Parent() != nil && o.Pkg() != nil && o.Parent() == o.Pkg().Scope() {
-			owner = 1
+			owner = e.packages[o.Pkg()]
 		}
 	}
 	id := semantics.EntityID(len(e.data.Entities) + 1)
@@ -150,10 +166,14 @@ func (e *exporter) typ(t types.Type) semantics.TermID {
 				e.parameters(obj, t.TypeParams())
 			}
 		}
-		e.fact(id, "alias-target", e.typ(t.Rhs()))
+		if !e.external(t) {
+			e.fact(id, "alias-target", e.typ(t.Rhs()))
+		}
 	case *types.TypeParam:
 		term = semantics.Term{Kind: semantics.Reference, Target: e.object(t.Obj())}
-		e.fact(id, "constraint", e.typ(t.Constraint()))
+		if !e.external(t) {
+			e.fact(id, "constraint", e.typ(t.Constraint()))
+		}
 	case *types.Slice:
 		term = e.expression("slice", nil, e.typ(t.Elem()))
 	case *types.Struct:
@@ -206,7 +226,9 @@ func (e *exporter) typ(t types.Type) semantics.TermID {
 	if e.err != nil {
 		return id
 	}
-	e.fact(id, "underlying", e.typ(t.Underlying()))
+	if !e.external(t) {
+		e.fact(id, "underlying", e.typ(t.Underlying()))
+	}
 	e.fact(id, "display", e.term(semantics.Term{Kind: semantics.ProviderExpression, Operator: n.Key("display"), Encoding: n.Key("utf8"), Data: []byte(types.TypeString(t, nil))}))
 	return id
 }
@@ -223,19 +245,28 @@ func siteLess(a, b ast.NodeRef) bool {
 	}
 	return a.Node < b.Node
 }
-func export(ctx context.Context, pkg *types.Package, info *types.Info, origins map[*goast.Ident]ast.NodeRef, expressions map[goast.Expr]ast.NodeRef, positions map[token.Pos]ast.NodeRef, inputs []s.AST) (*Checked, error) {
-	e := exporter{ctx: ctx, objects: map[types.Object]semantics.EntityID{}, types: map[types.Type]semantics.TermID{}, native: map[semantics.TermID]types.Type{}, positions: positions}
-	packageEntity := semantics.Entity{Kind: n.Key("package"), Name: pkg.Path()}
-	for _, tree := range inputs {
-		packageEntity.Declarations = append(packageEntity.Declarations, ast.NodeRef{Tree: tree.ID, Node: tree.Root})
+func export(ctx context.Context, program *checkedProgram, info *types.Info, origins map[*goast.Ident]ast.NodeRef, expressions map[goast.Expr]ast.NodeRef, positions map[token.Pos]ast.NodeRef) (*Checked, error) {
+	e := exporter{ctx: ctx, objects: map[types.Object]semantics.EntityID{}, types: map[types.Type]semantics.TermID{}, native: map[semantics.TermID]types.Type{}, positions: positions, program: program, packages: map[*types.Package]semantics.EntityID{}}
+	// Captured packages come first, in import-path order, then supplied packages.
+	// The base profile has exactly one captured package, which is entity 1.
+	for _, captured := range program.captured {
+		e.data.Entities = append(e.data.Entities, semantics.Entity{Kind: n.Key("package"), Name: captured.pkg.Path(), Declarations: slices.Clone(captured.roots)})
+		e.packages[captured.pkg] = semantics.EntityID(len(e.data.Entities))
 	}
-	e.data.Entities = append(e.data.Entities, packageEntity)
+	for _, pkg := range program.supplied {
+		e.data.Entities = append(e.data.Entities, semantics.Entity{Kind: n.Key("package"), Name: pkg.Path()})
+		e.packages[pkg] = semantics.EntityID(len(e.data.Entities))
+	}
+	byPath := map[string]semantics.EntityID{}
+	for pkg, id := range e.packages {
+		byPath[pkg.Path()] = id
+	}
 	// Seed public scalar queries even when neither type is mentioned in syntax.
 	e.typ(types.Typ[types.Bool])
 	e.typ(types.Typ[types.String])
 	var definitions []*goast.Ident
 	for id, obj := range info.Defs {
-		if obj != nil {
+		if _, imported := obj.(*types.PkgName); obj != nil && !imported {
 			definitions = append(definitions, id)
 		}
 	}
@@ -243,9 +274,16 @@ func export(ctx context.Context, pkg *types.Package, info *types.Info, origins m
 	for _, id := range definitions {
 		e.object(info.Defs[id])
 	}
+	// Each captured import binds to the package it names.
+	for _, site := range program.imports {
+		e.data.Bindings = append(e.data.Bindings, semantics.Binding{At: semantics.Occurrence{Site: site.At, Role: n.Key("import")}, Target: byPath[site.Path]})
+	}
 	var uses []*goast.Ident
-	for id := range info.Uses {
-		uses = append(uses, id)
+	for id, obj := range info.Uses {
+		// A package qualifier is not a type use; its import is bound above.
+		if _, qualifier := obj.(*types.PkgName); !qualifier {
+			uses = append(uses, id)
+		}
 	}
 	sort.Slice(uses, func(i, j int) bool { return siteLess(origins[uses[i]], origins[uses[j]]) })
 	for _, id := range uses {

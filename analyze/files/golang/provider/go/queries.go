@@ -47,7 +47,7 @@ func NewQueries(ctx context.Context, model n.Model) (Queries, error) {
 		}
 		inputs = append(inputs, tree)
 	}
-	checked, err := golangsem.Check(ctx, inputs)
+	checked, err := golangsem.Check(ctx, inputs, model.Snapshot().Files(), model.Receipt().Configuration())
 	if err != nil {
 		return Queries{}, err
 	}

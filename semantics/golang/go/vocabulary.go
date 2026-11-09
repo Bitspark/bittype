@@ -3,7 +3,6 @@ package golang
 
 import (
 	"errors"
-	"reflect"
 	"runtime"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
@@ -34,8 +33,12 @@ func Configuration() []semantic.Setting {
 		{Key: Key("sizes"), Value: []byte("gc/amd64")},
 	}
 }
+
+// MatchesConfiguration accepts the base Configuration or the base extended by
+// exactly one normalized ImportConfiguration.
 func MatchesConfiguration(settings []semantic.Setting) bool {
-	return reflect.DeepEqual(settings, Configuration())
+	_, _, err := Imports(settings)
+	return err == nil
 }
 func Requirements() []semantic.Requirement {
 	return []semantic.Requirement{

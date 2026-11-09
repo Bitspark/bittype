@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
+	"github.com/Bitspark/bittype/files/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
 	s "github.com/Bitspark/bittype/syntax/golang/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -47,6 +48,16 @@ type converter struct {
 	refs        map[*goast.Ident][]ast.Reference
 	positions   *token.File
 	expressions map[goast.Expr]ast.NodeRef
+	// imports is true only under an ImportConfiguration; the base profile
+	// admits neither import declarations nor qualified types.
+	imports bool
+	sites   []importSite
+}
+
+// importSite is one captured import declaration and the path it names.
+type importSite struct {
+	At   ast.NodeRef
+	Path string
 }
 
 func (c *converter) node(id ast.NodeID) s.Node { return c.tree.Nodes[id-1] }
@@ -85,18 +96,25 @@ func (c *converter) one(node s.Node, role string, depth int) (goast.Expr, error)
 
 // Check consumes syntax-admitted trees. Token positions are synthetic addresses
 // used only to return compiler diagnostics to captured nodes, never source spans.
-func Check(ctx context.Context, inputs []s.AST) (*Checked, error) {
+// captured is the request's Files context. It is required only under an import
+// configuration, where it assigns each tree to a package by its file path.
+func Check(ctx context.Context, inputs []s.AST, captured *files.Context, settings []semantic.Setting) (*Checked, error) {
 	if ctx == nil || len(inputs) == 0 {
 		return nil, semantic.ErrInvalidRequest
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	environment, imports, err := n.Imports(settings)
+	if err != nil {
+		return nil, semantic.ErrInvalidRequest
+	}
 	if err := bound(inputs); err != nil {
 		return nil, err
 	}
 	fset := token.NewFileSet()
-	var files []*goast.File
+	var goFiles []*goast.File
+	var sites []importSite
 	origins := map[*goast.Ident]ast.NodeRef{}
 	refs := map[*goast.Ident][]ast.Reference{}
 	expressions := map[goast.Expr]ast.NodeRef{}
@@ -109,7 +127,7 @@ func Check(ctx context.Context, inputs []s.AST) (*Checked, error) {
 		for i := range tree.Nodes {
 			positions[file.Pos(i*1024)] = ast.NodeRef{Tree: tree.ID, Node: ast.NodeID(i + 1)}
 		}
-		c := converter{tree: tree, origins: origins, refs: refs, positions: file, expressions: expressions}
+		c := converter{tree: tree, origins: origins, refs: refs, positions: file, expressions: expressions, imports: imports}
 		f, err := c.file()
 		if err != nil {
 			if _, ok := err.(*Failure); !ok {
@@ -117,35 +135,58 @@ func Check(ctx context.Context, inputs []s.AST) (*Checked, error) {
 			}
 			return nil, err
 		}
-		files = append(files, f)
+		goFiles = append(goFiles, f)
+		sites = append(sites, c.sites...)
 	}
 	info := &types.Info{Defs: map[*goast.Ident]types.Object{}, Uses: map[*goast.Ident]types.Object{}, Types: map[goast.Expr]types.TypeAndValue{}}
-	conf := types.Config{GoVersion: n.LanguageVersion, Sizes: types.SizesFor("gc", "amd64")}
-	pkg, err := conf.Check(n.PackagePath, fset, files, info)
+	var program *checkedProgram
+	if imports {
+		program, err = checkPackages(ctx, fset, environment, inputs, goFiles, sites, captured, info, positions)
+	} else {
+		program, err = checkSingle(fset, inputs, goFiles, info, positions)
+	}
 	if e := ctx.Err(); e != nil {
 		return nil, e
 	}
 	if err != nil {
-		var at ast.NodeRef
-		if e, ok := err.(types.Error); ok {
-			at = positions[e.Pos]
-		}
-		return nil, &Failure{Err: err, At: at, Invalid: true}
+		return nil, err
 	}
-	sites := map[types.Object]ast.NodeRef{}
+	defined := map[types.Object]ast.NodeRef{}
 	for id, obj := range info.Defs {
 		if obj != nil {
-			sites[obj] = origins[id]
+			defined[obj] = origins[id]
 		}
 	}
 	for id, obj := range info.Uses {
 		for _, ref := range refs[id] {
-			if ref.Role != s.RoleTarget || ref.Target != sites[obj] {
+			if ref.Role != s.RoleTarget || ref.Target != defined[obj] {
 				return nil, semantic.ErrInvalidRequest
 			}
 		}
 	}
-	return export(ctx, pkg, info, origins, expressions, positions, inputs)
+	return export(ctx, program, info, origins, expressions, positions)
+}
+
+func typeFailure(err error, positions map[token.Pos]ast.NodeRef) error {
+	var at ast.NodeRef
+	if e, ok := err.(types.Error); ok {
+		at = positions[e.Pos]
+	}
+	return &Failure{Err: err, At: at, Invalid: true}
+}
+
+// checkSingle is the base profile: one captured package at n.PackagePath.
+func checkSingle(fset *token.FileSet, inputs []s.AST, goFiles []*goast.File, info *types.Info, positions map[token.Pos]ast.NodeRef) (*checkedProgram, error) {
+	conf := types.Config{GoVersion: n.LanguageVersion, Sizes: types.SizesFor("gc", "amd64")}
+	pkg, err := conf.Check(n.PackagePath, fset, goFiles, info)
+	if err != nil {
+		return nil, typeFailure(err, positions)
+	}
+	captured := capturedPackage{pkg: pkg}
+	for _, tree := range inputs {
+		captured.roots = append(captured.roots, ast.NodeRef{Tree: tree.ID, Node: tree.Root})
+	}
+	return &checkedProgram{captured: []capturedPackage{captured}}, nil
 }
 
 func bound(inputs []s.AST) error {
@@ -201,6 +242,15 @@ func (c *converter) expression(id ast.NodeID, depth int) (out goast.Expr, err er
 	switch node.Kind {
 	case s.KindNamedType:
 		return c.ident(id), nil
+	case s.KindQualifiedType:
+		if !c.imports {
+			return nil, n.ErrUnsupported
+		}
+		// The qualifier names an import of the same file; the selected identifier
+		// carries the node's origin, so the binding is the imported declaration.
+		qualifier := goast.NewIdent(attribute(node, s.AttributeQualifier))
+		qualifier.NamePos = c.pos(id)
+		return &goast.SelectorExpr{X: qualifier, Sel: c.ident(id)}, nil
 	case s.KindSliceType:
 		e, err := c.one(node, s.RoleElement, depth)
 		return &goast.ArrayType{Elt: e}, err
@@ -276,11 +326,19 @@ func (c *converter) expression(id ast.NodeID, depth int) (out goast.Expr, err er
 }
 func (c *converter) file() (*goast.File, error) {
 	node := c.node(c.tree.Root)
-	if node.Kind != s.KindFile || len(children(node, s.RoleImport)) != 0 {
+	if node.Kind != s.KindFile || !c.imports && len(children(node, s.RoleImport)) != 0 {
 		return nil, n.ErrUnsupported
 	}
 	f := &goast.File{Name: goast.NewIdent(attribute(node, s.AttributePackage)), Package: c.pos(c.tree.Root)}
 	f.Name.NamePos = c.pos(c.tree.Root)
+	for _, id := range children(node, s.RoleImport) {
+		spec, err := c.importSpec(id)
+		if err != nil {
+			return nil, &Failure{Err: err, At: ast.NodeRef{Tree: c.tree.ID, Node: id}}
+		}
+		f.Imports = append(f.Imports, spec)
+		f.Decls = append(f.Decls, &goast.GenDecl{Tok: token.IMPORT, TokPos: c.pos(id), Specs: []goast.Spec{spec}})
+	}
 	for _, id := range children(node, s.RoleDeclaration) {
 		d := c.node(id)
 		if d.Kind != s.KindTypeDeclaration && d.Kind != s.KindTypeAlias {

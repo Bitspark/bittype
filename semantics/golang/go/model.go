@@ -39,7 +39,11 @@ type FieldInfo struct {
 
 // Open requires an admitted analysis receipt and never invokes a compiler.
 func Open(result semantic.Result) (Model, error) {
-	if _, err := semantic.AdmitEvidence(result.Snapshot(), []semantic.EvidenceRequirement{Evidence()}, []semantic.Result{result}); err != nil {
+	requirement, err := EvidenceFor(result.Configuration())
+	if err != nil {
+		return Model{}, err
+	}
+	if _, err := semantic.AdmitEvidence(result.Snapshot(), []semantic.EvidenceRequirement{requirement}, []semantic.Result{result}); err != nil {
 		return Model{}, err
 	}
 	envelope, _ := result.Semantics()
@@ -76,20 +80,38 @@ func (m Model) Type(id semantics.TermID) (Type, error) {
 	}
 	return Type{m.state, id}, nil
 }
+
+// Lookup finds a package-level type by name. It fails when packages of an
+// import environment declare the name more than once; use LookupIn then.
 func (m Model) Lookup(name string) (Type, error) {
+	return m.lookup("", name)
+}
+
+// LookupIn finds a package-level type declared by the package at importPath.
+func (m Model) LookupIn(importPath, name string) (Type, error) {
+	if importPath == "" {
+		return Type{}, ErrForeign
+	}
+	return m.lookup(importPath, name)
+}
+func (m Model) lookup(importPath, name string) (Type, error) {
 	if !m.Valid() {
 		return Type{}, ErrForeign
 	}
+	var found []semantics.TermID
 	for _, e := range m.state.graph.Data().Entities {
 		if e.Name != name || (e.Kind != Key("defined") && e.Kind != Key("alias")) {
 			continue
 		}
 		owner, _ := m.state.graph.Entity(e.Owner)
-		if owner.Kind == Key("package") {
-			return m.Type(e.Body)
+		if owner.Kind == Key("package") && (importPath == "" || owner.Name == importPath) {
+			found = append(found, e.Body)
 		}
 	}
-	return Type{}, ErrForeign
+	if len(found) != 1 {
+		return Type{}, ErrForeign
+	}
+	return m.Type(found[0])
 }
 func (m Model) Basic(kind types.BasicKind) (Type, error) {
 	if !m.Valid() || (kind != types.String && kind != types.Bool) {
