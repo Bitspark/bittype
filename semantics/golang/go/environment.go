@@ -53,13 +53,6 @@ func ImportConfiguration(environment ImportEnvironment) ([]semantic.Setting, err
 	if err != nil {
 		return nil, err
 	}
-	// Analysis contracts and model admission carry these settings in an evidence
-	// requirement with its own budget; refuse an environment they could not carry.
-	requirement := Evidence()
-	requirement.Configuration = settings
-	if err := semantic.ValidateEvidenceRequirements([]semantic.EvidenceRequirement{requirement}); err != nil {
-		return nil, err
-	}
 	// One analysis invocation charges its own configuration and its
 	// resolution's against one budget, so two copies must fit with room for
 	// the operation, profile, report and requested keys.
