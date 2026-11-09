@@ -1,5 +1,9 @@
 # Changelog
 
+## Representation families — 9 November 2026
+
+- Record research 0015's accepted design ([representation families](docs/representation-families.md)). Each family is a representation contract, instantiated once per use, whose native type and plan entry are projections of one selected instance. The plan is a graph with a shared envelope and family-owned payloads declared in horos, five version axes and explicit generic requirements; it stays unstable until six vertical cases pass. Correct 0014's union rule: the obstruction is information loss, not overlap. Nothing is implemented yet.
+
 ## GEN-01 verified — 9 November 2026
 
 - Record the independent verification of the GEN-01 correction: #192 at
