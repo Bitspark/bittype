@@ -35,6 +35,11 @@ bittype owns:
 - Native AST vocabularies and an agnostic language identity/registration
   boundary, independent of particular language providers.
 - Native representation profiles and independent generation/round-trip fixtures.
+- The selected representation plan: the typed record of each native representation
+  bittype selects, published for per-target binding backends
+  ([binding generation](docs/binding-generation.md), research 0014, 9 November 2026).
+  bittype remains the authority for these selections; backends consume them without
+  re-deriving them.
 - The [agnostic semantic model](docs/semantics.md) and implemented
   [analysis-provider boundary](docs/analysis.md); language providers retain their
   semantic rules. The separate [resolver contract](docs/resolution.md) uses the
@@ -112,7 +117,9 @@ consumers; the current representation profile permits erasure and the enforcing
 profile is unsupported. Passing Page<Cell> tests does not close it.
 
 This scope excludes application-value validators, serialization, Wire adapters,
-RPC/streaming implementations and service migrations. The unified declaration
+RPC/streaming implementations and service migrations. Binding emission and runtime
+adapters belong to per-target binding backends and contract libraries, which consume
+the selected representation plan; bittype publishes the plan only. The unified declaration
 cut includes maintained frontend consumers and the required public Horos release.
 Function, Stream, Cell and future behavioral contracts remain ordinary library
 declarations with no privileged cases in shared infrastructure. Concrete Horos model dependencies belong to the Horos frontend and its private
