@@ -1,6 +1,6 @@
 github.com/Bitspark/horos/core/go v0.10.2 h1:baTh8ZXIJqSEYXxSMeRkYx8GuiQvzWfu2gX49PTVS0w=
 github.com/Bitspark/horos/core/go v0.10.2/go.mod h1:eksDk7qOGGTJwktE6XgOjaskLBbn58tn3Yq9r37IxT0=
-github.com/Bitspark/logos-contract/contract/go v0.25.0 h1:UD8c/Tbs/Wh7l/StY//r+4LoPZZgGgCcGqQIEHmfkx0=
-github.com/Bitspark/logos-contract/contract/go v0.25.0/go.mod h1:EmwR+Y9wxv1qR8F61R89mOh3vPfYDnVYx6JJGShIo8c=
+github.com/Bitspark/logos-contract/contract/go v0.26.0 h1:GChkAbmGd8Vq8c4+sWDkkQM3Pwl328TphTsePADVxX4=
+github.com/Bitspark/logos-contract/contract/go v0.26.0/go.mod h1:EmwR+Y9wxv1qR8F61R89mOh3vPfYDnVYx6JJGShIo8c=
 github.com/bitspark/ontos v0.16.0 h1:/LA9+ukd9+/WgIWLShUwlTB06bfpqEo43t9CGh9umgY=
 github.com/bitspark/ontos v0.16.0/go.mod h1:GLOg9USEPJXJ7RN7iiOJ7OVlyM8b3X4lN0ZVTg2G3QY=

@@ -191,14 +191,14 @@ fallback for a requested quantified proof.
 
 ## Concrete typed check-only contract
 
-Logos owns the [narrow contract](https://github.com/Bitspark/logos-contract/blob/eef2c26467bee408f36a8efee38ad99d89ea5b6b/docs/spec/typed-check-only.md).
+Logos owns the [narrow contract](https://github.com/Bitspark/logos-contract/blob/97b738945c9a1fe4c85bddcf2313726e62af0965/docs/spec/typed-check-only.md).
 The concrete Bittype integration calls
 `github.com/Bitspark/logos-contract/contract/go/typed` directly. No process client, hosted
 service, search engine, checker registry or package-discovery framework is needed
 for this route. See the [implemented composition](verification.md#implemented-go-surface)
 and its [public dependency](dependencies.md).
 
-The [Go signature](https://github.com/Bitspark/logos-contract/blob/eef2c26467bee408f36a8efee38ad99d89ea5b6b/contract/go/typed/check.go#L7)
+The [Go signature](https://github.com/Bitspark/logos-contract/blob/97b738945c9a1fe4c85bddcf2313726e62af0965/contract/go/typed/check.go#L7)
 is:
 
 ```go

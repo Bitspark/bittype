@@ -2,7 +2,7 @@
 
 Bittype's [go.mod](../go.mod) pins public Horos Go 0.10.2,
 Ontos 0.16.0 and the public Logos contract at
-`v0.25.0`. There are no local replacements, private module paths or
+`v0.26.0`. There are no local replacements, private module paths or
 compatibility aliases. Consumers upgrade together across the declaration revision.
 
 The Horos frontend consumes revision 4: ordinary kind definitions, general kind
@@ -18,7 +18,7 @@ Horos-owned facts under an explicit representation profile.
 
 The [joint checker](../verification/logos/go/joint.go) invokes the typed checker;
 Logos-aware verification interpretations and mapping laws also use `github.com/Bitspark/logos-contract/contract/go/typed` directly. Its
-[public source revision](https://github.com/Bitspark/logos-contract/commit/eef2c26467bee408f36a8efee38ad99d89ea5b6b)
+[public source revision](https://github.com/Bitspark/logos-contract/commit/97b738945c9a1fe4c85bddcf2313726e62af0965)
 provides the check-only typed foundation. Agnostic association and native
 projection packages have no Logos imports. No hosted service, credential or
 private repository is needed to install Bittype.
