@@ -1,5 +1,12 @@
 # Changelog
 
+## GEN-01 verified — 9 November 2026
+
+- Record the independent verification of the GEN-01 correction: #192 at
+  `6132170`, board record 000005. ACX-006 and GEN-01 read verified. The
+  provider-integrity and single-site diagnostic limits remain; #193 tracks
+  certifying that a provider's judgments rest on the admitted evidence.
+
 ## Binding generation ownership — 9 November 2026
 
 - Record the accepted ownership of binding generation for horos-declared contracts
