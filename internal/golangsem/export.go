@@ -34,12 +34,11 @@ type exporter struct {
 	depth     int
 }
 
-// external reports whether t is declared by a supplied package. Such types are
-// exported by identity: reference, application and display, never structure.
+// external reports whether an alias or type parameter is declared by a supplied
+// package; its alias-target or constraint fact would expose supplied structure.
+// Underlying facts are guarded more broadly by suppliedStructure.
 func (e *exporter) external(t types.Type) bool {
 	switch t := t.(type) {
-	case *types.Named:
-		return e.program.isSupplied(t.Obj().Pkg())
 	case *types.Alias:
 		return e.program.isSupplied(t.Obj().Pkg())
 	case *types.TypeParam:
