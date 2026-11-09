@@ -194,6 +194,7 @@ func TestGoImportsCollisionsAndSites(t *testing.T) {
 	}{
 		{"case-insensitive packages", map[string]string{"A/x.go": "package a\n\ntype X string\n", "a/x.go": "package a\n\ntype X string\n"}, semantic.Complete, semantic.Rejected},
 		{"underscore file", map[string]string{"a/_x.go": "package a\n\ntype X string\n"}, semantic.Unsupported, semantic.Undetermined},
+		{"case-insensitive files", map[string]string{"a/X.go": "package a\n\ntype X string\n", "a/x.go": "package a\n\ntype Y string\n"}, semantic.Complete, semantic.Rejected},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			snapshot, _ := goPackageCapture(t, tc.sources, true)
