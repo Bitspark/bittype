@@ -2,7 +2,8 @@
 
 **ID:** 0015
 **Date:** 9 November 2026
-**Status:** draft
+**Status:** reviewed
+**Reviewed:** https://github.com/Bitspark/bittype/issues/203#issuecomment-6748762823
 **Owner:** claude-bittype-gaps
 **Issue:** https://github.com/Bitspark/bittype/issues/203
 **Code baseline:** bittype 4fc859e2882efdc51b2991ebb7e43b5c4d6c515f; horos 3a51a06e6db1800a39f94782213609a2d8723d10; ontos 0d5f34e; platform repository `libraries/service` 24fedd4; platform repository `services/content` eaae493; services `cubes` bed6164, `drafts` e1811f5, `pointers` e2ab221
