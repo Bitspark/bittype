@@ -13,73 +13,63 @@
 shared value model, **ontos**. **bittype** is a Go library that reads horos
 declarations and generates native type declarations for TypeScript, Go, Rust
 and C++. A software platform will declare its network services' contracts in
-horos. A build then produces two things from each contract: native types, and
-**bindings**, which convert native values to and from ontos values, plus the
-operation data that the command line and web forms need.
+horos. From each contract a build produces native types, and **bindings**: code
+that converts native values to and from ontos values.
 
-An earlier consultation (research 0014, 9 November 2026) settled who owns which
-part of that build. Its decision is quoted in section 2.3. In short:
+An earlier consultation (research 0014) decided who owns which part of that
+build (section 2.3):
 
 - bittype selects the native representation of every type and publishes those
   choices as a typed **selected representation plan**;
 - a **binding backend** per target language reads the plan and emits the
-  conversion code, without choosing any representation rule itself;
-- message values are canonical ontos data that conform to the horos type.
+  conversion code, choosing no representation rule itself;
+- message values are canonical ontos data conforming to the horos type.
 
-Today bittype can represent only a small set of horos types: text, booleans,
-lists, named closed records with optional fields, and generic declarations. The
-pilot service, Content, needs more:
+Today bittype represents only text, booleans, lists, named closed records with
+optional fields, and generics. The pilot service needs integers, bytes, maps,
+unions and recursive types. The other services also need nullable fields,
+tagged unions and a text-or-integer union.
 
-- **integers**: a count of stored objects;
-- **bytes**: stored content;
-- **maps**: a content value can be a map;
-- **unions with tags**: a content value is bytes, a list or a map;
-- **recursive types**: a list or map of further content values.
-
-The other services need some of the same families (section 3.7).
-
-The owner asked for this to be done properly, so that nothing has to be
-refactored later. That rules out the obvious order. One could add native types
-for these families first and the plan and conversions afterwards. But the
-conversion for a family constrains which native type is admissible at all. A
-TypeScript `number` cannot hold every horos integer. A JavaScript `Map` compares
-object keys by reference, not by value. And the plan has to record decisions
-that the type declaration alone does not show. Each family would have to be
-reopened.
-
-**How should a representation family be defined, so that it is complete the
-first time?** By "complete" we mean that it fixes, for each target:
+**How should a representation family be defined so that it is complete the
+first time?** For each target, a complete family fixes four things:
 
 - its native type;
 - what the plan records about each use of it;
-- how its values convert to and from ontos values, and the laws that
-  conversion obeys;
-- what is refused, and how binding support is qualified, separately from type
-  support.
+- how its values convert, and the laws that conversion obeys;
+- what it refuses, with binding support qualified separately from type support.
 
-Families must compose (generics, nesting, recursion) and stay additive: adding a
-family must not change shared machinery or other families.
+Families must compose (generics, nesting, recursion) and stay additive.
 
-**The tensions we see:**
+**What "complete the first time" means here.** The owner asked for this work to
+be done properly, without technical debt that forces a refactor later
+(9 November 2026). We count as a refactor any later change to one of these:
 
-- **Unbounded integers.** horos integers have no size limit and horos has no
-  range refinement, while ergonomic native integer types are bounded.
-- **Untagged unions.** A horos union is plain set membership. Alternatives
-  often overlap, and nothing reports which alternative a value belongs to.
-  Native languages want a tag.
-- **Maps.** Map keys may be any value and are ordered by their canonical
-  encoding. Native maps use native equality and native order.
-- **Recursion.** horos recursion is anonymous and structural, written inside one
-  type expression. Every target needs a named declaration for it, and some need
-  an explicit indirection.
-- **Mutable native values.** Native byte buffers are mutable, while message
-  values are immutable.
-- **The plan's form.** The plan must carry these decisions without becoming a
-  universal schema language or a second type algebra (a constraint from 0014).
+- the plan's shared envelope or its version semantics;
+- shared planning code;
+- a delivered family's native type, plan entries or conversion.
 
-Sections 1 to 3 give the context. Section 4 follows one value through every
-layer. Section 5 lists what is fixed. Section 6 gives our present leanings,
-none decided. Section 7 holds the five questions.
+Adding a new family later, or supporting a form that is explicitly refused
+today, is additive and not a refactor. So a family may refuse cases, provided
+the refusal is explicit and support can be added without touching delivered
+parts. Replacing `number` with `bigint` after release would be a refactor.
+
+That is why the obvious order fails. If native types came first and conversions
+later, the conversion would constrain which native type is admissible at all.
+A TypeScript `number` cannot hold every horos integer, and a JavaScript `Map`
+compares object keys by reference.
+
+**The tensions**, each developed in section 6:
+
+- **Integers.** horos integers are unbounded, and ergonomic native integers are not.
+- **Unions.** horos unions are untagged and often overlap; native code wants tags.
+- **Maps.** Keys are ordered by their canonical encoding; native maps use native equality and order.
+- **Recursion.** It is anonymous in horos; native targets need names and sometimes indirection.
+- **Mutation.** Native buffers and big integers are mutable; message values are not.
+- **The plan's form.** It must carry all of this without becoming a universal schema.
+
+Sections 1 to 3 give the context. Section 4 follows two values through every
+layer. Section 5 lists what is fixed. Section 6 gives the options and our
+present leanings, none decided. Section 7 holds five questions.
 
 ## 1. System overview
 
@@ -87,36 +77,48 @@ none decided. Section 7 holds the five questions.
 
 | Component | What it is | Language(s) |
 | --- | --- | --- |
-| **ontos** | The value model. A value is an **atom** (a byte string) or a **tuple** (an ordered sequence of values). On that floor it defines canonical data forms (integers, text, booleans, lists, maps, sets, null) as labelled tuples, and one canonical binary encoding. | Go, Rust, TypeScript; no C++ implementation |
-| **horos** | A type language whose types are ontos values called **descriptors**. It has a conformance checker for values and a declaration language with modules, generic declarations and imports pinned by content digest. bittype supplies its readable text syntax. | Descriptors and conformance: Go, Rust, TypeScript. Declaration semantics: Go only |
+| **ontos** | The value model. A value is an **atom** (a byte string) or a **tuple** (an ordered sequence of values). On that floor it defines canonical data forms (integers, text, booleans, lists, maps, sets, null, decimals) as labelled tuples, and one canonical binary encoding. | Go, Rust, TypeScript; no C++ implementation |
+| **horos** | A type language whose types are ontos values called **descriptors**. It has a conformance checker for values and a declaration language with modules, generic declarations and imports pinned by content digest. bittype supplies its readable text syntax. | Descriptors and conformance: Go, Rust, TypeScript. Declarations: Go only |
 | **bittype** | A Go library: horos syntax and analysis, and native type generation for TypeScript, Go, Rust and C++ through a public generation interface. Its native syntax covers type declarations only, not executable code. | Go; emits TypeScript, Go, Rust, C++ |
-| **bitruntime** | The message runtime. It carries ontos values between endpoints and never consults types. | Go, TypeScript |
-| **platform repository, `libraries/service`** | The TypeScript service library: today's adapters and call protocol, and the future TypeScript binding backend. | TypeScript |
-| **platform services** | Content, Cubes, Pointers and Drafts. Content is the pilot for horos-declared contracts. | TypeScript |
-| **logos** | A separate project for checked logical claims. horos deliberately leaves numeric ranges to it (section 3.2). | (not used in this document's code) |
+| **bitwire, bitruntime** | The message layer. Values in transit are ontos atoms and tuples, plus live references to remote endpoints. The platform's code calls these in-memory message values **hydrated** values, and conversion to them `toWire`. A horos type may contain such references, written `wire<E>`. This document concerns values without them. | Go, TypeScript |
+| **platform repository, `libraries/service`** | The TypeScript service library: today's converters and call protocol, and the home of the future TypeScript binding backend. | TypeScript |
+| **platform services** | Content, Cubes, Pointers and Drafts. Content is the pilot. | TypeScript |
 
 ### 1.2 Terms used throughout
 
 | Term | Meaning in this document |
 | --- | --- |
 | **Native value / native type** | A value or type of a target language, for example a TypeScript `bigint` or `interface`. |
-| **Canonical value** | An ontos value in the canonical data form that a horos type describes, for example `Tuple(Atom("int"), Atom(0x00 0x05))` for the integer 5. |
-| **Descriptor, conformance** | A horos type written as an ontos value; `conforms(value, descriptor)` checks a value against it. |
-| **Representation family** | One kind of horos type, together with how it is represented natively: integers, bytes, lists, maps and so on. |
-| **Representation profile** | A named policy in bittype deciding how horos forms become native types in one target, for example `pagination-representation/1`. |
-| **Mapping library, recipe** | A bittype contribution that supplies native representations. A **binding description** is its rule for uses of one horos form; a **recipe** is its rule for one horos declaration. Libraries select by exact identity, never by name or shape. |
-| **Selected representation plan** | The plan of research 0014: every representation decision bittype made for one generation, in typed form, published for binding backends. Not implemented yet. |
-| **Facet** | One part of a library's contribution for one target. The **native facet** produces the native type. The **value facet** converts values. 0014 also defines a root facet and an operation facet, which do not matter here. |
-| **Binding backend** | The per-target component that reads the plan and emits conversion code. The TypeScript backend lives in `libraries/service`. |
-| **Encode E, decode D** | The value facet's two directions: `E(native) → canonical`, `D(canonical) → native`. |
-| **Native domain** | The set of horos values a native representation can hold. A representation **narrows** the domain if some valid horos value has no native form. |
-| **Binding support** | A family is binding-supported for a target when its conversion laws are tested (section 2.3), separately from being able to generate its type. |
-| **Qualified** | Validated by tests and checks for a stated scope. |
+| **Canonical value** | An ontos value in the data form that a horos type describes, for example `Tuple(Atom("int"), Atom(0x00 0x05))` for the integer 5. |
+| **Descriptor, conformance** | A horos type written as an ontos value; `conforms(value, descriptor)` checks a value against it. **Ground** means containing no endpoint references. |
+| **Source, target** | In generation, the **source** is the horos side (declarations and their checked semantics) and the **target** is the native language. |
+| **Use, actual, binder** | A **use** is one occurrence of a type expression inside a declaration. An **actual** is an argument supplied when a generic declaration is applied. A **binder** is a declared type parameter. |
+| **The planner** | bittype's family-agnostic code that walks the source graph and selects representations (section 3.3). bittype's documents also call this shared machinery the **kernel**. |
+| **Source integration** | bittype's horos-specific reader that interprets horos facts for the planner and judges whether each use is supported. It is bittype code. horos itself owns the meaning of membership. |
+| **Representation family** | One kind of horos type together with how it is represented natively: integers, bytes, lists, maps and so on. |
+| **Representation profile** | A named policy deciding how horos forms become native types in one target, for example `pagination-representation/1`. |
+| **Mapping library, contribution** | A bittype contribution that supplies native representations. Its **use rules** (Go type `BindingDescription`, unrelated to value bindings) cover uses of a form, and its **recipes** cover declarations. A library selects by **exact identity**, never by name or shape. |
+| **Structural profile vs exact mapping** | A **structural profile** maps horos's built-in forms (records, lists, text) for one target; `pagination-representation/1` is the current one. An **exact mapping** maps one particular declaration, identified by module digest and name, to a library-owned native type. Both use the same public mechanism. |
+| **Selected representation plan** | Every representation decision bittype made for one generation, in typed form, published for binding backends. It does not exist yet. |
+| **Facet** | One part of a contribution for one target. The **native facet** produces the native type. The **value facet** converts values; 0014's documents also call it the **adapter facet**. An **adapter** is the run-time implementation a value facet refers to, usually built by a **run-time factory**. |
+| **Binding backend** | The per-target component that reads the plan and emits conversion code. |
+| **Encode E, decode D** | The value facet's two directions: `E(native) → canonical` and `D(canonical) → native`. |
+| **Value domain; admissible** | The set of values a representation can hold. A native value or canonical value is **admissible** if it lies in the domain the representation declares. A representation **narrows** if some valid horos value has no native form. |
+| **Message capture** | The converter taking ownership of caller data, so that later mutation of the caller's objects cannot change a message already produced. (Distinct from bittype's generation-time *slot capture* in section 3.3.) |
+| **Domain library** | A library owned by an application domain, such as Content's model package, which may add predicates (for example "non-negative") that horos cannot express. |
+| **Binding support** | A family is binding-supported for a target when its conversion laws are tested, separately from being able to generate its type. |
 
-### 1.3 Scale, people and direction
+### 1.3 Scale and direction
 
 - **Consumers.** Four TypeScript services with 6, 6, 7 and 10 operations,
-  running in Node.js and browsers.
+  running on Node.js 24 and in browsers. bittype's TypeScript checker targets
+  ES2020, which has `bigint`.
+- **Families.** We estimate ten to twelve families across the four services
+  (sections 3.6 to 3.8).
+- **Value sizes.** Content's default limits are 10,000 objects, 100,000 steps,
+  64 MiB of bytes and depth 256. Today's call-wide conversion budget is 100,000
+  nodes, depth 256 and 16 MiB. Conversion cost matters, but no service is
+  throughput-bound today.
 - **People.** One human owner decides for all the repositories involved. Each
   repository is maintained by AI coding-agent sessions, several of which work in
   parallel. Additive composition with clear ownership is therefore a hard
@@ -124,10 +126,6 @@ none decided. Section 7 holds the five questions.
 - **Targets.** TypeScript bindings now; Go bindings expected. bittype also emits
   Rust and C++ types. Bindings for those are not planned, but the design must
   not preclude them.
-- **What may change.** The native TypeScript API, the message form and the
-  bytes on the network may all change: the services share one installation and
-  no external client depends on them. horos changes may be recommended, and
-  horos's maintainers decide.
 
 ## 2. Architectural context
 
@@ -147,25 +145,23 @@ none decided. Section 7 holds the five questions.
 
 ### 2.2 Standing architecture rules (AC = architectural correctness)
 
-The owner has made architecture part of correctness. These numbered rules apply
-to every design here:
+The owner has made architecture part of correctness. The rules this document
+relies on:
 
 | Rule | Requirement |
 | --- | --- |
-| AC-01 | Architecture is part of correctness: ownership, dependency and composition contracts are requirements, like behaviour. |
 | AC-02 | Meanings remain with their semantic owners. Independently owned implementations supply their domain interpretations, policies and laws; shared mechanisms own their invariant guarantees. |
 | AC-03 | Extensions compose additively. Adding a contribution changes only that contribution and the consumers that compose it, not shared orchestration, a central list of cases, or unrelated implementations. |
 | AC-04 | Built-in and first contributions use the same public extension mechanism as independent ones. |
 | AC-05 | Composition preserves guarantees: identity, scope, ownership, authority, assumptions, resource limits and failure meaning. |
-| AC-06 | A small first coverage does not redefine the intended extension boundary. |
 | AC-07 | A test or a compiler's acceptance supports only the claim it establishes. |
-| AC-08 | A change to a shared contract needs a general justification. |
 | AC-09 | Design interfaces from the domain, its owners and the guarantees consumers need. The existing API and the effort of changing it must never influence the design, not even as a tiebreaker. |
 
 ### 2.3 Research 0014's accepted decision
 
-The decision is recorded in bittype's `docs/binding-generation.md`. These are
-the parts this document builds on, quoted.
+This decision is fixed, unless the expert finds that it forces a later
+refactor. Such findings are welcome under question 5. It is recorded in
+bittype's `docs/binding-generation.md`, quoted here.
 
 **Responsibilities:**
 
@@ -177,7 +173,7 @@ the parts this document builds on, quoted.
 | Binding backend, one per target | Adapter composition, runtime imports, generated glue, assembly of the requested binding products |
 | Contract or domain library | Its native recipe, its adapter implementation, its protocol or domain meaning, and the laws below |
 
-**The plan.** "For each use and generic instance, the plan carries":
+**The plan.** For each use and generic instance it carries:
 
 > - the checked source identity and the actual generic arguments;
 > - the selected contribution, target and representation profile;
@@ -190,111 +186,129 @@ the parts this document builds on, quoted.
 > - recursive references;
 > - the selected adapter factories, their argument slots and their resource requirements;
 > - the selected root contract [...]
->
-> The serialized plan carries an explicit format version, which bittype owns. A
-> backend consumes a pinned version and refuses an unknown one.
 
-The plan is "typed references and target-owned expressions. They are not a
-universal schema or a new type algebra." A completeness test must show that "a
-test backend implements each supported representation from the plan and the
-selected contributions alone, without guessing a rule."
+> **Form.** These are typed references and target-owned expressions, the same
+> principle as bittype's native intent [...]. They are not a universal schema
+> and not another type algebra.
 
-**Interpreters.** "A shared structural interpreter is allowed only if it executes
-the plan's decisions rather than choosing representation rules itself."
+> **Completeness test.** The backend can implement each selected representation
+> from the plan, the source semantics and the selected contributions alone,
+> without guessing a rule.
 
-**No fallback.** "A native mapping without an adapter facet still supports types,
-but a request for bindings that needs a missing facet fails explicitly. There is
-never a fallback to structural conversion."
+Three facts shape the design:
 
-**Laws every value facet must satisfy** (from the 0014 advice):
+- **No plan exists yet.** bittype's native program keeps no per-use record
+  (section 3.3).
+- **The plan must be serialized.** The TypeScript backend runs in another
+  process, in Node.js. The plan carries an explicit format version, which
+  bittype owns; a backend refuses an unknown version.
+- **The payload is plain.** bittype's native expressions carry only lists of
+  strings and child expressions, with no typed metadata.
 
-| Law | Meaning |
+> **Interpreters.** A shared structural interpreter is allowed only if it
+> executes the plan's decisions rather than choosing representation rules
+> itself.
+
+> **Selection.** [...] A native mapping without an adapter facet still supports
+> types, but a request for bindings that needs a missing facet fails
+> explicitly. There is never a fallback to structural conversion [...].
+
+**Laws** (condensed from the decision). For a type T and representation profile
+p, let `V_T` be the admissible abstract values, including library-owned
+predicates, and `N_T,p` the admissible native values. Every contribution must
+satisfy:
+
+```text
+D(E(n)) ≈ n    for every n in N_T,p   (the equivalence states whether copying, class identity, branch tags and sharing matter)
+E(D(v)) = v    for every v in V_T     (abstract-value equality; any normalization is specified)
+```
+
+It must also establish, quoted:
+
+| Law | Establishes |
 | --- | --- |
-| Round trip on native values | `D(E(n)) ≈ n` for every admissible native value `n`, with `≈` specified (copying, class identity, sharing) |
-| Round trip on canonical values | `E(D(v)) = v` for every admissible canonical value `v`, with any normalization specified |
-| Conformance | `E(n)` conforms to the horos descriptor |
-| Coverage | the admissible native values and the admissible canonical values correspond as stated |
-| Capture | later mutation of caller-owned data cannot change a captured message |
-| Generic composition | substitution, aliases, nested applications and recursion preserve the laws |
+| Conformance | Produced values inhabit the declared descriptor where ground conformance applies |
+| Semantic validity | Domain predicates survive both directions |
+| Coverage | Every promised abstract value is representable, and restrictions are explicit |
+| Capture | Once captured, later mutation of caller-owned data cannot change the message |
+| Generic composition | Substitution, aliases, nested applications and recursion preserve the laws |
+| Resource atomicity | Failed preparation releases newly acquired resources and leaves existing ones intact |
+| Capability preservation | Authority, identity and reuse rules, scope and lifetime remain valid |
+| Cross-target agreement | Different native representations agree on abstract values and protocol observations |
 
-**Binding support is qualified separately from type support** (0014, accepted):
-"Information-losing representations, such as overlapping unions, are rejected
-for bindings unless a library-owned representation supplies the missing
-information."
+> **Coverage** is never weakened to "what this implementation happens to accept".
 
-### 2.4 Earlier advice that bears on the families
+> **Capture in practice.** Both ontos implementations copy bytes when an atom is
+> built [...]. Conversion into ontos atoms therefore discharges capture for byte
+> buffers. Adapters that keep native references, views or capabilities must
+> discharge it themselves.
 
-From the 0014 advice, quoted:
+> **Binding support is qualified separately from type support** [...]. A
+> representation must keep enough information for the laws to be possible:
+>
+> - Two native branches can encode to the same canonical value, as with an overlapping union.
+> - Two abstract alternatives can collapse into one native form.
+>
+> Neither can bind unless a library-owned representation supplies the missing information.
 
-> An integer declaration does not by itself remove Content's result validator.
-> The declared integer is signed and unbounded, while `check.objects` currently
-> means a non-negative integer. Non-negativity still needs a refinement or
-> domain-owned predicate. The native representation also needs range and
-> exactness rules.
+**Validation**, quoted:
 
-> Consider a horos union of integer values and the exact integer zero. Suppose a
-> native tagged sum distinguishes `GeneralInteger(0)` from `ExactZero`. Both
-> encode to the same canonical integer zero. Decoding cannot recover which native
-> branch was used.
+| Judgment | Owner |
+| --- | --- |
+| Ground structural conformance | horos, against descriptors emitted at build time (prefer `diagnose`: exhaustion is not a mismatch) |
+| Native representation validity and construction | the structural or custom adapter |
+| Additional domain predicates | the domain library |
 
-> Serde explicitly chooses declaration-order first-success matching for untagged
-> enums. That is a specified policy, not a consequence of union membership.
-> Horos's set-theoretic union semantics do not by themselves authorize importing
-> that policy.
+> **Resource accounting.** Validation and conversion share one budget: check
+> maximal ground regions, and never give each child a fresh budget.
 
-> Synchronous conversion does not by itself establish capture. A synchronous
-> adapter can return an atom backed by the caller's mutable byte buffer. Later
-> mutation can still change the message.
+> **"Declared once" means structure.** Domain laws that horos cannot express stay
+> with the model library. For example, `ContentHash` is text plus a
+> content-model predicate, and a non-negative count is an integer plus a
+> predicate [...].
 
-> Validation and conversion also need coordinated resource accounting. Giving
-> every child a fresh whole-operation budget defeats the intended bound.
+### 2.4 What is still open around this work
 
-bittype's own design notes already say: "Unbounded integers cannot silently
-become bounded integers, absence cannot collapse into a zero value, and
-recursive type indirection cannot be guessed by the kernel." And on generics:
-"mapping after substitution must agree with substituting mapped arguments into
-the mapped generic declaration."
-
-### 2.5 Pending contracts in `libraries/service`
-
-The 0014 advice asked for four short contracts before any interface is
-committed. bittype's, the native representation laws above, is written. The
-service library owns the other three and has not started them:
-
-- the service root: a declared `Service<Ops>` contract dispatching by path;
-- capture and lifetime: what a call captures and how long exported endpoints
-  live;
-- domain outcomes versus invocation uncertainty: `Function<A, B, E>` with the
-  reply protocol `ok | error | protocol | unknown`.
-
-The capture contract in particular constrains value facets. This consultation
-does not need its answer, but its recommendations should not presuppose one.
+- **Message capture.** The service library owns a pending contract on capture
+  and lifetime. It is not needed here, and recommendations should not
+  presuppose its answer.
+- **The run-time factories.** The service library owns the TypeScript backend.
+  It has not yet been asked who should implement the run-time factories of the
+  structural families (section 6.1).
 
 ## 3. Relevant code
 
 ### 3.1 ontos values and canonical data forms
 
 A value is `Atom(bytes)` or `Tuple(value, ...)`. Nothing else exists, and
-`Atom("")` differs from `Tuple()`. Data forms are labelled tuples. Each family
-below is quoted from the ontos data specification:
+`Atom("")` differs from `Tuple()`. Data forms are labelled tuples:
 
 | Form | Canonical value | Notes |
 | --- | --- | --- |
-| Integer | `Tuple(Atom("int"), Atom(<sign-magnitude bytes>))` | Sign byte `0x00` non-negative or `0x01` negative, then the magnitude big-endian with leading zero bytes stripped. Zero is exactly the single byte `0x00`. Unbounded. |
-| Text | `Tuple(Atom("utf8-text"), Atom(<UTF-8 bytes>))` | Valid UTF-8, no Unicode normalization. |
+| Integer | `Tuple(Atom("int"), Atom(<sign-magnitude bytes>))` | Sign byte `0x00` non-negative or `0x01` negative, then the magnitude big-endian with leading zero bytes stripped. Zero is the single byte `0x00`. Unbounded. |
+| Text | `Tuple(Atom("utf8-text"), Atom(<UTF-8 bytes>))` | Valid UTF-8, no Unicode normalization. Producers reject unpaired UTF-16 surrogates, which JavaScript strings may contain. |
 | Boolean | `Tuple(Atom("bool"), Atom(0x00 or 0x01))` | |
 | List | `Tuple(Atom("list"), element, ...)` | |
-| Map | `Tuple(Atom("map"), Tuple(k0, v0), Tuple(k1, v1), ...)` | Keys may be any value. Entries are "strictly ascending under the codec total order", with duplicates forbidden ("Never last-wins"). |
+| Map | `Tuple(Atom("map"), Tuple(k0, v0), Tuple(k1, v1), ...)` | Keys may be any value, "sorted by key, strictly ascending, under the codec total order". Duplicates are forbidden ("Never last-wins"). |
 | Set | `Tuple(Atom("set"), e0, e1, ...)` | Sorted by codec order, no duplicates. |
 | Null | `Tuple(Atom("null"))` | "`null()` means present-but-no-value, NOT absence." |
+| Decimal | an exact `mantissa × 10^exponent` built on integers | horos does not recognize it (section 3.2). |
 | Bytes | a bare `Atom(bytes)` | Not a labelled form. |
 
 **The codec order.** The canonical encoding is
 `encode(Atom(b)) = 0x00 ‖ uvarint(len(b)) ‖ b` and
-`encode(Tuple(...)) = 0x01 ‖ uvarint(n) ‖ ...`. Map keys and set elements are
-ordered by lexicographic comparison of these encodings. Because the length comes
-first, shorter keys sort first: `"b"` precedes `"aa"`. Native string order and
-native numeric order are therefore not canonical order.
+`encode(Tuple(v0 … vn)) = 0x01 ‖ uvarint(n) ‖ encode(v0) ‖ …`, where `uvarint`
+is unsigned LEB128 in shortest form, which is little-endian. Map keys and set
+elements are ordered by lexicographic comparison of these whole encodings.
+Below 128 bytes the length byte makes shorter keys sort first, so `"b"`
+precedes `"aa"`. From 128 bytes on, the little-endian length breaks that rule:
+a 256-byte key (length bytes `80 02`) sorts before a 129-byte key (`81 01`).
+**Only comparison of the actual encodings is correct.** Native string or
+numeric order never is.
+
+**Where order is checked.** The codec decodes any atoms and tuples. Map order and
+duplicate keys are checked by the ontos data recognizer, or by horos
+conformance of a `map-of` type. A binding must call one of them.
 
 **Immutability.** Values are immutable. The Go and TypeScript constructors copy
 atom bytes:
@@ -309,41 +323,38 @@ func NewAtom(bytes []byte) Atom {
 ```
 
 ```ts
-// ontos core/ts/src/index.ts:56-58 (class Atom)
-constructor(bytes: BytesLike) { this.#bytes = copyBytes(bytes); Object.freeze(this); }
+// ontos core/ts/src/index.ts:56-58 (class Atom, condensed)
+constructor(bytes) { this.#bytes = copyBytes(bytes); Object.freeze(this); }
 ```
 
-A TypeScript `Tuple` shallow-copies its item array and freezes it, so children
-are shared by reference.
+Reading an atom's bytes also returns a copy. A TypeScript `Tuple` copies its
+item array and freezes it; children are shared by reference.
 
 **Trees, with sharing allowed.** "Well-founded (acyclic) … a finite tree, not a
-graph … Sharing … is unobservable and never makes a value cyclic." "Equal
-subtrees MAY be shared … A value MAY be held as a DAG internally … cyclic
+graph … (Sharing … is unobservable and never makes a value cyclic.)" "Equal
+subtrees MAY be shared … A value MAY be held as a DAG internally … `μ` (cyclic)
 representations are forbidden." Encoding and equality do not memoize, so a
-heavily shared value is processed at its full expanded size.
+heavily shared value costs its full expanded size.
 
-**Integer libraries.** TypeScript encodes from `bigint`, and Go from
-`*big.Int`. The Rust implementation materializes integers as `i128` and reports
+**Integer libraries.** TypeScript encodes from `bigint`, Go from `*big.Int`.
+The Rust implementation materializes integers as `i128` and reports
 `IntOutOfRange` beyond it. **There is no C++ ontos implementation.**
 
-**JSON.** The existing named profile `ontos-data-json/1` is one-directional,
-from JSON to ontos values. It cannot produce bytes, sets, tuples, labelled
-compounds or non-text map keys. A lossless two-way profile has been proposed to
-ontos's maintainers as a result of research 0014. Presentation is outside this
-document.
+**JSON** is outside this document. The existing JSON mapping is one-directional,
+and a lossless two-way one has been proposed to ontos's maintainers.
 
 ### 3.2 horos descriptors for these families
 
 A descriptor is `Tuple(Atom("horos/<constructor>"), argument, ...)`.
 "Descriptors add no equality: value and descriptor identity remain exact ontos
-structural identity." The table lists the constructors and what the
-conformance checker tests for each:
+structural identity."
 
 | Descriptor | Admits |
 | --- | --- |
 | `any()` | Every value |
 | `atom()`, `atom-exact(Atom)`, `atom-len(int lo, int hi)`, `atom-in(set of Atom)` | A bare atom; with exact bytes, a byte length within bounds, or membership in a finite set |
 | `scalar(Atom("int" or "utf8-text" or "bool"))` | The canonical integer, text or boolean form. Integer recognition has "no host integer width bound" |
+| `text-len`, `key-grammar()`, `text-non-blank()`, `lowercase-uuid()` | Text with a code-point length range, the fixed pattern `^[a-z0-9][a-z0-9._-]{0,63}$`, a non-blank character, or a lowercase UUID spelling |
 | `tuple(T0, ..., Tn)` | Any tuple of exactly this arity whose children conform |
 | `seq(T)` | Any tuple of any arity whose children all conform to T |
 | `compound(Atom(label), T0, ...)` | A tuple whose first child is the exact label atom, then the given children |
@@ -353,14 +364,18 @@ conformance checker tests for each:
 | `exact(value)` | Exactly that value |
 | `rec(Atom(name), T)`, `ref(Atom(name))` | Recursion (below) |
 
-A field is `Tuple(Atom("horos/field"), text(name), Atom("req" or "opt"), T)`.
+There is **no general text pattern**, so `^sha256:[0-9a-f]{64}$` cannot be
+expressed in horos. There is **no floating-point or decimal type**: "`decimal`
+and `null` are not recognized scalar tags in v1."
 
-**Records and absence**, quoted:
+**Records and absence.** A field is
+`Tuple(Atom("horos/field"), text(name), Atom("req" or "opt"), T)`. Quoted:
 
-> `open` permits additional text-keyed fields with unconstrained values;
-> `closed` rejects additional fields. Every required field must be present and
-> conform. An optional field may be absent; if present, it must conform. An
-> absent map entry and an entry containing null are different values.
+> Mode is mandatory: `open` permits additional text-keyed fields with
+> unconstrained values; `closed` rejects additional fields. Every required field
+> must be present and conform. An optional field may be absent; if present, it
+> must conform. An absent map entry and an entry containing null are different
+> values.
 
 "The singleton null type is expressible as `exact(null())`." A nullable field is
 therefore `union(T, exact(null()))`, independent of whether it is optional.
@@ -369,7 +384,7 @@ therefore `union(T, exact(null()))`, independent of whether it is optional.
 nothing." The checker is a plain disjunction:
 
 ```ts
-// horos core/ts/src/core.ts:518-523 (union arm of conformsIn)
+// horos core/ts/src/core.ts:518-523 (union arm of the conformance check)
 for (const ct of args) {
   if (conformsIn(v, ct, env, pending, depth + 1)) return true;
 }
@@ -379,9 +394,9 @@ No interface reports which alternative matched. Tags exist only where an author
 writes them, for example `union(compound("item", T), compound("end"))`, or as an
 exact-text field in each alternative.
 
-**Alternatives often overlap.** The checker states: "A value may conform to many
-descriptors at once (overlapping classification, not a new identity)." Overlaps
-that follow from the rules above:
+**Alternatives often overlap.** The checker's documentation: "A value may
+conform to many descriptors at once (overlapping classification, not a new
+identity)". Overlaps that follow from the rules above:
 
 - the empty list conforms to `list-of(T)` for every T, so
   `union(list-of(int), list-of(text))` is ambiguous on `[]`; likewise for sets
@@ -394,11 +409,12 @@ that follow from the rules above:
   the same values.
 
 **Integers have no refinement, by decision.** `scalar(int)` is the only integer
-descriptor. A horos conformance test records the ruling: "magnitude is NOT a
-form bound (int-range principled-out to logos)". Kinds, horos's type-level
-predicates, have "no … numeric-bound predicates". A finite set of integers can
-only be written as a union of `exact` values. The only refinements are on text
-and atoms: lengths, membership, exact values and a few text grammars.
+descriptor. A comment in horos's conformance vectors records the ruling:
+"magnitude is NOT a form bound (int-range §5-principled-out to logos — CAA
+ruling 2026-07-24)". logos is a separate project for checked logical claims.
+horos's kinds, its predicates over types such as "this type is data", have
+"no ... numeric-bound predicates". A finite set of integers can only be written
+as a union of `exact` values.
 
 **Recursion is anonymous and must be guarded.** Quoted:
 
@@ -408,39 +424,43 @@ and atoms: lengths, membership, exact values and a few text grammars.
 > shadow matching outer names. The values themselves remain finite acyclic
 > trees.
 
-At the declaration layer, "Named type and kind dependency cycles are rejected."
+At the declaration layer: "Named type and kind dependency cycles are rejected."
 **A recursive type is therefore written with `rec` and `ref` inside one type
 expression**, never as two named declarations that refer to each other. Mutual
 recursion uses nested `rec` binders.
 
-**Declarations.** A horos module declares named, possibly generic types. A type
-expression in a declaration is a descriptor, or a parameter reference, a
-reference to a local or imported declaration, or an application of a generic
-declaration to arguments. A declaration is identified by (module digest, name),
-where the digest is the SHA-256 of the module's canonical bytes. This
-declaration from horos's specification is a generic page:
+**Declarations.** A horos module declares named, possibly generic types. A
+declaration is identified by (module digest, name), where the digest is the
+SHA-256 of the module's canonical bytes. horos's specification writes
+declarations in a compact notation, which section 4 also uses:
+
+- `H(c, x, ...)` is the descriptor `Tuple(Atom("horos/" + c), x, ...)`;
+- `A(s)` is an atom, `T(s)` a canonical text value, `I(n)` a canonical integer
+  and `L(x, ...)` a canonical list;
+- `D(c, x, ...)` is `Tuple(Atom("horos/decl/" + c), x, ...)`, a
+  declaration-level form: `D("param", I(0))` is the declaration's first type
+  parameter, `D("local", T(name))` refers to a declaration in the same module,
+  and `D("apply", E, L(E, ...))` applies a generic declaration to arguments.
+
+A generic page of items, as written in horos's specification:
 
 ```text
-H("record", A("closed"),
+Page = H("record", A("closed"),
   H("field", T("items"), A("req"), H("list-of", D("param", I(0)))),
   H("field", T("next"),  A("opt"), H("scalar", A("utf8-text"))))
 ```
 
-`H(c, ...)` is the descriptor constructor `c`. `A`, `T` and `I` are an atom, a
-text value and an integer. `D("param", I(0))` refers to the declaration's first
-type parameter.
-
 **Limits.** Declarations: depth 256, 100,000 nodes, 16 MiB of canonical bytes,
-256 modules. The TypeScript checker stops at 512 recursion frames. Its boolean
-interface reports an exhausted check as non-conforming. A separate `diagnose`
-interface distinguishes `conforms`, `mismatch`, `not_well_formed` and
+256 modules. The checkers stop at 512 recursion frames. The boolean interface
+reports an exhausted check as false, which inside `not` can become a true.
+`diagnose` distinguishes `conforms`, `mismatch`, `not_well_formed` and
 `exhausted`.
 
 ### 3.3 bittype's generation interface
 
-A **mapping library** describes its rules once, at registration. `F`, `T` and `R`
-are type parameters for the source language, the target language and the
-source-specific reader.
+A **mapping library** describes its rules once, at registration. The type
+parameters `F`, `T` and `R` are the source language, the target language and
+the source integration's reader.
 
 ```go
 // contracts/generation/go/description.go (excerpts)
@@ -449,76 +469,55 @@ type MappingLibrary[F, T, R any] interface {
 }
 type MappingDescription[F, T, R any] struct {
 	Profile      string // the representation profile; libraries are selected by exact equality
-	Bindings     []BindingDescription[F, T, R]
-	Declarations []DeclarationRecipe[F, T, R]
-	Helpers      []HelperRecipe[T]
+	Bindings     []BindingDescription[F, T, R] // use rules
+	Declarations []DeclarationRecipe[F, T, R]  // recipes; a zero selector is the structural default
+	Helpers      []HelperRecipe[T]             // shared generated helper declarations
 }
-// A rule for uses of one source form, selected by exact identity.
+// A use rule: selected by exact identity, it captures child uses into named
+// slots ("slot capture") and yields a native expression.
 type BindingDescription[F, T, R any] struct {
 	ID     string
-	Input  Pattern[F, R] // a selector plus the child uses to capture into slots
-	Output Expression[T] // a fixed native expression, or ...
-	Expand func(context.Context, Expansion[F, T, R]) (Expression[T], error) // ... a computed one
-}
-type Pattern[F, R any] struct {
-	Selector Selector
-	Slots    []Slot
-	Capture  func(context.Context, R, UseView[F]) ([]Capture[F], error)
-}
-// A rule for one declaration; a zero selector is the structural default.
-type DeclarationRecipe[F, T, R any] struct {
-	ID       string
-	Selector Selector
-	Expand   func(context.Context, DeclarationRequest[F, T, R]) (DeclarationDescription[T], error)
+	Input  Pattern[F, R]                                                    // selector plus slot capture
+	Output Expression[T]                                                    // a fixed native expression, or
+	Expand func(context.Context, Expansion[F, T, R]) (Expression[T], error) // a computed one
 }
 ```
 
-A **selector** is "an exact source-owned identity" that the planner compares
-but never interprets. For horos built-in forms it is a key such as
-`builtin/6:scalar/9:utf8-text`. For a declaration it is
-`declaration/<module digest>/<name>`.
+A **selector** is "an exact source-owned identity" that the planner compares but
+never interprets. For a horos built-in form it is a key such as
+`builtin/6:scalar/9:utf8-text`, with length-prefixed segments. For a declaration
+it is `declaration/<module digest>/<name>`.
 
-Native output is an **expression** over target-owned constructors:
+Native output is an **expression** over constructors that the target owns:
 
 ```go
 // contracts/generation/go/expression.go (excerpts)
-// Form[T] is a target-owned constructor, readable only by its issuer;
-// "not an AST kind or a globally registered type kind".
-func Native[T any](form Form[T], data []string, args ...Expression[T]) Expression[T]
-func Mapped[T any](slot Slot) Expression[T]    // the native form of a captured child use
-func Parameter[T any](index int) Expression[T] // a declaration's own type parameter
-func Argument[T any](index int) Expression[T]  // an actual generic argument
-func Helper[T any](key HelperKey, args ...Expression[T]) Expression[T] // a shared generated helper
+func Native[T any](form Form[T], data []string, args ...Expression[T]) Expression[T] // a target constructor with string data
+func Mapped[T any](slot Slot) Expression[T]      // the native form of a captured child use
+func Parameter[T any](index int) Expression[T]   // a declaration's own type parameter
+func Argument[T any](index int) Expression[T]    // an actual generic argument
 ```
 
-A native expression's payload is a list of strings plus child expressions. It
-carries no numeric or other typed metadata.
+**Planning.** The planner walks the horos declaration graph itself:
 
-**Planning.** The planner walks the horos declaration graph itself. For each use
-it selects exactly one binding by selector. More than one is `ErrAmbiguous`.
-None is "no mapping for `<key>`", reported as unsupported at the use's source
-site. A use of a declaration with no exact binding is declared through a
-recipe: the exact recipe if there is one, otherwise the structural default. The
-result is a closed native program for the target:
+- For each use it selects exactly one use rule by selector. More than one gives
+  `ErrAmbiguous`.
+- If none matches, it reports "no mapping for `<key>`" as unsupported at the
+  use's source site.
+- A declaration with no exact use rule is declared through a recipe: the exact
+  recipe if there is one, otherwise the structural default.
 
-```go
-// contracts/generation/go/native.go and planning.go (excerpts)
-type NativeDeclaration[T any] struct { Name string; Form Form[T]; Origin ast.NodeRef; Parameters []NativeParameter; Body Expression[T] }
-type NativeParameter struct { Name string; Origin ast.NodeRef }
-type Program[T any] struct { declarations []PlannedDeclaration[T]; exposed []uint32 }
-type Step struct { Binding, Source, Declaration, Form string; Expression string } // debug strings only
-```
-
-`Program[T]` keeps no per-use source identity and no actual source arguments.
-The only per-use record is `Step`, whose fields are debug strings. **Nothing
-resembling the selected representation plan exists yet.** Recursion is refused
-in two places: the planner reports "recursive native declaration", and native
-construction refuses any declaration cycle.
+The result is a closed native program. It keeps no per-use source identity and
+no actual source arguments. Its only per-use record is debug strings. Recursion
+is refused twice:
+- the planner reports "recursive native declaration"
+  (`contracts/generation/go/planning.go:322-325`);
+- native construction refuses any declaration cycle
+  (`transform/syntax/shared/target/go/compile.go:88-93`).
 
 ### 3.4 The implemented representation profile
 
-All four targets implement one profile, `pagination-representation/1`, through
-mapping libraries with the same structure.
+All four targets implement the structural profile `pagination-representation/1`:
 
 | horos form | TypeScript | Go | Rust | C++ |
 | --- | --- | --- | --- | --- |
@@ -529,52 +528,24 @@ mapping libraries with the same structure.
 | Optional field | `field?: T` | `BittypeOptional[T]` helper | `Option<T>` | `std::optional<T>` |
 | Type parameter, application | native generics | native generics | native generics | templates |
 
-TypeScript output is compiled with `strict` and `exactOptionalPropertyTypes`,
-so `field?: T` does not admit an explicit `undefined`. Go's helper is a
-generated struct, `BittypeOptional[T]{Present bool; Value T}`. Absence never
-becomes `null` or a zero value.
-
-The text mapping for TypeScript, which is typical, in outline:
-
-```go
-// transform/syntax/horos-to-typescript/mapping/go/mapping.go:15-25 (outline)
-pattern, err := rules.Pattern(from, "scalar", "utf8-text")
-// Bindings: {{ID: "utf8-text/typescript/1", Input: pattern, Output: model.Primitive("string")}}
-```
-
-The record recipe refuses inline records: "nested records require a named
-declaration in this profile". The project's documentation states the boundary:
+TypeScript output is compiled with `strict` and `exactOptionalPropertyTypes`, so
+`field?: T` does not admit an explicit `undefined`. Go's helper is a generated
+struct, `BittypeOptional[T]{Present bool; Value T}`. Absence never becomes `null`
+or a zero value. Inline records are refused: "nested records require a named
+declaration in this profile". bittype's documentation states the boundary:
 
 > Canonical integers remain Unsupported. The existence of native integer syntax
 > does not choose an arbitrary-width representation or dependency. Open records,
 > Wire, tuples, sets/maps, unions/intersections, complements, exact/refinement
 > forms and ground recursion remain outside this profile.
 
-**A library-owned representation already works for types.** A `Cell<T>` contract
-library maps its declaration, by exact identity, to an external TypeScript type:
+("Wire" there is the endpoint-reference type `wire<E>`.)
 
-```go
-// integration/go/horos_generation_composition_test.go:197-218 (abridged)
-key, err := source.Named(from, pin, "Cell") // "declaration/<64-hex pin>/Cell"
-slot := g.TypeSlot("V")
-pattern := g.Pattern[h.Language, source.Reader]{Selector: key, Slots: []g.Slot{slot},
-	Capture: func(ctx context.Context, src source.Reader, use g.UseView[h.Language]) ([]g.Capture[h.Language], error) {
-		// select the actual for Cell's own binder T, never a position
-		for _, a := range use.Actuals {
-			if p, err := src.Parameter(a.Binder); err != nil {
-				return nil, err
-			} else if p.Name == "T" {
-				return []g.Capture[h.Language]{{Slot: slot, Use: a.Use}}, nil
-			}
-		}
-		return nil, g.ErrScope
-	}}
-// Binding: {ID: "cells/typescript/1", Input: pattern,
-//           Output: model.External("@bitspark/cell", "Cell", g.Mapped[ts.Language](slot))}
-```
-
-`Page<Cell<Person>>` then generates `Page<Cell<Person>>` in TypeScript, with an
-import of `Cell` from `@bitspark/cell` that the file-placement stage adds.
+**Exact mappings already work for types.** A `Cell<T>` contract library maps its
+declaration, selected by exact identity, to the external TypeScript type `Cell`
+exported by `@bitspark/cell`. It captures the actual for Cell's binder named `T`,
+never a position. A test then generates `Page<Cell<string>>` with the import
+added by the file-placement stage.
 
 ### 3.5 What the native target models can express
 
@@ -589,26 +560,40 @@ if len(d) != 1 || len(a) != 0 || (d[0] != "string" && d[0] != "bool") {
 
 | Family | TypeScript | Go | Rust | C++ |
 | --- | --- | --- | --- | --- |
-| Integers | none | none | none | none |
-| Bytes | none (an external global `Uint8Array` is possible, untested) | none | none | none |
-| Maps and sets | none | none | none | none |
-| Unions | none | none | none | none |
+| Integers, bytes, maps, sets, unions | none | none | none | none |
 | Indirection for recursion | not needed | none | none | none |
-| External library types | yes | **no** (the model refuses `external`) | absolute paths | absolute paths |
+| External library types | yes | **no** (the model refuses them) | absolute paths | absolute paths |
 
-The native syntax layers underneath can express much more: TypeScript union,
-literal and `bigint` types; Go pointer, map and array types; Rust enums with
-variants, `Box` paths and integer primitives; C++ pointers and integer types.
-Only the models and the mapping libraries are missing.
+The syntax layers underneath can express much more: TypeScript union, literal
+and `bigint` types; Go pointer, map and array types; Rust enums and integer
+primitives; C++ pointers and integer types. Only the models and mapping
+libraries are missing.
 
-### 3.6 The pilot service: Content
+### 3.6 Today's generic conversion, which this work replaces
+
+The service library converts structural TypeScript values with one run-time
+interpreter (`@bitspark/service-api` 0.3.2). Its message forms are not canonical
+ontos data:
+
+- strings, numbers and booleans are bare atoms;
+- records and arrays are unlabelled tuples, each field wrapped in a tuple of
+  zero or one element;
+- numbers are any finite JavaScript number, written as `String(n)`;
+- unions are `(alternative index, body)`, and the encoder keeps the first
+  alternative that succeeds (first-success matching);
+- shared subvalues are converted once per occurrence, so sharing is lost;
+- one budget covers a whole call: 100,000 nodes, depth 256, 16 MiB.
+
+Research 0014 replaced these forms with canonical data conforming to the horos
+type. Only the budget principle carries over.
+
+### 3.7 The pilot service: Content
 
 Content stores byte strings and structured values by hash. Its contract is
-today a TypeScript interface (platform repository `services/content`, commit
-`eaae493`):
+today a TypeScript interface:
 
 ```ts
-// packages/api/src/content-service-api.ts
+// services/content packages/api/src/content-service-api.ts
 export interface ContentService {
   put(options: { bytes: Uint8Array }): Promise<{ hash: ContentHash }>;
   get(hash: ContentHash): Promise<Uint8Array>;
@@ -622,7 +607,7 @@ export interface ContentService {
 ```
 
 ```ts
-// packages/model/src (one declaration per file)
+// services/content packages/model/src (one declaration per file)
 export type ContentHash = `sha256:${string}`;
 export type ContentRepresentation = 'raw' | 'map/1' | 'list/1';
 export interface ContentLink { readonly representation: ContentRepresentation; readonly hash: ContentHash; }
@@ -630,86 +615,52 @@ export type ContentValue = Uint8Array | ContentMap | readonly ContentValue[];
 export interface ContentMap { readonly [key: string]: ContentValue; }
 ```
 
-The families this contract uses:
+The families it uses:
 
-- **Integers.** `check().objects` counts stored objects. TypeScript says
-  `number`. A hand-written validator requires a non-negative safe integer in
-  canonical decimal text.
-- **Bytes.** `put`'s argument, `get`'s result, and the leaves of `ContentValue`.
-- **Lists.** `ContentHash[]` and lists of content values.
-- **Maps with text keys.** `ContentMap`.
-- **A union, untagged in TypeScript.** `ContentValue` is told apart at run time by
-  `instanceof Uint8Array` and `Array.isArray`.
-- **Recursion.** `ContentValue` and `ContentMap` refer to each other.
-- **A finite set of text values.** `ContentRepresentation`.
-- **A text pattern.** `ContentHash` must match `^sha256:[0-9a-f]{64}$`.
+| Family | Where |
+| --- | --- |
+| Integers | `check().objects`, a count. A hand-written validator requires a non-negative safe integer. |
+| Bytes | `put`'s argument, `get`'s result, the leaves of `ContentValue` |
+| Lists | `ContentHash[]`, lists of content values |
+| Maps with text keys | `ContentMap` |
+| A disjoint union | `ContentValue`, told apart at run time by `instanceof Uint8Array` and `Array.isArray` |
+| Recursion | `ContentValue` and `ContentMap` refer to each other |
+| A finite set of text values | `ContentRepresentation` |
+| Text with a domain predicate | `ContentHash` must match `^sha256:[0-9a-f]{64}$` |
 
 Content's semantics include **sharing**. Its snapshot function "preserve[s]
-shared DAGs" and copies bytes. Its own conversion of a content value says:
+shared DAGs" and copies bytes. Its own hand-written converter says:
 
 ```ts
-// packages/api/src/content-value-wire.ts (comment and core of the encoder)
+// services/content packages/api/src/content-value-wire.ts (comment)
 /**
  * A captured ContentValue as tagged wire values: `("bytes", atom)`, `("list", (value...))`
  * or `("map", ((key, value)...))`. Each subvalue is converted once and shared wherever it
  * recurs, so a compact DAG stays compact and the runtime can bound its occurrences.
  */
-const memo = new Map<object, Tuple>();
-// ...
-result = tuple([tags.map, tuple(Object.keys(map).map(key => tuple([textAtom(key), visit(map[key]!)])))]);
 ```
 
-Its decoder enforces a depth limit, a step limit and a byte limit. It rejects
-cycles ("Cyclic wire value"), non-atom map keys, duplicate map keys and unknown
-tags. Then it snapshots the result. Two observations:
+Its decoder enforces depth, step and byte limits. It rejects cycles, duplicate
+map keys and unknown tags. Its keys are bare UTF-8 atoms in JavaScript
+enumeration order, so its form is not canonical ontos data either. A horos
+contract would replace these hand-written converters with declared types.
 
-- The encoder takes map keys in JavaScript enumeration order, which is not a
-  canonical order. Content's separate storage format sorts keys by UTF-8 bytes.
-- `ContentHash`, `ContentLink` and `ContentValue` are hand-written "semantic
-  codecs" today. A horos contract would replace them with declared types.
+### 3.8 The other three services
 
-### 3.7 The other three services
+Type names are from each service's current main branch:
 
-The same families recur. Type names are from each service's current main
-branch:
-
-| Service | Shapes | Families |
+| Service | Shapes | Families beyond Content's |
 | --- | --- | --- |
-| Cubes | Validation reports with five counts; `CubeSelector = readonly (string \| number)[]`; a cube graph whose content is `ContentValue \| ContentLink`; annotations that contain `ContentHash \| CubeAnnotation` | integers, a text-or-integer union, recursion, unions of records |
-| Drafts | `revision: number`; `ContentHash \| null`; outcomes such as `{ kind: 'created'; draft: Draft } \| { kind: 'published'; publication: KnownPublication }`; optional `pending` | integers, nullable fields, unions tagged by an exact text field, optional fields, an intersection over a union |
-| Pointers | `PointerJson = null \| boolean \| number \| string \| readonly PointerJson[] \| PointerMetadata`, inside a hand-written codec; nullable unions; tagged outcome unions | recursive JSON-like data with arbitrary finite numbers, nullable fields, tagged unions |
+| Cubes | `CubeSelector = readonly (string \| number)[]`; a graph whose content is `ContentValue \| ContentLink`; annotations containing `ContentHash \| CubeAnnotation` | a text-or-integer union; unions of records |
+| Drafts | `revision: number`; `ContentHash \| null`; outcomes `{ kind: 'created'; draft: Draft } \| { kind: 'published'; publication: KnownPublication } \| ...`; `pending?: {...}`; an intersection over a union | nullable fields; unions tagged by an exact-text field; optional fields; intersection |
+| Pointers | `PointerJson = null \| boolean \| number \| string \| readonly PointerJson[] \| PointerMetadata`, inside a hand-written converter | recursive JSON-like data with **arbitrary finite numbers**, which horos cannot express (section 3.2) |
 
-### 3.8 Today's generic conversion, which this work replaces
+## 4. Two values through every layer
 
-The platform's service library converts structural TypeScript values with one
-run-time interpreter (`@bitspark/service-api` 0.3.2, `dataAdapter`). Its choices
-were made without a type language, and are listed so the expert can see what
-not to inherit:
+### 4.1 Content's recursive value
 
-- **Numbers** are any finite JavaScript number, encoded as the text of
-  `String(n)`, with `-0` written `"-0"`. There is no integer kind and no
-  `bigint` support.
-- **Booleans** are the atoms `"true"` and `"false"`; `null` is an empty atom.
-- **Records** are entries sorted by JavaScript's default string sort, which is
-  UTF-16 code-unit order and differs from UTF-8 byte order for some characters.
-  An absent optional field and a field present as `undefined` encode
-  differently.
-- **Unions** are encoded as `(alternative index, body)`. The encoder tries each
-  alternative in order and keeps the first that succeeds (first-success
-  matching).
-- **Shared subvalues** are converted once per occurrence, so sharing is lost.
-- **Cycles** are rejected, and a whole call has one budget: 100,000 nodes,
-  depth 256, 16 MiB.
-
-None of these forms is canonical horos data. Research 0014 decided that message
-values become canonical ontos data that conform to the horos type.
-
-## 4. One value through every layer
-
-`ContentValue` exercises most of the families at once. Suppose Content declares
-it in horos. Recursion must be written with `rec` inside one expression
-(section 3.2). In the descriptor notation of section 3.2, with `H` for a
-descriptor constructor and `A` for an atom:
+Content would declare `ContentValue` in horos with `rec` inside one expression
+(section 3.2):
 
 ```text
 ContentValue = H("rec", A("value"),
@@ -719,10 +670,9 @@ ContentValue = H("rec", A("value"),
     H("map-of", H("scalar", A("utf8-text")), H("ref", A("value")))))
 ```
 
-This union happens to be structurally disjoint. A bare atom, a tuple labelled
-`list` and a tuple labelled `map` never coincide.
-
-**The canonical value** of the content value `{"a": bytes 01, "b": []}`:
+This union is structurally disjoint: a bare atom, a tuple labelled `list` and a
+tuple labelled `map` never coincide. The canonical value of
+`{"a": bytes 01, "b": []}`:
 
 ```text
 Tuple(Atom("map"),
@@ -730,130 +680,159 @@ Tuple(Atom("map"),
   Tuple(Tuple(Atom("utf8-text"), Atom("b")), Tuple(Atom("list"))))
 ```
 
-**A candidate TypeScript type**:
+A candidate TypeScript type:
 
 ```ts
 export type ContentValue = Uint8Array | readonly ContentValue[] | { readonly [key: string]: ContentValue };
 ```
 
 A `ReadonlyMap<string, ContentValue>` would serve equally well for the third
-alternative.
-
-**What conversion needs to know, and so what the plan must carry**, beyond the
-type itself:
+alternative. What conversion needs beyond the type, and so what the plan must
+carry:
 
 | Decision | For this value | Today decided by |
 | --- | --- | --- |
 | Recursion | The `rec` binder `value` becomes the native declaration `ContentValue`. An inner `rec` would need a fresh native name. | nobody (refused) |
 | Union, decoding | atom → alternative 0, `list` tuple → 1, `map` tuple → 2 | nobody |
 | Union, encoding | `instanceof Uint8Array` → 0, `Array.isArray` → 1, otherwise → 2. The order matters, since a `Uint8Array` is also an object. | nobody |
-| Bytes | Copy on encoding, so that later mutation cannot change the message; produce a fresh buffer on decoding | nobody |
+| Bytes | Encoding copies, which ontos's atom constructor already does. Decoding yields a fresh buffer. | ontos (copying) |
+| Text keys | Unpaired surrogates in a JavaScript key must be refused | nobody |
 | Map form | Index-signature object or `Map`. Objects have hazards such as the key `"__proto__"`. | nobody |
-| Map order | Encoding sorts by the codec order of the encoded keys, not by JavaScript order. Decoding rejects disorder and duplicates. | ontos enforces decoding |
-| Sharing | A buffer referenced twice: encode once and share? Is sharing preserved on decoding? | Content's own codec |
-| Cycles | A cyclic native object graph must be refused on encoding | Content's own codec |
-| Limits | Depth, node and byte limits, counted over the expanded tree or the shared graph | Content's own codec |
+| Map order | Encoding sorts by the codec order of the encoded keys. Decoding must check order and duplicates through the ontos data recognizer or horos conformance. | nobody |
+| Sharing | A buffer referenced twice: encode once and share? Preserve sharing on decoding? | Content's own converter |
+| Cycles | A cyclic native object graph must be refused on encoding | Content's own converter |
+| Limits | Depth, node and byte limits over the expanded tree or the shared graph | Content's own converter |
 
-**The integer in `check()`'s result** raises a separate choice. The horos type
-is `scalar(int)`, which is unbounded. The native candidates are `bigint`, which
-is lossless, and `number`, which is ergonomic but exact only up to 2^53 − 1.
-Content's meaning is "a non-negative count", which horos cannot express.
+### 4.2 A generic outcome with an optional nullable field, and an integer
+
+Suppose a horos version of Drafts' outcome, applied inside the generic `Page`:
+
+```text
+Outcome = H("union",
+  H("record", A("closed"),
+    H("field", T("kind"),  A("req"), H("exact", T("created"))),
+    H("field", T("draft"), A("req"), D("local", T("Draft")))),
+  H("record", A("closed"),
+    H("field", T("kind"),    A("req"), H("exact", T("unknown"))),
+    H("field", T("pending"), A("opt"), H("union", D("local", T("Pending")), H("exact", Tuple(A("null")))))))
+
+Outcomes = D("apply", D("local", T("Page")), L(D("local", T("Outcome"))))
+```
+
+Here a family must decide:
+
+- **Discrimination.** It can come from the `kind` field, whose exact text values
+  differ between the alternatives. Recognizing that is a judgment about horos
+  membership.
+- **Three states for `pending`.** It can be absent, present as null, or present
+  as a value. In TypeScript that is `pending?: Pending | null` under
+  `exactOptionalPropertyTypes`. In Go, a presence wrapper around a nullable
+  form. The plan must say which is which.
+- **Composition.** Every rule must hold after `Page`'s parameter is substituted.
+  Mapping `Page<Outcome>` must agree with substituting the mapped `Outcome` into
+  the mapped `Page`.
+
+Two contrasting cases:
+
+- **An overlapping union.** `union(list-of(scalar(int)), list-of(scalar(utf8-text)))`
+  admits `[]` in both alternatives. Native `bigint[] | string[]` cannot say
+  which alternative an empty array came from, so decoding cannot pick a branch
+  and `E(D(v))` has no defined branch.
+- **A count.** Content's `{ objects: int }`. The horos type is unbounded. As a
+  `bigint`, every value converts. As a `number`, encoding is exact only up to
+  2^53 − 1, and decoding must refuse larger values. Content's own meaning,
+  "non-negative", is a domain predicate (section 2.3) that horos cannot
+  express.
 
 ## 5. Constraints
 
-- **horos semantics are given.**
-  - Unions are untagged set membership.
-  - Integers are unbounded, and ranges are deliberately left to logos.
-  - Named declaration cycles are rejected.
-
-  horos changes may be recommended; its maintainers decide.
+- **horos semantics are given.** Unions are untagged set membership. Integers are
+  unbounded, with ranges deliberately left to logos. Named declaration cycles
+  are rejected. horos has no floating-point or decimal type and no general text
+  pattern. horos changes may be recommended; its maintainers decide.
 - **Message values are canonical ontos data conforming to the horos type**
-  (research 0014). There is no other message form.
+  (0014). There is no other message form.
 - **No silent narrowing.** A family must not quietly lose information or refuse
   valid values it was not declared to refuse. A refusal is an explicit,
   classified failure.
-- **Same mechanism for everyone** (AC-04). The structural profile and library or
-  domain mappings contribute through one public mechanism. The kernel learns no
-  family by name. There is no catalogue of families in shared code.
-- **The plan** consists of typed references and target-owned expressions, not a
-  universal schema or a new type algebra. It is serialized and versioned, because
-  the TypeScript backend runs in another process (Node.js).
-- **bittype's native syntax covers types only**, and bittype does not own runtime
-  adapters (0014). It owns the plan.
-- **Targets.** TypeScript bindings come first and Go bindings next. Rust and C++
-  types must remain possible. C++ has no ontos implementation, and Rust's ontos
-  integers stop at `i128`.
+- **One mechanism** (AC-04). The structural profile and exact mappings
+  contribute through the same public mechanism. The planner learns no family by
+  name, and shared code holds no catalogue of families.
+- **The plan** is typed references and target-owned expressions, serialized and
+  versioned (section 2.3).
+- **bittype's native syntax covers types only**, and bittype owns no run-time
+  code today.
+- **Targets.** TypeScript first, then Go. Rust and C++ types must remain
+  possible. C++ has no ontos implementation, and Rust's ontos integers stop at
+  `i128`.
 - **Compatibility is not a constraint.** Today's native API, message forms and
-  bytes may all change.
-- **The capture and lifetime contract is pending** (section 2.5).
+  bytes may all change: the services share one installation, and no external
+  client depends on them.
+- **Out of scope:** JSON presentation, endpoint references (`wire<E>`), and
+  Pointers' floating-point numbers, which need a horos or domain decision first.
 
 ## 6. What we have considered
 
 None of this is decided.
 
-### 6.1 One contribution per family and target
+### 6.1 The unit of a family, and where conversion decisions live
 
-A family contributes, per target, one unit with three parts:
-
-- a **native facet**: the binding descriptions and recipes it already supplies;
-- a **value facet**: a reference to the run-time conversion it requires;
+A family would contribute, per target, one unit with three parts:
+- a **native facet**: the use rules and recipes it already supplies;
+- a **value facet**: a reference to the run-time conversion;
 - the **plan entries** it records for each use.
 
-Our present leaning is that the plan entries are the **arguments of the value
-facet**. For a record they would be the field names, native member names and
-absence rules. For a union, the alternatives and their discrimination. For a
-map, the key representation and the native map form. Their types would be owned
-by the family that defines them. The plan would then consist of:
-- a generic envelope: the selected contribution, its target, the source use, its
-  children and the version;
-- per entry, a family-owned payload.
+Three ways to carry the conversion decisions:
 
-The backend composes static calls of each family's run-time factory with these
-arguments. Alternatives we considered:
+| Option | How it works | Strengths | Costs |
+| --- | --- | --- | --- |
+| A. Factory arguments | Each plan entry names the family's run-time factory and gives it typed arguments the family defines: field names and absence rules for a record, alternatives and discrimination for a union. The backend composes static factory calls. | Each family owns its payload; the backend stays generic; adding a family adds a factory and a payload type. | Every family needs a payload schema readable in TypeScript, and a run-time factory per target. The plan's schema is spread across families. |
+| B. Target expressions | The plan carries target-owned expressions for access, construction and discrimination, which the backend writes into generated code. | Little run-time code, and fast generated code. | Risks a small code language inside the plan. bittype's native syntax covers types only. |
+| C. Shared interpreter | A run-time interpreter executes the plan's decisions. | One implementation per target. | It must stay an executor (0014), and its input is A's payloads again. |
 
-- **The plan records target expressions for access and construction**, which the
-  backend pastes into generated code. This is flexible, but it risks becoming a
-  small code language inside the plan.
-- **A shared structural interpreter** reads the plan at run time. 0014 allows it
-  only if it executes the plan's decisions rather than choosing rules.
-
-We are unsure who implements a structural family's run-time factory in
-TypeScript. Candidates:
-- the representation profile's owner, which today is bittype, but bittype owns no
-  run-time code;
-- the TypeScript backend's owner, the service library;
-- a separate small run-time package per profile.
+Our present leaning is A, possibly with C as one implementation of A's
+factories. We are unsure who implements the structural families' run-time
+factories in TypeScript. bittype owns the structural profile's decisions but no
+run-time code. The service library owns the backend. A separate small run-time
+package per profile is a third possibility. The service library has not yet been
+asked.
 
 ### 6.2 Integers
 
-The options per target are:
-- lossless types: TypeScript `bigint`, Go `*big.Int`, a Rust big-integer crate,
-  a C++ library;
-- bounded native types: `number`, `int64`, `i128`.
+Three options:
 
-Our leaning:
-- **The structural profile.** It uses only lossless types.
-- **Bounded types.** A bounded type may appear only through an exact mapping
-  owned by a library or domain that declares the narrower domain, for example a
-  `Count` type that Content declares. Its decoding explicitly refuses values
-  outside that domain.
+| Option | Native types | Behaviour |
+| --- | --- | --- |
+| a. Lossless structural profile | TypeScript `bigint`, Go `*big.Int`, a Rust or C++ big-integer library | Every horos integer converts. |
+| b. A declared narrowing profile | `number`, `int64`, `i128`, under a separately named profile such as `bounded-integers/1` | Decoding explicitly refuses values outside the native domain. A consumer chooses the profile knowingly. |
+| c. Exact domain mappings | A domain library declares a type such as `Count` with its native type and its value domain | The domain's predicate decides the native type. Others stay lossless. |
+
+bittype's current position, in its design notes: "Unbounded integers cannot
+silently become bounded integers, absence cannot collapse into a zero value, and
+recursive type indirection cannot be guessed by the kernel." Our present leaning
+is a with c. Option b honours "no silent narrowing" too, since the narrowing is
+declared, but it narrows every integer in a contract at once.
 
 Open points:
-- **Where the domain is declared, since horos has no ranges.** It could be a
-  logos claim, a domain library's own declaration, or a horos extension.
-- **Ergonomics.** Whether `bigint` is acceptable at the TypeScript surface.
-- **Mutability.** A Go `big.Int` is mutable, which touches capture.
+- **Where a narrower value domain is declared**, since horos has no ranges: a
+  logos claim, the domain library (0014 already gives domain predicates to the
+  domain library), or a horos extension.
+- **Whether `bigint` is acceptable** at the TypeScript surface.
+- **Mutability.** Go's `big.Int` is mutable, which bears on message capture.
 
-### 6.3 Bytes and atoms
+### 6.3 Bytes, text and refinements
 
-- **The type.** `atom()` becomes `Uint8Array`, `[]byte`, `Vec<u8>` or
-  `std::vector<std::uint8_t>`.
-- **Copying.** Values are copied on encoding and on decoding.
-- **Refinements.** A length bound, an exact value or a finite set of byte
-  strings has no native type form. Our leaning is to check refinements by horos
-  conformance at the boundary, not to model them natively. A finite set of
-  *text* values, such as `ContentRepresentation`, can become a native literal
-  union.
+- **Bytes.** `atom()` becomes `Uint8Array`, `[]byte`, `Vec<u8>` or
+  `std::vector<std::uint8_t>`. Encoding into ontos atoms copies. Decoding must
+  hand out a buffer the caller may own.
+- **Wider native types.** A length range, an exact value or a finite set of byte
+  strings has no native type form, and neither has a domain text predicate such
+  as `ContentHash`'s pattern. Here the native type is wider than the horos type.
+  Our leaning is to check horos refinements by conformance at the boundary, and
+  domain predicates by the domain library (section 2.3). A finite set of text
+  values, such as `ContentRepresentation`, can become a native literal union.
+- **Text.** JavaScript strings may hold unpaired surrogates. Encoding must refuse
+  them.
 
 ### 6.4 Tuples, sequences, labelled compounds and `any`
 
@@ -867,15 +846,14 @@ Open points:
 
 ### 6.5 Maps and sets
 
-- **Text keys.** Maps keyed by text, the common case, become a native map or an
+- **Text keys.** These, the common case, become a native map or an
   index-signature object.
 - **Key equality.** Native maps compare keys by native equality. That is correct
-  only for key types whose native equality is canonical equality: text,
-  booleans, and `bigint` in TypeScript. Byte strings and records as keys are not
-  (JavaScript compares objects by reference; Go cannot use `[]byte` as a key).
-  Our leaning:
-  - such keys need a library-owned canonical map keyed by encoded bytes;
-  - otherwise they are refused for bindings.
+  only where native equality coincides with canonical equality: text, booleans,
+  and `bigint` in TypeScript. Byte strings and records as keys do not
+  (JavaScript compares objects by reference, and Go cannot key a map by
+  `[]byte`). Our leaning: a library-owned canonical map keyed by encoded bytes,
+  or refusal for bindings.
 - **Order.** Encoding always sorts by the codec order of the encoded keys.
 
 ### 6.6 Unions
@@ -883,66 +861,64 @@ Open points:
 Our leaning:
 - **When to bind.** Bind a union only when its alternatives are provably
   distinguishable on both sides:
-  - on the canonical side, by a structural test that picks exactly one
+  - on the canonical side, by a structural test that selects exactly one
     alternative;
   - on the native side, by a test over the native representations.
 
   First-success matching is rejected.
-- **Who judges.** Distinguishability on the canonical side is a judgment about
-  horos membership. It belongs to horos's interpretation, as a source judgment,
-  not to the kernel or a target.
-- **Common tags we would recognize:**
-  - different labels of `compound`;
+- **Easy cases:**
+  - different `compound` labels;
   - different canonical forms (atom, list, map);
-  - an exact-text field shared by all alternatives, as in Drafts' `kind`;
+  - an exact-text field shared by all alternatives, as in section 4.2;
   - `union(T, exact(null()))` where T excludes null.
 - **Overlapping unions** are refused for bindings unless a library-owned
   representation supplies the missing information (0014).
 
-We are unsure how far a general disjointness judgment can go. It is easy for the
-cases above and hard in general (`and`, `not`, `any`, open records).
+Who judges canonical distinguishability is open:
+- the horos project, since it is a fact about membership;
+- bittype's horos source integration, which already judges uses for the planner;
+- each union family.
+
+The judgment is easy for the cases above and hard in general (`and`, `not`,
+`any`, open records, and Drafts' intersection over a union).
 
 ### 6.7 Absence, null and open records
 
 - **Optional fields** stay as they are (section 3.4).
-- **Nullable fields** are `union(T, exact(null()))`, whose native form is
-  `T | null`, `*T`, `Option<T>` or similar. They must stay distinct from absence,
-  so an optional nullable field has three states.
+- **Nullable fields.** `union(T, exact(null()))` becomes `T | null`, `*T`,
+  `Option<T>` or similar. It stays distinct from absence, so an optional nullable
+  field has three states (section 4.2).
 - **Open records** carry extra fields of any value. A native form needs a place
-  for them: a separate map member, or refusal. Our leaning is to refuse open
+  for them, a separate map member, or refusal. Our leaning is to refuse open
   records for bindings until a representation is chosen deliberately.
 
-### 6.8 Recursion
+### 6.8 Recursion and sharing
 
 - **Naming.** Each `rec` binder becomes a named native declaration. A binder that
-  is a declaration's whole body takes the declaration's name. Inner binders need
-  a naming rule, and the naming must avoid collisions.
-- **Indirection** is chosen per recursive edge by the target's profile:
+  forms a declaration's whole body takes the declaration's name. Inner binders
+  need a naming rule that avoids collisions.
+- **Indirection** is chosen per recursive edge by the target's profile, and the
+  plan records each edge and its indirection:
   - none in TypeScript;
   - Go: a pointer, or none through a slice;
   - Rust: `Box`, or none through `Vec`;
   - C++: `std::unique_ptr`, or `std::vector` where an incomplete element type is
     allowed.
+- **Cycles and sharing.** Native values may be cyclic or shared; canonical values
+  are trees. Encoding refuses cycles. Sharing is unobservable in ontos, so
+  `D(E(n)) ≈ n` could ignore it. But Content relies on DAG compactness for its
+  resource bounds. Two questions are open:
+  - whether sharing is part of a family's contract or only an implementation
+    property;
+  - whether limits count the expanded tree or the shared graph.
 
-  The plan records each recursive edge and its indirection.
-- **Cycles and sharing.**
-  - Native values may be cyclic or shared, and canonical values are trees.
-    Encoding refuses cycles.
-  - Sharing is unobservable in ontos, so the round-trip law `D(E(n)) ≈ n` would
-    ignore sharing.
-  - Content, however, relies on DAG compactness for resource bounds.
-
-  Whether sharing is part of a family's contract or an implementation property is
-  open. The same goes for whether limits count the expanded tree or the shared
-  graph.
-
-### 6.9 Qualification
+### 6.9 Qualification and order
 
 Each family and target is qualified for bindings separately from types:
-- by the laws of section 2.3, with each law shown failing when its rule is broken
-  on purpose;
-- by the 0014 completeness test, in which a test backend implements each family
-  from the plan alone.
+- by the laws of section 2.3, each shown failing when its rule is broken on
+  purpose;
+- by the completeness test, in which a test backend implements each family from
+  the plan, the source semantics and the contributions alone.
 
 TypeScript comes first. Families arrive in the order Content needs them:
 1. integers;
@@ -951,48 +927,58 @@ TypeScript comes first. Families arrive in the order Content needs them:
 4. disjoint unions;
 5. recursion.
 
-### 6.10 Claims we want tested
+### 6.10 Hypotheses we want attacked
 
-1. "A structural profile should never narrow a domain. Only an exact library or
-   domain mapping that declares the narrower domain may."
-2. "Whether a union's alternatives are distinguishable is a source judgment
-   (horos), not a target judgment."
-3. "The plan is the selected contributions plus their contribution-owned
-   arguments, and nothing else."
-4. "Sharing is never part of a family's semantic contract."
+1. "A structural profile never narrows a value domain; only a declared profile or
+   an exact domain mapping may."
+2. "Whether a union's alternatives are distinguishable is a judgment about horos
+   membership, owned on the source side, not by a target."
+3. "Beyond the source semantics, the plan needs only the selected contributions
+   and their contribution-owned arguments."
+4. "Sharing is never part of a family's semantic contract." This is in tension
+   with Content's reliance on compact shared graphs.
 
 ## 7. Questions for the expert
 
-1. **The unit of a family.** What should one representation family contribute,
-   as a unit, so that its native type, its plan entries and its conversion are
-   defined once and always agree? How would you shape the plan entries, such as
-   absence rules, union discrimination, map key handling and recursive
-   references? They must let a backend in another process carry the decisions
-   out without re-deriving a rule, while the plan stays typed references and
-   target-owned expressions rather than a universal schema.
+For each question, principles and patterns from comparable systems, including
+what failed, are especially welcome. Such systems include code generators for
+schema and serialization languages. Section 6.10 lists four hypotheses: where an
+answer bears on one, please say where it holds and where it breaks.
 
-2. **Where native and canonical domains differ.** Integers are the clearest case:
-   horos integers are unbounded and horos has no ranges by design, while
-   ergonomic native integers are bounded. Map and set keys are another: ontos
-   orders keys by their canonical encoding, and native maps use native equality
-   and order. How should a family decide between a faithful representation and
-   an ergonomic narrower one? Who may declare a narrower domain, and how should
-   conversion treat a valid value outside it?
+1. **The unit of a family, and its owners.** What should one representation
+   family contribute, per target, so that its native type, plan entries and
+   conversion are defined once, always agree, and can be qualified for bindings
+   separately from types? Our leaning (6.1) is that plan entries are typed
+   arguments of a family-owned run-time factory. The alternatives are target
+   expressions carried in the plan, or a shared interpreter. bittype owns the
+   structural profile's decisions but no run-time code. Who should own the
+   structural families' run-time factories?
 
-3. **Unions.** horos unions are untagged and their alternatives often overlap.
-   When can a union be bound to a native union, and which component should own
-   the judgment that its alternatives can be told apart, on the canonical side
-   and on the native side? How would you treat unions that are only partly
-   distinguishable?
+2. **Where native and canonical domains differ.** A native type can hold less
+   than the horos type: `number` for an unbounded integer, or a native map whose
+   key equality is not canonical equality. It can also hold more: `Uint8Array`
+   for a length-bounded atom, `string` for text with a domain predicate. Our
+   leaning (6.2, 6.3) is that the structural profile never narrows, and that
+   wider native types are checked at the boundary. How would you approach both
+   directions, and where should a narrower value domain be declared, given that
+   horos deliberately has no ranges?
 
-4. **Recursion and sharing.** horos recursion is anonymous and values are finite
-   trees that may be shared internally. Native targets need named recursive
-   declarations, sometimes explicit indirection, and their values can be cyclic
-   or shared. How would you divide naming, indirection, cycle refusal, sharing
-   and resource accounting between the source, the family and the backend?
+3. **Unions.** horos unions are untagged set membership, and their alternatives
+   often overlap (3.2). How would you decide when a union can be bound to a
+   native union, and where should the judgment that its alternatives are
+   distinguishable live? It is easy for distinct compound labels, distinct
+   canonical forms, a shared exact-text field or `T | null`, and hard with
+   `and`, `not`, `any` and open records. How far can such a judgment usefully go?
 
-5. **Open.** Looking at the whole design, which choices here are most likely to
-   force a refactor later, and what would you do differently? Patterns from
-   comparable systems are especially welcome: code generators for schema
-   languages with unbounded integers, untagged unions or canonical map order,
-   and what worked or failed for them.
+4. **Recursion and native identity.** horos recursion is anonymous, and
+   canonical values are immutable finite trees whose internal sharing cannot be
+   observed. Native targets need named declarations and sometimes indirection,
+   and native values can be mutated, shared or cyclic, while Content relies on
+   compact shared graphs for its resource bounds. How would you divide naming,
+   indirection, cycle refusal, sharing and limit accounting between the source
+   side, each family and the binding backend? Please do not presuppose the
+   pending capture contract.
+
+5. **Open.** What should we know that these questions do not ask? In particular,
+   which choices here are most likely to force a refactor as more families and
+   the Go backend arrive, and what would you do instead?
