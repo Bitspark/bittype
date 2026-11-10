@@ -159,6 +159,9 @@ description selecting its package export. The kernel and target remain unchanged
 [Cell and reversed Pair qualification](../integration/go/generation_planning_test.go)
 
 Go's target configuration supplies Package, and C++'s supplies Namespace.
+Both are recorded as pending placement instances in
+[ACX-004](architecture-cases/0004-generation-file-syntax.md): the package or
+namespace of a placed declaration belongs to the consumer's placement.
 Configuration is stable for a registered target. There is no provider opening
 that hands a target builder to a mapping, no procedural operation interface and
 no compatibility alias.
