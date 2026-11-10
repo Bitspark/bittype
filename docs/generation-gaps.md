@@ -21,7 +21,7 @@ before construction. The native constructor receives a closed program with no
 source reader, mapping callbacks or source-substitution templates. TypeScript
 Files consumes its checked output and verifies bindings after placement. These
 delivered boundaries remain distinct from the open item GEN-02.
-The remaining Rust/C++ Files ownership defects retain their own
+The remaining Rust, C++ and Go Files ownership defects retain their own
 [ACX-004 record](architecture-cases/0004-generation-file-syntax.md).
 
 ## GEN-01

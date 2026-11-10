@@ -5,6 +5,8 @@ TypeScript's [generated Files handoff](typescript-type-imports.md) is implemente
 Go, Rust and C++ Files formatters and their concrete placement APIs are not.
 Rust currently chooses public visibility and C++ emits includes during generation;
 those ownership defects remain open in [ACX-004](architecture-cases/0004-generation-file-syntax.md).
+Go's package clause and C++'s namespace are fixed by target configuration during
+generation; the same record lists them as pending instances.
 
 ## Inputs and ownership
 

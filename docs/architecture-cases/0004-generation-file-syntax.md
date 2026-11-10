@@ -1,6 +1,6 @@
 # bittype/ACX-004 — Generation emits file syntax before placement
 
-**TypeScript corrected on 8 November 2026. The C++ and Rust cases remain open.** The [generation/Files decision](../source.md#from-generated-declarations-to-files)
+**TypeScript corrected on 8 November 2026. The C++, Rust and Go cases remain open.** The [generation/Files decision](../source.md#from-generated-declarations-to-files)
 assigns concrete import and export syntax to the language's Files formatter.
 
 **Original behavior, 7 November.** The Cell mapping correctly requests the public type
@@ -43,5 +43,7 @@ instead of being rebound or silently exported. The [planner](../generation-plann
 describes this qualification.
 
 **Implemented TypeScript correction.** Generation retains exposed sites and emitted external use occurrences. Files allocates imports and aliases after placement and checks the compiler's named exports and each relocated destination. The qualification uses one output with a local Cell and an external use of Cell. With Person in a second unit, the relative import is present. Moving Person alongside Page removes its relative import and retains the package import with the alias `Cell_1`. Missing or inaccessible destinations fail publication. [Output](../../contracts/generation/go/output.go) · [Generated Files input](../../format/files/typescript/provider/go/generated.go) · [Placement tests](../../integration/go/typescript_placement_test.go)
+
+**Further instances identified on 10 November 2026. Pending; no correction is implemented.** The [Go target](https://github.com/Bitspark/bittype/blob/33a3287/transform/syntax/golang/target/go/provider.go#L79) writes one package clause, taken from target configuration, on the single file node it constructs. The [C++ target](https://github.com/Bitspark/bittype/blob/33a3287/transform/syntax/cpp/target/go/provider.go#L159) wraps every declaration in one configured namespace. The [placement proposal](../native-file-placement.md#required-checks-before-claiming-support) takes the native scope of each emitted declaration from the consumer's placement. It requires one generated output to be placed both across packages or namespaces and co-located. That is impossible while generation fixes a single package or namespace, and a Files stage that overwrote it would repeat the double duty described above. These are the same AC-02 and AC-06 failures as the import and visibility cases. [Kernel composition](../kernel-composition.md) documents Package and Namespace as target configuration; that describes the present behaviour, not the corrected ownership. **Required correction:** generation carries no package or namespace choice, and Go Files and C++ Files read it from placement. Tracked in [#161](https://github.com/Bitspark/bittype/issues/161) and [#160](https://github.com/Bitspark/bittype/issues/160), which record the decision and its reasons.
 
 The C++ header directives and Rust module visibility described above require separate target and Files work. The declarative planner and mapping redesign are implemented; they do not resolve these separate Files ownership cases.
