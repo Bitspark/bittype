@@ -16,6 +16,7 @@ rules do not transfer ownership of these cases to the platform repository.
 | [bittype/ACX-006: Common semantic traversal delegated to source integrations](0006-generation-source-traversal.md) | Corrected and independently verified: #191 was rejected on 8 November 2026; #192, correcting exact evidence and selector identity, was verified at `6132170` on 9 November 2026 | AC-02, AC-06, AC-01, AC-05, AC-07, AC-09 |
 | [bittype/ACX-007: Matrix dependencies keyed by display names](0007-matrix-contract-identity.md) | Corrected, including unnamed argument identity | AC-05, AC-07 |
 | [bittype/ACX-008: The shared horos mapping policy admits one profile](0008-structural-profile-gate.md) | Identified; correction pending | AC-03 |
+| [bittype/ACX-009: Package boundaries do not follow contributions](0009-package-boundaries.md) | Identified; correction pending. Three further candidates are not confirmed | AC-10, AC-07 |
 
 ACX-001 continues the same incident first recorded as
 [platform/ACX-001](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/0001-bittype-verification-composition.md).

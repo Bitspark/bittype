@@ -45,6 +45,21 @@ named part first, as its own change, and add missing coverage afterwards. Defer
 such a move only when its destination needs a huge effort, and record the
 deferral with its reason and trigger as an open violation.
 [AC-10](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-10).
+
+**Owner request, 11 November 2026:** check for packages whose parts "neither
+conceptually nor practically depend on each other", and for parts that call one
+another directly "instead of invoking the kernel", and enforce the result
+"through forbidden dependencies that we could check for and enforce". Read
+[package boundaries](docs/package-boundaries.md) before adding a package or an
+import between implementations. One contribution, meaning one thing a consumer
+registers or selects on its own, is one package. Identities live in vocabulary
+packages. Only a composition imports a contribution. Ask of every direct call
+whose answer the caller needs: its own, or the composition's. The rules are
+proposed and ordered in [#218](https://github.com/Bitspark/bittype/issues/218); the open findings are
+[bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md). The
+import check enforces boundaries that this reasoning has decided. It does not
+replace the reasoning, and a green run does not show that ownership is right.
+
 The [Horos/Go verification path](docs/verification.md#library-owned-verification-contributions)
 takes library-owned interpretations, mapping projections and laws. Preserve the
 captured subject, receiver authority, dependency policy and Logos outcome when
