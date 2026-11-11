@@ -3,6 +3,8 @@ package integration_test
 import (
 	"go/parser"
 	"go/token"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -146,6 +148,7 @@ func TestArchitectureEntriesOfAbsentPackagesPass(t *testing.T) {
 	// The same entries are checked once the package exists.
 	s.add("legacy/go", "trees/ast/go")
 	s.expect(t,
+		"unused external allowance: legacy/go may import example.org/model and does not",
 		"unused allowance: legacy/go may import check/syntax/x/provider/go and does not",
 		"unused provider exception: legacy/go does not import check/syntax/x/provider/go",
 	)
@@ -222,6 +225,32 @@ func TestArchitectureExternalDependencies(t *testing.T) {
 		"unclassified external production dependency: example.org/other",
 		"parse/syntax/x/provider/go must not import example.org/model",
 	)
+
+	// An external allowance that its package does not use fails.
+	s = providerSet()
+	s.spec.ExternalModels = []string{"example.org/model"}
+	s.packages["example.org/model"] = architecturePackage{Production: true}
+	s.spec.ExternalImports[syntheticChecker] = []string{"example.org/model"}
+	s.expect(t, "unused external allowance: check/syntax/x/provider/go may import example.org/model and does not")
+}
+
+// An import of a module package that the set does not hold fails: `go list`
+// leaves out a package whose every file the build constraints exclude, so
+// nothing would check it.
+func TestArchitectureImportOfUnlistedPackage(t *testing.T) {
+	s := providerSet()
+	s.imports(syntheticParser, "internal/elsewhere")
+	s.spec.Rules[syntheticParser] = append(s.spec.Rules[syntheticParser], "internal/elsewhere")
+	s.expect(t, "parse/syntax/x/provider/go imports internal/elsewhere, which the package set does not hold: no file of it is built here, so nothing checks it")
+
+	// A role does not admit it either, also where its path is one the role names.
+	s = layoutSet()
+	delete(s.packages, syntheticModule+"/transform/syntax/x/model/go")
+	s.expect(t,
+		"transform/syntax/x/target/go imports transform/syntax/x/model/go, which the package set does not hold: no file of it is built here, so nothing checks it",
+		"transform/syntax/y-to-x/mapping/record/go imports transform/syntax/x/model/go, which the package set does not hold: no file of it is built here, so nothing checks it",
+		"transform/syntax/y-to-x/mapping/text/go imports transform/syntax/x/model/go, which the package set does not hold: no file of it is built here, so nothing checks it",
+	)
 }
 
 func TestArchitectureMalformedProviderException(t *testing.T) {
@@ -279,10 +308,10 @@ var languageLayout = map[string][]string{
 
 	"resolve/files/<l>/provider/go": {"contracts/resolution/go", "contracts/semantic/go", "internal/<l>sem", "semantics/go", "semantics/<l>/go", "syntax/<l>/go", "trees/representation/go"},
 	"analyze/files/<l>/provider/go": {"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "semantics/<l>/go", "syntax/<l>/go"},
-	"analyze/files/<l>/queries/go":  {"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/<l>sem", "semantics/go", "semantics/<l>/go", "syntax/<l>/go", "trees/representation/go"},
+	"analyze/files/<l>/queries/go":  {"contracts/semantic/go", "internal/<l>sem", "semantics/<l>/go", "syntax/<l>/go", "trees/representation/go"},
 	"parse/files/<l>/provider/go": {
 		"contracts/analysis/go", "contracts/check/go", "contracts/parse/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go",
-		"semantics/go", "semantics/<l>/go", "source/go", "syntax/<l>/go", "trees/ast/go", "trees/cst/go", "trees/representation/go",
+		"semantics/go", "source/go", "syntax/<l>/go", "trees/ast/go", "trees/cst/go", "trees/representation/go",
 	},
 	"format/files/<l>/provider/go": {
 		"contracts/analysis/go", "contracts/check/go", "contracts/format/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go",
@@ -306,7 +335,7 @@ var languageLayout = map[string][]string{
 var pairImports = []string{
 	"contracts/generation/go", "syntax/<n>/go", "syntax/<s>/go", "transform/syntax/<n>/model/go",
 	"transform/syntax/<s>/mapping/declarations/go", "transform/syntax/<s>/mapping/go", "transform/syntax/<s>/mapping/naming/go",
-	"transform/syntax/<s>/mapping/pattern/go", "transform/syntax/<s>/source/go", "trees/ast/go", "trees/representation/go",
+	"transform/syntax/<s>/mapping/pattern/go", "transform/syntax/<s>/source/go", "trees/representation/go",
 }
 
 func replaced(values []string, replacer *strings.Replacer) []string {
@@ -588,6 +617,7 @@ func TestArchitectureFilesStageProviderRoles(t *testing.T) {
 		notAllowed(parser, resolver),
 		notAllowed(parser, "contracts/format/go"),
 		notAllowed(parser, "internal/xsem"),
+		notAllowed(parser, "semantics/x/go"),
 		notAllowed(formatter, "contracts/parse/go"),
 		notAllowed(formatter, "files/go"),
 		prohibited(formatter, "transform/syntax/y/symbol/go", languageY),
@@ -595,6 +625,8 @@ func TestArchitectureFilesStageProviderRoles(t *testing.T) {
 		prohibited(queries, resolver, queryWithoutResolver),
 		notAllowed(queries, analyzer),
 		notAllowed(queries, "trees/ast/go"),
+		notAllowed(queries, "contracts/analysis/go"),
+		notAllowed(queries, "semantics/go"),
 		prohibited(queries, "internal/ysem", languageY),
 	)
 
@@ -680,6 +712,7 @@ func TestArchitectureMappingContributionRole(t *testing.T) {
 		notAllowed(text, "internal/y"),
 		notAllowed(text, "parse/syntax/x/provider/go"),
 		notAllowed(text, "transform/syntax/shared/target/go"),
+		notAllowed(text, "trees/ast/go"),
 	)
 
 	s := layoutSet()
@@ -740,6 +773,103 @@ func TestArchitectureLanguageHelperRoles(t *testing.T) {
 	s.foundation("internal/common", "internal/grammar")
 	delete(s.packages, syntheticModule+"/internal/wsem")
 	delete(s.packages, syntheticModule+"/internal/x/deeper")
+	s.expect(t)
+}
+
+// drop removes one import from a declared package.
+func (s *syntheticSet) drop(path, dependency string) *syntheticSet {
+	p := s.packages[syntheticModule+"/"+path]
+	p.Imports = slices.DeleteFunc(slices.Clone(p.Imports), func(imported string) bool { return imported == syntheticModule+"/"+dependency })
+	s.packages[syntheticModule+"/"+path] = p
+	return s
+}
+
+// A role names its language's private part by the path: internal/<language>.
+// It grants that import only where the imported package is that language's
+// helper by its own role. A package cannot give itself the private part of
+// another owner by choosing a name.
+func TestArchitectureRoleGrantsOnlyALanguagesHelper(t *testing.T) {
+	// internal/xmodel is a private part of x with a hand entry. A vocabulary
+	// named after it would be allowed "internal/" + its own name.
+	s := layoutSet()
+	s.listed("internal/xmodel", "semantics/x/go")
+	s.add("semantics/xmodel/go", "semantics/go", "internal/xmodel")
+	s.expect(t, "semantics/xmodel/go must not import internal/xmodel: its role grants internal/<language> to a language's helper only, and internal/xmodel is not one")
+	// With an owner the private part is refused as another language's already.
+	s.spec.Owners["internal/xmodel"] = "x"
+	s.expect(t, refused("semantics/xmodel/go", "internal/xmodel", "it belongs to another language, x"))
+
+	// The same for every role that names a helper by the path. The importer
+	// brings other failures of its own; the one about the helper is among them.
+	for _, c := range []struct{ importer, helper, pattern string }{
+		{"check/syntax/xmodel/provider/go", "internal/xmodel", "internal/<language>"},
+		{"parse/syntax/xmodel/provider/go", "internal/xmodel", "internal/<language>"},
+		{"format/syntax/xmodel/provider/go", "internal/xmodel", "internal/<language>"},
+		{"transform/syntax/xmodel/symbol/go", "internal/xmodel", "internal/<language>"},
+		{"transform/syntax/xmodel/target/go", "internal/xmodel", "internal/<language>"},
+		{"resolve/files/xmo/provider/go", "internal/xmosem", "internal/<language>sem"},
+		{"analyze/files/xmo/queries/go", "internal/xmosem", "internal/<language>sem"},
+	} {
+		s = layoutSet()
+		s.listed(c.helper, "semantics/x/go")
+		s.add(c.importer, c.helper)
+		got := checkArchitecture(s.spec, s.packages)
+		want := c.importer + " must not import " + c.helper + ": its role grants " + c.pattern + " to a language's helper only, and " + c.helper + " is not one"
+		if !slices.Equal(got, []string{want}) {
+			t.Errorf("%s importing %s:\n got: %q\nwant: %q", c.importer, c.helper, got, want)
+		}
+	}
+
+	// Declaring the language too makes the private part that language's
+	// lexical helper, and the helper's prohibitions then bind it.
+	s = layoutSet()
+	s.listed("internal/xmodel", "contracts/semantic/go")
+	s.add("syntax/xmodel/go")
+	s.add("semantics/xmodel/go", "semantics/go", "internal/xmodel")
+	s.expect(t, refused("internal/xmodel", "contracts/semantic/go", noStage))
+
+	// A foundation helper of the same name as a language is not that
+	// language's helper either.
+	s = layoutSet()
+	s.add("syntax/grammar/go")
+	s.add("semantics/grammar/go", "semantics/go", "internal/grammar")
+	s.expect(t, "semantics/grammar/go must not import internal/grammar: its role grants internal/<language> to a language's helper only, and internal/grammar is not one")
+}
+
+// A role is never wider than what its packages use together: each import it
+// permits must be imported by at least one package that the role classifies.
+func TestArchitectureUnusedRoleAllowance(t *testing.T) {
+	const pattern = "trees/cst/go"
+	s := layoutSet().drop("format/syntax/x/provider/go", pattern)
+	s.expect(t)
+	s.drop("format/syntax/y/provider/go", pattern)
+	s.expect(t, "unused role allowance: no package of format/syntax/<language>/provider/go imports trees/cst/go")
+
+	// The allowance is one across languages: a language's own package counts.
+	s = layoutSet().drop("check/syntax/x/provider/go", "internal/x")
+	s.expect(t)
+	s.drop("check/syntax/y/provider/go", "internal/y")
+	s.expect(t, "unused role allowance: no package of check/syntax/<language>/provider/go imports internal/<language>")
+
+	// A package with a hand entry is checked by its entry and does not count.
+	s = layoutSet().drop("check/syntax/x/provider/go", "internal/x")
+	s.spec.Rules["check/syntax/y/provider/go"] = []string{"contracts/check/go", "contracts/text/go", "internal/y", "internal/grammar", "internal/tree", "syntax/y/go", "trees/ast/go"}
+	s.expect(t, "unused role allowance: no package of check/syntax/<language>/provider/go imports internal/<language>")
+
+	// A shape that no package has is not said to be unused.
+	s = layoutSet()
+	for _, language := range []string{"x", "y"} {
+		delete(s.packages, syntheticModule+"/analyze/files/"+language+"/queries/go")
+	}
+	s.expect(t)
+
+	// What an extension adds and what a shape admits is not part of the list.
+	s = layoutSet()
+	for _, mapping := range []string{"x-to-y/mapping/text", "x-to-y/mapping/record", "y-to-x/mapping/text", "y-to-x/mapping/record"} {
+		for _, language := range []string{"x", "y"} {
+			s.drop("transform/syntax/"+mapping+"/go", "transform/syntax/"+language+"/mapping/pattern/go")
+		}
+	}
 	s.expect(t)
 }
 
@@ -888,10 +1018,7 @@ func TestArchitectureVocabularyEntryCannotLiftProhibition(t *testing.T) {
 	)
 }
 
-var queryImports = []string{
-	"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/xsem",
-	"semantics/go", "semantics/x/go", "syntax/x/go", "trees/representation/go",
-}
+var queryImports = []string{"contracts/semantic/go", "internal/xsem", "semantics/x/go", "syntax/x/go", "trees/representation/go"}
 
 func querySet(extra ...string) *syntheticSet {
 	s := newSyntheticSet()
@@ -900,7 +1027,7 @@ func querySet(extra ...string) *syntheticSet {
 			s.leaves(path)
 		}
 	}
-	s.add("semantics/x/go")
+	s.listed("semantics/x/go")
 	s.leaves("resolve/files/x/provider/go", "analyze/files/x/provider/go", "trees/ast/go")
 	s.add("analyze/files/x/queries/go", append(slices.Clone(queryImports), extra...)...)
 	return s
@@ -924,14 +1051,15 @@ var lawModels = []string{"github.com/Bitspark/horos/core/go/declarations", "gith
 func lawSet(extra ...string) *syntheticSet {
 	s := newSyntheticSet()
 	s.leaves("verification/files/horos-to-go/go", "semantics/go", "verification/files/horos-to-go/mappings/go")
-	s.add("semantics/golang/go")
+	s.listed("semantics/golang/go")
 	s.add("verification/files/horos-to-go/mappings/list/go", lawImports...)
 	s.add("verification/files/horos-to-go/mappings/text/go", append(slices.Clone(lawImports), extra...)...)
 	s.spec.ExternalModels = slices.Clone(lawModels)
 	for _, model := range lawModels {
 		s.packages[model] = architecturePackage{Production: true}
 	}
-	return s
+	// One law uses the external models of the role, so they are not unused.
+	return s.importsExternal("verification/files/horos-to-go/mappings/list/go", lawModels[0], lawModels[1])
 }
 
 func (s *syntheticSet) importsExternal(path string, models ...string) *syntheticSet {
@@ -948,9 +1076,16 @@ func TestArchitectureVerificationLawRole(t *testing.T) {
 }
 
 // A law's external model imports come with its role: the package has no line
-// in the external allowances. A vocabulary's do not.
+// in the external allowances. A vocabulary's do not. Like the role's module
+// imports, each must be imported by at least one law.
 func TestArchitectureVerificationLawExternalModels(t *testing.T) {
 	const law = "verification/files/horos-to-go/mappings/text/go"
+	unused := lawSet()
+	unused.packages[syntheticModule+"/verification/files/horos-to-go/mappings/list/go"] = unused.packages[syntheticModule+"/"+law]
+	unused.expect(t,
+		"unused role allowance: no package of verification/files/horos-to-go/mappings/<name>/go imports github.com/Bitspark/horos/core/go/declarations",
+		"unused role allowance: no package of verification/files/horos-to-go/mappings/<name>/go imports github.com/bitspark/ontos/core/go",
+	)
 	lawSet().importsExternal(law, lawModels[0], lawModels[1]).expect(t)
 	lawSet().importsExternal(law, lawModels...).expect(t, "verification/files/horos-to-go/mappings/text/go must not import github.com/bitspark/ontos/data/go")
 
@@ -961,6 +1096,81 @@ func TestArchitectureVerificationLawExternalModels(t *testing.T) {
 	s.expect(t, "semantics/x/go must not import github.com/Bitspark/horos/core/go/declarations")
 	s.spec.ExternalImports["semantics/x/go"] = []string{lawModels[0]}
 	s.expect(t)
+}
+
+// A forbidden import in a file that the build constraints of the run exclude
+// is production code on another build, and the check reads it: behind a build
+// tag, in a file of another operating system, and in a cgo file when cgo is
+// off. `go list` reports none of these among a package's imports.
+//
+// The fixture is a module written at test time; no nested module is committed.
+func TestArchitectureReadsFilesExcludedByBuildConstraints(t *testing.T) {
+	const (
+		checker = "check/syntax/x/provider/go"
+		parser  = "parse/syntax/x/provider/go"
+	)
+	files := map[string]string{
+		"go.mod":                      "module example.test/m\n\ngo 1.21\n",
+		"trees/ast/go/ast.go":         "package ast\n\ntype Node struct{}\n",
+		"contracts/parse/go/parse.go": "package parse\n\ntype Input struct{}\n",
+		"syntax/x/go/x.go":            "package x\n\nimport \"example.test/m/trees/ast/go\"\n\ntype Tree = ast.Node\n",
+		"syntax/y/go/y.go":            "package y\n\nconst Name = \"y\"\n",
+
+		checker + "/check.go": "package check\n\nimport \"example.test/m/syntax/x/go\"\n\nfunc Check(x.Tree) error { return nil }\n",
+		// A build tag: another language's vocabulary.
+		checker + "/tagged.go": "//go:build sometag\n\npackage check\n\nimport _ \"example.test/m/syntax/y/go\"\n",
+
+		parser + "/parse.go": "package parse\n\nimport \"example.test/m/syntax/x/go\"\n\nfunc Parse() x.Tree { return x.Tree{} }\n",
+		// Another operating system: a stage provider, used without an exception.
+		// Its standard-library import is of no concern.
+		parser + "/admit_plan9.go": "package parse\n\nimport (\n\t\"os/signal\"\n\n\t\"example.test/m/check/syntax/x/provider/go\"\n)\n\nvar _ = signal.Notify\n\nfunc admit() error { return check.Check(Parse()) }\n",
+
+		"internal/x/x.go": "package x\n\nconst Quote = '\"'\n",
+		// cgo: a stage contract in a lexical helper.
+		"internal/x/bridge.go": "package x\n\n// #include <stddef.h>\nimport \"C\"\n\nimport _ \"example.test/m/contracts/parse/go\"\n\nvar _ C.size_t\n",
+		// An excluded test file stays out, as an included one does.
+		"internal/x/tagged_test.go": "//go:build sometag\n\npackage x\n\nimport _ \"example.test/m/syntax/y/go\"\n",
+	}
+	root := t.TempDir()
+	for name, content := range files {
+		path := filepath.Join(root, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	spec := architectureSpec{
+		Module:      syntheticModule,
+		Foundations: map[string][]string{"trees/ast/go": {}, "contracts/parse/go": {}},
+		// Hand entries keep the fixture small. The roles of these paths still
+		// bind them. The parser's entry names its checker, which only the
+		// excluded file imports.
+		Rules: map[string][]string{
+			"syntax/x/go": {"trees/ast/go"}, "syntax/y/go": {},
+			checker: {"syntax/x/go"}, parser: {"syntax/x/go", checker}, "internal/x": {},
+		},
+	}
+	want := []string{
+		refused(checker, "syntax/y/go", languageY),
+		"internal/x must not import C",
+		refused("internal/x", "contracts/parse/go", noStage),
+		"parse/syntax/x/provider/go imports stage provider check/syntax/x/provider/go (uses Check) without a provider exception",
+	}
+	for _, cgo := range []string{"0", "1"} {
+		listed := listPackages(t, root, "CGO_ENABLED="+cgo, "GOWORK=off", "GOFLAGS=")
+		// What `go list` reports alone does not show the seeded imports.
+		for importer, hidden := range map[string]string{checker: "syntax/y/go", parser: checker, "internal/x": "contracts/parse/go"} {
+			reported := slices.Contains(listed[syntheticModule+"/"+importer].Imports, syntheticModule+"/"+hidden)
+			if reported != (importer == "internal/x" && cgo == "1") {
+				t.Errorf("CGO_ENABLED=%s: go list reports the import of %s by %s: %v", cgo, hidden, importer, reported)
+			}
+		}
+		if got := checkArchitecture(spec, architecturePackages(t, syntheticModule, listed)); !slices.Equal(got, want) {
+			t.Errorf("CGO_ENABLED=%s:\n got: %q\nwant: %q", cgo, got, want)
+		}
+	}
 }
 
 // Symbol use is read per file: an import without an alias goes by the imported

@@ -23,12 +23,24 @@ type productionPackage struct {
 	Imports    []string
 	GoFiles    []string
 	CgoFiles   []string
+	// IgnoredGoFiles are the Go files that the build constraints of this run
+	// exclude: a build tag, another operating system or architecture, and a
+	// cgo file when cgo is off. `go list` leaves their imports out of Imports.
+	IgnoredGoFiles []string
 }
 
 func productionPackages(t *testing.T) map[string]productionPackage {
 	t.Helper()
+	return listPackages(t, "../..")
+}
+
+// listPackages reads the packages of the module in a directory and their
+// dependencies. Each environment entry overrides the test's own.
+func listPackages(t *testing.T, directory string, environment ...string) map[string]productionPackage {
+	t.Helper()
 	command := exec.Command("go", "list", "-deps", "-json", "./...")
-	command.Dir = "../.."
+	command.Dir = directory
+	command.Env = append(os.Environ(), environment...)
 	output, err := command.Output()
 	if err != nil {
 		t.Fatal(err)
@@ -305,30 +317,57 @@ func TestProductionArchitecture(t *testing.T) {
 		Module: modulePath, Foundations: foundationRules, Rules: rules, Extensions: roleExtensions, Owners: languageOwners,
 		Exceptions: providerExceptions, ExternalModels: modelDependencies, ExternalImports: modelExternalImports,
 	}
-	for _, failure := range checkArchitecture(spec, architecturePackages(t, packages)) {
+	for _, failure := range checkArchitecture(spec, architecturePackages(t, modulePath, packages)) {
 		t.Error(failure)
 	}
 }
 
-// architecturePackages adds to the `go list` data the symbols that each
-// production package of this module selects on its module imports.
-func architecturePackages(t *testing.T, packages map[string]productionPackage) map[string]architecturePackage {
+// architecturePackages adds to the `go list` data what the check needs from
+// the source of each production package of the module: the symbols it selects
+// on its module imports, and the imports and symbols of the files that the
+// build constraints of this run exclude.
+//
+// `go list` reports for one operating system, one architecture, one set of
+// tags and one cgo setting. A file outside that build is production code on
+// another, so the check reads it too. Otherwise a forbidden import would pass
+// behind a build tag, in a _linux.go file on Windows or in a cgo file when cgo
+// is off. Test files stay out, as they do in a build.
+func architecturePackages(t *testing.T, module string, packages map[string]productionPackage) map[string]architecturePackage {
 	t.Helper()
 	name := func(path string) (string, bool) {
 		p, ok := packages[path]
-		return p.Name, ok && strings.HasPrefix(path, modulePath+"/")
+		return p.Name, ok && strings.HasPrefix(path, module+"/")
 	}
 	result := map[string]architecturePackage{}
 	for path, p := range packages {
 		files := append(slices.Clone(p.GoFiles), p.CgoFiles...)
-		data := architecturePackage{Standard: p.Standard, Production: len(files) > 0, Imports: p.Imports}
-		if !p.Standard && strings.HasPrefix(path, modulePath+"/") {
+		var excluded []string
+		for _, file := range p.IgnoredGoFiles {
+			if !strings.HasSuffix(file, "_test.go") {
+				excluded = append(excluded, filepath.Join(p.Dir, file))
+			}
+		}
+		data := architecturePackage{Standard: p.Standard, Production: len(files)+len(excluded) > 0, Imports: slices.Clone(p.Imports)}
+		if !p.Standard && strings.HasPrefix(path, module+"/") {
 			for i, file := range files {
 				files[i] = filepath.Join(p.Dir, file)
 			}
 			var err error
-			if data.Uses, data.DotImports, err = parseSymbolUse(files, name); err != nil {
+			if data.Uses, data.DotImports, err = parseSymbolUse(append(files, excluded...), name); err != nil {
 				t.Fatal(err)
+			}
+			hidden, err := parseImports(excluded)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, imported := range hidden {
+				// The pseudo-package "C" is kept: with cgo on, `go list` reports
+				// it as an import too, so a cgo file fails the same either way.
+				listed, known := packages[imported]
+				standard := known && listed.Standard || !known && imported != "C" && isStandardImportPath(imported)
+				if !standard && !slices.Contains(data.Imports, imported) {
+					data.Imports = append(data.Imports, imported)
+				}
 			}
 		}
 		result[path] = data

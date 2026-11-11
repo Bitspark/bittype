@@ -12,9 +12,11 @@ import (
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 )
 
-// typescriptLibraries is the one place in this package that lists the builtin
-// horos-to-typescript mapping libraries. Tests that need the whole set call it, so a
-// change to how that pair is composed edits this file only.
+// typescriptLibraries is the one place in this package that lists the whole
+// builtin set of horos-to-typescript mapping libraries. Tests that need the
+// whole set call it, so a change to that set edits this file only. A test that
+// composes a selection of its own names single libraries itself, as
+// horos_generation_composition_test.go does.
 func typescriptLibraries(profile string) []g.MappingLibrary[h.Language, s.Language, source.Reader] {
 	return []g.MappingLibrary[h.Language, s.Language, source.Reader]{
 		text.Library(profile),

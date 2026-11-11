@@ -13,11 +13,16 @@ import (
 // architecturePackage is what the check reads about one package. The real test
 // fills it from `go list` and the package's non-test files; the check's own
 // tests fill it by hand.
+//
+// The non-test files are all of them: also a file that the build constraints
+// of the run that lists the packages exclude (a build tag, another operating
+// system or architecture, cgo that is switched off).
 type architecturePackage struct {
 	Standard bool
 	// Production is true for a package that has non-test Go files.
 	Production bool
-	// Imports are import paths.
+	// Imports are import paths. Those of the standard library that only an
+	// excluded file imports are left out.
 	Imports []string
 	// Uses lists, per imported module package, the exported symbols selected on
 	// it in the package's non-test files.
@@ -77,14 +82,22 @@ func isFreeComposition(relative string) bool {
 //   - its hand entry in Rules. It imports what the entry lists;
 //   - the role its path gives (packageRole), with the package's Extensions.
 //
-// A package with none of the three fails. Every allowance in an entry or an
-// extension must be used; a role's allow-list need not be. The prohibitions of
-// a role bind every package of its shape, also under a hand entry or an
-// extension: its own (roleRule.forbidden) and "a vocabulary never imports a
-// contribution". A package that belongs to a language, by its path or by
-// Owners, imports no package that belongs to another. An import of a stage
-// provider by a package that is not a composition also needs a provider
-// exception that names the symbols used.
+// A package with none of the three fails.
+//
+// Every allowance must be used. An entry and an extension are checked per
+// package. A role is checked per shape: each import it permits must be
+// imported by at least one package that the role classifies. An external
+// allowance is checked per package too.
+//
+// The prohibitions of a role bind every package of its shape, also under a
+// hand entry or an extension: its own (roleRule.forbidden) and "a vocabulary
+// never imports a contribution". A package that belongs to a language, by its
+// path or by Owners, imports no package that belongs to another. A role grants
+// a language's private part only where the imported package is that
+// language's helper by its own role. An import of a stage provider by a
+// package that is not a composition also needs a provider exception that names
+// the symbols used. An import of a module package that the set does not hold
+// fails: nothing checks that package.
 //
 // An entry for a package that the set does not hold is ignored: a rule, an
 // extension, an owner, a provider exception by its importer, an external
@@ -146,6 +159,14 @@ func checkArchitecture(spec architectureSpec, packages map[string]architecturePa
 		}
 	}
 
+	// roleUse records, per shape, the imports that the role permits and which of
+	// them a package classified by the role imports.
+	type shapeUse struct {
+		permitted []string
+		imported  map[string]bool
+	}
+	roleUse := map[string]*shapeUse{}
+
 	paths := make([]string, 0, len(packages))
 	for path := range packages {
 		paths = append(paths, path)
@@ -176,17 +197,17 @@ func checkArchitecture(spec architectureSpec, packages map[string]architecturePa
 		hand, listed := spec.Rules[relative]
 		role, hasRole := roleOf(relative)
 		extension, extended := spec.Extensions[relative]
-		var allowed []string
+		// entry is the exact list of a package that its role does not classify.
+		var entry []string
 		switch {
 		case isFoundation:
 			if listed {
 				fail("%s has a foundation entry and a hand entry", relative)
 			}
-			allowed = foundation
+			entry = foundation
 		case listed:
-			allowed = hand
+			entry = hand
 		case hasRole:
-			allowed = append(slices.Clone(role.allowed), extension...)
 		default:
 			if shape, ok := packageRole(relative); ok {
 				fail("unclassified production package: %s (as a language's helper it needs %s, which does not exist)", relative, shape.needs)
@@ -232,6 +253,28 @@ func checkArchitecture(spec architectureSpec, packages map[string]architecturePa
 			return ""
 		}
 
+		// permitted reports whether the package's rule names a module package. It
+		// gives a reason where the rule names it and still does not grant it.
+		permitted := func(target string) (bool, string) {
+			if !byRole {
+				return slices.Contains(entry, target), ""
+			}
+			if slices.Contains(extension, target) {
+				return true, ""
+			}
+			i := slices.Index(role.allowed, target)
+			if i < 0 {
+				return role.admits != nil && role.admits(target), ""
+			}
+			if !strings.HasPrefix(role.patterns[i], "internal/<") {
+				return true, ""
+			}
+			if helper, ok := roleOf(target); ok && helper.kind == rolePrivatePart {
+				return true, ""
+			}
+			return false, "its role grants " + role.patterns[i] + " to a language's helper only, and " + target + " is not one"
+		}
+
 		for _, dependency := range sorted(p.Imports) {
 			if dep, ok := packages[dependency]; ok && dep.Standard {
 				continue
@@ -244,11 +287,17 @@ func checkArchitecture(spec architectureSpec, packages map[string]architecturePa
 				continue
 			}
 			target := strings.TrimPrefix(dependency, prefix)
+			if _, held := packages[dependency]; !held {
+				fail("%s imports %s, which the package set does not hold: no file of it is built here, so nothing checks it", relative, target)
+				continue
+			}
 			if reason := prohibition(target); reason != "" {
 				fail("%s must not import %s: %s", relative, target, reason)
 				continue
 			}
-			if !slices.Contains(allowed, target) && !(byRole && role.admits != nil && role.admits(target)) {
+			if ok, reason := permitted(target); !ok && reason != "" {
+				fail("%s must not import %s: %s", relative, target, reason)
+			} else if !ok {
 				fail("%s must not import %s", relative, dependency)
 			}
 			if !isStageProvider(target) || isComposition(relative) {
@@ -266,8 +315,13 @@ func checkArchitecture(spec architectureSpec, packages map[string]architecturePa
 				}
 			}
 		}
+		for _, model := range spec.ExternalImports[relative] {
+			if !slices.Contains(p.Imports, model) {
+				fail("unused external allowance: %s may import %s and does not", relative, model)
+			}
+		}
 		if !byRole {
-			for _, allowance := range allowed {
+			for _, allowance := range entry {
 				if !slices.Contains(p.Imports, prefix+allowance) {
 					fail("unused allowance: %s may import %s and does not", relative, allowance)
 				}
@@ -280,6 +334,34 @@ func checkArchitecture(spec architectureSpec, packages map[string]architecturePa
 				fail("extension of %s repeats its role: %s", relative, addition)
 			case !slices.Contains(p.Imports, prefix+addition):
 				fail("unused extension: %s may import %s and does not", relative, addition)
+			}
+		}
+		use := roleUse[role.shape]
+		if use == nil {
+			use = &shapeUse{permitted: append(slices.Clone(role.patterns), role.external...), imported: map[string]bool{}}
+			roleUse[role.shape] = use
+		}
+		for i, allowance := range role.allowed {
+			if slices.Contains(p.Imports, prefix+allowance) {
+				use.imported[role.patterns[i]] = true
+			}
+		}
+		for _, model := range role.external {
+			if slices.Contains(p.Imports, model) {
+				use.imported[model] = true
+			}
+		}
+	}
+
+	shapes := make([]string, 0, len(roleUse))
+	for shape := range roleUse {
+		shapes = append(shapes, shape)
+	}
+	slices.Sort(shapes)
+	for _, shape := range shapes {
+		for _, permitted := range roleUse[shape].permitted {
+			if !roleUse[shape].imported[permitted] {
+				fail("unused role allowance: no package of %s imports %s", shape, permitted)
 			}
 		}
 	}
@@ -361,6 +443,33 @@ func fileSymbolUse(file *ast.File, name func(path string) (string, bool), uses m
 		return true
 	})
 	return dots
+}
+
+// isStandardImportPath reports whether an import path belongs to the standard
+// library by the rule the go command uses: its first element has no dot. It
+// decides for a path that `go list` did not report, because only a file that
+// the build constraints exclude imports it.
+func isStandardImportPath(path string) bool {
+	first, _, _ := strings.Cut(path, "/")
+	return !strings.Contains(first, ".")
+}
+
+// parseImports returns the import paths of source files on disk.
+func parseImports(files []string) ([]string, error) {
+	var imports []string
+	set := token.NewFileSet()
+	for _, path := range files {
+		file, err := parser.ParseFile(set, path, nil, parser.ImportsOnly)
+		if err != nil {
+			return nil, err
+		}
+		for _, spec := range file.Imports {
+			if imported, err := strconv.Unquote(spec.Path.Value); err == nil && !slices.Contains(imports, imported) {
+				imports = append(imports, imported)
+			}
+		}
+	}
+	return imports, nil
 }
 
 // parseSymbolUse applies fileSymbolUse to source files on disk.
