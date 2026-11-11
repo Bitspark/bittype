@@ -10,7 +10,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"time"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
@@ -46,11 +45,8 @@ func (b *boundedBuffer) Write(data []byte) (int, error) {
 	b.remaining -= len(data)
 	return b.Buffer.Write(data)
 }
-func ValidCompiler(nodePath, modulePath string) bool {
-	return filepath.IsAbs(nodePath) && filepath.IsAbs(modulePath)
-}
 func Check(ctx context.Context, nodePath, modulePath string, trees []s.AST, source *files.Context, query *Query, settings []semantic.Setting) (Output, error) {
-	if ctx == nil || !ValidCompiler(nodePath, modulePath) {
+	if ctx == nil || (n.Compiler{NodePath: nodePath, TypeScriptPath: modulePath}).Validate() != nil {
 		return Output{}, semantic.ErrInvalidRequest
 	}
 	if err := ctx.Err(); err != nil {

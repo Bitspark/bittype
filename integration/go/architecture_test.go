@@ -270,7 +270,7 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["transform/syntax/typescript/symbol/go"] = []string{"contracts/generation/go", "internal/typescript", "semantics/go", "syntax/typescript/go", "trees/ast/go", "trees/representation/go"}
 	rules["internal/typescriptsem"] = []string{"contracts/parse/go", "contracts/semantic/go", "files/go", "parse/syntax/typescript/provider/go", "semantics/go", "semantics/typescript/go", "syntax/typescript/go", "trees/ast/go"}
 	rules["resolve/files/typescript/provider/go"] = []string{"trees/representation/go", "contracts/resolution/go", "contracts/semantic/go", "internal/typescriptsem", "semantics/go", "semantics/typescript/go", "syntax/typescript/go"}
-	rules["analyze/files/typescript/provider/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/typescriptsem", "resolve/files/typescript/provider/go", "semantics/go", "semantics/typescript/go", "syntax/typescript/go", "trees/representation/go"}
+	rules["analyze/files/typescript/provider/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "semantics/typescript/go", "syntax/typescript/go"}
 	rules["internal/rustsem"] = []string{"contracts/parse/go", "contracts/semantic/go", "files/go", "parse/syntax/rust/provider/go", "semantics/go", "semantics/rust/go", "syntax/rust/go", "trees/ast/go"}
 	rules["resolve/files/rust/provider/go"] = []string{"trees/representation/go", "contracts/resolution/go", "contracts/semantic/go", "internal/rustsem", "semantics/go", "semantics/rust/go", "syntax/rust/go"}
 	rules["analyze/files/rust/provider/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "semantics/rust/go", "syntax/rust/go"}

@@ -1,4 +1,6 @@
-package analyze
+// Package queries answers explicit native TypeScript questions about an
+// admitted model. Ordinary analysis and graph readers do not invoke it.
+package queries
 
 import (
 	"context"
@@ -6,7 +8,6 @@ import (
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/internal/typescriptsem"
-	resolve "github.com/Bitspark/bittype/resolve/files/typescript/provider/go"
 	n "github.com/Bitspark/bittype/semantics/typescript/go"
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -14,7 +15,7 @@ import (
 
 type Queries struct {
 	model    n.Model
-	compiler resolve.Compiler
+	compiler n.Compiler
 }
 type Assignability struct {
 	model  n.Model
@@ -24,7 +25,7 @@ type Assignability struct {
 }
 
 // NewQueries configures explicit compiler queries; it starts no hidden process.
-func NewQueries(model n.Model, compiler resolve.Compiler) (Queries, error) {
+func NewQueries(model n.Model, compiler n.Compiler) (Queries, error) {
 	if !model.Valid() {
 		return Queries{}, n.ErrForeign
 	}
