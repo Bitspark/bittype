@@ -87,7 +87,7 @@ func rsResults(t *testing.T, snapshot semantic.Snapshot) (semantic.Result, seman
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyzerust.Contract(), analyzerust.Provider{})
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyzerust.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +145,7 @@ func qualifyRust(t *testing.T) {
 	if _, err = e.Analyze(ctx, input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyzerust.Contract(), analyzerust.Provider{})
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyzerust.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -313,7 +313,7 @@ func TestRustSemanticCaptureAndReceipts(t *testing.T) {
 	snapshot, trees, source := rsCapture(t, "pub struct A {} pub struct B {} pub type Alias = A;")
 	resolved, _ := rsResults(t, snapshot)
 	resolver, _ := resolve.New(snapshot.Language(), rsCompiler(t))
-	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyzerust.Contract(), analyzerust.Provider{})
+	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyzerust.Provider{})
 	other := rsCaptureTrees(t, trees, source)
 	if _, err := analyzer.Analyze(ctx, analysis.Input{Snapshot: other, Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}}); err == nil {
 		t.Fatal("foreign receipt")
@@ -360,7 +360,7 @@ func TestRustSemanticCaptureAndReceipts(t *testing.T) {
 func TestRustSemanticConcurrent(t *testing.T) {
 	snapshot, _, _ := rsCapture(t, "pub struct Page<T> {pub item:T} pub type Bytes = Page<u8>;")
 	resolver, _ := resolve.New(snapshot.Language(), rsCompiler(t))
-	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyzerust.Contract(), analyzerust.Provider{})
+	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyzerust.Provider{})
 	resolved, err := resolver.Resolve(context.Background(), snapshot, semantic.Options{Configuration: n.Configuration()})
 	if err != nil {
 		t.Fatal(err)
