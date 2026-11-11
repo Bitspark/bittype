@@ -59,7 +59,10 @@ check/syntax/shared/{ast,cst}/go/              carrier structure
 transform/syntax/shared/generation/go/         registry and request composition
 transform/syntax/shared/target/go/             native construction and scoped symbol storage
 transform/syntax/horos/source/go/              Horos semantic reader
-transform/syntax/horos/mapping/go/             common Horos mapping policy
+transform/syntax/horos/mapping/go/             mapping adapter and representation profile names
+transform/syntax/horos/mapping/pattern/go/     horos source patterns
+transform/syntax/horos/mapping/declarations/go/ horos declaration recipe
+transform/syntax/horos/mapping/naming/go/      horos name to exported native identifier
 transform/syntax/<native>/model/go/            native semantic forms and validation
 transform/syntax/<native>/target/go/           AST construction from native forms
 transform/syntax/typescript/symbol/go/        public type symbols for generation and Files
@@ -266,14 +269,12 @@ This remains open:
   package, and `verification/files/horos-to-go/go` takes `Admission` from the Go
   analysis provider package. Draft pull request #231 is prepared to remove
   both. It is stacked on open pull request #204 and is not on `main`.
-- **The common mapping package in the documents.**
+- **The profile gate.**
   [#238](https://github.com/Bitspark/bittype/pull/238) divided
-  `transform/syntax/horos/mapping/go` on 11 November 2026. The adapter with the
-  profile gate stays at that path. The pattern constructors, the declaration
-  recipe and the naming function are the packages `pattern`, `declarations` and
-  `naming` under `transform/syntax/horos/mapping/<name>/go`. The hierarchy above
-  and several documents still describe the one undivided package. A later
-  documents change updates them.
+  `transform/syntax/horos/mapping/go` on 11 November 2026. The adapter stays at
+  that path and still refuses every profile but one. That gate is
+  [#216](https://github.com/Bitspark/bittype/issues/216) and
+  [bittype/ACX-008](docs/architecture-cases/0008-structural-profile-gate.md).
 
 The findings and their state are in
 [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md).
@@ -363,7 +364,8 @@ plan/output. The registry and concrete integrations follow the stage-first layou
 contracts/generation/go/                  descriptions, invariant planner and output
 transform/syntax/shared/generation/go/      registry, selection and composition
 transform/syntax/horos/source/go/           receipt-backed source reader
-transform/syntax/horos/mapping/go/          patterns and declaration recipes
+transform/syntax/horos/mapping/go/          mapping adapter and profile names
+transform/syntax/horos/mapping/{pattern,declarations,naming}/go/  source patterns, declaration recipe, naming
 transform/syntax/shared/target/go/          shared native construction and scoped symbol storage
 transform/syntax/<native>/model/go/         intended native forms
 transform/syntax/<native>/target/go/        native intent to AST construction

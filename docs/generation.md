@@ -106,7 +106,8 @@ engine/go/                                   public operations and endpoint admi
 transform/syntax/shared/generation/go/        registry and selected composition
 transform/syntax/shared/target/go/            shared AST construction mechanics
 transform/syntax/horos/source/go/             Horos evidence reader
-transform/syntax/horos/mapping/go/            source patterns and declaration policy
+transform/syntax/horos/mapping/go/            mapping adapter and profile names
+transform/syntax/horos/mapping/{pattern,declarations,naming}/go/ source patterns, declaration recipe, naming
 transform/syntax/horos-to-<native>/mapping/<name>/go/ representation choices, one package per mapping
 transform/syntax/<native>/model/go/           native intent vocabulary
 transform/syntax/<native>/target/go/          native intent to AST
@@ -128,8 +129,9 @@ optional helper and passes it to `record.Library(profile, key)` and
 [bittype/ACX-009](architecture-cases/0009-package-boundaries.md) records the
 correction. [#238](https://github.com/Bitspark/bittype/pull/238) divided the
 common package the same day. Its adapter with the profile gate stays at
-`transform/syntax/horos/mapping/go`. The listing above does not show the
-packages below it yet.
+`transform/syntax/horos/mapping/go`. The source patterns, the declaration
+recipe and the naming rule are the packages `pattern`, `declarations` and
+`naming` below it.
 
 ## Language identity and registration
 

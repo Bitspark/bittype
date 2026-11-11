@@ -21,7 +21,8 @@ engine/go/                                  endpoint checks and public entry poi
 transform/syntax/shared/generation/go/       registration, selection and composition
 transform/syntax/shared/target/go/           scoped AST construction and relocation
 transform/syntax/horos/source/go/            horos interpretation and reader
-transform/syntax/horos/mapping/go/           Horos patterns and declaration policy
+transform/syntax/horos/mapping/go/           horos mapping adapter and profile names
+transform/syntax/horos/mapping/{pattern,declarations,naming}/go/ horos patterns, declaration recipe, naming
 transform/syntax/<native>/model/go/          intended native forms, no AST construction
 transform/syntax/<native>/target/go/         native grammar and construction
 transform/syntax/horos-to-<native>/mapping/<name>/go/ one declarative representation library each
