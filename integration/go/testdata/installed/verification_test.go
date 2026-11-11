@@ -140,7 +140,7 @@ func TestInstalledJointTextBox(t *testing.T) {
 
 // Each semantic role is explicit; opening the typed view compiles nothing.
 func checkedNative(ctx context.Context, snapshot semantic.Snapshot) (n.Model, error) {
-	resolver, err := resolution.NewResolver[gs.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
+	resolver, err := resolution.NewResolver[gs.Language](snapshot.Language(), n.ResolutionContract(), resolvegolang.Provider{})
 	if err != nil {
 		return n.Model{}, err
 	}
@@ -148,7 +148,7 @@ func checkedNative(ctx context.Context, snapshot semantic.Snapshot) (n.Model, er
 	if err != nil {
 		return n.Model{}, err
 	}
-	analyzer, err := analysis.NewAnalyzer[gs.Language](snapshot.Language(), nativequery.Contract(), nativequery.Provider{})
+	analyzer, err := analysis.NewAnalyzer[gs.Language](snapshot.Language(), n.AnalysisContract(), nativequery.Provider{})
 	if err != nil {
 		return n.Model{}, err
 	}

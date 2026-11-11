@@ -67,7 +67,7 @@ func goCaptureTrees(t *testing.T, trees []s.AST) semantic.Snapshot {
 func goResults(t *testing.T, snapshot semantic.Snapshot) (semantic.Result, semantic.Result) {
 	t.Helper()
 	ctx := context.Background()
-	resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
+	resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), n.ResolutionContract(), resolvegolang.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +75,7 @@ func goResults(t *testing.T, snapshot semantic.Snapshot) (semantic.Result, seman
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +115,7 @@ func qualifyGolang(t *testing.T) {
 	if _, err := registry.Resolve(ctx, snapshot, semantic.Options{}); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
+	resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), n.ResolutionContract(), resolvegolang.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func qualifyGolang(t *testing.T) {
 	if _, err := registry.Analyze(ctx, input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,8 +226,8 @@ func TestGoSemanticReceiptAndEnvironmentIsolation(t *testing.T) {
 	snapshot, trees := goCapture(t, "type Box[T any] struct {Value T}")
 	foreign := goCaptureTrees(t, trees)
 	resolved, result := goResults(t, snapshot)
-	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
-	resolver, _ := resolution.NewResolver[s.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
+	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyze.Provider{})
+	resolver, _ := resolution.NewResolver[s.Language](snapshot.Language(), n.ResolutionContract(), resolvegolang.Provider{})
 	for name, input := range map[string]analysis.Input{
 		"missing":    {Snapshot: snapshot, Options: semantic.Options{Configuration: n.Configuration()}},
 		"foreign":    {Snapshot: foreign, Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}},
@@ -305,7 +305,7 @@ func TestGoSemanticMultiUnitReferencesAndRecursion(t *testing.T) {
 		}
 	}
 	forged := goCaptureTrees(t, trees)
-	resolver, _ := resolution.NewResolver[s.Language](forged.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
+	resolver, _ := resolution.NewResolver[s.Language](forged.Language(), n.ResolutionContract(), resolvegolang.Provider{})
 	if _, err := resolver.Resolve(context.Background(), forged, semantic.Options{Configuration: n.Configuration()}); !errors.Is(err, semantic.ErrInvalidRequest) {
 		t.Fatal("forged reference", err)
 	}

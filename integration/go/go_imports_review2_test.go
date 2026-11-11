@@ -271,8 +271,8 @@ func TestGoImportsCollisionsAndSites(t *testing.T) {
 		if _, _, err := n.Imports(altered); err == nil {
 			t.Fatal(name, "settings accepted by Imports")
 		}
-		if _, err := analyze.ContractFor(altered); err == nil {
-			t.Fatal(name, "settings accepted by ContractFor")
+		if _, err := n.AnalysisContractFor(altered); err == nil {
+			t.Fatal(name, "settings accepted by AnalysisContractFor")
 		}
 	}
 }
