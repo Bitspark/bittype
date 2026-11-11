@@ -610,7 +610,7 @@ Authored scope: [docs/source.md#horos-composition-and-pagination](https://github
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| multi-file-pagination | receipt-preserving-round-trips | fresh-output-and-receipt | unspecified (authored profile absent) | [TestFilesPaginationAndReceiptPreservingRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/files_test.go#L85) (external) |
+| multi-file-pagination | receipt-preserving-round-trips | fresh-output-and-receipt | unspecified (authored profile absent) | [TestFilesPaginationAndReceiptPreservingRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/files_test.go#L86) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -874,7 +874,7 @@ Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://gith
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
 | horos-modules-and-generics | pagination-and-imported-library | canonical-identity-preserved | unspecified (authored profile absent) | [TestCanonicalPaginationAndImportedLibraryRoundTrip](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format_test.go#L59) (external) |
-| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L27) (external) |
+| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L28) (external) |
 | horos-text-vocabulary | declared-constructor-fixtures | canonical-round-trip-preserved | unspecified (authored profile absent) | [TestCompleteSourceVocabulary](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L85) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -909,7 +909,7 @@ Authored scope: [docs/native-semantics.md#first-rust-profile](https://github.com
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
+| semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
 | rust-semantic-subset | native-types-and-generics | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestRustSemanticNativeTypes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L202) (external) |
 | rust-semantic-subset | bounds-and-profile-outcomes | qualified-reports-without-partial-model | unspecified (authored profile absent) | [TestRustSemanticBoundsAndOutcomes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L264) (external) |
 
@@ -950,7 +950,7 @@ Authored scope: [docs/horos-syntax.md#pipeline-and-limits](https://github.com/Bi
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
 | horos-modules-and-generics | pagination-and-imported-library | canonical-identity-preserved | unspecified (authored profile absent) | [TestCanonicalPaginationAndImportedLibraryRoundTrip](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format_test.go#L59) (external) |
-| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L27) (external) |
+| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L28) (external) |
 | horos-text-vocabulary | declared-constructor-fixtures | canonical-round-trip-preserved | unspecified (authored profile absent) | [TestCompleteSourceVocabulary](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L85) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -975,7 +975,7 @@ Authored scope: [docs/native-semantics.md#first-rust-profile](https://github.com
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
+| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
 | rust-semantic-subset | native-types-and-generics | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestRustSemanticNativeTypes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L202) (external) |
 | rust-semantic-subset | bounds-and-profile-outcomes | qualified-reports-without-partial-model | unspecified (authored profile absent) | [TestRustSemanticBoundsAndOutcomes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L264) (external) |
 
@@ -987,7 +987,7 @@ No structural definition attached. Operation source and authored scope remain th
 
 Contract: github.com/Bitspark/bittype/contracts/analysis/go.Provider&#91;github.com/Bitspark/bittype/syntax/horos/go.Language&#93;.
 
-Public operation: [github.com/Bitspark/bittype/analyze/files/horos/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/horos/provider/go/analyze.go#L75). Receiver: github.com/Bitspark/bittype/analyze/files/horos/provider/go.Provider.
+Public operation: [github.com/Bitspark/bittype/analyze/files/horos/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/horos/provider/go/analyze.go#L53). Receiver: github.com/Bitspark/bittype/analyze/files/horos/provider/go.Provider.
 
 Language marker: github.com/Bitspark/bittype/syntax/horos/go.Language.
 
@@ -995,11 +995,11 @@ Construction alternatives: no provider collaborators.
 
 Static call relationships (no evidence transfer):
 
-- [github.com/Bitspark/bittype/analyze/files/horos/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/horos/provider/go/analyze.go#L75) → [github.com/Bitspark/bittype/analyze/files/horos/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/horos/provider/go/analyze.go#L37) ([call](https://github.com/Bitspark/bittype/blob/main/analyze/files/horos/provider/go/analyze.go#L76)); receiver ; type arguments .
+- [github.com/Bitspark/bittype/analyze/files/horos/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/horos/provider/go/analyze.go#L53) → [github.com/Bitspark/bittype/analyze/files/horos/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/horos/provider/go/analyze.go#L15) ([call](https://github.com/Bitspark/bittype/blob/main/analyze/files/horos/provider/go/analyze.go#L54)); receiver ; type arguments .
 
 Traversal boundary: not a single-return static call.
 
-### Declared target [github.com/Bitspark/bittype/analyze/files/horos/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/horos/provider/go/analyze.go#L37)
+### Declared target [github.com/Bitspark/bittype/analyze/files/horos/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/horos/provider/go/analyze.go#L15)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
@@ -1007,12 +1007,12 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Authored scope: [docs/analysis.md#horos-profile](https://github.com/Bitspark/bittype/blob/main/docs/analysis.md#horos-profile); profile: unspecified (authored profile absent).
 
-### Declared target [github.com/Bitspark/bittype/analyze/files/horos/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/horos/provider/go/analyze.go#L75)
+### Declared target [github.com/Bitspark/bittype/analyze/files/horos/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/horos/provider/go/analyze.go#L53)
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | analysis-evidence-produced | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
-| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L27) (external) |
+| semantic-conformance | independent-provider-registration | analysis-evidence-produced | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
+| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L28) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -1064,7 +1064,7 @@ No structural definition attached. Operation source and authored scope remain th
 
 Contract: github.com/Bitspark/bittype/contracts/resolution/go.Provider&#91;github.com/Bitspark/bittype/syntax/horos/go.Language&#93;.
 
-Public operation: [github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L57). Receiver: github.com/Bitspark/bittype/resolve/files/horos/provider/go.Provider.
+Public operation: [github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L31). Receiver: github.com/Bitspark/bittype/resolve/files/horos/provider/go.Provider.
 
 Language marker: github.com/Bitspark/bittype/syntax/horos/go.Language.
 
@@ -1072,18 +1072,18 @@ Construction alternatives: no provider collaborators.
 
 Static call relationships (no evidence transfer):
 
-- [github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L57) → [github.com/Bitspark/bittype/resolve/files/horos/provider/go#ResolveReferences](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L50) ([call](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L58)); receiver ; type arguments .
+- [github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L31) → [github.com/Bitspark/bittype/resolve/files/horos/provider/go#ResolveReferences](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L24) ([call](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L32)); receiver ; type arguments .
 
 Traversal boundary: callee is dynamic or outside implementation source.
 
-### Declared target [github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L57)
+### Declared target [github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L31)
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
-| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L27) (external) |
+| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
+| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L28) (external) |
 
-### Declared target [github.com/Bitspark/bittype/resolve/files/horos/provider/go#ResolveReferences](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L50)
+### Declared target [github.com/Bitspark/bittype/resolve/files/horos/provider/go#ResolveReferences](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L24)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
@@ -1123,7 +1123,7 @@ Authored scope: [docs/native-semantics.md#first-go-profile](https://github.com/B
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
+| semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
 | go-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestGoSemanticReportsAndCoverage](https://github.com/Bitspark/bittype/blob/main/integration/go/native_semantics_test.go#L188) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
@@ -1150,7 +1150,7 @@ Traversal boundary: not a single-return static call.
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
+| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
 | go-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestGoSemanticReportsAndCoverage](https://github.com/Bitspark/bittype/blob/main/integration/go/native_semantics_test.go#L188) (external) |
 
 ### Declared target [github.com/Bitspark/bittype/resolve/files/golang/provider/go#Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/provider/go/resolver.go#L25)
@@ -2729,7 +2729,7 @@ Authored scope: [docs/source.md#horos-composition-and-pagination](https://github
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| multi-file-pagination | receipt-preserving-round-trips | module-context-preserved | unspecified (authored profile absent) | [TestFilesPaginationAndReceiptPreservingRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/files_test.go#L85) (external) |
+| multi-file-pagination | receipt-preserving-round-trips | module-context-preserved | unspecified (authored profile absent) | [TestFilesPaginationAndReceiptPreservingRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/files_test.go#L86) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -3262,7 +3262,7 @@ Authored scope: [docs/horos.md#syntax-vocabulary](https://github.com/Bitspark/bi
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L27) (external) |
+| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L28) (external) |
 | horos-text-vocabulary | declared-constructor-fixtures | canonical-round-trip-preserved | unspecified (authored profile absent) | [TestCompleteSourceVocabulary](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L85) (external) |
 | syntax-semantics-boundary | semantically-invalid-syntax-fixtures | syntax-accepted | unspecified (authored profile absent) | [TestSyntaxDoesNotResolveOrCheckContracts](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L176) (external) |
 
@@ -3335,7 +3335,7 @@ Authored scope: [docs/horos-syntax.md#pipeline-and-limits](https://github.com/Bi
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
 | horos-modules-and-generics | pagination-and-imported-library | canonical-identity-preserved | unspecified (authored profile absent) | [TestCanonicalPaginationAndImportedLibraryRoundTrip](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format_test.go#L59) (external) |
-| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L27) (external) |
+| independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L28) (external) |
 | horos-text-vocabulary | declared-constructor-fixtures | canonical-round-trip-preserved | unspecified (authored profile absent) | [TestCompleteSourceVocabulary](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L85) (external) |
 | syntax-semantics-boundary | semantically-invalid-syntax-fixtures | syntax-accepted | unspecified (authored profile absent) | [TestSyntaxDoesNotResolveOrCheckContracts](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L176) (external) |
 | source-boundary | whole-input-rejection | located-error-without-output | unspecified (authored profile absent) | [TestRejectWholeInput](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L197) (external) |
@@ -3406,7 +3406,7 @@ Authored scope: [docs/source.md#symmetric-role-contracts](https://github.com/Bit
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| multi-file-pagination | receipt-preserving-round-trips | file-content-and-placement-preserved | unspecified (authored profile absent) | [TestFilesPaginationAndReceiptPreservingRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/files_test.go#L85) (external) |
+| multi-file-pagination | receipt-preserving-round-trips | file-content-and-placement-preserved | unspecified (authored profile absent) | [TestFilesPaginationAndReceiptPreservingRoundTrips](https://github.com/Bitspark/bittype/blob/main/integration/go/files_test.go#L86) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -3548,7 +3548,7 @@ Authored scope: [docs/native-semantics.md#first-typescript-profile](https://gith
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
+| semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
 | typescript-semantic-subset | generic-and-native-facts | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestTypeScriptSemanticGenericsAndNativeFacts](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L210) (external) |
 | typescript-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestTypeScriptSemanticReports](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L254) (external) |
 
@@ -3574,7 +3574,7 @@ Authored scope: [docs/native-semantics.md#first-typescript-profile](https://gith
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
+| semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
 | typescript-semantic-subset | generic-and-native-facts | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestTypeScriptSemanticGenericsAndNativeFacts](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L210) (external) |
 | typescript-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestTypeScriptSemanticReports](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L254) (external) |
 
