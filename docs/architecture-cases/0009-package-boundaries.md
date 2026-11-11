@@ -1,8 +1,10 @@
 # bittype/ACX-009: Package boundaries do not follow contributions
 
-**Status:** Partly corrected on 11 November 2026; correction pending for Go's
-contract identities and query service, the inline horos keys and the import
-rules by role. Three further candidates are not confirmed.
+**Status:** Partly corrected; state of 12 November 2026. The import rules by
+role are corrected and the merged moves are independently reviewed. Correction
+is pending for Go's contract identities and query service, with the eight hand
+entries in the test that wait for them, and for the inline horos keys. Three
+further candidates are not confirmed.
 **Scope:** The native and common horos mapping packages, the horos-to-Go
 verification laws, the Go and TypeScript analysis provider packages, the
 publication of contract identities and horos semantic names, and the import
@@ -131,8 +133,10 @@ reads imports per package and accepts any use of an allowed import.
 
 ## Correction and qualification status
 
-**Partly corrected on 11 November 2026. The case stays open.** The state below
-was read in source on `main` at `1a5aa2d`. The order is the one in
+**Partly corrected. The case stays open.** The state below was read in source
+on `main` at `1a5aa2d` on 11 November 2026, and the architecture test again at
+`71bfec9` on 12 November 2026. Only test files and documents changed between
+those two commits. The order is the one in
 [package boundaries](../package-boundaries.md#order-of-work). The pair packages
 were split while [#207](https://github.com/Bitspark/bittype/issues/207), which
 writes the first families into mapping packages, is still open. That is the
@@ -152,7 +156,9 @@ requires.
 | The TypeScript analysis provider package held a query service | `Queries`, `NewQueries` and `Assignability` are in `analyze/files/typescript/queries/go` | [#233](https://github.com/Bitspark/bittype/pull/233) |
 | Rust, TypeScript and horos identities were published by provider packages. horos had no vocabulary package | `semantics/rust/go`, `semantics/typescript/go` and the new `semantics/horos/go` export `ResolutionContract()` and `AnalysisContract()`. `semantics/horos/go` owns the horos roles, relations and profiles, the limits setting and the prelude pin. The TypeScript `Compiler` type is in `semantics/typescript/go`. Seven of the eight imports in the table above are gone | [#229](https://github.com/Bitspark/bittype/pull/229) rust, [#233](https://github.com/Bitspark/bittype/pull/233) typescript, [#234](https://github.com/Bitspark/bittype/pull/234) horos |
 | The check accepted any use of an allowed import and passed unused allowances | Every import of a stage provider package outside a composition needs an entry that names its symbols and its reason. A use outside the named symbols fails. An unused entry, an unused symbol and an unused allowance fail. A dot import of a module package fails. 94 unused allowances were removed | [#225](https://github.com/Bitspark/bittype/pull/225), closing [#219](https://github.com/Bitspark/bittype/issues/219) |
-| Every new package edited the test's list | Corrected for four package shapes only. They are classified by their path: `semantics/<language>/go`, `analyze/files/<language>/queries/go`, the mapping packages and the law packages. A mapping that imports another mapping fails, and so does a law that imports another law | [#225](https://github.com/Bitspark/bittype/pull/225) |
+| Every new package edited the test's list | A package gets its import rule from the role that its path gives. At `71bfec9`, 78 of the 126 production packages are classified this way, and a new package of an existing role needs no edit to the test. A package that names a language imports no package of another language. 48 packages keep an explicit entry: the 31 of the closed foundation and kernel set, 9 packages of which there is only one, and 8 entries held for Go. The explicit entries for the foundation and kernel set are a narrowing of the plan, decided on #218 on 11 November 2026: their layering among each other is a fact per package, which one rule for the role would lose | [#225](https://github.com/Bitspark/bittype/pull/225) for four package shapes, [#244](https://github.com/Bitspark/bittype/pull/244) for the others |
+| The allow-list of a role was not checked for use | Every allowance is checked for use. An entry and an extension are checked per package. A role is checked per shape: each import it permits must be imported by at least one package of that role. External model allowances are checked too | [#244](https://github.com/Bitspark/bittype/pull/244) |
+| The check read only the files of the build that ran it, and the vocabulary rule accepted any name as a language. The independent review found both | The check reads every non-test file of a package, also one that a build tag, another operating system or disabled cgo excludes. A role grants `internal/<language>` and `internal/<language>sem` only where the imported package is that language's helper by its own role | [#244](https://github.com/Bitspark/bittype/pull/244) |
 
 [#224](https://github.com/Bitspark/bittype/pull/224) prepared the mapping and
 law splits. It put each pair's list of libraries and the laws behind one test
@@ -160,12 +166,12 @@ seam file under `integration/go`. It changed no production code.
 
 ### Qualification
 
-The statements below come from the pull requests named. Their authors made the
-before and after comparisons. #227, #228, #229, #233 and #234 used programs
-that are not committed.
+The statements below come from the pull requests named, unless a bullet names
+another source. Their authors made the before and after comparisons. #227,
+#228, #229, #233 and #234 used programs that are not committed.
 
 - **Hosted checks.** The hosted `docs`, `contracts` and `native` checks passed
-  on each of the eleven pull requests.
+  on each of the eleven pull requests, and on #244.
 - **Identity values.** #229 rendered the two Rust contract values before and
   after. #233 rendered the TypeScript contracts, the configured analysis
   contract and the `Compiler` type. #234 rendered the horos keys, profiles,
@@ -186,23 +192,71 @@ that are not committed.
   importing a stage provider (#234), the `pattern` package importing `naming`
   (#238), and a formatter importing its parser and using an unnamed symbol of
   its checker (#225).
-- **The check itself.** `integration/go/architecture_synthetic_test.go` holds 21
-  tests that feed the check hand-built package sets: one per failure, for each
-  of the four path shapes a conforming package and its forbidden imports, and
-  one for the packages of the common horos mapping.
+- **The check itself.** `integration/go/architecture_synthetic_test.go` holds 36
+  tests that feed the check hand-built package sets. Each failing set breaks
+  one rule and must produce that rule's message and no other. One test adds a
+  third language, a pair into it, one more mapping and one more common mapping
+  part without a new line in the foundation table, the hand entries or the
+  owners. One test writes a module at test time and runs the real loader on
+  files that a build tag, another operating system and cgo exclude.
 - **Go's Record and Optional.** `TestGolangRecordRequiresItsOptionalHelper`
   covers an invalid key, a key that no library supplies and the working case.
+- **The rules by role, by their author.** #244 reports the following on the
+  real tree. Five seeded forbidden imports failed `TestProductionArchitecture`:
+  a Rust parser importing TypeScript's syntax, a vocabulary importing a stage
+  provider, a mapping importing a native target, the engine importing a
+  language's syntax and a lexical helper importing a stage contract. Three
+  seeds in files that the build excludes failed: behind a build tag, in a
+  `_linux.go` file on Windows and in a cgo file with cgo off. Fourteen scratch
+  packages passed `TestProductionArchitecture` without an edit to the test
+  files: a new language, two mappings, a law and an extractor.
+- **The rules by role, by the integrator.** The integrator reports in a
+  [status comment on #218](https://github.com/Bitspark/bittype/issues/218#issuecomment-6809884454)
+  that ten further forbidden imports were seeded on the head of #244 before it
+  merged, and that each failed. The comment gives the count. The list is the
+  integrator's, as given to the change that wrote this record: a mapping
+  importing another pair's mapping, a formatter importing its own parser, a syntax vocabulary importing
+  the text contract, the Rust analyzer importing its resolver, a native target
+  importing a source reader, the horos resolver importing TypeScript's syntax,
+  a law importing the Go analysis provider, the generation contract importing
+  the horos vocabulary, `naming` importing `pattern`, and an unknown package
+  `internal/foo`. The same ten were repeated for this record at `71bfec9` in a
+  scratch copy. Each failed `TestProductionArchitecture`. Four failed with the
+  reason of a prohibition. Five failed as an import that the package's rule
+  does not name, and three of those also as a provider import without an
+  exception. `internal/foo` failed as unclassified.
+- **Independent review of the moves.** A reviewer that wrote none of the
+  changes read the range `d23542a..e83cf52` from the code. Its verdict is that
+  they are moves. It compared 237 production declarations with the old ones.
+  It printed every identity at both revisions, 3352 lines with the same
+  SHA-256. It compared the generated output of the four targets, and it built
+  the installed-consumer fixture, which passed seven of its eight tests. It
+  found four defects, all in the check or in comments and none in moved code,
+  and #244 corrected them. The review is recorded in a
+  [comment on #218](https://github.com/Bitspark/bittype/issues/218#issuecomment-6809378108),
+  and [package boundaries](../package-boundaries.md#independent-review) gives
+  its method.
 
 ### Limits
 
 - The comparisons of #227, #228, #229, #233 and #234 cannot be repeated from
   the repository, because the programs that made them were not committed. The
   tests that compare fragments of the generated declarations remain.
-- This record names no independent verification of the corrections.
-- The three packages that #238 added are classified by entries in the
-  per-package list, not by a path rule.
-- The allow-list of a path rule is not checked for use. Only the per-package
-  list is.
+- The independent review covered the moves in `d23542a..e83cf52`. It did not
+  verify anything that needs the Rust helper, the native compiler job, or the
+  race and fuzz steps. The hosted checks ran those on each pull request. Its
+  range ends before #244, which changes test code only.
+- The review's programs and outputs are in a scratch directory on the
+  workstation and not in the repository. The same holds for the seeded
+  imports of #244 and of the integrator, and for their repeat at `71bfec9`.
+  None of them can be repeated from the repository alone.
+- Use of a role's allowances is checked per shape, not per package. One
+  package may import what a sibling of the same shape imports.
+- An import check does not see a re-export or an alias. The review confirmed
+  by seed that a helper holding an exception can re-export the excepted
+  symbol, and that a package can alias an excepted type for another package.
+  Both pass. [Package boundaries](../package-boundaries.md#what-the-check-cannot-establish)
+  lists what else the check cannot establish.
 - The helper key that Go's Record receives is an interim form. Record still
   decides how an optional field is represented in Go, Rust and C++. That is
   [#196](https://github.com/Bitspark/bittype/issues/196), item 6, and is not
@@ -224,15 +278,19 @@ that are not committed.
    `transform/syntax/horos/source/go`. The change that added
    `semantics/horos/go` found them. They are tracked in
    [#220](https://github.com/Bitspark/bittype/issues/220).
-4. **Import rules by role.** Every package outside the four path shapes is
-   still classified by its entry in the per-package list in
-   `integration/go/architecture_test.go`. A new package of such a shape edits
-   the test. This is the final step of
-   [#218](https://github.com/Bitspark/bittype/issues/218).
 
 Instances 1 and 2 are the two open entries of the exception table. Their
 correction is prepared in draft pull request #231. That pull request is
 stacked on open pull request #204 and is not on `main`.
+
+Eight hand entries in `TestProductionArchitecture` wait for the same two pull
+requests. Five are entries that the pull requests edit: the four Go packages
+`semantics/golang/go`, `internal/golangsem`,
+`resolve/files/golang/provider/go` and `analyze/files/golang/provider/go`, and
+`verification/files/horos-to-go/go`. Three are neighbouring lines kept in
+place so that the pull requests merge cleanly. A comment in the test says how
+the eight convert afterwards. The case stays open while these and the three
+instances remain.
 
 The profile gate in the adapter of the common horos mapping package is not an
 instance of this case. It stays with
@@ -266,3 +324,8 @@ proves that listed edges between packages are absent. Two questions were never
 asked of it: what can reach what inside one package, and how much of an allowed
 import is used. When a dependency check is green, ask what its unit is, and
 whether the thing that must be independent is smaller than that unit.
+
+The independent review found that the unit was also smaller than "the
+package". The check read the files that the build running the test selects,
+so a file behind a build tag or for another operating system was never read.
+Ask as well which files, builds and settings the check's unit leaves out.
