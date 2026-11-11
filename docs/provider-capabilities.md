@@ -19,7 +19,7 @@ No execution observations are included in this committed inventory. Per-invocati
 
 Contract: github.com/Bitspark/bittype/contracts/generation/go.MappingLibrary&#91;github.com/Bitspark/bittype/syntax/horos/go.Language, github.com/Bitspark/bittype/syntax/golang/go.Language, github.com/Bitspark/bittype/transform/syntax/horos/source/go.Reader&#93;.
 
-Public operation: [github.com/Bitspark/bittype/transform/syntax/horos/mapping/go#Library.Describe](https://github.com/Bitspark/bittype/blob/main/transform/syntax/horos/mapping/go/mapping.go#L23). Receiver: github.com/Bitspark/bittype/transform/syntax/horos/mapping/go.Library&#91;github.com/Bitspark/bittype/syntax/golang/go.Language&#93;.
+Public operation: [github.com/Bitspark/bittype/transform/syntax/horos/mapping/go#Library.Describe](https://github.com/Bitspark/bittype/blob/main/transform/syntax/horos/mapping/go/mapping.go#L26). Receiver: github.com/Bitspark/bittype/transform/syntax/horos/mapping/go.Library&#91;github.com/Bitspark/bittype/syntax/golang/go.Language&#93;.
 
 Selectable mapping from github.com/Bitspark/bittype/syntax/horos/go.Language to github.com/Bitspark/bittype/syntax/golang/go.Language. Its public Go contract identifies the required source API and native semantic model. The consumer supplies a registration and request.
 
@@ -35,7 +35,7 @@ No associated cases found in the selected test sources. This does not establish 
 
 Contract: github.com/Bitspark/bittype/contracts/generation/go.MappingLibrary&#91;github.com/Bitspark/bittype/syntax/horos/go.Language, github.com/Bitspark/bittype/syntax/typescript/go.Language, github.com/Bitspark/bittype/transform/syntax/horos/source/go.Reader&#93;.
 
-Public operation: [github.com/Bitspark/bittype/transform/syntax/horos/mapping/go#Library.Describe](https://github.com/Bitspark/bittype/blob/main/transform/syntax/horos/mapping/go/mapping.go#L23). Receiver: github.com/Bitspark/bittype/transform/syntax/horos/mapping/go.Library&#91;github.com/Bitspark/bittype/syntax/typescript/go.Language&#93;.
+Public operation: [github.com/Bitspark/bittype/transform/syntax/horos/mapping/go#Library.Describe](https://github.com/Bitspark/bittype/blob/main/transform/syntax/horos/mapping/go/mapping.go#L26). Receiver: github.com/Bitspark/bittype/transform/syntax/horos/mapping/go.Library&#91;github.com/Bitspark/bittype/syntax/typescript/go.Language&#93;.
 
 Selectable mapping from github.com/Bitspark/bittype/syntax/horos/go.Language to github.com/Bitspark/bittype/syntax/typescript/go.Language. Its public Go contract identifies the required source API and native semantic model. The consumer supplies a registration and request.
 
@@ -51,7 +51,7 @@ No associated cases found in the selected test sources. This does not establish 
 
 Contract: github.com/Bitspark/bittype/contracts/generation/go.MappingLibrary&#91;github.com/Bitspark/bittype/syntax/horos/go.Language, github.com/Bitspark/bittype/syntax/cpp/go.Language, github.com/Bitspark/bittype/transform/syntax/horos/source/go.Reader&#93;.
 
-Public operation: [github.com/Bitspark/bittype/transform/syntax/horos/mapping/go#Library.Describe](https://github.com/Bitspark/bittype/blob/main/transform/syntax/horos/mapping/go/mapping.go#L23). Receiver: github.com/Bitspark/bittype/transform/syntax/horos/mapping/go.Library&#91;github.com/Bitspark/bittype/syntax/cpp/go.Language&#93;.
+Public operation: [github.com/Bitspark/bittype/transform/syntax/horos/mapping/go#Library.Describe](https://github.com/Bitspark/bittype/blob/main/transform/syntax/horos/mapping/go/mapping.go#L26). Receiver: github.com/Bitspark/bittype/transform/syntax/horos/mapping/go.Library&#91;github.com/Bitspark/bittype/syntax/cpp/go.Language&#93;.
 
 Selectable mapping from github.com/Bitspark/bittype/syntax/horos/go.Language to github.com/Bitspark/bittype/syntax/cpp/go.Language. Its public Go contract identifies the required source API and native semantic model. The consumer supplies a registration and request.
 
@@ -67,7 +67,7 @@ No associated cases found in the selected test sources. This does not establish 
 
 Contract: github.com/Bitspark/bittype/contracts/generation/go.MappingLibrary&#91;github.com/Bitspark/bittype/syntax/horos/go.Language, github.com/Bitspark/bittype/syntax/rust/go.Language, github.com/Bitspark/bittype/transform/syntax/horos/source/go.Reader&#93;.
 
-Public operation: [github.com/Bitspark/bittype/transform/syntax/horos/mapping/go#Library.Describe](https://github.com/Bitspark/bittype/blob/main/transform/syntax/horos/mapping/go/mapping.go#L23). Receiver: github.com/Bitspark/bittype/transform/syntax/horos/mapping/go.Library&#91;github.com/Bitspark/bittype/syntax/rust/go.Language&#93;.
+Public operation: [github.com/Bitspark/bittype/transform/syntax/horos/mapping/go#Library.Describe](https://github.com/Bitspark/bittype/blob/main/transform/syntax/horos/mapping/go/mapping.go#L26). Receiver: github.com/Bitspark/bittype/transform/syntax/horos/mapping/go.Library&#91;github.com/Bitspark/bittype/syntax/rust/go.Language&#93;.
 
 Selectable mapping from github.com/Bitspark/bittype/syntax/horos/go.Language to github.com/Bitspark/bittype/syntax/rust/go.Language. Its public Go contract identifies the required source API and native semantic model. The consumer supplies a registration and request.
 
