@@ -32,10 +32,6 @@ import (
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
 	cgtarget "github.com/Bitspark/bittype/transform/syntax/cpp/target/go"
 	ggtarget "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
-	cg "github.com/Bitspark/bittype/transform/syntax/horos-to-cpp/mapping/go"
-	gg "github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/go"
-	rg "github.com/Bitspark/bittype/transform/syntax/horos-to-rust/mapping/go"
-	tg "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	rgtarget "github.com/Bitspark/bittype/transform/syntax/rust/target/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
@@ -220,16 +216,16 @@ func outputTree[L any](t *testing.T, out g.Output) ast.AST[L] {
 type requestBuilder func(*c.Registry, transform.Input, representation.Language) (c.Request, error)
 
 func tsRequest(reg *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-	return genfixture.Request(reg, input, to, "generated-ts", tgtarget.Provider{}, tg.Libraries(rules.RepresentationProfile)...)
+	return genfixture.Request(reg, input, to, "generated-ts", tgtarget.Provider{}, typescriptLibraries(rules.RepresentationProfile)...)
 }
 func goRequest(reg *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-	return genfixture.Request(reg, input, to, "generated-go", ggtarget.Provider{Package: "pagination"}, gg.Libraries(rules.RepresentationProfile)...)
+	return genfixture.Request(reg, input, to, "generated-go", ggtarget.Provider{Package: "pagination"}, golangLibraries(rules.RepresentationProfile)...)
 }
 func rustRequest(reg *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-	return genfixture.Request(reg, input, to, "generated-rust", rgtarget.Provider{}, rg.Libraries(rules.RepresentationProfile)...)
+	return genfixture.Request(reg, input, to, "generated-rust", rgtarget.Provider{}, rustLibraries(rules.RepresentationProfile)...)
 }
 func cppRequest(reg *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-	return genfixture.Request(reg, input, to, "generated-cpp", cgtarget.Provider{Namespace: "pagination"}, cg.Libraries(rules.RepresentationProfile)...)
+	return genfixture.Request(reg, input, to, "generated-cpp", cgtarget.Provider{Namespace: "pagination"}, cppLibraries(rules.RepresentationProfile)...)
 }
 
 func nativeChecker[L any](t *testing.T, p nativeProvider[L]) check.Checker {

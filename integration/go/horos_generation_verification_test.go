@@ -21,14 +21,12 @@ import (
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	hs "github.com/Bitspark/bittype/syntax/horos/go"
 	target "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
-	generate "github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 	v "github.com/Bitspark/bittype/verification/files/horos-to-go/go"
-	m "github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/go"
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
 	joint "github.com/Bitspark/bittype/verification/logos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
@@ -172,7 +170,7 @@ func bindPage(t *testing.T, s h.Model, g n.Model) (pagination, error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rules := []v.Rule{m.Text(), m.Boolean(), m.List(), m.Record(), (m.Optional{Constructor: native(t, g, "BittypeOptional"), PresenceField: "Present", ValueField: "Value"}).Rule()}
+	rules := []v.Rule{textLaw(), booleanLaw(), listLaw(), recordLaw(), optionalLaw(native(t, g, "BittypeOptional"), "Present", "Value")}
 	library := v.NewFamilies(selectMappings(t, rules...))
 	f, err := library.Bind(d, native(t, g, "Page"), []v.FieldBinding{{Source: "items", Target: "Items"}, {Source: "next", Target: "Next"}}, k, guarantee)
 	if err != nil {
@@ -209,7 +207,7 @@ func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	var registry c.Registry
-	request, err := genfixture.Request(&registry, transform.Input{Source: s.Snapshot(), Evidence: []semantic.Result{evidence}}, to, "generated", target.Provider{Package: "example"}, generate.Libraries(rules.RepresentationProfile)...)
+	request, err := genfixture.Request(&registry, transform.Input{Source: s.Snapshot(), Evidence: []semantic.Result{evidence}}, to, "generated", target.Provider{Package: "example"}, golangLibraries(rules.RepresentationProfile)...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -271,7 +269,7 @@ func checkedNative(ctx context.Context, snapshot semantic.Snapshot) (n.Model, er
 
 // The receiver owns this policy independently of the mapping selection.
 func allowedLaws() []string {
-	return []string{v.ModelBasis, v.SourceBasis, v.NativeBasis, m.ScalarLaw, m.ListLaw, m.OptionalLaw, m.RecordLaw, v.NamedLaw}
+	return []string{v.ModelBasis, v.SourceBasis, v.NativeBasis, scalarLawName, listLawName, optionalLawName, recordLawName, v.NamedLaw}
 }
 func selectMappings(t *testing.T, rules ...v.Rule) v.Mappings {
 	t.Helper()
