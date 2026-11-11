@@ -325,7 +325,7 @@ func (f *formatter) typ(id ast.NodeID, parent, level int) doc {
 			}
 		case "record":
 			result = f.record(id, operands, level)
-		case "exact", "atom-exact", "atom-in", "atom-len", "text-len", "key-grammar", "text-non-blank", "lowercase-uuid", "compound", "rec", "ref":
+		case "exact", "atom-exact", "atom-in", "atom-len", "text-len", "int-min", "int-max", "key-grammar", "text-non-blank", "lowercase-uuid", "compound", "rec", "ref":
 			count := 1
 			switch name {
 			case "key-grammar", "text-non-blank", "lowercase-uuid":

@@ -15,10 +15,12 @@ import (
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 
+	"github.com/Bitspark/bittype/internal/horosmodel"
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
+	data "github.com/bitspark/ontos/data/go"
 )
 
 func pins(tree s.AST) []string {
@@ -159,6 +161,63 @@ type Escaped = ` + "`list`" + `<text>;
 	}
 }
 
+// Horos ADR 0010 adds the inclusive integer bounds int-min(int(lo)) and
+// int-max(int(hi)). Like atom-exact, each is spelled with one literal operand,
+// here the integer embedding. Syntax admits the operand without judging the
+// bound; resolution owns that. The pinned Horos release predates ADR 0010 and
+// reports both as malformed descriptors, so this test stops at syntax and
+// canonical lowering. They join TestCompleteSourceVocabulary once Bittype's
+// Horos dependency and its prelude list both bounds.
+//
+// bittype:case target=github.com/Bitspark/bittype/parse/syntax/horos/provider/go#Provider.Parse feature=horos-text-vocabulary case=integer-bound-fixtures expects=canonical-round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/check/syntax/horos/provider/go#Provider.Check feature=horos-text-vocabulary case=integer-bound-fixtures expects=canonical-round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/format/syntax/horos/provider/go#Provider.Format feature=horos-text-vocabulary case=integer-bound-fixtures expects=canonical-round-trip-preserved
+// bittype:case target=github.com/Bitspark/bittype/print/syntax/shared/provider/go#Provider.Print feature=horos-text-vocabulary case=integer-bound-fixtures expects=canonical-round-trip-preserved language=github.com/Bitspark/bittype/syntax/horos/go#Language
+func TestIntegerBoundSpelling(t *testing.T) {
+	wide := "170141183460469231731687303715884105727"
+	tree := roundTrip(t, `module examples.bounds;
+kind Bounds = node("int-min", {}, epsilon) | node("int-max", {}, epsilon);
+type Count = int & int-min(0);
+type Byte = int & int-min(-128) & int-max(127);
+type Wide = int-max(`+wide+`);
+`)
+	patterns, bounds := []string{}, []string{}
+	for _, node := range tree.Nodes {
+		constructor := ""
+		for _, attr := range node.Attributes {
+			if attr.Name == s.AttributeConstructor {
+				constructor = attr.Text
+			}
+		}
+		if constructor != "int-min" && constructor != "int-max" {
+			continue
+		}
+		switch node.Kind {
+		case s.KindNodePattern:
+			patterns = append(patterns, constructor)
+		case s.KindDescriptor:
+			if len(node.Children) != 1 {
+				t.Fatalf("%s has %d operands", constructor, len(node.Children))
+			}
+			value, err := horosmodel.SourceLiteral(tree, node.Children[0].Node)
+			if err != nil {
+				t.Fatal(err)
+			}
+			bound, err := data.ReadInt(value)
+			if err != nil {
+				t.Fatalf("%s operand is not an integer: %v", constructor, err)
+			}
+			bounds = append(bounds, constructor+"("+bound.String()+")")
+		}
+	}
+	if got, want := strings.Join(patterns, ","), "int-min,int-max"; got != want {
+		t.Fatalf("kind node constructors: got %s, want %s", got, want)
+	}
+	if got, want := strings.Join(bounds, ","), "int-min(0),int-min(-128),int-max(127),int-max("+wide+")"; got != want {
+		t.Fatalf("integer bounds: got %s, want %s", got, want)
+	}
+}
+
 func TestSourceTriviaAndSpans(t *testing.T) {
 	source := "\ufeff// heading\r\nmodule examples.trivia; /* comment */\r\ntype Page<T> = {\r\n items: list<T>; // item\r\n next?: text;\r\n};\r\n// tail"
 	tree := roundTrip(t, source)
@@ -200,6 +259,8 @@ func TestRejectWholeInput(t *testing.T) {
 		"module x; type X<> = text;", "module x; type X<T,T> = T;",
 		"module x; type X = list<>;", "module x; type X = map<text>;", "module x; type X = wire<text,int>;",
 		"module x; type X = exact-(1);", "module x; type X = text-len-(1, 2);",
+		"module x; type X = int-min-(1);", "module x; type X = int-min(1, 2);", "module x; type X = int-max();",
+		"module x; type X = int - min(1);", "module x; type X = int-max(-0);",
 		"module x; type X = { foo: text };", "module x; type X = exact(T);", "module x; type X = exact(1.2);",
 		"module x; type X = exact(01);", "module x; type X = exact(-0);", "module x; type X = exact(1e3);",
 		`module x; type X = exact("\xFF");`, `module x; type X = exact("\uD800");`, `module x; type X = atom-exact(#hex"f");`,
@@ -227,6 +288,7 @@ func FuzzSourceRoundTrip(f *testing.F) {
 	f.Add("module pagination; type Page<T> = { items: list<T>; next?: text; };")
 	f.Add("module x; type X = (text | int) | union<text>;")
 	f.Add(`module x; type X = exact(tuple(#"horos/decl/param", 0, #hex"ff"));`)
+	f.Add("module x; type X = int & int-min(-1) & int-max(1);")
 	f.Fuzz(func(t *testing.T, source string) {
 		if len(source) > 65536 {
 			t.Skip()
