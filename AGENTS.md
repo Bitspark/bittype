@@ -55,12 +55,21 @@ import between implementations. One contribution, meaning one thing a consumer
 registers or selects on its own, is one package. Identities live in vocabulary
 packages. Only a composition imports a contribution. Ask of every direct call
 whose answer the caller needs: its own, or the composition's. The
-[architecture test](integration/go/architecture_check_test.go) enforces part of
-this since 11 November 2026. An import of a stage provider package outside a
-composition needs an entry that names its symbols and its reason. Mapping
-contributions, verification laws, language vocabularies and query services are
-classified by their path. Every other package is still classified by a
-per-package list. The plan is [#218](https://github.com/Bitspark/bittype/issues/218); the findings that remain open are
+[architecture test](integration/go/architecture_check_test.go) derives a
+package's import rule from the role that its path gives, as the
+[layout](LAYOUT.md#dependency-direction) lists. The foundation and kernel set
+and the packages of which there is only one have explicit entries. Go's
+identities and query service are still open, and eight hand entries in the
+test wait for pull requests #204 and #231. When you add a package:
+
+- A package of an existing role needs no edit to the test.
+- A foundation, kernel or one-of-a-kind package needs an explicit entry in
+  [`architecture_test.go`](integration/go/architecture_test.go).
+- An import of a stage provider package outside a composition needs an entry
+  in the [exception table](integration/go/architecture_exceptions_test.go)
+  that names its symbols and its reason.
+
+The plan is [#218](https://github.com/Bitspark/bittype/issues/218); the findings that remain open are
 [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md). The
 import check enforces boundaries that this reasoning has decided. It does not
 replace the reasoning, and a green run does not show that ownership is right.

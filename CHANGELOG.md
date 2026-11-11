@@ -1,5 +1,21 @@
 # Changelog
 
+## Import rules by role and the independent review — 12 November 2026
+
+The last step of the plan in [#218](https://github.com/Bitspark/bittype/issues/218) merged with [#244](https://github.com/Bitspark/bittype/pull/244), at `71bfec9`. It changes test code only. [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) records the correction, its qualification and what remains.
+
+- **Rules by role.** The architecture test derives a package's import rule from the role that its path gives (`integration/go/architecture_roles_test.go`). 78 of the 126 production packages are classified this way, and a new package of an existing role needs no edit to the test. 48 keep an explicit entry: 31 foundation and kernel packages in `foundationRules`, 9 packages of which there is only one in `oneOfAKindRules`, and 8 hand entries held for Go. The explicit entries for the foundation and kernel set were decided on #218 on 11 November 2026, because their layering among each other is a fact per package.
+- **New in the check.** A package that names a language imports no package of another language. Every allowance is checked for use: an entry and an extension per package, a role per shape. The check reads the files that build constraints exclude. A role grants `internal/<language>` and `internal/<language>sem` only where the imported package is that language's helper. The entries of deleted packages are gone.
+- **Independent review.** A reviewer that wrote none of the changes read the merged moves `d23542a..e83cf52` and found that they are moves. It found four defects in the check and in comments and none in moved code, and #244 corrected them. The review is recorded in a [comment on #218](https://github.com/Bitspark/bittype/issues/218#issuecomment-6809378108). Its programs are in a scratch directory on the workstation and not in the repository.
+- **Documents.** `LAYOUT.md` replaces its per-component dependency table with a role table. [Package boundaries](docs/package-boundaries.md) says how the test realises each of the six rules, what the check cannot establish and what the review covered. `AGENTS.md` says what adding a package needs.
+
+Not done:
+
+- Go's contract identities and Go's query service are still in its provider packages. Their move is draft pull request #231, stacked on open pull request #204. Two open entries of the exception table and the eight hand entries in the test wait for it.
+- Some horos-owned keys are still spelled inline ([#220](https://github.com/Bitspark/bittype/issues/220)).
+- The profile gate and the profile names ([#216](https://github.com/Bitspark/bittype/issues/216), [bittype/ACX-008](docs/architecture-cases/0008-structural-profile-gate.md)) and what a mapping's `Expand` returns ([#196](https://github.com/Bitspark/bittype/issues/196), item 6) are unchanged.
+- Three candidates are not confirmed: the thirteen same-language `Check` and `Parse` calls ([#218](https://github.com/Bitspark/bittype/issues/218)), the `Self` rule (a question for #216) and `CheckSingleScope` (with [#161](https://github.com/Bitspark/bittype/issues/161)).
+
 ## Documents follow the divided common mapping package — 11 November 2026
 
 - `LAYOUT.md`, `AGENTS.md`, [generation](docs/generation.md), [kernel composition](docs/kernel-composition.md) and [type-owned mappings](docs/type-generation-plugins.md) list the adapter package and its siblings `pattern`, `declarations` and `naming` ([#238](https://github.com/Bitspark/bittype/pull/238)). The examples in [generation SPI](docs/generation-spi.md) and [generation planner](docs/generation-planner.md) call `patterns.Element`.
