@@ -109,7 +109,7 @@ func placementStages(t *testing.T, packages ...n.PackageTypes) tsfiles.Stages {
 	if err != nil {
 		t.Fatal(err)
 	}
-	contract, err := analyze.ContractFor(settings)
+	contract, err := n.AnalysisContractFor(settings)
 	if err != nil {
 		t.Fatal(err)
 	}

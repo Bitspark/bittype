@@ -6,30 +6,11 @@ import (
 	"reflect"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
-	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/typescript/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/typescript/go"
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
 )
-
-func Contract() analysis.Contract {
-	c := resolve.Contract().Semantic
-	c.Profile = n.AnalysisProfile
-	return analysis.Contract{Semantic: c, Resolution: &resolution.Requirement{Profile: n.ResolutionProfile, Configuration: n.Configuration()}}
-}
-
-// ContractFor binds analysis to resolution with exactly the supplied package environment.
-func ContractFor(settings []semantic.Setting) (analysis.Contract, error) {
-	evidence, err := n.EvidenceFor(settings)
-	if err != nil {
-		return analysis.Contract{}, err
-	}
-	c := Contract()
-	c.Resolution.Configuration = evidence.Configuration
-	return c, nil
-}
 
 // bittype:scope docs/native-semantics.md#first-typescript-profile
 func Analyze(ctx context.Context, request analysis.Request[s.Language]) (semantic.Result, error) {
@@ -45,7 +26,7 @@ func Analyze(ctx context.Context, request analysis.Request[s.Language]) (semanti
 	}
 	publication := semantic.Publication{Diagnostics: resolved.Diagnostics()}
 	known := map[semantics.Key]bool{}
-	for _, obligation := range Contract().Semantic.Obligations {
+	for _, obligation := range n.AnalysisContract().Semantic.Obligations {
 		report, found := resolved.Report(obligation.Key)
 		if !found {
 			report = semantic.Report{Obligation: obligation.Key, Status: semantic.Incomplete}
