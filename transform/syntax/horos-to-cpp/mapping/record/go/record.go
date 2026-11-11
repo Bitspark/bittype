@@ -1,4 +1,6 @@
-package mapping
+// Package record is the builtin horos-to-cpp mapping library for closed horos
+// records. It describes a C++ record whose fields have their mapped types.
+package record
 
 import (
 	"context"
@@ -12,28 +14,9 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-func primitive(profile, sourceName, targetName string) rules.Library[s.Language] {
-	return rules.Library[s.Language]{Profile: profile, DescribeRules: func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
-		pattern, err := rules.Pattern(from, "scalar", sourceName)
-		if err != nil {
-			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
-		}
-		return g.MappingDescription[h.Language, s.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: sourceName + "/cpp/1", Input: pattern, Output: model.Primitive(targetName)}}}, nil
-	}}
-}
-func Text(profile string) rules.Library[s.Language] { return primitive(profile, "utf8-text", "string") }
-func Bool(profile string) rules.Library[s.Language] { return primitive(profile, "bool", "bool") }
-func List(profile string) rules.Library[s.Language] {
-	slot := g.TypeSlot("E")
-	return rules.Library[s.Language]{Profile: profile, DescribeRules: func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
-		pattern, err := rules.Element(from, slot)
-		if err != nil {
-			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
-		}
-		return g.MappingDescription[h.Language, s.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "list/cpp/1", Input: pattern, Output: model.Collection(g.Mapped[s.Language](slot))}}}, nil
-	}}
-}
-func Record(profile string) rules.Library[s.Language] {
+// Library maps a closed record to a record of its mapped fields under the
+// binding record/cpp/1. An optional field is wrapped in std::optional here.
+func Library(profile string) rules.Library[s.Language] {
 	return rules.Library[s.Language]{Profile: profile, DescribeRules: func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
 		pattern, err := rules.Pattern(from, "record", "closed")
 		if err != nil {
@@ -74,10 +57,4 @@ func Record(profile string) rules.Library[s.Language] {
 			return g.At(model.Record(members...), view.Origin), nil
 		}}}}, nil
 	}}
-}
-func Declarations(profile string) rules.Library[s.Language] {
-	return rules.Declarations(profile, model.Form("struct"), model.Form("alias"))
-}
-func Libraries(profile string) []g.MappingLibrary[h.Language, s.Language, source.Reader] {
-	return []g.MappingLibrary[h.Language, s.Language, source.Reader]{Text(profile), Bool(profile), List(profile), Record(profile), Declarations(profile)}
 }
