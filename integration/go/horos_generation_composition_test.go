@@ -14,7 +14,11 @@ import (
 	n "github.com/Bitspark/bittype/semantics/typescript/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
-	mappings "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/go"
+	tsboolean "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/boolean/go"
+	tsdeclarations "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/declarations/go"
+	tslist "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/list/go"
+	tsrecord "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/record/go"
+	tstext "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/text/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
@@ -74,7 +78,7 @@ func TestHorosReaderRefusesForeignHandles(t *testing.T) {
 		run++
 		var registry c.Registry
 		to := nativeChecker(t, typescriptText()).Language()
-		q, err := genfixture.Request(&registry, input, to, "foreign-reader", target.Provider{}, mappings.Text(rules.RepresentationProfile), mappings.Bool(rules.RepresentationProfile), record, mappings.List(rules.RepresentationProfile), mappings.Declarations(rules.RepresentationProfile))
+		q, err := genfixture.Request(&registry, input, to, "foreign-reader", target.Provider{}, tstext.Library(rules.RepresentationProfile), tsboolean.Library(rules.RepresentationProfile), record, tslist.Library(rules.RepresentationProfile), tsdeclarations.Library(rules.RepresentationProfile))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -104,7 +108,7 @@ func (p tsContribution) Describe(from, to representation.Language) (g.MappingDes
 }
 func selectedTS(p tsContribution, replacementID string) requestBuilder {
 	return func(registry *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-		request, err := genfixture.Request(registry, input, to, "selected-ts", target.Provider{}, mappings.Text(rules.RepresentationProfile), mappings.Bool(rules.RepresentationProfile), mappings.Record(rules.RepresentationProfile), mappings.Declarations(rules.RepresentationProfile))
+		request, err := genfixture.Request(registry, input, to, "selected-ts", target.Provider{}, tstext.Library(rules.RepresentationProfile), tsboolean.Library(rules.RepresentationProfile), tsrecord.Library(rules.RepresentationProfile), tsdeclarations.Library(rules.RepresentationProfile))
 		if err != nil {
 			return c.Request{}, err
 		}
@@ -112,7 +116,7 @@ func selectedTS(p tsContribution, replacementID string) requestBuilder {
 		if err != nil {
 			return c.Request{}, err
 		}
-		base, err := c.RegisterMapping(registry, input.Source.Language(), to, mappings.List(rules.RepresentationProfile))
+		base, err := c.RegisterMapping(registry, input.Source.Language(), to, tslist.Library(rules.RepresentationProfile))
 		if err != nil {
 			return c.Request{}, err
 		}
