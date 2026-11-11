@@ -4,13 +4,30 @@ import (
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	s "github.com/Bitspark/bittype/syntax/golang/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
-	mapping "github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/go"
+	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/boolean/go"
+	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/declarations/go"
+	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/list/go"
+	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/optional/go"
+	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/record/go"
+	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/text/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 )
 
 // golangLibraries is the one place in this package that lists the builtin
 // horos-to-golang mapping libraries. Tests that need the whole set call it, so a
 // change to how that pair is composed edits this file only.
+//
+// The record library wraps an optional field in a helper and the optional
+// library supplies that helper. Neither creates the helper key: the consumer
+// creates it once and passes the same key to both.
 func golangLibraries(profile string) []g.MappingLibrary[h.Language, s.Language, source.Reader] {
-	return mapping.Libraries(profile)
+	optionalKey := g.NewHelperKey("horos/optional")
+	return []g.MappingLibrary[h.Language, s.Language, source.Reader]{
+		text.Library(profile),
+		boolean.Library(profile),
+		list.Library(profile),
+		record.Library(profile, optionalKey),
+		declarations.Library(profile),
+		optional.Library(profile, optionalKey),
+	}
 }
