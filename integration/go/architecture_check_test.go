@@ -39,21 +39,22 @@ type providerException struct {
 
 type architectureSpec struct {
 	Module string
-	// Rules is the per-package allow-list of module imports.
-	Rules      map[string][]string
+	// Foundations is the closed table of foundation and kernel packages with the
+	// exact module imports of each. Such a package imports nothing outside the table.
+	Foundations map[string][]string
+	// Rules holds the hand entries: the exact module imports of a package whose
+	// path gives no role, or of one whose entry replaces its role's allow-list.
+	Rules map[string][]string
+	// Extensions names, per package, imports that its role does not give.
+	Extensions map[string][]string
+	// Owners names the one language that a package with a hand entry belongs
+	// to. Such a package is bound like a package whose path names the language.
+	Owners     map[string]string
 	Exceptions []providerException
 	// ExternalModels are the non-module packages the production graph may hold;
 	// ExternalImports names the module packages that may import each directly.
 	ExternalModels  []string
 	ExternalImports map[string][]string
-}
-
-// isStageProvider reports whether a module-relative path has the shape
-// <stage>/<dimension>/<language>/provider/go. The shared printers are kernel
-// packages, not a language's contribution.
-func isStageProvider(relative string) bool {
-	s := strings.Split(relative, "/")
-	return len(s) == 5 && s[3] == "provider" && s[4] == "go" && s[2] != "shared"
 }
 
 // isComposition reports whether a package chooses and registers contributions.
@@ -67,125 +68,60 @@ func isFreeComposition(relative string) bool {
 	return relative == "integration/go" || relative == "verification/integration/go"
 }
 
-// roleRule is the import rule of every package of one path shape. A package
-// with a role needs no entry in the per-package list.
-type roleRule struct {
-	allowed []string
-	// external are the non-module packages every package of the role may import.
-	external []string
-	// forbidden returns why a dependency is never permitted for the role, or "".
-	// It also binds a package of this shape that has a per-package entry.
-	forbidden func(dependency string) string
-}
-
-// isSemanticHelper reports whether a path has the shape internal/<language>sem.
-func isSemanticHelper(relative string) bool {
-	s := strings.Split(relative, "/")
-	return len(s) == 2 && s[0] == "internal" && strings.HasSuffix(s[1], "sem") && s[1] != "sem"
-}
-
-func isMappingContribution(relative string) bool {
-	s := strings.Split(relative, "/")
-	return len(s) == 6 && s[0] == "transform" && s[1] == "syntax" && strings.HasPrefix(s[2], "horos-to-") && s[2] != "horos-to-" && s[3] == "mapping" && s[5] == "go"
-}
-
-func isVerificationLaw(relative string) bool {
-	s := strings.Split(relative, "/")
-	return len(s) == 6 && strings.HasPrefix(relative, "verification/files/horos-to-go/mappings/") && s[5] == "go"
-}
-
-// packageRole derives a package's rule from its layout path. A role's
-// allow-list is not checked for use: it states what the role may import, and
-// one package of the role need not import all of it.
-func packageRole(relative string) (roleRule, bool) {
-	s := strings.Split(relative, "/")
-	switch {
-	case len(s) == 3 && s[0] == "semantics" && s[2] == "go":
-		// semantics/<language>/go: the vocabulary of one language. It may use
-		// its language's lexical helper, never a provider or internal/<language>sem.
-		language := s[1]
-		return roleRule{
-			allowed: []string{
-				"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "semantics/go",
-				"syntax/" + language + "/go", "trees/ast/go", "trees/representation/go", "internal/" + language,
-			},
-			forbidden: func(dependency string) string {
-				if isStageProvider(dependency) {
-					return "a vocabulary never imports a stage provider"
-				}
-				if isSemanticHelper(dependency) {
-					return "a vocabulary never imports a semantic helper"
-				}
-				return ""
-			},
-		}, true
-	case len(s) == 5 && s[0] == "analyze" && s[1] == "files" && s[3] == "queries" && s[4] == "go":
-		// analyze/files/<language>/queries/go: a native query service. It may
-		// import what the analysis provider it is split from could, without the
-		// resolver.
-		language := s[2]
-		resolver := "resolve/files/" + language + "/provider/go"
-		return roleRule{
-			allowed: []string{
-				"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/" + language + "sem",
-				"semantics/go", "semantics/" + language + "/go", "syntax/" + language + "/go", "trees/representation/go",
-			},
-			forbidden: func(dependency string) string {
-				if dependency == resolver {
-					return "a query service does not import its resolver"
-				}
-				return ""
-			},
-		}, true
-	case isMappingContribution(relative):
-		// transform/syntax/horos-to-<native>/mapping/<name>/go: one mapping. It
-		// may import what the pair's mapping package it is split from could.
-		native := strings.TrimPrefix(s[2], "horos-to-")
-		return roleRule{
-			allowed: []string{
-				"contracts/generation/go", "syntax/horos/go", "syntax/" + native + "/go", "transform/syntax/horos/source/go",
-				"transform/syntax/horos/mapping/go", "transform/syntax/" + native + "/model/go", "trees/ast/go", "trees/representation/go",
-				// The common horos mapping packages: source patterns, the
-				// declaration recipe and naming. They are not mapping contributions.
-				"transform/syntax/horos/mapping/pattern/go", "transform/syntax/horos/mapping/declarations/go", "transform/syntax/horos/mapping/naming/go",
-			},
-			forbidden: func(dependency string) string {
-				if dependency != relative && isMappingContribution(dependency) {
-					return "a mapping contribution never imports another mapping contribution"
-				}
-				return ""
-			},
-		}, true
-	case isVerificationLaw(relative):
-		// verification/files/horos-to-go/mappings/<name>/go: one verification
-		// law. It may import what the mappings package it is split from could,
-		// the external models included.
-		return roleRule{
-			allowed:  []string{"verification/files/horos-to-go/go", "semantics/golang/go", "semantics/go"},
-			external: []string{"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
-			forbidden: func(dependency string) string {
-				if dependency != relative && isVerificationLaw(dependency) {
-					return "a verification law never imports another law"
-				}
-				return ""
-			},
-		}, true
-	}
-	return roleRule{}, false
-}
-
 // checkArchitecture returns one message per violated rule, in a stable order.
 //
-// An entry for a package that the set does not hold is ignored: a rule, a
-// provider exception by its importer, an external allowance. A package can
-// then be deleted without an edit here, and "unused" is said only of a package
-// that exists.
+// Every production package of the module is classified by exactly one of:
+//
+//   - its entry in Foundations. It imports what the entry lists, and nothing
+//     outside the table, whatever the entry says;
+//   - its hand entry in Rules. It imports what the entry lists;
+//   - the role its path gives (packageRole), with the package's Extensions.
+//
+// A package with none of the three fails. Every allowance in an entry or an
+// extension must be used; a role's allow-list need not be. The prohibitions of
+// a role bind every package of its shape, also under a hand entry or an
+// extension: its own (roleRule.forbidden) and "a vocabulary never imports a
+// contribution". A package that belongs to a language, by its path or by
+// Owners, imports no package that belongs to another. An import of a stage
+// provider by a package that is not a composition also needs a provider
+// exception that names the symbols used.
+//
+// An entry for a package that the set does not hold is ignored: a rule, an
+// extension, an owner, a provider exception by its importer, an external
+// allowance. A package can then be deleted without an edit here, and "unused"
+// is said only of a package that exists.
 func checkArchitecture(spec architectureSpec, packages map[string]architecturePackage) []string {
 	var failures []string
 	fail := func(format string, arguments ...any) {
 		failures = append(failures, fmt.Sprintf(format, arguments...))
 	}
 	prefix := spec.Module + "/"
+
+	// roleOf is the role a path gives in this package set: none for a
+	// foundation, and none for a helper whose language does not exist.
+	roleOf := func(relative string) (roleRule, bool) {
+		if _, ok := spec.Foundations[relative]; ok {
+			return roleRule{}, false
+		}
+		role, ok := packageRole(relative)
+		if ok && role.needs != "" {
+			if owner, exists := packages[prefix+role.needs]; !exists || !owner.Production {
+				return roleRule{}, false
+			}
+		}
+		return role, ok
+	}
+	// languagesOf are the languages a package belongs to: those its path names,
+	// or the owner of a package whose path names none.
+	languagesOf := func(relative string) []string {
+		if role, ok := roleOf(relative); ok {
+			return role.scope
+		}
+		if owner, ok := spec.Owners[relative]; ok {
+			return []string{owner}
+		}
+		return nil
+	}
 
 	exceptions := map[[2]string]providerException{}
 	for _, e := range spec.Exceptions {
@@ -235,20 +171,72 @@ func checkArchitecture(spec architectureSpec, packages map[string]architecturePa
 				fail("%s dot-imports %s, which hides the symbols it uses", relative, strings.TrimPrefix(dependency, prefix))
 			}
 		}
-		role, hasRole := packageRole(relative)
-		allowed, listed := spec.Rules[relative]
-		if !listed {
-			if !hasRole {
-				fail("unclassified production package: %s", relative)
-				continue
+
+		foundation, isFoundation := spec.Foundations[relative]
+		hand, listed := spec.Rules[relative]
+		role, hasRole := roleOf(relative)
+		extension, extended := spec.Extensions[relative]
+		var allowed []string
+		switch {
+		case isFoundation:
+			if listed {
+				fail("%s has a foundation entry and a hand entry", relative)
 			}
-			allowed = role.allowed
+			allowed = foundation
+		case listed:
+			allowed = hand
+		case hasRole:
+			allowed = append(slices.Clone(role.allowed), extension...)
+		default:
+			if shape, ok := packageRole(relative); ok {
+				fail("unclassified production package: %s (as a language's helper it needs %s, which does not exist)", relative, shape.needs)
+			} else {
+				fail("unclassified production package: %s", relative)
+			}
+			continue
 		}
+		byRole := !isFoundation && !listed
+		if extended && !byRole {
+			fail("extension of %s extends no role: the package has its own entry", relative)
+		}
+		if _, owned := spec.Owners[relative]; owned && (isFoundation || hasRole) {
+			fail("owner of %s is not needed: its path or the foundation table places it", relative)
+		}
+
+		// prohibition returns why the package may never import a module package,
+		// whatever its allow-list says, or "".
+		prohibition := func(target string) string {
+			if isFoundation {
+				if _, ok := spec.Foundations[target]; !ok {
+					return "a foundation or kernel package imports only foundation and kernel packages"
+				}
+				return ""
+			}
+			if hasRole {
+				if role.forbidden != nil {
+					if reason := role.forbidden(target); reason != "" {
+						return reason
+					}
+				}
+				if imported, ok := roleOf(target); ok && role.kind == roleVocabulary && imported.kind == roleContribution {
+					return "a vocabulary never imports a contribution"
+				}
+			}
+			if own := languagesOf(relative); len(own) > 0 {
+				for _, language := range languagesOf(target) {
+					if !slices.Contains(own, language) {
+						return "it belongs to another language, " + language
+					}
+				}
+			}
+			return ""
+		}
+
 		for _, dependency := range sorted(p.Imports) {
 			if dep, ok := packages[dependency]; ok && dep.Standard {
 				continue
 			}
-			if slices.Contains(spec.ExternalImports[relative], dependency) || slices.Contains(role.external, dependency) {
+			if slices.Contains(spec.ExternalImports[relative], dependency) || hasRole && slices.Contains(role.external, dependency) {
 				continue
 			}
 			if !strings.HasPrefix(dependency, prefix) {
@@ -256,13 +244,11 @@ func checkArchitecture(spec architectureSpec, packages map[string]architecturePa
 				continue
 			}
 			target := strings.TrimPrefix(dependency, prefix)
-			if hasRole {
-				if reason := role.forbidden(target); reason != "" {
-					fail("%s must not import %s: %s", relative, target, reason)
-					continue
-				}
+			if reason := prohibition(target); reason != "" {
+				fail("%s must not import %s: %s", relative, target, reason)
+				continue
 			}
-			if !slices.Contains(allowed, target) {
+			if !slices.Contains(allowed, target) && !(byRole && role.admits != nil && role.admits(target)) {
 				fail("%s must not import %s", relative, dependency)
 			}
 			if !isStageProvider(target) || isComposition(relative) {
@@ -280,11 +266,20 @@ func checkArchitecture(spec architectureSpec, packages map[string]architecturePa
 				}
 			}
 		}
-		if listed {
+		if !byRole {
 			for _, allowance := range allowed {
 				if !slices.Contains(p.Imports, prefix+allowance) {
 					fail("unused allowance: %s may import %s and does not", relative, allowance)
 				}
+			}
+			continue
+		}
+		for _, addition := range extension {
+			switch {
+			case slices.Contains(role.allowed, addition) || role.admits != nil && role.admits(addition):
+				fail("extension of %s repeats its role: %s", relative, addition)
+			case !slices.Contains(p.Imports, prefix+addition):
+				fail("unused extension: %s may import %s and does not", relative, addition)
 			}
 		}
 	}
