@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	analyze "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
+	nativequery "github.com/Bitspark/bittype/analyze/files/golang/queries/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
@@ -65,7 +65,7 @@ func TestGoImportsGuardLongChainsOverSuppliedStructure(t *testing.T) {
 		t.Fatal("supplied generic display", got)
 	}
 	// Admission detail never spells a supplied constraint.
-	queries, err := analyze.NewQueries(context.Background(), model)
+	queries, err := nativequery.NewQueries(context.Background(), model)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,4 +1,4 @@
-// Package analyze consumes Go resolution evidence and owns explicit native queries.
+// Package analyze consumes Go resolution evidence.
 package analyze
 
 import (

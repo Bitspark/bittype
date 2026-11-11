@@ -11,7 +11,8 @@ import (
 	resolvegolang "github.com/Bitspark/bittype/resolve/files/golang/provider/go"
 
 	"context"
-	nativequery "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
+	analyzegolang "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
+	nativequery "github.com/Bitspark/bittype/analyze/files/golang/queries/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"go/types"
 	"testing"
@@ -148,7 +149,7 @@ func checkedNative(ctx context.Context, snapshot semantic.Snapshot) (n.Model, er
 	if err != nil {
 		return n.Model{}, err
 	}
-	analyzer, err := analysis.NewAnalyzer[gs.Language](snapshot.Language(), n.AnalysisContract(), nativequery.Provider{})
+	analyzer, err := analysis.NewAnalyzer[gs.Language](snapshot.Language(), n.AnalysisContract(), analyzegolang.Provider{})
 	if err != nil {
 		return n.Model{}, err
 	}

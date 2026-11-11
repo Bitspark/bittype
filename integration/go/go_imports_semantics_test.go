@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	analyze "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
+	nativequery "github.com/Bitspark/bittype/analyze/files/golang/queries/go"
 	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	check "github.com/Bitspark/bittype/contracts/check/go"
@@ -224,7 +225,7 @@ func TestGoImportsBindQualifiedUsesToImportedDeclarations(t *testing.T) {
 		t.Fatal("supplied structure was exported", facts)
 	}
 	// The explicit query session reconstructs the same graph from the same environment.
-	if _, err := analyze.NewQueries(context.Background(), model); err != nil {
+	if _, err := nativequery.NewQueries(context.Background(), model); err != nil {
 		t.Fatal(err)
 	}
 }

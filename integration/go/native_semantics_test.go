@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	analyze "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
+	nativequery "github.com/Bitspark/bittype/analyze/files/golang/queries/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
@@ -292,7 +293,7 @@ func TestGoSemanticMultiUnitReferencesAndRecursion(t *testing.T) {
 	if !ok || !element.Same(goType(t, m, "Person")) {
 		t.Fatal("cross-file lookup")
 	}
-	query, err := analyze.NewQueries(context.Background(), m)
+	query, err := nativequery.NewQueries(context.Background(), m)
 	if err != nil {
 		t.Fatal("reconstruction", err)
 	}
@@ -313,7 +314,7 @@ func TestGoSemanticMultiUnitReferencesAndRecursion(t *testing.T) {
 func TestGoSemanticNativeAdmission(t *testing.T) {
 	ctx := context.Background()
 	m := goModel(t, "type Text string; type Open[T any] struct{ Value T }; type Strict[T string] struct{ Value T }; type Approx[T ~string] struct{ Value T }")
-	queries, err := analyze.NewQueries(ctx, m)
+	queries, err := nativequery.NewQueries(ctx, m)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -348,7 +349,7 @@ func TestGoSemanticNativeAdmission(t *testing.T) {
 	if _, err := queries.Admit(ctx, goType(t, m, "Open")); !errors.Is(err, n.ErrUnsupported) {
 		t.Fatal("arity", err)
 	}
-	if _, err := analyze.NewQueries(ctx, n.Model{}); !errors.Is(err, n.ErrForeign) {
+	if _, err := nativequery.NewQueries(ctx, n.Model{}); !errors.Is(err, n.ErrForeign) {
 		t.Fatal("zero model", err)
 	}
 	canceled, cancel := context.WithCancel(ctx)
@@ -356,13 +357,13 @@ func TestGoSemanticNativeAdmission(t *testing.T) {
 	if _, err := queries.Admit(canceled, goType(t, m, "Open"), boolean); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
-	if _, err := analyze.NewQueries(canceled, m); !errors.Is(err, context.Canceled) {
+	if _, err := nativequery.NewQueries(canceled, m); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
 }
 func TestGoSemanticConcurrentQueries(t *testing.T) {
 	m := goModel(t, "type Box[T any] struct{ Value T }")
-	q, err := analyze.NewQueries(context.Background(), m)
+	q, err := nativequery.NewQueries(context.Background(), m)
 	if err != nil {
 		t.Fatal(err)
 	}

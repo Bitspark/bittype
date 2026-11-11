@@ -1,4 +1,5 @@
-package analyze
+// Package queries answers explicit native Go questions about an admitted model.
+package queries
 
 import (
 	"context"
