@@ -320,6 +320,47 @@ func TestArchitectureMappingContributionRole(t *testing.T) {
 	mappingSet("transform/syntax/horos-to-x/mapping/go").expect(t, "transform/syntax/horos-to-x/mapping/text/go must not import example.test/m/transform/syntax/horos-to-x/mapping/go")
 }
 
+const (
+	commonAdapter      = "transform/syntax/horos/mapping/go"
+	commonPattern      = "transform/syntax/horos/mapping/pattern/go"
+	commonDeclarations = "transform/syntax/horos/mapping/declarations/go"
+	commonNaming       = "transform/syntax/horos/mapping/naming/go"
+)
+
+var commonMappingImports = []string{"contracts/generation/go", "syntax/horos/go", "transform/syntax/horos/source/go", "trees/representation/go"}
+
+// commonMappingSet is the divided common horos mapping package under the
+// per-package entries of the real rules, and one mapping contribution that
+// imports all four parts. patternExtra and namingExtra are imports that the
+// entries of pattern and naming do not allow.
+func commonMappingSet(patternExtra, namingExtra []string) *syntheticSet {
+	s := newSyntheticSet()
+	s.leaves(commonMappingImports...)
+	s.leaves("syntax/x/go", "transform/syntax/x/model/go", "trees/ast/go")
+	s.listed(commonAdapter, commonMappingImports...)
+	s.add(commonPattern, append(slices.Clone(commonMappingImports), patternExtra...)...)
+	s.spec.Rules[commonPattern] = slices.Clone(commonMappingImports)
+	s.add(commonNaming, namingExtra...)
+	s.spec.Rules[commonNaming] = []string{}
+	s.listed(commonDeclarations, append(slices.Clone(commonMappingImports), commonAdapter, commonNaming)...)
+	s.add("transform/syntax/horos-to-x/mapping/declarations/go", "syntax/x/go", "transform/syntax/x/model/go", commonAdapter, commonDeclarations)
+	s.add("transform/syntax/horos-to-x/mapping/record/go", append(slices.Clone(mappingImports), commonPattern, commonNaming)...)
+	return s
+}
+
+// A mapping contribution may import each part of the common horos mapping
+// package; they are not mapping contributions. Among the parts, the entries of
+// pattern and naming allow neither each other nor the adapter. An entry states
+// that as a missing allowance, so the failure carries no reason of its own.
+func TestArchitectureCommonMappingPackages(t *testing.T) {
+	commonMappingSet(nil, nil).expect(t)
+	commonMappingSet([]string{commonNaming}, nil).expect(t, "transform/syntax/horos/mapping/pattern/go must not import example.test/m/transform/syntax/horos/mapping/naming/go")
+	commonMappingSet([]string{commonAdapter}, nil).expect(t, "transform/syntax/horos/mapping/pattern/go must not import example.test/m/transform/syntax/horos/mapping/go")
+	commonMappingSet([]string{commonDeclarations}, nil).expect(t, "transform/syntax/horos/mapping/pattern/go must not import example.test/m/transform/syntax/horos/mapping/declarations/go")
+	commonMappingSet(nil, []string{commonPattern}).expect(t, "transform/syntax/horos/mapping/naming/go must not import example.test/m/transform/syntax/horos/mapping/pattern/go")
+	commonMappingSet(nil, []string{commonAdapter}).expect(t, "transform/syntax/horos/mapping/naming/go must not import example.test/m/transform/syntax/horos/mapping/go")
+}
+
 var lawImports = []string{"verification/files/horos-to-go/go", "semantics/golang/go", "semantics/go"}
 
 // The first two are what a law may import; the third is another classified model.

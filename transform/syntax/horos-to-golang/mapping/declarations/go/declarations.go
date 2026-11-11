@@ -6,10 +6,11 @@ package declarations
 import (
 	s "github.com/Bitspark/bittype/syntax/golang/go"
 	model "github.com/Bitspark/bittype/transform/syntax/golang/model/go"
+	recipe "github.com/Bitspark/bittype/transform/syntax/horos/mapping/declarations/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 )
 
 // Library returns the declaration mapping under the given profile.
 func Library(profile string) rules.Library[s.Language] {
-	return rules.Declarations(profile, model.Form("defined"), model.Form("alias"))
+	return recipe.Library(profile, model.Form("defined"), model.Form("alias"))
 }

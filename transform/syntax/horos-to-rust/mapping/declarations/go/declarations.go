@@ -4,6 +4,7 @@ package declarations
 
 import (
 	s "github.com/Bitspark/bittype/syntax/rust/go"
+	recipe "github.com/Bitspark/bittype/transform/syntax/horos/mapping/declarations/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	model "github.com/Bitspark/bittype/transform/syntax/rust/model/go"
 )
@@ -11,5 +12,5 @@ import (
 // Library applies the horos declaration recipe with the Rust model forms
 // struct, for a record body, and alias, for every other body.
 func Library(profile string) rules.Library[s.Language] {
-	return rules.Declarations(profile, model.Form("struct"), model.Form("alias"))
+	return recipe.Library(profile, model.Form("struct"), model.Form("alias"))
 }

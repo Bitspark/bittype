@@ -224,6 +224,12 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["transform/syntax/horos/source/go"] = []string{"contracts/analysis/go", "contracts/generation/go", "contracts/semantic/go", "contracts/text/go", "contracts/transform/go", "semantics/go", "semantics/horos/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
 	rules["transform/syntax/shared/target/go"] = []string{"contracts/generation/go", "trees/ast/go", "trees/representation/go"}
 	rules["transform/syntax/horos/mapping/go"] = []string{"contracts/generation/go", "transform/syntax/horos/source/go", "syntax/horos/go", "trees/representation/go"}
+	// The common horos mapping package is divided by owner. The patterns and the
+	// naming function import neither each other nor the adapter; only the
+	// declaration recipe builds on the adapter and on naming.
+	rules["transform/syntax/horos/mapping/pattern/go"] = []string{"contracts/generation/go", "transform/syntax/horos/source/go", "syntax/horos/go", "trees/representation/go"}
+	rules["transform/syntax/horos/mapping/naming/go"] = []string{}
+	rules["transform/syntax/horos/mapping/declarations/go"] = []string{"contracts/generation/go", "transform/syntax/horos/source/go", "syntax/horos/go", "trees/representation/go", "transform/syntax/horos/mapping/go", "transform/syntax/horos/mapping/naming/go"}
 	for _, syntax := range []string{"typescript", "golang", "rust", "cpp"} {
 		rules["transform/syntax/"+syntax+"/target/go"] = []string{"contracts/generation/go", "transform/syntax/shared/target/go", "syntax/" + syntax + "/go", "trees/ast/go"}
 		// These are supplied Horos integrations. The shared composer, source

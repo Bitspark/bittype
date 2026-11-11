@@ -20,6 +20,7 @@ import (
 	tsrecord "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/record/go"
 	tstext "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/text/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
+	patterns "github.com/Bitspark/bittype/transform/syntax/horos/mapping/pattern/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	model "github.com/Bitspark/bittype/transform/syntax/typescript/model/go"
@@ -39,7 +40,7 @@ func TestHorosReaderRefusesForeignHandles(t *testing.T) {
 	var refusals []error
 	run := 0
 	record := tsContribution(func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
-		pattern, err := rules.Pattern(from, "record", "closed")
+		pattern, err := patterns.Head(from, "record", "closed")
 		return g.MappingDescription[h.Language, ts.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, source.Reader]{{ID: "record/foreign", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, ts.Language, source.Reader]) (g.Expression[ts.Language], error) {
 			view, err := r.Use()
 			if err != nil {
@@ -133,7 +134,7 @@ func selectedTS(p tsContribution, replacementID string) requestBuilder {
 func listContribution(id, module, name string) tsContribution {
 	return func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
 		slot := g.TypeSlot("E")
-		pattern, err := rules.Element(from, slot)
+		pattern, err := patterns.Element(from, slot)
 		return g.MappingDescription[h.Language, ts.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, source.Reader]{{ID: id, Input: pattern, Output: model.External(module, name, g.Mapped[ts.Language](slot))}}}, err
 	}
 }
@@ -152,7 +153,7 @@ func TestSelectedMappingFailureNeverFallsBack(t *testing.T) {
 	sentinel := errors.New("selected mapping failed")
 	called := 0
 	provider := tsContribution(func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
-		pattern, err := rules.Pattern(from, "list-of", "")
+		pattern, err := patterns.Head(from, "list-of", "")
 		return g.MappingDescription[h.Language, ts.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, source.Reader]{{ID: "consumer/failure/1", Input: pattern, Expand: func(context.Context, g.Expansion[h.Language, ts.Language, source.Reader]) (g.Expression[ts.Language], error) {
 			called++
 			return g.Expression[ts.Language]{}, sentinel

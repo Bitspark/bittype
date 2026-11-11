@@ -8,13 +8,14 @@ import (
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	model "github.com/Bitspark/bittype/transform/syntax/golang/model/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
+	patterns "github.com/Bitspark/bittype/transform/syntax/horos/mapping/pattern/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 func primitive(profile, sourceName, targetName string) rules.Library[s.Language] {
 	return rules.Library[s.Language]{Profile: profile, DescribeRules: func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
-		pattern, err := rules.Pattern(from, "scalar", sourceName)
+		pattern, err := patterns.Head(from, "scalar", sourceName)
 		if err != nil {
 			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
 		}
