@@ -5,6 +5,7 @@ package declarations
 
 import (
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
+	recipe "github.com/Bitspark/bittype/transform/syntax/horos/mapping/declarations/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	model "github.com/Bitspark/bittype/transform/syntax/typescript/model/go"
 )
@@ -12,5 +13,5 @@ import (
 // Library applies the horos declaration recipe with the TypeScript forms
 // "interface" for records and "alias" for every other declaration.
 func Library(profile string) rules.Library[s.Language] {
-	return rules.Declarations(profile, model.Form("interface"), model.Form("alias"))
+	return recipe.Library(profile, model.Form("interface"), model.Form("alias"))
 }

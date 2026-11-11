@@ -145,6 +145,9 @@ func packageRole(relative string) (roleRule, bool) {
 			allowed: []string{
 				"contracts/generation/go", "syntax/horos/go", "syntax/" + native + "/go", "transform/syntax/horos/source/go",
 				"transform/syntax/horos/mapping/go", "transform/syntax/" + native + "/model/go", "trees/ast/go", "trees/representation/go",
+				// The common horos mapping packages: source patterns, the
+				// declaration recipe and naming. They are not mapping contributions.
+				"transform/syntax/horos/mapping/pattern/go", "transform/syntax/horos/mapping/declarations/go", "transform/syntax/horos/mapping/naming/go",
 			},
 			forbidden: func(dependency string) string {
 				if dependency != relative && isMappingContribution(dependency) {

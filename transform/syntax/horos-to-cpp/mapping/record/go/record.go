@@ -10,6 +10,7 @@ import (
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	model "github.com/Bitspark/bittype/transform/syntax/cpp/model/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
+	patterns "github.com/Bitspark/bittype/transform/syntax/horos/mapping/pattern/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
@@ -18,7 +19,7 @@ import (
 // binding record/cpp/1. An optional field is wrapped in std::optional here.
 func Library(profile string) rules.Library[s.Language] {
 	return rules.Library[s.Language]{Profile: profile, DescribeRules: func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
-		pattern, err := rules.Pattern(from, "record", "closed")
+		pattern, err := patterns.Head(from, "record", "closed")
 		if err != nil {
 			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
 		}

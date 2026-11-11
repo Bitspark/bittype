@@ -12,6 +12,8 @@ import (
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	model "github.com/Bitspark/bittype/transform/syntax/golang/model/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
+	naming "github.com/Bitspark/bittype/transform/syntax/horos/mapping/naming/go"
+	patterns "github.com/Bitspark/bittype/transform/syntax/horos/mapping/pattern/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
@@ -30,7 +32,7 @@ func Library(profile string, optional g.HelperKey) rules.Library[s.Language] {
 		if !optional.Valid() {
 			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, g.ErrInvalid
 		}
-		pattern, err := rules.Pattern(from, "record", "closed")
+		pattern, err := patterns.Head(from, "record", "closed")
 		if err != nil {
 			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
 		}
@@ -56,7 +58,7 @@ func Library(profile string, optional g.HelperKey) rules.Library[s.Language] {
 			}
 			var members []g.Expression[s.Language]
 			for _, f := range fields {
-				f.Name, err = rules.Exported(f.Name)
+				f.Name, err = naming.Exported(f.Name)
 				if err != nil {
 					return g.Expression[s.Language]{}, err
 				}
