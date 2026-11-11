@@ -8,6 +8,7 @@ the implemented scope, not complete language coverage.
 | --- | --- | --- |
 | What belongs to Bittype? | [Charter](../CHARTER.md), [model boundary](model.md), [dependencies](dependencies.md) | Current scope and dependency rules |
 | Where does code belong? | [Layout](../LAYOUT.md) | Current stage/dimension/scope/component hierarchy |
+| What may depend on what, and what is one package? | [Package boundaries](package-boundaries.md), [layout dependency table](../LAYOUT.md#dependency-direction) | Import check per package implemented; one contribution per package and rules by role proposed ([#218](https://github.com/Bitspark/bittype/issues/218), ACX-009) |
 | What exists at each abstraction level? | [Contexts and typed relations](abstraction-levels.md) | Conceptual model, with a current-carrier correspondence table |
 | How do AST, CST, Files and Source relate? | [AST](ast.md), [text stages](parsing-formatting.md), [Files/Source](source.md) | Implemented carriers and role contracts; coverage varies by language |
 | What does the semantic graph establish? | [Semantics](semantics.md), [resolution](resolution.md), [analysis](analysis.md) | Implemented contracts; language-owned judgments |

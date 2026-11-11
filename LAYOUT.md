@@ -196,6 +196,17 @@ verification integrations. The exact package allowances live in the test. Generi
 contracts, engine and printer must remain independent of Horos/ontos, and native
 syntax/text stages must remain independent of the canonical frontend.
 
+**Proposed, 11 November 2026; not implemented.** The check above reads imports
+per package. It cannot see a dependency between two contributions in one
+package, it accepts any use of an allowed import, and an unused allowance
+passes. [Package boundaries](docs/package-boundaries.md) records the findings
+and the proposed rules: one contribution per package, identities in vocabulary
+packages, only a composition imports a contribution, and import rules stated
+per role. The open findings are
+[bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md); the plan
+is [#218](https://github.com/Bitspark/bittype/issues/218). Until its steps land, the paths in this document are
+the current ones.
+
 The [native conformance suite](integration/go/conformance_test.go) covers
 every native language. It checks stable identity, matching AST/CST checker
 views, formatter snapshot ownership and metadata, whole-input rejection, located

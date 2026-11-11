@@ -118,6 +118,11 @@ native models and construction mechanics. Neither the kernel nor a target import
 concrete mapping libraries. There are no per-pair assembly factories or presets.
 The consumer supplies implementations; the kernel performs their composition.
 
+The four native mapping packages still export `Libraries(profile)`, a list of
+their own mappings, and the examples use it.
+[bittype/ACX-009](architecture-cases/0009-package-boundaries.md) records this,
+and [#222](https://github.com/Bitspark/bittype/issues/222) removes it.
+
 ## Language identity and registration
 
 Language markers implement the existing language package contract:
