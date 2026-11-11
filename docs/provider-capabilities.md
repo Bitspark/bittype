@@ -885,7 +885,7 @@ No structural definition attached. Operation source and authored scope remain th
 
 Contract: github.com/Bitspark/bittype/contracts/analysis/go.Provider&#91;github.com/Bitspark/bittype/syntax/rust/go.Language&#93;.
 
-Public operation: [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L57). Receiver: github.com/Bitspark/bittype/analyze/files/rust/provider/go.Provider.
+Public operation: [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L49). Receiver: github.com/Bitspark/bittype/analyze/files/rust/provider/go.Provider.
 
 Language marker: github.com/Bitspark/bittype/syntax/rust/go.Language.
 
@@ -893,11 +893,11 @@ Construction alternatives: no provider collaborators.
 
 Static call relationships (no evidence transfer):
 
-- [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L57) → [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L23) ([call](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L58)); receiver ; type arguments .
+- [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L49) → [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L15) ([call](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L50)); receiver ; type arguments .
 
 Traversal boundary: not a single-return static call.
 
-### Declared target [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L23)
+### Declared target [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L15)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
@@ -905,7 +905,7 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Authored scope: [docs/native-semantics.md#first-rust-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-rust-profile); profile: unspecified (authored profile absent).
 
-### Declared target [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L57)
+### Declared target [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L49)
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
@@ -961,13 +961,13 @@ No structural definition attached. Operation source and authored scope remain th
 
 Contract: github.com/Bitspark/bittype/contracts/resolution/go.Provider&#91;github.com/Bitspark/bittype/syntax/rust/go.Language&#93;.
 
-Public operation: [github.com/Bitspark/bittype/resolve/files/rust/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/rust/provider/go/resolver.go#L44). Receiver: github.com/Bitspark/bittype/resolve/files/rust/provider/go.Provider.
+Public operation: [github.com/Bitspark/bittype/resolve/files/rust/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/rust/provider/go/resolver.go#L36). Receiver: github.com/Bitspark/bittype/resolve/files/rust/provider/go.Provider.
 
 Language marker: github.com/Bitspark/bittype/syntax/rust/go.Language.
 
 Construction alternatives: no provider collaborators.
 
-### Declared target [github.com/Bitspark/bittype/resolve/files/rust/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/rust/provider/go/resolver.go#L44)
+### Declared target [github.com/Bitspark/bittype/resolve/files/rust/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/rust/provider/go/resolver.go#L36)
 
 <a id="binding-NDQ3Ok9EcHdjbTkyYVdSbGNqYzFPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl5WlhOdmJIWmxMMlpwYkdWekwzSjFjM1F2Y0hKdmRtbGtaWEl2WjI4alVISnZkbWxrWlhJdVVtVnpiMngyWlRFeE16cG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZMjl1ZEhKaFkzUnpMM0psYzI5c2RYUnBiMjR2WjI4dVVISnZkbWxrWlhKYloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwzTjViblJoZUM5eWRYTjBMMmR2TGt4aGJtZDFZV2RsWFRZM09tZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXlaWE52YkhabEwyWnBiR1Z6TDNKMWMzUXZjSEp2ZG1sa1pYSXZaMjh1VUhKdmRtbGtaWEkxTVRwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDNKMWMzUXZaMjhqVEdGdVozVmhaMlUwT25KMWMzUTc1OmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9yZXNvbHZlL2ZpbGVzL3J1c3QvcHJvdmlkZXIvZ28jUHJvdmlkZXIuUmVzb2x2ZTU6c2NvcGUxOiM0Mzpkb2NzL25hdGl2ZS1zZW1hbnRpY3MubWQjZmlyc3QtcnVzdC1wcm9maWxlNTpmYWxzZTA6"></a>
 
