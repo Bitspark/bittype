@@ -20,6 +20,7 @@ import (
 	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
 	syntaxprint "github.com/Bitspark/bittype/print/syntax/shared/provider/go"
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
+	"github.com/Bitspark/bittype/semantics/horos/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
 	tsboolean "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/boolean/go"
@@ -68,14 +69,14 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	resolver, err := resolution.NewResolver[h.Language](from, resolve.Contract(), resolve.Provider{})
+	resolver, err := resolution.NewResolver[h.Language](from, horos.ResolutionContract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err = e.RegisterResolver(resolver); err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[h.Language](from, analyze.Contract(), analyze.Provider{})
+	analyzer, err := analysis.NewAnalyzer[h.Language](from, horos.AnalysisContract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}

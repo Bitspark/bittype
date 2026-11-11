@@ -13,6 +13,7 @@ import (
 	filesprint "github.com/Bitspark/bittype/print/files/shared/provider/go"
 	syntaxprint "github.com/Bitspark/bittype/print/syntax/shared/provider/go"
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
+	"github.com/Bitspark/bittype/semantics/horos/go"
 
 	"context"
 	"encoding/json"
@@ -42,11 +43,11 @@ func fileStages(t *testing.T, def representation.Language) (checkerapi.Checker, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolver, err := checkfiles.NewResolver[s.Language](def, resolve.Contract(), resolve.Provider{})
+	resolver, err := checkfiles.NewResolver[s.Language](def, horos.ResolutionContract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](def, analyze.Contract(), analyze.Provider{})
+	analyzer, err := analysis.NewAnalyzer[s.Language](def, horos.AnalysisContract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -36,11 +36,6 @@ var providerExceptions = []providerException{
 	// Open until #220: an identity that a provider package publishes and a
 	// vocabulary package should.
 	{Importer: "analyze/files/golang/provider/go", Provider: "resolve/files/golang/provider/go", Symbols: []string{"Contract"}, Reason: readsResolution, Issue: 220},
-	{Importer: "analyze/files/horos/provider/go", Provider: "resolve/files/horos/provider/go", Symbols: []string{"Contract"}, Reason: readsResolution, Issue: 220},
-	{Importer: "internal/horosfiles", Provider: "resolve/files/horos/provider/go", Symbols: []string{"PreludePin"}, Reason: "compares an import's pin with the horos prelude identity", Issue: 220},
-	{Importer: "transform/syntax/horos/source/go", Provider: "analyze/files/horos/provider/go", Symbols: []string{"Contract", "Profile"}, Reason: "names the horos analysis profile and contract in the evidence it requires", Issue: 220},
-	{Importer: "transform/syntax/horos/source/go", Provider: "resolve/files/horos/provider/go", Symbols: []string{"ExpressionRole", "IdentityRelation", "ResultSortRelation", "SortRelation"}, Reason: "reads the horos semantic graph by the role and relation names the resolver publishes", Issue: 220},
-	{Importer: "verification/files/source/horos/go", Provider: "resolve/files/horos/provider/go", Symbols: []string{"Contract", "Profile"}, Reason: "names the horos resolution profile and contract in the evidence it requires", Issue: 220},
 
 	// Open until #221: a query service that shares a package with a provider.
 	{Importer: "verification/files/horos-to-go/go", Provider: "analyze/files/golang/provider/go", Symbols: []string{"Admission"}, Reason: "takes the Go query service's admission type, which lives in the analysis provider package", Issue: 221},

@@ -25,6 +25,7 @@ import (
 	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
 	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
+	"github.com/Bitspark/bittype/semantics/horos/go"
 	cs "github.com/Bitspark/bittype/syntax/cpp/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
@@ -140,14 +141,14 @@ func generationSource(t *testing.T, source h.AST) (*engine.Engine, representatio
 	if err = e.RegisterChecker(checker); err != nil {
 		t.Fatal(err)
 	}
-	resolver, err := resolution.NewResolver[h.Language](from, resolve.Contract(), resolve.Provider{})
+	resolver, err := resolution.NewResolver[h.Language](from, horos.ResolutionContract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err = e.RegisterResolver(resolver); err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[h.Language](from, analyze.Contract(), analyze.Provider{})
+	analyzer, err := analysis.NewAnalyzer[h.Language](from, horos.AnalysisContract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}

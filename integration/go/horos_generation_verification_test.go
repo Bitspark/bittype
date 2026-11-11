@@ -18,6 +18,7 @@ import (
 	resolvegolang "github.com/Bitspark/bittype/resolve/files/golang/provider/go"
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
+	"github.com/Bitspark/bittype/semantics/horos/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	hs "github.com/Bitspark/bittype/syntax/horos/go"
 	target "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
@@ -71,7 +72,7 @@ func sourceModel(t *testing.T, text string) h.Model {
 	t.Helper()
 	text = "module example; import h from horos.kinds pin \"sha256:" + decl.PreludePin().String() + "\"; " + text
 	s := capture[hs.Language](t, horosText(), hs.Profile, text)
-	r, err := resolution.NewResolver[hs.Language](s.Language(), resolve.Contract(), resolve.Provider{})
+	r, err := resolution.NewResolver[hs.Language](s.Language(), horos.ResolutionContract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,7 +194,7 @@ func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
 	s := sourceModel(t, sourcePage+" type PeoplePage = Page<Person>; type NestedPage = Page<Page<Person>>;")
 	ctx := context.Background()
 	from := s.Snapshot().Language()
-	a, err := analysis.NewAnalyzer[hs.Language](from, analyze.Contract(), analyze.Provider{})
+	a, err := analysis.NewAnalyzer[hs.Language](from, horos.AnalysisContract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
