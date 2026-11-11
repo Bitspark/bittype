@@ -333,7 +333,7 @@ func (p *parser) primaryAtom() ast.NodeID {
 	}
 	// Hyphens are allowed only in the fixed constructor spellings, never names.
 	word := p.Peek()
-	if word == "atom" || word == "text" || word == "key" || word == "lowercase" {
+	if word == "atom" || word == "text" || word == "int" || word == "key" || word == "lowercase" {
 		for i := 1; p.At(i) == "-" && p.Pos+i+1 < len(p.Tokens); i += 2 {
 			if p.Tokens[p.Pos+i-1].End != p.Tokens[p.Pos+i].Start || p.Tokens[p.Pos+i].End != p.Tokens[p.Pos+i+1].Start {
 				break
@@ -374,7 +374,7 @@ func (p *parser) primaryAtom() ast.NodeID {
 			word = "map-of"
 		}
 		return p.descriptor(word, start, args...)
-	case "exact", "atom-exact", "atom-in", "atom-len", "text-len", "key-grammar", "text-non-blank", "lowercase-uuid", "compound", "rec", "ref":
+	case "exact", "atom-exact", "atom-in", "atom-len", "text-len", "int-min", "int-max", "key-grammar", "text-non-blank", "lowercase-uuid", "compound", "rec", "ref":
 		for i, part := range strings.Split(word, "-") {
 			if i > 0 {
 				p.Want("-")

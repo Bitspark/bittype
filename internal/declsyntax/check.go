@@ -87,7 +87,7 @@ var rules = g.Rules{
 	KindUnion:                  {Roles: []g.Role{g.One(RoleSort, sorts...), g.Many(RoleOperand, 2, kinds...)}},
 	KindIntersection:           {Roles: []g.Role{g.One(RoleSort, sorts...), g.Many(RoleOperand, 2, kinds...)}},
 	KindArrow:                  {Roles: []g.Role{g.Many(RoleInput, 1, kinds...), g.One(RoleResult, kinds...)}},
-	KindNodePattern:            {Attributes: g.Attributes(AttributeConstructor, g.Attr(true, g.Set("any", "atom", "atom-exact", "atom-len", "atom-in", "text-len", "key-grammar", "text-non-blank", "lowercase-uuid", "scalar", "exact", "wire", "seq", "list-of", "set-of", "not", "map-of", "tuple", "compound", "union", "and", "record"))), Roles: []g.Role{g.Many(RoleSelector, 0, KindSelector), g.One(RolePattern, sequences...)}},
+	KindNodePattern:            {Attributes: g.Attributes(AttributeConstructor, g.Attr(true, g.Set("any", "atom", "atom-exact", "atom-len", "atom-in", "text-len", "int-min", "int-max", "key-grammar", "text-non-blank", "lowercase-uuid", "scalar", "exact", "wire", "seq", "list-of", "set-of", "not", "map-of", "tuple", "compound", "union", "and", "record"))), Roles: []g.Role{g.Many(RoleSelector, 0, KindSelector), g.One(RolePattern, sequences...)}},
 	KindSelector:               {Attributes: g.Attributes(AttributeName, g.Attr(true, g.Set("selector", "mode")), AttributeValue, g.Attr(true, g.Set("int", "utf8-text", "bool", "open", "closed")))},
 	KindRecursiveKind:          {Attributes: g.Attributes(AttributeIndex, g.Attr(true, g.Decimal)), Roles: []g.Role{g.Many(RoleEquation, 1, KindEquation)}},
 	KindEquation:               {Attributes: g.Attributes(AttributeName, g.Attr(false, identifier), AttributeIndex, g.Attr(true, g.Decimal)), Roles: []g.Role{g.One(RoleBody, kinds...)}},

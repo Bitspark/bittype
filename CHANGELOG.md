@@ -1,5 +1,10 @@
 # Changelog
 
+## Integer bounds in Horos syntax — 11 November 2026
+
+- Kind node patterns admit the constructors `int-min` and `int-max`, so `horos-module` can lower a `horos.kinds` source that lists them in `Scalar` ([#241](https://github.com/Bitspark/bittype/issues/241), [horos ADR 0010](https://github.com/Bitspark/horos/blob/main/docs/architecture/decisions/0010-integer-bounds.md)).
+- Declaration bodies spell the bounds `int-min(lo)` and `int-max(hi)` with one literal operand, as `atom-exact` does. The parser and formatter round-trip them ([Horos syntax](docs/horos-syntax.md#type-descriptors)). Horos 0.10.2, which Bittype pins, predates ADR 0010, so resolution still reports these descriptors as malformed. Native mappings for the bounds are not part of this change.
+
 ## Documents follow the divided common mapping package — 11 November 2026
 
 - `LAYOUT.md`, `AGENTS.md`, [generation](docs/generation.md), [kernel composition](docs/kernel-composition.md) and [type-owned mappings](docs/type-generation-plugins.md) list the adapter package and its siblings `pattern`, `declarations` and `naming` ([#238](https://github.com/Bitspark/bittype/pull/238)). The examples in [generation SPI](docs/generation-spi.md) and [generation planner](docs/generation-planner.md) call `patterns.Element`.

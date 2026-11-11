@@ -232,6 +232,8 @@ type SmallBlob = atom-len(0, 4096);
 type Ready = atom-exact(#"ready");
 type Operation = atom-in(set(#"read", #"write"));
 type ShortName = text & text-len(1, 80) & text-non-blank();
+type Count = int & int-min(0);
+type Byte = int & int-min(-128) & int-max(127);
 type Key = key-grammar();
 type UUID = lowercase-uuid();
 type NullableText = text | exact(null);
@@ -240,6 +242,12 @@ type Tree<D: h.Data> = rec(#"tree", {
     children: list<ref(#"tree")>;
 });
 ```
+
+`int-min(lo)` and `int-max(hi)` are Horos's inclusive integer bounds
+([horos ADR 0010](https://github.com/Bitspark/horos/blob/main/docs/architecture/decisions/0010-integer-bounds.md)),
+and a closed range is their intersection. Like the other literal operands, a
+bound is admitted as any literal. Whether it is a well-formed bound is decided by
+resolution, which needs a Horos release that implements ADR 0010.
 
 The last example assumes the ordinary `h` prelude import. Horos establishes
 primitive operand contracts using ordinary kinds. Existing seq/set/map,
