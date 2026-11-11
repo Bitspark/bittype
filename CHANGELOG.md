@@ -1,5 +1,11 @@
 # Changelog
 
+## Order of correction and the profile gate — 11 November 2026
+
+- Record the owner's 11 November direction in [ACX-004](docs/architecture-cases/0004-generation-file-syntax.md): each misplaced placement decision moves to its Files formatter first and coverage follows additively. The Go package clause ([#161](https://github.com/Bitspark/bittype/issues/161)) and Rust visibility ([#159](https://github.com/Bitspark/bittype/issues/159)) can start; C++ ([#160](https://github.com/Bitspark/bittype/issues/160)) is deferred until its semantic provider, with the reason. The Rust external path is recorded as a further pending instance. No correction is implemented.
+- Add [bittype/ACX-008](docs/architecture-cases/0008-structural-profile-gate.md): the shared horos mapping policy admits exactly one profile name, and that name is taken from the first fixture ([#216](https://github.com/Bitspark/bittype/issues/216)). Pending.
+- Note in [representation families](docs/representation-families.md) the two changes that precede the additive work, and that ontos delivered the expanded-size measure in v0.17.0.
+
 ## Chain issues made startable — 10 November 2026
 
 - Record two further pending instances in ACX-004: the Go package clause and the C++ namespace are fixed by target configuration during generation, while the placement proposal takes each declaration's native scope from the consumer's placement ([#161](https://github.com/Bitspark/bittype/issues/161), [#160](https://github.com/Bitspark/bittype/issues/160)). No correction is implemented.
