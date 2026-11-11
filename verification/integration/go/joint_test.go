@@ -35,7 +35,10 @@ import (
 	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 	v "github.com/Bitspark/bittype/verification/files/horos-to-go/go"
-	m "github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/list/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/optional/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/record/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/scalar/go"
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
 	joint "github.com/Bitspark/bittype/verification/logos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
@@ -195,7 +198,7 @@ func box(t *testing.T, constraint string) (h.Model, n.Model, boxWitness, error) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	library := v.NewAdmissions(selectMappings(t, m.Boolean()))
+	library := v.NewAdmissions(selectMappings(t, scalar.Boolean()))
 	w, err := library.Counterexample(d, ng, nonmember, admission)
 	return s, g, boxWitness{w, library.Authority()}, err
 }
@@ -211,7 +214,7 @@ func TestTextBoxExplicitCounterexample(t *testing.T) {
 		t.Fatal("lost actual captures")
 	}
 	a, _ := r.Outcome().Accepted()
-	want := []string{v.ModelBasis, v.NativeBasis, m.ScalarLaw, v.SourceBasis}
+	want := []string{v.ModelBasis, v.NativeBasis, scalar.Law, v.SourceBasis}
 	slices.Sort(want)
 	if !slices.Equal(a.Dependencies(), want) {
 		t.Fatal(a.Dependencies())
@@ -261,7 +264,7 @@ func TestKindSpellingDoesNotSubstituteItsResolutionModule(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := v.NewAdmissions(selectMappings(t, m.Boolean())).Counterexample(d, native(t, g, "Box"), refuted, admission); !errors.Is(err, v.ErrCoverage) {
+	if _, err := v.NewAdmissions(selectMappings(t, scalar.Boolean())).Counterexample(d, native(t, g, "Box"), refuted, admission); !errors.Is(err, v.ErrCoverage) {
 		t.Fatal("query was rebound by spelling", err)
 	}
 	if _, err := foreignScope.Arrow(s.Root()); !errors.Is(err, h.ErrForeign) {
@@ -301,7 +304,7 @@ func bindPage(t *testing.T, s h.Model, g n.Model, extra ...v.Rule) (pagination, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	rules := []v.Rule{m.Text(), m.Boolean(), m.List(), m.Record(), (m.Optional{Constructor: native(t, g, "BittypeOptional"), PresenceField: "Present", ValueField: "Value"}).Rule()}
+	rules := []v.Rule{scalar.Text(), scalar.Boolean(), list.Rule(), record.Rule(), optional.Rule(native(t, g, "BittypeOptional"), "Present", "Value")}
 	rules = append(rules, extra...)
 	library := v.NewFamilies(selectMappings(t, rules...))
 	f, err := library.Bind(d, native(t, g, "Page"), []v.FieldBinding{{Source: "items", Target: "Items"}, {Source: "next", Target: "Next"}}, k, guarantee)
@@ -341,7 +344,7 @@ func TestOrdinaryRenamedFamilyUsesSameMapping(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rules := []v.Rule{m.Text(), m.Boolean(), m.List(), m.Record(), (m.Optional{Constructor: native(t, g, "Maybe"), PresenceField: "Has", ValueField: "Item"}).Rule()}
+	rules := []v.Rule{scalar.Text(), scalar.Boolean(), list.Rule(), record.Rule(), optional.Rule(native(t, g, "Maybe"), "Has", "Item")}
 	library := v.NewFamilies(selectMappings(t, rules...))
 	f, err := library.Bind(d, native(t, g, "Envelope"), []v.FieldBinding{{Source: "entries", Target: "Entries"}, {Source: "cursor", Target: "Cursor"}}, k, guarantee)
 	if err != nil {
@@ -399,7 +402,7 @@ func TestPageClosedTheoremAndNestedReuse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dependencies := slices.DeleteFunc(allowedLaws(), func(dependency string) bool { return dependency == m.OptionalLaw })
+	dependencies := slices.DeleteFunc(allowedLaws(), func(dependency string) bool { return dependency == optional.Law })
 	limits := joint.DefaultLimits()
 	limits.Checker.Work = 20000000
 	restricted := composition(t, typed.Policy{Foundation: typed.Foundation, Checker: typed.Checker, Dependencies: dependencies}, limits, p.authorities...)
@@ -586,7 +589,7 @@ func nativeAdmission(t *testing.T, ctx context.Context, model n.Model, construct
 
 // The receiver owns this policy independently of the mapping selection.
 func allowedLaws() []string {
-	return []string{v.ModelBasis, v.SourceBasis, v.NativeBasis, m.ScalarLaw, m.ListLaw, m.OptionalLaw, m.RecordLaw, v.NamedLaw}
+	return []string{v.ModelBasis, v.SourceBasis, v.NativeBasis, scalar.Law, list.Law, optional.Law, record.Law, v.NamedLaw}
 }
 func selectMappings(t *testing.T, rules ...v.Rule) v.Mappings {
 	t.Helper()
