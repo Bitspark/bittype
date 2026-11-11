@@ -1,5 +1,9 @@
 # Changelog
 
+## Documents follow the divided common mapping package — 11 November 2026
+
+- `LAYOUT.md`, `AGENTS.md`, [generation](docs/generation.md), [kernel composition](docs/kernel-composition.md) and [type-owned mappings](docs/type-generation-plugins.md) list the adapter package and its siblings `pattern`, `declarations` and `naming` ([#238](https://github.com/Bitspark/bittype/pull/238)). The examples in [generation SPI](docs/generation-spi.md) and [generation planner](docs/generation-planner.md) call `patterns.Element`.
+
 ## Package boundaries, first corrections — 11 November 2026
 
 Code changes that merged on 11 November 2026 under the plan in [#218](https://github.com/Bitspark/bittype/issues/218). The pull requests that moved code report byte-identical identity values and generated declarations before and after. [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) records the corrections, their qualification and what remains.
@@ -16,7 +20,6 @@ Code changes that merged on 11 November 2026 under the plan in [#218](https://gi
 Not done:
 
 - Go's contract identities and Go's query service are still in its provider packages. Their move is draft pull request #231, stacked on open pull request #204.
-- The documents do not follow #238 yet. `LAYOUT.md` and several documents under `docs/` still describe one undivided common package, and the examples in [generation SPI](docs/generation-spi.md) and [generation planner](docs/generation-planner.md) still call `rules.Element`, which is now `pattern.Element`. A later documents change updates them.
 - The per-package list in the architecture test still classifies every package outside the four path shapes.
 - Some horos-owned keys are still spelled inline in `internal/horosfiles` and `transform/syntax/horos/source/go` ([#220](https://github.com/Bitspark/bittype/issues/220)).
 - What a mapping's `Expand` returns is unchanged ([#196](https://github.com/Bitspark/bittype/issues/196), item 6).

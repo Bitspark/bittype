@@ -199,11 +199,6 @@ that are not committed.
   the repository, because the programs that made them were not committed. The
   tests that compare fragments of the generated declarations remain.
 - This record names no independent verification of the corrections.
-- The documents do not yet follow #238. `LAYOUT.md` and several documents under
-  `docs/` still describe one undivided common package. Two examples, in
-  `docs/generation-spi.md` and `docs/generation-planner.md`, still call
-  `rules.Element`, which is now `pattern.Element`. A later documents change
-  updates them.
 - The three packages that #238 added are classified by entries in the
   per-package list, not by a path rule.
 - The allow-list of a path rule is not checked for use. Only the per-package

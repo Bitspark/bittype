@@ -60,11 +60,12 @@ invoke the planner or construct AST nodes.
 
 This is the TypeScript list rule, with error handling abbreviated. The Horos
 pattern owns the element operand; the mapping chooses an array; the TypeScript
-model owns that native form. [Implemented mapping](../transform/syntax/horos-to-typescript/mapping/list/go/list.go)
+model owns that native form. `patterns` is the package
+`transform/syntax/horos/mapping/pattern/go`. [Implemented mapping](../transform/syntax/horos-to-typescript/mapping/list/go/list.go)
 
 ```go
 element := generation.TypeSlot("E")
-pattern, err := rules.Element(from, element)
+pattern, err := patterns.Element(from, element)
 
 binding := generation.BindingDescription[horos.Language, ts.Language, source.Reader]{
     ID:     "list/typescript/1",

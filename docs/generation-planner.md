@@ -266,11 +266,12 @@ description-plus-executable-authority proposal recorded in
 
 For a fixed rule, a library supplies a source selector, authenticated captures
 and an immutable target expression. This is the TypeScript list rule's body
-(fragment inside Describe, using the actual public types):
+(fragment inside Describe, using the actual public types; `patterns` is
+`transform/syntax/horos/mapping/pattern/go`):
 
 ```go
 element := generation.TypeSlot("E")
-pattern, err := rules.Element(from, element)
+pattern, err := patterns.Element(from, element)
 if err != nil { return description, err }
 binding := generation.BindingDescription[horos.Language, typescript.Language, source.Reader]{
     ID: "list/typescript/1",
