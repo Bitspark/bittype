@@ -11,7 +11,9 @@ import (
 	association "github.com/Bitspark/bittype/contracts/verification/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	v "github.com/Bitspark/bittype/verification/files/horos-to-go/go"
-	m "github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/list/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/record/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/scalar/go"
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
 	"github.com/Bitspark/bittype/verification/integration/go/testdata/pair"
 	joint "github.com/Bitspark/bittype/verification/logos/go"
@@ -80,7 +82,7 @@ func TestConsumerPairComposesUnderListAndRecord(t *testing.T) {
 		result := checkClaim(t, checker, application, p.argument.Candidate(depth))
 		accepted(t, result)
 		closure, _ := result.Outcome().Accepted()
-		for _, law := range []string{m.RecordLaw, m.ListLaw, pair.Law} {
+		for _, law := range []string{record.Law, list.Law, pair.Law} {
 			if !slices.Contains(closure.Dependencies(), law) {
 				t.Fatalf("missing %s in %v", law, closure.Dependencies())
 			}
@@ -151,12 +153,12 @@ func TestIndependentLawCannotCertifyItsOwnCandidate(t *testing.T) {
 func TestChildBelongsToThisProjection(t *testing.T) {
 	s := sourceModel(t, sourcePage)
 	g := nativeModel(t, nativePage)
-	list := m.List()
+	listRule := list.Rule()
 	var saved v.Subject
 	spy := v.Rule{Key: semantics.Key{Owner: "test", Name: "capture"}, Dependency: "test/capture", Law: v.Congruence{}, Project: func(p v.Subject) ([]v.Subject, bool, error) {
 		view := p.Source()
 		*view = decl.Expression{}
-		children, ok, err := list.Project(p)
+		children, ok, err := listRule.Project(p)
 		if ok {
 			saved = children[0]
 		}
@@ -203,13 +205,13 @@ func TestCounterexampleUsesSelectedNonBooleanWitness(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	library := v.NewAdmissions(selectMappings(t, m.Text()))
+	library := v.NewAdmissions(selectMappings(t, scalar.Text()))
 	w, err := library.Counterexample(d, box, nonmember, admitted)
 	if err != nil {
 		t.Fatal(err)
 	}
 	accepted(t, checkClaim(t, receiver(t, library.Authority()), w.Claim, w.Candidate))
-	other := v.NewAdmissions(selectMappings(t, m.Boolean()))
+	other := v.NewAdmissions(selectMappings(t, scalar.Boolean()))
 	if _, err := other.Counterexample(d, box, nonmember, admitted); !errors.Is(err, v.ErrCoverage) {
 		t.Fatal(err)
 	}
@@ -261,7 +263,7 @@ func TestNamedTupleUsesActualBodyAndNativeFieldOperands(t *testing.T) {
 			return children, true, nil
 		},
 	}
-	library := v.NewFamilies(selectMappings(t, rule, m.Boolean()))
+	library := v.NewFamilies(selectMappings(t, rule, scalar.Boolean()))
 	k := importedKind(t, s, "Data")
 	bound, err := k.Arrow(s.Root())
 	if err != nil {

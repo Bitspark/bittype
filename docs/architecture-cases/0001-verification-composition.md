@@ -147,7 +147,11 @@ rule supplies the law signature, declared dependency and proof application.
 The composer binds child occurrences and generic parameters, constructs the
 source/native terms, and attributes declarations to explicit captured sites.
 [Mapping protocol](../../verification/files/horos-to-go/go/representation.go) ·
-[Ordinary contributions](../../verification/files/horos-to-go/mappings/go/rules.go).
+Ordinary contributions, one package per law:
+[scalar](../../verification/files/horos-to-go/mappings/scalar/go/law.go),
+[list](../../verification/files/horos-to-go/mappings/list/go/law.go),
+[optional](../../verification/files/horos-to-go/mappings/optional/go/law.go) and
+[record](../../verification/files/horos-to-go/mappings/record/go/law.go).
 
 The joint Logos package accepts typed, receiver-selected interpreters. An issued
 question retains its subjects and immutable logical problem. The receiver

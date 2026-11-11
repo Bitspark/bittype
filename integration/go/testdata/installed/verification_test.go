@@ -30,7 +30,10 @@ import (
 	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 	v "github.com/Bitspark/bittype/verification/files/horos-to-go/go"
-	m "github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/list/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/optional/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/record/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/scalar/go"
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
 	joint "github.com/Bitspark/bittype/verification/logos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
@@ -119,7 +122,7 @@ func TestInstalledJointTextBox(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	library := v.NewAdmissions(selectMappings(t, m.Boolean()))
+	library := v.NewAdmissions(selectMappings(t, scalar.Boolean()))
 	witness, err := library.Counterexample(box, nativeBox, nonmember, admission)
 	if err != nil {
 		t.Fatal(err)
@@ -169,7 +172,7 @@ func nativeAdmission(t *testing.T, ctx context.Context, model n.Model, construct
 
 // The receiver owns this policy independently of the mapping selection.
 func allowedLaws() []string {
-	return []string{v.ModelBasis, v.SourceBasis, v.NativeBasis, m.ScalarLaw, m.ListLaw, m.OptionalLaw, m.RecordLaw, v.NamedLaw}
+	return []string{v.ModelBasis, v.SourceBasis, v.NativeBasis, scalar.Law, list.Law, optional.Law, record.Law, v.NamedLaw}
 }
 func selectMappings(t *testing.T, rules ...v.Rule) v.Mappings {
 	t.Helper()
