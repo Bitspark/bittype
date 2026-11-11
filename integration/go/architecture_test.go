@@ -273,7 +273,7 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["analyze/files/typescript/provider/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/typescriptsem", "resolve/files/typescript/provider/go", "semantics/go", "semantics/typescript/go", "syntax/typescript/go", "trees/representation/go"}
 	rules["internal/rustsem"] = []string{"contracts/parse/go", "contracts/semantic/go", "files/go", "parse/syntax/rust/provider/go", "semantics/go", "semantics/rust/go", "syntax/rust/go", "trees/ast/go"}
 	rules["resolve/files/rust/provider/go"] = []string{"trees/representation/go", "contracts/resolution/go", "contracts/semantic/go", "internal/rustsem", "semantics/go", "semantics/rust/go", "syntax/rust/go"}
-	rules["analyze/files/rust/provider/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "resolve/files/rust/provider/go", "semantics/go", "semantics/rust/go", "syntax/rust/go"}
+	rules["analyze/files/rust/provider/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "semantics/rust/go", "syntax/rust/go"}
 	rules["verification/files/horos-to-go/go"] = []string{"contracts/semantic/go", "contracts/verification/go", "semantics/go", "trees/ast/go", "verification/files/source/horos/go", "semantics/golang/go", "analyze/files/golang/provider/go", "verification/logos/go"}
 	rules["verification/logos/go"] = []string{"contracts/verification/go", "semantics/go"}
 	rules["verification/files/horos-to-go/mappings/go"] = []string{"verification/files/horos-to-go/go", "semantics/golang/go", "semantics/go"}

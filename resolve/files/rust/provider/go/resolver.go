@@ -32,14 +32,6 @@ type Provider struct {
 	Compiler Compiler
 }
 
-func Contract() resolution.Contract {
-	c := semantic.Contract{Profile: n.ResolutionProfile, SemanticsRequirements: n.Requirements()}
-	for _, key := range []semantics.Key{n.Coverage(), n.Bindings(), n.Validity()} {
-		c.Obligations = append(c.Obligations, semantic.Obligation{Key: key, Domain: n.Key("captured-program")})
-	}
-	return resolution.Contract{Semantic: c, Bindings: n.Bindings()}
-}
-
 // bittype:scope docs/native-semantics.md#first-rust-profile
 func (p Provider) Resolve(ctx context.Context, request semantic.Request[s.Language]) (semantic.Result, error) {
 	if ctx == nil || request.Contract().Profile != n.ResolutionProfile || !n.MatchesConfiguration(request.Configuration()) {
@@ -84,5 +76,5 @@ func New(definition representation.Language, compiler Compiler) (resolution.Reso
 	if err := compiler.Validate(); err != nil {
 		return resolution.Resolver{}, err
 	}
-	return resolution.NewResolver[s.Language](definition, Contract(), Provider{Compiler: compiler})
+	return resolution.NewResolver[s.Language](definition, n.ResolutionContract(), Provider{Compiler: compiler})
 }

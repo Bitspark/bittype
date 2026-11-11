@@ -37,7 +37,6 @@ var providerExceptions = []providerException{
 	// vocabulary package should.
 	{Importer: "analyze/files/golang/provider/go", Provider: "resolve/files/golang/provider/go", Symbols: []string{"Contract"}, Reason: readsResolution, Issue: 220},
 	{Importer: "analyze/files/horos/provider/go", Provider: "resolve/files/horos/provider/go", Symbols: []string{"Contract"}, Reason: readsResolution, Issue: 220},
-	{Importer: "analyze/files/rust/provider/go", Provider: "resolve/files/rust/provider/go", Symbols: []string{"Contract"}, Reason: readsResolution, Issue: 220},
 	{Importer: "analyze/files/typescript/provider/go", Provider: "resolve/files/typescript/provider/go", Symbols: []string{"Compiler", "Contract"}, Reason: readsResolution + "; its query service takes the resolver's compiler configuration type", Issue: 220},
 	{Importer: "internal/horosfiles", Provider: "resolve/files/horos/provider/go", Symbols: []string{"PreludePin"}, Reason: "compares an import's pin with the horos prelude identity", Issue: 220},
 	{Importer: "transform/syntax/horos/source/go", Provider: "analyze/files/horos/provider/go", Symbols: []string{"Contract", "Profile"}, Reason: "names the horos analysis profile and contract in the evidence it requires", Issue: 220},
