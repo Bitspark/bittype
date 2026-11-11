@@ -106,7 +106,8 @@ filenames and storage order do not establish visibility. Unrelated supplied
 modules are not silently promoted into the selected closure. The existing Files
 profile keeps its complete supplied-file admission rules.
 
-The exact bundled standard module is identified by public `resolve.PreludePin()`.
+The exact bundled standard module is identified by public `horos.PreludePin()`
+in the vocabulary package `semantics/horos/go`.
 A source module still writes an ordinary import to that identity. When the
 bundled prelude has no supplied AST, authoritative kind entities may be
 source-less. The bridge invents neither AST locations nor a Files relation to a
@@ -175,7 +176,7 @@ a usable partial semantic model. Export exhaustion can preserve an earlier
 validity report while leaving graph publication incomplete. Unknown requested
 obligations remain Unsupported rather than silently counted as complete.
 
-`resolve.LimitsSetting()` retains provider-owned configuration for
+`horos.LimitsSetting()` in `semantics/horos/go` retains provider-owned configuration for
 `[MaxDepth, MaxNodes, MaxBytes, MaxModules]`. Absence uses Horos defaults; malformed
 configuration is a request/configuration error. The kernel bounds and copies the
 configuration without interpreting it. Canonical, syntax/carrier, graph and

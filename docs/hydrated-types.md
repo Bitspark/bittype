@@ -144,7 +144,7 @@ Provider-owned facts distinguish sorts, declared/result kinds, checked symbolic
 bodies and individual memberships with their actual assumptions. Absence is not
 nonmembership; no principal kind is published. The kernel stores these terms
 without interpreting Type, Data, Scalar, Record, List or Wire. Native mappings
-use `transform/syntax/horos-to-<native>/mapping/go` with an explicit representation profile;
+use `transform/syntax/horos-to-<native>/mapping/<name>/go` with an explicit representation profile;
 unimplemented enforcement returns Unsupported. No concrete library introduces
 an engine case, built-in registration or runtime dependency.
 

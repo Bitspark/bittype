@@ -16,6 +16,7 @@ establish complete language validity. See the [provider matrix](providers.md).
 | [engine/go](../engine/go/resolution.go) | Explicit capture, registration, capability lookup and invocation |
 | [resolve/files/horos/provider/go](../resolve/files/horos/provider/go/resolver.go) | Horos resolution, authoritative semantic export and existing canonical-value entry helpers |
 | [analyze/files/horos/provider/go](../analyze/files/horos/provider/go/analyze.go) | Consume explicit Horos evidence and reuse its sealed model |
+| [semantics/horos/go](../semantics/horos/go/vocabulary.go) | The horos semantic identities, including the resolution and analysis contracts |
 
 The common semantic package replaces the former analysis-owned construction
 records. There are no aliases at their old paths. The semantic fact model remains
@@ -151,8 +152,10 @@ validity without a model.
 
 The analyzer consumes that explicit result, preserves the advertised analysis
 reports and reuses the same model without repeating authoritative resolution.
-`analyze.ContractWithResolutionConfiguration(settings)` selects exact expected
-resolver settings; `analyze.Contract()` selects the default empty configuration.
+`horos.AnalysisContractWithResolutionConfiguration(settings)` selects exact expected
+resolver settings; `horos.AnalysisContract()` selects the default empty configuration.
+Both are published by the vocabulary package `semantics/horos/go`, next to
+`horos.ResolutionContract()`.
 Resolver settings belong to Resolve's Options, not the analyzer's Options.
 
 Pagination retains imported Page, the caller's plain Person reference,

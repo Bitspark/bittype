@@ -54,8 +54,13 @@ another directly "instead of invoking the kernel", and enforce the result
 import between implementations. One contribution, meaning one thing a consumer
 registers or selects on its own, is one package. Identities live in vocabulary
 packages. Only a composition imports a contribution. Ask of every direct call
-whose answer the caller needs: its own, or the composition's. The rules are
-proposed and ordered in [#218](https://github.com/Bitspark/bittype/issues/218); the open findings are
+whose answer the caller needs: its own, or the composition's. The
+[architecture test](integration/go/architecture_check_test.go) enforces part of
+this since 11 November 2026. An import of a stage provider package outside a
+composition needs an entry that names its symbols and its reason. Mapping
+contributions, verification laws, language vocabularies and query services are
+classified by their path. Every other package is still classified by a
+per-package list. The plan is [#218](https://github.com/Bitspark/bittype/issues/218); the findings that remain open are
 [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md). The
 import check enforces boundaries that this reasoning has decided. It does not
 replace the reasoning, and a green run does not show that ownership is right.
@@ -148,7 +153,8 @@ identify both expected and replacement bindings; ambiguity and selected-rule
 failure never trigger a weaker fallback. Native semantic forms belong under
 transform/syntax/<native>/model/go, their AST interpretation under
 transform/syntax/<native>/target/go. Horos mappings live under
-transform/syntax/horos/mapping/go and transform/syntax/horos-to-<native>/mapping/go.
+transform/syntax/horos/mapping/go and, one package per mapping, under
+transform/syntax/horos-to-<native>/mapping/<name>/go. Each exports Library.
 The kernel, source and target packages cannot import concrete mapping packages.
 Mapping packages depend on native models, never target AST constructors.
 

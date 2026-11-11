@@ -53,8 +53,8 @@ admit each law the candidate uses.
 
 ```go
 selected, err := verification.Select(
-    mappings.Text(), mappings.Boolean(), mappings.List(), mappings.Record(),
-    optional.Rule(), pair.Rule(tupleHelper),
+    scalar.Text(), scalar.Boolean(), list.Rule(), record.Rule(),
+    optional.Rule(optionalHelper, "Present", "Value"), pair.Rule(tupleHelper),
 )
 if err != nil {
     return err
@@ -62,6 +62,12 @@ if err != nil {
 families := verification.NewFamilies(selected)
 checker, err := logos.New(policy, limits, families.Authorities()...)
 ```
+
+Each builtin law is its own package under
+`verification/files/horos-to-go/mappings/<name>/go`: `scalar`, `list`,
+`optional` and `record`. `scalar` exports the two rules `Text()` and
+`Boolean()` of one law. `optional.Rule` takes the helper type and the names of
+its presence and value fields. No package lists the laws.
 
 A new question family uses `logos.Interpret[S]` with its own subject type and
 projection. Only the exact authority selected in `logos.New` can issue its
