@@ -3524,7 +3524,7 @@ No structural definition attached. Operation source and authored scope remain th
 
 Contract: github.com/Bitspark/bittype/contracts/analysis/go.Provider&#91;github.com/Bitspark/bittype/syntax/typescript/go.Language&#93;.
 
-Public operation: [github.com/Bitspark/bittype/analyze/files/typescript/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/typescript/provider/go/analyze.go#L69). Receiver: github.com/Bitspark/bittype/analyze/files/typescript/provider/go.Provider.
+Public operation: [github.com/Bitspark/bittype/analyze/files/typescript/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/typescript/provider/go/analyze.go#L50). Receiver: github.com/Bitspark/bittype/analyze/files/typescript/provider/go.Provider.
 
 Language marker: github.com/Bitspark/bittype/syntax/typescript/go.Language.
 
@@ -3532,11 +3532,11 @@ Construction alternatives: no provider collaborators.
 
 Static call relationships (no evidence transfer):
 
-- [github.com/Bitspark/bittype/analyze/files/typescript/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/typescript/provider/go/analyze.go#L69) → [github.com/Bitspark/bittype/analyze/files/typescript/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/typescript/provider/go/analyze.go#L35) ([call](https://github.com/Bitspark/bittype/blob/main/analyze/files/typescript/provider/go/analyze.go#L70)); receiver ; type arguments .
+- [github.com/Bitspark/bittype/analyze/files/typescript/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/typescript/provider/go/analyze.go#L50) → [github.com/Bitspark/bittype/analyze/files/typescript/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/typescript/provider/go/analyze.go#L16) ([call](https://github.com/Bitspark/bittype/blob/main/analyze/files/typescript/provider/go/analyze.go#L51)); receiver ; type arguments .
 
 Traversal boundary: not a single-return static call.
 
-### Declared target [github.com/Bitspark/bittype/analyze/files/typescript/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/typescript/provider/go/analyze.go#L35)
+### Declared target [github.com/Bitspark/bittype/analyze/files/typescript/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/typescript/provider/go/analyze.go#L16)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
@@ -3544,13 +3544,13 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Authored scope: [docs/native-semantics.md#first-typescript-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-typescript-profile); profile: unspecified (authored profile absent).
 
-### Declared target [github.com/Bitspark/bittype/analyze/files/typescript/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/typescript/provider/go/analyze.go#L69)
+### Declared target [github.com/Bitspark/bittype/analyze/files/typescript/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/typescript/provider/go/analyze.go#L50)
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
 | semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
-| typescript-semantic-subset | generic-and-native-facts | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestTypeScriptSemanticGenericsAndNativeFacts](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L209) (external) |
-| typescript-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestTypeScriptSemanticReports](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L253) (external) |
+| typescript-semantic-subset | generic-and-native-facts | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestTypeScriptSemanticGenericsAndNativeFacts](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L210) (external) |
+| typescript-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestTypeScriptSemanticReports](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L254) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -3560,13 +3560,13 @@ No structural definition attached. Operation source and authored scope remain th
 
 Contract: github.com/Bitspark/bittype/contracts/resolution/go.Provider&#91;github.com/Bitspark/bittype/syntax/typescript/go.Language&#93;.
 
-Public operation: [github.com/Bitspark/bittype/resolve/files/typescript/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/typescript/provider/go/resolver.go#L44). Receiver: github.com/Bitspark/bittype/resolve/files/typescript/provider/go.Provider.
+Public operation: [github.com/Bitspark/bittype/resolve/files/typescript/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/typescript/provider/go/resolver.go#L22). Receiver: github.com/Bitspark/bittype/resolve/files/typescript/provider/go.Provider.
 
 Language marker: github.com/Bitspark/bittype/syntax/typescript/go.Language.
 
 Construction alternatives: no provider collaborators.
 
-### Declared target [github.com/Bitspark/bittype/resolve/files/typescript/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/typescript/provider/go/resolver.go#L44)
+### Declared target [github.com/Bitspark/bittype/resolve/files/typescript/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/typescript/provider/go/resolver.go#L22)
 
 <a id="binding-NDg4Ok9EcHdjbTkyYVdSbGNqZ3hPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl5WlhOdmJIWmxMMlpwYkdWekwzUjVjR1Z6WTNKcGNIUXZjSEp2ZG1sa1pYSXZaMjhqVUhKdmRtbGtaWEl1VW1WemIyeDJaVEV4T1RwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdlkyOXVkSEpoWTNSekwzSmxjMjlzZFhScGIyNHZaMjh1VUhKdmRtbGtaWEpiWjJsMGFIVmlMbU52YlM5Q2FYUnpjR0Z5YXk5aWFYUjBlWEJsTDNONWJuUmhlQzkwZVhCbGMyTnlhWEIwTDJkdkxreGhibWQxWVdkbFhUY3pPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzl5WlhOdmJIWmxMMlpwYkdWekwzUjVjR1Z6WTNKcGNIUXZjSEp2ZG1sa1pYSXZaMjh1VUhKdmRtbGtaWEkxTnpwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDNSNWNHVnpZM0pwY0hRdloyOGpUR0Z1WjNWaFoyVXhNRHAwZVhCbGMyTnlhWEIwODE6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL3Jlc29sdmUvZmlsZXMvdHlwZXNjcmlwdC9wcm92aWRlci9nbyNQcm92aWRlci5SZXNvbHZlNTpzY29wZTE6IzQ5OmRvY3MvbmF0aXZlLXNlbWFudGljcy5tZCNmaXJzdC10eXBlc2NyaXB0LXByb2ZpbGU1OmZhbHNlMDo"></a>
 
@@ -3575,7 +3575,7 @@ Authored scope: [docs/native-semantics.md#first-typescript-profile](https://gith
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
 | semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L50) (external) |
-| typescript-semantic-subset | generic-and-native-facts | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestTypeScriptSemanticGenericsAndNativeFacts](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L209) (external) |
-| typescript-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestTypeScriptSemanticReports](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L253) (external) |
+| typescript-semantic-subset | generic-and-native-facts | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestTypeScriptSemanticGenericsAndNativeFacts](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L210) (external) |
+| typescript-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestTypeScriptSemanticReports](https://github.com/Bitspark/bittype/blob/main/integration/go/typescript_semantics_test.go#L254) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
