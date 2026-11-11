@@ -209,11 +209,11 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["internal/horos"] = []string{}
 	// The Horos frontend uses private mechanics, not a language registry.
 	rules["internal/declsyntax"] = []string{"trees/ast/go", "check/syntax/shared/ast/go", "contracts/text/go", "internal/grammar"}
-	rules["internal/horosmodel"] = []string{"trees/ast/go", "check/syntax/shared/ast/go", "contracts/text/go", "internal/declsyntax", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"}
+	rules["internal/horosmodel"] = []string{"trees/ast/go", "check/syntax/shared/ast/go", "contracts/text/go", "internal/declsyntax", "contracts/semantic/go", "semantics/go", "semantics/horos/go"}
 	for _, name := range []string{"horos"} {
-		rules["resolve/files/"+name+"/provider/go"] = []string{"trees/ast/go", "syntax/" + name + "/go", "check/syntax/" + name + "/provider/go", "internal/horosmodel", "contracts/semantic/go", "contracts/resolution/go", "semantics/go"}
+		rules["resolve/files/"+name+"/provider/go"] = []string{"trees/ast/go", "syntax/" + name + "/go", "check/syntax/" + name + "/provider/go", "internal/horosmodel", "contracts/semantic/go", "contracts/resolution/go"}
 		rules["check/syntax/"+name+"/provider/go"] = []string{"trees/ast/go", "syntax/" + name + "/go", "internal/declsyntax", "contracts/check/go"}
-		rules["analyze/files/"+name+"/provider/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "contracts/resolution/go", "semantics/go", "syntax/" + name + "/go", "resolve/files/" + name + "/provider/go"}
+		rules["analyze/files/"+name+"/provider/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "semantics/" + name + "/go", "syntax/" + name + "/go"}
 		for _, stage := range []string{"parse", "format"} {
 			rules[stage+"/syntax/"+name+"/provider/go"] = append(rules[stage+"/syntax/"+name+"/provider/go"], "internal/"+name, "internal/horosmodel", "internal/lex")
 		}
@@ -221,7 +221,7 @@ func TestProductionArchitecture(t *testing.T) {
 		rules["format/syntax/"+name+"/provider/go"] = append(rules["format/syntax/"+name+"/provider/go"], "contracts/text/go")
 	}
 	rules["transform/syntax/shared/generation/go"] = []string{"contracts/text/go", "contracts/generation/go", "contracts/semantic/go", "contracts/transform/go", "trees/ast/go", "trees/representation/go"}
-	rules["transform/syntax/horos/source/go"] = []string{"analyze/files/horos/provider/go", "contracts/analysis/go", "contracts/generation/go", "contracts/semantic/go", "contracts/text/go", "contracts/transform/go", "resolve/files/horos/provider/go", "semantics/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
+	rules["transform/syntax/horos/source/go"] = []string{"contracts/analysis/go", "contracts/generation/go", "contracts/semantic/go", "contracts/text/go", "contracts/transform/go", "semantics/go", "semantics/horos/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
 	rules["transform/syntax/shared/target/go"] = []string{"contracts/generation/go", "trees/ast/go", "trees/representation/go"}
 	rules["transform/syntax/horos/mapping/go"] = []string{"contracts/generation/go", "transform/syntax/horos/source/go", "syntax/horos/go", "trees/representation/go"}
 	for _, syntax := range []string{"typescript", "golang", "rust", "cpp"} {
@@ -241,13 +241,13 @@ func TestProductionArchitecture(t *testing.T) {
 	rules["engine/go"] = append(rules["engine/go"], "contracts/generation/go", "transform/syntax/shared/generation/go", "files/go", "source/go")
 	rules["print/files/shared/provider/go"] = []string{"contracts/language/go", "contracts/print/go", "files/go", "source/go", "trees/cst/go", "trees/representation/go"}
 	composition := []string{"contracts/analysis/go", "contracts/check/go", "contracts/parse/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go", "source/go", "semantics/go", "syntax/horos/go", "trees/ast/go", "trees/cst/go", "trees/representation/go"}
-	// Files composition uses the public Horos prelude identity from the resolver.
-	rules["internal/horosfiles"] = append(append([]string{}, composition...), "contracts/format/go", "files/go", "internal/tree", "resolve/files/horos/provider/go")
+	// Files composition uses the public horos prelude identity from the vocabulary.
+	rules["internal/horosfiles"] = append(append([]string{}, composition...), "contracts/format/go", "files/go", "internal/tree", "semantics/horos/go")
 	rules["parse/files/horos/provider/go"] = append(append([]string{}, composition...), "internal/horosfiles")
 	rules["format/files/horos/provider/go"] = append(append([]string{}, composition...), "contracts/format/go", "internal/horosfiles")
 	// Verification projections are explicit concrete compositions, not registered
 	// language stages. The agnostic association above never imports their models.
-	rules["verification/files/source/horos/go"] = []string{"contracts/semantic/go", "contracts/resolution/go", "internal/horosmodel", "resolve/files/horos/provider/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
+	rules["verification/files/source/horos/go"] = []string{"contracts/semantic/go", "contracts/resolution/go", "internal/horosmodel", "semantics/horos/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"}
 	// semantics/<language>/go is classified by its role. The golang entry states
 	// the same list and stays until #204, which edits the next line, has merged.
 	rules["semantics/golang/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "syntax/golang/go", "trees/ast/go", "trees/representation/go"}
@@ -331,6 +331,7 @@ var modelExternalImports = map[string][]string{
 	"format/syntax/horos/provider/go":            {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"internal/horosmodel":                        {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 	"resolve/files/horos/provider/go":            {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
+	"semantics/horos/go":                         {"github.com/Bitspark/horos/core/go/declarations"},
 	"verification/files/source/horos/go":         {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"verification/files/horos-to-go/go":          {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/Bitspark/logos-contract/contract/go/typed"},
 }

@@ -24,6 +24,7 @@ import (
 
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
+	"github.com/Bitspark/bittype/semantics/horos/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	hs "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -78,7 +79,7 @@ func installedCapture[L any](t *testing.T, p installedSyntax[L], profile, source
 func TestInstalledJointTextBox(t *testing.T) {
 	ctx := context.Background()
 	snapshot := installedCapture[hs.Language](t, textfixture.New(parsehoros.Provider{}, checkhoros.Provider{}, formathoros.Provider{}), hs.Profile, "module installed; import h from horos.kinds pin \"sha256:"+decl.PreludePin().String()+"\"; type TextBox<T:h.Text> = {value:T;};")
-	resolver, err := resolution.NewResolver[hs.Language](snapshot.Language(), resolve.Contract(), resolve.Provider{})
+	resolver, err := resolution.NewResolver[hs.Language](snapshot.Language(), horos.ResolutionContract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}

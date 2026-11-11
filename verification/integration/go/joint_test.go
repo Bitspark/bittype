@@ -29,6 +29,7 @@ import (
 
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
+	"github.com/Bitspark/bittype/semantics/horos/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	hs "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -83,7 +84,7 @@ func sourceModel(t *testing.T, text string) h.Model {
 	t.Helper()
 	text = "module example; import h from horos.kinds pin \"sha256:" + decl.PreludePin().String() + "\"; " + text
 	s := capture[hs.Language](t, textfixture.New(parsehoros.Provider{}, checkhoros.Provider{}, formathoros.Provider{}), hs.Profile, text)
-	r, err := resolution.NewResolver[hs.Language](s.Language(), resolve.Contract(), resolve.Provider{})
+	r, err := resolution.NewResolver[hs.Language](s.Language(), horos.ResolutionContract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}

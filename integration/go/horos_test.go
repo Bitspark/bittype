@@ -19,6 +19,7 @@ import (
 
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
+	"github.com/Bitspark/bittype/semantics/horos/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -114,7 +115,7 @@ func qualifyHoros(t *testing.T) {
 	if _, err := registry.Analyze(context.Background(), input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatalf("syntax registration silently installs an analyzer: %v", err)
 	}
-	analyzer, err := analysis.NewAnalyzer[h.Language](definition, analyze.Contract(), analyze.Provider{})
+	analyzer, err := analysis.NewAnalyzer[h.Language](definition, horos.AnalysisContract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +125,7 @@ func qualifyHoros(t *testing.T) {
 	if _, err := registry.Resolve(context.Background(), snapshot, semantic.Options{}); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	resolver, err := resolution.NewResolver[h.Language](definition, resolve.Contract(), resolve.Provider{})
+	resolver, err := resolution.NewResolver[h.Language](definition, horos.ResolutionContract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,10 +141,10 @@ func qualifyHoros(t *testing.T) {
 	if err != nil || !result.HasSemantics() {
 		t.Fatalf("explicitly registered Horos analysis: %v", err)
 	}
-	for _, obligation := range analyze.Contract().Semantic.Obligations {
+	for _, obligation := range horos.AnalysisContract().Semantic.Obligations {
 		report, found := result.Report(obligation.Key)
 		want := semantic.Undetermined
-		if obligation.Key == resolve.Validity() {
+		if obligation.Key == horos.Validity() {
 			want = semantic.Holds
 		}
 		if !found || report.Status != semantic.Complete || report.Verdict != want {

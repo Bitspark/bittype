@@ -9,7 +9,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	bridge "github.com/Bitspark/bittype/internal/horosmodel"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
+	n "github.com/Bitspark/bittype/semantics/horos/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -21,7 +21,7 @@ import (
 var ErrForeign = errors.New("foreign or missing Horos projection handle")
 
 var frontend = bridge.Frontend[s.Language]{
-	DeclarationPrefix: "horos/decl/", DescriptorPrefix: "horos/", Owner: "horos", ResolutionProfile: resolve.Profile,
+	DeclarationPrefix: "horos/decl/", DescriptorPrefix: "horos/",
 	ResolveModel: func(root core.Value, deps []core.Value, limits decl.Limits) (bridge.Program, error) {
 		return decl.ResolveWithLimits(root, deps, limits)
 	},
@@ -56,8 +56,8 @@ type Judgment struct {
 }
 
 func Evidence() semantic.EvidenceRequirement {
-	return semantic.EvidenceRequirement{Operation: resolution.Kind(), Profile: resolve.Profile,
-		Reports: resolve.Contract().Semantic.SemanticsRequirements, Semantics: true}
+	return semantic.EvidenceRequirement{Operation: resolution.Kind(), Profile: n.ResolutionProfile,
+		Reports: n.ResolutionContract().Semantic.SemanticsRequirements, Semantics: true}
 }
 
 // Inspect explicitly reconstructs the owner-local Program from the exact captured
