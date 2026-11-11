@@ -1,5 +1,26 @@
 # Changelog
 
+## Package boundaries, first corrections — 11 November 2026
+
+Code changes that merged on 11 November 2026 under the plan in [#218](https://github.com/Bitspark/bittype/issues/218). The pull requests that moved code report byte-identical identity values and generated declarations before and after. [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) records the corrections, their qualification and what remains.
+
+- [#224](https://github.com/Bitspark/bittype/pull/224): tests reach each pair's mapping libraries and the verification laws through one seam file each under `integration/go` (`libraries_*_test.go`, `laws_golang_test.go`).
+- [#225](https://github.com/Bitspark/bittype/pull/225), closing [#219](https://github.com/Bitspark/bittype/issues/219): the architecture check names the exact symbols of every import of a stage provider package. An unused allowance, an unused exception and a dot import of a module package fail. Four package shapes are classified by their path. 94 unused allowances are removed from the per-package list.
+- [#226](https://github.com/Bitspark/bittype/pull/226), [#227](https://github.com/Bitspark/bittype/pull/227), [#230](https://github.com/Bitspark/bittype/pull/230), [#232](https://github.com/Bitspark/bittype/pull/232): each native mapping library is its own package, `transform/syntax/horos-to-<native>/mapping/<name>/go`, and exports `Library(profile)`. `Libraries(profile)` is deleted. For Go the consumer creates the helper key and passes it to `record.Library(profile, key)` and `optional.Library(profile, key)`.
+- [#228](https://github.com/Bitspark/bittype/pull/228): each horos-to-Go verification law is its own package, `verification/files/horos-to-go/mappings/{scalar,list,optional,record}/go`.
+- [#229](https://github.com/Bitspark/bittype/pull/229), [#233](https://github.com/Bitspark/bittype/pull/233), [#234](https://github.com/Bitspark/bittype/pull/234): the Rust, TypeScript and horos contract identities are published by `semantics/{rust,typescript,horos}/go` as `ResolutionContract()` and `AnalysisContract()`. `semantics/horos/go` is new and owns the horos roles, relations and profiles, the limits setting and the prelude pin. The TypeScript `Compiler` type moved to `semantics/typescript/go`.
+- [#233](https://github.com/Bitspark/bittype/pull/233): the TypeScript query service is `analyze/files/typescript/queries/go`.
+- [#238](https://github.com/Bitspark/bittype/pull/238): the common horos mapping package is divided. The adapter `Library` with the profile gate stays at `transform/syntax/horos/mapping/go`. `pattern`, `declarations` and `naming` are packages under `transform/syntax/horos/mapping/<name>/go`. `Pattern` is now `pattern.Head` and `Declarations` is now `declarations.Library`. The profile gate is unchanged ([#216](https://github.com/Bitspark/bittype/issues/216)).
+- The documents follow these changes, except #238: `LAYOUT.md` records the path form `<component>/<name>/go` for a component with several independently selectable contributions, and the examples in [kernel composition](docs/kernel-composition.md) and the [Page and Cell example](docs/page-cell-example.md) register each library.
+
+Not done:
+
+- Go's contract identities and Go's query service are still in its provider packages. Their move is draft pull request #231, stacked on open pull request #204.
+- The documents do not follow #238 yet. `LAYOUT.md` and several documents under `docs/` still describe one undivided common package, and the examples in [generation SPI](docs/generation-spi.md) and [generation planner](docs/generation-planner.md) still call `rules.Element`, which is now `pattern.Element`. A later documents change updates them.
+- The per-package list in the architecture test still classifies every package outside the four path shapes.
+- Some horos-owned keys are still spelled inline in `internal/horosfiles` and `transform/syntax/horos/source/go` ([#220](https://github.com/Bitspark/bittype/issues/220)).
+- What a mapping's `Expand` returns is unchanged ([#196](https://github.com/Bitspark/bittype/issues/196), item 6).
+
 ## Package boundaries — 11 November 2026
 
 - Add [package boundaries](docs/package-boundaries.md): the difference between parts that are wrongly grouped in one package and contributions that are wrongly coupled, the question that separates them, what to look for, the findings of a scan at `3bf45c3`, the proposed import rules by role and the order of work ([#218](https://github.com/Bitspark/bittype/issues/218)). Nothing is implemented.

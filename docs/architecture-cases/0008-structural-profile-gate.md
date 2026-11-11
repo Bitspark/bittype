@@ -51,8 +51,11 @@ func (p Library[T]) Describe(from, to representation.Language) (...) {
 	}
 ```
 
-Every rule constructor in the four native mapping packages takes a `profile`
-argument, for example `Text(profile)` and `Libraries(profile)`. Exactly one
+Every constructor of a native mapping library takes a `profile` argument, for
+example `text.Library(profile)` and `record.Library(profile)` in the packages
+under `transform/syntax/horos-to-<native>/mapping/<name>/go`. At `ca5dc80`
+these were `Text(profile)` and `Libraries(profile)` in one package per pair;
+[bittype/ACX-009](0009-package-boundaries.md) records that split. Exactly one
 value of that argument works. The documented purpose of the check is to refuse
 the enforcement profile, whose encoding does not exist
 ([GEN-02](../generation-gaps.md#gen-02)). It is written as an allowlist of one,

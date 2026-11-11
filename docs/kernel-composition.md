@@ -24,7 +24,7 @@ transform/syntax/horos/source/go/            horos interpretation and reader
 transform/syntax/horos/mapping/go/           Horos patterns and declaration policy
 transform/syntax/<native>/model/go/          intended native forms, no AST construction
 transform/syntax/<native>/target/go/         native grammar and construction
-transform/syntax/horos-to-<native>/mapping/go/ declarative representation libraries
+transform/syntax/horos-to-<native>/mapping/<name>/go/ one declarative representation library each
 format/files/typescript/provider/go/        placement, imports, exports and binding checks
 ```
 
@@ -137,7 +137,14 @@ if err != nil { return err }
 err = compose.RegisterTarget(registry, to, target.Provider{})
 if err != nil { return err }
 
-for _, library := range mappings.Libraries(rules.RepresentationProfile) {
+libraries := []generation.MappingLibrary[horos.Language, typescript.Language, source.Reader]{
+    text.Library(rules.RepresentationProfile),
+    boolean.Library(rules.RepresentationProfile),
+    list.Library(rules.RepresentationProfile),
+    record.Library(rules.RepresentationProfile),
+    declarations.Library(rules.RepresentationProfile),
+}
+for _, library := range libraries {
     if _, err := compose.RegisterMapping(registry, from, to, library); err != nil {
         return err
     }
@@ -151,6 +158,12 @@ plan, err := eng.PlanGeneration(ctx, compose.Request{
 if err != nil { return err }
 out, err := plan.Run(ctx)
 ```
+
+`text`, `boolean`, `list`, `record` and `declarations` are the five packages
+under `transform/syntax/horos-to-typescript/mapping/<name>/go`. Each exports
+`Library(profile)`. No package lists them. The consumer names every library it
+registers, as the [installed consumer fixture](../integration/go/testdata/installed/horos_generation_test.go)
+does.
 
 Horos supplies interpretation and admission. The mapping library selects native
 representations. TypeScript supplies intended native forms and their AST

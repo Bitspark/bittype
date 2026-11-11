@@ -143,11 +143,19 @@ err := compose.RegisterSource[h.Language, source.Reader](registry, from, source.
 if err != nil { return err }
 err = compose.RegisterTarget(registry, to, target.Provider{})
 if err != nil { return err }
-for _, library := range mappings.Libraries(rules.RepresentationProfile) {
+profile := rules.RepresentationProfile
+for _, library := range []g.MappingLibrary[h.Language, ts.Language, source.Reader]{
+    text.Library(profile), boolean.Library(profile), list.Library(profile),
+    record.Library(profile), declarations.Library(profile),
+} {
     if _, err := compose.RegisterMapping(registry, from, to, library); err != nil { return err }
 }
 if _, err := compose.RegisterMapping(registry, from, to, cellLibrary); err != nil { return err }
 ```
+
+`text`, `boolean`, `list`, `record` and `declarations` are the five packages
+under `transform/syntax/horos-to-typescript/mapping/<name>/go`. Each exports
+`Library(profile)`, and the consumer names each one it registers.
 
 The [registration reference](kernel-composition.md#registration-and-request)
 shows complete signatures. The fixture requests Page, Person, Cells and local
