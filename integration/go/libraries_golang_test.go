@@ -13,9 +13,11 @@ import (
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 )
 
-// golangLibraries is the one place in this package that lists the builtin
-// horos-to-golang mapping libraries. Tests that need the whole set call it, so a
-// change to how that pair is composed edits this file only.
+// golangLibraries is the one place in this package that lists the whole builtin
+// set of horos-to-golang mapping libraries. Tests that need the whole set call
+// it, so a change to that set edits this file only. A test that composes a
+// selection of its own names single libraries itself, as
+// horos_generation_golang_optional_test.go does.
 //
 // The record library wraps an optional field in a helper and the optional
 // library supplies that helper. Neither creates the helper key: the consumer
