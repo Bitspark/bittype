@@ -37,6 +37,14 @@ Reason about responsibilities and change propagation; do not replace this with
 keyword heuristics, scoring or new lint gates. Limited coverage may be deferred;
 a violated extension boundary must be identified as an architectural defect,
 not described as merely future coverage or reported architecturally complete.
+
+**Owner direction, 11 November 2026:** "if something is placed incorrectly, it is
+incorrect and must change. Something that is missing can be healed additively,
+i.e. there is nothing wrong requiring removal." Correct a misplaced or wrongly
+named part first, as its own change, and add missing coverage afterwards. Defer
+such a move only when its destination needs a huge effort, and record the
+deferral with its reason and trigger as an open violation.
+[AC-10](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-10).
 The [Horos/Go verification path](docs/verification.md#library-owned-verification-contributions)
 takes library-owned interpretations, mapping projections and laws. Preserve the
 captured subject, receiver authority, dependency policy and Logos outcome when

@@ -8,6 +8,12 @@ those ownership defects remain open in [ACX-004](architecture-cases/0004-generat
 Go's package clause and C++'s namespace are fixed by target configuration during
 generation; the same record lists them as pending instances.
 
+**Order of correction, 11 November 2026.** Each misplaced decision moves to its
+language's Files formatter first, for the placements existing semantic evidence
+can check. Coverage of the placements below is added afterwards. Go and Rust
+visibility can start; C++ waits for its semantic provider. ACX-004 records the
+order and its reasons.
+
 ## Inputs and ownership
 
 Generate the logical declarations once:

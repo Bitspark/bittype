@@ -318,8 +318,11 @@ the laws, so each family keeps its law-level argument beside its tests.
 
 The order of work, the first slice and the owner of each vertical case are in [#206](https://github.com/Bitspark/bittype/issues/206). [#165](https://github.com/Bitspark/bittype/issues/165) is the index of the family issues.
 
+**Changes before the additive work (11 November 2026).** Two existing parts change once, ahead of the families: the structural profile's identity and the closed profile gate ([#216](https://github.com/Bitspark/bittype/issues/216), [bittype/ACX-008](architecture-cases/0008-structural-profile-gate.md)), and what an existing mapping returns (item 6 of [#196](https://github.com/Bitspark/bittype/issues/196)). After them a family adds a contribution and changes no existing contract.
+
 | Work | Owner | Tracking |
 | --- | --- | --- |
+| The structural profile's identity, before the first plan entry records it | bittype | [#216](https://github.com/Bitspark/bittype/issues/216) |
 | The plan envelope, payload schemas, version axes, generic requirements, six vertical cases | bittype | [#195](https://github.com/Bitspark/bittype/issues/195) |
 | The representation contract, lowering facet, operational requirements, failure classes | bittype | [#196](https://github.com/Bitspark/bittype/issues/196) |
 | Binding qualification, partial coverage, the information-loss criterion | bittype | [#197](https://github.com/Bitspark/bittype/issues/197) |
@@ -338,7 +341,7 @@ The order of work, the first slice and the owner of each vertical case are in [#
 | Hosting of the structural profile's TypeScript run-time package | platform `libraries/service` | [bitspark-service#38](https://github.com/Bitspark/bitspark-service/issues/38) |
 | `Function<A, B, E>` and `Service<Ops>` declared in horos, with their paired contributions | platform `libraries/service` | [bitspark-service#39](https://github.com/Bitspark/bitspark-service/issues/39) |
 | The TypeScript backend: factory composition, recursive adapters, conversion state, the call context | platform `libraries/service` | [bitspark-service#40](https://github.com/Bitspark/bitspark-service/issues/40) |
-| The expanded canonical size of a shared value | ontos | [ontos#35](https://github.com/Bitspark/ontos/issues/35) |
+| The expanded canonical size of a shared value | ontos | [ontos#35](https://github.com/Bitspark/ontos/issues/35), delivered in ontos v0.17.0 on 10 November 2026. bittype pins v0.16.0 until [#164](https://github.com/Bitspark/bittype/issues/164) needs the measure |
 | The domain of `check().objects` | Content | [bitspark-content#52](https://github.com/Bitspark/bitspark-content/issues/52) |
 | Content's contract in horos | Content | [bitspark-content#53](https://github.com/Bitspark/bitspark-content/issues/53) |
 | Content's exact mappings and the pilot's qualification | Content | [bitspark-content#54](https://github.com/Bitspark/bitspark-content/issues/54) |

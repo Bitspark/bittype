@@ -11,10 +11,11 @@ rules do not transfer ownership of these cases to the platform repository.
 | [bittype/ACX-001: Closed verification contributions](0001-verification-composition.md) | Corrected for scoped static verification | AC-02, AC-03, AC-04 |
 | [bittype/ACX-002: Generation assembly escaped the kernel](0002-generation-assembly.md) | Corrected and qualified | AC-02, AC-03, AC-05 |
 | [bittype/ACX-003: Files stage coverage assumed Horos](0003-files-stage-coverage.md) | Corrected in stage coverage and test composition | AC-03, AC-06 |
-| [bittype/ACX-004: Generation emits file syntax before placement](0004-generation-file-syntax.md) | TypeScript corrected; C++, Rust and Go (package clause) remain open | AC-02, AC-06 |
+| [bittype/ACX-004: Generation emits file syntax before placement](0004-generation-file-syntax.md) | TypeScript corrected; C++, Rust and Go (package clause) remain open. Order of correction recorded 11 November 2026: Go and Rust visibility move first, C++ is deferred until its semantic provider | AC-02, AC-06 |
 | [bittype/ACX-005: Existing callbacks prescribed the redesigned interface](0005-generation-interface-design.md) | Corrected and qualified by declarative planning and native construction | AC-09 |
 | [bittype/ACX-006: Common semantic traversal delegated to source integrations](0006-generation-source-traversal.md) | Corrected and independently verified: #191 was rejected on 8 November 2026; #192, correcting exact evidence and selector identity, was verified at `6132170` on 9 November 2026 | AC-02, AC-06, AC-01, AC-05, AC-07, AC-09 |
 | [bittype/ACX-007: Matrix dependencies keyed by display names](0007-matrix-contract-identity.md) | Corrected, including unnamed argument identity | AC-05, AC-07 |
+| [bittype/ACX-008: The shared horos mapping policy admits one profile](0008-structural-profile-gate.md) | Identified; correction pending | AC-03 |
 
 ACX-001 continues the same incident first recorded as
 [platform/ACX-001](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/0001-bittype-verification-composition.md).

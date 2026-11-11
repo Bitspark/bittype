@@ -44,6 +44,12 @@ The [Horos mapping library](../transform/syntax/horos/mapping/go/mapping.go) def
 | RepresentationProfile | Native declarations represent uses already admitted by Horos. The profile expressly permits erasing ordinary proper-kind contracts from target parameter declarations. |
 | EnforcementProfile | Native clients would have to be prevented from violating the source constraint. No such target encoding is implemented; the library rejects registration of this profile with generation.ErrUnsupported. |
 
+The mapping library admits exactly one profile name, so a further profile needs
+an edit to that shared file, and both identities are named after the first
+fixture. [bittype/ACX-008](architecture-cases/0008-structural-profile-gate.md)
+records this; [#216](https://github.com/Bitspark/bittype/issues/216) tracks the
+correction.
+
 The profile selection is part of the configured mapping, not inferred from a kind
 name. Representation does not advertise arbitrary native instantiations as
 Horos-admitted values. Native strings, records and generic parameters do not
