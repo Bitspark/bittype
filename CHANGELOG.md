@@ -1,5 +1,15 @@
 # Changelog
 
+## Research 0016: native Files placement, evaluated and in delivery — 12 November 2026
+
+[Research 0016](research-docs/0016-native-files-placement.md) asks what the first Go and Rust Files slices (#161, #159) must fix for good: the placement input, the unplaced generated output and the placement check. It was written after a reading of the accepted documents left five points open, reviewed by four readers, and answered through the consult service. This entry adds documents only.
+
+- **Evaluated.** The advice was split into 36 recommendations, and each was checked against the code at `7e6e02e`. 15 rows hold as written, 17 are accepted with a named adjustment, one is stale and five are deferred with a trigger. None is rejected. The table is the section "Applied" of the document.
+- **What it decides.** Each language owns its placement type, and one shared admission runs the common rules. A placement is a typed value built from handles that the sealed output issues, so it cannot be used with another output. Generation records a naming intent, and each language's Files stage realizes the spelling, which in Go includes the case of the name. Unplaced TypeScript, Go and Rust declarations get their own root. Rust external destinations are recorded now. The Files stage tells unsupported coverage from invalid input.
+- **What it withdraws.** The statement that Files never renames a declaration. The leaning to one shared placement type. The deferral of Rust external paths in [bittype/ACX-004](docs/architecture-cases/0004-generation-file-syntax.md), which the case record follows with #276.
+- **C++.** Its move stays deferred until C++ has a semantic provider (#167), and the guarantee that generated output does not change after the first slices excludes legacy C++ output. #160 records it.
+- **Delivery.** #271 to #278, then slice 1 of #161 and of #159. The document reads `delivering` until every accepted row is implemented and validated.
+
 ## horos scope values and the record tag take their names from the vocabularies, and the published horos names are pinned — 12 November 2026
 
 The two values of the horos `scope` attribute have one declaration in `syntax/horos/go`, the horos source reader builds the record tag from the vocabulary's prefix, and a test pins every published name of `semantics/horos/go`. These are items 8, 6 and 9 of [#256](https://github.com/Bitspark/bittype/issues/256). It is a move: every value is unchanged, no import is new and no architecture test is edited. One of the two tags of item 6 is confirmed and not corrected, because its owner is not importable by the two packages that spell it.
