@@ -1011,8 +1011,9 @@ function (steps 1 to 3). The guard runs it a second time on the original input
 and compares the result with what was published. `expected` is the recomputed
 layout: `expected.moved` maps old sites to new sites, `expected.public` holds
 the exposure of each new top-level site, and `u.expected` holds the intended
-destination of each type reference in unit `u`. `realized` is read from the
-fresh semantic graph of the published snapshot:
+destination of each type reference in unit `u`. `actual.Source` is the ID of
+the text a unit is printed to. `realized` is read from the fresh semantic graph
+of the published snapshot:
 
 ```go
 // format/files/typescript/provider/go/format.go:197-224
