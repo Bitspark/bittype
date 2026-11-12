@@ -1613,3 +1613,347 @@ itself has no name rule.
 **TypeScript has both rules.** Its target calls `CheckSingleScope`, and its
 Files stage checks each placed unit again (section 3.5, "duplicate declaration
 %s in %s"). The accepted TypeScript correction kept the flat rule.
+
+### 3.10 C++, briefly
+
+The C++ target takes one namespace from its configuration, wraps every
+declaration in it, and writes the include directives it collected:
+
+```go
+// transform/syntax/cpp/target/go/provider.go:148-164
+func (b *Backend) Finish(declarations []m.Fragment[s.Language]) (m.Fragment[s.Language], error) {
+	var children []m.Child[s.Language]
+	headers := slices.Clone(b.headers)
+	slices.Sort(headers)
+	for _, header := range headers {
+		n, err := b.Node(m.Node(s.KindInclude, m.Attributes("path", header, "system", "true"), ast.NodeRef{}))
+		if err != nil {
+			return n, err
+		}
+		children = append(children, m.Child[s.Language]{Role: s.RoleInclude, Fragment: n})
+	}
+	ns, err := b.Node(m.Node(s.KindNamespace, m.Attributes("name", b.config.Namespace), ast.NodeRef{}), edges(s.RoleDeclaration, declarations)...)
+	if err != nil {
+		return ns, err
+	}
+	children = append(children, m.Child[s.Language]{Role: s.RoleDeclaration, Fragment: ns})
+	return b.Node(m.Node(s.KindTranslationUnit, nil, ast.NodeRef{}), children...)
+}
+```
+
+C++ has no resolution or analysis provider. The shared contract refuses a
+formatter without semantic evidence (section 3.4), so a C++ generated-Files
+formatter cannot be constructed yet, and its move is deferred with that
+trigger. It still constrains the shape now:
+
+- a namespace is a native scope that is independent of the file path, can be
+  nested, and can occur several times in one header and across headers;
+- a use in another namespace is spelled with a qualified name, not through an
+  import;
+- includes are file-level, order matters, and whether a forward declaration
+  suffices depends on how a type is used.
+
+### 3.11 The package-role check
+
+One test classifies every package by its path and checks its imports against
+its role (section 2.1). A Files formatter is a contribution at
+`format/files/<language>/provider/go`. Its role allows:
+
+```go
+// integration/go/architecture_roles_test.go:287-290
+	"format/files": {
+		"contracts/analysis/go", "contracts/check/go", "contracts/format/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go",
+		"semantics/go", "semantics/<language>/go", "source/go", "syntax/<language>/go", "trees/ast/go", "trees/cst/go", "trees/representation/go",
+	},
+```
+
+The generation contract and the Files identities are not in that list.
+TypeScript's formatter has them through a per-package extension, a mechanism
+the layout document reserves for the case "Languages differ":
+
+```go
+// integration/go/architecture_test.go:280-282
+	// TypeScript Files formatting places generated declarations in the supplied
+	// Files and writes named type imports for their public symbols.
+	"format/files/typescript/provider/go": {"contracts/generation/go", "files/go", "internal/typescriptimports", "transform/syntax/typescript/symbol/go"},
+```
+
+The project's instructions state: "A package of an existing role needs no edit
+to the test." A Go formatter, a package of an existing role, would need one.
+The shared contract package `contracts/format/go` may import the generation
+contract, the semantic contract, `source/go` and the tree packages. It may not
+import `files/go` today.
+
+## 4. One generated set through placement
+
+The table follows `Cells = Page<Cell<Person>>` and shows, for each decision,
+who makes it today, who should, and what compiler-established evidence can see
+it after the move.
+
+| Decision | TypeScript (corrected) | Go today | Go after slice 1, as the work item states it | Rust today | Rust after slice 1, as the work item states it |
+| --- | --- | --- | --- | --- | --- |
+| Name of a declaration | Recipe, in generation | Recipe | Recipe | Recipe | Recipe |
+| Destination of each use | Link or external use in the output | Link; none for `string`, `bool`; no external types | Unchanged | Link; none for the three absolute paths | Unchanged |
+| Root of the unplaced tree | `source-file`, no file decision | `file` with a package | Open (section 6.2) | `file`, no file decision except visibility | `file` |
+| Which file | Placement | One tree, no placement | Placement | One tree | Placement |
+| Native scope | The file | Target configuration | Placement: one package | One module, implied | Placement: one module |
+| Exposure of a declaration | Files writes `export` from `Exposed()`; checked against `named-export` facts | The name's case, from the recipe | Unchanged | Target writes `pub` on everything | Files writes `pub` from `Exposed()`; no fact to check against |
+| Imports and aliases | Files; checked through bindings | None | Refused | None (absolute paths) | Refused |
+| Collisions | Flat rule in the target and per unit in Files | Flat rule | Open (section 6.3) | Flat rule | Open |
+| Evidence profile of the check | TypeScript import environment, required at construction | — | "The existing Go Files resolution and analysis providers" | — | "The existing single-crate Rust Files providers" |
+
+Two cells in this table are the reason for question 4:
+
+- **Go, base profile.** If slice 1 uses the base profile, placing one output
+  into package `pages` and then into package `people` produces two graphs that
+  are identical: one package entity named `captured`. The work item's
+  verification, "both results pass the Go semantic check", would pass whatever
+  the formatter wrote as long as it compiles.
+- **Rust.** If Rust Files decides which items are `pub`, no fact in the Rust
+  graph says whether an item is public. A check can only compare the published
+  tree with the tree the formatter itself computed.
+
+## 5. Constraints
+
+- **One output tree per request.** The generation request names one output
+  tree ID, and each mapping "currently produces one declaration tree". A set of
+  one tree per declaration would change the request and the shared constructor.
+- **One language and one checker** for generated output and placed source
+  (section 3.4). Generated output is sealed with the target's syntax checker.
+- **The shared contract refuses a formatter without a check and semantic
+  evidence.** A first slice cannot move a decision and postpone its check.
+- **Generated output is syntax, not a program.** "Native intent is not an
+  analyzed `Semantics[T]`: target analysis establishes facts about the actual
+  constructed/organized program." Native semantics exist only for the placed
+  result.
+- **Names are not identity.** Declarations and uses are identified by site.
+  Files never renames a declaration; it chooses how a use is spelled.
+- **No discovery.** Providers do no disk or network IO. Dependency packages are
+  supplied as text by the consumer. Nothing is read from a module cache, a
+  registry or the standard library.
+- **Failure is total.** A placement that cannot be expressed fails without a
+  partial Source. An inaccessible target is never made public to obtain a
+  valid file.
+- **Nothing is released.** Interfaces, setting keys and generated names can
+  change now. After the first release they cannot change without breaking
+  consumers' code.
+- **The Rust helper builds on Linux only**, with a pinned compiler. Rust
+  checks run in the hosted checks, not on the developers' workstations.
+- **Package roles.** A new `format/files/<language>/provider/go` package may
+  import what section 3.11 lists. Shared packages import no contribution and
+  no language vocabulary.
+- **Shared contract changes need AC-08's justification**, recorded as a finding
+  before the change is made. The Go and Rust work items both say so.
+- **Out of scope here:** conversion code between native values and horos
+  values, runtime behaviour, C++ modules (as opposed to headers), and the
+  choice of native representations.
+
+## 6. What we have considered
+
+Each point is marked **decided** (an accepted document states it), **proposed**
+(only the proposal of 8 November 2026 states it) or **derived** (the documents
+are silent, and the answer is ours to defend). No earlier consultation of this
+project was about Files or placement. One, on an interface that has since been
+replaced, sketched a `Placement{Unit, Scope}` pair with the scope as a string;
+we gave it no weight.
+
+### 6.1 What is already decided
+
+- **Decided.** Unplaced output is a sealed set of syntax-checked trees of the
+  target language with exposed sites and external uses. It assigns no file and
+  has no native semantics.
+- **Decided.** A declaration's name belongs to generation and does not depend
+  on placement. Files chooses the spelling of uses: qualification and aliases.
+- **Decided.** Two separate inputs: one placement per request, and the
+  dependency environment. The placement is per declaration: a file and a
+  native scope.
+- **Decided.** The check compares fresh compiler bindings under the consumer's
+  environment with the output's intent, at every relocated use.
+- **Decided.** A member's accessibility that is part of the representation
+  belongs to the declaration (section 2.2).
+- **Proposed.** Uniqueness within a placed scope is a Files check ("Check
+  collisions"). TypeScript's formatter does it.
+- **Decided for Go's semantic profile.** A captured file's import path is the
+  module path joined with its directory; files of one directory form one
+  package.
+
+### 6.2 The root of unplaced Go output (derived)
+
+In TypeScript and Rust a declaration sequence is the top production. In Go it
+is a part of `SourceFile = PackageClause { ImportDecl } { TopLevelDecl }`.
+
+| Option | Shape | Assessment |
+| --- | --- | --- |
+| **A. A second root kind** in the Go vocabulary for a declaration sequence, with declaration children only | A checked `file` still always has a package. The bridge already refuses a non-`file` root, so resolution and analysis refuse unplaced output without new code. Go Files requires this root and refuses a `file` from generation, as TypeScript refuses `exported` | **Our leaning** |
+| B. `file` with an optional package | Every reader of a `file` loses the guarantee that it is a Go file. The checker has no notion of "before placement", so the attribute would be optional always. One node kind stands for two things, which is the "double duty" the case record describes, mirrored | Rejected |
+| C. No container: one tree per declaration, or a list outside the tree carrier | Changes the generation request and the shared constructor, and gives the consumer nothing A does not | Rejected; conflicts with section 5 |
+| D. A second language profile for unplaced Go | Excluded by the compatibility test in the shared contract | Rejected |
+
+Two riders on A. The kind should be named for the syntax (Go's sequence of
+top-level declarations), not for generation, because the vocabulary package
+holds no generation concept. And the Go Syntax formatter must print the new
+root, as declarations without a clause, or "Syntax formatting and printing can
+also operate directly on individual output trees" stops being true for Go.
+
+We are unsure how A ages for C++, where the unplaced set is a part of a
+translation unit and placed declarations sit inside namespace nodes.
+
+### 6.3 Name uniqueness (derived)
+
+| Option | What the consumer is guaranteed | Who owns what |
+| --- | --- | --- |
+| U1. Both: the flat rule stays in every target and in the shared constructor; Files adds the rule per scope | Every output can be put into one scope. But an output with `Item` in two horos modules can never be placed as `pages.Item` and `people.Item`, although Go allows it | The target keeps a rule about scopes it no longer decides. The shared constructor carries one placement's policy for every contribution |
+| **U2. Per placed scope only**: Files owns collisions; the shared constructor and every target with a Files stage require no uniqueness; the module-pin prefix remains the recipe's own naming policy | Any placement the language permits is accepted. A collision fails at the stage that knows the scope | Files: scope rules. Recipe: names. Shared constructor: identity only |
+
+**Our leaning is U2**, with C++ keeping the flat rule in its own target until
+it has a Files stage. Reasons: "collision" is the native scope rule applied to
+a placement, and only Files knows the scopes (AC-02); under AC-09 a retained
+rule needs its own justification, and we found none once a Files stage exists.
+Under U2 the shared constructor needs a deterministic order for equal names.
+
+What speaks against U2: the accepted TypeScript correction kept U1, and no
+document says the set-wide rule is wrong. U2 would be overturned by a consumer
+guarantee that every output can be co-located, or that a name alone identifies
+a declaration within one output. We found neither stated.
+
+**Two naming questions we cannot answer alone.** The prefix
+`M<16 hex digits>_Name` exists to make one flat scope work. Once packages and
+modules exist, a consumer would see `people.M3f9a0c2d1e4b5a67_Person`. And in
+Go the recipe exports every declaration by capitalizing it, so a declaration
+the caller did not expose is public anyway. Go Files can check exposure
+("cannot silently export an unexported type") but cannot realize it without
+renaming, which is not its decision. Both must be settled before the first
+release fixes the names.
+
+### 6.4 What a placement entry carries (derived, within decided limits)
+
+For Go, beyond TypeScript's file ID, path and declaration sites:
+
+| Candidate | Carry it? | Reason |
+| --- | --- | --- |
+| Directory | No | It is the directory of the path |
+| Package import path | No | The module (environment) and the directory determine it. Stating it again would be a second source for one fact |
+| Package name (the clause) | **Yes** | Not derivable: a package's name is not its last path element by rule (`main`, a path ending in `v3`). It is exactly the decision slice 1 moves |
+| Imports, aliases, qualifiers | No | Files decides them after placement |
+| Exportedness | No | In Go it is the case of the name |
+
+The package name could be stated per entry (each file states its package, as
+each Go file does; an inconsistent placement is representable and must fail)
+or once per directory (inconsistency is unrepresentable, but a directory
+without a file becomes a new failure). We lean to per entry.
+
+For Rust an entry assigns sites to a file **and a module path** relative to
+the crate root. Several entries may name one file, because two modules can
+occupy one file. The crate name and dependency crates are environment. `mod`
+items and their visibility are not carried; Files constructs them.
+
+For C++ the scope would be a namespace path, independent of the file path.
+
+### 6.5 One shared carrier, or one type per language (derived)
+
+| Option | Shape |
+| --- | --- |
+| **S1. A shared carrier and its admission in the shared format contract**, generic in the scope: an entry is (file ID, path, scope, declaration sites), several entries may share a file, plus the entry file. Each language supplies its scope type, its setting key and the rules relating scope and path | One shape for the consumer in every language; the assignment rules have one implementation; a new language adds a scope type and its rules |
+| S2. Per-language types; only the admission function is shared | The rules are shared; the consumer learns several shapes that differ in one field |
+| S3. Per-language types and admission, as today | Nothing shared; the rules of section 3.6 exist in a third and fourth copy |
+
+**Our leaning is S1.** The scope types would be: none for TypeScript, package
+name for Go, module path for Rust, namespace path for C++. The reasons are
+AC-02 (an invariant of the Files boundary should have one owner) and AC-03
+(adding a formatter should not copy it). S1 changes a shared contract and
+reshapes TypeScript's `Organization`, so it needs AC-08's justification, and
+under AC-10 it must be decided before slice 1 fixes a Go type.
+
+Open inside S1:
+
+- **Entries or nesting.** A flat list of entries in which a file may repeat, or
+  files that each hold a list of scoped groups. Today one unit is one file and
+  the inventory refuses a repeated file.
+- **Order.** Entry order is declaration order in TypeScript. In C++ order is
+  semantically relevant.
+- **What the shared part may know.** It can check assignment, sites, files and
+  the entry. It cannot know that a Go directory has one package name, or that
+  Rust module paths form a tree.
+- **The role rule.** Every generated-Files formatter needs the generation
+  contract and the Files identities, so the role's import list was shaped by
+  the first implementation (section 3.11).
+
+### 6.6 The evidence profile for Go slice 1 (derived)
+
+| | Base profile | Import environment, with no supplied package |
+| --- | --- | --- |
+| Package identity in the graph | The constant `captured` | Module path joined with the file's directory |
+| Does the evidence see the decision slice 1 moves? | No (section 4) | As identity: each relocated declaration is owned by the package entity of the expected import path. Not the name |
+| Meaning of a file's directory | None: all files are one package | Go's: one directory, one package |
+| What slice 2 must change | The evidence requirement, the formatter's constructor and the meaning of paths | Nothing: it supplies packages and admits imports |
+
+**Our leaning:** slice 1 builds on the import environment and requires it at
+construction, as TypeScript does. Its evidence would be: (1) a fresh receipt
+admitted against `EvidenceFor(configuration)`; (2) every relocated use binds to
+the entity declared at the relocated site; (3) every relocated declaration is
+owned by the expected package entity; (4) the package name, checked only by
+equality with the recomputed tree and by the compiler's rule that the files of
+a directory agree, **stated as a limit**. A later slice covers the name
+indirectly, when an import without an alias binds through it. We have not run
+an import environment without supplied packages end to end; the code does not
+reject it.
+
+### 6.7 Intent for predeclared and standard types (derived)
+
+Go's `string` and `bool` are written with no recorded destination (section
+3.7), and so are Rust's three absolute paths (section 3.8). The proposal says
+external symbols must be "represented by that target's model and the shared
+output contract, not guessed from a name". TypeScript records a global type as
+an external use whose symbol has an empty module, and checks it against a
+builtin entity.
+
+**Our leaning for Go:** report a predeclared type as an external use with a
+Go-issued symbol whose package is empty; slice 1 accepts those, checks them
+against `builtin` entities, and refuses a symbol with a package. Otherwise the
+slice's rule "an output with an external use fails" and the binding check
+contradict each other, and a later slice must change how the target reports
+uses.
+
+### 6.8 Rust visibility
+
+**Fields (decided, after a correction).** The Rust work item extended the move
+to field visibility. The accepted decision keeps a member's accessibility with
+the declaration when it is part of the representation.
+
+| Option | Guarantee | Owner |
+| --- | --- | --- |
+| **F1. Field visibility is the record representation's and stays in the declaration** | A record's fields are accessible wherever the type is; an opaque type would be another mapping | Mapping and target |
+| F2. Files writes it from exposure and placement | The same result today, but Files must assume every struct is a transparent record, and the output has no carrier for another intent | Files decides without intent |
+
+We follow F1 and have withdrawn the extension. `pub` on a field never widens
+exposure beyond the struct's own.
+
+**Items (derived).** Rust Files decides: an exposed declaration is `pub`,
+every other one has no attribute. Two ways to check it:
+
+1. add a compiler-established visibility fact for items to the helper and the
+   Rust vocabulary, as TypeScript has `named-export` (needs the Linux build);
+2. check by tree equality only and record the limit.
+
+**Our leaning is 1**, because equality with the formatter's own output
+establishes nothing about visibility (AC-07) and AC-10 forbids "Moving a
+decision without the guarantee its new owner must give". We are unsure which
+fact is the right one: the item's declared visibility, its effective
+visibility from the crate root, or its reachability from a using module. The
+vocabulary has no `pub(super)` or `pub(in …)`, which limits what a later slice
+can realize between modules.
+
+### 6.9 Hypotheses we want attacked
+
+1. "A declaration's name never depends on placement; Files chooses only how a
+   use is spelled."
+2. "Collision is a property of a placed scope, so generation needs no
+   uniqueness rule once a target has a Files stage."
+3. "A placement entry is exactly (file, native scope, declaration sites).
+   Everything else is derived by Files or supplied by the environment."
+4. "Equality with a recomputed tree is sound evidence only for what the
+   formatter computes from inputs the consumer stated. It is never evidence
+   for a property whose meaning the compiler decides: binding, visibility,
+   package identity."
+5. "The unplaced set needs no semantics of its own. Only the placed result is
+   analyzed."
