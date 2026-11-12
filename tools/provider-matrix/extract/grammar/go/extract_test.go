@@ -22,6 +22,9 @@ const fixturePath = "example.test/fixture"
 
 // These declarations provide compiler identities/signatures; they are never
 // executed. Maintained helper meaning is separately checked against g below.
+// This stand-in is keyed by strings. The extractor reads source syntax and
+// compiler facts, which a language parameter does not change; the typed
+// stand-in below mirrors the owning package and has its own test.
 const grammarSource = `package grammar
 type Attribute struct { Required bool; Accept func(string)bool }
 type Role struct { Name string; Min,Max int; Kinds []string }
@@ -34,6 +37,55 @@ func Opt(string,...string)Role{return Role{}}
 func Many(string,int,...string)Role{return Role{}}
 func Set(...string)func(string)bool{return nil}
 func Bool(string)bool{return false}
+`
+
+// language marks the maintained helpers that the tests below call. The owning
+// table is typed by language; a fixture's table is source text and never runs.
+type language struct{}
+
+func names[K ~string](kinds []K) []string {
+	result := make([]string, len(kinds))
+	for i, kind := range kinds {
+		result[i] = string(kind)
+	}
+	return result
+}
+
+// The typed declarations mirror the owning package: the table is keyed by one
+// language's node kinds, and role and attribute names are strings.
+const kindSource = `package ast
+type Kind[L any] string
+`
+const kindPath = "example.test/ast"
+const typedGrammarSource = `package grammar
+import "` + kindPath + `"
+type Attribute struct { Required bool; Accept func(string)bool }
+type Role[L any] struct { Name string; Min,Max int; Kinds []ast.Kind[L] }
+type Rule[L any] struct { Attributes map[string]Attribute; Roles []Role[L]; Reference bool }
+type Rules[L any] map[ast.Kind[L]]Rule[L]
+func Attr(bool,func(string)bool)Attribute{return Attribute{}}
+func Attributes(...any)map[string]Attribute{return nil}
+func One[L any](string,...ast.Kind[L])Role[L]{return Role[L]{}}
+func Opt[L any](string,...ast.Kind[L])Role[L]{return Role[L]{}}
+func Many[L any](string,int,...ast.Kind[L])Role[L]{return Role[L]{}}
+func Set(...string)func(string)bool{return nil}
+func Bool(string)bool{return false}
+`
+const vocabularyPath = "example.test/vocabulary"
+const vocabularySource = `package vocabulary
+import "` + kindPath + `"
+type Language struct{}
+type Kind = ast.Kind[Language]
+const (
+ KindRecord Kind = "record"
+ KindField Kind = "field"
+ KindAtom Kind = "atom"
+)
+const (
+ RoleField = "field"
+ RoleType = "type"
+)
+const AttributeName = "name"
 `
 
 type fixtureSource struct {
@@ -208,8 +260,8 @@ var rules = Alias{
 		t.Fatalf("roles: %#v", record)
 	}
 	items := record.Roles.Value[0]
-	maintained := g.Many("items", 0, "atom")
-	if items.Name != maintained.Name || items.Min.Value != maintained.Min || !items.Max.Value.Unbounded || maintained.Max >= 0 || strings.Join(items.Kinds.Value, ",") != strings.Join(maintained.Kinds, ",") {
+	maintained := g.Many[language]("items", 0, "atom")
+	if items.Name != maintained.Name || items.Min.Value != maintained.Min || !items.Max.Value.Unbounded || maintained.Max >= 0 || strings.Join(items.Kinds.Value, ",") != strings.Join(names(maintained.Kinds), ",") {
 		t.Fatalf("owning helper semantics: %#v", items)
 	}
 	if record.Roles.Value[1].Max.Value.Value != 1 || record.References.Value[0] != "target" {
@@ -239,8 +291,8 @@ func TestInterpretationMatchesMaintainedOwningHelpers(t *testing.T) {
  Roles:[]g.Role{g.One("one","a"),g.Opt("optional","a","b"),g.Many("many",2,"b")},
  Attributes:g.Attributes("finite",g.Attr(true,g.Set("a","b")),"empty",g.Attr(false,g.Set()),"free",g.Attr(false,nil),"override",g.Attr(true,func(string)bool{return true}),"override",g.Attr(false,g.Set("after"))),Reference:true,
 }}`)
-	maintained := g.Rule{
-		Roles:      []g.Role{g.One("one", "a"), g.Opt("optional", "a", "b"), g.Many("many", 2, "b")},
+	maintained := g.Rule[language]{
+		Roles:      []g.Role[language]{g.One[language]("one", "a"), g.Opt[language]("optional", "a", "b"), g.Many[language]("many", 2, "b")},
 		Attributes: g.Attributes("finite", g.Attr(true, g.Set("a", "b")), "empty", g.Attr(false, g.Set()), "free", g.Attr(false, nil), "override", g.Attr(true, func(string) bool { return true }), "override", g.Attr(false, g.Set("after"))),
 		Reference:  true,
 	}
@@ -250,7 +302,7 @@ func TestInterpretationMatchesMaintainedOwningHelpers(t *testing.T) {
 	}
 	for i, actual := range maintained.Roles {
 		model := feature.Roles.Value[i]
-		if model.Name != actual.Name || model.Min.Value != actual.Min || model.Max.Value.Unbounded != (actual.Max < 0) || actual.Max >= 0 && model.Max.Value.Value != actual.Max || !slices.Equal(model.Kinds.Value, actual.Kinds) {
+		if model.Name != actual.Name || model.Min.Value != actual.Min || model.Max.Value.Unbounded != (actual.Max < 0) || actual.Max >= 0 && model.Max.Value.Value != actual.Max || !slices.Equal(model.Kinds.Value, names(actual.Kinds)) {
 			t.Fatalf("owning role %d disagrees: %#v versus %#v", i, model, actual)
 		}
 	}
@@ -269,6 +321,52 @@ func TestInterpretationMatchesMaintainedOwningHelpers(t *testing.T) {
 	}
 	if !slices.Equal(feature.References.Value, []string{"target"}) {
 		t.Fatal("reference allowance changed")
+	}
+}
+
+func TestTableTypedByLanguageReadsVocabularyConstants(t *testing.T) {
+	source := &fixtureSource{set: token.NewFileSet(), files: map[c.FileRef]c.File{}, declarations: map[c.Symbol]c.Declaration{}, facts: map[c.Span]c.Facts{}, packages: map[string]*types.Package{}}
+	source.add(t, kindPath, kindSource)
+	source.add(t, grammarPath, typedGrammarSource)
+	source.add(t, vocabularyPath, vocabularySource)
+	source.add(t, fixturePath, "package fixture\nimport g \""+grammarPath+"\"\nimport v \""+vocabularyPath+"\"\n"+`
+var types = []v.Kind{v.KindAtom, v.KindRecord}
+func prefix() []g.Role[v.Language] { return []g.Role[v.Language]{g.Many(v.RoleField,0,v.KindField)} }
+func with(base []g.Role[v.Language], more ...g.Role[v.Language]) []g.Role[v.Language] { return append(base,more...) }
+var rules = g.Rules[v.Language]{
+ v.KindRecord: {Attributes:g.Attributes(v.AttributeName,g.Attr(true,nil)), Roles:with(prefix(),g.Opt(v.RoleType,append(types,v.KindField)...))},
+ v.KindField: {Roles:[]g.Role[v.Language]{g.One(v.RoleType,types...)},Reference:true},
+ v.KindAtom: {},
+}`)
+	result, err := (extract.Extractor{}).Extract(context.Background(), c.DefinitionRequest{Root: c.Symbol{Package: fixturePath, Name: "rules"}, Source: source})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Extent != c.Decoded || len(result.Features) != 3 || len(result.Limitations) != 0 {
+		t.Fatalf("typed table was not decoded: %#v", result)
+	}
+	record, field, atom := result.Features[0], result.Features[1], result.Features[2]
+	if record.Key != "record" || field.Key != "field" || atom.Key != "atom" {
+		t.Fatalf("keys are not the vocabulary's kind values: %#v", result.Features)
+	}
+	if len(record.Attributes.Value) != 1 || record.Attributes.Value[0].Name != "name" || !record.Attributes.Value[0].Required.Value {
+		t.Fatalf("attribute name constant: %#v", record.Attributes)
+	}
+	if len(record.Roles.Value) != 2 {
+		t.Fatalf("roles through structural helpers: %#v", record.Roles)
+	}
+	for i, maintained := range []g.Role[language]{g.Many[language]("field", 0, "field"), g.Opt[language]("type", "atom", "record", "field")} {
+		model := record.Roles.Value[i]
+		if model.Name != maintained.Name || model.Min.Value != maintained.Min || model.Max.Value.Unbounded != (maintained.Max < 0) || !slices.Equal(model.Kinds.Value, names(maintained.Kinds)) {
+			t.Fatalf("role %d through typed helpers: %#v", i, record.Roles)
+		}
+	}
+	one := g.One[language]("type", "atom", "record")
+	if len(field.Roles.Value) != 1 || field.Roles.Value[0].Name != one.Name || field.Roles.Value[0].Min.Value != one.Min || field.Roles.Value[0].Max.Value.Value != one.Max || !slices.Equal(field.Roles.Value[0].Kinds.Value, names(one.Kinds)) || !slices.Equal(field.References.Value, []string{"target"}) {
+		t.Fatalf("typed kind list and reference: %#v", field)
+	}
+	if atom.Roles.State != c.Known || len(atom.Roles.Value) != 0 || len(atom.Attributes.Value) != 0 || len(atom.References.Value) != 0 {
+		t.Fatalf("known absence: %#v", atom)
 	}
 }
 
