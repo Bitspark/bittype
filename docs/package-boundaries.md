@@ -351,8 +351,9 @@ Limits of these two corrections:
   The constants of `internal/declsyntax` stay exported, and no package outside
   it uses them.
 
-Still not examined, and so neither an instance nor cleared. No issue tracks
-these yet. Each bullet says only what was seen in source at `f821eb3`:
+Still not examined, and so neither an instance nor cleared.
+[#256](https://github.com/Bitspark/bittype/issues/256) tracks these. Each
+bullet says only what was seen in source at `f821eb3`:
 
 - **What the TypeScript helper reads.** `internal/typescriptsem/compiler.cjs`
   reads the syntax node kinds, child roles and attribute names of its request
@@ -684,7 +685,8 @@ recorded here and in
 [#251](https://github.com/Bitspark/bittype/issues/251) examined the names
 that this document first listed as not examined, and is closed with the change
 that wrote this paragraph. What it left unexamined is listed under
-[finding 12](#findings-on-main-at-3bf45c3) and has no issue yet. Open pull
+[finding 12](#findings-on-main-at-3bf45c3) and tracked in
+[#256](https://github.com/Bitspark/bittype/issues/256). Open pull
 request #204 is not part of this plan. It adds imported packages to
 Go's semantics and will add `AnalysisContractFor(settings)` to
 `semantics/golang/go` when it rebases.

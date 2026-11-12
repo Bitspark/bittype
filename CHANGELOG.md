@@ -10,7 +10,7 @@
 - **Limits recorded.** No independent review read #254 or #255. `ImportRole()` is published and no test fails when it changes. The tests were shown to fail for a changed vocabulary and not for a changed helper. The language marker `L` of the horos framing is a remainder of a removed language.
 - **Other documents.** `AGENTS.md`, `LAYOUT.md`, [native semantics](docs/native-semantics.md) and the two index tables follow. The counts of the architecture test were made again at `f821eb3`, and none changed.
 
-Not examined, and tracked by no issue yet:
+Not examined, and tracked in [#256](https://github.com/Bitspark/bittype/issues/256):
 
 - What the TypeScript helper reads by spelling: the syntax node kinds, child roles and attribute names of its request.
 - The status of the helper's response, which the helper, the bridge, the resolver and the query service each spell.

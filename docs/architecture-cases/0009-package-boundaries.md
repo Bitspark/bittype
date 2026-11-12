@@ -491,8 +491,9 @@ that are not committed.
     spelling. That is a confirmed instance, corrected with #255. Rust and Go
     have no such reader.
 - **Not examined.** The following were not assessed. They are neither
-  instances nor cleared, and no issue tracks them yet. Each says only what was
-  seen in source at `f821eb3`.
+  instances nor cleared.
+  [#256](https://github.com/Bitspark/bittype/issues/256) tracks them.
+  Each says only what was seen in source at `f821eb3`.
   - **What the TypeScript helper reads.** `internal/typescriptsem/compiler.cjs`
     reads the syntax node kinds, child roles and attribute names of its request
     by spelling: a set of supported kinds from line 23, the attributes `operator`
@@ -583,8 +584,8 @@ change that wrote this record.
 
 A new confirmed instance reopens this list. The names under "Not examined" in
 the [limits](#limits) are where one would be looked for first. Issue #251 is
-closed with the change that wrote this paragraph, and no issue tracks those
-names yet.
+closed with the change that wrote this paragraph, and
+[#256](https://github.com/Bitspark/bittype/issues/256) tracks those names.
 
 Open pull request #204 is not part of this case. It adds imported packages to
 Go's semantics and will add `AnalysisContractFor(settings)` to
