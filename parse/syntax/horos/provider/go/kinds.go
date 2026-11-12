@@ -199,10 +199,10 @@ func (p *parser) kindPrimary() ast.NodeID {
 		p.Want(".")
 	}
 	name := p.name()
-	attrs := tr.Attrs(s.AttributeScope, "local", s.AttributeName, name)
+	attrs := tr.Attrs(s.AttributeScope, s.ScopeLocal, s.AttributeName, name)
 	var callee ast.NodeID
 	if !local && p.Eat(".") {
-		attrs = tr.Attrs(s.AttributeScope, "imported", s.AttributeAlias, name, s.AttributeName, p.name())
+		attrs = tr.Attrs(s.AttributeScope, s.ScopeImported, s.AttributeAlias, name, s.AttributeName, p.name())
 	} else if !local {
 		for i := len(p.groups) - 1; i >= 0; i-- {
 			if index, ok := p.groups[i][name]; ok {

@@ -85,9 +85,9 @@ func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 			prefix = "kind-"
 		}
 		switch r.attr(id, s.AttributeScope) {
-		case "local":
+		case s.ScopeLocal:
 			return tagged(r.declarationPrefix, prefix+"local", data.MustEncodeText(r.attr(id, s.AttributeName))), nil
-		case "imported":
+		case s.ScopeImported:
 			return tagged(r.declarationPrefix, prefix+"imported", data.MustEncodeText(r.attr(id, s.AttributeAlias)), data.MustEncodeText(r.attr(id, s.AttributeName))), nil
 		default:
 			return nil, r.bad(id, "invalid reference scope")

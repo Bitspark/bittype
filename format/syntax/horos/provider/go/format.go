@@ -229,7 +229,7 @@ func (f *formatter) typ(id ast.NodeID, parent, level int) doc {
 	case s.KindReference:
 		name := f.Attr(id, s.AttributeName)
 		parts := []doc{}
-		if f.Attr(id, s.AttributeScope) == "imported" {
+		if f.Attr(id, s.AttributeScope) == s.ScopeImported {
 			parts = append(parts, f.T(lit.Name(f.Attr(id, s.AttributeAlias))), f.T("."))
 		} else {
 			shadowed := false
