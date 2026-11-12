@@ -4,12 +4,12 @@ const (
 	admitsOwnTree     = "admits the tree it built with its own language's grammar before publishing it"
 	admitsOwnInput    = "admits the tree it is given with its own language's grammar before formatting it"
 	verifiesOwnSource = "reparses captured source with its own language's parser to verify that the captured tree corresponds to it"
-	readsResolution   = "reads the resolution contract identity that its analysis is bound to"
 )
 
 // providerExceptions lists every import of a stage provider package
-// (<stage>/<dimension>/<language>/provider/go) by a production package that is
-// not a composition. Only a composition chooses a provider, so each such
+// (<stage>/<dimension>/<language>/provider/go) or of a query service package
+// (analyze/files/<language>/queries/go) by a production package that is not a
+// composition. Only a composition chooses a provider, so each such
 // import is admitted by name: the importer, the provider, the exact exported
 // symbols used and the reason. The check fails on an import without an entry,
 // on a use of any other symbol, and on an entry or symbol that is not used.
@@ -33,10 +33,7 @@ var providerExceptions = []providerException{
 	{Importer: "internal/rustsem", Provider: "parse/syntax/rust/provider/go", Symbols: []string{"Parse"}, Reason: verifiesOwnSource},
 	{Importer: "internal/typescriptsem", Provider: "parse/syntax/typescript/provider/go", Symbols: []string{"Parse"}, Reason: verifiesOwnSource},
 
-	// Open until #220: an identity that a provider package publishes and a
-	// vocabulary package should.
-	{Importer: "analyze/files/golang/provider/go", Provider: "resolve/files/golang/provider/go", Symbols: []string{"Contract"}, Reason: readsResolution, Issue: 220},
-
-	// Open until #221: a query service that shares a package with a provider.
-	{Importer: "verification/files/horos-to-go/go", Provider: "analyze/files/golang/provider/go", Symbols: []string{"Admission"}, Reason: "takes the Go query service's admission type, which lives in the analysis provider package", Issue: 221},
+	// Accepted: the pair interprets an admission, and only the query service
+	// can make one. It names the result type and never opens a query session.
+	{Importer: "verification/files/horos-to-go/go", Provider: "analyze/files/golang/queries/go", Symbols: []string{"Admission"}, Reason: "takes the admission that a composition obtained from the Go query service; it names the result type and starts no query"},
 }

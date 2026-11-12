@@ -31,8 +31,8 @@ type architecturePackage struct {
 	DotImports []string
 }
 
-// providerException admits one import of a stage provider package by a
-// production package that is not a composition. An entry with Issue 0 is
+// providerException admits one import of a stage provider or query service
+// package by a production package that is not a composition. An entry with Issue 0 is
 // accepted; any other entry is an open finding that the named issue removes.
 type providerException struct {
 	Importer string
@@ -145,8 +145,8 @@ func checkArchitecture(spec architectureSpec, packages map[string]architecturePa
 			continue
 		}
 		exceptions[key] = e
-		if !isStageProvider(e.Provider) {
-			fail("provider exception %s does not name a stage provider package", name)
+		if _, selected := selectedKind(e.Provider); !selected {
+			fail("provider exception %s does not name a stage provider or query service package", name)
 		}
 		if isComposition(e.Importer) {
 			fail("provider exception %s is not needed: %s is a composition", name, e.Importer)
@@ -300,13 +300,14 @@ func checkArchitecture(spec architectureSpec, packages map[string]architecturePa
 			} else if !ok {
 				fail("%s must not import %s", relative, dependency)
 			}
-			if !isStageProvider(target) || isComposition(relative) {
+			kind, selected := selectedKind(target)
+			if !selected || isComposition(relative) {
 				continue
 			}
 			used := sorted(p.Uses[dependency])
 			e, ok := exceptions[[2]string{relative, target}]
 			if !ok {
-				fail("%s imports stage provider %s (uses %s) without a provider exception", relative, target, symbolList(used))
+				fail("%s imports %s %s (uses %s) without a provider exception", relative, kind, target, symbolList(used))
 				continue
 			}
 			for _, symbol := range used {

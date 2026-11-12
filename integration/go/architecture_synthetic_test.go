@@ -274,7 +274,7 @@ func TestArchitectureMalformedProviderException(t *testing.T) {
 	s = providerSet()
 	s.except(syntheticParser, "trees/ast/go", "Node")
 	s.expect(t,
-		"provider exception parse/syntax/x/provider/go -> trees/ast/go does not name a stage provider package",
+		"provider exception parse/syntax/x/provider/go -> trees/ast/go does not name a stage provider or query service package",
 		"unused symbol in provider exception parse/syntax/x/provider/go -> trees/ast/go: Node",
 	)
 }
@@ -433,9 +433,11 @@ func unlisted(importer, imported string) string {
 	return importer + " must not import " + syntheticModule + "/" + imported
 }
 
-// unadmitted is the second failure of an unlisted import of a stage provider.
+// unadmitted is the second failure of an unlisted import of a stage provider
+// or a query service.
 func unadmitted(importer, provider string) string {
-	return importer + " imports stage provider " + provider + " (uses no symbol) without a provider exception"
+	kind, _ := selectedKind(provider)
+	return importer + " imports " + kind + " " + provider + " (uses no symbol) without a provider exception"
 }
 
 type roleBreak struct {
@@ -449,7 +451,7 @@ func prohibited(importer, imported, reason string) roleBreak {
 
 func notAllowed(importer, imported string) roleBreak {
 	want := []string{unlisted(importer, imported)}
-	if isStageProvider(imported) {
+	if _, selected := selectedKind(imported); selected {
 		want = append(want, unadmitted(importer, imported))
 	}
 	return roleBreak{importer, imported, want}
@@ -988,8 +990,8 @@ func TestArchitectureExtractorRole(t *testing.T) {
 	set().imports("syntax/x/go", extractor).expect(t, refused("syntax/x/go", extractor, noContribution))
 }
 
-// The sets below keep hand entries beside a role, as the real rules do for a
-// few packages.
+// The sets below keep hand entries beside a role. No real package has both
+// today; the check still has to hold for one that does.
 
 var vocabularyImports = []string{
 	"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "semantics/go",
@@ -1041,6 +1043,31 @@ func TestArchitectureQueryServiceRole(t *testing.T) {
 		"analyze/files/x/queries/go imports stage provider analyze/files/x/provider/go (uses no symbol) without a provider exception",
 	)
 	querySet("trees/ast/go").expect(t, "analyze/files/x/queries/go must not import example.test/m/trees/ast/go")
+}
+
+// A query service is selected by a composition, like a stage provider. Another
+// importer needs a provider exception that names the symbols it uses.
+func TestArchitectureQueryServiceImportNeedsException(t *testing.T) {
+	const queries, pair = "analyze/files/x/queries/go", "verification/files/pair/go"
+	set := func() *syntheticSet {
+		s := querySet()
+		s.listed(pair, queries)
+		s.uses(pair, queries, "Admission")
+		return s
+	}
+	set().expect(t, pair+" imports query service "+queries+" (uses Admission) without a provider exception")
+	s := set()
+	s.except(pair, queries, "Admission")
+	s.expect(t)
+	s = set()
+	s.except(pair, queries, "Admission")
+	s.uses(pair, queries, "Admission", "NewQueries")
+	s.expect(t, pair+" uses NewQueries from "+queries+", but its provider exception names only Admission")
+	// A composition selects the query service and needs no exception.
+	s = querySet()
+	s.listed("tools/x/go", queries)
+	s.uses("tools/x/go", queries, "NewQueries")
+	s.expect(t)
 }
 
 var lawImports = []string{"verification/files/horos-to-go/go", "semantics/golang/go", "semantics/go"}

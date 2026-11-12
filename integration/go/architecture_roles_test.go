@@ -83,6 +83,26 @@ func isStageProvider(relative string) bool {
 	return len(s) == 5 && s[3] == "provider" && s[4] == "go" && s[2] != "shared"
 }
 
+// isQueryService reports whether a path has the shape
+// analyze/files/<language>/queries/go.
+func isQueryService(relative string) bool {
+	s := strings.Split(relative, "/")
+	return len(s) == 5 && s[0] == "analyze" && s[1] == "files" && s[3] == "queries" && s[4] == "go" && isLanguageName(s[2])
+}
+
+// selectedKind names the kind of a package that a consumer selects on its own:
+// a stage provider or a query service. Only a composition imports one freely.
+// Any other importer needs a provider exception that names the symbols it uses.
+func selectedKind(relative string) (string, bool) {
+	switch {
+	case isStageProvider(relative):
+		return "stage provider", true
+	case isQueryService(relative):
+		return "query service", true
+	}
+	return "", false
+}
+
 // isSemanticHelper reports whether a path has the shape internal/<language>sem.
 func isSemanticHelper(relative string) bool {
 	s := strings.Split(relative, "/")
@@ -163,7 +183,7 @@ func packageRole(relative string) (roleRule, bool) {
 		return rule, true
 	case len(s) == 5 && s[3] == "provider" && isLanguageName(s[2]):
 		return stageProviderRole(s[0], s[1], s[2])
-	case len(s) == 5 && s[0] == "analyze" && s[1] == "files" && s[3] == "queries" && isLanguageName(s[2]):
+	case isQueryService(relative):
 		// A native query service over the facts of its language's compiler
 		// bridge. It is not an analysis, and it does not import its resolver.
 		rule := role("analyze/files/<language>/queries/go", roleContribution, []string{"language", s[2]},
