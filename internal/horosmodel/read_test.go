@@ -5,14 +5,14 @@ import (
 	"strings"
 	"testing"
 
-	s "github.com/Bitspark/bittype/internal/declsyntax"
+	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
 func TestParameterIndexDecodeHasMachineIntegerWorkBound(t *testing.T) {
 	decode := func(spelling string) (bool, error) {
 		input := ast.AST[struct{}]{ID: "index", Root: 1, Nodes: []ast.Node[struct{}]{{
-			Kind: s.KindParameter, Attributes: []ast.Attribute{{Name: s.AttributeIndex, Text: spelling}},
+			Kind: ast.Kind[struct{}](s.KindParameter), Attributes: []ast.Attribute{{Name: s.AttributeIndex, Text: spelling}},
 		}}}
 		value, err := (reader[struct{}]{tree: input, declarationPrefix: "horos/decl/", descriptorPrefix: "horos/"}).value(1)
 		return value != nil, err

@@ -13,8 +13,25 @@ Not done:
 - `transform/syntax/typescript/symbol/go` still spells `typescript/name` as its own `nameRole`, which it writes in `ExternalUse` and reads in `ReadExternal`. The role that the architecture test gives that package does not permit `semantics/typescript/go`: with the import, `TestProductionArchitecture` fails. This change edits no architecture test, so that second spelling of `typescript/name` remains.
 - Names with a writer and no separate Go reader stay where they are written. From the helper: the entity kinds `program`, `script` and `property`, the parameter sort `type`, the operators `primitive`, `literal`, `tuple`, `array`, `union`, `intersection`, `boolean` and `display`, the encodings `json-1` and `utf8`, the relation `structure`, the expression roles `type-expression` and `native-type`, and the diagnostic codes. From Go: the diagnostic codes `limit` and `missing-context` of `internal/typescriptsem`, and the Files relation `type-import` and the setting `declaration-placement-1` of the Files formatter.
 - Two neighbouring groups were seen and not examined. The helper reads the syntax node kinds, child roles and attribute names of its request by spelling, and `syntax/typescript/go` owns them in Go. The status of the helper's response (`ok`, `invalid`, `unsupported` and the rest) is spelled in the helper, in `internal/typescriptsem`, in the resolver and in the query service.
-- The Rust and Go helpers of #251 and its observation 2 are not part of this change.
+- The Rust and Go helpers of #251 are not part of this change. Observation 2 of #251 has its own entry below.
 - [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) and [package boundaries](docs/package-boundaries.md) still list the TypeScript names under "Not examined". This change edits no document besides this entry.
+
+## horos syntax node kinds, attributes and roles declared once, in the vocabulary package — 12 November 2026
+
+This answers observation 2 of [#251](https://github.com/Bitspark/bittype/issues/251). `syntax/horos/go` and `internal/declsyntax` each declared the 33 node kinds, the 9 attribute names and the 18 role names of the horos syntax, and neither imported the other. The two lists were equal in every name and every value. `syntax/horos/go` owns the names, and no other production package spells one. It is a move: every value, the parsed and formatted fixtures, the syntax projected from canonical values and the published semantic graph are byte-identical before and after.
+
+- **Why there were two.** Pull request #39 of 4 November 2026 made the private horos model generic over the language marker, so that horos and a second language, horos/wire, could share it. It added `internal/declsyntax` with the names as untyped strings, which fit a tree of either language. Pull request #49 of the same day removed the second language. Since then every production use of the framing is over `syntax/horos/go`'s `Language`. One unit test of `internal/horosmodel` builds a tree over `struct{}`.
+- **`internal/horosmodel`** takes the names from `syntax/horos/go` and no longer imports `internal/declsyntax`. Its code is generic over the language marker, so it reads a tree's kind as a horos kind, `s.Kind(n.Kind)`, where it compares one, and the projector's `add` takes a horos kind. `resolver.go` spelled the attribute name `pin` inline and now uses the constant.
+- **`internal/declsyntax`** keeps its constant names, because its admission grammar is a table keyed by strings. Each constant is defined from the vocabulary: a kind as `string(h.KindProgram)`, an attribute or a role as `h.AttributeName`. The grammar table `rules` is unchanged. `Check` spelled the root kind inline as `"program"` and now uses the constant.
+- **The architecture test.** Two entries of `oneOfAKindRules` change. `internal/declsyntax` gains `syntax/horos/go`. `internal/horosmodel` gains `syntax/horos/go` and loses `internal/declsyntax`. Both packages belong to horos by `languageOwners`, and the import goes from a private part to the vocabulary of its own language. `syntax/horos/go` imports nothing new.
+
+Not done:
+
+- The framing stays generic over the language marker, although only horos uses it. Removing the parameter would remove the conversions. It changes the signatures of `internal/horosmodel` and `internal/declsyntax` and is a change of its own.
+- The constants of `internal/declsyntax` stay exported. No package outside it uses them now.
+- This change edits no document besides this entry. [Package boundaries](docs/package-boundaries.md) and [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) still list the node kinds as not examined.
+- Observation 1 of #251, the names that the native compiler helpers write, is open.
+- The checkers of the native languages were not examined. The Rust checker compares node kinds with inline strings beside the constants of its vocabulary.
 
 ## Go's contract identities and query service move, and the documents follow — 12 November 2026
 

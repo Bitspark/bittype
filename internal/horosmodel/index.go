@@ -1,7 +1,7 @@
 package horosmodel
 
 import (
-	s "github.com/Bitspark/bittype/internal/declsyntax"
+	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 )

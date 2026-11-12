@@ -2,8 +2,8 @@ package horosmodel
 
 import (
 	"github.com/Bitspark/bittype/contracts/text/go"
-	s "github.com/Bitspark/bittype/internal/declsyntax"
 	n "github.com/Bitspark/bittype/semantics/horos/go"
+	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	core "github.com/bitspark/ontos/core/go"
@@ -56,7 +56,7 @@ func SourceLiteral[L any](tree ast.AST[L], id ast.NodeID) (core.Value, error) {
 	var literal func(ast.NodeID) bool
 	literal = func(id ast.NodeID) bool {
 		n := tree.Nodes[id-1]
-		if n.Kind != s.KindAtom && n.Kind != s.KindTuple {
+		if s.Kind(n.Kind) != s.KindAtom && s.Kind(n.Kind) != s.KindTuple {
 			return false
 		}
 		for _, child := range n.Children {

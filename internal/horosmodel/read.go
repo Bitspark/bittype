@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/Bitspark/bittype/contracts/text/go"
-	s "github.com/Bitspark/bittype/internal/declsyntax"
+	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	core "github.com/bitspark/ontos/core/go"
@@ -50,25 +50,25 @@ func (r reader[L]) index(id ast.NodeID, name string) (core.Value, error) {
 
 func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 	n := r.node(id)
-	if n.Kind == s.KindAtom {
+	if s.Kind(n.Kind) == s.KindAtom {
 		bytes, err := hex.DecodeString(r.attr(id, s.AttributeHex))
 		if err != nil {
 			return nil, r.bad(id, "invalid atom hex")
 		}
 		return core.NewAtom(bytes), nil
 	}
-	if n.Kind == s.KindParameter || n.Kind == s.KindKindParameterReference {
+	if s.Kind(n.Kind) == s.KindParameter || s.Kind(n.Kind) == s.KindKindParameterReference {
 		index, err := r.index(id, s.AttributeIndex)
 		if err != nil {
 			return nil, err
 		}
 		tag := "param"
-		if n.Kind == s.KindKindParameterReference {
+		if s.Kind(n.Kind) == s.KindKindParameterReference {
 			tag = "kind-param"
 		}
 		return tagged(r.declarationPrefix, tag, index), nil
 	}
-	if n.Kind == s.KindRecursiveVariable {
+	if s.Kind(n.Kind) == s.KindRecursiveVariable {
 		depth, err := r.index(id, s.AttributeDepth)
 		if err != nil {
 			return nil, err
@@ -79,9 +79,9 @@ func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 		}
 		return tagged(r.declarationPrefix, "recursive-var", depth, index), nil
 	}
-	if n.Kind == s.KindReference || n.Kind == s.KindKindReference {
+	if s.Kind(n.Kind) == s.KindReference || s.Kind(n.Kind) == s.KindKindReference {
 		prefix := ""
-		if n.Kind == s.KindKindReference {
+		if s.Kind(n.Kind) == s.KindKindReference {
 			prefix = "kind-"
 		}
 		switch r.attr(id, s.AttributeScope) {
@@ -94,7 +94,7 @@ func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 		}
 	}
 	// Selector and equation nodes are AST framing, not extra canonical forms.
-	if n.Kind == s.KindNodePattern {
+	if s.Kind(n.Kind) == s.KindNodePattern {
 		var selectors [][2]core.Value
 		var pattern core.Value
 		for _, child := range n.Children {
@@ -117,7 +117,7 @@ func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 		}
 		return tagged(r.declarationPrefix, "node", data.MustEncodeText(r.attr(id, s.AttributeConstructor)), values, pattern), nil
 	}
-	if n.Kind == s.KindRecursiveKind {
+	if s.Kind(n.Kind) == s.KindRecursiveKind {
 		var equations []core.Value
 		for _, child := range n.Children {
 			wrapper := r.node(child.Node)
@@ -144,7 +144,7 @@ func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 		}
 		values[i] = value
 	}
-	switch n.Kind {
+	switch s.Kind(n.Kind) {
 	case s.KindTuple:
 		return core.NewTuple(values...), nil
 	case s.KindDescriptor:
@@ -156,13 +156,13 @@ func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 			return nil, r.bad(id, "arrow requires inputs and result")
 		}
 		tag := "arrow"
-		if n.Kind == s.KindArrowSort {
+		if s.Kind(n.Kind) == s.KindArrowSort {
 			tag = "sort-arrow"
 		}
 		return tagged(r.declarationPrefix, tag, data.EncodeList(values[:len(values)-1]), values[len(values)-1]), nil
 	case s.KindTop, s.KindBottom:
 		tag := "top"
-		if n.Kind == s.KindBottom {
+		if s.Kind(n.Kind) == s.KindBottom {
 			tag = "bottom"
 		}
 		return tagged(r.declarationPrefix, tag, values...), nil
@@ -171,7 +171,7 @@ func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 			return nil, r.bad(id, "application requires callee and arguments")
 		}
 		tag := "apply"
-		if n.Kind == s.KindKindApplication {
+		if s.Kind(n.Kind) == s.KindKindApplication {
 			tag = "kind-apply"
 		}
 		return tagged(r.declarationPrefix, tag, values[0], data.EncodeList(values[1:])), nil
@@ -180,7 +180,7 @@ func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 			return nil, r.bad(id, "kind Boolean form requires sort and operands")
 		}
 		tag := "or"
-		if n.Kind == s.KindIntersection {
+		if s.Kind(n.Kind) == s.KindIntersection {
 			tag = "and"
 		}
 		return tagged(r.declarationPrefix, tag, values[0], data.EncodeList(values[1:])), nil
@@ -190,7 +190,7 @@ func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 		return tagged(r.declarationPrefix, "item", values...), nil
 	case s.KindSequenceConcat, s.KindSequenceAlternative:
 		tag := "concat"
-		if n.Kind == s.KindSequenceAlternative {
+		if s.Kind(n.Kind) == s.KindSequenceAlternative {
 			tag = "alternative"
 		}
 		return tagged(r.declarationPrefix, tag, data.EncodeList(values)), nil
@@ -204,9 +204,9 @@ func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 func (r reader[L]) declaration(id ast.NodeID) (core.Value, error) {
 	n := r.node(id)
 	tag, parameterTag := "type", "parameter"
-	if n.Kind == s.KindKindDefinition {
+	if s.Kind(n.Kind) == s.KindKindDefinition {
 		tag, parameterTag = "kind", "kind-parameter"
-	} else if n.Kind != s.KindTypeDefinition {
+	} else if s.Kind(n.Kind) != s.KindTypeDefinition {
 		return nil, r.bad(id, "expected declaration")
 	}
 	var parameters []core.Value
@@ -246,14 +246,14 @@ func (r reader[L]) declaration(id ast.NodeID) (core.Value, error) {
 }
 
 func (r reader[L]) module(id ast.NodeID) (core.Value, error) {
-	if r.node(id).Kind != s.KindModule {
+	if s.Kind(r.node(id).Kind) != s.KindModule {
 		return nil, r.bad(id, "expected module")
 	}
 	var imports, declarations [][2]core.Value
 	for _, child := range r.node(id).Children {
 		switch child.Role {
 		case s.RoleImport:
-			if r.node(child.Node).Kind != s.KindImport {
+			if s.Kind(r.node(child.Node).Kind) != s.KindImport {
 				return nil, r.bad(child.Node, "expected import")
 			}
 			bytes, err := hex.DecodeString(r.attr(child.Node, s.AttributePin))
@@ -481,7 +481,7 @@ func (d *Decoded[L]) OperandSite(site ast.NodeRef, path []int) ast.NodeRef {
 			return item
 		}
 		equation := false
-		switch node.Kind {
+		switch s.Kind(node.Kind) {
 		case s.KindTuple:
 		case s.KindDescriptor:
 			index--
@@ -633,7 +633,7 @@ func (d *Decoded[L]) correspond(expected ast.AST[L]) error {
 			return part.annotation(gotID, context, "Horos syntax does not match checked declaration positions")
 		}
 		gotAttributes := len(got.Attributes)
-		if got.Kind == s.KindEquation {
+		if s.Kind(got.Kind) == s.KindEquation {
 			for _, attribute := range got.Attributes {
 				if attribute.Name == s.AttributeName {
 					gotAttributes--
@@ -652,7 +652,7 @@ func (d *Decoded[L]) correspond(expected ast.AST[L]) error {
 		contexts[wantID] = context
 		type memberKey struct{ role, name string }
 		members := map[memberKey]ast.Child{}
-		if want.Kind == s.KindModule || want.Kind == s.KindNodePattern {
+		if s.Kind(want.Kind) == s.KindModule || s.Kind(want.Kind) == s.KindNodePattern {
 			for _, candidate := range got.Children {
 				name := s.AttributeName
 				if candidate.Role == s.RoleImport {
@@ -663,7 +663,7 @@ func (d *Decoded[L]) correspond(expected ast.AST[L]) error {
 		}
 		for i, child := range want.Children {
 			actual := got.Children[i]
-			if want.Kind == s.KindModule || want.Kind == s.KindNodePattern {
+			if s.Kind(want.Kind) == s.KindModule || s.Kind(want.Kind) == s.KindNodePattern {
 				name := s.AttributeName
 				if child.Role == s.RoleImport {
 					name = s.AttributeAlias
