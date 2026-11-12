@@ -8,6 +8,7 @@ import (
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
+	mapping "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -53,6 +54,10 @@ func Roots(input transform.Input) ([]ast.NodeRef, error) {
 
 var configuredSources sync.Map
 
+// Request registers the source once per registry, the target and the given
+// mapping libraries. The request it returns names the entry module's type
+// definitions as roots and the structural representation profile, whose
+// identity comes from its owner, the horos mapping package.
 func Request[T any](registry *c.Registry, input transform.Input, to representation.Language, output ast.TreeID, target g.Target[T], mappings ...g.MappingLibrary[h.Language, T, source.Reader]) (c.Request, error) {
 	zero := c.Request{}
 	from := input.Source.Language()
@@ -73,5 +78,5 @@ func Request[T any](registry *c.Registry, input transform.Input, to representati
 	if err != nil {
 		return zero, err
 	}
-	return c.Request{Input: input, To: to, Output: output, Roots: roots, Profile: "pagination-representation/1", Limits: g.DefaultLimits()}, nil
+	return c.Request{Input: input, To: to, Output: output, Roots: roots, Profile: mapping.RepresentationProfile, Limits: g.DefaultLimits()}, nil
 }
