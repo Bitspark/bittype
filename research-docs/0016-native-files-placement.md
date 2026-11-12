@@ -156,7 +156,7 @@ to **admit** an input is to validate and accept it, as opposed to refusing it.
 | **Semantic graph, fact, binding** | What such a provider publishes: **entities** (declarations, packages, modules), **bindings** (this use site resolves to that entity) and **facts** (provider-owned relations such as "this module exports that declaration"). Each language owns its names in the graph. |
 | **Receipt, report, evidence** | A **receipt** is the result of one resolution or analysis, bound to one snapshot and one configuration. It carries **reports** (a provider's verdict, holds or rejected, on one named obligation such as "the program is valid") and, when demanded, a semantic graph. A stage states an **evidence requirement** (operation, profile, configuration, required reports), and a receipt is admitted against it. "Compiler-established evidence" always means a receipt. From section 3 on we also use "evidence" in the ordinary sense of whatever a check rests on, including tree equality. The **evidence profile** of a formatter is the semantic profile and configuration its evidence requirement names. |
 | **Compiler bridge** | The private code that converts bittype's tree into the compiler's own input and exports facts back: `internal/golangsem` for Go, `internal/typescriptsem` for TypeScript, a Rust executable (the **helper**) for Rust. |
-| **Profile** | A named, bounded subset of a language or a policy. A syntax or semantic profile says which constructs are supported. A **representation profile** says how horos forms become native types. |
+| **Profile** | A named, bounded subset of a language: a syntax or semantic profile says which constructs are supported. |
 | **Kernel, shared contract** | The **generation kernel** is bittype's language-agnostic code that plans and runs generation. **The shared Files contract** is the package `contracts/format/go` of section 4.4, which every generated-Files formatter goes through; code comments call it the Files kernel. Both are "shared mechanisms" in the sense of the rules in section 2.1. |
 | **Mapping library, declaration recipe** | A mapping library is a contribution that says how a horos form or declaration is represented natively (text becomes `string`, a list becomes a slice). The **declaration recipe** is the mapping part that turns a named horos declaration into a native declaration and chooses its name. |
 | **Native model, form** | Each language's closed set of native type **forms** (for example primitive, sequence, field, record, external) in which mapping libraries state a representation. A form carries string data and child forms. It is intent, not syntax. |
@@ -167,7 +167,6 @@ to **admit** an input is to validate and accept it, as opposed to refusing it.
 | **Seal** | To validate a native target's result and freeze it into an immutable `Output` (section 4.2). |
 | **Placement, placement assignment** | The **placement** is the consumer's whole statement of where generated declarations go. One element of it, which assigns some declaration sites to one file (and, in our proposals, one native scope), is a **placement assignment**. The placement also names the entry file. |
 | **Dependency environment** | What the consumer says about the world the output is compiled in: the module root, the dependency packages and their declarations, compiler settings. |
-| **Slice** | One delivered change. Slice 1 of a work item moves a misplaced decision; later slices add coverage. |
 | **Limitation** | A declared gap in what a check establishes. "Limit" is reserved for resource bounds. |
 | **ACX-nnn** | A numbered architecture case record in bittype's repository: a found violation of the rules in section 2.1, with its correction and limitations. ACX-004 is "generation emits file syntax before placement". |
 
@@ -222,13 +221,9 @@ times with different placements.
 - **Setting keys carry a version.** The TypeScript placement travels under a
   key ending in `-1`. A later `-2` would be a change to what a consumer
   writes, and counts as a failure in the sense of the Question section.
-- **People.** One human owner decides for all repositories involved. Each
-  repository is maintained by AI coding-agent sessions, several working in
-  parallel. Clear ownership and additive composition are therefore hard
-  requirements.
-- **Existing Files formatters.** Two exist: horos (it places whole horos
-  modules into files) and TypeScript. TypeScript's is the only one that
-  consumes generation output.
+- **People.** Each repository is maintained by AI coding-agent sessions,
+  several working in parallel, so clear ownership and additive composition
+  are hard requirements.
 
 
 ## 2. Architectural context
@@ -359,18 +354,13 @@ Further sentences of the proposal that the questions rest on.
 
 > Files must construct `mod` declarations or inline modules consistently with
 > the placement, and realize public-root visibility under the crate/module
-> rules. Two files may contribute through one module arrangement; one file may
-> contain several modules.
+> rules.
 
-> Cargo package selection/renaming belongs to the dependency environment; it is
-> not inferred from a source type's name.
-
-(C++; "the Files profile" is the C++ Files formatter's profile:)
-
-> The Files profile owns include directives, guards, declaration order and the
-> chosen relative/public-header policy. [...] A forward declaration is not
-> automatically enough: required completeness depends on the selected native
-> use.
+For Rust the proposal also assigns the selection and renaming of dependency
+crates to the dependency environment. For C++ it assigns include directives,
+guards and declaration order to the C++ Files formatter, and notes: "A forward
+declaration is not automatically enough: required completeness depends on the
+selected native use."
 
 (All languages, on checks:)
 
@@ -503,17 +493,10 @@ An unresolved name is only an attribute. `Origin` records where a node came
 from and plays no part here.
 
 ```go
-// contracts/semantic/go/contract.go:82-85, evidence.go:14-20
+// contracts/semantic/go/contract.go:82-85
 type Setting struct {
 	Key   semantics.Key
 	Value []byte
-}
-type EvidenceRequirement struct {
-	Operation     semantics.Key
-	Profile       string
-	Configuration []Setting
-	Reports       []Requirement
-	Semantics     bool
 }
 
 // semantics/go/model.go:30-37, 77-86, 110-114
@@ -543,8 +526,9 @@ type Fact struct {
 
 A `Key` is an owner and a name, for example `go/package`. A `Setting` is how
 configuration, including a placement, travels through shared code that must
-not interpret it. `Semantics: true` in an evidence requirement demands a
-semantic graph; a `Requirement` names one report and the verdict it must have.
+not interpret it. An `EvidenceRequirement` names an operation, a profile, a
+configuration and the required reports, and says in its field `Semantics`
+whether a semantic graph is demanded.
 An `Occurrence` is one position within a node: its site, plus a role and an
 ordinal that the provider owns. A term is a provider-owned expression in the
 graph, for example a type; a fact's `Subject` is an entity or a term.
@@ -734,16 +718,12 @@ language of the output's snapshot, passes the settings through unread, and
 installs the language's check as a guard:
 
 ```go
-// contracts/format/go/generated.go:73-80, 96-107
-func (p GeneratedFilesFormatter[L]) Format(ctx context.Context, input GeneratedFilesInput) (source.Source[L], error) {
-	if err := p.Validate(); err != nil {
-		return source.Source[L]{}, err
-	}
+// contracts/format/go/generated.go:77-80, 96-103
 	snapshot := input.Output.Snapshot()
 	if ctx == nil || !snapshot.Valid() || !p.definition.Compatible(snapshot.Language()) {
 		return source.Source[L]{}, source.ErrInvalid
 	}
-	// …
+// …
 	policy := source.Policy[L]{Evidence: p.contract.Evidence, SemanticLimits: limits.Semantic, Limits: limits.Source, Print: p.contract.Print, Check: func(ctx context.Context, output source.Publication[L]) error {
 		if snapshot.Same(output.Snapshot) {
 			return source.ErrStale
@@ -752,16 +732,12 @@ func (p GeneratedFilesFormatter[L]) Format(ctx context.Context, input GeneratedF
 		guard.Configuration, _ = semantic.CaptureSettings(input.Configuration, limits.Semantic)
 		return p.contract.Check(ctx, guard, output)
 	}}
-	return publishFiles(ctx, p.definition, policy, func(publisher source.Publisher[L]) (source.Source[L], error) {
-		return p.provider.Format(ctx, GeneratedFilesRequest[L]{input, publisher})
-	})
-}
 ```
 
-Here `p.definition` is the formatter's language, `limits` is the normalized
-form of `input.Limits` from the elided lines, `snapshot.Same(output.Snapshot)`
-refuses publishing the input snapshot itself, and `publishFiles` creates the
-publisher under this policy.
+Here `input` is the `GeneratedFilesInput` of one request, `p.definition` is
+the formatter's language, `limits` is the normalized form of `input.Limits`,
+and `snapshot.Same(output.Snapshot)` refuses publishing the input snapshot
+itself. The publisher of this request then works under this policy.
 
 A formatter cannot return a `Source` it built itself. It hands a
 `source.Publication` to `Publish`: a fresh snapshot of the placed units, their
@@ -779,15 +755,12 @@ files and sites. The shared publisher then:
 3. runs the language's `Check` with the original input.
 
 Three properties of this code matter for the questions. All three are
-implemented today and open to change:
-
-- **One language, one checker.** The unplaced output and the placed source
-  have the same language descriptor, so the same syntax checker admits both.
-- **The shared contract knows nothing about a placement.** It carries
-  `Configuration []semantic.Setting` and never reads it. What a placement is,
-  and whether it is complete, is decided privately by each formatter.
-- **The evidence requirement is fixed when the formatter is built**, from the
-  dependency environment. The placement arrives with each request.
+implemented today and open to change. The unplaced output and the placed
+source have one language descriptor, so one syntax checker admits both. The
+shared contract carries the placement as settings and never reads it, so each
+formatter decides privately what a placement is and whether it is complete.
+And the evidence requirement is fixed when the formatter is built, from the
+dependency environment, while the placement arrives with each request.
 
 
 ### 4.5 TypeScript, the corrected path and working model
@@ -829,40 +802,15 @@ emitted, err := filesPrinter.Print(ctx, organized)
 Section 4.2 says where such sites come from: `Exposed()`, or a walk over the
 generated tree that reads each declaration's name.
 
-**Generation side: the TypeScript target writes no file decision.** Its root
-is the vocabulary's top node with declaration children only. `string` and
-`boolean` are keyword nodes, and a library-owned type is an unlinked reference
-recorded as an external use:
-
-```go
-// transform/syntax/typescript/target/go/provider.go:80-94, 115-117
-func (b *Backend) externalType(module, export string, args []m.Fragment[s.Language], origin ast.NodeRef) (m.Fragment[s.Language], error) {
-	ref, err := b.Node(m.Node(s.KindTypeReference, m.Attributes("name", export), origin))
-	if err != nil {
-		return ref, err
-	}
-	external, err := symbol.ExternalUse(b.language, ast.NodeRef{}, symbol.Type{Module: module, Name: export})
-	if err != nil {
-		return ref, err
-	}
-	ref, err = b.External(ref, external)
-	if err != nil {
-		return ref, err
-	}
-	return b.apply(ref, args, origin)
-}
-// …
-func (b *Backend) Finish(declarations []m.Fragment[s.Language]) (m.Fragment[s.Language], error) {
-	return b.Node(m.Node(s.KindSourceFile, nil, ast.NodeRef{}), edges(s.RoleDeclaration, declarations)...)
-}
-```
-
-Here `symbol` is TypeScript's symbol package, and `symbol.Type{Module, Name}`
-is "a named export, or a global type when Module is empty". The external use
-is created with an empty site; `Compile` fills the site in when the node
-receives its ID. No new node kind was needed, because the TypeScript grammar
-requires nothing on its top node, and `exported` is an optional attribute of a
-declaration:
+**Generation side: the TypeScript target writes no file decision.** Its
+`Finish` creates the vocabulary's top node with declaration children only.
+`string` and `boolean` are keyword nodes. For a library-owned type the target
+creates a type-reference node without a link and attaches an external use,
+which TypeScript's symbol package builds from a module and a name: "a named
+export, or a global type when Module is empty". The use is created with an
+empty site; `Compile` fills the site in when the node receives its ID. No new
+node kind was needed, because the TypeScript grammar requires nothing on its
+top node, and `exported` is an optional attribute of a declaration:
 
 ```go
 // check/syntax/typescript/provider/go/check.go:19
@@ -882,19 +830,13 @@ an `exported` attribute, are both refused. Exposure is read only from
 (`imports.Attr` reads an attribute, `imports.Export{Module, Name}` names an
 export of a module), `ref(tree, node)` builds a site, and
 `tssymbol.ReadExternal` asks TypeScript's symbol package to read an external
-symbol back as `{Module, Name}`:
+symbol back as `{Module, Name}`. The excerpt is the body of the loop over the
+output's trees: `t` is one tree, `snap` the output's snapshot, and `p` the
+formatter's view (`p.tops`: top-level declaration sites; `p.public`: exposed
+ones; `p.bindings`: intended destinations):
 
 ```go
-// format/files/typescript/provider/go/generated.go:61-115
-func generatedProgram(ctx context.Context, output g.Output) (*program, error) {
-	snap := output.Snapshot()
-	p := &program{trees: map[ast.TreeID]s.AST{}, tops: map[ast.NodeRef]bool{}, public: map[ast.NodeRef]bool{}, bindings: map[ast.NodeRef]symbol{}}
-	for _, env := range snap.Inputs() {
-		t, err := representation.Unpack[s.Language](snap.Language(), env)
-		if err != nil {
-			return nil, err
-		}
-		p.trees[t.ID] = t
+// format/files/typescript/provider/go/generated.go:70-115
 		for _, c := range t.Nodes[t.Root-1].Children {
 			if c.Role != s.RoleDeclaration {
 				return nil, source.ErrInvalid
@@ -973,21 +915,9 @@ declaration sites of the input, and `p.original` is the organization of an
 already placed program (empty for generation output):
 
 ```go
-// format/files/typescript/provider/go/placement.go:168-210
+// format/files/typescript/provider/go/placement.go:168, 182-210
 func (p *program) organization(settings []semantic.Setting, limits source.Limits) (Organization, error) {
-	o := p.original
-	if len(settings) > 0 {
-		if len(settings) != 1 || settings[0].Key != OrganizationSetting() {
-			return Organization{}, source.ErrInvalid
-		}
-		o = Organization{}
-		// A setting contains one strict object, including the explicit entry.
-		decoder := json.NewDecoder(bytes.NewReader(settings[0].Value))
-		decoder.DisallowUnknownFields()
-		if !json.Valid(settings[0].Value) || decoder.Decode(&o) != nil {
-			return Organization{}, source.ErrInvalid
-		}
-	}
+	// …
 	if len(o.Units) > limits.Files.MaxFiles {
 		return Organization{}, source.ErrLimit
 	}
@@ -1019,11 +949,11 @@ func (p *program) organization(settings []semantic.Setting, limits source.Limits
 }
 ```
 
-One line here is about TypeScript: `imports.SourcePath` (a `.ts` path that is
-not `.d.ts`). The rest is not: strict decoding, a resource limit, no empty
-assignment, an entry file, every top-level declaration assigned exactly once
-and by site, and file IDs and paths admitted by the Files list. One assignment
-is one file, because that list refuses a repeated file ID or path.
+The elided lines decode the one setting strictly as JSON, refusing unknown
+fields. One line of the rest is about TypeScript: `imports.SourcePath` (a
+`.ts` path that is not `.d.ts`). One assignment is one file, because the Files
+list refuses a repeated file ID or path. The table at the end of this section
+names the rules that are not TypeScript's.
 
 **Steps 2 and 3: copy declarations, check collisions per file, write file
 syntax.** Declarations are copied into one new tree per assignment, and a map
@@ -1051,16 +981,8 @@ import helper picks an alias such as `Cell_1` when a local name collides. A
 declaration is never renamed.
 
 **Step 4: capture, and obtain fresh compiler evidence under the consumer's
-environment.** The formatter cannot be built without the environment
-(`n.Imports` returns the environment and whether one is present):
-
-```go
-// format/files/typescript/provider/go/format.go:43-46
-	_, enabled, err := n.Imports(p.Configuration)
-	if err != nil || !enabled {
-		return Stages{}, fmt.Errorf("%w: named TypeScript import environment required", source.ErrInvalid)
-	}
-```
+environment.** The formatter cannot be built without the environment: its
+constructor fails with "named TypeScript import environment required".
 
 Its contract evidence is the analysis profile under exactly that environment,
 and its check recomputes the layout. This is the template a Go or Rust
@@ -1221,17 +1143,12 @@ Four things to take from this part:
 
 #### What generation writes today
 
-The checker requires a package identifier on `file` and accepts no other root.
-`g.Attr(true, …)` is a required attribute and `Reference: true` allows a
-reference link:
+The checker requires a package identifier on `file` and accepts no other root
+(`g.Attr(true, …)` marks a required attribute):
 
 ```go
-// check/syntax/golang/provider/go/check.go:13, 18, 23, 45-49
-func identifier(v string) bool { return g.Identifier(v) && !token.Lookup(v).IsKeyword() }
-// …
+// check/syntax/golang/provider/go/check.go:18, 45-49
 	s.KindFile:              {Attributes: g.Attributes(s.AttributePackage, g.Attr(true, identifier)), Roles: []g.Role[s.Language]{g.Many(s.RoleImport, 0, s.KindImport), g.Many(s.RoleDeclaration, 0, s.KindTypeDeclaration, s.KindTypeAlias)}},
-// …
-	s.KindNamedType:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, identifier)), Reference: true},
 // …
 func Check(view ast.View[s.Language]) error {
 	t := view.ASTView()
@@ -1400,10 +1317,8 @@ package cannot import the standard library and cannot lie under the
 consumer's module path; dot and blank imports are unsupported.
 
 **A reader of the unplaced output that would change.** One integration test
-resolves and analyzes the generation snapshot itself as Go, and asserts that a
-later verification step used exactly that snapshot. Once the unplaced output is
-no longer a Go file, that snapshot has no Go semantics, and the test must use
-the snapshot of the placed Source.
+resolves and analyzes the generation snapshot itself as Go. Once the unplaced
+output is no longer a Go file, it must use the snapshot of the placed Source.
 
 
 ### 4.8 Rust as it is
