@@ -34,8 +34,9 @@ func golangLibraries() []g.MappingLibrary[h.Language, s.Language, source.Reader]
 	}
 }
 
-// golangConstructors lists the exported constructor of every builtin
-// horos-to-golang mapping package, in the order of golangLibraries.
-func golangConstructors() []any {
-	return []any{text.Library, boolean.Library, list.Library, record.Library, declarations.Library, optional.Library}
+// golangConstructors names the exported constructor of every builtin
+// horos-to-golang mapping package by the directory of its package under
+// transform/syntax/horos-to-golang/mapping.
+func golangConstructors() map[string]any {
+	return map[string]any{"text": text.Library, "boolean": boolean.Library, "list": list.Library, "record": record.Library, "declarations": declarations.Library, "optional": optional.Library}
 }

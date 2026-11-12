@@ -27,8 +27,9 @@ func typescriptLibraries() []g.MappingLibrary[h.Language, s.Language, source.Rea
 	}
 }
 
-// typescriptConstructors lists the exported constructor of every builtin
-// horos-to-typescript mapping package, in the order of typescriptLibraries.
-func typescriptConstructors() []any {
-	return []any{text.Library, boolean.Library, list.Library, record.Library, declarations.Library}
+// typescriptConstructors names the exported constructor of every builtin
+// horos-to-typescript mapping package by the directory of its package under
+// transform/syntax/horos-to-typescript/mapping.
+func typescriptConstructors() map[string]any {
+	return map[string]any{"text": text.Library, "boolean": boolean.Library, "list": list.Library, "record": record.Library, "declarations": declarations.Library}
 }

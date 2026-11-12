@@ -25,8 +25,9 @@ func cppLibraries() []g.MappingLibrary[h.Language, s.Language, source.Reader] {
 	}
 }
 
-// cppConstructors lists the exported constructor of every builtin
-// horos-to-cpp mapping package, in the order of cppLibraries.
-func cppConstructors() []any {
-	return []any{text.Library, boolean.Library, list.Library, record.Library, declarations.Library}
+// cppConstructors names the exported constructor of every builtin
+// horos-to-cpp mapping package by the directory of its package under
+// transform/syntax/horos-to-cpp/mapping.
+func cppConstructors() map[string]any {
+	return map[string]any{"text": text.Library, "boolean": boolean.Library, "list": list.Library, "record": record.Library, "declarations": declarations.Library}
 }
