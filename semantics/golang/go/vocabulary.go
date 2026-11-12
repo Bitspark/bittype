@@ -24,6 +24,28 @@ func Bindings() semantics.Key       { return Key("bindings") }
 func Coverage() semantics.Key       { return Key("captured-type-coverage") }
 func Validity() semantics.Key       { return Key("captured-type-validity") }
 
+// The graph names below are written by the compiler bridge internal/golangsem
+// and read by name in model.go.
+
+// Kinds of graph entities.
+func PackageKind() semantics.Key   { return Key("package") }
+func DefinedKind() semantics.Key   { return Key("defined") }
+func AliasKind() semantics.Key     { return Key("alias") }
+func ParameterKind() semantics.Key { return Key("parameter") }
+
+// Relations of the facts about a native type.
+func IdenticalRelation() semantics.Key   { return Key("identical") }
+func UnderlyingRelation() semantics.Key  { return Key("underlying") }
+func ConstraintRelation() semantics.Key  { return Key("constraint") }
+func AliasTargetRelation() semantics.Key { return Key("alias-target") }
+func EmptyRelation() semantics.Key       { return Key("empty") }
+func DisplayRelation() semantics.Key     { return Key("display") }
+
+// Operators of the terms of a basic, a slice and a struct type.
+func BasicOperator() semantics.Key  { return Key("basic") }
+func SliceOperator() semantics.Key  { return Key("slice") }
+func StructOperator() semantics.Key { return Key("struct") }
+
 // Configuration fixes the compiler environment of this bounded provider.
 func Configuration() []semantic.Setting {
 	return []semantic.Setting{

@@ -75,7 +75,7 @@ func (m Model) Type(id semantics.TermID) (Type, error) {
 		return Type{}, ErrForeign
 	}
 	// Only terms explicitly carrying native type identity are type handles.
-	if len(m.state.graph.Facts(semantics.Subject{Term: id}, Key("identical"))) != 1 {
+	if len(m.state.graph.Facts(semantics.Subject{Term: id}, IdenticalRelation())) != 1 {
 		return Type{}, ErrForeign
 	}
 	return Type{m.state, id}, nil
@@ -101,12 +101,12 @@ func (m Model) lookup(importPath, name string) (Type, error) {
 	}
 	var found []semantics.TermID
 	for _, e := range m.state.graph.Data().Entities {
-		if e.Name != name || (e.Kind != Key("defined") && e.Kind != Key("alias")) {
+		if e.Name != name || (e.Kind != DefinedKind() && e.Kind != AliasKind()) {
 			continue
 		}
 		owner, _ := m.state.graph.Entity(e.Owner)
 		// Captured packages have declaration sites; supplied packages have none.
-		if owner.Kind == Key("package") && (importPath == "" && len(owner.Declarations) > 0 || importPath != "" && owner.Name == importPath) {
+		if owner.Kind == PackageKind() && (importPath == "" && len(owner.Declarations) > 0 || importPath != "" && owner.Name == importPath) {
 			found = append(found, e.Body)
 		}
 	}
@@ -137,11 +137,11 @@ func (t Type) term() semantics.Term {
 	v, _ := t.owner.graph.Term(t.id)
 	return v
 }
-func (t Type) fact(name string) Type {
+func (t Type) fact(relation semantics.Key) Type {
 	if !t.Valid() {
 		return Type{}
 	}
-	v := t.owner.graph.Facts(semantics.Subject{Term: t.id}, Key(name))
+	v := t.owner.graph.Facts(semantics.Subject{Term: t.id}, relation)
 	if len(v) != 1 {
 		return Type{}
 	}
@@ -159,15 +159,15 @@ func (t Type) entity() semantics.Entity {
 	return e
 }
 func (t Type) Same(u Type) bool {
-	return t.Valid() && u.Valid() && t.Model().Same(u.Model()) && t.fact("identical").id == u.fact("identical").id
+	return t.Valid() && u.Valid() && t.Model().Same(u.Model()) && t.fact(IdenticalRelation()).id == u.fact(IdenticalRelation()).id
 }
 func (t Type) IsBasic(kind types.BasicKind) bool {
 	v := t.term()
 	var k types.BasicKind
-	return v.Operator == Key("basic") && json.Unmarshal(v.Data, &k) == nil && k == kind
+	return v.Operator == BasicOperator() && json.Unmarshal(v.Data, &k) == nil && k == kind
 }
-func (t Type) IsNamed() bool { return t.entity().Kind == Key("defined") }
-func (t Type) IsAlias() bool { return t.entity().Kind == Key("alias") }
+func (t Type) IsNamed() bool { return t.entity().Kind == DefinedKind() }
+func (t Type) IsAlias() bool { return t.entity().Kind == AliasKind() }
 func (t Type) Site() ast.NodeRef {
 	e := t.entity()
 	if len(e.Declarations) > 0 {
@@ -202,19 +202,19 @@ func (t Type) Origin() Type {
 	}
 	return t
 }
-func (t Type) Underlying() Type  { return t.fact("underlying") }
-func (t Type) Constraint() Type  { return t.fact("constraint") }
-func (t Type) AliasTarget() Type { return t.fact("alias-target") }
+func (t Type) Underlying() Type  { return t.fact(UnderlyingRelation()) }
+func (t Type) Constraint() Type  { return t.fact(ConstraintRelation()) }
+func (t Type) AliasTarget() Type { return t.fact(AliasTargetRelation()) }
 func (t Type) SliceElement() (Type, bool) {
 	v := t.term()
-	if v.Operator != Key("slice") || len(v.Operands) != 1 {
+	if v.Operator != SliceOperator() || len(v.Operands) != 1 {
 		return Type{}, false
 	}
 	return Type{t.owner, v.Operands[0].Term}, true
 }
 func (t Type) Fields() ([]Field, bool) {
 	v := t.Underlying().term()
-	if v.Operator != Key("struct") {
+	if v.Operator != StructOperator() {
 		return nil, false
 	}
 	var metadata []FieldInfo
@@ -239,10 +239,10 @@ func (t Type) Fields() ([]Field, bool) {
 // parameter's constraint. Such a parameter is never reported unconstrained;
 // callers must treat false as "not established".
 func (t Type) Unconstrained() bool {
-	if t.entity().Kind != Key("parameter") {
+	if t.entity().Kind != ParameterKind() {
 		return false
 	}
-	v := t.Constraint().Underlying().fact("empty").term()
+	v := t.Constraint().Underlying().fact(EmptyRelation()).term()
 	return string(v.Data) == "true"
 }
-func (t Type) String() string { return string(t.fact("display").term().Data) }
+func (t Type) String() string { return string(t.fact(DisplayRelation()).term().Data) }
