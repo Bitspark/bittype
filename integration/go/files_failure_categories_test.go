@@ -519,6 +519,7 @@ func TestFilesFailureCategories(t *testing.T) {
 		limits.Semantic.MaxInputNodes = smallest(bundle.Snapshot(), inputNodes)
 		return horosFormat(horosFormatter, bundle, limits, semantic.Setting{Key: filesformat.OrganizationSetting(), Value: []byte(horosValid)})
 	}, semantic.ErrLimit)
+	add("more fresh units than the input limit", typescript, source.ErrLimit, tsLimited(func(l *format.FilesLimits) { l.Semantic.MaxInputs = 1 }))
 	add("the fresh text exceeds the input byte limit", horosName, source.ErrLimit, func(*testing.T) (bool, error) {
 		limits := format.DefaultFilesLimits()
 		limits.Semantic.MaxInputBytes = smallest(bundle.Snapshot(), inputBytes)
