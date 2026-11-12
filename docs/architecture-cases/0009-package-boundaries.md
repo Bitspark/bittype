@@ -592,9 +592,10 @@ Go's semantics and will add `AnalysisContractFor(settings)` to
 `semantics/golang/go` when it rebases onto `main`.
 
 The profile gate in the adapter of the common horos mapping package is not an
-instance of this case. It stays with
+instance of this case. It belongs to
 [#216](https://github.com/Bitspark/bittype/issues/216) and
 [bittype/ACX-008](0008-structural-profile-gate.md), and #238 did not change it.
+The change for #216 removed it on 12 November 2026.
 
 ### Candidates
 
@@ -611,7 +612,11 @@ are.
 - **The `Self` rule in the shared naming function.** Decided on #222 on
   11 November 2026: the rule stays where it is. The naming function gives one
   declaration the same name in every target. That is a property of the
-  profile, so the question belongs to #216.
+  profile, so the question was passed to #216. The change for #216 opened the
+  adapter on 12 November 2026 and did not decide this question. The rule now
+  binds the libraries that call the naming package and no longer every
+  profile. It stays a candidate
+  ([bittype/ACX-008](0008-structural-profile-gate.md#limits)).
 - **`CheckSingleScope` in the shared target package.** #222 did not decide it.
   It stays with the second design point of
   [#161](https://github.com/Bitspark/bittype/issues/161).

@@ -330,14 +330,15 @@ The compositions `integration/go` and `verification/integration/go` are not
 classified. `tools/**` needs no exception to import a provider or a query
 service.
 
-The plan in #218 is complete. This remains open and belongs to other work:
+The plan in #218 is complete. The profile gate that
+[#238](https://github.com/Bitspark/bittype/pull/238) left in the adapter at
+`transform/syntax/horos/mapping/go` is removed since 12 November 2026
+([#216](https://github.com/Bitspark/bittype/issues/216),
+[bittype/ACX-008](docs/architecture-cases/0008-structural-profile-gate.md)).
+The adapter admits a profile by no list and refuses only the enforcement
+profile, which its own package declares and does not implement. This remains
+open and belongs to other work:
 
-- **The profile gate.**
-  [#238](https://github.com/Bitspark/bittype/pull/238) divided
-  `transform/syntax/horos/mapping/go` on 11 November 2026. The adapter stays at
-  that path and still refuses every profile but one. That gate is
-  [#216](https://github.com/Bitspark/bittype/issues/216) and
-  [bittype/ACX-008](docs/architecture-cases/0008-structural-profile-gate.md).
 - **Optional fields in Record.** Record still decides how an optional field is
   represented in Go, Rust and C++. What a mapping's `Expand` returns is
   [#196](https://github.com/Bitspark/bittype/issues/196), item 6.

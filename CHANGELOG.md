@@ -1,5 +1,27 @@
 # Changelog
 
+## The structural profile has its own identity, and the horos mapping adapter admits any profile — 12 November 2026
+
+The two generation profiles of the horos mapping side are named for what they promise, and the shared adapter no longer holds a list of admitted profile names. This is [#216](https://github.com/Bitspark/bittype/issues/216) and corrects [bittype/ACX-008](docs/architecture-cases/0008-structural-profile-gate.md). The generated output is unchanged: the text of three fixtures in the four targets, twelve files, and all 91 texts that the existing integration tests format have the same SHA-256 before and after.
+
+- **The identities.** `RepresentationProfile` is `structural-representation/1` and `EnforcementProfile` is `structural-enforcement/1`. Before, both began with the word `pagination`, the name of the first fixture. The owner of research 0015 chose the names and recorded the reason on #216. The Go constant names and the version `/1` are unchanged. There is no alias: nothing is released, and a request under an old name finds no mapping and fails.
+- **No closed list.** `Library.Describe` in `transform/syntax/horos/mapping/go` refused every profile but `RepresentationProfile`. It now copies the profile it is given into the library's description. The registry already selects the mappings registered under the requested profile, and that selection is the only rule that admits one. A second profile needs its own libraries and its consumer's composition, and no change to the horos mapping package.
+- **The enforcement refusal is kept, by its owner.** The adapter refuses to describe a library under `EnforcementProfile`, by that one name, with `ErrUnsupported`. Without it a composition could build the erasing libraries under the enforcement name, and a request for the enforcement profile would return representation output, which [GEN-02](docs/generation-gaps.md#gen-02) forbids. The package that declares the promise and does not implement it states the refusal. Every other name passes.
+- **Refusals at the request.** A request for the enforcement profile, or for a profile under which nothing is registered, fails with `ErrUnsupported` in the registry. That behaviour existed and is unchanged. The registry and `contracts/**` are not edited.
+- **One name, one place.** The integration fixture `horosgeneration.Request` spelled the identity as a string and now takes it from the horos mapping package. No test or fixture spells either identity.
+- **Tests.** `integration/go/horos_generation_profile_test.go` generates through the builtin libraries of all four targets under a second identity, selects between two profiles in one registry, and covers the two refusals. `mapping_test.go` beside the adapter covers the adapter alone. The two second-profile tests fail on `9cfd195`. With the closed list put back they fail again, and with the enforcement refusal removed the enforcement test fails in all four targets.
+- **One edge.** An adapter value with an empty profile was refused with `ErrUnsupported`. The contract's `FreezeDescription` now refuses it with `ErrInvalid`.
+- **Imports.** None is new, and no architecture test is edited.
+- **Documents.** [Semantic generation](docs/semantic-generation.md) describes the profiles and the three rules. [Generation gaps](docs/generation-gaps.md), [native kind constraints](docs/native-kind-constraints.md), the [Page and Cell example](docs/page-cell-example.md) and [representation families](docs/representation-families.md) use the new identities. `LAYOUT.md`, [generation](docs/generation.md), [package boundaries](docs/package-boundaries.md), [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) and the two index tables no longer list the gate as open.
+
+Not done:
+
+- No independent review has read this change.
+- When [#162](https://github.com/Bitspark/bittype/issues/162) implements an enforcing encoding, the refusal has to be restated by whoever then knows which libraries enforce. The enforcement interface is not designed, and this change does not anticipate it.
+- A library that implements the mapping contract itself, without the adapter, can still publish a description under any identity. The kernel treats a profile as opaque.
+- The `Self` rule in the shared naming function, which bittype/ACX-009 passed to #216, is not decided. It stays a candidate.
+- The documents under `research-docs/` are verbatim records and keep the old names. Earlier entries of this file do not spell them.
+
 ## Generation form names declared once by each language's model package — 12 November 2026
 
 The names of the intended native forms have one declaration per language, in `transform/syntax/<language>/model/go`. This is item 5 of [#256](https://github.com/Bitspark/bittype/issues/256). The issue named TypeScript. Go, Rust and C++ had the same shape and are corrected with it. It is a move: every value is unchanged, and the plan steps, the generated tree and the printed text of the four targets are byte-identical before and after, in fifteen dumps.

@@ -35,7 +35,7 @@ placement remains [proposed](native-file-placement.md). Rust visibility and C++
 include emission still violate the intended Files boundary; their correction is
 tracked in [ACX-004](architecture-cases/0004-generation-file-syntax.md).
 
-The [pagination profile](semantic-generation.md) maps text, bool, lists, named
+The [structural profile](semantic-generation.md) maps text, bool, lists, named
 closed records, optional fields and ordinary proper generic parameters and
 applications. The application selects public roots. Native construction follows
 the representation dependencies demanded by those roots; source admission covers
@@ -128,10 +128,12 @@ optional helper and passes it to `record.Library(profile, key)` and
 `optional.Library(profile, key)`.
 [bittype/ACX-009](architecture-cases/0009-package-boundaries.md) records the
 correction. [#238](https://github.com/Bitspark/bittype/pull/238) divided the
-common package the same day. Its adapter with the profile gate stays at
+common package the same day. Its adapter stays at
 `transform/syntax/horos/mapping/go`. The source patterns, the declaration
 recipe and the naming rule are the packages `pattern`, `declarations` and
-`naming` below it.
+`naming` below it. Since 12 November 2026 the adapter admits a profile by no
+list, and it refuses only the enforcement profile
+([bittype/ACX-008](architecture-cases/0008-structural-profile-gate.md)).
 
 ## Language identity and registration
 
