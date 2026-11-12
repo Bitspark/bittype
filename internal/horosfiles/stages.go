@@ -64,7 +64,7 @@ func (p Stages) Capture() (Stages, error) {
 	}
 	// This Files composition requires the fixed Horos semantic contracts. Configured
 	// resource options remain explicit and are captured with the matching receipts.
-	if p.Resolver.Contract().Semantic.Profile != "horos-declarations-4/resolution-1" || p.Analyzer.Contract().Semantic.Profile != "horos-declarations-4/analysis-1" {
+	if p.Resolver.Contract().Semantic.Profile != n.ResolutionProfile || p.Analyzer.Contract().Semantic.Profile != n.AnalysisProfile {
 		return Stages{}, semantic.ErrInvalidOperation
 	}
 	for _, options := range []*semantic.Options{&p.ResolutionOptions, &p.AnalysisOptions} {

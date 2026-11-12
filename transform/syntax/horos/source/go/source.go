@@ -2,7 +2,6 @@ package source
 
 import (
 	"context"
-	"strings"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
@@ -200,10 +199,11 @@ func (s *interpretation) descriptor(u g.Use[h.Language]) (Descriptor, bool, erro
 	if t.Kind != semantics.ProviderExpression {
 		return d, false, nil
 	}
-	if t.Operator.Owner != "horos" || !strings.HasPrefix(t.Operator.Name, "descriptor/") {
+	constructor, ok := n.DescriptorConstructor(t.Operator)
+	if !ok {
 		return d, false, semantic.ErrInvalidRequest
 	}
-	d.Constructor = strings.TrimPrefix(t.Operator.Name, "descriptor/")
+	d.Constructor = constructor
 	if d.Constructor == "scalar" || d.Constructor == "record" {
 		p, err := s.payload(id)
 		if err != nil {

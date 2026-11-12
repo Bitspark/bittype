@@ -1,5 +1,19 @@
 # Changelog
 
+## horos descriptor operators, term encoding and profile names owned by the vocabulary package — 12 November 2026
+
+Three more names that a writer and a separate reader have to agree on have one owner, `semantics/horos/go`. They were found with the five keys of [#220](https://github.com/Bitspark/bittype/issues/220), under the plan in [#218](https://github.com/Bitspark/bittype/issues/218). It is a move: each key value, each string, the published semantic graph and the generated output are byte-identical before and after.
+
+- **Published.** `DescriptorOperator(constructor)` is `horos/descriptor/<constructor>`. `DescriptorConstructor(operator)` is its inverse: it returns the constructor of such a key and reports false for every other key. `TermEncoding()` is `ontos/codec-v1`, the encoding that the data of horos terms carries. ontos owns the codec; that horos terms carry it is a horos agreement. `ResolutionProfile` and `AnalysisProfile` were published before.
+- **Writers and readers.** `internal/horosmodel` writes the descriptor operators and the encoding of every provider term through these functions. `transform/syntax/horos/source/go` reads the constructor through `DescriptorConstructor` and compares the encoding of a payload and of a module identity with `TermEncoding()`. It refuses the same terms as before with `semantic.ErrInvalidRequest`, and an operator that is the prefix alone still reads as an empty constructor. `internal/horosfiles` compares the profiles of its stages with the two constants. No production package outside `semantics/horos/go` spells any of the three.
+
+Not done:
+
+- No document describes these three names as inline, and this change edits no document besides this entry.
+- ontos 0.16.0 exports no identity for its codec from a Go package, so `ontos/codec-v1` is spelled once, in `semantics/horos/go`.
+- A test in `analyze/files/horos/provider/go` still spells the encoding itself. It pins the value independently of the vocabulary.
+- The remaining entity kinds, parameter sorts, term operators and diagnostic codes have a production writer and no production reader, and stay where they are written.
+
 ## horos keys published by the vocabulary package — 12 November 2026
 
 The five horos-owned keys of [#220](https://github.com/Bitspark/bittype/issues/220) that a writer and a reader each spelled inline are published by `semantics/horos/go`, under the plan in [#218](https://github.com/Bitspark/bittype/issues/218). It is a move: each key value and the published semantic graph are byte-identical before and after.

@@ -159,7 +159,7 @@ func (e *exporter[L]) expression(value *decl.Expression, site ast.NodeRef, owner
 			term.Arguments = append(term.Arguments, child)
 		}
 	case decl.Descriptor:
-		term.Kind, term.Operator, term.Encoding = semantics.ProviderExpression, n.Key("descriptor/"+value.Constructor()), semantics.Key{Owner: "ontos", Name: "codec-v1"}
+		term.Kind, term.Operator, term.Encoding = semantics.ProviderExpression, n.DescriptorOperator(value.Constructor()), n.TermEncoding()
 		term.Data = codec.Encode(value.Value())
 		for _, operand := range value.Operands() {
 			path := operand.Path()
@@ -233,7 +233,7 @@ func (e *exporter[L]) kind(value *decl.Kind, site ast.NodeRef, owner semantics.E
 			term.Arguments = append(term.Arguments, child)
 		}
 	default:
-		term.Kind, term.Operator, term.Encoding = semantics.ProviderExpression, n.Key("kind/"+string(value.Form())), semantics.Key{Owner: "ontos", Name: "codec-v1"}
+		term.Kind, term.Operator, term.Encoding = semantics.ProviderExpression, n.Key("kind/"+string(value.Form())), n.TermEncoding()
 		term.Data = codec.Encode(value.Value())
 		for _, operand := range value.Operands() {
 			path := operand.Path()

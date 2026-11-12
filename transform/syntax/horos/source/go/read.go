@@ -141,7 +141,7 @@ func atom(v core.Value) string {
 }
 func (s *interpretation) payload(id semantics.TermID) (core.Tuple, error) {
 	t := s.data.Terms[id-1]
-	if t.Encoding != (semantics.Key{Owner: "ontos", Name: "codec-v1"}) {
+	if t.Encoding != n.TermEncoding() {
 		return core.Tuple{}, semantic.ErrInvalidRequest
 	}
 	v, err := codec.Decode(t.Data)
@@ -160,7 +160,7 @@ func (s *interpretation) modulePin(id semantics.EntityID) (string, error) {
 		return "", semantic.ErrInvalidRequest
 	}
 	t := s.data.Terms[term-1]
-	if t.Operator != n.ModuleIdentity() || t.Encoding != (semantics.Key{Owner: "ontos", Name: "codec-v1"}) {
+	if t.Operator != n.ModuleIdentity() || t.Encoding != n.TermEncoding() {
 		return "", semantic.ErrInvalidRequest
 	}
 	v, err := codec.Decode(t.Data)
