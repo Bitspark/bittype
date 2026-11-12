@@ -3,6 +3,8 @@ package horosfiles
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
 	"github.com/Bitspark/bittype/internal/tree"
@@ -62,17 +64,19 @@ func Materialize(snapshot semantic.Snapshot, settings []semantic.Setting, limits
 	}
 	var placements []Placement
 	if len(settings) > 0 {
+		// A refusal of the setting is invalid input in the Files category. The
+		// value returned before stays joined to it.
 		if len(settings) != 1 || settings[0].Key != OrganizationSetting() {
-			return fail(semantic.ErrInvalidRequest)
+			return fail(fmt.Errorf("%w: %w", source.ErrInvalid, semantic.ErrInvalidRequest))
 		}
 		decoder := json.NewDecoder(bytes.NewReader(settings[0].Value))
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(&placements); err != nil {
-			return fail(err)
+			return fail(fmt.Errorf("%w: %w", source.ErrInvalid, err))
 		}
 		var extra any
 		if err := decoder.Decode(&extra); err != io.EOF {
-			return fail(semantic.ErrInvalidRequest)
+			return fail(fmt.Errorf("%w: %w", source.ErrInvalid, semantic.ErrInvalidRequest))
 		}
 	} else if context := snapshot.Files(); context != nil {
 		byTree := map[ast.TreeID]files.File{}
@@ -105,7 +109,11 @@ func Materialize(snapshot semantic.Snapshot, settings []semantic.Setting, limits
 		inventory.Entries = append(inventory.Entries, files.File{ID: placement.ID, Path: placement.Path})
 	}
 	if _, err := inventory.Capture(limits.Files); err != nil {
-		return fail(err)
+		// The inventory's own value stays joined to the Files category.
+		if errors.Is(err, files.ErrLimit) {
+			return fail(fmt.Errorf("%w: %w", source.ErrLimit, err))
+		}
+		return fail(fmt.Errorf("%w: %w", source.ErrInvalid, err))
 	}
 	seen := map[string]bool{}
 	var output []ast.AST[s.Language]

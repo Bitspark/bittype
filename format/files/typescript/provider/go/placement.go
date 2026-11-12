@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
@@ -62,7 +63,8 @@ func declarations(t s.AST) ([]ast.NodeRef, error) {
 		case s.RoleImport:
 			for _, b := range t.Nodes[child.Node-1].Children {
 				if t.Nodes[b.Node-1].Kind != s.KindImportBinding {
-					return nil, fmt.Errorf("only named type imports are supported")
+					// Another import form is TypeScript that this profile does not cover.
+					return nil, fmt.Errorf("%w: only named type imports are supported", source.ErrUnsupported)
 				}
 			}
 		default:
@@ -114,7 +116,8 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 	}
 	for _, tree := range p.trees {
 		if !modules[ref(tree.ID, tree.Root)] {
-			return nil, fmt.Errorf("%w: placement requires TypeScript modules with file-local scope", source.ErrInvalid)
+			// A script is TypeScript that this profile does not cover.
+			return nil, fmt.Errorf("%w: placement requires TypeScript modules with file-local scope", source.ErrUnsupported)
 		}
 	}
 	for _, fact := range data.Facts {
@@ -204,7 +207,11 @@ func (p *program) organization(settings []semantic.Setting, limits source.Limits
 		return Organization{}, fmt.Errorf("%w: incomplete placement or missing entry", source.ErrInvalid)
 	}
 	if _, err := inventory.Capture(limits.Files); err != nil {
-		return Organization{}, err
+		// The inventory's own value stays joined to the Files category.
+		if errors.Is(err, files.ErrLimit) {
+			return Organization{}, fmt.Errorf("%w: %w", source.ErrLimit, err)
+		}
+		return Organization{}, fmt.Errorf("%w: %w", source.ErrInvalid, err)
 	}
 	return o, nil
 }
