@@ -49,6 +49,40 @@ func (m closedImporter) Import(path string) (*types.Package, error) {
 	return nil, fmt.Errorf("package %q is not in the supplied environment", path)
 }
 
+// checkPackage type-checks one package beside the call and returns the
+// context's error as soon as the context ends. go/types cannot be interrupted:
+// an abandoned check keeps its goroutine until it ends by itself, and its
+// result is dropped. A caller that is told the context ended must return
+// without reading or writing anything it passed here, because the abandoned
+// check may still read the files, the file set and the importer and write info.
+func checkPackage(ctx context.Context, conf *types.Config, path string, fset *token.FileSet, files []*goast.File, info *types.Info) (*types.Package, error) {
+	type outcome struct {
+		pkg      *types.Package
+		err      error
+		panicked any
+	}
+	done := make(chan outcome, 1)
+	go func() {
+		var o outcome
+		defer func() {
+			// A panic of the checker belongs to the caller's goroutine, as it
+			// did when the check ran there. Nobody receives it after an abandon.
+			o.panicked = recover()
+			done <- o
+		}()
+		o.pkg, o.err = conf.Check(path, fset, files, info)
+	}()
+	select {
+	case o := <-done:
+		if o.panicked != nil {
+			panic(o.panicked)
+		}
+		return o.pkg, o.err
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
 // importSpec converts one captured import. Dot and blank imports stay outside the profile.
 func (c *converter) importSpec(id ast.NodeID) (*goast.ImportSpec, error) {
 	d := c.node(id)
@@ -142,7 +176,10 @@ func prepareEnvironment(ctx context.Context, fset *token.FileSet, environment n.
 				return nil, semantic.ErrInvalidRequest
 			}
 		}
-		pkg, err := conf.Check(p, fset, parsed[p], nil)
+		pkg, err := checkPackage(ctx, &conf, p, fset, parsed[p], nil)
+		if e := ctx.Err(); e != nil {
+			return nil, e
+		}
 		if err != nil {
 			return nil, semantic.ErrInvalidRequest
 		}
@@ -280,7 +317,10 @@ func checkCaptured(ctx context.Context, fset *token.FileSet, env *environmentSta
 			return nil, err
 		}
 		g := groups[p]
-		pkg, err := conf.Check(p, fset, g.files, info)
+		pkg, err := checkPackage(ctx, &conf, p, fset, g.files, info)
+		if e := ctx.Err(); e != nil {
+			return nil, e
+		}
 		if err != nil {
 			return nil, typeFailure(err, positions)
 		}

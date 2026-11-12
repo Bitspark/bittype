@@ -3,6 +3,9 @@
 ## Go imported packages — 12 November 2026
 
 - The first Go profile accepts an explicit import environment (#168). Captured files form packages by their paths under a module, and supplied dependency packages are given as source in receipt identity. Packages are checked in import order through a closed importer, without module or standard-library discovery. Qualified type references bind to imported declarations; supplied declarations are exported by identity only. The base configuration is unchanged.
+- Supplied packages are kept out of the graph's structural projection for containment, not for secrecy: properties the compiler establishes for captured types, and human-readable text, may name supplied declarations. A supplied import path with a `vendor` element is refused.
+- A Go resolution whose context ends returns the context's error without waiting for `go/types`, in the base profile too. Each package check runs beside the call and is abandoned when the context ends. `go/types` cannot be interrupted, so an abandoned check keeps its goroutine until it ends; [native semantics](docs/native-semantics.md) states the limit. Before, a 1,618-byte supplied package held a call with a 20 ms deadline for 11 seconds.
+- Analysis compares its whole configuration with the resolution's, and a test now fails when only lengths or keys are compared.
 
 ## Documents record what #251 examined and what stays unexamined — 12 November 2026
 

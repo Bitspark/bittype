@@ -73,9 +73,13 @@ func TestGoImportsDoNotExportSuppliedStructureThroughCapturedTypes(t *testing.T)
 func TestGoImportsAnalysisRefusesAnotherEnvironment(t *testing.T) {
 	ctx := context.Background()
 	imports := goImportSettings(t, cellPackage)
+	// The same module, package path and file name with another text: only the
+	// setting's value differs, so a comparison of lengths or keys accepts it.
+	otherText := goImportSettings(t, n.Package{ImportPath: cellPackage.ImportPath, Files: []n.PackageFile{{Name: "cell.go", Text: "package cell\n\ntype Cell[T any] struct{ Value T }\n"}}})
 	for name, tc := range map[string]struct{ resolve, analyze []semantic.Setting }{
-		"base resolution, import analysis": {n.Configuration(), imports},
-		"import resolution, base analysis": {imports, n.Configuration()},
+		"base resolution, import analysis":           {n.Configuration(), imports},
+		"import resolution, base analysis":           {imports, n.Configuration()},
+		"import resolution, another text, same path": {imports, otherText},
 	} {
 		t.Run(name, func(t *testing.T) {
 			snapshot, _ := goPackageCapture(t, map[string]string{"a/a.go": "package a\n\ntype A string\n"}, true)

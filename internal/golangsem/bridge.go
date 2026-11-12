@@ -163,7 +163,7 @@ func Check(ctx context.Context, inputs []s.AST, captured *files.Context, setting
 	if imports {
 		program, err = checkCaptured(ctx, fset, env, inputs, goFiles, sites, info, positions)
 	} else {
-		program, err = checkSingle(fset, inputs, goFiles, info, positions)
+		program, err = checkSingle(ctx, fset, inputs, goFiles, info, positions)
 	}
 	if e := ctx.Err(); e != nil {
 		return nil, e
@@ -196,9 +196,12 @@ func typeFailure(err error, positions map[token.Pos]ast.NodeRef) error {
 }
 
 // checkSingle is the base profile: one captured package at n.PackagePath.
-func checkSingle(fset *token.FileSet, inputs []s.AST, goFiles []*goast.File, info *types.Info, positions map[token.Pos]ast.NodeRef) (*checkedProgram, error) {
+func checkSingle(ctx context.Context, fset *token.FileSet, inputs []s.AST, goFiles []*goast.File, info *types.Info, positions map[token.Pos]ast.NodeRef) (*checkedProgram, error) {
 	conf := types.Config{GoVersion: n.LanguageVersion, Sizes: types.SizesFor("gc", "amd64")}
-	pkg, err := conf.Check(n.PackagePath, fset, goFiles, info)
+	pkg, err := checkPackage(ctx, &conf, n.PackagePath, fset, goFiles, info)
+	if e := ctx.Err(); e != nil {
+		return nil, e
+	}
 	if err != nil {
 		return nil, typeFailure(err, positions)
 	}

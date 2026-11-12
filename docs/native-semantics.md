@@ -73,9 +73,18 @@ Every result records separate coverage, binding and validity reports. A native
 type error gives a rejected validity report with a captured-node diagnostic;
 unsupported syntax gives unsupported coverage; exhausted bounds give incomplete
 reports. None publishes partial semantics. Invalid configuration, forged supplied
-references, foreign receipts and cancellation remain operation errors. Native
-checking is synchronous: cancellation is checked around compiler calls and does
-not claim to preempt `go/types` while it runs.
+references, foreign receipts and cancellation remain operation errors.
+
+A call whose context ends returns that context's error without waiting for
+`go/types`. Each package check, captured or supplied, runs beside the call and
+is abandoned when the context ends; nothing an abandoned check produces is
+read or published. `go/types` itself cannot be interrupted, so an abandoned
+check keeps its goroutine and its processor until it ends by itself. The
+profile's limits bound the captured fragment and the size of supplied text, not
+the cost of checking supplied source: a supplied package of 1,618 bytes with two
+structurally equal alias chains took 11 seconds to check. A consumer that must
+also bound that work, for supplied source it does not trust, runs the provider
+in a process it can end.
 
 Those incomplete reports cover the provider's own input, conversion and export
 bounds. The shared capture/publication boundary can also return `ErrLimit` when
