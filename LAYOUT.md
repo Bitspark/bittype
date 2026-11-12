@@ -342,8 +342,13 @@ none. This remains open and belongs to other work:
 - **Optional fields in Record.** Record still decides how an optional field is
   represented in Go, Rust and C++. What a mapping's `Expand` returns is
   [#196](https://github.com/Bitspark/bittype/issues/196), item 6.
-- **Three candidates.** They are not confirmed and are listed in
+- **Two candidates.** They are not confirmed and are listed in
   [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md#candidates).
+- **The `Self` rule in the shared naming function.** Answered in principle on
+  12 November 2026: a reserved word is the target's. It is not corrected.
+  [#274](https://github.com/Bitspark/bittype/issues/274) delivers it with
+  [#268](https://github.com/Bitspark/bittype/issues/268), as the
+  [naming design](docs/naming.md#reserved-words) says.
 - **Names that were not examined.**
   [#251](https://github.com/Bitspark/bittype/issues/251) examined the names
   that the native compiler helpers write and the horos node kinds that two
@@ -458,6 +463,8 @@ transform/syntax/horos-to-<native>/mapping/<name>/go/  independently selected ma
 ```
 
 Consumers register source, target and mapping libraries, then request source roots and an output identity. The kernel plans fixed native intent; Run constructs ASTs without invoking a mapping. The [construction SPI](docs/kernel-composition.md) gives the public interfaces and a Horos to TypeScript example.
+
+The [naming design](docs/naming.md) is accepted and not implemented. Today the `naming` and `declarations` packages above spell every target's names. Under the design generation records a naming intent, and each language owns its realization: its reserved words, in Go the case of a name, and in its Files stage the collisions of a placed scope. The design names one new package, a Go-owned one for Go's check of a spelled name, which [#274](https://github.com/Bitspark/bittype/issues/274) adds. No path in this layout has changed.
 
 The [Syntax and Files design](docs/source.md) is implemented with
 `Syntax : CST : AST` and `Files : Source : Semantics`. Both dimension names are

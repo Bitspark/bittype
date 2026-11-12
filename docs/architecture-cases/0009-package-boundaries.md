@@ -18,8 +18,10 @@ TypeScript graph names that Go read by spelling
 stands. Two independent reviews read the moves of 11 November 2026 and the
 first commit of #246. No independent review read the second commit of #246,
 #247, #248, #250, #254 or #255. The [limits](#limits) say what the corrections
-and the check do not establish and which names were not examined. Three
-candidates are not confirmed and are not part of this case.
+and the check do not establish and which names were not examined. Two
+candidates are not confirmed and are not part of this case. A third, the
+`Self` rule, was answered in principle on 12 November 2026 and is not
+corrected ([Candidates](#candidates)).
 **Scope:** The native and common horos mapping packages, the horos-to-Go
 verification laws, the Go and TypeScript analysis provider packages, the
 publication of contract identities and horos semantic names, and the import
@@ -599,8 +601,9 @@ The change for #216 removed it on 12 November 2026.
 
 ### Candidates
 
-Three candidates are not confirmed and are not part of this case until they
-are.
+Two candidates are not confirmed and are not part of this case until they
+are. The `Self` rule was the third. It is answered in principle and not
+corrected.
 
 - **The thirteen direct calls into a same-language checker or parser.** They
   are accepted entries of the exception table, each with its symbol and its
@@ -612,9 +615,21 @@ are.
 - **The `Self` rule in the shared naming function.** Decided on #222 on
   11 November 2026: the rule stays where it is. The naming function gives one
   declaration the same name in every target. That is a property of the
-  profile, so the question was passed to #216. #216 did not decide it. It
-  stays a candidate and is tracked in
-  [#268](https://github.com/Bitspark/bittype/issues/268).
+  profile, so the question was passed to #216. #216 did not decide it.
+  [#268](https://github.com/Bitspark/bittype/issues/268) asked who owns the rule.
+  **Answered in principle on 12 November 2026**
+  ([comment on #268](https://github.com/Bitspark/bittype/issues/268#issuecomment-6837825043)): a reserved word is the target's, because it is
+  a fact about one language, and no accepted document promises equal native
+  names in every target. With that answer the rule is in the wrong place
+  ([AC-02](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-02)):
+  the shared function holds a word that only Rust reserves. Nothing is
+  corrected. The function still appends `_` to `Self` for all four targets.
+  The answer is one part of the [naming design](../naming.md#reserved-words),
+  and the correction is delivered by [#274](https://github.com/Bitspark/bittype/issues/274) with #268: the shared
+  function holds no reserved word, and each target that needs one states its
+  own. The pending record is the Go naming instance of
+  [bittype/ACX-004](0004-generation-file-syntax.md), which names the same
+  shared function. #268 stays open until then and records the result here.
 - **`CheckSingleScope` in the shared target package.** #222 did not decide it.
   It stays with the second design point of
   [#161](https://github.com/Bitspark/bittype/issues/161).
