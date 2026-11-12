@@ -4,8 +4,8 @@
 states its profile in its own description, no shared code lists, writes or
 refuses a profile, and the two identities are `structural-representation/1`
 and `structural-enforcement/1`. A first form of the correction kept a refusal
-of one name in the adapter and was replaced before merging. One independent
-review read that first form. The reworked form gets another. The
+of one name in the adapter and was replaced before merging. Two independent
+reviews read the correction, the first form and the reworked form. The
 [limits](#limits) say what the correction does not establish.
 **Scope:** The common horos mapping policy,
 [`transform/syntax/horos/mapping/go`](https://github.com/Bitspark/bittype/blob/ca5dc80/transform/syntax/horos/mapping/go/mapping.go),
@@ -163,7 +163,7 @@ and on [#196](https://github.com/Bitspark/bittype/issues/196). The reasons:
 | Was | Is |
 | --- | --- |
 | Both identities began with `pagination` | `RepresentationProfile` is `structural-representation/1` and `EnforcementProfile` is `structural-enforcement/1`. The owner of research 0015 chose them and recorded the reason on #216. The Go names are unchanged. No alias exists |
-| Every mapping constructor took a `profile` argument, and the adapter wrote it into the description | A mapping states its profile itself. Each builtin mapping writes `RepresentationProfile` into its own description, and its constructor takes no profile: `text.Library()`, `record.Library()`, and for Go `record.Library(key)` and `optional.Library(key)` with the helper key. The common declaration recipe states the profile for the four declarations mappings |
+| Every mapping constructor took a `profile` argument, and the adapter wrote it into the description | A mapping states its profile itself. Each builtin mapping writes `RepresentationProfile` into its own description, and its constructor takes no profile: `text.Library()`, `record.Library()`, and for Go `record.Library(key)` and `optional.Library(key)` with the helper key. That includes the declarations mapping of each target. The common declaration recipe states no profile: `Recipe(record, alias)` returns the recipe, and a mapping puts it into its own description |
 | The adapter refused every profile but `RepresentationProfile` | No shared code lists, writes or refuses a profile. `Library` in `transform/syntax/horos/mapping/go` is a function type with the method `Describe`. It returns what the function returns |
 | The enforcement profile was refused as one of all other names | No mapping in bittype states `EnforcementProfile`. The registry finds no mapping for a request that names it and fails with `ErrUnsupported` |
 | The integration fixture repeated the identity as a string | [`horosgeneration.Request`](../../integration/go/testdata/horosgeneration/request.go) takes it from the horos mapping package. One test beside the declaration pins both values on purpose. No other test or fixture spells either identity |
@@ -192,8 +192,22 @@ and failed `TestCurrentRepositoryProviderDiscovery`.
 **Behaviour at the edges.** A nil function fails with `ErrInvalid`, in
 `Describe` and at registration. A description that states no profile is
 refused at registration by the contract's `FreezeDescription`, with
-`ErrInvalid`. On `main` the gate answered both with `ErrUnsupported`. No
-caller relied on either.
+`ErrInvalid`. On `main` the adapter answered a library without rules with
+`ErrInvalid` under the structural profile and with `ErrUnsupported` under any
+other, and a library with an empty profile with `ErrUnsupported`. No caller
+relied on any of these.
+
+**Two changes after the second review.** The reworked form at `d61bc5d` let
+the common declaration recipe write `RepresentationProfile` for the
+declarations mappings of all four targets. "No shared code writes a profile"
+was therefore not true, and the fixture contribution held a reduced copy of
+the recipe, which is the parallel copy that
+[AC-03](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-03)
+names as a sign. The recipe now states no profile, each target's declarations
+mapping states it, and the fixture uses the same recipe. The second change is
+about evidence: the fixture is now a `mapping.Library` function value, and
+the unit test of `Describe` covers functions that succeed, so a test fails
+when the shared function type closes again.
 
 ### Qualification
 
@@ -205,22 +219,34 @@ The fixture contribution is
 [`integration/go/testdata/readonlyprofile`](../../integration/go/testdata/readonlyprofile/library.go).
 
 - **Every builtin mapping states the structural profile.**
-  `TestBuiltinMappingsStateTheStructuralProfile` describes every builtin
-  library of the four pairs and compares the stated profile. It checks that no
-  constructor has a parameter of a string type, and that the lists it reads
-  have as many entries as the pair has mapping packages. The calls
-  `text.Library()` in the test compositions compile only while a constructor
-  takes no profile.
+  `TestBuiltinMappingsStateTheStructuralProfile` builds each library through
+  the exported constructor `Library` of its package, describes it and compares
+  the profile it states. That comparison is the evidence. The test reads the
+  pairs and the mapping packages from the directories under
+  `transform/syntax` and compares their names with the constructors it names,
+  so a new pair or a new mapping package fails it until it is named. Two
+  things around the comparison are tripwires and no proof: the test fails for
+  a constructor parameter that is not a helper key, because it cannot build
+  one, and the calls `text.Library()` in the test compositions stop compiling
+  when a constructor gains a required parameter.
 - **A second profile as a contribution of its own.**
   `TestRequestSelectsTheContributionsOfItsProfile` registers the builtin
   TypeScript family and the fixture contribution in one registry. The fixture
   lives in its own package, states its own profile, maps a list to
-  `ReadonlyArray<E>` and maps no record. For one module the structural request
-  yields `string[]` and the fixture's request yields `ReadonlyArray<string>`,
-  and each plan names its own list binding. A module with records fails under
-  the fixture's profile although the builtin record library is in the same
-  registry: a family is not completed from another profile. The horos mapping
-  package and the registry know nothing of the fixture.
+  `ReadonlyArray<E>` and maps no record. It is a `mapping.Library` function
+  value, as the builtin mappings are, and it uses the common declaration
+  recipe, so it maps generic and imported declarations. For one root module
+  with an imported module the structural request yields `string[]` and the
+  fixture's request yields `ReadonlyArray<string>`, and each plan names its
+  own list binding. A module with records fails under the fixture's profile
+  although the builtin record library is in the same registry: a family is
+  not completed from another profile. The horos mapping package and the
+  registry know nothing of the fixture.
+- **The same test fails on the old code.** Ported to the merge base
+  `d35f1fa`, where the gate exists, the second-profile test fails in all
+  three subtests with `ErrUnsupported` at registration. The port is the
+  fixture written against the base's adapter and the test body of the head.
+  With only the gate removed at the base, the same port passes.
 - **The enforcement profile.** `TestEnforcementProfileIsRefused` requests it
   from the registry that has just generated under the structural profile, in
   all four targets. The request fails with `ErrUnsupported` with no plan and
@@ -229,36 +255,57 @@ The fixture contribution is
   empty registry and the four builtin sets.
 - **The identities.** `TestProfileIdentitiesArePinned` spells both values
   beside their declaration. On the first form no test failed when a value was
-  changed.
-- **The function type and registration.**
-  `TestLibraryReturnsWhatItsFunctionDescribes` and
+  changed. This is a deliberate exception to done-when 4 of #216, which says
+  that no test repeats the identity as a literal.
+- **The function type.** `TestLibraryReturnsWhatItsFunctionDescribes` gives
+  `Describe` functions that state the structural identity, the enforcement
+  identity, another identity and none, each with and without an error. Every
+  description and error comes back unchanged.
+  `TestLibraryWithoutAFunctionIsInvalid` and
   `TestRegistrationNeedsAStatedProfile` cover the edges above.
-- **Seeded faults.** A builtin constructor that takes and uses a caller's
-  profile breaks the build of the tests. The same with a variadic parameter
-  fails the signature check. A builtin mapping that states the enforcement
-  profile fails the profile comparison. The fixture stating the builtin
-  profile fails the second-profile test, and with the test's own guard removed
-  the registry answers "ambiguous generation mapping". Either identity changed
-  fails the pin.
-- **Output.** Between `main` at `6c788d8` and the correction, the 79 texts
-  that the existing integration tests format have the same test names, SHA-256
-  and lengths. So has the text of three fixtures in the four targets, twelve
-  files, written by a dump helper that is not committed. The comparison covers
-  formatted text. It does not cover the output trees that tests read without
-  formatting them.
+- **Seeded faults.**
+  - `Describe` refusing a stated profile other than the structural one fails
+    the unit test and all three subtests of the second-profile test. On the
+    reworked form before the second review no test failed for it, because the
+    fixture did not pass through the function type and the unit test used only
+    functions that return an error.
+  - A builtin constructor that takes and uses a caller's profile breaks the
+    build of the tests. With a variadic parameter, or with an optional options
+    struct that carries a profile, the property test fails for the parameter.
+  - A builtin mapping that states the enforcement profile fails the profile
+    comparison, also when it is a declarations mapping.
+  - A mapping package that the test does not name fails the comparison of
+    names.
+  - The fixture stating the builtin profile fails the second-profile test, and
+    with the test's own guard removed the registry answers "ambiguous
+    generation mapping".
+  - Either identity changed fails the pin.
+- **Output.** Between the merge base `d35f1fa` and the correction, 108
+  records of existing integration tests have the same test names, SHA-256 and
+  lengths: 79 formatted texts and 29 output trees. 62 of the texts come from
+  five formatter-only tests that do not generate, so they could not change.
+  The other 17 texts and the 29 trees come from generation outputs. The second
+  review counts 28 of the trees as generation tests. The text of three
+  further fixtures in the four targets, twelve files, is identical too. A
+  dump helper that is not committed wrote the records.
 - **The whole suite.** `go test ./...` on the author's Windows machine gives
-  the same outcome for every test that existed at `6c788d8`. 23 test outcomes
-  are new and pass. The eight failing outcomes are the same before and after:
-  the Rust semantic tests have no rustc helper on that machine.
+  the same outcome for every test that existed at `d35f1fa`. 24 test outcomes
+  are new and pass. The nine failing outcomes are the same before and after:
+  the tests that need the rustc helper, which is not built on that machine.
 - **Imports.** `TestProductionArchitecture` passes with no new entry and no
-  new exception. No package and no production import is added. The fixture
-  package under `testdata` and the test that uses it import what they need.
+  new exception. No production package is added. The four target declarations
+  packages now build their own description and import what the other mappings
+  of their target import, which their role allows. One allowance is removed:
+  the common declaration recipe states no profile and no longer imports the
+  horos mapping package. The fixture package under `testdata` and the test
+  that uses it import what they need.
 
 ### Limits
 
-- **Review.** One independent review read the first form at `fd75abe`, and
-  its findings are in this record. The reworked form gets another review,
-  which this record does not contain yet.
+- **Review.** Two independent reviews read this correction: the first form at
+  `fd75abe` and the reworked form at `d61bc5d`. Their findings are in this
+  record. The fixes after the second review are checked by its reviewer
+  again, and that check is not in this record yet.
 - **The registry does not judge a stated profile.** A contribution that states
   the enforcement profile is selected by a request for it. A wrapper that
   takes a builtin library's description and states another profile is such a
@@ -269,23 +316,26 @@ The fixture contribution is
   ([AC-05](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-05)).
   What bittype gives is narrower and holds: no mapping in bittype states the
   enforcement profile, and no builtin constructor takes a profile.
-- **A profile's family is complete in itself.** A builtin mapping states the
-  structural profile, so another profile cannot register it as its own. The
-  common patterns and the naming function stay usable by any contribution.
-  The common declaration recipe states the structural profile. A further
-  profile that wants the same recipe writes its own, as the fixture does, or
-  the recipe is offered as a function it can call. That is an addition and is
-  not made here.
+- **What a further profile can reuse.** It can use the parts that state no
+  profile: the function type, the common patterns, the naming function and
+  the common declaration recipe, as the fixture does. It reuses no builtin
+  mapping, because each builtin mapping states the structural profile. A
+  bounded profile that wants the builtin text or list mapping unchanged writes
+  that mapping under its own identity
+  ([#207](https://github.com/Bitspark/bittype/issues/207) meets this first).
+- **What passes the property test.** It names one exported constructor per
+  mapping package. A second exported constructor in an existing mapping
+  package, a package variable or a setter that changes the stated profile
+  would pass it. A reader of the package sees those; the test does not.
 - **The fixture is small.** It is one TypeScript library with three bindings
-  and an alias recipe. No bounded profile with a narrower domain exists yet,
-  and no second profile exists for Go, Rust or C++.
-- **The signature check reads strings.** A constructor that took a profile
-  through a type that is not a string would pass it. The comparison of the
-  stated profile would then catch only what the listed calls produce.
+  and the common recipe. No bounded profile with a narrower domain exists
+  yet, and no second profile exists for Go, Rust or C++. Whether the
+  TypeScript text of the fixture compiles is not checked.
 - **One matrix entry per pair.** The provider matrix shows the builtin
   mappings of a pair as one entry, the shared function type, although the pair
   has five or six mapping packages. That was so before this change and is not
-  examined here.
+  examined here. The source link of that entry moves in three generated
+  documents, which the matrices workflow regenerates.
 - **The names in plan entries.** No plan entry exists yet
   ([#207](https://github.com/Bitspark/bittype/issues/207)). That the new
   identities are what the entries record is for that work to show.

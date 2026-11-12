@@ -579,7 +579,7 @@ preserve native interchangeability with its payload. Representation-only profile
 must state any conversion boundary, and this types-only design supplies no
 conversions. See the [Rust constraint limits](native-kind-constraints.md#7-rust).
 
-The current pagination representation profile still permits constraint erasure;
+The current structural representation profile still permits constraint erasure;
 the current enforcement profile still returns Unsupported. Proposed plugin
 composition alone implements neither an enforcing encoding nor a runtime value
 checker. Selecting an enforcing promise cannot fall back to the representation
