@@ -1,5 +1,17 @@
 # Changelog
 
+## horos keys published by the vocabulary package — 12 November 2026
+
+The five horos-owned keys of [#220](https://github.com/Bitspark/bittype/issues/220) that a writer and a reader each spelled inline are published by `semantics/horos/go`, under the plan in [#218](https://github.com/Bitspark/bittype/issues/218). It is a move: each key value and the published semantic graph are byte-identical before and after.
+
+- **Published.** `ModuleKind()` is `horos/module`, `TypeDefinitionKind()` is `horos/type-definition`, `ImportRelation()` is `horos/import`, `ProperSort()` is `horos/sort/proper` and `ModuleIdentity()` is `horos/identity/module`.
+- **Writers and readers.** `internal/horosmodel` writes the two entity kinds and the two operators through these functions. `internal/horosfiles` writes the group kind and the import relation and reads the module kind through them. `transform/syntax/horos/source/go` reads the type-definition kind and the two operators through them and no longer declares its own copies. No production package outside `semantics/horos/go` spells any of the five.
+
+Not done:
+
+- [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) and row 12 of [package boundaries](docs/package-boundaries.md) still describe these five keys as inline. This change edits no document besides this entry.
+- Other horos-owned names are still spelled where they are used. The `descriptor/` operator prefix has a writer in `internal/horosmodel` and a reader in `transform/syntax/horos/source/go`. The profile names that `semantics/horos/go` already publishes are repeated as literals in `internal/horosfiles`. The remaining entity kinds, parameter sorts, term operators and diagnostic codes have a production writer and no production reader.
+
 ## Import rules by role and the independent review — 12 November 2026
 
 The last step of the plan in [#218](https://github.com/Bitspark/bittype/issues/218) merged with [#244](https://github.com/Bitspark/bittype/pull/244), at `71bfec9`. It changes test code only. [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) records the correction, its qualification and what remains.
