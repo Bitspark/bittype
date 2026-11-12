@@ -103,9 +103,10 @@ profile through it.
 
 ## Correction and qualification status
 
-Corrected on 12 November 2026 by the change that closes
-[#216](https://github.com/Bitspark/bittype/issues/216), made against `main` at
-`9cfd195`. It is ordered before #207 under the owner's direction of
+Corrected on 12 November 2026 by pull request
+[#265](https://github.com/Bitspark/bittype/pull/265), which closes
+[#216](https://github.com/Bitspark/bittype/issues/216) and was made against
+`main` at `9cfd195`. It is ordered before #207 under the owner's direction of
 11 November 2026 that a misplaced or wrongly named part changes first and
 missing coverage is added afterwards
 ([AC-10](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-10)).
