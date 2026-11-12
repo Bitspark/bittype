@@ -1099,7 +1099,7 @@ No structural definition attached. Operation source and authored scope remain th
 
 Contract: github.com/Bitspark/bittype/contracts/analysis/go.Provider&#91;github.com/Bitspark/bittype/syntax/golang/go.Language&#93;.
 
-Public operation: [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L49). Receiver: github.com/Bitspark/bittype/analyze/files/golang/provider/go.Provider.
+Public operation: [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L52). Receiver: github.com/Bitspark/bittype/analyze/files/golang/provider/go.Provider.
 
 Language marker: github.com/Bitspark/bittype/syntax/golang/go.Language.
 
@@ -1107,11 +1107,11 @@ Construction alternatives: no provider collaborators.
 
 Static call relationships (no evidence transfer):
 
-- [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L49) → [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L15) ([call](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L50)); receiver ; type arguments .
+- [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L52) → [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L16) ([call](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L53)); receiver ; type arguments .
 
 Traversal boundary: not a single-return static call.
 
-### Declared target [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L15)
+### Declared target [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L16)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
@@ -1119,10 +1119,13 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Authored scope: [docs/native-semantics.md#first-go-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-go-profile); profile: unspecified (authored profile absent).
 
-### Declared target [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L49)
+### Declared target [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L52)
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
+| go-imported-packages | largest-environment-end-to-end | accepted-environments-analyzable | unspecified (authored profile absent) | [TestGoImportLargestEnvironmentEndToEnd](https://github.com/Bitspark/bittype/blob/main/integration/go/go_imports_review2_test.go#L116) (external) |
+| go-imported-packages | resolution-and-analysis-environment-mismatch | invalid-request | unspecified (authored profile absent) | [TestGoImportsAnalysisRefusesAnotherEnvironment](https://github.com/Bitspark/bittype/blob/main/integration/go/go_imports_review_test.go#L73) (external) |
+| go-imported-packages | captured-lookup-and-base-parity | captured-ambiguity-only | unspecified (authored profile absent) | [TestGoImportsLookupAndBaseParity](https://github.com/Bitspark/bittype/blob/main/integration/go/go_imports_review_test.go#L183) (external) |
 | semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
 | go-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestGoSemanticReportsAndCoverage](https://github.com/Bitspark/bittype/blob/main/integration/go/native_semantics_test.go#L189) (external) |
 
@@ -1150,6 +1153,17 @@ Traversal boundary: not a single-return static call.
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
+| go-imported-packages | context-ends-during-native-work | context-error-without-waiting | unspecified (authored profile absent) | [TestGoResolveReturnsWhenContextEndsDuringNativeWork](https://github.com/Bitspark/bittype/blob/main/integration/go/go_imports_cancellation_test.go#L80) (external) |
+| go-imported-packages | long-chains-over-supplied-structure | supplied-structure-not-exported | unspecified (authored profile absent) | [TestGoImportsGuardLongChainsOverSuppliedStructure](https://github.com/Bitspark/bittype/blob/main/integration/go/go_imports_review2_test.go#L46) (external) |
+| go-imported-packages | deterministic-diagnostics-and-graphs | capture-order-independent | unspecified (authored profile absent) | [TestGoImportsDiagnosticsAndGraphsIgnoreCaptureOrder](https://github.com/Bitspark/bittype/blob/main/integration/go/go_imports_review2_test.go#L147) (external) |
+| go-imported-packages | go-tool-collisions-and-sites | go-build-agreement | unspecified (authored profile absent) | [TestGoImportsCollisionsAndSites](https://github.com/Bitspark/bittype/blob/main/integration/go/go_imports_review2_test.go#L216) (external) |
+| go-imported-packages | documented-check-order | layout-then-syntax-then-go-tool-rejections | unspecified (authored profile absent) | [TestGoImportsCheckOrderAndVendor](https://github.com/Bitspark/bittype/blob/main/integration/go/go_imports_review2_test.go#L309) (external) |
+| go-imported-packages | captured-types-on-supplied-structure | supplied-structure-not-exported | unspecified (authored profile absent) | [TestGoImportsDoNotExportSuppliedStructureThroughCapturedTypes](https://github.com/Bitspark/bittype/blob/main/integration/go/go_imports_review_test.go#L34) (external) |
+| go-imported-packages | go-module-layout-rules | go-tool-classification | unspecified (authored profile absent) | [TestGoImportsFollowGoLayoutRules](https://github.com/Bitspark/bittype/blob/main/integration/go/go_imports_review_test.go#L110) (external) |
+| go-imported-packages | environment-before-captured-judgment | order-independent-classification | unspecified (authored profile absent) | [TestGoImportsClassifyIndependentlyOfOrder](https://github.com/Bitspark/bittype/blob/main/integration/go/go_imports_review_test.go#L154) (external) |
+| go-imported-packages | captured-and-supplied-imports | qualified-uses-bind-imported-declarations | unspecified (authored profile absent) | [TestGoImportsBindQualifiedUsesToImportedDeclarations](https://github.com/Bitspark/bittype/blob/main/integration/go/go_imports_semantics_test.go#L163) (external) |
+| go-imported-packages | rejected-unsupported-and-invalid-environments | no-partial-model | unspecified (authored profile absent) | [TestGoImportsRejectAndRefuse](https://github.com/Bitspark/bittype/blob/main/integration/go/go_imports_semantics_test.go#L249) (external) |
+| go-imported-packages | normalized-receipt-environment | equal-environments-equal-settings | unspecified (authored profile absent) | [TestGoImportConfigurationIsNormalizedAndBound](https://github.com/Bitspark/bittype/blob/main/integration/go/go_imports_semantics_test.go#L314) (external) |
 | semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
 | go-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestGoSemanticReportsAndCoverage](https://github.com/Bitspark/bittype/blob/main/integration/go/native_semantics_test.go#L189) (external) |
 
