@@ -138,7 +138,7 @@ It does not walk the tree and it reads no `name` attribute.
 | Field | Meaning | Who states it |
 | --- | --- | --- |
 | `Handle` | One declaration of this one output. | The kernel, when it seals. |
-| `Site` | The declaration's node in the snapshot. | The target's construction, checked by the kernel. |
+| `Site` | The declaration's node in the snapshot. | The target's construction. The kernel checks that the site lies in the snapshot and is listed once. |
 | `Role` | Requested: the request lists its source declaration as a root. Dependency: a planned declaration uses its source declaration and the request does not list it. Helper: a mapping demanded it by a helper key. | The planner. |
 | `Provenance` | The declaring sites of the source declarations it represents. Empty for a helper, which represents none. | The planner, from the admitted semantic graph. |
 | `Values` | What the owner of the declaration's description states about it. | A declaration recipe or a helper recipe. |
