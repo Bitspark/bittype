@@ -83,8 +83,9 @@ func (p tamperedTarget) Build(ctx context.Context, in g.BuildInput[ts.Language])
 }
 
 // tamperedCellPage generates Cells = Page<Cell<Person>> with one external use,
-// the Cell of a package, through a target that changes the assembly.
-func tamperedCellPage(t *testing.T, change func(g.BuildInput[ts.Language], *g.Assembly) error) g.Output {
+// the Cell of a package, through a target that changes the assembly. A name in
+// only requests that one declaration, so that the others are not exposed.
+func tamperedCellPage(t *testing.T, change func(g.BuildInput[ts.Language], *g.Assembly) error, only string) g.Output {
 	t.Helper()
 	library := genModule("cells", genMap(), genEntry("Cell", genType(genTuple("horos/wire", genParam(0)), "T")))
 	pin, err := decl.Pin(library)
@@ -105,6 +106,24 @@ func tamperedCellPage(t *testing.T, change func(g.BuildInput[ts.Language], *g.As
 		if _, err = compose.RegisterMapping(registry, input.Source.Language(), to, cellMapping(from, pin.String(), &calls)); err != nil {
 			return compose.Request{}, err
 		}
+		if only == "" {
+			return request, nil
+		}
+		envelope, err := input.Source.EntryTree()
+		if err != nil {
+			return compose.Request{}, err
+		}
+		tree, err := representation.Unpack[s.Language](input.Source.Language(), envelope)
+		if err != nil {
+			return compose.Request{}, err
+		}
+		for _, site := range request.Roots {
+			if nodeAttribute(tree.Nodes[site.Node-1], s.AttributeName) == only {
+				request.Roots = []ast.NodeRef{site}
+				return request, nil
+			}
+		}
+		t.Fatal("no requested declaration", only)
 		return request, nil
 	})
 }
@@ -316,7 +335,7 @@ func TestFilesFailureCategories(t *testing.T) {
 	// declaration placed in one file.
 	tampered := func(change func(g.BuildInput[ts.Language], *g.Assembly) error) func(*testing.T) (bool, error) {
 		return func(t *testing.T) (bool, error) {
-			out := tamperedCellPage(t, change)
+			out := tamperedCellPage(t, change, "")
 			tree := outputTree[ts.Language](t, out)
 			placement := tsfiles.Placement{File: "types", Path: "types.ts"}
 			for _, child := range tree.Nodes[tree.Root-1].Children {
@@ -455,10 +474,6 @@ func TestFilesFailureCategories(t *testing.T) {
 	add("missing entry", typescript, source.ErrInvalid, tsPlaced(func(o *tsfiles.Organization) { o.Entry = "absent" }))
 
 	// What the placement asks of the declarations.
-	add("an exposed declaration uses an unexposed one of another file", typescriptExisting, source.ErrInvalid, tsExisting(&tsfiles.Organization{Entry: "public", Units: []tsfiles.Placement{
-		{File: "public", Path: "public.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Visible")}},
-		{File: "private", Path: "private.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Hidden")}},
-	}}, hidden))
 	add("two declarations of one name in one file", typescriptExisting, source.ErrInvalid, tsExisting(&tsfiles.Organization{Entry: "both", Units: []tsfiles.Placement{
 		{File: "both", Path: "both.ts", Declarations: []ast.NodeRef{tsSite(first, "Same"), tsSite(second, "Same")}},
 	}}, first, second))
@@ -497,7 +512,35 @@ func TestFilesFailureCategories(t *testing.T) {
 		root.Children = append([]ast.Child{{Role: ts.RoleImport, Node: ast.NodeID(len(tree.Nodes))}}, root.Children...)
 	})))
 
-	// Well formed, and outside this profile.
+	// Well formed, and outside this profile. A placement that separates an
+	// unexposed declaration from its user needs access that the request did not
+	// grant, and a later profile may admit it when access can be stated.
+	add("a declaration uses an unexposed one of another file", typescriptExisting, source.ErrUnsupported, tsExisting(&tsfiles.Organization{Entry: "public", Units: []tsfiles.Placement{
+		{File: "public", Path: "public.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Visible")}},
+		{File: "private", Path: "private.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Hidden")}},
+	}}, hidden))
+	add("a declaration uses an unexposed one of another file", typescript, source.ErrUnsupported, func(t *testing.T) (bool, error) {
+		out := tamperedCellPage(t, func(g.BuildInput[ts.Language], *g.Assembly) error { return nil }, "Cells")
+		tree := outputTree[ts.Language](t, out)
+		used := tsfiles.Placement{File: "used", Path: "used.ts"}
+		user := tsfiles.Placement{File: "user", Path: "user.ts"}
+		for _, child := range tree.Nodes[tree.Root-1].Children {
+			site := ast.NodeRef{Tree: tree.ID, Node: child.Node}
+			if nodeAttribute(tree.Nodes[child.Node-1], ts.AttributeName) == "Cells" {
+				user.Declarations = append(user.Declarations, site)
+			} else {
+				used.Declarations = append(used.Declarations, site)
+			}
+		}
+		if exposed := out.Exposed(); len(exposed) != 1 || len(user.Declarations) != 1 || exposed[0] != user.Declarations[0] || len(used.Declarations) == 0 {
+			t.Fatal("expected Cells as the one exposed declaration", exposed)
+		}
+		together := tsBytes(tsfiles.Organization{Entry: "user", Units: []tsfiles.Placement{{File: "user", Path: "user.ts", Declarations: append(append([]ast.NodeRef{}, user.Declarations...), used.Declarations...)}}})
+		if published, err := tsFormat(generated, out, format.FilesLimits{}, semantic.Setting{Key: tsfiles.OrganizationSetting(), Value: together}); err != nil || !published {
+			t.Fatal("the same declarations in one file must format", err)
+		}
+		return tsFormat(generated, out, format.FilesLimits{}, semantic.Setting{Key: tsfiles.OrganizationSetting(), Value: tsBytes(tsfiles.Organization{Entry: "user", Units: []tsfiles.Placement{user, used}})})
+	})
 	add("a file that is a script", typescriptExisting, source.ErrUnsupported, tsExisting(nil, tsUnit("input", "type Global = string;")))
 	add("a placed file that is a script", typescriptExisting, source.ErrUnsupported, tsExisting(&tsfiles.Organization{Entry: "public", Units: []tsfiles.Placement{
 		{File: "public", Path: "public.ts", Declarations: []ast.NodeRef{tsSite(unused, "Visible")}},
