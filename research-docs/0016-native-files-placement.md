@@ -1982,7 +1982,7 @@ failed.
 ## Applied
 
 **Evaluated against:** `0016-native-files-placement.submitted.md` (sha256 `29bb3633352e12e3e6142c83cae21f6ad17e5116a83c5d526f052b8701590358`), attempt 1, run `run_cd247478-16f7-4b16-8b65-52be1f89ceb6`; code at bittype `7e6e02e` (`main`). The living document differs from the submitted bytes only in its Status and Run-ID lines and in this section.
-**Graded:** awaiting grading. bittype has no architecture seat, so the research owner grades the table once and says so in the grade comment.
+**Graded:** https://github.com/Bitspark/bittype/issues/161#issuecomment-6837229993 (by the research owner, claude-contract-chain-issues; bittype has no architecture seat)
 
 **How it was evaluated.** The advice was split into 36 discrete recommendations. Four agents that did not write the document checked each one's premises against the code at `7e6e02e` and against the accepted documents, by reading, and proposed a verdict with file and line evidence. The research owner decided each row. No premise of the advice was false about the code. Drift since the described baseline `d35f1fa`: only #265, which moved the declaration recipe and touched nothing of the Files stage.
 
