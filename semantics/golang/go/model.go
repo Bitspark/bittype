@@ -39,7 +39,11 @@ type FieldInfo struct {
 
 // Open requires an admitted analysis receipt and never invokes a compiler.
 func Open(result semantic.Result) (Model, error) {
-	if _, err := semantic.AdmitEvidence(result.Snapshot(), []semantic.EvidenceRequirement{Evidence()}, []semantic.Result{result}); err != nil {
+	requirement, err := EvidenceFor(result.Configuration())
+	if err != nil {
+		return Model{}, err
+	}
+	if _, err := semantic.AdmitEvidence(result.Snapshot(), []semantic.EvidenceRequirement{requirement}, []semantic.Result{result}); err != nil {
 		return Model{}, err
 	}
 	envelope, _ := result.Semantics()
@@ -76,20 +80,40 @@ func (m Model) Type(id semantics.TermID) (Type, error) {
 	}
 	return Type{m.state, id}, nil
 }
+
+// Lookup finds a package-level type declared by captured code. It fails when
+// more than one captured package declares the name; use LookupIn then.
 func (m Model) Lookup(name string) (Type, error) {
+	return m.lookup("", name)
+}
+
+// LookupIn finds a package-level type of the package at importPath. A supplied
+// package's declaration is present only where captured code uses it.
+func (m Model) LookupIn(importPath, name string) (Type, error) {
+	if importPath == "" {
+		return Type{}, ErrForeign
+	}
+	return m.lookup(importPath, name)
+}
+func (m Model) lookup(importPath, name string) (Type, error) {
 	if !m.Valid() {
 		return Type{}, ErrForeign
 	}
+	var found []semantics.TermID
 	for _, e := range m.state.graph.Data().Entities {
 		if e.Name != name || (e.Kind != Key("defined") && e.Kind != Key("alias")) {
 			continue
 		}
 		owner, _ := m.state.graph.Entity(e.Owner)
-		if owner.Kind == Key("package") {
-			return m.Type(e.Body)
+		// Captured packages have declaration sites; supplied packages have none.
+		if owner.Kind == Key("package") && (importPath == "" && len(owner.Declarations) > 0 || importPath != "" && owner.Name == importPath) {
+			found = append(found, e.Body)
 		}
 	}
-	return Type{}, ErrForeign
+	if len(found) != 1 {
+		return Type{}, ErrForeign
+	}
+	return m.Type(found[0])
 }
 func (m Model) Basic(kind types.BasicKind) (Type, error) {
 	if !m.Valid() || (kind != types.String && kind != types.Bool) {
@@ -208,6 +232,12 @@ func (t Type) Fields() ([]Field, bool) {
 	}
 	return out, true
 }
+
+// Unconstrained reports whether the graph establishes that the parameter is
+// unconstrained. The constraint of a supplied parameter is not projected, and
+// neither is a supplied interface, or an alias of one, used as a captured
+// parameter's constraint. Such a parameter is never reported unconstrained;
+// callers must treat false as "not established".
 func (t Type) Unconstrained() bool {
 	if t.entity().Kind != Key("parameter") {
 		return false
