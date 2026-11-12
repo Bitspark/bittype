@@ -124,7 +124,7 @@ func (b *Backend) Expression(e g.Expression[s.Language], args []m.Fragment[s.Lan
 	switch name {
 	case model.FormPrimitive:
 		spelling := "boolean"
-		if data[0] == "string" {
+		if data[0] == model.PrimitiveString {
 			spelling = "string"
 		}
 		return b.Node(m.Node(s.KindKeywordType, m.Attributes("name", spelling), origin))

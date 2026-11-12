@@ -29,5 +29,5 @@ func primitive(profile, sourceName, targetName string) rules.Library[s.Language]
 // Library binds utf8-text to the TypeScript primitive string under the binding
 // ID "utf8-text/typescript/1".
 func Library(profile string) rules.Library[s.Language] {
-	return primitive(profile, "utf8-text", "string")
+	return primitive(profile, "utf8-text", model.PrimitiveString)
 }

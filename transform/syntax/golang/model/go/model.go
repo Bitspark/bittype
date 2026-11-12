@@ -25,6 +25,13 @@ const (
 	FormDefined   = "defined"
 )
 
+// The names a primitive form carries, each declared here once. Primitive
+// takes one of them.
+const (
+	PrimitiveString = "string"
+	PrimitiveBool   = "bool"
+)
+
 func Form(name string) g.Form[s.Language]      { return forms.Form(name) }
 func Name(f g.Form[s.Language]) (string, bool) { return forms.Read(f) }
 func Primitive(name string) g.Expression[s.Language] {
@@ -53,7 +60,7 @@ func CheckExpression(ctx context.Context, e g.Expression[s.Language]) error {
 	d, a := e.Data(), e.Arguments()
 	switch name {
 	case FormPrimitive:
-		if len(d) != 1 || len(a) != 0 || (d[0] != "string" && d[0] != "bool") {
+		if len(d) != 1 || len(a) != 0 || (d[0] != PrimitiveString && d[0] != PrimitiveBool) {
 			return g.ErrInvalid
 		}
 	case FormSlice:

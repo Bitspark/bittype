@@ -27,5 +27,5 @@ func primitive(profile, sourceName, targetName string) rules.Library[s.Language]
 
 // Library maps utf8-text to string under the binding utf8-text/cpp/1.
 func Library(profile string) rules.Library[s.Language] {
-	return primitive(profile, "utf8-text", "string")
+	return primitive(profile, "utf8-text", model.PrimitiveString)
 }

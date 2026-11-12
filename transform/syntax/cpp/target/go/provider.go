@@ -171,7 +171,7 @@ func (b *Backend) Expression(e g.Expression[s.Language], args []m.Fragment[s.Lan
 	data, origin := e.Data(), e.Origin()
 	switch name {
 	case model.FormPrimitive:
-		if data[0] == "string" {
+		if data[0] == model.PrimitiveString {
 			if err := b.Include("string"); err != nil {
 				return m.Fragment[s.Language]{}, err
 			}

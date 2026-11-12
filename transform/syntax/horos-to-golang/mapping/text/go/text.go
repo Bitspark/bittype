@@ -25,5 +25,5 @@ func primitive(profile, sourceName, targetName string) rules.Library[s.Language]
 
 // Library returns the text mapping under the given profile.
 func Library(profile string) rules.Library[s.Language] {
-	return primitive(profile, "utf8-text", "string")
+	return primitive(profile, "utf8-text", model.PrimitiveString)
 }

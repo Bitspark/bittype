@@ -105,7 +105,7 @@ func (b *Backend) Expression(e g.Expression[s.Language], args []m.Fragment[s.Lan
 	data, origin := e.Data(), e.Origin()
 	switch name {
 	case model.FormPrimitive:
-		if data[0] == "string" {
+		if data[0] == model.PrimitiveString {
 			return b.Path([]string{"std", "string", "String"}, nil, origin, true)
 		}
 		return b.Node(m.Node(s.KindPrimitiveType, m.Attributes("name", "bool"), origin))
