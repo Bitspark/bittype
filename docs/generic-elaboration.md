@@ -270,7 +270,7 @@ and the target configuration. For example, an external mapping could supply
 not new built-in packages. The enclosing Page uses the same open definition and
 passes that selected representation as its argument.
 
-The default pagination profile does not thereby gain Wire or Cell support. The
+The default structural profile does not thereby gain Wire or Cell support. The
 [composition fixture](generation-composition.md#extension-examples-and-qualification)
 adds an explicit library-owned Cell mapping and its supported native contract. Function and Stream use the same supplied
 mechanism. A capability-containing Cell still fails a Data bound regardless of

@@ -77,7 +77,7 @@ type Page[T any] struct {
 ```
 
 Page is unconstrained in both languages. The fixture uses the same explicit
-presence representation as the [pagination profile](semantic-generation.md#pagination-subset).
+presence representation as the [structural profile](semantic-generation.md#pagination-subset).
 The spelling Optional is local to this independently authored fixture.
 
 ## Encoding the admission relation

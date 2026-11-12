@@ -520,7 +520,7 @@ the subsequent composition plan. Public proof integration and target enforcement
 must not be inferred from the existing representation-only path.
 
 This documentation performs none of those software or proof executions. The
-current pagination representation profile continues to permit constraint erasure;
+current structural representation profile continues to permit constraint erasure;
 its enforcing profile continues to return Unsupported. No native semantic
 provider capability, automatic proof path or runtime behavior is added.
 

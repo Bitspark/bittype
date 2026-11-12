@@ -37,30 +37,66 @@ resolution/analysis of its own snapshot.
 
 ## Representation and enforcement profiles
 
-The [horos mapping library](../transform/syntax/horos/mapping/go/mapping.go) defines RepresentationProfile and EnforcementProfile. Each native mapping is its own package under `transform/syntax/horos-to-<native>/mapping/<name>/go` and exports Library(profile). No package lists the mappings of a pair. Each consumer registers a source, target and mapping libraries and passes the root declaration sites, output tree ID, receipts, profile and limits to Engine.Generate (or PlanGeneration then Run). Go's target provider takes Package and C++ takes Namespace. The [TypeScript example](kernel-composition.md#horos-to-typescript) shows registration and execution.
+The [horos mapping package](../transform/syntax/horos/mapping/go/mapping.go) declares the two profile identities, RepresentationProfile and EnforcementProfile. One test beside the declaration pins both values. Every other test and fixture takes them from there. Each native mapping is its own package under `transform/syntax/horos-to-<native>/mapping/<name>/go` and exports `Library()`. No package lists the mappings of a pair. Each consumer registers a source, target and mapping libraries and passes the root declaration sites, output tree ID, receipts, profile and limits to Engine.Generate (or PlanGeneration then Run). Go's target provider takes Package and C++ takes Namespace. The [TypeScript example](kernel-composition.md#horos-to-typescript) shows registration and execution.
 
-| Selected profile | Promise and behavior |
+| Profile | Promise and behavior |
 | --- | --- |
-| RepresentationProfile | Native declarations represent uses already admitted by Horos. The profile expressly permits erasing ordinary proper-kind contracts from target parameter declarations. |
-| EnforcementProfile | Native clients would have to be prevented from violating the source constraint. No such target encoding is implemented; the library rejects registration of this profile with generation.ErrUnsupported. |
+| RepresentationProfile, `structural-representation/1` | Native declarations represent uses already admitted by Horos. The profile expressly permits erasing ordinary proper-kind contracts from target parameter declarations. Every builtin mapping states this profile. |
+| EnforcementProfile, `structural-enforcement/1` | Native clients would have to be prevented from violating the source constraint. No such target encoding is implemented, and no mapping in bittype states this profile. A request for it fails with generation.ErrUnsupported. |
 
-The mapping library admits exactly one profile name, so a further profile needs
-an edit to that shared file, and both identities are named after the first
-fixture. [bittype/ACX-008](architecture-cases/0008-structural-profile-gate.md)
-records this; [#216](https://github.com/Bitspark/bittype/issues/216) tracks the
-correction.
+The two identities state what the profile promises and name no fixture. The
+version stays `/1`: nothing is released and the generated output did not change
+with the names.
 
-The profile selection is part of the configured mapping, not inferred from a kind
+A profile is a promise about the native type. The kernel does not interpret
+it. Three rules decide what a request receives:
+
+- **A mapping states its own profile.** The profile is a field of the
+  description that a mapping library returns. Each builtin mapping writes
+  `RepresentationProfile` there, and its constructor takes no profile. A
+  composition chooses which libraries it registers. It cannot choose what a
+  builtin library promises.
+- **A request selects by its profile.** The registry plans with the mappings
+  that state the requested profile and have compatible languages. With none it
+  fails with generation.ErrUnsupported. This is how the enforcement profile is
+  refused, and any profile that no registered mapping states.
+- **The registry does not judge the promise.** Selecting a contribution does
+  not establish its claim. A contribution of another author that states a
+  profile is selected under it, and that author answers for it.
+
+No shared code lists, writes or refuses a profile. The horos mapping package
+holds the two identities and the function type `Library`, which makes a
+description function a mapping library and returns what the function returns. A
+nil function fails with generation.ErrInvalid. A description that states no
+profile is refused at registration by the generation contract, also with
+generation.ErrInvalid.
+
+A further profile, such as the bounded profile that the
+[families design](representation-families.md#domains) names, enters as a
+contribution that states its own identity in its own package, registered by the
+consumer's composition. It needs no change to the horos mapping package or to
+the registry. The tests in
+[`horos_generation_profile_test.go`](../integration/go/horos_generation_profile_test.go)
+show this with the fixture contribution
+[`readonlyprofile`](../integration/go/testdata/readonlyprofile/library.go),
+which maps a list to another native form under its own profile: one registry
+holds both families, and each request receives its own. The same file shows
+that every builtin library states the structural profile, and it covers the
+two refusals. [bittype/ACX-008](architecture-cases/0008-structural-profile-gate.md)
+records the earlier closed gate, its correction and its limits.
+
+The profile is part of what a mapping describes, not inferred from a kind
 name. Representation does not advertise arbitrary native instantiations as
 Horos-admitted values. Native strings, records and generic parameters do not
-prove every source invariant. An enforcement request never silently selects
-representation instead. [GEN-02](generation-gaps.md#gen-02) records the missing
-native-plan capability, target encodings and completion criteria.
+prove every source invariant. A request for the enforcement profile is not
+answered by a mapping that states the representation profile.
+[GEN-02](generation-gaps.md#gen-02) records the missing native-plan
+capability, target encodings and completion criteria.
 
 The [native kind-constraint proposal](native-kind-constraints.md) describes a
 future enforcing route using direct bounds or source type witnesses, with
 language-specific limits. It is documentation only: the representation profile
-still permits erasure and the enforcement profile is still rejected as unsupported.
+still permits erasure, and no mapping states the enforcement profile.
 
 ## Pagination subset
 
@@ -110,8 +146,8 @@ creates the key once and passes it to both:
 ```go
 key := g.NewHelperKey("horos/optional")
 libraries := []g.MappingLibrary[h.Language, s.Language, source.Reader]{
-    record.Library(profile, key),
-    optional.Library(profile, key),
+    record.Library(key),
+    optional.Library(key),
 }
 ```
 

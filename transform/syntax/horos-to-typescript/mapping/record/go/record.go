@@ -18,13 +18,13 @@ import (
 
 // Library binds a closed record to a TypeScript record of its fields under the
 // binding ID "record/typescript/1". The kernel resolves each field's mapping.
-func Library(profile string) rules.Library[s.Language] {
-	return rules.Library[s.Language]{Profile: profile, DescribeRules: func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
+func Library() rules.Library[s.Language] {
+	return func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
 		pattern, err := patterns.Head(from, "record", "closed")
 		if err != nil {
 			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
 		}
-		return g.MappingDescription[h.Language, s.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "record/typescript/1", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, s.Language, source.Reader]) (g.Expression[s.Language], error) {
+		return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "record/typescript/1", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, s.Language, source.Reader]) (g.Expression[s.Language], error) {
 			src, err := r.Reader()
 			if err != nil {
 				return g.Expression[s.Language]{}, err
@@ -56,5 +56,5 @@ func Library(profile string) rules.Library[s.Language] {
 			}
 			return g.At(model.Record(members...), view.Origin), nil
 		}}}}, nil
-	}}
+	}
 }

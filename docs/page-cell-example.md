@@ -126,8 +126,8 @@ binding := g.BindingDescription[h.Language, ts.Language, source.Reader]{
 }
 ```
 
-Describe returns that binding in a MappingDescription with the selected
-`pagination-representation/1` profile. The kernel pairs Cell's binder with its
+Describe returns that binding in a MappingDescription that states the
+`structural-representation/1` profile. The kernel pairs Cell's binder with its
 actual from the graph, judges that actual, and accepts the capture only as a
 child it minted for this use. Cell's body is never opened. The mapping chooses a
 public symbol; it cannot build an import or invoke an AST builder.
@@ -143,10 +143,9 @@ err := compose.RegisterSource[h.Language, source.Reader](registry, from, source.
 if err != nil { return err }
 err = compose.RegisterTarget(registry, to, target.Provider{})
 if err != nil { return err }
-profile := rules.RepresentationProfile
 for _, library := range []g.MappingLibrary[h.Language, ts.Language, source.Reader]{
-    text.Library(profile), boolean.Library(profile), list.Library(profile),
-    record.Library(profile), declarations.Library(profile),
+    text.Library(), boolean.Library(), list.Library(),
+    record.Library(), declarations.Library(),
 } {
     if _, err := compose.RegisterMapping(registry, from, to, library); err != nil { return err }
 }
@@ -155,7 +154,9 @@ if _, err := compose.RegisterMapping(registry, from, to, cellLibrary); err != ni
 
 `text`, `boolean`, `list`, `record` and `declarations` are the five packages
 under `transform/syntax/horos-to-typescript/mapping/<name>/go`. Each exports
-`Library(profile)`, and the consumer names each one it registers.
+`Library()`, and the consumer names each one it registers. A library states
+its profile itself, as the Cell contribution does. The request below names the
+profile it wants.
 
 The [registration reference](kernel-composition.md#registration-and-request)
 shows complete signatures. The fixture requests Page, Person, Cells and local

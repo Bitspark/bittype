@@ -21,7 +21,7 @@ engine/go/                                  endpoint checks and public entry poi
 transform/syntax/shared/generation/go/       registration, selection and composition
 transform/syntax/shared/target/go/           scoped AST construction and relocation
 transform/syntax/horos/source/go/            horos interpretation and reader
-transform/syntax/horos/mapping/go/           horos mapping adapter and profile names
+transform/syntax/horos/mapping/go/           profile identities and the mapping library function type
 transform/syntax/horos/mapping/{pattern,declarations,naming}/go/ horos patterns, declaration recipe, naming
 transform/syntax/<native>/model/go/          intended native forms, no AST construction
 transform/syntax/<native>/target/go/         native grammar and construction
@@ -139,11 +139,11 @@ err = compose.RegisterTarget(registry, to, target.Provider{})
 if err != nil { return err }
 
 libraries := []generation.MappingLibrary[horos.Language, typescript.Language, source.Reader]{
-    text.Library(rules.RepresentationProfile),
-    boolean.Library(rules.RepresentationProfile),
-    list.Library(rules.RepresentationProfile),
-    record.Library(rules.RepresentationProfile),
-    declarations.Library(rules.RepresentationProfile),
+    text.Library(),
+    boolean.Library(),
+    list.Library(),
+    record.Library(),
+    declarations.Library(),
 }
 for _, library := range libraries {
     if _, err := compose.RegisterMapping(registry, from, to, library); err != nil {
@@ -162,7 +162,9 @@ out, err := plan.Run(ctx)
 
 `text`, `boolean`, `list`, `record` and `declarations` are the five packages
 under `transform/syntax/horos-to-typescript/mapping/<name>/go`. Each exports
-`Library(profile)`. No package lists them. The consumer names every library it
+`Library()`, which takes no profile. A library states the structural
+representation profile in its own description, and the request names the
+profile it wants. No package lists them. The consumer names every library it
 registers, as the [installed consumer fixture](../integration/go/testdata/installed/horos_generation_test.go)
 does.
 

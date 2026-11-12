@@ -59,7 +59,7 @@ check/syntax/shared/{ast,cst}/go/              carrier structure
 transform/syntax/shared/generation/go/         registry and request composition
 transform/syntax/shared/target/go/             native construction and scoped symbol storage
 transform/syntax/horos/source/go/              Horos semantic reader
-transform/syntax/horos/mapping/go/             mapping adapter and representation profile names
+transform/syntax/horos/mapping/go/             representation profile identities and the mapping library function type
 transform/syntax/horos/mapping/pattern/go/     horos source patterns
 transform/syntax/horos/mapping/declarations/go/ horos declaration recipe
 transform/syntax/horos/mapping/naming/go/      horos name to exported native identifier
@@ -330,14 +330,15 @@ The compositions `integration/go` and `verification/integration/go` are not
 classified. `tools/**` needs no exception to import a provider or a query
 service.
 
-The plan in #218 is complete. This remains open and belongs to other work:
+The plan in #218 is complete. The profile gate that
+[#238](https://github.com/Bitspark/bittype/pull/238) left in the adapter at
+`transform/syntax/horos/mapping/go` is removed since 12 November 2026
+([#216](https://github.com/Bitspark/bittype/issues/216),
+[bittype/ACX-008](docs/architecture-cases/0008-structural-profile-gate.md)).
+A mapping states its profile in its own description. That package keeps the
+two profile identities and a function type that writes no profile and refuses
+none. This remains open and belongs to other work:
 
-- **The profile gate.**
-  [#238](https://github.com/Bitspark/bittype/pull/238) divided
-  `transform/syntax/horos/mapping/go` on 11 November 2026. The adapter stays at
-  that path and still refuses every profile but one. That gate is
-  [#216](https://github.com/Bitspark/bittype/issues/216) and
-  [bittype/ACX-008](docs/architecture-cases/0008-structural-profile-gate.md).
 - **Optional fields in Record.** Record still decides how an optional field is
   represented in Go, Rust and C++. What a mapping's `Expand` returns is
   [#196](https://github.com/Bitspark/bittype/issues/196), item 6.
@@ -448,7 +449,7 @@ plan/output. The registry and concrete integrations follow the stage-first layou
 contracts/generation/go/                  descriptions, invariant planner and output
 transform/syntax/shared/generation/go/      registry, selection and composition
 transform/syntax/horos/source/go/           receipt-backed source reader
-transform/syntax/horos/mapping/go/          mapping adapter and profile names
+transform/syntax/horos/mapping/go/          profile identities and the mapping library function type
 transform/syntax/horos/mapping/{pattern,declarations,naming}/go/  source patterns, declaration recipe, naming
 transform/syntax/shared/target/go/          shared native construction and scoped symbol storage
 transform/syntax/<native>/model/go/         intended native forms

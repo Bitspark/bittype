@@ -105,7 +105,7 @@ Wire expressions do not create a second language or registered profile.
 The following table discovers both ASTTransformer factories and declarative
 mapping libraries from their actual Go contracts. Mapping entries are selectable
 descriptions, not registered transformation edges.
-The [pagination profile](semantic-generation.md) explains the native representation
+The [structural profile](semantic-generation.md) explains the native representation
 scope and its semantic requirements.
 
 <!-- generated:transformers:begin -->

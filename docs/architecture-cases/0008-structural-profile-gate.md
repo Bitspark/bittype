@@ -1,6 +1,12 @@
-# bittype/ACX-008: The shared horos mapping policy admits one profile
+# bittype/ACX-008: The shared horos mapping policy admitted one profile
 
-**Status:** Identified; correction pending.
+**Status:** Corrected, with limits; state of 12 November 2026. A mapping
+states its profile in its own description, no shared code lists, writes or
+refuses a profile, and the two identities are `structural-representation/1`
+and `structural-enforcement/1`. A first form of the correction kept a refusal
+of one name in the adapter and was replaced before merging. Two independent
+reviews read the correction, the first form and the reworked form. The
+[limits](#limits) say what the correction does not establish.
 **Scope:** The common horos mapping policy,
 [`transform/syntax/horos/mapping/go`](https://github.com/Bitspark/bittype/blob/ca5dc80/transform/syntax/horos/mapping/go/mapping.go),
 at `ca5dc80`, and the four `horos-to-<native>` mapping packages that build
@@ -14,21 +20,32 @@ requires that adding a contribution change only its owning implementation and
 the consumer's composition. A representation profile is such a contribution:
 the [accepted families design](../representation-families.md#domains) names the
 lossless structural profile and "an explicitly named bounded profile" beside it.
-The shared policy's `Library.Describe` returns `ErrUnsupported` for every
-profile whose name is not the one constant `RepresentationProfile`. A second
-profile that reuses the horos patterns and the declaration recipe therefore
-needs an edit to this shared file.
+The shared policy's `Library.Describe` returned `ErrUnsupported` for every
+profile whose name was not the one constant `RepresentationProfile`. A second
+profile that reused the horos patterns and the declaration recipe therefore
+needed an edit to this shared file.
 
 [AC-02](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-02)
 asks reviewers to inspect helpers outside the kernel. That is where this gate
-sits. The kernel is not at fault: it treats a profile as an opaque identity and
+sat. The kernel was not at fault: it treats a profile as an opaque identity and
 selects only the mappings registered under the requested one
 ([registry](https://github.com/Bitspark/bittype/blob/ca5dc80/transform/syntax/shared/generation/go/registry.go#L185)).
 
-The profile's name is a second, related fault, and not a rule violation by
-itself. The identity `pagination-representation/1` names the first fixture, not
-what the profile promises. It is corrected with the gate because the plan
-records profile identities ([#195](https://github.com/Bitspark/bittype/issues/195)).
+The profile's name was a second, related fault, and not a rule violation by
+itself. Both identities began with the word `pagination`, which names the
+first fixture and not what the profile promises
+([the two constants at `ca5dc80`](https://github.com/Bitspark/bittype/blob/ca5dc80/transform/syntax/horos/mapping/go/mapping.go#L15-L16)).
+It was corrected with the gate because the plan records profile identities
+([#195](https://github.com/Bitspark/bittype/issues/195)).
+
+A third fault was found on 12 November 2026, while the first form of the
+correction was under review, and it is the cause of the gate.
+[AC-02](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-02)
+keeps a meaning with its semantic owner. A profile is a promise about the
+native type, and every mapping constructor took it as an argument, so the
+composition stated the promise of the mapping it registered. The gate existed
+to stop a composition from registering a constraint-erasing library under the
+enforcement name.
 
 ## Intended boundary
 
@@ -41,47 +58,47 @@ shared file lists the admitted names.
 
 ## Actual implementation and consequence
 
-```go
-const RepresentationProfile = "pagination-representation/1"
-const EnforcementProfile = "pagination-enforcement/1"
+At `ca5dc80` the adapter began with this check:
 
+```go
 func (p Library[T]) Describe(from, to representation.Language) (...) {
 	if p.Profile != RepresentationProfile {
 		return ..., g.ErrUnsupported
 	}
 ```
 
-Every constructor of a native mapping library takes a `profile` argument, for
+Every constructor of a native mapping library took a `profile` argument, for
 example `text.Library(profile)` and `record.Library(profile)` in the packages
-under `transform/syntax/horos-to-<native>/mapping/<name>/go`. At `ca5dc80`
+under `transform/syntax/horos-to-<native>/mapping/<name>/go` on `main` at
+`6c788d8`. At `ca5dc80`
 these were `Text(profile)` and `Libraries(profile)` in one package per pair;
 [bittype/ACX-009](0009-package-boundaries.md) records that split. Exactly one
-value of that argument works. The documented purpose of the check is to refuse
-the enforcement profile, whose encoding does not exist
-([GEN-02](../generation-gaps.md#gen-02)). It is written as an allowlist of one,
-so it refuses every other profile as well.
+value of that argument worked. The documented purpose of the check was to
+refuse the enforcement profile, whose encoding does not exist
+([GEN-02](../generation-gaps.md#gen-02)). It was written as an allowlist of
+one, so it refused every other profile as well.
 
 Consequences:
 
-- A bounded profile, or any second structural profile, cannot be registered
+- A bounded profile, or any second structural profile, could not be registered
   through the common policy without changing it.
-- Integers, maps, unions and every later family would be recorded in plan
-  entries under an identity that says pagination. Renaming it after
+- Integers, maps, unions and every later family would have been recorded in
+  plan entries under an identity that says pagination. Renaming it after
   [#207](https://github.com/Bitspark/bittype/issues/207) writes the first entry
-  changes an identity that binding backends pin.
+  would have changed an identity that binding backends pin.
 
-This is architectural and not missing coverage: the missing profile is not
-another contribution behind a sound contract. The shared helper must change to
-admit it.
+This was architectural and not missing coverage: the missing profile was not
+another contribution behind a sound contract. The shared helper had to change
+to admit it.
 
 ## What worked and what it did not establish
 
-All generation tests select the one profile, and they pass. An independent
-library can enter the kernel directly: an independent contribution in the
+All generation tests selected the one profile, and they passed. An independent
+library could enter the kernel directly: an independent contribution in the
 [composition test](../../integration/go/horos_generation_composition_test.go)
 implements the mapping contract itself and sets the profile on its own
-description. Those results establish that the kernel is open. They do not
-establish that the common horos policy is, because no test registers a second
+description. Those results established that the kernel is open. They did not
+establish that the common horos policy was, because no test registered a second
 profile through it.
 
 ## Required correction
@@ -95,16 +112,239 @@ profile through it.
    research 0015 chooses them.
 4. The native declarations generated for the existing fixtures stay
    byte-identical.
+5. Added on 12 November 2026: a mapping states its own profile. A composition
+   chooses which mappings it registers and which profile it requests, and it
+   does not hand a mapping its profile.
 
 ## Correction and qualification status
 
-Nothing is implemented. The gate and both identities are unchanged at `ca5dc80`.
-The correction is ordered before #207 under the owner's direction of 11 November
-2026 that a misplaced or wrongly named part changes first and missing coverage
-is added afterwards
+Corrected on 12 November 2026 by pull request
+[#265](https://github.com/Bitspark/bittype/pull/265), which closes
+[#216](https://github.com/Bitspark/bittype/issues/216). It is ordered before
+#207 under the owner's direction of 11 November 2026 that a misplaced or
+wrongly named part changes first and missing coverage is added afterwards
 ([AC-10](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-10)).
-Qualification needs a test that registers a second profile through the common
-policy and fails on `ca5dc80`.
+
+### The first form, and why it was replaced before merging
+
+The first form of #265, at `fd75abe`, renamed the identities and removed the
+closed list. It kept the constructors `Library(profile)`: the composition
+passed a profile, and the adapter copied it into the description. Because a
+composition could then build the constraint-erasing libraries under the
+enforcement name, the adapter kept a refusal of that one name,
+`EnforcementProfile`.
+
+That form was not merged. The owner asked what the adapter is needed for, and
+the holder of #216 decided on 12 November 2026 that the profile moves to the
+mapping that promises it. The decision and its sources are comments on #265
+and on [#196](https://github.com/Bitspark/bittype/issues/196). The reasons:
+
+- **The refusal guarded a misplacement and did not remove it.** A profile says
+  what the native type retains. Only the mapping's owner can promise that
+  ([AC-02](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-02)).
+  Research 0014 lists "Representation context: target and supported profile"
+  among the elements that a contribution publishes. With `Library(profile)` the
+  composition stated the mapping's promise.
+- **It was a guard and not a guarantee.** An independent review of `fd75abe`
+  registered the builtin TypeScript libraries under `EnforcementProfile`
+  through a five-line wrapper that uses only exported API, and a request for
+  that profile returned representation output. The check compared one exact
+  string. The record of the first form said that representation output never
+  carries the enforcement identity, which the code did not give.
+- **It reserved an identity in a shared helper.** Implementing enforcement
+  ([#162](https://github.com/Bitspark/bittype/issues/162)) would have needed an
+  edit to that helper.
+- **Its evidence for a second profile was a renamed copy.** The test
+  registered the builtin libraries under another string. That does not
+  establish an extension boundary.
+
+### Correction
+
+| Was | Is |
+| --- | --- |
+| Both identities began with `pagination` | `RepresentationProfile` is `structural-representation/1` and `EnforcementProfile` is `structural-enforcement/1`. The owner of research 0015 chose them and recorded the reason on #216. The Go names are unchanged. No alias exists |
+| Every mapping constructor took a `profile` argument, and the adapter wrote it into the description | A mapping states its profile itself. Each builtin mapping writes `RepresentationProfile` into its own description, and its constructor takes no profile: `text.Library()`, `record.Library()`, and for Go `record.Library(key)` and `optional.Library(key)` with the helper key. That includes the declarations mapping of each target. The common declaration recipe states no profile: `Recipe(record, alias)` returns the recipe, and a mapping puts it into its own description |
+| The adapter refused every profile but `RepresentationProfile` | No shared code lists, writes or refuses a profile. `Library` in `transform/syntax/horos/mapping/go` is a function type with the method `Describe`. It returns what the function returns |
+| The enforcement profile was refused as one of all other names | No mapping in bittype states `EnforcementProfile`. The registry finds no mapping for a request that names it and fails with `ErrUnsupported` |
+| The integration fixture repeated the identity as a string | [`horosgeneration.Request`](../../integration/go/testdata/horosgeneration/request.go) takes it from the horos mapping package. One test beside the declaration pins both values on purpose. No other test or fixture spells either identity |
+
+**Where each responsibility sits.**
+
+- **The identities** stay in `transform/syntax/horos/mapping/go`. They are the
+  two promises that the horos mapping side declares.
+- **The promise** sits with the mapping that makes it. The profile is a field
+  of the description that a library returns, and the library fills it.
+- **Selection** sits with the registry, unchanged: it plans with the mappings
+  that state the requested profile. The registry and `contracts/**` are not
+  edited.
+- **The choice** sits with the consumer: which libraries it registers and
+  which profile it requests. It cannot choose what a builtin library promises.
+
+**What remains of the adapter.** One thing: a description function becomes a
+`generation.MappingLibrary`. The type has no field and no profile. It stays a
+shared, exported function type for a reason found during the rework. The
+provider matrix identifies a mapping library by a concrete exported type or by
+a factory's concrete result type, and by its own rule a returned interface
+does not establish one. A form in which every mapping returned the contract
+interface from an unexported type removed all builtin mappings from the matrix
+and failed `TestCurrentRepositoryProviderDiscovery`.
+
+**Behaviour at the edges.** A nil function fails with `ErrInvalid`, in
+`Describe` and at registration. A description that states no profile is
+refused at registration by the contract's `FreezeDescription`, with
+`ErrInvalid`. On `main` the adapter answered a library without rules with
+`ErrInvalid` under the structural profile and with `ErrUnsupported` under any
+other, and a library with an empty profile with `ErrUnsupported`. No caller
+relied on any of these.
+
+**Two changes after the second review.** The reworked form at `d61bc5d` let
+the common declaration recipe write `RepresentationProfile` for the
+declarations mappings of all four targets. "No shared code writes a profile"
+was therefore not true, and the fixture contribution held a reduced copy of
+the recipe, which is the parallel copy that
+[AC-03](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-03)
+names as a sign. The recipe now states no profile, each target's declarations
+mapping states it, and the fixture uses the same recipe. The second change is
+about evidence: the fixture is now a `mapping.Library` function value, and
+the unit test of `Describe` covers functions that succeed, so a test fails
+when the shared function type closes again.
+
+### Qualification
+
+The tests are in
+[`integration/go/horos_generation_profile_test.go`](../../integration/go/horos_generation_profile_test.go)
+and beside the declaration in
+[`mapping_test.go`](../../transform/syntax/horos/mapping/go/mapping_test.go).
+The fixture contribution is
+[`integration/go/testdata/readonlyprofile`](../../integration/go/testdata/readonlyprofile/library.go).
+
+- **Every builtin mapping states the structural profile.**
+  `TestBuiltinMappingsStateTheStructuralProfile` builds each library through
+  the exported constructor `Library` of its package, describes it and compares
+  the profile it states. That comparison is the evidence. The test reads the
+  pairs and the mapping packages from the directories under
+  `transform/syntax` and compares their names with the constructors it names,
+  so a new pair or a new mapping package fails it until it is named. Two
+  things around the comparison are tripwires and no proof: the test fails for
+  a constructor parameter that is not a helper key, because it cannot build
+  one, and the calls `text.Library()` in the test compositions stop compiling
+  when a constructor gains a required parameter.
+- **A second profile as a contribution of its own.**
+  `TestRequestSelectsTheContributionsOfItsProfile` registers the builtin
+  TypeScript family and the fixture contribution in one registry. The fixture
+  lives in its own package, states its own profile, maps a list to
+  `ReadonlyArray<E>` and maps no record. It is a `mapping.Library` function
+  value, as the builtin mappings are, and it uses the common declaration
+  recipe, so it maps generic and imported declarations. For one root module
+  with an imported module the structural request yields `string[]` and the
+  fixture's request yields `ReadonlyArray<string>`, and each plan names its
+  own list binding. A module with records fails under the fixture's profile
+  although the builtin record library is in the same registry: a family is
+  not completed from another profile. The horos mapping package and the
+  registry know nothing of the fixture.
+- **The same test fails on the old code.** Ported to the merge base
+  `d35f1fa`, where the gate exists, the second-profile test fails in all
+  three subtests with `ErrUnsupported` at registration. The port is the
+  fixture written against the base's adapter and the test body of the head.
+  With only the gate removed at the base, the same port passes.
+- **The enforcement profile.** `TestEnforcementProfileIsRefused` requests it
+  from the registry that has just generated under the structural profile, in
+  all four targets. The request fails with `ErrUnsupported` with no plan and
+  no output.
+- **An unregistered profile.** `TestUnregisteredProfileIsRefused` covers an
+  empty registry and the four builtin sets.
+- **The identities.** `TestProfileIdentitiesArePinned` spells both values
+  beside their declaration. On the first form no test failed when a value was
+  changed. This is a deliberate exception to done-when 4 of #216, which says
+  that no test repeats the identity as a literal.
+- **The function type.** `TestLibraryReturnsWhatItsFunctionDescribes` gives
+  `Describe` functions that state the structural identity, the enforcement
+  identity, another identity and none, each with and without an error. Every
+  description and error comes back unchanged.
+  `TestLibraryWithoutAFunctionIsInvalid` and
+  `TestRegistrationNeedsAStatedProfile` cover the edges above.
+- **Seeded faults.**
+  - `Describe` refusing a stated profile other than the structural one fails
+    the unit test and all three subtests of the second-profile test. On the
+    reworked form before the second review no test failed for it, because the
+    fixture did not pass through the function type and the unit test used only
+    functions that return an error.
+  - A builtin constructor that takes and uses a caller's profile breaks the
+    build of the tests. With a variadic parameter, or with an optional options
+    struct that carries a profile, the property test fails for the parameter.
+  - A builtin mapping that states the enforcement profile fails the profile
+    comparison, also when it is a declarations mapping.
+  - A mapping package that the test does not name fails the comparison of
+    names.
+  - The fixture stating the builtin profile fails the second-profile test, and
+    with the test's own guard removed the registry answers "ambiguous
+    generation mapping".
+  - Either identity changed fails the pin.
+- **Output.** Between the merge base `d35f1fa` and the correction, 108
+  records of existing integration tests have the same test names, SHA-256 and
+  lengths: 79 formatted texts and 29 output trees. 62 of the texts come from
+  five formatter-only tests that do not generate, so they could not change.
+  The other 17 texts and the 29 trees come from generation outputs. The second
+  review counts 28 of the trees as generation tests. The text of three
+  further fixtures in the four targets, twelve files, is identical too. A
+  dump helper that is not committed wrote the records.
+- **The whole suite.** `go test ./...` on the author's Windows machine gives
+  the same outcome for every test that existed at `d35f1fa`. 24 test outcomes
+  are new and pass. The nine failing outcomes are the same before and after:
+  the tests that need the rustc helper, which is not built on that machine.
+- **Imports.** `TestProductionArchitecture` passes with no new entry and no
+  new exception. No production package is added. The four target declarations
+  packages now build their own description and import what the other mappings
+  of their target import, which their role allows. One allowance is removed:
+  the common declaration recipe states no profile and no longer imports the
+  horos mapping package. The fixture package under `testdata` and the test
+  that uses it import what they need.
+
+### Limits
+
+- **Review.** Two independent reviews read this correction: the first form at
+  `fd75abe` and the reworked form at `d61bc5d`. Their findings are in this
+  record. The fixes after the second review are checked by its reviewer
+  again, and that check is not in this record yet.
+- **The registry does not judge a stated profile.** A contribution that states
+  the enforcement profile is selected by a request for it. A wrapper that
+  takes a builtin library's description and states another profile is such a
+  contribution, and it yields representation output under that profile.
+  `TestRegistryDoesNotJudgeAStatedProfile` reproduces this. It is a
+  contribution of its own author, who states its profile and answers for it:
+  selecting a contribution does not establish its claim
+  ([AC-05](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-05)).
+  What bittype gives is narrower and holds: no mapping in bittype states the
+  enforcement profile, and no builtin constructor takes a profile.
+- **What a further profile can reuse.** It can use the parts that state no
+  profile: the function type, the common patterns, the naming function and
+  the common declaration recipe, as the fixture does. It reuses no builtin
+  mapping, because each builtin mapping states the structural profile. A
+  bounded profile that wants the builtin text or list mapping unchanged writes
+  that mapping under its own identity
+  ([#207](https://github.com/Bitspark/bittype/issues/207) meets this first).
+- **What passes the property test.** It names one exported constructor per
+  mapping package. A second exported constructor in an existing mapping
+  package, a package variable or a setter that changes the stated profile
+  would pass it. A reader of the package sees those; the test does not.
+- **The fixture is small.** It is one TypeScript library with three bindings
+  and the common recipe. No bounded profile with a narrower domain exists
+  yet, and no second profile exists for Go, Rust or C++. Whether the
+  TypeScript text of the fixture compiles is not checked.
+- **One matrix entry per pair.** The provider matrix shows the builtin
+  mappings of a pair as one entry, the shared function type, although the pair
+  has five or six mapping packages. That was so before this change and is not
+  examined here. The source link of that entry moves in three generated
+  documents, which the matrices workflow regenerates.
+- **The names in plan entries.** No plan entry exists yet
+  ([#207](https://github.com/Bitspark/bittype/issues/207)). That the new
+  identities are what the entries record is for that work to show.
+- **Verbatim records keep the old names.** The documents under `research-docs/`
+  are submitted consultations and their replies and are unchanged.
+
+Implementing enforcement ([#162](https://github.com/Bitspark/bittype/issues/162))
+no longer needs an edit to shared code: an enforcing mapping states
+`EnforcementProfile` in its own description.
 
 ## Assessment lesson
 
@@ -113,3 +353,10 @@ correct behaviour. Its form went unexamined: a refusal written as "not the one
 admitted name" is a closed catalogue of one. When a helper takes an identity as
 a parameter, ask how many values of that parameter can succeed, and who would
 have to edit what to add another.
+
+The first form of the correction repeated the mistake one level up. It asked
+who should refuse the enforcement name and did not ask why a composition could
+state a mapping's promise at all. When a correction needs a guard, ask which
+misplacement makes the guard necessary, and move that instead. And state a
+guarantee where it lives: a refusal by an exact name in a helper that a caller
+can go around is a guard.
