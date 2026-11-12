@@ -30,5 +30,5 @@ func primitive(profile, sourceName, targetName string) rules.Library[s.Language]
 // "bool/typescript/1". Both names are unchanged from the package this library
 // was split from.
 func Library(profile string) rules.Library[s.Language] {
-	return primitive(profile, "bool", "bool")
+	return primitive(profile, "bool", model.PrimitiveBool)
 }

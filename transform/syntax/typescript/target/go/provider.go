@@ -95,7 +95,7 @@ func (b *Backend) externalType(module, export string, args []m.Fragment[s.Langua
 func (b *Backend) Declaration(d g.NativeDeclaration[s.Language], params []m.Fragment[s.Language], body m.Fragment[s.Language]) (m.Fragment[s.Language], error) {
 	name, origin := d.Name, d.Origin
 	form, _ := model.Name(d.Form)
-	record := form != "alias"
+	record := form != model.FormAlias
 
 	children := edges(s.RoleTypeParameter, params)
 	if record {
@@ -122,19 +122,19 @@ func (b *Backend) Expression(e g.Expression[s.Language], args []m.Fragment[s.Lan
 	name, _ := model.Name(e.Form())
 	data, origin := e.Data(), e.Origin()
 	switch name {
-	case "primitive":
+	case model.FormPrimitive:
 		spelling := "boolean"
-		if data[0] == "string" {
+		if data[0] == model.PrimitiveString {
 			spelling = "string"
 		}
 		return b.Node(m.Node(s.KindKeywordType, m.Attributes("name", spelling), origin))
-	case "array":
+	case model.FormArray:
 		return b.Node(m.Node(s.KindArrayType, nil, origin), m.Child[s.Language]{Role: s.RoleElement, Fragment: args[0]})
-	case "field":
+	case model.FormField:
 		return b.Node(m.Node(s.KindProperty, m.Attributes("name", data[0], "optional", data[1]), origin), m.Child[s.Language]{Role: s.RoleType, Fragment: args[0]})
-	case "record":
+	case model.FormRecord:
 		return b.Node(m.Node(s.KindObjectType, nil, origin), edges(s.RoleMember, args)...)
-	case "external":
+	case model.FormExternal:
 		if data[0] == "" {
 			return b.GlobalType(data[1], args, origin)
 		}

@@ -20,8 +20,8 @@ import (
 func Library(profile string, key g.HelperKey) rules.Library[s.Language] {
 	return rules.Library[s.Language]{Profile: profile, DescribeRules: func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
 		return g.MappingDescription[h.Language, s.Language, source.Reader]{Helpers: []g.HelperRecipe[s.Language]{{Key: key, Declaration: g.NativeDeclaration[s.Language]{
-			Name: "BittypeOptional", Form: model.Form("defined"), Parameters: []g.NativeParameter{{Name: "T"}},
-			Body: model.Record(model.Field("Present", false, model.Primitive("bool")), model.Field("Value", false, g.Parameter[s.Language](0))),
+			Name: "BittypeOptional", Form: model.Form(model.FormDefined), Parameters: []g.NativeParameter{{Name: "T"}},
+			Body: model.Record(model.Field("Present", false, model.Primitive(model.PrimitiveBool)), model.Field("Value", false, g.Parameter[s.Language](0))),
 		}}}}, nil
 	}}
 }

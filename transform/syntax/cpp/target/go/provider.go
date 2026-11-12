@@ -113,7 +113,7 @@ func (b *Backend) Path(names []string, args []m.Fragment[s.Language], origin ast
 func (b *Backend) Declaration(d g.NativeDeclaration[s.Language], params []m.Fragment[s.Language], body m.Fragment[s.Language]) (m.Fragment[s.Language], error) {
 	name, origin := d.Name, d.Origin
 	form, _ := model.Name(d.Form)
-	record := form != "alias"
+	record := form != model.FormAlias
 
 	children := edges(s.RoleTemplateParameter, params)
 	if record {
@@ -170,24 +170,24 @@ func (b *Backend) Expression(e g.Expression[s.Language], args []m.Fragment[s.Lan
 	name, _ := model.Name(e.Form())
 	data, origin := e.Data(), e.Origin()
 	switch name {
-	case "primitive":
-		if data[0] == "string" {
+	case model.FormPrimitive:
+		if data[0] == model.PrimitiveString {
 			if err := b.Include("string"); err != nil {
 				return m.Fragment[s.Language]{}, err
 			}
 			return b.Path([]string{"std", "string"}, nil, origin, true)
 		}
 		return b.Node(m.Node(s.KindBuiltinType, m.Attributes("name", "bool"), origin))
-	case "sequence":
+	case model.FormSequence:
 		if err := b.Include("vector"); err != nil {
 			return m.Fragment[s.Language]{}, err
 		}
 		return b.Path([]string{"std", "vector"}, args, origin, true)
-	case "field":
+	case model.FormField:
 		return b.Node(m.Node(s.KindField, m.Attributes("name", data[0]), origin), m.Child[s.Language]{Role: s.RoleType, Fragment: args[0]})
-	case "record":
+	case model.FormRecord:
 		return b.Node(m.Node(s.KindRecord, nil, origin), edges(s.RoleMember, args)...)
-	case "external":
+	case model.FormExternal:
 		if data[0] == "std" && data[1] == "optional" {
 			if err := b.Include("optional"); err != nil {
 				return m.Fragment[s.Language]{}, err

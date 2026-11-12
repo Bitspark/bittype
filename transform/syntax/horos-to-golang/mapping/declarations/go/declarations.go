@@ -12,5 +12,5 @@ import (
 
 // Library returns the declaration mapping under the given profile.
 func Library(profile string) rules.Library[s.Language] {
-	return recipe.Library(profile, model.Form("defined"), model.Form("alias"))
+	return recipe.Library(profile, model.Form(model.FormDefined), model.Form(model.FormAlias))
 }

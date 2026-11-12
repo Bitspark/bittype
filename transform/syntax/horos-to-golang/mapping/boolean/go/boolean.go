@@ -25,5 +25,5 @@ func primitive(profile, sourceName, targetName string) rules.Library[s.Language]
 
 // Library returns the boolean mapping under the given profile.
 func Library(profile string) rules.Library[s.Language] {
-	return primitive(profile, "bool", "bool")
+	return primitive(profile, "bool", model.PrimitiveBool)
 }
