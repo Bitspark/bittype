@@ -12,46 +12,46 @@ import (
 
 func identifier(v string) bool { return lit.Identifier(v) }
 
-var types = []string{"type-reference", "qualified-type", "type-application", "keyword-type", "literal-type", "array-type", "tuple-type", "object-type", "union-type", "intersection-type", "conditional-type", "infer-type", "mapped-type", "function-type", "type-operator", "indexed-access-type"}
-var members = []string{"property", "method", "call-signature", "index-signature"}
+var types = []s.Kind{s.KindTypeReference, s.KindQualifiedType, s.KindTypeApplication, s.KindKeywordType, s.KindLiteralType, s.KindArrayType, s.KindTupleType, s.KindObjectType, s.KindUnionType, s.KindIntersectionType, s.KindConditionalType, s.KindInferType, s.KindMappedType, s.KindFunctionType, s.KindTypeOperator, s.KindIndexedAccessType}
+var members = []s.Kind{s.KindProperty, s.KindMethod, s.KindCallSignature, s.KindIndexSignature}
 var keywords = g.Set("any", "unknown", "never", "void", "undefined", "boolean", "number", "bigint", "string", "symbol", "object", "this")
-var rules = g.Rules{
-	"source-file":         {Roles: []g.Role{g.Many("import", 0, "import"), g.Many("declaration", 0, "type-alias", "interface")}},
-	"import":              {Attributes: g.Attributes("module", g.Attr(true, g.Nonempty)), Roles: []g.Role{g.Many("binding", 1, "import-binding", "namespace-import")}},
-	"import-binding":      {Attributes: g.Attributes("name", g.Attr(true, identifier), "alias", g.Attr(false, identifier))},
-	"namespace-import":    {Attributes: g.Attributes("name", g.Attr(true, identifier))},
-	"type-alias":          {Attributes: g.Attributes("name", g.Attr(true, lit.TypeName), "exported", g.Attr(false, g.Bool)), Roles: []g.Role{g.Many("type-parameter", 0, "type-parameter"), g.One("type", types...)}},
-	"interface":           {Attributes: g.Attributes("name", g.Attr(true, lit.TypeName), "exported", g.Attr(false, g.Bool)), Roles: []g.Role{g.Many("type-parameter", 0, "type-parameter"), g.Many("base", 0, "type-reference", "qualified-type", "type-application"), g.Many("member", 0, members...)}},
-	"type-parameter":      {Attributes: g.Attributes("name", g.Attr(true, lit.TypeName)), Roles: []g.Role{g.Opt("constraint", types...), g.Opt("default", types...)}},
-	"type-reference":      {Attributes: g.Attributes("name", g.Attr(true, lit.TypeName)), Reference: true},
-	"qualified-type":      {Attributes: g.Attributes("name", g.Attr(true, identifier)), Roles: []g.Role{g.One("qualifier", "type-reference", "qualified-type")}, Reference: true},
-	"type-application":    {Roles: []g.Role{g.One("constructor", "type-reference", "qualified-type"), g.Many("argument", 1, types...)}},
-	"keyword-type":        {Attributes: g.Attributes("name", g.Attr(true, keywords))},
-	"literal-type":        {Attributes: g.Attributes("literal-kind", g.Attr(true, g.Set("string", "number", "bigint", "boolean", "null")), "text", g.Attr(true, g.Nonempty))},
-	"array-type":          {Roles: []g.Role{g.One("element", types...)}},
-	"tuple-type":          {Roles: []g.Role{g.Many("element", 0, "tuple-element")}},
-	"tuple-element":       {Attributes: g.Attributes("name", g.Attr(false, identifier), "optional", g.Attr(false, g.Bool), "rest", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("type", types...)}},
-	"object-type":         {Roles: []g.Role{g.Many("member", 0, members...)}},
-	"union-type":          {Roles: []g.Role{g.Many("type", 2, types...)}},
-	"intersection-type":   {Roles: []g.Role{g.Many("type", 2, types...)}},
-	"conditional-type":    {Roles: []g.Role{g.One("check", types...), g.One("constraint", types...), g.One("true", types...), g.One("false", types...)}},
-	"infer-type":          {Roles: []g.Role{g.One("type-parameter", "type-parameter")}},
-	"mapped-type":         {Attributes: g.Attributes("readonly-modifier", g.Attr(false, g.Set("add", "remove")), "optional-modifier", g.Attr(false, g.Set("add", "remove"))), Roles: []g.Role{g.One("type-parameter", "type-parameter"), g.Opt("name-type", types...), g.One("type", types...)}},
-	"function-type":       {Roles: []g.Role{g.Many("type-parameter", 0, "type-parameter"), g.Many("parameter", 0, "parameter"), g.One("result", types...)}},
-	"parameter":           {Attributes: g.Attributes("name", g.Attr(true, identifier), "optional", g.Attr(false, g.Bool), "rest", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("type", types...)}},
-	"property":            {Attributes: g.Attributes("name", g.Attr(true, g.String), "optional", g.Attr(false, g.Bool), "readonly", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("type", types...)}},
-	"method":              {Attributes: g.Attributes("name", g.Attr(true, g.String), "optional", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("signature", "function-type")}},
-	"call-signature":      {Roles: []g.Role{g.One("signature", "function-type")}},
-	"index-signature":     {Attributes: g.Attributes("readonly", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("parameter", "parameter"), g.One("type", types...)}},
-	"type-operator":       {Attributes: g.Attributes("operator", g.Attr(true, g.Set("keyof", "readonly", "unique"))), Roles: []g.Role{g.One("type", types...)}},
-	"indexed-access-type": {Roles: []g.Role{g.One("object", types...), g.One("index", types...)}},
+var rules = g.Rules[s.Language]{
+	s.KindSourceFile:        {Roles: []g.Role[s.Language]{g.Many(s.RoleImport, 0, s.KindImport), g.Many(s.RoleDeclaration, 0, s.KindTypeAlias, s.KindInterface)}},
+	s.KindImport:            {Attributes: g.Attributes(s.AttributeModule, g.Attr(true, g.Nonempty)), Roles: []g.Role[s.Language]{g.Many(s.RoleBinding, 1, s.KindImportBinding, s.KindNamespaceImport)}},
+	s.KindImportBinding:     {Attributes: g.Attributes(s.AttributeName, g.Attr(true, identifier), s.AttributeAlias, g.Attr(false, identifier))},
+	s.KindNamespaceImport:   {Attributes: g.Attributes(s.AttributeName, g.Attr(true, identifier))},
+	s.KindTypeAlias:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, lit.TypeName), s.AttributeExported, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.Many(s.RoleTypeParameter, 0, s.KindTypeParameter), g.One(s.RoleType, types...)}},
+	s.KindInterface:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, lit.TypeName), s.AttributeExported, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.Many(s.RoleTypeParameter, 0, s.KindTypeParameter), g.Many(s.RoleBase, 0, s.KindTypeReference, s.KindQualifiedType, s.KindTypeApplication), g.Many(s.RoleMember, 0, members...)}},
+	s.KindTypeParameter:     {Attributes: g.Attributes(s.AttributeName, g.Attr(true, lit.TypeName)), Roles: []g.Role[s.Language]{g.Opt(s.RoleConstraint, types...), g.Opt(s.RoleDefault, types...)}},
+	s.KindTypeReference:     {Attributes: g.Attributes(s.AttributeName, g.Attr(true, lit.TypeName)), Reference: true},
+	s.KindQualifiedType:     {Attributes: g.Attributes(s.AttributeName, g.Attr(true, identifier)), Roles: []g.Role[s.Language]{g.One(s.RoleQualifier, s.KindTypeReference, s.KindQualifiedType)}, Reference: true},
+	s.KindTypeApplication:   {Roles: []g.Role[s.Language]{g.One(s.RoleConstructor, s.KindTypeReference, s.KindQualifiedType), g.Many(s.RoleArgument, 1, types...)}},
+	s.KindKeywordType:       {Attributes: g.Attributes(s.AttributeName, g.Attr(true, keywords))},
+	s.KindLiteralType:       {Attributes: g.Attributes(s.AttributeLiteralKind, g.Attr(true, g.Set("string", "number", "bigint", "boolean", "null")), s.AttributeText, g.Attr(true, g.Nonempty))},
+	s.KindArrayType:         {Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
+	s.KindTupleType:         {Roles: []g.Role[s.Language]{g.Many(s.RoleElement, 0, s.KindTupleElement)}},
+	s.KindTupleElement:      {Attributes: g.Attributes(s.AttributeName, g.Attr(false, identifier), s.AttributeOptional, g.Attr(false, g.Bool), s.AttributeRest, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
+	s.KindObjectType:        {Roles: []g.Role[s.Language]{g.Many(s.RoleMember, 0, members...)}},
+	s.KindUnionType:         {Roles: []g.Role[s.Language]{g.Many(s.RoleType, 2, types...)}},
+	s.KindIntersectionType:  {Roles: []g.Role[s.Language]{g.Many(s.RoleType, 2, types...)}},
+	s.KindConditionalType:   {Roles: []g.Role[s.Language]{g.One(s.RoleCheck, types...), g.One(s.RoleConstraint, types...), g.One(s.RoleTrue, types...), g.One(s.RoleFalse, types...)}},
+	s.KindInferType:         {Roles: []g.Role[s.Language]{g.One(s.RoleTypeParameter, s.KindTypeParameter)}},
+	s.KindMappedType:        {Attributes: g.Attributes(s.AttributeReadonlyModifier, g.Attr(false, g.Set("add", "remove")), s.AttributeOptionalModifier, g.Attr(false, g.Set("add", "remove"))), Roles: []g.Role[s.Language]{g.One(s.RoleTypeParameter, s.KindTypeParameter), g.Opt(s.RoleNameType, types...), g.One(s.RoleType, types...)}},
+	s.KindFunctionType:      {Roles: []g.Role[s.Language]{g.Many(s.RoleTypeParameter, 0, s.KindTypeParameter), g.Many(s.RoleParameter, 0, s.KindParameter), g.One(s.RoleResult, types...)}},
+	s.KindParameter:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, identifier), s.AttributeOptional, g.Attr(false, g.Bool), s.AttributeRest, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
+	s.KindProperty:          {Attributes: g.Attributes(s.AttributeName, g.Attr(true, g.String), s.AttributeOptional, g.Attr(false, g.Bool), s.AttributeReadonly, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
+	s.KindMethod:            {Attributes: g.Attributes(s.AttributeName, g.Attr(true, g.String), s.AttributeOptional, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.One(s.RoleSignature, s.KindFunctionType)}},
+	s.KindCallSignature:     {Roles: []g.Role[s.Language]{g.One(s.RoleSignature, s.KindFunctionType)}},
+	s.KindIndexSignature:    {Attributes: g.Attributes(s.AttributeReadonly, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.One(s.RoleParameter, s.KindParameter), g.One(s.RoleType, types...)}},
+	s.KindTypeOperator:      {Attributes: g.Attributes(s.AttributeOperator, g.Attr(true, g.Set("keyof", "readonly", "unique"))), Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
+	s.KindIndexedAccessType: {Roles: []g.Role[s.Language]{g.One(s.RoleObject, types...), g.One(s.RoleIndex, types...)}},
 }
 
 // bittype:grammar rules
 // bittype:scope docs/syntax.md#typescript
 func Check(view ast.View[s.Language]) error {
 	t := view.ASTView()
-	if err := g.Check(t, "source-file", rules); err != nil {
+	if err := g.Check(t, s.KindSourceFile, rules); err != nil {
 		return err
 	}
 	v := tree.View[s.Language]{Tree: t}
@@ -64,7 +64,7 @@ func Check(view ast.View[s.Language]) error {
 			return text.AtNode(t, id, "infer is only supported within a conditional extends operand")
 		}
 		for _, child := range n.Children {
-			if err := context(child.Node, inConstraint || (n.Kind == s.KindConditionalType && child.Role == "constraint")); err != nil {
+			if err := context(child.Node, inConstraint || (n.Kind == s.KindConditionalType && child.Role == s.RoleConstraint)); err != nil {
 				return err
 			}
 		}
@@ -78,24 +78,24 @@ func Check(view ast.View[s.Language]) error {
 		bad := func(m string) error { return text.AtNode(t, id, m) }
 		switch n.Kind {
 		case s.KindMappedType, s.KindInferType:
-			parameter := v.Child(id, "type-parameter")
-			if v.Child(parameter, "default") != 0 {
+			parameter := v.Child(id, s.RoleTypeParameter)
+			if v.Child(parameter, s.RoleDefault) != 0 {
 				return text.AtNode(t, parameter, "mapped and inferred parameters cannot have defaults")
 			}
-			if n.Kind == s.KindMappedType && v.Child(parameter, "constraint") == 0 {
+			if n.Kind == s.KindMappedType && v.Child(parameter, s.RoleConstraint) == 0 {
 				return text.AtNode(t, parameter, "mapped parameter requires an in type")
 			}
 		case s.KindImport:
-			b := v.Children(id, "binding")
+			b := v.Children(id, s.RoleBinding)
 			for _, x := range b {
-				if v.Kind(x) == "namespace-import" && len(b) != 1 {
+				if v.Node(x).Kind == s.KindNamespaceImport && len(b) != 1 {
 					return bad("namespace import must be the only binding")
 				}
 			}
 		case s.KindLiteralType:
-			value := v.Attr(id, "text")
+			value := v.Attr(id, s.AttributeText)
 			valid := false
-			switch v.Attr(id, "literal-kind") {
+			switch v.Attr(id, s.AttributeLiteralKind) {
 			case "string":
 				_, err := lit.Unquote(value)
 				valid = err == nil
@@ -112,24 +112,24 @@ func Check(view ast.View[s.Language]) error {
 				return bad("literal kind and token do not agree")
 			}
 		case s.KindTypeOperator:
-			child := v.Child(id, "type")
-			op := v.Attr(id, "operator")
-			if op == "readonly" && v.Kind(child) != "array-type" && v.Kind(child) != "tuple-type" {
+			child := v.Child(id, s.RoleType)
+			op := v.Attr(id, s.AttributeOperator)
+			if op == "readonly" && v.Node(child).Kind != s.KindArrayType && v.Node(child).Kind != s.KindTupleType {
 				return bad("readonly applies to array or tuple syntax")
 			}
-			if op == "unique" && (v.Kind(child) != "keyword-type" || v.Attr(child, "name") != "symbol") {
+			if op == "unique" && (v.Node(child).Kind != s.KindKeywordType || v.Attr(child, s.AttributeName) != "symbol") {
 				return bad("unique applies to symbol")
 			}
 		case s.KindFunctionType, s.KindTupleType:
-			role := "parameter"
+			role := s.RoleParameter
 			if n.Kind == s.KindTupleType {
-				role = "element"
+				role = s.RoleElement
 			}
 			list := v.Children(id, role)
 			optional, rest := false, false
 			named := -1
 			for j, p := range list {
-				o, r := v.Flag(p, "optional"), v.Flag(p, "rest")
+				o, r := v.Flag(p, s.AttributeOptional), v.Flag(p, s.AttributeRest)
 				if r && o {
 					return text.AtNode(t, p, "rest cannot be optional")
 				}
@@ -153,7 +153,7 @@ func Check(view ast.View[s.Language]) error {
 				}
 				if n.Kind == s.KindTupleType {
 					mode := 0
-					if v.Has(p, "name") {
+					if v.Has(p, s.AttributeName) {
 						mode = 1
 					}
 					if named >= 0 && named != mode {
@@ -163,8 +163,8 @@ func Check(view ast.View[s.Language]) error {
 				}
 			}
 		case s.KindIndexSignature:
-			p := v.Child(id, "parameter")
-			if v.Flag(p, "optional") || v.Flag(p, "rest") {
+			p := v.Child(id, s.RoleParameter)
+			if v.Flag(p, s.AttributeOptional) || v.Flag(p, s.AttributeRest) {
 				return bad("index parameter cannot be optional or rest")
 			}
 		}
