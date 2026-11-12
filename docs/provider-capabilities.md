@@ -2128,7 +2128,7 @@ No structural definition attached. Operation source and authored scope remain th
 
 Contract: github.com/Bitspark/bittype/contracts/check/go.Provider&#91;github.com/Bitspark/bittype/syntax/rust/go.Language&#93;.
 
-Public operation: [github.com/Bitspark/bittype/check/syntax/rust/provider/go#Provider.Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/check.go#L192). Receiver: github.com/Bitspark/bittype/check/syntax/rust/provider/go.Provider.
+Public operation: [github.com/Bitspark/bittype/check/syntax/rust/provider/go#Provider.Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/check.go#L194). Receiver: github.com/Bitspark/bittype/check/syntax/rust/provider/go.Provider.
 
 Language marker: github.com/Bitspark/bittype/syntax/rust/go.Language.
 
@@ -2136,17 +2136,17 @@ Construction alternatives: no provider collaborators.
 
 Static call relationships (no evidence transfer):
 
-- [github.com/Bitspark/bittype/check/syntax/rust/provider/go#Provider.Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/check.go#L192) → [github.com/Bitspark/bittype/check/syntax/rust/provider/go#Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/check.go#L72) ([call](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/check.go#L192)); receiver ; type arguments .
+- [github.com/Bitspark/bittype/check/syntax/rust/provider/go#Provider.Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/check.go#L194) → [github.com/Bitspark/bittype/check/syntax/rust/provider/go#Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/check.go#L74) ([call](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/check.go#L194)); receiver ; type arguments .
 
 Traversal boundary: not a single-return static call.
 
-### Declared target [github.com/Bitspark/bittype/check/syntax/rust/provider/go#Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/check.go#L72)
+### Declared target [github.com/Bitspark/bittype/check/syntax/rust/provider/go#Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/check.go#L74)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
 <a id="binding-NDM1Ok9EcHdjbTkyYVdSbGNqY3lPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndmNuVnpkQzl3Y205MmFXUmxjaTluYnlOUWNtOTJhV1JsY2k1RGFHVmphekV3T0RwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdlkyOXVkSEpoWTNSekwyTm9aV05yTDJkdkxsQnliM1pwWkdWeVcyZHBkR2gxWWk1amIyMHZRbWwwYzNCaGNtc3ZZbWwwZEhsd1pTOXplVzUwWVhndmNuVnpkQzluYnk1TVlXNW5kV0ZuWlYwMk5qcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZZMmhsWTJzdmMzbHVkR0Y0TDNKMWMzUXZjSEp2ZG1sa1pYSXZaMjh1VUhKdmRtbGtaWEkxTVRwbmFYUm9kV0l1WTI5dEwwSnBkSE53WVhKckwySnBkSFI1Y0dVdmMzbHVkR0Y0TDNKMWMzUXZaMjhqVEdGdVozVmhaMlUwT25KMWMzUTYzOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jaGVjay9zeW50YXgvcnVzdC9wcm92aWRlci9nbyNDaGVjazc6Z3JhbW1hcjYzOmdpdGh1Yi5jb20vQml0c3BhcmsvYml0dHlwZS9jaGVjay9zeW50YXgvcnVzdC9wcm92aWRlci9nbyNydWxlczA6NTpmYWxzZTA6"></a>
 
-Definition: [github.com/Bitspark/bittype/check/syntax/rust/provider/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/check.go#L31); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
+Definition: [github.com/Bitspark/bittype/check/syntax/rust/provider/go#rules](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/check.go#L33); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
 #### file (source unavailable)
 
@@ -2716,7 +2716,7 @@ Authored scope: [docs/syntax.md#rust](https://github.com/Bitspark/bittype/blob/m
 | generic-associated-declarations | relaxed-bound-context | context-sensitive-admission | unspecified (authored profile absent) | [TestRelaxedBoundContext](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/declarations_test.go#L53) (external) |
 | generic-associated-declarations | invalid-declaration-contexts | located-rejection | unspecified (authored profile absent) | [TestGenericAssociatedContextRules](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/declarations_test.go#L73) (external) |
 
-### Declared target [github.com/Bitspark/bittype/check/syntax/rust/provider/go#Provider.Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/check.go#L192)
+### Declared target [github.com/Bitspark/bittype/check/syntax/rust/provider/go#Provider.Check](https://github.com/Bitspark/bittype/blob/main/check/syntax/rust/provider/go/check.go#L194)
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
@@ -2818,7 +2818,7 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 <a id="binding-NDQyOk9EcHdjbTkyYVdSbGNqY3pPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndmFHOXliM012Y0hKdmRtbGtaWEl2WjI4alVISnZkbWxrWlhJdVEyaGxZMnN4TURrNloybDBhSFZpTG1OdmJTOUNhWFJ6Y0dGeWF5OWlhWFIwZVhCbEwyTnZiblJ5WVdOMGN5OWphR1ZqYXk5bmJ5NVFjbTkyYVdSbGNsdG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyaHZjbTl6TDJkdkxreGhibWQxWVdkbFhUWTNPbWRwZEdoMVlpNWpiMjB2UW1sMGMzQmhjbXN2WW1sMGRIbHdaUzlqYUdWamF5OXplVzUwWVhndmFHOXliM012Y0hKdmRtbGtaWEl2WjI4dVVISnZkbWxrWlhJMU1qcG5hWFJvZFdJdVkyOXRMMEpwZEhOd1lYSnJMMkpwZEhSNWNHVXZjM2x1ZEdGNEwyaHZjbTl6TDJkdkkweGhibWQxWVdkbE5UcG9iM0p2Y3c2NDpnaXRodWIuY29tL0JpdHNwYXJrL2JpdHR5cGUvY2hlY2svc3ludGF4L2hvcm9zL3Byb3ZpZGVyL2dvI0NoZWNrNzpncmFtbWFyNTM6Z2l0aHViLmNvbS9CaXRzcGFyay9iaXR0eXBlL2ludGVybmFsL2RlY2xzeW50YXgjcnVsZXMwOjU6ZmFsc2UwOg"></a>
 
-Definition: [github.com/Bitspark/bittype/internal/declsyntax#rules](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L66); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
+Definition: [github.com/Bitspark/bittype/internal/declsyntax#rules](https://github.com/Bitspark/bittype/blob/main/internal/declsyntax/check.go#L67); format: github.com/Bitspark/bittype/internal/grammar#Rules; extraction: **partial**; profile: unspecified (authored profile absent).
 
 #### program (source unavailable)
 
