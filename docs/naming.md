@@ -2,7 +2,7 @@
 
 **Accepted design, 13 November 2026, from research 0016 (rows 11, 13 and 14). Not implemented.**
 Decided by [research 0016](../research-docs/0016-native-files-placement.md)
-and by three comments of its owner on
+and by the comments of its owner on
 [#274](https://github.com/Bitspark/bittype/issues/274). It answers
 [#268](https://github.com/Bitspark/bittype/issues/268) and is delivered by
 #274, per target, in the [order](#delivery-order-per-target) near the end. No
@@ -26,6 +26,9 @@ present behaviour, and nothing else on this page is implemented.
   [decisions after an independent reading](https://github.com/Bitspark/bittype/issues/274#issuecomment-6839006959)
   of this page, also of 13 November 2026. They are numbered 8 to 15 in that
   comment.
+- **R14c:** the [correction of decision 14, point 3](https://github.com/Bitspark/bittype/issues/274#issuecomment-6839289646), of 13 November
+  2026, after a second reading. It withdraws that point and accepts four small
+  findings.
 
 A sentence marked **derived here** follows from those sources and is stated by
 none of them. Code references are `path:line` at commit `9961adb`.
@@ -82,7 +85,13 @@ builder's comparator and every Files stage read it there." So the name of a
 native declaration and the `name` attribute of the unplaced tree stay one
 string, the spelled intent. No target and no Files stage turns a module
 identity into a prefix. R10: "Names stay with the mapping, as `docs/source.md`
-has it, and each language checks or refuses the spelling."
+has it, and each language checks or refuses the spelling." The words about
+`docs/source.md` are a reading, and R14c says whose: "my reading of that
+page's sentence about what generation builds". That sentence gives the
+selected mapping and the generation target the task "Build declaration bodies
+and type expressions" (`docs/source.md:48`), and this page uses the same
+reading under [Who owns what](#who-owns-what). The decision of 7 November has
+no sentence that says who spells a name.
 
 An intent states no visibility, no reserved-word escape and no placement.
 
@@ -230,7 +239,9 @@ helpers. A contribution states the access of every declaration it introduces."
 - **The request** states its roots. That is the accepted decision: "The plan
   records which declaration the caller requested to expose."
   (`docs/source.md:48`).
-- **A contribution** states the access of a declaration that it introduces. A
+- **A contribution** states the access of a declaration that it introduces.
+  R14c says what that is: it "means one whose access no request can state". A
+  source declaration is not one, because a request can name it as a root. A
   helper is one case.
   [#272, decision 4](https://github.com/Bitspark/bittype/issues/272#issuecomment-6837792602):
   "a helper recipe states the access its declaration requires. The record
@@ -295,17 +306,32 @@ every field public (`transform/syntax/rust/target/go/provider.go:115`).
 
 | Language | An unexposed source declaration in the body of an exposed one | Reason, in E5's words |
 | --- | --- | --- |
-| TypeScript | Admitted within one module. A placement that separates the two is refused | "because structural typing keeps the exposed type usable there" |
+| TypeScript | Admitted within one module. A placement that separates the two is refused as invalid input | "because structural typing keeps the exposed type usable there" |
 | Go | Refused as unsupported coverage | "because a caller in another package or crate could not construct the value" |
 | Rust | Refused as unsupported coverage | The same |
 
 `TestGeneratedFilesPreservePublicationIntent`
 (`integration/go/typescript_placement_test.go:323-376`) pins the TypeScript
-behaviour, and it stays (E5). The category of TypeScript's refusal changes.
-R14: "TypeScript's refusal of a placement that separates an unexposed
-declaration from its user is unsupported coverage, as in Go and Rust. #271
-follows." Today it is invalid input
-(`format/files/typescript/provider/go/relocate.go:163-165`).
+behaviour, and it stays (E5).
+
+**Which category a refusal has (R14c).** The rule, stated once: "a refusal is
+unsupported coverage when a later slice can admit the same input. It is
+invalid input when no later slice can."
+
+- **Go and Rust: unsupported coverage.** "Go and Rust refuse the output
+  whatever its placement, and a later rule of the language can admit that
+  output unchanged, so their refusal is unsupported coverage."
+- **TypeScript: invalid input.** "TypeScript admits the output and refuses one
+  placement of it. A caller who wants that placement has to change the
+  request, which makes it a different input." The refusal "stays invalid
+  input, as #271 decided on 12 November", for the reason #271 gives: "it can
+  never succeed for the same output, because Files never exports a
+  declaration without authorization." It is invalid input today
+  (`format/files/typescript/provider/go/relocate.go:163-165`), and that does
+  not change.
+- **What is withdrawn.** Point 3 of R14 said that this TypeScript refusal is
+  unsupported coverage, as in Go and Rust. It reversed the decision on #271
+  without saying so, and R14c withdraws it.
 
 **How this relates to the decision of 7 November.** That decision names one
 stater of visibility, the caller. A contribution's stated access is a second
@@ -475,7 +501,7 @@ it as unsupported coverage when it is not exported. It renames nothing."
   not rest on it. The rule reads the spelling it is given.
 - **A helper.** Its name is the one its recipe states. A public helper whose
   recipe states a name that is not exported is refused, for example a helper
-  named `string` (R8, in the validation below).
+  named `optional` (R8 and R14c, in the validation below).
 - **Nothing is renamed.** In the first slices the realized name of an admitted
   Go declaration is its spelled intent.
 
@@ -550,10 +576,14 @@ or not, and nothing of Go's checks whether that is right.
 [bittype/ACX-004](architecture-cases/0004-generation-file-syntax.md) records
 it as a pending instance.
 
-**How the correction is validated (R8, the validation of row 13).** "Go Files
-refuses a public helper named `string`, refuses an unexposed source
+**How the correction is validated (R8 and R14c, the validation of row 13).**
+Go Files refuses a public helper named `optional`, refuses an unexposed source
 declaration in the public representation of an exposed one, and realizes the
-optional helper exported. Red today: no Go-owned check exists." After the
+optional helper exported. Red today: no Go-owned check exists. R8 wrote the
+first of the three with a helper named `string`. R14c replaces the example by
+"a helper name that only the exportedness check refuses, such as `optional`",
+because "A helper named `string` could be refused by the capture check of row
+25 alone." After the
 correction the mapping still writes a capital, as its style. What decides
 whether a Go declaration is published exported is Go's check and the access
 that its owner stated.
@@ -596,6 +626,8 @@ a first change establishes the final structure):
   policy lands before the plan envelope is declared stable and before the
   first release. #195 gains that condition: the envelope is not declared
   stable before slice 1 of #161 and of #159 have changed their defaults."
+  That note is not on #195 yet (see
+  [the notes not yet posted](#what-is-delegated-and-what-is-not-specified-here)).
   TypeScript's default changes with #273, Go's with slice 1 of #161, Rust's
   with slice 1 of #159 (E6).
 
@@ -658,7 +690,8 @@ The sentence does not say who handles a collision or how. The following
 reading is this page's, from rows 8 and 9, D1 and R13. It is not a decision of
 the owner of that family. R13: "The page marks the reconciliation with the
 lifted binder of `docs/representation-families.md` as derived, and #164
-carries the note."
+carries the note." That note is not on #164 yet (see
+[the notes not yet posted](#what-is-delegated-and-what-is-not-specified-here)).
 
 | Part of that sentence | Where this reading puts it |
 | --- | --- |
@@ -722,13 +755,14 @@ The first version of this page listed seven open points, and E1 to E7 decide
 them. A second version said that nothing is open. R14 replaces that sentence
 with this list.
 
-**Decided by R14**, each in its words:
+**Decided by R14.** Points 1, 2 and 4 in its words. Point 3 is withdrawn by
+R14c:
 
 | | Decision | Stated under |
 | --- | --- | --- |
 | 1 | "Go's exact rule for what is in a public representation is written in slice 1 of #161. The set of admitted outputs only grows afterwards." | [Exposure](#exposure-and-its-audience) |
 | 2 | "A refusal names every offending declaration, each by its handle and its spelled intent." | [Exposure](#exposure-and-its-audience) |
-| 3 | "TypeScript's refusal of a placement that separates an unexposed declaration from its user is unsupported coverage, as in Go and Rust. #271 follows." | [Exposure](#exposure-and-its-audience) |
+| 3 | Withdrawn. It made TypeScript's refusal of a separating placement unsupported coverage. R14c keeps it invalid input, as #271 decided, and states the rule for the category of a refusal | [Exposure](#exposure-and-its-audience) |
 | 4 | "A consumer learns realized names and access from the formatter's result. Nothing offers them before formatting." | [How a consumer learns](#how-a-consumer-learns-the-realized-name-and-the-placed-site) |
 
 **Delegated**, each with the one who decides:
@@ -742,6 +776,10 @@ with this list.
 | Rust's rule for a usable public record | [#278](https://github.com/Bitspark/bittype/issues/278) and slice 1 of #159 | Row 24 |
 | C++ exposure, and the C++ default | #160 | Rows 32 and 36 |
 
+**The notes not yet posted.** R12 says that #195 gains a condition, and R13
+that #164 carries a note. Neither issue has the note yet. R14c: "The notes for
+#164 and #195 are not posted yet. I post them when this page merges."
+
 **Not specified here:**
 
 - **Go's unexported spelling.** Deferred with a trigger (row 13a).
@@ -754,6 +792,10 @@ with this list.
   of done-when 8 of #274.
 - **The identities of the two policies.** R10 makes each a named value. This
   page gives neither a name.
+- **What a helper's intent records in place of a module and a policy.** A
+  helper has no source module, and the policy is given to the declarations
+  mapping, not to the mapping that states a helper. Its spelling is the name
+  its recipe states.
 - **An escape rule.** None exists. One is "a later, explicit rule" (R13).
 
 **Where each decision of 13 November is stated:**
@@ -773,8 +815,9 @@ with this list.
 | R11 | A contribution states the access of every declaration it introduces | [Exposure](#exposure-and-its-audience) |
 | R12 | Each default change lands before the envelope is declared stable | [What is fixed, and when](#what-is-fixed-and-when) |
 | R13 | In the first slices a target refuses and does not rename | [Reserved words](#reserved-words) |
-| R14 | The four decisions above | This section |
+| R14 | Points 1, 2 and 4 above. Point 3 is withdrawn | This section |
 | R15 | Annotations of the research table | Rows 13, 14, 14a, 23 and 29 of the table "Applied" |
+| R14c | TypeScript's refusal of a separating placement stays invalid input. The rule for the category of a refusal. Four small corrections | [Exposure](#exposure-and-its-audience), [Go](#go), [Three things that were one](#three-things-that-were-one), this section |
 
 ## Delivery order per target
 
@@ -796,7 +839,7 @@ with #160"):
 
 | Target | The flat-name rule leaves, and Files checks collisions per placed scope | What Files does with a spelled intent | The default becomes unqualified |
 | --- | --- | --- | --- |
-| TypeScript | #273, second change, after #272 | TypeScript has no case rule. Its Files stage already writes the export from exposure (`relocate.go:89-91`). Its refusal of a separating placement becomes unsupported coverage (R14) | After #273 (#274, done-when 10) |
+| TypeScript | #273, second change, after #272 | TypeScript has no case rule. Its Files stage already writes the export from exposure (`relocate.go:89-91`). Its refusal of a separating placement stays invalid input (R14c) | After #273 (#274, done-when 10) |
 | Go | Slice 1 of #161 | Slice 1 of #161: the check that a public declaration's spelling is exported, and the refusal of an output with an unexposed dependency. Nothing is renamed. The unexported spelling is deferred (row 13a) | Slice 1 of #161 |
 | Rust | Slice 1 of #159 | Slice 1 of #159 realizes visibility and refuses an output with an unexposed dependency. Rust has no case rule | Slice 1 of #159 |
 | C++ | With #160. Until then C++ selects the flat rule in its own target | Deferred until [#167](https://github.com/Bitspark/bittype/issues/167) supplies a C++ semantic provider | With #160. Until then the qualified policy |
