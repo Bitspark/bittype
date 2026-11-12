@@ -12,5 +12,5 @@ import (
 // Library applies the horos declaration recipe with the forms struct and
 // alias.
 func Library(profile string) rules.Library[s.Language] {
-	return recipe.Library(profile, model.Form("struct"), model.Form("alias"))
+	return recipe.Library(profile, model.Form(model.FormStruct), model.Form(model.FormAlias))
 }
