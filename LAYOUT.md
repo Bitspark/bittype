@@ -36,7 +36,7 @@ contracts/
   analysis/go/            analysis capability and explicit resolution input
   verification/go/        agnostic joint capture/receipt/site association
 semantics/go/             typed immutable Semantics and provider-owned facts
-semantics/horos/go/       horos vocabulary: roles, relations, entity kinds, term operators and encoding, profiles, limits setting, prelude pin, contract identities
+semantics/horos/go/       horos vocabulary: roles, relations, entity kinds, term operators and encoding, tag prefixes, profiles, limits setting, prelude pin, contract identities
 semantics/golang/go/      Go vocabulary, contract identities and immutable native type readers
 internal/golangsem/       private direct Go compiler bridge and fact export
 semantics/typescript/go/  TypeScript vocabulary, contract identities, compiler configuration and immutable native type readers
@@ -269,7 +269,9 @@ and query service moved afterwards, with pull request
 [#246](https://github.com/Bitspark/bittype/pull/246). The horos names that
 a writer and a separate reader each spelled moved into `semantics/horos/go`
 with pull requests [#247](https://github.com/Bitspark/bittype/pull/247) and
-[#248](https://github.com/Bitspark/bittype/pull/248). Every confirmed
+[#248](https://github.com/Bitspark/bittype/pull/248), and the tag
+prefixes of canonical horos values with
+[#250](https://github.com/Bitspark/bittype/pull/250). Every confirmed
 instance of
 [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) is
 corrected. The check is the function
@@ -324,8 +326,7 @@ The compositions `integration/go` and `verification/integration/go` are not
 classified. `tools/**` needs no exception to import a provider or a query
 service.
 
-No step of the plan in #218 is recorded as open. This remains open and belongs
-to other work:
+The plan in #218 is complete. This remains open and belongs to other work:
 
 - **The profile gate.**
   [#238](https://github.com/Bitspark/bittype/pull/238) divided
@@ -338,6 +339,9 @@ to other work:
   [#196](https://github.com/Bitspark/bittype/issues/196), item 6.
 - **Three candidates.** They are not confirmed and are listed in
   [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md#candidates).
+- **Names that were not examined.** The names that the native compiler helpers
+  write and Go packages read, and the horos node kinds that two packages
+  declare, are tracked in [#251](https://github.com/Bitspark/bittype/issues/251).
 
 A green run shows that the forbidden imports are absent. It does not show that
 a package holds one contribution, that a decision made inside a package is
