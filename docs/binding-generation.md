@@ -37,7 +37,7 @@ From these it emits static composition and typed glue.
 | Each representation implementation (a target's structural profile, or a library's exact mapping) | Native layout, presence rules, numeric representation, construction and access |
 | Binding backend, one per target | Adapter composition, runtime imports, generated glue, assembly of the requested binding products |
 | Contract or domain library | Its native recipe, its adapter implementation, its protocol or domain meaning, and the laws below |
-| bitruntime | Capability recognition, export and import identity, lifetime, admission, transport |
+| bitruntime | Capability recognition, export and import identity, the lifetime of an export with its endpoint, admission, transport |
 | Consumer build | Selection and composition of the concrete contributions it uses |
 
 **Placement.** Each target's backend sits with the owner of that target's runtime adapter contract:
@@ -138,17 +138,17 @@ It must also establish:
 | Conformance | Produced values inhabit the declared descriptor where ground conformance applies |
 | Semantic validity | Domain predicates survive both directions |
 | Coverage | Every promised abstract value is representable, and restrictions are explicit |
-| Capture | Once captured, later mutation of caller-owned data cannot change the message |
+| Capture | Once captured, later mutation of native data cannot change the message, on either side: the caller's arguments and the provider's answer. A decoded native value belongs to its receiver |
 | Generic composition | Substitution, aliases, nested applications and recursion preserve the laws |
 | Resource atomicity | Failed preparation releases newly acquired resources and leaves existing ones intact |
-| Capability preservation | Authority, identity and reuse rules, scope and lifetime remain valid |
+| Capability preservation | Authority, identity, scope and lifetime remain valid. No export is reused across messages |
 | Cross-target agreement | Different native representations agree on abstract values and protocol observations |
 
 **Coverage** is never weakened to "what this implementation happens to accept". [Research 0015](../research-docs/0015-representation-families.md) refines `V_T` into four sets and makes narrower coverage a declared, reported restriction: see [representation families](representation-families.md#domains).
 
-**Capture in practice.** Both ontos implementations copy bytes when an atom is built (Go `NewAtom`, the TypeScript `Atom` constructor). Conversion into ontos atoms therefore discharges capture for byte buffers. Adapters that keep native references, views or capabilities must discharge it themselves.
+**Capture in practice.** Both ontos implementations copy bytes when an atom is built (Go `NewAtom`, the TypeScript `Atom` constructor). Conversion into ontos atoms therefore discharges capture for byte buffers. An adapter may keep a native reference only for an input its family declares immutable and its factory checks. Otherwise it copies ([binding contracts](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md#capture), C3).
 
-**Capability round trips** are behavioural equivalence under stated assumptions about connection state, lifetime, cancellation and observable failures. Rollback undoes only newly prepared exports. Conversion never invokes a protocol to decide how to encode a value.
+**Capability round trips** are behavioural equivalence under stated assumptions about connection state, lifetime, cancellation and observable failures. One assumption is fixed by libraries/service: converting an imported capability forwards it as a borrow, the call reference without the release control ([binding contracts](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md#exports-holds-and-borrows), L3). Encoding a decoded hold again therefore keeps what can be called and not who may release. Rollback undoes only newly prepared exports. Conversion never invokes a protocol to decide how to encode a value.
 
 **Binding support is qualified separately from type support** ([#197](https://github.com/Bitspark/bittype/issues/197)). A representation must keep enough information for the laws to be possible:
 
@@ -166,11 +166,14 @@ It must also establish:
 | Judgment | Owner |
 | --- | --- |
 | Whether a value is ground or mixed | ontos/wire facilities |
-| Ground structural conformance | horos, against descriptors emitted at build time (prefer `diagnose`: exhaustion is not a mismatch) |
+| Ground structural conformance | horos, against descriptors emitted at build time (through `diagnose`, never the boolean `conforms`: exhaustion is not a mismatch) |
 | Native representation validity and construction | the structural or custom adapter |
 | Additional domain predicates | the domain library |
-| Capability recognition, authority, lifetime | the runtime |
-| Protocol messages, state, replies, cancellation | the contract library |
+| Capability recognition, the lifetime of an export with its endpoint | the runtime |
+| Authority over an operation | the receiver's decision on the request, through thesmos |
+| Holds, borrows and owners of a capability | platform `libraries/service` |
+| The request envelope, the reply endpoint, settling one observation, the deadline, and the `refused`, `protocol` and `unknown` observations | the invocation layer of `@bitspark/service-contracts` |
+| The argument list, the completed answer and the state of a callable contract | the contract library |
 
 **Mixed values** also need the structure around capability leaves checked. A mixed checker needs a specified owner consistent with horos and ontos/wire ([ontos#33](https://github.com/Bitspark/ontos/issues/33)). Until one is qualified, unsupported mixed constructs are rejected.
 
@@ -203,11 +206,14 @@ Libraries implement native↔abstract conversion once, and each format implement
 
 **`Function<A, B, E>`** is designed by the Function library ([bitspark-service#35](https://github.com/Bitspark/bitspark-service/issues/35)):
 
-- A completed answer is `Ok(B) | DomainError(E)`, and `E` must be ground. Function's declaration states that requirement.
-- The full reply protocol is Function's: `ok(B) | error(E) | protocol(message) | unknown(reason, message)`. `protocol` means the peer refused before invoking. `unknown` means a failure after invocation, an unusable result, or an answer over the limit.
-- Invocation failures travel on a separate channel: local non-admission, an unknown outcome after admission, an undecodable reply, ended observation. Function supplies no remote cancellation.
+- A completed answer is `ok(B) | error(E)`, and `E` must be ground. Function's declaration states that requirement.
+- The reply has two owners ([binding contracts](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md#two-layers-two-owners)). The invocation layer of `@bitspark/service-contracts`, which Function and Service both use, owns the request envelope, the reply endpoint, the deadline and the observations `refused`, `protocol` and `unknown`. Function owns the argument list and the completed answer. The encoding nests: `completed(ok(B) | error(E)) | protocol(reason, message) | unknown(reason, message)`. The `protocol` reply means the peer refused before invoking. The `unknown` reply means a failure after invocation, an unusable result, or an answer over the limit.
+- `ok` and `error` are domain outcomes. `refused`, `protocol` and `unknown` are invocation failures. `protocol` and `unknown` can arrive on the same reply endpoint as `completed`; `refused` is settled by the caller's runtime and is never a reply. Ending observation settles `refused` before sending and `unknown` after it. There is no remote cancellation.
+- A conversion failure is never `error(E)`. Where it occurs decides the observation: `refused` when the caller converts the arguments, `protocol` when the provider converts them, and `unknown` when either side converts the answer ([failure classes](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md#failure-classes)). A domain predicate on an argument type is checked when the argument is converted, so the operation never runs for an argument that violates it. An operation that wants to answer such an argument with `error(e)` accepts the wider type and checks the predicate itself.
 - A provider returns a domain error as a value. A thrown exception is `unknown`, and nothing is recognised by a `code` or `family` property. The native representation of `E` is the domain's own contribution.
 - The protocol is incompatible with today's. libraries/service introduces it under new profiles with a coordinated cutover. Decided by libraries/service in [bitspark-service#35, comment 6729151207](https://github.com/Bitspark/bitspark-service/issues/35#issuecomment-6729151207).
+
+Until 12 November 2026 this section gave Function the whole reply and allowed only Function leaves under a Service. libraries/service's [binding contracts](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md#refinements-of-35) refined both, and [consistency with the binding contracts](#consistency-with-the-binding-contracts) records the check.
 
 **The service root is a declared root contract.** A service declared as a record of Function values is a different contract from a single capability that dispatches by path. The advice's default was to export the declared record, with a dispatcher allowed only as an explicit library-owned root protocol. libraries/service took that alternative ([bitspark-service#35, comment 6729151207](https://github.com/Bitspark/bitspark-service/issues/35#issuecomment-6729151207)), for four reasons:
 
@@ -216,7 +222,28 @@ Libraries implement native↔abstract conversion once, and each format implement
 - path dispatch lets a provider add operations without changing what callers decode;
 - authority is decided per request, not by holding an endpoint.
 
-So `@bitspark/service-contracts` declares `Service<Ops>`, whose `Ops` is a record, with nested records as namespaces, of `Function<A, B, E>` leaves. The service author writes `Service<…>` at the root of the contract. The plan selects it like any other contribution, through its root facet. Each operation's argument, result and failure positions come from Function's operation facet, so outcomes stay Function's. Service rejects any other leaf at composition. The generator never infers a dispatcher, and a plain record of Functions stays a record value.
+So `@bitspark/service-contracts` declares `Service<Ops>`, whose `Ops` is a record. A field is a namespace when the plan selects it as the structural record family. Every other field is a leaf, and a leaf's selected contribution must supply an operation facet built on the invocation layer. Function is the one such contribution delivered. An exact mapping such as `Cell<T>` is a leaf too, so it fails composition unless its contribution supplies an operation facet. The service author writes `Service<…>` at the root of the contract. The plan selects it like any other contribution, through its root facet. Each routed call's arguments, completed answer and outcome are its leaf's. Service hands the call's arguments and its reply endpoint to the leaf's operation facet, which owns decoding, invocation and the completed answer. Service itself adds only `protocol`, for a request it cannot route. A field that is neither a namespace nor such a leaf fails composition, naming its path. A second callable contract with its own operation facet therefore changes no Service, Function, backend or generator code ([binding contracts](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md#2-the-service-root), S2, S3 and S7). The generator never infers a dispatcher, and a plain record of Functions stays a record value.
+
+## Consistency with the binding contracts
+
+libraries/service wrote its three contracts as one document, [binding contracts](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md) ([bitspark-service#37](https://github.com/Bitspark/bitspark-service/issues/37)). Item 5 of that issue asks bittype to confirm that the plan and facet design agrees with them. Checked on 12 November 2026 by the owner of research 0014, against that document at `c36722db901ef7a259242e168c4c35d6f777fbf4` and against this page and [representation families](representation-families.md) at `8e81f5b`.
+
+| Laws | Result |
+| --- | --- |
+| Outcomes, O1 to O10 | Consistent after the corrections to "Failures and the service root" above |
+| Service root, S1 to S7 | Consistent after the same corrections |
+| Capture, C1 to C5 | Consistent after four additions: capture binds both sides, retention needs a declared and checked immutable input, a decoded value belongs to its receiver, and converting the arguments is synchronous |
+| Call context, K1 to K4 | Consistent after two additions: one context per message per side, and conversion state that never crosses messages |
+| Failure classes, F1 and F2 | Consistent. The tokens and their observations are the binding contracts'; this design keeps the classes distinct |
+| Lifetime, L1 to L14 | Not confirmed. L7, L10 and L14 are under revision ([bitspark-service#47](https://github.com/Bitspark/bitspark-service/issues/47)), and that amendment also covers release and rollback. This page states four of the laws as they read at the checked commit: L1 (no export is reused across messages), L3 (a forwarded capability is a borrow), L12 (rollback closes only newly prepared exports) and L13 (conversion never sends) |
+
+What the plan and the facets take from the binding contracts, and where it is tracked:
+
+- **The call context reaches every factory.** A factory, and the code a lowering facet emits, charges its work through the context it is given. Tracked in [#196](https://github.com/Bitspark/bittype/issues/196).
+- **A run-time identity for the representation instance.** The memo key is the selected instance, by its descriptor and generic environment, plus the input's identity. The plan gives each factory that identity, and two uses with the same selected representation, descriptor and environment share one memo key. Tracked in [#195](https://github.com/Bitspark/bittype/issues/195).
+- **The operation facet has a run-time role.** Service hands a routed call's arguments and reply to its leaf's operation facet, which decodes, invokes and completes the answer through the invocation layer. Tracked in [#196](https://github.com/Bitspark/bittype/issues/196).
+- **A namespace is told from a leaf by the plan.** Service's root facet reads from the plan whether a field was selected as the structural record family. Tracked in [#195](https://github.com/Bitspark/bittype/issues/195).
+- **The plan carries no lifetime annotation.** libraries/service stated this on [#196](https://github.com/Bitspark/bittype/issues/196#issuecomment-6817956191) on 12 November 2026: ownership of capabilities lives behind a contribution's adapter factory at run time. It comes from the amendment pending in [bitspark-service#47](https://github.com/Bitspark/bitspark-service/issues/47). The binding contracts at the checked commit still describe a retain that the shared runtime performs (L7), so this point is pending with that amendment.
 
 ## Order of work and qualification
 

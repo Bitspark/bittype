@@ -1,5 +1,14 @@
 # Changelog
 
+## Binding design checked against libraries/service's binding contracts — 12 November 2026
+
+libraries/service wrote its three contracts as [binding contracts](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md) ([bitspark-service#37](https://github.com/Bitspark/bitspark-service/issues/37)). Item 5 of that issue asks bittype to confirm that the plan and facet design agrees with them. This entry changes documents only; [binding generation](docs/binding-generation.md#consistency-with-the-binding-contracts) holds the result.
+
+- **Corrected in "Failures and the service root".** The reply has two owners: the invocation layer owns `refused`, `protocol` and `unknown`, and Function owns the completed answer `ok(B) | error(E)`. A Service leaf is any contribution with an operation facet built on the invocation layer, not only Function. A conversion failure is never `error(E)`.
+- **Added to the laws and to [representation families](docs/representation-families.md).** Capture binds both sides, and retention needs a declared and checked immutable input. A decoded value belongs to its receiver, so decoded sharing needs transitively immutable values. There is one call context per message per side, passed to every factory. Conversion state never crosses messages. No export is reused across messages, and a forwarded capability is a borrow.
+- **Not confirmed.** The lifetime laws: three of them are under revision in [bitspark-service#47](https://github.com/Bitspark/bitspark-service/issues/47).
+- **Left to the interface issues.** Four things the plan and the facets must carry are listed on the page and recorded on [#195](https://github.com/Bitspark/bittype/issues/195) and [#196](https://github.com/Bitspark/bittype/issues/196).
+
 ## Generation form names declared once by each language's model package — 12 November 2026
 
 The names of the intended native forms have one declaration per language, in `transform/syntax/<language>/model/go`. This is item 5 of [#256](https://github.com/Bitspark/bittype/issues/256). The issue named TypeScript. Go, Rust and C++ had the same shape and are corrected with it. It is a move: every value is unchanged, and the plan steps, the generated tree and the printed text of the four targets are byte-identical before and after, in fifteen dumps.

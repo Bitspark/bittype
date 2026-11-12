@@ -146,8 +146,12 @@ Adapters validate text: JavaScript strings may hold unpaired surrogates, Go
 strings arbitrary bytes. Refinements use horos's meaning, such as code points,
 never UTF-16 or byte lengths.
 
-**Bytes.** Encoding into ontos atoms copies. Each family defines who owns decoded
-storage and what repeated occurrences may share.
+**Bytes.** Encoding into ontos atoms copies. A decoded native value belongs to its
+receiver, and two positions may share one decoded value only if that value is
+transitively immutable ([binding contracts](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md#capture), C4).
+Capabilities are exempt: one capability decoded at two positions is one native
+value for one hold. Within that rule each family states what repeated
+occurrences share.
 
 **Maps and sets** ([#165](https://github.com/Bitspark/bittype/issues/165)).
 
@@ -254,22 +258,32 @@ substitution into an unchanged generic declaration.
 **Conversion state.** Active traversal detects cycles, and completed conversions
 give sharing. The memo is keyed by the selected representation instance plus
 input identity, including the descriptor and generic environment. An object-only
-cache is unsound when one object appears under two mappings.
+cache is unsound when one object appears under two mappings. The state lives in
+the call context and never crosses messages. A capability that appears twice in
+one message converts to one export and one hold; on decoding its hold is keyed
+by the interned imported reference, not by the envelope that carries it
+([binding contracts](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md#call-context-and-conversion-state)).
 
 **Three sharing promises, distinguished:**
 
 1. Abstract value equality ignores sharing.
 2. Conversion may preserve physical DAG sharing. This is an operational guarantee,
-   conditioned on the sharing the input exposes.
+   conditioned on the sharing the input exposes. On decoding it is allowed only
+   between transitively immutable native values, so a family that keeps a decoded
+   DAG shared, such as a recursive value, produces immutable native values (C4;
+   capabilities are exempt).
 3. The sender's aliasing cannot cross the canonical tree encoding: `[x, x]` and
    `[x, y]` with equal `x` and `y` encode identically.
 
 Hash-consing on decode introduces aliases the sender did not have, so it is a
-visible policy.
+visible policy, and under C4 one for immutable values only.
 
 **Budgets.** A DAG of O(k) distinct nodes can encode to Θ(2^k) occurrences, so
-distinct-object and depth limits do not bound the expanded message. One call
-context carries separate measures:
+distinct-object and depth limits do not bound the expanded message. There is one
+call context per message per side: the caller's request, the provider's request,
+the provider's reply and the caller's reply. It is passed to every factory, and
+all nested conversions of that message share its budget. A request and its reply
+share neither budget nor conversion state. The context carries separate measures:
 
 | Measure | Purpose |
 | --- | --- |
@@ -281,11 +295,19 @@ context carries separate measures:
 Expanded size and height are computed by memo without expansion
 ([ontos#35](https://github.com/Bitspark/ontos/issues/35)). ontos owns the encoded
 size, families account for their work, the service library owns the call context,
-and Content owns its limits.
+and Content owns its limits. Exhaustion covers the four measures and the export
+limit of the owner, the lifetime scope that holds the exports. A conversion
+reaches that limit when it must export a capability.
 
-**Capture** stays with platform `libraries/service`. Families declare what they
-copy, retain and require to stay stable while reading. Copying atom bytes protects
-those bytes; it does not snapshot a mutable composite graph.
+**Capture** stays with platform `libraries/service`
+([binding contracts](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md#capture), C1 to C5).
+Converting the arguments is synchronous and completes before the call yields
+control. Families declare, for each native value they read, that they copy it,
+retain it or need it stable while reading. Retaining is admitted only for an
+input the family declares immutable and its factory checks. Capture binds both
+sides: a provider's answer and decoded arguments as well as the caller's
+arguments. Copying atom bytes protects those bytes; it does not snapshot a
+mutable composite graph.
 
 ## Failures and conformance
 
@@ -297,6 +319,10 @@ those bytes; it does not snapshot a mutable composite graph.
   runtime, invalid native value, structural mismatch, domain violation, declared
   coverage restriction, cycle and exhaustion stay distinct. Shared code never
   reads a conversion failure as a failed membership test.
+- **Tokens and observations.** The token of each class, which classes can occur
+  on encoding and on decoding, and the observation each becomes are fixed in the
+  [binding contracts](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md#failure-classes).
+  A conversion failure is never `error(E)`.
 
 ## Qualification
 
@@ -306,6 +332,8 @@ Each family and target is qualified for bindings separately from types
 - compiled types in the target configuration;
 - both laws over the declared domains;
 - boundary values and malformed input, with classified failures;
+- the capture declaration: mutating an input after conversion changes no message,
+  and a retaining factory refuses a mutable input;
 - substitution, aliases and recursion;
 - source conformance checked independently of successful native construction;
 - cross-target canonical agreement;
@@ -338,7 +366,7 @@ The order of work, the first slice and the owner of each vertical case are in [#
 | Tuples, bare sequences and labelled compounds | bittype | [#213](https://github.com/Bitspark/bittype/issues/213) |
 | Open records, `any()`, intersections and complements | bittype | [#214](https://github.com/Bitspark/bittype/issues/214) |
 | Explicit specialization | bittype | [#166](https://github.com/Bitspark/bittype/issues/166) |
-| The three contracts: service root, capture and lifetime, outcomes versus invocation uncertainty | platform `libraries/service` | [bitspark-service#37](https://github.com/Bitspark/bitspark-service/issues/37) |
+| The three contracts: service root, capture and lifetime, outcomes versus invocation uncertainty | platform `libraries/service` | [bitspark-service#37](https://github.com/Bitspark/bitspark-service/issues/37), written as [binding contracts](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md) on 11 November 2026. Three lifetime laws are under revision in [bitspark-service#47](https://github.com/Bitspark/bitspark-service/issues/47). [Consistency](binding-generation.md#consistency-with-the-binding-contracts) |
 | Hosting of the structural profile's TypeScript run-time package | platform `libraries/service` | [bitspark-service#38](https://github.com/Bitspark/bitspark-service/issues/38) |
 | `Function<A, B, E>` and `Service<Ops>` declared in horos, with their paired contributions | platform `libraries/service` | [bitspark-service#39](https://github.com/Bitspark/bitspark-service/issues/39) |
 | The TypeScript backend: factory composition, recursive adapters, conversion state, the call context | platform `libraries/service` | [bitspark-service#40](https://github.com/Bitspark/bitspark-service/issues/40) |
