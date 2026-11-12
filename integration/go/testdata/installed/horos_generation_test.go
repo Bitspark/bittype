@@ -108,11 +108,11 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, library := range []g.MappingLibrary[h.Language, ts.Language, reader.Reader]{
-		tstext.Library(rules.RepresentationProfile),
-		tsboolean.Library(rules.RepresentationProfile),
-		tslist.Library(rules.RepresentationProfile),
-		tsrecord.Library(rules.RepresentationProfile),
-		tsdeclarations.Library(rules.RepresentationProfile),
+		tstext.Library(),
+		tsboolean.Library(),
+		tslist.Library(),
+		tsrecord.Library(),
+		tsdeclarations.Library(),
 	} {
 		if _, err := c.RegisterMapping(registry, from, to, library); err != nil {
 			t.Fatal(err)

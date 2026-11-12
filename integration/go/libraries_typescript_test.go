@@ -17,12 +17,18 @@ import (
 // whole set call it, so a change to that set edits this file only. A test that
 // composes a selection of its own names single libraries itself, as
 // horos_generation_composition_test.go does.
-func typescriptLibraries(profile string) []g.MappingLibrary[h.Language, s.Language, source.Reader] {
+func typescriptLibraries() []g.MappingLibrary[h.Language, s.Language, source.Reader] {
 	return []g.MappingLibrary[h.Language, s.Language, source.Reader]{
-		text.Library(profile),
-		boolean.Library(profile),
-		list.Library(profile),
-		record.Library(profile),
-		declarations.Library(profile),
+		text.Library(),
+		boolean.Library(),
+		list.Library(),
+		record.Library(),
+		declarations.Library(),
 	}
+}
+
+// typescriptConstructors lists the exported constructor of every builtin
+// horos-to-typescript mapping package, in the order of typescriptLibraries.
+func typescriptConstructors() []any {
+	return []any{text.Library, boolean.Library, list.Library, record.Library, declarations.Library}
 }

@@ -79,7 +79,7 @@ func TestHorosReaderRefusesForeignHandles(t *testing.T) {
 		run++
 		var registry c.Registry
 		to := nativeChecker(t, typescriptText()).Language()
-		q, err := genfixture.Request(&registry, input, to, "foreign-reader", target.Provider{}, tstext.Library(rules.RepresentationProfile), tsboolean.Library(rules.RepresentationProfile), record, tslist.Library(rules.RepresentationProfile), tsdeclarations.Library(rules.RepresentationProfile))
+		q, err := genfixture.Request(&registry, input, to, "foreign-reader", target.Provider{}, tstext.Library(), tsboolean.Library(), record, tslist.Library(), tsdeclarations.Library())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -109,7 +109,7 @@ func (p tsContribution) Describe(from, to representation.Language) (g.MappingDes
 }
 func selectedTS(p tsContribution, replacementID string) requestBuilder {
 	return func(registry *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-		request, err := genfixture.Request(registry, input, to, "selected-ts", target.Provider{}, tstext.Library(rules.RepresentationProfile), tsboolean.Library(rules.RepresentationProfile), tsrecord.Library(rules.RepresentationProfile), tsdeclarations.Library(rules.RepresentationProfile))
+		request, err := genfixture.Request(registry, input, to, "selected-ts", target.Provider{}, tstext.Library(), tsboolean.Library(), tsrecord.Library(), tsdeclarations.Library())
 		if err != nil {
 			return c.Request{}, err
 		}
@@ -117,7 +117,7 @@ func selectedTS(p tsContribution, replacementID string) requestBuilder {
 		if err != nil {
 			return c.Request{}, err
 		}
-		base, err := c.RegisterMapping(registry, input.Source.Language(), to, tslist.Library(rules.RepresentationProfile))
+		base, err := c.RegisterMapping(registry, input.Source.Language(), to, tslist.Library())
 		if err != nil {
 			return c.Request{}, err
 		}
