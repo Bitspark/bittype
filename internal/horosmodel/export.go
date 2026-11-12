@@ -266,7 +266,7 @@ func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Pro
 	// definitions. Only actual snapshot sites enter Declarations and occurrences.
 	for _, module := range modules {
 		standard := module.Pin() == decl.PreludePin()
-		moduleID, err := e.entity(n.Key("module"), module.Name(), 0, input.ModuleSite(module.Pin()), standard)
+		moduleID, err := e.entity(n.ModuleKind(), module.Name(), 0, input.ModuleSite(module.Pin()), standard)
 		if err != nil {
 			return semantics.Data{}, err
 		}
@@ -275,11 +275,11 @@ func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Pro
 			return semantics.Data{}, err
 		}
 		for _, declaration := range module.Declarations() {
-			kind, parameterKind := "type-definition", "type-parameter"
+			kind, parameterKind := n.TypeDefinitionKind(), n.Key("type-parameter")
 			if declaration.Form() == decl.KindDefinition {
-				kind, parameterKind = "kind-definition", "kind-parameter"
+				kind, parameterKind = n.Key("kind-definition"), n.Key("kind-parameter")
 			}
-			id, err := e.entity(n.Key(kind), declaration.ID().Name, moduleID, input.DeclarationSite(declaration.ID()), standard)
+			id, err := e.entity(kind, declaration.ID().Name, moduleID, input.DeclarationSite(declaration.ID()), standard)
 			if err != nil {
 				return semantics.Data{}, err
 			}
@@ -302,7 +302,7 @@ func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Pro
 			}
 			for index, name := range names {
 				parameter := decl.ParameterID{Declaration: declaration.ID(), Index: index}
-				parameterID, err := e.entity(n.Key(parameterKind), name, id, input.ParameterSite(parameter), standard)
+				parameterID, err := e.entity(parameterKind, name, id, input.ParameterSite(parameter), standard)
 				if err != nil {
 					return semantics.Data{}, err
 				}

@@ -7,8 +7,9 @@ const (
 )
 
 // providerExceptions lists every import of a stage provider package
-// (<stage>/<dimension>/<language>/provider/go) by a production package that is
-// not a composition. Only a composition chooses a provider, so each such
+// (<stage>/<dimension>/<language>/provider/go) or of a query service package
+// (analyze/files/<language>/queries/go) by a production package that is not a
+// composition. Only a composition chooses a provider, so each such
 // import is admitted by name: the importer, the provider, the exact exported
 // symbols used and the reason. The check fails on an import without an entry,
 // on a use of any other symbol, and on an entry or symbol that is not used.
@@ -31,4 +32,8 @@ var providerExceptions = []providerException{
 	{Importer: "resolve/files/horos/provider/go", Provider: "check/syntax/horos/provider/go", Symbols: []string{"Check"}, Reason: "admits the tree it is given with its own language's grammar before reading its model"},
 	{Importer: "internal/rustsem", Provider: "parse/syntax/rust/provider/go", Symbols: []string{"Parse"}, Reason: verifiesOwnSource},
 	{Importer: "internal/typescriptsem", Provider: "parse/syntax/typescript/provider/go", Symbols: []string{"Parse"}, Reason: verifiesOwnSource},
+
+	// Accepted: the pair interprets an admission, and only the query service
+	// can make one. It names the result type and never opens a query session.
+	{Importer: "verification/files/horos-to-go/go", Provider: "analyze/files/golang/queries/go", Symbols: []string{"Admission"}, Reason: "takes the admission that a composition obtained from the Go query service; it names the result type and starts no query"},
 }

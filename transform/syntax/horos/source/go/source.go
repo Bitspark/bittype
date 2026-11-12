@@ -20,11 +20,6 @@ func Contract() transform.Contract {
 	return transform.Contract{Evidence: []semantic.EvidenceRequirement{{Operation: analysis.Kind(), Profile: n.AnalysisProfile, Reports: n.AnalysisContract().Semantic.SemanticsRequirements, Semantics: true}}}
 }
 
-var (
-	typeDefinition = semantics.Key{Owner: "horos", Name: "type-definition"}
-	properSort     = semantics.Key{Owner: "horos", Name: "sort/proper"}
-)
-
 // interpretation is the horos reading of one captured graph for the kernel.
 // It classifies declarations, names descriptors and judges proper sorts from
 // the analysis facts. It never walks the graph on the kernel's behalf.
@@ -97,7 +92,7 @@ func (s *interpretation) definition(d g.Declaration[h.Language]) (semantics.Enti
 		return semantics.Entity{}, false, g.ErrScope
 	}
 	e := s.data.Entities[id-1]
-	if e.Kind != typeDefinition {
+	if e.Kind != n.TypeDefinitionKind() {
 		return semantics.Entity{}, false, nil
 	}
 	if e.Owner == 0 || e.Body == 0 || len(e.Declarations) != 1 {
@@ -185,7 +180,7 @@ func (s *interpretation) proper(sort semantics.TermID, site ast.NodeRef) g.Judgm
 		return g.Judgment{Verdict: g.Undetermined, Diagnostic: &g.SiteError{Err: semantic.ErrEvidenceUnavailable, Site: site, Message: "no established sort"}}
 	}
 	t := s.data.Terms[sort-1]
-	if t.Kind == semantics.ProviderExpression && t.Operator == properSort {
+	if t.Kind == semantics.ProviderExpression && t.Operator == n.ProperSort() {
 		return g.Judgment{Verdict: g.Admitted}
 	}
 	return g.Judgment{Verdict: g.Unsupported, Diagnostic: s.diagnostic(site, "constructor-valued types require an explicit representation")}

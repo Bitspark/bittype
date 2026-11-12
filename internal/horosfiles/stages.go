@@ -195,7 +195,7 @@ func Organization(units []source.Unit[s.Language]) ([]source.Group, []source.Rel
 				return nil, nil, source.ErrInvalid
 			}
 			locations[pin] = unit.File
-			groups = append(groups, source.Group{ID: source.GroupID(pin), Kind: semantics.Key{Owner: "horos", Name: "module"}, Members: []files.ID{unit.File}, Sites: []ast.NodeRef{{Tree: tree.ID, Node: module.Node}}})
+			groups = append(groups, source.Group{ID: source.GroupID(pin), Kind: n.ModuleKind(), Members: []files.ID{unit.File}, Sites: []ast.NodeRef{{Tree: tree.ID, Node: module.Node}}})
 		}
 	}
 	for _, unit := range units {
@@ -211,7 +211,7 @@ func Organization(units []source.Unit[s.Language]) ([]source.Group, []source.Rel
 						return nil, nil, source.ErrInvalid
 					}
 					at := ast.NodeRef{Tree: tree.ID, Node: child.Node}
-					relations = append(relations, source.Relation{Kind: semantics.Key{Owner: "horos", Name: "import"}, From: unit.File, To: to, At: &at})
+					relations = append(relations, source.Relation{Kind: n.ImportRelation(), From: unit.File, To: to, At: &at})
 				}
 			}
 		}
@@ -230,7 +230,7 @@ func (p Stages) CheckPublication(ctx context.Context, publication source.Publica
 	graph, _ := publication.Analysis.Semantics()
 	moduleSites := map[ast.NodeRef]bool{}
 	for _, entity := range graph.Data().Entities {
-		if entity.Kind == (semantics.Key{Owner: "horos", Name: "module"}) {
+		if entity.Kind == n.ModuleKind() {
 			for _, site := range entity.Declarations {
 				moduleSites[site] = true
 			}
