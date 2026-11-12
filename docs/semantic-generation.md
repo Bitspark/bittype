@@ -212,10 +212,16 @@ a name. Three statements above change when [#274](https://github.com/Bitspark/bi
   which module the request enters through.
   [The qualification policy](naming.md#the-qualification-policy).
 - **`Self` becomes `Self_` in all four targets, and only Rust reserves it.** A
-  reserved word is the target's. [Reserved words](naming.md#reserved-words).
+  reserved word is the target's. Rust will refuse `Self`, and the other
+  targets will keep it. The refusal of a name that contains `__`, which the
+  shared rule makes for every target today, moves to the C++ target.
+  [Reserved words](naming.md#reserved-words).
 - **Every declaration name is capitalized, so every generated Go declaration
-  is exported.** In Go the case of a name is its visibility, which the Go
-  Files stage realizes. [Go](naming.md#go) ·
+  is exported.** The capitalised form stays the mapping's chosen name. In Go
+  the case of a name is its visibility, which the Go Files stage realizes: it
+  will export a requested root and a helper that its contribution states
+  public, and refuse an output with an unexposed dependency.
+  [Go](naming.md#go) ·
   [bittype/ACX-004](architecture-cases/0004-generation-file-syntax.md).
 
 The refusal of two equal names in one output leaves a target when its Files

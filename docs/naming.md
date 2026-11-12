@@ -3,13 +3,15 @@
 **Accepted design, 12 November 2026, from research 0016 (rows 11, 13 and 14). Not implemented.**
 Decided by [research 0016](../research-docs/0016-native-files-placement.md)
 and by the [decisions on #274](https://github.com/Bitspark/bittype/issues/274#issuecomment-6837793448)
-of its owner. It answers [#268](https://github.com/Bitspark/bittype/issues/268)
+of its owner. The first version of this page left seven points open, and the
+[decisions of 13 November 2026](https://github.com/Bitspark/bittype/issues/274#issuecomment-6838436844) on #274 decide them. It answers
+[#268](https://github.com/Bitspark/bittype/issues/268)
 and is delivered by [#274](https://github.com/Bitspark/bittype/issues/274), per
 target, in the [order](#delivery-order-per-target) at the end. No target has
 changed a name. [The code today](#the-code-today) describes the present
 behaviour, and nothing else on this page is implemented.
 
-**How to read the sources.** Each statement names one of three sources.
+**How to read the sources.** Each statement names one of four sources.
 
 - **An accepted document**, quoted, with its file and line.
 - **The advice** of research 0016, section 2, "Names"
@@ -18,6 +20,9 @@ behaviour, and nothing else on this page is implemented.
 - **A decision on #274**, written D1 to D6 after the six points of the
   decisions comment, with the reason the comment gives. The integrator who
   wrote it is the owner of research 0016.
+- **A decision of 13 November 2026 on #274**, written E1 to E7 after the seven
+  points of the [second decisions comment](https://github.com/Bitspark/bittype/issues/274#issuecomment-6838436844). E4 defers one thing that D4
+  defined, Go's unexported spelling. [Go](#go) says so.
 
 A sentence marked **derived here** follows from those sources and is stated by
 none of them. Code references are `path:line` at commit `9961adb`.
@@ -52,16 +57,26 @@ intent states:
 
 - **the chosen name**, which the mapping derives from the source declaration,
   or which a helper recipe states for its helper;
-- **the qualification**, which is either none or the module that the
-  declaration comes from. The [qualification policy](#the-qualification-policy)
-  decides which. A helper has no source module and no qualification
+- **the qualification**, which is either none or the identity of the module
+  that the declaration comes from. The
+  [qualification policy](#the-qualification-policy) decides which. E2: "A
+  qualification is recorded as the module's identity." and "The spelled prefix
+  is one policy's realization of it." So an intent holds no prefix, and the
+  truncation of a pin is not part of what is recorded. A helper has no source
+  module and no qualification
   ([#272, decision 3](https://github.com/Bitspark/bittype/issues/272#issuecomment-6837792602):
   "A helper has no source declaration.").
 
 An intent states no visibility, no reserved-word escape and no placement. The
-chosen name is not a spelling of any language. The horos side writes it with a
-capital first letter, as #274 does in its tests ("the unexported spelling of
-the intent `Person`"), and that capital says nothing about access.
+chosen name is not a spelling of any language.
+
+**The chosen name of a source declaration (E3).** It is the horos name in a
+capitalised form: the first letter in upper case, and `Type` before a leading
+underscore. E3: "The `Type` prefix before a leading underscore stays with the
+chosen name: it is the mapping's way to give every name a capitalised form,
+the same for all targets." The capital says nothing about access. The other
+two things that the shared naming function does today leave that function: the `Self`
+rule and the refusal of `__`, both under [Reserved words](#reserved-words).
 
 The alternative was an intent that is the spelling written today, from which a
 language derives its other spellings. It was rejected on #274 (point 2): "With
@@ -96,8 +111,8 @@ Files must use an explicitly authorized naming rule or fail."
 | The names inside one declaration: type parameters, members, duplicates among them, malformed identifiers | Generation | Advice: "Retain checks whose meaning is wholly inside a declaration: duplicate type parameters, malformed identifiers, and similar local defects." (row 8) |
 | A member's name and accessibility | The declaration, so the mapping of that pair | [`docs/source.md:77-78`](source.md#from-generated-declarations-to-files): "The distinction is about module visibility. A member's accessibility, when it is part of the chosen type representation, still belongs to the declaration." |
 | The qualification policy | The consumer's composition, as an argument of the declarations mapping of each pair, with a default | D3, row 11 |
-| The case rule and the exported and unexported forms | Go | Row 13, D4. See [Go](#go) |
-| Reserved words, and what is refused or escaped | Each target | D1. See [Reserved words](#reserved-words) |
+| The case rule of a Go name: the exported spelling, and the unexported spelling, which is deferred | Go | Row 13, D4, E4. See [Go](#go) |
+| Reserved words, and what is refused | Each target | D1, E1, E3. See [Reserved words](#reserved-words) |
 | Collisions between declarations in a placed scope | The language's Files stage | Advice: "Collisions belong to the language’s placed scopes" (row 8). Delivered per target by [#273](https://github.com/Bitspark/bittype/issues/273) for TypeScript and by slice 1 of [#161](https://github.com/Bitspark/bittype/issues/161) and [#159](https://github.com/Bitspark/bittype/issues/159) |
 | Rewriting the linked uses and reporting the realized name | The language's Files stage | Advice, row 13, quoted above |
 | What "exposed" requires | Each language | Row 14. See [Exposure](#exposure-and-its-audience) |
@@ -217,18 +232,34 @@ declaration's own statement (`docs/source.md:77-78`, quoted above). The exact
 rule is each language's. Row 24 calls Rust's "A Rust-owned rule", and Go's is
 written with slice 1 of #161.
 
-**A consequence, derived here.** In the structural profile every member of a Go
-or Rust record is accessible to the audience: the Go record mapping
-capitalizes each field (`record.go:62`) and the Rust target writes every field
-public (`transform/syntax/rust/target/go/provider.go:115`). An output holds the
-requested roots and what they demand. So an unexposed source declaration is
-always named in the body of an exposed one, or of a declaration that is itself
-refused for that reason. Under D5 Go and Rust therefore admit, in this
-profile, only outputs in which every source declaration is a requested root.
-The unexported Go spelling is first realized for a source declaration when a
-representation has members that its audience cannot reach, or when row 14a is
-delivered. [Open point 4](#open-inside-this-design) asks whether that is
-intended, and open point 5 asks what TypeScript does.
+**Which outputs Go and Rust admit (E4).** "Go and Rust admit only outputs in
+which every source declaration in the public representation of an exposed one
+is itself a requested root." E4 accepts this as the consequence of D5, and
+says how far it reaches: "In the structural profile every member of a Go or
+Rust record is accessible, so this covers every dependency." The Go record
+mapping capitalizes each field (`record.go:62`), and the Rust target writes
+every field public (`transform/syntax/rust/target/go/provider.go:115`).
+
+- **The refusal says what to do.** E4: "The refusal names the declaration to
+  request."
+- **Why a refusal and not an export.** E4: "The authority to expose stays with
+  the caller". That is `docs/source.md:48`: "The plan records which
+  declaration the caller requested to expose."
+- **What follows for Go's unexported spelling.** E4: "So Go's unexported
+  spelling is realized by nothing in the first slices." It is deferred. See
+  [Go](#go).
+
+**The rule is each language's (E5).**
+
+| Language | An unexposed source declaration in the body of an exposed one | Reason, in E5's words |
+| --- | --- | --- |
+| TypeScript | Admitted within one module. A use from another file is refused (`format/files/typescript/provider/go/relocate.go:163-165`) | "because structural typing keeps the exposed type usable there" |
+| Go | Refused as unsupported coverage | "because a caller in another package or crate could not construct the value" |
+| Rust | Refused as unsupported coverage | The same |
+
+`TestGeneratedFilesPreservePublicationIntent`
+(`integration/go/typescript_placement_test.go:323-376`) pins the TypeScript
+behaviour, and it stays (E5).
 
 **How this relates to the decision of 7 November.** That decision names one
 stater of visibility, the caller. A helper's stated access is a second one, and
@@ -272,7 +303,7 @@ is `Names` in one request and `M<pin>_Names` in another.
 
 | Policy | What an intent carries | Result |
 | --- | --- | --- |
-| Qualified | The module qualification, for a declaration outside the entry module. This is today's rule | Today's output, byte for byte, in all four targets |
+| Qualified | The identity of its module, for a declaration outside the entry module. The policy realizes it as today's prefix (E2) | Today's output, byte for byte, in all four targets |
 | Unqualified | No qualification | One horos declaration has the same native name whether its module is the entry of the request or an import |
 
 Under the unqualified policy two declarations of the same name can be in one
@@ -315,26 +346,41 @@ protocol observations." The law reads: "Different native representations agree
 on abstract values and protocol observations"
 (`docs/binding-generation.md:145`).
 
+**A target refuses. It does not rename.** E1 gives the reason, the one that D4
+gave for Go: "A refusal can be lifted later, a spelling cannot be changed."
+[`docs/representation-families.md:26-28`](representation-families.md#delivered-complete-the-first-time)
+has the same rule for native types: "An explicit refusal that can later be
+lifted additively is complete; replacing a delivered native type (for example
+`number` by `bigint`) is not."
+
 **Where each language's words are.** Each language's syntax checker already
 holds its own list. The one word that the shared function knows is Rust's.
 
-| Language | Its reserved words | What arises from a chosen name | Rule |
+| Language | Its reserved words | What a chosen name can meet | Rule |
 | --- | --- | --- | --- |
-| Go | Keywords, in the checker (`check/syntax/golang/provider/go/check.go:13`). Predeclared identifiers are in no list | Nothing in the exported spelling: every keyword and every predeclared identifier of Go begins with a lower-case letter. The unexported spelling can be either | Refusal, no escape. See [Go](#go) |
-| Rust | `internal/rust/names.go:11` | `Self`, the only entry that begins with a capital | Rust renames `Self` to a legal name. See [open point 1](#open-inside-this-design) |
-| TypeScript | `internal/typescript/names.go:11`, and the predefined type words at `:24` | Nothing: every entry begins with a lower-case letter | Refusal by TypeScript, if a later naming rule can produce one |
-| C++ | `internal/cpp/names.go:11` | Nothing: every entry begins with a lower-case letter | Refusal by C++, if a later naming rule can produce one |
+| Go | Keywords, in the checker (`check/syntax/golang/provider/go/check.go:13`). Predeclared identifiers are in no list | Nothing: every keyword and every predeclared identifier of Go begins with a lower-case letter, and a chosen name with a capital | Nothing to refuse in the first slices. Only the [deferred unexported spelling](#go) could meet one |
+| Rust | `internal/rust/names.go:11` | `Self`, the only entry that begins with a capital | Rust refuses `Self` as unsupported coverage (E1) |
+| TypeScript | `internal/typescript/names.go:11`, and the predefined type words at `:24` | Nothing: every entry begins with a lower-case letter | A refusal by TypeScript, if a later naming rule can produce one |
+| C++ | `internal/cpp/names.go:11`. A name that contains `__` is a reserved identifier of C++ and is in no list | No keyword: every entry begins with a lower-case letter. A chosen name that contains `__`, which the shared function refuses today | C++ refuses a name that contains `__` (E3) |
 
-- **`Self`.** The shared function appends `_` to it for all four targets
+- **`Self` (E1).** "Rust refuses it as unsupported coverage. The other targets
+  realize `Self` unchanged." Today the shared function appends `_` to it for
+  all four targets
   (`transform/syntax/horos/mapping/naming/go/naming.go:28-30`). After the
-  delivery it holds no reserved word. A horos type named `Self` is `Self` in
-  Go, TypeScript and C++ and a legal name in Rust (#274, done-when 7).
+  delivery the function holds no reserved word. A horos type named `Self` is
+  `Self` in Go, TypeScript and C++, and Rust refuses it, where Rust output has
+  `Self_` today. The text of #274 (done-when 7) says "a legal name in Rust",
+  and E1 replaces that.
+- **A name that contains `__` (E3).** The shared function refuses it for every
+  target today (`naming.go:15`). E3: "The refusal of `__` is a
+  reserved-identifier rule of C++ and moves to the C++ target. The other
+  targets admit such a name."
+- **`Type` before a leading underscore (E3)** is no reserved-word rule. It
+  stays with the chosen name, as [above](#three-things-that-were-one).
 - **`type`, `func`, `class` and `interface`** (#268, done-when 3). A
   declaration or parameter of that name has the chosen name `Type`, `Func`,
   `Class` or `Interface`, and none of the four lists holds those. So no target
-  meets a reserved word through a chosen name. `Type`, `Func` and `Interface`
-  are refused as unexported Go spellings, because their lower-case forms are
-  Go keywords.
+  meets a reserved word through a chosen name.
 - **Field names.** No target writes a field name in lower case. TypeScript,
   Rust and C++ keep the horos spelling
   (`transform/syntax/horos-to-typescript/mapping/record/go/record.go:55`,
@@ -355,25 +401,43 @@ Row 13's action: "It follows from the accepted decision: Files realizes
 visibility under the language's rules, and in Go that is the case of the
 name."
 
-| | Spelling | When |
-| --- | --- | --- |
-| Exported | The intent as written: the chosen name, after its qualification if it has one. The chosen name of a source declaration begins with an upper-case ASCII letter (`naming.go:23-27`), and so does a qualified one (`declarations.go:46`) | The declaration is a requested root, or a helper whose contribution states that it is part of a public representation |
-| Unexported | The same with its first letter in lower case. `Person` gives `person` | Every other declaration |
+**The exported spelling.** It is the intent as written: the chosen name, after
+the realization of its qualification if it has one. The chosen name of a
+source declaration begins with an upper-case ASCII letter (`naming.go:23-27`),
+and so does a name with today's prefix (`declarations.go:46`). Go Files
+realizes it for two kinds of declaration:
 
-**Refusals (D4).** "Go's unexported spelling is the lower-case form, with
-refusals where that form is a predeclared identifier, a keyword or a
-collision." Examples: `String` would give `string`, `Any` would give `any`,
-`Type` would give `type`. A collision is with another name of the package in
-which the declaration is placed. Each refusal is unsupported coverage.
+- a requested root;
+- a helper whose contribution states that it is part of a public
+  representation (D5). The optional helper is one.
 
-**No escape rule (D4).** "No escape rule: a refusal can be lifted later, a
-spelling cannot be changed." A refusal that is lifted admits an output that
-was refused and changes no name that exists. An escape fixes a spelling that
-consumers then depend on.
-[`docs/representation-families.md:26-28`](representation-families.md#delivered-complete-the-first-time)
-has the same rule for native types: "An explicit refusal that can later be
-lifted additively is complete; replacing a delivered native type (for example
-`number` by `bigint`) is not."
+**What Go Files refuses in the first slices.** An output with an unexposed
+source declaration in the public representation of an exposed one, as
+unsupported coverage (D5, E4). The refusal names the declaration to request.
+In the structural profile that is every unexposed source declaration (E4).
+**Derived here:** a helper whose contribution states no such access has no
+form in the first slices either, because Files does not widen access (D5) and
+no unexported spelling is built (E4). No such helper exists today.
+
+**Deferred: the unexported spelling.** This page specifies no unexported form,
+and nothing in the first slices builds one.
+
+- **D4, of 12 November 2026, defined it:** "Go's unexported spelling is the
+  lower-case form, with refusals where that form is a predeclared identifier, a
+  keyword or a collision. No escape rule: a refusal can be lifted later, a
+  spelling cannot be changed."
+- **E4, of 13 November 2026, defers it:** "So Go's unexported spelling is
+  realized by nothing in the first slices. Decision 4 above defined it. It is
+  now deferred, with a trigger: a representation exists in which an unexposed
+  source declaration is not part of an exposed one's public representation, or
+  a request can state access beyond its roots (row 14a). Until then it is not
+  built and not specified further."
+- **Where the deferral is recorded.** Row 13a of the table "Applied" of
+  [research 0016](../research-docs/0016-native-files-placement.md).
+- **What the text of #274 still says.** Done-when 9 has the Go rule return
+  "the unexported spelling or a refusal", and two tests of its Verify table
+  are about an unexported spelling. Derived here: under E4 they wait for the
+  trigger.
 
 **Fields.** A Go field's case is a member's accessibility and stays with the Go
 record mapping (`docs/source.md:77-78`).
@@ -402,43 +466,61 @@ generation, through a recipe that all four targets share.
 [bittype/ACX-004](architecture-cases/0004-generation-file-syntax.md) records
 it as a pending instance.
 
+**How the correction is validated (E4, the new validation of row 13).** "an
+output with an unexposed source declaration in the public representation of an
+exposed one is refused by Go Files as unsupported coverage, the Go optional
+helper is realized exported because its contribution states it, and the shared
+naming function no longer decides the case of a Go name." Red today:
+"generation exports every Go declaration, requested or not." The capital of a
+chosen name states no access. Go's own rule gives the exported spelling, and
+Go Files decides which declarations get it.
+
 **Where the Go rule lives.** In a Go-owned package that the Go target imports,
 and later Go Files (#274, done-when 9). For an intent it returns the exported
-spelling, and the unexported spelling or a refusal. The model is
-`transform/syntax/typescript/symbol/go`, which "owns the TypeScript public type
-symbols shared by generation and Files". Go Files realizes a spelling in
-slice 1 of #161.
+spelling. The model is `transform/syntax/typescript/symbol/go`, which "owns
+the TypeScript public type symbols shared by generation and Files". Go Files
+realizes a spelling in slice 1 of #161.
 
-## What must not change after the first slice records a name
+## What is fixed, and when
 
-[#207](https://github.com/Bitspark/bittype/issues/207) and
-[#195](https://github.com/Bitspark/bittype/issues/195) record declarations in
-plan entries. A plan entry records a declaration's identity and naming intent,
-and no realized native name (#274, done-when 2). From then on a later change
-may not alter
+**E6.** "the record of intent and each language's rule are fixed before the
+plan envelope becomes stable and before the first release (#3). The envelope
+is unstable until the six vertical cases pass, and a plan entry written before
+that may still change its recorded qualification."
+
+The text of #274, and the first version of this page, drew the line earlier:
+before [#207](https://github.com/Bitspark/bittype/issues/207) and [#195](https://github.com/Bitspark/bittype/issues/195) write their first plan entry. E6
+calls that wrong and gives the reason: "The default policy for Go and Rust can
+only change with their Files stages (#161, #159), which come later." The first
+release is [#3](https://github.com/Bitspark/bittype/issues/3). The six vertical cases are those of the plan envelope
+in #195 ([representation families](representation-families.md#delivery)).
+
+Fixed before the envelope is stable and before the first release
 ([AC-10](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-10):
 a first change establishes the final structure):
 
-- **the record of intent:** that it states the chosen name and the
-  qualification, kept apart;
-- **the default policy of each target**, as the
-  [order](#delivery-order-per-target) gives it;
-- **each language's realization rule:** what "exposed" requires in that
-  language, the Go spellings and their refusals, and each target's reserved
-  words with what it refuses or renames.
+- **the record of intent:** the chosen name, and the qualification as the
+  module's identity, kept apart;
+- **each language's rule:** what "exposed" requires in that language, which
+  outputs it admits, Go's exported spelling, and each target's reserved words
+  with what it refuses.
 
-What may change:
+Each target's default policy changes once, with the change that gives its
+Files stage the collision check: TypeScript's with #273, Go's with slice 1 of
+#161, Rust's with slice 1 of #159 (E6). C++ keeps the qualified policy until
+#160, and the guarantee of research 0016 excludes legacy C++ output (row 36).
 
-- **A refusal that is lifted** (D4).
+A plan entry records a declaration's identity and naming intent, and no
+realized native name (#274, done-when 2).
+
+What may change afterwards, without changing a name that exists:
+
+- **A refusal that is lifted** (D4, E1): Rust's of `Self`, C++'s of `__`, Go's
+  and Rust's of an output with an unexposed dependency.
+- **What is deferred with a trigger:** Go's unexported spelling (row 13a) and
+  access that a request states beyond its roots (row 14a).
 - **A field added to the inventory record.** #272: "Adding a field to the
   record is additive."
-
-The default of a target changes once, in the step that the order names. For
-Go and Rust that step is slice 1 of #161 and #159, which is later than the
-other parts of #274. [Open point 6](#open-inside-this-design) asks what a plan
-entry records for those targets before it. C++ is the stated exception: its
-names keep today's rule until #160, and the guarantee of research 0016
-excludes legacy C++ output (row 36).
 
 ## How a consumer learns the realized name and the placed site
 
@@ -468,28 +550,33 @@ D1:
 | "a deterministic name" | Generation. The recursion family states a deterministic **intent** for the lifted binder. It depends on the declaration that the binder is lifted from and on the binder, never on which other declarations are in the output |
 | Collisions among the names of one source declaration: its type parameters, its members, and the binders lifted from it | Generation. Their meaning is wholly inside one declaration |
 | Collisions between top-level declarations, which a lifted binder becomes | The language's Files stage, in the placed scope. It refuses and does not rename (row 8, and "never a hash", row 11) |
-| "reserved-word handling" | The target (D1) |
+| "reserved-word handling" | The target (D1). It refuses and does not rename (E1) |
 
 One reading of that sentence does not survive: that generation gives a lifted
 binder another name when its name meets that of another declaration of the
 output. Generation does not know the placed scope, and a name must not depend
 on which other declarations are in the output.
 
-**[Binding generation](binding-generation.md#the-selected-representation-plan).**
-The plan carries "native symbols, distinguishing run-time imports from
-type-only imports" (`docs/binding-generation.md:56`), and the shared envelope
-of [representation families](representation-families.md#the-plan) lists
-"Native symbols, imports, factory references, runtime requirements". For a
-declaration that generation owns, this design reads "native symbol" as the
-declaration's identity and naming intent. Its realized name and placed site
-come from the reader of D6. A symbol of an external package keeps the name
-that its owner published. The completeness test of that page says: "The
-backend can implement each selected representation from the plan, the source
-semantics and the selected contributions alone, without guessing a rule."
-(`docs/binding-generation.md:72`). Reading a name from the formatter's result
-guesses no rule. It is still an input beyond the three that the sentence
-lists, and the owner of #195 has to confirm this reading. It is
-[open point 7](#open-inside-this-design).
+**[Binding generation](binding-generation.md#the-selected-representation-plan):
+a tension that this page states and does not resolve (E7).** The plan carries
+"native symbols, distinguishing run-time imports from type-only imports"
+(`docs/binding-generation.md:56`), and the shared envelope of
+[representation families](representation-families.md#the-plan) lists "Native
+symbols, imports, factory references, runtime requirements". The completeness
+test says: "The backend can implement each selected representation from the
+plan, the source semantics and the selected contributions alone, without
+guessing a rule." (`docs/binding-generation.md:72`).
+
+- **The tension.** E7: "With names realized by Files, a plan entry cannot hold
+  a realized name or an import path."
+- **What follows from this design.** E7: "A plan entry refers to a native
+  declaration by its identity, and the backend reads the realized name and
+  place from the formatter's result. That is a fourth input to the backend and
+  an amendment to an accepted sentence."
+- **Who decides.** E7: "It belongs to #195 and goes into research 0017 as part
+  of its question on the identities of the plan." This page amends no sentence
+  of binding generation, and that page stands as written until
+  [#195](https://github.com/Bitspark/bittype/issues/195) decides.
 
 **[Source and Files](source.md#from-generated-declarations-to-files).** No
 sentence of the decision of 7 November says who spells a declaration's name.
@@ -500,65 +587,28 @@ described under [Exposure](#exposure-and-its-audience).
 
 ## Open inside this design
 
-1. **Rust's legal name for `Self`.** #274 requires "a legal name in Rust" and
-   does not say which.
-   - Option a: `Self_`, which Rust output has today. #268, done-when 4, keeps
-     today's output "except for a name the answer deliberately changes".
-   - Option b: a refusal, by the reason D4 gives for Go: "a refusal can be
-     lifted later, a spelling cannot be changed." This changes done-when 7 of
-     #274.
-2. **What a qualification is, as a recorded value.** D2 keeps the chosen name
-   and the qualification apart and does not say what the qualification holds.
-   Today it is spelled as `M`, 16 digits of the pin and `_`
-   (`declarations.go:46`).
-   - Option a: the module's identity. Each language's realization spells it,
-     and under the qualified policy it spells today's form.
-   - Option b: the spelled prefix. The truncation is then part of what a plan
-     entry records.
-3. **The other two rules of the shared naming function.** It puts `Type`
-   before a leading underscore (`naming.go:23-24`) and refuses a name that
-   contains `__` (`naming.go:15`). No document gives either a purpose. A name
-   that contains `__`, or that begins with an underscore and a capital, is
-   reserved in C++. #268 excludes both rules "only if answer 1 is taken
-   further", and #274 takes it further.
-   - Option a: they are restrictions of the chosen name, and stay with the
-     horos side.
-   - Option b: they are C++'s reserved identifiers, and move to C++ with
-     done-when 7 of #274.
-4. **Which unexposed source declarations Go and Rust admit.** The consequence
-   derived under [Exposure](#exposure-and-its-audience): in the structural
-   profile, none. Row 13's validation expects that "an unexposed Go declaration
-   is realized unexported and its uses are rewritten".
-   - Option a: the consequence stands. The unexported spelling is tested on
-     the Go rule itself, slice 1 of #161 tests the refusal, and the row's
-     validation is met by the first representation with members that its
-     audience cannot reach.
-   - Option b: the public representation is narrower than every declaration
-     that a body names. Then Go and Rust each need a stated rule for it before
-     their slice 1.
-5. **TypeScript and an unexposed declaration in the public representation of an
-   exposed one.** D5 names Go and Rust. TypeScript admits the case today when
-   both are in one file, and refuses a use across files
-   (`format/files/typescript/provider/go/relocate.go:163-165`).
-   `TestGeneratedFilesPreservePublicationIntent`
-   (`integration/go/typescript_placement_test.go:323-376`) pins both.
-   - Option a: TypeScript keeps admitting it. A TypeScript type is structural,
-     so an importer can read and build the value without naming the type.
-   - Option b: TypeScript refuses it as Go and Rust do. The test changes.
-6. **What a plan entry records for Go and Rust before their slice 1.** The
-   default policy of Go and Rust changes in slice 1 of #161 and #159. A plan
-   entry that #207 writes before that, for a consumer that passes no policy,
-   records a qualified intent that the slice then changes.
-   - Option a: #207 records no intent for Go and Rust before their slice 1.
-   - Option b: the default of Go and Rust changes with the other parts of
-     #274. That needs their collision check earlier than the table says.
-7. **The plan's native symbols.** The reading under
-   [Reconciliation](#reconciliation-with-accepted-documents) is this page's.
-   The owner of #195 confirms it or states another.
+Nothing is open inside this design. The first version of this page listed
+seven points here, and the [decisions of 13 November 2026](https://github.com/Bitspark/bittype/issues/274#issuecomment-6838436844) on #274
+decide each:
+
+| | Point | Decision | Stated under |
+| --- | --- | --- | --- |
+| E1 | Rust and `Self` | Rust refuses it as unsupported coverage. The other targets keep `Self` | [Reserved words](#reserved-words) |
+| E2 | What a qualification is, as a recorded value | The module's identity. The prefix is one policy's realization | [Three things that were one](#three-things-that-were-one) |
+| E3 | The other two rules of the shared naming function | `Type` before a leading underscore stays with the chosen name. The refusal of `__` moves to the C++ target | [Three things that were one](#three-things-that-were-one), [Reserved words](#reserved-words) |
+| E4 | Which unexposed source declarations Go and Rust admit | None in the public representation of an exposed one. Go's unexported spelling is deferred with a trigger | [Exposure](#exposure-and-its-audience), [Go](#go) |
+| E5 | TypeScript | The rule is each language's. TypeScript admits within one module | [Exposure](#exposure-and-its-audience) |
+| E6 | What is fixed when | Before the plan envelope is stable and before the first release, not before the first plan entry | [What is fixed, and when](#what-is-fixed-and-when) |
+| E7 | "Native symbols" in the plan | Stated as a tension and not resolved here | [Reconciliation](#reconciliation-with-accepted-documents) |
+
+One thing is open outside this design: the tension of E7 with a sentence of
+[binding generation](binding-generation.md#the-selected-representation-plan).
+It belongs to [#195](https://github.com/Bitspark/bittype/issues/195) and to research 0017.
 
 ## Delivery order per target
 
-From #274, "Order", and rows 8, 10, 11 and 12 of the table "Applied".
+From #274, "Order", as E6 corrects it, and rows 8, 10, 11 and 12 of the table
+"Applied".
 
 | Step | Needs | Item |
 | --- | --- | --- |
@@ -566,9 +616,9 @@ From #274, "Order", and rows 8, 10, 11 and 12 of the table "Applied".
 | The inventory with handles. Each record can carry an intent | Nothing. It can start with [#271](https://github.com/Bitspark/bittype/issues/271) | #272 (row 10) |
 | The builder's comparator orders by name, then origin, then planned identity | In the same change as the first removal of the flat-name rule | #272 (row 12) |
 | The policy is selectable. The qualified policy reproduces today's output in all four targets | Nothing | #274, done-when 5 and 6 |
-| The shared naming function holds no reserved word. Rust states its own | Nothing | #274, done-when 7, and #268 |
+| The shared naming function holds no reserved word and no refusal of `__`. Rust refuses `Self`, and C++ refuses a name that contains `__` | Nothing | #274, done-when 7 as E1 and E3 change it, and #268 |
 | Every inventory record carries an intent for TypeScript, Go and Rust | #272 | #274, done-when 8 |
-| A Go-owned package holds the Go rule | #274 names no prerequisite | #274, done-when 9 |
+| A Go-owned package holds the Go rule: the exported spelling | #274 names no prerequisite | #274, done-when 9, without the unexported spelling (row 13a) |
 
 Then per target (row 8: "TypeScript first, Go and Rust with their slice 1, C++
 with #160"):
@@ -576,11 +626,14 @@ with #160"):
 | Target | The flat-name rule leaves, and Files checks collisions per placed scope | Files realizes the spelling | The default becomes unqualified |
 | --- | --- | --- | --- |
 | TypeScript | #273, second change, after #272 | TypeScript has no case rule. Its Files stage already writes the export from exposure (`relocate.go:89-91`) | After #273 (#274, done-when 10) |
-| Go | Slice 1 of #161 | Slice 1 of #161: exported or unexported, uses rewritten | Slice 1 of #161 |
-| Rust | Slice 1 of #159 | Slice 1 of #159 realizes visibility. Rust has no case rule | Slice 1 of #159 |
+| Go | Slice 1 of #161 | Slice 1 of #161: the exported spelling for a requested root and for a helper that its contribution states public, and the refusal of an output with an unexposed dependency. The unexported spelling is deferred (row 13a) | Slice 1 of #161 |
+| Rust | Slice 1 of #159 | Slice 1 of #159 realizes visibility and refuses an output with an unexposed dependency. Rust has no case rule | Slice 1 of #159 |
 | C++ | With #160. Until then C++ selects the flat rule in its own target | Deferred until [#167](https://github.com/Bitspark/bittype/issues/167) supplies a C++ semantic provider | With #160. Until then the qualified policy |
 
-All of it lands before #207 and #195 record a native name.
+The record of intent and each language's rule are fixed before the plan
+envelope becomes stable and before the first release (E6). #274's "Order" said
+that all of it lands before #207 and #195 record a native name, and E6
+corrects that.
 
 ## The code today
 
