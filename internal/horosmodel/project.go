@@ -9,7 +9,7 @@ import (
 
 	structure "github.com/Bitspark/bittype/check/syntax/shared/ast/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
-	s "github.com/Bitspark/bittype/internal/declsyntax"
+	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	core "github.com/bitspark/ontos/core/go"
@@ -42,7 +42,7 @@ func attributes(pairs ...string) []ast.Attribute {
 	return result
 }
 
-func (p *projector[L]) add(kind ast.Kind[L], attrs ...string) ast.NodeID {
+func (p *projector[L]) add(kind s.Kind, attrs ...string) ast.NodeID {
 	if p.err != nil {
 		return 0
 	}
@@ -54,7 +54,7 @@ func (p *projector[L]) add(kind ast.Kind[L], attrs ...string) ast.NodeID {
 		p.exhausted()
 		return 0
 	}
-	p.tree.Nodes = append(p.tree.Nodes, ast.Node[L]{Kind: kind, Attributes: attributes(attrs...)})
+	p.tree.Nodes = append(p.tree.Nodes, ast.Node[L]{Kind: ast.Kind[L](kind), Attributes: attributes(attrs...)})
 	return ast.NodeID(len(p.tree.Nodes))
 }
 
@@ -160,7 +160,7 @@ func projectChecked[L any](program Program, treeID ast.TreeID) (ast.AST[L], erro
 			p.child(m, s.RoleImport, i)
 		}
 		for _, declaration := range module.Declarations() {
-			kind := ast.Kind[L](s.KindTypeDefinition)
+			kind := s.KindTypeDefinition
 			if declaration.Form() == decl.KindDefinition {
 				kind = s.KindKindDefinition
 			}
@@ -273,7 +273,7 @@ func (p *projector[L]) expression(expression *decl.Expression, module decl.Diges
 	}
 }
 
-func (p *projector[L]) namedReference(kind ast.Kind[L], value core.Value, target decl.DeclarationID, module decl.Digest) ast.NodeID {
+func (p *projector[L]) namedReference(kind s.Kind, value core.Value, target decl.DeclarationID, module decl.Digest) ast.NodeID {
 	raw := value.(core.Tuple)
 	attrs := []string{s.AttributeScope, "local"}
 	if raw.Len() == 3 {
@@ -316,7 +316,7 @@ func (p *projector[L]) kind(value *decl.Kind, module decl.Digest, depth int) ast
 	var n ast.NodeID
 	switch value.Form() {
 	case decl.KindTop, decl.KindBottom:
-		kind := ast.Kind[L](s.KindTop)
+		kind := s.KindTop
 		if value.Form() == decl.KindBottom {
 			kind = s.KindBottom
 		}
@@ -336,7 +336,7 @@ func (p *projector[L]) kind(value *decl.Kind, module decl.Digest, depth int) ast
 			p.child(n, s.RoleArgument, p.kind(argument, module, depth+1))
 		}
 	case decl.KindUnion, decl.KindIntersection:
-		kind := ast.Kind[L](s.KindUnion)
+		kind := s.KindUnion
 		if value.Form() == decl.KindIntersection {
 			kind = s.KindIntersection
 		}
@@ -375,7 +375,7 @@ func (p *projector[L]) sequence(value *decl.Sequence, module decl.Digest, depth 
 	if !p.depth(depth) {
 		return 0
 	}
-	kind := ast.Kind[L](s.KindSequenceEpsilon)
+	kind := s.KindSequenceEpsilon
 	switch value.Form() {
 	case decl.SequenceItem:
 		kind = s.KindSequenceItem

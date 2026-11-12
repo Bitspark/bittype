@@ -14,6 +14,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/horos/go"
+	s "github.com/Bitspark/bittype/syntax/horos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 )
 
@@ -121,7 +122,7 @@ func (f Frontend[L]) failure(request semantic.Request[L], decoded *Decoded[L], e
 				target = detail.CalleeParameter.Declaration
 			}
 			root := decoded.tree.Nodes[decoded.tree.Root-1].References[0].Target.Node
-			if (reader[L]{tree: decoded.tree}).attr(root, "pin") != target.Module.String() {
+			if (reader[L]{tree: decoded.tree}).attr(root, s.AttributePin) != target.Module.String() {
 				subject = n.Key("context")
 			}
 			diagnostics = append(diagnostics, semantic.Diagnostic{Code: n.Key("callee-declaration"), Subject: subject, At: site, Message: "callee declaration or parameter contract"})
