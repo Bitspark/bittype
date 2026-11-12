@@ -149,7 +149,9 @@ never UTF-16 or byte lengths.
 **Bytes.** Encoding into ontos atoms copies. A decoded native value belongs to its
 receiver, and two positions may share one decoded value only if that value is
 transitively immutable ([binding contracts](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md#capture), C4).
-Within that rule each family states what repeated occurrences share.
+Capabilities are exempt: one capability decoded at two positions is one native
+value for one hold. Within that rule each family states what repeated
+occurrences share.
 
 **Maps and sets** ([#165](https://github.com/Bitspark/bittype/issues/165)).
 
@@ -268,7 +270,8 @@ by the interned imported reference, not by the envelope that carries it
 2. Conversion may preserve physical DAG sharing. This is an operational guarantee,
    conditioned on the sharing the input exposes. On decoding it is allowed only
    between transitively immutable native values, so a family that keeps a decoded
-   DAG shared, such as a recursive value, produces immutable native values (C4).
+   DAG shared, such as a recursive value, produces immutable native values (C4;
+   capabilities are exempt).
 3. The sender's aliasing cannot cross the canonical tree encoding: `[x, x]` and
    `[x, y]` with equal `x` and `y` encode identically.
 
@@ -292,8 +295,9 @@ share neither budget nor conversion state. The context carries separate measures
 Expanded size and height are computed by memo without expansion
 ([ontos#35](https://github.com/Bitspark/ontos/issues/35)). ontos owns the encoded
 size, families account for their work, the service library owns the call context,
-and Content owns its limits. Exhaustion covers the four measures and the owner's
-export limit, which a conversion reaches when it must export a capability.
+and Content owns its limits. Exhaustion covers the four measures and the export
+limit of the owner, the lifetime scope that holds the exports. A conversion
+reaches that limit when it must export a capability.
 
 **Capture** stays with platform `libraries/service`
 ([binding contracts](https://github.com/Bitspark/bitspark-service/blob/c36722db901ef7a259242e168c4c35d6f777fbf4/docs/design/binding-contracts.md#capture), C1 to C5).
