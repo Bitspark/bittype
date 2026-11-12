@@ -279,6 +279,19 @@ func TestGenerationRunRefusesAnAssemblyWithAnIncompleteInventory(t *testing.T) {
 	}
 }
 
+// The shared constructor lists a site for every planned declaration. When a
+// lowering leaves a declaration out of the unit, the constructor returns no
+// assembly.
+func TestGenerationBuildRefusesAUnitWithoutAPlannedDeclaration(t *testing.T) {
+	plan, err := independent(t).PlanDropping(context.Background(), inventoryRoots...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out, err := plan.Run(context.Background()); !errors.Is(err, g.ErrIncomplete) || out.Snapshot().Valid() || len(out.Inventory()) != 0 {
+		t.Fatal("a unit without a planned declaration was sealed", err)
+	}
+}
+
 // A value in a description must come from an issuer, and its content counts
 // against the output budget. Both are refused when the plan is made.
 func TestGenerationPlanRefusesUnissuedAndOversizedValues(t *testing.T) {

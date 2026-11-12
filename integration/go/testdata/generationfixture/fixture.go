@@ -22,6 +22,7 @@ import (
 	model "github.com/Bitspark/bittype/transform/syntax/golang/model/go"
 	target "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
+	construct "github.com/Bitspark/bittype/transform/syntax/shared/target/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
@@ -535,6 +536,33 @@ func (f *Fixture) PlanBuilt(ctx context.Context, tamper func(g.Assembly) g.Assem
 		return g.GenerationPlan{}, err
 	}
 	return f.planWith(ctx, Standard, SourceVariant{}, g.DefaultLimits(), f.Input(), roots, tampering{target.Provider{Package: "generated"}, tamper})
+}
+
+// dropping is the Go lowering that leaves the last finished declaration out of
+// the unit it returns.
+type dropping struct{ *target.Backend }
+
+func (d dropping) Finish(declarations []construct.Fragment[s.Language]) (construct.Fragment[s.Language], error) {
+	return d.Backend.Finish(declarations[:len(declarations)-1])
+}
+
+// droppingTarget builds through the shared constructor with the dropping
+// lowering. It returns what the constructor returns.
+type droppingTarget struct{ target.Provider }
+
+func (droppingTarget) Build(ctx context.Context, in g.BuildInput[s.Language]) (g.Assembly, error) {
+	b := &target.Backend{Store: construct.New[s.Language](ctx, in.Limits)}
+	return construct.Compile(ctx, in, b.Store, dropping{b})
+}
+
+// PlanDropping generates the named declarations with a target whose lowering
+// leaves one declaration out of the unit.
+func (f *Fixture) PlanDropping(ctx context.Context, names ...string) (g.GenerationPlan, error) {
+	roots, err := f.roots(names)
+	if err != nil {
+		return g.GenerationPlan{}, err
+	}
+	return f.planWith(ctx, Standard, SourceVariant{}, g.DefaultLimits(), f.Input(), roots, droppingTarget{target.Provider{Package: "generated"}})
 }
 
 // PlanSites generates the declarations at the given syntax sites.

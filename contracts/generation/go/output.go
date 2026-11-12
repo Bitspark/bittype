@@ -184,7 +184,6 @@ func seal(ctx context.Context, checker check.Checker, assembly Assembly, declara
 	}
 	// Freeze target-owned slices before invoking the independently supplied checker.
 	set.Trees = slices.Clone(set.Trees)
-	assembly.Declarations = slices.Clone(assembly.Declarations)
 	assembly.ExternalUses = slices.Clone(assembly.ExternalUses)
 	trees := map[ast.TreeID]int{}
 	position := map[ast.TreeID]int{}
