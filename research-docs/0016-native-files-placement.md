@@ -110,7 +110,6 @@ capitalize project names; words in square brackets inside a quotation are
 ours. In code excerpts a line `// …` marks lines we left out; everything else
 is exact, with its file path and line numbers at the code baseline.
 
-
 ## 1. System overview
 
 ### 1.1 The components
@@ -158,7 +157,7 @@ to **admit** an input is to validate and accept it, as opposed to refusing it.
 | **Compiler bridge** | The private code that converts bittype's tree into the compiler's own input and exports facts back: `internal/golangsem` for Go, `internal/typescriptsem` for TypeScript, a Rust executable (the **helper**) for Rust. |
 | **Profile** | A named, bounded subset of a language: a syntax or semantic profile says which constructs are supported. |
 | **Kernel, shared contract** | The **generation kernel** is bittype's language-agnostic code that plans and runs generation. **The shared Files contract** is the package `contracts/format/go` of section 4.4, which every generated-Files formatter goes through; code comments call it the Files kernel. Both are "shared mechanisms" in the sense of the rules in section 2.1. |
-| **Mapping library, declaration recipe** | A mapping library is a contribution that says how a horos form or declaration is represented natively (text becomes `string`, a list becomes a slice). The **declaration recipe** is the mapping part that turns a named horos declaration into a native declaration and chooses its name. |
+| **Mapping library, declaration recipe** | A mapping library is a contribution that says how a horos form (a built-in kind of horos type, such as text, list or record) or a horos declaration is represented natively: text becomes `string`, a list becomes a slice. The **declaration recipe** is the mapping part that turns a named horos declaration into a native declaration and chooses its name. |
 | **Native model, form** | Each language's closed set of native type **forms** (for example primitive, sequence, field, record, external) in which mapping libraries state a representation. A form carries string data and child forms. It is intent, not syntax. |
 | **Native target** | The per-language contribution that constructs the syntax tree from the closed plan the kernel hands it (closed: the requested declarations and everything they reference, transitively). Where we write "the Go target writes" or "target configuration", we mean this contribution, not the language. The quoted documents also say "generation target". What a reference points at is called its **destination**, except in code identifiers and quotations. |
 | **Intent** | What generation recorded: for a reference, its destination (a link in the tree, or an external use); for exposure, the exposed sites. It is a claim. Only analysis of the placed program yields facts. |
@@ -224,7 +223,6 @@ times with different placements.
 - **People.** Each repository is maintained by AI coding-agent sessions,
   several working in parallel, so clear ownership and additive composition
   are hard requirements.
-
 
 ## 2. Architectural context
 
@@ -405,9 +403,9 @@ predeclared types relate to "an output with an external use fails" (6.7),
 fields (6.8), whether Rust's existing providers supply a real check for item
 visibility (6.8), and whether each language gets its own setting type (6.5).
 "Files providers" in the quotes are the resolution and analysis providers that
-accept a snapshot with file paths. The Go work item does not say which of Go's
-two semantic profiles (section 4.7) it means.
-
+accept a snapshot with file paths. The Go work item was written before the
+second of Go's two semantic profiles (section 4.7) existed, and says that
+slice 1 does not wait for it.
 
 ## 3. Map: who decides what today, and where the code shows it
 
@@ -762,7 +760,6 @@ formatter decides privately what a placement is and whether it is complete.
 And the evidence requirement is fixed when the formatter is built, from the
 dependency environment, while the placement arrives with each request.
 
-
 ### 4.5 TypeScript, the corrected path and working model
 
 TypeScript was corrected on 8 November 2026. Before that, its native target
@@ -1011,9 +1008,9 @@ the resolver and the analyzer, and hands the result to `Publish`.
 
 **Step 5: the check.** `placeGenerated` is the formatter's own private layout
 function (steps 1 to 3). The guard runs it a second time on the original input
-and compares the result with what was published. `expected` is the recomputed layout:
-`expected.moved` maps old sites to new sites, `expected.public` holds the
-exposure of each new top-level site, and `u.expected` holds the intended
+and compares the result with what was published. `expected` is the recomputed
+layout: `expected.moved` maps old sites to new sites, `expected.public` holds
+the exposure of each new top-level site, and `u.expected` holds the intended
 destination of each type reference in unit `u`. `realized` is read from the
 fresh semantic graph of the published snapshot:
 
@@ -1122,12 +1119,10 @@ type Placement struct {
 Its admission applies the file limit, admits the file IDs and paths through
 the same Files list, refuses an empty assignment, refuses a pin that is
 unknown or already assigned, and requires every module to be assigned. So it
-enforces the same
-kind of rules as TypeScript's admission, for a different kind of item: module
-pins, where TypeScript has declaration sites. Like TypeScript's, it allows one
-assignment per file. The entry is not named by the placement here; it is the
-file that receives the entry module.
-
+enforces the same kind of rules as TypeScript's admission, for a different
+kind of item: module pins, where TypeScript has declaration sites. Like
+TypeScript's, it allows one assignment per file. The entry is not named by the
+placement here; it is the file that receives the entry module.
 
 ### 4.7 Go as it is
 
@@ -1319,7 +1314,6 @@ consumer's module path; dot and blank imports are unsupported.
 **A reader of the unplaced output that would change.** One integration test
 resolves and analyzes the generation snapshot itself as Go. Once the unplaced
 output is no longer a Go file, it must use the snapshot of the placed Source.
-
 
 ### 4.8 Rust as it is
 
@@ -1582,7 +1576,6 @@ constrains the shape now:
 - includes are file-level, order matters, and whether a forward declaration
   suffices depends on how a type is used.
 
-
 ## 5. Fixed points and their standing
 
 Every statement this document treats as given has one of four statuses:
@@ -1625,7 +1618,6 @@ Every statement this document treats as given has one of four statuses:
 Out of scope: conversion code between native values and horos values, runtime
 behaviour, C++ modules (as opposed to headers), and the choice of native
 representations.
-
 
 ## 6. What we have considered
 
@@ -1907,7 +1899,6 @@ These are known to us, so they are not what question 5 asks for:
 - **Shared parts shaped by the first implementation.** The package-role list
   for Files formatters lacks what every generated-Files formatter needs
   (statement 17).
-
 
 ## 7. Questions for the expert
 
