@@ -25,7 +25,7 @@ and checks those declarations under a placement and dependency environment.
    [SPI](generation-spi.md#semantic-traversal-and-source-interpretation) ·
    [GEN-01: correction and scope](generation-gaps.md#gen-01)
 
-The C++ include and namespace, Rust visibility and Go package clause cases remain open in
+The C++ include and namespace, Rust visibility, Go package clause and Go naming cases remain open in
 [ACX-004](architecture-cases/0004-generation-file-syntax.md). Language route
 planning through ASTTransformer remains a separate operation; it is not the
 source-bound generation plan documented here. [GEN-02](generation-gaps.md#gen-02)
