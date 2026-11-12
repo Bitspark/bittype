@@ -13,15 +13,23 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-// Library returns the optional helper under the given profile. key is the
+// library is this package's one mapping library.
+type library struct{ key g.HelperKey }
+
+// Library returns the optional helper. It states the structural
+// representation profile itself. key is the
 // helper key that the consumer created; a mapping that wraps a type in this
 // helper receives the same key. The generation contract rejects an invalid key
 // with generation.ErrInvalid when the library is registered.
-func Library(profile string, key g.HelperKey) rules.Library[s.Language] {
-	return rules.Library[s.Language]{Profile: profile, DescribeRules: func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
-		return g.MappingDescription[h.Language, s.Language, source.Reader]{Helpers: []g.HelperRecipe[s.Language]{{Key: key, Declaration: g.NativeDeclaration[s.Language]{
-			Name: "BittypeOptional", Form: model.Form(model.FormDefined), Parameters: []g.NativeParameter{{Name: "T"}},
-			Body: model.Record(model.Field("Present", false, model.Primitive(model.PrimitiveBool)), model.Field("Value", false, g.Parameter[s.Language](0))),
-		}}}}, nil
-	}}
+func Library(key g.HelperKey) g.MappingLibrary[h.Language, s.Language, source.Reader] {
+	return library{key: key}
+}
+
+// Describe states the structural representation profile and the one helper.
+func (p library) Describe(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
+	key := p.key
+	return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Helpers: []g.HelperRecipe[s.Language]{{Key: key, Declaration: g.NativeDeclaration[s.Language]{
+		Name: "BittypeOptional", Form: model.Form(model.FormDefined), Parameters: []g.NativeParameter{{Name: "T"}},
+		Body: model.Record(model.Field("Present", false, model.Primitive(model.PrimitiveBool)), model.Field("Value", false, g.Parameter[s.Language](0))),
+	}}}}, nil
 }

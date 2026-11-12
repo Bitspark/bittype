@@ -4,6 +4,11 @@
 // form, and its generic parameters. The horos side of a mapping owns this
 // recipe, and it is the same for every target. A target's declarations mapping
 // owns only the two native forms it passes in.
+//
+// The recipe states the structural representation profile itself. It gives a
+// native declaration bare generic parameters, which is what that profile
+// promises: the native type represents the horos type and enforces no kind
+// constraint.
 package declarations
 
 import (
@@ -17,56 +22,63 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-// Library returns the declaration recipe as a mapping library under the given
-// profile. record is the native form of a declaration whose body is a horos
-// record; alias is the form of every other declaration.
-func Library[T any](profile string, record, alias g.Form[T]) mapping.Library[T] {
-	return mapping.Library[T]{Profile: profile, DescribeRules: func(from, to representation.Language) (g.MappingDescription[h.Language, T, source.Reader], error) {
-		return g.MappingDescription[h.Language, T, source.Reader]{Declarations: []g.DeclarationRecipe[h.Language, T, source.Reader]{{ID: "declarations", Expand: func(ctx context.Context, r g.DeclarationRequest[h.Language, T, source.Reader]) (g.DeclarationDescription[T], error) {
-			zero := g.DeclarationDescription[T]{}
-			src, err := r.Reader()
+// library is the declaration recipe with one target's two forms.
+type library[T any] struct{ record, alias g.Form[T] }
+
+// Library returns the declaration recipe as a mapping library. record is the
+// native form of a declaration whose body is a horos record; alias is the form
+// of every other declaration.
+func Library[T any](record, alias g.Form[T]) g.MappingLibrary[h.Language, T, source.Reader] {
+	return library[T]{record: record, alias: alias}
+}
+
+// Describe states the structural representation profile and the one recipe.
+func (p library[T]) Describe(from, to representation.Language) (g.MappingDescription[h.Language, T, source.Reader], error) {
+	record, alias := p.record, p.alias
+	return g.MappingDescription[h.Language, T, source.Reader]{Profile: mapping.RepresentationProfile, Declarations: []g.DeclarationRecipe[h.Language, T, source.Reader]{{ID: "declarations", Expand: func(ctx context.Context, r g.DeclarationRequest[h.Language, T, source.Reader]) (g.DeclarationDescription[T], error) {
+		zero := g.DeclarationDescription[T]{}
+		src, err := r.Reader()
+		if err != nil {
+			return zero, err
+		}
+		open, err := r.Declaration()
+		if err != nil {
+			return zero, err
+		}
+		decl, err := src.Declaration(open.Declaration)
+		if err != nil {
+			return zero, err
+		}
+		name, err := naming.Exported(decl.Name)
+		if err != nil {
+			return zero, src.Unsupported(open.Body, err.Error())
+		}
+		if !decl.Root {
+			name = "M" + decl.ModulePin[:16] + "_" + name
+		}
+		body, descriptor, err := src.Descriptor(open.Body)
+		if err != nil {
+			return zero, err
+		}
+		form := alias
+		if descriptor && body.Constructor == "record" {
+			form = record
+		}
+		desc := g.DeclarationDescription[T]{Name: name, Form: form, Origin: decl.Origin}
+		for i, f := range open.Formals {
+			parameter, err := src.Parameter(f)
 			if err != nil {
 				return zero, err
 			}
-			open, err := r.Declaration()
+			pname, err := naming.Exported(parameter.Name)
 			if err != nil {
 				return zero, err
 			}
-			decl, err := src.Declaration(open.Declaration)
-			if err != nil {
-				return zero, err
-			}
-			name, err := naming.Exported(decl.Name)
-			if err != nil {
-				return zero, src.Unsupported(open.Body, err.Error())
-			}
-			if !decl.Root {
-				name = "M" + decl.ModulePin[:16] + "_" + name
-			}
-			body, descriptor, err := src.Descriptor(open.Body)
-			if err != nil {
-				return zero, err
-			}
-			form := alias
-			if descriptor && body.Constructor == "record" {
-				form = record
-			}
-			desc := g.DeclarationDescription[T]{Name: name, Form: form, Origin: decl.Origin}
-			for i, f := range open.Formals {
-				parameter, err := src.Parameter(f)
-				if err != nil {
-					return zero, err
-				}
-				pname, err := naming.Exported(parameter.Name)
-				if err != nil {
-					return zero, err
-				}
-				desc.Generic.Parameters = append(desc.Generic.Parameters, g.ParameterDescription{Name: pname, Origin: parameter.Origin, RequiredUse: true})
-				desc.Generic.Bindings = append(desc.Generic.Bindings, g.Parameter[T](i))
-				desc.Generic.Arguments = append(desc.Generic.Arguments, g.Argument[T](i))
-			}
-			desc.Body, err = r.Mapped(open.Body)
-			return desc, err
-		}}}}, nil
-	}}
+			desc.Generic.Parameters = append(desc.Generic.Parameters, g.ParameterDescription{Name: pname, Origin: parameter.Origin, RequiredUse: true})
+			desc.Generic.Bindings = append(desc.Generic.Bindings, g.Parameter[T](i))
+			desc.Generic.Arguments = append(desc.Generic.Arguments, g.Argument[T](i))
+		}
+		desc.Body, err = r.Mapped(open.Body)
+		return desc, err
+	}}}}, nil
 }
