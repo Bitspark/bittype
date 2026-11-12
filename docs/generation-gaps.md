@@ -187,11 +187,20 @@ test events of main CI run [42509242909](https://github.com/Bitspark/bittype/act
 ### Current guarantee and visible limitation
 
 Horos checks source applications before generation. The supplied
-`pagination-representation/1` profile explicitly permits erasing proper-kind
+`structural-representation/1` profile explicitly permits erasing proper-kind
 constraints from native generic parameters. The declared
-`pagination-enforcement/1` profile is unsupported: the mapping library rejects
-registration with `generation.ErrUnsupported`. It never falls back to the
-representation profile. [Profile implementation](../transform/syntax/horos/mapping/go/mapping.go)
+`structural-enforcement/1` profile is unsupported. The horos mapping adapter
+refuses to describe a library under that identity, so registration fails with
+`generation.ErrUnsupported` and no mapping exists under it. A request for it
+then fails with `generation.ErrUnsupported` in the registry, which finds no
+mapping for the requested profile. It never falls back to the representation
+profile. [Profile implementation](../transform/syntax/horos/mapping/go/mapping.go),
+[tests](../integration/go/horos_generation_profile_test.go)
+
+The refusal names the one identity that its own package declares and does not
+implement. It is no list of admitted profiles: a library built under any other
+profile registers, and a request for that profile selects it
+([bittype/ACX-008](architecture-cases/0008-structural-profile-gate.md)).
 
 For example, with the ordinary Horos prelude imported as h:
 

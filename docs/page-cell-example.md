@@ -127,7 +127,7 @@ binding := g.BindingDescription[h.Language, ts.Language, source.Reader]{
 ```
 
 Describe returns that binding in a MappingDescription with the selected
-`pagination-representation/1` profile. The kernel pairs Cell's binder with its
+`structural-representation/1` profile. The kernel pairs Cell's binder with its
 actual from the graph, judges that actual, and accepts the capture only as a
 child it minted for this use. Cell's body is never opened. The mapping chooses a
 public symbol; it cannot build an import or invoke an AST builder.

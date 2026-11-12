@@ -37,18 +37,42 @@ resolution/analysis of its own snapshot.
 
 ## Representation and enforcement profiles
 
-The [horos mapping library](../transform/syntax/horos/mapping/go/mapping.go) defines RepresentationProfile and EnforcementProfile. Each native mapping is its own package under `transform/syntax/horos-to-<native>/mapping/<name>/go` and exports Library(profile). No package lists the mappings of a pair. Each consumer registers a source, target and mapping libraries and passes the root declaration sites, output tree ID, receipts, profile and limits to Engine.Generate (or PlanGeneration then Run). Go's target provider takes Package and C++ takes Namespace. The [TypeScript example](kernel-composition.md#horos-to-typescript) shows registration and execution.
+The [horos mapping library](../transform/syntax/horos/mapping/go/mapping.go) declares the two profile identities, RepresentationProfile and EnforcementProfile. Tests and fixtures take them from there and repeat neither as a literal. Each native mapping is its own package under `transform/syntax/horos-to-<native>/mapping/<name>/go` and exports Library(profile). No package lists the mappings of a pair. Each consumer registers a source, target and mapping libraries and passes the root declaration sites, output tree ID, receipts, profile and limits to Engine.Generate (or PlanGeneration then Run). Go's target provider takes Package and C++ takes Namespace. The [TypeScript example](kernel-composition.md#horos-to-typescript) shows registration and execution.
 
 | Selected profile | Promise and behavior |
 | --- | --- |
-| RepresentationProfile | Native declarations represent uses already admitted by Horos. The profile expressly permits erasing ordinary proper-kind contracts from target parameter declarations. |
-| EnforcementProfile | Native clients would have to be prevented from violating the source constraint. No such target encoding is implemented; the library rejects registration of this profile with generation.ErrUnsupported. |
+| RepresentationProfile, `structural-representation/1` | Native declarations represent uses already admitted by Horos. The profile expressly permits erasing ordinary proper-kind contracts from target parameter declarations. |
+| EnforcementProfile, `structural-enforcement/1` | Native clients would have to be prevented from violating the source constraint. No such target encoding is implemented. The profile is declared and refused: the adapter rejects registration of a library under it with generation.ErrUnsupported, and a request for it fails with generation.ErrUnsupported. |
 
-The mapping library admits exactly one profile name, so a further profile needs
-an edit to that shared file, and both identities are named after the first
-fixture. [bittype/ACX-008](architecture-cases/0008-structural-profile-gate.md)
-records this; [#216](https://github.com/Bitspark/bittype/issues/216) tracks the
-correction.
+The two identities state what the profile promises and name no fixture. The
+version stays `/1`: nothing is released and the generated output did not change
+with the names.
+
+A profile is an identity that the kernel does not interpret. Three rules decide
+what a request receives:
+
+- **A library answers under the profile it is given.** The adapter `Library`
+  in the horos mapping package copies that profile into the library's
+  description. It compares it with no list of admitted names.
+- **A request selects by its profile.** The registry plans with the mappings
+  registered under the requested profile and compatible languages. With none it
+  fails with generation.ErrUnsupported. This is how a profile that nobody
+  registered is refused.
+- **The enforcement profile is refused by its owner.** The horos mapping
+  package declares that identity and does not implement it, so its adapter
+  refuses to describe a library under it. A consumer cannot register the
+  erasing libraries under the enforcing name.
+
+A further profile, such as the bounded profile that the
+[families design](representation-families.md#domains) names, therefore needs
+its own libraries under its own identity and the consumer's composition. It
+needs no change to the horos mapping package. It may reuse a builtin mapping by
+calling its constructor with its own profile.
+[`TestHorosMappingLibrariesAnswerUnderASecondProfile`](../integration/go/horos_generation_profile_test.go)
+generates through the builtin libraries of all four targets under a second
+identity, and the tests beside it cover the two refusals.
+[bittype/ACX-008](architecture-cases/0008-structural-profile-gate.md) records
+the earlier closed gate, its correction and its limits.
 
 The profile selection is part of the configured mapping, not inferred from a kind
 name. Representation does not advertise arbitrary native instantiations as
