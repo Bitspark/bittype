@@ -223,6 +223,10 @@ func TestGenerationHandleIsRefusedByAnotherRunOfThePlan(t *testing.T) {
 // planned declaration once, inside the snapshot.
 func TestGenerationRunRefusesAnAssemblyWithAnIncompleteInventory(t *testing.T) {
 	fixture := independent(t)
+	standard := inventoryOutput(t, fixture, inventoryRoots...).Inventory()
+	for i := range standard {
+		standard[i].Handle = g.DeclarationHandle{}
+	}
 	for name, c := range map[string]struct {
 		tamper func([]ast.NodeRef) []ast.NodeRef
 		want   error
@@ -248,8 +252,23 @@ func TestGenerationRunRefusesAnAssemblyWithAnIncompleteInventory(t *testing.T) {
 				t.Fatal("the target listed another number of declarations", built)
 			}
 			if c.want == nil {
-				if err != nil || len(out.Inventory()) != 5 {
+				if err != nil {
 					t.Fatal("the complete assembly was not sealed", err)
+				}
+				// The plan is run a second time. What the target overwrote
+				// in its copy of the program is in neither inventory.
+				again, err := plan.Run(context.Background())
+				if err != nil {
+					t.Fatal(err)
+				}
+				for _, run := range []g.Output{out, again} {
+					inventory := run.Inventory()
+					for i := range inventory {
+						inventory[i].Handle = g.DeclarationHandle{}
+					}
+					if !reflect.DeepEqual(inventory, standard) {
+						t.Fatal("the target changed what the plan states about its declarations")
+					}
 				}
 				return
 			}

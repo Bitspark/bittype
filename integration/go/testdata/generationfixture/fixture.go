@@ -503,7 +503,9 @@ func (f *Fixture) PlanRootsWithin(ctx context.Context, mode Mode, limits g.Limit
 }
 
 // tampering is the fixture's Go target with each assembly passed through
-// tamper before the kernel receives it.
+// tamper before the kernel receives it. After it has built, it also overwrites
+// what the program handed it about each declaration, which must not reach the
+// plan or a later run.
 type tampering struct {
 	target.Provider
 	tamper func(g.Assembly) g.Assembly
@@ -513,6 +515,14 @@ func (p tampering) Build(ctx context.Context, in g.BuildInput[s.Language]) (g.As
 	built, err := p.Provider.Build(ctx, in)
 	if err != nil {
 		return built, err
+	}
+	for _, d := range in.Program.Declarations() {
+		for i := range d.Provenance {
+			d.Provenance[i] = ast.NodeRef{}
+		}
+		for i := range d.Description.Values {
+			d.Description.Values[i] = g.IssuedValue{}
+		}
 	}
 	return p.tamper(built), nil
 }

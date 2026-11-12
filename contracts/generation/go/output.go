@@ -157,7 +157,7 @@ func (o Output) Inventory() []OwnedDeclaration {
 // this output did not issue with ErrScope. That includes the handle of another
 // run of the same plan.
 func (o Output) Resolve(h DeclarationHandle) (OwnedDeclaration, error) {
-	if o.owner == nil || h.output != o.owner || h.index == 0 || int(h.index) > len(o.inventory) {
+	if h.output != o.owner || h.index == 0 || int(h.index) > len(o.inventory) {
 		return OwnedDeclaration{}, ErrScope
 	}
 	return o.inventory[h.index-1].clone(), nil

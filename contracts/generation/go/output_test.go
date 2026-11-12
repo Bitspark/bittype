@@ -342,3 +342,19 @@ func TestIssuedValueIsReadOnlyByItsIssuer(t *testing.T) {
 		t.Fatal("a value without an issuer", err)
 	}
 }
+
+// A copy of a description owns its values: the kernel keeps copies, and what a
+// library or a target does to its own slice afterwards does not reach them.
+func TestDescriptionCopiesOwnTheirValues(t *testing.T) {
+	value, err := NewValueIssuer().Issue("Person")
+	if err != nil {
+		t.Fatal(err)
+	}
+	native := NativeDeclaration[outputLanguage]{Values: []IssuedValue{value}}
+	described := DeclarationDescription[outputLanguage]{Values: []IssuedValue{value}}
+	nativeCopy, describedCopy := native.Clone(), described.Clone()
+	native.Values[0], described.Values[0] = IssuedValue{}, IssuedValue{}
+	if nativeCopy.Values[0] != value || describedCopy.Values[0] != value {
+		t.Fatal("a copy shares its values with the original")
+	}
+}
