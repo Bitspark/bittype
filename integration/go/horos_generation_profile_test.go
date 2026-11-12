@@ -314,3 +314,44 @@ func TestRequestSelectsTheContributionsOfItsProfile(t *testing.T) {
 		}
 	})
 }
+
+// republished is a contribution of its own author: it takes another library's
+// description and states a profile of its own choice.
+type republished struct {
+	library g.MappingLibrary[h.Language, ts.Language, source.Reader]
+	profile string
+}
+
+func (p republished) Describe(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
+	description, err := p.library.Describe(from, to)
+	description.Profile = p.profile
+	return description, err
+}
+
+// TestRegistryDoesNotJudgeAStatedProfile records where the refusal of the
+// enforcement profile ends. The registry selects by the profile that a
+// contribution states and does not judge whether the contribution keeps that
+// promise. A contribution that republishes the builtin, constraint-erasing
+// descriptions under the enforcement identity is selected by a request for it
+// and yields representation output. Its author states that profile and
+// answers for it. bittype states it nowhere, and no constructor of a builtin
+// mapping takes it (bittype/ACX-008, limits).
+func TestRegistryDoesNotJudgeAStatedProfile(t *testing.T) {
+	var libraries []g.MappingLibrary[h.Language, ts.Language, source.Reader]
+	for _, library := range typescriptLibraries() {
+		libraries = append(libraries, republished{library: library, profile: rules.EnforcementProfile})
+	}
+	q := composeProfiles(t, paginationModule(), typescriptText(), tgtarget.Provider{}, libraries...)
+	out, err := q.generate(rules.EnforcementProfile)
+	if err != nil {
+		t.Fatal("the registry refused a stated profile:", err)
+	}
+	if text := q.text(t, out); !strings.Contains(text, "interface Page<T>") {
+		t.Fatal(text)
+	}
+	// The builtin libraries themselves were not registered, so nothing states
+	// the structural profile in this registry.
+	if err := q.refuses(rules.RepresentationProfile); err != nil {
+		t.Fatal(err)
+	}
+}
