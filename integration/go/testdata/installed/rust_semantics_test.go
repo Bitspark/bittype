@@ -59,7 +59,7 @@ func TestInstalledRustSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](definition, analyzerust.Contract(), analyzerust.Provider{})
+	analyzer, err := analysis.NewAnalyzer[s.Language](definition, n.AnalysisContract(), analyzerust.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}

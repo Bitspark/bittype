@@ -7,6 +7,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/semantics/go"
+	n "github.com/Bitspark/bittype/semantics/horos/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/bitspark/ontos/codec/go"
@@ -140,7 +141,7 @@ func atom(v core.Value) string {
 }
 func (s *interpretation) payload(id semantics.TermID) (core.Tuple, error) {
 	t := s.data.Terms[id-1]
-	if t.Encoding != (semantics.Key{Owner: "ontos", Name: "codec-v1"}) {
+	if t.Encoding != n.TermEncoding() {
 		return core.Tuple{}, semantic.ErrInvalidRequest
 	}
 	v, err := codec.Decode(t.Data)
@@ -159,7 +160,7 @@ func (s *interpretation) modulePin(id semantics.EntityID) (string, error) {
 		return "", semantic.ErrInvalidRequest
 	}
 	t := s.data.Terms[term-1]
-	if t.Operator != (semantics.Key{Owner: "horos", Name: "identity/module"}) || t.Encoding != (semantics.Key{Owner: "ontos", Name: "codec-v1"}) {
+	if t.Operator != n.ModuleIdentity() || t.Encoding != n.TermEncoding() {
 		return "", semantic.ErrInvalidRequest
 	}
 	v, err := codec.Decode(t.Data)

@@ -79,12 +79,12 @@ func TestGoImportsAnalysisRefusesAnotherEnvironment(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			snapshot, _ := goPackageCapture(t, map[string]string{"a/a.go": "package a\n\ntype A string\n"}, true)
-			resolver, _ := resolution.NewResolver[s.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
+			resolver, _ := resolution.NewResolver[s.Language](snapshot.Language(), n.ResolutionContract(), resolvegolang.Provider{})
 			resolved, err := resolver.Resolve(ctx, snapshot, semantic.Options{Configuration: tc.resolve})
 			if err != nil {
 				t.Fatal(err)
 			}
-			contract, err := analyze.ContractFor(tc.analyze)
+			contract, err := n.AnalysisContractFor(tc.analyze)
 			if err != nil {
 				t.Fatal(err)
 			}

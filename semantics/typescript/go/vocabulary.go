@@ -20,6 +20,34 @@ func Key(name string) semantics.Key { return semantics.Key{Owner: "typescript", 
 func Bindings() semantics.Key       { return Key("bindings") }
 func Coverage() semantics.Key       { return Key("captured-type-coverage") }
 func Validity() semantics.Key       { return Key("captured-type-validity") }
+
+// The graph names below are written by the compiler helper, which is
+// JavaScript and spells them itself, and read by name in Go.
+
+// Kinds of graph entities; ModuleKind is also the kind of a Files group.
+func ModuleKind() semantics.Key      { return Key("module") }
+func PackageKind() semantics.Key     { return Key("package") }
+func PackageTypeKind() semantics.Key { return Key("package-type") }
+func BuiltinKind() semantics.Key     { return Key("builtin") }
+func AliasKind() semantics.Key       { return Key("alias") }
+func InterfaceKind() semantics.Key   { return Key("interface") }
+func ParameterKind() semantics.Key   { return Key("parameter") }
+
+// Relations of facts: about a module, a declaration and a native type.
+func NamedExportRelation() semantics.Key  { return Key("named-export") }
+func DeclaredTypeRelation() semantics.Key { return Key("declared-type") }
+func ConstraintRelation() semantics.Key   { return Key("constraint") }
+func NativeTypeRelation() semantics.Key   { return Key("native-type") }
+func DisplayRelation() semantics.Key      { return Key("display") }
+func PropertiesRelation() semantics.Key   { return Key("properties") }
+
+// The operator of the term that a properties fact carries.
+func ObjectOperator() semantics.Key { return Key("object") }
+
+// Roles of binding occurrences: a type reference and an import binding.
+func NameRole() semantics.Key   { return Key("name") }
+func ImportRole() semantics.Key { return Key("import") }
+
 func Configuration() []semantic.Setting {
 	return []semantic.Setting{
 		{Key: Key("compiler"), Value: []byte(CompilerVersion)},

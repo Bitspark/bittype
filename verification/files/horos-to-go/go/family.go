@@ -12,8 +12,6 @@ import (
 	joint "github.com/Bitspark/bittype/verification/logos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	"github.com/Bitspark/logos-contract/contract/go/typed"
-	core "github.com/bitspark/ontos/core/go"
-	data "github.com/bitspark/ontos/data/go"
 )
 
 type namedBody struct {
@@ -135,8 +133,7 @@ func (l Families) Bind(source h.Declaration, target n.Type, fields []FieldBindin
 	if !k.Sort().IsProper() || !source.Definition().Parameters()[0].Kind.Sort().IsProper() {
 		return Family{}, ErrCoverage
 	}
-	want := core.NewTuple(core.NewAtom([]byte("horos/decl/arrow")), data.EncodeList([]core.Value{k.Value()}), k.Value())
-	if guarantee.Kind().Module() != kind.Module() || !q.Value().Equal(want) {
+	if guarantee.Kind().Module() != kind.Module() || !q.Value().Equal(h.ArrowValue(k.Value())) {
 		return Family{}, ErrCoverage
 	}
 	r, err := l.mappings.bindBody(source, target, fields, "family")

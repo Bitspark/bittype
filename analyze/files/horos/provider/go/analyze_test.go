@@ -23,6 +23,7 @@ import (
 
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
+	"github.com/Bitspark/bittype/semantics/horos/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -211,7 +212,7 @@ func runHorosCase(language representation.Language, ctx context.Context, input h
 	if err != nil {
 		return semantic.Result{}, err
 	}
-	resolver, err := resolution.NewResolver[s.Language](language, resolve.Contract(), resolve.Provider{})
+	resolver, err := resolution.NewResolver[s.Language](language, horos.ResolutionContract(), resolve.Provider{})
 	if err != nil {
 		return semantic.Result{}, err
 	}
@@ -219,7 +220,7 @@ func runHorosCase(language representation.Language, ctx context.Context, input h
 	if err != nil {
 		return semantic.Result{}, err
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](language, analyze.ContractWithResolutionConfiguration(input.Configuration), analyze.Provider{})
+	analyzer, err := analysis.NewAnalyzer[s.Language](language, horos.AnalysisContractWithResolutionConfiguration(input.Configuration), analyze.Provider{})
 	if err != nil {
 		return semantic.Result{}, err
 	}
@@ -254,7 +255,7 @@ func runResolution(t *testing.T, tree s.AST, modify func(*horosCase)) semantic.R
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolver, err := resolution.NewResolver[s.Language](syntax, resolve.Contract(), resolve.Provider{})
+	resolver, err := resolution.NewResolver[s.Language](syntax, horos.ResolutionContract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,9 +279,9 @@ func requireModel(t *testing.T, result semantic.Result) representation.Semantics
 	if !ok {
 		t.Fatalf("missing semantic model: %+v", result.Diagnostics())
 	}
-	for _, obligation := range analyze.Contract().Semantic.Obligations {
+	for _, obligation := range horos.AnalysisContract().Semantic.Obligations {
 		verdict := semantic.Undetermined
-		if obligation.Key == resolve.Validity() {
+		if obligation.Key == horos.Validity() {
 			verdict = semantic.Holds
 		}
 		requireReport(t, result, obligation.Key, semantic.Complete, verdict)
@@ -290,11 +291,11 @@ func requireModel(t *testing.T, result semantic.Result) representation.Semantics
 func entity(t *testing.T, model representation.Semantics, module, name string) (semantics.EntityID, semantics.Entity) {
 	t.Helper()
 	for i, e := range model.Data().Entities {
-		if e.Kind.Name != "type-definition" || e.Name != name {
+		if e.Kind != horos.TypeDefinitionKind() || e.Name != name {
 			continue
 		}
 		owner, ok := model.Entity(e.Owner)
-		if ok && owner.Kind.Name == "module" && owner.Name == module {
+		if ok && owner.Kind == horos.ModuleKind() && owner.Name == module {
 			return semantics.EntityID(i + 1), e
 		}
 	}
@@ -350,7 +351,7 @@ func TestPaginationBindingsPreserveCallerScopeAndDistinctParameters(t *testing.T
 	if _, ok := model.DirectParameterBindings(peopleBody.Arguments[0]); ok {
 		t.Fatal("a bare reference must not be reported as an application")
 	}
-	deps := model.DependenciesFrom(peopleID, resolve.ReferenceDependency())
+	deps := model.DependenciesFrom(peopleID, horos.ReferenceDependency())
 	targets := map[semantics.EntityID]bool{}
 	for _, dep := range deps {
 		targets[dep.To] = true
@@ -366,7 +367,7 @@ func TestPaginationBindingsPreserveCallerScopeAndDistinctParameters(t *testing.T
 			t.Fatal("published occurrence binding is not queryable")
 		}
 		at := binding.At
-		at.Role = resolve.ExpressionRole()
+		at.Role = horos.ExpressionRole()
 		if _, ok := model.TermAt(at); !ok {
 			t.Fatal("binding lost its occurrence-to-term association")
 		}
@@ -434,7 +435,7 @@ func TestDescriptorPayloadsAndOperandPathsRetainCanonicalMeaning(t *testing.T) {
 	}
 	for name := range bodies {
 		id, _ := entity(t, model, "example.payloads", name)
-		if len(model.DependenciesFrom(id, resolve.ReferenceDependency())) != 0 {
+		if len(model.DependenciesFrom(id, horos.ReferenceDependency())) != 0 {
 			t.Fatalf("%s invented a declaration dependency from literal data", name)
 		}
 	}
@@ -501,8 +502,8 @@ func requireFailure(t *testing.T, result semantic.Result, status semantic.Comple
 	if result.HasSemantics() {
 		t.Fatal("failed or incomplete analysis published a model")
 	}
-	requireReport(t, result, resolve.Validity(), status, verdict)
-	for _, key := range []semantics.Key{resolve.Indexing(), resolve.Bindings(), resolve.Applications(), resolve.Dependencies()} {
+	requireReport(t, result, horos.Validity(), status, verdict)
+	for _, key := range []semantics.Key{horos.Indexing(), horos.Bindings(), horos.Applications(), horos.Dependencies()} {
 		requireReport(t, result, key, semantic.Incomplete, semantic.Undetermined)
 	}
 	diagnostics := result.Diagnostics()
@@ -542,7 +543,7 @@ func TestUnresolvedSourceAndContextHaveDistinctReports(t *testing.T) {
 			if test.code == "unknown-declaration" || test.code == "unknown-import" {
 				status, verdict = semantic.Complete, semantic.Rejected
 			}
-			requireReport(t, resolved, resolve.ReferenceResolution(), status, verdict)
+			requireReport(t, resolved, horos.ReferenceResolution(), status, verdict)
 			if result.Diagnostics()[0].At == nil {
 				t.Fatal("located failure lost its current syntax site")
 			}
@@ -584,7 +585,7 @@ func TestMissingPinnedDependencyIsIncomplete(t *testing.T) {
 	tree.Nodes[tree.Root-1].Children = []ast.Child{{Role: s.RoleModule, Node: root}}
 	result := run(t, compact(tree), nil)
 	requireFailure(t, result, semantic.Incomplete, semantic.Undetermined, "missing-dependency", "context")
-	requireReport(t, runResolution(t, compact(tree), nil), resolve.ReferenceResolution(), semantic.Incomplete, semantic.Undetermined)
+	requireReport(t, runResolution(t, compact(tree), nil), horos.ReferenceResolution(), semantic.Incomplete, semantic.Undetermined)
 	if result.Diagnostics()[0].At == nil {
 		t.Fatal("missing dependency diagnostic lost its import site")
 	}
@@ -703,8 +704,8 @@ func TestHorosResolutionReportsSurviveExportExhaustion(t *testing.T) {
 		input.Limits.Semantics.MaxRecords = 1
 	}} {
 		resolved := runResolution(t, tree, modify)
-		requireReport(t, resolved, resolve.ReferenceResolution(), semantic.Complete, semantic.Holds)
-		requireReport(t, resolved, resolve.Validity(), semantic.Complete, semantic.Holds)
+		requireReport(t, resolved, horos.ReferenceResolution(), semantic.Complete, semantic.Holds)
+		requireReport(t, resolved, horos.Validity(), semantic.Complete, semantic.Holds)
 		if (modify == nil) != resolved.HasSemantics() {
 			t.Fatal("resolution verdict conflated with export availability")
 		}
@@ -714,7 +715,7 @@ func TestHorosResolutionReportsSurviveExportExhaustion(t *testing.T) {
 func TestResolverAndExportBudgetsAreIndependent(t *testing.T) {
 	tree := fixture(t)
 	result := run(t, tree, func(input *horosCase) {
-		input.Configuration = []semantic.Setting{{Key: resolve.LimitsSetting(), Value: []byte("[256,1,16777216,256]")}}
+		input.Configuration = []semantic.Setting{{Key: horos.LimitsSetting(), Value: []byte("[256,1,16777216,256]")}}
 	})
 	requireFailure(t, result, semantic.Incomplete, semantic.Undetermined, "exhausted", "request")
 	result = run(t, tree, func(input *horosCase) {
@@ -736,13 +737,13 @@ func TestInvalidConfigurationEntryAndCancellationReturnNoResult(t *testing.T) {
 	}
 	syntax, input := horosInput(t, fixture(t))
 	for _, settings := range [][]semantic.Setting{
-		{{Key: resolve.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}},
-		{{Key: resolve.LimitsSetting(), Value: []byte("[513,100000,16777216,256]")}},
-		{{Key: resolve.LimitsSetting(), Value: []byte("[256,0,16777216,256]")}},
-		{{Key: resolve.LimitsSetting(), Value: []byte("[256,100000,0,256]")}},
-		{{Key: resolve.LimitsSetting(), Value: []byte("[256,100000,16777216,0]")}},
-		{{Key: resolve.LimitsSetting(), Value: []byte("[256,1]")}},
-		{{Key: resolve.LimitsSetting(), Value: []byte("[256,100000,16777216,256] true")}},
+		{{Key: horos.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}},
+		{{Key: horos.LimitsSetting(), Value: []byte("[513,100000,16777216,256]")}},
+		{{Key: horos.LimitsSetting(), Value: []byte("[256,0,16777216,256]")}},
+		{{Key: horos.LimitsSetting(), Value: []byte("[256,100000,0,256]")}},
+		{{Key: horos.LimitsSetting(), Value: []byte("[256,100000,16777216,0]")}},
+		{{Key: horos.LimitsSetting(), Value: []byte("[256,1]")}},
+		{{Key: horos.LimitsSetting(), Value: []byte("[256,100000,16777216,256] true")}},
 		{{Key: semantics.Key{Owner: "other", Name: "configuration"}, Value: []byte("[]")}},
 	} {
 		request := input
@@ -770,7 +771,7 @@ func TestInvalidConfigurationPrecedesMalformedSourceDecoding(t *testing.T) {
 	// duplicate name fails earlier, at syntax admission, before configuration.
 	setAttribute(&tree.Nodes[find(tree, s.KindModule, "example.people")-1], s.AttributePin, strings.Repeat("0", 64))
 	syntax, input := horosInput(t, tree)
-	input.Configuration = []semantic.Setting{{Key: resolve.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}}
+	input.Configuration = []semantic.Setting{{Key: horos.LimitsSetting(), Value: []byte("[0,100000,16777216,256]")}}
 	result, err := runHorosCase(syntax, context.Background(), input)
 	if !errors.Is(err, semantic.ErrInvalidRequest) || result.Valid() {
 		t.Fatalf("invalid configuration was mistaken for source rejection: %v", err)

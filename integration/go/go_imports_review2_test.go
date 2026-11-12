@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	analyze "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
+	nativequery "github.com/Bitspark/bittype/analyze/files/golang/queries/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
@@ -69,7 +69,7 @@ func TestGoImportsGuardLongChainsOverSuppliedStructure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	queries, err := analyze.NewQueries(context.Background(), model)
+	queries, err := nativequery.NewQueries(context.Background(), model)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -299,8 +299,8 @@ func TestGoImportsCollisionsAndSites(t *testing.T) {
 		if _, _, err := n.Imports(altered); err == nil {
 			t.Fatal(name, "settings accepted by Imports")
 		}
-		if _, err := analyze.ContractFor(altered); err == nil {
-			t.Fatal(name, "settings accepted by ContractFor")
+		if _, err := n.AnalysisContractFor(altered); err == nil {
+			t.Fatal(name, "settings accepted by AnalysisContractFor")
 		}
 	}
 }

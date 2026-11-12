@@ -171,7 +171,7 @@ func (p Stages) organize(ctx context.Context, layout *result, limits semantic.Li
 func (x *result) groups() []source.Group {
 	groups := make([]source.Group, 0, len(x.units))
 	for _, u := range x.units {
-		groups = append(groups, source.Group{ID: source.GroupID(u.placement.File), Kind: n.Key("module"), Members: []files.ID{u.placement.File}, Sites: []ast.NodeRef{ref(u.tree.ID, u.tree.Root)}})
+		groups = append(groups, source.Group{ID: source.GroupID(u.placement.File), Kind: n.ModuleKind(), Members: []files.ID{u.placement.File}, Sites: []ast.NodeRef{ref(u.tree.ID, u.tree.Root)}})
 	}
 	return groups
 }

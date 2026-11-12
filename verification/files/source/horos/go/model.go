@@ -9,7 +9,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	bridge "github.com/Bitspark/bittype/internal/horosmodel"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
+	n "github.com/Bitspark/bittype/semantics/horos/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -21,7 +21,7 @@ import (
 var ErrForeign = errors.New("foreign or missing Horos projection handle")
 
 var frontend = bridge.Frontend[s.Language]{
-	DeclarationPrefix: "horos/decl/", DescriptorPrefix: "horos/", Owner: "horos", ResolutionProfile: resolve.Profile,
+	DeclarationPrefix: n.DeclarationTagPrefix, DescriptorPrefix: n.DescriptorTagPrefix,
 	ResolveModel: func(root core.Value, deps []core.Value, limits decl.Limits) (bridge.Program, error) {
 		return decl.ResolveWithLimits(root, deps, limits)
 	},
@@ -56,8 +56,8 @@ type Judgment struct {
 }
 
 func Evidence() semantic.EvidenceRequirement {
-	return semantic.EvidenceRequirement{Operation: resolution.Kind(), Profile: resolve.Profile,
-		Reports: resolve.Contract().Semantic.SemanticsRequirements, Semantics: true}
+	return semantic.EvidenceRequirement{Operation: resolution.Kind(), Profile: n.ResolutionProfile,
+		Reports: n.ResolutionContract().Semantic.SemanticsRequirements, Semantics: true}
 }
 
 // Inspect explicitly reconstructs the owner-local Program from the exact captured
@@ -198,8 +198,13 @@ func (k Kind) Arrow(module decl.Digest) (Kind, error) {
 	if k.owner == nil || module != k.module {
 		return Kind{}, ErrForeign
 	}
-	v := k.value.Expression().Value()
-	return (Model{k.owner}).CompileKind(module, core.NewTuple(core.NewAtom([]byte("horos/decl/arrow")), data.EncodeList([]core.Value{v}), v))
+	return (Model{k.owner}).CompileKind(module, ArrowValue(k.value.Expression().Value()))
+}
+
+// ArrowValue is the canonical horos kind syntax of the arrow from one
+// parameter kind to that same kind.
+func ArrowValue(kind core.Value) core.Value {
+	return core.NewTuple(core.NewAtom([]byte(n.DeclarationTagPrefix+"arrow")), data.EncodeList([]core.Value{kind}), kind)
 }
 func (k Kind) Model() Model                  { return Model{k.owner} }
 func (k Kind) Module() decl.Digest           { return k.module }

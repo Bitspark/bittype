@@ -13,8 +13,8 @@ import (
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
+	n "github.com/Bitspark/bittype/semantics/horos/go"
 	"github.com/Bitspark/bittype/source/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -64,7 +64,7 @@ func (p Stages) Capture() (Stages, error) {
 	}
 	// This Files composition requires the fixed Horos semantic contracts. Configured
 	// resource options remain explicit and are captured with the matching receipts.
-	if p.Resolver.Contract().Semantic.Profile != "horos-declarations-4/resolution-1" || p.Analyzer.Contract().Semantic.Profile != "horos-declarations-4/analysis-1" {
+	if p.Resolver.Contract().Semantic.Profile != n.ResolutionProfile || p.Analyzer.Contract().Semantic.Profile != n.AnalysisProfile {
 		return Stages{}, semantic.ErrInvalidOperation
 	}
 	for _, options := range []*semantic.Options{&p.ResolutionOptions, &p.AnalysisOptions} {
@@ -195,7 +195,7 @@ func Organization(units []source.Unit[s.Language]) ([]source.Group, []source.Rel
 				return nil, nil, source.ErrInvalid
 			}
 			locations[pin] = unit.File
-			groups = append(groups, source.Group{ID: source.GroupID(pin), Kind: semantics.Key{Owner: "horos", Name: "module"}, Members: []files.ID{unit.File}, Sites: []ast.NodeRef{{Tree: tree.ID, Node: module.Node}}})
+			groups = append(groups, source.Group{ID: source.GroupID(pin), Kind: n.ModuleKind(), Members: []files.ID{unit.File}, Sites: []ast.NodeRef{{Tree: tree.ID, Node: module.Node}}})
 		}
 	}
 	for _, unit := range units {
@@ -205,13 +205,13 @@ func Organization(units []source.Unit[s.Language]) ([]source.Group, []source.Rel
 				if child.Role == s.RoleImport {
 					to := locations[attr(tree, child.Node, s.AttributePin)]
 					if to == "" {
-						if attr(tree, child.Node, s.AttributePin) == resolve.PreludePin() {
+						if attr(tree, child.Node, s.AttributePin) == n.PreludePin() {
 							continue
 						}
 						return nil, nil, source.ErrInvalid
 					}
 					at := ast.NodeRef{Tree: tree.ID, Node: child.Node}
-					relations = append(relations, source.Relation{Kind: semantics.Key{Owner: "horos", Name: "import"}, From: unit.File, To: to, At: &at})
+					relations = append(relations, source.Relation{Kind: n.ImportRelation(), From: unit.File, To: to, At: &at})
 				}
 			}
 		}
@@ -230,7 +230,7 @@ func (p Stages) CheckPublication(ctx context.Context, publication source.Publica
 	graph, _ := publication.Analysis.Semantics()
 	moduleSites := map[ast.NodeRef]bool{}
 	for _, entity := range graph.Data().Entities {
-		if entity.Kind == (semantics.Key{Owner: "horos", Name: "module"}) {
+		if entity.Kind == n.ModuleKind() {
 			for _, site := range entity.Declarations {
 				moduleSites[site] = true
 			}

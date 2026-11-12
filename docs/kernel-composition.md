@@ -21,10 +21,11 @@ engine/go/                                  endpoint checks and public entry poi
 transform/syntax/shared/generation/go/       registration, selection and composition
 transform/syntax/shared/target/go/           scoped AST construction and relocation
 transform/syntax/horos/source/go/            horos interpretation and reader
-transform/syntax/horos/mapping/go/           Horos patterns and declaration policy
+transform/syntax/horos/mapping/go/           horos mapping adapter and profile names
+transform/syntax/horos/mapping/{pattern,declarations,naming}/go/ horos patterns, declaration recipe, naming
 transform/syntax/<native>/model/go/          intended native forms, no AST construction
 transform/syntax/<native>/target/go/         native grammar and construction
-transform/syntax/horos-to-<native>/mapping/go/ declarative representation libraries
+transform/syntax/horos-to-<native>/mapping/<name>/go/ one declarative representation library each
 format/files/typescript/provider/go/        placement, imports, exports and binding checks
 ```
 
@@ -137,7 +138,14 @@ if err != nil { return err }
 err = compose.RegisterTarget(registry, to, target.Provider{})
 if err != nil { return err }
 
-for _, library := range mappings.Libraries(rules.RepresentationProfile) {
+libraries := []generation.MappingLibrary[horos.Language, typescript.Language, source.Reader]{
+    text.Library(rules.RepresentationProfile),
+    boolean.Library(rules.RepresentationProfile),
+    list.Library(rules.RepresentationProfile),
+    record.Library(rules.RepresentationProfile),
+    declarations.Library(rules.RepresentationProfile),
+}
+for _, library := range libraries {
     if _, err := compose.RegisterMapping(registry, from, to, library); err != nil {
         return err
     }
@@ -152,6 +160,12 @@ if err != nil { return err }
 out, err := plan.Run(ctx)
 ```
 
+`text`, `boolean`, `list`, `record` and `declarations` are the five packages
+under `transform/syntax/horos-to-typescript/mapping/<name>/go`. Each exports
+`Library(profile)`. No package lists them. The consumer names every library it
+registers, as the [installed consumer fixture](../integration/go/testdata/installed/horos_generation_test.go)
+does.
+
 Horos supplies interpretation and admission. The mapping library selects native
 representations. TypeScript supplies intended native forms and their AST
 construction. For Page<Cell<Person>>, the Cell library registers one more exact
@@ -159,6 +173,9 @@ description selecting its package export. The kernel and target remain unchanged
 [Cell and reversed Pair qualification](../integration/go/generation_planning_test.go)
 
 Go's target configuration supplies Package, and C++'s supplies Namespace.
+Both are recorded as pending placement instances in
+[ACX-004](architecture-cases/0004-generation-file-syntax.md): the package or
+namespace of a placed declaration belongs to the consumer's placement.
 Configuration is stable for a registered target. There is no provider opening
 that hands a target builder to a mapping, no procedural operation interface and
 no compatibility alias.

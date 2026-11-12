@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	analyze "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
+	nativequery "github.com/Bitspark/bittype/analyze/files/golang/queries/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
@@ -67,7 +68,7 @@ func goCaptureTrees(t *testing.T, trees []s.AST) semantic.Snapshot {
 func goResults(t *testing.T, snapshot semantic.Snapshot) (semantic.Result, semantic.Result) {
 	t.Helper()
 	ctx := context.Background()
-	resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
+	resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), n.ResolutionContract(), resolvegolang.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +76,7 @@ func goResults(t *testing.T, snapshot semantic.Snapshot) (semantic.Result, seman
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +116,7 @@ func qualifyGolang(t *testing.T) {
 	if _, err := registry.Resolve(ctx, snapshot, semantic.Options{}); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
+	resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), n.ResolutionContract(), resolvegolang.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +131,7 @@ func qualifyGolang(t *testing.T) {
 	if _, err := registry.Analyze(ctx, input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,8 +227,8 @@ func TestGoSemanticReceiptAndEnvironmentIsolation(t *testing.T) {
 	snapshot, trees := goCapture(t, "type Box[T any] struct {Value T}")
 	foreign := goCaptureTrees(t, trees)
 	resolved, result := goResults(t, snapshot)
-	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
-	resolver, _ := resolution.NewResolver[s.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
+	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyze.Provider{})
+	resolver, _ := resolution.NewResolver[s.Language](snapshot.Language(), n.ResolutionContract(), resolvegolang.Provider{})
 	for name, input := range map[string]analysis.Input{
 		"missing":    {Snapshot: snapshot, Options: semantic.Options{Configuration: n.Configuration()}},
 		"foreign":    {Snapshot: foreign, Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}},
@@ -292,7 +293,7 @@ func TestGoSemanticMultiUnitReferencesAndRecursion(t *testing.T) {
 	if !ok || !element.Same(goType(t, m, "Person")) {
 		t.Fatal("cross-file lookup")
 	}
-	query, err := analyze.NewQueries(context.Background(), m)
+	query, err := nativequery.NewQueries(context.Background(), m)
 	if err != nil {
 		t.Fatal("reconstruction", err)
 	}
@@ -305,7 +306,7 @@ func TestGoSemanticMultiUnitReferencesAndRecursion(t *testing.T) {
 		}
 	}
 	forged := goCaptureTrees(t, trees)
-	resolver, _ := resolution.NewResolver[s.Language](forged.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
+	resolver, _ := resolution.NewResolver[s.Language](forged.Language(), n.ResolutionContract(), resolvegolang.Provider{})
 	if _, err := resolver.Resolve(context.Background(), forged, semantic.Options{Configuration: n.Configuration()}); !errors.Is(err, semantic.ErrInvalidRequest) {
 		t.Fatal("forged reference", err)
 	}
@@ -313,7 +314,7 @@ func TestGoSemanticMultiUnitReferencesAndRecursion(t *testing.T) {
 func TestGoSemanticNativeAdmission(t *testing.T) {
 	ctx := context.Background()
 	m := goModel(t, "type Text string; type Open[T any] struct{ Value T }; type Strict[T string] struct{ Value T }; type Approx[T ~string] struct{ Value T }")
-	queries, err := analyze.NewQueries(ctx, m)
+	queries, err := nativequery.NewQueries(ctx, m)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -348,7 +349,7 @@ func TestGoSemanticNativeAdmission(t *testing.T) {
 	if _, err := queries.Admit(ctx, goType(t, m, "Open")); !errors.Is(err, n.ErrUnsupported) {
 		t.Fatal("arity", err)
 	}
-	if _, err := analyze.NewQueries(ctx, n.Model{}); !errors.Is(err, n.ErrForeign) {
+	if _, err := nativequery.NewQueries(ctx, n.Model{}); !errors.Is(err, n.ErrForeign) {
 		t.Fatal("zero model", err)
 	}
 	canceled, cancel := context.WithCancel(ctx)
@@ -356,13 +357,13 @@ func TestGoSemanticNativeAdmission(t *testing.T) {
 	if _, err := queries.Admit(canceled, goType(t, m, "Open"), boolean); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
-	if _, err := analyze.NewQueries(canceled, m); !errors.Is(err, context.Canceled) {
+	if _, err := nativequery.NewQueries(canceled, m); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
 }
 func TestGoSemanticConcurrentQueries(t *testing.T) {
 	m := goModel(t, "type Box[T any] struct{ Value T }")
-	q, err := analyze.NewQueries(context.Background(), m)
+	q, err := nativequery.NewQueries(context.Background(), m)
 	if err != nil {
 		t.Fatal(err)
 	}

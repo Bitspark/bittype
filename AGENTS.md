@@ -37,6 +37,50 @@ Reason about responsibilities and change propagation; do not replace this with
 keyword heuristics, scoring or new lint gates. Limited coverage may be deferred;
 a violated extension boundary must be identified as an architectural defect,
 not described as merely future coverage or reported architecturally complete.
+
+**Owner direction, 11 November 2026:** "if something is placed incorrectly, it is
+incorrect and must change. Something that is missing can be healed additively,
+i.e. there is nothing wrong requiring removal." Correct a misplaced or wrongly
+named part first, as its own change, and add missing coverage afterwards. Defer
+such a move only when its destination needs a huge effort, and record the
+deferral with its reason and trigger as an open violation.
+[AC-10](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-10).
+
+**Owner request, 11 November 2026:** check for packages whose parts "neither
+conceptually nor practically depend on each other", and for parts that call one
+another directly "instead of invoking the kernel", and enforce the result
+"through forbidden dependencies that we could check for and enforce". Read
+[package boundaries](docs/package-boundaries.md) before adding a package or an
+import between implementations. One contribution, meaning one thing a consumer
+registers or selects on its own, is one package. Identities live in vocabulary
+packages. Only a composition imports a contribution. Ask of every direct call
+whose answer the caller needs: its own, or the composition's. The
+[architecture test](integration/go/architecture_check_test.go) derives a
+package's import rule from the role that its path gives, as the
+[layout](LAYOUT.md#dependency-direction) lists. The foundation and kernel set
+and the packages of which there is only one have explicit entries. No other
+package has a hand entry: pull request
+[#246](https://github.com/Bitspark/bittype/pull/246) moved Go's contract
+identities and query service and converted the last eight. When you add a
+package:
+
+- A package of an existing role needs no edit to the test.
+- A foundation, kernel or one-of-a-kind package needs an explicit entry in
+  [`architecture_test.go`](integration/go/architecture_test.go).
+- An import of a stage provider package or of a query service package outside
+  a composition needs an entry in the
+  [exception table](integration/go/architecture_exceptions_test.go) that names
+  its symbols and its reason.
+
+The plan is [#218](https://github.com/Bitspark/bittype/issues/218). The findings, their corrections and
+their limits are
+[bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md). Every
+confirmed instance of that case is corrected as of 12 November 2026, and its
+limits name what was not examined.
+[#256](https://github.com/Bitspark/bittype/issues/256) tracks those names. The
+import check enforces boundaries that this reasoning has decided. It does not
+replace the reasoning, and a green run does not show that ownership is right.
+
 The [Horos/Go verification path](docs/verification.md#library-owned-verification-contributions)
 takes library-owned interpretations, mapping projections and laws. Preserve the
 captured subject, receiver authority, dependency policy and Logos outcome when
@@ -124,8 +168,11 @@ Builtin and independent library mappings use the same contract. Exact overrides
 identify both expected and replacement bindings; ambiguity and selected-rule
 failure never trigger a weaker fallback. Native semantic forms belong under
 transform/syntax/<native>/model/go, their AST interpretation under
-transform/syntax/<native>/target/go. Horos mappings live under
-transform/syntax/horos/mapping/go and transform/syntax/horos-to-<native>/mapping/go.
+transform/syntax/<native>/target/go. The horos mapping adapter lives in
+transform/syntax/horos/mapping/go; its source patterns, declaration recipe and
+naming rule are the packages pattern, declarations and naming below it. Each
+mapping is one package under transform/syntax/horos-to-<native>/mapping/<name>/go
+and exports Library.
 The kernel, source and target packages cannot import concrete mapping packages.
 Mapping packages depend on native models, never target AST constructors.
 

@@ -109,7 +109,7 @@ func placementStages(t *testing.T, packages ...n.PackageTypes) tsfiles.Stages {
 	if err != nil {
 		t.Fatal(err)
 	}
-	contract, err := analyze.ContractFor(settings)
+	contract, err := n.AnalysisContractFor(settings)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -488,5 +488,40 @@ func TestTypeScriptPlacementPreservesModuleScope(t *testing.T) {
 	}
 	if out, err := formatter.Format(ctx, in); err == nil || len(out.Units()) != 0 {
 		t.Fatal("script presented as an ESM module")
+	}
+}
+
+// The compiler helper is JavaScript and spells the graph names itself. Three of
+// the names that Go reads through the vocabulary are read by no other test: the
+// builtin kind of a binding's target, the parameter kind of a declaration opened
+// by id and the native-type relation of a type opened by id.
+func TestTypeScriptHelperNamesMatchVocabulary(t *testing.T) {
+	ctx := context.Background()
+	stages := placementStages(t)
+	u := importedUnit(t, "export type Items<T> = Array<T>;")
+	in, err := stages.Capture(ctx, []source.Unit[ts.Language]{u}, u.File, semantic.Limits{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	formatter, err := tsfiles.New(stages)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out, err := formatter.Format(ctx, in); err != nil || len(out.Units()) != 1 {
+		t.Fatal("binding to a builtin constructor", err)
+	}
+	model, err := n.Open(in.Evidence)
+	if err != nil {
+		t.Fatal(err)
+	}
+	items, err := model.Lookup(u.Syntax.Abstract.ID, "Items")
+	if err != nil || len(items.Parameters()) != 1 {
+		t.Fatal("generic alias", err)
+	}
+	if opened, err := model.Declaration(items.Parameters()[0].ID()); err != nil || opened.Entity().Name != "T" {
+		t.Fatal("parameter declaration by id", err)
+	}
+	if opened, err := model.Type(items.Type().ID()); err != nil || !opened.Same(items.Type()) {
+		t.Fatal("native type by id", err)
 	}
 }

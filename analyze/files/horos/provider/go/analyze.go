@@ -5,33 +5,11 @@ import (
 	"context"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
-	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
+	n "github.com/Bitspark/bittype/semantics/horos/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 )
-
-const Profile = "horos-declarations-4/analysis-1"
-
-func Contract() analysis.Contract { return ContractWithResolutionConfiguration(nil) }
-
-func ContractWithResolutionConfiguration(settings []semantic.Setting) analysis.Contract {
-	resolved := resolve.Contract()
-	requirement := resolution.Requirement{Profile: resolved.Semantic.Profile, Configuration: settings, Reports: resolved.Semantic.SemanticsRequirements}.Clone()
-	contract := semantic.Contract{Profile: Profile}
-	for _, obligation := range resolved.Semantic.Obligations {
-		if obligation.Key != resolved.Bindings {
-			contract.Obligations = append(contract.Obligations, obligation)
-		}
-	}
-	for _, required := range resolved.Semantic.SemanticsRequirements {
-		if required.Obligation != resolved.Bindings {
-			contract.SemanticsRequirements = append(contract.SemanticsRequirements, required)
-		}
-	}
-	return analysis.Contract{Semantic: contract, Resolution: &requirement}
-}
 
 // bittype:scope docs/analysis.md#horos-profile
 func Analyze(ctx context.Context, request analysis.Request[s.Language]) (semantic.Result, error) {
@@ -41,7 +19,7 @@ func Analyze(ctx context.Context, request analysis.Request[s.Language]) (semanti
 	if err := ctx.Err(); err != nil {
 		return semantic.Result{}, err
 	}
-	if request.Contract().Profile != Profile || len(request.Configuration()) != 0 {
+	if request.Contract().Profile != n.AnalysisProfile || len(request.Configuration()) != 0 {
 		return semantic.Result{}, semantic.ErrInvalidRequest
 	}
 	resolved, ok := request.Resolution()

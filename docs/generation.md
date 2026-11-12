@@ -106,8 +106,9 @@ engine/go/                                   public operations and endpoint admi
 transform/syntax/shared/generation/go/        registry and selected composition
 transform/syntax/shared/target/go/            shared AST construction mechanics
 transform/syntax/horos/source/go/             Horos evidence reader
-transform/syntax/horos/mapping/go/            source patterns and declaration policy
-transform/syntax/horos-to-<native>/mapping/go/ representation choices
+transform/syntax/horos/mapping/go/            mapping adapter and profile names
+transform/syntax/horos/mapping/{pattern,declarations,naming}/go/ source patterns, declaration recipe, naming
+transform/syntax/horos-to-<native>/mapping/<name>/go/ representation choices, one package per mapping
 transform/syntax/<native>/model/go/           native intent vocabulary
 transform/syntax/<native>/target/go/          native intent to AST
 format/files/typescript/provider/go/          implemented generated Files handoff
@@ -117,6 +118,20 @@ Mappings depend on source interpretation and native models. Targets depend on
 native models and construction mechanics. Neither the kernel nor a target imports
 concrete mapping libraries. There are no per-pair assembly factories or presets.
 The consumer supplies implementations; the kernel performs their composition.
+
+Each builtin mapping is its own package and exports `Library(profile)`:
+`text`, `boolean`, `list`, `record` and `declarations` for every native
+language, and `optional` for Go. No package lists the mappings of a pair. The
+former `Libraries(profile)` functions are deleted, and a consumer registers
+each library it selects. For Go the consumer also creates the key of the
+optional helper and passes it to `record.Library(profile, key)` and
+`optional.Library(profile, key)`.
+[bittype/ACX-009](architecture-cases/0009-package-boundaries.md) records the
+correction. [#238](https://github.com/Bitspark/bittype/pull/238) divided the
+common package the same day. Its adapter with the profile gate stays at
+`transform/syntax/horos/mapping/go`. The source patterns, the declaration
+recipe and the naming rule are the packages `pattern`, `declarations` and
+`naming` below it.
 
 ## Language identity and registration
 

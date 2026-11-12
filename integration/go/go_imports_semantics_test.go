@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	analyze "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
+	nativequery "github.com/Bitspark/bittype/analyze/files/golang/queries/go"
 	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	check "github.com/Bitspark/bittype/contracts/check/go"
@@ -108,7 +109,7 @@ func goPackageCaptureIn(t *testing.T, paths []string, sources map[string]string,
 func goImportResults(t *testing.T, snapshot semantic.Snapshot, settings []semantic.Setting) (semantic.Result, semantic.Result, error) {
 	t.Helper()
 	ctx := context.Background()
-	resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
+	resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), n.ResolutionContract(), resolvegolang.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +117,7 @@ func goImportResults(t *testing.T, snapshot semantic.Snapshot, settings []semant
 	if err != nil {
 		return semantic.Result{}, semantic.Result{}, err
 	}
-	contract, err := analyze.ContractFor(settings)
+	contract, err := n.AnalysisContractFor(settings)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -238,7 +239,7 @@ func TestGoImportsBindQualifiedUsesToImportedDeclarations(t *testing.T) {
 		t.Fatal("supplied structure was exported", facts)
 	}
 	// The explicit query session reconstructs the same graph from the same environment.
-	if _, err := analyze.NewQueries(context.Background(), model); err != nil {
+	if _, err := nativequery.NewQueries(context.Background(), model); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -355,14 +356,14 @@ func TestGoImportConfigurationIsNormalizedAndBound(t *testing.T) {
 	}
 	// Analysis is bound to the exact environment its resolution used.
 	snapshot, _ := goPackageCapture(t, map[string]string{"a/a.go": "package a\n\nimport \"example.org/cell\"\n\ntype A = cell.Cell[string]\n"}, true)
-	resolver, _ := resolution.NewResolver[s.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
+	resolver, _ := resolution.NewResolver[s.Language](snapshot.Language(), n.ResolutionContract(), resolvegolang.Provider{})
 	resolved, err := resolver.Resolve(context.Background(), snapshot, semantic.Options{Configuration: goImportSettings(t, cellPackage)})
 	if err != nil {
 		t.Fatal(err)
 	}
 	other := n.Package{ImportPath: cellPackage.ImportPath, Files: []n.PackageFile{{Name: "cell.go", Text: "package cell\n\ntype Cell[T any] struct{ Value T }\n"}}}
 	otherSettings := goImportSettings(t, other)
-	contract, err := analyze.ContractFor(otherSettings)
+	contract, err := n.AnalysisContractFor(otherSettings)
 	if err != nil {
 		t.Fatal(err)
 	}

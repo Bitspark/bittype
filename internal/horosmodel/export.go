@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/Bitspark/bittype/semantics/go"
+	n "github.com/Bitspark/bittype/semantics/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	codec "github.com/bitspark/ontos/codec/go"
 )
 
 type exporter[L any] struct {
-	frontend              Frontend[L]
 	ctx                   context.Context
 	input                 *Decoded[L]
 	facts                 semantics.Data
@@ -57,7 +57,7 @@ func (e *exporter[L]) association(site ast.NodeRef, term semantics.TermID) error
 	if site.Node == 0 {
 		return nil
 	}
-	at := semantics.Occurrence{Site: site, Role: e.frontend.ExpressionRole()}
+	at := semantics.Occurrence{Site: site, Role: n.ExpressionRole()}
 	if err := e.reserve(1, 0, occurrenceSize(at)); err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (e *exporter[L]) binding(site ast.NodeRef, target semantics.EntityID) error
 	if site.Node == 0 {
 		return nil
 	}
-	at := semantics.Occurrence{Site: site, Role: e.frontend.TargetRole()}
+	at := semantics.Occurrence{Site: site, Role: n.TargetRole()}
 	if err := e.reserve(1, 0, occurrenceSize(at)); err != nil {
 		return err
 	}
@@ -79,10 +79,10 @@ func (e *exporter[L]) dependency(owner, target semantics.EntityID, site ast.Node
 	if owner == 0 || target == 0 {
 		return fmt.Errorf("Horos reference has no declaration identity")
 	}
-	dependency := semantics.Dependency{From: owner, To: target, Relation: e.frontend.ReferenceDependency()}
+	dependency := semantics.Dependency{From: owner, To: target, Relation: n.ReferenceDependency()}
 	bytes := keySize(dependency.Relation)
 	if site.Node != 0 {
-		at := semantics.Occurrence{Site: site, Role: e.frontend.ExpressionRole()}
+		at := semantics.Occurrence{Site: site, Role: n.ExpressionRole()}
 		dependency.At = &at
 		bytes += occurrenceSize(at)
 	}
@@ -159,7 +159,7 @@ func (e *exporter[L]) expression(value *decl.Expression, site ast.NodeRef, owner
 			term.Arguments = append(term.Arguments, child)
 		}
 	case decl.Descriptor:
-		term.Kind, term.Operator, term.Encoding = semantics.ProviderExpression, e.frontend.key("descriptor/"+value.Constructor()), semantics.Key{Owner: "ontos", Name: "codec-v1"}
+		term.Kind, term.Operator, term.Encoding = semantics.ProviderExpression, n.DescriptorOperator(value.Constructor()), n.TermEncoding()
 		term.Data = codec.Encode(value.Value())
 		for _, operand := range value.Operands() {
 			path := operand.Path()
@@ -179,7 +179,7 @@ func (e *exporter[L]) expression(value *decl.Expression, site ast.NodeRef, owner
 		return 0, err
 	}
 	subject := semantics.Subject{Term: id}
-	if err := e.sortFact(subject, e.frontend.SortRelation(), value.Sort(), depth+1); err != nil {
+	if err := e.sortFact(subject, n.SortRelation(), value.Sort(), depth+1); err != nil {
 		return 0, err
 	}
 	if err := e.memberships(subject, value.Memberships(), depth+1); err != nil {
@@ -233,7 +233,7 @@ func (e *exporter[L]) kind(value *decl.Kind, site ast.NodeRef, owner semantics.E
 			term.Arguments = append(term.Arguments, child)
 		}
 	default:
-		term.Kind, term.Operator, term.Encoding = semantics.ProviderExpression, e.frontend.key("kind/"+string(value.Form())), semantics.Key{Owner: "ontos", Name: "codec-v1"}
+		term.Kind, term.Operator, term.Encoding = semantics.ProviderExpression, n.Key("kind/"+string(value.Form())), n.TermEncoding()
 		term.Data = codec.Encode(value.Value())
 		for _, operand := range value.Operands() {
 			path := operand.Path()
@@ -251,7 +251,7 @@ func (e *exporter[L]) kind(value *decl.Kind, site ast.NodeRef, owner semantics.E
 		if err := e.association(site, id); err != nil {
 			return 0, err
 		}
-		if err := e.sortFact(semantics.Subject{Term: id}, e.frontend.SortRelation(), value.Sort(), depth+1); err != nil {
+		if err := e.sortFact(semantics.Subject{Term: id}, n.SortRelation(), value.Sort(), depth+1); err != nil {
 			return 0, err
 		}
 	}
@@ -259,14 +259,14 @@ func (e *exporter[L]) kind(value *decl.Kind, site ast.NodeRef, owner semantics.E
 }
 
 func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Program, limits semantics.Limits) (semantics.Data, error) {
-	e := exporter[L]{frontend: f, ctx: ctx, input: input, limits: limits, records: limits.MaxRecords, edges: limits.MaxEdges, bytes: limits.MaxBytes,
+	e := exporter[L]{ctx: ctx, input: input, limits: limits, records: limits.MaxRecords, edges: limits.MaxEdges, bytes: limits.MaxBytes,
 		modules: make(map[decl.Digest]semantics.EntityID), declarations: make(map[decl.DeclarationID]semantics.EntityID), parameters: make(map[decl.ParameterID]semantics.EntityID)}
 	modules := program.Modules()
 	// Allocate every identity before any expression, including source-less bundled
 	// definitions. Only actual snapshot sites enter Declarations and occurrences.
 	for _, module := range modules {
 		standard := module.Pin() == decl.PreludePin()
-		moduleID, err := e.entity(f.key("module"), module.Name(), 0, input.ModuleSite(module.Pin()), standard)
+		moduleID, err := e.entity(n.ModuleKind(), module.Name(), 0, input.ModuleSite(module.Pin()), standard)
 		if err != nil {
 			return semantics.Data{}, err
 		}
@@ -275,11 +275,11 @@ func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Pro
 			return semantics.Data{}, err
 		}
 		for _, declaration := range module.Declarations() {
-			kind, parameterKind := "type-definition", "type-parameter"
+			kind, parameterKind := n.TypeDefinitionKind(), n.Key("type-parameter")
 			if declaration.Form() == decl.KindDefinition {
-				kind, parameterKind = "kind-definition", "kind-parameter"
+				kind, parameterKind = n.Key("kind-definition"), n.Key("kind-parameter")
 			}
-			id, err := e.entity(f.key(kind), declaration.ID().Name, moduleID, input.DeclarationSite(declaration.ID()), standard)
+			id, err := e.entity(kind, declaration.ID().Name, moduleID, input.DeclarationSite(declaration.ID()), standard)
 			if err != nil {
 				return semantics.Data{}, err
 			}
@@ -302,14 +302,14 @@ func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Pro
 			}
 			for index, name := range names {
 				parameter := decl.ParameterID{Declaration: declaration.ID(), Index: index}
-				parameterID, err := e.entity(f.key(parameterKind), name, id, input.ParameterSite(parameter), standard)
+				parameterID, err := e.entity(parameterKind, name, id, input.ParameterSite(parameter), standard)
 				if err != nil {
 					return semantics.Data{}, err
 				}
 				e.parameters[parameter] = parameterID
-				coarse := f.key("proper")
+				coarse := n.Key("proper")
 				if !sorts[index].IsProper() {
-					coarse = f.key("constructor")
+					coarse = n.Key("constructor")
 				}
 				if err := e.reserve(0, 1, keySize(coarse)); err != nil {
 					return semantics.Data{}, err
@@ -318,7 +318,7 @@ func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Pro
 				if err := e.parameterIdentity(parameterID, parameter); err != nil {
 					return semantics.Data{}, err
 				}
-				if err := e.sortFact(semantics.Subject{Entity: parameterID}, f.SortRelation(), sorts[index], 1); err != nil {
+				if err := e.sortFact(semantics.Subject{Entity: parameterID}, n.SortRelation(), sorts[index], 1); err != nil {
 					return semantics.Data{}, err
 				}
 			}
@@ -328,18 +328,18 @@ func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Pro
 		for _, declaration := range module.Declarations() {
 			id := e.declarations[declaration.ID()]
 			subject := semantics.Subject{Entity: id}
-			if err := e.sortFact(subject, f.SortRelation(), declaration.Sort(), 1); err != nil {
+			if err := e.sortFact(subject, n.SortRelation(), declaration.Sort(), 1); err != nil {
 				return semantics.Data{}, err
 			}
 			var body semantics.TermID
 			var err error
 			if declaration.Form() == decl.KindDefinition {
-				if err := e.sortFact(subject, f.ResultSortRelation(), declaration.Sort(), 1); err != nil {
+				if err := e.sortFact(subject, n.ResultSortRelation(), declaration.Sort(), 1); err != nil {
 					return semantics.Data{}, err
 				}
 				body, err = e.kind(declaration.KindBody(), input.BodySite(declaration.ID()), id, true, 1)
 			} else {
-				if err := e.sortFact(subject, f.ResultSortRelation(), declaration.Result().Sort(), 1); err != nil {
+				if err := e.sortFact(subject, n.ResultSortRelation(), declaration.Result().Sort(), 1); err != nil {
 					return semantics.Data{}, err
 				}
 				for index, parameter := range declaration.Parameters() {
@@ -348,7 +348,7 @@ func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Pro
 					if err != nil {
 						return semantics.Data{}, err
 					}
-					if err := e.fact(semantics.Subject{Entity: e.parameters[pid]}, f.DeclaredKindRelation(), kind); err != nil {
+					if err := e.fact(semantics.Subject{Entity: e.parameters[pid]}, n.DeclaredKindRelation(), kind); err != nil {
 						return semantics.Data{}, err
 					}
 				}
@@ -356,14 +356,14 @@ func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Pro
 				if err != nil {
 					return semantics.Data{}, err
 				}
-				if err := e.fact(subject, f.ResultKindRelation(), result); err != nil {
+				if err := e.fact(subject, n.ResultKindRelation(), result); err != nil {
 					return semantics.Data{}, err
 				}
 				contract, err := e.kind(declaration.Contract(), ast.NodeRef{}, 0, false, 1)
 				if err != nil {
 					return semantics.Data{}, err
 				}
-				if err := e.fact(subject, f.DeclaredKindRelation(), contract); err != nil {
+				if err := e.fact(subject, n.DeclaredKindRelation(), contract); err != nil {
 					return semantics.Data{}, err
 				}
 				if err := e.memberships(subject, declaration.Memberships(), 1); err != nil {
@@ -375,7 +375,7 @@ func (f Frontend[L]) project(ctx context.Context, input *Decoded[L], program Pro
 				return semantics.Data{}, err
 			}
 			e.facts.Entities[id-1].Body = body
-			if err := e.fact(subject, f.SymbolicBodyRelation(), body); err != nil {
+			if err := e.fact(subject, n.SymbolicBodyRelation(), body); err != nil {
 				return semantics.Data{}, err
 			}
 		}

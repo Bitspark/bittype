@@ -14,8 +14,8 @@ captured, syntax-admitted ASTs
   -> resolve/files/golang/provider/go -> go/ast -> go/types
   -> immutable declarations, bindings, type terms, facts and reports
   -> analyze/files/golang/provider/go (explicit resolution receipt; reuses the graph)
-  -> semantics/golang/go (typed read-only view)
-  -> explicit native query session, when a consumer needs admission checking
+  -> semantics/golang/go (typed read-only view, contract identities)
+  -> analyze/files/golang/queries/go (explicit native query session, when a consumer needs admission checking)
 ```
 
 Resolution and type checking are coupled inside `go/types`. The resolver declares
@@ -23,15 +23,19 @@ both responsibilities; analysis consumes its exact compatible receipt without
 running the compiler again. Syntax admission still permits unresolved names.
 There is no language switch in the engine and no automatic registration.
 Use resolution.NewResolver and analysis.NewAnalyzer with their respective Go contracts and providers.
+The contracts are `golang.ResolutionContract()` and `golang.AnalysisContract()`, published by the
+vocabulary package `semantics/golang/go`. The providers are the `Provider` types of
+`resolve/files/golang/provider/go` and `analyze/files/golang/provider/go`.
 
 The package layout is:
 
 | Package | Responsibility |
 | --- | --- |
-| `semantics/golang/go` | Go-owned vocabulary, environment identity and immutable typed graph readers |
+| `semantics/golang/go` | Go-owned vocabulary, contract identities, environment identity and immutable typed graph readers |
 | `internal/golangsem` | Direct AST bridge, bounded compiler invocation and fact export |
 | `resolve/files/golang/provider/go` | Configured resolution, coverage and native validity reports |
-| `analyze/files/golang/provider/go` | Receipt-consuming analysis and explicit compiler-backed admission queries |
+| `analyze/files/golang/provider/go` | Receipt-consuming analysis |
+| `analyze/files/golang/queries/go` | Explicit compiler-backed admission queries over an opened model |
 | `integration/go` | Provider, environment, coverage and graph qualification |
 | `verification/files/horos-to-go/go` | Joint representation claims using the native provider results |
 
@@ -214,7 +218,8 @@ then opens the typed view. A resolution receipt alone, a receipt from a differen
 capture or a different compiler configuration cannot substitute for that input.
 
 `semantics/golang.Open` admits the analysis receipt and reads this graph without
-compilation. Native `NewQueries` is a separate, explicit operation: it rebuilds
+compilation. Native `queries.NewQueries(ctx, model)` from
+`analyze/files/golang/queries/go` is a separate, explicit operation: it rebuilds
 compiler state from the same capture and environment and checks correspondence
 with the published graph. A query session retains that state privately, with no
 compiler pointers in the generic graph, hidden cache or callback attachment.
@@ -236,14 +241,23 @@ syntax-admitted TypeScript ASTs + captured Files and links
   -> private source/AST correspondence check + pinned TypeScript compiler
   -> immutable symbols, native type terms, bindings and reports
   -> analyze/files/typescript/provider/go (explicit receipt; reuses the exact graph)
-  -> semantics/typescript/go (typed read-only view)
+  -> semantics/typescript/go (typed read-only view, graph names, contract identities, compiler configuration)
+  -> analyze/files/typescript/queries/go (explicit native queries over an opened model)
 ```
 
-The package roles mirror Go. `internal/typescriptsem` owns the compiler bridge,
+The package roles mirror Go. `semantics/typescript/go` publishes the contract identities
+`ResolutionContract()`, `AnalysisContract()` and `AnalysisContractFor(settings)`
+and the `Compiler` configuration type. It also publishes the sixteen graph names
+that the compiler helper writes and Go reads by name, such as `ModuleKind()`,
+`NamedExportRelation()` and `NameRole()`. The helper is JavaScript and spells them
+itself, and tests that run it keep the two sides equal. The query service is its own package,
+`analyze/files/typescript/queries/go`. Go has the same two placements since pull request
+[#246](https://github.com/Bitspark/bittype/pull/246) of 12 November 2026. Go has no
+`AnalysisContractFor(settings)` and no `Compiler` type. `internal/typescriptsem` owns the compiler bridge,
 including its embedded CommonJS helper. Each TypeScript stage supplies its own provider. No TypeScript types, rules or compiler handles enter the
 agnostic kernel; no native stage imports Horos, Logos or generation packages.
 
-The resolver constructor requires a `resolve.Compiler` containing absolute
+The resolver constructor requires a `typescript.Compiler` containing absolute
 `NodePath` and `TypeScriptPath` paths. The latter names the explicitly provisioned
 TypeScript package's `lib/typescript.js`. Construction does no discovery,
 installation or IO. Resolution invokes that compiler and requires version
@@ -258,7 +272,7 @@ The child process receives no `NODE_OPTIONS`, `NODE_PATH` or credential environm
 The named-import setting from `typescript.ImportConfiguration(packages)` additionally
 admits local `.js` specifiers resolved against captured `.ts` files and named
 exports of explicitly supplied package declaration modules. Both the package specifiers
-and their declaration text participate in receipt identity. Use `analyze.ContractFor(settings)`
+and their declaration text participate in receipt identity. Use `typescript.AnalysisContractFor(settings)`
 with the same configuration for resolution and analysis. The graph binds a named use
 to its compiler symbol and records the imported package type's module, export and
 generic arguments. Bittype checks the syntax link to the local import binding.
@@ -333,8 +347,9 @@ The shared `DirectParameterBindings` reader works on source application terms;
 the corresponding native type can retain an alias or normalize to another form.
 
 `typescript.Open(analyzed)` admits a complete analysis receipt and reads its
-immutable graph without invoking the compiler. `analyze.NewQueries(model,
-compiler)` separately configures explicit native queries. `Assignable(ctx,
+immutable graph without invoking the compiler. `queries.NewQueries(model,
+compiler)` from `analyze/files/typescript/queries/go` separately configures
+explicit native queries. `Assignable(ctx,
 source, target)` calls the official checker's directional `isTypeAssignableTo`.
 It reconstructs compiler state from the original capture and exact environment,
 requires correspondence with the entire published graph, and returns a result
@@ -380,7 +395,9 @@ syntax-admitted Rust AST + captured Files and links
 
 The public adapters and orchestration are Go. The private helper at
 `internal/rustsem/helper` uses Rust's compiler APIs, pinned to **1.90.0**.
-Its Cargo package is unpublished. `resolve/files/rust/provider/go.New` takes a
+Its Cargo package is unpublished. `semantics/rust/go` publishes the contract
+identities `rust.ResolutionContract()` and `rust.AnalysisContract()`.
+`resolve/files/rust/provider/go.New` takes a
 `resolve.Compiler` with absolute `HelperPath` and `SysrootPath`. Constructors
 perform no IO, discovery or installation. The caller provisions that helper and
 the matching compiler sysroot explicitly. Both operations require

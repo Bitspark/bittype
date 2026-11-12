@@ -7,6 +7,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
+	"github.com/Bitspark/bittype/semantics/horos/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
@@ -64,7 +65,7 @@ func TestUnifiedPaginationContractsSurviveASTAndSemanticExport(t *testing.T) {
 				id = semantics.EntityID(i + 1)
 			}
 		}
-		facts := model.Facts(semantics.Subject{Entity: id}, resolve.DeclaredKindRelation())
+		facts := model.Facts(semantics.Subject{Entity: id}, horos.DeclaredKindRelation())
 		if len(facts) != 1 {
 			t.Fatalf("missing declared kind for %s", wanted)
 		}
@@ -106,7 +107,7 @@ func TestUnconstrainedForwardingReachesSemanticRejection(t *testing.T) {
 		if result.HasSemantics() {
 			t.Fatal("unproved source contract published semantics")
 		}
-		report, _ := result.Report(resolve.Validity())
+		report, _ := result.Report(horos.Validity())
 		if report.Verdict == semantic.Holds || len(result.Diagnostics()) == 0 || result.Diagnostics()[0].At == nil {
 			t.Fatal("contract failure lost its verdict or source location")
 		}

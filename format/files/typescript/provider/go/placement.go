@@ -108,7 +108,7 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 	data := graph.Data()
 	modules := map[ast.NodeRef]bool{}
 	for _, e := range data.Entities {
-		if e.Kind == n.Key("module") && len(e.Declarations) == 1 {
+		if e.Kind == n.ModuleKind() && len(e.Declarations) == 1 {
 			modules[e.Declarations[0]] = true
 		}
 	}
@@ -118,7 +118,7 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 		}
 	}
 	for _, fact := range data.Facts {
-		if fact.Relation != n.Key("named-export") {
+		if fact.Relation != n.NamedExportRelation() {
 			continue
 		}
 		if fact.Subject.Entity == 0 {
@@ -126,7 +126,7 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 		}
 		owner := data.Entities[fact.Subject.Entity-1]
 		term := data.Terms[fact.Term-1]
-		if term.Kind != semantics.Reference || owner.Kind != n.Key("module") || len(owner.Declarations) != 1 {
+		if term.Kind != semantics.Reference || owner.Kind != n.ModuleKind() || len(owner.Declarations) != 1 {
 			return nil, source.ErrInvalid
 		}
 		declaration := data.Entities[term.Target-1]
@@ -139,7 +139,7 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		if b.At.Role != n.Key("name") && b.At.Role != n.Key("import") {
+		if b.At.Role != n.NameRole() && b.At.Role != n.ImportRole() {
 			continue
 		}
 		entity := data.Entities[b.Target-1]
@@ -147,13 +147,13 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 		switch {
 		case len(entity.Declarations) == 1:
 			dest.site = entity.Declarations[0]
-		case entity.Kind == n.Key("package-type") && entity.Owner != 0:
+		case entity.Kind == n.PackageTypeKind() && entity.Owner != 0:
 			owner := data.Entities[entity.Owner-1]
-			if owner.Kind != n.Key("package") {
+			if owner.Kind != n.PackageKind() {
 				return nil, source.ErrInvalid
 			}
 			dest.external = imports.Export{Module: owner.Name, Name: entity.Name}
-		case entity.Kind == n.Key("builtin"):
+		case entity.Kind == n.BuiltinKind():
 			dest.builtin = entity.Name
 		default:
 			return nil, fmt.Errorf("%w: ambiguous native binding %s", source.ErrInvalid, entity.Name)

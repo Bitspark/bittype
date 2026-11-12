@@ -36,11 +36,12 @@ contracts/
   analysis/go/            analysis capability and explicit resolution input
   verification/go/        agnostic joint capture/receipt/site association
 semantics/go/             typed immutable Semantics and provider-owned facts
-semantics/golang/go/      Go vocabulary and immutable native type readers
+semantics/horos/go/       horos vocabulary: roles, relations, entity kinds, term operators and encoding, tag prefixes, profiles, limits setting, prelude pin, contract identities
+semantics/golang/go/      Go vocabulary, contract identities and immutable native type readers
 internal/golangsem/       private direct Go compiler bridge and fact export
-semantics/typescript/go/  TypeScript vocabulary and immutable native type readers
+semantics/typescript/go/  TypeScript vocabulary, graph names, contract identities, compiler configuration and immutable native type readers
 internal/typescriptsem/   private captured-source compiler helper and fact export
-semantics/rust/go/        Rust vocabulary and immutable native type readers
+semantics/rust/go/        Rust vocabulary, contract identities and immutable native type readers
 internal/rustsem/         private captured-source compiler bridge
   helper/                private pinned rustc_driver executable (Rust/Cargo)
 engine/go/                explicit registration, planning and execution
@@ -52,22 +53,26 @@ parse/files/horos/provider/go/                 Files to Source
 format/files/{horos,typescript}/provider/go/   Semantics to Source
 resolve/files/<language>/provider/go/          captured reference resolution
 analyze/files/<language>/provider/go/          semantic analysis
+analyze/files/{golang,typescript}/queries/go/  native query service over an opened model
 print/{syntax,files}/shared/provider/go/       shared printers
 check/syntax/shared/{ast,cst}/go/              carrier structure
 transform/syntax/shared/generation/go/         registry and request composition
 transform/syntax/shared/target/go/             native construction and scoped symbol storage
 transform/syntax/horos/source/go/              Horos semantic reader
-transform/syntax/horos/mapping/go/             common Horos mapping policy
+transform/syntax/horos/mapping/go/             mapping adapter and representation profile names
+transform/syntax/horos/mapping/pattern/go/     horos source patterns
+transform/syntax/horos/mapping/declarations/go/ horos declaration recipe
+transform/syntax/horos/mapping/naming/go/      horos name to exported native identifier
 transform/syntax/<native>/model/go/            native semantic forms and validation
 transform/syntax/<native>/target/go/           AST construction from native forms
 transform/syntax/typescript/symbol/go/        public type symbols for generation and Files
-transform/syntax/horos-to-<native>/mapping/go/ selectable mapping descriptions
+transform/syntax/horos-to-<native>/mapping/<name>/go/ one selectable mapping library per package
 internal/<language>/                           private lexical helpers
 integration/go/          independent consumers and cross-package qualification
 verification/            concrete static verification; public Logos contract
   files/source/horos/go/  explicit authoritative queries bound to captured Horos
   files/horos-to-go/go/   scoped representation contributions and named questions
-  files/horos-to-go/mappings/go/ selectable scalar, list, optional and record laws
+  files/horos-to-go/mappings/<name>/go/ one selectable law per package: scalar, list, optional, record
   logos/go/              typed interpretation selection, receipt association, Logos checking
   integration/go/        TextBox/Page, independent tuple composition, theorem reuse
 tools/provider-matrix/
@@ -88,6 +93,29 @@ The final `go` directory denotes implementation language, not target:
 stage are reserved generic-carrier components, not native language names.
 
 Implementations use the same stage, dimension, scope, component and implementation-language order. A scope identifies one language, an ordered pair or shared machinery. Go packages use their role name. Syntax vocabularies retain their language names. Applications construct independent stage adapters through their contracts. A configured resolver belongs to its language's resolve stage. See [kernel-owned composition](docs/kernel-composition.md).
+
+**Path form for several contributions, decided in
+[#222](https://github.com/Bitspark/bittype/issues/222) on 11 November 2026.** A
+component that holds several independently selectable contributions has one
+package per contribution, one level below the component:
+`<stage>/<dimension>/<scope>/<component>/<name>/go`. The Go package is named
+`<name>`. No package lists the contributions of a component. A consumer
+registers each one it selects. The role stays readable from the path, which
+the architecture check uses. Two components have this form today:
+
+- **Mapping libraries:** `transform/syntax/horos-to-<native>/mapping/<name>/go`
+  with `text`, `boolean`, `list`, `record` and `declarations` for each of the
+  four native languages, and `optional` for Go. Each package exports `Library`.
+- **Verification laws:** `verification/files/horos-to-go/mappings/<name>/go`
+  with `scalar`, `list`, `optional` and `record`. The unit is the law. `scalar`
+  exports the two rules `Text()` and `Boolean()` of one law. The other three
+  export `Rule`.
+
+A native query service has its own package beside its language's analysis
+provider: `analyze/files/golang/queries/go` and
+`analyze/files/typescript/queries/go`. Rust and horos have none. The Go package
+moved out of `analyze/files/golang/provider/go` with pull request
+[#246](https://github.com/Bitspark/bittype/pull/246).
 
 Stateless language stages expose a free operation and a zero-value `Provider`.
 Both shared printer packages expose `Provider[L]` and `New[L]`; Files printing
@@ -112,45 +140,77 @@ fixture module at execution time; no nested Go module is committed.
 ## Dependency direction
 
 Directory groups are not Go packages or an assertion that all members share the
-same dependency level. The package boundaries are:
+same dependency level. A package gets its import rule from the role that its
+path gives. The roles are in
+[`architecture_roles_test.go`](integration/go/architecture_roles_test.go) and
+the explicit tables are in
+[`architecture_test.go`](integration/go/architecture_test.go). The table below
+summarises them. The exact lists are in the test.
 
-| Component | Permitted responsibilities and dependencies |
-| --- | --- |
-| AST, Stage, language identity | Independent foundations; no native syntax or other foundation dependency |
-| CST | Generic AST carrier |
-| Parse contract/adapter | Syntax and Files inputs, Source publication, carriers, semantic evidence and identity |
-| Check contract/adapter | AST views, representations and language identity; no concrete grammar or text-stage dependency |
-| Format contract/adapter | AST/CST and Source carriers, semantic evidence and identity |
-| Print contract/adapter | CST and Source/Files carriers, representations and identity |
-| Text diagnostics | AST addresses only; no stage contracts |
-| Carrier checks and printer | Generic tree structure and shared diagnostic contracts; no native grammar or formatting choices |
-| Structurally checked representation | Carriers, identity and generic carrier checks; no engine or transformer dependency |
-| Transformer contract/bridge | Typed requests, shared semantic evidence admission, checked representations and endpoint identity; no concrete mapping |
-| Generation contracts/planner | Scoped substitution, immutable native programs, semantic evidence admission and whole-output failure; no concrete language, Logos or mapping imports |
-| Native generation model | Own native forms and their admission; no AST allocation or source-language interpretation |
-| Generation mapping | Source meaning and native model; no native AST constructor dependency |
-| Native generation target | Own native forms to AST construction; no source reader or mapping callback |
-| Semantic facts | Generic AST addresses; graph integrity and owned storage, no language rules |
-| Shared semantic contract/bridge | Semantic facts, Files context, representations, explicit checker and identity; no Source dependency |
-| Resolution contract/bridge | Shared semantic contract and identity; binding coverage and typed invocation |
-| Analysis contract/bridge | Shared semantic and resolution contracts; explicit dependency composition |
-| Engine | Checked representations and shared contracts; no concrete language, provider or mapping |
-| Native syntax | Carriers and identity; no implementation stage or other language |
-| Native checker | Own syntax, shared checking mechanics and own lexical helpers |
-| Native parser/formatter | Own syntax/checker and appropriate shared mechanics; neither imports the other |
-| Native stage provider | Own stage implementation and identity; independent parse/check/format/resolve/analyze contracts |
-| Horos syntax | Generic AST/CST and identity; no semantic-model imports |
-| Horos checker | Own syntax and generic structural/grammar checks; no semantic resolution |
-| Horos resolver | Own syntax, private projection/correspondence helper, Horos Go model and Ontos values/codec |
-| Horos analyzer | Own syntax, Horos resolver contract and shared semantic evidence; no direct external model imports |
-| Horos parser/formatter | Own syntax/checker, private spelling and canonical-value helpers, Ontos values; no semantic resolution |
-| Horos Files composition | Explicit text/checker/resolver/analyzer collaborators and shared contracts; no implicit stage registration |
-| Horos module command | Existing Horos parser, private module lowering and Ontos encoder; no semantic resolution or prelude-specific logic |
-| Capability extraction contract | Tooling-only selectors, captured source/fact queries and fixed structural records; no runtime provider or report destination authority |
-| Capability report host | Selected-module source discovery, annotations, validated association and rendering; depends on extraction/observation contracts, never concrete extractors |
-| Grammar extractor | Owns interpretation of the Rules declaration format through the public tooling contract; no provider registration or execution claims |
-| Execution observations | Explicit Go test invocation import and exact-context association; no profile interpretation or capability support verdict |
-| Matrix command | Composes the public host, selected extractors and optional captured results; no tests or inspected provider code are executed |
+| Role | Paths | Imports |
+| --- | --- | --- |
+| Foundation | `trees/*/go`, `files/go`, `source/go`, `semantics/go`, `contracts/*/go` | Each package has its own entry in the table `foundationRules` and imports exactly what the entry lists. It never imports a package outside that table. The AST imports nothing. The CST, `files/go`, `semantics/go` and `contracts/text/go` import only the AST. `trees/representation/go` and `contracts/semantic/go` do not import `source/go` |
+| Kernel | `engine/go`, `transform/syntax/shared/*/go`, `check/syntax/shared/*/go`, `print/*/shared/provider/go` | The same table and the same rule. So no foundation or kernel package imports a vocabulary, a contribution or a language's private part |
+| Shared private helper | `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil`, `internal/concrete` | The same table and the same rule. A helper of no single language cannot conceal a language |
+| Vocabulary | `syntax/<language>/go`, `semantics/<language>/go`, `transform/syntax/<native>/model/go`, `transform/syntax/<native>/symbol/go` | Foundations and its own language's vocabulary. `semantics/<language>/go` and `symbol` may also import their language's lexical helper. Never a contribution. `semantics/<language>/go` never imports `internal/<language>sem`. Only TypeScript has a `symbol` package today |
+| Contribution: stage provider | `<stage>/<dimension>/<language>/provider/go` for `check/syntax`, `parse/syntax`, `format/syntax`, `resolve/files`, `analyze/files`, `parse/files` and `format/files` | Each of the seven has its own list: foundations, shared private helpers and what belongs to its own language. A checker gets no concrete tree, a formatter no lexer, and no Syntax stage a semantic contract. A parser and a formatter import their own checker under an exception, and neither list names the other. A resolver may import its language's semantic helper. A Files parser or formatter reaches its collaborators through their contracts |
+| Contribution: query service | `analyze/files/<language>/queries/go` | The shared semantic contract, the representation, and its own syntax, vocabulary and semantic helper. Never its resolver. Go and TypeScript have this package today. A package that is not a composition imports a query service only under an exception that names the symbols it uses |
+| Contribution: source reader | `transform/syntax/<language>/source/go` | Foundations and its own syntax and vocabulary. Only horos has one today |
+| Contribution: native target | `transform/syntax/<native>/target/go` | The generation contract, the AST, the shared target construction, and its own syntax, model and lexical helper. It reads no source and calls no mapping: a source reader, a mapping and a common mapping part are refused |
+| Contribution: mapping | `transform/syntax/<source>-to-<native>/mapping/<name>/go` | The generation contract, the representation, the syntax of both languages, the source reader and the common mapping parts of its source language, and the model of its native language. Never another mapping and never a native target |
+| Contribution: verification law | `verification/files/horos-to-go/mappings/<name>/go` | `verification/files/horos-to-go/go`, `semantics/golang/go`, `semantics/go` and the external models `github.com/Bitspark/horos/core/go/declarations` and `github.com/bitspark/ontos/core/go`. Never another law |
+| Contribution: capability extractor | `tools/provider-matrix/extract/<format>/go` | `tools/provider-matrix/capability/go` only |
+| Common mapping part | `transform/syntax/<source>/mapping/go` and `transform/syntax/<source>/mapping/<part>/go` | The generation contract, the representation, and the syntax and source reader of its source language. The list names no other part, and the one-language rule below refuses every native package |
+| Private part | `internal/<language>`, `internal/<language>sem` | A lexical helper imports `internal/grammar` only, and never a contract or a stage provider. A semantic helper imports foundations and its own syntax and vocabulary, and may reparse with its own parser under an exception. Both have their role only when `syntax/<language>/go` exists |
+| Composition | `integration/go`, `verification/integration/go`, `tools/**` | Chooses and registers contributions. The two test compositions are not classified. A package under `tools/` needs no exception to import a stage provider or a query service. It is still classified, by an explicit entry or as an extractor |
+
+**One language.** A package that names a language imports no package of
+another language. A mapping names two. A package belongs to a language by its
+path, or by the table `languageOwners` where its path gives no role. No entry
+and no extension lifts this rule. The verification laws are outside it: the
+rule spells out their pair, because the directory says `go` where the language
+is `golang`.
+
+**Explicit entries.** A role is written once for every language, so a new
+package of an existing role needs no edit to the test. Two groups keep one
+explicit entry per package, and a new package of either group is an edit:
+
+- **The foundation and kernel set, `foundationRules`.** These are the first
+  three rows of the table above. Their layering among each other is a fact per
+  package, and one rule for "a foundation" would lose it. The set is closed.
+  The paths in those rows describe its members and are not patterns: a new
+  `contracts/<name>/go` is unclassified until it has an entry.
+- **Packages of which there is only one, `oneOfAKindRules`.** These are the
+  private horos parts `internal/declsyntax`, `internal/horosmodel` and
+  `internal/horosfiles`, the TypeScript import reader
+  `internal/typescriptimports`, the projection
+  `verification/files/source/horos/go`, the horos-to-go verification pair
+  `verification/files/horos-to-go/go`, the logos adapter
+  `verification/logos/go`, the reporting-tool packages
+  `tools/provider-matrix/go`, `report/go`, `capability/go` and
+  `observation/go`, and the command `tools/horos-module/go`. The report host
+  never imports a concrete extractor. The verification pair lists the Go query
+  service and never the Go analysis provider. It imports the query service
+  under an exception that names `Admission`.
+
+**Role extensions.** Languages differ. The table `roleExtensions` names, per
+package, the imports that one language needs and its role does not give. Ten
+packages have one: the six horos stage providers, three TypeScript packages
+and the horos declaration recipe. An extension must be used, must not repeat
+the role and cannot lift a prohibition of the role.
+
+**No further hand entries.** `TestProductionArchitecture` holds no entry of
+its own. Eight were held there for Go until pull request
+[#246](https://github.com/Bitspark/bittype/pull/246) converted them.
+`semantics/golang/go`, `internal/golangsem`,
+`resolve/files/golang/provider/go`, `analyze/files/golang/provider/go` and
+`analyze/files/rust/provider/go` take their role. `internal/typescriptimports`,
+`verification/files/horos-to-go/go` and `verification/logos/go` are entries of
+`oneOfAKindRules`. Where a package has both a role by its path and a hand
+entry, the entry replaces the role's allow-list and none of its prohibitions.
+No package has both today.
+
+A future `cmd/**` composition is not known to the test. Adding it is an edit.
 
 The parse, check, format and print interfaces are independent; their configured
 adapters use representations for owned heterogeneous inputs/outputs. The engine
@@ -178,7 +238,9 @@ under engine for these moved types.
 
 Every private helper also has a dependency rule. A shared helper cannot conceal
 a native-language import, and a language helper cannot depend on another
-language or a stage. This keeps the rule enforceable through indirect imports.
+language. A lexical helper depends on no stage. A semantic helper may import
+its own language's parser under an exception. This keeps the rule enforceable
+through indirect imports.
 
 ## Enforced consistency
 
@@ -195,6 +257,110 @@ for the Horos frontend/text stages, source reader, module encoder and concrete
 verification integrations. The exact package allowances live in the test. Generic carriers,
 contracts, engine and printer must remain independent of Horos/ontos, and native
 syntax/text stages must remain independent of the canonical frontend.
+
+**Implemented. State of 12 November 2026.**
+[Package boundaries](docs/package-boundaries.md) records the rules: one
+contribution per package, identities in vocabulary packages, only a
+composition imports a contribution, and import rules stated per role. The plan
+is [#218](https://github.com/Bitspark/bittype/issues/218). Its last step, the
+rules by role, merged with
+[#244](https://github.com/Bitspark/bittype/pull/244). Go's contract identities
+and query service moved afterwards, with pull request
+[#246](https://github.com/Bitspark/bittype/pull/246). The horos names that
+a writer and a separate reader each spelled moved into `semantics/horos/go`
+with pull requests [#247](https://github.com/Bitspark/bittype/pull/247) and
+[#248](https://github.com/Bitspark/bittype/pull/248), and the tag
+prefixes of canonical horos values with
+[#250](https://github.com/Bitspark/bittype/pull/250). The horos syntax node
+kinds have one declaration since
+[#254](https://github.com/Bitspark/bittype/pull/254), and
+`semantics/typescript/go` publishes the TypeScript graph names that Go reads
+since [#255](https://github.com/Bitspark/bittype/pull/255). Every confirmed
+instance of
+[bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) is
+corrected. The check is the function
+`checkArchitecture` in
+[`architecture_check_test.go`](integration/go/architecture_check_test.go). It
+does the following:
+
+- **Rules by role.** A package gets its import rule from the role that its
+  path gives, as the table under
+  [dependency direction](#dependency-direction) summarises. At `c8d0344`, the merge
+  of pull request #246, 84 of the 127 production packages are
+  classified this way, ten of them with a role extension. The other 43 have an
+  explicit entry: 31 in the foundation and kernel table and 12 one-of-a-kind
+  packages. A production package with neither a role nor an entry fails as
+  unclassified. A new language, mapping, common mapping part, verification
+  law, extractor or language helper needs no edit to the rules. An import that
+  its role does not
+  give needs a role extension. A new language whose parser and formatter call
+  its own checker still adds two entries to the exception table. A new stage
+  or dimension gives no role and is an edit.
+- **Every allowance is used.** An explicit entry and an extension are checked
+  per package: an import that they allow and the package does not make fails.
+  A role is checked per shape: each import it permits must be imported by at
+  least one package of that role. The external model allowances are checked
+  the same way.
+- **Symbols of a provider or query service import.** The check reads which
+  exported symbols a production package uses from each module package it
+  imports. An import of a stage provider package
+  (`<stage>/<dimension>/<language>/provider/go`) or of a query service package
+  (`analyze/files/<language>/queries/go`) by a package that is not a
+  composition needs an entry in the
+  [exception table](integration/go/architecture_exceptions_test.go). The entry
+  names the importer, the imported package, the exact symbols and the reason.
+  A use of another symbol fails. An entry or a symbol that is not used fails.
+  The table holds fourteen entries. All are accepted. In thirteen, a parser, a
+  formatter and the horos resolver call their own checker, and the Rust and
+  TypeScript semantic helpers call their own parser. In one, the horos-to-go
+  verification pair takes `Admission` from the Go query service.
+- **All files of a package.** The check also reads the files that the build
+  constraints of the test run exclude: a file behind a build tag, a file of
+  another operating system or architecture, and a cgo file when cgo is off.
+  Test files stay out. An import of a module package that `go list` does not
+  report fails, because nothing checks that package.
+- **A private part belongs to its language.** A role grants
+  `internal/<language>` and `internal/<language>sem` only where the imported
+  package is that language's helper by its own role. A package cannot take
+  another owner's private part by choosing a name.
+- **Dot imports.** A dot import of a package of this module fails, because it
+  hides the symbols used.
+
+The compositions `integration/go` and `verification/integration/go` are not
+classified. `tools/**` needs no exception to import a provider or a query
+service.
+
+The plan in #218 is complete. This remains open and belongs to other work:
+
+- **The profile gate.**
+  [#238](https://github.com/Bitspark/bittype/pull/238) divided
+  `transform/syntax/horos/mapping/go` on 11 November 2026. The adapter stays at
+  that path and still refuses every profile but one. That gate is
+  [#216](https://github.com/Bitspark/bittype/issues/216) and
+  [bittype/ACX-008](docs/architecture-cases/0008-structural-profile-gate.md).
+- **Optional fields in Record.** Record still decides how an optional field is
+  represented in Go, Rust and C++. What a mapping's `Expand` returns is
+  [#196](https://github.com/Bitspark/bittype/issues/196), item 6.
+- **Three candidates.** They are not confirmed and are listed in
+  [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md#candidates).
+- **Names that were not examined.**
+  [#251](https://github.com/Bitspark/bittype/issues/251) examined the names
+  that the native compiler helpers write and the horos node kinds that two
+  packages declared, and both are corrected. What it left unexamined has no
+  issue yet and is listed in the
+  [limits of bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md#limits):
+  what the TypeScript helper reads, its response status, the TypeScript
+  generation form names, the Go and Rust vocabulary packages' own readers, and
+  the admission grammars of the native checkers.
+
+A green run shows that the forbidden imports are absent. It does not show that
+a package holds one contribution, that a decision made inside a package is
+right, or that each package of a role needs every import its role permits.
+[What the check cannot establish](docs/package-boundaries.md#what-the-check-cannot-establish)
+lists the limits.
+
+The findings and their state are in
+[bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md).
 
 The [native conformance suite](integration/go/conformance_test.go) covers
 every native language. It checks stable identity, matching AST/CST checker
@@ -233,11 +399,12 @@ semantic analysis is not implied by native text tooling.
 The [Horos declaration integration](docs/horos.md) implements
 `syntax/horos/go`, `check/syntax/horos/provider/go`, `analyze/files/horos/provider/go` and
 `resolve/files/horos/provider/go`, with private projection/correspondence in `internal/horosmodel`.
+The horos semantic identities are published by `semantics/horos/go`.
 Readable syntax now implements `parse/syntax/horos/provider/go` and
 `format/syntax/horos/provider/go` under the same stage matrix. These replace the former proposed
 `canonical` paths; there are no compatibility aliases.
 
-Directed pagination mappings live under `transform/syntax/horos-to-<native>/mapping/go`. A partial reverse implementation would use the reverse ordered pair. Application
+Directed pagination mappings live under `transform/syntax/horos-to-<native>/mapping/<name>/go`, one package per mapping. A partial reverse implementation would use the reverse ordered pair. Application
 composition and IO are proposed under `cmd/bittype/go`. Horos owns the declaration semantics and
 encoding; these packages supply tooling projections and native representations.
 New dependency rules and qualification accompany further implementation, with no
@@ -253,13 +420,14 @@ Cell or another library declaration does not add a stage, language or core kind.
 The [unified declaration model](docs/horos.md) uses one `horos` family under
 syntax/check/resolve/analyze. Private syntax framing remains in
 `internal/declsyntax`; model projection, correspondence and export remain in
-`internal/horosmodel`. No `horoswire` stage or compatibility alias remains.
+`internal/horosmodel`. Both take the node kinds, attributes and roles from
+`syntax/horos/go`, which declares them once. No `horoswire` stage or compatibility alias remains.
 Bounds are explicit syntax and provider-owned semantic facts, not kernel kinds.
 
 Model dependency allowances cover the concrete owners listed above, including
 Horos source reading and verification. They do not extend to agnostic contracts.
 Architecture checks preserve the agnostic and native-stage boundaries. Native
-pagination mappings use `transform/syntax/horos-to-<native>/mapping/go`.
+pagination mappings use `transform/syntax/horos-to-<native>/mapping/<name>/go`.
 Template lifting and its exclusive dependency allowances remain removed.
 
 The [native representation design](docs/type-representations.md) and
@@ -280,11 +448,12 @@ plan/output. The registry and concrete integrations follow the stage-first layou
 contracts/generation/go/                  descriptions, invariant planner and output
 transform/syntax/shared/generation/go/      registry, selection and composition
 transform/syntax/horos/source/go/           receipt-backed source reader
-transform/syntax/horos/mapping/go/          patterns and declaration recipes
+transform/syntax/horos/mapping/go/          mapping adapter and profile names
+transform/syntax/horos/mapping/{pattern,declarations,naming}/go/  source patterns, declaration recipe, naming
 transform/syntax/shared/target/go/          shared native construction and scoped symbol storage
 transform/syntax/<native>/model/go/         intended native forms
 transform/syntax/<native>/target/go/        native intent to AST construction
-transform/syntax/horos-to-<native>/mapping/go/  independently selected mappings
+transform/syntax/horos-to-<native>/mapping/<name>/go/  independently selected mappings, one package each
 ```
 
 Consumers register source, target and mapping libraries, then request source roots and an output identity. The kernel plans fixed native intent; Run constructs ASTs without invoking a mapping. The [construction SPI](docs/kernel-composition.md) gives the public interfaces and a Horos to TypeScript example.

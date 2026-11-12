@@ -78,7 +78,7 @@ func (m Model) Declaration(id semantics.EntityID) (Declaration, error) {
 		return Declaration{}, ErrForeign
 	}
 	e, ok := m.state.graph.Entity(id)
-	if !ok || (e.Kind != Key("alias") && e.Kind != Key("interface") && e.Kind != Key("parameter")) {
+	if !ok || (e.Kind != AliasKind() && e.Kind != InterfaceKind() && e.Kind != ParameterKind()) {
 		return Declaration{}, ErrForeign
 	}
 	return Declaration{m.state, id}, nil
@@ -90,7 +90,7 @@ func (m Model) Lookup(tree ast.TreeID, name string) (Declaration, error) {
 		return Declaration{}, ErrForeign
 	}
 	for i, e := range m.state.graph.Data().Entities {
-		if e.Name != name || (e.Kind != Key("alias") && e.Kind != Key("interface")) {
+		if e.Name != name || (e.Kind != AliasKind() && e.Kind != InterfaceKind()) {
 			continue
 		}
 		for _, site := range e.Declarations {
@@ -102,7 +102,7 @@ func (m Model) Lookup(tree ast.TreeID, name string) (Declaration, error) {
 	return Declaration{}, ErrForeign
 }
 func (m Model) Type(id semantics.TermID) (Type, error) {
-	if !m.Valid() || len(m.Graph().Facts(semantics.Subject{Term: id}, Key("native-type"))) != 1 {
+	if !m.Valid() || len(m.Graph().Facts(semantics.Subject{Term: id}, NativeTypeRelation())) != 1 {
 		return Type{}, ErrForeign
 	}
 	return Type{m.state, id}, nil
@@ -117,18 +117,18 @@ func (d Declaration) Entity() semantics.Entity {
 	e, _ := d.owner.graph.Entity(d.id)
 	return e
 }
-func (d Declaration) fact(name string) Type {
+func (d Declaration) fact(relation semantics.Key) Type {
 	if !d.Valid() {
 		return Type{}
 	}
-	ids := d.owner.graph.Facts(semantics.Subject{Entity: d.id}, Key(name))
+	ids := d.owner.graph.Facts(semantics.Subject{Entity: d.id}, relation)
 	if len(ids) != 1 {
 		return Type{}
 	}
 	return Type{d.owner, ids[0]}
 }
-func (d Declaration) Type() Type       { return d.fact("declared-type") }
-func (d Declaration) Constraint() Type { return d.fact("constraint") }
+func (d Declaration) Type() Type       { return d.fact(DeclaredTypeRelation()) }
+func (d Declaration) Constraint() Type { return d.fact(ConstraintRelation()) }
 func (d Declaration) Parameters() []Declaration {
 	var out []Declaration
 	for _, p := range d.Entity().Parameters {
@@ -151,11 +151,11 @@ func (t Type) Term() semantics.Term {
 	term, _ := t.owner.graph.Term(t.id)
 	return term
 }
-func (t Type) fact(name string) semantics.TermID {
+func (t Type) fact(relation semantics.Key) semantics.TermID {
 	if !t.Valid() {
 		return 0
 	}
-	ids := t.owner.graph.Facts(semantics.Subject{Term: t.id}, Key(name))
+	ids := t.owner.graph.Facts(semantics.Subject{Term: t.id}, relation)
 	if len(ids) != 1 {
 		return 0
 	}
@@ -165,15 +165,15 @@ func (t Type) String() string {
 	if !t.Valid() {
 		return ""
 	}
-	term, _ := t.owner.graph.Term(t.fact("display"))
+	term, _ := t.owner.graph.Term(t.fact(DisplayRelation()))
 	return string(term.Data)
 }
 func (t Type) Properties() ([]Property, bool) {
 	if !t.Valid() {
 		return nil, false
 	}
-	term, _ := t.owner.graph.Term(t.fact("properties"))
-	if term.Operator != Key("object") {
+	term, _ := t.owner.graph.Term(t.fact(PropertiesRelation()))
+	if term.Operator != ObjectOperator() {
 		return nil, false
 	}
 	var fields []PropertyInfo

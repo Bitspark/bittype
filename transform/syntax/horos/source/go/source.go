@@ -2,29 +2,22 @@ package source
 
 import (
 	"context"
-	"strings"
 
-	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
+	n "github.com/Bitspark/bittype/semantics/horos/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 func Contract() transform.Contract {
-	return transform.Contract{Evidence: []semantic.EvidenceRequirement{{Operation: analysis.Kind(), Profile: analyze.Profile, Reports: analyze.Contract().Semantic.SemanticsRequirements, Semantics: true}}}
+	return transform.Contract{Evidence: []semantic.EvidenceRequirement{{Operation: analysis.Kind(), Profile: n.AnalysisProfile, Reports: n.AnalysisContract().Semantic.SemanticsRequirements, Semantics: true}}}
 }
-
-var (
-	typeDefinition = semantics.Key{Owner: "horos", Name: "type-definition"}
-	properSort     = semantics.Key{Owner: "horos", Name: "sort/proper"}
-)
 
 // interpretation is the horos reading of one captured graph for the kernel.
 // It classifies declarations, names descriptors and judges proper sorts from
@@ -63,24 +56,24 @@ func open(ctx context.Context, c g.Captured[h.Language]) (*interpretation, error
 		return nil, semantic.ErrInvalidRequest
 	}
 	for _, e := range s.data.Expressions {
-		if e.At.Role == resolve.ExpressionRole() {
+		if e.At.Role == n.ExpressionRole() {
 			s.sites[e.Term] = e.At.Site
 		}
 	}
 	// horos publishes at most one value for each of these relations per subject.
 	for _, f := range s.data.Facts {
 		switch f.Relation {
-		case resolve.SortRelation():
+		case n.SortRelation():
 			if s.sorts[f.Subject] != 0 {
 				return nil, semantic.ErrInvalidRequest
 			}
 			s.sorts[f.Subject] = f.Term
-		case resolve.ResultSortRelation():
+		case n.ResultSortRelation():
 			if f.Subject.Entity == 0 || s.results[f.Subject.Entity] != 0 {
 				return nil, semantic.ErrInvalidRequest
 			}
 			s.results[f.Subject.Entity] = f.Term
-		case resolve.IdentityRelation():
+		case n.IdentityRelation():
 			if f.Subject.Entity == 0 || s.identities[f.Subject.Entity] != 0 {
 				return nil, semantic.ErrInvalidRequest
 			}
@@ -98,7 +91,7 @@ func (s *interpretation) definition(d g.Declaration[h.Language]) (semantics.Enti
 		return semantics.Entity{}, false, g.ErrScope
 	}
 	e := s.data.Entities[id-1]
-	if e.Kind != typeDefinition {
+	if e.Kind != n.TypeDefinitionKind() {
 		return semantics.Entity{}, false, nil
 	}
 	if e.Owner == 0 || e.Body == 0 || len(e.Declarations) != 1 {
@@ -186,7 +179,7 @@ func (s *interpretation) proper(sort semantics.TermID, site ast.NodeRef) g.Judgm
 		return g.Judgment{Verdict: g.Undetermined, Diagnostic: &g.SiteError{Err: semantic.ErrEvidenceUnavailable, Site: site, Message: "no established sort"}}
 	}
 	t := s.data.Terms[sort-1]
-	if t.Kind == semantics.ProviderExpression && t.Operator == properSort {
+	if t.Kind == semantics.ProviderExpression && t.Operator == n.ProperSort() {
 		return g.Judgment{Verdict: g.Admitted}
 	}
 	return g.Judgment{Verdict: g.Unsupported, Diagnostic: s.diagnostic(site, "constructor-valued types require an explicit representation")}
@@ -206,10 +199,11 @@ func (s *interpretation) descriptor(u g.Use[h.Language]) (Descriptor, bool, erro
 	if t.Kind != semantics.ProviderExpression {
 		return d, false, nil
 	}
-	if t.Operator.Owner != "horos" || !strings.HasPrefix(t.Operator.Name, "descriptor/") {
+	constructor, ok := n.DescriptorConstructor(t.Operator)
+	if !ok {
 		return d, false, semantic.ErrInvalidRequest
 	}
-	d.Constructor = strings.TrimPrefix(t.Operator.Name, "descriptor/")
+	d.Constructor = constructor
 	if d.Constructor == "scalar" || d.Constructor == "record" {
 		p, err := s.payload(id)
 		if err != nil {

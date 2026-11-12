@@ -316,15 +316,33 @@ the laws, so each family keeps its law-level argument beside its tests.
 
 ## Delivery
 
+The order of work, the first slice and the owner of each vertical case are in [#206](https://github.com/Bitspark/bittype/issues/206). [#165](https://github.com/Bitspark/bittype/issues/165) is the index of the family issues.
+
+**Changes before the additive work (11 November 2026).** Two existing parts change once, ahead of the families: the structural profile's identity and the closed profile gate ([#216](https://github.com/Bitspark/bittype/issues/216), [bittype/ACX-008](architecture-cases/0008-structural-profile-gate.md)), and what an existing mapping returns (item 6 of [#196](https://github.com/Bitspark/bittype/issues/196)). After them a family adds a contribution and changes no existing contract. A third change moves code and changes no contract: one package per mapping ([#222](https://github.com/Bitspark/bittype/issues/222), [bittype/ACX-009](architecture-cases/0009-package-boundaries.md), [package boundaries](package-boundaries.md)). The four pair packages are split on `main` since 11 November 2026: each mapping is `transform/syntax/horos-to-<native>/mapping/<name>/go` and exports `Library(profile)`. The common package `transform/syntax/horos/mapping/go` was divided the same day; its adapter with the profile gate stays at that path. #216 and item 6 of #196 are unchanged.
+
 | Work | Owner | Tracking |
 | --- | --- | --- |
+| The structural profile's identity, before the first plan entry records it | bittype | [#216](https://github.com/Bitspark/bittype/issues/216) |
+| One package per mapping contribution, before a family is written into a mapping package. Done on `main` on 11 November 2026 for the four pair packages and the common package | bittype | [#222](https://github.com/Bitspark/bittype/issues/222) |
 | The plan envelope, payload schemas, version axes, generic requirements, six vertical cases | bittype | [#195](https://github.com/Bitspark/bittype/issues/195) |
 | The representation contract, lowering facet, operational requirements, failure classes | bittype | [#196](https://github.com/Bitspark/bittype/issues/196) |
 | Binding qualification, partial coverage, the information-loss criterion | bittype | [#197](https://github.com/Bitspark/bittype/issues/197) |
 | Integers | bittype | [#163](https://github.com/Bitspark/bittype/issues/163) |
 | Recursion | bittype | [#164](https://github.com/Bitspark/bittype/issues/164) |
-| Text, maps, unions, nullable and the remaining families | bittype | [#165](https://github.com/Bitspark/bittype/issues/165) |
+| The delivered families (text, booleans, lists, closed records, optional fields, generics), completed with payloads, conversions and qualification | bittype | [#207](https://github.com/Bitspark/bittype/issues/207) |
+| Bytes and atoms | bittype | [#208](https://github.com/Bitspark/bittype/issues/208) |
+| Maps and sets | bittype | [#209](https://github.com/Bitspark/bittype/issues/209) |
+| Unions | bittype | [#210](https://github.com/Bitspark/bittype/issues/210) |
+| Nullable values and optional nullable fields | bittype | [#211](https://github.com/Bitspark/bittype/issues/211) |
+| Exact forms and text refinements | bittype | [#212](https://github.com/Bitspark/bittype/issues/212) |
+| Tuples, bare sequences and labelled compounds | bittype | [#213](https://github.com/Bitspark/bittype/issues/213) |
+| Open records, `any()`, intersections and complements | bittype | [#214](https://github.com/Bitspark/bittype/issues/214) |
 | Explicit specialization | bittype | [#166](https://github.com/Bitspark/bittype/issues/166) |
-| The TypeScript backend: factory composition, recursive adapters, conversion state, the call context, the structural run-time package's hosting | platform `libraries/service` | [bitspark-service#35](https://github.com/Bitspark/bitspark-service/issues/35) |
-| The expanded canonical size of a shared value | ontos | [ontos#35](https://github.com/Bitspark/ontos/issues/35) |
+| The three contracts: service root, capture and lifetime, outcomes versus invocation uncertainty | platform `libraries/service` | [bitspark-service#37](https://github.com/Bitspark/bitspark-service/issues/37) |
+| Hosting of the structural profile's TypeScript run-time package | platform `libraries/service` | [bitspark-service#38](https://github.com/Bitspark/bitspark-service/issues/38) |
+| `Function<A, B, E>` and `Service<Ops>` declared in horos, with their paired contributions | platform `libraries/service` | [bitspark-service#39](https://github.com/Bitspark/bitspark-service/issues/39) |
+| The TypeScript backend: factory composition, recursive adapters, conversion state, the call context | platform `libraries/service` | [bitspark-service#40](https://github.com/Bitspark/bitspark-service/issues/40) |
+| The expanded canonical size of a shared value | ontos | [ontos#35](https://github.com/Bitspark/ontos/issues/35), delivered in ontos v0.17.0 on 10 November 2026. bittype pins v0.16.0 until [#164](https://github.com/Bitspark/bittype/issues/164) needs the measure |
 | The domain of `check().objects` | Content | [bitspark-content#52](https://github.com/Bitspark/bitspark-content/issues/52) |
+| Content's contract in horos | Content | [bitspark-content#53](https://github.com/Bitspark/bitspark-content/issues/53) |
+| Content's exact mappings and the pilot's qualification | Content | [bitspark-content#54](https://github.com/Bitspark/bitspark-content/issues/54) |

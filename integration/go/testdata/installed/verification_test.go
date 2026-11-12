@@ -11,7 +11,8 @@ import (
 	resolvegolang "github.com/Bitspark/bittype/resolve/files/golang/provider/go"
 
 	"context"
-	nativequery "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
+	analyzegolang "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
+	nativequery "github.com/Bitspark/bittype/analyze/files/golang/queries/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"go/types"
 	"testing"
@@ -24,13 +25,17 @@ import (
 
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
+	"github.com/Bitspark/bittype/semantics/horos/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	hs "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/cst/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 	v "github.com/Bitspark/bittype/verification/files/horos-to-go/go"
-	m "github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/list/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/optional/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/record/go"
+	"github.com/Bitspark/bittype/verification/files/horos-to-go/mappings/scalar/go"
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"
 	joint "github.com/Bitspark/bittype/verification/logos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
@@ -75,7 +80,7 @@ func installedCapture[L any](t *testing.T, p installedSyntax[L], profile, source
 func TestInstalledJointTextBox(t *testing.T) {
 	ctx := context.Background()
 	snapshot := installedCapture[hs.Language](t, textfixture.New(parsehoros.Provider{}, checkhoros.Provider{}, formathoros.Provider{}), hs.Profile, "module installed; import h from horos.kinds pin \"sha256:"+decl.PreludePin().String()+"\"; type TextBox<T:h.Text> = {value:T;};")
-	resolver, err := resolution.NewResolver[hs.Language](snapshot.Language(), resolve.Contract(), resolve.Provider{})
+	resolver, err := resolution.NewResolver[hs.Language](snapshot.Language(), horos.ResolutionContract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +124,7 @@ func TestInstalledJointTextBox(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	library := v.NewAdmissions(selectMappings(t, m.Boolean()))
+	library := v.NewAdmissions(selectMappings(t, scalar.Boolean()))
 	witness, err := library.Counterexample(box, nativeBox, nonmember, admission)
 	if err != nil {
 		t.Fatal(err)
@@ -140,7 +145,7 @@ func TestInstalledJointTextBox(t *testing.T) {
 
 // Each semantic role is explicit; opening the typed view compiles nothing.
 func checkedNative(ctx context.Context, snapshot semantic.Snapshot) (n.Model, error) {
-	resolver, err := resolution.NewResolver[gs.Language](snapshot.Language(), resolvegolang.Contract(), resolvegolang.Provider{})
+	resolver, err := resolution.NewResolver[gs.Language](snapshot.Language(), n.ResolutionContract(), resolvegolang.Provider{})
 	if err != nil {
 		return n.Model{}, err
 	}
@@ -148,7 +153,7 @@ func checkedNative(ctx context.Context, snapshot semantic.Snapshot) (n.Model, er
 	if err != nil {
 		return n.Model{}, err
 	}
-	analyzer, err := analysis.NewAnalyzer[gs.Language](snapshot.Language(), nativequery.Contract(), nativequery.Provider{})
+	analyzer, err := analysis.NewAnalyzer[gs.Language](snapshot.Language(), n.AnalysisContract(), analyzegolang.Provider{})
 	if err != nil {
 		return n.Model{}, err
 	}
@@ -169,7 +174,7 @@ func nativeAdmission(t *testing.T, ctx context.Context, model n.Model, construct
 
 // The receiver owns this policy independently of the mapping selection.
 func allowedLaws() []string {
-	return []string{v.ModelBasis, v.SourceBasis, v.NativeBasis, m.ScalarLaw, m.ListLaw, m.OptionalLaw, m.RecordLaw, v.NamedLaw}
+	return []string{v.ModelBasis, v.SourceBasis, v.NativeBasis, scalar.Law, list.Law, optional.Law, record.Law, v.NamedLaw}
 }
 func selectMappings(t *testing.T, rules ...v.Rule) v.Mappings {
 	t.Helper()

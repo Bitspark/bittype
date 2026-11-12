@@ -12,6 +12,7 @@ import (
 	"github.com/Bitspark/bittype/engine/go"
 
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
+	"github.com/Bitspark/bittype/semantics/horos/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
@@ -56,11 +57,11 @@ func TestHorosSourceThroughIndependentEngineStages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolver, err := resolution.NewResolver[s.Language](definition, resolve.Contract(), resolve.Provider{})
+	resolver, err := resolution.NewResolver[s.Language](definition, horos.ResolutionContract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](definition, analyze.Contract(), analyze.Provider{})
+	analyzer, err := analysis.NewAnalyzer[s.Language](definition, horos.AnalysisContract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
