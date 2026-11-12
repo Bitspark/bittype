@@ -7,13 +7,14 @@ import (
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	bridge "github.com/Bitspark/bittype/internal/horosmodel"
+	n "github.com/Bitspark/bittype/semantics/horos/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	core "github.com/bitspark/ontos/core/go"
 )
 
 var frontend = bridge.Frontend[s.Language]{
-	DeclarationPrefix: "horos/decl/", DescriptorPrefix: "horos/",
+	DeclarationPrefix: n.DeclarationTagPrefix, DescriptorPrefix: n.DescriptorTagPrefix,
 	ResolveModel: func(root core.Value, deps []core.Value, limits decl.Limits) (bridge.Program, error) {
 		return decl.ResolveWithLimits(root, deps, limits)
 	},

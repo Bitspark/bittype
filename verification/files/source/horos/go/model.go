@@ -21,7 +21,7 @@ import (
 var ErrForeign = errors.New("foreign or missing Horos projection handle")
 
 var frontend = bridge.Frontend[s.Language]{
-	DeclarationPrefix: "horos/decl/", DescriptorPrefix: "horos/",
+	DeclarationPrefix: n.DeclarationTagPrefix, DescriptorPrefix: n.DescriptorTagPrefix,
 	ResolveModel: func(root core.Value, deps []core.Value, limits decl.Limits) (bridge.Program, error) {
 		return decl.ResolveWithLimits(root, deps, limits)
 	},
@@ -198,8 +198,13 @@ func (k Kind) Arrow(module decl.Digest) (Kind, error) {
 	if k.owner == nil || module != k.module {
 		return Kind{}, ErrForeign
 	}
-	v := k.value.Expression().Value()
-	return (Model{k.owner}).CompileKind(module, core.NewTuple(core.NewAtom([]byte("horos/decl/arrow")), data.EncodeList([]core.Value{v}), v))
+	return (Model{k.owner}).CompileKind(module, ArrowValue(k.value.Expression().Value()))
+}
+
+// ArrowValue is the canonical horos kind syntax of the arrow from one
+// parameter kind to that same kind.
+func ArrowValue(kind core.Value) core.Value {
+	return core.NewTuple(core.NewAtom([]byte(n.DeclarationTagPrefix+"arrow")), data.EncodeList([]core.Value{kind}), kind)
 }
 func (k Kind) Model() Model                  { return Model{k.owner} }
 func (k Kind) Module() decl.Digest           { return k.module }

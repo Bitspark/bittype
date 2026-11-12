@@ -63,6 +63,13 @@ func DescriptorConstructor(operator semantics.Key) (constructor string, ok bool)
 // The encoding that the data of horos terms carries; ontos owns the codec.
 func TermEncoding() semantics.Key { return semantics.Key{Owner: "ontos", Name: "codec-v1"} }
 
+// The ontos tag namespaces of canonical horos values: declaration forms and
+// descriptor constructors. The horos library reads the values that carry them.
+const (
+	DeclarationTagPrefix = "horos/decl/"
+	DescriptorTagPrefix  = "horos/"
+)
+
 // LimitsSetting contains a JSON array [depth,nodes,bytes,modules]. All four
 // positive limits are required; depth must not exceed 512. Its absence selects
 // Horos's fixed defaults.
