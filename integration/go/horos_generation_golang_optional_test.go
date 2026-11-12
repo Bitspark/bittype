@@ -16,7 +16,6 @@ import (
 	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/optional/go"
 	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/record/go"
 	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/text/go"
-	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 )
@@ -26,10 +25,9 @@ import (
 // Without a helper registered under exactly that key the generation fails; the
 // field is never emitted with its unwrapped type.
 func TestGolangRecordRequiresItsOptionalHelper(t *testing.T) {
-	const profile = rules.RepresentationProfile
 	type libraries = []g.MappingLibrary[h.Language, gs.Language, source.Reader]
 	with := func(key g.HelperKey, more ...g.MappingLibrary[h.Language, gs.Language, source.Reader]) libraries {
-		return append(libraries{text.Library(profile), boolean.Library(profile), list.Library(profile), record.Library(profile, key), declarations.Library(profile)}, more...)
+		return append(libraries{text.Library(), boolean.Library(), list.Library(), record.Library(key), declarations.Library()}, more...)
 	}
 	_, _, input := generationInput(t, paginationModule())
 	checker := nativeChecker(t, golangText())
@@ -42,11 +40,11 @@ func TestGolangRecordRequiresItsOptionalHelper(t *testing.T) {
 		return registry.PlanGeneration(context.Background(), request, checker)
 	}
 	key := g.NewHelperKey("horos/optional")
-	if p, err := plan(with(key, optional.Library(profile, key))); err != nil || !p.Valid() {
+	if p, err := plan(with(key, optional.Library(key))); err != nil || !p.Valid() {
 		t.Fatal("the shared key did not plan", err)
 	}
 	// An invalid key is refused when the record library is registered.
-	if p, err := plan(with(g.HelperKey{}, optional.Library(profile, key))); !errors.Is(err, g.ErrInvalid) || p.Valid() {
+	if p, err := plan(with(g.HelperKey{}, optional.Library(key))); !errors.Is(err, g.ErrInvalid) || p.Valid() {
 		t.Fatal("record library accepted an invalid optional key", err)
 	}
 	// No library supplies the helper.
@@ -54,7 +52,7 @@ func TestGolangRecordRequiresItsOptionalHelper(t *testing.T) {
 		t.Fatal("optional field planned without its helper", err)
 	}
 	// A key with the same name and another identity is another helper.
-	if p, err := plan(with(key, optional.Library(profile, g.NewHelperKey("horos/optional")))); !errors.Is(err, g.ErrUnsupported) || p.Valid() {
+	if p, err := plan(with(key, optional.Library(g.NewHelperKey("horos/optional")))); !errors.Is(err, g.ErrUnsupported) || p.Valid() {
 		t.Fatal("optional field planned with a helper under another key", err)
 	}
 }

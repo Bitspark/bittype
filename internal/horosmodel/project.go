@@ -275,11 +275,11 @@ func (p *projector[L]) expression(expression *decl.Expression, module decl.Diges
 
 func (p *projector[L]) namedReference(kind s.Kind, value core.Value, target decl.DeclarationID, module decl.Digest) ast.NodeID {
 	raw := value.(core.Tuple)
-	attrs := []string{s.AttributeScope, "local"}
+	attrs := []string{s.AttributeScope, s.ScopeLocal}
 	if raw.Len() == 3 {
 		alias, _ := data.ReadText(raw.At(1))
 		name, _ := data.ReadText(raw.At(2))
-		attrs = []string{s.AttributeScope, "imported", s.AttributeAlias, alias, s.AttributeName, name}
+		attrs = []string{s.AttributeScope, s.ScopeImported, s.AttributeAlias, alias, s.AttributeName, name}
 	} else {
 		name, _ := data.ReadText(raw.At(1))
 		attrs = append(attrs, s.AttributeName, name)

@@ -22,7 +22,6 @@ import (
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	hs "github.com/Bitspark/bittype/syntax/horos/go"
 	target "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
-	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/cst/go"
@@ -208,7 +207,7 @@ func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	var registry c.Registry
-	request, err := genfixture.Request(&registry, transform.Input{Source: s.Snapshot(), Evidence: []semantic.Result{evidence}}, to, "generated", target.Provider{Package: "example"}, golangLibraries(rules.RepresentationProfile)...)
+	request, err := genfixture.Request(&registry, transform.Input{Source: s.Snapshot(), Evidence: []semantic.Result{evidence}}, to, "generated", target.Provider{Package: "example"}, golangLibraries()...)
 	if err != nil {
 		t.Fatal(err)
 	}

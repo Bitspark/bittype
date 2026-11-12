@@ -168,11 +168,14 @@ Builtin and independent library mappings use the same contract. Exact overrides
 identify both expected and replacement bindings; ambiguity and selected-rule
 failure never trigger a weaker fallback. Native semantic forms belong under
 transform/syntax/<native>/model/go, their AST interpretation under
-transform/syntax/<native>/target/go. The horos mapping adapter lives in
-transform/syntax/horos/mapping/go; its source patterns, declaration recipe and
-naming rule are the packages pattern, declarations and naming below it. Each
-mapping is one package under transform/syntax/horos-to-<native>/mapping/<name>/go
-and exports Library.
+transform/syntax/<native>/target/go. The two generation profile identities and the
+mapping library function type live in transform/syntax/horos/mapping/go; the
+source patterns, declaration recipe and naming rule are the packages pattern,
+declarations and naming below it. Each mapping is one package under
+transform/syntax/horos-to-<native>/mapping/<name>/go and exports Library. A
+mapping states its profile in its own description. Its constructor takes no
+profile, and no shared code writes, lists or refuses one
+([bittype/ACX-008](docs/architecture-cases/0008-structural-profile-gate.md)).
 The kernel, source and target packages cannot import concrete mapping packages.
 Mapping packages depend on native models, never target AST constructors.
 

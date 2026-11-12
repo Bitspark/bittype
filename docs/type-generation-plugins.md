@@ -579,7 +579,7 @@ preserve native interchangeability with its payload. Representation-only profile
 must state any conversion boundary, and this types-only design supplies no
 conversions. See the [Rust constraint limits](native-kind-constraints.md#7-rust).
 
-The current pagination representation profile still permits constraint erasure;
+The current structural representation profile still permits constraint erasure;
 the current enforcement profile still returns Unsupported. Proposed plugin
 composition alone implements neither an enforcing encoding nor a runtime value
 checker. Selecting an enforcing promise cannot fall back to the representation
@@ -613,7 +613,7 @@ transform/syntax/shared/target/go/               native construction mechanics
 transform/syntax/<native>/model/go/              native semantic forms
 transform/syntax/<native>/target/go/             form-to-AST construction
 transform/syntax/horos/source/go/                source interpretation
-transform/syntax/horos/mapping/go/               mapping adapter and profile names
+transform/syntax/horos/mapping/go/               profile identities and the mapping library function type
 transform/syntax/horos/mapping/{pattern,declarations,naming}/go/  source patterns, declaration recipe, naming
 transform/syntax/horos-to-<native>/mapping/<name>/go/  representation descriptions, one package per mapping
 ```

@@ -35,7 +35,7 @@ func (f *formatter) sortExpression(id ast.NodeID) doc {
 func (f *formatter) kindName(id ast.NodeID) doc {
 	name := f.Attr(id, s.AttributeName)
 	var parts []doc
-	if f.Attr(id, s.AttributeScope) == "imported" {
+	if f.Attr(id, s.AttributeScope) == s.ScopeImported {
 		parts = append(parts, f.T(lit.Name(f.Attr(id, s.AttributeAlias))), f.T("."))
 	} else {
 		shadowed := false

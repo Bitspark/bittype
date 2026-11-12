@@ -49,8 +49,8 @@ domain, supported kind fragment and public API shape must be explicit.
 The [Horos frontend](horos.md) already supplies general kind contracts and
 membership facts, including the assumptions under which they hold. The four
 pagination mappings currently emit ordinary native generics under the
-`pagination-representation/1` profile, which expressly permits constraint erasure.
-The `pagination-enforcement/1` profile currently returns `Unsupported` with no
+`structural-representation/1` profile, which expressly permits constraint erasure.
+The `structural-enforcement/1` profile currently returns `Unsupported` with no
 output. Neither the encodings nor the helper names below are implemented APIs.
 
 The [implemented composer](generation-composition.md) separates source

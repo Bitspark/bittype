@@ -18,7 +18,8 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-// Library returns the record mapping under the given profile. optional is the
+// Library returns the record mapping. It states the structural representation
+// profile itself. optional is the
 // key of the one-parameter helper that wraps the type of an optional field.
 // The consumer creates the key and registers a library that supplies a helper
 // under it.
@@ -27,8 +28,8 @@ import (
 // cannot be registered. A valid key that no registered library supplies makes
 // planning fail with generation.ErrUnsupported at the first optional field.
 // An optional field is never emitted unwrapped.
-func Library(profile string, optional g.HelperKey) rules.Library[s.Language] {
-	return rules.Library[s.Language]{Profile: profile, DescribeRules: func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
+func Library(optional g.HelperKey) rules.Library[s.Language] {
+	return func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
 		if !optional.Valid() {
 			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, g.ErrInvalid
 		}
@@ -36,7 +37,7 @@ func Library(profile string, optional g.HelperKey) rules.Library[s.Language] {
 		if err != nil {
 			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
 		}
-		return g.MappingDescription[h.Language, s.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "record/golang/1", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, s.Language, source.Reader]) (g.Expression[s.Language], error) {
+		return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "record/golang/1", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, s.Language, source.Reader]) (g.Expression[s.Language], error) {
 			src, err := r.Reader()
 			if err != nil {
 				return g.Expression[s.Language]{}, err
@@ -73,5 +74,5 @@ func Library(profile string, optional g.HelperKey) rules.Library[s.Language] {
 			}
 			return g.At(model.Record(members...), view.Origin), nil
 		}}}}, nil
-	}}
+	}
 }

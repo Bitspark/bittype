@@ -22,14 +22,21 @@ import (
 // The record library wraps an optional field in a helper and the optional
 // library supplies that helper. Neither creates the helper key: the consumer
 // creates it once and passes the same key to both.
-func golangLibraries(profile string) []g.MappingLibrary[h.Language, s.Language, source.Reader] {
+func golangLibraries() []g.MappingLibrary[h.Language, s.Language, source.Reader] {
 	optionalKey := g.NewHelperKey("horos/optional")
 	return []g.MappingLibrary[h.Language, s.Language, source.Reader]{
-		text.Library(profile),
-		boolean.Library(profile),
-		list.Library(profile),
-		record.Library(profile, optionalKey),
-		declarations.Library(profile),
-		optional.Library(profile, optionalKey),
+		text.Library(),
+		boolean.Library(),
+		list.Library(),
+		record.Library(optionalKey),
+		declarations.Library(),
+		optional.Library(optionalKey),
 	}
+}
+
+// golangConstructors names the exported constructor of every builtin
+// horos-to-golang mapping package by the directory of its package under
+// transform/syntax/horos-to-golang/mapping.
+func golangConstructors() map[string]any {
+	return map[string]any{"text": text.Library, "boolean": boolean.Library, "list": list.Library, "record": record.Library, "declarations": declarations.Library, "optional": optional.Library}
 }

@@ -283,8 +283,9 @@ var roleExtensions = map[string][]string{
 	// The TypeScript target publishes those symbols with its output.
 	"transform/syntax/typescript/target/go": {"transform/syntax/typescript/symbol/go", "trees/representation/go"},
 	// Of the common horos mapping parts, only the declaration recipe builds on
-	// others: on the adapter and on naming. Patterns and naming import no part.
-	"transform/syntax/horos/mapping/declarations/go": {"transform/syntax/horos/mapping/go", "transform/syntax/horos/mapping/naming/go"},
+	// another: on naming. It states no profile and imports no profile identity.
+	// Patterns and naming import no part.
+	"transform/syntax/horos/mapping/declarations/go": {"transform/syntax/horos/mapping/naming/go"},
 }
 
 // Each production package is checked, including private helpers. This prevents

@@ -17,7 +17,6 @@ import (
 	n "github.com/Bitspark/bittype/semantics/typescript/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
-	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	patterns "github.com/Bitspark/bittype/transform/syntax/horos/mapping/pattern/go"
 	src "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
@@ -54,7 +53,7 @@ func planningEngine(t *testing.T, root core.Value, deps ...core.Value) (*engine.
 		t.Fatal(err)
 	}
 	builds := &atomic.Int32{}
-	request, err := genfixture.Request(e.Generation(), input, to, "planned-output", countedTarget{builds: builds}, typescriptLibraries(rules.RepresentationProfile)...)
+	request, err := genfixture.Request(e.Generation(), input, to, "planned-output", countedTarget{builds: builds}, typescriptLibraries()...)
 	if err != nil {
 		t.Fatal(err)
 	}

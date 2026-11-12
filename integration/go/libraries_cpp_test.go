@@ -15,12 +15,19 @@ import (
 // cppLibraries is the one place in this package that lists the builtin
 // horos-to-cpp mapping libraries. Tests that need the whole set call it, so a
 // change to how that pair is composed edits this file only.
-func cppLibraries(profile string) []g.MappingLibrary[h.Language, s.Language, source.Reader] {
+func cppLibraries() []g.MappingLibrary[h.Language, s.Language, source.Reader] {
 	return []g.MappingLibrary[h.Language, s.Language, source.Reader]{
-		text.Library(profile),
-		boolean.Library(profile),
-		list.Library(profile),
-		record.Library(profile),
-		declarations.Library(profile),
+		text.Library(),
+		boolean.Library(),
+		list.Library(),
+		record.Library(),
+		declarations.Library(),
 	}
+}
+
+// cppConstructors names the exported constructor of every builtin
+// horos-to-cpp mapping package by the directory of its package under
+// transform/syntax/horos-to-cpp/mapping.
+func cppConstructors() map[string]any {
+	return map[string]any{"text": text.Library, "boolean": boolean.Library, "list": list.Library, "record": record.Library, "declarations": declarations.Library}
 }

@@ -15,13 +15,13 @@ import (
 
 // Library maps a horos list to the Rust model collection of its mapped
 // element type.
-func Library(profile string) rules.Library[s.Language] {
+func Library() rules.Library[s.Language] {
 	slot := g.TypeSlot("E")
-	return rules.Library[s.Language]{Profile: profile, DescribeRules: func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
+	return func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
 		pattern, err := patterns.Element(from, slot)
 		if err != nil {
 			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
 		}
-		return g.MappingDescription[h.Language, s.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "list/rust/1", Input: pattern, Output: model.Collection(g.Mapped[s.Language](slot))}}}, nil
-	}}
+		return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "list/rust/1", Input: pattern, Output: model.Collection(g.Mapped[s.Language](slot))}}}, nil
+	}
 }
