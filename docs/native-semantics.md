@@ -48,17 +48,21 @@ compatibility entry point remains. No type-generation behavior changes.
 The supported subset remains the captured type-declaration fragment: one supplied
 package across at most 16 files, defined types and aliases, generic parameters and
 applications, named/predeclared types, slices, ordinary struct fields and tags,
-embedded interface type terms, approximations and unions.
+embedded interface type terms, approximations and unions. Under an explicit
+import environment, the captured files form several packages by their file paths,
+and named and aliased imports of captured or explicitly supplied packages bind
+qualified type references to the imported declarations.
 <!-- bittype:overview:end -->
 
 <!-- bittype:overview scope=first-go-profile part=exclusions -->
-Imported packages,
-methods, embedded struct fields, pointer/array/map/function types and executable
-bodies remain unsupported. Syntax acceptance does not promise semantic coverage.
+Imports outside an explicit import environment, dot and blank imports, the
+standard library, methods, embedded struct fields, pointer/array/map/function
+types and executable bodies remain unsupported. Syntax acceptance does not
+promise semantic coverage.
 <!-- bittype:overview:end -->
 
-The language version is Go 1.25, the package path is `captured`, and the only
-external scope is the predeclared universe. The native compiler is the `go/types`
+The language version is Go 1.25. Without an import environment, the package path
+is `captured` and the only external scope is the predeclared universe. The native compiler is the `go/types`
 library linked into the process; its actual Go toolchain version is part of the
 required request configuration. Sizes are explicitly `gc/amd64`, matching the
 previous default. CI qualifies Go 1.27.3. The provider does not discover a project,
@@ -69,9 +73,27 @@ Every result records separate coverage, binding and validity reports. A native
 type error gives a rejected validity report with a captured-node diagnostic;
 unsupported syntax gives unsupported coverage; exhausted bounds give incomplete
 reports. None publishes partial semantics. Invalid configuration, forged supplied
-references, foreign receipts and cancellation remain operation errors. Native
-checking is synchronous: cancellation is checked around compiler calls and does
-not claim to preempt `go/types` while it runs.
+references, foreign receipts and cancellation remain operation errors.
+
+A call whose context ends returns that context's error without waiting for
+`go/types`. The whole native work of a resolution runs beside the call as one
+unit: conversion, every package check and the export, whose type comparisons
+`go/types` cannot interrupt any more than a check. Reconstructing the compiler
+state for queries and an admission query run the same way, an admission
+including its wait for an earlier admission on the same queries. When the
+context ends the unit is abandoned, and nothing it produces is read or
+published. Abandoned work stops at the next step it reaches between two
+`go/types` calls. A call it is inside keeps its goroutine and its processor
+until that call ends by itself, and an abandoned admission keeps later
+admissions on its queries waiting, each until its own context ends.
+
+The profile's limits bound sizes, not this cost, for captured code as for
+supplied source. Comparing two structurally equal chains of struct aliases
+doubles with every step. As captured declarations in the base profile such
+chains took 0.6 seconds at depth 20 and 8.8 seconds at depth 24, and a supplied
+package of 1,618 bytes took 11 seconds to check. A consumer that must bound
+that work, for source it does not trust, runs the provider in a process it can
+end.
 
 Those incomplete reports cover the provider's own input, conversion and export
 bounds. The shared capture/publication boundary can also return `ErrLimit` when
@@ -103,6 +125,118 @@ The builtin `error` interface needs signature/tuple facts internally, even thoug
 authoring method/function syntax remains unsupported. `display` facts are UTF-8
 diagnostic text, never semantic identity. Typed readers return copies or immutable
 handles; callers cannot mutate a published graph through them.
+
+### Import environment
+
+`golang.ImportConfiguration(golang.ImportEnvironment{Module, Packages})` extends
+the base configuration with one normalized `imports-1` setting. It follows Go's
+own module layout:
+
+- **Captured packages.** Each captured tree must be linked to a `.go` file in the
+  request's Files context. Its package import path is the module path joined with
+  the file's directory: `pages/page.go` under `example.org/app` belongs to
+  `example.org/app/pages`. Files in one directory form one package.
+- **Supplied packages.** Every other imported package is supplied as Go source:
+  an import path and up to 16 files. Supplied text participates in receipt
+  identity and is never an output. A supplied package may import only other
+  supplied packages, and it may not use a path under the module.
+- **No discovery.** Import paths need a first element containing a dot, Go's
+  module-path rule. That also keeps supplied packages from naming standard
+  library paths, which this profile does not provide. Nothing is read from a
+  module cache, `GOPATH` or the network.
+
+**The go tool's layout rules apply to captured files:**
+
+- test files (`_test.go`), files and directories starting with `_` or `.`, and
+  `testdata` directories are not part of a package, and are unsupported;
+- `vendor` directories, whose import paths Go resolves differently, are
+  unsupported, and a supplied import path may not contain a `vendor` element;
+- an import of a path with an `internal` element is allowed only from within the
+  tree rooted at its parent;
+- a package named `main` cannot be imported;
+- import paths, and file names within one package, may not differ only in case.
+
+Supplied files follow the same file rules: a supplied package lists package
+source files only, never test or ignored files.
+
+Build constraints, including GOOS and GOARCH file-name suffixes, are not
+interpreted: every captured file belongs to its directory's package.
+
+**Classification.** The checks run in a fixed order, so no result or diagnostic
+depends on capture order:
+
+1. The environment: the Files layout of every tree, then every supplied package,
+   parsed and checked in its own import order.
+2. Captured file paths, in file-path order: test, ignored and vendored files and
+   invalid package directories. These come before any captured resource limit.
+3. Captured resource limits, then each tree's syntax, in file-path order:
+   unsupported constructs, including dot and blank imports.
+4. Imports outside the environment.
+5. The go tool's rejections: case collisions of import paths and file names,
+   then disagreeing package clauses, then the `internal` and `main` rules and
+   import cycles.
+6. The type check, in import order through a closed importer.
+
+| Case | Result |
+| --- | --- |
+| A supplied package that fails to parse or type-check, imports outside the supplied packages, breaks the `internal` rule, imports a `main` package or forms an import cycle; supplied paths or file names that differ only in case, a supplied test or ignored file, or a supplied path with a `vendor` element; a missing Files layout, or a captured file that is not a `.go` path | `ErrInvalidRequest`; no judgment of the captured code |
+| An import outside the environment, a dot or blank import, a test, ignored or vendored file, a package directory that is not a valid import path | Unsupported coverage at the import or file |
+| A captured type error, an unused import, an unexported cross-package use, an import cycle through a captured package (including a self-import), an `internal` violation, an import of a `main` package, inconsistent package clauses, captured import paths or file names that differ only in case | Rejected validity, with a diagnostic at the captured node |
+
+The graph gains:
+
+- one `package` entity per captured package, in import-path order, owning that
+  package's declarations, followed by one per supplied package;
+- an `import` binding from each captured import declaration to its package's
+  entity;
+- `name` bindings from qualified type references to the imported declarations.
+
+**Supplied structure stays outside the graph's projection.** The graph projects
+captured code; supplied packages take part by identity. A supplied declaration
+contributes its entity, the entities of its type parameters with their names,
+its reference and application terms and its `display` and `identical` facts,
+never its structure: no fields, no `underlying`, `alias-target` or `constraint`
+facts. Native identity is still go/types identity: an `identical` fact relates a
+supplied alias to its target when that target is in the graph, which `string`
+and `bool` always are.
+This also holds when a captured declaration is built directly on supplied
+structure: a captured alias of a supplied type, a captured declaration whose
+right-hand side is one (through chains of any length), or a type parameter
+constrained by one. So supplied internals may lie outside this profile without
+failing a captured result.
+
+The purpose is that containment, not secrecy: the consumer supplies these
+packages itself. Two kinds of output may therefore depend on supplied
+declarations:
+
+- **Compiler-established properties of captured types**, such as the comparability
+  or emptiness of a captured constraint that embeds a supplied interface, and
+  go/types identity in `identical` facts.
+- **Human-readable text**: diagnostics, `display` facts and admission detail may
+  name supplied types and spell their constraints. This text is never semantic
+  identity.
+
+`Type.Unconstrained` reports only what the graph establishes, and a parameter it
+reports is one the compiler found unconstrained. It never reports a supplied
+parameter, nor a captured parameter whose constraint is a supplied interface or
+an alias of one, because the graph holds no structure for that constraint. A
+captured constraint that embeds a supplied interface is captured structure and
+is reported as the compiler finds it. An admission query's constructor must be a
+generic defined type: an instance, a non-generic type and a generic alias are
+refused as unsupported.
+
+**Lookups.** `Model.Lookup(name)` considers captured packages only, and refuses a
+name that more than one of them declares. `Model.LookupIn(importPath, name)`
+reads a package-qualified declaration. A supplied declaration is present only
+where captured code uses it.
+
+**One environment end to end.** Analysis refuses a configuration that differs
+from its resolution's. Use `golang.AnalysisContractFor(settings)` and
+`golang.EvidenceFor(settings)` with the same configuration for resolution and
+analysis. `ImportConfiguration` refuses an environment that one analysis
+invocation could not carry; it charges the settings twice, once for the analysis
+and once for its resolution. An export-time limit or unsupported construct is
+reported at the captured declaration or use being exported.
 
 A consumer explicitly constructs both adapters, resolves with
 `semantic.Options{Configuration: golang.Configuration()}`, and calls the analyzer
@@ -145,8 +279,8 @@ that the compiler helper writes and Go reads by name, such as `ModuleKind()`,
 `NamedExportRelation()` and `NameRole()`. The helper is JavaScript and spells them
 itself, and tests that run it keep the two sides equal. The query service is its own package,
 `analyze/files/typescript/queries/go`. Go has the same two placements since pull request
-[#246](https://github.com/Bitspark/bittype/pull/246) of 12 November 2026. Go has no
-`AnalysisContractFor(settings)` and no `Compiler` type. `internal/typescriptsem` owns the compiler bridge,
+[#246](https://github.com/Bitspark/bittype/pull/246) of 12 November 2026. Go publishes
+`AnalysisContractFor(settings)` too, since pull request [#204](https://github.com/Bitspark/bittype/pull/204), and has no `Compiler` type. `internal/typescriptsem` owns the compiler bridge,
 including its embedded CommonJS helper. Each TypeScript stage supplies its own provider. No TypeScript types, rules or compiler handles enter the
 agnostic kernel; no native stage imports Horos, Logos or generation packages.
 

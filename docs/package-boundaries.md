@@ -185,9 +185,9 @@ Finding 6 on 12 November 2026, with pull request [#246](https://github.com/Bitsp
 `semantics/golang/go` exports `ResolutionContract()` and `AnalysisContract()`
 in `contracts.go`. The two Go provider packages no longer export `Contract()`,
 and the Go analysis provider no longer imports the Go resolver. No alias
-remains at an old path. Go has no `AnalysisContractFor(settings)` on `main`.
-Open pull request #204 adds it, because it binds analysis to an import
-environment that only #204 has.
+remains at an old path. Go's `AnalysisContractFor(settings)` arrived with pull
+request #204, because it binds analysis to an import environment that only #204
+has.
 
 The Go move changed its place in the order on 12 November 2026. It was first
 prepared as draft pull request #231 on top of #204. #231 is closed. The move
@@ -688,10 +688,10 @@ recorded here and in
 that this document first listed as not examined, and is closed with the change
 that wrote this paragraph. What it left unexamined is listed under
 [finding 12](#findings-on-main-at-3bf45c3) and tracked in
-[#256](https://github.com/Bitspark/bittype/issues/256). Open pull
+[#256](https://github.com/Bitspark/bittype/issues/256). Pull
 request #204 is not part of this plan. It adds imported packages to
-Go's semantics and will add `AnalysisContractFor(settings)` to
-`semantics/golang/go` when it rebases.
+Go's semantics and, merged after the move, `AnalysisContractFor(settings)` to
+`semantics/golang/go`.
 
 The steps ran as parallel lanes, as the lane map on #218 records. The path
 rules for four package shapes went in with step 1, so that a new package of

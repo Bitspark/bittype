@@ -22,6 +22,14 @@ Not done:
 - The `Self` rule in the shared naming function, which bittype/ACX-009 passed to #216, is not decided. It stays a candidate.
 - The documents under `research-docs/` are verbatim records and keep the old names. Earlier entries of this file do not spell them.
 
+## Go imported packages — 12 November 2026
+
+- The first Go profile accepts an explicit import environment (#168). Captured files form packages by their paths under a module, and supplied dependency packages are given as source in receipt identity. Packages are checked in import order through a closed importer, without module or standard-library discovery. Qualified type references bind to imported declarations; supplied declarations are exported by identity only. The base configuration is unchanged.
+- Supplied packages are kept out of the graph's structural projection for containment, not for secrecy: properties the compiler establishes for captured types, and human-readable text, may name supplied declarations. A supplied import path with a `vendor` element is refused.
+- A Go resolution whose context ends returns the context's error without waiting for `go/types`, in the base profile too. Its whole native work runs beside the call as one unit: conversion, the package checks and the export, whose type comparisons cannot be interrupted either. Reconstructing the compiler state for queries and an admission query run the same way. `go/types` cannot be interrupted, so abandoned work keeps its goroutine until the call it is inside ends; [native semantics](docs/native-semantics.md) states the limit and the measured costs. Before, a 1,618-byte supplied package held a call with a 20 ms deadline for 11 seconds, and captured alias chains of depth 24 held a base-profile resolution for 8.8 seconds.
+- An admission query's constructor must be a generic defined type. An instance used as constructor was accepted before, and a non-generic type with no arguments made `go/types` panic; both are now refused as unsupported.
+- Analysis compares its whole configuration with the resolution's, and a test now fails when only lengths or keys are compared.
+
 ## Generation form names declared once by each language's model package — 12 November 2026
 
 The names of the intended native forms have one declaration per language, in `transform/syntax/<language>/model/go`. This is item 5 of [#256](https://github.com/Bitspark/bittype/issues/256). The issue named TypeScript. Go, Rust and C++ had the same shape and are corrected with it. It is a move: every value is unchanged, and the plan steps, the generated tree and the printed text of the four targets are byte-identical before and after, in fifteen dumps.

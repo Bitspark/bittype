@@ -21,7 +21,7 @@ func Resolve(ctx context.Context, request semantic.Request[s.Language]) (semanti
 	if err := ctx.Err(); err != nil {
 		return semantic.Result{}, err
 	}
-	checked, err := golangsem.Check(ctx, request.Inputs())
+	checked, err := golangsem.Check(ctx, request.Inputs(), request.Files(), request.Configuration())
 	publication := semantic.Publication{}
 	for _, key := range []semantics.Key{n.Coverage(), n.Bindings(), n.Validity()} {
 		publication.Reports = append(publication.Reports, semantic.Report{Obligation: key, Status: semantic.Complete, Verdict: semantic.Holds})

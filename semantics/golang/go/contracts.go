@@ -27,3 +27,14 @@ func AnalysisContract() analysis.Contract {
 	c.Profile = AnalysisProfile
 	return analysis.Contract{Semantic: c, Resolution: &resolution.Requirement{Profile: ResolutionProfile, Configuration: Configuration()}}
 }
+
+// AnalysisContractFor binds analysis to resolution with exactly the supplied import environment.
+func AnalysisContractFor(settings []semantic.Setting) (analysis.Contract, error) {
+	evidence, err := EvidenceFor(settings)
+	if err != nil {
+		return analysis.Contract{}, err
+	}
+	c := AnalysisContract()
+	c.Resolution.Configuration = evidence.Configuration
+	return c, nil
+}

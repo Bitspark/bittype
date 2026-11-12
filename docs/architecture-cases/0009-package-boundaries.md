@@ -587,9 +587,9 @@ the [limits](#limits) are where one would be looked for first. Issue #251 is
 closed with the change that wrote this paragraph, and
 [#256](https://github.com/Bitspark/bittype/issues/256) tracks those names.
 
-Open pull request #204 is not part of this case. It adds imported packages to
-Go's semantics and will add `AnalysisContractFor(settings)` to
-`semantics/golang/go` when it rebases onto `main`.
+Pull request #204 is not part of this case. It adds imported packages to
+Go's semantics and, merged after the move, `AnalysisContractFor(settings)` to
+`semantics/golang/go`.
 
 The profile gate in the adapter of the common horos mapping package is not an
 instance of this case. It belongs to
