@@ -1,6 +1,7 @@
 package target
 
 import (
+	"cmp"
 	"context"
 	"slices"
 
@@ -8,6 +9,26 @@ import (
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
+
+// compareDeclarations orders the declarations that seed construction. Its key
+// is the name, then the origin by tree and node, then the planned identity.
+// Equal names compare equal and the next part of the key decides, so
+// compareDeclarations(a, b) == -compareDeclarations(b, a) for every pair. It
+// returns 0 only for one and the same planned declaration.
+//
+// Limit: two declarations with equal names and equal origins are ordered by
+// their planned identity, which follows the order of the requested roots. Two
+// helpers of one name are such a pair, since a helper has no origin, and so
+// are two native declarations of one source declaration. Compile refuses equal
+// names today, and no plan contains such a pair.
+func compareDeclarations[T any](a, b g.PlannedDeclaration[T]) int {
+	return cmp.Or(
+		cmp.Compare(a.Description.Name, b.Description.Name),
+		cmp.Compare(a.Description.Origin.Tree, b.Description.Origin.Tree),
+		cmp.Compare(a.Description.Origin.Node, b.Description.Origin.Node),
+		cmp.Compare(a.ID, b.ID),
+	)
+}
 
 func Compile[T any](ctx context.Context, in g.BuildInput[T], store *Store[T], lower Lowering[T]) (g.Assembly, error) {
 	fail := func(e error) (g.Assembly, error) { return g.Assembly{}, e }
@@ -110,12 +131,7 @@ func Compile[T any](ctx context.Context, in g.BuildInput[T], store *Store[T], lo
 		return nil
 	}
 	order := slices.Clone(declarations)
-	slices.SortFunc(order, func(a, b g.PlannedDeclaration[T]) int {
-		if a.Description.Name < b.Description.Name {
-			return -1
-		}
-		return 1
-	})
+	slices.SortFunc(order, compareDeclarations[T])
 	for _, d := range order {
 		if err := declaration(d.ID, 0); err != nil {
 			return fail(err)
@@ -197,16 +213,15 @@ func Compile[T any](ctx context.Context, in g.BuildInput[T], store *Store[T], lo
 	if err != nil {
 		return fail(err)
 	}
+	// The inventory: the realized site of every planned declaration, in planned
+	// order. The kernel adds what the plan knows about each of them.
 	out := g.Assembly{Syntax: syntax, ExternalUses: external}
-	for _, id := range in.Program.Exposed() {
-		if id == 0 || int(id) > len(declarations) {
-			return fail(g.ErrScope)
-		}
-		node := symbols[Symbol[T]{store, id, -1, declarations[id-1].Description.Name}]
+	for _, d := range declarations {
+		node := symbols[Symbol[T]{store, d.ID, -1, d.Description.Name}]
 		if node == 0 {
 			return fail(g.ErrIncomplete)
 		}
-		out.Exposed = append(out.Exposed, ast.NodeRef{Tree: in.Output, Node: node})
+		out.Declarations = append(out.Declarations, ast.NodeRef{Tree: in.Output, Node: node})
 	}
 	return out, nil
 }

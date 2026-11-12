@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	checkgo "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
@@ -248,7 +249,53 @@ const (
 	PatternStray
 	// RecipeStray maps a kept non-body use from Outer's declaration recipe.
 	RecipeStray
+	// UnissuedValue states a value that no issuer issued from the declaration recipe.
+	UnissuedValue
+	// UnissuedHelperValue states a value that no issuer issued from the helper recipe.
+	UnissuedHelperValue
+	// LargeValue states a naming intent of LargeValueBytes bytes.
+	LargeValue
 )
+
+// LargeValueBytes is the size of the intent the LargeValue mode states.
+const LargeValueBytes = 1 << 16
+
+// The fixture states two things about the declarations it describes: the name
+// its declaration recipe chose, and the access its helper requires. Each has
+// its own issuer, so only the fixture reads them back from an inventory record.
+var (
+	namingIntent = g.NewValueIssuer()
+	helperAccess = g.NewValueIssuer()
+)
+
+// HelperAccess is what the fixture's helper recipe states.
+const HelperAccess = "public"
+
+// Intent is the name the fixture's declaration recipe stated for a record.
+func Intent(d g.OwnedDeclaration) (string, bool) { return stated(namingIntent, d) }
+
+// Access is the access the fixture's helper recipe stated for a record.
+func Access(d g.OwnedDeclaration) (string, bool) { return stated(helperAccess, d) }
+
+func stated(issuer g.ValueIssuer, d g.OwnedDeclaration) (string, bool) {
+	for _, value := range d.Values {
+		if content, ok := issuer.Read(value); ok {
+			return content, true
+		}
+	}
+	return "", false
+}
+
+// intent is the value the declaration recipe states under a mode.
+func (l library) intent(name string) (g.IssuedValue, error) {
+	switch l.mode {
+	case UnissuedValue:
+		return g.IssuedValue{}, nil
+	case LargeValue:
+		return namingIntent.Issue(strings.Repeat("n", LargeValueBytes))
+	}
+	return namingIntent.Issue(name)
+}
 
 type library struct {
 	mode Mode
@@ -263,6 +310,13 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 	ignore, _ := g.NewSelector(from, "declaration/Ignore")
 	shadow, _ := g.NewSelector(from, "declaration/Shadow")
 	v := g.TypeSlot("V")
+	access, err := helperAccess.Issue(HelperAccess)
+	if err != nil {
+		return g.MappingDescription[SourceLanguage, s.Language, Reader]{}, err
+	}
+	if l.mode == UnissuedHelperValue {
+		access = g.IssuedValue{}
+	}
 	return g.MappingDescription[SourceLanguage, s.Language, Reader]{
 		Profile: "independent/1",
 		Bindings: []g.BindingDescription[SourceLanguage, s.Language, Reader]{
@@ -327,7 +381,11 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 				if name == "Person" || name == "Page" {
 					form = model.Form("defined")
 				}
-				d := g.DeclarationDescription[s.Language]{Name: name, Form: form}
+				value, err := l.intent(name)
+				if err != nil {
+					return g.DeclarationDescription[s.Language]{}, err
+				}
+				d := g.DeclarationDescription[s.Language]{Name: name, Form: form, Values: []g.IssuedValue{value}}
 				for i := range view.Formals {
 					d.Generic.Parameters = append(d.Generic.Parameters, g.ParameterDescription{Name: fmt.Sprintf("T%d", i)})
 					d.Generic.Bindings = append(d.Generic.Bindings, g.Parameter[s.Language](i))
@@ -349,7 +407,7 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 			// Shadow's recipe never represents its body; the kernel still admits it.
 			{ID: "erase-shadow", Selector: shadow, Expand: erase("Shadow")},
 		},
-		Helpers: []g.HelperRecipe[s.Language]{{Key: cursor, Declaration: g.NativeDeclaration[s.Language]{Name: "Cursor", Form: model.Form("alias"), Body: model.Primitive("string")}}},
+		Helpers: []g.HelperRecipe[s.Language]{{Key: cursor, Declaration: g.NativeDeclaration[s.Language]{Name: "Cursor", Form: model.Form("alias"), Body: model.Primitive("string"), Values: []g.IssuedValue{access}}}},
 	}, nil
 }
 
@@ -433,6 +491,40 @@ func (f *Fixture) Plan(ctx context.Context) (g.GenerationPlan, error) {
 // PlanRoots generates the named declarations through the public registry.
 func (f *Fixture) PlanRoots(ctx context.Context, mode Mode, names ...string) (g.GenerationPlan, error) {
 	return f.plan(ctx, mode, SourceVariant{}, f.Input(), names...)
+}
+
+// PlanRootsWithin is PlanRoots under the given limits.
+func (f *Fixture) PlanRootsWithin(ctx context.Context, mode Mode, limits g.Limits, names ...string) (g.GenerationPlan, error) {
+	roots, err := f.roots(names)
+	if err != nil {
+		return g.GenerationPlan{}, err
+	}
+	return f.planWithin(ctx, mode, SourceVariant{}, limits, f.Input(), roots)
+}
+
+// tampering is the fixture's Go target with each assembly passed through
+// tamper before the kernel receives it.
+type tampering struct {
+	target.Provider
+	tamper func(g.Assembly) g.Assembly
+}
+
+func (p tampering) Build(ctx context.Context, in g.BuildInput[s.Language]) (g.Assembly, error) {
+	built, err := p.Provider.Build(ctx, in)
+	if err != nil {
+		return built, err
+	}
+	return p.tamper(built), nil
+}
+
+// PlanBuilt generates the named declarations with a target whose assemblies
+// pass through tamper, so a test can hand the kernel a wrong assembly.
+func (f *Fixture) PlanBuilt(ctx context.Context, tamper func(g.Assembly) g.Assembly, names ...string) (g.GenerationPlan, error) {
+	roots, err := f.roots(names)
+	if err != nil {
+		return g.GenerationPlan{}, err
+	}
+	return f.planWith(ctx, Standard, SourceVariant{}, g.DefaultLimits(), f.Input(), roots, tampering{target.Provider{Package: "generated"}, tamper})
 }
 
 // PlanSites generates the declarations at the given syntax sites.
@@ -545,12 +637,16 @@ func (f *Fixture) planAt(ctx context.Context, mode Mode, variant SourceVariant, 
 }
 
 func (f *Fixture) planWithin(ctx context.Context, mode Mode, variant SourceVariant, limits g.Limits, input transform.Input, roots []ast.NodeRef) (g.GenerationPlan, error) {
+	return f.planWith(ctx, mode, variant, limits, input, roots, target.Provider{Package: "generated"})
+}
+
+func (f *Fixture) planWith(ctx context.Context, mode Mode, variant SourceVariant, limits g.Limits, input transform.Input, roots []ast.NodeRef, built g.Target[s.Language]) (g.GenerationPlan, error) {
 	var registry c.Registry
 	from := f.captured.language
 	if err := c.RegisterSource[SourceLanguage, Reader](&registry, from, sourceProvider{variant}); err != nil {
 		return g.GenerationPlan{}, err
 	}
-	if err := c.RegisterTarget(&registry, f.target, target.Provider{Package: "generated"}); err != nil {
+	if err := c.RegisterTarget(&registry, f.target, built); err != nil {
 		return g.GenerationPlan{}, err
 	}
 	if _, err := c.RegisterMapping(&registry, from, f.target, library{mode: mode, kept: &f.kept}); err != nil {
