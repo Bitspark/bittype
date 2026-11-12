@@ -17,7 +17,8 @@ bittype separates two stages:
 
 - **Generation** builds the declarations: their bodies, their type expressions
   and the intended destination of every type reference. It must decide nothing
-  about files, packages, modules, namespaces, imports or visibility.
+  about files, packages, modules, namespaces, imports or module-level
+  visibility.
 - A later stage, called **Files**, takes the generated declarations, one
   **placement** supplied by the consumer (which declaration goes into which
   file and which native scope) and the consumer's dependency environment. It
@@ -26,35 +27,43 @@ bittype separates two stages:
   placed program, and compares what the compiler found with what generation
   intended.
 
-This split is implemented for TypeScript only. Two targets still make a file
+This split is implemented for TypeScript only. Two languages still make a file
 decision during generation:
 
-- **Go** writes the package clause, taken from target configuration.
-- **Rust** writes `pub` on every generated struct, type alias and field.
+- **Go** writes the package clause, taken from configuration.
+- **Rust** writes `pub` on every generated struct and type alias. It also
+  writes `pub` on every field; whether that is a misplaced decision at all is
+  discussed in section 6.8, and our present answer is that it is not.
 
-Two small changes, called **slice 1** for Go and slice 1 for Rust, are about to
-move these two decisions into new Go and Rust Files stages. Each slice admits
-only the simplest placement (one Go package without imports, one Rust module)
-and refuses everything else. Later slices add external types, imports, several
-packages and several modules. C++ follows when it has compiler-backed semantic
-tooling.
+Two small changes are about to move these two decisions into new Go and Rust
+Files stages. They are **slice 1** of two work items (a work item is a GitHub
+issue): the **Go work item**, issue #161, "Add Files placement for generated
+Go", and the **Rust work item**, issue #159, "Rust generation decides module
+visibility before Files placement". Each slice admits only the simplest
+placement (one Go package without imports, one Rust module) and refuses
+everything else. Later slices add external types, imports, several packages and
+several modules. C++ follows when it has compiler-backed semantic tooling.
 
 **What we need advice on.** The project's rule for such a first move is that it
 establishes the final structure: its inputs and identities already have their
 intended shape, and later slices only add (section 2.1, rule AC-10). The
-owner's direction of 9 November 2026 is: "I want this properly done, so that we
-don't accumulate technical debt and have to refactor later." Nothing in bittype
-is released yet, so every interface can still change now, and none of it should
-have to change later.
+project's owner, one person who decides for every repository involved, directed
+on 9 November 2026: "I want this properly done, so that we don't accumulate
+technical debt and have to refactor later." Nothing in bittype is released yet,
+so every interface can still change now, and none of it should have to change
+later.
 
 **What shape should the placement input, the unplaced generated output and the
 placement check have, so that Go, Rust and later C++ are added without changing
-what TypeScript, Go slice 1 and Rust slice 1 delivered?**
+what exists once the two slices have landed?**
 
-We count as a later change, and therefore as a failure of the first move:
+TypeScript's present types may be reshaped now, as part of this decision. The
+test is that nothing changes after the two slices land. We count as a later
+change, and therefore as a failure of the first move:
 
-- a change to the type a consumer writes to state a placement, or to the
-  meaning of a placement that was already accepted;
+- a change to the type a consumer writes to state a placement, to the key
+  under which it travels, or to the meaning of a placement that was already
+  accepted;
 - a change to what generated output is before placement (its root, its names,
   what it records about intent);
 - a change to the evidence a Files stage requires, or to the constructor a
@@ -64,33 +73,43 @@ We count as a later change, and therefore as a failure of the first move:
 Admitting a placement that is explicitly refused today is additive and not a
 change.
 
-**The tensions**, each developed in section 6:
+**How to read the standing of our statements.** Section 5 lists every fixed
+point with one of four statuses. Owner rules are fixed. The accepted decision
+of 7 November 2026 is fixed unless you see that it contradicts an owner rule or
+itself; if you do, please say so. Everything that is merely implemented today,
+and everything we derived, is open, however firmly the code or our text states
+it. In your answers, please name the option first and then the reason.
 
-- **Scope differs per language.** A TypeScript module's scope is its file. A Go
-  package is a directory of files and has a name that the path does not
-  determine. A Rust file can hold several modules. A C++ header can hold
-  several namespaces, and a namespace is independent of the path.
-- **Unplaced Go is not a Go file.** Generated output is a checked syntax tree
-  of the target language. Go's source file production requires a package
-  clause.
-- **Names and scopes.** Today all generated names must be unique in one flat
-  scope, and a naming policy exists only to make that possible. Once the
-  consumer decides scopes, it is unclear who owns collisions.
-- **Evidence that cannot see the moved decision.** For the Go package name and
-  for Rust item visibility, the compiler-established facts bittype publishes
-  contain nothing to compare against.
+**The tensions**, in the order of the questions:
 
-Sections 1 and 2 give the system, the rules and the two governing documents.
-Section 3 shows the code: the shared contracts, TypeScript as the working
-model, then Go, Rust, name uniqueness and C++ as they are. Section 4 follows
-one generated set through placement. Section 5 lists what is fixed. Section 6
-gives the options and our leanings, marked as decided by an accepted document
-or derived by us. Section 7 holds five questions.
+- **Question 1: scope differs per language.** A TypeScript module's scope is
+  its file. A Go package is a directory of files and has a name that the path
+  does not determine. A Rust file can hold several modules. A C++ header can
+  hold several namespaces, and a namespace is independent of the path.
+- **Question 2: names and scopes.** Today all generated names must be unique in
+  one flat scope, and one naming policy, as we read it, exists to make that
+  possible. Once the consumer decides scopes, it is unclear who owns
+  collisions.
+- **Question 3: unplaced Go is not a Go file.** Generated output is a
+  syntax-checked tree of the target language (grammar only; no names
+  resolved). Go's source file production requires a package clause.
+- **Question 4: a check that cannot see the moved decision.** For the Go
+  package name and for Rust item visibility, the compiler-established facts
+  bittype publishes contain nothing to compare against. For Go's predeclared
+  `string` and `bool` the compiler publishes a fact, but generation records no
+  intended destination.
+
+**Map.** Sections 1 and 2 give the system, the rules and the two governing
+documents. Section 3 is a one-page map: who decides what today, per language,
+and where section 4 shows it. Section 4 is the code. Section 5 lists the fixed
+points and their standing. Section 6 gives the options and our leanings, all of
+them open. Section 7 holds five questions.
 
 Quotations from project documents are verbatim, including where they
-capitalize project names. In code excerpts a line `// …` marks lines we left
-out; everything else is exact, with its file path and line numbers at the code
-baseline.
+capitalize project names; words in square brackets inside a quotation are
+ours. In code excerpts a line `// …` marks lines we left out; everything else
+is exact, with its file path and line numbers at the code baseline.
+
 
 ## 1. System overview
 
@@ -101,46 +120,56 @@ baseline.
 | **ontos** | The value model under horos. A value is an atom (a byte string) or a tuple (an ordered sequence of values). It plays no further part in this document. | Go, Rust, TypeScript |
 | **horos** | A type language whose types are ontos values. It has a declaration language with **modules**, generic declarations and imports. A module is identified by a **pin**, the SHA-256 digest of its canonical content, written as 64 hexadecimal digits. An import names a module by its pin. | Go, Rust, TypeScript |
 | **bittype** | A Go library. It parses and analyzes horos source, and it generates native type declarations for TypeScript, Go, Rust and C++. Its native syntax covers type declarations only, not executable code. | Go; emits TypeScript, Go, Rust, C++ |
-| **Consumers** | Applications that link bittype as a library, register the parts they want, and call generation and Files. The first intended consumers are the builds of four network services of the surrounding platform. | Go |
+| **Consumers** | Applications that link bittype as a library, register the parts they want, and call generation and Files. Consumers' hand-written code then refers to the generated declarations by name. | Go |
 
 A horos example used throughout, with the declarations a consumer asks for:
 
 ```text
 Page<T> = { items: list<T>; next?: text; }       a generic record
 Person  = { name: text; }                        a record
-Cells   = Page<cells.Cell<Person>>               an alias; Cell is owned by a library
+Cells   = Page<Cell<Person>>                     an alias; Cell is owned by a library
 ```
 
 `Cell` stands for a type that a separate library owns in every target language
 (`Cell` exported by the npm package `@bitspark/cell`, `cell.Cell[T]` in a Go
 package, `Cell<T>` in a Rust crate). Generation must refer to it without
-declaring it.
+declaring it. In horos source the example writes `cells.Cell`, where `cells`
+is the alias under which it imports the horos module that declares `Cell`.
 
 ### 1.2 Terms used throughout
 
+Two house words first: a **carrier** is the data type that holds something, and
+to **admit** an input is to validate and accept it, as opposed to refusing it.
+
 | Term | Meaning in this document |
 | --- | --- |
-| **Target, native** | A **target** is one of the four output languages. **Native** means "of the target language": a native type, a native scope, the native compiler. |
-| **Syntax tree (AST)** | bittype's own tree representation of a program in some language. One generic carrier serves every language: a flat array of nodes, each with a kind, text attributes, child edges with role names, and reference links (section 3.1). Each language supplies a **vocabulary**: its node kinds, roles and attribute names. |
+| **Target language, native** | One of the four output languages. **Native** means "of the target language": a native type, the native compiler. |
+| **Native scope** | The language construct inside which declarations see each other without import or qualification: a TypeScript module (its file), a Go package, a Rust module, a C++ namespace. |
+| **Syntax tree (AST)** | bittype's own tree representation of a program in some language. One generic carrier serves every language: a flat array of nodes, each with a kind, text attributes, child edges with role names, and reference links (section 4.1). Each language supplies a **vocabulary**: its node kinds, roles and attribute names. |
 | **Site** | The address of one node: a tree ID and a node ID. Declarations and uses are identified by site, never by spelling. |
-| **Parse, check, format, print** | For one tree: **parse** turns text into a tree, **check** admits a tree against the vocabulary's grammar rules (the **syntax check**; it resolves no names), **format** turns a tree into concrete syntax, **print** turns concrete syntax into text. The project calls this the **Syntax** dimension. |
-| **Files** | The second dimension: a set of trees, each linked to a file ID and a relative path. A **Files formatter** produces such a set for a chosen organization. "Files" with a capital letter always means this stage or dimension. |
-| **Source** | The published result of a Files stage: the units (file ID, path, concrete syntax), together with the compiler-backed evidence for exactly those units. A Files printer turns a Source into paths and text. Nothing is written to disk by bittype. |
-| **Snapshot, capture** | An immutable, syntax-checked set of trees, optionally with the files they belong to. To **capture** is to create one. Every later stage refers to a snapshot, never to mutable trees. |
-| **Resolution and analysis providers** | Per-language components that run the language's real compiler front end over a snapshot (Go's `go/types` library, the TypeScript compiler API, a helper linked against `rustc`) and publish what it established. They are called "providers" because the consumer supplies them explicitly; nothing is discovered or registered automatically. |
-| **Semantic graph, fact, binding** | What a provider publishes: **entities** (declarations, packages, modules), **bindings** (this use site resolves to that entity) and **facts** (provider-owned relations such as "this module exports that declaration"). Each language owns its names in the graph. |
-| **Receipt, evidence** | The result of one resolution or analysis, bound to one snapshot and one configuration. A stage that needs compiler-established facts states an **evidence requirement** (operation, profile, configuration, required reports), and a receipt is **admitted** against it. A receipt for another snapshot or configuration is refused. |
-| **Compiler bridge** | The private code that converts bittype's tree into the compiler's own input and exports facts back: `internal/golangsem` for Go, a Rust executable (the **helper**) for Rust. |
+| **Parse, check, format, print** | For one tree: **parse** turns text into a tree, **check** admits a tree against the vocabulary's grammar rules (the **syntax check**; it resolves no names), **format** turns a tree into concrete syntax, **print** turns concrete syntax into text. The project calls this the **Syntax** dimension, and a **Syntax formatter** does only that formatting step. |
+| **Files** | The second dimension: a set of trees, each linked to a file ID and a relative path. A **Files formatter** produces such a set for a chosen organization. A **generated-Files formatter** is one whose input is generation output; "the Go Files stage", "Go Files" and "the Go generated-Files formatter" are the same thing. Despite the name it relocates declarations, writes imports and verifies bindings. |
+| **Source** | The result a Files stage publishes: the units (file ID, path, concrete syntax) with the compiler-backed receipt for exactly those units. A Files printer turns a Source into paths and text. bittype writes nothing to disk. |
+| **Snapshot, capture, entry** | A **snapshot** is an immutable, syntax-checked set of trees, optionally with the files they belong to. To **capture** is to create one. Every snapshot names one **entry** node, the root of one of its trees; the file of that tree is the **entry file**. The capture contract requires it. horos resolution starts from it. No Go, Rust or TypeScript compiler bridge reads it. |
+| **Contribution, provider** | A **contribution** is one independently owned part a consumer registers: a mapping library, a native target, a resolution or analysis provider, a Files formatter. The project calls every explicitly supplied implementation of a contract a **provider**; in the excerpts a type named `Provider` is whichever contribution its file path says. Nothing is discovered or registered automatically. |
+| **Resolution and analysis providers** | Per-language contributions that run the language's real compiler front end over a snapshot (Go's `go/types` library, the TypeScript compiler API, a helper linked against `rustc`) and publish what it established. |
+| **Semantic graph, fact, binding** | What such a provider publishes: **entities** (declarations, packages, modules), **bindings** (this use site resolves to that entity) and **facts** (provider-owned relations such as "this module exports that declaration"). Each language owns its names in the graph. |
+| **Receipt, report, evidence** | A **receipt** is the result of one resolution or analysis, bound to one snapshot and one configuration. It carries **reports** (a provider's verdict, holds or rejected, on one named obligation such as "the program is valid") and, when demanded, a semantic graph. A stage states an **evidence requirement** (operation, profile, configuration, required reports), and a receipt is admitted against it. "Compiler-established evidence" always means a receipt. From section 3 on we also use "evidence" in the ordinary sense of whatever a check rests on, including tree equality. The **evidence profile** of a formatter is the semantic profile and configuration its evidence requirement names. |
+| **Compiler bridge** | The private code that converts bittype's tree into the compiler's own input and exports facts back: `internal/golangsem` for Go, `internal/typescriptsem` for TypeScript, a Rust executable (the **helper**) for Rust. |
 | **Profile** | A named, bounded subset of a language or a policy. A syntax or semantic profile says which constructs are supported. A **representation profile** says how horos forms become native types. |
-| **Generation kernel** | bittype's language-agnostic code that plans and runs generation. The documents also call the shared, contribution-independent parts "the kernel" or "shared mechanisms". |
-| **Mapping library** | A contribution that says how a horos form or declaration is represented natively (text becomes `string`, a list becomes a slice). The **declaration recipe** is the mapping part that turns a named horos declaration into a native declaration and chooses its name. |
-| **Native target** | The per-language contribution that constructs the syntax tree from the closed plan the kernel hands it. |
-| **Exposed site** | The site of a declaration the caller asked to be public. The documents also say "public root" and "publication". |
-| **External use** | A use site that refers to a type outside the generated set (the library-owned `Cell`), recorded together with an opaque, target-issued **symbol** that identifies the destination. |
-| **Placement** | The consumer's assignment of generated declarations to output files and native scopes. |
+| **Kernel, shared contract** | The **generation kernel** is bittype's language-agnostic code that plans and runs generation. **The shared Files contract** is the package `contracts/format/go` of section 4.4, which every generated-Files formatter goes through; code comments call it the Files kernel. Both are "shared mechanisms" in the sense of the rules in section 2.1. |
+| **Mapping library, declaration recipe** | A mapping library is a contribution that says how a horos form or declaration is represented natively (text becomes `string`, a list becomes a slice). The **declaration recipe** is the mapping part that turns a named horos declaration into a native declaration and chooses its name. |
+| **Native model, form** | Each language's closed set of native type **forms** (for example primitive, sequence, field, record, external) in which mapping libraries state a representation. A form carries string data and child forms. It is intent, not syntax. |
+| **Native target** | The per-language contribution that constructs the syntax tree from the closed plan the kernel hands it (closed: the requested declarations and everything they reference, transitively). Where we write "the Go target writes" or "target configuration", we mean this contribution, not the language. The quoted documents also say "generation target". What a reference points at is called its **destination**, except in code identifiers and quotations. |
+| **Intent** | What generation recorded: for a reference, its destination (a link in the tree, or an external use); for exposure, the exposed sites. It is a claim. Only analysis of the placed program yields facts. |
+| **Exposed site, exposure, visibility** | An **exposed site** is the site of a declaration the caller requested as a root of generation. **Exposure** is that request; **visibility** is its native realization (`export`, `pub`, a capitalized Go name). The documents also say "public root" and "publication". They do not say to whom an exposed declaration is public (section 4.2). |
+| **External use, external symbol** | A use site that refers to a type outside the generated set (the library-owned `Cell`), recorded with an opaque **external symbol** that identifies the destination. The symbol is issued by the language's small symbol package, which code comments call the "target library"; both the native target and the Files formatter of that language import it. |
+| **Seal** | To validate a native target's result and freeze it into an immutable `Output` (section 4.2). |
+| **Placement, placement assignment** | The **placement** is the consumer's whole statement of where generated declarations go. One element of it, which assigns some declaration sites to one file (and, in our proposals, one native scope), is a **placement assignment**. The placement also names the entry file. |
 | **Dependency environment** | What the consumer says about the world the output is compiled in: the module root, the dependency packages and their declarations, compiler settings. |
-| **Slice** | One delivered change. Slice 1 of an issue moves a misplaced decision; later slices add coverage. |
-| **ACX-nnn** | A numbered architecture case record in bittype's repository: a found violation of the rules in section 2.1, with its correction and limits. ACX-004 is "generation emits file syntax before placement". |
+| **Slice** | One delivered change. Slice 1 of a work item moves a misplaced decision; later slices add coverage. |
+| **Limitation** | A declared gap in what a check establishes. "Limit" is reserved for resource bounds. |
+| **ACX-nnn** | A numbered architecture case record in bittype's repository: a found violation of the rules in section 2.1, with its correction and limitations. ACX-004 is "generation emits file syntax before placement". |
 
 ### 1.3 The stages, in one picture
 
@@ -151,17 +180,18 @@ horos files ──parse, resolve, analyze──▶ horos snapshot + receipt
                                               ▼
                               closed native program (intent, no syntax yet)
                                               │
-                    native target: construct  │  one syntax tree, references linked to their targets
+                    native target: construct  │  one syntax tree, references linked to their destinations
                     syntax check, seal        ▼
         generation.Output = snapshot of the unplaced tree + exposed sites + external uses
                                               │
       consumer: placement (per request)       │   consumer: dependency environment (per formatter)
                                               ▼
               generated-Files formatter of the target language
-                 1. copy declarations into one tree per output file
-                 2. write the file-level syntax the placement needs
-                 3. capture the new trees with their paths
-                 4. run the native resolution and analysis providers
+                 1. read intent from the output; admit the placement
+                 2. copy declarations into one tree per output file
+                 3. write the file-level syntax the placement needs
+                 4. capture the new trees with their paths; run the native
+                    resolution and analysis providers
                  5. compare the compiler's bindings and facts with the intent
                                               │
                                               ▼
@@ -174,22 +204,32 @@ times with different placements.
 ### 1.4 Scale and direction
 
 - **Release state.** Nothing is released. The first release is a tracked work
-  item that follows this work. Interfaces, names and bytes can all change now.
-- **Targets.** TypeScript first, Go next. Rust and C++ types are generated
-  today; their Files stages must remain possible without reshaping the shared
-  parts.
-- **Sizes.** We expect a generation output to hold tens to a few hundred
-  declarations. The Files dimension defaults to at most 256 files. The Go
-  semantic profile accepts at most 16 captured files per analysis. The Rust
-  semantic profile accepts one captured source file, which may contain inline
-  modules.
+  item that follows this work.
+- **Consumers, as the plan states them.** The pilot consumer is a content
+  service of the surrounding platform. Its contract becomes TypeScript first;
+  Go follows, for the services' own code. No consumer is planned yet for Rust
+  or C++ output. Both exist as generation targets and must not be closed off.
+- **Order of work.** TypeScript is corrected. Go slice 1 and Rust slice 1 are
+  about to start. C++ waits for its semantic tooling.
+- **Modules per output.** We expect an output to span a handful of horos
+  modules, as the documented walkthrough does (three). Declarations from every
+  module but one get a hash prefix in their name (section 4.9), so that prefix
+  is common in practice, not a corner case.
+- **Sizes.** We expect tens to a few hundred declarations per output. The
+  Files dimension defaults to at most 256 files. The Go semantic profile
+  accepts at most 16 captured files per analysis. The Rust semantic profile
+  accepts one captured source file, which may contain inline modules.
+- **Setting keys carry a version.** The TypeScript placement travels under a
+  key ending in `-1`. A later `-2` would be a change to what a consumer
+  writes, and counts as a failure in the sense of the Question section.
 - **People.** One human owner decides for all repositories involved. Each
   repository is maintained by AI coding-agent sessions, several working in
   parallel. Clear ownership and additive composition are therefore hard
   requirements.
-- **Existing formatters.** The directory of Files formatters holds two: horos
-  (it places whole horos modules into files) and TypeScript. TypeScript's is
-  the only one that consumes generation output.
+- **Existing Files formatters.** Two exist: horos (it places whole horos
+  modules into files) and TypeScript. TypeScript's is the only one that
+  consumes generation output.
+
 
 ## 2. Architectural context
 
@@ -198,7 +238,8 @@ times with different placements.
 The owner has made architecture part of correctness: a design that works and
 passes its tests is still wrong if a responsibility sits with the wrong owner.
 The rules are numbered. The questions rest on seven of them. Each is given in
-our words, followed by its requirement text, quoted.
+our words, followed by its requirement text, quoted. For AC-09 the quoted text
+is the owner's standing direction of 8 November 2026, which the rule adopts.
 
 | Rule | In our words | Requirement text (verbatim) |
 | --- | --- | --- |
@@ -218,25 +259,12 @@ that is missing can be healed additively, i.e. there is nothing wrong requiring
 removal." And: "no compromise on architecture, but practical deferral is
 allowed, if the huge effort justifies it."
 
-**Package roles.** The rules are also applied to Go packages. Each package has
-one role, and a test forbids imports the role does not allow (section 3.11):
-
-- a **shared mechanism** imports no contribution and no vocabulary of one;
-- a **vocabulary** (names two parties must agree on) imports no contribution;
-- a **contribution** (one thing a consumer registers) is one package, and
-  imports shared contracts, the vocabularies of its own language and its own
-  private parts;
-- only a **composition** (the consumer's wiring) imports a contribution.
-
-The owner's request of 11 November 2026 names the fault this guards against:
-parts that call one another directly "instead of invoking the kernel". It also
-names a fault of grouping: parts that "neither conceptually nor practically
-depend on each other" sharing one package. bittype's own record of its package
-boundaries lists, among the signs of wrong grouping: "**A policy next to a
-shared mechanism.** A shared package also holds one case's rule."
-
-For AC-09 the quoted text is the owner's standing direction of 8 November 2026,
-which the rule adopts as its requirement.
+**Package roles.** The rules are also applied to Go packages. A shared
+mechanism imports no contribution; only a consumer's composition imports a
+contribution; a contribution imports shared contracts and the vocabularies of
+its own language. A test forbids every other import. This bears on question 1
+in one way only: a shared placement type would live in a shared package and
+could therefore hold nothing that only one language understands.
 
 ### 2.2 The accepted decision of 7 November 2026
 
@@ -251,10 +279,12 @@ section "From generated declarations to files", and marked "**Design decision,
 | Target-language Files formatter | "Follow those bindings under that placement. Choose the local spelling, qualification or alias, and construct the necessary import, export or other module syntax. Realize the requested visibility under the language's rules and establish that uses still resolve to their intended targets." |
 | Shared Files printer | "Emit the paths and text already represented by `Source`. The caller decides whether and where to write them." |
 
-Further sentences of the same decision that the questions rest on:
+Further sentences of the same decision that the questions rest on. On names:
 
 > A spelling alone is insufficient: two distinct types named `Person` must not
 > become interchangeable when placement changes.
+
+Of its two example placements (Person in its own file; Person in Page's file):
 
 > Both placements use the same generated declarations, bindings and publication
 > intent. Files must preserve those bindings and the requested public surface;
@@ -265,21 +295,16 @@ Further sentences of the same decision that the questions rest on:
 > import between them, while two Rust modules can occupy one file. A file
 > boundary alone is never an import rule.
 
+On which visibility Files owns:
+
 > The distinction is about module visibility. A member's accessibility, when it
 > is part of the chosen type representation, still belongs to the declaration.
+
+On what the boundary covers:
 
 > This is the boundary for **generating declarations**. Native ASTs can still
 > represent imports and exports when parsing existing source or constructing
 > organized units.
-
-The generation planner document, which describes the implemented TypeScript
-path, uses the same terms: "A sealed generation.Output
-holds checked declaration ASTs, requested exposed sites and external use
-destinations. Files receives that output, one placement and the selected native
-dependencies, builds module syntax and checks its bindings before publishing
-Source." And: "The planned native program is intent, not a fabricated
-semantic-analysis result. Only analysis of the realized target program
-establishes native semantic facts."
 
 ### 2.3 The proposal of 8 November 2026
 
@@ -288,21 +313,20 @@ through Go, Rust and C++. **It is a proposal and not an accepted decision.**
 It opens: "**Proposal, 8 November 2026.** These examples specify the intended
 Files boundary." It says of its own tables: "The concrete Go/Rust/C++ settings
 and checks still need specification and implementation. The following tables
-are proposed inputs/output, not shipped Go structs or APIs." The architecture
-case and both work items nevertheless treat it as the specification of the
-boundary. Where only this document speaks, we mark the point as open.
+are proposed inputs/output, not shipped Go structs or APIs." ACX-004 and both
+work items nevertheless treat it as the specification of the boundary.
 
 Its proposed inputs, quoted:
 
 | Input | Proposed meaning |
 | --- | --- |
-| Owned declaration placement | "Output file and native scope for each emitted declaration/helper; entries identify declarations, not just spellings" |
+| Owned declaration placement | "Output file and native scope for each emitted declaration/helper [helper: an auxiliary generated declaration, not the Rust helper of 1.2]; entries identify declarations, not just spellings" |
 | Public roots | "Generation's exposed declaration sites; placement cannot make an inaccessible dependency public merely to obtain a valid file" |
-| External destination | "Library-selected public package/crate/header symbol and mapped arguments" |
+| External destination | "Library-selected [the mapping library] public package/crate/header symbol and mapped arguments" |
 | Dependency environment | "Consumer-selected module/crate/include roots, actual dependency artifacts and relevant native configuration" |
 
-Its required placements, condensed from its tables. Each must be produced from
-one generated output without regenerating:
+Its six required placements, condensed from its tables. Each must be produced
+from one generated output without regenerating:
 
 | Language | Placement | What Files must write in the unit containing `Cells` |
 | --- | --- | --- |
@@ -313,7 +337,14 @@ one generated output without regenerating:
 | C++ | Page and Cells in namespace `app::pages`; Person in `model/person.hpp`, namespace `app::model` | Includes of the Person header and the Cell header; the qualified name `app::model::Person` |
 | C++ | "Person moves into `pages/page.hpp`, retaining namespace `app::model`" | No include of Person; the qualified name stays |
 
-Further sentences of the proposal that the questions rest on:
+Further sentences of the proposal that the questions rest on.
+
+(All languages, on external types:)
+
+> External-symbol support for a future target must be represented by that
+> target's model and the shared output contract, not guessed from a name.
+
+(Go:)
 
 > A package import path and an output filename are different identities; the
 > consumer's Go module layout relates them.
@@ -324,6 +355,8 @@ Further sentences of the proposal that the questions rest on:
 > type or treat same-package movement as a package import. Package aliases must
 > avoid names in the use's lexical scope.
 
+(Rust:)
+
 > Files must construct `mod` declarations or inline modules consistently with
 > the placement, and realize public-root visibility under the crate/module
 > rules. Two files may contribute through one module arrangement; one file may
@@ -332,10 +365,14 @@ Further sentences of the proposal that the questions rest on:
 > Cargo package selection/renaming belongs to the dependency environment; it is
 > not inferred from a source type's name.
 
+(C++; "the Files profile" is the C++ Files formatter's profile:)
+
 > The Files profile owns include directives, guards, declaration order and the
 > chosen relative/public-header policy. [...] A forward declaration is not
 > automatically enough: required completeness depends on the selected native
 > use.
+
+(All languages, on checks:)
 
 > Check collisions, visibility, missing external destinations, dependency
 > cycles/completeness and public roots. The shared contract associates sites
@@ -343,29 +380,45 @@ Further sentences of the proposal that the questions rest on:
 > meaning. [...] Successful printing or compilation alone does not establish
 > that every intended use bound to the right declaration.
 
-### 2.4 The order of correction, and the two slices
+### 2.4 The order of correction, and what the two work items say about slice 1
 
-The architecture case ACX-004 records four misplaced decisions and their order
-(11 November 2026):
+ACX-004 records four misplaced decisions and their order (11 November 2026):
 
 | Instance | First step | State |
 | --- | --- | --- |
-| Go package clause | Generation decides no package. Go Files writes the clause for one package and no import (slice 1 of the Go work item) | Can start |
-| Rust visibility | Generation chooses no visibility. Rust Files decides it for one module (slice 1 of the Rust work item) | Can start |
-| Rust external paths | The target reports an external use and Rust Files decides the import | Deferred until Rust semantics cover a second crate |
+| Go package clause | Generation decides no package. Go Files writes the clause for one package and no import | Can start |
+| Rust visibility | Generation chooses no visibility. Rust Files decides it for one module | Can start |
+| Rust external paths | The Rust target reports an external use and Rust Files decides the import | Deferred until Rust semantics cover a second crate |
 | C++ includes and namespace | Generation emits neither. C++ Files decides both | Deferred until C++ has resolution and analysis providers |
 
 The case states the rule for the first step: it "moves the misplaced decision to
 the language's generated-Files formatter, for the placements that existing
 semantic evidence can check, and refuses every other placement. The second step
-adds coverage and changes nothing the first delivered. The first step cannot
-skip its check".
+adds coverage and changes nothing the first delivered."
 
-Both work items require of slice 1: "The placement setting has its final
-shape." Before coding started, we read the accepted documents against the code
-to find what they decide and what they leave open. The open parts are the
-subject of this consultation. The plan that orders the work says of itself that
-it "decides no design".
+The two work items define slice 1 as follows, quoted:
+
+| | Go work item | Rust work item |
+| --- | --- | --- |
+| Generation | "The Go target takes no `Package`." | "The Rust target sets no `visibility` attribute on declarations or fields" |
+| The formatter | "It reads the package from the consumer's placement setting and writes the package clause." | "It decides the visibility of each declaration and its fields from the exposures and the consumer's placement." |
+| The check | "The existing Go Files resolution and analysis providers supply both [a check and semantic evidence] for what this slice admits." | "The existing single-crate Rust Files providers supply both for what this slice admits." |
+| Admits and refuses | "It admits one package and no import. A placement into more than one package fails, and an output with an external use fails." | "It admits one module. A placement into more than one module fails." |
+| The setting | "It assigns each declaration a file and a native scope, as TypeScript's `Organization` assigns declarations to files. Slice 2 then admits more placements without changing the setting." | "It assigns each declaration a file and a module, so slice 2 admits more placements without changing it." |
+| Verification | "One generated output is placed into package `pages` and into package `people` without regenerating, and both results pass the Go semantic check." | "A declaration that is not exposed is not made public." The existing compilation with rustc "passes on the placed output." |
+
+**Standing of the work items.** They were written on 10 and 11 November 2026
+to make the work startable. The plan that orders them says of itself: "It
+decides no design." So they are revisable. Our leanings in section 6 depart
+from them in five places: which Go semantic profile the check uses (6.6), how
+predeclared types relate to "an output with an external use fails" (6.7),
+fields (6.8), whether Rust's existing providers supply a real check for item
+visibility (6.8), and whether each language gets its own setting type (6.5).
+"Files providers" in the quotes are the resolution and analysis providers that
+accept a snapshot with file paths. The Go work item does not say which of Go's
+two semantic profiles (section 4.7) it means.
+
+<!-- REVISION IN PROGRESS: the text below this line is the earlier draft -->
 
 ## 3. Relevant code
 
