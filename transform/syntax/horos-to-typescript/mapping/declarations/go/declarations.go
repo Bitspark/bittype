@@ -13,5 +13,5 @@ import (
 // Library applies the horos declaration recipe with the TypeScript forms
 // "interface" for records and "alias" for every other declaration.
 func Library(profile string) rules.Library[s.Language] {
-	return recipe.Library(profile, model.Form("interface"), model.Form("alias"))
+	return recipe.Library(profile, model.Form(model.FormInterface), model.Form(model.FormAlias))
 }
