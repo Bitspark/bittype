@@ -52,21 +52,21 @@ type state[L any] struct {
 	abstract    semantics.Semantics[L]
 }
 
-// A Files refusal of an input has exactly one of four categories, which a
-// caller tests with errors.Is: invalid input is ErrInvalid, unsupported coverage
-// is ErrUnsupported, missing evidence is semantic.ErrEvidenceUnavailable and an
+// A Files stage refuses an input in one of four categories, which a caller
+// tests with errors.Is: invalid input is ErrInvalid, unsupported coverage is
+// ErrUnsupported, missing evidence is semantic.ErrEvidenceUnavailable and an
 // exceeded limit is ErrLimit. The category of a refusal is part of the Files
-// contract: a later change may turn an ErrUnsupported refusal into success, and
-// it may neither admit an input refused with ErrInvalid nor move a refusal to
-// another category. A refusal that carries another package's value joins it to
-// its category, so errors.Is holds for both.
+// contract. A refusal that carries another package's value joins it to its
+// category, so errors.Is holds for both. docs/source.md lists the refusals
+// that carry a category.
 var ErrInvalid = errors.New("invalid Source")
 var ErrStale = errors.New("Source belongs to another Files invocation")
 var ErrLimit = errors.New("Source resource limit")
 
-// ErrUnsupported refuses an input that is well formed and that this profile does
-// not cover yet: a later profile may admit the same input unchanged, and no
-// profile ever admits an input refused with ErrInvalid.
+// ErrUnsupported refuses an input that is well formed and that this profile
+// does not cover yet. A later change may turn an ErrUnsupported refusal into
+// success, and it may neither admit an input refused with ErrInvalid nor move a
+// refusal to another category.
 var ErrUnsupported = errors.New("Files input outside supported coverage")
 
 // Limits bound concrete storage and metadata in addition to semantic capture limits.

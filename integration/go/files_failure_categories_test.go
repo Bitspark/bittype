@@ -10,6 +10,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/format/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
+	"github.com/Bitspark/bittype/contracts/print/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/files/go"
@@ -155,6 +156,17 @@ func (p substitutedSyntax) Format(ctx context.Context, view ast.View[s.Language]
 		return parsehoros.Provider{}.Parse(ctx, parse.Input{SourceID: ast.SourceID(tree.ID), TreeID: tree.ID, Text: text})
 	}
 	return p.Provider.Format(ctx, view)
+}
+
+// commentingPrinter is a TypeScript Syntax printer that writes a long comment
+// after each unit, so that the fresh text exceeds a byte limit that the input met.
+type commentingPrinter struct {
+	print.Provider[cst.CST[ts.Language], string]
+}
+
+func (p commentingPrinter) Print(ctx context.Context, unit cst.CST[ts.Language]) (string, error) {
+	text, err := p.Provider.Print(ctx, unit)
+	return text + "\n// " + strings.Repeat("x", 1<<16) + "\n", err
 }
 
 type horosPlacement struct {
@@ -563,6 +575,20 @@ func TestFilesFailureCategories(t *testing.T) {
 		return horosFormat(horosFormatter, bundle, limits, semantic.Setting{Key: filesformat.OrganizationSetting(), Value: []byte(horosValid)})
 	}, semantic.ErrLimit)
 	add("more fresh units than the input limit", typescript, source.ErrLimit, tsLimited(func(l *format.FilesLimits) { l.Semantic.MaxInputs = 1 }))
+	add("the fresh text exceeds the input byte limit", typescript, source.ErrLimit, func(*testing.T) (bool, error) {
+		stages := placementStages(t, cell)
+		stages.Printer = commentingPrinter{stages.Printer}
+		commenting, err := tsfiles.NewGenerated(stages)
+		if err != nil {
+			t.Fatal(err)
+		}
+		limits := format.DefaultFilesLimits()
+		limits.Semantic.MaxInputBytes = smallest(output.Snapshot(), inputBytes)
+		if limits.Semantic.MaxInputBytes >= 1<<16 {
+			t.Fatal("the comment must exceed the limit that admits the input", limits.Semantic.MaxInputBytes)
+		}
+		return tsFormat(commenting, output, limits, semantic.Setting{Key: tsfiles.OrganizationSetting(), Value: []byte(valid)})
+	})
 	add("the fresh text exceeds the input byte limit", horosName, source.ErrLimit, func(*testing.T) (bool, error) {
 		limits := format.DefaultFilesLimits()
 		limits.Semantic.MaxInputBytes = smallest(bundle.Snapshot(), inputBytes)
