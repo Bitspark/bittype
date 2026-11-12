@@ -211,8 +211,8 @@ var oneOfAKindRules = map[string][]string{
 	// internal/<language> and internal/<language>sem, and these are neither.
 	// languageOwners binds each to horos. No role allows them, so an importer
 	// names them in roleExtensions or in its own entry here.
-	"internal/declsyntax": {"check/syntax/shared/ast/go", "contracts/text/go", "internal/grammar", "trees/ast/go"},
-	"internal/horosmodel": {"check/syntax/shared/ast/go", "contracts/semantic/go", "contracts/text/go", "internal/declsyntax", "semantics/go", "semantics/horos/go", "trees/ast/go"},
+	"internal/declsyntax": {"check/syntax/shared/ast/go", "contracts/text/go", "internal/grammar", "syntax/horos/go", "trees/ast/go"},
+	"internal/horosmodel": {"check/syntax/shared/ast/go", "contracts/semantic/go", "contracts/text/go", "semantics/go", "semantics/horos/go", "syntax/horos/go", "trees/ast/go"},
 	// A private composition of the horos Files stages through their contracts,
 	// not a substitute language registry.
 	"internal/horosfiles": {

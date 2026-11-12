@@ -130,20 +130,20 @@ func Check[L any](view ast.View[L]) error {
 	for i := range shape.Nodes {
 		shape.Nodes[i].References = nil
 	}
-	if err := g.Check(shape, "program", rules); err != nil {
+	if err := g.Check(shape, KindProgram, rules); err != nil {
 		return err
 	}
 	rootTarget := ast.NodeID(0)
 	rootReferences := 0
 	for i, node := range tree.Nodes {
 		id := ast.NodeID(i + 1)
-		if node.Kind == KindReference || node.Kind == KindKindReference {
+		if string(node.Kind) == KindReference || string(node.Kind) == KindKindReference {
 			imported := attribute(node, AttributeScope) == "imported"
 			if imported != (attribute(node, AttributeAlias) != "") {
 				return text.AtNode(tree, id, "only imported references require an alias")
 			}
 		}
-		if node.Kind == KindNodePattern {
+		if string(node.Kind) == KindNodePattern {
 			seen := map[string]bool{}
 			for _, child := range node.Children {
 				if child.Role != RoleSelector {
@@ -166,7 +166,7 @@ func Check[L any](view ast.View[L]) error {
 		}
 		for _, ref := range node.References {
 			allowed := false
-			switch node.Kind {
+			switch string(node.Kind) {
 			case KindProgram:
 				allowed = ref.Role == RoleRoot && ref.Target.Tree == tree.ID
 				if allowed {
@@ -201,7 +201,7 @@ func lexical[L any](tree ast.AST[L], id ast.NodeID, typeParameters, kindParamete
 		n, err := strconv.Atoi(attribute(node, name))
 		return err == nil && n >= 0 && n < count
 	}
-	switch node.Kind {
+	switch string(node.Kind) {
 	case KindModule:
 		imports, declarations := map[string]bool{}, map[string]bool{}
 		for _, child := range node.Children {
@@ -231,7 +231,7 @@ func lexical[L any](tree ast.AST[L], id ast.NodeID, typeParameters, kindParamete
 			count++
 		}
 		typeParameters, kindParameters, groups = 0, 0, nil
-		if node.Kind == KindTypeDefinition {
+		if string(node.Kind) == KindTypeDefinition {
 			typeParameters = count
 		} else {
 			kindParameters = count
