@@ -18,10 +18,16 @@
       "serverSha256": "29bb3633352e12e3e6142c83cae21f6ad17e5116a83c5d526f052b8701590358",
       "runId": "run_cd247478-16f7-4b16-8b65-52be1f89ceb6",
       "submittedAt": "2026-11-12T21:28:44Z",
-      "state": null,
+      "state": "completed",
       "failureCode": null,
-      "resultSha256": null,
-      "verify": null
+      "resultSha256": "58e707ff2dc11bbb356e1bfed30327f23d32d20e119885bb0dc5c55248edbda4",
+      "verify": {
+        "exit": 0,
+        "verified": true,
+        "with": "--output research-docs/0016-native-files-placement.advice.md",
+        "checks": 9,
+        "failed": 0
+      }
     }
   ]
 }
