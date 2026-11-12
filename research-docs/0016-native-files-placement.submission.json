@@ -1,0 +1,33 @@
+{
+  "doc": "research-docs/0016-native-files-placement.md",
+  "attempts": [
+    {
+      "attempt": 1,
+      "idempotencyKey": "bittype-research-0016-bcdf3e4f-6722-4955-bc29-baa2f7c7b6af",
+      "clientTag": "bittype",
+      "collection": "bittype-research",
+      "slug": "0016-native-files-placement",
+      "submittedPath": "research-docs/0016-native-files-placement.submitted.md",
+      "docSha256": "29bb3633352e12e3e6142c83cae21f6ad17e5116a83c5d526f052b8701590358",
+      "docBytes": 113623,
+      "codeRevision": "9732860dd6ba51d87861bfe40345387bc630ae82",
+      "describedCodeRevision": "d35f1fad4f84bc754900fadefcba00c70858dc0d",
+      "cliBuild": "nightfall 0.1.0 (4523cf59444f, bundle 55bb314e11c6) built 2026-11-10T01:39:26.630Z",
+      "preparedAt": "2026-11-12T21:28:10Z",
+      "documentId": "doc_430dcd8b-84f8-4a7d-8c1e-a9352fe5bcc7",
+      "serverSha256": "29bb3633352e12e3e6142c83cae21f6ad17e5116a83c5d526f052b8701590358",
+      "runId": "run_cd247478-16f7-4b16-8b65-52be1f89ceb6",
+      "submittedAt": "2026-11-12T21:28:44Z",
+      "state": "completed",
+      "failureCode": null,
+      "resultSha256": "58e707ff2dc11bbb356e1bfed30327f23d32d20e119885bb0dc5c55248edbda4",
+      "verify": {
+        "exit": 0,
+        "verified": true,
+        "with": "--output research-docs/0016-native-files-placement.advice.md",
+        "checks": 9,
+        "failed": 0
+      }
+    }
+  ]
+}
