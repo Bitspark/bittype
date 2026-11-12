@@ -18,9 +18,6 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-// library is this package's one mapping library.
-type library struct{ optional g.HelperKey }
-
 // Library returns the record mapping. It states the structural representation
 // profile itself. optional is the
 // key of the one-parameter helper that wraps the type of an optional field.
@@ -31,55 +28,51 @@ type library struct{ optional g.HelperKey }
 // cannot be registered. A valid key that no registered library supplies makes
 // planning fail with generation.ErrUnsupported at the first optional field.
 // An optional field is never emitted unwrapped.
-func Library(optional g.HelperKey) g.MappingLibrary[h.Language, s.Language, source.Reader] {
-	return library{optional: optional}
-}
-
-// Describe states the structural representation profile and the one binding.
-func (p library) Describe(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
-	optional := p.optional
-	if !optional.Valid() {
-		return g.MappingDescription[h.Language, s.Language, source.Reader]{}, g.ErrInvalid
-	}
-	pattern, err := patterns.Head(from, "record", "closed")
-	if err != nil {
-		return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
-	}
-	return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "record/golang/1", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, s.Language, source.Reader]) (g.Expression[s.Language], error) {
-		src, err := r.Reader()
+func Library(optional g.HelperKey) rules.Library[s.Language] {
+	return func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
+		if !optional.Valid() {
+			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, g.ErrInvalid
+		}
+		pattern, err := patterns.Head(from, "record", "closed")
 		if err != nil {
-			return g.Expression[s.Language]{}, err
+			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
 		}
-		use, err := r.Use()
-		if err != nil {
-			return g.Expression[s.Language]{}, err
-		}
-		if !use.Body {
-			return g.Expression[s.Language]{}, src.Unsupported(use.Use, "nested records require a named declaration in this profile")
-		}
-		view, _, err := src.Descriptor(use.Use)
-		if err != nil {
-			return g.Expression[s.Language]{}, err
-		}
-		fields, err := src.Fields(use)
-		if err != nil {
-			return g.Expression[s.Language]{}, err
-		}
-		var members []g.Expression[s.Language]
-		for _, f := range fields {
-			f.Name, err = naming.Exported(f.Name)
+		return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "record/golang/1", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, s.Language, source.Reader]) (g.Expression[s.Language], error) {
+			src, err := r.Reader()
 			if err != nil {
 				return g.Expression[s.Language]{}, err
 			}
-			ty, err := r.Mapped(f.Use)
+			use, err := r.Use()
 			if err != nil {
 				return g.Expression[s.Language]{}, err
 			}
-			if f.Optional {
-				ty = g.Helper(optional, ty)
+			if !use.Body {
+				return g.Expression[s.Language]{}, src.Unsupported(use.Use, "nested records require a named declaration in this profile")
 			}
-			members = append(members, g.At(model.Field(f.Name, f.Optional, ty), f.Origin))
-		}
-		return g.At(model.Record(members...), view.Origin), nil
-	}}}}, nil
+			view, _, err := src.Descriptor(use.Use)
+			if err != nil {
+				return g.Expression[s.Language]{}, err
+			}
+			fields, err := src.Fields(use)
+			if err != nil {
+				return g.Expression[s.Language]{}, err
+			}
+			var members []g.Expression[s.Language]
+			for _, f := range fields {
+				f.Name, err = naming.Exported(f.Name)
+				if err != nil {
+					return g.Expression[s.Language]{}, err
+				}
+				ty, err := r.Mapped(f.Use)
+				if err != nil {
+					return g.Expression[s.Language]{}, err
+				}
+				if f.Optional {
+					ty = g.Helper(optional, ty)
+				}
+				members = append(members, g.At(model.Field(f.Name, f.Optional, ty), f.Origin))
+			}
+			return g.At(model.Record(members...), view.Origin), nil
+		}}}}, nil
+	}
 }

@@ -355,3 +355,27 @@ func TestRegistryDoesNotJudgeAStatedProfile(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// TestRegistrationNeedsAStatedProfile: a library that states no profile, and a
+// library without a description function, cannot be registered. Both fail
+// with ErrInvalid: the generation contract refuses a description without a
+// profile, and the function type refuses a nil function.
+func TestRegistrationNeedsAStatedProfile(t *testing.T) {
+	from, err := representation.NewLanguage[h.Language](h.Language{}, h.Profile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	to := nativeChecker(t, typescriptText()).Language()
+	var registry c.Registry
+	unstated := rules.Library[ts.Language](func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
+		description, err := typescriptLibraries()[0].Describe(from, to)
+		description.Profile = ""
+		return description, err
+	})
+	if _, err := c.RegisterMapping(&registry, from, to, unstated); !errors.Is(err, g.ErrInvalid) {
+		t.Error("a library that states no profile:", err)
+	}
+	if _, err := c.RegisterMapping(&registry, from, to, rules.Library[ts.Language](nil)); !errors.Is(err, g.ErrInvalid) {
+		t.Error("a library without a description function:", err)
+	}
+}

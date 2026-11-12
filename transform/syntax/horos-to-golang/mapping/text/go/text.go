@@ -13,18 +13,18 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-// library is this package's one mapping library.
-type library struct{}
+func primitive(sourceName, targetName string) rules.Library[s.Language] {
+	return func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
+		pattern, err := patterns.Head(from, "scalar", sourceName)
+		if err != nil {
+			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
+		}
+		return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: sourceName + "/golang/1", Input: pattern, Output: model.Primitive(targetName)}}}, nil
+	}
+}
 
 // Library returns the text mapping. It states the structural representation
 // profile itself.
-func Library() g.MappingLibrary[h.Language, s.Language, source.Reader] { return library{} }
-
-// Describe states the structural representation profile and the one binding.
-func (library) Describe(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
-	pattern, err := patterns.Head(from, "scalar", "utf8-text")
-	if err != nil {
-		return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
-	}
-	return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "utf8-text/golang/1", Input: pattern, Output: model.Primitive(model.PrimitiveString)}}}, nil
+func Library() rules.Library[s.Language] {
+	return primitive("utf8-text", model.PrimitiveString)
 }

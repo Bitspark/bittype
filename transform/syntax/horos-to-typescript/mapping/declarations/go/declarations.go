@@ -4,16 +4,14 @@
 package declarations
 
 import (
-	g "github.com/Bitspark/bittype/contracts/generation/go"
-	h "github.com/Bitspark/bittype/syntax/horos/go"
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
 	recipe "github.com/Bitspark/bittype/transform/syntax/horos/mapping/declarations/go"
-	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
+	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	model "github.com/Bitspark/bittype/transform/syntax/typescript/model/go"
 )
 
 // Library applies the horos declaration recipe with the TypeScript forms
 // "interface" for records and "alias" for every other declaration.
-func Library() g.MappingLibrary[h.Language, s.Language, source.Reader] {
+func Library() rules.Library[s.Language] {
 	return recipe.Library(model.Form(model.FormInterface), model.Form(model.FormAlias))
 }

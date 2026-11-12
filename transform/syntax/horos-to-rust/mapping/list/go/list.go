@@ -13,19 +13,15 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-// library is this package's one mapping library.
-type library struct{}
-
 // Library maps a horos list to the Rust model collection of its mapped
 // element type.
-func Library() g.MappingLibrary[h.Language, s.Language, source.Reader] { return library{} }
-
-// Describe states the structural representation profile and the one binding.
-func (library) Describe(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
+func Library() rules.Library[s.Language] {
 	slot := g.TypeSlot("E")
-	pattern, err := patterns.Element(from, slot)
-	if err != nil {
-		return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
+	return func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
+		pattern, err := patterns.Element(from, slot)
+		if err != nil {
+			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
+		}
+		return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "list/rust/1", Input: pattern, Output: model.Collection(g.Mapped[s.Language](slot))}}}, nil
 	}
-	return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "list/rust/1", Input: pattern, Output: model.Collection(g.Mapped[s.Language](slot))}}}, nil
 }

@@ -14,18 +14,20 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-// library is this package's one mapping library.
-type library struct{}
+// primitive is repeated in the boolean mapping library: a mapping library does
+// not import another one.
+func primitive(sourceName, targetName string) rules.Library[s.Language] {
+	return func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
+		pattern, err := patterns.Head(from, "scalar", sourceName)
+		if err != nil {
+			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
+		}
+		return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: sourceName + "/typescript/1", Input: pattern, Output: model.Primitive(targetName)}}}, nil
+	}
+}
 
 // Library binds utf8-text to the TypeScript primitive string under the binding
 // ID "utf8-text/typescript/1".
-func Library() g.MappingLibrary[h.Language, s.Language, source.Reader] { return library{} }
-
-// Describe states the structural representation profile and the one binding.
-func (library) Describe(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
-	pattern, err := patterns.Head(from, "scalar", "utf8-text")
-	if err != nil {
-		return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
-	}
-	return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "utf8-text/typescript/1", Input: pattern, Output: model.Primitive(model.PrimitiveString)}}}, nil
+func Library() rules.Library[s.Language] {
+	return primitive("utf8-text", model.PrimitiveString)
 }

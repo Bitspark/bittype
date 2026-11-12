@@ -13,17 +13,17 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-// library is this package's one mapping library.
-type library struct{}
+func primitive(sourceName, targetName string) rules.Library[s.Language] {
+	return func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
+		pattern, err := patterns.Head(from, "scalar", sourceName)
+		if err != nil {
+			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
+		}
+		return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: sourceName + "/rust/1", Input: pattern, Output: model.Primitive(targetName)}}}, nil
+	}
+}
 
 // Library maps the horos scalar bool to the Rust model primitive bool.
-func Library() g.MappingLibrary[h.Language, s.Language, source.Reader] { return library{} }
-
-// Describe states the structural representation profile and the one binding.
-func (library) Describe(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
-	pattern, err := patterns.Head(from, "scalar", "bool")
-	if err != nil {
-		return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
-	}
-	return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: "bool/rust/1", Input: pattern, Output: model.Primitive(model.PrimitiveBool)}}}, nil
+func Library() rules.Library[s.Language] {
+	return primitive("bool", model.PrimitiveBool)
 }
