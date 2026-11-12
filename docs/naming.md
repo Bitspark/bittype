@@ -217,10 +217,10 @@ declaration's own statement (`docs/source.md:77-78`, quoted above). The exact
 rule is each language's. Row 24 calls Rust's "A Rust-owned rule", and Go's is
 written with slice 1 of #161.
 
-**A consequence, derived here.** In the structural profile every member is
-accessible in every target: the Go record mapping capitalizes each field
-(`record.go:62`) and the Rust target writes every field public
-(`transform/syntax/rust/target/go/provider.go:115`). An output holds the
+**A consequence, derived here.** In the structural profile every member of a Go
+or Rust record is accessible to the audience: the Go record mapping
+capitalizes each field (`record.go:62`) and the Rust target writes every field
+public (`transform/syntax/rust/target/go/provider.go:115`). An output holds the
 requested roots and what they demand. So an unexposed source declaration is
 always named in the body of an exposed one, or of a declaration that is itself
 refused for that reason. Under D5 Go and Rust therefore admit, in this
@@ -322,8 +322,8 @@ holds its own list. The one word that the shared function knows is Rust's.
 | --- | --- | --- | --- |
 | Go | Keywords, in the checker (`check/syntax/golang/provider/go/check.go:13`). Predeclared identifiers are in no list | Nothing in the exported spelling: every keyword and every predeclared identifier of Go begins with a lower-case letter. The unexported spelling can be either | Refusal, no escape. See [Go](#go) |
 | Rust | `internal/rust/names.go:11` | `Self`, the only entry that begins with a capital | Rust renames `Self` to a legal name. See [open point 1](#open-inside-this-design) |
-| TypeScript | `internal/typescript/names.go:55`, and the predefined type words at `:68` | Nothing: every entry begins with a lower-case letter | Refusal by TypeScript, if a later naming rule can produce one |
-| C++ | `internal/cpp/names.go:40` | Nothing: every entry begins with a lower-case letter | Refusal by C++, if a later naming rule can produce one |
+| TypeScript | `internal/typescript/names.go:11`, and the predefined type words at `:24` | Nothing: every entry begins with a lower-case letter | Refusal by TypeScript, if a later naming rule can produce one |
+| C++ | `internal/cpp/names.go:11` | Nothing: every entry begins with a lower-case letter | Refusal by C++, if a later naming rule can produce one |
 
 - **`Self`.** The shared function appends `_` to it for all four targets
   (`transform/syntax/horos/mapping/naming/go/naming.go:28-30`). After the
@@ -331,9 +331,10 @@ holds its own list. The one word that the shared function knows is Rust's.
   Go, TypeScript and C++ and a legal name in Rust (#274, done-when 7).
 - **`type`, `func`, `class` and `interface`** (#268, done-when 3). A
   declaration or parameter of that name has the chosen name `Type`, `Func`,
-  `Class` or `Interface`, and none of the four lists holds those. They do not
-  arise in an exported or unqualified spelling. `Type` and `Func` are refused
-  as unexported Go spellings.
+  `Class` or `Interface`, and none of the four lists holds those. So no target
+  meets a reserved word through a chosen name. `Type`, `Func` and `Interface`
+  are refused as unexported Go spellings, because their lower-case forms are
+  Go keywords.
 - **Field names.** No target writes a field name in lower case. TypeScript,
   Rust and C++ keep the horos spelling
   (`transform/syntax/horos-to-typescript/mapping/record/go/record.go:55`,
@@ -562,11 +563,12 @@ From #274, "Order", and rows 8, 10, 11 and 12 of the table "Applied".
 | Step | Needs | Item |
 | --- | --- | --- |
 | This design | Nothing | #274, done-when 1 to 4 |
-| The inventory with handles. Each record can carry an intent | Nothing | #272 (row 10) |
+| The inventory with handles. Each record can carry an intent | Nothing. It can start with [#271](https://github.com/Bitspark/bittype/issues/271) | #272 (row 10) |
 | The builder's comparator orders by name, then origin, then planned identity | In the same change as the first removal of the flat-name rule | #272 (row 12) |
 | The policy is selectable. The qualified policy reproduces today's output in all four targets | Nothing | #274, done-when 5 and 6 |
 | The shared naming function holds no reserved word. Rust states its own | Nothing | #274, done-when 7, and #268 |
-| Every inventory record carries an intent for TypeScript, Go and Rust. A Go-owned package holds the Go rule | #272 | #274, done-when 8 and 9 |
+| Every inventory record carries an intent for TypeScript, Go and Rust | #272 | #274, done-when 8 |
+| A Go-owned package holds the Go rule | #274 names no prerequisite | #274, done-when 9 |
 
 Then per target (row 8: "TypeScript first, Go and Rust with their slice 1, C++
 with #160"):
@@ -575,7 +577,7 @@ with #160"):
 | --- | --- | --- | --- |
 | TypeScript | #273, second change, after #272 | TypeScript has no case rule. Its Files stage already writes the export from exposure (`relocate.go:89-91`) | After #273 (#274, done-when 10) |
 | Go | Slice 1 of #161 | Slice 1 of #161: exported or unexported, uses rewritten | Slice 1 of #161 |
-| Rust | Slice 1 of #159 | Slice 1 of #159 realizes visibility. The name changes only for `Self` | Slice 1 of #159 |
+| Rust | Slice 1 of #159 | Slice 1 of #159 realizes visibility. Rust has no case rule | Slice 1 of #159 |
 | C++ | With #160. Until then C++ selects the flat rule in its own target | Deferred until [#167](https://github.com/Bitspark/bittype/issues/167) supplies a C++ semantic provider | With #160. Until then the qualified policy |
 
 All of it lands before #207 and #195 record a native name.
