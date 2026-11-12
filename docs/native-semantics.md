@@ -14,8 +14,8 @@ captured, syntax-admitted ASTs
   -> resolve/files/golang/provider/go -> go/ast -> go/types
   -> immutable declarations, bindings, type terms, facts and reports
   -> analyze/files/golang/provider/go (explicit resolution receipt; reuses the graph)
-  -> semantics/golang/go (typed read-only view)
-  -> explicit native query session, when a consumer needs admission checking
+  -> semantics/golang/go (typed read-only view, contract identities)
+  -> analyze/files/golang/queries/go (explicit native query session, when a consumer needs admission checking)
 ```
 
 Resolution and type checking are coupled inside `go/types`. The resolver declares
@@ -23,15 +23,19 @@ both responsibilities; analysis consumes its exact compatible receipt without
 running the compiler again. Syntax admission still permits unresolved names.
 There is no language switch in the engine and no automatic registration.
 Use resolution.NewResolver and analysis.NewAnalyzer with their respective Go contracts and providers.
+The contracts are `golang.ResolutionContract()` and `golang.AnalysisContract()`, published by the
+vocabulary package `semantics/golang/go`. The providers are the `Provider` types of
+`resolve/files/golang/provider/go` and `analyze/files/golang/provider/go`.
 
 The package layout is:
 
 | Package | Responsibility |
 | --- | --- |
-| `semantics/golang/go` | Go-owned vocabulary, environment identity and immutable typed graph readers |
+| `semantics/golang/go` | Go-owned vocabulary, contract identities, environment identity and immutable typed graph readers |
 | `internal/golangsem` | Direct AST bridge, bounded compiler invocation and fact export |
 | `resolve/files/golang/provider/go` | Configured resolution, coverage and native validity reports |
-| `analyze/files/golang/provider/go` | Receipt-consuming analysis and explicit compiler-backed admission queries |
+| `analyze/files/golang/provider/go` | Receipt-consuming analysis |
+| `analyze/files/golang/queries/go` | Explicit compiler-backed admission queries over an opened model |
 | `integration/go` | Provider, environment, coverage and graph qualification |
 | `verification/files/horos-to-go/go` | Joint representation claims using the native provider results |
 
@@ -107,7 +111,8 @@ then opens the typed view. A resolution receipt alone, a receipt from a differen
 capture or a different compiler configuration cannot substitute for that input.
 
 `semantics/golang.Open` admits the analysis receipt and reads this graph without
-compilation. Native `NewQueries` is a separate, explicit operation: it rebuilds
+compilation. Native `queries.NewQueries(ctx, model)` from
+`analyze/files/golang/queries/go` is a separate, explicit operation: it rebuilds
 compiler state from the same capture and environment and checks correspondence
 with the published graph. A query session retains that state privately, with no
 compiler pointers in the generic graph, hidden cache or callback attachment.
@@ -133,12 +138,12 @@ syntax-admitted TypeScript ASTs + captured Files and links
   -> analyze/files/typescript/queries/go (explicit native queries over an opened model)
 ```
 
-The package roles mirror Go, with two differences on `main` since 11 November
-2026. `semantics/typescript/go` publishes the contract identities
+The package roles mirror Go. `semantics/typescript/go` publishes the contract identities
 `ResolutionContract()`, `AnalysisContract()` and `AnalysisContractFor(settings)`
 and the `Compiler` configuration type. The query service is its own package,
-`analyze/files/typescript/queries/go`. Go's contract identities and query
-service are still in its provider packages. `internal/typescriptsem` owns the compiler bridge,
+`analyze/files/typescript/queries/go`. Go has the same two placements since pull request
+[#246](https://github.com/Bitspark/bittype/pull/246) of 12 November 2026. Go has no
+`AnalysisContractFor(settings)` and no `Compiler` type. `internal/typescriptsem` owns the compiler bridge,
 including its embedded CommonJS helper. Each TypeScript stage supplies its own provider. No TypeScript types, rules or compiler handles enter the
 agnostic kernel; no native stage imports Horos, Logos or generation packages.
 
