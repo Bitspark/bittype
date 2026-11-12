@@ -80,6 +80,13 @@ const (
 	AttributeHex         = "hex"
 )
 
+// The values of AttributeScope on a reference and a kind reference: a
+// definition of the same module, or one selected through an import alias.
+const (
+	ScopeLocal    = "local"
+	ScopeImported = "imported"
+)
+
 const (
 	RoleModule      = "module"
 	RoleImport      = "import"

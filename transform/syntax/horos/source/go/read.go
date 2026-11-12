@@ -86,7 +86,7 @@ func (r reader) Fields(v g.UseView[h.Language]) ([]Field, error) {
 	if err != nil {
 		return nil, err
 	}
-	if p.Len() < 2 || atom(p.At(0)) != "horos/record" {
+	if p.Len() < 2 || atom(p.At(0)) != n.DescriptorTagPrefix+"record" {
 		return nil, semantic.ErrInvalidRequest
 	}
 	var fields []Field

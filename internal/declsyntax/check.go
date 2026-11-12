@@ -73,7 +73,7 @@ var rules = g.Rules[h.Language]{
 	h.KindTypeParameter:          {Attributes: g.Attributes(AttributeName, g.Attr(true, identifier), AttributeIndex, g.Attr(true, g.Decimal)), Roles: []g.Role[h.Language]{g.One(RoleContract, kinds...)}},
 	h.KindKindParameter:          {Attributes: g.Attributes(AttributeName, g.Attr(true, identifier), AttributeIndex, g.Attr(true, g.Decimal)), Roles: []g.Role[h.Language]{g.One(RoleSort, sorts...)}},
 	h.KindParameter:              {Attributes: g.Attributes(AttributeIndex, g.Attr(true, g.Decimal))},
-	h.KindReference:              {Attributes: g.Attributes(AttributeScope, g.Attr(true, g.Set("local", "imported")), AttributeName, g.Attr(true, identifier), AttributeAlias, g.Attr(false, identifier))},
+	h.KindReference:              {Attributes: g.Attributes(AttributeScope, g.Attr(true, g.Set(h.ScopeLocal, h.ScopeImported)), AttributeName, g.Attr(true, identifier), AttributeAlias, g.Attr(false, identifier))},
 	h.KindApplication:            {Roles: []g.Role[h.Language]{g.One(RoleCallee, expressions...), g.Many(RoleArgument, 1, expressions...)}},
 	h.KindDescriptor:             {Attributes: g.Attributes(AttributeConstructor, g.Attr(true, g.Nonempty)), Roles: []g.Role[h.Language]{g.Many(RoleOperand, 0, fragments...)}},
 	h.KindAtom:                   {Attributes: g.Attributes(AttributeHex, g.Attr(true, hexadecimal))},
@@ -83,7 +83,7 @@ var rules = g.Rules[h.Language]{
 	h.KindTop:                    {Roles: []g.Role[h.Language]{g.One(RoleSort, sorts...)}},
 	h.KindBottom:                 {Roles: []g.Role[h.Language]{g.One(RoleSort, sorts...)}},
 	h.KindKindParameterReference: {Attributes: g.Attributes(AttributeIndex, g.Attr(true, g.Decimal))},
-	h.KindKindReference:          {Attributes: g.Attributes(AttributeScope, g.Attr(true, g.Set("local", "imported")), AttributeName, g.Attr(true, identifier), AttributeAlias, g.Attr(false, identifier))},
+	h.KindKindReference:          {Attributes: g.Attributes(AttributeScope, g.Attr(true, g.Set(h.ScopeLocal, h.ScopeImported)), AttributeName, g.Attr(true, identifier), AttributeAlias, g.Attr(false, identifier))},
 	h.KindKindApplication:        {Roles: []g.Role[h.Language]{g.One(RoleCallee, h.KindKindReference), g.Many(RoleArgument, 1, kinds...)}},
 	h.KindUnion:                  {Roles: []g.Role[h.Language]{g.One(RoleSort, sorts...), g.Many(RoleOperand, 2, kinds...)}},
 	h.KindIntersection:           {Roles: []g.Role[h.Language]{g.One(RoleSort, sorts...), g.Many(RoleOperand, 2, kinds...)}},
@@ -139,7 +139,7 @@ func Check(view ast.View[h.Language]) error {
 	for i, node := range tree.Nodes {
 		id := ast.NodeID(i + 1)
 		if node.Kind == h.KindReference || node.Kind == h.KindKindReference {
-			imported := attribute(node, AttributeScope) == "imported"
+			imported := attribute(node, AttributeScope) == h.ScopeImported
 			if imported != (attribute(node, AttributeAlias) != "") {
 				return text.AtNode(tree, id, "only imported references require an alias")
 			}
@@ -177,7 +177,7 @@ func Check(view ast.View[h.Language]) error {
 			case h.KindImport, h.KindParameter, h.KindKindParameterReference, h.KindRecursiveVariable:
 				allowed = ref.Role == RoleTarget
 			case h.KindReference, h.KindKindReference:
-				allowed = ref.Role == RoleTarget || (ref.Role == RoleImport && attribute(node, AttributeScope) == "imported")
+				allowed = ref.Role == RoleTarget || (ref.Role == RoleImport && attribute(node, AttributeScope) == h.ScopeImported)
 			}
 			if !allowed {
 				return text.AtNode(tree, id, "unsupported declaration annotation role")

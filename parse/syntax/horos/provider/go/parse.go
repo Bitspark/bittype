@@ -409,9 +409,9 @@ func (p *parser) primaryAtom() ast.NodeID {
 		p.Want(".")
 	}
 	name := p.name()
-	attrs := tr.Attrs(s.AttributeScope, "local", s.AttributeName, name)
+	attrs := tr.Attrs(s.AttributeScope, s.ScopeLocal, s.AttributeName, name)
 	if !local && p.Eat(".") {
-		attrs = tr.Attrs(s.AttributeScope, "imported", s.AttributeAlias, name, s.AttributeName, p.name())
+		attrs = tr.Attrs(s.AttributeScope, s.ScopeImported, s.AttributeAlias, name, s.AttributeName, p.name())
 	} else if !local {
 		if index, ok := p.parameters[name]; ok {
 			return p.Add(s.KindParameter, start, tr.Attrs(s.AttributeIndex, strconv.Itoa(index)))
