@@ -134,8 +134,8 @@ creates the key once and passes it to both:
 ```go
 key := g.NewHelperKey("horos/optional")
 libraries := []g.MappingLibrary[h.Language, s.Language, source.Reader]{
-    record.Library(profile, key),
-    optional.Library(profile, key),
+    record.Library(key),
+    optional.Library(key),
 }
 ```
 

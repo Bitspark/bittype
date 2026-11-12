@@ -189,18 +189,20 @@ test events of main CI run [42509242909](https://github.com/Bitspark/bittype/act
 Horos checks source applications before generation. The supplied
 `structural-representation/1` profile explicitly permits erasing proper-kind
 constraints from native generic parameters. The declared
-`structural-enforcement/1` profile is unsupported. The horos mapping adapter
-refuses to describe a library under that identity, so registration fails with
-`generation.ErrUnsupported` and no mapping exists under it. A request for it
-then fails with `generation.ErrUnsupported` in the registry, which finds no
-mapping for the requested profile. It never falls back to the representation
-profile. [Profile implementation](../transform/syntax/horos/mapping/go/mapping.go),
+`structural-enforcement/1` profile is unsupported. No mapping library in
+bittype states it, so the generation registry finds no mapping for a request
+that names it and fails with `generation.ErrUnsupported`. The request does not
+fall back to the representation profile. [Profile identities](../transform/syntax/horos/mapping/go/mapping.go),
 [tests](../integration/go/horos_generation_profile_test.go)
 
-The refusal names the one identity that its own package declares and does not
-implement. It is no list of admitted profiles: a library built under any other
-profile registers, and a request for that profile selects it
-([bittype/ACX-008](architecture-cases/0008-structural-profile-gate.md)).
+This guarantee has two parts, and neither is a refusal by name. Every builtin
+mapping states the representation profile in its own description, and its
+constructor takes no profile, so a composition cannot register a builtin
+mapping under the enforcement identity. The registry selects by the profile
+that a contribution states. It does not judge whether the contribution keeps
+that promise. A contribution of another author that states the enforcement
+profile is selected by a request for it, and that author answers for it
+([bittype/ACX-008](architecture-cases/0008-structural-profile-gate.md#limits)).
 
 For example, with the ordinary Horos prelude imported as h:
 

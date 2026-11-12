@@ -612,11 +612,9 @@ are.
 - **The `Self` rule in the shared naming function.** Decided on #222 on
   11 November 2026: the rule stays where it is. The naming function gives one
   declaration the same name in every target. That is a property of the
-  profile, so the question was passed to #216. The change for #216 opened the
-  adapter on 12 November 2026 and did not decide this question. The rule now
-  binds the libraries that call the naming package and no longer every
-  profile. It stays a candidate
-  ([bittype/ACX-008](0008-structural-profile-gate.md#limits)).
+  profile, so the question was passed to #216. #216 did not decide it. It
+  stays a candidate and is tracked in
+  [#268](https://github.com/Bitspark/bittype/issues/268).
 - **`CheckSingleScope` in the shared target package.** #222 did not decide it.
   It stays with the second design point of
   [#161](https://github.com/Bitspark/bittype/issues/161).
