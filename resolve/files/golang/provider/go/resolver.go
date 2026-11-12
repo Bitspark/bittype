@@ -13,14 +13,6 @@ import (
 	s "github.com/Bitspark/bittype/syntax/golang/go"
 )
 
-func Contract() resolution.Contract {
-	c := semantic.Contract{Profile: n.ResolutionProfile, SemanticsRequirements: n.Requirements()}
-	for _, key := range []semantics.Key{n.Coverage(), n.Bindings(), n.Validity()} {
-		c.Obligations = append(c.Obligations, semantic.Obligation{Key: key, Domain: n.Key("captured-package")})
-	}
-	return resolution.Contract{Semantic: c, Bindings: n.Bindings()}
-}
-
 // bittype:scope docs/native-semantics.md#first-go-profile
 func Resolve(ctx context.Context, request semantic.Request[s.Language]) (semantic.Result, error) {
 	if ctx == nil || request.Contract().Profile != n.ResolutionProfile || !n.MatchesConfiguration(request.Configuration()) {

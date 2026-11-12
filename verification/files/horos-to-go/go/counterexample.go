@@ -1,7 +1,7 @@
 package verification
 
 import (
-	nativequery "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
+	nativequery "github.com/Bitspark/bittype/analyze/files/golang/queries/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	n "github.com/Bitspark/bittype/semantics/golang/go"
 	h "github.com/Bitspark/bittype/verification/files/source/horos/go"

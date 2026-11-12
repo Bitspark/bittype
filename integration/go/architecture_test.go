@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -224,6 +223,13 @@ var oneOfAKindRules = map[string][]string{
 	// Verification projections are explicit concrete compositions, not registered
 	// language stages. The agnostic association never imports their models.
 	"verification/files/source/horos/go": {"contracts/resolution/go", "contracts/semantic/go", "internal/horosmodel", "semantics/horos/go", "syntax/horos/go", "trees/ast/go", "trees/representation/go"},
+	// The TypeScript import reader: a private part beside internal/typescript
+	// and internal/typescriptsem, with a name that gives neither role.
+	"internal/typescriptimports": {"files/go", "internal/typescript", "syntax/typescript/go", "trees/ast/go"},
+	// The horos-to-go verification pair and the logos adapter. The pair takes
+	// the Go query service's admission type, never the Go analysis provider.
+	"verification/files/horos-to-go/go": {"contracts/semantic/go", "contracts/verification/go", "semantics/go", "trees/ast/go", "verification/files/source/horos/go", "semantics/golang/go", "analyze/files/golang/queries/go", "verification/logos/go"},
+	"verification/logos/go":             {"contracts/verification/go", "semantics/go"},
 	// The reporting tool: a command, its host and the two contracts the host is
 	// written against. The host never imports a concrete extractor; extractors
 	// have a role.
@@ -291,30 +297,8 @@ var roleExtensions = map[string][]string{
 // themselves are in checkArchitecture.
 func TestProductionArchitecture(t *testing.T) {
 	packages := productionPackages(t)
-	rules := maps.Clone(oneOfAKindRules)
-	// The lines from here to the specification below are kept exactly as they
-	// were, in their order and without a line between them. Pull requests #204
-	// and #231 edit five of them: the four golang entries and
-	// verification/files/horos-to-go/go. The other three (typescriptimports,
-	// the Rust analyzer, logos) are untouched neighbours, kept in place because
-	// Git merges an edited line cleanly only next to an unchanged one.
-	//
-	// They convert when #204 and #231 have merged. Delete the four golang
-	// entries and the Rust one: each of those packages then takes its role, as
-	// the Rust analyzer already could (a hand entry takes precedence over a
-	// role). Move the other three into oneOfAKindRules.
-	// semantics/<language>/go is classified by its role. The golang entry states
-	// the same list and stays until #204, which edits the next line, has merged.
-	rules["semantics/golang/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "syntax/golang/go", "trees/ast/go", "trees/representation/go"}
-	rules["internal/golangsem"] = []string{"contracts/semantic/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/ast/go"}
-	rules["resolve/files/golang/provider/go"] = []string{"contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "semantics/go", "semantics/golang/go", "syntax/golang/go"}
-	rules["analyze/files/golang/provider/go"] = []string{"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/golangsem", "resolve/files/golang/provider/go", "semantics/go", "semantics/golang/go", "syntax/golang/go", "trees/representation/go"}
-	rules["internal/typescriptimports"] = []string{"files/go", "internal/typescript", "syntax/typescript/go", "trees/ast/go"}
-	rules["analyze/files/rust/provider/go"] = []string{"contracts/analysis/go", "contracts/semantic/go", "semantics/go", "semantics/rust/go", "syntax/rust/go"}
-	rules["verification/files/horos-to-go/go"] = []string{"contracts/semantic/go", "contracts/verification/go", "semantics/go", "trees/ast/go", "verification/files/source/horos/go", "semantics/golang/go", "analyze/files/golang/provider/go", "verification/logos/go"}
-	rules["verification/logos/go"] = []string{"contracts/verification/go", "semantics/go"}
 	spec := architectureSpec{
-		Module: modulePath, Foundations: foundationRules, Rules: rules, Extensions: roleExtensions, Owners: languageOwners,
+		Module: modulePath, Foundations: foundationRules, Rules: oneOfAKindRules, Extensions: roleExtensions, Owners: languageOwners,
 		Exceptions: providerExceptions, ExternalModels: modelDependencies, ExternalImports: modelExternalImports,
 	}
 	for _, failure := range checkArchitecture(spec, architecturePackages(t, modulePath, packages)) {

@@ -4,7 +4,6 @@ const (
 	admitsOwnTree     = "admits the tree it built with its own language's grammar before publishing it"
 	admitsOwnInput    = "admits the tree it is given with its own language's grammar before formatting it"
 	verifiesOwnSource = "reparses captured source with its own language's parser to verify that the captured tree corresponds to it"
-	readsResolution   = "reads the resolution contract identity that its analysis is bound to"
 )
 
 // providerExceptions lists every import of a stage provider package
@@ -32,11 +31,4 @@ var providerExceptions = []providerException{
 	{Importer: "resolve/files/horos/provider/go", Provider: "check/syntax/horos/provider/go", Symbols: []string{"Check"}, Reason: "admits the tree it is given with its own language's grammar before reading its model"},
 	{Importer: "internal/rustsem", Provider: "parse/syntax/rust/provider/go", Symbols: []string{"Parse"}, Reason: verifiesOwnSource},
 	{Importer: "internal/typescriptsem", Provider: "parse/syntax/typescript/provider/go", Symbols: []string{"Parse"}, Reason: verifiesOwnSource},
-
-	// Open until #220: an identity that a provider package publishes and a
-	// vocabulary package should.
-	{Importer: "analyze/files/golang/provider/go", Provider: "resolve/files/golang/provider/go", Symbols: []string{"Contract"}, Reason: readsResolution, Issue: 220},
-
-	// Open until #221: a query service that shares a package with a provider.
-	{Importer: "verification/files/horos-to-go/go", Provider: "analyze/files/golang/provider/go", Symbols: []string{"Admission"}, Reason: "takes the Go query service's admission type, which lives in the analysis provider package", Issue: 221},
 }
