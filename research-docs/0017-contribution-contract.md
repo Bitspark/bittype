@@ -63,7 +63,9 @@ document, and each is public:
 3. **Which identities the plan records**: the identity of a contribution that a
    backend in another process recognises, the node of the plan, and the
    identity that a conversion's memo is keyed by at run time. Our documents use
-   the word "instance" for more than one of them.
+   the word "instance" for more than one of them. A fourth joined them on
+   12 November 2026: the identity of a generated native declaration, whose
+   name and import path are now decided only after generation.
 
 Two further questions ask how to validate the contract before every existing
 rule is rewritten onto it, and what such a change typically gets wrong.
@@ -81,17 +83,13 @@ has exactly one of four standings, listed in section 5:
 The code in section 3 is evidence of the present state. It is never a reason
 for or against an option.
 
-**How this document is organised.**
-
-| Section | Content |
-| --- | --- |
-| 1 | The system for an outsider, and the terms used throughout |
-| 2 | The architecture rules, the two accepted designs, the work items, and the contracts of the library that consumes the plan |
-| 3 | The contract as it is today, with the code inlined |
-| 4 | One request traced through today's code and through the accepted design |
-| 5 | Fixed points and their standing |
-| 6 | What we have considered: the settled part and the three open points, each with options, our leaning and what speaks against it |
-| 7 | Questions for the expert |
+**How this document is organised.** Section 1 introduces the system and its
+terms. Section 2 gives the architecture rules, the accepted designs, the work
+items and the contracts of the library that consumes the plan. Section 3
+shows the contract as it is today, with the code inlined, and section 4
+traces one request. Section 5 lists the fixed points with their standing.
+Section 6 holds what we have considered, each point with options, our leaning
+and what speaks against it. Section 7 holds the questions.
 
 Quotations give file and line at the code baseline. Quotations from GitHub
 issues give the issue number and the time of the comment in UTC. All code is
@@ -192,6 +190,7 @@ uses a word differently, the row says so.
 | Factory | A run-time function, exported by a run-time package, that builds an adapter from a payload and the adapters of the slots |
 | Completeness test backend | A backend written in Go inside bittype's tests. It is the acceptance instrument of the plan and no product |
 | Consumer composition | The code of a consumer that registers contributions and requests generation |
+| Files stage, placement | The stage after generation that puts generated declarations into files, packages or modules according to a **placement** the consumer supplies, and that realizes each declaration's final name (section 2.6) |
 
 ### 1.3 The stages, in one picture
 
@@ -216,8 +215,8 @@ kernel: for each use reachable from the requested declarations,
 target builder: syntax tree            binding backend, per target, outside bittype:
    │                                   reads the plan, the source semantics and the
    ▼                                   contributions' factories; emits imports,
-Files stage: files, imports            factory calls and glue
-(out of scope here)
+Files stage: files, imports,           factory calls and glue
+realized names (section 2.6)
 ```
 
 The left branch exists and is what section 3 shows. The right branch is the
@@ -374,12 +373,11 @@ and generic instance, the plan carries" a list that includes "the selected
 contribution, target and representation profile", "field access and
 construction", "the rules for absence, presence, null and native `undefined`",
 "recursive references" and "the selected adapter factories, their argument
-slots and their resource requirements". Then:
+slots and their resource requirements". Its form is "typed references and
+target-owned expressions", and it "starts as a typed build-time interface and
+is serialized only where a real process boundary needs it. A TypeScript
+backend in Node is such a boundary." Then:
 
-> **Form.** These are typed references and target-owned expressions, the same principle as bittype's native intent (the generation SPI). They are not a universal schema and not another type algebra.
->
-> **Serialization.** The plan starts as a typed build-time interface and is serialized only where a real process boundary needs it. A TypeScript backend in Node is such a boundary.
->
 > **Completeness test.** The backend can implement each selected representation from the plan, the source semantics and the selected contributions alone, without guessing a rule. If it must decide how Go optional values work, or how a custom union is represented, the plan is incomplete.
 
 And on value-level code (lines 81-83):
@@ -703,6 +701,63 @@ key that is not the input (K3), and the unit of an export (L1). The first is
 one per use. The second and third are one per distinct combination of
 contribution, descriptor and generic environment. `People = Page<Person>` used
 in two fields is two uses and, at run time, one memo identity.
+
+### 2.6 Names and places are decided after generation
+
+One more accepted decision bears on what a plan can record. bittype has a
+stage after generation, called **Files**. By an accepted decision of
+7 November 2026, generation decides nothing about files, packages, modules,
+imports or module-level visibility. The Files stage of each target takes the
+generated declarations and one **placement** supplied by the consumer (which
+declaration goes into which file and native scope), writes imports and
+visibility, and checks the placed program with the target's own compiler. The
+same generated declarations serve every placement. TypeScript has such a
+stage today; Go's and Rust's are being built.
+
+Research 0016, a consultation answered on 12 November 2026, extended this to
+names. Its result table (`research-docs/0016-native-files-placement.md`, rows
+11 and 13) records, as recommendation and accepted action:
+
+- Row 13, "Go's final spelling belongs to Files; identity, naming intent,
+  realized spelling": "Accepted. It follows from the accepted decision: Files
+  realizes visibility under the language's rules, and in Go that is the case
+  of the name."
+- Row 11, "The module-pin prefix leaves the default naming": "The
+  qualification becomes an explicit, selectable naming policy first, with
+  today's as one option and output unchanged."
+
+The decisions recorded on the work item for it (issue #274, comments of
+12 November 2026, 22:34Z and 23:05Z) say what generation records instead of a
+name: "An intent contains the mapping's chosen name and its qualification,
+kept apart", "A qualification is recorded as the module's identity. The
+spelled prefix is one policy's realization of it", and "A consumer learns the
+realized name and the placed site from a reader on the formatter's result,
+keyed by the output's handles." A **handle** is an identity that the sealed
+generation output is to issue for each declaration it contains (issue #272,
+not implemented; today a consumer finds a declaration by walking the syntax
+tree and reading names). A member's name, such as a record field's, stays
+with the declaration and is fixed by generation.
+
+So three things that are one string today become three: the **identity** of a
+native declaration, its **naming intent** (a chosen name plus a
+qualification), and its **realized name and place** (the spelling, and the
+file, package or module, which exist only after Files has run for one
+placement). Today the declaration recipe of section 3.5 spells the final name
+itself: it capitalises the horos name and, for a declaration outside the
+entry module, prefixes `M`, sixteen hexadecimal digits of the module pin and
+`_`.
+
+Standing: **accepted design** (the decision of 7 November 2026, and rows 11,
+13 and 14 of research 0016's result table, 12 November 2026). The design page
+for names is written and not yet merged, and nothing of it is implemented.
+
+This does not fit two accepted sentences of sections 2.2 and 2.3 as they are
+written. The plan carries "native symbols, distinguishing run-time imports
+from type-only imports", the envelope has "Native symbols, imports, factory
+references, runtime requirements", and a backend works "from the plan, the
+source semantics and the selected contributions alone". A plan issued by the
+planner, before any placement, cannot hold a realized name or an import path.
+Section 6.5 gives the alternatives.
 
 ## 3. Relevant code: the contract as it is today
 
@@ -1389,23 +1444,22 @@ section 3; we did not run it for this document.
    `structural-representation/1`, and calls the planner.
 2. The planner starts at the declaration `People`. No use rule is filed under
    its selector, so the default declaration recipe runs: name `People`, form
-   `alias`, a slot for the body.
-3. The body is a use of `Page` applied to `Person`. The planner plans the
-   declaration `Page` with the same recipe: name `Page`, form `defined`, one
-   parameter `T`, a slot for the body.
-4. `Page`'s body is a use of the builtin form "closed record". The record
+   `alias`, a slot for the body. The body is a use of `Page` applied to
+   `Person`, so the planner plans the declaration `Page` with the same recipe:
+   name `Page`, form `defined`, one parameter `T`, a slot for the body.
+3. `Page`'s body is a use of the builtin form "closed record". The record
    rule's callback reads two fields, asks for a slot per field type, wraps the
    second in the helper reference and returns
    `record(field(Items, false, slot), field(Next, true, helper(key, slot)))`.
-5. The planner fills the first slot by planning the use `list<T>`: the list
+4. The planner fills the first slot by planning the use `list<T>`: the list
    rule's template `slice(slot E)`, whose slot is the use `T`, replaced from
    the generic environment. It fills the second slot by planning the use
    `text`: the constant `primitive(string)`. It resolves the helper reference
    by planning the declaration `BittypeOptional` once.
-6. Back at `People`: the actual argument `Person` is planned like `Page`. The
+5. Back at `People`: the actual argument `Person` is planned like `Page`. The
    body of `People` becomes a reference to the declaration `Page` with one
    argument, the reference to `Person`.
-7. The result is a `Program` of four native declarations (`People`, `Page`,
+6. The result is a `Program` of four native declarations (`People`, `Page`,
    `BittypeOptional`, `Person`) and a flat list of step strings.
 
 Eight selections were made (the default recipe three times, the record rule
@@ -1430,10 +1484,10 @@ rule".
 **What has no place to come from today.** The trace shows the three open
 points concretely.
 
-- At step 4 the record rule decides the optional representation itself. Under
+- At step 3 the record rule decides the optional representation itself. Under
   the design it must ask. There is no use to ask about, only a flag
   (question 1).
-- At step 7 the Go test backend must construct a value of the named struct
+- After step 6 the Go test backend must construct a value of the named struct
   type `Page[Person]`. A factory that receives field names as data can do that
   only through reflection. The design's alternative is a lowering facet that
   yields typed Go code, for which bittype has no vocabulary (question 2).
@@ -1470,13 +1524,15 @@ accepted on 11 November 2026 (section 2.5).
 | 19 | The completeness test backend is in bittype, in Go, and is a test. bittype publishes no conversion code | Accepted design (BG, bittype's charter, and the result table of research 0015: "The Go case runs in bittype's own completeness test backend") | 2.2, 2.4 |
 | 20 | Nothing is released. No interface shown here has a consumer outside our repositories | Implemented today | Question |
 | 21 | A registered unit is a profile and three lists; a rule returns native intent; the planner keeps a native program and debug strings; rule IDs are local strings and registry handles are pointers; a replacement names use rules only; one kind of helper exists, wired by a key | Implemented today | 3 |
-| 22 | The contribution states its own profile, and a request selects the contributions that state the profile it names | Accepted design (BG: "Representation context: Target and supported profile") and implemented today | 2.2, 3.3 |
+| 22 | The contribution states its own profile, and a request selects the contributions that state the profile it names | Accepted design (BG's element "Representation context", meaning "Target and supported profile") and implemented today | 2.2, 3.3 |
 | 23 | The unit of registration is one contribution, and one contribution is one declaration or builtin form, one target and one profile. BG says "one declaration and one supported target representation", RF says "per target"; neither names builtin forms or says "one registration" | Our derivation | 6.1 |
 | 24 | A rule returns one decision record and the projection that computes the native type from it. The planner issues the instance, links its slots and reads no meaning of the record | Our derivation from 5, 9 and 11 | 6.1 |
 | 25 | The order: the contract change first with byte-identical output, then the optional representation moves, then additive work | Our derivation from AC-10 and 16 | 2.4 |
 | 26 | The Go conversions of the first slice are test code, written as registered handlers that execute the payload | Our derivation | 6.3 |
-| 27 | The payload types of the first slice can use only the six existing families, because bittype generates their Go and TypeScript types and represents nothing else yet. A payload cannot hold an integer until the integer family exists | Our derivation from 12 | 6.5 |
-| 28 | Native names that a plan entry records are provisional. A separate open design (issue #274) decides whether generation records a name or a naming intent that a later stage spells | Our assumption | here |
+| 27 | The payload types of the first slice can use only the six existing families, because bittype generates their Go and TypeScript types and represents nothing else yet. A payload cannot hold an integer until the integer family exists | Our derivation from 12 | 6.6 |
+| 28 | Generation records a naming intent per declaration: a chosen name and, apart from it, a qualification recorded as the module's identity. Each target's Files stage realizes the spelling (in Go including the case of the name) and decides file, package or module, per placement. At generation time neither the final name nor its import path exists | Accepted design (decision of 7 November 2026; research 0016's result table, rows 11, 13 and 14, 12 November 2026) | 2.6 |
+| 29 | Statements 4 and 11 ("native symbols", imports, and a backend that needs only the plan, the source semantics and the contributions) do not fit statement 28 as written: a plan entry cannot hold a realized name or an import path | Our reading of two accepted designs against each other | 2.6, 6.5 |
+| 30 | A plan entry refers to a native declaration by its identity, and a backend reads the realized name and place from the Files formatter's result, which becomes its fourth input | Our derivation | 6.5 |
 
 Statements 12 and 17 together have a consequence that is easy to miss. The
 plan's node type lives with the planner, in the contract package, because
@@ -1485,10 +1541,10 @@ against a horos type. The contract package may import neither. So the planner
 holds a payload as something opaque to it, and encoding and validation happen
 in a package outside the kernel that may import both.
 
-Out of scope: the Files stage that places generated declarations into files
-and packages (research 0016, answered on 12 November 2026); capability
-lifetime and the laws L1 to L14; the report of binding support; the choice of
-native representation for any particular family.
+Out of scope: the design of the Files stage itself (research 0016), beyond
+its consequence for the plan in statements 28 to 30; capability lifetime and
+the laws L1 to L14; the report of binding support; the choice of native
+representation for any particular family.
 ## 6. What we have considered
 
 Everything in this section is ours and open, including 6.1, which we treat as
@@ -1684,7 +1740,8 @@ input's identity", and one object under two representations converts once per
 representation (fixed points 6, 9, 11 and 18).
 
 **What no document says.** Three identities are in play, and no document gives
-any of them a form:
+any of them a form (a fourth, the identity of a native declaration, is the
+subject of 6.5):
 
 1. **The contribution identity.** What a plan node records as "selected
    contribution", what a backend in another process uses to find the factory,
@@ -1701,7 +1758,6 @@ For the contribution identity:
 | **I1. Owner-stated name and version** | A string the contribution states, such as `list/golang/1`, unique within a registry; the registry rejects a second registration of the same string | To a backend: a stable key in every process. Today's rule IDs already have this form | Uniqueness holds per registry only. Two owners can publish the same name, and a backend that pins it cannot tell them apart. The version in the name is one of the five axes (the semantic identity) folded into an identity |
 | I2. Owner namespace, name and version as separate parts | The owner's namespace is an identity the owner demonstrably controls: for an exact mapping the horos module pin of the declaration it maps; for a profile's builtin families the profile's identity | Collisions across owners cannot happen by accident, and the version axis stays an axis | Needs a rule for what a namespace is for a contribution that maps someone else's declaration (a Go mapping of a library's `Channel<T>`), and for two contributions of one owner for one declaration (two profiles, two targets) |
 | I3. Derived | A digest over the contribution's payload schema, its target, its profile and its selector | Nobody states it, so nobody can state it wrongly | A factory can change meaning without changing any of the hashed parts, which is why the design has a semantic-identity axis at all |
-| I4. Issued by a registry of names outside the kernel | A shared vocabulary package lists family identities | One place to look | A closed catalogue that every new family edits |
 
 For the node and the word "instance":
 
@@ -1735,7 +1791,42 @@ identity either, and there are four identities, not three. We do not know
 which of the two the design means by "its descriptor and its generic
 environment".
 
-### 6.5 What the first version must contain, and how to test it before the rewrite
+### 6.5 Native symbols in a plan whose names are realized later
+
+**What is decided.** The plan carries "native symbols" and imports, and a
+backend needs nothing beyond the plan, the source semantics and the
+contributions (fixed points 4 and 11). Generation records a naming intent;
+each target's Files stage realizes the spelling and decides file, package or
+module, per placement (fixed point 28).
+
+**What no document says.** How a plan entry refers to a generated native
+declaration, and from where a backend learns the name and import path it must
+write into its glue. This is a fourth identity beside the three of 6.4: the
+identity of a native declaration.
+
+| Option | What a plan entry holds | What it guarantees, and to whom | Weakness |
+| --- | --- | --- | --- |
+| S1. The plan is produced after placement and carries realized symbols | Spelled names and import paths | The accepted sentences hold as written: one artifact, three inputs | The plan depends on a placement, and one generated set serves several. The planner cannot issue it alone, so either Files completes a plan it did not make, or the kernel learns placement. A consumer that only wants conversions for already placed types still runs Files first |
+| **S2. The plan carries identities; the backend joins it with the placement result** | For each native declaration its identity (the handle the sealed output issues) and its naming intent. The backend reads the realized name and place from the Files formatter's result, by handle | The plan is independent of placement. Each language's spelling rule has one implementation. The planner stays the plan's only issuer | The placed result becomes a fourth input of a backend, which amends an accepted sentence. Two artifacts can be mismatched: a plan of one run with the placement result of another. The handle must survive serialization, and today an output's identity is a pointer and its sites repeat on every run |
+| S3. The plan carries intents; the backend derives spellings | Chosen name and qualification | Three inputs, no dependence on Files | The backend repeats each language's rule (Go's case, the qualification policy, collision handling). Two implementations must agree, which is the guessing that the completeness test excludes |
+
+**Our leaning: S2.** A plan entry refers to a native declaration by its
+identity, and the backend reads the realized name and place from the Files
+formatter's result. Member names, which generation fixes, stay in payloads.
+
+**What speaks against our leaning.** S2 moves the difficulty into the join.
+For the TypeScript backend the placement result must cross the same process
+boundary as the plan, so it needs a serialized form and a binding to the plan
+that a reader can check, and neither exists. The completeness test then has
+four inputs, and "the plan is incomplete" gets a second meaning: the plan is
+complete and the join failed. A backend also places its own glue (it "owns
+imports, names, placement and assembly"), so it may be less a reader of a
+placement result than a participant in placement, which S2 does not model.
+And for Go and Rust no Files stage exists yet, so the first slice's Go test
+backend would read names that generation still spells, through an interface
+that is meant to change.
+
+### 6.6 What the first version must contain, and how to test it before the rewrite
 
 The contract change rewrites 21 rule packages (five for each of TypeScript,
 Rust and C++, six for Go) and the kernel's planner. We see two ways to find a
@@ -1770,7 +1861,7 @@ the cases most likely to break the contract (recursion, unions with
 discriminators, explicit specialization) are the ones we understand least
 and would write worst.
 
-### 6.6 Surprises we already suspect
+### 6.7 Surprises we already suspect
 
 These are known suspects. Question 5 asks for what lies outside this list.
 
@@ -1786,8 +1877,8 @@ These are known suspects. Question 5 asks for what lies outside this list.
    configuration"; a decision record that silently assumes an option is
    wrong under another.
 4. A native declaration that a contribution owns without a horos declaration
-   behind it (Go's `BittypeOptional`): who names it, how two contributions
-   that need the same one share it, and how a plan refers to it.
+   behind it (Go's `BittypeOptional`): who states its naming intent, how two
+   contributions that need the same one share it, and how a plan refers to it.
 5. The semantic version inside an identity (`list/golang/1`) against the
    design's separate version axis (6.4).
 6. Generic conventions of exact external generics whose native parameters
@@ -1848,25 +1939,34 @@ type-class or trait resolution where one instance demands another.
 
 3. **The identities of a plan.** A plan must name the selected contribution
    so that a backend in another process, and a factory package in another
-   repository, recognise it; it has nodes; and a conversion's memo is keyed
-   at run time by "the selected representation instance" plus the input.
+   repository, recognise it; it has nodes; a conversion's memo is keyed at
+   run time by "the selected representation instance" plus the input; and it
+   must refer to generated native declarations.
    (a) Who should issue the identity of a contribution, what should it
    consist of, and how is a collision between two owners detected, and
    where? (b) Should a plan have one node per use, one per distinct
    selection, or both as two named things? (c) For a generic declaration,
    should nodes be open, with the environment supplied at an application,
    or one per instantiation, and what then is the run-time identity that a
-   memo is keyed by? (d) Which of these should the word "instance" name? We
-   lean to an owner-stated name with a version, unique within a registry,
-   and to one node per distinct selection (6.4, I1 with N2); 6.4 also lists
-   what speaks against it, including a choice between open and instantiated
-   nodes that we have not made. Your answer decides the identity fields of
-   the contribution contract and of the envelope's first version.
+   memo is keyed by? (d) Which of these should the word "instance" name?
+   (e) A generated native declaration gets its final name and its file,
+   package or module only after generation, per placement (2.6). Should the
+   plan be produced after placement and carry realized symbols, carry
+   identities that a backend joins with the placement result, or carry
+   naming intents, and what must a backend in another process be given so
+   that it never guesses a name? We lean to an owner-stated name with a
+   version, unique within a registry, to one node per distinct selection,
+   and to identities joined with the placement result (6.4, I1 with N2; 6.5,
+   S2); both sections also list what speaks against the leaning, including
+   a choice between open and instantiated nodes that we have not made. Your
+   answer decides the identity fields of the contribution contract and of
+   the envelope's first version, and whether a placement result becomes an
+   input of a backend.
 
 4. **Testing a contract that may change only once.** One change rewrites
    every existing rule of four targets onto the new contract; the plan's
    envelope may stay unstable until six vertical cases pass, the contract
-   may not. (a) How would you test the contract of sections 6.1 to 6.4
+   may not. (a) How would you test the contract of sections 6.1 to 6.5
    before that rewrite, and which families, written on paper or as fixtures,
    are most likely to break it? (b) What must the first version of the
    contribution contract and of the envelope already contain so that a later
@@ -1874,14 +1974,14 @@ type-class or trait resolution where one instance demands another.
    (c) Is the division sound, in which the contract is final in the first
    change while the envelope is declared unstable, or do the two have to
    stabilise together? We lean to paper families for six kinds before the
-   rewrite and a materially different fixture with it (6.5); 6.5 also says
+   rewrite and a materially different fixture with it (6.6); 6.6 also says
    why paper may not be enough. Your answer decides what we build and write
    before the rewrite starts, and what the first version carries.
 
 5. **Open.** What should we know that these questions do not ask? When a
    type generator's contribution contract is extended to carry conversion
    decisions for backends it does not own, what tends to be discovered late
-   and then forces a second change of that contract? Section 6.6 lists the
+   and then forces a second change of that contract? Section 6.7 lists the
    surprises we already suspect, so what lies outside that list is the most
    valuable to us. We will use your answer to add fields, refusals or checks
    to the contract before the rewrite.
