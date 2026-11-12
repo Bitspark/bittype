@@ -382,7 +382,7 @@ var modelExternalImports = map[string][]string{
 	"resolve/files/horos/provider/go":    {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go"},
 	"semantics/horos/go":                 {"github.com/Bitspark/horos/core/go/declarations"},
 	"verification/files/source/horos/go": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
-	"verification/files/horos-to-go/go":  {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/Bitspark/logos-contract/contract/go/typed"},
+	"verification/files/horos-to-go/go":  {"github.com/Bitspark/horos/core/go/declarations", "github.com/Bitspark/logos-contract/contract/go/typed"},
 }
 
 func TestFilesDimensionStageCoverage(t *testing.T) {
