@@ -89,8 +89,9 @@ func (e *Engine) Generate(ctx context.Context, r compose.Request) (generation.Ou
 func (p GenerationPlan) Run(context.Context) (Output, error)
 ```
 
-Generate plans and runs once. Output retains its checked snapshot, requested
-public declaration sites and external occurrences. It establishes neither
+Generate plans and runs once. Output retains its checked snapshot, the
+[inventory of its declarations](generation-planner.md#the-declaration-inventory-and-its-handles),
+requested public declaration sites and external occurrences. It establishes neither
 native kind enforcement nor a proof that the chosen representation is correct.
 The [Page/Cell walkthrough](page-cell-example.md) follows the complete consumer
 composition; the [context matrix](abstraction-levels.md) distinguishes the products.
