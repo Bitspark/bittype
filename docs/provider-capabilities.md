@@ -1099,7 +1099,7 @@ No structural definition attached. Operation source and authored scope remain th
 
 Contract: github.com/Bitspark/bittype/contracts/analysis/go.Provider&#91;github.com/Bitspark/bittype/syntax/golang/go.Language&#93;.
 
-Public operation: [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L57). Receiver: github.com/Bitspark/bittype/analyze/files/golang/provider/go.Provider.
+Public operation: [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L49). Receiver: github.com/Bitspark/bittype/analyze/files/golang/provider/go.Provider.
 
 Language marker: github.com/Bitspark/bittype/syntax/golang/go.Language.
 
@@ -1107,11 +1107,11 @@ Construction alternatives: no provider collaborators.
 
 Static call relationships (no evidence transfer):
 
-- [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L57) → [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L23) ([call](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L58)); receiver ; type arguments .
+- [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L49) → [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L15) ([call](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L50)); receiver ; type arguments .
 
 Traversal boundary: not a single-return static call.
 
-### Declared target [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L23)
+### Declared target [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L15)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
@@ -1119,12 +1119,12 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Authored scope: [docs/native-semantics.md#first-go-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-go-profile); profile: unspecified (authored profile absent).
 
-### Declared target [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L57)
+### Declared target [github.com/Bitspark/bittype/analyze/files/golang/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/golang/provider/go/analyze.go#L49)
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
 | semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
-| go-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestGoSemanticReportsAndCoverage](https://github.com/Bitspark/bittype/blob/main/integration/go/native_semantics_test.go#L188) (external) |
+| go-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestGoSemanticReportsAndCoverage](https://github.com/Bitspark/bittype/blob/main/integration/go/native_semantics_test.go#L189) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -1134,7 +1134,7 @@ No structural definition attached. Operation source and authored scope remain th
 
 Contract: github.com/Bitspark/bittype/contracts/resolution/go.Provider&#91;github.com/Bitspark/bittype/syntax/golang/go.Language&#93;.
 
-Public operation: [github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/provider/go/resolver.go#L82). Receiver: github.com/Bitspark/bittype/resolve/files/golang/provider/go.Provider.
+Public operation: [github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/provider/go/resolver.go#L74). Receiver: github.com/Bitspark/bittype/resolve/files/golang/provider/go.Provider.
 
 Language marker: github.com/Bitspark/bittype/syntax/golang/go.Language.
 
@@ -1142,18 +1142,18 @@ Construction alternatives: no provider collaborators.
 
 Static call relationships (no evidence transfer):
 
-- [github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/provider/go/resolver.go#L82) → [github.com/Bitspark/bittype/resolve/files/golang/provider/go#Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/provider/go/resolver.go#L25) ([call](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/provider/go/resolver.go#L83)); receiver ; type arguments .
+- [github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/provider/go/resolver.go#L74) → [github.com/Bitspark/bittype/resolve/files/golang/provider/go#Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/provider/go/resolver.go#L17) ([call](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/provider/go/resolver.go#L75)); receiver ; type arguments .
 
 Traversal boundary: not a single-return static call.
 
-### Declared target [github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/provider/go/resolver.go#L82)
+### Declared target [github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/provider/go/resolver.go#L74)
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
 | semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
-| go-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestGoSemanticReportsAndCoverage](https://github.com/Bitspark/bittype/blob/main/integration/go/native_semantics_test.go#L188) (external) |
+| go-semantic-subset | rejected-and-unsupported-fixtures | no-partial-model | unspecified (authored profile absent) | [TestGoSemanticReportsAndCoverage](https://github.com/Bitspark/bittype/blob/main/integration/go/native_semantics_test.go#L189) (external) |
 
-### Declared target [github.com/Bitspark/bittype/resolve/files/golang/provider/go#Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/provider/go/resolver.go#L25)
+### Declared target [github.com/Bitspark/bittype/resolve/files/golang/provider/go#Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/golang/provider/go/resolver.go#L17)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
