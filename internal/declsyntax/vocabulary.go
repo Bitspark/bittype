@@ -4,44 +4,8 @@ package declsyntax
 import h "github.com/Bitspark/bittype/syntax/horos/go"
 
 // The horos syntax vocabulary owns every name below. The admission grammar is
-// a table keyed by strings, so each kind is the vocabulary's constant converted
-// to a string. No name is spelled here.
-const (
-	KindProgram                = string(h.KindProgram)
-	KindModule                 = string(h.KindModule)
-	KindImport                 = string(h.KindImport)
-	KindTypeDefinition         = string(h.KindTypeDefinition)
-	KindKindDefinition         = string(h.KindKindDefinition)
-	KindTypeParameter          = string(h.KindTypeParameter)
-	KindKindParameter          = string(h.KindKindParameter)
-	KindParameter              = string(h.KindParameter)
-	KindReference              = string(h.KindReference)
-	KindApplication            = string(h.KindApplication)
-	KindDescriptor             = string(h.KindDescriptor)
-	KindAtom                   = string(h.KindAtom)
-	KindTuple                  = string(h.KindTuple)
-	KindProperSort             = string(h.KindProperSort)
-	KindArrowSort              = string(h.KindArrowSort)
-	KindTop                    = string(h.KindTop)
-	KindBottom                 = string(h.KindBottom)
-	KindKindParameterReference = string(h.KindKindParameterReference)
-	KindKindReference          = string(h.KindKindReference)
-	KindKindApplication        = string(h.KindKindApplication)
-	KindUnion                  = string(h.KindUnion)
-	KindIntersection           = string(h.KindIntersection)
-	KindArrow                  = string(h.KindArrow)
-	KindNodePattern            = string(h.KindNodePattern)
-	KindSelector               = string(h.KindSelector)
-	KindRecursiveKind          = string(h.KindRecursiveKind)
-	KindEquation               = string(h.KindEquation)
-	KindRecursiveVariable      = string(h.KindRecursiveVariable)
-	KindSequenceEpsilon        = string(h.KindSequenceEpsilon)
-	KindSequenceItem           = string(h.KindSequenceItem)
-	KindSequenceConcat         = string(h.KindSequenceConcat)
-	KindSequenceAlternative    = string(h.KindSequenceAlternative)
-	KindSequenceStar           = string(h.KindSequenceStar)
-)
-
+// typed by language and takes the node kinds from the vocabulary directly.
+// Attribute and role names are strings. No name is spelled here.
 const (
 	AttributeName        = h.AttributeName
 	AttributePin         = h.AttributePin

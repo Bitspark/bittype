@@ -12,72 +12,74 @@ import (
 
 func identifier(v string) bool { return native.Identifier(v) }
 
-var types = []string{"path-type", "qualified-path-type", "primitive-type", "reference-type", "raw-pointer-type", "slice-type", "array-type", "tuple-type", "never-type", "function-type", "trait-object-type"}
-var bounds = []string{"path-type", "lifetime-reference"}
-var typeBounds = []string{"path-type", "lifetime-reference", "relaxed-bound"}
-var generics = []string{"type-parameter", "lifetime-parameter"}
-var items = []string{"module", "use", "type-alias", "struct", "tuple-struct", "enum", "trait", "trait-impl"}
+var types = []s.Kind{s.KindPathType, s.KindQualifiedPathType, s.KindPrimitiveType, s.KindReferenceType, s.KindRawPointerType, s.KindSliceType, s.KindArrayType, s.KindTupleType, s.KindNeverType, s.KindFunctionType, s.KindTraitObjectType}
+var bounds = []s.Kind{s.KindPathType, s.KindLifetimeReference}
+var typeBounds = []s.Kind{s.KindPathType, s.KindLifetimeReference, s.KindRelaxedBound}
+var generics = []s.Kind{s.KindTypeParameter, s.KindLifetimeParameter}
+var items = []s.Kind{s.KindModule, s.KindUse, s.KindTypeAlias, s.KindStruct, s.KindTupleStruct, s.KindEnum, s.KindTrait, s.KindTraitImpl}
 var visibility = g.Set("private", "public", "crate")
 var primitive = g.Set("bool", "char", "str", "f32", "f64", "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize")
 
 func named() map[string]g.Attribute {
-	return g.Attributes("name", g.Attr(true, native.Declaration), "visibility", g.Attr(false, visibility))
+	return g.Attributes(s.AttributeName, g.Attr(true, native.Declaration), s.AttributeVisibility, g.Attr(false, visibility))
 }
-func prefix() []g.Role {
-	return []g.Role{g.Many("generic-parameter", 0, generics...), g.Many("where", 0, "where-predicate")}
+func prefix() []g.Role[s.Language] {
+	return []g.Role[s.Language]{g.Many(s.RoleGenericParameter, 0, generics...), g.Many(s.RoleWhere, 0, s.KindWherePredicate)}
 }
-func with(rs []g.Role, more ...g.Role) []g.Role { return append(rs, more...) }
+func with(rs []g.Role[s.Language], more ...g.Role[s.Language]) []g.Role[s.Language] {
+	return append(rs, more...)
+}
 
-var rules = g.Rules{
-	"file":                    {Roles: []g.Role{g.Many("item", 0, items...)}},
-	"module":                  {Attributes: named(), Roles: []g.Role{g.Many("item", 0, items...)}},
-	"use":                     {Attributes: g.Attributes("alias", g.Attr(false, identifier)), Roles: []g.Role{g.One("path", "path-type")}},
-	"type-alias":              {Attributes: named(), Roles: with(prefix(), g.One("type", types...))},
-	"struct":                  {Attributes: named(), Roles: with(prefix(), g.Many("field", 0, "field"))},
-	"tuple-struct":            {Attributes: named(), Roles: with(prefix(), g.Many("field", 0, "tuple-field"))},
-	"enum":                    {Attributes: named(), Roles: with(prefix(), g.Many("variant", 0, "unit-variant", "tuple-variant", "record-variant"))},
-	"unit-variant":            {Attributes: g.Attributes("name", g.Attr(true, native.Declaration))},
-	"tuple-variant":           {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("field", 0, "tuple-field")}},
-	"record-variant":          {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("field", 0, "field")}},
-	"field":                   {Attributes: named(), Roles: []g.Role{g.One("type", types...)}},
-	"tuple-field":             {Attributes: g.Attributes("visibility", g.Attr(false, visibility)), Roles: []g.Role{g.One("type", types...)}},
-	"trait":                   {Attributes: named(), Roles: []g.Role{g.Many("generic-parameter", 0, generics...), g.Many("bound", 0, bounds...), g.Many("where", 0, "where-predicate"), g.Many("member", 0, "method-signature", "associated-type")}},
-	"trait-impl":              {Roles: []g.Role{g.Many("generic-parameter", 0, generics...), g.One("trait", "path-type"), g.One("subject", types...), g.Many("where", 0, "where-predicate"), g.Many("member", 0, "type-alias")}},
-	"associated-type":         {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("generic-parameter", 0, generics...), g.Many("bound", 0, typeBounds...), g.Many("where", 0, "where-predicate")}},
-	"method-signature":        {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: with(prefix(), g.Opt("receiver", "receiver"), g.Many("parameter", 0, "parameter"), g.Opt("result", types...))},
-	"receiver":                {Attributes: g.Attributes("receiver-form", g.Attr(true, g.Set("value", "shared", "mutable"))), Roles: []g.Role{g.Opt("lifetime", "lifetime-reference")}},
-	"parameter":               {Attributes: g.Attributes("name", g.Attr(false, identifier)), Roles: []g.Role{g.One("type", types...)}},
-	"type-parameter":          {Attributes: g.Attributes("name", g.Attr(true, native.Declaration)), Roles: []g.Role{g.Many("bound", 0, typeBounds...), g.Opt("default", types...)}},
-	"lifetime-parameter":      {Attributes: g.Attributes("name", g.Attr(true, native.LifetimeParameter)), Roles: []g.Role{g.Many("bound", 0, "lifetime-reference")}},
-	"lifetime-reference":      {Attributes: g.Attributes("name", g.Attr(true, native.LifetimeReference)), Reference: true},
-	"where-predicate":         {Roles: []g.Role{g.One("subject", append(types, "lifetime-reference")...), g.Many("bound", 1, typeBounds...)}},
-	"relaxed-bound":           {Roles: []g.Role{g.One("path", "path-type")}},
-	"path-type":               {Attributes: g.Attributes("absolute", g.Attr(false, g.Bool)), Roles: []g.Role{g.Many("segment", 1, "path-segment")}},
-	"qualified-path-type":     {Roles: []g.Role{g.One("subject", types...), g.Opt("trait", "path-type"), g.Many("segment", 1, "path-segment")}},
-	"path-segment":            {Attributes: g.Attributes("name", g.Attr(true, native.PathSegment)), Roles: []g.Role{g.Many("argument", 0, append(types, "lifetime-reference", "associated-type-binding")...)}, Reference: true},
-	"associated-type-binding": {Roles: []g.Role{g.One("path", "path-segment"), g.One("type", types...)}},
-	"primitive-type":          {Attributes: g.Attributes("name", g.Attr(true, primitive))},
-	"reference-type":          {Attributes: g.Attributes("mutable", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("element", types...), g.Opt("lifetime", "lifetime-reference")}},
-	"raw-pointer-type":        {Attributes: g.Attributes("mutable", g.Attr(false, g.Bool)), Roles: []g.Role{g.One("element", types...)}},
-	"slice-type":              {Roles: []g.Role{g.One("element", types...)}},
-	"array-type":              {Attributes: g.Attributes("length", g.Attr(true, g.Decimal)), Roles: []g.Role{g.One("element", types...)}},
-	"tuple-type":              {Roles: []g.Role{g.Many("element", 0, types...)}},
-	"never-type":              {},
-	"function-type":           {Attributes: g.Attributes("unsafe", g.Attr(false, g.Bool), "abi", g.Attr(false, native.ABI)), Roles: []g.Role{g.Many("parameter", 0, "parameter"), g.Opt("result", types...)}},
-	"trait-object-type":       {Roles: []g.Role{g.Many("bound", 1, bounds...)}},
+var rules = g.Rules[s.Language]{
+	s.KindFile:                  {Roles: []g.Role[s.Language]{g.Many(s.RoleItem, 0, items...)}},
+	s.KindModule:                {Attributes: named(), Roles: []g.Role[s.Language]{g.Many(s.RoleItem, 0, items...)}},
+	s.KindUse:                   {Attributes: g.Attributes(s.AttributeAlias, g.Attr(false, identifier)), Roles: []g.Role[s.Language]{g.One(s.RolePath, s.KindPathType)}},
+	s.KindTypeAlias:             {Attributes: named(), Roles: with(prefix(), g.One(s.RoleType, types...))},
+	s.KindStruct:                {Attributes: named(), Roles: with(prefix(), g.Many(s.RoleField, 0, s.KindField))},
+	s.KindTupleStruct:           {Attributes: named(), Roles: with(prefix(), g.Many(s.RoleField, 0, s.KindTupleField))},
+	s.KindEnum:                  {Attributes: named(), Roles: with(prefix(), g.Many(s.RoleVariant, 0, s.KindUnitVariant, s.KindTupleVariant, s.KindRecordVariant))},
+	s.KindUnitVariant:           {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Declaration))},
+	s.KindTupleVariant:          {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Declaration)), Roles: []g.Role[s.Language]{g.Many(s.RoleField, 0, s.KindTupleField)}},
+	s.KindRecordVariant:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Declaration)), Roles: []g.Role[s.Language]{g.Many(s.RoleField, 0, s.KindField)}},
+	s.KindField:                 {Attributes: named(), Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
+	s.KindTupleField:            {Attributes: g.Attributes(s.AttributeVisibility, g.Attr(false, visibility)), Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
+	s.KindTrait:                 {Attributes: named(), Roles: []g.Role[s.Language]{g.Many(s.RoleGenericParameter, 0, generics...), g.Many(s.RoleBound, 0, bounds...), g.Many(s.RoleWhere, 0, s.KindWherePredicate), g.Many(s.RoleMember, 0, s.KindMethodSignature, s.KindAssociatedType)}},
+	s.KindTraitImpl:             {Roles: []g.Role[s.Language]{g.Many(s.RoleGenericParameter, 0, generics...), g.One(s.RoleTrait, s.KindPathType), g.One(s.RoleSubject, types...), g.Many(s.RoleWhere, 0, s.KindWherePredicate), g.Many(s.RoleMember, 0, s.KindTypeAlias)}},
+	s.KindAssociatedType:        {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Declaration)), Roles: []g.Role[s.Language]{g.Many(s.RoleGenericParameter, 0, generics...), g.Many(s.RoleBound, 0, typeBounds...), g.Many(s.RoleWhere, 0, s.KindWherePredicate)}},
+	s.KindMethodSignature:       {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Declaration)), Roles: with(prefix(), g.Opt(s.RoleReceiver, s.KindReceiver), g.Many(s.RoleParameter, 0, s.KindParameter), g.Opt(s.RoleResult, types...))},
+	s.KindReceiver:              {Attributes: g.Attributes(s.AttributeReceiverForm, g.Attr(true, g.Set("value", "shared", "mutable"))), Roles: []g.Role[s.Language]{g.Opt(s.RoleLifetime, s.KindLifetimeReference)}},
+	s.KindParameter:             {Attributes: g.Attributes(s.AttributeName, g.Attr(false, identifier)), Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
+	s.KindTypeParameter:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Declaration)), Roles: []g.Role[s.Language]{g.Many(s.RoleBound, 0, typeBounds...), g.Opt(s.RoleDefault, types...)}},
+	s.KindLifetimeParameter:     {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.LifetimeParameter)), Roles: []g.Role[s.Language]{g.Many(s.RoleBound, 0, s.KindLifetimeReference)}},
+	s.KindLifetimeReference:     {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.LifetimeReference)), Reference: true},
+	s.KindWherePredicate:        {Roles: []g.Role[s.Language]{g.One(s.RoleSubject, append(types, s.KindLifetimeReference)...), g.Many(s.RoleBound, 1, typeBounds...)}},
+	s.KindRelaxedBound:          {Roles: []g.Role[s.Language]{g.One(s.RolePath, s.KindPathType)}},
+	s.KindPathType:              {Attributes: g.Attributes(s.AttributeAbsolute, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.Many(s.RoleSegment, 1, s.KindPathSegment)}},
+	s.KindQualifiedPathType:     {Roles: []g.Role[s.Language]{g.One(s.RoleSubject, types...), g.Opt(s.RoleTrait, s.KindPathType), g.Many(s.RoleSegment, 1, s.KindPathSegment)}},
+	s.KindPathSegment:           {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.PathSegment)), Roles: []g.Role[s.Language]{g.Many(s.RoleArgument, 0, append(types, s.KindLifetimeReference, s.KindAssociatedTypeBinding)...)}, Reference: true},
+	s.KindAssociatedTypeBinding: {Roles: []g.Role[s.Language]{g.One(s.RolePath, s.KindPathSegment), g.One(s.RoleType, types...)}},
+	s.KindPrimitiveType:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, primitive))},
+	s.KindReferenceType:         {Attributes: g.Attributes(s.AttributeMutable, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...), g.Opt(s.RoleLifetime, s.KindLifetimeReference)}},
+	s.KindRawPointerType:        {Attributes: g.Attributes(s.AttributeMutable, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
+	s.KindSliceType:             {Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
+	s.KindArrayType:             {Attributes: g.Attributes(s.AttributeLength, g.Attr(true, g.Decimal)), Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
+	s.KindTupleType:             {Roles: []g.Role[s.Language]{g.Many(s.RoleElement, 0, types...)}},
+	s.KindNeverType:             {},
+	s.KindFunctionType:          {Attributes: g.Attributes(s.AttributeUnsafe, g.Attr(false, g.Bool), s.AttributeABI, g.Attr(false, native.ABI)), Roles: []g.Role[s.Language]{g.Many(s.RoleParameter, 0, s.KindParameter), g.Opt(s.RoleResult, types...)}},
+	s.KindTraitObjectType:       {Roles: []g.Role[s.Language]{g.Many(s.RoleBound, 1, bounds...)}},
 }
 
 // bittype:grammar rules
 // bittype:scope docs/syntax.md#rust
 func Check(view ast.View[s.Language]) error {
 	t := view.ASTView()
-	if err := g.Check(t, "file", rules); err != nil {
+	if err := g.Check(t, s.KindFile, rules); err != nil {
 		return err
 	}
 	v := tree.View[s.Language]{Tree: t}
 	noDefaults := func(owner ast.NodeID) error {
-		for _, p := range v.Children(owner, "generic-parameter") {
-			if v.Child(p, "default") != 0 {
+		for _, p := range v.Children(owner, s.RoleGenericParameter) {
+			if v.Child(p, s.RoleDefault) != 0 {
 				return text.AtNode(t, p, "generic parameter defaults are unsupported in this declaration")
 			}
 		}
@@ -87,17 +89,17 @@ func Check(view ast.View[s.Language]) error {
 		id := ast.NodeID(i + 1)
 		bad := func(m string) error { return text.AtNode(t, id, m) }
 		for _, child := range n.Children {
-			if v.Kind(child.Node) != "path-type" || child.Role == "bound" || child.Role == "trait" || n.Kind == s.KindUse || n.Kind == s.KindRelaxedBound {
+			if v.Node(child.Node).Kind != s.KindPathType || child.Role == s.RoleBound || child.Role == s.RoleTrait || n.Kind == s.KindUse || n.Kind == s.KindRelaxedBound {
 				continue
 			}
-			segments := v.Children(child.Node, "segment")
-			if !v.Flag(child.Node, "absolute") && len(segments) == 1 && len(v.Children(segments[0], "argument")) == 0 && primitive(v.Attr(segments[0], "name")) {
+			segments := v.Children(child.Node, s.RoleSegment)
+			if !v.Flag(child.Node, s.AttributeAbsolute) && len(segments) == 1 && len(v.Children(segments[0], s.RoleArgument)) == 0 && primitive(v.Attr(segments[0], s.AttributeName)) {
 				return text.AtNode(t, child.Node, "bare primitive spelling requires primitive-type in a type expression")
 			}
 		}
 		seenType := false
-		for _, p := range v.Children(id, "generic-parameter") {
-			if v.Kind(p) == "type-parameter" {
+		for _, p := range v.Children(id, s.RoleGenericParameter) {
+			if v.Node(p).Kind == s.KindTypeParameter {
 				seenType = true
 			} else if seenType {
 				return bad("lifetime parameters must precede type parameters")
@@ -108,8 +110,8 @@ func Check(view ast.View[s.Language]) error {
 			if err := noDefaults(id); err != nil {
 				return err
 			}
-			for _, member := range v.Children(id, "member") {
-				if vis := v.Attr(member, "visibility"); vis != "" && vis != "private" {
+			for _, member := range v.Children(id, s.RoleMember) {
+				if vis := v.Attr(member, s.AttributeVisibility); vis != "" && vis != "private" {
 					return text.AtNode(t, member, "trait impl associated types inherit visibility")
 				}
 				if err := noDefaults(member); err != nil {
@@ -121,22 +123,22 @@ func Check(view ast.View[s.Language]) error {
 				return err
 			}
 		case s.KindWherePredicate:
-			if v.Kind(v.Child(id, "subject")) == "lifetime-reference" {
-				for _, bound := range v.Children(id, "bound") {
-					if v.Kind(bound) != "lifetime-reference" {
+			if v.Node(v.Child(id, s.RoleSubject)).Kind == s.KindLifetimeReference {
+				for _, bound := range v.Children(id, s.RoleBound) {
+					if v.Node(bound).Kind != s.KindLifetimeReference {
 						return text.AtNode(t, bound, "lifetime predicates require lifetime bounds")
 					}
 				}
 			}
 		case s.KindPathSegment:
 			seenType, seenBinding := false, false
-			for _, arg := range v.Children(id, "argument") {
-				switch v.Kind(arg) {
-				case "lifetime-reference":
+			for _, arg := range v.Children(id, s.RoleArgument) {
+				switch v.Node(arg).Kind {
+				case s.KindLifetimeReference:
 					if seenType || seenBinding {
 						return text.AtNode(t, arg, "lifetime arguments must precede type arguments and associated-type bindings")
 					}
-				case "associated-type-binding":
+				case s.KindAssociatedTypeBinding:
 					seenBinding = true
 				default:
 					if seenBinding {
@@ -146,22 +148,22 @@ func Check(view ast.View[s.Language]) error {
 				}
 			}
 		case s.KindAssociatedTypeBinding:
-			if !native.Declaration(v.Attr(v.Child(id, "path"), "name")) {
+			if !native.Declaration(v.Attr(v.Child(id, s.RolePath), s.AttributeName)) {
 				return bad("associated-type binding requires an unqualified associated name")
 			}
 		case s.KindUse:
-			for _, seg := range v.Children(v.Child(id, "path"), "segment") {
-				if len(v.Children(seg, "argument")) > 0 {
+			for _, seg := range v.Children(v.Child(id, s.RolePath), s.RoleSegment) {
+				if len(v.Children(seg, s.RoleArgument)) > 0 {
 					return bad("use paths cannot have generic arguments")
 				}
 			}
 		case s.KindReceiver:
-			if v.Attr(id, "receiver-form") == "value" && v.Child(id, "lifetime") != 0 {
+			if v.Attr(id, s.AttributeReceiverForm) == "value" && v.Child(id, s.RoleLifetime) != 0 {
 				return bad("value receiver has no lifetime annotation")
 			}
 		case s.KindMethodSignature:
-			for _, p := range v.Children(id, "parameter") {
-				if !v.Has(p, "name") {
+			for _, p := range v.Children(id, s.RoleParameter) {
+				if !v.Has(p, s.AttributeName) {
 					return text.AtNode(t, p, "method parameter requires a name")
 				}
 			}
@@ -169,15 +171,15 @@ func Check(view ast.View[s.Language]) error {
 				return err
 			}
 		case s.KindTupleVariant, s.KindRecordVariant:
-			for _, field := range v.Children(id, "field") {
-				if vis := v.Attr(field, "visibility"); vis != "" && vis != "private" {
+			for _, field := range v.Children(id, s.RoleField) {
+				if vis := v.Attr(field, s.AttributeVisibility); vis != "" && vis != "private" {
 					return bad("variant fields inherit visibility")
 				}
 			}
 		case s.KindTraitObjectType:
 			hasTrait := false
-			for _, b := range v.Children(id, "bound") {
-				hasTrait = hasTrait || v.Kind(b) == "path-type"
+			for _, b := range v.Children(id, s.RoleBound) {
+				hasTrait = hasTrait || v.Node(b).Kind == s.KindPathType
 			}
 			if !hasTrait {
 				return bad("trait object requires a trait path")
