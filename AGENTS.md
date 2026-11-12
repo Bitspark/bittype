@@ -76,8 +76,8 @@ The plan is [#218](https://github.com/Bitspark/bittype/issues/218). The findings
 their limits are
 [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md). Every
 confirmed instance of that case is corrected as of 12 November 2026, and its
-limits name what was not examined, which
-[#251](https://github.com/Bitspark/bittype/issues/251) tracks. The
+limits name what was not examined.
+[#256](https://github.com/Bitspark/bittype/issues/256) tracks those names. The
 import check enforces boundaries that this reasoning has decided. It does not
 replace the reasoning, and a green run does not show that ownership is right.
 

@@ -8,12 +8,18 @@ names that a writer and a reader each spelled
 ([#247](https://github.com/Bitspark/bittype/pull/247) and
 [#248](https://github.com/Bitspark/bittype/pull/248)), and the tag
 prefixes of canonical horos values, which three packages spelled
-([#250](https://github.com/Bitspark/bittype/pull/250)). Two independent
-reviews read the moves of 11 November 2026 and the first commit of #246. No
-independent review read the second commit of #246, #247, #248 or #250. The
-[limits](#limits) say what the corrections and the check do not establish and
-which names were not examined. Three candidates are not confirmed and are not
-part of this case.
+([#250](https://github.com/Bitspark/bittype/pull/250)). Two further instances
+were confirmed after this status was first written, by issue
+[#251](https://github.com/Bitspark/bittype/issues/251), and are corrected:
+the horos syntax node kinds, attributes and roles, which two packages declared
+([#254](https://github.com/Bitspark/bittype/pull/254)), and sixteen
+TypeScript graph names that Go read by spelling
+([#255](https://github.com/Bitspark/bittype/pull/255)). The status
+stands. Two independent reviews read the moves of 11 November 2026 and the
+first commit of #246. No independent review read the second commit of #246,
+#247, #248, #250, #254 or #255. The [limits](#limits) say what the corrections
+and the check do not establish and which names were not examined. Three
+candidates are not confirmed and are not part of this case.
 **Scope:** The native and common horos mapping packages, the horos-to-Go
 verification laws, the Go and TypeScript analysis provider packages, the
 publication of contract identities and horos semantic names, and the import
@@ -149,8 +155,9 @@ instance remains. The state below was read in source on `main` at `1a5aa2d` on
 rows and the tables of the architecture test were read at `c8d0344`, the merge
 of pull request #246, on 12 November 2026. The horos rows were read at
 `abfc948`, the merge of pull request #248, on the same day, and the row of the
-tag prefixes on the head of pull request #250, `cadf495`. The order is the one
-in
+tag prefixes on the head of pull request #250, `cadf495`. The two rows of
+issue #251 were read at `f821eb3`, the merge of pull request #255. The order is
+the one in
 [package boundaries](../package-boundaries.md#order-of-work). The pair packages
 were split while [#207](https://github.com/Bitspark/bittype/issues/207), which
 writes the first families into mapping packages, is still open. That is the
@@ -178,6 +185,8 @@ requires.
 | Five horos-owned keys were spelled inline by a writer and by a separate reader: `horos/module`, `horos/import`, `horos/type-definition`, `horos/sort/proper` and `horos/identity/module` | `semantics/horos/go` publishes them as `ModuleKind()`, `ImportRelation()`, `TypeDefinitionKind()`, `ProperSort()` and `ModuleIdentity()`. The writers in `internal/horosmodel` and `internal/horosfiles` and the readers in `internal/horosfiles` and `transform/syntax/horos/source/go` call these functions | [#247](https://github.com/Bitspark/bittype/pull/247) |
 | Three further horos names were spelled by a writer and by a separate reader. The change that moved the five keys found them on 12 November 2026: the descriptor operator `horos/descriptor/<constructor>`, the term encoding `ontos/codec-v1`, and the two profile names, which `internal/horosfiles` repeated as string literals | `semantics/horos/go` publishes `DescriptorOperator(constructor)` with its inverse `DescriptorConstructor(operator)`, and `TermEncoding()`. `internal/horosfiles` compares with the constants `ResolutionProfile` and `AnalysisProfile`, which were published before. No production package outside the vocabulary spells any of the three | [#248](https://github.com/Bitspark/bittype/pull/248) |
 | The ontos tag prefixes of canonical horos values, `horos/decl/` and `horos/`, were spelled in three production packages. `resolve/files/horos/provider/go` and `verification/files/source/horos/go` each configure the same `Frontend` with them and must agree, and `internal/horosmodel` spelled them again in `SourceModules`. The tuple tagged `horos/decl/arrow` was built by hand in `verification/files/source/horos/go` and again in `verification/files/horos-to-go/go`. The change that wrote this record found both on 12 November 2026 | `semantics/horos/go` publishes the constants `DeclarationTagPrefix` and `DescriptorTagPrefix`, and the three packages use them. `verification/files/source/horos/go` exports `ArrowValue(kind)`, and the pair calls it. The pair imports no ontos package directly, and its two external allowances for `ontos/core/go` and `ontos/data/go` are removed from `modelExternalImports`. The horos resolver now imports its vocabulary, which its role permits | [#250](https://github.com/Bitspark/bittype/pull/250) |
+| `syntax/horos/go` and `internal/declsyntax` each declared the 33 node kinds, the 9 attribute names and the 18 role names of the horos syntax, with equal names and values. Neither imported the other. The parser and the formatter used one declaration, and the checker and the private model the other. Issue #251 confirmed it on 12 November 2026 | One declaration, in `syntax/horos/go`. `internal/horosmodel` takes the names from there and no longer imports `internal/declsyntax`. `internal/declsyntax` defines its 60 constants from the vocabulary's by constant conversion, so no name is spelled there. Two entries of `oneOfAKindRules` follow: `internal/declsyntax` gains `syntax/horos/go`, and `internal/horosmodel` gains `syntax/horos/go` and loses `internal/declsyntax` | [#254](https://github.com/Bitspark/bittype/pull/254) |
+| `format/files/typescript/provider/go` read seven TypeScript graph names by spelling, and the model readers of `semantics/typescript/go` spelled nine more, two of them twice. The compiler helper `internal/typescriptsem/compiler.cjs` writes all sixteen. The scan on #251 found the outside reader on 12 November 2026 | `semantics/typescript/go` publishes the sixteen names as functions: seven entity kinds, six fact relations, one term operator and two binding roles. The Files formatter and the model readers call them. The helper is JavaScript, cannot import a Go package and is not edited. Tests that run the real helper keep the two sides equal, and `TestTypeScriptHelperNamesMatchVocabulary` is new | [#255](https://github.com/Bitspark/bittype/pull/255) |
 | The allow-list of a role was not checked for use | Every allowance is checked for use. An entry and an extension are checked per package. A role is checked per shape: each import it permits must be imported by at least one package of that role. External model allowances are checked too | [#244](https://github.com/Bitspark/bittype/pull/244) |
 | The check read only the files of the build that ran it, and the vocabulary rule accepted any name as a language. The independent review found both | The check reads every non-test file of a package, also one that a build tag, another operating system or disabled cgo excludes. A role grants `internal/<language>` and `internal/<language>sem` only where the imported package is that language's helper by its own role | [#244](https://github.com/Bitspark/bittype/pull/244) |
 
@@ -200,13 +209,14 @@ onto it and blocks nothing in this case. The reasons are in a
 
 The statements below come from the pull requests named, unless a bullet names
 another source. Their authors made the before and after comparisons. #227,
-#228, #229, #233, #234, #246, #247, #248 and #250 used programs that are not
-committed.
+#228, #229, #233, #234, #246, #247, #248, #250, #254 and #255 used programs
+that are not committed.
 
 - **Hosted checks.** The hosted `docs`, `contracts` and `native` checks passed
   on each of the eleven pull requests, and on #244. They passed on both
   commits of #246, `7ecdaa1` and `052a3e3`, on #247 at `838d5e2`, on #248 at
-  `3db9bc9` and on #250 at `cadf495`.
+  `3db9bc9`, on #250 at `cadf495`, on #254 at `da487a9` and on #255 at
+  `82b6f49`.
 - **Identity values.** #229 rendered the two Rust contract values before and
   after. #233 rendered the TypeScript contracts, the configured analysis
   contract and the `Compiler` type. #234 rendered the horos keys, profiles,
@@ -306,6 +316,35 @@ committed.
   edit to them is the removal of the two unused allowances. The change that
   wrote this record repeated the search for the two literals on `cadf495` and
   found them in `semantics/horos/go/vocabulary.go` only.
+- **The horos syntax names, by their author.** #254 reports the following,
+  run on `main` at `9867398` and on its head `da487a9`. A program that is not
+  committed parsed both declarations before the change and found 33 kinds, 9
+  attributes and 18 roles in both, with no name in one only and no different
+  value. Another printed every constant of both packages with its type and
+  value, 121 lines, identical before and after. A test that is not committed
+  dumped 52 files of behaviour: four horos sources through parse, check,
+  print, format, the private reader, resolution and analysis, two canonical
+  fixtures through the private projection, and four generated outputs. All 52
+  have the same size and SHA-256 before and after. The sorted outcomes of
+  `go test ./... -count=1` per package and per test are identical, with the
+  pinned TypeScript and without the Rust helper. One value was seeded,
+  `KindAtom` in `syntax/horos/go`, in plain copies of both trees. Before the
+  change the two declarations then disagree and 26 tests fail. After it the
+  framing follows the vocabulary and the test outcomes equal the unseeded
+  ones. The integrator of the plan read the diff.
+- **The TypeScript graph names, by their author.** #255 reports the following.
+  A test that is not committed compared each of the sixteen functions with
+  the key it replaced, and all are equal. Another wrote the semantic graph,
+  the Files groups and relations, the printed text and what the model readers
+  return for three fixtures in seven dumps. Each dump has the same size and
+  SHA-256 before and after. Each published name was then changed in the
+  vocabulary in turn, with the helper untouched, and the two test binaries
+  that link the vocabulary were run in full. Tests that already existed fail
+  for twelve names. `TestTypeScriptHelperNamesMatchVocabulary`, which is
+  committed, fails for `BuiltinKind`, `ParameterKind` and
+  `NativeTypeRelation`. No test fails for `ImportRole`. The mutation runs were
+  made before `main` was merged into the branch and were not repeated on the
+  merged head.
 - **The rules by role, by their author.** #244 reports the following on the
   real tree. Five seeded forbidden imports failed `TestProductionArchitecture`:
   a Rust parser importing TypeScript's syntax, a vocabulary importing a stage
@@ -362,9 +401,34 @@ committed.
   `C:/Development/bitspark/scratch-bittype-review-246/` on the workstation and
   not in the repository. The review is recorded in the body of #246, which the
   author of #246 wrote.
-- No independent review read #247, #248 or #250. Their qualification is their
-  authors', and the integrator of the plan read the diff of #247 and wrote
-  #250.
+- No independent review read #247, #248, #250, #254 or #255. Their
+  qualification is their authors', and the integrator of the plan read the
+  diffs of #247 and #254 and wrote #250.
+- **`ImportRole` is published and untested.** `ImportRole()` is one of the
+  sixteen TypeScript names. No test fails when its value changes. The Files
+  formatter admits bindings of that role and stores them, and nothing looks
+  them up, so the read has no effect that a test could observe. Whether that
+  read should exist is not decided.
+- **Only the Go side of the TypeScript names was mutated.** The tests were
+  shown to fail when a name changes in the vocabulary. The helper's spelling
+  was never changed, so the tests were not shown to fail for a changed helper.
+  The helper is JavaScript and spells every name itself. Nothing but those
+  tests keeps the two sides equal.
+- **The language marker of the horos framing is vestigial.** `internal/horosmodel`
+  and `internal/declsyntax` are still generic over a language marker `L`. Pull
+  request #39 introduced it for a second language, which pull request #49
+  removed the same day. Every production use is over the horos `Language`. One
+  unit test builds a tree over `struct{}`. The parameter costs the conversions
+  that #254 added, and removing it is a change of its own. The constants of
+  `internal/declsyntax` stay exported, and no package outside it uses them.
+- **The `typescript/name` role of the symbol package is not an instance.**
+  Decided on 12 November 2026 by the integrator of the plan.
+  `transform/syntax/typescript/symbol/go` declares the role as its private
+  `nameRole`, writes it in `ExternalUse` and reads it in `ReadExternal`. Its
+  consumers call those two functions and never name the key, and no production
+  code compares it with the binding role that the helper writes. It has one
+  party. The role that the architecture test gives the package does not permit
+  `semantics/typescript/go`, and that stays.
 - **The tag prefixes have their owner outside bittype.** The horos library
   reads the canonical values, so it owns `horos/decl/` and `horos/`. horos
   0.10.2, the version that bittype pins, spells them in
@@ -414,21 +478,55 @@ committed.
     keys only in `internal/golangsem/export.go`, where they are written. The
     integrator of the plan checked this on `main` at `abfc948`, and the change
     that wrote this record repeated both searches on `cadf495`.
+- **What issue #251 examined.** This list first named two groups as not
+  examined: the names that the native compiler helpers write, and the horos
+  syntax node kinds. [#251](https://github.com/Bitspark/bittype/issues/251)
+  took both on 12 November 2026.
+  - The horos syntax node kinds, attributes and roles were a confirmed
+    instance, corrected with #254.
+  - The [scan on #251](https://github.com/Bitspark/bittype/issues/251#issuecomment-6814719220)
+    searched `main` at `9867398` for graph names spelled outside the
+    vocabulary packages, the compiler bridges and the horos private parts.
+    Only `format/files/typescript/provider/go` read native graph names by
+    spelling. That is a confirmed instance, corrected with #255. Rust and Go
+    have no such reader.
 - **Not examined.** The following were not assessed. They are neither
-  instances nor cleared. Both are tracked in
-  [#251](https://github.com/Bitspark/bittype/issues/251) and are not part of
-  this case unless that issue confirms an instance.
-  - The other names that the native compiler helpers write. One pair was
-    seen: `internal/typescriptsem/compiler.cjs` writes the entity kind
-    `module` and the binding roles `name` and `import`, and
-    `format/files/typescript/provider/go` reads them as `n.Key("module")`,
-    `n.Key("name")` and `n.Key("import")`. The same question was not asked
-    for Go and Rust. These names were not moved with the horos names, because
-    two of the three native writers are not Go. The TypeScript helper is
-    JavaScript and the Rust helper is Rust, and neither can import a Go
-    vocabulary package. One owner there needs a design.
-  - The node kinds of the horos syntax. `syntax/horos/go` and
-    `internal/declsyntax` each declare them, and neither imports the other.
+  instances nor cleared.
+  [#256](https://github.com/Bitspark/bittype/issues/256) tracks them.
+  Each says only what was seen in source at `f821eb3`.
+  - **What the TypeScript helper reads.** `internal/typescriptsem/compiler.cjs`
+    reads the syntax node kinds, child roles and attribute names of its request
+    by spelling: a set of supported kinds from line 23, the attributes `operator`
+    and `name`, the roles `default` and `type-parameter`, and a switch over node
+    kinds from line 95. `syntax/typescript/go` declares these names in Go.
+  - **The status of the helper's response.** `ok`, `invalid`, `unsupported`,
+    `incomplete`, `mismatch` and `environment` are spelled in the helper and in
+    `internal/typescriptsem/compiler.go`.
+    `resolve/files/typescript/provider/go/resolver.go` spells `ok`, `invalid` and
+    `unsupported`, and `analyze/files/typescript/queries/go/queries.go` spells
+    `ok`. It is a string of the bridge's output and not a graph name.
+  - **The generation form names of TypeScript.** `alias`, `interface` and
+    `record` are spelled in `transform/syntax/typescript/model/go/model.go`.
+    `transform/syntax/typescript/target/go/provider.go` spells `alias` and
+    `record`, and the declarations mapping
+    `transform/syntax/horos-to-typescript/mapping/declarations/go` spells
+    `interface` and `alias`. They are not graph names either.
+  - **The Go and Rust vocabulary packages' own readers.** The scan did not
+    cover spellings inside a vocabulary package. Two were seen:
+    `semantics/golang/go/model.go` spells `Key("alias")` and `Key("defined")`
+    twice each, and the bridge `internal/golangsem/export.go` writes both kinds.
+    `semantics/rust/go/model.go` spells `Key("native-type")` and
+    `Key("declared-type")`, which the Rust helper
+    `internal/rustsem/helper/src/main.rs` writes. The two sides were not
+    compared name by name, and what test fails when they differ was not asked.
+  - **The admission grammars of the native checkers.** `rules` in
+    `check/syntax/<language>/provider/go/check.go` is a table keyed by string
+    literals for Go, TypeScript, Rust and C++. It spells node kinds, child roles
+    and attribute names that `syntax/<language>/go` also declares. Each of the
+    four checkers also compares a node kind with an inline string in a few
+    places, for example `"path-type"` and `"lifetime-reference"` in the Rust
+    checker. As in `internal/declsyntax` before #254, a checker spells names that
+    its vocabulary declares.
 - The review's programs and outputs are in a scratch directory on the
   workstation and not in the repository. The same holds for the seeded
   imports of #244 and of the integrator, and for their repeat at `71bfec9`.
@@ -449,8 +547,8 @@ committed.
 
 ### Instances that remain
 
-No confirmed instance remains on `main` after pull request #250. The last four
-left this list on 12 November 2026:
+No confirmed instance remains on `main` at `f821eb3`, after pull request #255.
+The last six left this list on 12 November 2026:
 
 1. **Go's query service**, corrected with pull request #246.
 2. **Go's contract identities**, corrected with pull request #246. With
@@ -466,6 +564,16 @@ left this list on 12 November 2026:
    remains, and listed them first as not examined. They were then confirmed:
    two packages configure the same frontend and must agree, and a third
    spelled the prefixes again.
+5. **The horos syntax node kinds, attributes and roles**, corrected with pull
+   request #254. Issue #251 confirmed them after the status "Corrected, with
+   limits" was written. Two packages declared the same 60 names, and the
+   parser and the checker each used a different declaration.
+6. **Sixteen TypeScript graph names**, corrected with pull request #255. Issue
+   #251 confirmed them the same way. The JavaScript helper writes them, and Go
+   packages read them by spelling.
+
+Instances 5 and 6 did not change the status. They were confirmed and corrected
+on the same day, and the status is dated for the state after both.
 
 [#219](https://github.com/Bitspark/bittype/issues/219),
 [#220](https://github.com/Bitspark/bittype/issues/220),
@@ -475,8 +583,9 @@ left this list on 12 November 2026:
 change that wrote this record.
 
 A new confirmed instance reopens this list. The names under "Not examined" in
-the [limits](#limits) are where one would be looked for first, and
-[#251](https://github.com/Bitspark/bittype/issues/251) tracks them.
+the [limits](#limits) are where one would be looked for first. Issue #251 is
+closed with the change that wrote this paragraph, and
+[#256](https://github.com/Bitspark/bittype/issues/256) tracks those names.
 
 Open pull request #204 is not part of this case. It adds imported packages to
 Go's semantics and will add `AnalysisContractFor(settings)` to
