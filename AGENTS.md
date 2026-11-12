@@ -58,9 +58,11 @@ whose answer the caller needs: its own, or the composition's. The
 [architecture test](integration/go/architecture_check_test.go) derives a
 package's import rule from the role that its path gives, as the
 [layout](LAYOUT.md#dependency-direction) lists. The foundation and kernel set
-and the packages of which there is only one have explicit entries. Go's
-identities and query service are still open, and eight hand entries in the
-test wait for pull requests #204 and #231. When you add a package:
+and the packages of which there is only one have explicit entries. No other
+package has a hand entry: pull request
+[#246](https://github.com/Bitspark/bittype/pull/246) moved Go's contract
+identities and query service and converted the last eight. When you add a
+package:
 
 - A package of an existing role needs no edit to the test.
 - A foundation, kernel or one-of-a-kind package needs an explicit entry in

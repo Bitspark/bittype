@@ -1,5 +1,24 @@
 # Changelog
 
+## Go's contract identities and query service move — 12 November 2026
+
+Pull request [#246](https://github.com/Bitspark/bittype/pull/246) makes the Go part of [#220](https://github.com/Bitspark/bittype/issues/220) and [#221](https://github.com/Bitspark/bittype/issues/221). It is a move. [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) records the correction, its qualification and what remains.
+
+- **Contract identities.** `semantics/golang/go` exports `ResolutionContract()` and `AnalysisContract()` in `contracts.go`. `resolve/files/golang/provider/go` and `analyze/files/golang/provider/go` no longer export `Contract()`. The Go analysis provider no longer imports the Go resolver.
+- **Query service.** `Queries`, `NewQueries` and `Admission` are the package `queries` at `analyze/files/golang/queries/go`. `verification/files/horos-to-go/go` imports that package and no longer the analysis provider.
+- **No alias.** Nothing remains at an old path. A consumer that called `Contract()` on a Go provider package, or `NewQueries` on the Go analysis provider package, names the new places.
+- **The architecture test.** The two open entries of the exception table are deleted. Thirteen remain, and all are accepted. The eight hand entries in `TestProductionArchitecture` are converted: `semantics/golang/go`, `internal/golangsem`, the two Go provider packages and `analyze/files/rust/provider/go` take their role, and `internal/typescriptimports`, `verification/files/horos-to-go/go` and `verification/logos/go` are entries of `oneOfAKindRules`. 84 of the 127 production packages are classified by their role. 43 keep an explicit entry: 31 in `foundationRules` and 12 in `oneOfAKindRules`.
+- **Order.** The move was first prepared as draft pull request #231 on top of open pull request #204. #231 is closed. The move went to `main` first, because a misplaced responsibility moves before an addition ([AC-10](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-10)), and #204 rebases onto it. The reasons are in a [comment on #204](https://github.com/Bitspark/bittype/pull/204#issuecomment-6812747024).
+- **Qualification, by the author of #246.** `go build ./...` and `go vet ./...` pass. `go test ./... -count=1` has the same outcome per package and per test on the branch and on `main` at `3c3b748`, apart from one new line for the new package, which has no test files. The tests that need the pinned TypeScript and the Rust helper fail on the author's workstation in both runs. A program that is not committed rendered the two contract values and the analysis contract's resolution requirement before and after: 2522 bytes each, with the same SHA-256. Six seeded forbidden imports each failed `TestProductionArchitecture`. This entry states no result of the hosted checks or of an independent review of #246.
+- **Documents.** `AGENTS.md`, `LAYOUT.md`, [package boundaries](docs/package-boundaries.md), [native semantics](docs/native-semantics.md), the [type-system architecture](docs/type-system-architecture.md) and the two index tables follow the move. The generated provider tables change through their workflow.
+
+Not done:
+
+- Go has no `AnalysisContractFor(settings)`. It arrives with open pull request #204.
+- Five horos-owned keys are still spelled inline in `internal/horosfiles` and `transform/syntax/horos/source/go`. [#220](https://github.com/Bitspark/bittype/issues/220) stays open for them, and so does [#218](https://github.com/Bitspark/bittype/issues/218).
+- The profile gate and the profile names ([#216](https://github.com/Bitspark/bittype/issues/216), [bittype/ACX-008](docs/architecture-cases/0008-structural-profile-gate.md)) and what a mapping's `Expand` returns ([#196](https://github.com/Bitspark/bittype/issues/196), item 6) are unchanged.
+- Three candidates are not confirmed: the thirteen same-language `Check` and `Parse` calls ([#218](https://github.com/Bitspark/bittype/issues/218)), the `Self` rule (a question for #216) and `CheckSingleScope` (with [#161](https://github.com/Bitspark/bittype/issues/161)).
+
 ## horos descriptor operators, term encoding and profile names owned by the vocabulary package — 12 November 2026
 
 Three more names that a writer and a separate reader have to agree on have one owner, `semantics/horos/go`. They were found with the five keys of [#220](https://github.com/Bitspark/bittype/issues/220), under the plan in [#218](https://github.com/Bitspark/bittype/issues/218). It is a move: each key value, each string, the published semantic graph and the generated output are byte-identical before and after.
