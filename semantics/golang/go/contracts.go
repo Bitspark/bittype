@@ -21,7 +21,7 @@ func ResolutionContract() resolution.Contract {
 }
 
 // AnalysisContract is the contract of the first Go profile's analysis. It
-// requires resolution under the base Configuration.
+// requires resolution under Configuration.
 func AnalysisContract() analysis.Contract {
 	c := ResolutionContract().Semantic
 	c.Profile = AnalysisProfile
