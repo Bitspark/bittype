@@ -464,7 +464,7 @@ transform/syntax/horos-to-<native>/mapping/<name>/go/  independently selected ma
 
 Consumers register source, target and mapping libraries, then request source roots and an output identity. The kernel plans fixed native intent; Run constructs ASTs without invoking a mapping. The [construction SPI](docs/kernel-composition.md) gives the public interfaces and a Horos to TypeScript example.
 
-The [naming design](docs/naming.md) is accepted and not implemented. Today the `naming` and `declarations` packages above spell every target's names. Under the design generation records a naming intent, and each language owns its realization: its reserved words, in Go the case of a name, and in its Files stage the collisions of a placed scope. The design names one new package, a Go-owned one for the Go spellings, which [#274](https://github.com/Bitspark/bittype/issues/274) adds. No path in this layout has changed.
+The [naming design](docs/naming.md) is accepted and not implemented. Today the `naming` and `declarations` packages above spell every target's names. Under the design generation records a naming intent, and each language owns its realization: its reserved words, in Go the case of a name, and in its Files stage the collisions of a placed scope. The design names one new package, a Go-owned one for Go's check of a spelled name, which [#274](https://github.com/Bitspark/bittype/issues/274) adds. No path in this layout has changed.
 
 The [Syntax and Files design](docs/source.md) is implemented with
 `Syntax : CST : AST` and `Files : Source : Semantics`. Both dimension names are

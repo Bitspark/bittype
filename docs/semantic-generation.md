@@ -195,12 +195,15 @@ distinct from a consumer explicitly requesting a declaration as a public root. T
 or C++ namespace remain separate from canonical module identity. This mapping
 performs no implicit filesystem or network IO.
 
-**Naming design, 12 November 2026. Accepted, not implemented.** The two
+**Naming design, 13 November 2026. Accepted, not implemented.** The two
 paragraphs above describe what generation writes today. The
-[naming design](naming.md) changes who decides a name: generation records a
-naming intent, which is the mapping's chosen name and, apart from it, its
-qualification, and each language realizes the spelling. No target has changed
-a name. Three statements above change when [#274](https://github.com/Bitspark/bittype/issues/274) delivers it:
+[naming design](naming.md) changes who decides what about a name. The mapping
+spells it under a policy that the consumer's composition selects. Generation
+records that as a naming intent: the chosen name, the module's identity, the
+policy's identity and the spelling. Each language checks the spelling under
+its own rules, and publishes it or refuses. No target has changed a name.
+These statements change when [#274](https://github.com/Bitspark/bittype/issues/274) and the first Files slices of Go
+and Rust ([#161](https://github.com/Bitspark/bittype/issues/161), [#159](https://github.com/Bitspark/bittype/issues/159)) deliver it:
 
 - **The module-pin prefix is today's default, and nothing can select another
   rule.** It becomes one of two policies that the consumer's composition
@@ -217,16 +220,24 @@ a name. Three statements above change when [#274](https://github.com/Bitspark/bi
   shared rule makes for every target today, moves to the C++ target.
   [Reserved words](naming.md#reserved-words).
 - **Every declaration name is capitalized, so every generated Go declaration
-  is exported.** The capitalised form stays the mapping's chosen name. In Go
-  the case of a name is its visibility, which the Go Files stage realizes: it
-  will export a requested root and a helper that its contribution states
-  public, and refuse an output with an unexposed dependency.
+  is exported.** The capital stays the mapping's style for every target and
+  decides no access. Go gets its own check: Go Files will refuse a
+  declaration that requires public access and whose spelling is not exported,
+  and an output with an unexposed dependency. It renames nothing.
   [Go](naming.md#go) ·
   [bittype/ACX-004](architecture-cases/0004-generation-file-syntax.md).
+- **Name collisions and parameter shadowing fail for the whole output.** Both
+  are the flat-name rule. It leaves a target when that target's Files stage
+  checks collisions in a placed scope, and a type parameter that captures a
+  use is then refused for that placement
+  ([delivery order](naming.md#delivery-order-per-target)). The sentence below
+  that "Go reserves `BittypeOptional`" is today an effect of the same rule.
 
-The refusal of two equal names in one output leaves a target when its Files
-stage checks collisions in a placed scope
-([delivery order](naming.md#delivery-order-per-target)).
+The sentence above that the version stays `/1` because the generated output
+did not change is about the renaming of the profile identities. A change of a
+target's default policy changes names and no promise of a profile. The design
+says when each lands
+([What is fixed, and when](naming.md#what-is-fixed-and-when)).
 
 Go reserves `BittypeOptional` for its generated support declaration. C++ references
 use the configured qualified namespace; that namespace cannot be `std` or another
