@@ -16,22 +16,28 @@ type Attribute struct {
 	Required bool
 	Accept   func(string) bool
 }
-type Role struct {
+type Role[L any] struct {
 	Name     string
 	Min, Max int
-	Kinds    []string
+	Kinds    []ast.Kind[L]
 }
-type Rule struct {
+type Rule[L any] struct {
 	Attributes map[string]Attribute
-	Roles      []Role
+	Roles      []Role[L]
 	Reference  bool
 }
-type Rules map[string]Rule
+
+// Rules is one language's admission table. Its keys and the kinds of its roles
+// are that language's node kinds, so a table of one language cannot be applied
+// to a tree of another. Role and attribute names are strings.
+type Rules[L any] map[ast.Kind[L]]Rule[L]
 
 func Attr(required bool, accept func(string) bool) Attribute { return Attribute{required, accept} }
-func One(name string, kinds ...string) Role                  { return Role{name, 1, 1, kinds} }
-func Opt(name string, kinds ...string) Role                  { return Role{name, 0, 1, kinds} }
-func Many(name string, min int, kinds ...string) Role        { return Role{name, min, -1, kinds} }
+func One[L any](name string, kinds ...ast.Kind[L]) Role[L]   { return Role[L]{name, 1, 1, kinds} }
+func Opt[L any](name string, kinds ...ast.Kind[L]) Role[L]   { return Role[L]{name, 0, 1, kinds} }
+func Many[L any](name string, min int, kinds ...ast.Kind[L]) Role[L] {
+	return Role[L]{name, min, -1, kinds}
+}
 func Set(values ...string) func(string) bool {
 	return func(s string) bool {
 		for _, v := range values {
@@ -71,17 +77,17 @@ func Attributes(pairs ...any) map[string]Attribute {
 	return m
 }
 
-func Check[L any](tree ast.AST[L], root string, rules Rules) error {
+func Check[L any](tree ast.AST[L], root ast.Kind[L], rules Rules[L]) error {
 	if err := check.Structure(tree); err != nil {
 		return err
 	}
-	if string(tree.Nodes[tree.Root-1].Kind) != root {
+	if tree.Nodes[tree.Root-1].Kind != root {
 		return text.AtNode(tree, tree.Root, "wrong root kind")
 	}
 	for i, n := range tree.Nodes {
 		id := ast.NodeID(i + 1)
 		bad := func(message string) error { return text.AtNode(tree, id, message) }
-		rule, ok := rules[string(n.Kind)]
+		rule, ok := rules[n.Kind]
 		if !ok {
 			return bad("unsupported node kind: " + string(n.Kind))
 		}
@@ -113,7 +119,7 @@ func Check[L any](tree ast.AST[L], root string, rules Rules) error {
 			}
 			last = index
 			counts[index]++
-			childKind := string(tree.Nodes[c.Node-1].Kind)
+			childKind := tree.Nodes[c.Node-1].Kind
 			allowed := false
 			for _, kind := range rule.Roles[index].Kinds {
 				if kind == childKind {
