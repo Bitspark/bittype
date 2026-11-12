@@ -101,8 +101,7 @@ baseline.
 | **ontos** | The value model under horos. A value is an atom (a byte string) or a tuple (an ordered sequence of values). It plays no further part in this document. | Go, Rust, TypeScript |
 | **horos** | A type language whose types are ontos values. It has a declaration language with **modules**, generic declarations and imports. A module is identified by a **pin**, the SHA-256 digest of its canonical content, written as 64 hexadecimal digits. An import names a module by its pin. | Go, Rust, TypeScript |
 | **bittype** | A Go library. It parses and analyzes horos source, and it generates native type declarations for TypeScript, Go, Rust and C++. Its native syntax covers type declarations only, not executable code. | Go; emits TypeScript, Go, Rust, C++ |
-| **logos** | A separate proof language used elsewhere in the project. It appears here only as a name in a quoted sentence. | — |
-| **Consumers** | Applications that link bittype as a library, register the parts they want, and call generation and Files. The first consumers are the build steps of four network services of the surrounding platform. | Go |
+| **Consumers** | Applications that link bittype as a library, register the parts they want, and call generation and Files. The first intended consumers are the builds of four network services of the surrounding platform. | Go |
 
 A horos example used throughout, with the declarations a consumer asks for:
 
@@ -179,10 +178,11 @@ times with different placements.
 - **Targets.** TypeScript first, Go next. Rust and C++ types are generated
   today; their Files stages must remain possible without reshaping the shared
   parts.
-- **Sizes.** A generation output holds tens to a few hundred declarations. The
-  Files dimension defaults to at most 256 files. The Go semantic profile
-  accepts at most 16 captured files per analysis. The Rust semantic profile
-  accepts one captured source file, which may contain inline modules.
+- **Sizes.** We expect a generation output to hold tens to a few hundred
+  declarations. The Files dimension defaults to at most 256 files. The Go
+  semantic profile accepts at most 16 captured files per analysis. The Rust
+  semantic profile accepts one captured source file, which may contain inline
+  modules.
 - **People.** One human owner decides for all repositories involved. Each
   repository is maintained by AI coding-agent sessions, several working in
   parallel. Clear ownership and additive composition are therefore hard
@@ -474,7 +474,10 @@ configuration, including a placement, travels through shared code that must
 not interpret it. `semantic.Snapshot` is the immutable capture (section 1.2),
 and `semantic.Result` is a receipt. `representation.Language` is a language
 descriptor: a language ID, a profile name and the marker type.
-`a.Compatible(b)` holds only if all three are equal.
+`a.Compatible(b)` holds only if all three are equal. `cst.CST[L]` is the
+concrete syntax tree that formatting produces and printing consumes.
+`check.Checker` is a handle on a language's syntax checker.
+`representation.ASTSet` is a set of trees of one language with an entry node.
 
 ### 3.2 What generation produces
 
@@ -598,6 +601,13 @@ type, and `Compile` collects those into `Assembly.ExternalUses`. Finally the
 target's `Finish(declarations)` wraps the declaration nodes in the root node.
 That `Finish` call is where Go writes its package and C++ its namespace
 (sections 3.7 and 3.10). Section 3.9 shows the name rules inside `Compile`.
+
+In the target excerpts below, `b.Node(m.Node(kind, attributes, origin),
+children…)` creates one node, `m.Attributes("name", x, …)` builds its attribute
+list from name and value pairs, and `edges(role, fragments)` turns node
+fragments into child edges with one role. The plan a target receives is a
+`g.Program`: a list of planned declarations, each with a numeric `ID` and a
+`Description` holding its `Name`, its type `Parameters` and its body.
 
 ### 3.4 The shared generated-Files contract
 
@@ -767,7 +777,11 @@ func (o Organization) Setting() (semantic.Setting, error) {
 
 **Its admission** is private to the same package. `p.tops` is the set of
 top-level declaration sites of the input, and `p.original` is the organization
-an already placed program has (empty for generation output):
+an already placed program has (empty for generation output). `imports` is a
+private TypeScript helper package: `imports.Attr` reads an attribute,
+`imports.AddNode` appends a node, `imports.SetName` sets the name attribute,
+and `imports.Export{Module, Name}` names an export of a module. `ref(tree,
+node)` builds a site:
 
 ```go
 // format/files/typescript/provider/go/placement.go:168-210
@@ -885,10 +899,11 @@ func generatedProgram(ctx context.Context, output g.Output) (*program, error) {
 }
 ```
 
-`symbol` is the formatter's record of a destination: a local site, an external
-`{Module, Name}`, or a compiler builtin. After this, every type reference has
-an intended destination, or formatting fails ("type reference lacks native
-binding").
+`tssymbol.ReadExternal` asks the TypeScript symbol issuer to read the opaque
+symbol back as `{Module, Name}`. `symbol` is the formatter's record of a
+destination: a local site, an external `{Module, Name}`, or a compiler
+builtin. After this, every type reference has an intended destination, or
+formatting fails ("type reference lacks native binding").
 
 **Relocation, with a collision check per placed scope.** Declarations are
 copied into one new tree per unit. `layout.moved` maps every old site to its
@@ -1163,8 +1178,8 @@ returns "unsupported" for the external form), so Go generation reports no
 external use.
 
 **The compiler bridge** converts captured trees to Go's own `go/ast` and runs
-`go/types`. It refuses a root that is not a `file`, and it is the only reader
-of the package attribute besides the Syntax formatter:
+`go/types`. It refuses a root that is not a `file`, and it reads the package
+attribute, as the Syntax formatter does:
 
 ```go
 // internal/golangsem/bridge.go:360-366
@@ -1412,7 +1427,8 @@ func named() map[string]g.Attribute {
 ```
 
 The parser, however, produces only two values and no attribute at all for a
-private item. The formatter prints `pub` and `pub(crate)` and nothing else:
+private item. The Rust Syntax formatter prints `pub` and `pub(crate)` and
+nothing else:
 
 ```go
 // parse/syntax/rust/provider/go/parse.go:51-61, 190-192
@@ -1510,8 +1526,8 @@ library checking, dependencies from the compiler's own sysroot only. The
 supported fragment is "one captured source file with inline modules";
 "Imports and multi-file crates, dependency closures" are outside it. The
 profile "is qualified on Linux x86-64", and the helper is built only in the
-hosted Linux checks. A Rust Files formatter's check therefore runs only where
-the helper is provisioned.
+project's continuous integration on Linux. A Rust Files formatter's check
+therefore runs only where the helper is provisioned.
 
 ### 3.9 Name uniqueness as it is
 
@@ -1669,7 +1685,7 @@ its role (section 2.1). A Files formatter is a contribution at
 
 The generation contract and the Files identities are not in that list.
 TypeScript's formatter has them through a per-package extension, a mechanism
-the layout document reserves for the case "Languages differ":
+bittype's layout document reserves for the case "Languages differ":
 
 ```go
 // integration/go/architecture_test.go:280-282
@@ -1728,9 +1744,10 @@ Two cells in this table are the reason for question 4:
   result.
 - **Names are not identity.** Declarations and uses are identified by site.
   Files never renames a declaration; it chooses how a use is spelled.
-- **No discovery.** Providers do no disk or network IO. Dependency packages are
-  supplied as text by the consumer. Nothing is read from a module cache, a
-  registry or the standard library.
+- **No discovery.** Providers do no disk or network IO. Go and TypeScript
+  dependency packages are supplied as text by the consumer; nothing is read
+  from a module cache or a registry, and Go's standard library is not
+  available. Rust sees only the pinned compiler's own sysroot.
 - **Failure is total.** A placement that cannot be expressed fails without a
   partial Source. An inaccessible target is never made public to obtain a
   valid file.
@@ -1738,7 +1755,7 @@ Two cells in this table are the reason for question 4:
   change now. After the first release they cannot change without breaking
   consumers' code.
 - **The Rust helper builds on Linux only**, with a pinned compiler. Rust
-  checks run in the hosted checks, not on the developers' workstations.
+  checks run in continuous integration, not on the developers' workstations.
 - **Package roles.** A new `format/files/<language>/provider/go` package may
   import what section 3.11 lists. Shared packages import no contribution and
   no language vocabulary.
@@ -1957,3 +1974,86 @@ can realize between modules.
    package identity."
 5. "The unplaced set needs no semantics of its own. Only the placed result is
    analyzed."
+
+## 7. Questions for the expert
+
+For each question, principles and patterns from comparable systems, including
+what failed, are especially welcome. Such systems include multi-target code
+generators for schema and interface languages, compilers with separate layout
+and emission phases, and build systems that place generated code into packages
+or modules. Section 6.9 lists five hypotheses: where an answer bears on one,
+please say where it holds and where it breaks.
+
+1. **The placement input.** A consumer places one generated set of
+   declarations into files and native scopes. The scope is the file itself in
+   TypeScript, a named package per directory in Go, a module path in Rust
+   (several per file) and a namespace in C++ (several per header, independent
+   of the path). How would you factor a placement input into a
+   language-neutral part and a language part, so that later targets and
+   layouts are pure additions? Our leaning (6.4, 6.5) is one shared carrier
+   whose entries assign declaration sites to a file and a scope, with the
+   assignment rules admitted once by the shared contract and the scope type
+   and its path rules supplied per language. Today each formatter owns a
+   private type and a private copy of those rules (3.5, 3.6). How do
+   comparable systems draw this line? Which facts belong to the dependency
+   environment (module root, crate name, dependency packages) and which to the
+   placement? What must the first version already carry so that several
+   modules in one file, several packages and namespaces need no change to it?
+
+2. **Names and scopes.** Today every target requires all generated names to be
+   unique in one flat scope, the shared constructor enforces the same rule a
+   second time, and a module-pin prefix exists only to make the rule
+   satisfiable (3.9). Once the consumer's placement decides scopes, how would
+   you divide responsibility for name collisions between generation and the
+   per-language Files stage, and what should generation still guarantee about
+   names: stability under placement, determinism, the ability to co-locate
+   everything? Our leaning (6.3) is that collisions belong to the placed scope
+   and therefore to Files alone, while names stay with generation; the
+   accepted TypeScript correction kept both rules. How have comparable
+   generators evolved a naming policy that existed only to make one flat scope
+   work, and how should exposure be handled in a language where visibility is
+   the spelling of the name? Nothing is released yet, so this is the last
+   point at which names can change freely.
+
+3. **Unplaced output as syntax.** Generated output is a checked syntax tree in
+   the target language's own vocabulary before any file exists, and the same
+   language and checker serve it and the placed source (3.2, 3.4). In
+   TypeScript and Rust the top production is a sequence of items, so the
+   unplaced tree is already a legal root. In Go a source file requires a
+   package clause, and in C++ placed declarations sit inside namespaces, so
+   there the unplaced set is a part of the top production and not an instance
+   of it. How do systems with typed syntax trees represent declarations that
+   are not yet placed, and what invariants should the placed root and the
+   unplaced root keep towards each other and towards their readers (checker,
+   printer, compiler bridge)? Our leaning (6.2) is a second root kind in the Go
+   vocabulary for a bare declaration sequence, which every file-level tool
+   refuses. The alternatives are an optional package on the file node, one
+   tree per declaration, or a carrier outside the syntax tree. Which ages best
+   when C++ arrives, and is there a better shape?
+
+4. **Evidence for a moved decision.** Each move must come with a check that
+   the placed program means what generation intended. The project holds that
+   printing, compiler acceptance and equality with the formatter's own
+   recomputed tree do not by themselves establish that (2.1, AC-07; 3.5 shows
+   TypeScript's three-part check). For three decisions the published compiler
+   facts contain nothing to compare against: the Go package name (3.7), Rust
+   item visibility (3.8), and the destination of Go's predeclared `string` and
+   `bool`, which are shadowable identifiers recorded without intent. How would
+   you design the minimal sound evidence for "the placed program means what
+   generation intended"? Which facts should a compiler bridge publish? Which
+   properties can soundly be established by reconstruction, which follow from
+   compiler acceptance alone, and which need an independent fact? And how
+   should a first slice that admits only one package or one module be set up
+   so that its check already observes the decision it moves (section 4)? Our
+   leanings are in 6.6 to 6.8.
+
+5. **Open.** What should we know that these questions do not ask? In your
+   experience with separating generation from placement, what tends to be
+   discovered late and then forces a change of the first delivered interface?
+   Examples of where we suspect such surprises: adding targets one at a time;
+   a consumer placing one generated set in two different layouts, or into a
+   package or module that also holds hand-written code the Files stage never
+   sees; visibility and exposure across module boundaries, including
+   re-exports and visibility narrower than public; cyclic dependencies between
+   placed units, declaration order and completeness in C++. Anything we did
+   not think to ask is welcome.
