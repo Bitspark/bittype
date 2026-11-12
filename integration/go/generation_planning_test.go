@@ -17,8 +17,8 @@ import (
 	n "github.com/Bitspark/bittype/semantics/typescript/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
-	mappings "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
+	patterns "github.com/Bitspark/bittype/transform/syntax/horos/mapping/pattern/go"
 	src "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	model "github.com/Bitspark/bittype/transform/syntax/typescript/model/go"
@@ -54,7 +54,7 @@ func planningEngine(t *testing.T, root core.Value, deps ...core.Value) (*engine.
 		t.Fatal(err)
 	}
 	builds := &atomic.Int32{}
-	request, err := genfixture.Request(e.Generation(), input, to, "planned-output", countedTarget{builds: builds}, mappings.Libraries(rules.RepresentationProfile)...)
+	request, err := genfixture.Request(e.Generation(), input, to, "planned-output", countedTarget{builds: builds}, typescriptLibraries(rules.RepresentationProfile)...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -243,7 +243,7 @@ func TestMappingRegistrationFreezesDescriptionAndSlots(t *testing.T) {
 	e, q, _ := planningEngine(t, paginationModule())
 	from := q.Input.Source.Language()
 	slot := g.TypeSlot("E")
-	pattern, err := rules.Element(from, slot)
+	pattern, err := patterns.Element(from, slot)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -271,7 +271,7 @@ func TestPlanningExpansionScopeAndNoFallback(t *testing.T) {
 			_, _, input := generationInput(t, paginationModule())
 			var saved g.Expansion[h.Language, ts.Language, src.Reader]
 			library := tsContribution(func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, src.Reader], error) {
-				pattern, err := rules.Pattern(from, "list-of", "")
+				pattern, err := patterns.Head(from, "list-of", "")
 				return g.MappingDescription[h.Language, ts.Language, src.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, src.Reader]{{ID: "expansion", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, ts.Language, src.Reader]) (g.Expression[ts.Language], error) {
 					saved = r
 					u, err := r.Use()
@@ -331,7 +331,7 @@ func TestPlanFreezesExpandedNativeRepresentation(t *testing.T) {
 	readonly := false
 	calls := 0
 	library := tsContribution(func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, src.Reader], error) {
-		pattern, err := rules.Pattern(from, "list-of", "")
+		pattern, err := patterns.Head(from, "list-of", "")
 		return g.MappingDescription[h.Language, ts.Language, src.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, src.Reader]{{ID: "chosen", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, ts.Language, src.Reader]) (g.Expression[ts.Language], error) {
 			calls++
 			source, err := r.Reader()

@@ -13,8 +13,8 @@ import (
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
+	n "github.com/Bitspark/bittype/semantics/horos/go"
 	"github.com/Bitspark/bittype/source/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -205,7 +205,7 @@ func Organization(units []source.Unit[s.Language]) ([]source.Group, []source.Rel
 				if child.Role == s.RoleImport {
 					to := locations[attr(tree, child.Node, s.AttributePin)]
 					if to == "" {
-						if attr(tree, child.Node, s.AttributePin) == resolve.PreludePin() {
+						if attr(tree, child.Node, s.AttributePin) == n.PreludePin() {
 							continue
 						}
 						return nil, nil, source.ErrInvalid

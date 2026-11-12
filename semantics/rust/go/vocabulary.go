@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
+	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/semantics/go"
 )
@@ -34,6 +35,26 @@ func MatchesConfiguration(settings []semantic.Setting) bool {
 func Requirements() []semantic.Requirement {
 	return []semantic.Requirement{{Obligation: Coverage(), Verdict: semantic.Holds}, {Obligation: Bindings(), Verdict: semantic.Holds}, {Obligation: Validity(), Verdict: semantic.Holds}}
 }
+
+// ResolutionContract is the contract of the captured Rust resolution profile.
+// Resolver and consumers agree on this one value.
+func ResolutionContract() resolution.Contract {
+	c := semantic.Contract{Profile: ResolutionProfile, SemanticsRequirements: Requirements()}
+	for _, key := range []semantics.Key{Coverage(), Bindings(), Validity()} {
+		c.Obligations = append(c.Obligations, semantic.Obligation{Key: key, Domain: Key("captured-program")})
+	}
+	return resolution.Contract{Semantic: c, Bindings: Bindings()}
+}
+
+// AnalysisContract is the contract of the captured Rust analysis profile. It
+// carries the resolution contract's obligations and requires a receipt of the
+// resolution profile under the pinned configuration.
+func AnalysisContract() analysis.Contract {
+	c := ResolutionContract().Semantic
+	c.Profile = AnalysisProfile
+	return analysis.Contract{Semantic: c, Resolution: &resolution.Requirement{Profile: ResolutionProfile, Configuration: Configuration()}}
+}
+
 func Evidence() semantic.EvidenceRequirement {
 	return semantic.EvidenceRequirement{Operation: analysis.Kind(), Profile: AnalysisProfile, Configuration: Configuration(), Reports: Requirements(), Semantics: true}
 }

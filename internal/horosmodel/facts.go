@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/Bitspark/bittype/semantics/go"
+	n "github.com/Bitspark/bittype/semantics/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 	codec "github.com/bitspark/ontos/codec/go"
@@ -23,7 +24,7 @@ func (e *exporter[L]) provider(name string, value core.Value, operands []semanti
 	if err != nil {
 		return 0, err
 	}
-	term := semantics.Term{Kind: semantics.ProviderExpression, Operator: e.frontend.key(name), Encoding: semantics.Key{Owner: "ontos", Name: "codec-v1"}, Data: codec.Encode(value), Operands: operands}
+	term := semantics.Term{Kind: semantics.ProviderExpression, Operator: n.Key(name), Encoding: semantics.Key{Owner: "ontos", Name: "codec-v1"}, Data: codec.Encode(value), Operands: operands}
 	if err := e.fillTerm(id, term); err != nil {
 		return 0, err
 	}
@@ -92,7 +93,7 @@ func (e *exporter[L]) memberships(subject semantics.Subject, memberships []decl.
 		if err != nil {
 			return err
 		}
-		if err := e.fact(subject, e.frontend.MembershipRelation(), value); err != nil {
+		if err := e.fact(subject, n.MembershipRelation(), value); err != nil {
 			return err
 		}
 	}
@@ -103,7 +104,7 @@ func (e *exporter[L]) identity(subject semantics.Subject, name string, value cor
 	if err != nil {
 		return err
 	}
-	return e.fact(subject, e.frontend.IdentityRelation(), term)
+	return e.fact(subject, n.IdentityRelation(), term)
 }
 func (e *exporter[L]) moduleIdentity(id semantics.EntityID, pin decl.Digest) error {
 	return e.identity(semantics.Subject{Entity: id}, "module", core.NewAtom(pin[:]))

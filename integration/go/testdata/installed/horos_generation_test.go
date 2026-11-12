@@ -20,9 +20,14 @@ import (
 	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
 	syntaxprint "github.com/Bitspark/bittype/print/syntax/shared/provider/go"
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
+	"github.com/Bitspark/bittype/semantics/horos/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
-	generate "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/go"
+	tsboolean "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/boolean/go"
+	tsdeclarations "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/declarations/go"
+	tslist "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/list/go"
+	tsrecord "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/record/go"
+	tstext "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/text/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	reader "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
@@ -64,14 +69,14 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	resolver, err := resolution.NewResolver[h.Language](from, resolve.Contract(), resolve.Provider{})
+	resolver, err := resolution.NewResolver[h.Language](from, horos.ResolutionContract(), resolve.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err = e.RegisterResolver(resolver); err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[h.Language](from, analyze.Contract(), analyze.Provider{})
+	analyzer, err := analysis.NewAnalyzer[h.Language](from, horos.AnalysisContract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +107,13 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 	if err = c.RegisterTarget(registry, to, target.Provider{}); err != nil {
 		t.Fatal(err)
 	}
-	for _, library := range generate.Libraries(rules.RepresentationProfile) {
+	for _, library := range []g.MappingLibrary[h.Language, ts.Language, reader.Reader]{
+		tstext.Library(rules.RepresentationProfile),
+		tsboolean.Library(rules.RepresentationProfile),
+		tslist.Library(rules.RepresentationProfile),
+		tsrecord.Library(rules.RepresentationProfile),
+		tsdeclarations.Library(rules.RepresentationProfile),
+	} {
 		if _, err := c.RegisterMapping(registry, from, to, library); err != nil {
 			t.Fatal(err)
 		}

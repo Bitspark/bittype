@@ -62,6 +62,7 @@ language: `analyze/files/horos/provider/go` is Go code implementing analysis for
 | [syntax/horos/go](../syntax/horos/go/nodes.go) and [check/syntax/horos/provider/go](../check/syntax/horos/provider/go/check.go) | Horos AST vocabulary and syntax admission |
 | [resolve/files/horos/provider/go](../resolve/files/horos/provider/go/resolver.go) | Registered resolution, authoritative fact export and explicit canonical-value helpers |
 | [analyze/files/horos/provider/go](../analyze/files/horos/provider/go/analyze.go) | Consume explicit resolution evidence and reuse its immutable model |
+| [semantics/horos/go](../semantics/horos/go/vocabulary.go) | The horos semantic identities: roles, relations, profiles, the limits setting, the prelude pin and the resolution and analysis contracts |
 | [internal/horosmodel](../internal/horosmodel) | Private decoding and correspondence between current AST sites and the authoritative model, used by the resolver |
 | External horos and ontos packages | Horos owns declaration/type rules; Ontos owns values and encoding |
 
@@ -182,8 +183,9 @@ error and no usable result; they do not use the table's diagnostic-result path.
 
 ### 5. Query the published facts
 
-At the Page callee reference, `pageTarget` uses `resolve.TargetRole()`. At
-the containing application, `pageExpression` uses `resolve.ExpressionRole()`.
+At the Page callee reference, `pageTarget` uses `horos.TargetRole()`. At
+the containing application, `pageExpression` uses `horos.ExpressionRole()`.
+Here `horos` is the vocabulary package `semantics/horos/go`.
 Both ordinals are 0, but their AST sites differ. The following query arguments
 are symbolic labels for actual occurrences and IDs in this result:
 
@@ -192,7 +194,7 @@ are symbolic labels for actual occurrences and IDs in this result:
 | Which declaration does this use denote? | `Resolve(pageTarget)` | Page's entity ID |
 | Which expression was established here? | `TermAt(pageExpression)` | The term ID of the Page application shown above |
 | What fills each generic slot? | `DirectParameterBindings(pageApplicationTermID)` | One pair: Page.T's entity ID and the Person reference's term ID |
-| Which declarations does PeoplePage reference? | `DependenciesFrom(peoplePageID, resolve.ReferenceDependency())` | Edges to Page and Person, each with its reference occurrence |
+| Which declarations does PeoplePage reference? | `DependenciesFrom(peoplePageID, horos.ReferenceDependency())` | Edges to Page and Person, each with its reference occurrence |
 
 `Entity(id)` and `Term(id)` inspect the referenced records. Consumers can also
 enumerate the established occurrences in `Semantics.Data()` instead of constructing

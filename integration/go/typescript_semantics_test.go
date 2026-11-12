@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	analyze "github.com/Bitspark/bittype/analyze/files/typescript/provider/go"
+	queries "github.com/Bitspark/bittype/analyze/files/typescript/queries/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
@@ -30,9 +31,9 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-func tsCompiler(t *testing.T) resolve.Compiler {
+func tsCompiler(t *testing.T) n.Compiler {
 	t.Helper()
-	c := resolve.Compiler{NodePath: os.Getenv("BITTYPE_TYPESCRIPT_NODE"), TypeScriptPath: os.Getenv("BITTYPE_TYPESCRIPT_MODULE")}
+	c := n.Compiler{NodePath: os.Getenv("BITTYPE_TYPESCRIPT_NODE"), TypeScriptPath: os.Getenv("BITTYPE_TYPESCRIPT_MODULE")}
 	if err := c.Validate(); err != nil {
 		t.Fatal("Provision the pinned TypeScript compiler and set BITTYPE_TYPESCRIPT_NODE and BITTYPE_TYPESCRIPT_MODULE:", err)
 	}
@@ -88,7 +89,7 @@ func tsResults(t *testing.T, snapshot semantic.Snapshot) (semantic.Result, seman
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +147,7 @@ func qualifyTypeScript(t *testing.T) {
 	if _, err = e.Analyze(ctx, input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -382,7 +383,7 @@ func TestTypeScriptSemanticScopeAndSourceCorrespondence(t *testing.T) {
 func TestTypeScriptSemanticReceiptsAndLimits(t *testing.T) {
 	snapshot, trees, source := tsCapture(t, "type Box<T> = {value:T};")
 	resolved, result := tsResults(t, snapshot)
-	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), analyze.Contract(), analyze.Provider{})
+	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyze.Provider{})
 	resolver, _ := resolve.New(snapshot.Language(), tsCompiler(t))
 	for name, input := range map[string]analysis.Input{
 		"missing":    {Snapshot: snapshot, Options: semantic.Options{Configuration: n.Configuration()}},
@@ -408,7 +409,7 @@ func TestTypeScriptSemanticReceiptsAndLimits(t *testing.T) {
 			t.Fatal("foreign environment", err)
 		}
 	}
-	if _, err := resolve.New(snapshot.Language(), resolve.Compiler{}); err == nil {
+	if _, err := resolve.New(snapshot.Language(), n.Compiler{}); err == nil {
 		t.Fatal("implicit compiler")
 	}
 	canceled, cancel := context.WithCancel(context.Background())
@@ -441,7 +442,7 @@ func TestTypeScriptSemanticAssignability(t *testing.T) {
 	m := tsModel(t, `type Narrow = {x:string; y:boolean}; type Wide = {x:string};
 type Optional = {x?:string}; type ExplicitUndefined = {x:string|undefined};
 type Letters = "a" | "b"; type One = "a"; type Text = string;`)
-	q, err := analyze.NewQueries(m, tsCompiler(t))
+	q, err := queries.NewQueries(m, tsCompiler(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -462,7 +463,7 @@ type Letters = "a" | "b"; type One = "a"; type Text = string;`)
 	if _, err := q.Assignable(context.Background(), n.Type{}, tsType(t, m, "Text")); !errors.Is(err, n.ErrForeign) {
 		t.Fatal("zero argument", err)
 	}
-	if _, err := analyze.NewQueries(n.Model{}, tsCompiler(t)); !errors.Is(err, n.ErrForeign) {
+	if _, err := queries.NewQueries(n.Model{}, tsCompiler(t)); !errors.Is(err, n.ErrForeign) {
 		t.Fatal("zero model", err)
 	}
 	canceled, cancel := context.WithCancel(context.Background())
@@ -474,7 +475,7 @@ type Letters = "a" | "b"; type One = "a"; type Text = string;`)
 
 func TestTypeScriptSemanticConcurrentQueries(t *testing.T) {
 	m := tsModel(t, "type Box = {value:string}; type Read = {value:string};")
-	q, err := analyze.NewQueries(m, tsCompiler(t))
+	q, err := queries.NewQueries(m, tsCompiler(t))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,5 +1,62 @@
 # Changelog
 
+## Import rules by role and the independent review — 12 November 2026
+
+The last step of the plan in [#218](https://github.com/Bitspark/bittype/issues/218) merged with [#244](https://github.com/Bitspark/bittype/pull/244), at `71bfec9`. It changes test code only. [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) records the correction, its qualification and what remains.
+
+- **Rules by role.** The architecture test derives a package's import rule from the role that its path gives (`integration/go/architecture_roles_test.go`). 78 of the 126 production packages are classified this way, and a new package of an existing role needs no edit to the test. 48 keep an explicit entry: 31 foundation and kernel packages in `foundationRules`, 9 packages of which there is only one in `oneOfAKindRules`, and 8 hand entries held for Go. The explicit entries for the foundation and kernel set were decided on #218 on 11 November 2026, because their layering among each other is a fact per package.
+- **New in the check.** A package that names a language imports no package of another language. Every allowance is checked for use: an entry and an extension per package, a role per shape. The check reads the files that build constraints exclude. A role grants `internal/<language>` and `internal/<language>sem` only where the imported package is that language's helper. The entries of deleted packages are gone.
+- **Independent review.** A reviewer that wrote none of the changes read the merged moves `d23542a..e83cf52` and found that they are moves. It found four defects in the check and in comments and none in moved code, and #244 corrected them. The review is recorded in a [comment on #218](https://github.com/Bitspark/bittype/issues/218#issuecomment-6809378108). Its programs are in a scratch directory on the workstation and not in the repository.
+- **Documents.** `LAYOUT.md` replaces its per-component dependency table with a role table. [Package boundaries](docs/package-boundaries.md) says how the test realises each of the six rules, what the check cannot establish and what the review covered. `AGENTS.md` says what adding a package needs.
+
+Not done:
+
+- Go's contract identities and Go's query service are still in its provider packages. Their move is draft pull request #231, stacked on open pull request #204. Two open entries of the exception table and the eight hand entries in the test wait for it.
+- Some horos-owned keys are still spelled inline ([#220](https://github.com/Bitspark/bittype/issues/220)).
+- The profile gate and the profile names ([#216](https://github.com/Bitspark/bittype/issues/216), [bittype/ACX-008](docs/architecture-cases/0008-structural-profile-gate.md)) and what a mapping's `Expand` returns ([#196](https://github.com/Bitspark/bittype/issues/196), item 6) are unchanged.
+- Three candidates are not confirmed: the thirteen same-language `Check` and `Parse` calls ([#218](https://github.com/Bitspark/bittype/issues/218)), the `Self` rule (a question for #216) and `CheckSingleScope` (with [#161](https://github.com/Bitspark/bittype/issues/161)).
+
+## Documents follow the divided common mapping package — 11 November 2026
+
+- `LAYOUT.md`, `AGENTS.md`, [generation](docs/generation.md), [kernel composition](docs/kernel-composition.md) and [type-owned mappings](docs/type-generation-plugins.md) list the adapter package and its siblings `pattern`, `declarations` and `naming` ([#238](https://github.com/Bitspark/bittype/pull/238)). The examples in [generation SPI](docs/generation-spi.md) and [generation planner](docs/generation-planner.md) call `patterns.Element`.
+
+## Package boundaries, first corrections — 11 November 2026
+
+Code changes that merged on 11 November 2026 under the plan in [#218](https://github.com/Bitspark/bittype/issues/218). The pull requests that moved code report byte-identical identity values and generated declarations before and after. [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) records the corrections, their qualification and what remains.
+
+- [#224](https://github.com/Bitspark/bittype/pull/224): tests reach each pair's mapping libraries and the verification laws through one seam file each under `integration/go` (`libraries_*_test.go`, `laws_golang_test.go`).
+- [#225](https://github.com/Bitspark/bittype/pull/225), closing [#219](https://github.com/Bitspark/bittype/issues/219): the architecture check names the exact symbols of every import of a stage provider package. An unused allowance, an unused exception and a dot import of a module package fail. Four package shapes are classified by their path. 94 unused allowances are removed from the per-package list.
+- [#226](https://github.com/Bitspark/bittype/pull/226), [#227](https://github.com/Bitspark/bittype/pull/227), [#230](https://github.com/Bitspark/bittype/pull/230), [#232](https://github.com/Bitspark/bittype/pull/232): each native mapping library is its own package, `transform/syntax/horos-to-<native>/mapping/<name>/go`, and exports `Library(profile)`. `Libraries(profile)` is deleted. For Go the consumer creates the helper key and passes it to `record.Library(profile, key)` and `optional.Library(profile, key)`.
+- [#228](https://github.com/Bitspark/bittype/pull/228): each horos-to-Go verification law is its own package, `verification/files/horos-to-go/mappings/{scalar,list,optional,record}/go`.
+- [#229](https://github.com/Bitspark/bittype/pull/229), [#233](https://github.com/Bitspark/bittype/pull/233), [#234](https://github.com/Bitspark/bittype/pull/234): the Rust, TypeScript and horos contract identities are published by `semantics/{rust,typescript,horos}/go` as `ResolutionContract()` and `AnalysisContract()`. `semantics/horos/go` is new and owns the horos roles, relations and profiles, the limits setting and the prelude pin. The TypeScript `Compiler` type moved to `semantics/typescript/go`.
+- [#233](https://github.com/Bitspark/bittype/pull/233): the TypeScript query service is `analyze/files/typescript/queries/go`.
+- [#238](https://github.com/Bitspark/bittype/pull/238): the common horos mapping package is divided. The adapter `Library` with the profile gate stays at `transform/syntax/horos/mapping/go`. `pattern`, `declarations` and `naming` are packages under `transform/syntax/horos/mapping/<name>/go`. `Pattern` is now `pattern.Head` and `Declarations` is now `declarations.Library`. The profile gate is unchanged ([#216](https://github.com/Bitspark/bittype/issues/216)).
+- The documents follow these changes, except #238: `LAYOUT.md` records the path form `<component>/<name>/go` for a component with several independently selectable contributions, and the examples in [kernel composition](docs/kernel-composition.md) and the [Page and Cell example](docs/page-cell-example.md) register each library.
+
+Not done:
+
+- Go's contract identities and Go's query service are still in its provider packages. Their move is draft pull request #231, stacked on open pull request #204.
+- The per-package list in the architecture test still classifies every package outside the four path shapes.
+- Some horos-owned keys are still spelled inline in `internal/horosfiles` and `transform/syntax/horos/source/go` ([#220](https://github.com/Bitspark/bittype/issues/220)).
+- What a mapping's `Expand` returns is unchanged ([#196](https://github.com/Bitspark/bittype/issues/196), item 6).
+
+## Package boundaries — 11 November 2026
+
+- Add [package boundaries](docs/package-boundaries.md): the difference between parts that are wrongly grouped in one package and contributions that are wrongly coupled, the question that separates them, what to look for, the findings of a scan at `3bf45c3`, the proposed import rules by role and the order of work ([#218](https://github.com/Bitspark/bittype/issues/218)). Nothing is implemented.
+- Add [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md): the mapping packages, the verification laws and two analysis provider packages group separate contributions, contract identities and horos names are published by provider packages, and the import check cannot see either ([#219](https://github.com/Bitspark/bittype/issues/219), [#220](https://github.com/Bitspark/bittype/issues/220), [#221](https://github.com/Bitspark/bittype/issues/221), [#222](https://github.com/Bitspark/bittype/issues/222)).
+- Record the owner's request of 11 November in `AGENTS.md`, and note in `LAYOUT.md`, [generation](docs/generation.md) and [representation families](docs/representation-families.md) what the current check does not establish and that the mapping split precedes the families.
+
+## Order of correction and the profile gate — 11 November 2026
+
+- Record the owner's 11 November direction in [ACX-004](docs/architecture-cases/0004-generation-file-syntax.md): each misplaced placement decision moves to its Files formatter first and coverage follows additively. The Go package clause ([#161](https://github.com/Bitspark/bittype/issues/161)) and Rust visibility ([#159](https://github.com/Bitspark/bittype/issues/159)) can start; C++ ([#160](https://github.com/Bitspark/bittype/issues/160)) is deferred until its semantic provider, with the reason. The Rust external path is recorded as a further pending instance. No correction is implemented.
+- Add [bittype/ACX-008](docs/architecture-cases/0008-structural-profile-gate.md): the shared horos mapping policy admits exactly one profile name, and that name is taken from the first fixture ([#216](https://github.com/Bitspark/bittype/issues/216)). Pending.
+- Note in [representation families](docs/representation-families.md) the two changes that precede the additive work, and that ontos delivered the expanded-size measure in v0.17.0.
+
+## Chain issues made startable — 10 November 2026
+
+- Record two further pending instances in ACX-004: the Go package clause and the C++ namespace are fixed by target configuration during generation, while the placement proposal takes each declaration's native scope from the consumer's placement ([#161](https://github.com/Bitspark/bittype/issues/161), [#160](https://github.com/Bitspark/bittype/issues/160)). No correction is implemented.
+- Point the delivery tables of [representation families](docs/representation-families.md) and [binding generation](docs/binding-generation.md) at the per-family issues split out of #165, the libraries/service and Content tracking issues, and the ordered plan in [#206](https://github.com/Bitspark/bittype/issues/206), which replaces #5.
+
 ## Go imported packages — 9 November 2026
 
 - The first Go profile accepts an explicit import environment (#168). Captured files form packages by their paths under a module, and supplied dependency packages are given as source in receipt identity. Packages are checked in import order through a closed importer, without module or standard-library discovery. Qualified type references bind to imported declarations; supplied declarations are exported by identity only. The base configuration is unchanged.

@@ -206,7 +206,7 @@ semantics/golang/go/                      immutable Go type facts and typed read
 resolve/files/golang/provider/go/                  bounded Go compiler-backed resolution
 analyze/files/golang/provider/go/                  explicit analysis and admission queries
 verification/files/horos-to-go/go/          scoped Horos/Go subjects and law composition
-verification/files/horos-to-go/mappings/go/  selected builtin representation laws
+verification/files/horos-to-go/mappings/<name>/go/  selected builtin representation laws, one package per law
 verification/logos/go/                     typed interpretations and direct Logos checking
 verification/integration/go/               TextBox/Page composition qualification
 ```

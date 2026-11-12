@@ -13,31 +13,9 @@ import (
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
 )
 
-// Compiler names explicitly provisioned executables. Constructors do no discovery
-// or installation; TypeScriptPath is the pinned package's lib/typescript.js.
-type Compiler struct {
-	NodePath       string
-	TypeScriptPath string
-}
-
-func (c Compiler) Validate() error {
-	if !typescriptsem.ValidCompiler(c.NodePath, c.TypeScriptPath) {
-		return semantic.ErrInvalidOperation
-	}
-	return nil
-}
-
 type Provider struct {
 	s.Language
-	Compiler Compiler
-}
-
-func Contract() resolution.Contract {
-	c := semantic.Contract{Profile: n.ResolutionProfile, SemanticsRequirements: n.Requirements()}
-	for _, key := range []semantics.Key{n.Coverage(), n.Bindings(), n.Validity()} {
-		c.Obligations = append(c.Obligations, semantic.Obligation{Key: key, Domain: n.Key("captured-program")})
-	}
-	return resolution.Contract{Semantic: c, Bindings: n.Bindings()}
+	Compiler n.Compiler
 }
 
 // bittype:scope docs/native-semantics.md#first-typescript-profile
@@ -80,9 +58,9 @@ func (p Provider) Resolve(ctx context.Context, request semantic.Request[s.Langua
 var _ resolution.Provider[s.Language] = Provider{}
 
 // New captures an explicitly provisioned compiler and constructs only resolution.
-func New(definition representation.Language, compiler Compiler) (resolution.Resolver, error) {
+func New(definition representation.Language, compiler n.Compiler) (resolution.Resolver, error) {
 	if err := compiler.Validate(); err != nil {
 		return resolution.Resolver{}, err
 	}
-	return resolution.NewResolver[s.Language](definition, Contract(), Provider{Compiler: compiler})
+	return resolution.NewResolver[s.Language](definition, n.ResolutionContract(), Provider{Compiler: compiler})
 }

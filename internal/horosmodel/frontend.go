@@ -16,7 +16,6 @@ type Program interface {
 }
 type Frontend[L any] struct {
 	DeclarationPrefix, DescriptorPrefix string
-	Owner, ResolutionProfile            string
 	ResolveModel                        func(core.Value, []core.Value, decl.Limits) (Program, error)
 	PinModel                            func(core.Value, decl.Limits) (decl.Digest, error)
 }

@@ -8,6 +8,7 @@ the implemented scope, not complete language coverage.
 | --- | --- | --- |
 | What belongs to Bittype? | [Charter](../CHARTER.md), [model boundary](model.md), [dependencies](dependencies.md) | Current scope and dependency rules |
 | Where does code belong? | [Layout](../LAYOUT.md) | Current stage/dimension/scope/component hierarchy |
+| What may depend on what, and what is one package? | [Package boundaries](package-boundaries.md), [layout role table](../LAYOUT.md#dependency-direction) | Implemented except for Go, state of 12 November 2026: provider imports named by symbol, one package per native mapping and per verification law, the common horos mapping package divided, vocabulary packages for the Rust, TypeScript and horos identities, and import rules derived from each package's role, with explicit entries for the foundation and kernel set and for one-of-a-kind packages. The merged moves are independently reviewed. Open: Go's identities and query service with eight hand entries in the test, and the inline horos keys ([#218](https://github.com/Bitspark/bittype/issues/218), ACX-009) |
 | What exists at each abstraction level? | [Contexts and typed relations](abstraction-levels.md) | Conceptual model, with a current-carrier correspondence table |
 | How do AST, CST, Files and Source relate? | [AST](ast.md), [text stages](parsing-formatting.md), [Files/Source](source.md) | Implemented carriers and role contracts; coverage varies by language |
 | What does the semantic graph establish? | [Semantics](semantics.md), [resolution](resolution.md), [analysis](analysis.md) | Implemented contracts; language-owned judgments |
@@ -23,7 +24,7 @@ the implemented scope, not complete language coverage.
 | What broader reasoning is proposed? | [Type-system model](type-system-model.md), [preservation reasoning](logos-preservation.md) | Language-owned theories; no new Bittype proof foundation |
 | What belongs above static types? | [Binding generation](binding-generation.md), [representation families](representation-families.md), [runtime values](runtime-values.md), [optional extensions](hydrated-types.md), [concept inventory](wire-extension-preservation.md) | Accepted ownership of binding generation (research 0014) and the family contract (research 0015); the selected plan, families and adapters are not implemented |
 | What is implemented and what has evidence? | [Provider matrix](providers.md), [language overview](language-support.md), [capability reports](capability-reports.md) | Generated source-derived reports; execution evidence is separate |
-| What architectural corrections remain? | [Generation gaps](generation-gaps.md), [case index](architecture-cases/README.md) | GEN-01's correction is independently verified; Rust/C++ Files ownership remains open; GEN-02 is an unsupported guarantee |
+| What architectural corrections remain? | [Generation gaps](generation-gaps.md), [case index](architecture-cases/README.md) | GEN-01's correction is independently verified; Rust, C++ and Go Files ownership remains open (ACX-004); the structural profile gate is open (ACX-008); GEN-02 is an unsupported guarantee |
 
 The exact implemented SPI belongs in its contract guide, with its source link.
 Conceptual guides explain responsibilities and refer to that definition rather

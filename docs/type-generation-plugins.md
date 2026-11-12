@@ -613,8 +613,9 @@ transform/syntax/shared/target/go/               native construction mechanics
 transform/syntax/<native>/model/go/              native semantic forms
 transform/syntax/<native>/target/go/             form-to-AST construction
 transform/syntax/horos/source/go/                source interpretation
-transform/syntax/horos/mapping/go/               common source declaration policy
-transform/syntax/horos-to-<native>/mapping/go/    representation descriptions
+transform/syntax/horos/mapping/go/               mapping adapter and profile names
+transform/syntax/horos/mapping/{pattern,declarations,naming}/go/  source patterns, declaration recipe, naming
+transform/syntax/horos-to-<native>/mapping/<name>/go/  representation descriptions, one package per mapping
 ```
 
 A real Cell library implements MappingLibrary in its own integration package.

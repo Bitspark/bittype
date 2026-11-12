@@ -4,21 +4,20 @@ import (
 	"context"
 	"strings"
 
-	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
-	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
+	n "github.com/Bitspark/bittype/semantics/horos/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 func Contract() transform.Contract {
-	return transform.Contract{Evidence: []semantic.EvidenceRequirement{{Operation: analysis.Kind(), Profile: analyze.Profile, Reports: analyze.Contract().Semantic.SemanticsRequirements, Semantics: true}}}
+	return transform.Contract{Evidence: []semantic.EvidenceRequirement{{Operation: analysis.Kind(), Profile: n.AnalysisProfile, Reports: n.AnalysisContract().Semantic.SemanticsRequirements, Semantics: true}}}
 }
 
 var (
@@ -63,24 +62,24 @@ func open(ctx context.Context, c g.Captured[h.Language]) (*interpretation, error
 		return nil, semantic.ErrInvalidRequest
 	}
 	for _, e := range s.data.Expressions {
-		if e.At.Role == resolve.ExpressionRole() {
+		if e.At.Role == n.ExpressionRole() {
 			s.sites[e.Term] = e.At.Site
 		}
 	}
 	// horos publishes at most one value for each of these relations per subject.
 	for _, f := range s.data.Facts {
 		switch f.Relation {
-		case resolve.SortRelation():
+		case n.SortRelation():
 			if s.sorts[f.Subject] != 0 {
 				return nil, semantic.ErrInvalidRequest
 			}
 			s.sorts[f.Subject] = f.Term
-		case resolve.ResultSortRelation():
+		case n.ResultSortRelation():
 			if f.Subject.Entity == 0 || s.results[f.Subject.Entity] != 0 {
 				return nil, semantic.ErrInvalidRequest
 			}
 			s.results[f.Subject.Entity] = f.Term
-		case resolve.IdentityRelation():
+		case n.IdentityRelation():
 			if f.Subject.Entity == 0 || s.identities[f.Subject.Entity] != 0 {
 				return nil, semantic.ErrInvalidRequest
 			}

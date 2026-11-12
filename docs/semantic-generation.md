@@ -37,12 +37,18 @@ resolution/analysis of its own snapshot.
 
 ## Representation and enforcement profiles
 
-The [Horos mapping library](../transform/syntax/horos/mapping/go/mapping.go) defines RepresentationProfile and EnforcementProfile. The four native mapping packages expose individual rules and a Libraries(profile) collection. Each consumer registers a source, target and mapping libraries and passes the root declaration sites, output tree ID, receipts, profile and limits to Engine.Generate (or PlanGeneration then Run). Go's target provider takes Package and C++ takes Namespace. The [TypeScript example](kernel-composition.md#horos-to-typescript) shows registration and execution.
+The [horos mapping library](../transform/syntax/horos/mapping/go/mapping.go) defines RepresentationProfile and EnforcementProfile. Each native mapping is its own package under `transform/syntax/horos-to-<native>/mapping/<name>/go` and exports Library(profile). No package lists the mappings of a pair. Each consumer registers a source, target and mapping libraries and passes the root declaration sites, output tree ID, receipts, profile and limits to Engine.Generate (or PlanGeneration then Run). Go's target provider takes Package and C++ takes Namespace. The [TypeScript example](kernel-composition.md#horos-to-typescript) shows registration and execution.
 
 | Selected profile | Promise and behavior |
 | --- | --- |
 | RepresentationProfile | Native declarations represent uses already admitted by Horos. The profile expressly permits erasing ordinary proper-kind contracts from target parameter declarations. |
 | EnforcementProfile | Native clients would have to be prevented from violating the source constraint. No such target encoding is implemented; the library rejects registration of this profile with generation.ErrUnsupported. |
+
+The mapping library admits exactly one profile name, so a further profile needs
+an edit to that shared file, and both identities are named after the first
+fixture. [bittype/ACX-008](architecture-cases/0008-structural-profile-gate.md)
+records this; [#216](https://github.com/Bitspark/bittype/issues/216) tracks the
+correction.
 
 The profile selection is part of the configured mapping, not inferred from a kind
 name. Representation does not advertise arbitrary native instantiations as
@@ -95,6 +101,29 @@ TypeScript uses strictNullChecks and exactOptionalPropertyTypes. Go's generated
 `BittypeOptional` declaration has Present and Value fields; Value is ignored when
 absent. It has no generated methods or runtime implementation. Optional presence
 is not silently replaced by null or a zero value.
+
+Go's record mapping wraps an optional field in a helper, and Go's optional
+mapping supplies that helper with the `BittypeOptional` declaration. Neither
+package creates the helper's key and neither imports the other. The consumer
+creates the key once and passes it to both:
+
+```go
+key := g.NewHelperKey("horos/optional")
+libraries := []g.MappingLibrary[h.Language, s.Language, source.Reader]{
+    record.Library(profile, key),
+    optional.Library(profile, key),
+}
+```
+
+Here g is `contracts/generation/go`, h and s are the horos and Go syntax
+packages, and record and optional are the packages under
+`transform/syntax/horos-to-golang/mapping/<name>/go`. An invalid key makes
+registration of the record library fail with `ErrInvalid`. A valid key that no
+registered library supplies makes planning fail with `ErrUnsupported`.
+[`TestGolangRecordRequiresItsOptionalHelper`](../integration/go/horos_generation_golang_optional_test.go)
+covers both. This form is interim:
+[#196](https://github.com/Bitspark/bittype/issues/196), item 6, changes how a
+record asks for the optional representation.
 
 Canonical integers remain Unsupported. The existence of native integer syntax
 does not choose an arbitrary-width representation or dependency. Open records,
@@ -169,7 +198,7 @@ Mappings retain real declaration/parameter links and available current source
 origins. Imported definitions are emitted once with dependencies before uses.
 The horos interpretation and reader live at `transform/syntax/horos/source/go`; bounded native
 storage lives at `transform/syntax/shared/target/go`, with native adapters under the
-four language paths. The packages under `transform/syntax/horos-to-<native>/mapping/go` choose representations. Shared contracts, engine and
+four language paths. The packages under `transform/syntax/horos-to-<native>/mapping/<name>/go` choose representations, one mapping per package. Shared contracts, engine and
 printer gain no Horos/Ontos or behavioral-library imports.
 
 Generation uses the public SPI defaults: 100,000 operations, depth 128, 4,096

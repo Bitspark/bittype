@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	analyze "github.com/Bitspark/bittype/analyze/files/typescript/provider/go"
+	queries "github.com/Bitspark/bittype/analyze/files/typescript/queries/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
@@ -49,7 +50,7 @@ func TestInstalledTypeScriptSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	compiler := r.Compiler{NodePath: os.Getenv("BITTYPE_TYPESCRIPT_NODE"), TypeScriptPath: os.Getenv("BITTYPE_TYPESCRIPT_MODULE")}
+	compiler := n.Compiler{NodePath: os.Getenv("BITTYPE_TYPESCRIPT_NODE"), TypeScriptPath: os.Getenv("BITTYPE_TYPESCRIPT_MODULE")}
 	resolver, err := r.New(definition, compiler)
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +59,7 @@ func TestInstalledTypeScriptSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](definition, analyze.Contract(), analyze.Provider{})
+	analyzer, err := analysis.NewAnalyzer[s.Language](definition, n.AnalysisContract(), analyze.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +79,7 @@ func TestInstalledTypeScriptSemantics(t *testing.T) {
 	if !ok || len(fields) != 1 || fields[0].Type.String() != "Page<string>[]" {
 		t.Fatal(fields)
 	}
-	q, err := analyze.NewQueries(m, compiler)
+	q, err := queries.NewQueries(m, compiler)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -10,58 +10,19 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/semantics/go"
+	n "github.com/Bitspark/bittype/semantics/horos/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
 )
-
-func (f Frontend[L]) key(name string) semantics.Key       { return semantics.Key{Owner: f.Owner, Name: name} }
-func (f Frontend[L]) ReferenceResolution() semantics.Key  { return f.key("reference-resolution") }
-func (f Frontend[L]) Validity() semantics.Key             { return f.key("program-validity") }
-func (f Frontend[L]) Indexing() semantics.Key             { return f.key("declaration-index") }
-func (f Frontend[L]) Bindings() semantics.Key             { return f.key("occurrence-bindings") }
-func (f Frontend[L]) Applications() semantics.Key         { return f.key("applications") }
-func (f Frontend[L]) Dependencies() semantics.Key         { return f.key("reference-dependencies") }
-func (f Frontend[L]) TypeFacts() semantics.Key            { return f.key("type-facts") }
-func (f Frontend[L]) TargetRole() semantics.Key           { return f.key("target") }
-func (f Frontend[L]) ExpressionRole() semantics.Key       { return f.key("expression") }
-func (f Frontend[L]) ReferenceDependency() semantics.Key  { return f.key("declaration-reference") }
-func (f Frontend[L]) SortRelation() semantics.Key         { return f.key("sort") }
-func (f Frontend[L]) ResultSortRelation() semantics.Key   { return f.key("result-sort") }
-func (f Frontend[L]) DeclaredKindRelation() semantics.Key { return f.key("declared-kind") }
-func (f Frontend[L]) ResultKindRelation() semantics.Key   { return f.key("result-kind") }
-func (f Frontend[L]) SymbolicBodyRelation() semantics.Key { return f.key("symbolic-body") }
-func (f Frontend[L]) MembershipRelation() semantics.Key   { return f.key("membership") }
-func (f Frontend[L]) IdentityRelation() semantics.Key     { return f.key("canonical-identity") }
-
-// LimitsSetting contains a JSON array [depth,nodes,bytes,modules]. All four
-// positive limits are required; depth must not exceed 512. Its absence selects
-// Horos's fixed defaults.
-// This bounds authoritative resolution separately from shared graph publication.
-func (f Frontend[L]) LimitsSetting() semantics.Key { return f.key("declaration-limits-json-1") }
-
-func (f Frontend[L]) Contract() resolution.Contract {
-	keys := []semantics.Key{f.ReferenceResolution(), f.Validity(), f.Indexing(), f.Bindings(), f.Applications(), f.Dependencies(), f.TypeFacts()}
-	contract := semantic.Contract{Profile: f.ResolutionProfile}
-	for _, k := range keys {
-		contract.Obligations = append(contract.Obligations, semantic.Obligation{Key: k, Domain: f.key("entry-transitive-module-closure")})
-		verdict := semantic.Undetermined
-		if k == f.Validity() || k == f.ReferenceResolution() {
-			verdict = semantic.Holds
-		}
-		contract.SemanticsRequirements = append(contract.SemanticsRequirements, semantic.Requirement{Obligation: k, Verdict: verdict})
-	}
-	return resolution.Contract{Semantic: contract, Bindings: f.ReferenceResolution()}
-}
 
 func (f Frontend[L]) configuredLimits(settings []semantic.Setting) (decl.Limits, error) {
 	limits := decl.DefaultLimits()
 	if len(settings) == 0 {
 		return limits, nil
 	}
-	if len(settings) != 1 || settings[0].Key != f.LimitsSetting() {
+	if len(settings) != 1 || settings[0].Key != n.LimitsSetting() {
 		return decl.Limits{}, fmt.Errorf("%w: unsupported Horos configuration", semantic.ErrInvalidRequest)
 	}
 	decoder := json.NewDecoder(bytes.NewReader(settings[0].Value))
@@ -84,15 +45,15 @@ func (f Frontend[L]) configuredLimits(settings []semantic.Setting) (decl.Limits,
 func (f Frontend[L]) reports(request semantic.Request[L], status semantic.Completion, verdict semantic.Verdict, complete bool) []semantic.Report {
 	var result []semantic.Report
 	known := make(map[semantics.Key]bool)
-	for _, obligation := range f.Contract().Semantic.Obligations {
+	for _, obligation := range n.ResolutionContract().Semantic.Obligations {
 		r := semantic.Report{Obligation: obligation.Key, Status: semantic.Incomplete}
 		if complete {
 			r.Status = semantic.Complete
 		}
-		if obligation.Key == f.ReferenceResolution() && status == semantic.Complete && verdict == semantic.Holds {
+		if obligation.Key == n.ReferenceResolution() && status == semantic.Complete && verdict == semantic.Holds {
 			r.Status, r.Verdict = semantic.Complete, semantic.Holds
 		}
-		if obligation.Key == f.Validity() {
+		if obligation.Key == n.Validity() {
 			r.Status, r.Verdict = status, verdict
 		}
 		result = append(result, r)
@@ -108,7 +69,7 @@ func (f Frontend[L]) reports(request semantic.Request[L], status semantic.Comple
 
 func (f Frontend[L]) failure(request semantic.Request[L], decoded *Decoded[L], err error) (semantic.Result, error) {
 	status, verdict := semantic.Complete, semantic.Rejected
-	diagnostic := semantic.Diagnostic{Code: f.key("invalid-source"), Subject: f.key("source"), Message: err.Error()}
+	diagnostic := semantic.Diagnostic{Code: n.Key("invalid-source"), Subject: n.Key("source"), Message: err.Error()}
 	var detail *decl.Error
 	var assertion *ValidationError
 	var syntax *text.Diagnostic
@@ -117,7 +78,7 @@ func (f Frontend[L]) failure(request semantic.Request[L], decoded *Decoded[L], e
 		if detail.Code == decl.InvalidOptions || detail.Subject == decl.SubjectConfiguration {
 			return semantic.Result{}, fmt.Errorf("%w: %w", semantic.ErrInvalidRequest, err)
 		}
-		diagnostic.Code, diagnostic.Subject = f.key(string(detail.Code)), f.key(string(detail.Subject))
+		diagnostic.Code, diagnostic.Subject = n.Key(string(detail.Code)), n.Key(string(detail.Subject))
 		if detail.Code == decl.MissingDependency || detail.Code == decl.Exhausted || detail.Code == decl.UnprovedObligation {
 			status, verdict = semantic.Incomplete, semantic.Undetermined
 		}
@@ -125,11 +86,11 @@ func (f Frontend[L]) failure(request semantic.Request[L], decoded *Decoded[L], e
 			diagnostic.At = decoded.Locate(detail)
 		}
 	case errors.As(err, &assertion):
-		diagnostic.Code = f.key("invalid-annotation")
+		diagnostic.Code = n.Key("invalid-annotation")
 		if assertion.Context {
-			diagnostic.Subject = f.key("context")
+			diagnostic.Subject = n.Key("context")
 			if !assertion.Annotation {
-				diagnostic.Code = f.key("invalid-context")
+				diagnostic.Code = n.Key("invalid-context")
 			}
 		}
 		site := assertion.Site
@@ -138,7 +99,7 @@ func (f Frontend[L]) failure(request semantic.Request[L], decoded *Decoded[L], e
 		diagnostic.At = syntax.Node
 		if syntax.Code == text.LimitExceeded {
 			status, verdict = semantic.Incomplete, semantic.Undetermined
-			diagnostic.Code, diagnostic.Subject = f.key("exhausted"), f.key("request")
+			diagnostic.Code, diagnostic.Subject = n.Key("exhausted"), n.Key("request")
 		}
 	default:
 		return semantic.Result{}, err
@@ -146,7 +107,7 @@ func (f Frontend[L]) failure(request semantic.Request[L], decoded *Decoded[L], e
 	coverage := f.reports(request, status, verdict, false)
 	if detail != nil && (detail.Code == decl.UnknownImport || detail.Code == decl.UnknownDeclaration) {
 		for i := range coverage {
-			if coverage[i].Obligation == f.ReferenceResolution() {
+			if coverage[i].Obligation == n.ReferenceResolution() {
 				coverage[i].Status, coverage[i].Verdict = semantic.Complete, semantic.Rejected
 			}
 		}
@@ -154,16 +115,16 @@ func (f Frontend[L]) failure(request semantic.Request[L], decoded *Decoded[L], e
 	diagnostics := []semantic.Diagnostic{diagnostic}
 	if decoded != nil && detail != nil {
 		if site := decoded.CalleeDeclarationSite(detail); site != nil {
-			subject := f.key("source")
+			subject := n.Key("source")
 			target := detail.Target
 			if detail.CalleeParameter.Declaration.Name != "" {
 				target = detail.CalleeParameter.Declaration
 			}
 			root := decoded.tree.Nodes[decoded.tree.Root-1].References[0].Target.Node
 			if (reader[L]{tree: decoded.tree}).attr(root, "pin") != target.Module.String() {
-				subject = f.key("context")
+				subject = n.Key("context")
 			}
-			diagnostics = append(diagnostics, semantic.Diagnostic{Code: f.key("callee-declaration"), Subject: subject, At: site, Message: "callee declaration or parameter contract"})
+			diagnostics = append(diagnostics, semantic.Diagnostic{Code: n.Key("callee-declaration"), Subject: subject, At: site, Message: "callee declaration or parameter contract"})
 		}
 	}
 	return request.Publish(semantic.Publication{Reports: coverage, Diagnostics: diagnostics})
@@ -178,7 +139,7 @@ func (f Frontend[L]) ResolveReferences(ctx context.Context, request semantic.Req
 	if err := ctx.Err(); err != nil {
 		return semantic.Result{}, err
 	}
-	if request.Contract().Profile != f.ResolutionProfile {
+	if request.Contract().Profile != n.ResolutionProfile {
 		return semantic.Result{}, fmt.Errorf("%w: unsupported Horos resolution profile", semantic.ErrInvalidRequest)
 	}
 	inputs := request.Inputs()
@@ -211,11 +172,11 @@ func (f Frontend[L]) ResolveReferences(ctx context.Context, request semantic.Req
 		if !errors.Is(err, semantics.ErrLimit) {
 			return semantic.Result{}, err
 		}
-		return request.Publish(semantic.Publication{Reports: f.reports(request, semantic.Complete, semantic.Holds, false), Diagnostics: []semantic.Diagnostic{{Code: f.key("export-exhausted"), Subject: f.key("request"), Message: "Horos semantic export exceeds its resource budget"}}})
+		return request.Publish(semantic.Publication{Reports: f.reports(request, semantic.Complete, semantic.Holds, false), Diagnostics: []semantic.Diagnostic{{Code: n.Key("export-exhausted"), Subject: n.Key("request"), Message: "Horos semantic export exceeds its resource budget"}}})
 	}
 	result, err := request.Publish(semantic.Publication{Facts: &facts, Reports: f.reports(request, semantic.Complete, semantic.Holds, true)})
 	if errors.Is(err, semantics.ErrLimit) {
-		return request.Publish(semantic.Publication{Reports: f.reports(request, semantic.Complete, semantic.Holds, false), Diagnostics: []semantic.Diagnostic{{Code: f.key("export-exhausted"), Subject: f.key("request"), Message: "Horos semantic export exceeds its resource budget"}}})
+		return request.Publish(semantic.Publication{Reports: f.reports(request, semantic.Complete, semantic.Holds, false), Diagnostics: []semantic.Diagnostic{{Code: n.Key("export-exhausted"), Subject: n.Key("request"), Message: "Horos semantic export exceeds its resource budget"}}})
 	}
 	return result, err
 }

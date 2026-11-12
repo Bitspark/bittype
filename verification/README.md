@@ -8,8 +8,9 @@ single root Go module.
   queries. Native facts and admission come from the [Go semantic providers](../docs/native-semantics.md#first-go-profile).
 - `files/horos-to-go/go` owns the scoped subject and law protocol, the conditional
   family interpretation and the admission counterexample.
-- `files/horos-to-go/mappings/go` supplies independently selectable text, bool,
-  list, optional and closed-record rules.
+- `files/horos-to-go/mappings/<name>/go` supplies the independently selectable
+  laws, one package per law: `scalar` with the text and bool rules, `list`,
+  `optional` and `record` for closed records.
 - `logos/go` freezes typed questions, admits captures and origins, applies receiver
   limits and calls the public Logos checker.
 - `integration/go` checks TextBox and Page, nested theorem reuse, and a separately
