@@ -457,7 +457,13 @@ All code is Go unless marked, at the code baseline. In the excerpts, short
 import aliases follow one pattern: `s` is the syntax vocabulary of the language
 at hand, `n` its semantic vocabulary, `g` the generation contract package
 (inside the grammar checkers, `g` is a small grammar helper), `m` the shared
-tree builder, `f` or `fm` the shared Files contract package.
+tree builder, `f` the shared Files contract package and `model` the language's
+native model. `semantic` is the shared semantic contract (snapshots, settings,
+receipts); `semantics` is the graph model (keys, entities, bindings, facts).
+`goast`, `types` and `token` are Go's `go/ast`, `go/types` and `go/token`;
+`tr`, `native` and `imports` are private helpers. Inside a function a single
+letter is sometimes a local variable instead. In section 4.1 declarations from
+several places are listed together, without the comments between them.
 
 ### 4.1 Carriers
 
@@ -467,7 +473,9 @@ publishes. One tree carrier serves every language. `L` is a marker type owned
 by the language, so trees of different languages cannot be mixed.
 
 ```go
-// trees/ast/go/origin.go:7-10, node.go:28-31, 38-44
+// trees/ast/go/ast.go:13, 17, origin.go:7-10, node.go:28-31, 38-44
+type TreeID string
+type NodeID uint32
 type NodeRef struct {
 	Tree TreeID
 	Node NodeID
@@ -485,7 +493,9 @@ type Node[L any] struct {
 }
 ```
 
-A tree (`AST[L]`) is an ID, a root node ID and a flat list of such nodes. An
+A `NodeID` is a one-based index into its tree's node list; zero names no node.
+Entity and term IDs in the graph are one-based in the same way. A tree
+(`AST[L]`) is an ID, a root node ID and a flat list of such nodes. An
 `Attribute` is a name and a text. A `Child` is a role and a node ID:
 containment. `References` are resolved, non-containment links: a type reference
 that names a generated declaration carries a link to that declaration's node.
@@ -617,8 +627,11 @@ func seal(ctx context.Context, checker check.Checker, assembly Assembly, publica
 
 Intent for a reference to a generated declaration or to a type parameter is
 the `Reference` link inside the tree. Intent for a reference to a library-owned
-type is an `ExternalUse`. The request that starts generation names one output
-tree ID, and every native target today returns one tree.
+type is an `ExternalUse`. As the first quoted condition shows, a sealed output
+may hold up to 256 trees. The request that starts generation names one tree
+ID, and the kernel requires only that the output's entry tree has that ID.
+Every native target today returns exactly one tree, because the shared tree
+builder of section 4.3 builds one.
 
 **How a consumer obtains a site.** A placement names declarations by site.
 `Exposed()` returns the sites of the requested declarations, in the order of
@@ -627,9 +640,11 @@ closure pulled in, or a generated support declaration such as Go's
 `BittypeOptional`) the output has no accessor. The consumer must open the
 snapshot's tree, walk the root's declaration children and recognize each by
 its name attribute. The TypeScript acceptance test does exactly that. A
-complete placement must assign those declarations too. So today a consumer
-states identity by site but finds an unexposed site by name, which works
-because names are unique in one output (section 4.9).
+complete placement must assign those declarations too. No API maps a horos
+declaration to its site. So today a consumer states identity by site but finds
+an unexposed site by name, which works only because names are unique in one
+output (section 4.9). If that uniqueness goes (option U2 in section 6.2), the
+lookup by name becomes ambiguous.
 
 **To whom an exposed declaration is public.** The documents do not say. They
 define exposure as the caller's request and require that an unexposed
@@ -641,18 +656,22 @@ placement that separates an unexposed declaration from its user is refused
 
 ### 4.3 The shared tree builder (`Compile`)
 
-Every native target implements this interface, and delegates the walk over the
-planned program to one shared function, `Compile`:
+Every native target implements this interface:
 
 ```go
-// contracts/generation/go, as shown in docs/generation.md:66-75
+// contracts/generation/go/contracts.go:37-42
 type Target[T any] interface {
-    CheckExpression(context.Context, Expression[T]) error
-    CheckDeclaration(context.Context, NativeDeclaration[T]) error
-    CheckProgram(context.Context, Program[T]) error
-    Build(context.Context, BuildInput[T]) (Assembly, error)
+	CheckExpression(context.Context, Expression[T]) error
+	CheckDeclaration(context.Context, NativeDeclaration[T]) error
+	CheckProgram(context.Context, Program[T]) error
+	Build(context.Context, BuildInput[T]) (Assembly, error)
 }
 ```
+
+The generation kernel calls `Build` and seals whatever `Assembly` comes back.
+All four targets implement `Build` by calling one shared helper function,
+`Compile`, which walks the planned program. `Compile` is a helper the targets
+chose, not a kernel invariant.
 
 `CheckProgram` is called while planning; `Build` constructs the tree. The plan
 a target receives is a `g.Program`: a list of planned declarations, each with a
@@ -739,6 +758,11 @@ func (p GeneratedFilesFormatter[L]) Format(ctx context.Context, input GeneratedF
 }
 ```
 
+Here `p.definition` is the formatter's language, `limits` is the normalized
+form of `input.Limits` from the elided lines, `snapshot.Same(output.Snapshot)`
+refuses publishing the input snapshot itself, and `publishFiles` creates the
+publisher under this policy.
+
 A formatter cannot return a `Source` it built itself. It hands a
 `source.Publication` to `Publish`: a fresh snapshot of the placed units, their
 analysis receipt, and the units. (This "publication" is the placed result, not
@@ -749,7 +773,7 @@ between output files. The shared code checks only that they refer to existing
 files and sites. The shared publisher then:
 
 1. admits the receipt against the contract's evidence requirement, for exactly
-   the published snapshot (`semantic.AdmitEvidence`, `source/go/source.go:212`);
+   the published snapshot;
 2. requires the units to cover the snapshot completely, their trees to equal
    the captured trees, and their printed text to equal the captured file text;
 3. runs the language's `Check` with the original input.
@@ -802,6 +826,9 @@ if err != nil { return err }
 emitted, err := filesPrinter.Print(ctx, organized)
 ```
 
+Section 4.2 says where such sites come from: `Exposed()`, or a walk over the
+generated tree that reads each declaration's name.
+
 **Generation side: the TypeScript target writes no file decision.** Its root
 is the vocabulary's top node with declaration children only. `string` and
 `boolean` are keyword nodes, and a library-owned type is an unlinked reference
@@ -830,11 +857,20 @@ func (b *Backend) Finish(declarations []m.Fragment[s.Language]) (m.Fragment[s.La
 }
 ```
 
-`symbol.Type{Module, Name}` is TypeScript's symbol vocabulary: "a named export,
-or a global type when Module is empty". No new node kind was needed, because
-the TypeScript grammar requires nothing on its top node: the checker's rule
-for `KindSourceFile` lists no attribute, and `exported` is an optional
-attribute of a declaration.
+Here `symbol` is TypeScript's symbol package, and `symbol.Type{Module, Name}`
+is "a named export, or a global type when Module is empty". The external use
+is created with an empty site; `Compile` fills the site in when the node
+receives its ID. No new node kind was needed, because the TypeScript grammar
+requires nothing on its top node, and `exported` is an optional attribute of a
+declaration:
+
+```go
+// check/syntax/typescript/provider/go/check.go:19
+	s.KindSourceFile:        {Roles: []g.Role[s.Language]{g.Many(s.RoleImport, 0, s.KindImport), g.Many(s.RoleDeclaration, 0, s.KindTypeAlias, s.KindInterface)}},
+```
+
+(`g.Many(role, min, kinds…)` is a repeated child role; the rule lists no
+attribute.)
 
 The formatter then works in the five steps of the picture in section 1.3.
 
@@ -905,7 +941,7 @@ func generatedProgram(ctx context.Context, output g.Output) (*program, error) {
 }
 ```
 
-The lower-case `symbol` here is the formatter's private record of a
+In this excerpt `symbol` is a private struct of the formatter, its record of a
 destination: a local site, an external `{Module, Name}`, or a compiler builtin.
 After this step every type reference has an intended destination, or
 formatting fails.
@@ -1015,7 +1051,8 @@ import helper picks an alias such as `Cell_1` when a local name collides. A
 declaration is never renamed.
 
 **Step 4: capture, and obtain fresh compiler evidence under the consumer's
-environment.** The formatter cannot be built without the environment:
+environment.** The formatter cannot be built without the environment
+(`n.Imports` returns the environment and whether one is present):
 
 ```go
 // format/files/typescript/provider/go/format.go:43-46
@@ -1025,14 +1062,34 @@ environment.** The formatter cannot be built without the environment:
 	}
 ```
 
-Its contract evidence is `n.EvidenceFor(p.Configuration)`: the analysis
-profile under exactly that environment. The formatter formats each new tree,
-captures the units with their paths, runs the resolver and the analyzer, and
-hands the result to `Publish`.
+Its contract evidence is the analysis profile under exactly that environment,
+and its check recomputes the layout. This is the template a Go or Rust
+formatter would follow:
 
-**Step 5: the check.** The guard recomputes the expected layout by running the
-formatter's own private layout function a second time on the original input,
-and compares it with what was published. `expected` is the recomputed layout:
+```go
+// format/files/typescript/provider/go/generated.go:28-33, 44-50
+	evidence, err := n.EvidenceFor(p.Configuration)
+	if err != nil {
+		return f.GeneratedFilesFormatter[s.Language]{}, err
+	}
+	return f.NewGeneratedFilesFormatter(p.Language, f.GeneratedFilesContract[s.Language]{Evidence: evidence, Print: p.Printer.Print, Check: checkGenerated}, GeneratedProvider{stages: p})
+}
+// …
+func checkGenerated(ctx context.Context, input f.GeneratedFilesInput, publication source.Publication[s.Language]) error {
+	layout, err := placeGenerated(ctx, input)
+	if err != nil {
+		return err
+	}
+	return checkLayout(ctx, layout, publication)
+}
+```
+
+The formatter formats each new tree, captures the units with their paths, runs
+the resolver and the analyzer, and hands the result to `Publish`.
+
+**Step 5: the check.** `placeGenerated` is the formatter's own private layout
+function (steps 1 to 3). The guard runs it a second time on the original input
+and compares the result with what was published. `expected` is the recomputed layout:
 `expected.moved` maps old sites to new sites, `expected.public` holds the
 exposure of each new top-level site, and `u.expected` holds the intended
 destination of each type reference in unit `u`. `realized` is read from the
@@ -1075,14 +1132,37 @@ So the check has three independent parts:
 1. **Tree equality by reconstruction.** Each published tree equals the tree the
    guard recomputed from the input.
 2. **Bindings, from the compiler.** `realized.bindings` is built from the
-   graph's `Binding` records. For every relocated type reference, the entity
-   the compiler resolved it to must be the relocated intended declaration, the
-   intended package export, or the intended builtin.
+   graph's `Binding` records, classified as shown below. For every relocated
+   type reference, the entity the compiler resolved it to must be the
+   relocated intended declaration, the intended package export, or the
+   intended builtin.
 3. **Exposure, from the compiler.** `realized.public` is built from
    `named-export` facts, which TypeScript's bridge publishes for each module
    entity. A declaration is exported in the result exactly if it was exposed.
 
-Parts 2 and 3 are facts the formatter did not produce itself.
+Parts 2 and 3 are facts the formatter did not produce itself. This is how a
+compiler binding becomes a destination (`data` is the graph's content, `b` one
+binding):
+
+```go
+// format/files/typescript/provider/go/placement.go:145-160
+		entity := data.Entities[b.Target-1]
+		var dest symbol
+		switch {
+		case len(entity.Declarations) == 1:
+			dest.site = entity.Declarations[0]
+		case entity.Kind == n.PackageTypeKind() && entity.Owner != 0:
+			owner := data.Entities[entity.Owner-1]
+			if owner.Kind != n.PackageKind() {
+				return nil, source.ErrInvalid
+			}
+			dest.external = imports.Export{Module: owner.Name, Name: entity.Name}
+		case entity.Kind == n.BuiltinKind():
+			dest.builtin = entity.Name
+		default:
+			return nil, fmt.Errorf("%w: ambiguous native binding %s", source.ErrInvalid, entity.Name)
+		}
+```
 
 The acceptance test for this path generates `Cells = Page<Cell<Person>>` once,
 together with a local declaration also named `Cell`, and formats it twice.
@@ -1107,7 +1187,7 @@ files. It has its own placement type and its own admission, in a private
 package:
 
 ```go
-// internal/horosfiles/organization.go:18-24, 170-172
+// internal/horosfiles/organization.go:18-24
 // Placement is an explicit same-language organization decision. Modules are
 // canonical module pins, never aliases selected by spelling or filesystem lookup.
 type Placement struct {
@@ -1115,38 +1195,43 @@ type Placement struct {
 	Path    files.Path
 	Modules []string
 }
-// …
-	if len(seen) != len(modules) || entry == "" {
-		return fail(source.ErrInvalid)
-	}
 ```
 
-Between those lines the function applies the file limit, admits the file IDs
-and paths through the same Files list, refuses an empty assignment, and
-refuses a pin that is unknown or already assigned. So it enforces the same
+Its admission applies the file limit, admits the file IDs and paths through
+the same Files list, refuses an empty assignment, refuses a pin that is
+unknown or already assigned, and requires every module to be assigned. So it
+enforces the same
 kind of rules as TypeScript's admission, for a different kind of item: module
 pins, where TypeScript has declaration sites. Like TypeScript's, it allows one
 assignment per file. The entry is not named by the placement here; it is the
 file that receives the entry module.
 
-<!-- REVISION IN PROGRESS: the text below this line is the earlier draft -->
 
-### 3.7 Go as it is
+### 4.7 Go as it is
 
-**The vocabulary and its checker.** The Go syntax vocabulary has one root kind,
-`file`. The checker requires a package identifier on it and accepts no other
-root. In the grammar helper, `g.Attr(true, …)` is a required attribute,
-`g.Many(role, min, kinds…)` a repeated child role, and `Reference: true` allows
-a reference link:
+Four things to take from this part:
+
+1. The Go vocabulary's only root, `file`, requires a package name.
+2. The Go target writes that name from its configuration, and writes `string`
+   and `bool` with no recorded destination.
+3. Go has two semantic profiles. In the base profile all files are one package
+   under a constant path. Under an import environment, files form packages by
+   directory.
+4. In neither profile does the graph contain the package name.
+
+#### What generation writes today
+
+The checker requires a package identifier on `file` and accepts no other root.
+`g.Attr(true, …)` is a required attribute and `Reference: true` allows a
+reference link:
 
 ```go
-// check/syntax/golang/provider/go/check.go:13, 18, 23-24, 45-49
+// check/syntax/golang/provider/go/check.go:13, 18, 23, 45-49
 func identifier(v string) bool { return g.Identifier(v) && !token.Lookup(v).IsKeyword() }
 // …
 	s.KindFile:              {Attributes: g.Attributes(s.AttributePackage, g.Attr(true, identifier)), Roles: []g.Role[s.Language]{g.Many(s.RoleImport, 0, s.KindImport), g.Many(s.RoleDeclaration, 0, s.KindTypeDeclaration, s.KindTypeAlias)}},
 // …
 	s.KindNamedType:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, identifier)), Reference: true},
-	s.KindQualifiedType:     {Attributes: g.Attributes(s.AttributeName, g.Attr(true, identifier), s.AttributeQualifier, g.Attr(true, identifier)), Reference: true},
 // …
 func Check(view ast.View[s.Language]) error {
 	t := view.ASTView()
@@ -1155,19 +1240,17 @@ func Check(view ast.View[s.Language]) error {
 	}
 ```
 
-The vocabulary's documentation gives the same shape: "File | `package`: package
-identifier | `import*`; `declaration*` TypeDeclaration/TypeAlias". The
-vocabulary package describes itself as containing "no parser, builder, grammar
-checker, generator or formatter". The Go Syntax formatter prints
+The vocabulary package describes itself as containing "no parser, builder,
+grammar checker, generator or formatter". The Go Syntax formatter prints
 `package <name>` first, from the same attribute.
 
-**The target decides the package.** It takes the package name from its own
-configuration, refuses to build without one, and writes it on the single file
-node. It also writes `string` and `bool` as plain named types with no link and
-no external use, while a reference to a generated declaration is linked:
+The Go target takes the package name from its own configuration, refuses to
+build without one, and writes it on the single file node. A reference to a
+generated declaration is a named type linked to its destination. `string` and
+`bool` are also named types, with no link and no external use:
 
 ```go
-// transform/syntax/golang/target/go/provider.go:15, 27-33, 41-49, 78-80, 87-89, 100-102
+// transform/syntax/golang/target/go/provider.go:15, 27-33, 78-80, 88-89
 type Provider struct{ Package string }
 // …
 func (p Provider) Build(ctx context.Context, in g.BuildInput[s.Language]) (g.Assembly, error) {
@@ -1178,26 +1261,12 @@ func (p Provider) Build(ctx context.Context, in g.BuildInput[s.Language]) (g.Ass
 	return m.Compile(ctx, in, b.Store, b)
 }
 // …
-func (b *Backend) Reference(symbol m.Symbol[s.Language], args []m.Fragment[s.Language], origin ast.NodeRef) (m.Fragment[s.Language], error) {
-	node, err := b.Node(m.Node(s.KindNamedType, m.Attributes("name", symbol.Name()), origin))
-	if err != nil {
-		return node, err
-	}
-	node, err = b.Link(node, symbol, s.RoleTarget)
-	if err != nil {
-		return node, err
-	}
-// …
 func (b *Backend) Finish(declarations []m.Fragment[s.Language]) (m.Fragment[s.Language], error) {
 	return b.Node(m.Node(s.KindFile, m.Attributes("package", b.config.Package), ast.NodeRef{}), edges(s.RoleDeclaration, declarations)...)
 }
 // …
 	case model.FormPrimitive:
 		return b.Node(m.Node(s.KindNamedType, m.Attributes("name", data[0]), origin))
-// …
-func (p Provider) CheckProgram(ctx context.Context, program g.Program[s.Language]) error {
-	return m.CheckSingleScope(ctx, program)
-}
 ```
 
 `data[0]` is `"string"` or `"bool"`. In Go these are identifiers of the
@@ -1207,9 +1276,15 @@ The Go native model refuses library-owned types altogether today (its check
 returns "unsupported" for the external form), so Go generation reports no
 external use.
 
-**The compiler bridge** converts captured trees to Go's own `go/ast` and runs
+#### What compiler evidence can see
+
+**The package name, the word after `package`, is a fact in no graph, in either
+profile.** The rest of this part shows why.
+
+The compiler bridge converts captured trees to Go's own `go/ast` and runs
 `go/types`. It refuses a root that is not a `file`, and it reads the package
-attribute, as the Syntax formatter does:
+attribute. `c.imports` is true only under an import environment, so the base
+profile refuses any import node:
 
 ```go
 // internal/golangsem/bridge.go:360-366
@@ -1222,35 +1297,27 @@ func (c *converter) file() (*goast.File, error) {
 	f.Name.NamePos = c.pos(c.tree.Root)
 ```
 
-There are two semantic profiles.
-
 *The base profile.* All captured files are one package, checked under a
-constant path. No import is admitted:
+constant path, whatever their directories:
 
 ```go
 // semantics/golang/go/vocabulary.go:16
 const PackagePath = "captured"
 
-// internal/golangsem/bridge.go:208-223
-// checkSingle is the base profile: one captured package at n.PackagePath.
-func checkSingle(ctx context.Context, fset *token.FileSet, inputs []s.AST, goFiles []*goast.File, info *types.Info, positions map[token.Pos]ast.NodeRef) (*checkedProgram, error) {
+// internal/golangsem/bridge.go:210-211
 	conf := types.Config{GoVersion: n.LanguageVersion, Sizes: types.SizesFor("gc", "amd64")}
 	pkg, err := conf.Check(n.PackagePath, fset, goFiles, info)
-	// …
-	captured := capturedPackage{pkg: pkg}
-	for _, tree := range inputs {
-		captured.roots = append(captured.roots, ast.NodeRef{Tree: tree.ID, Node: tree.Root})
-	}
-	return &checkedProgram{captured: []capturedPackage{captured}}, nil
-}
 ```
 
-*The import environment.* It was merged on 12 November 2026, after the work
-items were written. The consumer supplies a module path and the source of every
-dependency package. Captured files then form packages by their directories:
+*The import environment.* It is Go's form of the dependency environment of
+section 1.2, and TypeScript's counterpart is the environment of section 4.5.
+It was merged on 12 November 2026, after the work items were written.
+Supplying one as configuration selects the second profile. The consumer gives
+a module path and the source text of every dependency package (an import path
+and its files). Captured files then form packages by their directories:
 
 ```go
-// semantics/golang/go/environment.go:16-36, 102-109
+// semantics/golang/go/environment.go:16-24, 102-109
 // Import environments bound the imported-packages extension of the first Go
 // profile. A captured file's package import path is the module path joined with
 // the file's directory. Every other imported package is supplied here as Go
@@ -1259,18 +1326,6 @@ dependency package. Captured files then form packages by their directories:
 type ImportEnvironment struct {
 	Module   string
 	Packages []Package
-}
-
-// Package is the supplied source of one dependency package.
-type Package struct {
-	ImportPath string
-	Files      []PackageFile
-}
-
-// PackageFile is one source file of a supplied package. Name is a base name ending in ".go".
-type PackageFile struct {
-	Name string
-	Text string
 }
 // …
 // CapturedImportPath is the import path of a captured file at filePath under module.
@@ -1283,127 +1338,85 @@ func CapturedImportPath(module, filePath string) string {
 }
 ```
 
-Under this profile the bridge groups captured files by that import path,
-requires the files of one group to state one package name, and checks the
-groups in import order:
+Under this profile the bridge groups captured files by that import path and
+requires the files of one group to state one package name ("package %s;
+expected package %s"). It rejects import cycles, imports of a `main` package
+and uses of unexported names across packages, each as a failed validity
+report.
+
+In both profiles a package entity is named by its **path**, and a top-level
+declaration's entity is owned by its package entity. A predeclared type gets
+an entity of kind `builtin`:
 
 ```go
-// internal/golangsem/packages.go:190-198, 232-239
-	for i, tree := range inputs {
-		filePath := env.paths[tree.ID]
-		root := ast.NodeRef{Tree: tree.ID, Node: tree.Root}
-		importPath := n.CapturedImportPath(env.module, filePath)
-		g := groups[importPath]
-		if g == nil {
-			g = &packageGroup{name: goFiles[i].Name.Name}
-			groups[importPath] = g
+// internal/golangsem/export.go:129-141, 305-310
+	if _, ok := o.(*types.TypeName); ok {
+		kind = n.Key("builtin")
+		switch o.Type().(type) {
+		case *types.Named:
+			kind = n.DefinedKind()
+		case *types.Alias:
+			kind = n.AliasKind()
+		case *types.TypeParam:
+			kind = n.ParameterKind()
+		}
+		if o.Parent() != nil && o.Pkg() != nil && o.Parent() == o.Pkg().Scope() {
+			owner = e.packages[o.Pkg()]
 		}
 // …
-	for _, p := range groupPaths {
-		g := groups[p]
-		for i, f := range g.files {
-			if f.Name.Name != g.name {
-				return nil, &Failure{Err: fmt.Errorf("package %s; expected package %s", f.Name.Name, g.name), At: g.roots[i], Invalid: true}
-			}
-		}
-	}
-```
-
-It also rejects import cycles, imports of a `main` package and uses of
-unexported names across packages, each as a failed validity report.
-
-**What the graph says about a package.** In both profiles a package entity is
-named by its **path**. A declaration's entity is owned by its package entity:
-
-```go
-// internal/golangsem/export.go:305-314, 139-141
 	// Captured packages come first, in import-path order, then supplied packages.
 	// The base profile has exactly one captured package, which is entity 1.
 	for _, captured := range program.captured {
 		e.data.Entities = append(e.data.Entities, semantics.Entity{Kind: n.PackageKind(), Name: captured.pkg.Path(), Declarations: slices.Clone(captured.roots)})
 		e.packages[captured.pkg] = semantics.EntityID(len(e.data.Entities))
 	}
-	for _, pkg := range program.supplied {
-		e.data.Entities = append(e.data.Entities, semantics.Entity{Kind: n.PackageKind(), Name: pkg.Path()})
-		e.packages[pkg] = semantics.EntityID(len(e.data.Entities))
-	}
-// …
-		if o.Parent() != nil && o.Pkg() != nil && o.Parent() == o.Pkg().Scope() {
-			owner = e.packages[o.Pkg()]
-		}
 ```
 
-So in the base profile every placement yields a package entity named
-`captured`. Under the import environment the entity is named
-`CapturedImportPath(module, path)`, for example `example.org/app/pages`. **The
-package name, the word after `package`, is a fact in no graph in either
-profile.** The bridge reads it (to compare the files of one directory, and to
-refuse importing `main`) and exports nothing about it. `string` and `bool`
-resolve to entities of kind `builtin`, so a binding to them is visible in the
-graph.
+| | Base profile | Import environment |
+| --- | --- | --- |
+| Package identity in the graph | The constant `captured` | Module path joined with the file's directory, for example `example.org/app/pages` |
+| Meaning of a file's directory | None: all files are one package | Go's: one directory, one package |
+| The package name | Read by the bridge, exported nowhere | Read by the bridge to compare the files of one directory and to refuse importing `main`; exported nowhere |
+| `string`, `bool` | Bind to `builtin` entities | The same |
 
-**Evidence follows the configuration.** The contract identities are published
-by the Go semantic vocabulary and derived from the settings:
+So in the base profile, placing one output into package `pages` and then into
+package `people` yields two identical graphs.
 
-```go
-// semantics/golang/go/environment.go:92-100
-// EvidenceFor is the analysis evidence requirement for exactly this configuration.
-func EvidenceFor(settings []semantic.Setting) (semantic.EvidenceRequirement, error) {
-	if !MatchesConfiguration(settings) {
-		return semantic.EvidenceRequirement{}, semantic.ErrInvalidRequest
-	}
-	contract := Evidence()
-	contract.Configuration = settings
-	return contract.Clone(), nil
-}
+**Evidence follows the configuration.** Go's semantic vocabulary package
+exports two functions, `EvidenceFor(settings)` and
+`AnalysisContractFor(settings)`. They return the evidence requirement, and the
+contract a resolver and analyzer must be configured with, for exactly the
+given settings: the base configuration, or the base configuration extended by
+one normalized import environment. The reader that opens a Go receipt accepts
+a receipt made under any valid configuration. A consumer that needs one
+particular environment must therefore require `EvidenceFor(thatEnvironment)`.
+A generated-Files formatter does this through its contract evidence, as
+TypeScript's does.
 
-// semantics/golang/go/contracts.go:31-40
-// AnalysisContractFor binds analysis to resolution with exactly the supplied import environment.
-func AnalysisContractFor(settings []semantic.Setting) (analysis.Contract, error) {
-	evidence, err := EvidenceFor(settings)
-	if err != nil {
-		return analysis.Contract{}, err
-	}
-	c := AnalysisContract()
-	c.Resolution.Configuration = evidence.Configuration
-	return c, nil
-}
-```
+**Limitations of the import environment today:** at most 16 captured files; a
+module path and every supplied import path need a dot in their first element,
+so a module named `app` is refused and `math/big` cannot be named; a supplied
+package cannot import the standard library and cannot lie under the
+consumer's module path; dot and blank imports are unsupported.
 
-`MatchesConfiguration` accepts the base configuration, or the base
-configuration extended by exactly one normalized import environment. The
-reader that opens a Go receipt accepts a receipt made under any valid
-configuration, so a consumer that needs one particular environment must
-require `EvidenceFor(thatEnvironment)` itself. A generated-Files formatter does
-this through its contract evidence, as TypeScript's does.
-
-**Limits of the import environment today:** at most 16 captured files; a
-supplied package cannot import the standard library, and its path needs a dot
-in the first element, so `math/big` cannot be named; dot and blank imports are
-unsupported.
-
-**A consumer of the unplaced output that would change.** One integration test
+**A reader of the unplaced output that would change.** One integration test
 resolves and analyzes the generation snapshot itself as Go, and asserts that a
 later verification step used exactly that snapshot. Once the unplaced output is
 no longer a Go file, that snapshot has no Go semantics, and the test must use
 the snapshot of the placed Source.
 
-### 3.8 Rust as it is
 
-**The target writes visibility.** Every generated struct, every type alias and
-every field is marked public. The root is the vocabulary's `file` node with
-`item` children, on which the grammar requires nothing:
+### 4.8 Rust as it is
+
+**The Rust target writes visibility.** Every generated struct, every type
+alias and every field is marked public. The root is the vocabulary's `file`
+node with `item` children, on which the grammar requires nothing. The first
+fragment below is the end of the function that builds a declaration (`children`
+holds its generic parameters and, for a struct, its fields). The second is
+from the function that builds an expression from a native form:
 
 ```go
-// transform/syntax/rust/target/go/provider.go:83-99, 106-120
-	if record {
-		n, fields, err := b.Inspect(body)
-		if err != nil {
-			return body, err
-		}
-		if n.Kind != s.KindStruct {
-			return body, g.ErrInvalid
-		}
+// transform/syntax/rust/target/go/provider.go:91-99, 107-119
 		children = append(children, fields...)
 		return b.Node(m.Node(s.KindStruct, m.Attributes("name", name, "visibility", "public"), origin), children...)
 	}
@@ -1414,7 +1427,6 @@ func (b *Backend) Finish(declarations []m.Fragment[s.Language]) (m.Fragment[s.La
 	return b.Node(m.Node(s.KindFile, nil, ast.NodeRef{}), edges(s.RoleItem, declarations)...)
 }
 // …
-	switch name {
 	case model.FormPrimitive:
 		if data[0] == model.PrimitiveString {
 			return b.Path([]string{"std", "string", "String"}, nil, origin, true)
@@ -1428,7 +1440,6 @@ func (b *Backend) Finish(declarations []m.Fragment[s.Language]) (m.Fragment[s.La
 		return b.Node(m.Node(s.KindStruct, nil, origin), edges(s.RoleField, args)...)
 	case model.FormExternal:
 		return b.Path(append(strings.Split(data[0], "::"), data[1]), args, origin, true)
-	}
 ```
 
 `b.Path(…, true)` writes an absolute path such as `::std::string::String`, with
@@ -1436,13 +1447,14 @@ no link and no external use. Three sites do this: the string type, the
 sequence type and a library-owned type. An absolute path stays valid wherever
 the declaration is placed, so no placement breaks today, but the output records
 no intent for these uses. The Rust native model has no notion of visibility:
-its field form carries a name and an optional flag. The decision is the
-target's, not a mapping's.
+its field form carries a name and a flag that marks the field optional. So
+today field visibility is written by the target for every record alike, and no
+mapping library states it.
 
-**The vocabulary's visibility values.** The checker admits three values, and
-the attribute is optional on items (`module`, `struct`, `type-alias`, and so
-on) and on fields. The same `file` and `module` nodes hold items, so one file
-can contain several modules:
+**The vocabulary's visibility values.** The checker admits three values. The
+attribute is optional on items (`module`, `struct`, `type-alias` and so on) and
+on fields. A `file` and a `module` both hold items, so one file can contain
+several modules:
 
 ```go
 // check/syntax/rust/provider/go/check.go:20, 23-25, 34-35
@@ -1456,9 +1468,8 @@ func named() map[string]g.Attribute {
 	s.KindModule:                {Attributes: named(), Roles: []g.Role[s.Language]{g.Many(s.RoleItem, 0, items...)}},
 ```
 
-The parser, however, produces only two values and no attribute at all for a
-private item. The Rust Syntax formatter prints `pub` and `pub(crate)` and
-nothing else:
+The parser produces only two of the values, and no attribute at all for a
+private item:
 
 ```go
 // parse/syntax/rust/provider/go/parse.go:51-61, 190-192
@@ -1479,24 +1490,24 @@ func (p *parser) visibility() string {
 	}
 ```
 
-So `pub(super)` and `pub(in path)` have no syntax in this vocabulary, and a
-`use` item with a visibility (a re-export) is refused by the parser.
+The Rust Syntax formatter prints `pub` and `pub(crate)` and nothing else. Four
+limitations of this vocabulary bear on the questions:
+
+- `pub(super)` and `pub(in path)` have no syntax.
+- A `use` item cannot carry a visibility, so a re-export cannot be written.
+- A module exists only in its inline form, `mod name { … }`. The form
+  `mod name;`, which refers to another file, has no syntax. The proposal's
+  first Rust placement (Person in `src/people.rs`) needs it.
+- A private item and an item on which nobody has decided look the same: both
+  have no attribute.
 
 **The Rust bridge reparses and compares.** Rust's compiler needs source text.
-The bridge takes the captured file text, parses it again with bittype's parser
-and requires the result to equal the captured tree node for node, including
-attributes:
+The bridge parses the captured file text again with bittype's parser
+(`expected`) and requires the result to equal the captured tree (`tree`) node
+for node, including attributes:
 
 ```go
-// internal/rustsem/source.go:74-87
-		parsed, err := parser.Parse(ctx, parse.Input{Text: file.Text, SourceID: link.Source, TreeID: link.Tree})
-		if err != nil {
-			return nil, fmt.Errorf("%w: captured source/AST mismatch: %v", semantic.ErrInvalidRequest, err)
-		}
-		expected := parsed.ASTView()
-		if expected.Root != tree.Root || len(expected.Nodes) != len(tree.Nodes) {
-			return nil, semantic.ErrInvalidRequest
-		}
+// internal/rustsem/source.go:82-87
 		for i, node := range expected.Nodes {
 			actual := tree.Nodes[i]
 			if node.Kind != actual.Kind || !reflect.DeepEqual(node.Attributes, actual.Attributes) || !reflect.DeepEqual(node.Children, actual.Children) {
@@ -1513,37 +1524,13 @@ formatter must therefore express "private" as an absent attribute.
 Rust program linked against the compiler's internals (Rust 1.90.0). It exports
 entities of the kinds `module`, `struct`, `enum`, `variant`, `field`, `alias`,
 `trait`, `impl` and `parameter`, each with its compiler path as name (for
-example `captured::models::Person`), its captured site and its owner. The only
-occurrence of visibility in the helper is in the field list of a struct or
-variant:
+example `captured::models::Person`), its captured site and its owner.
+Visibility occurs once in the helper, in the field list of a struct or
+variant, and the Go side reads it as a boolean `Public` per field:
 
 ```rust
-// internal/rustsem/helper/src/main.rs:502-509
-                    for f in &variant.fields {
-                        let entity = self.entity(f.did)?;
-                        let ft = self
-                            .native(self.tcx.type_of(f.did).instantiate(self.tcx, args), context)?;
+// internal/rustsem/helper/src/main.rs:506
                         fields.push(json!({"Name":f.name.to_string(),"Public":self.tcx.visibility(f.did).is_public(),"Entity":entity}));
-                        field_terms.push(ft);
-                    }
-                    let fields = self.expression("fields", json!(fields), field_terms);
-```
-
-The Go side reads exactly that:
-
-```go
-// semantics/rust/go/model.go:26-36
-type Field struct {
-	Name   string
-	Type   Type
-	Public bool
-	Sites  []ast.NodeRef
-}
-type fieldInfo struct {
-	Name   string
-	Public bool
-	Entity semantics.EntityID
-}
 ```
 
 There is no fact for the visibility of a struct, an alias or a module. The
@@ -1551,20 +1538,23 @@ graph does carry compiler-resolved `target` bindings at path segments, so a
 comparison of bindings works as in TypeScript.
 
 **The Rust semantic profile.** Its configuration is one fixed setting list:
-edition 2024, target `x86_64-unknown-linux-gnu`, a crate named `captured`,
-library checking, dependencies from the compiler's own sysroot only. The
-supported fragment is "one captured source file with inline modules";
-"Imports and multi-file crates, dependency closures" are outside it. The
-profile "is qualified on Linux x86-64", and the helper is built only in the
+edition 2024, the compilation target `x86_64-unknown-linux-gnu`, a crate named
+`captured`, library checking, dependencies from the compiler's own sysroot
+only. There is no counterpart to Go's import environment: nothing a consumer
+supplies enters the configuration. The supported fragment is "one captured
+source file with inline modules"; "Imports and multi-file crates, dependency
+closures" are outside it. The profile "is qualified on Linux x86-64", in the
+project's sense of "accepted as tested", and the helper is built only in the
 project's continuous integration on Linux. A Rust Files formatter's check
-therefore runs only where the helper is provisioned.
+therefore runs only there.
 
-### 3.9 Name uniqueness as it is
+### 4.9 Names, and the two places that require them to be unique
 
 **Where names come from.** The horos declaration recipe chooses every
-declaration's native name. It is one recipe for all four targets. A
-declaration that is not in the entry module gets a prefix built from the first
-16 hexadecimal digits of its module's pin:
+declaration's native name. It is one recipe for all four languages. The
+**entry module** is the horos module that the horos snapshot's entry selects
+(`decl.Root` in the code). A declaration from any other module gets a prefix
+built from the first 16 hexadecimal digits of its module's pin:
 
 ```go
 // transform/syntax/horos/mapping/declarations/go/declarations.go:39-45
@@ -1578,18 +1568,22 @@ declaration that is not in the entry module gets a prefix built from the first
 ```
 
 `naming.Exported` capitalizes the first ASCII letter, turns a leading
-underscore into `Type_` and `Self` into `Self_`. So `Person` in an imported
-module becomes, for example, `M3f9a0c2d1e4b5a67_Person` in every target. The
-documentation says of this spelling: "This product spelling is not semantic
-identity", and describes the present state as "Each mapping currently produces
-one declaration tree containing the checked type closure."
+underscore into `Type_` and `Self` into `Self_`, and refuses a name containing
+`__`. So `Person` in an imported module becomes, for example,
+`M3f9a0c2d1e4b5a67_Person` in every language. The documentation says of this
+spelling: "This product spelling is not semantic identity", and describes the
+present state as "Each mapping currently produces one declaration tree
+containing the checked type closure." No document states the prefix's purpose.
+Nothing we read forbids two modules with the same module name and different
+pins in one output; we did not test it.
 
 Because every name is capitalized, every generated Go declaration is exported,
 whether or not the caller exposed it. In Go, visibility is the case of the
 name.
 
-**The flat-scope rule, in each target.** All four targets call one shared
-function from `CheckProgram`. Its comment marks it as one profile's rule:
+**The flat-scope rule, as each target's program rule.** All four targets call
+one shared function from `CheckProgram`. Its comment marks it as one profile's
+rule that a target selects:
 
 ```go
 // transform/syntax/shared/target/go/check.go:9-32
@@ -1619,28 +1613,20 @@ func CheckSingleScope[T any](ctx context.Context, p g.Program[T]) error {
 }
 ```
 
-**The same rule again, inside the shared constructor.** `Compile` (section
-3.3), which no target can bypass, repeats both refusals with a different
-error, and later orders declarations by name:
+**The same rule again, inside the shared tree builder.** `Compile`, which all
+four targets call from `Build`, repeats both refusals unconditionally, with a
+different error:
 
 ```go
-// transform/syntax/shared/target/go/compile.go:18-33, 112-118
+// transform/syntax/shared/target/go/compile.go:18, 21-26, 112-118
 	names := map[string]bool{}
-	anchors := map[Fragment[T]]Symbol[T]{}
-	parameters := map[uint32][]Fragment[T]{}
+	// …
 	for _, d := range declarations {
 		if d.ID == 0 || int(d.ID) > len(declarations) || names[d.Description.Name] {
 			return fail(g.ErrScope)
 		}
 		names[d.Description.Name] = true
 	}
-	for _, d := range declarations {
-		seen := map[string]bool{}
-		for i, p := range d.Description.Parameters {
-			if p.Name == "" || names[p.Name] || seen[p.Name] {
-				return fail(g.ErrScope)
-			}
-			seen[p.Name] = true
 // …
 	order := slices.Clone(declarations)
 	slices.SortFunc(order, func(a, b g.PlannedDeclaration[T]) int {
@@ -1651,46 +1637,28 @@ error, and later orders declarations by name:
 	})
 ```
 
-`Compile` identifies a symbol by declaration ID and parameter index, so
-references do not depend on unique names. The order of declarations in the
-output does: the comparison never reports two names as equal. The planner
-itself has no name rule.
+The loop that follows the first one refuses a type parameter named like any
+declaration. This second copy is a shared helper's rule, not a kernel
+invariant: the kernel seals whatever a target returns (section 4.3), and its
+planner has no name rule. `Compile` identifies a plan symbol by declaration ID
+and parameter index, so references do not depend on unique names. The order of
+the output does. Declarations are emitted in name order, each after the
+declarations its body uses, and the comparison never reports two names as
+equal. A declaration that depends on itself is refused.
 
-**TypeScript has both rules.** Its target calls `CheckSingleScope`, and its
-Files stage checks each placed unit again (section 3.5, "duplicate declaration
-%s in %s"). The accepted TypeScript correction kept the flat rule.
+**TypeScript has the rule three times.** Its target calls `CheckSingleScope`,
+`Compile` repeats it, and its Files stage checks each placed file (section
+4.5). The accepted TypeScript correction did not touch the first two.
 
-### 3.10 C++, briefly
+### 4.10 C++, briefly
 
-The C++ target takes one namespace from its configuration, wraps every
-declaration in it, and writes the include directives it collected:
-
-```go
-// transform/syntax/cpp/target/go/provider.go:148-164
-func (b *Backend) Finish(declarations []m.Fragment[s.Language]) (m.Fragment[s.Language], error) {
-	var children []m.Child[s.Language]
-	headers := slices.Clone(b.headers)
-	slices.Sort(headers)
-	for _, header := range headers {
-		n, err := b.Node(m.Node(s.KindInclude, m.Attributes("path", header, "system", "true"), ast.NodeRef{}))
-		if err != nil {
-			return n, err
-		}
-		children = append(children, m.Child[s.Language]{Role: s.RoleInclude, Fragment: n})
-	}
-	ns, err := b.Node(m.Node(s.KindNamespace, m.Attributes("name", b.config.Namespace), ast.NodeRef{}), edges(s.RoleDeclaration, declarations)...)
-	if err != nil {
-		return ns, err
-	}
-	children = append(children, m.Child[s.Language]{Role: s.RoleDeclaration, Fragment: ns})
-	return b.Node(m.Node(s.KindTranslationUnit, nil, ast.NodeRef{}), children...)
-}
-```
-
-C++ has no resolution or analysis provider. The shared contract refuses a
-formatter without semantic evidence (section 3.4), so a C++ generated-Files
-formatter cannot be constructed yet, and its move is deferred with that
-trigger. It still constrains the shape now:
+The C++ target takes one namespace from its configuration and, in its
+`Finish`, wraps every declaration in one namespace node. It also writes one
+include directive per standard header its declarations need. C++ has no
+resolution or analysis provider. The shared Files contract refuses a formatter
+without compiler evidence (section 4.4), so a C++ generated-Files formatter
+cannot be built yet, and its move is deferred with that trigger. It still
+constrains the shape now:
 
 - a namespace is a native scope that is independent of the file path, can be
   nested, and can occur several times in one header and across headers;
@@ -1699,36 +1667,7 @@ trigger. It still constrains the shape now:
 - includes are file-level, order matters, and whether a forward declaration
   suffices depends on how a type is used.
 
-### 3.11 The package-role check
-
-One test classifies every package by its path and checks its imports against
-its role (section 2.1). A Files formatter is a contribution at
-`format/files/<language>/provider/go`. Its role allows:
-
-```go
-// integration/go/architecture_roles_test.go:287-290
-	"format/files": {
-		"contracts/analysis/go", "contracts/check/go", "contracts/format/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go",
-		"semantics/go", "semantics/<language>/go", "source/go", "syntax/<language>/go", "trees/ast/go", "trees/cst/go", "trees/representation/go",
-	},
-```
-
-The generation contract and the Files identities are not in that list.
-TypeScript's formatter has them through a per-package extension, a mechanism
-bittype's layout document reserves for the case "Languages differ":
-
-```go
-// integration/go/architecture_test.go:280-282
-	// TypeScript Files formatting places generated declarations in the supplied
-	// Files and writes named type imports for their public symbols.
-	"format/files/typescript/provider/go": {"contracts/generation/go", "files/go", "internal/typescriptimports", "transform/syntax/typescript/symbol/go"},
-```
-
-The project's instructions state: "A package of an existing role needs no edit
-to the test." A Go formatter, a package of an existing role, would need one.
-The shared contract package `contracts/format/go` may import the generation
-contract, the semantic contract, `source/go` and the tree packages. It may not
-import `files/go` today.
+<!-- REVISION IN PROGRESS: the text below this line is the earlier draft -->
 
 ## 4. One generated set through placement
 
