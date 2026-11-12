@@ -24,7 +24,7 @@ func (e *exporter[L]) provider(name string, value core.Value, operands []semanti
 	if err != nil {
 		return 0, err
 	}
-	term := semantics.Term{Kind: semantics.ProviderExpression, Operator: n.Key(name), Encoding: semantics.Key{Owner: "ontos", Name: "codec-v1"}, Data: codec.Encode(value), Operands: operands}
+	term := semantics.Term{Kind: semantics.ProviderExpression, Operator: n.Key(name), Encoding: n.TermEncoding(), Data: codec.Encode(value), Operands: operands}
 	if err := e.fillTerm(id, term); err != nil {
 		return 0, err
 	}

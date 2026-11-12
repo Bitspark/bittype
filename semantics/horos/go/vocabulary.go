@@ -3,6 +3,8 @@
 package horos
 
 import (
+	"strings"
+
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
@@ -43,6 +45,23 @@ func ImportRelation() semantics.Key { return Key("import") }
 // Operators of the terms that sort and identity facts carry.
 func ProperSort() semantics.Key     { return Key("sort/proper") }
 func ModuleIdentity() semantics.Key { return Key("identity/module") }
+
+// Operators of the terms that descriptor occurrences carry, one for each
+// constructor. DescriptorConstructor is the inverse of DescriptorOperator; ok
+// is false for every other key.
+const descriptorPrefix = "descriptor/"
+
+func DescriptorOperator(constructor string) semantics.Key { return Key(descriptorPrefix + constructor) }
+func DescriptorConstructor(operator semantics.Key) (constructor string, ok bool) {
+	constructor, ok = strings.CutPrefix(operator.Name, descriptorPrefix)
+	if !ok || operator != DescriptorOperator(constructor) {
+		return "", false
+	}
+	return constructor, true
+}
+
+// The encoding that the data of horos terms carries; ontos owns the codec.
+func TermEncoding() semantics.Key { return semantics.Key{Owner: "ontos", Name: "codec-v1"} }
 
 // LimitsSetting contains a JSON array [depth,nodes,bytes,modules]. All four
 // positive limits are required; depth must not exceed 512. Its absence selects
