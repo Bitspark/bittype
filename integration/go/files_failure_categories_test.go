@@ -606,6 +606,22 @@ func TestFilesFailureCategories(t *testing.T) {
 	add("the placed declarations exceed the depth limit", horosName, source.ErrLimit, horosLimited(func(l *format.FilesLimits) { l.Source.MaxDepth = 1 }))
 	add("the placed declarations exceed the work limit", typescript, source.ErrLimit, tsLimited(func(l *format.FilesLimits) { l.Source.MaxWork = 1 }))
 	add("the placed declarations exceed the work limit", horosName, source.ErrLimit, horosLimited(func(l *format.FilesLimits) { l.Source.MaxWork = 1 }))
+	add("the root of a further file exceeds the node limit", typescript, source.ErrLimit, tsLimited(func(l *format.FilesLimits) {
+		// The first file takes every node that the limit allows: its root and the
+		// nodes of its declarations.
+		var count func(ast.NodeID) int
+		count = func(id ast.NodeID) int {
+			nodes := 1
+			for _, child := range tree.Nodes[id-1].Children {
+				nodes += count(child.Node)
+			}
+			return nodes
+		}
+		l.Source.MaxNodes = 1
+		for _, site := range tsPlacement().Units[0].Declarations {
+			l.Source.MaxNodes += count(site.Node)
+		}
+	}))
 	add("the constructed imports exceed the node limit", typescript, source.ErrLimit, tsLimited(func(l *format.FilesLimits) { l.Source.MaxNodes = len(tree.Nodes) + 1 }))
 	add("the constructed imports exceed the byte limit", typescript, source.ErrLimit, tsLimited(func(l *format.FilesLimits) { l.Source.MaxBytes = 1 }))
 
