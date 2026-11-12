@@ -161,9 +161,7 @@ func (layout *result) bindUnit(ctx context.Context, program *program, unit *plac
 			continue
 		}
 		if !program.tops[dest.site] || !program.public[dest.site] {
-			// The placement is well formed. It needs access that the request did
-			// not grant, which a later profile may admit.
-			return fmt.Errorf("%w: cross-unit type %s must be exported", source.ErrUnsupported, name)
+			return fmt.Errorf("%w: cross-unit type %s must be exported", source.ErrInvalid, name)
 		}
 		target := filesByTree[moved.Tree]
 		route, err := imports.Relative(unit.placement.Path, target.Path)
