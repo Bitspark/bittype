@@ -67,9 +67,10 @@ func (p Library[T]) Describe(from, to representation.Language) (...) {
 	}
 ```
 
-Every constructor of a native mapping library takes a `profile` argument, for
+Every constructor of a native mapping library took a `profile` argument, for
 example `text.Library(profile)` and `record.Library(profile)` in the packages
-under `transform/syntax/horos-to-<native>/mapping/<name>/go`. At `ca5dc80`
+under `transform/syntax/horos-to-<native>/mapping/<name>/go` on `main` at
+`6c788d8`. At `ca5dc80`
 these were `Text(profile)` and `Libraries(profile)` in one package per pair;
 [bittype/ACX-009](0009-package-boundaries.md) records that split. Exactly one
 value of that argument worked. The documented purpose of the check was to
