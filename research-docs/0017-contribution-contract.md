@@ -78,7 +78,7 @@ has exactly one of four standings, listed in section 5:
   rule AC-09 (section 2.1) gives it no weight in the design.
 - **Our assumption or derivation.** Open.
 
-The code in section 4 is evidence of the present state. It is never a reason
+The code in section 3 is evidence of the present state. It is never a reason
 for or against an option.
 
 **How this document is organised.**
@@ -87,8 +87,8 @@ for or against an option.
 | --- | --- |
 | 1 | The system for an outsider, and the terms used throughout |
 | 2 | The architecture rules, the two accepted designs, the work items, and the contracts of the library that consumes the plan |
-| 3 | One request traced through today's code and through the accepted design |
-| 4 | The contract as it is today, with the code inlined |
+| 3 | The contract as it is today, with the code inlined |
+| 4 | One request traced through today's code and through the accepted design |
 | 5 | Fixed points and their standing |
 | 6 | What we have considered: the settled part and the three open points, each with options, our leaning and what speaks against it |
 | 7 | Questions for the expert |
@@ -220,7 +220,7 @@ Files stage: files, imports            factory calls and glue
 (out of scope here)
 ```
 
-The left branch exists and is what section 4 shows. The right branch is the
+The left branch exists and is what section 3 shows. The right branch is the
 accepted design of section 2. The contract in question is the arrow from
 "contributions" into the kernel: what a contribution is, what its rule returns
 and what it may ask of the kernel.
@@ -311,7 +311,7 @@ bittype's own record of applying the package-boundary request,
 `docs/package-boundaries.md`, names the one confirmed case of wrong coupling in
 the generator. It is the case behind question 1 (lines 96-102, written against
 an earlier commit; the Go detail has changed since and is shown in section
-4.5):
+3.6):
 
 > In a Record mapping, `r.Mapped(f.Use)` asks the kernel for the native type of a field. Whichever mapping the consumer selected answers. This is the correct form.
 >
@@ -597,7 +597,7 @@ change. Verbatim, with one stale file path corrected in brackets:
 > **The existing mapping contract changes once, here.** [...] A binding's `Expand` returns only a native `Expression[T]` (`contracts/generation/go/description.go:26-31`), and a declaration recipe returns only a `DeclarationDescription[T]` (`:61-66`). A decision such as "this field is optional" is made inside the callback and recorded nowhere ([today `transform/syntax/horos-to-golang/mapping/record/go/record.go:70-72`]). Item 1 of #195 requires the native expression and the plan entry to be projections of one selected instance. So what a contribution returns has to change, and the mappings of all four targets implement that contract. The change is made in this slice for every existing mapping, including Rust and C++, so that later families add contributions and change no existing contract. Derive the new result from the domain (AC-09). This item prescribes no signature.
 
 "Recorded nowhere" is imprecise against the code, and the difference matters
-for option C of section 6.1. Section 4.6 shows what is kept and what is lost.
+for option C of section 6.1. Section 3.7 shows what is kept and what is lost.
 
 Its verification: "After this slice, a fixture family is added by registering
 one contribution. The diff of that test touches no file under
@@ -633,7 +633,7 @@ plan and a round trip in the Go completeness test backend, with no rule
 guessed by the backend." and "A seeded mutant that builds a plan entry in a
 separate pass from the native expression turns the completeness test red".
 ("Binding identities" in item 5 are the rule IDs such as `list/golang/1` of
-section 4.2.)
+sections 3.4 and 3.5.)
 
 **Issue #197** is the report: binding support per family and target,
 separately from type support, shown only with the evidence of section 2.3.
@@ -1557,3 +1557,464 @@ points concretely.
   yields typed Go code, for which bittype has no vocabulary (question 2).
 - `library-3/list/golang/1` is the only name the selected list rule has. Its
   first part is a registration counter (question 3).
+
+## 5. Fixed points and their standing
+
+The four standings are those of the Question section. "BG" is binding
+generation and "RF" is representation families, both accepted on 9 November
+2026 (sections 2.2 and 2.3). "BC" is the service library's binding contracts,
+accepted on 11 November 2026 (section 2.5).
+
+| # | Statement | Standing | Shown in |
+| --- | --- | --- | --- |
+| 1 | The rules AC-02, 03, 04, 05, 08, 09 and 10. In particular: adding a contribution changes only its owner and the consumer composition; openness must not come from arbitrary payloads or unchecked claims; a first change is final in its inputs and identities | Owner rule | 2.1 |
+| 2 | "Properly done", with no refactor later | Owner rule | Question |
+| 3 | A contribution that needs whatever the consumer registered for a meaning states a demand that the shared mechanism resolves. The record rules deciding the optional representation is a confirmed case of the fault | Owner rule, applied in bittype's package-boundaries record | 2.1, 3.6 |
+| 4 | bittype is the authority for selecting native representations and publishes each selection in a typed plan. One binding backend per target, owned outside bittype, consumes the plan, the source semantics and the contributions. bittype emits no run-time adapters | Accepted design (BG) | 2.2 |
+| 5 | The planner owns selection, substitutions, references and the plan. Each representation implementation owns native layout, presence rules, construction and access | Accepted design (BG) | 2.2 |
+| 6 | A library publishes a contribution "for one declaration and one supported target representation", with a source selector, a representation context (target and profile), a native facet, a value adapter facet, requirements and optional product facets. Facets a binding product needs are selected together with the native facet. A missing facet fails explicitly; there is no structural fallback | Accepted design (BG) | 2.2 |
+| 7 | A target's structural profile and a library's exact mapping use the same public contribution mechanism | Owner rule (AC-04) and accepted design (BG) | 2.1, 2.2 |
+| 8 | A family contributes, per target, one contract with seven parts, and is delivered complete: type, plan entries, conversion and qualification together | Accepted design (RF) | 2.3 |
+| 9 | One immutable representation instance per use. The native type and the plan entry are projections of it. No later pass reconstructs a decision from the source | Accepted design (RF) | 2.3 |
+| 10 | A plan entry names a run-time factory and gives it the payload. A family may supply a target-owned lowering facet that yields typed target expressions or helpers. The backend never switches over families. Source-code strings never stand in for typed target expressions | Accepted design (RF) | 2.3 |
+| 11 | The plan is a shared envelope plus family-owned payloads. It is a graph: links are explicit in the envelope, and nothing the orchestration must resolve hides in a payload | Accepted design (RF) | 2.3 |
+| 12 | A payload is an ontos value whose type its family declares in horos. bittype generates the Go and TypeScript types of that type, and horos conformance validates a payload | Accepted design (RF) | 2.3 |
+| 13 | Five version axes. Generic requirements from the first version. The envelope keeps an explicitly unstable version until the six vertical cases pass | Accepted design (RF) | 2.3 |
+| 14 | bittype's native vocabularies stay types-only. The emitter of a backend is scoped separately, with its own syntax and compiler checks | Accepted design (BG) | 2.2 |
+| 15 | The TypeScript backend belongs to the service library and reads a serialized plan. A Go backend belongs to a future Go runtime library | Accepted design (BG) | 2.2 |
+| 16 | The existing mapping contract changes once, for every existing rule of the four targets, before the families. After it a family adds a contribution and changes no existing contract | Accepted design (RF, sentence of 11 November 2026) | 2.3 |
+| 17 | The kernel's contract package and the registry import neither horos nor ontos. bittype's charter: "Generic carriers, contracts, engine, printer and native syntax stages have no external Horos/Ontos imports" (`CHARTER.md:129-131`). A dependency test enforces it | Accepted design (bittype's charter and repository layout) | here |
+| 18 | The call context is passed to every factory. Each family declares what it copies, retains or needs stable. The memo key is "the selected representation instance (its descriptor and its generic environment) plus the input's identity" | Accepted design (BC). The lifetime law L1, which also uses "instance", is not confirmed | 2.5 |
+| 19 | The completeness test backend is in bittype, in Go, and is a test. bittype publishes no conversion code | Accepted design (BG and bittype's charter), and research 0015's result table: "The Go case runs in bittype's own completeness test backend" | 2.2, 2.4 |
+| 20 | Nothing is released. No interface shown here has a consumer outside our repositories | Implemented today | Question |
+| 21 | A registered unit is a profile and three lists; a rule returns native intent; the planner keeps a native program and debug strings; rule IDs are local strings and registry handles are pointers; a replacement names use rules only; one kind of helper exists, wired by a key | Implemented today | 3 |
+| 22 | The contribution states its own profile, and a request selects the contributions that state the profile it names | Accepted design (BG: "Representation context: Target and supported profile") and implemented today | 2.2, 3.3 |
+| 23 | The unit of registration is one contribution, and one contribution is one declaration or builtin form, one target and one profile. BG says "one declaration and one supported target representation", RF says "per target"; neither names builtin forms or says "one registration" | Our derivation | 6.1 |
+| 24 | A rule returns one decision record and the projection that computes the native type from it (option B). The planner issues the instance, links its slots and reads no meaning of the record | Our derivation from 5, 9 and 11 | 6.1 |
+| 25 | The order: the contract change first with byte-identical output, then the optional representation moves, then additive work | Our derivation from AC-10 and 16 | 2.4 |
+| 26 | The Go conversions of the first slice are test code, written as registered handlers that execute the payload | Our derivation | 6.3 |
+| 27 | The payload types of the first slice can use only text, booleans, lists, closed records, optional fields and generics, because bittype generates their Go and TypeScript types and represents nothing else yet. A payload cannot hold an integer until the integer family exists | Our derivation from 12 | 6.5 |
+| 28 | Native names that a plan entry records are provisional. A separate, open design (issue #274) decides whether generation records a name or a naming intent that a later stage spells | Our assumption | here |
+
+Statements 17 and 12 together have a consequence that is easy to miss. The
+plan's node type lives with the planner, in the contract package, because
+only the planner may issue a plan. A payload is an ontos value validated
+against a horos type. The contract package may import neither. So the planner
+can hold a payload only as something opaque to it, and encoding and
+validation have to happen in a package outside the kernel that may import
+both. Under AC-09 the import rule is a fixed point only because an accepted
+document states it; we note that it is the one fixed point in this table that
+constrains the Go shape of the decision record directly.
+
+Out of scope: the Files stage that places generated declarations into files
+and packages (research 0016, answered on 12 November 2026); capability
+lifetime and the laws L1 to L14; the report of binding support; the choice of
+native representation for any particular family.
+
+## 6. What we have considered
+
+Everything in this section is ours and open, including 6.1, which we treat as
+settled only in the sense that we would build it tomorrow. "Our leaning" marks
+what we would do today. No option is ruled out because the present code would
+have to change.
+
+### 6.1 The part we treat as settled: what a rule returns
+
+Fixed point 9 gives the property: one instance per use, two projections, no
+later pass. Fixed point 5 names two owners: the representation owns the
+decisions, the planner owns selection, links and the plan. Issue #196 item 6
+"prescribes no signature". Three shapes satisfy the words to different
+degrees.
+
+| Option | What a rule returns for one use | What it guarantees, and to whom | Weakness |
+| --- | --- | --- | --- |
+| A. Two results side by side | Native intent and a payload, from one call | To a test that looks for a second pass: both come from one call | Each decision is written twice inside the rule, once per result. "Cannot disagree" then rests on each author. A rule that sets the flag in one and forgets it in the other compiles and plans |
+| **B. One decision record and its projections** | The family's decisions for this use as one value, with the slots it needs declared. The contribution also supplies a function from (decision record, native intent of the filled slots) to native intent. The plan node is the record plus the planner's links | To a backend: nothing was decided off the record, because the native type is computed from it. To the family: each decision is written once. To the planner: links are explicit and it reads no meaning | The native rule must be a function of the record. Every decision that is control flow today becomes a field. The projection gets no source reader, so anything it needs from the source must have been recorded |
+| C. Native intent is the record | Native intent only, as today. The planner keeps it per use, and a plan node is derived from it | One value | A node would consist of target forms and strings that only a native model may read (section 3.7). A decision that no type shows has no place: "`Value` is ignored when absent", "an absent property is not `undefined`", text validation. Fixed point 12 asks for a family-owned horos schema |
+
+**Our leaning: B.** Three consequences follow, all ours:
+
+- A declaration recipe returns a decision record too (record type or alias;
+  the name). Its generic part, the correspondence of parameters, is link
+  material and belongs to the envelope, which fixed point 13 already requires
+  to carry "scoped binder identities, native type arguments, adapter
+  arguments".
+- The record is opaque to the planner and typed by its family. Because of
+  fixed point 17 its encoding as an ontos value and its validation happen
+  outside the kernel.
+- The planner issues the instance: it gives it identity, fills and links its
+  slots and makes it immutable. A contribution cannot construct an instance or
+  a plan node. This continues an existing rule, that only the planner issues a
+  plan.
+
+The unit follows from fixed points 6 and 8: one contribution is one
+declaration or builtin form, one target, one profile, with all its facets, and
+it is what a consumer registers. The three lists of section 3.3 go away.
+
+**Why the kernel contract may change at all** (AC-08). The missing capability:
+the planner cannot keep "one origin per representation decision" while a rule
+returns native intent only and the per-use result is discarded. Why this
+layer: only the planner sees each selection exactly once and resolves slots,
+substitution and scope. How it serves independent contributions: the carrier
+is the same for a structural family and for a library's exact mapping, and
+the planner learns no payload meaning.
+
+**What speaks against our leaning.** The strongest argument we see is that B
+buys "cannot disagree" for the native type only. The conversion is not a
+projection that bittype computes from the record. It is a factory in another
+repository (TypeScript) or a handler in a test (Go) that reads the record and
+must agree with a native type that some function in bittype derived from the
+same record. The record makes disagreement detectable, by conformance vectors,
+and does not make it impossible. If that is all it buys, option A with a
+generated check might buy the same at less cost to authors. A second argument:
+B requires the native type to be a function of recorded decisions and slot
+results. An exact mapping to an existing external type has an empty record and
+a constant projection, which is fine. But a family whose native type depends
+on a property of what was selected for its operand (a nullable value that is
+`T | null` when `T` excludes null and a wrapper otherwise) needs facts about
+the operand's selection as inputs of its decision, and today a rule never sees
+its child's selection (section 3.3). B does not say where those facts come
+from. That leads into the first open point.
+
+### 6.2 Open point 1: the kernel's demand capability
+
+**What is decided.** The record rule must not decide the optional
+representation. It states a demand, and the kernel resolves it to whatever
+the consumer registered (fixed point 3). "Optional fields" is one of the six
+families of the first slice, so it has all seven parts on TypeScript and Go.
+
+**What no document says.** (a) What the demand is keyed by: the kernel selects
+by the selector of a use, and an optional field is no use (section 3.6).
+(b) What the answer is: a type around the field's type in Go, Rust and C++, a
+property of the field member in TypeScript. (c) How the demand appears in the
+plan. (d) How a consumer replaces the answer.
+
+| Option | The demand | What it guarantees, and to whom | Weakness |
+| --- | --- | --- | --- |
+| A. Presence stays in the record family | None. The record's payload holds the presence representation; Go's helper becomes a private part of Go's record contribution | One contribution; the simplest plan | Excluded by fixed point 3. A consumer who wants another optional representation still replaces the record contribution |
+| **B. A source-owned selector for a form that is not a use** | The source integration publishes a selector for "an optional field of a record", as it does for `list-of`. The record contribution asks the kernel for the representation under that selector and passes the field's type use as the operand. Any contribution registers for that selector like for any other | To the consumer: selection by exact identity, the ambiguity error, replacement and the missing-contribution failure all apply unchanged. To the backend: the record's node links to an optional node by a typed slot. To the record family: it never learns what was selected | The kernel gains a capability: selection for something that is not an occurrence in the source graph, at the request of a contribution. Its general justification (AC-08) must be written. The set of such "modalities" is open-ended, and each needs a selector that the source integration owns |
+| C. A key that the composition wires | Today's helper key, made complete: the unit that supplies the key becomes a full contribution with payload and conversion | The kernel resolves it and a missing supplier fails | Selection is by wiring, not by identity. Replacement does not apply. The key is a pointer of one process and cannot be recorded in a plan. Two suppliers are an error with no way to choose |
+| D. A demand keyed by a role that the asking family owns | The record family publishes a role identity ("presence of a field"), and contributions register as providers of that role for a target | The asking family defines exactly what it needs from an answer, including its shape | A second selection mechanism beside selectors. A provider depends on the vocabulary of the family that asks, so "optional" becomes the record family's concept and not horos's. Two families that need the same modality (records and tuples with optional elements) would each own a role |
+
+**What the answer is** is a second, independent choice:
+
+- **T. A type.** The answer is native intent with one slot for the operand:
+  `BittypeOptional[·]`, `std::optional<·>`. Then TypeScript has no optional
+  contribution, the `?` stays the record family's own layout decision, and
+  the absence rule of TypeScript lives in the record family. The six families
+  mean different sets of contributions per target.
+- **M. A field member.** The answer is at the level of the member: given the
+  field's name and the operand's representation, it yields the member (in
+  TypeScript a property with a modifier, in Go a field with a wrapped type and
+  the helper declaration it needs). All four targets ask alike, and each
+  target's presence rule has one owner. Then the demand's result is not "a
+  type", and the kernel's notion of what a slot can hold widens from "native
+  intent for a type position" to "native intent for a position that the
+  asking family defines".
+- **R. A decision record only.** The answer is the optional family's decision
+  record, with no native intent of its own. The record family's projection
+  reads a small, published vocabulary of that record ("wrap in this type", or
+  "mark the member") and builds the member itself. Then the record family
+  interprets another family's payload, which fixed point 11 seems to exclude
+  for the orchestration but does not clearly exclude between families.
+
+**Our leaning: B with M.** "Optional fields" is then one contribution per
+target, selected for the horos optional-field form. The record's payload keeps
+the field layout and, per optional field, a link to the optional node. Go's
+`BittypeOptional` declaration becomes a part of Go's optional contribution, so
+the consumer-made key and the separate helper registration disappear. An
+optional nullable field composes without touching the record family: the
+nullable family represents the field's type, the optional family the field.
+
+**What speaks against our leaning.** First, M makes the answer's shape depend
+on the asker: a record wants a member, a tuple with an optional trailing
+element wants something else, a function parameter something else again. One
+selector for "optional" then has to serve several position kinds, or there is
+one selector per position kind, and the optional family is no longer one
+thing. Under T this problem does not arise, at the price of TypeScript's
+asymmetry. Second, B invents source identities for things horos does not
+treat as types. The source integration owns selectors because it owns the
+meaning of source forms; a selector for "the presence modality of a field" is
+a statement about horos's grammar that horos itself does not make, and the
+next modality (a map's key requirement, a union's discriminator) may not be a
+form of the source at all but a relation between two selected
+representations. Third, a demand that returns a link and no facts cannot
+serve a family whose decision depends on its operand's selection (end of
+6.1). If demands must also return declared facts about the selected
+contribution, that is a larger capability than the one we lean to, and it
+would be better to know before the contract changes.
+
+### 6.3 Open point 2: facets as an open set, and the lowering facet
+
+**What is decided.** A contribution pairs a native facet with a value adapter
+facet; a root facet and "optional product facets" exist; a lowering facet may
+turn recorded decisions into "typed target expressions or helpers"; the
+backend never switches over families; bittype's vocabularies stay types-only
+(fixed points 6, 10 and 14).
+
+**What no document says.** Whether the set of facet kinds is closed in the
+kernel's contract. Who owns the vocabulary in which a lowering facet for Go
+writes an accessor or a constructor, given that the Go backend's owner does
+not exist yet. Whether the first slice must already pass vertical case 4, "a
+Go case with typed construction and a generic adapter argument".
+
+Two choices are entangled. The first is the shape of the contract:
+
+| Option | The contribution contract | What it guarantees, and to whom | Weakness |
+| --- | --- | --- | --- |
+| F1. A closed list | The kernel's contribution type has one field per facet kind: native, value, root, operation, lowering | Every reader sees every facet's type | A new binding product (presentation, documentation, a second backend) needs a kernel edit: the violation AC-03 describes. The kernel would name `operation`, a concept of the service library |
+| **F2. An open set, keyed by the reading product** | The kernel knows the native facet, because it plans with it, and the decision record. Every other facet is carried under a kind that the product reading it issues, as a native model issues its forms today. The kernel checks presence ("a bindings request needs kind K; this contribution has none") and never reads a facet's content | A new product adds a kind and edits nothing shared. The failure "missing facet" stays the kernel's | The kernel carries values it cannot check. What keeps this from being the "arbitrary payloads" of AC-05 is only that each kind has an issuer that validates its facets, and that a facet may refer to slots only through kernel-issued references |
+| F3. No facets in the contribution | The contribution is the native facet and the decision record. Everything else is registered separately, with the product that reads it, under the contribution's identity | The kernel contract is smallest. A second owner can add a facet to someone else's family | "Selected together" (fixed point 6) becomes a lookup by identity. We considered and dropped this on 12 November 2026 because joint ownership excludes a second owner adding a facet; it is, however, exactly how the TypeScript factory already relates to bittype's family (section 2.5) |
+
+The second is the first slice's Go conversion, which decides whether the
+contract is tested against lowering before it is fixed:
+
+| Option | How the Go test backend converts `Page[Person]` | What it proves | What it leaves open |
+| --- | --- | --- | --- |
+| **V1. Registered handlers that execute the payload** | One Go conversion per family, registered with the family's contribution, takes the payload and the conversions of its slots. For a named struct it reads and builds fields by the names in the payload, through reflection | Completeness: every name, order and presence rule comes from the payload. The design allows it: "its handlers are registered contributions executing selected decisions" | The lowering facet is not exercised. Case 4 stays open. Nothing shows that typed construction can be expressed from the decision record |
+| V2. Lowering to generated Go | Each Go family supplies a lowering facet; the test backend assembles Go source, compiles it and runs it | Also the lowering facet, and case 4 | Needs typed expressions for value-level Go: calls, field access, composite literals, closures. bittype may not own that vocabulary (fixed point 14), and its future owner is absent. The first slice would define a second public interface as a side effect |
+| V3. A paper lowering | V1 in code, plus the lowering facet of the Go record and list families written out on paper against F2, with a hypothetical expression vocabulary, before the contract is fixed | That F2 and the decision record carry what a lowering needs, to the extent paper shows it | No compiler has checked it |
+
+**Our leaning: F2 with V1, and a record on the issue that case 4 is not
+claimed by the first slice.** The lowering facet is "target-owned", and its
+vocabulary belongs to a backend's emitter, which is "scoped separately". The
+first slice's claim is a complete plan and the conversion laws for six
+families, and V1 establishes both. Adding a lowering facet later stays
+additive only if the contract does not enumerate facet kinds, which is why F2
+cannot be postponed even though lowering can.
+
+**What speaks against our leaning.** The six vertical cases exist because the
+expert of research 0015 expected the envelope to be wrong until difficult
+compositions had been built. We would be fixing the *contribution contract*,
+which "changes once", on the evidence of the easy path only, and reserving
+the "unstable" label for the envelope. But a lowering facet is a function of
+the decision record and of typed references to native symbols and slots. If
+it turns out to need something the record or the slots do not carry (a typed
+reference to a generated field instead of its name; the native type of a slot
+as a value-level type argument; the helper declaration's constructor), the
+contribution contract changes a second time, not the envelope. Reflection in
+V1 hides exactly these needs, because it turns every reference into a string
+at run time. A second argument: under F2 the kernel checks presence of a
+facet kind and nothing else, so "selected together" guarantees only that the
+facets were registered together, not that they agree. And F3 deserves a
+better hearing than we gave it: the process boundary forces lookup by
+identity for TypeScript anyway, so one mechanism for all facets may be more
+honest than "together" in Go and "by identity" elsewhere.
+
+### 6.4 Open point 3: the identities of the plan
+
+**What is decided.** The envelope records "selected contribution and profile
+identities" and "source-use identities". Duplicates are rejected. One instance
+per use. The memo key is "the selected representation instance (its
+descriptor and its generic environment) plus the input's identity", and one
+object under two representations converts once per representation (fixed
+points 9, 11, 18).
+
+**What no document says.** Three identities are in play and only the first
+two words of each are given:
+
+1. **The contribution identity.** What a plan node records as "selected
+   contribution", what a backend in another process uses to find the factory,
+   and what the service root's facet compares to recognise "the structural
+   record family". Today's only candidates are a registration counter and a
+   local string (section 3.4).
+2. **The plan node.** One per use, or one per distinct selection.
+3. **The run-time identity.** The part of a memo key that is not the input.
+
+For the contribution identity:
+
+| Option | Form | What it guarantees, and to whom | Weakness |
+| --- | --- | --- | --- |
+| **I1. Owner-stated name and version** | A string the contribution states, such as `list/golang/1`, unique within a registry; the registry rejects a second registration of the same string | To a backend: a stable key in every process. Today's rule IDs already have this form | Uniqueness holds per registry only. Two owners can publish the same name, and a backend that pins it cannot tell them apart. The version in the name is one of the five axes (the semantic identity) folded into an identity |
+| I2. Owner namespace, name and version as separate parts | The owner's namespace is an identity the owner demonstrably controls: for an exact mapping the horos module pin of the declaration it maps; for a profile's builtin families the profile's identity | Collisions across owners cannot happen by accident, and the version axis stays an axis | Needs a rule for what a namespace is for a contribution that maps someone else's declaration (a Go mapping of a library's `Channel<T>`), and for two contributions of one owner for one declaration (two profiles, two targets) |
+| I3. Derived | A digest over the contribution's payload schema, its target, its profile and its selector | Nobody states it, so nobody can state it wrongly | A factory can change meaning without changing any of the hashed parts, which is why the design has a semantic-identity axis at all |
+| I4. Issued by a registry of names outside the kernel | A shared vocabulary package lists family identities | One place to look | A closed catalogue that every new family edits |
+
+For the node and the word "instance":
+
+| Option | The plan node | Weakness |
+| --- | --- | --- |
+| N1. One node per use | Two fields of type `Page<Person>` are two nodes | Two memo identities for one representation, which K3 and issue #195's criterion exclude, unless the run-time identity is a separate field that both nodes share |
+| **N2. One node per distinct selection; uses refer to nodes** | A node is identified by (contribution identity, profile identity, source identity of the type, generic environment). Each use holds one reference to a node. "Instance" means the node | Per-use facts (provenance, the source-use identity the envelope lists) need a second, smaller record per use. What "source identity of the type" is for something that is not a type, such as the optional-field form of 6.2, is undefined |
+| N3. Two levels, both named | Use entries (one per use, with provenance and a node reference) and representation nodes (as N2). The design's "instance" is the use entry; the run-time identity is the node | Two concepts where the accepted text has one word |
+
+**Our leaning: I1 for the contribution identity, N2 for the node.** bittype's
+own families keep the form `list/golang/1`. The registry handle of section
+3.4 stays what authenticates a replacement inside one process; the stated
+identity is what the plan records.
+
+**What speaks against our leaning.** On I1: the whole point of the identity is
+the process boundary and the second repository, and "unique within a
+registry" is a guarantee about the one place that does not need it. The
+moment the service library and Content both register contributions, nothing
+but convention keeps their names apart, and a wrong factory selected by a
+colliding name fails at run time, in someone else's CI at best. On N2: we
+noticed while writing this document that "generic environment" hides a
+choice our derivation did not make. A plan for the open declaration `Page<T>`
+naturally has one record node for its body, with a link to the binder `T`,
+and each application supplies an adapter argument. The run-time identity of
+"the list inside `Page<Person>`" is then (that node, the environment in which
+`T` is `Person`'s node), a pair that exists only at run time. Making it a plan
+node means one node per instantiation: the plan is monomorphised, its size
+depends on the applications in the program, and a generic declaration alone
+has no complete plan. If nodes are open, then N2's node is not the run-time
+identity either, and there are four identities, not three. We do not know
+which of the two the design means by "its descriptor and its generic
+environment".
+
+### 6.5 What the first version must contain, and how to test it before the rewrite
+
+The contract change rewrites 21 rule packages (five for each of TypeScript,
+Rust and C++, six for Go) and the kernel's planner. After it, the plan and
+the first payload schemas are added. We see two ways to find a fault in the
+contract before that work, and have done neither.
+
+- **Paper families.** Write the contribution of one family of each kind
+  against the proposed contract, for TypeScript and Go, without code: a
+  constant (text), one slot (list), a callback with a demand (record with an
+  optional field), the declaration recipe with its generic part, an exact
+  external generic (`Cell<T>`), and one later family that places a
+  requirement on its operand (a nullable value, or a map with its key). For
+  each: the decision record as a horos type, the projection, the slots, the
+  facets, the plan nodes for one example, and what a factory receives.
+- **A materially different fixture.** The architecture rules ask for one
+  (section 2.1): a contribution in a separately owned package, of another
+  profile or another shape than the builtins, registered through the public
+  contract with the kernel fixed. Issue #196 already requires it after the
+  change. It could be written against the contract's types before the 21
+  packages move.
+
+What we believe the first version of the envelope needs, from fixed points 11
+to 13: one node per selection with the contribution and profile identity; the
+source reference and source identity; links by identity and never by nesting,
+so that a recursive reference is later one more link; for each generic use
+the scoped binders, native type arguments, adapter arguments and
+requirements; the five version axes as five values; root products for
+requested declarations; slots for factory references and run-time
+requirements, filled per target when a factory exists. And one limit (fixed
+point 27): a first payload schema cannot hold an integer, such as a field
+index or a count, a union or an exact value, because bittype cannot yet
+generate types for them. A later family that needs more declares it in its
+own schema.
+
+We lean to doing the paper families before the rewrite and the fixture with
+it. What speaks against: paper finds what its author already suspects, and
+the cases most likely to break the contract (recursion, unions with
+discriminators, explicit specialization) are the ones we understand least
+and would write worst.
+
+### 6.6 Surprises we already suspect
+
+These are known suspects. Question 5 asks for what lies outside this list.
+
+1. A family whose decision depends on what was selected for its operand
+   (6.1, 6.2): today a rule never sees its child's selection.
+2. Refusals. A rule refuses a use by returning an error from its callback
+   (section 3.6: "nested records require a named declaration in this
+   profile"). The representation contract lists "explicit refusals" under
+   applicability, as declared facts.
+3. Target configuration that changes a decision. TypeScript's meaning of
+   `next?: string` depends on the compiler option
+   `exactOptionalPropertyTypes`. The envelope has "target and its
+   configuration"; a decision record that silently assumes an option is
+   wrong under another.
+4. A native declaration that a contribution owns without a horos declaration
+   behind it (Go's `BittypeOptional`): who names it, how two contributions
+   that need the same one share it, and how a plan refers to it.
+5. The semantic version inside an identity (`list/golang/1`) against the
+   design's separate version axis (6.4).
+6. Generic conventions of exact external generics whose native parameters
+   are reordered, omitted or added, and what "the adapter argument travels
+   with the native type argument" means for an omitted one.
+7. One contribution wanted under two profiles, when a profile is a field
+   that the contribution states once.
+
+## 7. Questions for the expert
+
+In section 5, owner rules are fixed, and accepted designs are fixed unless
+you see a contradiction. Everything else is open, including what the code
+does today and the shape of section 6.1, which we invite you to attack.
+Please name the option first and then the reason. Patterns from comparable
+systems are welcome where they change the answer, including what failed:
+compilers with separately registered lowering passes, schema and interface
+compilers with plugin protocols across a process boundary, serialization
+frameworks that derive a type and its codec from one description, and
+type-class or trait resolution where one instance demands another.
+
+1. **A demand for something that is not a source occurrence.** A record
+   contribution must ask the kernel how an optional field is represented,
+   and the kernel must resolve the request to whatever the consumer
+   registered; later families ask alike for a nullable value, a map's key
+   requirement or a union's discriminator. (a) What would you key such a
+   demand by, and who should own that key: the source integration, the
+   asking family, or the composition? (b) What should the answer be: a type
+   around the operand, a member of the asking family's layout, or a decision
+   record that the asker reads, given that the same modality is a property
+   of a field in TypeScript, a generated type in Go and an external type in
+   Rust and C++? (c) Should a demand be able to return declared facts about
+   what was selected, for a family whose own decision depends on its
+   operand's representation? (d) How should a resolved demand appear in the
+   plan, and by what act does a consumer replace the answer? We lean to a
+   source-owned selector for the optional-field form with the member as the
+   answer (6.2, option B with M); 6.2 also lists what speaks against it. Your
+   answer decides the kernel capability we add in the one contract change,
+   and whether "optional fields" is one contribution on every target.
+
+2. **Facets and lowering.** A contribution pairs its native facet with a
+   conversion facet and may carry more: a root facet, an operation facet, a
+   lowering facet that yields typed target code. bittype's own vocabularies
+   describe types only, and the owner of Go's value-level code does not
+   exist yet. (a) Should the kernel's contribution contract enumerate facet
+   kinds, carry an open set whose kinds the reading products issue, or carry
+   none and leave every facet to a lookup by the contribution's identity?
+   (b) If the set is open, what must the kernel still guarantee about a
+   facet it cannot read, so that openness is not "arbitrary payloads"?
+   (c) Who should own the vocabulary of typed value-level target expressions,
+   and what is the least a contribution contract must fix about it today so
+   that a lowering facet can be added later without a second change?
+   (d) Should the contract be fixed before or after one Go case with typed
+   construction and a generic adapter argument has been built? We lean to an
+   open set, to handlers that execute the payload in the first slice, and to
+   building that Go case later (6.3, F2 with V1); 6.3 also lists what speaks
+   against it. Your answer decides the shape of the contribution type and
+   whether the first slice includes that case.
+
+3. **The identities of a plan.** A plan must name the selected contribution
+   so that a backend in another process, and a factory package in another
+   repository, recognise it; it has nodes; and a conversion's memo is keyed
+   at run time by "the selected representation instance" plus the input.
+   (a) Who should issue the identity of a contribution, what should it
+   consist of, and how is a collision between two owners detected, and
+   where? (b) Should a plan have one node per use, one per distinct
+   selection, or both as two named things? (c) For a generic declaration,
+   should nodes be open, with the environment supplied at an application,
+   or one per instantiation, and what then is the run-time identity that a
+   memo is keyed by? (d) Which of these should the word "instance" name? We
+   lean to an owner-stated name with a version, unique within a registry,
+   and to one node per distinct selection (6.4, I1 with N2); 6.4 also lists
+   what speaks against it, including a choice between open and instantiated
+   nodes that we have not made. Your answer decides the identity fields of
+   the contribution contract and of the envelope's first version.
+
+4. **Testing a contract that may change only once.** One change rewrites
+   every existing rule of four targets onto the new contract; the plan's
+   envelope may stay unstable until six vertical cases pass, the contract
+   may not. (a) How would you test the contract of sections 6.1 to 6.4
+   before that rewrite, and which families, written on paper or as fixtures,
+   are most likely to break it? (b) What must the first version of the
+   contribution contract and of the envelope already contain so that a later
+   family adds one contribution and one payload schema and nothing else?
+   (c) Is the division sound, in which the contract is final in the first
+   change while the envelope is declared unstable, or do the two have to
+   stabilise together? We lean to paper families for six kinds before the
+   rewrite and a materially different fixture with it (6.5); 6.5 also says
+   why paper may not be enough. Your answer decides what we build and write
+   before the rewrite starts, and what the first version carries.
+
+5. **Open.** What should we know that these questions do not ask? When a
+   type generator's contribution contract is extended to carry conversion
+   decisions for backends it does not own, what tends to be discovered late
+   and then forces a second change of that contract? Section 6.6 lists the
+   surprises we already suspect, so what lies outside that list is the most
+   valuable to us. We will use your answer to add fields, refusals or checks
+   to the contract before the rewrite.
