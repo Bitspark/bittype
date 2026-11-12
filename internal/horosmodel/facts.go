@@ -34,7 +34,7 @@ func (e *exporter[L]) sort(value decl.Sort, depth int) (semantics.TermID, error)
 	if depth > e.limits.MaxDepth {
 		return 0, semantics.ErrLimit
 	}
-	name := "sort/proper"
+	name := n.ProperSort().Name
 	var operands []semantics.Operand
 	if !value.IsProper() {
 		name = "sort/arrow"
@@ -107,7 +107,12 @@ func (e *exporter[L]) identity(subject semantics.Subject, name string, value cor
 	return e.fact(subject, n.IdentityRelation(), term)
 }
 func (e *exporter[L]) moduleIdentity(id semantics.EntityID, pin decl.Digest) error {
-	return e.identity(semantics.Subject{Entity: id}, "module", core.NewAtom(pin[:]))
+	// The vocabulary owns this operator, so identity does not assemble its name.
+	term, err := e.provider(n.ModuleIdentity().Name, core.NewAtom(pin[:]), nil, 1)
+	if err != nil {
+		return err
+	}
+	return e.fact(semantics.Subject{Entity: id}, n.IdentityRelation(), term)
 }
 func (e *exporter[L]) declarationIdentity(id semantics.EntityID, value decl.DeclarationID) error {
 	return e.identity(semantics.Subject{Entity: id}, "declaration", core.NewTuple(core.NewAtom(value.Module[:]), data.MustEncodeText(value.Name)))

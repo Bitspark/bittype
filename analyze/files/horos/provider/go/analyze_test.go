@@ -291,11 +291,11 @@ func requireModel(t *testing.T, result semantic.Result) representation.Semantics
 func entity(t *testing.T, model representation.Semantics, module, name string) (semantics.EntityID, semantics.Entity) {
 	t.Helper()
 	for i, e := range model.Data().Entities {
-		if e.Kind.Name != "type-definition" || e.Name != name {
+		if e.Kind != horos.TypeDefinitionKind() || e.Name != name {
 			continue
 		}
 		owner, ok := model.Entity(e.Owner)
-		if ok && owner.Kind.Name == "module" && owner.Name == module {
+		if ok && owner.Kind == horos.ModuleKind() && owner.Name == module {
 			return semantics.EntityID(i + 1), e
 		}
 	}

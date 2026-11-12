@@ -33,6 +33,17 @@ func SymbolicBodyRelation() semantics.Key { return Key("symbolic-body") }
 func MembershipRelation() semantics.Key   { return Key("membership") }
 func IdentityRelation() semantics.Key     { return Key("canonical-identity") }
 
+// Kinds of graph entities; ModuleKind is also the kind of a Files group.
+func ModuleKind() semantics.Key         { return Key("module") }
+func TypeDefinitionKind() semantics.Key { return Key("type-definition") }
+
+// The kind of the Files relation from an importing file to the imported one.
+func ImportRelation() semantics.Key { return Key("import") }
+
+// Operators of the terms that sort and identity facts carry.
+func ProperSort() semantics.Key     { return Key("sort/proper") }
+func ModuleIdentity() semantics.Key { return Key("identity/module") }
+
 // LimitsSetting contains a JSON array [depth,nodes,bytes,modules]. All four
 // positive limits are required; depth must not exceed 512. Its absence selects
 // Horos's fixed defaults.
