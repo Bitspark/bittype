@@ -134,13 +134,16 @@ syntax-admitted TypeScript ASTs + captured Files and links
   -> private source/AST correspondence check + pinned TypeScript compiler
   -> immutable symbols, native type terms, bindings and reports
   -> analyze/files/typescript/provider/go (explicit receipt; reuses the exact graph)
-  -> semantics/typescript/go (typed read-only view, contract identities, compiler configuration)
+  -> semantics/typescript/go (typed read-only view, graph names, contract identities, compiler configuration)
   -> analyze/files/typescript/queries/go (explicit native queries over an opened model)
 ```
 
 The package roles mirror Go. `semantics/typescript/go` publishes the contract identities
 `ResolutionContract()`, `AnalysisContract()` and `AnalysisContractFor(settings)`
-and the `Compiler` configuration type. The query service is its own package,
+and the `Compiler` configuration type. It also publishes the sixteen graph names
+that the compiler helper writes and Go reads by name, such as `ModuleKind()`,
+`NamedExportRelation()` and `NameRole()`. The helper is JavaScript and spells them
+itself, and tests that run it keep the two sides equal. The query service is its own package,
 `analyze/files/typescript/queries/go`. Go has the same two placements since pull request
 [#246](https://github.com/Bitspark/bittype/pull/246) of 12 November 2026. Go has no
 `AnalysisContractFor(settings)` and no `Compiler` type. `internal/typescriptsem` owns the compiler bridge,

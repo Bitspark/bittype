@@ -39,7 +39,7 @@ semantics/go/             typed immutable Semantics and provider-owned facts
 semantics/horos/go/       horos vocabulary: roles, relations, entity kinds, term operators and encoding, tag prefixes, profiles, limits setting, prelude pin, contract identities
 semantics/golang/go/      Go vocabulary, contract identities and immutable native type readers
 internal/golangsem/       private direct Go compiler bridge and fact export
-semantics/typescript/go/  TypeScript vocabulary, contract identities, compiler configuration and immutable native type readers
+semantics/typescript/go/  TypeScript vocabulary, graph names, contract identities, compiler configuration and immutable native type readers
 internal/typescriptsem/   private captured-source compiler helper and fact export
 semantics/rust/go/        Rust vocabulary, contract identities and immutable native type readers
 internal/rustsem/         private captured-source compiler bridge
@@ -271,7 +271,11 @@ a writer and a separate reader each spelled moved into `semantics/horos/go`
 with pull requests [#247](https://github.com/Bitspark/bittype/pull/247) and
 [#248](https://github.com/Bitspark/bittype/pull/248), and the tag
 prefixes of canonical horos values with
-[#250](https://github.com/Bitspark/bittype/pull/250). Every confirmed
+[#250](https://github.com/Bitspark/bittype/pull/250). The horos syntax node
+kinds have one declaration since
+[#254](https://github.com/Bitspark/bittype/pull/254), and
+`semantics/typescript/go` publishes the TypeScript graph names that Go reads
+since [#255](https://github.com/Bitspark/bittype/pull/255). Every confirmed
 instance of
 [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) is
 corrected. The check is the function
@@ -339,9 +343,15 @@ The plan in #218 is complete. This remains open and belongs to other work:
   [#196](https://github.com/Bitspark/bittype/issues/196), item 6.
 - **Three candidates.** They are not confirmed and are listed in
   [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md#candidates).
-- **Names that were not examined.** The names that the native compiler helpers
-  write and Go packages read, and the horos node kinds that two packages
-  declare, are tracked in [#251](https://github.com/Bitspark/bittype/issues/251).
+- **Names that were not examined.**
+  [#251](https://github.com/Bitspark/bittype/issues/251) examined the names
+  that the native compiler helpers write and the horos node kinds that two
+  packages declared, and both are corrected. What it left unexamined has no
+  issue yet and is listed in the
+  [limits of bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md#limits):
+  what the TypeScript helper reads, its response status, the TypeScript
+  generation form names, the Go and Rust vocabulary packages' own readers, and
+  the admission grammars of the native checkers.
 
 A green run shows that the forbidden imports are absent. It does not show that
 a package holds one contribution, that a decision made inside a package is
@@ -410,7 +420,8 @@ Cell or another library declaration does not add a stage, language or core kind.
 The [unified declaration model](docs/horos.md) uses one `horos` family under
 syntax/check/resolve/analyze. Private syntax framing remains in
 `internal/declsyntax`; model projection, correspondence and export remain in
-`internal/horosmodel`. No `horoswire` stage or compatibility alias remains.
+`internal/horosmodel`. Both take the node kinds, attributes and roles from
+`syntax/horos/go`, which declares them once. No `horoswire` stage or compatibility alias remains.
 Bounds are explicit syntax and provider-owned semantic facts, not kernel kinds.
 
 Model dependency allowances cover the concrete owners listed above, including

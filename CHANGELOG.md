@@ -1,5 +1,23 @@
 # Changelog
 
+## Documents record what #251 examined and what stays unexamined — 12 November 2026
+
+[Package boundaries](docs/package-boundaries.md) and [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) listed two groups of names as not examined. [#251](https://github.com/Bitspark/bittype/issues/251) examined both, and the two entries below record the corrections. This entry changes documents only.
+
+- **The scan.** A search of `main` at `9867398` for graph names spelled outside the vocabulary packages, the compiler bridges and the horos private parts found one outside reader, `format/files/typescript/provider/go`. Rust and Go have none. The scan did not cover spellings inside the Go and Rust vocabulary packages.
+- **The case.** ACX-009 gains the two corrections of #254 and #255 with their authors' qualification and their limits. Its status stays "Corrected, with limits". The two instances were confirmed and corrected on the same day.
+- **The symbol package.** `transform/syntax/typescript/symbol/go` keeps its own `typescript/name` role. It writes and reads the role itself and its consumers never name the key, so the role has one party. Decided on 12 November 2026 by the integrator of the plan.
+- **Limits recorded.** No independent review read #254 or #255. `ImportRole()` is published and no test fails when it changes. The tests were shown to fail for a changed vocabulary and not for a changed helper. The language marker `L` of the horos framing is a remainder of a removed language.
+- **Other documents.** `AGENTS.md`, `LAYOUT.md`, [native semantics](docs/native-semantics.md) and the two index tables follow. The counts of the architecture test were made again at `f821eb3`, and none changed.
+
+Not examined, and tracked by no issue yet:
+
+- What the TypeScript helper reads by spelling: the syntax node kinds, child roles and attribute names of its request.
+- The status of the helper's response, which the helper, the bridge, the resolver and the query service each spell.
+- The TypeScript generation form names `alias`, `interface` and `record`, which the model, the target and the declarations mapping spell.
+- The Go and Rust vocabulary packages' own readers against the names that their bridge and helper write.
+- The admission grammars of the four native checkers, which are keyed by string literals beside the constants of `syntax/<language>/go`.
+
 ## TypeScript graph names published by the vocabulary package — 12 November 2026
 
 The sixteen TypeScript graph names that the compiler helper writes and a Go package reads by name are published by `semantics/typescript/go`. This is the Go side of observation 1 of [#251](https://github.com/Bitspark/bittype/issues/251) for TypeScript. It is a move: each key value is unchanged, and the semantic graph, the groups, the relations and the printed text in seven dumps of three fixtures are byte-identical before and after.
