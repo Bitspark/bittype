@@ -56,7 +56,7 @@ func (q Queries) Assignable(ctx context.Context, source, target n.Type) (Assigna
 	if err != nil {
 		return Assignability{}, err
 	}
-	if out.Status != "ok" || out.Facts == nil || !reflect.DeepEqual(*out.Facts, q.model.Graph().Data()) || out.Assignable == nil {
+	if out.Status != typescriptsem.StatusOK || out.Facts == nil || !reflect.DeepEqual(*out.Facts, q.model.Graph().Data()) || out.Assignable == nil {
 		return Assignability{}, semantic.ErrEvidenceUnavailable
 	}
 	return Assignability{q.model, source, target, *out.Assignable}, nil

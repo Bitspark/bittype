@@ -29,6 +29,17 @@ type Output struct {
 	Diagnostics []semantic.Diagnostic
 	Assignable  *bool
 }
+
+// The values of Output.Status that more than one place names. Readers in other
+// packages compare with the three exported ones. The helper compiler.cjs writes
+// all four and spells them itself, because it cannot import this package.
+const (
+	StatusOK          = "ok"
+	StatusInvalid     = "invalid"
+	StatusUnsupported = "unsupported"
+	statusIncomplete  = "incomplete"
+)
+
 type boundedBuffer struct {
 	bytes.Buffer
 	remaining int
@@ -54,7 +65,7 @@ func Check(ctx context.Context, nodePath, modulePath string, trees []s.AST, sour
 	}
 	units, err := prepare(ctx, trees, source)
 	if errors.Is(err, semantic.ErrLimit) {
-		return Output{Status: "incomplete", Diagnostics: []semantic.Diagnostic{{Code: n.Key("limit"), Subject: n.Coverage(), Message: err.Error()}}}, nil
+		return Output{Status: statusIncomplete, Diagnostics: []semantic.Diagnostic{{Code: n.Key("limit"), Subject: n.Coverage(), Message: err.Error()}}}, nil
 	}
 	if err != nil {
 		return Output{}, err
@@ -94,7 +105,7 @@ func Check(ctx context.Context, nodePath, modulePath string, trees []s.AST, sour
 		return Output{}, ctx.Err()
 	}
 	if run.Err() != nil {
-		return Output{Status: "incomplete", Diagnostics: []semantic.Diagnostic{{Code: n.Key("limit"), Subject: n.Coverage(), Message: "TypeScript compiler exceeded the provider deadline"}}}, nil
+		return Output{Status: statusIncomplete, Diagnostics: []semantic.Diagnostic{{Code: n.Key("limit"), Subject: n.Coverage(), Message: "TypeScript compiler exceeded the provider deadline"}}}, nil
 	}
 	if err != nil {
 		return Output{}, fmt.Errorf("%w: %v: %s", n.ErrCompiler, err, stderr.String())
@@ -110,11 +121,11 @@ func Check(ctx context.Context, nodePath, modulePath string, trees []s.AST, sour
 		return Output{}, n.ErrCompiler
 	}
 	switch out.Status {
-	case "ok":
+	case StatusOK:
 		if out.Facts == nil || (query != nil && out.Assignable == nil) {
 			return Output{}, n.ErrCompiler
 		}
-	case "invalid", "unsupported", "incomplete":
+	case StatusInvalid, StatusUnsupported, statusIncomplete:
 		if out.Facts != nil || out.Assignable != nil {
 			return Output{}, n.ErrCompiler
 		}

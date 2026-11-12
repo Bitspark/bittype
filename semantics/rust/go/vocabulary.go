@@ -22,6 +22,21 @@ func Key(name string) semantics.Key { return semantics.Key{Owner: "rust", Name: 
 func Bindings() semantics.Key       { return Key("bindings") }
 func Coverage() semantics.Key       { return Key("captured-type-coverage") }
 func Validity() semantics.Key       { return Key("captured-type-validity") }
+
+// The graph names below are written by the compiler helper, which is Rust
+// and spells them itself, and read by name in model.go.
+
+// Relations of facts: about a declaration and a native type.
+func DeclaredTypeRelation() semantics.Key { return Key("declared-type") }
+func PredicateRelation() semantics.Key    { return Key("predicate") }
+func DefaultRelation() semantics.Key      { return Key("default") }
+func NativeTypeRelation() semantics.Key   { return Key("native-type") }
+func DisplayRelation() semantics.Key      { return Key("display") }
+func FieldsRelation() semantics.Key       { return Key("fields") }
+
+// The operator of the term that a fields fact carries.
+func FieldsOperator() semantics.Key { return Key("fields") }
+
 func Configuration() []semantic.Setting {
 	return []semantic.Setting{
 		{Key: Key("compiler"), Value: []byte(CompilerVersion)},

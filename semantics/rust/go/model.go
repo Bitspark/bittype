@@ -92,7 +92,7 @@ func (m Model) Lookup(path string) (Declaration, error) {
 	return m.Declaration(found)
 }
 func (m Model) Type(id semantics.TermID) (Type, error) {
-	if !m.Valid() || len(m.Graph().Facts(semantics.Subject{Term: id}, Key("native-type"))) != 1 {
+	if !m.Valid() || len(m.Graph().Facts(semantics.Subject{Term: id}, NativeTypeRelation())) != 1 {
 		return Type{}, ErrForeign
 	}
 	return Type{m.state, id}, nil
@@ -111,7 +111,7 @@ func (d Declaration) Type() Type {
 	if !d.Valid() {
 		return Type{}
 	}
-	terms := d.owner.graph.Facts(semantics.Subject{Entity: d.id}, Key("declared-type"))
+	terms := d.owner.graph.Facts(semantics.Subject{Entity: d.id}, DeclaredTypeRelation())
 	if len(terms) != 1 {
 		return Type{}
 	}
@@ -130,13 +130,13 @@ func (d Declaration) Predicates() []semantics.TermID {
 	if !d.Valid() {
 		return nil
 	}
-	return d.owner.graph.Facts(semantics.Subject{Entity: d.id}, Key("predicate"))
+	return d.owner.graph.Facts(semantics.Subject{Entity: d.id}, PredicateRelation())
 }
 func (d Declaration) Default() Type {
 	if !d.Valid() {
 		return Type{}
 	}
-	terms := d.owner.graph.Facts(semantics.Subject{Entity: d.id}, Key("default"))
+	terms := d.owner.graph.Facts(semantics.Subject{Entity: d.id}, DefaultRelation())
 	if len(terms) != 1 {
 		return Type{}
 	}
@@ -158,11 +158,11 @@ func (t Type) Term() semantics.Term {
 	term, _ := t.owner.graph.Term(t.id)
 	return term
 }
-func (t Type) fact(name string) semantics.TermID {
+func (t Type) fact(relation semantics.Key) semantics.TermID {
 	if !t.Valid() {
 		return 0
 	}
-	terms := t.owner.graph.Facts(semantics.Subject{Term: t.id}, Key(name))
+	terms := t.owner.graph.Facts(semantics.Subject{Term: t.id}, relation)
 	if len(terms) != 1 {
 		return 0
 	}
@@ -172,15 +172,15 @@ func (t Type) String() string {
 	if !t.Valid() {
 		return ""
 	}
-	term, _ := t.owner.graph.Term(t.fact("display"))
+	term, _ := t.owner.graph.Term(t.fact(DisplayRelation()))
 	return string(term.Data)
 }
 func (t Type) Fields() ([]Field, bool) {
 	if !t.Valid() {
 		return nil, false
 	}
-	term, _ := t.owner.graph.Term(t.fact("fields"))
-	if term.Operator != Key("fields") {
+	term, _ := t.owner.graph.Term(t.fact(FieldsRelation()))
+	if term.Operator != FieldsOperator() {
 		return nil, false
 	}
 	var metadata []fieldInfo

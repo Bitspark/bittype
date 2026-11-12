@@ -388,3 +388,35 @@ func TestRustSemanticConcurrent(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+// The compiler helper is Rust and spells the graph names itself. This reads the
+// real helper's graph through every name that the vocabulary publishes for
+// model.go, one failure per name. No other test opens a native type by id,
+// which reads the native-type relation.
+func TestRustHelperNamesMatchVocabulary(t *testing.T) {
+	m := rsModel(t, `pub struct Person {pub name: String}
+pub struct Page<T=Person> {pub items: Vec<T>}
+pub type People = Page<Person>;`)
+	page, people := rsDecl(t, m, "0", "Page"), rsType(t, m, "People")
+	if !people.Valid() {
+		t.Error("declared-type relation: an alias has no declared type")
+	}
+	if opened, err := m.Type(people.ID()); err != nil || !opened.Same(people) {
+		t.Error("native-type relation: a native type is not opened by id", err)
+	}
+	if people.String() == "" {
+		t.Error("display relation: a native type has no display")
+	}
+	if len(m.Graph().Facts(semantics.Subject{Term: people.ID()}, n.FieldsRelation())) != 1 {
+		t.Error("fields relation: a struct type has no fields fact")
+	} else if fields, ok := people.Fields(); !ok || len(fields) != 1 {
+		t.Error("fields operator: the fields fact carries no fields term", fields)
+	}
+	if len(page.Parameters()) != 1 || !page.Parameters()[0].Default().Valid() {
+		t.Error("default relation: a defaulted parameter has no default")
+	}
+	bounded := rsModel(t, `pub trait Marker {} pub struct Person {} impl Marker for Person {} pub struct Boxed<T: Marker> {pub value: T} pub type Good = Boxed<Person>;`)
+	if len(rsDecl(t, bounded, "0", "Boxed").Predicates()) == 0 {
+		t.Error("predicate relation: a bounded declaration has no predicate")
+	}
+}

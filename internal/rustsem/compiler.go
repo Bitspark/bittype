@@ -27,6 +27,19 @@ type Output struct {
 	Facts       *semantics.Data
 	Diagnostics []semantic.Diagnostic
 }
+
+// The values of Output.Status that more than one place names. Readers in other
+// packages compare with the three exported ones. The helper writes "ok",
+// "unsupported" and "incomplete" and spells them itself, because it cannot
+// import this package. It never writes "invalid": Check sets that status when
+// the helper reports compiler errors.
+const (
+	StatusOK          = "ok"
+	StatusInvalid     = "invalid"
+	StatusUnsupported = "unsupported"
+	statusIncomplete  = "incomplete"
+)
+
 type boundedBuffer struct {
 	bytes.Buffer
 	remaining int
@@ -55,7 +68,7 @@ func Check(ctx context.Context, helper, sysroot string, trees []s.AST, source *f
 	}
 	units, err := prepare(ctx, trees, source)
 	if errors.Is(err, semantic.ErrLimit) {
-		return Output{Status: "incomplete", Diagnostics: []semantic.Diagnostic{diagnostic("limit", err.Error())}}, nil
+		return Output{Status: statusIncomplete, Diagnostics: []semantic.Diagnostic{diagnostic("limit", err.Error())}}, nil
 	}
 	if err != nil {
 		return Output{}, err
@@ -68,7 +81,7 @@ func Check(ctx context.Context, helper, sysroot string, trees []s.AST, source *f
 		return Output{}, err
 	}
 	if len(encoded) > 2<<20 {
-		return Output{Status: "incomplete", Diagnostics: []semantic.Diagnostic{diagnostic("limit", "Rust compiler request exceeds the protocol bound")}}, nil
+		return Output{Status: statusIncomplete, Diagnostics: []semantic.Diagnostic{diagnostic("limit", "Rust compiler request exceeds the protocol bound")}}, nil
 	}
 	run, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -88,7 +101,7 @@ func Check(ctx context.Context, helper, sysroot string, trees []s.AST, source *f
 		return Output{}, ctx.Err()
 	}
 	if run.Err() != nil {
-		return Output{Status: "incomplete", Diagnostics: []semantic.Diagnostic{diagnostic("limit", "Rust compiler exceeded the provider deadline")}}, nil
+		return Output{Status: statusIncomplete, Diagnostics: []semantic.Diagnostic{diagnostic("limit", "Rust compiler exceeded the provider deadline")}}, nil
 	}
 	if err != nil {
 		return Output{}, fmt.Errorf("%w: %v: %s", n.ErrCompiler, err, stderr.String())
@@ -104,11 +117,11 @@ func Check(ctx context.Context, helper, sysroot string, trees []s.AST, source *f
 		return Output{}, n.ErrCompiler
 	}
 	switch out.Status {
-	case "ok":
+	case StatusOK:
 		if out.Facts == nil {
 			return Output{}, n.ErrCompiler
 		}
-	case "unsupported", "incomplete":
+	case StatusUnsupported, statusIncomplete:
 		if out.Facts != nil {
 			return Output{}, n.ErrCompiler
 		}
@@ -116,7 +129,7 @@ func Check(ctx context.Context, helper, sysroot string, trees []s.AST, source *f
 		if out.Facts != nil {
 			return Output{}, n.ErrCompiler
 		}
-		out.Status = "invalid"
+		out.Status = StatusInvalid
 		out.Diagnostics = compilerDiagnostics(stderr.Bytes(), units)
 		if len(out.Diagnostics) == 0 {
 			return Output{}, fmt.Errorf("%w: %s", n.ErrCompiler, stderr.String())
