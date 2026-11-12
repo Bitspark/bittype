@@ -195,6 +195,33 @@ distinct from a consumer explicitly requesting a declaration as a public root. T
 or C++ namespace remain separate from canonical module identity. This mapping
 performs no implicit filesystem or network IO.
 
+**Naming design, 12 November 2026. Accepted, not implemented.** The two
+paragraphs above describe what generation writes today. The
+[naming design](naming.md) changes who decides a name: generation records a
+naming intent, which is the mapping's chosen name and, apart from it, its
+qualification, and each language realizes the spelling. No target has changed
+a name. Three statements above change when [#274](https://github.com/Bitspark/bittype/issues/274) delivers it:
+
+- **The module-pin prefix is today's default, and nothing can select another
+  rule.** It becomes one of two policies that the consumer's composition
+  selects: qualified, which is today's rule, and unqualified. The policy
+  becomes selectable first, with unchanged output. Unqualified becomes a
+  target's default once that target's Files stage owns collisions. The
+  reasons: a content change renames every prefixed public name, a truncated
+  pin is no uniqueness guarantee, and the name of a declaration depends on
+  which module the request enters through.
+  [The qualification policy](naming.md#the-qualification-policy).
+- **`Self` becomes `Self_` in all four targets, and only Rust reserves it.** A
+  reserved word is the target's. [Reserved words](naming.md#reserved-words).
+- **Every declaration name is capitalized, so every generated Go declaration
+  is exported.** In Go the case of a name is its visibility, which the Go
+  Files stage realizes. [Go](naming.md#go) ·
+  [bittype/ACX-004](architecture-cases/0004-generation-file-syntax.md).
+
+The refusal of two equal names in one output leaves a target when its Files
+stage checks collisions in a placed scope
+([delivery order](naming.md#delivery-order-per-target)).
+
 Go reserves `BittypeOptional` for its generated support declaration. C++ references
 use the configured qualified namespace; that namespace cannot be `std` or another
 reserved identifier. A field cannot shadow a C++ template parameter. Standard

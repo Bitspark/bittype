@@ -17,6 +17,7 @@ the implemented scope, not complete language coverage.
 | Who chooses native representations? | [Type-owned mappings](type-generation-plugins.md), [generic elaboration](generic-elaboration.md), [representation profile](semantic-generation.md) | Four native pagination mappings; enforcing profile unsupported |
 | How does a consumer generate Page/Cell? | [Runnable fixture walkthrough](page-cell-example.md), [planner](generation-planner.md) | Existing tested TypeScript composition |
 | When are files and imports chosen? | [Generation/Files boundary](source.md#from-generated-declarations-to-files), [TypeScript imports](typescript-type-imports.md) | Generated Files handoff implemented for TypeScript |
+| Who decides a native name and its visibility? | [Naming](naming.md) | Accepted design (research 0016, rows 11, 13 and 14); not implemented. Today one shared rule spells every target's names, and the Go instance is pending in ACX-004. Delivered per target by [#274](https://github.com/Bitspark/bittype/issues/274) |
 | How should other targets place declarations? | [Go/Rust/C++ placement](native-file-placement.md) | Proposal; no native Files formatter for these targets |
 | Which native semantic facts exist? | [Native semantics](native-semantics.md) | Bounded Go, TypeScript and Rust; C++ deferred |
 | What does verification accept? | [Joint verification](verification.md), [verification architecture](type-system-architecture.md), [Logos contract map](logos-verification.md) | Public association, typed interpretations and scoped Horos/Go laws |

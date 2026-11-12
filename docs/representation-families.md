@@ -206,7 +206,12 @@ property from a present `undefined` at run time.
 - **Naming** runs on the source integration's checked binder identities. A `rec`
   that forms a declaration's whole body takes the declaration's name. A lifted
   inner binder gets a deterministic name, with collision and reserved-word
-  handling, and keeps its free generic parameters.
+  handling, and keeps its free generic parameters. The
+  [naming design](naming.md#reconciliation-with-accepted-documents) of
+  12 November 2026 says where each part of that handling is: generation states
+  a deterministic naming intent and checks the names inside one declaration,
+  the language's Files stage owns collisions between top-level declarations,
+  and the target owns its reserved words.
 - **Indirection** comes from the selected native layout graph. The planner may
   supply strongly connected components, the groups of mutually recursive
   declarations; each target defines its layout edges and where cycles break.
