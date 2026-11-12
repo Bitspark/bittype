@@ -51,9 +51,10 @@ func goPackageCapture(t *testing.T, sources map[string]string, withFiles bool) (
 	return goPackageCaptureIn(t, paths, sources, withFiles)
 }
 
-// goTreeID gives each file a stable tree ID that sorts opposite to its path:
-// lowercase letters are mirrored (a↔z, b↔y, ...). Results that follow file-path
-// order therefore cannot be produced by sorting tree IDs.
+// goTreeID gives each file a stable tree ID that sorts opposite to its path
+// wherever two paths first differ in lowercase letters: those are mirrored
+// (a↔z, b↔y, ...). For such paths, results that follow file-path order cannot
+// be produced by sorting tree IDs.
 func goTreeID(path string) ast.TreeID {
 	id := []rune("tree:")
 	for _, r := range path {

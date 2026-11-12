@@ -64,6 +64,13 @@ func (q Queries) Admit(ctx context.Context, constructor n.Type, arguments ...n.T
 	if err := ctx.Err(); err != nil {
 		return Admission{}, err
 	}
+	// Instantiation is native work that go/types cannot interrupt, and so is
+	// waiting for an earlier admission of this state that was abandoned.
+	arguments = append([]n.Type(nil), arguments...)
+	return golangsem.Beside(ctx, func() (Admission, error) { return q.admit(ctx, constructor, arguments) })
+}
+
+func (q Queries) admit(ctx context.Context, constructor n.Type, arguments []n.Type) (Admission, error) {
 	q.state.mu.Lock()
 	defer q.state.mu.Unlock()
 	if err := ctx.Err(); err != nil {

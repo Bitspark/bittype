@@ -103,10 +103,20 @@ func (c *converter) one(node s.Node, role string, depth int) (goast.Expr, error)
 // used only to return compiler diagnostics to captured nodes, never source spans.
 // captured is the request's Files context. It is required only under an import
 // configuration, where it assigns each tree to a package by its file path.
+//
+// The whole native work runs through Beside: conversion, the package checks and
+// the export, whose type comparisons go/types cannot interrupt either. After a
+// context error the abandoned work may still read the arguments.
 func Check(ctx context.Context, inputs []s.AST, captured *files.Context, settings []semantic.Setting) (*Checked, error) {
 	if ctx == nil || len(inputs) == 0 {
 		return nil, semantic.ErrInvalidRequest
 	}
+	return Beside(ctx, func() (*Checked, error) { return check(ctx, inputs, captured, settings) })
+}
+
+// check is Check's native work. Its context checks let abandoned work stop at
+// the next step it reaches.
+func check(ctx context.Context, inputs []s.AST, captured *files.Context, settings []semantic.Setting) (*Checked, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -198,7 +208,7 @@ func typeFailure(err error, positions map[token.Pos]ast.NodeRef) error {
 // checkSingle is the base profile: one captured package at n.PackagePath.
 func checkSingle(ctx context.Context, fset *token.FileSet, inputs []s.AST, goFiles []*goast.File, info *types.Info, positions map[token.Pos]ast.NodeRef) (*checkedProgram, error) {
 	conf := types.Config{GoVersion: n.LanguageVersion, Sizes: types.SizesFor("gc", "amd64")}
-	pkg, err := checkPackage(ctx, &conf, n.PackagePath, fset, goFiles, info)
+	pkg, err := conf.Check(n.PackagePath, fset, goFiles, info)
 	if e := ctx.Err(); e != nil {
 		return nil, e
 	}

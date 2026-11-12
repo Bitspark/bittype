@@ -76,15 +76,24 @@ reports. None publishes partial semantics. Invalid configuration, forged supplie
 references, foreign receipts and cancellation remain operation errors.
 
 A call whose context ends returns that context's error without waiting for
-`go/types`. Each package check, captured or supplied, runs beside the call and
-is abandoned when the context ends; nothing an abandoned check produces is
-read or published. `go/types` itself cannot be interrupted, so an abandoned
-check keeps its goroutine and its processor until it ends by itself. The
-profile's limits bound the captured fragment and the size of supplied text, not
-the cost of checking supplied source: a supplied package of 1,618 bytes with two
-structurally equal alias chains took 11 seconds to check. A consumer that must
-also bound that work, for supplied source it does not trust, runs the provider
-in a process it can end.
+`go/types`. The whole native work of a resolution runs beside the call as one
+unit: conversion, every package check and the export, whose type comparisons
+`go/types` cannot interrupt any more than a check. Reconstructing the compiler
+state for queries and an admission query run the same way, an admission
+including its wait for an earlier admission on the same queries. When the
+context ends the unit is abandoned, and nothing it produces is read or
+published. Abandoned work stops at the next step it reaches between two
+`go/types` calls. A call it is inside keeps its goroutine and its processor
+until that call ends by itself, and an abandoned admission keeps later
+admissions on its queries waiting, each until its own context ends.
+
+The profile's limits bound sizes, not this cost, for captured code as for
+supplied source. Comparing two structurally equal chains of struct aliases
+doubles with every step. As captured declarations in the base profile such
+chains took 0.6 seconds at depth 20 and 8.8 seconds at depth 24, and a supplied
+package of 1,618 bytes took 11 seconds to check. A consumer that must bound
+that work, for source it does not trust, runs the provider in a process it can
+end.
 
 Those incomplete reports cover the provider's own input, conversion and export
 bounds. The shared capture/publication boundary can also return `ErrLimit` when
@@ -184,8 +193,12 @@ The graph gains:
 
 **Supplied structure stays outside the graph's projection.** The graph projects
 captured code; supplied packages take part by identity. A supplied declaration
-contributes its entity and its reference and application terms, never its
-structure: no fields, no `underlying`, `alias-target` or `constraint` facts.
+contributes its entity, the entities of its type parameters with their names,
+its reference and application terms and its `display` and `identical` facts,
+never its structure: no fields, no `underlying`, `alias-target` or `constraint`
+facts. Native identity is still go/types identity: an `identical` fact relates a
+supplied alias to its target when that target is in the graph, which `string`
+and `bool` always are.
 This also holds when a captured declaration is built directly on supplied
 structure: a captured alias of a supplied type, a captured declaration whose
 right-hand side is one (through chains of any length), or a type parameter
@@ -203,9 +216,14 @@ declarations:
   name supplied types and spell their constraints. This text is never semantic
   identity.
 
-`Type.Unconstrained` reports only what the graph establishes, so a supplied
-parameter is never reported unconstrained. An admission query's constructor must
-be a generic declaration, never an instance or a non-generic type.
+`Type.Unconstrained` reports only what the graph establishes, and a parameter it
+reports is one the compiler found unconstrained. It never reports a supplied
+parameter, nor a captured parameter whose constraint is a supplied interface or
+an alias of one, because the graph holds no structure for that constraint. A
+captured constraint that embeds a supplied interface is captured structure and
+is reported as the compiler finds it. An admission query's constructor must be a
+generic defined type: an instance, a non-generic type and a generic alias are
+refused as unsupported.
 
 **Lookups.** `Model.Lookup(name)` considers captured packages only, and refuses a
 name that more than one of them declares. `Model.LookupIn(importPath, name)`
@@ -213,7 +231,7 @@ reads a package-qualified declaration. A supplied declaration is present only
 where captured code uses it.
 
 **One environment end to end.** Analysis refuses a configuration that differs
-from its resolution's. Use `analyze.ContractFor(settings)` and
+from its resolution's. Use `golang.AnalysisContractFor(settings)` and
 `golang.EvidenceFor(settings)` with the same configuration for resolution and
 analysis. `ImportConfiguration` refuses an environment that one analysis
 invocation could not carry; it charges the settings twice, once for the analysis
@@ -261,8 +279,8 @@ that the compiler helper writes and Go reads by name, such as `ModuleKind()`,
 `NamedExportRelation()` and `NameRole()`. The helper is JavaScript and spells them
 itself, and tests that run it keep the two sides equal. The query service is its own package,
 `analyze/files/typescript/queries/go`. Go has the same two placements since pull request
-[#246](https://github.com/Bitspark/bittype/pull/246) of 12 November 2026. Go has no
-`AnalysisContractFor(settings)` and no `Compiler` type. `internal/typescriptsem` owns the compiler bridge,
+[#246](https://github.com/Bitspark/bittype/pull/246) of 12 November 2026. Go publishes
+`AnalysisContractFor(settings)` too, since pull request [#204](https://github.com/Bitspark/bittype/pull/204), and has no `Compiler` type. `internal/typescriptsem` owns the compiler bridge,
 including its embedded CommonJS helper. Each TypeScript stage supplies its own provider. No TypeScript types, rules or compiler handles enter the
 agnostic kernel; no native stage imports Horos, Logos or generation packages.
 

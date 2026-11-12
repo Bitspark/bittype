@@ -120,7 +120,8 @@ func normalizeEnvironment(e ImportEnvironment) (ImportEnvironment, error) {
 	for _, p := range e.Packages {
 		lower, module := strings.ToLower(p.ImportPath), strings.ToLower(e.Module)
 		if !ValidImportPath(p.ImportPath) || lower == module || strings.HasPrefix(lower, module+"/") || slices.Contains(strings.Split(p.ImportPath, "/"), "vendor") {
-			// A supplied package must not claim the captured module's paths.
+			// A supplied package must not claim the captured module's paths, and a
+			// vendor element would make Go resolve its path differently.
 			return ImportEnvironment{}, semantic.ErrInvalidRequest
 		}
 		if len(p.Files) == 0 || len(p.Files) > 16 {

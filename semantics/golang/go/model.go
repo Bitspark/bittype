@@ -234,8 +234,10 @@ func (t Type) Fields() ([]Field, bool) {
 }
 
 // Unconstrained reports whether the graph establishes that the parameter is
-// unconstrained. A supplied parameter's constraint is not projected, so it is
-// never reported unconstrained; callers must treat false as "not established".
+// unconstrained. The constraint of a supplied parameter is not projected, and
+// neither is a supplied interface, or an alias of one, used as a captured
+// parameter's constraint. Such a parameter is never reported unconstrained;
+// callers must treat false as "not established".
 func (t Type) Unconstrained() bool {
 	if t.entity().Kind != Key("parameter") {
 		return false
