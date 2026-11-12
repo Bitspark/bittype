@@ -66,7 +66,7 @@ func edges(role string, fragments []m.Fragment[s.Language]) []m.Child[s.Language
 func (b *Backend) Declaration(d g.NativeDeclaration[s.Language], params []m.Fragment[s.Language], body m.Fragment[s.Language]) (m.Fragment[s.Language], error) {
 	name, origin := d.Name, d.Origin
 	form, _ := model.Name(d.Form)
-	record := form != "alias"
+	record := form != model.FormAlias
 
 	kind := s.KindTypeAlias
 	if record {
@@ -85,13 +85,13 @@ func (b *Backend) Expression(e g.Expression[s.Language], args []m.Fragment[s.Lan
 	name, _ := model.Name(e.Form())
 	data, origin := e.Data(), e.Origin()
 	switch name {
-	case "primitive":
+	case model.FormPrimitive:
 		return b.Node(m.Node(s.KindNamedType, m.Attributes("name", data[0]), origin))
-	case "slice":
+	case model.FormSlice:
 		return b.Node(m.Node(s.KindSliceType, nil, origin), m.Child[s.Language]{Role: s.RoleElement, Fragment: args[0]})
-	case "field":
+	case model.FormField:
 		return b.Node(m.Node(s.KindField, m.Attributes("name", data[0]), origin), m.Child[s.Language]{Role: s.RoleType, Fragment: args[0]})
-	case "record":
+	case model.FormRecord:
 		return b.Node(m.Node(s.KindStructType, nil, origin), edges(s.RoleField, args)...)
 	}
 	return m.Fragment[s.Language]{}, g.ErrUnsupported
