@@ -49,15 +49,15 @@ func (p Provider) Resolve(ctx context.Context, request semantic.Request[s.Langua
 		publication.Reports = append(publication.Reports, semantic.Report{Obligation: key, Status: semantic.Incomplete})
 	}
 	switch out.Status {
-	case "ok":
+	case rustsem.StatusOK:
 		for i := range publication.Reports {
 			publication.Reports[i].Status = semantic.Complete
 			publication.Reports[i].Verdict = semantic.Holds
 		}
-	case "invalid":
+	case rustsem.StatusInvalid:
 		publication.Reports[0] = semantic.Report{Obligation: n.Coverage(), Status: semantic.Complete, Verdict: semantic.Holds}
 		publication.Reports[2] = semantic.Report{Obligation: n.Validity(), Status: semantic.Complete, Verdict: semantic.Rejected}
-	case "unsupported":
+	case rustsem.StatusUnsupported:
 		publication.Reports[0].Status = semantic.Unsupported
 	}
 	known := map[semantics.Key]bool{n.Coverage(): true, n.Bindings(): true, n.Validity(): true}

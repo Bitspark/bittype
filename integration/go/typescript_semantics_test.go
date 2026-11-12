@@ -497,3 +497,131 @@ func TestTypeScriptSemanticConcurrentQueries(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+// The compiler helper is JavaScript and reads the syntax names of its request by
+// spelling: eighteen node kinds, three child roles, the reference role and two
+// attribute names. syntax/typescript/go declares them, the helper cannot import
+// it, and nothing but tests keeps the two sides equal. The accepted capture holds
+// every kind the helper lists, a type application, a readonly type operator and
+// a reference. Each refused capture turns on one name the accepted one cannot
+// show. TestTypeScriptHelperNamesMatchVocabulary does the same for the graph
+// names that the helper writes.
+func TestTypeScriptHelperReadsVocabularyNames(t *testing.T) {
+	ctx := context.Background()
+	settings, err := n.ImportConfiguration([]n.PackageTypes{{Module: "@bitspark/cell", Declaration: "export interface Cell<T> { value: T }\n"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Coverage of one captured source, with the reference of every use of
+	// Person bound to its declaration when bind is set.
+	coverage := func(t *testing.T, text string, bind bool) (s.AST, semantic.Report) {
+		t.Helper()
+		parsed, err := parsetypescript.Parse(ctx, parse.Input{Text: text, SourceID: "0", TreeID: "0"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		tree := parsed.ASTView()
+		if bind {
+			var person ast.NodeID
+			for i, node := range tree.Nodes {
+				if node.Kind == s.KindInterface && nodeAttribute(node, s.AttributeName) == "Person" {
+					person = ast.NodeID(i + 1)
+				}
+			}
+			bound := 0
+			for i, node := range tree.Nodes {
+				if node.Kind == s.KindTypeReference && nodeAttribute(node, s.AttributeName) == "Person" {
+					tree.Nodes[i].References = []ast.Reference{{Role: s.RoleTarget, Target: ast.NodeRef{Tree: tree.ID, Node: person}}}
+					bound++
+				}
+			}
+			if person == 0 || bound == 0 {
+				t.Fatal("no reference to bind")
+			}
+		}
+		source := &files.Context{Files: files.Files{Entries: []files.File{{ID: "0", Path: "0.ts", Text: text}}}, Links: []files.SyntaxLink{{File: "0", Tree: "0", Source: "0"}}}
+		snapshot := tsCaptureTrees(t, []s.AST{tree}, source)
+		resolver, err := resolve.New(snapshot.Language(), tsCompiler(t))
+		if err != nil {
+			t.Fatal(err)
+		}
+		result, err := resolver.Resolve(ctx, snapshot, semantic.Options{Configuration: settings})
+		if err != nil {
+			t.Fatal(err)
+		}
+		report, _ := result.Report(n.Coverage())
+		if result.HasSemantics() != (report.Status == semantic.Complete) {
+			t.Fatal("graph without complete coverage", report)
+		}
+		return tree, report
+	}
+	children := func(tree s.AST, kind s.Kind, role string) int {
+		most := 0
+		for _, node := range tree.Nodes {
+			count := 0
+			for _, child := range node.Children {
+				if node.Kind == kind && child.Role == role {
+					count++
+				}
+			}
+			most = max(most, count)
+		}
+		return most
+	}
+	attribute := func(tree s.AST, kind s.Kind, name, text string) bool {
+		for _, node := range tree.Nodes {
+			if node.Kind == kind && nodeAttribute(node, name) == text {
+				return true
+			}
+		}
+		return false
+	}
+	parameters := func(count int) string {
+		var names []string
+		for i := 0; i < count; i++ {
+			names = append(names, fmt.Sprintf("T%d", i))
+		}
+		return "type Wide<" + strings.Join(names, ", ") + "> = string;"
+	}
+
+	tree, report := coverage(t, `import type { Cell } from "@bitspark/cell";
+export interface Person { name: string; tags: readonly string[] }
+export interface Page<T> { items: T[]; next?: string }
+export type People = Page<Person>;
+export type Held = Cell<Person>;
+export type Pair = [string, number?];
+export type Choice = "a" | "b";
+export type Both = Person & { active: boolean };`, true)
+	if report.Status != semantic.Complete || report.Verdict != semantic.Holds {
+		t.Fatal("the helper refused a capture of the kinds it lists", report)
+	}
+	for _, kind := range []s.Kind{s.KindSourceFile, s.KindImport, s.KindImportBinding, s.KindTypeAlias, s.KindInterface, s.KindTypeParameter, s.KindTypeReference, s.KindTypeApplication, s.KindKeywordType, s.KindLiteralType, s.KindArrayType, s.KindTupleType, s.KindTupleElement, s.KindObjectType, s.KindUnionType, s.KindIntersectionType, s.KindProperty, s.KindTypeOperator} {
+		found := false
+		for _, node := range tree.Nodes {
+			found = found || node.Kind == kind
+		}
+		if !found {
+			t.Fatal("the accepted capture lacks a kind the helper lists", kind)
+		}
+	}
+	if children(tree, s.KindTypeApplication, s.RoleArgument) != 1 || !attribute(tree, s.KindTypeOperator, s.AttributeOperator, "readonly") {
+		t.Fatal("the accepted capture lacks an argument or a readonly operator")
+	}
+
+	tree, report = coverage(t, parameters(16), false)
+	if report.Status != semantic.Complete || children(tree, s.KindTypeAlias, s.RoleTypeParameter) != 16 {
+		t.Fatal("sixteen generic parameters", report)
+	}
+	tree, report = coverage(t, parameters(17), false)
+	if report.Status != semantic.Unsupported || children(tree, s.KindTypeAlias, s.RoleTypeParameter) != 17 {
+		t.Fatal("seventeen generic parameters", report)
+	}
+	tree, report = coverage(t, "type Box<T = string> = { value: T };", false)
+	if report.Status != semantic.Unsupported || children(tree, s.KindTypeParameter, s.RoleDefault) != 1 {
+		t.Fatal("a generic default", report)
+	}
+	tree, report = coverage(t, "interface Chain { next: this }", false)
+	if report.Status != semantic.Unsupported || !attribute(tree, s.KindKeywordType, s.AttributeName, "this") {
+		t.Fatal("the this type", report)
+	}
+}
