@@ -106,16 +106,16 @@ func (e *exporter) term(t semantics.Term) semantics.TermID {
 	e.data.Terms = append(e.data.Terms, t)
 	return semantics.TermID(len(e.data.Terms))
 }
-func (e *exporter) expression(kind string, data any, operands ...semantics.TermID) semantics.Term {
+func (e *exporter) expression(operator semantics.Key, data any, operands ...semantics.TermID) semantics.Term {
 	encoded, _ := json.Marshal(data)
-	t := semantics.Term{Kind: semantics.ProviderExpression, Operator: n.Key(kind), Encoding: n.Key("json-1"), Data: encoded}
+	t := semantics.Term{Kind: semantics.ProviderExpression, Operator: operator, Encoding: n.Key("json-1"), Data: encoded}
 	for i, id := range operands {
 		t.Operands = append(t.Operands, semantics.Operand{Locator: []uint32{uint32(i)}, Term: id})
 	}
 	return t
 }
-func (e *exporter) fact(id semantics.TermID, relation string, value semantics.TermID) {
-	e.data.Facts = append(e.data.Facts, semantics.Fact{Subject: semantics.Subject{Term: id}, Relation: n.Key(relation), Term: value})
+func (e *exporter) fact(id semantics.TermID, relation semantics.Key, value semantics.TermID) {
+	e.data.Facts = append(e.data.Facts, semantics.Fact{Subject: semantics.Subject{Term: id}, Relation: relation, Term: value})
 }
 func (e *exporter) object(o types.Object) semantics.EntityID {
 	if id := e.objects[o]; id != 0 {
@@ -124,17 +124,17 @@ func (e *exporter) object(o types.Object) semantics.EntityID {
 	if e.err != nil {
 		return 0
 	}
-	kind := "field"
+	kind := n.Key("field")
 	owner := semantics.EntityID(0)
 	if _, ok := o.(*types.TypeName); ok {
-		kind = "builtin"
+		kind = n.Key("builtin")
 		switch o.Type().(type) {
 		case *types.Named:
-			kind = "defined"
+			kind = n.DefinedKind()
 		case *types.Alias:
-			kind = "alias"
+			kind = n.AliasKind()
 		case *types.TypeParam:
-			kind = "parameter"
+			kind = n.ParameterKind()
 		}
 		if o.Parent() != nil && o.Pkg() != nil && o.Parent() == o.Pkg().Scope() {
 			owner = e.packages[o.Pkg()]
@@ -142,7 +142,7 @@ func (e *exporter) object(o types.Object) semantics.EntityID {
 	}
 	id := semantics.EntityID(len(e.data.Entities) + 1)
 	e.objects[o] = id
-	entity := semantics.Entity{Kind: n.Key(kind), Name: o.Name(), Owner: owner}
+	entity := semantics.Entity{Kind: kind, Name: o.Name(), Owner: owner}
 	if site := e.positions[o.Pos()]; site.Tree != "" {
 		entity.Declarations = []ast.NodeRef{site}
 	}
@@ -187,7 +187,7 @@ func (e *exporter) typ(t types.Type) semantics.TermID {
 	var term semantics.Term
 	switch t := t.(type) {
 	case *types.Basic:
-		term = e.expression("basic", t.Kind())
+		term = e.expression(n.BasicOperator(), t.Kind())
 	case *types.Named:
 		if t.TypeArgs().Len() > 0 {
 			term = semantics.Term{Kind: semantics.Application, Callee: e.typ(t.Origin())}
@@ -215,15 +215,15 @@ func (e *exporter) typ(t types.Type) semantics.TermID {
 			}
 		}
 		if !e.external(t) {
-			e.fact(id, "alias-target", e.typ(t.Rhs()))
+			e.fact(id, n.AliasTargetRelation(), e.typ(t.Rhs()))
 		}
 	case *types.TypeParam:
 		term = semantics.Term{Kind: semantics.Reference, Target: e.object(t.Obj())}
 		if !e.external(t) {
-			e.fact(id, "constraint", e.typ(t.Constraint()))
+			e.fact(id, n.ConstraintRelation(), e.typ(t.Constraint()))
 		}
 	case *types.Slice:
-		term = e.expression("slice", nil, e.typ(t.Elem()))
+		term = e.expression(n.SliceOperator(), nil, e.typ(t.Elem()))
 	case *types.Struct:
 		var fields []n.FieldInfo
 		var operands []semantics.TermID
@@ -232,7 +232,7 @@ func (e *exporter) typ(t types.Type) semantics.TermID {
 			fields = append(fields, n.FieldInfo{Name: f.Name(), Tag: t.Tag(i), Embedded: f.Embedded(), Entity: e.object(f)})
 			operands = append(operands, e.typ(f.Type()))
 		}
-		term = e.expression("struct", fields, operands...)
+		term = e.expression(n.StructOperator(), fields, operands...)
 	case *types.Interface:
 		t.Complete()
 		var operands []semantics.TermID
@@ -242,13 +242,13 @@ func (e *exporter) typ(t types.Type) semantics.TermID {
 		for i := 0; i < t.NumExplicitMethods(); i++ {
 			operands = append(operands, e.typ(t.ExplicitMethod(i).Type()))
 		}
-		term = e.expression("interface", struct {
+		term = e.expression(n.Key("interface"), struct {
 			Embeddeds  int
 			Methods    []string
 			Comparable bool
 			MethodSet  bool
 		}{Embeddeds: t.NumEmbeddeds(), Methods: methodNames(t), Comparable: t.IsComparable(), MethodSet: t.IsMethodSet()}, operands...)
-		e.fact(id, "empty", e.term(e.expression("boolean", t.Empty())))
+		e.fact(id, n.EmptyRelation(), e.term(e.expression(n.Key("boolean"), t.Empty())))
 	case *types.Union:
 		var tilde []bool
 		var operands []semantics.TermID
@@ -256,17 +256,17 @@ func (e *exporter) typ(t types.Type) semantics.TermID {
 			tilde = append(tilde, t.Term(i).Tilde())
 			operands = append(operands, e.typ(t.Term(i).Type()))
 		}
-		term = e.expression("union", tilde, operands...)
+		term = e.expression(n.Key("union"), tilde, operands...)
 	case *types.Signature:
 		// The predeclared error interface includes a method signature even though
 		// authored methods and function syntax remain outside this input profile.
-		term = e.expression("signature", t.Variadic(), e.typ(t.Params()), e.typ(t.Results()))
+		term = e.expression(n.Key("signature"), t.Variadic(), e.typ(t.Params()), e.typ(t.Results()))
 	case *types.Tuple:
 		var operands []semantics.TermID
 		for i := 0; i < t.Len(); i++ {
 			operands = append(operands, e.typ(t.At(i).Type()))
 		}
-		term = e.expression("tuple", nil, operands...)
+		term = e.expression(n.Key("tuple"), nil, operands...)
 	default:
 		e.err = n.ErrUnsupported
 	}
@@ -275,9 +275,9 @@ func (e *exporter) typ(t types.Type) semantics.TermID {
 		return id
 	}
 	if !e.suppliedStructure(t) {
-		e.fact(id, "underlying", e.typ(t.Underlying()))
+		e.fact(id, n.UnderlyingRelation(), e.typ(t.Underlying()))
 	}
-	e.fact(id, "display", e.term(semantics.Term{Kind: semantics.ProviderExpression, Operator: n.Key("display"), Encoding: n.Key("utf8"), Data: []byte(types.TypeString(t, nil))}))
+	e.fact(id, n.DisplayRelation(), e.term(semantics.Term{Kind: semantics.ProviderExpression, Operator: n.Key("display"), Encoding: n.Key("utf8"), Data: []byte(types.TypeString(t, nil))}))
 	return id
 }
 func methodNames(t *types.Interface) []string {
@@ -305,11 +305,11 @@ func export(ctx context.Context, program *checkedProgram, info *types.Info, orig
 	// Captured packages come first, in import-path order, then supplied packages.
 	// The base profile has exactly one captured package, which is entity 1.
 	for _, captured := range program.captured {
-		e.data.Entities = append(e.data.Entities, semantics.Entity{Kind: n.Key("package"), Name: captured.pkg.Path(), Declarations: slices.Clone(captured.roots)})
+		e.data.Entities = append(e.data.Entities, semantics.Entity{Kind: n.PackageKind(), Name: captured.pkg.Path(), Declarations: slices.Clone(captured.roots)})
 		e.packages[captured.pkg] = semantics.EntityID(len(e.data.Entities))
 	}
 	for _, pkg := range program.supplied {
-		e.data.Entities = append(e.data.Entities, semantics.Entity{Kind: n.Key("package"), Name: pkg.Path()})
+		e.data.Entities = append(e.data.Entities, semantics.Entity{Kind: n.PackageKind(), Name: pkg.Path()})
 		e.packages[pkg] = semantics.EntityID(len(e.data.Entities))
 	}
 	byPath := map[string]semantics.EntityID{}
@@ -387,7 +387,7 @@ func export(ctx context.Context, program *checkedProgram, info *types.Info, orig
 		if canonical == id {
 			representatives = append(representatives, id)
 		}
-		e.fact(id, "identical", canonical)
+		e.fact(id, n.IdenticalRelation(), canonical)
 	}
 	return &Checked{Facts: e.data, Types: e.native}, nil
 }
