@@ -302,17 +302,23 @@ func TestGenerationPlanRefusesUnissuedAndOversizedValues(t *testing.T) {
 	if err := independentFails(t, fixture, f.UnissuedHelperValue, "Page"); !errors.Is(err, g.ErrInvalid) {
 		t.Fatal("a helper recipe stated a value nobody issued", err)
 	}
+	// Page is the last declaration this plan describes, and its helper is the
+	// last thing Page uses. Nothing is charged after the two values, so only
+	// their own charge can refuse them.
 	limits := g.DefaultLimits()
 	limits.OutputBytes = f.LargeValueBytes
-	plan, err := fixture.PlanRootsWithin(context.Background(), f.Standard, limits, "Person")
+	plan, err := fixture.PlanRootsWithin(context.Background(), f.Standard, limits, "Page")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err = plan.Run(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if plan, err = fixture.PlanRootsWithin(context.Background(), f.LargeValue, limits, "Person"); !errors.Is(err, g.ErrLimit) || plan.Valid() {
-		t.Fatal("a value larger than the output budget was planned", err)
+	if plan, err = fixture.PlanRootsWithin(context.Background(), f.LargeValue, limits, "Page"); !errors.Is(err, g.ErrLimit) || plan.Valid() {
+		t.Fatal("a recipe's value larger than the output budget was planned", err)
+	}
+	if plan, err = fixture.PlanRootsWithin(context.Background(), f.LargeHelperValue, limits, "Page"); !errors.Is(err, g.ErrLimit) || plan.Valid() {
+		t.Fatal("a helper's value larger than the output budget was planned", err)
 	}
 }
 

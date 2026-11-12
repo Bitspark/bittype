@@ -256,9 +256,11 @@ const (
 	UnissuedHelperValue
 	// LargeValue states a naming intent of LargeValueBytes bytes.
 	LargeValue
+	// LargeHelperValue states a helper access of LargeValueBytes bytes.
+	LargeHelperValue
 )
 
-// LargeValueBytes is the size of the intent the LargeValue mode states.
+// LargeValueBytes is the size of the value the two Large modes state.
 const LargeValueBytes = 1 << 16
 
 // The fixture states two things about the declarations it describes: the name
@@ -311,7 +313,11 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 	ignore, _ := g.NewSelector(from, "declaration/Ignore")
 	shadow, _ := g.NewSelector(from, "declaration/Shadow")
 	v := g.TypeSlot("V")
-	access, err := helperAccess.Issue(HelperAccess)
+	content := HelperAccess
+	if l.mode == LargeHelperValue {
+		content = strings.Repeat("a", LargeValueBytes)
+	}
+	access, err := helperAccess.Issue(content)
 	if err != nil {
 		return g.MappingDescription[SourceLanguage, s.Language, Reader]{}, err
 	}
