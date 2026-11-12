@@ -36,7 +36,7 @@ contracts/
   analysis/go/            analysis capability and explicit resolution input
   verification/go/        agnostic joint capture/receipt/site association
 semantics/go/             typed immutable Semantics and provider-owned facts
-semantics/horos/go/       horos vocabulary: roles, relations, profiles, limits setting, prelude pin, contract identities
+semantics/horos/go/       horos vocabulary: roles, relations, entity kinds, term operators and encoding, profiles, limits setting, prelude pin, contract identities
 semantics/golang/go/      Go vocabulary, contract identities and immutable native type readers
 internal/golangsem/       private direct Go compiler bridge and fact export
 semantics/typescript/go/  TypeScript vocabulary, contract identities, compiler configuration and immutable native type readers
@@ -154,7 +154,7 @@ summarises them. The exact lists are in the test.
 | Shared private helper | `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil`, `internal/concrete` | The same table and the same rule. A helper of no single language cannot conceal a language |
 | Vocabulary | `syntax/<language>/go`, `semantics/<language>/go`, `transform/syntax/<native>/model/go`, `transform/syntax/<native>/symbol/go` | Foundations and its own language's vocabulary. `semantics/<language>/go` and `symbol` may also import their language's lexical helper. Never a contribution. `semantics/<language>/go` never imports `internal/<language>sem`. Only TypeScript has a `symbol` package today |
 | Contribution: stage provider | `<stage>/<dimension>/<language>/provider/go` for `check/syntax`, `parse/syntax`, `format/syntax`, `resolve/files`, `analyze/files`, `parse/files` and `format/files` | Each of the seven has its own list: foundations, shared private helpers and what belongs to its own language. A checker gets no concrete tree, a formatter no lexer, and no Syntax stage a semantic contract. A parser and a formatter import their own checker under an exception, and neither list names the other. A resolver may import its language's semantic helper. A Files parser or formatter reaches its collaborators through their contracts |
-| Contribution: query service | `analyze/files/<language>/queries/go` | The shared semantic contract, the representation, and its own syntax, vocabulary and semantic helper. Never its resolver. Go and TypeScript have this package today |
+| Contribution: query service | `analyze/files/<language>/queries/go` | The shared semantic contract, the representation, and its own syntax, vocabulary and semantic helper. Never its resolver. Go and TypeScript have this package today. A package that is not a composition imports a query service only under an exception that names the symbols it uses |
 | Contribution: source reader | `transform/syntax/<language>/source/go` | Foundations and its own syntax and vocabulary. Only horos has one today |
 | Contribution: native target | `transform/syntax/<native>/target/go` | The generation contract, the AST, the shared target construction, and its own syntax, model and lexical helper. It reads no source and calls no mapping: a source reader, a mapping and a common mapping part are refused |
 | Contribution: mapping | `transform/syntax/<source>-to-<native>/mapping/<name>/go` | The generation contract, the representation, the syntax of both languages, the source reader and the common mapping parts of its source language, and the model of its native language. Never another mapping and never a native target |
@@ -162,7 +162,7 @@ summarises them. The exact lists are in the test.
 | Contribution: capability extractor | `tools/provider-matrix/extract/<format>/go` | `tools/provider-matrix/capability/go` only |
 | Common mapping part | `transform/syntax/<source>/mapping/go` and `transform/syntax/<source>/mapping/<part>/go` | The generation contract, the representation, and the syntax and source reader of its source language. The list names no other part, and the one-language rule below refuses every native package |
 | Private part | `internal/<language>`, `internal/<language>sem` | A lexical helper imports `internal/grammar` only, and never a contract or a stage provider. A semantic helper imports foundations and its own syntax and vocabulary, and may reparse with its own parser under an exception. Both have their role only when `syntax/<language>/go` exists |
-| Composition | `integration/go`, `verification/integration/go`, `tools/**` | Chooses and registers contributions. The two test compositions are not classified. A package under `tools/` needs no exception to import a stage provider. It is still classified, by an explicit entry or as an extractor |
+| Composition | `integration/go`, `verification/integration/go`, `tools/**` | Chooses and registers contributions. The two test compositions are not classified. A package under `tools/` needs no exception to import a stage provider or a query service. It is still classified, by an explicit entry or as an extractor |
 
 **One language.** A package that names a language imports no package of
 another language. A mapping names two. A package belongs to a language by its
@@ -190,7 +190,8 @@ explicit entry per package, and a new package of either group is an edit:
   `tools/provider-matrix/go`, `report/go`, `capability/go` and
   `observation/go`, and the command `tools/horos-module/go`. The report host
   never imports a concrete extractor. The verification pair lists the Go query
-  service for its admission type, and never the Go analysis provider.
+  service and never the Go analysis provider. It imports the query service
+  under an exception that names `Admission`.
 
 **Role extensions.** Languages differ. The table `roleExtensions` names, per
 package, the imports that one language needs and its role does not give. Ten
@@ -257,7 +258,7 @@ verification integrations. The exact package allowances live in the test. Generi
 contracts, engine and printer must remain independent of Horos/ontos, and native
 syntax/text stages must remain independent of the canonical frontend.
 
-**Implemented except for the inline horos keys. State of 12 November 2026.**
+**Implemented. State of 12 November 2026.**
 [Package boundaries](docs/package-boundaries.md) records the rules: one
 contribution per package, identities in vocabulary packages, only a
 composition imports a contribution, and import rules stated per role. The plan
@@ -265,15 +266,21 @@ is [#218](https://github.com/Bitspark/bittype/issues/218). Its last step, the
 rules by role, merged with
 [#244](https://github.com/Bitspark/bittype/pull/244). Go's contract identities
 and query service moved afterwards, with pull request
-[#246](https://github.com/Bitspark/bittype/pull/246). The check is the function
+[#246](https://github.com/Bitspark/bittype/pull/246). The horos names that
+a writer and a separate reader each spelled moved into `semantics/horos/go`
+with pull requests [#247](https://github.com/Bitspark/bittype/pull/247) and
+[#248](https://github.com/Bitspark/bittype/pull/248). Every confirmed
+instance of
+[bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) is
+corrected. The check is the function
 `checkArchitecture` in
 [`architecture_check_test.go`](integration/go/architecture_check_test.go). It
 does the following:
 
 - **Rules by role.** A package gets its import rule from the role that its
   path gives, as the table under
-  [dependency direction](#dependency-direction) summarises. On the head of
-  pull request #246, `7ecdaa1`, 84 of the 127 production packages are
+  [dependency direction](#dependency-direction) summarises. At `c8d0344`, the merge
+  of pull request #246, 84 of the 127 production packages are
   classified this way, ten of them with a role extension. The other 43 have an
   explicit entry: 31 in the foundation and kernel table and 12 one-of-a-kind
   packages. A production package with neither a role nor an entry fails as
@@ -288,16 +295,19 @@ does the following:
   A role is checked per shape: each import it permits must be imported by at
   least one package of that role. The external model allowances are checked
   the same way.
-- **Symbols of a provider import.** The check reads which exported symbols a
-  production package uses from each module package it imports. An import of a
-  stage provider package (`<stage>/<dimension>/<language>/provider/go`) by a
-  package that is not a composition needs an entry in the
+- **Symbols of a provider or query service import.** The check reads which
+  exported symbols a production package uses from each module package it
+  imports. An import of a stage provider package
+  (`<stage>/<dimension>/<language>/provider/go`) or of a query service package
+  (`analyze/files/<language>/queries/go`) by a package that is not a
+  composition needs an entry in the
   [exception table](integration/go/architecture_exceptions_test.go). The entry
-  names the importer, the provider, the exact symbols and the reason. A use of
-  another symbol fails. An entry or a symbol that is not used fails. The table
-  holds thirteen entries. All are accepted: a parser, a formatter and the
-  horos resolver call their own checker, and the Rust and TypeScript semantic
-  helpers call their own parser.
+  names the importer, the imported package, the exact symbols and the reason.
+  A use of another symbol fails. An entry or a symbol that is not used fails.
+  The table holds fourteen entries. All are accepted. In thirteen, a parser, a
+  formatter and the horos resolver call their own checker, and the Rust and
+  TypeScript semantic helpers call their own parser. In one, the horos-to-go
+  verification pair takes `Admission` from the Go query service.
 - **All files of a package.** The check also reads the files that the build
   constraints of the test run exclude: a file behind a build tag, a file of
   another operating system or architecture, and a cgo file when cgo is off.
@@ -311,22 +321,23 @@ does the following:
   hides the symbols used.
 
 The compositions `integration/go` and `verification/integration/go` are not
-classified. `tools/**` needs no exception to import a provider.
+classified. `tools/**` needs no exception to import a provider or a query
+service.
 
-This remains open:
+No step of the plan in #218 is recorded as open. This remains open and belongs
+to other work:
 
-- **The inline horos keys.** Five horos-owned keys are spelled inline where
-  they are used: `horos/module` and `horos/import` in `internal/horosfiles`,
-  and `horos/type-definition`, `horos/sort/proper` and `horos/identity/module`
-  in `transform/syntax/horos/source/go`. `semantics/horos/go` does not publish
-  them. They are tracked in
-  [#220](https://github.com/Bitspark/bittype/issues/220).
 - **The profile gate.**
   [#238](https://github.com/Bitspark/bittype/pull/238) divided
   `transform/syntax/horos/mapping/go` on 11 November 2026. The adapter stays at
   that path and still refuses every profile but one. That gate is
   [#216](https://github.com/Bitspark/bittype/issues/216) and
   [bittype/ACX-008](docs/architecture-cases/0008-structural-profile-gate.md).
+- **Optional fields in Record.** Record still decides how an optional field is
+  represented in Go, Rust and C++. What a mapping's `Expand` returns is
+  [#196](https://github.com/Bitspark/bittype/issues/196), item 6.
+- **Three candidates.** They are not confirmed and are listed in
+  [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md#candidates).
 
 A green run shows that the forbidden imports are absent. It does not show that
 a package holds one contribution, that a decision made inside a package is

@@ -67,12 +67,16 @@ package:
 - A package of an existing role needs no edit to the test.
 - A foundation, kernel or one-of-a-kind package needs an explicit entry in
   [`architecture_test.go`](integration/go/architecture_test.go).
-- An import of a stage provider package outside a composition needs an entry
-  in the [exception table](integration/go/architecture_exceptions_test.go)
-  that names its symbols and its reason.
+- An import of a stage provider package or of a query service package outside
+  a composition needs an entry in the
+  [exception table](integration/go/architecture_exceptions_test.go) that names
+  its symbols and its reason.
 
-The plan is [#218](https://github.com/Bitspark/bittype/issues/218); the findings that remain open are
-[bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md). The
+The plan is [#218](https://github.com/Bitspark/bittype/issues/218). The findings, their corrections and
+their limits are
+[bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md). Every
+confirmed instance of that case is corrected as of 12 November 2026, and its
+limits name what was not examined. The
 import check enforces boundaries that this reasoning has decided. It does not
 replace the reasoning, and a green run does not show that ownership is right.
 
