@@ -39,7 +39,10 @@ func TestCompilerFailureAndProtocol(t *testing.T) {
 	trees, source := compilerFixture(t)
 	ctx := context.Background()
 	sysroot := t.TempDir()
-	for _, response := range []string{`{}`, `{"Version":1,"Compiler":"rustc 0.0.0 (x)","Status":"ok","Facts":{}}`, `{"Version":1,"Compiler":"rustc 1.90.0 (x)","Status":"ok"}`, `{"Version":1,"Compiler":"rustc 1.90.0 (x)","Status":"unsupported","Facts":{}}`, `{"Version":1,"Compiler":"rustc 1.90.0 (x)","Status":"ok","Facts":{},"unexpected":true}`} {
+	// Every response states the helper profile, so that each is refused for
+	// what it shows and not for a missing profile.
+	profile := `"Profile":"` + n.HelperProfile + `",`
+	for _, response := range []string{`{}`, `{"Version":1,` + profile + `"Compiler":"rustc 0.0.0 (x)","Status":"ok","Facts":{}}`, `{"Version":1,` + profile + `"Compiler":"rustc 1.90.0 (x)","Status":"ok"}`, `{"Version":1,` + profile + `"Compiler":"rustc 1.90.0 (x)","Status":"unsupported","Facts":{}}`, `{"Version":1,` + profile + `"Compiler":"rustc 1.90.0 (x)","Status":"ok","Facts":{},"unexpected":true}`} {
 		path := filepath.Join(t.TempDir(), "helper")
 		if err := os.WriteFile(path, []byte("#!/bin/sh\ncat >/dev/null\nprintf '%s' '"+response+"'\n"), 0700); err != nil {
 			t.Fatal(err)
@@ -56,12 +59,112 @@ func TestCompilerFailureAndProtocol(t *testing.T) {
 	}
 	t.Setenv("BITTYPE_SHOULD_NOT_LEAK", "secret-placeholder")
 	path := filepath.Join(t.TempDir(), "helper")
-	script := "#!/bin/sh\ncat >/dev/null\ntest -z \"$BITTYPE_SHOULD_NOT_LEAK\" || exit 1\nprintf '%s' '{\"Version\":1,\"Compiler\":\"rustc 1.90.0 (x)\",\"Status\":\"incomplete\"}'\n"
+	script := "#!/bin/sh\ncat >/dev/null\ntest -z \"$BITTYPE_SHOULD_NOT_LEAK\" || exit 1\nprintf '%s' '{\"Version\":1," + profile + "\"Compiler\":\"rustc 1.90.0 (x)\",\"Status\":\"incomplete\"}'\n"
 	if err := os.WriteFile(path, []byte(script), 0700); err != nil {
 		t.Fatal(err)
 	}
 	if out, err := Check(ctx, path, sysroot, environment, trees, source); err != nil || out.Status != "incomplete" {
 		t.Fatal(out, err)
+	}
+}
+
+// The bridge takes a response only under the helper profile that the
+// vocabulary publishes. A helper binary of another change of the facts states
+// another profile, and one of before this rule states none. Each is a helper
+// the bridge cannot use, and the refusal is the one for a helper that was
+// built with another compiler. The same response under the published profile
+// is taken.
+func TestBridgeRefusesAnotherHelperProfile(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("qualified helper execution platform is Linux")
+	}
+	trees, source := compilerFixture(t)
+	respond := func(member string) (Output, error) {
+		path := filepath.Join(t.TempDir(), "helper")
+		script := "#!/bin/sh\ncat >/dev/null\nprintf '%s' '{\"Version\":1," + member + "\"Compiler\":\"rustc " + n.CompilerVersion + " (x)\",\"Status\":\"incomplete\"}'\n"
+		if err := os.WriteFile(path, []byte(script), 0700); err != nil {
+			t.Fatal(err)
+		}
+		return Check(context.Background(), path, t.TempDir(), environment, trees, source)
+	}
+	if out, err := respond(`"Profile":"` + n.HelperProfile + `",`); err != nil || out.Status != statusIncomplete || out.Profile != n.HelperProfile {
+		t.Fatal("a response under the published profile", out, err)
+	}
+	for name, c := range map[string]struct{ member, stated string }{
+		"no profile, as the helper before this rule":     {``, `""`},
+		"the profile before the primitive type bindings": {`"Profile":"captured-types-2",`, `"captured-types-2"`},
+		"a later profile":                   {`"Profile":"captured-types-4",`, `"captured-types-4"`},
+		"an empty profile":                  {`"Profile":"",`, `""`},
+		"the profile with a space after it": {`"Profile":"` + n.HelperProfile + ` ",`, `"` + n.HelperProfile + ` "`},
+	} {
+		out, err := respond(c.member)
+		if !errors.Is(err, n.ErrCompiler) || errors.Is(err, semantic.ErrInvalidRequest) || errors.Is(err, n.ErrUnsupported) || out.Status != "" {
+			t.Errorf("%s: status %q and the error %v, want the refusal of a helper", name, out.Status, err)
+			continue
+		}
+		// The refusal names what the helper stated and what the bridge reads.
+		if !strings.Contains(err.Error(), "states the profile "+c.stated) || !strings.Contains(err.Error(), `"`+n.HelperProfile+`"`) {
+			t.Errorf("%s: the refusal does not name the two profiles: %v", name, err)
+		}
+	}
+}
+
+// The helper states the published profile in every response: with a graph,
+// for a source that the compiler rejects, and for a request it does not
+// cover. This reads what the helper writes, before the bridge judges it, so
+// the name is pinned from the helper's side too.
+func TestHelperStatesItsProfile(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("qualified helper execution platform is Linux")
+	}
+	respond := func(texts ...string) map[string]json.RawMessage {
+		t.Helper()
+		units := []Unit{}
+		for _, text := range texts {
+			parsed, err := parser.Parse(context.Background(), parse.Input{Text: text, SourceID: "test", TreeID: "test"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			source := &files.Context{Files: files.Files{Entries: []files.File{{ID: "test", Path: "test.rs", Text: text}}}, Links: []files.SyntaxLink{{File: "test", Tree: "test", Source: "test"}}}
+			prepared, err := prepare(context.Background(), []s.AST{parsed.ASTView()}, source)
+			if err != nil {
+				t.Fatal(err)
+			}
+			units = append(units, prepared...)
+		}
+		encoded, err := json.Marshal(input{Version: 1, Environment: environment, Units: units})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var stdout, stderr bytes.Buffer
+		command := exec.Command(os.Getenv("BITTYPE_RUST_HELPER"), os.Getenv("BITTYPE_RUST_SYSROOT"))
+		command.Env = []string{}
+		command.Stdin = bytes.NewReader(encoded)
+		command.Stdout, command.Stderr = &stdout, &stderr
+		if err := command.Run(); err != nil {
+			t.Fatal(err, stderr.String())
+		}
+		var response map[string]json.RawMessage
+		if err := json.Unmarshal(stdout.Bytes(), &response); err != nil {
+			t.Fatal(err, stdout.String())
+		}
+		return response
+	}
+	for _, c := range []struct {
+		name, status string
+		texts        []string
+	}{
+		{"a source with a graph", "ok", []string{"pub type Flag = bool;"}},
+		{"a source that the compiler rejects", "compiler-errors", []string{"pub type Missing = Unknown;"}},
+		{"a request without a unit", "unsupported", nil},
+	} {
+		response := respond(c.texts...)
+		if string(response["Status"]) != `"`+c.status+`"` {
+			t.Errorf("%s: the status %s, want %s", c.name, response["Status"], c.status)
+		}
+		if string(response["Profile"]) != `"`+n.HelperProfile+`"` {
+			t.Errorf("%s: the helper states the profile %s, and the vocabulary publishes %q", c.name, response["Profile"], n.HelperProfile)
+		}
 	}
 }
 

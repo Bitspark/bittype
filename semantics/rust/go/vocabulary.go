@@ -22,8 +22,14 @@ const AnalysisProfile = "rustc-1.90.0/captured-types-2/analysis-1"
 // setting of every configuration and changes when facts are added, so a
 // receipt of another helper is never read as one of this helper. The two
 // profile strings above are not derived from it: they change on their own
-// occasion.
-const HelperProfile = "captured-types-2"
+// occasion. An added entity kind and binding changed this name and kept
+// those: a reader of the earlier graph reads this one.
+//
+// The helper states the same name in every response, and the bridge refuses a
+// response that states another one. So the name is declared here and spelled
+// once more in the helper, and a helper binary of another change of the facts
+// is never taken for this one.
+const HelperProfile = "captured-types-3"
 
 var ErrForeign = errors.New("foreign or missing Rust semantic handle")
 var ErrCompiler = errors.New("Rust compiler helper failed")
@@ -86,6 +92,17 @@ func EffectiveVisibilityOperator() semantics.Key { return Key("effective-visibil
 // The kind of a module entity. The scope of a restricted visibility is one,
 // and the crate root is one.
 func ModuleKind() semantics.Key { return Key("module") }
+
+// PrimitiveKind is the kind of the entity of a primitive type, such as bool
+// and u8. The entity's name is the name that the language gives the type. A
+// primitive type is defined in no crate, so the entity has no owner, no
+// declaration site and no compiler path, and it carries no visibility fact.
+// A graph holds one such entity for each primitive type that its source uses.
+//
+// The helper binds every primitive type node, under the role of a path
+// segment, to what the compiler resolved the name to: this entity, or the
+// declaration or the generic parameter of that name that captures the use.
+func PrimitiveKind() semantics.Key { return Key("primitive") }
 
 // The audience and the path of the effective fact of this profile: another
 // crate, through the path of the definition. The profile has no re-export, so

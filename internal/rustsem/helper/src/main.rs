@@ -86,8 +86,13 @@ fn diagnostic(unit: Option<&Unit>, node: Option<&Node>, name: &str, message: &st
     }
     d
 }
+// The profile of this helper: the name of the facts it writes. The Go
+// vocabulary publishes the same name as a setting of every configuration.
+// Every response states it, and the Go bridge refuses a response that states
+// another one, so a helper binary of another change of the facts is not used.
+const HELPER_PROFILE: &str = "captured-types-3";
 fn output(status: &str, facts: Option<Value>, diagnostics: Vec<Value>) -> Value {
-    json!({"Version":1,"Compiler":env!("BITTYPE_RUSTC_VERSION"),"Status":status,"Facts":facts,"Diagnostics":diagnostics})
+    json!({"Version":1,"Profile":HELPER_PROFILE,"Compiler":env!("BITTYPE_RUSTC_VERSION"),"Status":status,"Facts":facts,"Diagnostics":diagnostics})
 }
 fn unsupported(unit: &Unit) -> Option<&Node> {
     unit.nodes.iter().find(|n| match n.kind.as_str() {
@@ -275,6 +280,7 @@ struct Exporter<'tcx, 'a> {
     facts: Vec<Value>,
     defs: HashMap<DefId, u32>,
     params: HashMap<(DefId, u32), u32>,
+    primitives: HashMap<&'static str, u32>,
     types: HashMap<(Ty<'tcx>, Option<DefId>), u32>,
     sites: HashMap<DefId, u32>,
     declared: HashMap<Option<DefId>, u32>,
@@ -294,6 +300,7 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
             facts: vec![],
             defs: HashMap::new(),
             params: HashMap::new(),
+            primitives: HashMap::new(),
             types: HashMap::new(),
             sites: HashMap::new(),
             declared: HashMap::new(),
@@ -333,6 +340,7 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
                     && n.start <= start
                     && n.end >= end
                     && (kind != "path-segment" || n.start == start)
+                    && (kind != "primitive-type" || (n.start == start && n.end == end))
             })
             .min_by_key(|n| n.end - n.start)
             .map(|n| n.id)
@@ -423,6 +431,19 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
             self.entities[id as usize - 1]["Parameters"] = json!(parameters);
         }
         Ok(id)
+    }
+    // A primitive type is an entity of its own kind, named as the language
+    // names the type. No crate defines it, so it has no owner, no path and no
+    // declaration site. One entity stands for every use of the type.
+    fn primitive(&mut self, name: &'static str) -> u32 {
+        if let Some(&id) = self.primitives.get(name) {
+            return id;
+        }
+        let id = self.entities.len() as u32 + 1;
+        self.primitives.insert(name, id);
+        self.entities
+            .push(json!({"Kind":key("primitive"),"Name":name,"Declarations":[]}));
+        id
     }
     fn parameter(&mut self, owner: DefId, index: u32) -> ExportResult<u32> {
         let g = self.tcx.generics_of(owner);
@@ -812,11 +833,19 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
         self.private_interfaces(&cat.definitions)?;
         let mut targets = HashMap::new();
         for (span, res) in cat.paths {
-            let Some(site) = self.find(span, "path-segment") else {
+            // A name is used at a path segment or at a primitive type node. The
+            // compiler resolves both as a path, so a primitive type node whose
+            // name a declaration or a generic parameter captures binds to that
+            // declaration, and any other one to the entity of the primitive type.
+            let Some(site) = self
+                .find(span, "path-segment")
+                .or_else(|| self.find(span, "primitive-type"))
+            else {
                 continue;
             };
             let target = match res {
                 Res::Def(_, did) => self.entity(did)?,
+                Res::PrimTy(primitive) => self.primitive(primitive.name_str()),
                 Res::SelfTyParam { trait_ } => self.parameter(trait_, 0)?,
                 Res::SelfTyAlias { alias_to, .. } => self.entity(alias_to)?,
                 _ => return Err(unsupported_error(format!("native path resolution {res:?}"))),
@@ -835,6 +864,14 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
             if node.kind == "path-segment" && !targets.contains_key(&node.id) {
                 return Err(unsupported_error(format!(
                     "unmapped path segment {}",
+                    node.id
+                )));
+            }
+            // A primitive type node without a binding would be a use whose
+            // capture nobody can see.
+            if node.kind == "primitive-type" && !targets.contains_key(&node.id) {
+                return Err(unsupported_error(format!(
+                    "unmapped primitive type {}",
                     node.id
                 )));
             }

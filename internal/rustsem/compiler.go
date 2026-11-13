@@ -21,7 +21,10 @@ import (
 )
 
 type Output struct {
-	Version     int
+	Version int
+	// Profile is the helper profile that the helper states for itself: the
+	// name of the facts it writes. Check accepts only rust.HelperProfile.
+	Profile     string
 	Compiler    string
 	Status      string
 	Facts       *semantics.Data
@@ -122,6 +125,13 @@ func Check(ctx context.Context, helper, sysroot string, environment Environment,
 	var trailing any
 	if decoder.Decode(&trailing) != io.EOF || out.Version != 1 || !strings.HasPrefix(out.Compiler, "rustc "+n.CompilerVersion+" (") {
 		return Output{}, n.ErrCompiler
+	}
+	// The helper states which facts it writes. A helper of another profile,
+	// or one that states none, is a helper this bridge cannot use, like one
+	// that was built with another compiler: its graph is not the vocabulary
+	// that the configuration of the receipt names.
+	if out.Profile != n.HelperProfile {
+		return Output{}, fmt.Errorf("%w: the helper states the profile %q, and this bridge reads %q", n.ErrCompiler, out.Profile, n.HelperProfile)
 	}
 	switch out.Status {
 	case StatusOK:
