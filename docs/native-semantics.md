@@ -640,13 +640,16 @@ an environment with an invalid and an unsupported value is invalid.
 **The vocabularies of an edition, a crate kind and a crate name are the pinned
 compiler's,** read in the source of rustc 1.90.0 and put to that compiler by
 `TestRustEnvironmentEqualsCompiler`, which compares its answers with
-`ConfigurationFor`. The Rust vocabulary declares each once, beside the
-supported values, in `semantics/rust/go/environment.go` and `cratename.go`.
+`ConfigurationFor`. Each is declared once. The editions, the crate kinds and
+the supported values are in `semantics/rust/go/environment.go`. The rule for a
+crate name and its table of characters are in `internal/rust/cratename.go`,
+the lexical helper, because the Rust symbol package judges the crate of a
+destination by the same rule and may not import the semantic vocabulary.
 The `compiler` setting and the profile strings identify this vocabulary: the
 editions, the crate kinds, the characters of a crate name and the keywords are
 those of rustc 1.90.0. A new compiler pin is a new vocabulary, under its own
 setting and profile strings, and the table of characters is regenerated for
-it as the comment in `cratename.go` says.
+it as the comment in `internal/rust/cratename.go` says.
 
 - **An edition.** `compiler/rustc_span/src/edition.rs:114-126` names five. The
   stable compiler refuses the fifth, `future`

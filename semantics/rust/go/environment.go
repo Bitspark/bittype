@@ -9,6 +9,7 @@ import (
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
+	native "github.com/Bitspark/bittype/internal/rust"
 )
 
 // Environment states what a captured Rust crate is compiled under. A consumer
@@ -152,11 +153,11 @@ func (e Environment) check() error {
 		return fmt.Errorf("%w: %q is no well-formed target", semantic.ErrInvalidRequest, e.Target)
 	case !slices.Contains(compilerCrateKinds, e.Crate.Kind):
 		return fmt.Errorf("%w: %q is no crate type of rustc %s", semantic.ErrInvalidRequest, e.Crate.Kind, CompilerVersion)
-	case !crateName(e.Crate.Name):
+	case !native.CrateName(e.Crate.Name):
 		return fmt.Errorf("%w: %q is no Rust crate name", semantic.ErrInvalidRequest, e.Crate.Name)
 	}
 	for _, dependency := range e.Dependencies {
-		if !crateName(dependency.Name) {
+		if !native.CrateName(dependency.Name) {
 			return fmt.Errorf("%w: the dependency name %q is no Rust crate name", semantic.ErrInvalidRequest, dependency.Name)
 		}
 	}
