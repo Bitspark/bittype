@@ -34,6 +34,15 @@ func (s Snapshot) LanguageID() language.ID {
 	}
 	return s.state.syntax.ID()
 }
+
+// Entry is the node that the capture names as its entry. Every capture has
+// one, and this contract gives it no meaning: it is an address. It names no
+// root of a native program, such as the packages of a Go build, the root file
+// of a Rust crate, a translation-unit context of C++ or the input files of a
+// TypeScript compiler. It limits no check: a provider answers for every
+// captured tree, whichever holds the entry. A provider may give the entry a
+// meaning of its own, as the horos providers do for the module that a request
+// enters through.
 func (s Snapshot) Entry() ast.NodeRef {
 	if !s.Valid() {
 		return ast.NodeRef{}
