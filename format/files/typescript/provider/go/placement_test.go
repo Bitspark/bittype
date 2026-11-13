@@ -114,3 +114,75 @@ func TestAmbiguousNativeBindingIsInvalid(t *testing.T) {
 	}
 	category(t, err, source.ErrInvalid)
 }
+
+// captureOne captures one tree, with or without the file that holds it, and
+// builds a graph in which the tree is a module.
+func captureOne(t *testing.T, tree s.AST, withFile bool) (semantic.Snapshot, semantics.Semantics[s.Language]) {
+	t.Helper()
+	definition, err := representation.NewLanguage[s.Language](s.Language{}, "native-types-v1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checker, err := check.NewChecker[s.Language](definition, admitAll{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	packed, err := representation.Pack(definition, tree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	input := semantic.Input{Entry: ref(tree.ID, tree.Root), Trees: []representation.AST{packed}}
+	if withFile {
+		input.Files = &files.Context{
+			Files: files.Files{Entries: []files.File{{ID: "input", Path: "input.ts", Text: "export type Use = string;"}}},
+			Links: []files.SyntaxLink{{File: "input", Tree: tree.ID, Source: "input"}},
+		}
+	}
+	snapshot, err := semantic.Capture(context.Background(), checker, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	graph, err := semantics.New[s.Language](semantics.Data{
+		Entities: []semantics.Entity{{Kind: n.ModuleKind(), Name: "input", Declarations: []ast.NodeRef{ref(tree.ID, tree.Root)}}},
+	}, semantics.DefaultLimits(), func(site ast.NodeRef) bool { return site.Tree == tree.ID && int(site.Node) <= len(tree.Nodes) })
+	if err != nil {
+		t.Fatal(err)
+	}
+	return snapshot, graph
+}
+
+// The TypeScript bridge requires captured files, so no evidence exists for a
+// capture without them and no formatter call reaches this refusal. The input is
+// well formed, and the horos formatter admits the same shape.
+func TestPlacementWithoutCapturedFilesIsUnsupported(t *testing.T) {
+	tree := s.AST{ID: "input", Root: 1, Nodes: []s.Node{
+		{Kind: s.KindSourceFile, Children: []ast.Child{{Role: s.RoleDeclaration, Node: 2}}},
+		{Kind: s.KindTypeAlias, Attributes: attributes(s.AttributeName, "Use", s.AttributeExported, "true"), Children: []ast.Child{{Role: s.RoleType, Node: 3}}},
+		{Kind: s.KindKeywordType, Attributes: attributes(s.AttributeName, "string")},
+	}}
+	snapshot, graph := captureOne(t, tree, true)
+	if p, err := readProgram(context.Background(), snapshot, graph); err != nil || len(p.original.Units) != 1 {
+		t.Fatal("the same tree with its file must be read", err)
+	}
+	snapshot, graph = captureOne(t, tree, false)
+	p, err := readProgram(context.Background(), snapshot, graph)
+	if err == nil || p != nil {
+		t.Fatal("a capture without files was read")
+	}
+	category(t, err, source.ErrUnsupported)
+}
+
+// readProgram passes the refusal of an import form on with its one category.
+func TestReadProgramKeepsTheImportFormCategory(t *testing.T) {
+	tree := s.AST{ID: "input", Root: 1, Nodes: []s.Node{
+		{Kind: s.KindSourceFile, Children: []ast.Child{{Role: s.RoleImport, Node: 2}}},
+		{Kind: s.KindImport, Attributes: attributes(s.AttributeModule, "@example/all"), Children: []ast.Child{{Role: s.RoleBinding, Node: 3}}},
+		{Kind: s.KindNamespaceImport, Attributes: attributes(s.AttributeName, "all")},
+	}}
+	snapshot, graph := captureOne(t, tree, true)
+	p, err := readProgram(context.Background(), snapshot, graph)
+	if err == nil || p != nil {
+		t.Fatal("a namespace import was read as a named type import")
+	}
+	category(t, err, source.ErrUnsupported)
+}

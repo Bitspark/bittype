@@ -5,6 +5,7 @@ package source
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
 	"github.com/Bitspark/bittype/semantics/go"
@@ -52,21 +53,36 @@ type state[L any] struct {
 	abstract    semantics.Semantics[L]
 }
 
-// A Files stage refuses an input in one of four categories, which a caller
-// tests with errors.Is: invalid input is ErrInvalid, unsupported coverage is
-// ErrUnsupported, missing evidence is semantic.ErrEvidenceUnavailable and an
-// exceeded limit is ErrLimit. The category of a refusal is part of the Files
-// contract: a later change may turn an ErrUnsupported refusal into success and
-// may not move a refusal to another category. A refusal that carries another
-// package's value joins it to its category, so errors.Is holds for both.
-// docs/source.md lists the refusals that carry a category.
+// ErrInvalid is invalid input: no later slice can admit the same input. The
+// publisher, the constructors and the publication guards also return it,
+// outside that rule.
+//
+// A refusal of an input that a Files formatter decides has one of four
+// categories, which a caller tests with errors.Is: invalid input is ErrInvalid,
+// unsupported coverage is ErrUnsupported, missing evidence is
+// semantic.ErrEvidenceUnavailable and an exceeded limit is ErrLimit. The
+// category of such a refusal is part of the Files contract: a later change may
+// turn an ErrUnsupported refusal into success, may not move a refusal to
+// another category, and may not accept and ignore what is refused as malformed
+// today. A refusal that carries another package's value joins it to its
+// category, so errors.Is holds for both. docs/source.md lists the refusals that
+// carry a category and the places that this rule does not reach.
 var ErrInvalid = errors.New("invalid Source")
+
+// ErrStale refuses an output that belongs to another Files invocation or that
+// returns the snapshot of its input. It is none of the four categories.
 var ErrStale = errors.New("Source belongs to another Files invocation")
+
+// ErrLimit is an exceeded limit: the input or the fresh output exceeds a limit
+// of the request.
 var ErrLimit = errors.New("Source resource limit")
 
 // ErrUnsupported is unsupported coverage. A refusal is unsupported coverage
 // when a later slice can admit the same input, and it is invalid input when no
-// later slice can.
+// later slice can. The same input is judged under the same vocabulary: an input
+// that is malformed under the published vocabulary of a setting or a placement
+// type is invalid, and an input that is well formed under it and outside what
+// the implementation covers is unsupported.
 var ErrUnsupported = errors.New("Files input outside supported coverage")
 
 // Limits bound concrete storage and metadata in addition to semantic capture limits.
@@ -245,7 +261,11 @@ func (p Publisher[L]) Publish(input Publication[L]) (Source[L], error) {
 	}
 	limits := q.policy.Limits
 	if _, err := contextFiles.Files.Capture(limits.Files); err != nil {
-		return Source[L]{}, err
+		// The inventory's own value stays joined to the Files category.
+		if errors.Is(err, files.ErrLimit) {
+			return Source[L]{}, fmt.Errorf("%w: %w", ErrLimit, err)
+		}
+		return Source[L]{}, fmt.Errorf("%w: %w", ErrInvalid, err)
 	}
 	if len(input.Units) > limits.Files.MaxFiles || len(input.Groups) > limits.MaxLinks || len(input.Relations) > limits.MaxLinks {
 		return Source[L]{}, ErrLimit

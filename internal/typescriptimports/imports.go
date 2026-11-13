@@ -22,6 +22,21 @@ var ErrLimit = errors.New("TypeScript import limit exceeded")
 func SourcePath(p files.Path) bool {
 	return files.ValidPath(p) && strings.HasSuffix(string(p), ".ts") && !strings.HasSuffix(string(p), ".d.ts") && !strings.ContainsAny(string(p), "?#%")
 }
+
+// ExcludedPath reports a valid path that TypeScript itself reads as a source
+// file and that SourcePath excludes: a declaration file, another TypeScript
+// extension, or a URL delimiter in a path with such an extension.
+func ExcludedPath(p files.Path) bool {
+	if !files.ValidPath(p) || SourcePath(p) {
+		return false
+	}
+	for _, extension := range []string{".ts", ".mts", ".cts", ".tsx"} {
+		if strings.HasSuffix(string(p), extension) {
+			return true
+		}
+	}
+	return false
+}
 func Relative(from, to files.Path) (string, error) {
 	if !SourcePath(from) || !SourcePath(to) || from == to {
 		return "", fmt.Errorf("invalid TypeScript import route %q to %q", from, to)

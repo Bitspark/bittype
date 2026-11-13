@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -19,6 +20,7 @@ import (
 	formathoros "github.com/Bitspark/bittype/format/syntax/horos/provider/go"
 	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
 	textfixture "github.com/Bitspark/bittype/integration/go/testdata/textfixture"
+	"github.com/Bitspark/bittype/internal/horosfiles"
 	filesparse "github.com/Bitspark/bittype/parse/files/horos/provider/go"
 	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
@@ -167,6 +169,27 @@ type commentingPrinter struct {
 func (p commentingPrinter) Print(ctx context.Context, unit cst.CST[ts.Language]) (string, error) {
 	text, err := p.Provider.Print(ctx, unit)
 	return text + "\n// " + strings.Repeat("x", 1<<16) + "\n", err
+}
+
+// errorTreeHas reports whether an error or one that it wraps or joins matches.
+func errorTreeHas(err error, match func(error) bool) bool {
+	if err == nil {
+		return false
+	}
+	if match(err) {
+		return true
+	}
+	switch wrapped := err.(type) {
+	case interface{ Unwrap() error }:
+		return errorTreeHas(wrapped.Unwrap(), match)
+	case interface{ Unwrap() []error }:
+		for _, each := range wrapped.Unwrap() {
+			if errorTreeHas(each, match) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 type horosPlacement struct {
@@ -409,6 +432,25 @@ func TestFilesFailureCategories(t *testing.T) {
 	}
 	valid := string(tsBytes(tsPlacement()))
 	horosValid := string(horosBytes(horosPlacements()))
+	// A refusal that the horos decoder decides is invalid input and still carries
+	// the decoder's own error, whatever its type.
+	horosDecoded := func(defect, value string) {
+		add(defect, horosName, source.ErrInvalid, horosRaw(value))
+		var placements []horosfiles.Placement
+		decoder := json.NewDecoder(strings.NewReader(value))
+		decoder.DisallowUnknownFields()
+		want := decoder.Decode(&placements)
+		if want == nil {
+			t.Fatal("the decoder accepts:", defect)
+		}
+		cases[len(cases)-1].check = func(t *testing.T, err error) {
+			if !errorTreeHas(err, func(each error) bool {
+				return reflect.TypeOf(each) == reflect.TypeOf(want) && each.Error() == want.Error()
+			}) {
+				t.Errorf("the decoder's error %q (%T) is no longer part of the refusal: %q", want, want, err)
+			}
+		}
+	}
 
 	// The setting.
 	add("wrong setting key", typescript, source.ErrInvalid, func(*testing.T) (bool, error) {
@@ -424,17 +466,15 @@ func TestFilesFailureCategories(t *testing.T) {
 		return horosFormat(horosFormatter, parsed, format.FilesLimits{}, semantic.Setting{Key: filesformat.OrganizationSetting(), Value: []byte(horosValid)}, semantic.Setting{Key: wrongKey, Value: []byte(horosValid)})
 	}, semantic.ErrInvalidRequest)
 	add("malformed JSON", typescript, source.ErrInvalid, tsRaw(`{"Entry":"pages","Units":[{"File":}]}`))
-	add("malformed JSON", horosName, source.ErrInvalid, horosRaw(`[{"ID":}]`))
-	cases[len(cases)-1].check = func(t *testing.T, err error) {
-		var syntax *json.SyntaxError
-		if !errors.As(err, &syntax) {
-			t.Errorf("the decoder's error is no longer part of the refusal: %q", err)
-		}
-	}
+	horosDecoded("malformed JSON", `[{"ID":}]`)
 	add("truncated JSON", typescript, source.ErrInvalid, tsRaw(valid[:len(valid)-1]))
-	add("truncated JSON", horosName, source.ErrInvalid, horosRaw(horosValid[:len(horosValid)-1]))
+	horosDecoded("truncated JSON", horosValid[:len(horosValid)-1])
 	add("a JSON value of another type", typescript, source.ErrInvalid, tsRaw(`[]`))
-	add("a JSON value of another type", horosName, source.ErrInvalid, horosRaw(`{}`))
+	horosDecoded("a JSON value of another type", `{}`)
+	add("an empty setting value", typescript, source.ErrInvalid, tsRaw(``))
+	horosDecoded("an empty setting value", ``)
+	add("the JSON value null", typescript, source.ErrInvalid, tsRaw(`null`))
+	add("the JSON value null", horosName, source.ErrInvalid, horosRaw(`null`), files.ErrInvalid)
 	add("a second JSON value", typescript, source.ErrInvalid, tsRaw(valid+` {}`))
 	add("a second JSON value", horosName, source.ErrInvalid, horosRaw(horosValid+` []`), semantic.ErrInvalidRequest)
 
@@ -442,13 +482,97 @@ func TestFilesFailureCategories(t *testing.T) {
 	add("unknown field", typescript, source.ErrInvalid, tsRaw(`{"Later":1,`+valid[1:]))
 	add("unknown field of a file", typescript, source.ErrInvalid, tsRaw(strings.Replace(valid, `{"File":`, `{"Later":1,"File":`, 1)))
 	add("unknown field of an item", typescript, source.ErrInvalid, tsRaw(strings.Replace(valid, `{"Tree":`, `{"Later":1,"Tree":`, 1)))
-	add("unknown field", horosName, source.ErrInvalid, horosRaw(`[{"Later":1,`+horosValid[2:]))
+	horosDecoded("unknown field", `[{"Later":1,`+horosValid[2:])
+
+	// A member that is named twice is refused. The decoder would keep the last
+	// value, so the first would be accepted and ignored. A member name in another
+	// case names the same member, and one such name alone stays admitted.
+	for name, run := range map[string]func(*testing.T) (bool, error){
+		"TypeScript, a member name in another case": tsRaw(strings.Replace(strings.Replace(valid, `"Entry"`, `"entry"`, 1), `"Units"`, `"UNITS"`, 1)),
+		"TypeScript, trailing white space":          tsRaw(valid + " \n\t"),
+		"horos, a member name in another case":      horosRaw(strings.Replace(horosValid, `"ID"`, `"id"`, 1)),
+		"horos, trailing white space":               horosRaw(horosValid + " \n"),
+	} {
+		if published, err := run(t); err != nil || !published {
+			t.Fatal("an admitted placement is refused:", name, err)
+		}
+	}
+	add("a repeated member", typescript, source.ErrInvalid, tsRaw(`{"Entry":"absent",`+valid[1:]))
+	add("a repeated member whose first value is another placement", typescript, source.ErrInvalid, tsRaw(`{"Units":[{"File":"x","Path":"../x","Declarations":[]}],`+valid[1:]))
+	add("a repeated member of a file", typescript, source.ErrInvalid, tsRaw(strings.Replace(valid, `{"File":`, `{"File":"other","File":`, 1)))
+	add("a repeated member of an item", typescript, source.ErrInvalid, tsRaw(strings.Replace(valid, `{"Tree":`, `{"Tree":"other","Tree":`, 1)))
+	add("a member repeated in another case", typescript, source.ErrInvalid, tsRaw(`{"entry":"absent",`+valid[1:]))
+	add("a repeated member", horosName, source.ErrInvalid, horosRaw(`[{"ID":"../other",`+horosValid[2:]))
+	add("a member repeated in another case", horosName, source.ErrInvalid, horosRaw(`[{"id":"../other",`+horosValid[2:]))
 
 	// The inventory of files.
 	add("too many files", typescript, source.ErrLimit, tsLimited(func(l *format.FilesLimits) { l.Source.Files.MaxFiles = 1 }))
 	add("too many files", horosName, source.ErrLimit, horosLimited(func(l *format.FilesLimits) { l.Source.Files.MaxFiles = 1 }))
 	add("file identities and paths exceed the byte limit", typescript, source.ErrLimit, tsLimited(func(l *format.FilesLimits) { l.Source.Files.MaxBytes = 8 }), files.ErrLimit)
 	add("file identities and paths exceed the byte limit", horosName, source.ErrLimit, horosLimited(func(l *format.FilesLimits) { l.Source.Files.MaxBytes = 8 }), files.ErrLimit)
+	add("the fresh files exceed the Files byte limit", typescript, source.ErrLimit, tsLimited(func(l *format.FilesLimits) {
+		// The identities and paths fit. The text of the fresh files does not.
+		l.Source.Files.MaxBytes = 0
+		for _, unit := range tsPlacement().Units {
+			l.Source.Files.MaxBytes += len(unit.File) + len(unit.Path)
+		}
+	}), files.ErrLimit)
+	add("the fresh files exceed the Files byte limit", typescriptExisting, source.ErrLimit, func(t *testing.T) (bool, error) {
+		unit := tsUnit("a", "export type A = string;")
+		in, err := existingStages.Capture(ctx, []source.Unit[ts.Language]{unit}, unit.File, semantic.Limits{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if out, err := plain.Format(ctx, in); err != nil || !out.Valid() {
+			t.Fatal("the module must format under the default limits", err)
+		}
+		in.Limits = format.DefaultFilesLimits()
+		in.Limits.Source.Files.MaxBytes = len(unit.File) + len(unit.Path) + 1
+		out, err := plain.Format(ctx, in)
+		return out.Valid(), err
+	}, files.ErrLimit)
+	add("the fresh files exceed the Files byte limit", horosName, source.ErrLimit, horosLimited(func(l *format.FilesLimits) {
+		l.Source.Files.MaxBytes = 0
+		for _, placement := range horosPlacements() {
+			l.Source.Files.MaxBytes += len(placement.ID) + len(placement.Path)
+		}
+	}), files.ErrLimit)
+	add("the fresh paths exceed the input byte limit", typescript, source.ErrLimit, func(t *testing.T) (bool, error) {
+		// The long path belongs to the file that imports, so no import names it and
+		// the fresh text stays below the limit.
+		o := tsPlacement()
+		o.Units[0].Path = files.Path("generated/" + strings.Repeat("d", 6000) + "/page.ts")
+		setting := semantic.Setting{Key: tsfiles.OrganizationSetting(), Value: tsBytes(o)}
+		if published, err := tsFormat(generated, output, format.FilesLimits{}, setting); err != nil || !published {
+			t.Fatal("the long path must format under the default limits", err)
+		}
+		limits := format.DefaultFilesLimits()
+		limits.Semantic.MaxInputBytes = 5000
+		if published, err := tsFormat(generated, output, limits, semantic.Setting{Key: tsfiles.OrganizationSetting(), Value: []byte(valid)}); err != nil || !published {
+			t.Fatal("the short path must format under the limit", err)
+		}
+		return tsFormat(generated, output, limits, setting)
+	}, files.ErrLimit)
+	add("the fresh paths exceed the input byte limit", horosName, source.ErrLimit, func(t *testing.T) (bool, error) {
+		placements := horosPlacements()
+		placements[0].Path = "generated/" + strings.Repeat("d", 6000) + "/people.horos"
+		setting := semantic.Setting{Key: filesformat.OrganizationSetting(), Value: horosBytes(placements)}
+		if published, err := horosFormat(horosFormatter, parsed, format.FilesLimits{}, setting); err != nil || !published {
+			t.Fatal("the long path must format under the default limits", err)
+		}
+		limits := format.DefaultFilesLimits()
+		limits.Semantic.MaxInputBytes = 5000
+		if published, err := horosFormat(horosFormatter, parsed, limits, semantic.Setting{Key: filesformat.OrganizationSetting(), Value: []byte(horosValid)}); err != nil || !published {
+			t.Fatal("the short path must format under the limit", err)
+		}
+		return horosFormat(horosFormatter, parsed, limits, setting)
+	}, files.ErrLimit)
+	add("two captured files with one path", typescriptExisting, source.ErrInvalid, func(*testing.T) (bool, error) {
+		first, second := tsUnit("first", "export type A = string;"), tsUnit("second", "export type B = string;")
+		second.Path = first.Path
+		in, err := existingStages.Capture(ctx, []source.Unit[ts.Language]{first, second}, first.File, semantic.Limits{})
+		return in.Abstract.Valid(), err
+	}, files.ErrInvalid)
 	add("one file identity for two files", typescript, source.ErrInvalid, tsPlaced(func(o *tsfiles.Organization) { o.Units[1].File = o.Units[0].File }), files.ErrInvalid)
 	add("one file identity for two files", horosName, source.ErrInvalid, horosPlaced(func(p *[]horosPlacement) { (*p)[1].ID = (*p)[0].ID }), files.ErrInvalid)
 	add("empty file identity", typescript, source.ErrInvalid, tsPlaced(func(o *tsfiles.Organization) { o.Units[1].File = "" }), files.ErrInvalid)
@@ -461,14 +585,27 @@ func TestFilesFailureCategories(t *testing.T) {
 	add("the path ..", horosName, source.ErrInvalid, horosPlaced(func(p *[]horosPlacement) { (*p)[1].Path = ".." }), files.ErrInvalid)
 	add("an absolute path", typescript, source.ErrInvalid, tsPlaced(func(o *tsfiles.Organization) { o.Units[1].Path = "/generated/person.ts" }))
 	add("an absolute path", horosName, source.ErrInvalid, horosPlaced(func(p *[]horosPlacement) { (*p)[1].Path = "/generated/page.horos" }), files.ErrInvalid)
-	add("a valid path that is not a TypeScript path", typescript, source.ErrInvalid, tsPlaced(func(o *tsfiles.Organization) { o.Units[1].Path = "generated/model/person.txt" }))
-	add("a declaration file path", typescript, source.ErrInvalid, tsPlaced(func(o *tsfiles.Organization) { o.Units[1].Path = "generated/model/person.d.ts" }))
+	// A path that is no TypeScript path is invalid input. A path that TypeScript
+	// itself reads and that this profile excludes is unsupported coverage.
+	tsPath := func(path string) func(*testing.T) (bool, error) {
+		return tsPlaced(func(o *tsfiles.Organization) { o.Units[1].Path = files.Path(path) })
+	}
+	add("a valid path that is not a TypeScript path", typescript, source.ErrInvalid, tsPath("generated/model/person.txt"))
+	add("a path with the extension in upper case", typescript, source.ErrInvalid, tsPath("generated/model/PERSON.TS"))
+	add("a path that is no TypeScript path and has an excluded character", typescript, source.ErrInvalid, tsPath("generated/model/per#son.txt"))
+	add("a declaration file path", typescript, source.ErrUnsupported, tsPath("generated/model/person.d.ts"))
+	add("a path with the extension mts", typescript, source.ErrUnsupported, tsPath("generated/model/person.mts"))
+	add("a path with the extension cts", typescript, source.ErrUnsupported, tsPath("generated/model/person.cts"))
+	add("a path with the extension tsx", typescript, source.ErrUnsupported, tsPath("generated/model/person.tsx"))
+	add("a path with a number sign", typescript, source.ErrUnsupported, tsPath("generated/model/per#son.ts"))
+	add("a path with a percent sign", typescript, source.ErrUnsupported, tsPath("generated/model/per%son.ts"))
+	add("a path with a question mark", typescript, source.ErrUnsupported, tsPath("generated/model/per?son.ts"))
 
 	// The items of the placement.
-	add("a file without an item", typescript, source.ErrInvalid, tsPlaced(func(o *tsfiles.Organization) {
+	add("a file without a declaration", typescript, source.ErrUnsupported, tsPlaced(func(o *tsfiles.Organization) {
 		o.Units = append(o.Units, tsfiles.Placement{File: "empty", Path: "generated/empty.ts"})
 	}))
-	add("a file without an item", horosName, source.ErrInvalid, horosPlaced(func(p *[]horosPlacement) {
+	add("a file without a module", horosName, source.ErrInvalid, horosPlaced(func(p *[]horosPlacement) {
 		*p = append(*p, horosPlacement{ID: "empty", Path: "generated/empty.horos"})
 	}))
 	add("no file", typescript, source.ErrInvalid, tsPlaced(func(o *tsfiles.Organization) { o.Units = nil }))
@@ -653,5 +790,49 @@ func TestFilesFailureCategories(t *testing.T) {
 				c.check(t, err)
 			}
 		})
+	}
+}
+
+// TestHorosEstablishJoinsTheFilesValue calls the step that the horos Files
+// parser and formatter share. Each formatter call hands it an inventory that
+// the formatter has checked, so only a direct call reaches the capture's
+// refusal of an invalid inventory.
+func TestHorosEstablishJoinsTheFilesValue(t *testing.T) {
+	ctx := context.Background()
+	input, _, _ := filePagination(t)
+	definition, err := representation.NewLanguage[s.Language](s.Language{}, s.Profile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checker, resolver, analyzer := fileStages(t, definition)
+	syntaxPrinter := textfixture.Printing[s.Language](s.Language{})
+	parser, err := filesparse.New(definition, parsehoros.Provider{}, syntaxPrinter, checker, resolver, analyzer, semantic.Options{}, semantic.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := parser.Parse(ctx, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stages, err := (horosfiles.Stages{Language: definition, Parser: parsehoros.Provider{}, Formatter: formathoros.Provider{}, Printer: syntaxPrinter, Checker: checker, Resolver: resolver, Analyzer: analyzer}).Capture()
+	if err != nil {
+		t.Fatal(err)
+	}
+	units := parsed.Units()
+	if _, err := stages.Establish(ctx, units, "people", semantic.DefaultLimits()); err != nil {
+		t.Fatal("the parsed units must be established", err)
+	}
+	units[1].Path = units[0].Path
+	publication, err := stages.Establish(ctx, units, "people", semantic.DefaultLimits())
+	if err == nil || publication.Snapshot.Valid() {
+		t.Fatal("two units with one path were established")
+	}
+	for _, category := range filesCategories {
+		if errors.Is(err, category.value) != (category.value == source.ErrInvalid) {
+			t.Errorf("errors.Is(err, %s) = %v for %q", category.name, errors.Is(err, category.value), err)
+		}
+	}
+	if !errors.Is(err, files.ErrInvalid) {
+		t.Errorf("the refusal no longer matches %q: %q", files.ErrInvalid, err)
 	}
 }

@@ -160,7 +160,8 @@ func (p Stages) Establish(ctx context.Context, units []source.Unit[s.Language], 
 	}
 	snapshot, err := semantic.Capture(ctx, p.Checker, input)
 	if err != nil {
-		return source.Publication[s.Language]{}, err
+		// The capture refuses the inventory of the files with a files value.
+		return source.Publication[s.Language]{}, filesCategory(err)
 	}
 	ro := p.ResolutionOptions
 	ro.Limits = limits

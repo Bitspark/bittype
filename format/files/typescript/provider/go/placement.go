@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
@@ -76,7 +77,8 @@ func declarations(t s.AST) ([]ast.NodeRef, error) {
 func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantics.Semantics[s.Language]) (*program, error) {
 	fileContext := snapshot.Files()
 	if fileContext == nil {
-		return nil, fmt.Errorf("%w: TypeScript placement requires captured files", source.ErrInvalid)
+		// A capture without files is well formed, and this profile reads none.
+		return nil, fmt.Errorf("%w: TypeScript placement requires captured files", source.ErrUnsupported)
 	}
 	p := &program{public: map[ast.NodeRef]bool{}, trees: map[ast.TreeID]s.AST{}, tops: map[ast.NodeRef]bool{}, bindings: map[ast.NodeRef]symbol{}}
 	byFile := map[files.ID]ast.TreeID{}
@@ -178,7 +180,7 @@ func (p *program) organization(settings []semantic.Setting, limits source.Limits
 		// A setting contains one strict object, including the explicit entry.
 		decoder := json.NewDecoder(bytes.NewReader(settings[0].Value))
 		decoder.DisallowUnknownFields()
-		if !json.Valid(settings[0].Value) || decoder.Decode(&o) != nil {
+		if !json.Valid(settings[0].Value) || decoder.Decode(&o) != nil || repeatedMember(settings[0].Value) {
 			return Organization{}, source.ErrInvalid
 		}
 	}
@@ -189,8 +191,17 @@ func (p *program) organization(settings []semantic.Setting, limits source.Limits
 	assigned := map[ast.NodeRef]bool{}
 	entry := false
 	for _, u := range o.Units {
-		if !imports.SourcePath(u.Path) || len(u.Declarations) == 0 {
+		// A path that is no TypeScript path is invalid input. A path that
+		// TypeScript reads and this profile excludes is well formed, and so is a
+		// file without a declaration: both are outside this profile.
+		if !imports.SourcePath(u.Path) {
+			if imports.ExcludedPath(u.Path) {
+				return Organization{}, fmt.Errorf("%w: path %q", source.ErrUnsupported, u.Path)
+			}
 			return Organization{}, source.ErrInvalid
+		}
+		if len(u.Declarations) == 0 {
+			return Organization{}, fmt.Errorf("%w: file %q has no declaration", source.ErrUnsupported, u.File)
 		}
 		inventory.Entries = append(inventory.Entries, files.File{ID: u.File, Path: u.Path})
 		if u.File == o.Entry {
@@ -207,11 +218,61 @@ func (p *program) organization(settings []semantic.Setting, limits source.Limits
 		return Organization{}, fmt.Errorf("%w: incomplete placement or missing entry", source.ErrInvalid)
 	}
 	if _, err := inventory.Capture(limits.Files); err != nil {
-		// The inventory's own value stays joined to the Files category.
-		if errors.Is(err, files.ErrLimit) {
-			return Organization{}, fmt.Errorf("%w: %w", source.ErrLimit, err)
-		}
-		return Organization{}, fmt.Errorf("%w: %w", source.ErrInvalid, err)
+		return Organization{}, filesCategory(err)
 	}
 	return o, nil
+}
+
+// filesCategory joins the Files category to a value of the files package, so
+// that errors.Is holds for both. It returns any other error as it is.
+func filesCategory(err error) error {
+	switch {
+	case errors.Is(err, files.ErrLimit):
+		return fmt.Errorf("%w: %w", source.ErrLimit, err)
+	case errors.Is(err, files.ErrInvalid):
+		return fmt.Errorf("%w: %w", source.ErrInvalid, err)
+	}
+	return err
+}
+
+// repeatedMember reports a JSON object that names one member twice. The decoder
+// keeps the last value, so the first would be accepted and ignored. Names are
+// compared as the decoder matches them, without regard to case. The caller has
+// decoded the value into its type, which bounds the nesting.
+func repeatedMember(data []byte) bool {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	var value func() bool
+	value = func() bool {
+		token, err := decoder.Token()
+		if err != nil {
+			return false
+		}
+		switch token {
+		case json.Delim('{'):
+			var names []string
+			for decoder.More() {
+				key, _ := decoder.Token()
+				name, _ := key.(string)
+				for _, seen := range names {
+					if strings.EqualFold(seen, name) {
+						return true
+					}
+				}
+				names = append(names, name)
+				if value() {
+					return true
+				}
+			}
+			decoder.Token()
+		case json.Delim('['):
+			for decoder.More() {
+				if value() {
+					return true
+				}
+			}
+			decoder.Token()
+		}
+		return false
+	}
+	return value()
 }

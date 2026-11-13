@@ -101,7 +101,8 @@ func (p Stages) establish(ctx context.Context, units []source.Unit[s.Language], 
 	}
 	snap, err := semantic.Capture(ctx, p.Checker, captured)
 	if err != nil {
-		return zero, err
+		// The capture refuses the inventory of the files with a files value.
+		return zero, filesCategory(err)
 	}
 	options := semantic.Options{Limits: limits, Configuration: p.Configuration}
 	resolved, err := p.Resolver.Resolve(ctx, snap, options)

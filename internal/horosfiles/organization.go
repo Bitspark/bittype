@@ -15,6 +15,7 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 	"io"
 	"sort"
+	"strings"
 )
 
 // Placement is an explicit same-language organization decision. Modules are
@@ -78,6 +79,9 @@ func Materialize(snapshot semantic.Snapshot, settings []semantic.Setting, limits
 		if err := decoder.Decode(&extra); err != io.EOF {
 			return fail(fmt.Errorf("%w: %w", source.ErrInvalid, semantic.ErrInvalidRequest))
 		}
+		if repeatedMember(settings[0].Value) {
+			return fail(fmt.Errorf("%w: a member of the organization is named twice", source.ErrInvalid))
+		}
 	} else if context := snapshot.Files(); context != nil {
 		byTree := map[ast.TreeID]files.File{}
 		for _, link := range context.Links {
@@ -109,11 +113,7 @@ func Materialize(snapshot semantic.Snapshot, settings []semantic.Setting, limits
 		inventory.Entries = append(inventory.Entries, files.File{ID: placement.ID, Path: placement.Path})
 	}
 	if _, err := inventory.Capture(limits.Files); err != nil {
-		// The inventory's own value stays joined to the Files category.
-		if errors.Is(err, files.ErrLimit) {
-			return fail(fmt.Errorf("%w: %w", source.ErrLimit, err))
-		}
-		return fail(fmt.Errorf("%w: %w", source.ErrInvalid, err))
+		return fail(filesCategory(err))
 	}
 	seen := map[string]bool{}
 	var output []ast.AST[s.Language]
@@ -179,6 +179,60 @@ func Materialize(snapshot semantic.Snapshot, settings []semantic.Setting, limits
 		return fail(source.ErrInvalid)
 	}
 	return placements, output, entry, nil
+}
+
+// filesCategory joins the Files category to a value of the files package, so
+// that errors.Is holds for both. It returns any other error as it is.
+func filesCategory(err error) error {
+	switch {
+	case errors.Is(err, files.ErrLimit):
+		return fmt.Errorf("%w: %w", source.ErrLimit, err)
+	case errors.Is(err, files.ErrInvalid):
+		return fmt.Errorf("%w: %w", source.ErrInvalid, err)
+	}
+	return err
+}
+
+// repeatedMember reports a JSON object that names one member twice. The decoder
+// keeps the last value, so the first would be accepted and ignored. Names are
+// compared as the decoder matches them, without regard to case. The caller has
+// decoded the value into its type, which bounds the nesting.
+func repeatedMember(data []byte) bool {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	var value func() bool
+	value = func() bool {
+		token, err := decoder.Token()
+		if err != nil {
+			return false
+		}
+		switch token {
+		case json.Delim('{'):
+			var names []string
+			for decoder.More() {
+				key, _ := decoder.Token()
+				name, _ := key.(string)
+				for _, seen := range names {
+					if strings.EqualFold(seen, name) {
+						return true
+					}
+				}
+				names = append(names, name)
+				if value() {
+					return true
+				}
+			}
+			decoder.Token()
+		case json.Delim('['):
+			for decoder.More() {
+				if value() {
+					return true
+				}
+			}
+			decoder.Token()
+		}
+		return false
+	}
+	return value()
 }
 
 func ProgramIdentity(snapshot semantic.Snapshot) (string, []string, error) {
