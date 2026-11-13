@@ -1853,8 +1853,9 @@ refused.
   left column is decided by this page and demonstrated only by its test in
   the gate. The relation between a symbol and its realization is demonstrated
   for TypeScript only, until Go and Rust have a Files stage (row 24a).
-- **Until the gate is met** nothing on this page is final. The prototype may
-  change any of it, and each change is recorded here with its date. The
+- **Until the gate is met** nothing on this page is final. The migration may
+  change any of it, as the prototype did, and each change is recorded here
+  with its date. The
   prototype's changes are the decisions O27 to O41 of 13 November 2026 and
   the forms that this page marks "fixed by the prototype".
 - **After the gate** the left column is fixed, by AC-10: a first change
@@ -2772,9 +2773,12 @@ Gathered from the report, so that no line above is read as more than it is.
   contract version is not shown against the kernel as built.
 - **None of the 18 switches is a mutant of the four kinds that row 39
   names:** presence, layout, slot identity or environment, between the entry
-  and the native type. The red lines of that kind are two of the six that are
-  no switch of the kernel: the pass that rebuilds an entry from the source,
-  and the lowering by string.
+  and the native type. No red line of the run is a mutant of that kind. The
+  nearest are two of the six that are no switch of the kernel: the pass that
+  rebuilds an entry from the source, which is the third layer of
+  [what a test must show](#what-a-test-must-show), and the lowering by
+  string, which is the test of row 29 between the lowered code and the
+  native type.
 - **The origins inside the native tree were not compared.** The printed text
   is equal.
 - **Recursion** beyond its two refusals. The horos source refuses a recursive
