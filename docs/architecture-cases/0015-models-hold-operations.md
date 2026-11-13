@@ -297,16 +297,20 @@ owner decided the two paths as
 `ops`, a unit that one stage uses is in the stage matrix, and a unit that
 several stages use is at the path of the sort and scope it works on. The
 typed readers go to `ops/semantics/<language>/reader/go`, and symbol
-admission to `ops/symbols/<language>/go`. AC-12 does not decide these
+admission to `ops/symbols/<language>/go`. [M32](https://github.com/Bitspark/bittype/issues/305#issuecomment-6861647384)
+says how that is read: the substitution governs, and not a count of today's
+users, so the readers and the symbol packages of all three languages take
+that placement. AC-12 does not decide these
 paths: the units are operations. What decides them is the substitution
 that the rules page asks of a place.
 
 **What stays open until the second part of S5 is done.** The typed readers
 share a package with the contract identities, `semantics/<language>/go`,
 after the names have left it. This case stays open for that. One point of
-M30 is open and is decided at the start of that part: whether `ExternalUse`
-and `ReadExternal`, which need the generation contract, belong with the
-symbols.
+M30 is open, as M32 states it, and is decided at the start of that part:
+which parts of the operations side of a symbol package work on symbols,
+which are generation's use of symbols, and what the first kind refuses with
+when it may not name the generation contract.
 
 ## Did we have the rule
 
@@ -347,7 +351,7 @@ supplies both the description and its first user. That is AC-12.
 
 This change documents the violation and the designed correction. No code
 has changed. The names below the two roots are decided (M10, M11, M14,
-M19, M28 and M30 on #305). The form-table type is a sketch that slice S2 makes final (M13).
+M19, M28, M30 and M32 on #305). The form-table type is a sketch that slice S2 makes final (M13).
 The classification of each package is the design page's
 table, made by reading. Each slice updates this case with what it delivered,
 its qualification and its limits.

@@ -1,6 +1,6 @@
 # Models and operations
 
-**Design, 13 November 2026, from research 0018. The decisions M1 to M29 are the research owner's, `claude-contract-chain-issues`, all recorded on #305: M1 to M9 in the [grade](https://github.com/Bitspark/bittype/issues/305#issuecomment-6855741567), M10 to M18 on [nine choices](https://github.com/Bitspark/bittype/issues/305#issuecomment-6856947056) that the first version of this page left to that owner, [M19](https://github.com/Bitspark/bittype/issues/305#issuecomment-6857366489), which adjusts M11, [M20 to M27](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249) on the findings of an independent review of this page, [M28](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842), which corrects M21, [M29](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859553686) on the second round of that review, and [M30](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860238626), which decides the two paths that M27 held. Nothing on this page is implemented on `main`: the code there has the layout that [`LAYOUT.md`](../LAYOUT.md) describes.**
+**Design, 13 November 2026, from research 0018. The decisions M1 to M29 are the research owner's, `claude-contract-chain-issues`, all recorded on #305: M1 to M9 in the [grade](https://github.com/Bitspark/bittype/issues/305#issuecomment-6855741567), M10 to M18 on [nine choices](https://github.com/Bitspark/bittype/issues/305#issuecomment-6856947056) that the first version of this page left to that owner, [M19](https://github.com/Bitspark/bittype/issues/305#issuecomment-6857366489), which adjusts M11, [M20 to M27](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249) on the findings of an independent review of this page, [M28](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842), which corrects M21, [M29](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859553686) on the second round of that review, [M30](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860238626), which decides the two paths that M27 held, and [M32](https://github.com/Bitspark/bittype/issues/305#issuecomment-6861647384), which says how M30 is read. Nothing on this page is implemented on `main`: the code there has the layout that [`LAYOUT.md`](../LAYOUT.md) describes.**
 
 The owner directed on 13 November 2026 that the repository splits at its root
 into models and operations. This page says how the line is drawn, where every
@@ -55,6 +55,9 @@ This page does not repeat them.
 - **M30:** the decision in the
   [grade of platform research 0004](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860238626),
   the consultation on a rule. It decides the two paths that M27 held.
+- **M32:** the [decision of the same day](https://github.com/Bitspark/bittype/issues/305#issuecomment-6861647384)
+  on three facts that this page's check of M30 against the code found. It
+  says how M30 is read and widens its open point.
   [Section 11](#11-decisions-and-deferrals) lists every decision.
 
 Code is quoted with its file and line on `main` at `0581401`. The existing
@@ -1028,7 +1031,7 @@ second and the fourth.
 | The contract identities, evidence requirements and settings of a language's analysis | `ops/semantics/<language>/go` | The general rule: it is what remains at today's path once the names have their model package | `ops/analyze/files/<language>/contracts/go`, a path under one stage for identities of two |
 | The typed readers of a language's analysed graph | `ops/semantics/<language>/reader/go` (M30) | Several operations use them, so they stand at the path of what they read: a language's semantics | `ops/analyze/files/<language>/reader/go`, M14's first path: a stage's path for a unit of no stage. Inside `ops/semantics/<language>/go`: a provider that needs only the contract identities would receive the readers. Joining the query service |
 | The typed constructors of a language's intent, with its issuer | `ops/transform/syntax/<language>/intent/go` | It is today's `transform/syntax/<language>/model/go` without the table and the checks. "The component `model` below `ops` would say the opposite of the root" (M14) | Keeping `model` as the component. Putting the constructors into the target, which a mapping may not import (`AGENTS.md:190`) |
-| The admission and the issuing of a language's symbols | `ops/symbols/<language>/go` (M30): TypeScript's operations half, and the whole packages of Go and Rust | The symbols are for generation and for Files, so the unit stands at the path of what it works on | `ops/transform/syntax/<language>/symbol/go`, M14's first path, by the general rule: the Files formatter would go on importing from the directory of another stage |
+| The admission and the issuing of a language's symbols | `ops/symbols/<language>/go` (M30, M32): TypeScript's operations half, and the whole packages of Go and Rust. Which parts of a symbol package go there is the open point | The symbols are for generation and for Files, so the unit stands at the path of what it works on | `ops/transform/syntax/<language>/symbol/go`, M14's first path, by the general rule: the Files formatter would go on importing from the directory of another stage |
 
 - *Reason:* the general rule makes the two halves of a split package
   findable from each other and keeps the scripted move mechanical.
@@ -1059,10 +1062,30 @@ second and the fourth.
   and the rule is about descriptions.
 - M6's "the stage matrix as it is" is read with this sentence.
 - *Not taken:* the two paths that M14 first gave, in the table above.
-- *Open, by M30:* the two functions of a symbol package that need the
-  generation contract, `ExternalUse` and `ReadExternal`, "may not belong
-  with the symbols". It is decided at the start of the second part of slice
-  S5.
+- *How it is read (M32).* The substitution governs, and not a count of
+  today's users. Read as a count, M30 would leave a unit with one importer
+  in the stage matrix. "That reading is wrong, and it is the mistake AC-12
+  names" (M32): "That an operation used it first, that it is the only one
+  so far and where the description stands today do not decide who owns
+  it." (AC-12.) The test is M30's: replace the user by a materially
+  different one and ask whether the path stays true. "A reader of Rust's
+  analysed graph under `analyze` would be false for a verification law, as
+  Go's is today. A symbol package under `transform` is false for a Files
+  formatter, as TypeScript's is today." (M32.) So the readers of all three
+  languages and all three symbol packages take the placement of M30. The
+  typed constructors of intent stay in the stage matrix by the same test's
+  other answer: "what they build is generation's own input, and a user
+  that is not generation has no use for them" (M32).
+- *Open, by M30 as M32 widens it.* M30 named two functions of a symbol
+  package that need the generation contract, `ExternalUse` and
+  `ReadExternal`. The question is about the whole operations side of a
+  symbol package: "which of its parts work on symbols and which are
+  generation's use of symbols, and what the first kind refuses with when
+  it may not name the generation contract" (M32). It is decided at the
+  start of the second part of slice S5, from the code, before that part
+  builds. "If the answer for TypeScript is that nothing remains, no
+  package is created there, and the page says so then." (M32.) The two
+  facts behind it are in the check below.
 
 **M30 checked against the code.** Read at `baf16eb`, whose code is that of
 `0581401`. The importers are the
@@ -1090,33 +1113,36 @@ What follows:
   lets the Files formatter import the symbol package
   (`integration/go/architecture_test.go:282`) is no longer needed: a
   contribution may import a public part of its language.
-- **The typed constructors are one stage's.** Their production importers are
-  the targets and the mappings, which are both generation.
-- **"Uses" is not a count of today's importers.** Derived here, from M30's
-  reason. By today's production importers only two of the units have users
-  in two operations: Go's readers and TypeScript's symbol package.
-  TypeScript's readers have one, Rust's none, and the symbol packages of Go
-  and Rust have their target alone. M30 places all of them by the
-  substitution, which asks what a path would be true of and not who imports
-  the unit today. The layout says what the symbol packages are for:
-  "predeclared type symbols for generation and Files" and "standard-library
-  item and primitive type symbols for generation and Files"
-  (`LAYOUT.md:70-71`). And the existing code has no weight in a choice
-  (AC-09).
+- **The typed constructors are generation's.** Their production importers
+  are the targets and the mappings of the same language. They stay by M32's
+  reason and not by that count: what they build is generation's own input.
+- **A count of today's importers would give other answers (M32).** By
+  today's production importers only two of the units have users in two
+  operations: Go's readers and TypeScript's symbol package. TypeScript's
+  readers have one, Rust's none, and the symbol packages of Go and Rust have
+  their target alone. M32 decides that the substitution governs, so all six
+  take the placement of M30. The layout already says what the symbol
+  packages are for: "predeclared type symbols for generation and Files" and
+  "standard-library item and primitive type symbols for generation and
+  Files" (`LAYOUT.md:70-71`).
 - **What the sentence reaches.** Derived here. It places a public part. A
   contribution keeps the path of its stage, because a consumer selects it
   for that stage: a query service stays under `analyze`, though the
   verification pair imports Go's under an exception. A private part stays
   under `ops/internal`, where Go's own rule keeps it private.
-- **Two facts for the open point.** In the packages of Go and Rust the
-  refusing constructors themselves return error values of the generation
-  contract (`g.ErrInvalid`, `g.ErrUnsupported`:
-  `transform/syntax/golang/symbol/go/symbol.go:36`, `:39`;
-  `transform/syntax/rust/symbol/go/symbol.go:55-77`, `:113`), so more than
-  the two functions needs that contract there. And the operations half of
-  TypeScript's package is nothing but the issuer and the two functions
-  (`transform/syntax/typescript/symbol/go/symbol.go:17-43`): if they do not
-  belong with the symbols, `ops/symbols/typescript/go` holds nothing.
+- **Two facts behind the open point (M32).**
+  - In the packages of Go and Rust the refusing constructors themselves
+    return error values of the generation contract, `g.ErrInvalid` and
+    `g.ErrUnsupported`: `Predeclared`
+    (`transform/syntax/golang/symbol/go/symbol.go:36`, `:39`), and `segment`,
+    `Dependency` and `Item`
+    (`transform/syntax/rust/symbol/go/symbol.go:55-77`, `:113`). So more than
+    the two functions needs that contract there.
+  - The operations half of TypeScript's package is nothing but the issuer
+    and the two functions
+    (`transform/syntax/typescript/symbol/go/symbol.go:17-43`). If they are
+    generation's use of symbols, nothing remains for
+    `ops/symbols/typescript/go`, and no package is created there.
 
 ### Every place named
 
@@ -1215,8 +1241,8 @@ named, and where no row is named it is derived here from the test.
 | `semantics/horos/go` | **Splits.** The profiles, the keys, the descriptor prefix, the term encoding, the limits setting key and the prelude pin to `model/semantics/horos/go`. `ResolutionContract`, `AnalysisContract`, `AnalysisContractWithResolutionConfiguration` (`vocabulary.go:75-91`), and `Key(name)`, `DescriptorOperator` and its inverse `DescriptorConstructor` (`:19`, `:54-55`), which build or read a name from an input (derived in [section 2](#2-the-test)), stay at `ops/semantics/horos/go` | Row R2 |
 | `semantics/{golang,rust,typescript}/go` | **Splits.** The profiles, the functions that each return one key, the payload shapes and the records of a compiler run's inputs (plain today) to `model/semantics/<language>/go`. The contracts, the evidence requirement, the requirements, the configuration, the encoding of inputs into settings and `Key(name)` stay at `ops/semantics/<language>/go`. So do the methods on the input records, as functions: `settings()` and `check()` of Rust's `Environment` (`semantics/rust/go/environment.go:134`, `:147`) and `Validate()` of TypeScript's `Compiler` (`semantics/typescript/go/compiler.go:19`). `Model`, `Open` and the typed readers go to `ops/semantics/<language>/reader/go` (M30) | Rows R2 and R7b; M14, M30 |
 | `transform/syntax/{cpp,golang,rust,typescript}/model/go` | **Splits.** The form names, the primitive names and the form table to `model/intent/<language>/go`. The issuer and the typed constructors to `ops/transform/syntax/<language>/intent/go`. The checks become the one checker in `ops/transform/syntax/shared/target/go`. The coverage answers go to `ops/transform/syntax/<language>/target/go`. Go's record-body condition is dropped, and no code is written for it anywhere (M17). Slice S2 makes this split on the migration's branch and removes the old package (M22) | M4, M17, M22; [section 5](#5-intent) |
-| `transform/syntax/typescript/symbol/go` | **Splits.** The record `Type{Module, Name}` (`symbol.go:15`, plain today) to `model/symbols/typescript/go`. The issuer, `ExternalUse` and `ReadExternal` to `ops/symbols/typescript/go` (M30) | Row R7a; M20, M30 |
-| `transform/syntax/{golang,rust}/symbol/go` | `ops/symbols/{golang,rust}/go`, whole (M30). Go's `Symbol` has unexported fields and only the refusing `Predeclared` creates it (`transform/syntax/golang/symbol/go/symbol.go:18`, `:33-43`). Rust's `Crate` and `Symbol` are sealed the same way (`transform/syntax/rust/symbol/go/symbol.go:20`, `:72`, `:85`, `:111`). No plain record is invented for a reader that does not exist | M1, sentence 1; M20, M30 |
+| `transform/syntax/typescript/symbol/go` | **Splits.** The record `Type{Module, Name}` (`symbol.go:15`, plain today) to `model/symbols/typescript/go`. The issuer, `ExternalUse` and `ReadExternal` to `ops/symbols/typescript/go` (M30), unless the open point finds that they are generation's use of symbols. Then they stay with generation and no package is created there (M32) | Row R7a; M20, M30, M32 |
+| `transform/syntax/{golang,rust}/symbol/go` | `ops/symbols/{golang,rust}/go`, whole (M30). Go's `Symbol` has unexported fields and only the refusing `Predeclared` creates it (`transform/syntax/golang/symbol/go/symbol.go:18`, `:33-43`). Rust's `Crate` and `Symbol` are sealed the same way (`transform/syntax/rust/symbol/go/symbol.go:20`, `:72`, `:85`, `:111`). No plain record is invented for a reader that does not exist. Which of their parts work on symbols and which are generation's use of symbols is the open point (M32) | M1, sentence 1; M20, M30, M32 |
 
 **Contracts (13).**
 
@@ -1585,7 +1611,7 @@ The validation of a slice is quoted from the table "Applied" of research
 | S3b | Each language's grammar table in its syntax vocabulary, with predicates named by identity | `main` | S3a, and for each language its lexical part of S4 (M25) | "the tables are data in a model package; the checker test red by mutant of a table entry" |
 | S6 | The carriers: the records of `files/go`, `semantics/go` and `source/go` apart from admission | `main` | S0. The graph-carrier part also waits for #310, whose pull request #315 changes `semantics/go/model.go` (M25). The Source part waits for the two other parts, whose records it uses | "the import rule red by a seeded import from a model carrier into an operation" |
 | S5, the first part | The semantic vocabularies: the names, profiles, payload shapes and input records go to `model/semantics/<language>/go`. The Go bridge writes its eleven literal keys through names that the Go vocabulary publishes (M26). TypeScript's symbol record goes to `model/symbols/typescript/go` (M20) | `main` | S0, #310, and the graph-carrier part of S6, whose `Key` the names are made of. The symbol record waits for S0 only: pull request #315 changes no file of the symbol package | "no model-side package imports a contract package; the import rule red by a seeded import". For the eleven keys, added by this page: a test over a graph that the Go bridge publishes for a corpus fails for a key that the vocabulary does not publish, and it is red by a mutant that makes the bridge write one more literal key. That test checks behaviour. It is no search of the source |
-| S5, the second part (M27, M29, M30) | The typed readers leave the semantic vocabularies for `ops/semantics/<language>/reader/go`, and the admission half of the TypeScript symbol package goes to `ops/symbols/typescript/go`. Its first step is the open point of M30: whether `ExternalUse` and `ReadExternal` belong with the symbols | `main` | The first part of S5. It waited for a decision on the two paths, and M30 is that decision | Row R7b, "The readers of `semantics/{golang,rust,typescript}/go` leave", is met only when this part is done. For the paths, from the table "Applied" of platform research 0004: "the import rule of bittype slice S5's waiting part, red by a seeded import" |
+| S5, the second part (M27, M29, M30, M32) | The typed readers leave the semantic vocabularies for `ops/semantics/<language>/reader/go`, and the admission half of the TypeScript symbol package goes to `ops/symbols/typescript/go`. Its first step is the open point of M30 as M32 states it, decided from the code before the part builds: which parts of the operations side of a symbol package work on symbols, which are generation's use of symbols, and what the first kind refuses with when it may not name the generation contract. If nothing remains for TypeScript, no package is created there | `main` | The first part of S5. It waited for a decision on the two paths, and M30 is that decision | Row R7b, "The readers of `semantics/{golang,rust,typescript}/go` leave", is met only when this part is done. For the paths, from the table "Applied" of platform research 0004: "the import rule of bittype slice S5's waiting part, red by a seeded import" |
 | The pairs' part of S7 and S2 (M29) | What only the pairs' branch holds: the vocabularies of the two further pairs (4 of `golang-to-typescript`, 5 of `typescript-to-horos`), the families of `golang` (4) and `typescript` (5) with their profile identities, the two further declarations of `Publisher`, which become the one of `model/contributions/go`, and the horos intended-forms package `transform/syntax/horos/model/go` | The pairs' branch, when it merges the migration | S7 and S2 on the migration's branch | The validations of S7 and of S2, for these packages |
 | S8 | The scripted root move, with language identity to `model/language/go` (M25) and the symbol packages of Go and Rust to `ops/symbols/{golang,rust}/go` (M30), the roles for each root and the import rule of the two roots | `main` and the branches | S2 to S7, with both parts of S5, and the pairs' part of S7 and S2 (M29) | "the import rule of the two roots, red by a seeded import from model into ops; every test name passes as before the move" |
 | S9 | The additions: a declared profile for each native syntax vocabulary; schemas of analysed facts with a shape check and generated names for the two bridges that are not written in Go; one test for each form; a record on an envelope that grammar admission ran; a type for captured Files. The last two are designed in S9 first (M26) | `main` | S8 | "per addition: its own red and green run" |
@@ -1780,8 +1806,9 @@ from the first split on:
 as a list from old path to new, for every package and half that is still at
 an old path. Three lines of it are no prefix: `contracts/language/go` to
 `model/language/go` (M25), and the symbol packages of Go and Rust to
-`ops/symbols/{golang,rust}/go` (M30). If the open point of M30 takes a part
-out of those two packages, the second part of S5 does that first. It rewrites the import strings of the module
+`ops/symbols/{golang,rust}/go` (M30). If the open point of M30 and M32
+takes a part out of those two packages, the second part of S5 does that
+first. It rewrites the import strings of the module
 (`git grep -o '"github.com/Bitspark/bittype/[^"]*"' origin/main -- '*.go' | wc -l`
 gives 2,137 in 367 files), the paths in the workflow files, the role
 function and its tables, and the path prefixes that the documentation tool
@@ -1830,7 +1857,7 @@ derived here.
 | Does the symbol split wait for #310? | No. Pull request #315 changes no file of `transform/syntax/typescript/symbol/go` |
 | May `model/semantics/horos/go` import the external horos module for `PreludePin`? | Yes. `PreludePin` (`semantics/horos/go/vocabulary.go:73`) takes no input and returns a pin that horos owns. Rule 1 speaks of the operations of this module, and the allowance for this package exists (`integration/go/architecture_test.go:390`) and moves with it |
 | Which paths does S5 create for the typed readers and for symbol admission? | Its second part creates `ops/semantics/<language>/reader/go` and `ops/symbols/typescript/go` (M30). The symbol packages of Go and Rust are whole and move in S8 |
-| Do `ExternalUse` and `ReadExternal` go to `ops/symbols/<language>/go`? | Open. **The first step of the second part of S5** (M30). The facts are in [section 7](#names-below-the-roots) |
+| Which parts of a symbol package go to `ops/symbols/<language>/go`? | Open. **The first step of the second part of S5** (M30, M32): which parts of its operations side work on symbols, which are generation's use of symbols, and what the first kind refuses with when it may not name the generation contract. The facts are in [section 7](#names-below-the-roots) |
 | What do the methods on the input records become? | Functions of `ops/semantics/<language>/go`, by the test: `settings()` and `check()` of Rust's `Environment` (`semantics/rust/go/environment.go:134`, `:147`) and `Validate()` of TypeScript's `Compiler` (`semantics/typescript/go/compiler.go:19`). `settings()` returns a type of a contract package, so it could stay with a model record in no case |
 | What shows that the bridge writes published keys only? | A test of behaviour over a published graph, with a mutant that adds a literal key. Not a search of the source ([the slice table](#10-the-order-of-work)) |
 | Which of the lists in the operations halves are declarations? | Open. **S5's first step** ([section 7](#names-below-the-roots)) |
@@ -1856,7 +1883,9 @@ M10 to M18 in the [decisions on this page's nine choices](https://github.com/Bit
 M20 to M27 in the [decisions on the independent review](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249),
 [M28](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842),
 [M29](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859553686)
-and M30 in the [grade of platform research 0004](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860238626).
+M30 in the [grade of platform research 0004](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860238626)
+and [M32](https://github.com/Bitspark/bittype/issues/305#issuecomment-6861647384). M31 is decided for the slices S3a, S4 and S3b and is
+added to this page by the change that re-cuts them.
 
 | Decision | What it decides | Rows | Section |
 | --- | --- | --- | --- |
@@ -1889,7 +1918,8 @@ and M30 in the [grade of platform research 0004](https://github.com/Bitspark/bit
 | M27 | Two paths of M14 are held until platform research 0004 is evaluated. M29 states its standing: a part of S5 that waits for a decision, and no deferral. M30 is that decision | R27 | [7](#names-below-the-roots), [10](#10-the-order-of-work) |
 | M28 | The publisher name lives in `model/contributions/go`, with the identity types, and every pair's vocabulary imports it from there. It corrects M21. The methods on the identity types become functions of the generation contract, as the first step of S7. M29 corrects one point: M28 counted three methods, and there are six | R23 | [7](#every-place-named), [10](#10-the-order-of-work) |
 | M29 | Six methods, not three, become functions in S7's first step. The typed readers leaving and the path of symbol admission are a part of S5 that waits for a decision, and S8 waits for S5 complete. The work that only the pairs' branch holds is the pairs' part of S7 and S2, and S8 waits for it | R7b, R23, R24 | [10](#10-the-order-of-work) |
-| M30 | Below `ops`, a unit that one stage uses is in the stage matrix, and a unit that several stages use is at the path of the sort and scope it works on. The typed readers are `ops/semantics/<language>/reader/go`, symbol admission is `ops/symbols/<language>/go`, and the typed constructors stay under `transform`. Open: whether `ExternalUse` and `ReadExternal` belong with the symbols | R7b, R27 | [7](#names-below-the-roots), [8](#8-roles-per-root), [10](#10-the-order-of-work) |
+| M30 | Below `ops`, a unit that one stage uses is in the stage matrix, and a unit that several stages use is at the path of the sort and scope it works on. The typed readers are `ops/semantics/<language>/reader/go`, symbol admission is `ops/symbols/<language>/go`, and the typed constructors stay under `transform`. M32 says how it is read and widens its open point | R7b, R27 | [7](#names-below-the-roots), [8](#8-roles-per-root), [10](#10-the-order-of-work) |
+| M32 | How M30 is read: the substitution governs, and not a count of today's users, so the readers of all three languages and all three symbol packages take M30's placement, and the typed constructors stay in the stage matrix because what they build is generation's own input. The open point of M30 is a question about the whole operations side of a symbol package | R7b, R27 | [7](#names-below-the-roots), [10](#10-the-order-of-work) |
 
 Two rows belong to no single decision. Row R23 places the identities of a
 contribution ([section 7](#every-place-named), slice S7). Row R25 takes one
@@ -1938,4 +1968,4 @@ list these. Each is answered here or open.
 | Whether adding an intended form is an edit of a shared package in the sense of the gate's line 7 | **Open.** It belongs to the gate of [the contribution contract](contribution-contract.md#the-gate) and is decided there |
 | What a family's meaning is for a source that is not horos | **Open**, by decision O46 on #196, item 6. Slice S7 places the family packages and does not answer it |
 | Whether four lists inside the operations halves of the semantic vocabularies are declarations | **Open.** Decided at the start of slice S5 ([section 7](#names-below-the-roots)) |
-| Whether `ExternalUse` and `ReadExternal`, which need the generation contract, belong with the symbols | **Open**, by M30. Decided at the start of the second part of slice S5 ([section 7](#names-below-the-roots)) |
+| Which parts of the operations side of a symbol package work on symbols, which are generation's use of symbols, and what the first kind refuses with when it may not name the generation contract | **Open**, by M30 and M32. Decided at the start of the second part of slice S5, from the code ([section 7](#names-below-the-roots)) |
