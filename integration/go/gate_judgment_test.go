@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
+	f "github.com/Bitspark/bittype/integration/go/testdata/generationfixture"
 )
 
 // O46 item 2 (the finding F4 of the two other pairs), gate line 2.
@@ -24,7 +26,10 @@ import (
 // horos tests of unsupported forms show it), or a source whose graph shares
 // one term among the occurrences inside ONE declaration: the kernel reports
 // the declaration's site for each of them.
-// Red under: O46-judgment-use-not-located, O46-judgment-declaration-not-located.
+// It also shows the registry's part: a source's text diagnostic that states
+// no site is reported at the site the kernel located.
+// Red under: O46-judgment-use-not-located, O46-judgment-declaration-not-located,
+// O46-registry-ignores-located-site.
 func TestGateKernelLocatesASourceJudgment(t *testing.T) {
 	fixture := gateFixture(t)
 	composition := indComposition(t, fixture, indOptions{})
@@ -57,5 +62,21 @@ func TestGateKernelLocatesASourceJudgment(t *testing.T) {
 	}
 	if fixture.Site("FaultA") == fixture.Site("FaultB") {
 		t.Fatal("the two declarations of the shared term have one site: the fixture shows nothing")
+	}
+	// A source that explains with a text diagnostic and no site: the registry
+	// reports that diagnostic, with the source's code and message, at the site
+	// the kernel located, and not at the entry of the input.
+	for _, root := range []string{"FaultA", "FaultB"} {
+		plan, err := fixture.PlanSource(context.Background(), f.SourceVariant{Unlocated: true}, fixture.Input(), root)
+		var diagnostic *text.Diagnostic
+		if !errors.Is(err, g.ErrUnsupported) || !errors.As(err, &diagnostic) || plan.Valid() {
+			t.Fatalf("%s: %v", root, err)
+		}
+		if diagnostic.Code != text.Unsupported || diagnostic.Message != f.UnlocatedMessage {
+			t.Errorf("%s: the reported diagnostic is not the source's: %+v", root, diagnostic)
+		}
+		if diagnostic.Node == nil || *diagnostic.Node != fixture.Site(root) || *diagnostic.Node == fixture.Input().Source.Entry() {
+			t.Errorf("%s: the source's diagnostic is reported at %v, want the declaring site %v", root, diagnostic.Node, fixture.Site(root))
+		}
 	}
 }

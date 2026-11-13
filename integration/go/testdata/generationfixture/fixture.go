@@ -15,6 +15,7 @@ import (
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
+	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	s "github.com/Bitspark/bittype/syntax/golang/go"
@@ -92,6 +93,9 @@ func (i interpretation) JudgeUse(ctx context.Context, u g.Use[SourceLanguage]) (
 	subject := semantics.Subject{Term: id}
 	switch {
 	case len(i.graph.Facts(subject, refuted)) > 0:
+		if i.variant.Unlocated {
+			return g.Judgment{Verdict: g.Unsupported, Diagnostic: &text.Diagnostic{Code: text.Unsupported, Message: UnlocatedMessage}}, nil
+		}
 		return g.Judgment{Verdict: g.Rejected, Diagnostic: fmt.Errorf("fixture term %d is refuted", id)}, nil
 	case len(i.graph.Facts(subject, zero)) > 0:
 		return g.Judgment{}, nil
@@ -133,6 +137,10 @@ func (r reader) ParameterName(b g.Binder[SourceLanguage]) (string, error) {
 	return e.Name, nil
 }
 
+// UnlocatedMessage is what the source says of a refuted term under the
+// variant Unlocated.
+const UnlocatedMessage = "the fixture source does not represent this term"
+
 // SourceVariant varies the fixture's source integration for negative
 // qualification. The zero value is the standard source.
 type SourceVariant struct {
@@ -143,6 +151,9 @@ type SourceVariant struct {
 	// Admission makes the contract require a second analysis report; a
 	// Rejected report rejects every declaration.
 	Admission bool
+	// Unlocated makes the source judge a refuted term as unsupported, with a
+	// text diagnostic that states what is wrong and no site.
+	Unlocated bool
 	// reuse, when set, keeps the first opened source and serves it for every
 	// later capture, as a caching integration would.
 	reuse *g.Source[SourceLanguage, Reader]
