@@ -522,6 +522,29 @@ an unsupported refusal into success. It may not turn an invalid refusal into
 success, it may not move a refusal from one category to another, and it may not
 accept and ignore what a formatter refuses as malformed today.
 
+Three inputs were corrected on 13 November 2026, with
+[#273](https://github.com/Bitspark/bittype/issues/273), and are named here
+because each is a move between two categories. Nothing was released with the
+earlier answers.
+
+- **A captured use whose text the compiler refuses**, in a placement of
+  existing TypeScript source: a captured use that is applied to arguments
+  (`own: U<T>`, where the parameter `T` takes the place of the generic
+  declaration), and a capture in the constraint of the parameter
+  (`T extends U`). Both were missing evidence, the compiler's TS2315 and
+  TS2313. Both are unsupported coverage now. A capture is a placement that
+  TypeScript Files judges itself, before a tree is built, and the compiler's
+  late answer was in the wrong category: it said that the analysis is not
+  established, where the placement is one that a later slice may admit.
+- **A member that is named like a type parameter of its interface**
+  (`interface Box<T> { T: T }`). It was invalid input, and it is unsupported
+  coverage now. The file is valid TypeScript. The compiler keeps the member
+  and the parameter in one symbol, so the graph gives the use of the
+  parameter two declarations, and this profile does not tell them apart. A
+  later slice can, so invalid was the wrong category. A use whose target has
+  no captured declaration and is no package type and no builtin stays invalid
+  input: the graph does not say what the name refers to.
+
 A name use without a destination is invalid input, for every generated-Files
 formatter: a sealed output with such a use is malformed, and no later slice
 admits it. So is an external use that the language's issuer cannot read, and
@@ -608,8 +631,10 @@ vocabulary has, with a value outside coverage, is unsupported.
 | A path that TypeScript reads and this profile excludes: `.d.ts`, `.mts`, `.cts`, `.tsx`, or `#`, `%` or `?` in a TypeScript path | unsupported | does not apply |
 | A file without an item, in a placement or among the captured files | unsupported | invalid |
 | No file, an unknown, repeated or missing item, an item in a file that the placement does not declare. | invalid | invalid |
-| Two declarations of one name in one file, a binding without a single target | invalid | does not apply |
-| A type parameter that would capture a use of a declaration of its file | unsupported | does not apply |
+| Two declarations of one name in one file, a binding whose target has no captured declaration | invalid | does not apply |
+| A type parameter that would capture a use of a declaration of its file, also where the compiler would refuse the captured text | unsupported | does not apply |
+| A declaration of the file, or a type parameter of the declaration that holds the use, that would capture a use of a global type | unsupported | does not apply |
+| A use whose target the compiler declares at several captured sites: a member named like a type parameter of its interface | unsupported | does not apply |
 | A declaration placed in another file than an unexposed declaration that it uses | invalid | does not apply |
 | A generated tree with an import or an exported declaration, an exposed site that is no top-level declaration, a name use without a destination, an external use that the TypeScript issuer cannot read or that its site does not name | invalid | does not apply |
 | An import form other than a named type import | unsupported | does not apply |
@@ -661,7 +686,12 @@ Four rows need their reason.
   declaration is admitted today: its import gets an alias
   ([the TypeScript document](typescript-type-imports.md#names-in-a-file)). The
   bridge's comparison of the bindings of the fresh output stays as the second
-  line.
+  line. A use of a global type is captured in the same way, by a type
+  parameter in scope and also by a declaration of its file, and gets the same
+  answer. Where the parameter and the use are in one declaration no placement
+  helps, and a later slice that renames can still admit the output. No builtin
+  mapping writes a global type, so only a consumer's contribution reaches
+  this.
 
 One [table test](../integration/go/files_failure_categories_test.go) feeds each
 of these to the formatter that can receive it. The TypeScript bridge refuses a

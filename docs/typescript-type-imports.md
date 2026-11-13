@@ -80,7 +80,14 @@ Generation states no rule about names across declarations for TypeScript. It bui
 | Two declarations of one name in two files | Published, each under its name |
 | A use of a declaration, inside a declaration of the same file that has a type parameter of the declaration's name | Unsupported coverage. The parameter would capture the use. A later slice may rename the parameter where that is permitted |
 | The same use, with the declaration in another file | Published. The import gets an alias |
-| A type parameter that is named like a declaration and captures no use of it | Published |
+| A type parameter that is named like a declaration and captures no use of it, also one named like its own declaration | Published |
+| A use of a global type, such as `Array`, in a file that declares that name | Unsupported coverage. The declaration would capture the use. With the declaration in another file it is published, and an import of the declaration gets an alias |
+| A use of a global type inside a declaration that has a type parameter of that name | Unsupported coverage. No placement helps: the parameter and the use are in one declaration |
+| A member that is named like a type parameter of its interface | Unsupported coverage. The compiler keeps both in one symbol, and this profile does not tell them apart |
+
+No builtin mapping writes a global type, so only a consumer's contribution, such as a list that maps to the global `Array`, reaches the two rows about a global type.
+
+**An alias renames nothing.** An alias is the local spelling of a use of an import, in the importing file. The declaration keeps its name in its own file, and no type parameter is respelled. [The naming design](naming.md#who-owns-what) makes the distinction: how a use reaches its declaration is the Files stage's, and the name of a declaration is the mapping's.
 
 **The alias of an import.** An import keeps the name of its export unless that name is taken in the importing file: by a declaration of the file, by a type parameter anywhere in it, or by a name that another use in the file is written with. Then it gets the name and a suffix, `_1`, `_2` and so on, the first that is free. The imports of a file are decided in the order of their module specifier and then of their export name, so the choice does not depend on the placement's order or on the order of the uses. Every use of the import is written with the alias.
 
@@ -105,6 +112,6 @@ export interface Page {
 }
 ```
 
-Both texts are pinned by [tests](../integration/go/typescript_names_test.go). The compiler's binding of each use is compared with the destination that generation recorded, as for every relocated use.
+Both texts are pinned by [tests](../integration/go/typescript_names_test.go), with eight more: an import beside a type parameter that no use is written with, three imports of one export name (`T_1`, `T_2`, `T_3`), an import beside a use of the global `Array`, the two orders of an export that is literally named `T_1`, a use outside the declaration with the parameter, the capture by a parameter of an alias, a parameter named like its own declaration, and a declaration named like a global type in another file. The compiler's binding of each use is compared with the destination that generation recorded, as for every relocated use.
 
 The Files stage coverage test registers this formatter alongside the Horos parser and formatter. [Bittype architectural case ACX-003](architecture-cases/0003-files-stage-coverage.md)
