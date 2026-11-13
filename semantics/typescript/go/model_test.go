@@ -65,19 +65,20 @@ func TestExtensionReader(t *testing.T) {
 	}
 
 	for name, term := range map[string]semantics.Term{
-		"an object":                         expression(ObjectOperator(), `[]`),
-		"another operator":                  expression(Key("intersection"), `{"Bases":1}`, baseTerm, objectTerm),
-		"no base":                           expression(ExtensionOperator(), `{"Bases":0}`, objectTerm),
-		"a negative number of bases":        expression(ExtensionOperator(), `{"Bases":-1}`),
-		"data that states no number":        expression(ExtensionOperator(), `null`, baseTerm, objectTerm),
-		"data that is no object":            expression(ExtensionOperator(), `[1]`, baseTerm, objectTerm),
-		"data that is no JSON":              expression(ExtensionOperator(), `{"Bases":1`, baseTerm, objectTerm),
-		"fewer operands than the data says": expression(ExtensionOperator(), `{"Bases":2}`, baseTerm, objectTerm),
-		"more operands than the data says":  expression(ExtensionOperator(), `{"Bases":1}`, baseTerm, baseTerm, objectTerm),
-		"no members object":                 expression(ExtensionOperator(), `{"Bases":1}`, baseTerm),
-		"a last operand that is no object":  expression(ExtensionOperator(), `{"Bases":1}`, baseTerm, booleanTerm),
-		"the members object first":          expression(ExtensionOperator(), `{"Bases":1}`, objectTerm, baseTerm),
-		"a reference":                       {Kind: semantics.Reference, Target: baseEntity},
+		"an object":                           expression(ObjectOperator(), `[]`),
+		"another operator":                    expression(Key("intersection"), `{"Bases":1}`, baseTerm, objectTerm),
+		"no base":                             expression(ExtensionOperator(), `{"Bases":0}`, objectTerm),
+		"a negative number of bases":          expression(ExtensionOperator(), `{"Bases":-1}`),
+		"data that states no number":          expression(ExtensionOperator(), `null`, baseTerm, objectTerm),
+		"data that is no object":              expression(ExtensionOperator(), `[1]`, baseTerm, objectTerm),
+		"data that is no JSON":                expression(ExtensionOperator(), `{"Bases":1`, baseTerm, objectTerm),
+		"fewer operands than the data says":   expression(ExtensionOperator(), `{"Bases":2}`, baseTerm, objectTerm),
+		"more operands than the data says":    expression(ExtensionOperator(), `{"Bases":1}`, baseTerm, baseTerm, objectTerm),
+		"an operand after the members object": expression(ExtensionOperator(), `{"Bases":1}`, baseTerm, objectTerm, objectTerm),
+		"no members object":                   expression(ExtensionOperator(), `{"Bases":1}`, baseTerm),
+		"a last operand that is no object":    expression(ExtensionOperator(), `{"Bases":1}`, baseTerm, booleanTerm),
+		"the members object first":            expression(ExtensionOperator(), `{"Bases":1}`, objectTerm, baseTerm),
+		"a reference":                         {Kind: semantics.Reference, Target: baseEntity},
 	} {
 		if extension, ok := modelOf(t, base, boolean, object, term).Extension(subject); ok {
 			t.Errorf("%s was read as an extension: %+v", name, extension)
