@@ -2910,3 +2910,222 @@ by several, the model by one and the symbol package by two (section 2.6).
 The model's values are values of one operation's contract. And the migration
 in flight adds per-pair and per-family vocabularies that no option above
 places without a further decision.
+
+### 6.3 Unification: three options
+
+The question is whether one language's type-level notions should be named
+once. Section 3.6 shows that Go names them three times. For each option we
+say what the platform's unification test (fixed point 6) would have to
+show, and which concrete differences between Go's three vocabularies would
+have to be represented.
+
+**U1. Three vocabularies stay, and their relation is written down.** Node
+kinds, analysed kinds and forms remain three sets of names with three
+owners inside one language. What is added is a stated relation between
+them.
+
+- What the test has to show: nothing, because nothing is unified. The
+  platform's table has a row for the finding "Independent identities or
+  lifetimes". Its response is: "Keep separate concepts and define their
+  relationship."
+- What would have to be defined: the relation from a form to the nodes it
+  becomes, which today is the `switch` in each target. And the relation from
+  a form to what analysis reports for the built program, which today exists
+  nowhere, except as the comparison of a symbol with an entity in
+  TypeScript's Files stage.
+
+**U2. Intended forms and analysed kinds share one vocabulary per language.
+Standing is carried by the carrier and not by the names.** Go would have
+one set of names for its type-level notions (basic type, slice, struct,
+field, defined type, alias, type of another package, type parameter). An
+expression of intent would use them as form names. The graph would use them
+as operators and entity kinds. That one is a claim made before a program
+exists and the other is evidence about one program would be a property of
+where the name occurs. Syntax node kinds would stay separate.
+
+- What the test has to show: that a consumer who reads "a slice of X" keeps
+  the same guarantees whether the statement is intent or evidence, and that
+  every difference is represented and not erased.
+- The differences that would have to be represented, from the code:
+  1. *What a name refers to.* Intent refers to a destination: a declaration
+     that is planned, or a symbol. Evidence refers to the entity that a
+     compiler bound. Fixed point 18 makes a symbol's key and an entity two
+     identities by decision.
+  2. *Structure.* Intent is a tree of values with placeholders that the
+     kernel fills (slots, parameters, helper keys). Evidence is a graph of
+     entities and terms with identity, and with facts attached.
+  3. *Notions on one side only.* The optional flag of a field exists only
+     in intent. Tags, embedding, type identity, the underlying type and the
+     display text exist only in evidence. Interfaces, unions, signatures and
+     tuples are reported by analysis and intended by nothing.
+  4. *Restrictions that are coverage.* A defined type must have a record
+     body in intent. Analysis reports a defined type over any type.
+  5. *Authority.* A form is an issued value that only its issuer can read. A
+     key of the graph is a pair of strings that any code can spell.
+  6. *Lifetime.* Intent lives within one generation request. A graph is
+     bound to the receipt of one captured program.
+  7. *Failure.* The checks of intent answer with the generation contract's
+     errors. The readers of the graph answer with their own.
+  8. *Today's import rule.* No vocabulary of a language may import another
+     except the syntax vocabulary, and an accepted page decides that the
+     symbol package does not import the semantic vocabulary.
+- What speaks to it in the fixed points: 8 to 11 separate the planned
+  program from the analysed one. Whether that separation also requires two
+  sets of names is not said by any of them. That is our reading.
+
+**U3. One declared model per language, from which node kinds, analysed
+kinds and forms are all derived.** A single description states, for each
+type-level notion of Go, its tree shape (node kind, roles, attributes), its
+fact shape (operator, operands, data) and its form shape (name, data,
+arguments).
+
+- What the test has to show: all of U2, and in addition that the syntax
+  vocabulary shares the contract.
+- The further differences that would have to be represented:
+  1. Syntax has notions that are not type-level notions: files, imports,
+     parameter lists, embedded fields, the terms of a constraint union.
+  2. A node has a site, an order among its siblings and a spelling. A form
+     and a term have none.
+  3. The relation from a form to nodes is not one to one in every language.
+     For Rust and C++ one form becomes a path of several nodes. In Go the
+     `primitive` form becomes a `named-type` node plus a recorded symbol.
+     That relation is the target's code today.
+  4. Not every language has all three: C++ has no analysis, and horos has
+     no model.
+
+U2 and U3 are about one language. They are not the cross-language sameness
+of the four models, which share five form names. Fixed point 13 decided
+that the four models share no package.
+
+### 6.4 Declaration: what is data, what is code, and three candidate carriers
+
+The owner's second question in message 7 is: "what is currently not
+declarative about our models? like, don't we already have an ast / cst
+model? why do we then need code for the model for the different languages
+even?" The facts that answer its first half follow. Its second half is
+question 3.
+
+**What is already data** (Go literals):
+
+- Node kinds, role names, attribute names, concrete kinds and profile
+  strings. For syntax the generic tree is the whole data structure and a
+  language's package is constants only (sections 2.2, 3.1).
+- The admission table of each language, except the predicates inside it.
+  It is an unexported variable of a contribution and holds function values.
+- Semantic names, as one-line functions that return a key.
+- Form names and primitive names.
+- Reserved-word lists, two regular expressions and one table of character
+  ranges.
+- The simple mappings: a pattern and a constant output expression.
+
+**What is code, and what it expresses.**
+
+| Code | What it expresses that no table of the repository states |
+| --- | --- |
+| 3 to 14 rules beside each admission table | Relations between two attributes; between an attribute and a child; between a node and its parent or ancestors; order within one role; consistency and uniqueness among siblings; reference roles other than one |
+| Attribute predicates | Which strings are identifiers, literals or module names of a language, including its reserved words |
+| The structure check of the generic tree | Bounds, valid indices, no cycle, one parent |
+| Parsers and formatters, entirely | Concrete spelling, precedence and layout. No table states the concrete syntax of any language |
+| The writer of facts (a bridge) and the reader (a vocabulary's typed readers) | The shape of each fact: which operator, how many operands, what the data bytes hold. The names are declared once. The shapes are stated twice, in code |
+| The types of a compiler environment | Normalisation, path rules, and the encoding into settings |
+| A model's constructors and checks | The shape of each form: how many data strings, what they mean, how many arguments. Stated twice, and read a third time by position in the target |
+| Coverage answers and the admission of symbols | What today's generation supports; which names a compiler's library declares |
+
+Two of the three bridges are not Go. The Rust bridge is a Rust program and
+the TypeScript bridge is a script. Each spells the names it writes in its
+own language. So a declared model would have to be consumed from three
+implementation languages, or the names in two of them stay hand-written.
+
+**Three candidate carriers for a declared model.**
+
+- **D1. A Go table type, extended.** The admission table becomes an
+  exported value of a language's model, with predicates named by identity
+  in place of function values. Tables of the same kind state fact shapes and
+  form shapes. It stays in Go, and a parser, a formatter, a tool and a test
+  can read it. The rules of the table above remain code unless the table
+  type grows the means to state them.
+- **D2. A horos declaration that uses the node patterns of kinds.** horos
+  already has a regular notation for tree shapes: sequences, alternatives,
+  repetition, recursion and parameters (section 3.8). Today it ranges over
+  22 fixed descriptor constructors of horos, has no child role names and no
+  attribute predicates, and no language's tree is described in it, the tree
+  of horos included. The project already generates Go from horos
+  declarations for one purpose (section 3.9), from types and not from
+  kinds. Two things bear on this candidate. The charter keeps
+  the shared parts free of the source language: "Generic carriers,
+  contracts, engine, printer and native syntax stages have no external
+  Horos/Ontos imports". And horos is one of the five languages whose tree
+  would have to be described.
+- **D3. A separate schema.** A description format of its own for tree
+  shapes, fact shapes and form shapes, from which the Go constants and
+  tables are generated. It can be fitted to exactly what sections 3.2 to
+  3.4 need. It is a new notation that the project would own, and fixed
+  point 5 asks for a concrete case that the existing notations cannot
+  express.
+
+**What must stay honest whatever is declared.** Five parsers, five
+formatters, three bridges and four targets are hand-written and must agree
+with any description. The checks of that agreement that we know of today
+are three: a parser and a formatter call the checker; TypeScript's Files
+stage compares each destination with what the compiler bound; and a
+documentation tool re-reads the tables.
+
+### 6.5 The step already decided: grouping
+
+Standing: our derivation and a decision of the research owner, recorded on
+the work item of this consultation on 13 November 2026. It is stated so
+that it is not answered again, and so that you can say if it prejudges
+something.
+
+**The facts.** Each model holds names, five constructors and two checks
+(section 3.4). The mappings use the constructors and the names and never the
+checks. The target uses the names and the checks and no constructor. The
+one production caller of a model's checks is the target of the same
+language. Most of the checks are well-formedness of a form. Three are
+coverage answers of today's generation: which primitives exist, Go's refusal
+of every external type, and the refusal of an unknown form name. For Go a
+fourth is the restriction of a defined type to a record body. Rust already
+keeps its coverage answer for external types in the target and the shape
+check in the model.
+
+**The reason.** The platform's rule separates wrongly grouped parts first,
+as a move (fixed points 2 and 3). The boundaries page lists the signs of
+wrong grouping. Two of them hold for a model: "An importer that uses a slice
+of the package" (both importers do) and "A policy next to a shared
+mechanism" (the coverage answers sit beside the names). A coverage answer
+is a statement of the target contribution about what it builds.
+
+**The decision.** The coverage answers leave the model packages for the
+target of the same language, as a change of their own. The well-formedness
+checks stay where they are for now. Whether a vocabulary may hold them is
+part of questions 1 and 3, because the accepted definition says "names and
+nothing else" and the accepted practice says otherwise (section 5.3, item
+1).
+
+**What waits.** The change is made when the migration's branch no longer
+edits those files. The migration rewrites every mapping, and every mapping
+calls the constructors.
+
+### 6.6 What a move would touch
+
+Standing: implemented today, from a count over the committed files. Under
+AC-09 (fixed point 1) these numbers have no weight in the choice between
+options. The same rule lets them "guide delivery sequencing". They are
+stated once, here, because question 4 is about order.
+
+| What | Count |
+| --- | --- |
+| Production packages that get a new import path if both roots are introduced | 129, and 3 packages that hold only tests |
+| Packages that move under P1 | 7 |
+| Import strings of this module in Go files | 2,121 in 365 files: 959 in non-test files, 871 in test files, 291 in fixture files under test data. Some fixtures are written against the public import paths as an installed consumer would |
+| Places that compute a role from a path | One function with its shape helpers (section 3.7), and five tables keyed by path with 31, 12, 5, 12 and 14 entries |
+| Quoted layout paths in test files | 1,166 in 17 files, 638 of them in one file of synthetic package sets for the dependency check |
+| Another reader of paths | The documentation tool finds language markers under `syntax/` and contracts under `contracts/` by path prefix |
+| Mentions of a layout path in hand-written pages | About 750 in 42 design pages, 185 in the layout page, 210 in the change log. About 660 more are in dated research records, which are not edited |
+| What does not change | The module path. No version tag pins the present import paths |
+
+Work in flight that is written against the present paths (section 2.8): the
+migration's branch with 24 new vocabulary packages and as many codec
+packages under `transform/`, the two further pairs with a horos model and a
+Go source reader, and the Go and Rust Files stages that are to import a
+symbol package.
