@@ -40,21 +40,28 @@ const (
 	statusIncomplete  = "incomplete"
 )
 
+// boundedBuffer collects what the helper process writes to one of its streams,
+// up to a bound. Write is its only method. os/exec copies a stream with
+// io.Copy, which calls the writer's ReadFrom when it has one, so a writer that
+// embeds bytes.Buffer is filled past the bound without a call of Write. The
+// first write that would pass the bound cancels the process, and every later
+// write is refused too.
 type boundedBuffer struct {
-	bytes.Buffer
+	data      []byte
 	remaining int
 	cancel    context.CancelFunc
 	exceeded  bool
 }
 
 func (b *boundedBuffer) Write(data []byte) (int, error) {
-	if len(data) > b.remaining {
+	if b.exceeded || len(data) > b.remaining {
 		b.exceeded = true
 		b.cancel()
 		return 0, semantic.ErrLimit
 	}
 	b.remaining -= len(data)
-	return b.Buffer.Write(data)
+	b.data = append(b.data, data...)
+	return len(data), nil
 }
 func Check(ctx context.Context, nodePath, modulePath string, trees []s.AST, source *files.Context, query *Query, settings []semantic.Setting) (Output, error) {
 	if ctx == nil || (n.Compiler{NodePath: nodePath, TypeScriptPath: modulePath}).Validate() != nil {
@@ -108,10 +115,10 @@ func Check(ctx context.Context, nodePath, modulePath string, trees []s.AST, sour
 		return Output{Status: statusIncomplete, Diagnostics: []semantic.Diagnostic{{Code: n.Key("limit"), Subject: n.Coverage(), Message: "TypeScript compiler exceeded the provider deadline"}}}, nil
 	}
 	if err != nil {
-		return Output{}, fmt.Errorf("%w: %v: %s", n.ErrCompiler, err, stderr.String())
+		return Output{}, fmt.Errorf("%w: %v: %s", n.ErrCompiler, err, stderr.data)
 	}
 	var out Output
-	decoder := json.NewDecoder(bytes.NewReader(stdout.Bytes()))
+	decoder := json.NewDecoder(bytes.NewReader(stdout.data))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&out); err != nil {
 		return Output{}, fmt.Errorf("%w: malformed response: %v", n.ErrCompiler, err)
