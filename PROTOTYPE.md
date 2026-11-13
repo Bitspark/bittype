@@ -579,3 +579,99 @@ time).
 | `...Stage5FacetsBelongAndMatch` | Guarantee 1: without one facet a request for bindings is "missing facet" and a request for types succeeds. Guarantee 2: another issuer under the same name, another target and another contract version are rejected, each red under its mutant. A facet of another publisher is not admitted | What a facet does |
 | `...Stage5ReferencesAreChecked` | Guarantee 3: a reference of another plan, a member where a type is expected, a binder outside its scope are rejected, each red under its mutant | External symbols; requirement references |
 | `...Stage5ExactPayloadPassedValidation` | Guarantee 6: a value that the Go type admits and the schema (`atom-exact("direct") \| atom-exact("boxed")`) does not is refused before the projector runs; red under a codec that does not validate. A receipt for another frozen value or another schema fails | That the kernel detects a codec that does not validate (F18) |
+
+## Stage 6: optional fields by delegation (row 11 as D3; rows 12, 13, 14, 35)
+
+**Built.** The delegated form, in both targets. The record contribution asks
+for a field position; the optional contribution answers with a member
+fragment and, for conversion, with a field-state protocol; the record's
+factory invokes the protocol and reads no payload of the optional
+contribution. A TypeScript `optional` package (mapping, vocabulary, codec,
+facet package). The TypeScript stand-in, which stage 7 uses as a reader:
+`completeness/typescript/standin/{reader,structural,ontos}.mjs`, with its
+vocabulary `completeness/typescript/values/go` and the facet packages
+`completeness/horos-to-typescript/facets/<name>/go`.
+
+**What the page said, and what happened.**
+
+- *The subject of the request* (row 12). Built as written. The source reader
+  issues the role selector (`source.Field.Role`, key
+  `horos/optional-record-field`) for the record's use and the field's operand
+  use. The record rule requests `Field(operand, role, memberName)`. The kernel
+  checks that the operand is a child of the asking use and that the role was
+  issued by the source's issuer for exactly that pair. It reads the role's
+  key to select and nothing else: not the flag, not the field's name.
+- *The native half* (row 13). Built as written: the fragment is in the
+  target's `field` form. The record states the member's name in the request
+  and does not record it again. Go's fragment is one field of the type
+  `BittypeOptional[T]`; TypeScript's is one optional property.
+- *The conversion half* (row 13). Built as a field-state protocol on both
+  sides. See "Row 11: what the protocol needed" below.
+- *"A contribution with no standalone value adapter"* (row 14). Expressed by
+  the product: it requires another facet kind of a contribution at a field
+  position than of a use. The optional contribution has a field-state facet
+  and no value facet, in both targets.
+
+**What the page left open and what was chosen.**
+
+- *The class of the member-fragment refusal.* **Unsupported**, with the
+  owner "member vocabulary of <target>" and the kernel's reason. Why: the
+  party that does not admit the fragment is the target's member vocabulary,
+  and a later slice of that vocabulary can admit the same fragment. The
+  criterion is the page's own for unsupported ("A later slice can admit the
+  same input"). It is not "refused by design": the optional contribution's
+  domain does cover the field position. A target that states no member
+  vocabulary refuses every field position the same way.
+- *Whether a member fragment may hold more than one member.* The page: "The
+  target's member vocabulary decides". The Go and the TypeScript model of the
+  prototype check each member alone (`model.CheckMember`), so a fragment of
+  two fields is admitted. The Go lowering of the prototype handles one member
+  for each link only.
+- *How a target states its member vocabulary.* An optional interface of the
+  contract, `generation.MemberVocabulary[T]` with `CheckMember`. The Go and
+  the TypeScript target implement it by their model's field form.
+- *The law of a field-state protocol.* Not fixed. The prototype's vectors
+  bound it by the two laws of the record that contains the field: each state
+  that the record's canonical value can have converts there and back as
+  itself, and a native state that is no value of the field's type is refused.
+
+**Row 11: what the protocol needed.**
+
+| | Go | The TypeScript stand-in |
+| --- | --- | --- |
+| The native fragment | One member of its own type, `BittypeOptional[T]` | One optional property `name?: T` |
+| Operations | `Construct(present, abstract value) -> member`, `State(member) -> (present, abstract value)` | `write(container, member key, present, canonical value)`, `read(container, member key) -> {present, value}` |
+| What the record's factory had to know | Which abstract field belongs to the position (from the source snapshot), and the member (a member reference). It hands over a member *value* and takes one back | The same, and it hands over the *container object and the member's key*, because an absent property is a fact about the object and has no value |
+| What the optional contribution had to know | The adapter selected for its operand, and the declaration it owns. Not the record, not the member's name, not the canonical name | The adapter selected for its operand. It is given the container and the key at each call |
+| The four states | Absent, present with a value, present with null (refused by the operand's adapter). A present undefined does not exist: a Go member is a value of its type | Absent, present with a value, present with null (refused by the operand's adapter), present with undefined (refused by the protocol) |
+| What neither side needed | The payload of the other contribution; a shared helper key; a cross-field layout | |
+
+Delegation of presence was workable in both. The one asymmetry is the slot's
+shape: in Go the protocol can be value-in, value-out, and in TypeScript it
+must be given the container and the key. A slot kind that is to serve every
+target therefore has the TypeScript shape, of which the Go shape is the
+special case where the container's member is a value. The decision of row 11
+is the research owner's, with the service library's owner; this is evidence
+for it and no decision.
+
+**Findings of this stage.**
+
+- **F19. The role of the optional flag in the native field form.** The Go
+  model's `field` form carries an "optional" flag as data, and today's Go
+  record passes `true` together with the wrapped type. To keep the native
+  text unchanged, the Go optional contribution writes the same flag into its
+  fragment. The flag is then the optional contribution's own statement in the
+  member vocabulary, and the record no longer knows it. Nothing reads the
+  flag in the Go target. Seen, not assessed further.
+- **F20. Under D3 a new package appears for each target, and tests that list
+  mapping packages change.** See F4. The same will hold for Rust and C++.
+
+**Tests** (`integration/go/prototype_stage6_test.go`; evidence
+`stage6-run2.txt`; `stage6-run1.txt` is the first run with one wrong
+expectation of the test: the target's identity is `go`).
+
+| Test | Shows | Does not show |
+| --- | --- | --- |
+| `...Stage6FourStatesOfAnOptionalField` | In lowered Go and in the stand-in: absent and present with a value convert there and back as themselves; present with null is refused; in the stand-in a present undefined is refused, and the vector is red when the protocol reads it as absence | A null that a type admits (#211); the service library's slot (row 11); independent authorship |
+| `...Stage6FieldPositionKeepsTheScopeCheck` | A request with the operand of another record, or with a role issued for another pair, fails. Red under a kernel without the check | That the source issues the role for optional fields only |
+| `...Stage6MemberFragmentOutsideTheVocabulary` | A fragment that is no member is refused as unsupported with the member vocabulary as owner; a target without a member vocabulary refuses a field position; a fragment of two members is admitted | Cross-field layout (out of the domain) |
