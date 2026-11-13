@@ -145,22 +145,11 @@ func (b *Backend) Expression(e g.Expression[s.Language], args []m.Fragment[s.Lan
 
 // CheckProgram states what TypeScript asks of a program before it is built:
 // the type parameters of one declaration have distinct names. That rule lies
-// inside a declaration, so it is generation's. Names across declarations are
-// no rule of generation for TypeScript: two declarations of one name, and a
-// type parameter named like a declaration, are built. The TypeScript Files
-// formatter decides them for each file of a placement.
+// inside a declaration, so it is generation's, and the shared target package
+// holds it once. Names across declarations are no rule of generation for
+// TypeScript: two declarations of one name, and a type parameter named like a
+// declaration, are built. The TypeScript Files formatter decides them for each
+// file of a placement.
 func (p Provider) CheckProgram(ctx context.Context, program g.Program[s.Language]) error {
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	for _, d := range program.Declarations() {
-		parameters := map[string]bool{}
-		for _, parameter := range d.Description.Parameters {
-			if parameters[parameter.Name] {
-				return g.ErrUnsupported
-			}
-			parameters[parameter.Name] = true
-		}
-	}
-	return nil
+	return m.CheckDistinctParameters(ctx, program)
 }
