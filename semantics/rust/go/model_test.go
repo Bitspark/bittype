@@ -228,3 +228,40 @@ func TestFieldsReader(t *testing.T) {
 		}
 	}
 }
+
+// members is the strict decoder of both readers: exactly the named members,
+// each once and spelled so, and nothing after the object.
+func TestStrictMembers(t *testing.T) {
+	values, ok := members([]byte(` {"B": [1, {"x": null}], "A": "text"} `), "A", "B")
+	if !ok || len(values) != 2 || string(values[0]) != `"text"` || string(values[1]) != `[1, {"x": null}]` {
+		t.Fatal(values, ok)
+	}
+	if values, ok := members([]byte(`{}`)); !ok || len(values) != 0 {
+		t.Fatal("no member", values, ok)
+	}
+	if values, ok := members([]byte(`{"A":null}`), "A"); !ok || string(values[0]) != "null" {
+		t.Fatal("a member that is null is present", values, ok)
+	}
+	for name, data := range map[string]string{
+		"a missing member":             `{"A":1}`,
+		"no member at all":             `{}`,
+		"an unknown member":            `{"A":1,"B":2,"C":3}`,
+		"a member in another case":     `{"a":1,"B":2}`,
+		"a repeated member":            `{"A":1,"B":2,"A":1}`,
+		"a member repeated first":      `{"A":1,"A":2,"B":3}`,
+		"a second object":              `{"A":1,"B":2}{}`,
+		"text after the object":        `{"A":1,"B":2} x`,
+		"a second closing brace":       `{"A":1,"B":2}}`,
+		"an object that is not closed": `{"A":1,"B":2`,
+		"a value that is cut off":      `{"A":1,"B":`,
+		"a list":                       `[{"A":1,"B":2}]`,
+		"a list of names and values":   `["A",1,"B",2]`,
+		"a text":                       `"A"`,
+		"null":                         `null`,
+		"nothing":                      ``,
+	} {
+		if values, ok := members([]byte(data), "A", "B"); ok || values != nil {
+			t.Errorf("%s: read as %s", name, values)
+		}
+	}
+}
