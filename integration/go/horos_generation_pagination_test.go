@@ -411,26 +411,56 @@ func TestGenerationRejectsInvalidCanonicalApplications(t *testing.T) {
 }
 
 func TestGenerationNameCollisionsAndPhantomSlots(t *testing.T) {
-	for name, source := range map[string]string{
-		"declarations": "module collision; type page = text; type Page = bool;",
-		"binders":      "module collision; type T = text; type Page<T> = list<T>;",
-		"unused":       "module collision; type Phantom<T> = text;",
+	// Two declarations of one name, and a type parameter named like a
+	// declaration, are no rule of generation for TypeScript: its Files stage
+	// decides them per file. Go, Rust and C++ still state one flat scope. A
+	// declaration with two parameters of one name, and a parameter that no
+	// representation uses, are refused by every target.
+	targets := []struct {
+		name    string
+		checker check.Checker
+		request requestBuilder
+		// perFile says that names across declarations are decided by Files.
+		perFile bool
+	}{
+		{"typescript", nativeChecker(t, typescriptText()), tsRequest, true},
+		{"go", nativeChecker(t, golangText()), goRequest, false},
+		{"rust", nativeChecker(t, rustText()), rustRequest, false},
+		{"cpp", nativeChecker(t, cppText()), cppRequest, false},
+	}
+	for _, c := range []struct {
+		name, source string
+		// acrossDeclarations says that the collision is one between declarations.
+		acrossDeclarations bool
+	}{
+		{"declarations", "module collision; type page = text; type Page = bool;", true},
+		{"binders", "module collision; type T = text; type Page<T> = list<T>;", true},
+		{"parameters", "module collision; type Pair<t, T> = { first: t; second: T; };", false},
+		{"unused", "module collision; type Phantom<T> = text;", false},
 	} {
-		t.Run(name, func(t *testing.T) {
-			parsed, err := parsehoros.Parse(context.Background(), parse.Input{SourceID: "names.horos", TreeID: "canonical", Text: source})
-			if err != nil {
-				t.Fatal(err)
-			}
-			_, _, input := generationSource(t, parsed.Abstract)
-			if !input.Evidence[0].HasSemantics() {
-				t.Fatal("fixture must be semantically valid")
-			}
-			output, err := runGeneration(t, input, nativeChecker(t, typescriptText()), tsRequest)
-			var diagnostic *text.Diagnostic
-			if !errors.As(err, &diagnostic) || diagnostic.Code != text.Unsupported || output.Snapshot().Valid() {
-				t.Fatalf("unsupported names mapped: %v", err)
-			}
-		})
+		for _, target := range targets {
+			t.Run(c.name+"/"+target.name, func(t *testing.T) {
+				parsed, err := parsehoros.Parse(context.Background(), parse.Input{SourceID: "names.horos", TreeID: "canonical", Text: c.source})
+				if err != nil {
+					t.Fatal(err)
+				}
+				_, _, input := generationSource(t, parsed.Abstract)
+				if !input.Evidence[0].HasSemantics() {
+					t.Fatal("fixture must be semantically valid")
+				}
+				output, err := runGeneration(t, input, target.checker, target.request)
+				if c.acrossDeclarations && target.perFile {
+					if err != nil || len(output.Inventory()) != 2 {
+						t.Fatalf("names across declarations are decided per file, and generation refused them: %v", err)
+					}
+					return
+				}
+				var diagnostic *text.Diagnostic
+				if !errors.As(err, &diagnostic) || diagnostic.Code != text.Unsupported || output.Snapshot().Valid() {
+					t.Fatalf("unsupported names mapped: %v", err)
+				}
+			})
+		}
 	}
 	_, _, input := generationInput(t, genModule("fields", genMap(), genEntry("Record", genType(genRecord(genField("name", false, genScalar("utf8-text")), genField("Name", false, genScalar("bool")))))))
 	if output, err := runGeneration(t, input, nativeChecker(t, golangText()), goRequest); err == nil || output.Snapshot().Valid() {

@@ -851,6 +851,29 @@ func TestFilesFailureCategories(t *testing.T) {
 		}
 	})
 	add("two declarations of one name in one file", typescript, source.ErrInvalid, tampered(renamed))
+	// A type parameter that would capture a use of a declaration of its file.
+	// A later slice may rename the parameter where that is permitted, so the
+	// placement is unsupported coverage. Another file for the declaration is
+	// admitted today: the import gets an alias.
+	capturing := func(t *testing.T, path files.Path) (bool, error) {
+		out := namesOutput(t, capturedNames)
+		return tsFormat(generated, out, format.FilesLimits{}, tsOneFile(out, "types", path).Issue())
+	}
+	add("a type parameter that captures a declaration of its file", typescript, source.ErrUnsupported, func(t *testing.T) (bool, error) {
+		return capturing(t, "types.ts")
+	})
+	add("a type parameter that captures a declaration of its file, in a file whose path is no TypeScript path", typescript, source.ErrInvalid, func(t *testing.T) (bool, error) {
+		return capturing(t, "types.txt")
+	})
+	capturedExisting := func(path string) func(*testing.T) (bool, error) {
+		declared := tsUnit("a", "export type T = string;")
+		user := tsUnit("user", "import type { T as U } from \"./a.js\"; export interface Box<T> { own: U; item: T }")
+		return tsExisting(&tsfiles.Organization{Units: []tsfiles.Placement{
+			{File: "both", Path: files.Path(path), Declarations: []ast.NodeRef{tsSite(declared, "T"), tsSite(user, "Box")}},
+		}}, declared, user)
+	}
+	add("a type parameter that captures a declaration of its file", typescriptExisting, source.ErrUnsupported, capturedExisting("both.ts"))
+	add("a type parameter that captures a declaration of its file, in a file whose path is no TypeScript path", typescriptExisting, source.ErrInvalid, capturedExisting("both.txt"))
 
 	// What the sealed generated output carries.
 	add("an external use of another issuer", typescript, source.ErrInvalid, tampered(func(in g.BuildInput[ts.Language], assembly *g.Assembly) error {
