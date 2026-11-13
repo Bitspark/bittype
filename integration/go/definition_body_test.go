@@ -152,6 +152,7 @@ func declarationNamed[L any](t *testing.T, graph semantics.Semantics[L], name st
 // definitionBodyCase is the same five declarations in each language.
 type definitionBodyCase struct {
 	address, person, tree, page, people semantics.EntityID
+	ping, pong                          semantics.EntityID
 }
 
 // checkDefinitionBodies asserts what the walk must reach, one subtest for each:
@@ -226,10 +227,21 @@ func checkDefinitionBodies[L any](t *testing.T, graph semantics.Semantics[L], c 
 			t.Fatalf("People: the actual is not Person paired with Page's parameter: %+v", actual)
 		}
 	})
+	// Two declarations that name each other: each read ends at the reference
+	// to the other declaration.
+	t.Run("mutual recursion", func(t *testing.T) {
+		ping, pong := read(t, "Ping", c.ping), read(t, "Pong", c.pong)
+		if !ping.Body.Expression || len(ping.Body.Operands) != 1 || !ping.Body.Operands[0].Expression || len(ping.Body.Operands[0].Operands) != 1 || ping.Body.Operands[0].Operands[0].Callee != c.pong {
+			t.Fatalf("Ping: its field does not hold a reference to Pong: %+v", ping.Body)
+		}
+		if !pong.Body.Expression || len(pong.Body.Operands) != 1 || pong.Body.Operands[0].Callee != c.ping {
+			t.Fatalf("Pong: its field is no reference to Ping: %+v", pong.Body)
+		}
+	})
 }
 
 func TestGoDeclarationBodyIsItsDefinition(t *testing.T) {
-	snapshot, _ := goCapture(t, "type Address struct { City string }; type Person struct { Name string; Active bool; Home Address }; type Tree struct { Value string; Children []Tree }; type Page[T any] struct { Items []T; Next string }; type People = Page[Person]")
+	snapshot, _ := goCapture(t, "type Address struct { City string }; type Person struct { Name string; Active bool; Home Address }; type Tree struct { Value string; Children []Tree }; type Page[T any] struct { Items []T; Next string }; type People = Page[Person]; type Ping struct { Pongs []Pong }; type Pong struct { Back Ping }")
 	_, result := goResults(t, snapshot)
 	envelope, ok := result.Semantics()
 	if !ok {
@@ -242,11 +254,12 @@ func TestGoDeclarationBodyIsItsDefinition(t *testing.T) {
 	checkDefinitionBodies(t, graph, definitionBodyCase{
 		address: declarationNamed(t, graph, "Address"), person: declarationNamed(t, graph, "Person"), tree: declarationNamed(t, graph, "Tree"),
 		page: declarationNamed(t, graph, "Page"), people: declarationNamed(t, graph, "People"),
+		ping: declarationNamed(t, graph, "Ping"), pong: declarationNamed(t, graph, "Pong"),
 	})
 }
 
 func TestTypeScriptDeclarationBodyIsItsDefinition(t *testing.T) {
-	snapshot, _, _ := tsCapture(t, "export interface Address { city: string }\nexport interface Person { name: string; active: boolean; home: Address }\nexport type Tree = { value: string; children: Tree[] };\nexport interface Page<T> { items: T[]; next: string }\nexport type People = Page<Person>;\nexport interface Employee extends Person, Page<Person> { desk: Address; role: string }\n")
+	snapshot, _, _ := tsCapture(t, "export interface Address { city: string }\nexport interface Person { name: string; active: boolean; home: Address }\nexport type Tree = { value: string; children: Tree[] };\nexport interface Page<T> { items: T[]; next: string }\nexport type People = Page<Person>;\nexport interface Employee extends Person, Page<Person> { desk: Address; role: string }\nexport interface Ping { pongs: Pong[] }\nexport interface Pong { back: Ping }\nexport type Same = Person & unknown;\nexport type SamePage = Page<Person> | never;\n")
 	_, result := tsResults(t, snapshot)
 	envelope, ok := result.Semantics()
 	if !ok {
@@ -259,6 +272,28 @@ func TestTypeScriptDeclarationBodyIsItsDefinition(t *testing.T) {
 	checkDefinitionBodies(t, graph, definitionBodyCase{
 		address: declarationNamed(t, graph, "Address"), person: declarationNamed(t, graph, "Person"), tree: declarationNamed(t, graph, "Tree"),
 		page: declarationNamed(t, graph, "Page"), people: declarationNamed(t, graph, "People"),
+		ping: declarationNamed(t, graph, "Ping"), pong: declarationNamed(t, graph, "Pong"),
+	})
+	// A right-hand side that the compiler reduces to another named type is a
+	// use of that type: the walk reaches the declaration and not a copy of
+	// its structure.
+	t.Run("right-hand side reduced to a named type", func(t *testing.T) {
+		person, page := declarationNamed(t, graph, "Person"), declarationNamed(t, graph, "Page")
+		same, err := readStructurally(graph, declarationNamed(t, graph, "Same"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if same.Body.Expression || same.Body.Callee != person || len(same.Body.Actuals) != 0 {
+			t.Fatalf("Same: the walk does not reach the declaration Person: %+v", same.Body)
+		}
+		samePage, err := readStructurally(graph, declarationNamed(t, graph, "SamePage"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		formals, _ := graph.Entity(page)
+		if samePage.Body.Expression || samePage.Body.Callee != page || len(samePage.Body.Actuals) != 1 || samePage.Body.Actuals[0].Binder != formals.Parameters[0].Entity || samePage.Body.Actuals[0].Use.Callee != person {
+			t.Fatalf("SamePage: the walk does not reach Page applied to Person: %+v", samePage.Body)
+		}
 	})
 	// An interface with base types: the walk reaches each base declaration,
 	// the actual of a base with type arguments, and each member that the

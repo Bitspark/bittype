@@ -3,6 +3,7 @@ package integration_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	analyzegolang "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
@@ -136,7 +137,7 @@ func checkEarlierProfileIsRefused[L any](t *testing.T, c earlierProfile[L]) {
 }
 
 func TestGoSemanticEarlierProfileIsRefused(t *testing.T) {
-	if golang.ResolutionProfile != "go1.25/captured-types-2/resolution-1" || golang.AnalysisProfile != "go1.25/captured-types-2/analysis-1" {
+	if golang.Profile != "go1.25/captured-types-2" || golang.ResolutionProfile != "go1.25/captured-types-2/resolution-1" || golang.AnalysisProfile != "go1.25/captured-types-2/analysis-1" {
 		t.Fatal("the profile strings", golang.ResolutionProfile, golang.AnalysisProfile)
 	}
 	snapshot, _ := goCapture(t, "type A struct{}")
@@ -150,7 +151,7 @@ func TestGoSemanticEarlierProfileIsRefused(t *testing.T) {
 }
 
 func TestTypeScriptSemanticEarlierProfileIsRefused(t *testing.T) {
-	if typescript.ResolutionProfile != "typescript-5.9.3/captured-types-2/resolution-1" || typescript.AnalysisProfile != "typescript-5.9.3/captured-types-2/analysis-1" || typescript.HelperProfile != "captured-types-2" {
+	if typescript.Profile != "typescript-5.9.3/captured-types-2" || typescript.ResolutionProfile != "typescript-5.9.3/captured-types-2/resolution-1" || typescript.AnalysisProfile != "typescript-5.9.3/captured-types-2/analysis-1" || typescript.HelperProfile != "captured-types-2" {
 		t.Fatal("the profile strings", typescript.ResolutionProfile, typescript.AnalysisProfile, typescript.HelperProfile)
 	}
 	snapshot, _, _ := tsCapture(t, "export interface A {}")
@@ -183,5 +184,15 @@ func TestTypeScriptSemanticEarlierProfileIsRefused(t *testing.T) {
 	}
 	if _, err := resolver.Resolve(context.Background(), snapshot, semantic.Options{Configuration: earlier}); !errors.Is(err, semantic.ErrInvalidRequest) {
 		t.Error("resolution with the earlier helper setting", err)
+	}
+	// The helper is JavaScript and spells the name of the helper profile once
+	// itself, for its messages. A refusal states it.
+	unsupported, _, _ := tsCapture(t, "type F = (x: string) => boolean;")
+	refused, err := resolver.Resolve(context.Background(), unsupported, semantic.Options{Configuration: typescript.Configuration()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diagnostics := refused.Diagnostics(); refused.HasSemantics() || len(diagnostics) != 1 || !strings.HasSuffix(diagnostics[0].Message, " is outside "+typescript.HelperProfile) {
+		t.Fatal("the helper's refusal does not state the helper profile", diagnostics)
 	}
 }

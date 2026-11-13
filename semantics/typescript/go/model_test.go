@@ -14,6 +14,9 @@ func TestPublishedNamesOfTheExtension(t *testing.T) {
 	if got := ExtensionOperator(); got != (semantics.Key{Owner: "typescript", Name: "extension"}) {
 		t.Errorf("ExtensionOperator is %v, want typescript/extension", got)
 	}
+	if got := JSONEncoding(); got != (semantics.Key{Owner: "typescript", Name: "json-1"}) {
+		t.Errorf("JSONEncoding is %v, want typescript/json-1", got)
+	}
 }
 
 // The entities of every graph below: an interface, its base and a property.
@@ -23,7 +26,7 @@ const (
 )
 
 func expression(operator semantics.Key, data string, operands ...semantics.TermID) semantics.Term {
-	term := semantics.Term{Kind: semantics.ProviderExpression, Operator: operator, Encoding: Key("json-1"), Data: []byte(data)}
+	term := semantics.Term{Kind: semantics.ProviderExpression, Operator: operator, Encoding: JSONEncoding(), Data: []byte(data)}
 	for i, operand := range operands {
 		term.Operands = append(term.Operands, semantics.Operand{Locator: []uint32{uint32(i)}, Term: operand})
 	}
@@ -63,6 +66,16 @@ func TestExtensionReader(t *testing.T) {
 	if extension, ok := m.Extension(subject); !ok || len(extension.Bases) != 2 || len(extension.Members) != 1 {
 		t.Fatal("two bases", extension, ok)
 	}
+	// A base with type arguments is an application.
+	application := semantics.Term{Kind: semantics.Application, Callee: baseTerm, Arguments: []semantics.TermID{booleanTerm}}
+	m = modelOf(t, base, boolean, object, application, expression(ExtensionOperator(), `{"Bases":2}`, baseTerm, subject, objectTerm))
+	if extension, ok := m.Extension(subject + 1); !ok || len(extension.Bases) != 2 || extension.Bases[1] != subject {
+		t.Fatal("a base that is an application", extension, ok)
+	}
+	encoded := func(term semantics.Term, encoding semantics.Key) semantics.Term {
+		term.Encoding = encoding
+		return term
+	}
 
 	for name, term := range map[string]semantics.Term{
 		"an object":                           expression(ObjectOperator(), `[]`),
@@ -79,6 +92,20 @@ func TestExtensionReader(t *testing.T) {
 		"a last operand that is no object":    expression(ExtensionOperator(), `{"Bases":1}`, baseTerm, booleanTerm),
 		"the members object first":            expression(ExtensionOperator(), `{"Bases":1}`, objectTerm, baseTerm),
 		"a reference":                         {Kind: semantics.Reference, Target: baseEntity},
+		// The forms that decoding alone would accept.
+		"another encoding with the same bytes": encoded(expression(ExtensionOperator(), `{"Bases":1}`, baseTerm, objectTerm), Key("utf8")),
+		"the member in lower case":             expression(ExtensionOperator(), `{"bases":1}`, baseTerm, objectTerm),
+		"the member in upper case":             expression(ExtensionOperator(), `{"BASES":1}`, baseTerm, objectTerm),
+		"a further member":                     expression(ExtensionOperator(), `{"Bases":1,"Members":7}`, baseTerm, objectTerm),
+		"the member twice":                     expression(ExtensionOperator(), `{"Bases":2,"Bases":1}`, baseTerm, objectTerm),
+		"white space around the data":          expression(ExtensionOperator(), " {\n\"Bases\" : 1 }\n", baseTerm, objectTerm),
+		"the number with a fraction":           expression(ExtensionOperator(), `{"Bases":1.0}`, baseTerm, objectTerm),
+		"the number as a text":                 expression(ExtensionOperator(), `{"Bases":"1"}`, baseTerm, objectTerm),
+		"a number beyond an int":               expression(ExtensionOperator(), `{"Bases":92233720368547758070}`, baseTerm, objectTerm),
+		"an empty object as data":              expression(ExtensionOperator(), `{}`, baseTerm, objectTerm),
+		"empty data":                           expression(ExtensionOperator(), ``, baseTerm, objectTerm),
+		"a base that is an object":             expression(ExtensionOperator(), `{"Bases":1}`, objectTerm, objectTerm),
+		"a base that is a primitive":           expression(ExtensionOperator(), `{"Bases":1}`, booleanTerm, objectTerm),
 	} {
 		if extension, ok := modelOf(t, base, boolean, object, term).Extension(subject); ok {
 			t.Errorf("%s was read as an extension: %+v", name, extension)
