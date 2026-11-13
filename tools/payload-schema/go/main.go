@@ -1,6 +1,7 @@
 // Command payload-schema makes or checks the pinned bootstrap artifact of a
 // payload schema in a vocabulary package: the canonical module of
-// payload.horos and the file that states its pin.
+// payload.horos, the file that states its pin, and the plain Go types that
+// bittype generates from the schema.
 //
 //	payload-schema -package record <directory>           writes the artifact
 //	payload-schema -package record -check <directory>    fails if a file differs
@@ -57,7 +58,11 @@ func run(ctx context.Context, args []string, diagnostics io.Writer) error {
 	if err != nil {
 		return err
 	}
-	files := map[string][]byte{artifact.ModuleFile: module, artifact.PinFile: []byte(artifact.Pin(*pkg, pin))}
+	types, err := artifact.Types(ctx, string(source), *pkg)
+	if err != nil {
+		return err
+	}
+	files := map[string][]byte{artifact.ModuleFile: module, artifact.PinFile: []byte(artifact.Pin(*pkg, pin)), artifact.TypesFile: []byte(types)}
 	for name, content := range files {
 		path := filepath.Join(directory, name)
 		if !*check {

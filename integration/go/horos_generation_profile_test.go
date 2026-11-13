@@ -116,7 +116,7 @@ func directoryNames(t *testing.T, path ...string) []string {
 	return names
 }
 
-func newBuiltinPair[L any](name string, p nativeProvider[L], target g.Target[L], libraries func() []g.MappingLibrary[h.Language, L, source.Reader], constructors func() map[string]any) builtinPair {
+func newBuiltinPair[L any](name string, p nativeProvider[L], target g.Target[L], libraries func() []g.MappingLibrary[h.Language, L, source.Reader], constructors func() map[string]any, bundles func() map[string]genfixture.Bundle[L]) builtinPair {
 	return builtinPair{
 		name: name,
 		compose: func(t *testing.T, modules ...core.Value) *profileComposition {
@@ -136,8 +136,46 @@ func newBuiltinPair[L any](name string, p nativeProvider[L], target g.Target[L],
 				named = append(named, name)
 			}
 			slices.Sort(named)
-			if packages := directoryNames(t, "transform", "syntax", "horos-to-"+name, "mapping"); len(packages) == 0 || !slices.Equal(named, packages) {
-				t.Fatalf("the pair has the mapping packages %v, and the test names the constructors of %v", packages, named)
+			// The contributions named in bundles_<pair>_test.go are those of
+			// exactly the mapping packages that the pair has, by directory
+			// name, and each has a vocabulary package and a codec package of
+			// the same name. Each states the structural profile and this
+			// target, and its codec is of the schema that it states.
+			var contributions []string
+			for name := range bundles() {
+				contributions = append(contributions, name)
+			}
+			slices.Sort(contributions)
+			for _, part := range []string{"mapping", "vocabulary", "codec"} {
+				if packages := directoryNames(t, "transform", "syntax", "horos-to-"+name, part); len(packages) == 0 || !slices.Equal(contributions, packages) {
+					t.Fatalf("the pair has the %s packages %v, and the test names the contributions %v", part, packages, contributions)
+				}
+			}
+			for _, name := range contributions {
+				bundle := bundles()[name]
+				contribution, err := bundle.Contribution(from)
+				if err != nil {
+					t.Errorf("%s: %v", name, err)
+					continue
+				}
+				codec, err := bundle.Codec()
+				if err != nil {
+					t.Errorf("%s: %v", name, err)
+					continue
+				}
+				if contribution.Profile != rules.RepresentationProfile || contribution.Target != string(to.ID()) || !contribution.Reference.Valid() || contribution.Rule.Decide == nil {
+					t.Errorf("%s states the profile %q, the target %q and the reference %v", name, contribution.Profile, contribution.Target, contribution.Reference)
+				}
+				if codec.Schema() != contribution.Schema {
+					t.Errorf("%s states the schema %v and its codec is of %v", name, contribution.Schema, codec.Schema())
+				}
+			}
+			// Until the mapping contract is removed, the libraries of the old
+			// shape are checked as before, for the packages that still have one.
+			for _, name := range named {
+				if !slices.Contains(contributions, name) {
+					t.Fatalf("the test names the constructor of %s, and the pair has no such mapping package", name)
+				}
 			}
 			if len(libraries()) != len(named) {
 				t.Errorf("%d libraries are registered by the tests, and the pair has %d mapping packages", len(libraries()), len(named))
@@ -191,10 +229,10 @@ func newBuiltinPair[L any](name string, p nativeProvider[L], target g.Target[L],
 
 func builtinPairs() []builtinPair {
 	return []builtinPair{
-		newBuiltinPair[ts.Language]("typescript", typescriptText(), tgtarget.Provider{}, typescriptLibraries, typescriptConstructors),
-		newBuiltinPair[gs.Language]("golang", golangText(), ggtarget.Provider{Package: "pagination"}, golangLibraries, golangConstructors),
-		newBuiltinPair[rs.Language]("rust", rustText(), rgtarget.Provider{}, rustLibraries, rustConstructors),
-		newBuiltinPair[cs.Language]("cpp", cppText(), cgtarget.Provider{Namespace: "pagination"}, cppLibraries, cppConstructors),
+		newBuiltinPair[ts.Language]("typescript", typescriptText(), tgtarget.Provider{}, typescriptLibraries, typescriptConstructors, typescriptBundleTable),
+		newBuiltinPair[gs.Language]("golang", golangText(), ggtarget.Provider{Package: "pagination"}, golangLibraries, golangConstructors, golangBundleTable),
+		newBuiltinPair[rs.Language]("rust", rustText(), rgtarget.Provider{}, rustLibraries, rustConstructors, rustBundleTable),
+		newBuiltinPair[cs.Language]("cpp", cppText(), cgtarget.Provider{Namespace: "pagination"}, cppLibraries, cppConstructors, cppBundleTable),
 	}
 }
 

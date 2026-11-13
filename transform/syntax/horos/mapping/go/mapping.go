@@ -43,6 +43,12 @@ const EnforcementProfile = "structural-enforcement/1"
 // registration in one process is the binding.
 const Publisher = "github.com/Bitspark/bittype"
 
+// ReasonNestedRecord is the structural profile's reason for refusing a record
+// that is no body of a named declaration: "Records must be named
+// declarations" (docs/semantic-generation.md). Each target's record
+// contribution refuses such a record as unsupported with this reason.
+const ReasonNestedRecord = "nested records require a named declaration in this profile"
+
 // Library is a horos mapping library given as its description function. The
 // function is the whole library: it states the profile, the bindings, the
 // declaration recipes and the helpers. The type adds one thing, the method

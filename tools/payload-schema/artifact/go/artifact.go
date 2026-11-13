@@ -1,7 +1,7 @@
 // Package artifact makes the pinned bootstrap artifact of a payload schema
 // (docs/contribution-contract.md, row 38, O9, O39): from the schema source, a
-// horos module, it makes the canonical module, its pin and the file that
-// states the pin. It is the public route from a schema source to the pinned
+// horos module, it makes the canonical module, its pin, the file that states
+// the pin and the plain Go types of the schema. It is the public route from a schema source to the pinned
 // artifact: a contribution that is authored outside this repository makes its
 // artifact through this package or through the command beside it, and needs
 // no internal package of bittype.
@@ -12,7 +12,7 @@
 //	payload.horos      the schema source, written by hand
 //	payload.ontos      its canonical module (Module)
 //	payload_schema.go  the pin of that module (PinFile)
-//	payload_types.go   the plain Go type of the payload
+//	payload_types.go   the plain Go types of the schema (Types)
 //	and, in the codec package, the hand-written codec
 package artifact
 

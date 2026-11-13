@@ -249,8 +249,22 @@ var oneOfAKindRules = map[string][]string{
 	payloadShared: {"contracts/generation/go"},
 	// The public route from a schema source to the pinned artifact of a
 	// payload schema (O39): a command and the library behind it.
-	"tools/payload-schema/go":          {"tools/payload-schema/artifact/go"},
-	"tools/payload-schema/artifact/go": {"contracts/parse/go", "internal/horosmodel", "parse/syntax/horos/provider/go", payloadShared},
+	"tools/payload-schema/go": {"tools/payload-schema/artifact/go"},
+	// The library is a composition: for the Go types of a schema it runs the
+	// horos frontend and generation with bittype's structural Go contributions
+	// and their codecs.
+	"tools/payload-schema/artifact/go": {
+		"analyze/files/horos/provider/go", "check/syntax/golang/provider/go", "check/syntax/horos/provider/go", "contracts/analysis/go",
+		"contracts/check/go", "contracts/generation/go", "contracts/parse/go", "contracts/resolution/go",
+		"contracts/semantic/go", "contracts/transform/go", "engine/go", "format/syntax/golang/provider/go",
+		"internal/horosmodel", "parse/syntax/horos/provider/go", "print/syntax/shared/provider/go", "resolve/files/horos/provider/go",
+		"semantics/horos/go", "syntax/golang/go", "syntax/horos/go", "transform/syntax/golang/target/go",
+		"transform/syntax/horos-to-golang/codec/boolean/go", "transform/syntax/horos-to-golang/codec/declarations/go", "transform/syntax/horos-to-golang/codec/list/go", "transform/syntax/horos-to-golang/codec/optional/go",
+		"transform/syntax/horos-to-golang/codec/record/go", "transform/syntax/horos-to-golang/codec/text/go", "transform/syntax/horos-to-golang/mapping/boolean/go", "transform/syntax/horos-to-golang/mapping/declarations/go",
+		"transform/syntax/horos-to-golang/mapping/list/go", "transform/syntax/horos-to-golang/mapping/optional/go", "transform/syntax/horos-to-golang/mapping/record/go", "transform/syntax/horos-to-golang/mapping/text/go",
+		"transform/syntax/horos/mapping/go", payloadShared, "transform/syntax/horos/source/go", "transform/syntax/shared/generation/go",
+		"trees/ast/go", "trees/representation/go",
+	},
 }
 
 // languageOwners names the one language that a package with a hand entry
