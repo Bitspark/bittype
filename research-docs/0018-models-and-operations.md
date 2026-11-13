@@ -128,3 +128,127 @@ bittype's main branch at commit a28febc
 Go unless marked. Quotations of documents give the file. Numbers come from
 two investigation notes that read the main branch on 13 November 2026, and we
 recounted the totals at the code baseline. A glossary is in section 8.
+
+## 1. System overview
+
+Standing of this section: implemented today, except the two rules of 1.5,
+which are owner rules.
+
+### 1.1 The components
+
+- **ontos** is a data model with a canonical binary encoding: a value is an
+  atom (a byte string) or a tuple of values.
+- **horos** is a declarative type language over ontos values: a horos type
+  denotes a set of ontos values, declarations live in modules, and a module is
+  identified by a hash of its content, its **pin**.
+- **bittype** is a Go library, whatever language it processes. It has three
+  groups of capabilities.
+  - **Syntax.** For each of five languages (horos, TypeScript, Go, Rust and
+    C++) it parses type syntax from text into a tree, checks a tree against
+    the language's grammar, formats a tree back into concrete syntax and
+    prints it. It covers type declarations and type expressions only. It has
+    no statements and no executable bodies.
+  - **Meaning.** For four of them (horos, TypeScript, Go and Rust) it resolves
+    names and analyses declarations. It does not reimplement the languages'
+    type checkers. Go is analysed by the type checker of the Go standard
+    library. TypeScript is analysed by a helper script that runs the
+    TypeScript compiler. Rust is analysed by a pinned helper executable built
+    on the Rust compiler's driver. horos is analysed by the horos library.
+    Each result is published as a graph of facts in one shared carrier. We
+    call the Go code that runs a compiler and exports its facts a **bridge**.
+  - **Generation.** From analysed horos declarations it generates native type
+    declarations in TypeScript, Go, Rust and C++. Every rule that turns one
+    kind of horos type into a native type is supplied from outside the shared
+    mechanism, by a package that a consumer registers. For TypeScript a later
+    stage places the generated declarations into files and writes the
+    imports. For Go and Rust that stage is planned and not built.
+- A fourth, optional component relates a captured horos program to a captured
+  Go program and checks stated representation laws through logos, a separate
+  reasoning library of the organization. It appears in this document only as
+  one more reader of a language's analysed meaning.
+- **Consumers** are builds of the organization's own services and libraries.
+
+The example that the rest of the document reuses is one horos record with one
+text field:
+
+```horos
+module example.people;
+type Person = { name: text; };
+```
+
+For Go, generation produces this declaration (read from the code and followed
+by hand in section 4; not run for this document):
+
+```go
+type Person struct {
+	Name string
+}
+```
+
+### 1.2 The shared mechanism and what is supplied to it
+
+Two words recur. The **kernel** is the shared code that selects and composes:
+an engine, a generation registry and planner, and the interfaces they are
+written against. A **contribution** is one thing a consumer registers or
+selects on its own: the parser of one language, the checker of one language,
+the generation target of one language, one mapping rule. The kernel names no
+language. A composition, which today is test code and a few tools, chooses
+contributions and registers them.
+
+This division is the project's main architectural commitment. Section 2.1
+gives the rules behind it, and section 2.5 gives the roles that the
+repository's own dependency test enforces.
+
+### 1.3 Size
+
+bittype is one Go module with one `go.mod`. At the code baseline it has 129
+production packages in 245 Go files with 35,943 lines, not counting tests.
+It has 126 test files with 31,259 lines. The table gives the production
+packages by top-level directory. We recounted it at the code baseline with a
+script over the committed files.
+
+| Directory | Packages | Lines | What it holds |
+| --- | --- | --- | --- |
+| `trees/` | 3 | 650 | The generic syntax trees and their type-erased envelope |
+| `files/`, `source/` | 2 | 699 | The generic carriers for supplied files and for placed, analysed source |
+| `semantics/` | 5 | 2,645 | The generic semantic graph (1 package, 560 lines) and four languages' semantic vocabularies |
+| `syntax/` | 5 | 644 | Five languages' syntax vocabularies: constants only |
+| `contracts/` | 13 | 5,030 | One package per operation: its interface and the value types it exchanges |
+| `engine/` | 1 | 860 | Registration, route planning and execution |
+| `parse/`, `check/`, `format/`, `print/` | 22 | 7,049 | The Syntax stages of each language, the structure checks of the generic trees, the shared printers, and the Files stages of horos and TypeScript |
+| `resolve/`, `analyze/` | 10 | 716 | The stage adapters around the bridges, and two query services |
+| `transform/` | 39 | 3,584 | Generation: the shared kernel parts, one source reader, four targets, four models, three symbol packages, 21 mapping rules and four shared mapping parts |
+| `verification/` | 7 | 1,676 | The optional verification component |
+| `internal/` | 16 | 6,286 | Private helpers: lexing and parsing mechanics, the grammar table type, per-language spelling rules, the three compiler bridges, the horos adapters |
+| `tools/` | 6 | 6,104 | A documentation generator that reads the source, and one horos command |
+| **Total** | **129** | **35,943** | |
+
+So the packages that only describe a language are small. The five syntax
+vocabularies together have 644 lines, and the four models together have 467.
+
+### 1.4 Who uses it
+
+Nothing is released. The repository has no version tag. Packages outside
+`internal/` have public import paths, and the consumers are repositories of
+the same organization. An investigation of the checkouts on one workstation
+found no other Go module that requires bittype. That is a statement about
+those checkouts only.
+
+### 1.5 The two rules that shape everything
+
+Both are rules of the project's owner. Both apply to every project of the
+organization, and section 2.1 gives them in full.
+
+- **Architecture is part of correctness** (owner direction of 6 November
+  2026). A feature that works and passes its tests can still be incorrect,
+  because a decision sits with the wrong owner. The rule AC-01 requires:
+  "Satisfy the agreed ownership, dependency and composition contracts as well
+  as observable behavior."
+- **An interface is derived from the domain and never from the code that
+  exists** (owner direction of 8 November 2026, rule AC-09). "The currently
+  implemented surface must have **zero influence** on that choice.
+  Implementation or migration effort has **zero weight**, including as a
+  tiebreaker."
+
+The second rule is why this document can ask its question at all. A layout
+that touches every package is a legitimate answer if it is the right one.
