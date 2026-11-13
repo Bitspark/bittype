@@ -873,6 +873,48 @@ func TestFilesFailureCategories(t *testing.T) {
 		}}, declared, user)
 	}
 	add("a type parameter that captures a declaration of its file", typescriptExisting, source.ErrUnsupported, capturedExisting("both.ts"))
+	// Two captures whose text the compiler refuses. Until 13 November 2026 the
+	// compiler's answer came first and was missing evidence (TS2315, TS2313).
+	// TypeScript Files judges a capture itself, before a tree is built.
+	capturedIn := func(declaration, user string) func(*testing.T) (bool, error) {
+		declared := tsUnit("a", declaration)
+		using := tsUnit("user", user)
+		return tsExisting(&tsfiles.Organization{Units: []tsfiles.Placement{
+			{File: "both", Path: "both.ts", Declarations: []ast.NodeRef{tsSite(declared, "T"), tsSite(using, "Box")}},
+		}}, declared, using)
+	}
+	add("a captured use that is applied to arguments", typescriptExisting, source.ErrUnsupported, capturedIn("export type T<V> = V[];", "import type { T as U } from \"./a.js\"; export interface Box<T> { own: U<T> }"))
+	add("a capture in the constraint of the parameter", typescriptExisting, source.ErrUnsupported, capturedIn("export type T = string;", "import type { T as U } from \"./a.js\"; export interface Box<T extends U> { v: T }"))
+	// A use of a global type is written by the global's name. A declaration of
+	// the file, or a type parameter of the declaration that holds the use, that
+	// has that name would capture it. No builtin mapping writes a global type:
+	// a consumer's contribution does, here a list as the global Array.
+	arrays := selectedTS(listContribution("names/array/1", "", "Array"), "names/array/1")
+	add("a declaration named Array and a use of the global Array in one file", typescript, source.ErrUnsupported, func(t *testing.T) (bool, error) {
+		out := namesOutputWith(t, "module collision; type array = text; type box = list<text>;", arrays)
+		return tsFormat(generated, out, format.FilesLimits{}, tsOneFile(out, "types", "types.ts").Issue())
+	})
+	add("a type parameter named Array in the declaration that applies the global Array, which no placement helps", typescript, source.ErrUnsupported, func(t *testing.T) (bool, error) {
+		out := namesOutputWith(t, "module collision; type box<array> = list<array>;", arrays)
+		return tsFormat(generated, out, format.FilesLimits{}, tsOneFile(out, "types", "types.ts").Issue())
+	})
+	add("a declaration named Array and a use of the global Array in one file", typescriptExisting, source.ErrUnsupported, func(t *testing.T) (bool, error) {
+		declared := tsUnit("a", "export type Array = string;")
+		using := tsUnit("user", "export interface Box { items: Array<string> }")
+		return tsExisting(&tsfiles.Organization{Units: []tsfiles.Placement{
+			{File: "both", Path: "both.ts", Declarations: []ast.NodeRef{tsSite(declared, "Array"), tsSite(using, "Box")}},
+		}}, declared, using)(t)
+	})
+	// A member that is named like a type parameter of its interface. The
+	// compiler keeps the member and the parameter in one symbol, so the use of
+	// the parameter has two declarations in the graph. That is valid TypeScript
+	// which this profile does not tell apart: unsupported coverage, and no
+	// defect of the input. Until 13 November 2026 it was refused as invalid.
+	add("a member named like a type parameter of its declaration", typescriptExisting, source.ErrUnsupported, tsExisting(nil, tsUnit("input", "export interface Box<T> { T: T }")))
+	add("a member named like a type parameter of its declaration", typescript, source.ErrUnsupported, func(t *testing.T) (bool, error) {
+		out := namesOutput(t, "module collision; type Box<T> = { T: T; };")
+		return tsFormat(generated, out, format.FilesLimits{}, tsOneFile(out, "types", "types.ts").Issue())
+	})
 	// The capture is found in the same pass as the refusals of relocation and is
 	// reported after them: a placement that also separates an unexposed
 	// declaration from its user is invalid input.

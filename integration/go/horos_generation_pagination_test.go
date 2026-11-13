@@ -412,7 +412,7 @@ func TestGenerationRejectsInvalidCanonicalApplications(t *testing.T) {
 
 func TestGenerationNameCollisionsAndPhantomSlots(t *testing.T) {
 	// Two declarations of one name, and a type parameter named like a
-	// declaration, are no rule of generation for TypeScript: its Files stage
+	// declaration, also like its own, are no rule of generation for TypeScript: its Files stage
 	// decides them per file. Go, Rust and C++ still state one flat scope. A
 	// declaration with two parameters of one name, and a parameter that no
 	// representation uses, are refused by every target.
@@ -430,13 +430,16 @@ func TestGenerationNameCollisionsAndPhantomSlots(t *testing.T) {
 	}
 	for _, c := range []struct {
 		name, source string
-		// acrossDeclarations says that the collision is one between declarations.
-		acrossDeclarations bool
+		// perFile is the number of declarations that a target generates which
+		// leaves names across declarations to its Files stage. 0 says that every
+		// target refuses the source.
+		perFile int
 	}{
-		{"declarations", "module collision; type page = text; type Page = bool;", true},
-		{"binders", "module collision; type T = text; type Page<T> = list<T>;", true},
-		{"parameters", "module collision; type Pair<t, T> = { first: t; second: T; };", false},
-		{"unused", "module collision; type Phantom<T> = text;", false},
+		{"declarations", "module collision; type page = text; type Page = bool;", 2},
+		{"binders", "module collision; type T = text; type Page<T> = list<T>;", 2},
+		{"own", "module collision; type box<box> = list<box>;", 1},
+		{"parameters", "module collision; type Pair<t, T> = { first: t; second: T; };", 0},
+		{"unused", "module collision; type Phantom<T> = text;", 0},
 	} {
 		for _, target := range targets {
 			t.Run(c.name+"/"+target.name, func(t *testing.T) {
@@ -449,8 +452,8 @@ func TestGenerationNameCollisionsAndPhantomSlots(t *testing.T) {
 					t.Fatal("fixture must be semantically valid")
 				}
 				output, err := runGeneration(t, input, target.checker, target.request)
-				if c.acrossDeclarations && target.perFile {
-					if err != nil || len(output.Inventory()) != 2 {
+				if c.perFile != 0 && target.perFile {
+					if err != nil || len(output.Inventory()) != c.perFile {
 						t.Fatalf("names across declarations are decided per file, and generation refused them: %v", err)
 					}
 					return

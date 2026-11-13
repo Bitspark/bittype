@@ -3,6 +3,7 @@ package integration_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/format/go"
@@ -340,4 +341,256 @@ func TestTypeScriptAliasAvoidsATypeParameterWithoutAUse(t *testing.T) {
 		t.Fatalf("the file user: %q", text)
 	}
 	checkImportedUse(t, out.Units()[1].Syntax.Abstract, "T_1", "./a.js", "T")
+}
+
+// namesOutputWith generates TypeScript from one horos module with a request of
+// the caller, for a mapping that no builtin library has.
+func namesOutputWith(t *testing.T, text string, build requestBuilder) g.Output {
+	t.Helper()
+	parsed, err := parsehoros.Parse(context.Background(), parse.Input{SourceID: "names.horos", TreeID: "canonical", Text: text})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, input := generationSource(t, parsed.Abstract)
+	output, err := runGeneration(t, input, nativeChecker(t, typescriptText()), build)
+	if err != nil {
+		t.Fatal("generation refused the names: ", err)
+	}
+	return output
+}
+
+// namesExisting captures existing TypeScript, one file per text under the
+// path of its key, and formats it. A placement gives each new file the
+// declarations that it holds, each named as file.Name. Without a placement
+// the files stay as they are. It returns the text of each published file.
+// The probes of the independent review of #304 are the source of this helper
+// and of the tests below that use it.
+func namesExisting(t *testing.T, texts map[string]string, placement map[string][]string) (map[files.ID]string, error) {
+	t.Helper()
+	ctx := context.Background()
+	stages := placementStages(t)
+	formatter, err := tsfiles.New(stages)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ids []string
+	for id := range texts {
+		ids = append(ids, id)
+	}
+	slices.Sort(ids)
+	var units []source.Unit[ts.Language]
+	sites := map[string]ast.NodeRef{}
+	for _, id := range ids {
+		parsed, err := typescriptText().Parse(ctx, parse.Input{SourceID: ast.SourceID(id), TreeID: ast.TreeID(id), Text: texts[id]})
+		if err != nil {
+			t.Fatal(id, err)
+		}
+		tree := parsed.Abstract
+		for _, child := range tree.Nodes[tree.Root-1].Children {
+			if child.Role == ts.RoleDeclaration {
+				sites[id+"."+nodeAttribute(tree.Nodes[child.Node-1], ts.AttributeName)] = ast.NodeRef{Tree: tree.ID, Node: child.Node}
+			}
+		}
+		units = append(units, source.Unit[ts.Language]{File: files.ID(id), Path: files.Path(id + ".ts"), Source: ast.SourceID(id), Syntax: parsed})
+	}
+	in, err := stages.Capture(ctx, units, files.ID(ids[0]), semantic.Limits{})
+	if err != nil {
+		t.Fatal("the existing source must be admitted before it is placed: ", err)
+	}
+	if placement != nil {
+		var organization tsfiles.Organization
+		var placed []string
+		for file := range placement {
+			placed = append(placed, file)
+		}
+		slices.Sort(placed)
+		for _, file := range placed {
+			unit := tsfiles.Placement{File: files.ID(file), Path: files.Path(file + ".ts")}
+			for _, declaration := range placement[file] {
+				site, known := sites[declaration]
+				if !known {
+					t.Fatal("no declaration", declaration)
+				}
+				unit.Declarations = append(unit.Declarations, site)
+			}
+			organization.Units = append(organization.Units, unit)
+		}
+		setting, err := organization.Setting()
+		if err != nil {
+			t.Fatal(err)
+		}
+		in.Configuration = []semantic.Setting{setting}
+	}
+	out, err := formatter.Format(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	published := map[files.ID]string{}
+	for _, unit := range out.Units() {
+		text, err := stages.Printer.Print(ctx, unit.Syntax)
+		if err != nil {
+			t.Fatal(err)
+		}
+		published[unit.File] = text
+	}
+	return published, nil
+}
+
+// Two imports of one export name in one file get two spellings: an alias that
+// was chosen takes its name. Here a record T uses three declarations T of
+// three other files.
+func TestTypeScriptAliasesOfOneExportNameDiffer(t *testing.T) {
+	published, err := namesExisting(t, map[string]string{
+		"a":    "export type T = string;",
+		"b":    "export type T = boolean;",
+		"c":    "export type T = string[];",
+		"user": "import type { T as A } from \"./a.js\"; import type { T as B } from \"./b.js\"; import type { T as C } from \"./c.js\"; export interface T { a: A; b: B; c: C }",
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want = "import type { T as T_1 } from \"./a.js\";\nimport type { T as T_2 } from \"./b.js\";\nimport type { T as T_3 } from \"./c.js\";\n\nexport interface T {\n  a: T_1;\n  b: T_2;\n  c: T_3;\n}\n"
+	if published["user"] != want {
+		t.Fatalf("the file user: %q", published["user"])
+	}
+}
+
+// A name that another use of the file is written with is taken. The use of
+// the global Array is written Array, so the import of a declaration Array
+// gets an alias, although the file declares no Array and has no parameter of
+// that name.
+func TestTypeScriptAliasAvoidsANameThatAnotherUseIsWrittenWith(t *testing.T) {
+	published, err := namesExisting(t, map[string]string{
+		"a": "export type Array = string;",
+		"b": "import type { Array as Mine } from \"./a.js\"; export interface Box { items: Array<string>; mine: Mine }",
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want = "import type { Array as Array_1 } from \"./a.js\";\n\nexport interface Box {\n  items: Array<string>;\n  mine: Array_1;\n}\n"
+	if published["b"] != want {
+		t.Fatalf("the file b: %q", published["b"])
+	}
+}
+
+// The imports of a file are decided in the order of their module specifier
+// and then of their export name. A file imports T and an export that is
+// literally named T_1, beside a type parameter T. With the module of T first,
+// T becomes T_1 and the export T_1 has to give way. With the module of T_1
+// first, T_1 keeps its name and T takes the next suffix. An order by export
+// name would give the first answer in both.
+func TestTypeScriptAliasesAreDecidedByModuleSpecifierThenExportName(t *testing.T) {
+	texts := map[string]string{
+		"a":    "export type T = string;",
+		"b":    "export type T_1 = boolean;",
+		"user": "import type { T as A } from \"./a.js\"; import type { T_1 as B } from \"./b.js\"; export interface Box<T> { a: A; b: B; own: T }",
+	}
+	published, err := namesExisting(t, texts, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const first = "import type { T as T_1 } from \"./a.js\";\nimport type { T_1 as T_1_1 } from \"./b.js\";\n\nexport interface Box<T> {\n  a: T_1;\n  b: T_1_1;\n  own: T;\n}\n"
+	if published["user"] != first {
+		t.Fatalf("the module of T first: %q", published["user"])
+	}
+	published, err = namesExisting(t, texts, map[string][]string{"0": {"b.T_1"}, "a": {"a.T"}, "user": {"user.Box"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	const second = "import type { T_1 } from \"./0.js\";\nimport type { T as T_2 } from \"./a.js\";\n\nexport interface Box<T> {\n  a: T_2;\n  b: T_1;\n  own: T;\n}\n"
+	if published["user"] != second {
+		t.Fatalf("the module of T_1 first: %q", published["user"])
+	}
+}
+
+// The capture is decided by the type parameters of the declaration that holds
+// the use, and not by those of another declaration of the file. Box has a
+// parameter T and uses only that. User uses the declaration T. In one file
+// nothing is captured, and the placement is published.
+func TestTypeScriptCaptureReadsTheDeclarationThatHoldsTheUse(t *testing.T) {
+	published, err := namesExisting(t, map[string]string{
+		"a": "export type T = string;",
+		"b": "import type { T as U } from \"./a.js\"; export interface Box<T> { own: T } export interface User { u: U }",
+	}, map[string][]string{"all": {"a.T", "b.Box", "b.User"}})
+	if err != nil {
+		t.Fatal("a use outside the declaration with the parameter was refused: ", err)
+	}
+	const want = "export type T = string;\n\nexport interface Box<T> {\n  own: T;\n}\n\nexport interface User {\n  u: T;\n}\n"
+	if published["all"] != want {
+		t.Fatalf("the file all: %q", published["all"])
+	}
+}
+
+// A type parameter of an alias captures as one of an interface does.
+func TestTypeScriptParameterOfAnAliasCaptures(t *testing.T) {
+	texts := map[string]string{
+		"a": "export type T = string;",
+		"b": "import type { T as U } from \"./a.js\"; export type Pair<T> = [U, T];",
+	}
+	published, err := namesExisting(t, texts, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if published["b"] != "import type { T as T_1 } from \"./a.js\";\n\nexport type Pair<T> = [T_1, T];\n" {
+		t.Fatalf("the file b: %q", published["b"])
+	}
+	published, err = namesExisting(t, texts, map[string][]string{"all": {"a.T", "b.Pair"}})
+	if published != nil {
+		t.Fatal("a use that the parameter of an alias captures was published")
+	}
+	onlyCategory(t, "a parameter of an alias that captures a declaration of its file", err, source.ErrUnsupported)
+}
+
+// A type parameter that is named like its own declaration generates for
+// TypeScript and is published: inside the declaration the name is the
+// parameter, and nothing uses the declaration there.
+func TestTypeScriptParameterNamedLikeItsOwnDeclaration(t *testing.T) {
+	output := namesOutput(t, "module collision; type box<box> = list<box>;")
+	out, texts, err := namesFormat(t, output, tsOneFile(output, "types", "types.ts"))
+	if err != nil || !out.Valid() {
+		t.Fatal("a parameter named like its own declaration was refused: ", err)
+	}
+	if texts["types"] != "export type Box<Box> = Box[];\n" {
+		t.Fatalf("the file: %q", texts["types"])
+	}
+}
+
+// A use of a global type is written by the global's name. A declaration of
+// its file with that name, or a type parameter of the declaration that holds
+// the use, would capture it, and TypeScript refuses the placement as
+// unsupported coverage. With the declaration in another file the placement is
+// published, and where the file also uses the declaration its import gets an
+// alias. Where the parameter and the use are in one declaration no placement
+// helps. No builtin mapping writes a global type: the list here is a
+// consumer's contribution that maps to the global Array.
+func TestTypeScriptGlobalTypeCapturedByANameOfItsFile(t *testing.T) {
+	arrays := selectedTS(listContribution("names/array/1", "", "Array"), "names/array/1")
+	output := namesOutputWith(t, "module collision; type array = text; type box = list<array>;", arrays)
+	tree := namesTree(t, output)
+	inventory := output.Inventory()
+	if len(inventory) != 2 || nodeAttribute(tree.Nodes[inventory[0].Site.Node-1], ts.AttributeName) != "Array" || len(output.ExternalUses()) != 1 {
+		t.Fatal("the output owns a declaration Array and a declaration that applies the global Array")
+	}
+	out, _, err := namesFormat(t, output, tsOneFile(output, "types", "types.ts"))
+	if out.Valid() {
+		t.Fatal("a use of the global Array beside a declaration Array was published")
+	}
+	onlyCategory(t, "a declaration named like a global type that its file uses", err, source.ErrUnsupported)
+	apart := tsfiles.GeneratedPlacement{
+		Files:       map[files.ID]files.Path{"a": "a.ts", "b": "b.ts"},
+		Definitions: map[g.DeclarationHandle]files.ID{inventory[0].Handle: "a", inventory[1].Handle: "b"},
+	}
+	out, texts, err := namesFormat(t, output, apart)
+	if err != nil || !out.Valid() {
+		t.Fatal("the two files were refused: ", err)
+	}
+	if texts["a"] != "export type Array = string;\n" || texts["b"] != "import type { Array as Array_1 } from \"./a.js\";\n\nexport type Box = Array<Array_1>;\n" {
+		t.Fatalf("the two files: %q", texts)
+	}
+	output = namesOutputWith(t, "module collision; type box<array> = list<array>;", arrays)
+	out, _, err = namesFormat(t, output, tsOneFile(output, "types", "types.ts"))
+	if out.Valid() {
+		t.Fatal("a use of the global Array under a parameter Array was published")
+	}
+	onlyCategory(t, "a type parameter named like a global type that its declaration uses", err, source.ErrUnsupported)
 }

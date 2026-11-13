@@ -26,7 +26,10 @@ import (
 // Limit: two declarations with equal names and equal provenance are ordered by
 // their planned identity, which follows the order of the requested roots. Two
 // native declarations of one source declaration are such a pair, and so are
-// two helpers of one name.
+// two helpers of one name. The order of such a pair is therefore not the same
+// for every order of the roots. A target that states one flat scope refuses
+// the pair in its program rule. A target that states none, as TypeScript since
+// #273, builds it.
 func compareDeclarations[T any](a, b g.PlannedDeclaration[T]) int {
 	return cmp.Or(
 		cmp.Compare(a.Description.Name, b.Description.Name),

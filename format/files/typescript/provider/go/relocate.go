@@ -156,6 +156,13 @@ func placeProgram(ctx context.Context, program *program, units []Placement, limi
 // The check reads every type parameter below the declaration that holds the
 // use, which is exact for the parameters of an alias and of an interface, the
 // only binders of this profile.
+//
+// A use of a global type is captured in the same way, and by a declaration of
+// its file too: it is written by the global's name, and the compiler binds
+// that name to a type parameter in scope or to a declaration of the file
+// before it reaches the global. Where the parameter and the use are in one
+// declaration no placement helps, and a later slice that renames can still
+// admit the output, so the refusal is unsupported coverage there as well.
 func (program *program) relocatable(ctx context.Context, units []Placement) (captured error, err error) {
 	type located struct {
 		site    ast.NodeRef
@@ -163,9 +170,11 @@ func (program *program) relocatable(ctx context.Context, units []Placement) (cap
 		binders map[string]bool
 	}
 	home := map[ast.NodeRef]int{}
+	declared := make([]map[string]bool, len(units))
 	var references []located
 	for i, u := range units {
 		names := map[string]bool{}
+		declared[i] = names
 		for _, site := range u.Declarations {
 			if err := ctx.Err(); err != nil {
 				return nil, err
@@ -200,7 +209,13 @@ func (program *program) relocatable(ctx context.Context, units []Placement) (cap
 		if !bound {
 			return nil, fmt.Errorf("%w: type reference lacks native binding at %v", source.ErrInvalid, use.site)
 		}
-		if dest.external.Module != "" || dest.builtin != "" {
+		if dest.external.Module != "" {
+			continue
+		}
+		if dest.builtin != "" {
+			if (use.binders[dest.builtin] || declared[use.unit][dest.builtin]) && captured == nil {
+				captured = fmt.Errorf("%w: a type parameter or a declaration %s in %s would capture a use of the global type %s", source.ErrUnsupported, dest.builtin, units[use.unit].Path, dest.builtin)
+			}
 			continue
 		}
 		at, placed := home[dest.site]

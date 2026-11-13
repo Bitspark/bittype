@@ -268,6 +268,9 @@ const (
 	ParameterNamedSame
 	// SameParameters gives the two parameters of Page one name.
 	SameParameters
+	// TwoHelpersOfOneName gives Person a helper of its own. It is named Cursor,
+	// like the helper of Page, and its body is another primitive.
+	TwoHelpersOfOneName
 )
 
 // LargeValueBytes is the size of the value the two Large modes state.
@@ -317,6 +320,11 @@ type library struct {
 
 func (l library) Describe(from, to representation.Language) (g.MappingDescription[SourceLanguage, s.Language, Reader], error) {
 	cursor := g.NewHelperKey("independent/cursor")
+	marker := g.NewHelperKey("independent/marker")
+	personBody := model.Record(model.Field("Name", false, model.Primitive("string")))
+	if l.mode == TwoHelpersOfOneName {
+		personBody = model.Record(model.Field("Name", false, model.Primitive("string")), model.Field("Marker", false, g.Helper[s.Language](marker)))
+	}
 	person, _ := g.NewSelector(from, "expression/person-body")
 	page, _ := g.NewSelector(from, "expression/page-body")
 	cell, _ := g.NewSelector(from, "declaration/Cell")
@@ -337,7 +345,7 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 	return g.MappingDescription[SourceLanguage, s.Language, Reader]{
 		Profile: "independent/1",
 		Bindings: []g.BindingDescription[SourceLanguage, s.Language, Reader]{
-			{ID: "person", Input: g.Pattern[SourceLanguage, Reader]{Selector: person}, Output: model.Record(model.Field("Name", false, model.Primitive("string")))},
+			{ID: "person", Input: g.Pattern[SourceLanguage, Reader]{Selector: person}, Output: personBody},
 			{ID: "page", Input: g.Pattern[SourceLanguage, Reader]{Selector: page}, Expand: func(ctx context.Context, q g.Expansion[SourceLanguage, s.Language, Reader]) (g.Expression[s.Language], error) {
 				view, err := q.Use()
 				if err != nil {
@@ -441,7 +449,10 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 			// Shadow's recipe never represents its body; the kernel still admits it.
 			{ID: "erase-shadow", Selector: shadow, Expand: erase("Shadow")},
 		},
-		Helpers: []g.HelperRecipe[s.Language]{{Key: cursor, Declaration: g.NativeDeclaration[s.Language]{Name: "Cursor", Form: model.Form("alias"), Body: model.Primitive("string"), Values: []g.IssuedValue{access}}}},
+		Helpers: []g.HelperRecipe[s.Language]{
+			{Key: cursor, Declaration: g.NativeDeclaration[s.Language]{Name: "Cursor", Form: model.Form("alias"), Body: model.Primitive("string"), Values: []g.IssuedValue{access}}},
+			{Key: marker, Declaration: g.NativeDeclaration[s.Language]{Name: "Cursor", Form: model.Form("alias"), Body: model.Primitive("bool"), Values: []g.IssuedValue{access}}},
+		},
 	}, nil
 }
 

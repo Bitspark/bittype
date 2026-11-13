@@ -129,3 +129,53 @@ func TestBuilderRefusesTwoParametersOfOneNameInOneDeclaration(t *testing.T) {
 		t.Fatal("two parameters of one name in one declaration", err)
 	}
 }
+
+// Two helpers of one name have no provenance, so the comparator of the builder
+// orders them by their planned identity, and that follows the order of the
+// requested roots: the helper that the first root demands comes first. The
+// order of such a pair is therefore not the same for every order of the roots.
+// A target that states one flat scope refuses the pair, so only a target
+// without that rule reaches it.
+func TestBuilderOrdersTwoHelpersOfOneNameByTheOrderOfTheRoots(t *testing.T) {
+	ctx := context.Background()
+	bodies := func(roots ...string) []string {
+		fixture := independent(t)
+		plan, err := fixture.PlanTargetIn(ctx, f.TwoHelpersOfOneName, ruleless{gotarget.Provider{Package: "generated"}}, roots...)
+		if err != nil {
+			t.Fatal(roots, err)
+		}
+		out, err := plan.Run(ctx)
+		if err != nil {
+			t.Fatal(roots, err)
+		}
+		tree := outputTree[gs.Language](t, out)
+		var helpers []string
+		for _, record := range out.Inventory() {
+			if record.Role != g.HelperDeclaration {
+				continue
+			}
+			node := tree.Nodes[record.Site.Node-1]
+			if nodeAttribute(node, gs.AttributeName) != "Cursor" || len(node.Children) != 1 {
+				t.Fatal("a helper is not an alias named Cursor", roots, node)
+			}
+			helpers = append(helpers, nodeAttribute(tree.Nodes[node.Children[0].Node-1], gs.AttributeName))
+		}
+		return helpers
+	}
+	// Person demands the helper whose body is bool, Page the one whose body is string.
+	if got := bodies("Person", "Page"); len(got) != 2 || got[0] != "bool" || got[1] != "string" {
+		t.Fatal("the roots Person, Page: the helper of Person comes first", got)
+	}
+	if got := bodies("Page", "Person"); len(got) != 2 || got[0] != "string" || got[1] != "bool" {
+		t.Fatal("the roots Page, Person: the helper of Page comes first", got)
+	}
+	// The Go target, which states one flat scope, refuses the pair.
+	fixture := independent(t)
+	plan, err := fixture.PlanTargetIn(ctx, f.TwoHelpersOfOneName, gotarget.Provider{Package: "generated"}, "Person", "Page")
+	if err == nil {
+		_, err = plan.Run(ctx)
+	}
+	if !errors.Is(err, g.ErrUnsupported) {
+		t.Fatal("the Go target refuses two helpers of one name", err)
+	}
+}
