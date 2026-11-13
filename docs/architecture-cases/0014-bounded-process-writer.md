@@ -2,8 +2,11 @@
 
 **Status:** Corrected, with limits; state of 13 November 2026. One package,
 `internal/processoutput`, holds the writer, the three callers use it and no
-copy is left. The [limits](#limits) say what the correction does not
-establish. No independent review has read it yet.
+copy is left. The fixture of the tests, which this correction had first
+written a third and a fourth time, has one owner too. The [limits](#limits)
+say what the correction does not establish. An independent review read the
+first form at `c8c3509`, and its findings are corrected in the
+[second form](#independent-review).
 **Scope:** The collection of a child process's output stream and error stream
 against a bound, on `main` at `3998db5fe4f76942ba1c99870a6be8cc160e316f`:
 `boundedBuffer` in
@@ -130,9 +133,18 @@ Corrected by the change for
   The bridges bound each stream by itself. The loader bounds four streams of
   two processes together. One writer type with its own count serves the
   first and not the second, so the count is its own value, and a writer
-  draws on it. The loader's copy kept the part of a refused write that still
-  fitted. No caller reads a stream whose bound was passed, so the one writer
-  keeps nothing of a refused write.
+  draws on it.
+- **Two differences in behaviour, and no caller sees either.** The loader's
+  copy kept the part of a refused write that still fitted. The one writer
+  keeps nothing of a refused write. And `Bytes` returns nothing once its
+  bound is passed: from the first refused write on, no writer of the bound
+  takes another byte, so what each holds may be a stream with its end cut
+  off, and a cut stream must not read as a whole one. Each caller asks
+  `Exceeded` before it reads `Bytes` and returns no output after a passed
+  bound.
+- **The cancel function is the caller's.** It is called once, after the
+  bound reports itself passed and outside the bound's lock, so it may ask
+  the bound.
 - **Each caller keeps its meaning.** The bridges read `Exceeded` and return
   `semantic.ErrLimit` and no output. The loader returns its error "Go
   command output exceeds N bytes". The package knows neither.
@@ -142,6 +154,75 @@ Corrected by the change for
   `internal/typescriptsem`, and the package in the entry of
   `tools/provider-matrix/report/go`. Each of the three is checked for use by
   its own package.
+
+### The fixture of the tests
+
+The same rule applies to test code. Pull request #298 gave each bridge a
+test with a real child process: the test binary, started as the child,
+writes stated numbers of bytes to its streams, and in some cases connects to
+the test first and never exits by itself, so that only a cancellation ends
+it. The first form of this correction wrote that child and its harness a
+third time for the loader and a fourth time for the writer, and recorded
+"whether the fixture is one mechanism was not assessed". The review measured
+it: 60 code lines were identical in all four test files, and 116 in the two
+bridge files. The protocol was one. What differed is what each package
+owns: how its test binary knows that it is the child, what the output stream
+starts with, whether the child reads its input stream, and the call under
+test.
+
+[`internal/processoutput/processoutputtest`](../../internal/processoutput/processoutputtest/processoutputtest.go)
+now holds the child, its description file and the harness, and the four test
+files use it. It imports no package of the module and has its entry in
+`foundationRules`. Only test files import it, and the architecture test
+reads no test file, so no importer has an allowance. The two bridge test
+files of #298 are edited for it: their cases, bounds and assertions are
+unchanged, and their own copy of the child and of the harness is gone.
+
+The copies also shared a defect, which is corrected once. The harness
+waited for the first of two events, the child's connection and the return
+of the call, and failed when the return came first. Nothing orders the two
+in the test's process: a child that made its parent return had connected
+before it wrote, and the test may still learn of the return first. The
+review saw that false failure in 1 to 10 of 100 runs on a loaded host, and
+the same lines were in the bridge tests on `main`. The harness now keeps a
+return that comes first and awaits the connection after it, with a bound.
+
+### Independent review
+
+A reviewer that wrote none of the change read its first form at `c8c3509`
+on 13 November 2026. The record is a
+[comment on the pull request](https://github.com/Bitspark/bittype/pull/313#issuecomment-6858433447).
+It found no defect in the writer or in the three callers, by reading and
+under 16 mutants of its own, and confirmed the red run on `main`, the
+place and the three import allowances. Its seven findings and what the
+second form does:
+
+1. **The false failure of the "process stays" tests.** Corrected once, in
+   the shared harness.
+2. **The fixture in four copies.** One package, as above.
+3. **No race detector had run two writers on one bound.** The hosted job
+   has a step that runs the tests of `internal/processoutput` and of the
+   loader's package under the detector.
+4. **`Bytes` returned a cut stream with no sign that it was cut.** It
+   returns nothing once its bound is passed.
+5. **`docs/package-boundaries.md` disagreed with itself.** Its counts were
+   made again.
+6. **"Cancel is called outside the lock" had no test.**
+   `TestCancelMayAskTheBound` gives the bound a cancel function that asks
+   the bound and writes to it. Called inside the lock it never returns, and
+   the test fails when its wait passes.
+7. **One `WaitDelay` failure in 300 runs under load**, in a case of the
+   writer's own test where the process exits by itself. `os/exec` gives the
+   copies of the streams the command's `WaitDelay` to end after the process
+   has exited, and returns an error when it passes. That test had taken the
+   bridges' one second for a call of its own. Its wait is now the harness's
+   bound, because the call is the test's own and the wait is not what the
+   test is about. The tests of the bridges and of the loader go through the
+   caller, so they run the caller's real wait, one second and two seconds.
+   A failure there would report the caller's own limit, which this case
+   leaves out.
+
+The reviewer did not read the second form.
 
 ### Qualification
 
@@ -157,19 +238,32 @@ Corrected by the change for
   nothing.
 - **The one writer.** The tests of `internal/processoutput` read its method
   set, run it against a real child process with one bound per stream and
-  with one shared bound, and write to it from eight goroutines.
-- **The bridges.** `TestHelperOutputBound` passes unchanged in both
-  packages. `TestBoundedBufferOnlyWrites` named the fields of a bridge's
-  own type and went with that type; the tests of the owner assert what it
-  asserted.
+  with one shared bound, let its cancel function ask the bound, and write to
+  it from eight goroutines while a ninth reads the bound and the writers.
+- **The bridges.** `TestHelperOutputBound` passes in both packages with its
+  cases and assertions unchanged. `TestBoundedBufferOnlyWrites` named the
+  fields of a bridge's own type and went with that type; the tests of the
+  owner assert what it asserted.
 - **A copy fails.** A bridge or the loader as it is on `main`, with its own
   writer and without the import, fails `TestProductionArchitecture`: its
   extension or its entry is unused.
-- **Mutants.** 58 single changes each fail a test: 18 of the writer, 12 of
-  each bridge's use of it, 8 of the loader's use of it and 8 of the entries
-  in the architecture test.
-- **Output.** 153 values that the integration tests generate, format or
-  place have the same SHA-256 before and after.
+- **Mutants.** 65 single changes: 21 of the writer, 2 of the fixture, 12 of
+  each bridge's use of the writer, 8 of the loader's use of it and 10 of the
+  entries in the architecture test. 64 fail a test. The one that does not
+  removes the lock from `Exceeded` and `Bytes`: without the race detector
+  no test can fail for it, because a test that orders its read after the
+  writes reads the right value without the lock, and a test that does not
+  order them accepts either value.
+- **The false failure.** The process tests of the four packages ran 300
+  times each with the default number of processors and 300 times each on
+  one: 2400 runs and no failure. The test files of the first form, run after
+  them under the same conditions, failed 5 of 300 runs of the
+  writer's test and 1 of 100 of the loader's.
+- **The race detector.** The hosted step runs the tests of the writer and of
+  the loader's package under it, `TestConcurrentWritersKeepTheBound` among
+  them.
+- **Output.** 159 values that the integration tests generate, format or
+  place have the same SHA-256 on `main` and with this change.
 
 The pull request holds the runs.
 
@@ -177,24 +271,21 @@ The pull request holds the runs.
 
 - **A copy that keeps the import.** The architecture test sees imports. A
   package that uses the shared writer for one stream and a correct writer of
-  its own for another passes every test. Only a reader sees it.
+  its own for another passes every test. Only a reader sees it. The review
+  confirmed this with two mutants.
 - **A fourth caller.** Nothing fails when a new package starts a process and
-  writes its own bounded writer. The layout says that it must not, and the
-  import check cannot say it.
-- **The race detector** does not run on the workstation. The test with eight
-  goroutines failed in 20 of 20 runs without the lock. The hosted step
-  `syntax-race` runs `TestRustSemanticConcurrent` and
-  `TestTypeScriptSemanticConcurrentQueries` under the detector, and both
-  reach a bridge and so the one writer. The tests of
-  `internal/processoutput` themselves do not run under it.
+  writes its own bounded writer, or a test its own child process. The layout
+  says that it must not, and the import check cannot say it.
+- **The lock of `Exceeded` and `Bytes`** is shown only by the race
+  detector, in the hosted step. That the detector reports the mutant was
+  reasoned and not run: the workstation has no detector.
 - **The Rust helper** does not run on the workstation. The hosted checks run
   its tests against the one writer.
 - **Other limits of the three callers** are not examined: the deadlines, the
   wait after a cancellation, and a process that a helper starts itself.
-- **The child-process fixture of the tests** exists once per package: in
-  both bridges, in the loader and in the owner. Each starts its process the
-  way its package does. Whether the fixture is one mechanism was not
-  assessed.
+- **The harness's check that the process ended** has no mutant: with these
+  callers, a call that returns has ended its process, so no single change
+  makes a process outlive its call.
 
 ## Assessment lesson
 
@@ -204,5 +295,11 @@ size of the helper. Placement is not a cost question. The question that
 finds this fault is the third of AC-11: would another caller copy the
 mechanism? One already had, with the defect that the correction had just
 removed from the other two.
+
+The correction then repeated the fault it corrected, one level down. It
+copied the child process of the tests twice more and wrote that the question
+was not assessed. A rule about mechanisms does not stop at the line between
+code and its tests, and "not assessed" is not an answer to a question that
+the change itself raises by adding the copy.
 
 [Package boundaries](../package-boundaries.md) · [Layout](../../LAYOUT.md#dependency-direction) · [Case index](README.md)
