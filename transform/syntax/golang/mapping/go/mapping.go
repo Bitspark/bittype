@@ -21,4 +21,10 @@ const TypesProfile = "golang-declared-types/1"
 // the library that publishes them, which is bittype (row 15). The name
 // authenticates nothing: until a composition lock binds it (row 15a),
 // registration in one process is the binding.
+//
+// COPY (AC-11, finding AG-6 of the two other pairs): the same name is spelled
+// in transform/syntax/horos/mapping/go, because the vocabulary of a
+// contribution may import the mapping identities of its own source language
+// only. The publisher is bittype whatever the source language is: one name
+// with a spelling per source language, and no agnostic home.
 const Publisher = "github.com/Bitspark/bittype"
