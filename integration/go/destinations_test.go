@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"context"
+	"errors"
 	"slices"
 	"strings"
 	"testing"
@@ -32,7 +33,9 @@ import (
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	patterns "github.com/Bitspark/bittype/transform/syntax/horos/mapping/pattern/go"
 	hsource "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
+	rustmodel "github.com/Bitspark/bittype/transform/syntax/rust/model/go"
 	rustsymbol "github.com/Bitspark/bittype/transform/syntax/rust/symbol/go"
+	rgtarget "github.com/Bitspark/bittype/transform/syntax/rust/target/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	tssymbol "github.com/Bitspark/bittype/transform/syntax/typescript/symbol/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -505,5 +508,44 @@ func TestTypeScriptAliasExportIsTheDestination(t *testing.T) {
 	}
 	if !slices.Equal(published, []tssymbol.Type{recorded}) {
 		t.Fatalf("the published bindings name %+v, and the recorded destination is %+v", published, recorded)
+	}
+}
+
+// The Rust model's external form names its crate apart from the path. The
+// model refuses a malformed form as invalid. The Rust target refuses a crate
+// that no destination can name: a text that is no crate name as invalid, and
+// the crate of a library as unsupported. The Go model's external form stays
+// unsupported.
+func TestExternalFormsNameADependencyThatADestinationCanName(t *testing.T) {
+	ctx := context.Background()
+	text := rustmodel.Primitive(rustmodel.PrimitiveString)
+	rust := rgtarget.Provider{}
+	for name, c := range map[string]struct {
+		form   g.Expression[rs.Language]
+		model  error
+		target error
+	}{
+		"an item of the standard library": {rustmodel.External("std", []string{"option", "Option"}, text), nil, nil},
+		"a nested item":                   {rustmodel.External("std", []string{"collections", "BTreeMap"}, text, text), nil, nil},
+		"no path":                         {rustmodel.External("std", nil), g.ErrInvalid, g.ErrInvalid},
+		"an empty segment":                {rustmodel.External("std", []string{"option", ""}), g.ErrInvalid, g.ErrInvalid},
+		"no crate":                        {rustmodel.External("", []string{"Option"}), g.ErrInvalid, g.ErrInvalid},
+		"the crate joined with the path":  {rustmodel.External("std::option", []string{"Option"}), nil, g.ErrInvalid},
+		"a path joined in one segment":    {rustmodel.External("std", []string{"option::Option"}), nil, g.ErrInvalid},
+		"a keyword as a segment":          {rustmodel.External("std", []string{"option", "fn"}), nil, g.ErrInvalid},
+		"the crate of a library":          {rustmodel.External("serde_json", []string{"Value"}), nil, g.ErrUnsupported},
+		"another crate of the sysroot":    {rustmodel.External("core", []string{"option", "Option"}), nil, g.ErrUnsupported},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if err := rustmodel.CheckExpression(ctx, c.form); !errors.Is(err, c.model) || (c.model == nil && err != nil) {
+				t.Errorf("the model answers %v, want %v", err, c.model)
+			}
+			if err := rust.CheckExpression(ctx, c.form); !errors.Is(err, c.target) || (c.target == nil && err != nil) {
+				t.Errorf("the target answers %v, want %v", err, c.target)
+			}
+		})
+	}
+	if err := (ggtarget.Provider{Package: "p"}).CheckExpression(ctx, gomodel.External("fmt", "Stringer")); !errors.Is(err, g.ErrUnsupported) {
+		t.Errorf("the Go external form answers %v, want unsupported", err)
 	}
 }
