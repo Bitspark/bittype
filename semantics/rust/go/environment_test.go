@@ -24,7 +24,7 @@ func TestEnvironmentConfigurationBytes(t *testing.T) {
 	want := []semantic.Setting{
 		{Key: n.Key("compiler"), Value: []byte("1.90.0")},
 		{Key: n.Key("environment-1"), Value: []byte(`{"Edition":"2024","Target":"x86_64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[]}`)},
-		{Key: n.Key("helper"), Value: []byte("captured-types-2")},
+		{Key: n.Key("helper"), Value: []byte("captured-types-3")},
 	}
 	if !reflect.DeepEqual(settings, want) {
 		t.Fatalf("%s", settings)
@@ -46,7 +46,9 @@ func TestEnvironmentConfigurationBytes(t *testing.T) {
 		t.Fatal("the crate name is not part of the configuration", different, err)
 	}
 	// The profile has a new version: the vocabulary lost a member that a
-	// reader of the earlier version reads.
+	// reader of the earlier version reads. The helper profile changed once
+	// more since, for an added entity kind and binding, and the two profile
+	// strings stayed: nothing was removed.
 	if n.ResolutionProfile != "rustc-1.90.0/captured-types-2/resolution-1" || n.AnalysisProfile != "rustc-1.90.0/captured-types-2/analysis-1" {
 		t.Fatal(n.ResolutionProfile, n.AnalysisProfile)
 	}
@@ -224,6 +226,8 @@ func TestEvidenceRequiresAnEnvironment(t *testing.T) {
 			{Key: n.Key("helper"), Value: []byte("captured-types-1")},
 		}, semantic.ErrInvalidRequest},
 		"the earlier helper profile with an environment": {[]semantic.Setting{settings[0], settings[1], {Key: n.Key("helper"), Value: []byte("captured-types-1")}}, semantic.ErrInvalidRequest},
+		// The helper profile of before the primitive type bindings.
+		"the helper profile without primitive type bindings": {[]semantic.Setting{settings[0], settings[1], {Key: n.Key("helper"), Value: []byte("captured-types-2")}}, semantic.ErrInvalidRequest},
 		"another compiler":         {[]semantic.Setting{{Key: n.Key("compiler"), Value: []byte("1.91.0")}, settings[1], settings[2]}, semantic.ErrInvalidRequest},
 		"no environment":           {[]semantic.Setting{settings[0], settings[2]}, semantic.ErrInvalidRequest},
 		"two environments":         {[]semantic.Setting{settings[0], settings[1], settings[1], settings[2]}, semantic.ErrInvalidRequest},

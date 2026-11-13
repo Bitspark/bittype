@@ -136,10 +136,12 @@ func StdVec() Symbol { return Symbol{item, Std(), "vec" + separator + "Vec"} }
 // issued today. bool is no keyword, so a declaration or a generic parameter of
 // that name captures a use, and the destination is the primitive type itself.
 //
-// Limit: no evidence can establish this destination today. The Rust helper
-// publishes bindings for path segments only, so it has none at a primitive
-// type. Until it has, a formatter cannot tell a captured use from one that
-// reaches the primitive type.
+// The Rust helper binds a primitive type node to what the compiler resolved
+// the name to. A use reaches this destination when that binding names the
+// entity of the primitive type: an entity of the primitive kind of the Rust
+// vocabulary whose name is the one that Primitive returns. A use that a
+// declaration or a generic parameter captures binds to that declaration
+// instead. docs/destinations.md states the rule.
 func Bool() Symbol { return Symbol{primitive, Crate{}, "bool"} }
 
 // Item returns the dependency and the path of an item, and false for a symbol
