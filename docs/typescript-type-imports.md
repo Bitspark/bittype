@@ -19,34 +19,38 @@ fixture, exact compiler setup, registration and both placements. The
 
 ## Consumer API
 
-Supply the selected packages and their declaration text through `semantics/typescript.ImportConfiguration` when constructing the TypeScript stages. In this example `page`, `cells` and `person` are sites in `out.Snapshot()`.
+Supply the selected packages and their declaration text through `semantics/typescript.ImportConfiguration` when constructing the TypeScript stages. In this example `page`, `cells` and `person` are handles from `out.Inventory()`, the list of the declarations that the output owns.
 
 ```go
 out, err := eng.Generate(ctx, request)
 if err != nil { return err }
-organization := tsfiles.Organization{
-    Entry: "pages",
-    Units: []tsfiles.Placement{
-        {File: "pages", Path: "generated/pages/page.ts", Declarations: []ast.NodeRef{page, cells}},
-        {File: "model", Path: "generated/model/person.ts", Declarations: []ast.NodeRef{person}},
+placement := tsfiles.GeneratedPlacement{
+    Files: map[files.ID]files.Path{
+        "pages": "generated/pages/page.ts",
+        "model": "generated/model/person.ts",
+    },
+    Definitions: map[generation.DeclarationHandle]files.ID{
+        page: "pages", cells: "pages", person: "model",
     },
 }
-setting, err := organization.Setting()
-if err != nil { return err }
 formatter, err := tsfiles.NewGenerated(stages)
 if err != nil { return err }
 organized, err := formatter.Format(ctx, format.GeneratedFilesInput{
-    Output: out, Configuration: []semantic.Setting{setting},
+    Output: out, Placement: placement.Issue(),
 })
 if err != nil { return err }
 emitted, err := filesPrinter.Print(ctx, organized)
 ```
 
-The engine also accepts this formatter through `RegisterGeneratedFilesFormatter` and `FormatGeneratedFiles`. For an existing analyzed program, `tsfiles.New` accepts the graph, its snapshot and its analysis receipt. The two operations share placement and fresh native checking. [Generated Files SPI](../contracts/format/go/generated.go) · [Executable example](../integration/go/typescript_placement_test.go)
+The placement is a typed value with two keyed tables: each file identity with its path, and each declaration with the file that holds it. It travels as no setting and as no bytes. A handle carries its output, so a placement that was built for one run is refused with another run of the same plan. TypeScript reads the placement back and derives the view of its two tables. The [shared contract](source.md#the-generated-files-contract) admits that view before TypeScript judges the placement by its own rules: every declaration of the output has one file, every file is declared, and the files are a valid inventory.
+
+The placement states no order and names no entry. TypeScript Files owns the order: the files in the order of their identities, and the declarations of one file in the order of their sites in the sealed output. Two placements with the same assignments give byte-identical files. The entry of the fresh snapshot is the file of least identity. That entry is an address: it names no root of a TypeScript program and limits no check.
+
+The engine also accepts this formatter through `RegisterGeneratedFilesFormatter` and `FormatGeneratedFiles`, and carries the placement unread. For an existing analyzed program, `tsfiles.New` accepts the graph, its snapshot and its analysis receipt. Its placement, `tsfiles.Organization`, names sites of that snapshot and travels as the setting `declaration-placement-2`; it names no entry either, and the same rule chooses the entry. The vocabulary that named an entry was `declaration-placement-1`. A setting under that key is another setting key and is refused as invalid input, whatever it holds. The two operations share the relocation and the fresh native checking. [Generated Files SPI](../contracts/format/go/generated.go) · [Executable example](../integration/go/typescript_placement_test.go) · [Order, entry and guard tests](../integration/go/typescript_generated_placement_test.go)
 
 ## Example and scope
 
-Assign the captured TypeScript declarations Page and Cells to file ID `pages` at `generated/pages/page.ts`, and Person to `model` at `generated/model/person.ts`. The generated ESM declarations include the following types.
+Assign the generated TypeScript declarations Page and Cells to file ID `pages` at `generated/pages/page.ts`, and Person to `model` at `generated/model/person.ts`. The generated ESM declarations include the following types.
 
 ```typescript
 import type { Person } from "../model/person.js";

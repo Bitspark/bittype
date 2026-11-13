@@ -6,8 +6,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 
+	f "github.com/Bitspark/bittype/contracts/format/go"
+	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
 	imports "github.com/Bitspark/bittype/internal/typescriptimports"
@@ -25,18 +28,51 @@ type Placement struct {
 	Path         files.Path
 	Declarations []ast.NodeRef
 }
+
+// Organization is the placement of existing source. Its sites belong to the
+// snapshot that travels in the same input, and it travels as a setting. It
+// names no entry: no TypeScript reader has one. The formatter chooses the entry
+// of the fresh snapshot, which is the file of least identity.
 type Organization struct {
-	Entry files.ID
 	Units []Placement
 }
 
-func OrganizationSetting() semantics.Key { return n.Key("declaration-placement-1") }
+// OrganizationSetting is the key of the vocabulary without an entry. The
+// vocabulary that named one was published as declaration-placement-1. A
+// setting under that key is another setting and is refused, whatever it holds:
+// a vocabulary does not change under its key.
+func OrganizationSetting() semantics.Key { return n.Key("declaration-placement-2") }
 func (o Organization) Setting() (semantic.Setting, error) {
 	data, err := json.Marshal(o)
 	if err != nil {
 		return semantic.Setting{}, err
 	}
 	return semantic.Setting{Key: OrganizationSetting(), Value: data}, nil
+}
+
+// GeneratedPlacement is the placement of the declarations of one sealed output
+// into TypeScript files. Files gives each file identity its path. Definitions
+// gives each declaration the file that holds it. A declaration is named by the
+// handle that the output issued for it, so a placement belongs to one output
+// and to no other run of the same plan.
+//
+// Both tables are keyed. A placement therefore states no order, cannot name a
+// file twice and cannot place a declaration twice. It names no entry. The
+// formatter owns the order: the files by their identities, and the
+// declarations of one file by their sites in the sealed output. The entry of
+// the fresh snapshot is the file of least identity. That entry is an address.
+// It names no root of a TypeScript program and limits no check.
+type GeneratedPlacement struct {
+	Files       map[files.ID]files.Path
+	Definitions map[g.DeclarationHandle]files.ID
+}
+
+var placements = f.NewGeneratedPlacementIssuer[GeneratedPlacement]()
+
+// Issue returns the value that a generated-Files request carries. It owns a
+// copy of both tables.
+func (p GeneratedPlacement) Issue() f.GeneratedPlacement {
+	return placements.Issue(GeneratedPlacement{Files: maps.Clone(p.Files), Definitions: maps.Clone(p.Definitions)})
 }
 
 type symbol struct {
@@ -74,6 +110,20 @@ func declarations(t s.AST) ([]ast.NodeRef, error) {
 	return out, nil
 }
 func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantics.Semantics[s.Language]) (*program, error) {
+	p, err := readDeclarations(snapshot)
+	if err != nil {
+		return nil, err
+	}
+	if err := p.readSemantics(ctx, graph); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+// readDeclarations reads what the captured trees say alone: the files, their
+// trees and the top-level declarations of each. A placement is judged against
+// this much, before the graph is read.
+func readDeclarations(snapshot semantic.Snapshot) (*program, error) {
 	fileContext := snapshot.Files()
 	if fileContext == nil {
 		// A capture without files is well formed, and this profile reads none.
@@ -101,13 +151,17 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 			return nil, err
 		}
 		p.original.Units = append(p.original.Units, Placement{file.ID, file.Path, sites})
-		if snapshot.Entry() == ref(tree.ID, tree.Root) {
-			p.original.Entry = file.ID
-		}
 		for _, site := range sites {
 			p.tops[site] = true
 		}
 	}
+	return p, nil
+}
+
+// readSemantics reads what the graph says of the declarations: that every file
+// is a module, what each module exports and where each name is bound. A script
+// is refused here, as unsupported coverage.
+func (p *program) readSemantics(ctx context.Context, graph semantics.Semantics[s.Language]) error {
 	data := graph.Data()
 	modules := map[ast.NodeRef]bool{}
 	for _, e := range data.Entities {
@@ -118,7 +172,7 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 	for _, tree := range p.trees {
 		if !modules[ref(tree.ID, tree.Root)] {
 			// A script is TypeScript that this profile does not cover.
-			return nil, fmt.Errorf("%w: placement requires TypeScript modules with file-local scope", source.ErrUnsupported)
+			return fmt.Errorf("%w: placement requires TypeScript modules with file-local scope", source.ErrUnsupported)
 		}
 	}
 	for _, fact := range data.Facts {
@@ -126,22 +180,22 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 			continue
 		}
 		if fact.Subject.Entity == 0 {
-			return nil, source.ErrInvalid
+			return source.ErrInvalid
 		}
 		owner := data.Entities[fact.Subject.Entity-1]
 		term := data.Terms[fact.Term-1]
 		if term.Kind != semantics.Reference || owner.Kind != n.ModuleKind() || len(owner.Declarations) != 1 {
-			return nil, source.ErrInvalid
+			return source.ErrInvalid
 		}
 		declaration := data.Entities[term.Target-1]
 		if len(declaration.Declarations) != 1 || declaration.Owner != fact.Subject.Entity || !p.tops[declaration.Declarations[0]] {
-			return nil, source.ErrInvalid
+			return source.ErrInvalid
 		}
 		p.public[declaration.Declarations[0]] = true
 	}
 	for _, b := range data.Bindings {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return err
 		}
 		if b.At.Role != n.NameRole() && b.At.Role != n.ImportRole() {
 			continue
@@ -154,80 +208,77 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 		case entity.Kind == n.PackageTypeKind() && entity.Owner != 0:
 			owner := data.Entities[entity.Owner-1]
 			if owner.Kind != n.PackageKind() {
-				return nil, source.ErrInvalid
+				return source.ErrInvalid
 			}
 			dest.external = imports.Export{Module: owner.Name, Name: entity.Name}
 		case entity.Kind == n.BuiltinKind():
 			dest.builtin = entity.Name
 		default:
-			return nil, fmt.Errorf("%w: ambiguous native binding %s", source.ErrInvalid, entity.Name)
+			return fmt.Errorf("%w: ambiguous native binding %s", source.ErrInvalid, entity.Name)
 		}
 		if _, dup := p.bindings[b.At.Site]; dup {
-			return nil, source.ErrInvalid
+			return source.ErrInvalid
 		}
 		p.bindings[b.At.Site] = dest
 	}
-	return p, nil
+	return nil
 }
-func (p *program) organization(settings []semantic.Setting, limits source.Limits) (Organization, error) {
-	o := p.original
-	if len(settings) > 0 {
-		if len(settings) != 1 || settings[0].Key != OrganizationSetting() {
-			return Organization{}, source.ErrInvalid
-		}
-		o = Organization{}
-		// A setting contains one strict object, including the explicit entry.
-		decoder := json.NewDecoder(bytes.NewReader(settings[0].Value))
-		decoder.DisallowUnknownFields()
-		if !json.Valid(settings[0].Value) || decoder.Decode(&o) != nil || repeatedMember(settings[0].Value) {
-			return Organization{}, source.ErrInvalid
-		}
+
+// decodeOrganization reads the placement of existing source from the settings
+// of a request. It reports false when the request states none. The form of the
+// setting is decided here, before the captured program is read: a setting that
+// is malformed under its vocabulary is invalid input whatever the program is.
+func decodeOrganization(settings []semantic.Setting) (Organization, bool, error) {
+	if len(settings) == 0 {
+		return Organization{}, false, nil
 	}
-	if len(o.Units) > limits.Files.MaxFiles {
-		return Organization{}, source.ErrLimit
+	if len(settings) != 1 || settings[0].Key != OrganizationSetting() {
+		return Organization{}, false, source.ErrInvalid
 	}
-	inventory := files.Files{}
-	assigned := map[ast.NodeRef]bool{}
-	entry := false
-	// Validity is decided before coverage. A path that TypeScript reads and this
-	// profile excludes is well formed, and so is a file without a declaration:
-	// both are outside this profile. The first of them is kept until every file,
-	// the completeness of the placement and the inventory are found valid, so a
-	// placement that no profile admits is never reported as outside coverage.
-	var uncovered error
+	var o Organization
+	// A setting contains one strict object.
+	decoder := json.NewDecoder(bytes.NewReader(settings[0].Value))
+	decoder.DisallowUnknownFields()
+	if !json.Valid(settings[0].Value) || decoder.Decode(&o) != nil || repeatedMember(settings[0].Value) {
+		return Organization{}, false, source.ErrInvalid
+	}
+	return o, true, nil
+}
+
+// admit decides the validity of a placement of existing source against the
+// captured program. The lists of the setting become the two keyed tables that
+// files.Cover reads, so the common rules have one owner: every declaration
+// exactly once, every file declared, and an inventory that the files contract
+// admits. A list can state what a keyed table cannot, a file identity or a
+// declaration that is named twice, and that is refused here.
+func (p *program) admit(o Organization, limits source.Limits) error {
+	// The number of files is counted before a list is read. The count answers
+	// with files.ErrLimit, or with files.ErrInvalid for an invalid limit record.
+	if err := limits.Files.CheckFiles(len(o.Units)); err != nil {
+		return source.WithCategory(err)
+	}
+	table := make(map[files.ID]files.Path, len(o.Units))
+	assignment := map[ast.NodeRef]files.ID{}
 	for _, u := range o.Units {
-		switch {
-		case imports.SourcePath(u.Path):
-		case !imports.ExcludedPath(u.Path):
-			// A path that is no TypeScript path is invalid input.
-			return Organization{}, source.ErrInvalid
-		case uncovered == nil:
-			uncovered = fmt.Errorf("%w: path %q", source.ErrUnsupported, u.Path)
+		if _, twice := table[u.File]; twice {
+			// The files contract refuses an identity that two files share.
+			return fmt.Errorf("%w: file identity %q is named twice: %w", source.ErrInvalid, u.File, files.ErrInvalid)
 		}
-		if len(u.Declarations) == 0 && uncovered == nil {
-			uncovered = fmt.Errorf("%w: file %q has no declaration", source.ErrUnsupported, u.File)
-		}
-		inventory.Entries = append(inventory.Entries, files.File{ID: u.File, Path: u.Path})
-		if u.File == o.Entry {
-			entry = true
-		}
+		table[u.File] = u.Path
 		for _, site := range u.Declarations {
-			if !p.tops[site] || assigned[site] {
-				return Organization{}, fmt.Errorf("%w: duplicate or unknown declaration %v", source.ErrInvalid, site)
+			if _, twice := assignment[site]; twice {
+				return fmt.Errorf("%w: declaration %v is placed twice", source.ErrInvalid, site)
 			}
-			assigned[site] = true
+			assignment[site] = u.File
 		}
 	}
-	if !entry || len(assigned) != len(p.tops) {
-		return Organization{}, fmt.Errorf("%w: incomplete placement or missing entry", source.ErrInvalid)
+	tops := make([]ast.NodeRef, 0, len(p.tops))
+	for site := range p.tops {
+		tops = append(tops, site)
 	}
-	if _, err := inventory.Capture(limits.Files); err != nil {
-		return Organization{}, source.WithCategory(err)
-	}
-	if uncovered != nil {
-		return Organization{}, uncovered
-	}
-	return o, nil
+	// Cover answers with files.ErrInvalid or files.ErrLimit.
+	_, err := files.Cover(table, assignment, tops, limits.Files)
+	return source.WithCategory(err)
 }
 
 // repeatedMember reports a JSON object that names one member twice. The decoder

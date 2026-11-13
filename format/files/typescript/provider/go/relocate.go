@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"slices"
 
 	fm "github.com/Bitspark/bittype/contracts/format/go"
@@ -31,20 +30,88 @@ type result struct {
 }
 
 func materialize(ctx context.Context, input fm.FilesInput[s.Language]) (*result, error) {
-	program, err := readProgram(ctx, input.Snapshot, input.Abstract)
+	// The form of the setting is decided before the captured program is read.
+	organization, stated, err := decodeOrganization(input.Configuration)
 	if err != nil {
 		return nil, err
 	}
-	return placeProgram(ctx, program, input.Configuration, input.Limits.Source)
+	program, err := readDeclarations(input.Snapshot)
+	if err != nil {
+		return nil, err
+	}
+	if !stated {
+		organization = program.original
+	}
+	// The placement is judged against the top-level declarations before the
+	// graph is read: its files, its items and its paths need nothing else, so
+	// a script does not hide a placement that no slice admits.
+	if err := program.admit(organization, input.Limits.Source); err != nil {
+		return nil, err
+	}
+	if _, err := sourcePaths(organization.Units); err != nil {
+		return nil, err
+	}
+	if err := program.readSemantics(ctx, input.Abstract); err != nil {
+		return nil, err
+	}
+	return placeProgram(ctx, program, organization.Units, input.Limits.Source)
 }
-func placeProgram(ctx context.Context, program *program, settings []semantic.Setting, limits source.Limits) (*result, error) {
-	organization, err := program.organization(settings, limits)
+
+// sourcePaths judges the paths of a placement. A path that is no TypeScript
+// path is invalid input, and it is the error. A path that TypeScript reads and
+// this profile excludes is unsupported coverage, and the first such path is
+// the first result: the caller reports it after everything invalid.
+func sourcePaths(units []Placement) (uncovered error, invalid error) {
+	for _, u := range units {
+		switch {
+		case imports.SourcePath(u.Path):
+		case !imports.ExcludedPath(u.Path):
+			// A path that is no TypeScript path is invalid input.
+			return nil, fmt.Errorf("%w: %q is no TypeScript source path", source.ErrInvalid, u.Path)
+		case uncovered == nil:
+			uncovered = fmt.Errorf("%w: path %q", source.ErrUnsupported, u.Path)
+		}
+	}
+	return uncovered, nil
+}
+
+// placeProgram realizes a placement whose common rules are admitted: every
+// declaration has one declared file and the inventory of the files is valid.
+// units are in the order that the formatter realizes. Validity is decided
+// before coverage, and both before anything is constructed:
+//
+//   - a path that is no TypeScript path, two declarations of one name in one
+//     file and a use of an unexposed declaration of another file are invalid
+//     input;
+//   - a path that TypeScript reads and this profile excludes, and a file
+//     without a declaration, are unsupported coverage.
+//
+// A placement with a defect of both kinds is invalid input.
+func placeProgram(ctx context.Context, program *program, units []Placement, limits source.Limits) (*result, error) {
+	uncovered, err := sourcePaths(units)
 	if err != nil {
 		return nil, err
 	}
-	layout := &result{public: map[ast.NodeRef]bool{}, entry: organization.Entry, moved: map[ast.NodeRef]ast.NodeRef{}}
+	if err := program.relocatable(ctx, units); err != nil {
+		return nil, err
+	}
+	for _, u := range units {
+		if len(u.Declarations) == 0 && uncovered == nil {
+			uncovered = fmt.Errorf("%w: file %q has no declaration", source.ErrUnsupported, u.File)
+		}
+	}
+	if uncovered != nil {
+		return nil, uncovered
+	}
+	// The entry of the fresh snapshot is the file of least identity. No
+	// placement names one, and the rule reads no order of the input. There is a
+	// first unit: the admission refuses a placement without a file.
+	layout := &result{public: map[ast.NodeRef]bool{}, entry: units[0].File, moved: map[ast.NodeRef]ast.NodeRef{}}
 	filesByTree := map[ast.TreeID]Placement{}
-	for _, placement := range organization.Units {
+	for _, placement := range units {
+		if placement.File < layout.entry {
+			layout.entry = placement.File
+		}
 		tree := s.AST{ID: ast.TreeID("typescript/files/" + string(placement.File))}
 		layout.units = append(layout.units, placed{placement: placement, tree: tree, expected: map[ast.NodeID]symbol{}})
 		filesByTree[tree.ID] = placement
@@ -65,6 +132,66 @@ func placeProgram(ctx context.Context, program *program, settings []semantic.Set
 		nodesLeft -= len(unit.tree.Nodes) - before
 	}
 	return layout, nil
+}
+
+// relocatable decides what only the declarations can decide about a placement,
+// before a tree is constructed. One file cannot hold two declarations of one
+// name. A declaration that another file uses has to be exposed: Files never
+// exports a declaration without authorization. Both are invalid input. Every
+// placed site is a top-level declaration of the program: the admission of an
+// existing placement and the reading of a generated one established that.
+func (program *program) relocatable(ctx context.Context, units []Placement) error {
+	type located struct {
+		site ast.NodeRef
+		unit int
+	}
+	home := map[ast.NodeRef]int{}
+	var references []located
+	for i, u := range units {
+		names := map[string]bool{}
+		for _, site := range u.Declarations {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			tree := program.trees[site.Tree]
+			name := imports.Attr(tree.Nodes[site.Node-1], s.AttributeName)
+			if names[name] {
+				return fmt.Errorf("%w: duplicate declaration %s in %s", source.ErrInvalid, name, u.Path)
+			}
+			names[name] = true
+			// The trees are captured, so they hold no cycle.
+			for stack := []ast.NodeID{site.Node}; len(stack) > 0; {
+				id := stack[len(stack)-1]
+				stack = stack[:len(stack)-1]
+				node := tree.Nodes[id-1]
+				home[ref(site.Tree, id)] = i
+				if node.Kind == s.KindTypeReference {
+					references = append(references, located{ref(site.Tree, id), i})
+				}
+				for _, child := range node.Children {
+					stack = append(stack, child.Node)
+				}
+			}
+		}
+	}
+	for _, use := range references {
+		dest, bound := program.bindings[use.site]
+		if !bound {
+			return fmt.Errorf("%w: type reference lacks native binding at %v", source.ErrInvalid, use.site)
+		}
+		if dest.external.Module != "" || dest.builtin != "" {
+			continue
+		}
+		at, placed := home[dest.site]
+		if !placed {
+			return fmt.Errorf("%w: the target of the type reference at %v is not placed", source.ErrInvalid, use.site)
+		}
+		if at != use.unit && (!program.tops[dest.site] || !program.public[dest.site]) {
+			name := imports.Attr(program.trees[dest.site.Tree].Nodes[dest.site.Node-1], s.AttributeName)
+			return fmt.Errorf("%w: cross-unit type %s must be exported", source.ErrInvalid, name)
+		}
+	}
+	return nil
 }
 
 // Copy declarations without their former imports. Retain origins and record
@@ -117,13 +244,7 @@ func (layout *result) copyDeclarations(ctx context.Context, program *program, li
 			return source.ErrLimit
 		}
 		unit.tree.Root = imports.AddNode(&unit.tree, s.Node{Kind: s.KindSourceFile})
-		names := map[string]bool{}
 		for _, site := range unit.placement.Declarations {
-			name := imports.Attr(program.trees[site.Tree].Nodes[site.Node-1], s.AttributeName)
-			if names[name] {
-				return fmt.Errorf("%w: duplicate declaration %s in %s", source.ErrInvalid, name, unit.placement.Path)
-			}
-			names[name] = true
 			id, err := copyNode(unit, site, 1)
 			if err != nil {
 				return err
@@ -159,9 +280,6 @@ func (layout *result) bindUnit(ctx context.Context, program *program, unit *plac
 			imports.SetName(node, name)
 			node.References = []ast.Reference{{Role: s.RoleTarget, Target: moved}}
 			continue
-		}
-		if !program.tops[dest.site] || !program.public[dest.site] {
-			return fmt.Errorf("%w: cross-unit type %s must be exported", source.ErrInvalid, name)
 		}
 		target := filesByTree[moved.Tree]
 		route, err := imports.Relative(unit.placement.Path, target.Path)
