@@ -162,7 +162,9 @@ covers both. This form is interim:
 record asks for the optional representation. Whether a record asks at all is
 conditional since 13 November 2026: see
 [optional fields](contribution-contract.md#optional-fields) in the
-contribution contract.
+contribution contract. Decided later that day, after the prototype: a record
+asks, because presence is delegated, unless an objection of the service
+library's owner reopens the decision before the migration merges.
 
 Canonical integers remain Unsupported. The existence of native integer syntax
 does not choose an arbitrary-width representation or dependency. Open records,
