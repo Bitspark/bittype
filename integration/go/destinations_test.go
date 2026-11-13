@@ -13,7 +13,6 @@ import (
 	checktypescript "github.com/Bitspark/bittype/check/syntax/typescript/provider/go"
 	"github.com/Bitspark/bittype/contracts/format/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
-	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	tsfiles "github.com/Bitspark/bittype/format/files/typescript/provider/go"
 	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
@@ -543,21 +542,12 @@ func TestTypeScriptAliasExportIsTheDestination(t *testing.T) {
 	if recorded != (tssymbol.Type{Module: module, Name: "Cell"}) {
 		t.Fatalf("the recorded destination is %+v", recorded)
 	}
-	tree := outputTree[ts.Language](t, output)
-	placement := tsfiles.Placement{File: "types", Path: "types.ts"}
-	for _, child := range tree.Nodes[tree.Root-1].Children {
-		placement.Declarations = append(placement.Declarations, ast.NodeRef{Tree: tree.ID, Node: child.Node})
-	}
-	setting, err := (tsfiles.Organization{Entry: placement.File, Units: []tsfiles.Placement{placement}}).Setting()
-	if err != nil {
-		t.Fatal(err)
-	}
 	formatter, err := tsfiles.NewGenerated(placementStages(t, tn.PackageTypes{Module: module, Declaration: "export interface Inner<T> { value: T }\nexport type Cell<T> = Inner<T>;\n"}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	var placed source.Source[ts.Language]
-	placed, err = formatter.Format(context.Background(), format.GeneratedFilesInput{Output: output, Configuration: []semantic.Setting{setting}})
+	placed, err = formatter.Format(context.Background(), format.GeneratedFilesInput{Output: output, Placement: tsOneFile(output, "types", "types.ts").Issue()})
 	if err != nil {
 		t.Fatal("the placement of an aliased export was refused: ", err)
 	}
