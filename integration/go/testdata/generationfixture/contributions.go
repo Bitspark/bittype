@@ -74,6 +74,36 @@ func gateProgram() *graph {
 	// An exact generic whose native side omits its parameter.
 	p.declare("CellOfPerson")
 	p.body("CellOfPerson", p.apply("Cell", p.ref(p.names["Person"])))
+	// A second generic whose body asks about its own binder: another generic
+	// environment than Probed's (guarantee 4).
+	p.declare("ProbedToo", "U")
+	p.body("ProbedToo", p.expression("probe", p.ref(p.parameter("ProbedToo", 0))))
+	// Evidence through a declaration (O35). Word's body is no record, so a
+	// declaration contribution decides an alias for it. Wrap's body is its binder.
+	p.declare("Word")
+	p.body("Word", p.expression("word"))
+	p.declare("ProbeWord")
+	p.body("ProbeWord", p.expression("probe", p.ref(p.names["Word"])))
+	p.declare("ProbePerson")
+	p.body("ProbePerson", p.expression("probe", p.ref(p.names["Person"])))
+	p.declare("Wrap", "T")
+	p.body("Wrap", p.ref(p.parameter("Wrap", 0)))
+	p.declare("ProbeWrapped")
+	p.body("ProbeWrapped", p.expression("probe", p.apply("Wrap", p.ref(p.names["Word"]))))
+	p.declare("ProbedWord")
+	p.body("ProbedWord", p.apply("Probed", p.ref(p.names["Word"])))
+	// A cycle whose one request names its operand for conversion only (O40).
+	p.declare("Spin")
+	p.body("Spin", p.expression("carry", p.ref(p.names["Spin"])))
+	// A generic with two binders and one application of it, for the ties of an
+	// application's arguments to binders (row 20, row 39).
+	p.declare("Pair", "A", "B")
+	p.body("Pair", p.expression("pair-body", p.ref(p.parameter("Pair", 0)), p.ref(p.parameter("Pair", 1))))
+	p.declare("Words")
+	p.body("Words", p.apply("Pair", p.ref(p.names["Word"]), p.ref(p.names["Person"])))
+	// A form of a family that no composition of the gate builds (row 33).
+	p.declare("Unbuilt")
+	p.body("Unbuilt", p.expression("unbuilt-family"))
 	return p
 }
 
