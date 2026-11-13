@@ -232,12 +232,21 @@ const (
 
 // Request is one thing a rule names in step 1.
 type Request[F any] struct {
-	kind    requestKind
-	use     Use[F]
-	role    Role[F]
-	stated  string
-	demands []Demand
-	helper  string
+	kind       requestKind
+	use        Use[F]
+	role       Role[F]
+	stated     string
+	demands    []Demand
+	helper     string
+	conversion bool
+}
+
+// Conversion names a child use that the rule needs for conversion only: the
+// native type does not refer to it. The planner resolves it when the request
+// asks for bindings and leaves it out for types alone (O5, row 20): "Only
+// demanded native actuals need mappings."
+func Conversion[F any](child Use[F]) Request[F] {
+	return Request[F]{kind: childRequest, use: child, conversion: true}
 }
 
 // Reference names a child use the rule needs to refer to.

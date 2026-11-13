@@ -313,7 +313,7 @@ func ParsePlan(serialized []byte) (RepresentationPlan, error) {
 	missing := func(id string) bool { _, ok := p.index[id]; return !ok }
 	for _, n := range data.Nodes {
 		for _, l := range n.Links {
-			if missing(l.Node) {
+			if l.Node != "" && missing(l.Node) {
 				return RepresentationPlan{}, fmt.Errorf("%w: node %s links to a node the plan does not hold", ErrIncomplete, n.ID)
 			}
 		}

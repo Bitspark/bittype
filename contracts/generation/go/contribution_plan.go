@@ -497,14 +497,14 @@ func (p *cplanner[F, T, R]) run(c *Contribution[F, T, R], subject Subject[F], ke
 	if len(requests) > p.execution.Limits.References {
 		return out, ErrLimit
 	}
-	subjectKey := f.state.symbol + "/"
+	// The subject as an answer is bound to it: its place in its declaration.
+	// The declaration itself is the generic environment, bound apart.
+	subjectKey := "declaration"
 	switch subject.Kind {
 	case UseSubject:
-		subjectKey += occurrencePath(subject.Use.Use.o)
-	case DeclarationSubject:
-		subjectKey += "declaration"
+		subjectKey = occurrencePath(subject.Use.Use.o)
 	case FieldSubject:
-		subjectKey += occurrencePath(subject.Field.Operand.o) + "@" + subject.Field.Role.key
+		subjectKey = occurrencePath(subject.Field.Operand.o) + "@" + subject.Field.Role.key
 	}
 	state := &answerState{}
 	for i, r := range requests {
@@ -542,6 +542,17 @@ func (p *cplanner[F, T, R]) run(c *Contribution[F, T, R], subject Subject[F], ke
 			link.Kind, link.Need = "child", "reference"
 			if len(r.demands) > 0 {
 				link.Need = "evidence"
+			}
+			if r.conversion {
+				link.Need = "conversion"
+				if !p.bindings {
+					// Types alone: the dependency is not demanded. The link
+					// records that the rule named it and that nothing was planned.
+					link.Need = "conversion, not demanded"
+					state.issued, state.expected = append(state.issued, nil), append(state.expected, answerBinding{})
+					out.links, out.deps, out.views = append(out.links, link), append(out.deps, resolved[T]{binder: -1}), append(out.views, DependencyView[T]{})
+					continue
+				}
 			}
 			p.edges = append(p.edges, len(r.demands) > 0)
 			dep, err = p.use(r.use, f, depth+1)

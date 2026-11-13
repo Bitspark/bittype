@@ -213,3 +213,110 @@ the roles were added).
 | `TestPrototypeStage1DecisionTheSourceDoesNotDetermine` | With a fixture whose member names come from its configuration, the plan entry and the native type agree, and an entry rebuilt from the source is detected | That no second pass can be written. The mutant is a pass of the test, not of the kernel |
 | `TestPrototypePayloadBootstrap` | For eleven vocabulary packages: the committed module and pin are what the schema source lowers to, the committed Go type is what bittype generates with the prototype's own Go contributions, every listed value round-trips | TypeScript types of a payload (none are generated); a payload field the existing families cannot type |
 | `TestProductionArchitecture` | Green with the new roles | That the roles are right |
+
+## Stage 2: evidence (gate line 2, rows 3, 5, 7, 8, 9; guarantee 4)
+
+**Built.** Evidence kinds, facts, demands, answers with their five outcomes,
+binder requirements with their discharge at an application, the two refusals
+of row 9, and the binding of an answer. Two consumers of the evidence path:
+the declaration contribution (its body's record form) and the fixture family
+`evidenceList` (`integration/go/prototype_fixtures_test.go`). A second set of
+fixture contributions for the independent fixture source
+(`integration/go/prototype_independent_test.go`, with
+`integration/go/testdata/generationfixture/contributions.go`).
+
+**What the page left open and what was chosen.**
+
+- *The form of an evidence kind.* `EvidenceKind{Identity, Version}`: a
+  qualified identity and a version, a plain comparable value. Its owner is a
+  vocabulary of the target or product (`model.EvidenceRecordForm` in the Go
+  and the TypeScript model). A fact is `Fact{Kind, Outcome, Content}` with the
+  outcome proved, refuted or exhausted. `Content` is a string that the kind's
+  owner reads and the kernel carries unread. A rule states facts in
+  `Decision.Facts`; a contribution declares them in `Contribution.Facts`.
+- *How a rule could present an answer that was not issued to it.* An answer
+  is a value (`Answer`) with unexported fields. A rule reads it only through
+  the step it was issued to: `DecideStep.Present(dependency, answer)`.
+  `DecideStep.Evidence(dependency, kind)` is the ordinary way and calls
+  `Present` with the step's own answer. An answer is bound, by value, to the
+  asking contribution's reference, the subject's place in its declaration,
+  the index of the dependency, the dependency's whole contribution reference
+  and the generic environment (the declaration being planned). A rejected
+  answer fails the planning of the subject even if the rule drops the error.
+  The binding is by value so that the test can keep everything equal but one
+  part. An answer kept from an identical run would be read; it says the same.
+- *A binder's requirement: in which record, in what form, how found.*
+  - **Declared** by the selected representation contribution, in step 1, with
+    the demand itself: `Demand{Kind, Require: true}`. Where the operand turns
+    out to be bound to a binder, the planner records "this binder's actuals
+    must prove this kind".
+  - **Stated** in the frozen record of the rule that declared it, as the
+    answer `deferred, required` on the link, and collected on the node of the
+    open declaration that binds the binder (`PlanNode.Requirements`:
+    binder index and kind).
+  - **Found** by the planner on the open declaration, which it has planned
+    before it plans any application of it.
+  - **Discharged** by the planner at each application
+    (`cplanner.application`): it reads the facts of what was selected for the
+    actual. Proved: recorded in `PlanApplication.Discharges` with the actual's
+    contribution reference. Refuted: "requirement unsatisfied". Unknown or
+    exhausted: "requirement unresolved". An actual that is itself bound to a
+    binder moves the requirement to that binder (outcome `deferred`).
+  - Without `Require` the answer about a binder is `deferred` and establishes
+    nothing.
+- *The value of the two refusals of row 9.* Both are class "unsupported",
+  owner `bittype/kernel`, with the reasons `recursive reference` and
+  `evidence cycle`. Unsupported, because a later slice can admit both inputs:
+  #164 for the first, "a declared evaluation discipline" for the second.
+
+**Findings of this stage.**
+
+- **F5. "a rule that reads one application to decide fails" (rows 7, 8).**
+  The kernel gives no rule an application to read: no rule runs for an
+  application, and inside `Page<T>` the answer about `T` is `deferred`
+  whatever `Page` is applied to. What a rule can still do is decide
+  differently on `deferred` than on `proved`. The kernel cannot refuse that:
+  it does not know what a rule does with an answer. So "fails" can only mean
+  "fails the coherence test of its family". Built so: the test compares
+  `Page<text>` with the written-out record, is green for the rule that
+  declares the requirement and red for the rule that makes a choice for want
+  of proof inside the generic only.
+- **F6. What makes a cycle an evidence cycle.** The page: "A rule that
+  demands evidence from a dependency whose own decision demands evidence from
+  that rule cannot be planned." The declaration contribution itself demands
+  evidence about its body (row 3). Read as "a cycle with an evidence demand
+  on it", every recursive declaration would be an evidence cycle, and the two
+  refusals of row 9 could not be told apart. Built: a cycle is an evidence
+  cycle when *every* open request on it demands evidence, because then no
+  decision on it can finish. With one reference on it, it is a recursive
+  reference, which placeholders would admit.
+- **F7. The horos source cannot state the recursion cases.** The horos
+  analysis publishes no sort for a recursive declaration, so the horos source
+  refuses `type Node = { next?: Node; }` as "required semantic evidence is
+  not established" before the kernel meets the recursion. The test of row 9
+  runs on the independent fixture source. This is seen and not assessed
+  beyond that.
+- **F8. A request for conversion only.** O5 lets a request for types alone
+  succeed without what only conversion needs, and row 20 keeps an omitted
+  argument "for conversion". For a declaration that the policy represents,
+  the planner knows from the native convention which actuals the native type
+  demands. For an exact contribution the rule names its requests itself, and
+  it does not know the products. So a request needs a third need beside
+  "reference" and "evidence": "for conversion only". Built as
+  `generation.Conversion(child)`: resolved when bindings are asked for, left
+  out for types alone, and recorded on the link either way. The page's step 1
+  names two needs.
+
+**Tests** (`integration/go/prototype_stage2_test.go`; evidence
+`stage2-run2.txt`, and `stage2-run1.txt` for the first run, in which the
+recursion test failed for the reason of F7).
+
+| Test | Shows | Does not show |
+| --- | --- | --- |
+| `...Stage2FixtureFamilyDecidesOnEvidence` | A rule gets a typed answer about what was selected for its operand before it decides, and its native type follows it: `[]string` where the fact is declared, `[][]string` where nothing is stated | That the fact is true (AC-05) |
+| `...Stage2GenericAndWrittenOutAgree` | With a declared requirement, `Page<text>` and the written-out record have the same native type, the open declaration records the requirement and the application its discharge. Red for a rule that decides differently inside the generic | That the kernel refuses the incoherent rule (F5) |
+| `...Stage2FiveOutcomes` | Each of the five outcomes reaches a rule as its own answer | A check that reaches a limit: "exhausted" is stated, nothing computes |
+| `...Stage2DeclarationPolicyAsksAboutItsBody` | The declaration contribution decides nominal or alias from the answer about its body and reads no payload of the record | A record under another contribution |
+| `...Stage2RevisionIsIdentityAndNoPayload` | Two representation revisions: equal payloads, different nodes, also for the node that depends on it | What a revision means |
+| `...Stage2CycleAndRecursionAreToldApart` | `Rec = Page<Rec>` and `Loop = probe(Loop)` are refused as unsupported with two reasons, on the independent source | Anything of recursion beyond its refusal |
+| `...Stage2AnswersAreBoundToTheirDependency` | An answer for another dependency, another environment, another representation revision or another meaning revision of the dependency is rejected. Each is red under a kernel without that one comparison | That a rule cannot act on what it remembers without presenting it |
