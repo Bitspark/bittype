@@ -1,0 +1,3 @@
+module bittype.payload.typescript_to_horos_objecttype;
+
+type Payload = { members: list<text>; };
