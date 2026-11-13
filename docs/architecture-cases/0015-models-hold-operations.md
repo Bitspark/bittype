@@ -152,7 +152,8 @@ The design page gives it in full. In short:
 3. The grammar tables go to the model side, each into its language's
    syntax vocabulary, with predicates named by identity. Their type goes to
    the agnostic syntax model (slice S3). The word lists leave the lexical
-   helpers for the same syntax vocabularies (slice S4).
+   helpers for a lexical part below each language's syntax model, which
+   imports no node kinds (slice S4).
 4. The typed readers and the contract identities leave the semantic
    vocabularies, and the symbol packages split (slice S5).
 5. The plain records of the carriers part from admission, and language
@@ -198,8 +199,8 @@ migration's branch and are not deferred.
 ## Correction and qualification status
 
 This change documents the violation and the designed correction. No code
-has changed. The names below the two roots are decided (M10, M11 and M14
-on #305). The form-table type is a sketch that slice S2 makes final (M13).
+has changed. The names below the two roots are decided (M10, M11, M14 and
+M19 on #305). The form-table type is a sketch that slice S2 makes final (M13).
 The classification of each package is the design page's
 table, made by reading. Each slice updates this case with what it delivered,
 its qualification and its limits.

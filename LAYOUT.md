@@ -21,7 +21,7 @@ implemented.** The hierarchy and the role table below describe `main` as it
 is, and no path in this layout has changed. The
 [order of work](docs/models-and-operations.md#10-the-order-of-work) says which
 slice moves what. That page gives the names below the two roots (decisions
-M10, M11 and M14 on #305).
+M10, M11, M14 and M19 on #305).
 [bittype/ACX-015](docs/architecture-cases/0015-models-hold-operations.md)
 records the violation that stays open until the slices are done.
 
@@ -184,7 +184,7 @@ under both roots: names and declared tables under `model`, and identities
 that are values of a contract package's type under `ops`. A language's typed
 readers, typed constructors and symbol admission get a role of their own,
 which that page calls public part. A lexical helper imports its own
-language's syntax vocabulary, which holds the word lists. A pair's contribution
+language's lexical part, which holds the word lists and no node kind. A pair's contribution
 vocabulary names two languages, as a mapping does. Not implemented: the table
 below gives the roles of `main` as they are.
 
