@@ -3,6 +3,8 @@ package rust
 import (
 	"bytes"
 	"encoding/json"
+	"io"
+	"slices"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/semantics/go"
@@ -32,10 +34,6 @@ type Field struct {
 	Type        Type
 	Declaration Declaration
 	Sites       []ast.NodeRef
-}
-type fieldInfo struct {
-	Name   string
-	Entity semantics.EntityID
 }
 
 // Visibility is a declared visibility in the compiler's resolved form: public,
@@ -172,14 +170,18 @@ func (d Declaration) Default() Type {
 
 // Visibility reads the declared visibility of a captured item or field. It
 // fails with ErrMissingFact when the graph has no such fact for the
-// declaration, more than one, or one in another form. A declaration without
-// the fact is never reported as private.
+// declaration, more than one, or one in another form. The form is a public
+// term without an operand or a restricted term with one, a module, and
+// neither carries data. A declaration without the fact is never reported as
+// private.
 func (d Declaration) Visibility() (Visibility, error) {
 	term, err := d.fact(DeclaredVisibilityRelation())
 	if err != nil {
 		return Visibility{}, err
 	}
 	switch {
+	case string(term.Data) != "null":
+		// Data in either term is another form.
 	case term.Operator == PublicOperator() && len(term.Operands) == 0:
 		return Visibility{Public: true}, nil
 	case term.Operator == RestrictedOperator() && len(term.Operands) == 1:
@@ -195,27 +197,54 @@ func (d Declaration) Visibility() (Visibility, error) {
 }
 
 // Effective reads the effective fact of a captured item. It fails with
-// ErrMissingFact like Visibility, and also for an audience or a path that this
-// reader does not know.
+// ErrMissingFact like Visibility. The form is one object with the members
+// Audience, Path and Nameable, each once and spelled so, and nothing after
+// it. An audience or a path that this reader does not know fails too.
 func (d Declaration) Effective() (Effective, error) {
 	term, err := d.fact(EffectiveVisibilityRelation())
 	if err != nil {
 		return Effective{}, err
 	}
-	var data struct {
-		Audience string
-		Path     string
-		Nameable *bool
-	}
-	decoder := json.NewDecoder(bytes.NewReader(term.Data))
-	decoder.DisallowUnknownFields()
-	if term.Operator != EffectiveVisibilityOperator() || len(term.Operands) != 0 || decoder.Decode(&data) != nil {
+	values, formed := members(term.Data, "Audience", "Path", "Nameable")
+	if term.Operator != EffectiveVisibilityOperator() || len(term.Operands) != 0 || !formed {
 		return Effective{}, ErrMissingFact
 	}
-	if data.Nameable == nil || data.Audience != AudienceAnotherCrate || data.Path != PathDefinition {
+	var audience, path *string
+	var nameable *bool
+	if json.Unmarshal(values[0], &audience) != nil || json.Unmarshal(values[1], &path) != nil || json.Unmarshal(values[2], &nameable) != nil {
 		return Effective{}, ErrMissingFact
 	}
-	return Effective{Audience: data.Audience, Path: data.Path, Nameable: *data.Nameable}, nil
+	if audience == nil || path == nil || nameable == nil || *audience != AudienceAnotherCrate || *path != PathDefinition {
+		return Effective{}, ErrMissingFact
+	}
+	return Effective{Audience: *audience, Path: *path, Nameable: *nameable}, nil
+}
+
+// members reads data as one JSON object that has exactly the named members,
+// each once and spelled exactly, with nothing after the object. It returns
+// their values in the order of names. The standard decoder alone takes a
+// member in another case, a repeated member and a second value.
+func members(data []byte, names ...string) ([]json.RawMessage, bool) {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	if open, err := decoder.Token(); err != nil || open != json.Delim('{') {
+		return nil, false
+	}
+	values := make([]json.RawMessage, len(names))
+	for decoder.More() {
+		key, _ := decoder.Token()
+		name, _ := key.(string)
+		at := slices.Index(names, name)
+		if at < 0 || values[at] != nil || decoder.Decode(&values[at]) != nil {
+			return nil, false
+		}
+	}
+	if _, err := decoder.Token(); err != nil {
+		return nil, false
+	}
+	if _, err := decoder.Token(); err != io.EOF || slices.ContainsFunc(values, func(value json.RawMessage) bool { return value == nil }) {
+		return nil, false
+	}
+	return values, true
 }
 
 // PrivateInterface returns the declarations that the compiler observed in the
@@ -292,14 +321,28 @@ func (t Type) Fields() ([]Field, bool) {
 	if term.Operator != FieldsOperator() {
 		return nil, false
 	}
-	var metadata []fieldInfo
-	if json.Unmarshal(term.Data, &metadata) != nil || len(metadata) != len(term.Operands) {
+	// The form is a list with one object for each operand, and each object
+	// has exactly the members Name and Entity.
+	var listed []json.RawMessage
+	if json.Unmarshal(term.Data, &listed) != nil || listed == nil || len(listed) != len(term.Operands) {
 		return nil, false
 	}
-	out := make([]Field, len(metadata))
-	for i, f := range metadata {
-		e, _ := t.owner.graph.Entity(f.Entity)
-		out[i] = Field{Name: f.Name, Type: Type{t.owner, term.Operands[i].Term}, Declaration: Declaration{t.owner, f.Entity}, Sites: e.Declarations}
+	out := make([]Field, len(listed))
+	for i, field := range listed {
+		values, formed := members(field, "Name", "Entity")
+		if !formed {
+			return nil, false
+		}
+		var name *string
+		var entity *semantics.EntityID
+		if json.Unmarshal(values[0], &name) != nil || json.Unmarshal(values[1], &entity) != nil || name == nil || entity == nil {
+			return nil, false
+		}
+		e, found := t.owner.graph.Entity(*entity)
+		if !found {
+			return nil, false
+		}
+		out[i] = Field{Name: *name, Type: Type{t.owner, term.Operands[i].Term}, Declaration: Declaration{t.owner, *entity}, Sites: e.Declarations}
 	}
 	return out, true
 }

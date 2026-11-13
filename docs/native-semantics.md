@@ -601,25 +601,71 @@ executable locations are configuration of the collaborator.
 **13 November 2026** ([#278](https://github.com/Bitspark/bittype/issues/278),
 rows 28 and 35 of [research 0016](../research-docs/0016-native-files-placement.md)).
 `rust.Environment` states what the captured crate is compiled under. A consumer
-states every field, and no field has a default. Each field admits one value in
-this profile. Another value is refused before the compiler runs, and no field
-is accepted and ignored. Later coverage admits more values of the same fields
-and adds no constructor.
+states every field, and no field has a default. Each field has a vocabulary,
+and of that vocabulary this profile covers one value. A refusal comes before
+the compiler runs, and no field is accepted and ignored. Later coverage admits
+more values of the same fields and adds no constructor.
 
-| Field | This profile covers | Another value |
-| --- | --- | --- |
-| `Edition` | `2024` (`rust.Edition2024`) | Unsupported coverage |
-| `Target` | `x86_64-unknown-linux-gnu` (`rust.TargetLinuxX64`) | Unsupported coverage |
-| `Crate.Kind` | `lib` (`rust.KindLibrary`) | Unsupported coverage |
-| `Crate.Name` | An ASCII identifier that is no keyword of the edition | Another name of letters, digits and underscores, which the compiler takes as a crate name: unsupported coverage. Any other text: invalid input |
-| `Dependencies` | None. The sysroot is the only other crate | Unsupported coverage |
+| Field | Its vocabulary. Another text is invalid input | This profile covers | Another value of the vocabulary |
+| --- | --- | --- | --- |
+| `Edition` | The four editions that the pinned compiler takes: `2015`, `2018`, `2021`, `2024` | `2024` (`rust.Edition2024`) | Unsupported coverage |
+| `Crate.Kind` | The seven crate types that the pinned compiler takes: `lib`, `rlib`, `staticlib`, `dylib`, `cdylib`, `bin`, `proc-macro` | `lib` (`rust.KindLibrary`) | Unsupported coverage |
+| `Crate.Name` | What the pinned compiler takes as a crate name: a text that is not empty, of characters that are alphanumeric or an underscore | An ASCII identifier that is no keyword of the edition and not the name of a crate that the sysroot loads | Unsupported coverage |
+| `Target` | A well-formed target text | `x86_64-unknown-linux-gnu` (`rust.TargetLinuxX64`) | Unsupported coverage |
+| `Dependencies` | Each name is judged as a crate name | None. The sysroot is the only other crate | Unsupported coverage |
 
-Unsupported coverage is `rust.ErrUnsupported`: the value is meaningful Rust, and
-a later profile may admit it unchanged. Invalid input is
-`semantic.ErrInvalidRequest`: an empty field, a text that is no crate name, and
-settings that `ConfigurationFor` returns for no environment. No refusal is
-both. Validity is judged before coverage, over every field, so an environment
-with an invalid and an unsupported value is invalid.
+Unsupported coverage is `rust.ErrUnsupported`: the value is well formed under
+the field's vocabulary, this profile does not cover it, and a later profile may
+admit it unchanged. Invalid input is `semantic.ErrInvalidRequest`: a text
+outside the field's vocabulary, which includes an empty field, and settings
+that `ConfigurationFor` returns for no environment. No refusal is both.
+Validity is judged before coverage, over every field and every dependency, so
+an environment with an invalid and an unsupported value is invalid.
+
+**The vocabularies are the pinned compiler's,** read in the source of rustc
+1.90.0 and put to that compiler by `TestRustEnvironmentEqualsCompiler`, which
+compares its answers with `ConfigurationFor`. The Rust vocabulary declares each
+once, beside the supported values, in `semantics/rust/go/environment.go` and
+`cratename.go`.
+
+- **An edition.** `compiler/rustc_span/src/edition.rs:114-126` names five. The
+  stable compiler refuses the fifth, `future`
+  (`compiler/rustc_session/src/config.rs:2127-2137`), so it is invalid here,
+  like `2027` and `banana`.
+- **A crate kind.** `compiler/rustc_session/src/config.rs:2953-2980` names
+  eight. The stable compiler refuses the eighth, `sdylib`
+  (`compiler/rustc_interface/src/passes.rs:271-272`). The compiler's option
+  also takes a list such as `lib,rlib`. A list is no crate kind, and the field
+  states one.
+- **A crate name.** `compiler/rustc_session/src/output.rs:57-79`: the name is
+  not empty, and each character satisfies `c.is_alphanumeric() || c == '_'`,
+  with `char::is_alphanumeric` of `library/core/src/char/methods.rs:922-924`
+  (`is_alphabetic` at 778-783, `is_numeric` at 1003-1008). So `x²` and `ⅷ` are
+  crate names, and `a-b` and a name with a combining mark are not. The
+  characters are the compiler's own table, 144435 of them: a program built by
+  the pinned compiler printed it, and the test builds that program again and
+  compares every code point. Go's `unicode` package is not used, because its
+  tables follow the Go release.
+- **A crate of the sysroot.** A captured crate may not have the name of a crate
+  that the sysroot loads for it: `std`, `core`, `alloc` and the sixteen crates
+  that the standard library depends on. The graph names an entity by its crate
+  and its path, so with the crate name `core` two entities are named `core`
+  and a lookup of the crate root is refused as ambiguous. The list is what the
+  compiler reports as loaded for this profile's target. The test reads the
+  same list from the compiler's dependency file and checks it against every
+  crate of the sysroot's library directory, in both directions. A crate that
+  the sysroot holds and does not load, such as `test` and `proc_macro`, and a
+  name that only starts like one, such as `corelib`, are admitted.
+- **A target** is the one field where invalid and unsupported cannot be told
+  apart by what a compiler has. The compiler takes any text as the name of a
+  target, and a text that ends in `.json` as the path of a file
+  (`compiler/rustc_session/src/config.rs:2348-2359`). The vocabulary holds no
+  list of targets. A well-formed target text is not empty, consists of ASCII
+  letters, digits, `_`, `-` and `.`, and does not end in `.json`. That is the
+  alphabet of the 290 targets of the pinned compiler, which the test checks.
+  A well-formed text other than the supported target is unsupported, whether
+  it names a target of some compiler, like `aarch64-unknown-linux-gnu`, or
+  none, like `banana`. A path is invalid: an environment names no file.
 
 **The crate name is the consumer's.** The compiler analyzes under
 `Crate.Name`, so every compiler path of the model starts with it, as the
@@ -820,6 +866,17 @@ parameters and sysroot declarations carry neither fact, because Rust gives
 none of them a visibility modifier of its own, and a reader that is asked for
 one fails. Fields carry the declared fact only.
 
+**The forms, exactly.** A declared term is `public` without an operand or
+`restricted` with one operand, a module, and carries no data. The data of an
+effective term is one object with the members `Audience`, `Path` and
+`Nameable`, each once and spelled so, with a text, a text and a truth value,
+and nothing after the object. The data of a `fields` term is a list with one
+object for each field, each with exactly the members `Name` and `Entity`. A
+repeated member, a member in another case, an unknown member and data after
+the value are another form, and the reader fails. The helper spells these
+member names itself, and the tests that run it read every one of them through
+these readers.
+
 **An interface that names a more private type** is the Rust-owned rule of row
 24. `pub struct Public { pub field: Hidden } struct Hidden {}` is legal Rust,
 and another crate cannot use the type of that field. The compiler reports it
@@ -831,7 +888,11 @@ The helper receives its own diagnostics, withholds every warning from its
 error stream and publishes each forced one as a `private-interface` fact: on
 the declaration that the compiler reports it at, which here is the field, with
 a reference to the more private declaration. The compiler reports it for a
-field of a struct, of a tuple struct and of a variant, and for an alias.
+field of a struct, of a tuple struct and of a variant, and for an alias. For
+the default of a type parameter, `pub struct P<T = Hidden>`, it reports the
+item itself, and the fact is on `P`. The bridge bounds the helper's error
+stream, so the withholding is what lets a record with hundreds of such fields
+resolve, and a test resolves one.
 
 - **The source stays analyzed.** Coverage, bindings and validity hold, and the
   graph is published. The profile keeps analyzing hand-written Rust that has
@@ -846,9 +907,27 @@ field of a struct, of a tuple struct and of a variant, and for an alias.
 - **A diagnostic the helper cannot place** on two captured declarations is
   unsupported coverage without a graph. Dropping it would publish a
   declaration as usable that the compiler reported.
+- **The fact follows the declared visibility of the type, and that is its
+  limit.** In `mod m { pub struct D {} } pub struct A { pub d: m::D }` the
+  type `D` is declared public, so the compiler reports nothing and the field
+  carries no fact. Another crate still cannot name `D`, and the effective fact
+  of `D` says so. A Rust Files stage that decides whether a public record is
+  usable therefore needs both: no `private-interface` fact on the
+  declarations of the record, and the effective fact of every declaration in
+  its public representation.
+  [The naming design](naming.md#exposure-and-its-audience) states that rule:
+  an unexposed source declaration in the body of an exposed one is refused
+  "because a caller in another package or crate could not construct the
+  value".
 - **A limit.** The compiler reports a bound on a more private trait,
   `pub struct Boxed<T: Hidden>`, with another lint, `private_bounds`. The
   helper does not force it and publishes no fact for it.
+- **A limit.** The helper does not report which facts it writes. The helper
+  profile is a setting that the Go side states alone, so a helper binary of
+  an earlier change is caught today only because the request gained a member
+  that the earlier helper refuses. It goes with the next change of the helper,
+  the binding of `bool` in
+  [#276](https://github.com/Bitspark/bittype/issues/276).
 
 `rust.Open(analyzed)` admits the exact completed analysis receipt of a
 supported environment and reads the graph without a compiler invocation.

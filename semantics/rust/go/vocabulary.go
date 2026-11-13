@@ -28,9 +28,9 @@ const HelperProfile = "captured-types-2"
 var ErrForeign = errors.New("foreign or missing Rust semantic handle")
 var ErrCompiler = errors.New("Rust compiler helper failed")
 
-// ErrUnsupported is unsupported coverage: the input is meaningful Rust and
-// this profile does not cover it. A later profile may admit the same input
-// unchanged. It never means invalid input.
+// ErrUnsupported is unsupported coverage: the input is well formed under the
+// vocabulary of this profile, and the profile does not cover it. A later
+// profile may admit the same input unchanged. It never means invalid input.
 var ErrUnsupported = errors.New("Rust semantics outside supported fragment")
 
 // ErrMissingFact reports that a graph lacks a fact its reader requires, or

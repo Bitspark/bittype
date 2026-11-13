@@ -11,11 +11,15 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"reflect"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
 	"testing"
+	"unicode"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
@@ -533,6 +537,7 @@ pub type People = Page<Person>;`)
 // helper and run where it is provisioned.
 
 type rsVisibilityCase struct {
+	model    n.Model
 	name     string
 	public   bool
 	scope    string
@@ -544,6 +549,11 @@ type rsVisibilityCase struct {
 func TestRustSemanticItemVisibility(t *testing.T) {
 	m := rsModel(t, `pub struct A {} struct B {} pub(crate) struct C {} mod m { pub struct D {} } pub mod n { pub struct E {} struct F {} }`)
 	root := rsRoot(t, m)
+	// A restriction is the one that was written, which inside a module is not
+	// the enclosing module: G is restricted to the root. Every module around
+	// a declaration counts for the effective fact, not only the nearest: b
+	// and X are declared public inside the private a.
+	deeper := rsModel(t, `pub mod n { pub(crate) struct G {} } mod a { pub mod b { pub struct X {} } }`)
 	for _, c := range []rsVisibilityCase{
 		{name: "A", public: true, nameable: true},
 		{name: "B", scope: ""},
@@ -553,7 +563,16 @@ func TestRustSemanticItemVisibility(t *testing.T) {
 		{name: "n", public: true, nameable: true},
 		{name: "n::E", public: true, nameable: true},
 		{name: "n::F", scope: "n"},
+		{model: deeper, name: "n", public: true, nameable: true},
+		{model: deeper, name: "n::G", scope: ""},
+		{model: deeper, name: "a", scope: ""},
+		{model: deeper, name: "a::b", public: true},
+		{model: deeper, name: "a::b::X", public: true},
 	} {
+		m, root := m, root
+		if c.model.Valid() {
+			m, root = c.model, rsRoot(t, c.model)
+		}
 		d := rsDecl(t, m, "0", c.name)
 		declared, err := d.Visibility()
 		if err != nil {
@@ -825,7 +844,7 @@ func TestRustSemanticPrivateInterface(t *testing.T) {
 
 	// The compiler reports the same for an alias, a tuple field and a variant
 	// field, and once for each more private type.
-	m = rsModel(t, `struct Hidden {} struct Other {} pub type Alias = Hidden; pub struct Tuple(pub Hidden, pub Other); pub enum Choice { Value(Hidden) } pub struct Both { pub field: (Hidden, Other) } pub struct Twice { pub field: (Hidden, Hidden) }`)
+	m = rsModel(t, `struct Hidden {} struct Other {} pub type Alias = Hidden; pub struct Tuple(pub Hidden, pub Other); pub enum Choice { Value(Hidden) } pub struct Both { pub field: (Hidden, Other) } pub struct Twice { pub field: (Hidden, Hidden) } pub struct Defaulted<T = Hidden> { pub value: T } pub type Chosen<T = Other> = Vec<T>;`)
 	hidden, other := rsDecl(t, m, "0", "Hidden").ID(), rsDecl(t, m, "0", "Other").ID()
 	for name, want := range map[string][]semantics.EntityID{
 		"Alias":            {hidden},
@@ -834,6 +853,10 @@ func TestRustSemanticPrivateInterface(t *testing.T) {
 		"Choice::Value::0": {hidden},
 		"Both::field":      {hidden, other},
 		"Twice::field":     {hidden},
+		// For the default of a parameter the compiler reports the item itself.
+		"Defaulted":        {hidden},
+		"Defaulted::value": nil,
+		"Chosen":           {other},
 		"Hidden":           nil,
 	} {
 		observed, err := rsDecl(t, m, "0", name).PrivateInterface()
@@ -848,6 +871,38 @@ func TestRustSemanticPrivateInterface(t *testing.T) {
 		slices.Sort(want)
 		if !slices.Equal(got, want) {
 			t.Errorf("%s: observed %v, want %v", name, got, want)
+		}
+	}
+
+	// The limit of the fact: it follows the declared visibility of the type.
+	// D is declared public, so the field carries no observation, although
+	// another crate cannot name D. The effective fact of D says that.
+	m = rsModel(t, `mod m { pub struct D {} } pub struct A { pub d: m::D }`)
+	if observed, err := rsDecl(t, m, "0", "A::d").PrivateInterface(); err != nil || len(observed) != 0 {
+		t.Error("a public type in a private module is observed", observed, err)
+	}
+	if effective, err := rsDecl(t, m, "0", "m::D").Effective(); err != nil || effective.Nameable {
+		t.Error("the type of that field is nameable", effective, err)
+	}
+
+	// The helper withholds the forced warnings from its error stream, which
+	// the bridge bounds. A record with this many such fields resolves, and
+	// every field has its observation.
+	const many = 600
+	var text strings.Builder
+	text.WriteString("struct Hidden {} pub struct Wide {")
+	for i := 0; i < many; i++ {
+		fmt.Fprintf(&text, " pub f%d: Hidden,", i)
+	}
+	text.WriteString(" }")
+	m = rsModel(t, text.String())
+	fields, ok := rsType(t, m, "Wide").Fields()
+	if !ok || len(fields) != many {
+		t.Fatal("the wide record", len(fields), ok)
+	}
+	for _, field := range fields {
+		if observed, err := field.Declaration.PrivateInterface(); err != nil || len(observed) != 1 {
+			t.Fatal(field.Name, observed, err)
 		}
 	}
 }
@@ -1003,5 +1058,192 @@ func TestRustSemanticEarlierProfileIsRefused(t *testing.T) {
 	}
 	if _, err := n.Open(earlier); !errors.Is(err, semantic.ErrInvalidRequest) {
 		t.Error("an analysis receipt of the earlier profile was opened", err)
+	}
+}
+
+// rsRustc runs the pinned compiler on a one-line source and reports whether
+// it took the arguments. Its answer is the vocabulary that the environment
+// follows.
+func rsRustc(t *testing.T, arguments ...string) (bool, string) {
+	t.Helper()
+	directory := t.TempDir()
+	source := filepath.Join(directory, "source.rs")
+	if err := os.WriteFile(source, []byte("fn main() {}\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	command := exec.Command(filepath.Join(rsCompiler(t).SysrootPath, "bin", "rustc"), append(arguments, "-A", "warnings", "--out-dir", directory, source)...)
+	output, err := command.CombinedOutput()
+	var exit *exec.ExitError
+	if err != nil && !errors.As(err, &exit) {
+		t.Fatal(err)
+	}
+	return err == nil, string(output)
+}
+
+// The generator of the crate-name table of semantics/rust/go/cratename.go: it
+// prints, as ranges, every code point that the compiler's rule for a
+// character of a crate name takes.
+const rsCrateNameCharacters = `fn main() {
+    let mut start: Option<u32> = None;
+    for u in 0..=0x110000u32 {
+        let ok = char::from_u32(u).map_or(false, |c| c.is_alphanumeric() || c == '_');
+        match (ok, start) {
+            (true, None) => start = Some(u),
+            (false, Some(s)) => { println!("{:X}..{:X}", s, u - 1); start = None; }
+            _ => {}
+        }
+    }
+}
+`
+
+// The environment's vocabulary is the pinned compiler's. This puts the same
+// texts to the compiler and to the environment and compares the answers: a
+// text the compiler takes is admitted or unsupported, and a text it refuses
+// is invalid. For a crate name the comparison covers every code point.
+func TestRustEnvironmentEqualsCompiler(t *testing.T) {
+	invalid := func(change func(*n.Environment)) bool {
+		t.Helper()
+		environment := rsEnvironment()
+		change(&environment)
+		_, err := n.ConfigurationFor(environment)
+		if err != nil && errors.Is(err, semantic.ErrInvalidRequest) == errors.Is(err, n.ErrUnsupported) {
+			t.Fatal("a refusal that is not exactly one of invalid and unsupported", err)
+		}
+		return errors.Is(err, semantic.ErrInvalidRequest)
+	}
+	base := []string{"--emit", "metadata", "--edition", "2024"}
+
+	// Every character of a crate name.
+	directory := t.TempDir()
+	generator := filepath.Join(directory, "characters.rs")
+	if err := os.WriteFile(generator, []byte(rsCrateNameCharacters), 0600); err != nil {
+		t.Fatal(err)
+	}
+	program := filepath.Join(directory, "characters")
+	if output, err := exec.Command(filepath.Join(rsCompiler(t).SysrootPath, "bin", "rustc"), "-O", "-o", program, generator).CombinedOutput(); err != nil {
+		t.Fatal(err, string(output))
+	}
+	printed, err := exec.Command(program).Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	taken := map[rune]bool{}
+	for _, line := range strings.Fields(string(printed)) {
+		var low, high rune
+		if _, err := fmt.Sscanf(line, "%X..%X", &low, &high); err != nil {
+			t.Fatal(line, err)
+		}
+		for r := low; r <= high; r++ {
+			taken[r] = true
+		}
+	}
+	if len(taken) < 100000 {
+		t.Fatal("the compiler's set of crate name characters", len(taken))
+	}
+	differ := 0
+	for r := rune(0); r <= unicode.MaxRune; r++ {
+		if r >= 0xD800 && r <= 0xDFFF {
+			continue
+		}
+		if invalid(func(e *n.Environment) { e.Crate.Name = "a" + string(r) }) == taken[r] {
+			if differ++; differ <= 10 {
+				t.Errorf("U+%04X in a crate name: the compiler takes it: %v", r, taken[r])
+			}
+		}
+	}
+	if differ != 0 {
+		t.Errorf("%d characters of a crate name differ from the compiler", differ)
+	}
+
+	// Whole crate names, put to the compiler as it is called.
+	for _, name := range []string{"pages", "_", "__", "1a", "é", "x²", "ⅷ", "٣", "a٣", "ª", "ⓐ", "日本語", "self", "crate", "Self", "type", "std", "core", "test",
+		"", "a-b", "a b", "a.b", "a\u0301", "r#type", "-a", "pages\n", "a/b", "a::b"} {
+		takes, output := rsRustc(t, append(base, "--crate-type", "lib", "--crate-name="+name)...)
+		if takes == invalid(func(e *n.Environment) { e.Crate.Name = name }) {
+			t.Errorf("crate name %q: the compiler takes it: %v\n%s", name, takes, output)
+		}
+		// A dependency's name is judged by the same rule.
+		if takes == invalid(func(e *n.Environment) { e.Dependencies = []n.Dependency{{Name: name}} }) {
+			t.Errorf("dependency name %q: the compiler takes it as a crate name: %v", name, takes)
+		}
+	}
+
+	// Editions and crate kinds.
+	for _, edition := range []string{"2015", "2018", "2021", "2024", "future", "2027", "2024 ", "banana", ""} {
+		takes, output := rsRustc(t, "--emit", "metadata", "--crate-type", "lib", "--crate-name", "pages", "--edition="+edition)
+		if takes == invalid(func(e *n.Environment) { e.Edition = edition }) {
+			t.Errorf("edition %q: the compiler takes it: %v\n%s", edition, takes, output)
+		}
+	}
+	for _, kind := range []string{"lib", "rlib", "staticlib", "dylib", "cdylib", "bin", "proc-macro", "sdylib", "Lib", "banana", ""} {
+		takes, output := rsRustc(t, append(base, "--crate-name", "pages", "--crate-type="+kind)...)
+		if takes == invalid(func(e *n.Environment) { e.Crate.Kind = kind }) {
+			t.Errorf("crate kind %q: the compiler takes it: %v\n%s", kind, takes, output)
+		}
+	}
+
+	// Every target the compiler has is a well-formed target text.
+	targets, err := exec.Command(filepath.Join(rsCompiler(t).SysrootPath, "bin", "rustc"), "--print", "target-list").Output()
+	if names := strings.Fields(string(targets)); err != nil || len(names) < 100 || !slices.Contains(names, n.TargetLinuxX64) {
+		t.Fatal("the compiler's targets", err, len(names))
+	} else {
+		for _, target := range names {
+			if invalid(func(e *n.Environment) { e.Target = target }) {
+				t.Errorf("the compiler's target %q is no well-formed target here", target)
+			}
+		}
+	}
+
+	// A captured crate named like a crate that the sysroot loads for it is
+	// unsupported, and one named like another crate of the sysroot is
+	// admitted. The compiler lists the crates it loaded in its dependency file.
+	library := filepath.Join(rsCompiler(t).SysrootPath, "lib", "rustlib", n.TargetLinuxX64, "lib")
+	crate := regexp.MustCompile(`^lib([A-Za-z0-9_]+)-[0-9a-f]+\.(rlib|rmeta)$`)
+	dependencies := t.TempDir()
+	empty := filepath.Join(dependencies, "pages.rs")
+	if err := os.WriteFile(empty, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	command := exec.Command(filepath.Join(rsCompiler(t).SysrootPath, "bin", "rustc"), "-Z", "binary-dep-depinfo", "--emit", "dep-info,metadata", "--edition", "2024", "--crate-type", "lib", "--crate-name", "pages", "--target", n.TargetLinuxX64, "--out-dir", dependencies, empty)
+	command.Env = append(os.Environ(), "RUSTC_BOOTSTRAP=1")
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatal(err, string(output))
+	}
+	listed, err := os.ReadFile(filepath.Join(dependencies, "pages.d"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	loaded := map[string]bool{}
+	for _, word := range strings.Fields(string(listed)) {
+		if match := crate.FindStringSubmatch(filepath.Base(strings.TrimSuffix(word, ":"))); match != nil && filepath.Dir(strings.TrimSuffix(word, ":")) == library {
+			loaded[match[1]] = true
+		}
+	}
+	if !loaded["std"] || !loaded["core"] || !loaded["alloc"] || len(loaded) < 3 {
+		t.Fatal("the crates the compiler loaded", loaded)
+	}
+	entries, err := os.ReadDir(library)
+	if err != nil {
+		t.Fatal(err)
+	}
+	present := map[string]bool{}
+	for _, entry := range entries {
+		if match := crate.FindStringSubmatch(entry.Name()); match != nil {
+			present[match[1]] = true
+		}
+	}
+	if len(present) <= len(loaded) {
+		t.Fatal("the crates of the sysroot", len(present), len(loaded))
+	}
+	for name := range present {
+		environment := rsEnvironment()
+		environment.Crate.Name = name
+		_, err := n.ConfigurationFor(environment)
+		if loaded[name] && !errors.Is(err, n.ErrUnsupported) {
+			t.Errorf("crate name %s, which the sysroot loads: %v, want unsupported", name, err)
+		}
+		if !loaded[name] && err != nil {
+			t.Errorf("crate name %s, which the sysroot does not load: %v", name, err)
+		}
 	}
 }

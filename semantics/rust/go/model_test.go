@@ -63,9 +63,13 @@ func TestDeclaredVisibilityReader(t *testing.T) {
 		terms []semantics.Term
 		facts []semantics.TermID
 	}{
-		"no fact":                                   {[]semantics.Term{public}, nil},
-		"two facts":                                 {[]semantics.Term{public, public}, []semantics.TermID{1, 2}},
-		"the fact of another relation":              {nil, nil},
+		"no fact":                      {[]semantics.Term{public}, nil},
+		"two facts":                    {[]semantics.Term{public, public}, []semantics.TermID{1, 2}},
+		"the fact of another relation": {nil, nil},
+		// The two forms carry no data: the helper writes null.
+		"public with data":                          {[]semantics.Term{expression(PublicOperator(), `{"anything":1}`)}, []semantics.TermID{1}},
+		"public without data":                       {[]semantics.Term{expression(PublicOperator(), ``)}, []semantics.TermID{1}},
+		"restricted with data":                      {[]semantics.Term{reference(rootEntity), expression(RestrictedOperator(), `{"Scope":1}`, 1)}, []semantics.TermID{2}},
 		"an unknown operator":                       {[]semantics.Term{expression(Key("crate"), "null")}, []semantics.TermID{1}},
 		"a reference instead of a form":             {[]semantics.Term{reference(rootEntity)}, []semantics.TermID{1}},
 		"public with an operand":                    {[]semantics.Term{reference(rootEntity), expression(PublicOperator(), "null", 1)}, []semantics.TermID{2}},
@@ -95,6 +99,9 @@ func TestEffectiveVisibilityReader(t *testing.T) {
 	for data, nameable := range map[string]bool{
 		`{"Audience":"another-crate","Path":"definition","Nameable":true}`:  true,
 		`{"Audience":"another-crate","Path":"definition","Nameable":false}`: false,
+		// The order of the members and the space between them are no part of the form.
+		`{"Nameable":true,"Path":"definition","Audience":"another-crate"}`:                true,
+		` { "Audience" : "another-crate" , "Path" : "definition" , "Nameable" : false } `: false,
 	} {
 		want := Effective{Audience: AudienceAnotherCrate, Path: PathDefinition, Nameable: nameable}
 		if e, err := stated(data).Effective(); err != nil || e != want {
@@ -102,14 +109,30 @@ func TestEffectiveVisibilityReader(t *testing.T) {
 		}
 	}
 	for name, data := range map[string]string{
-		"no answer":         `{"Audience":"another-crate","Path":"definition"}`,
-		"no audience":       `{"Path":"definition","Nameable":true}`,
-		"no path":           `{"Audience":"another-crate","Nameable":true}`,
-		"another audience":  `{"Audience":"this-crate","Path":"definition","Nameable":true}`,
-		"another path":      `{"Audience":"another-crate","Path":"re-export","Nameable":true}`,
-		"an unknown member": `{"Audience":"another-crate","Path":"definition","Nameable":true,"Through":1}`,
-		"no object":         `true`,
-		"no data":           ``,
+		"no answer":        `{"Audience":"another-crate","Path":"definition"}`,
+		"no audience":      `{"Path":"definition","Nameable":true}`,
+		"no path":          `{"Audience":"another-crate","Nameable":true}`,
+		"another audience": `{"Audience":"this-crate","Path":"definition","Nameable":true}`,
+		"another path":     `{"Audience":"another-crate","Path":"re-export","Nameable":true}`,
+		// The form is the three members by exact name, each once, and nothing after them.
+		"a repeated member":          `{"Audience":"another-crate","Path":"definition","Nameable":false,"Nameable":true}`,
+		"a member repeated alike":    `{"Audience":"another-crate","Audience":"another-crate","Path":"definition","Nameable":true}`,
+		"a member in lower case":     `{"audience":"another-crate","Path":"definition","Nameable":true}`,
+		"the path in lower case":     `{"Audience":"another-crate","path":"definition","Nameable":true}`,
+		"the answer in lower case":   `{"Audience":"another-crate","Path":"definition","nameable":true}`,
+		"every member in lower case": `{"audience":"another-crate","path":"definition","nameable":true}`,
+		"a second value":             `{"Audience":"another-crate","Path":"definition","Nameable":true}{"Nameable":false}`,
+		"text after the value":       `{"Audience":"another-crate","Path":"definition","Nameable":true} trailing`,
+		"a second closing brace":     `{"Audience":"another-crate","Path":"definition","Nameable":true}}`,
+		"an answer that is null":     `{"Audience":"another-crate","Path":"definition","Nameable":null}`,
+		"an answer that is text":     `{"Audience":"another-crate","Path":"definition","Nameable":"true"}`,
+		"an answer that is a number": `{"Audience":"another-crate","Path":"definition","Nameable":1}`,
+		"an audience that is null":   `{"Audience":null,"Path":"definition","Nameable":true}`,
+		"a path that is a list":      `{"Audience":"another-crate","Path":["definition"],"Nameable":true}`,
+		"a list":                     `[{"Audience":"another-crate","Path":"definition","Nameable":true}]`,
+		"an unknown member":          `{"Audience":"another-crate","Path":"definition","Nameable":true,"Through":1}`,
+		"no object":                  `true`,
+		"no data":                    ``,
 	} {
 		if e, err := stated(data).Effective(); !errors.Is(err, ErrMissingFact) || e != (Effective{}) {
 			t.Errorf("%s: read as %+v, %v", name, e, err)
@@ -146,5 +169,62 @@ func TestPrivateInterfaceReader(t *testing.T) {
 	}
 	if _, err := (Declaration{}).PrivateInterface(); !errors.Is(err, ErrForeign) {
 		t.Error("the zero declaration", err)
+	}
+}
+
+// The fields term describes each field by exactly its name and its entity.
+func TestFieldsReader(t *testing.T) {
+	fields := func(data string, operands ...semantics.TermID) ([]Field, bool) {
+		t.Helper()
+		graph, err := semantics.New[s.Language](semantics.Data{
+			Entities: []semantics.Entity{
+				{Kind: ModuleKind(), Name: "pages"},
+				{Kind: Key("struct"), Name: "pages::A", Owner: rootEntity},
+				{Kind: Key("field"), Name: "pages::A::value", Owner: itemEntity},
+			},
+			Terms: []semantics.Term{reference(itemEntity), reference(rootEntity), expression(FieldsOperator(), data, operands...)},
+			Facts: []semantics.Fact{{Subject: semantics.Subject{Term: 1}, Relation: FieldsRelation(), Term: 3}},
+		}, semantics.DefaultLimits(), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return Type{&model{graph: graph}, 1}.Fields()
+	}
+	read, ok := fields(`[{"Name":"value","Entity":3}]`, 2)
+	if !ok || len(read) != 1 || read[0].Name != "value" || read[0].Declaration.ID() != otherEntity || read[0].Type.ID() != 2 {
+		t.Fatal(read, ok)
+	}
+	if read, ok := fields(` [ { "Entity" : 3 , "Name" : "value" } ] `, 2); !ok || len(read) != 1 || read[0].Name != "value" || read[0].Declaration.ID() != otherEntity {
+		t.Fatal("another order and spacing", read, ok)
+	}
+	if read, ok := fields(`[]`); !ok || len(read) != 0 {
+		t.Fatal("no field", read, ok)
+	}
+	for name, c := range map[string]struct {
+		data     string
+		operands []semantics.TermID
+	}{
+		"the member of the earlier profile": {`[{"Name":"value","Public":true,"Entity":3}]`, []semantics.TermID{2}},
+		"members in lower case":             {`[{"name":"value","entity":3}]`, []semantics.TermID{2}},
+		"a repeated member":                 {`[{"Name":"other","Name":"value","Entity":3}]`, []semantics.TermID{2}},
+		"no entity":                         {`[{"Name":"value"}]`, []semantics.TermID{2}},
+		"no name":                           {`[{"Entity":3}]`, []semantics.TermID{2}},
+		"a name that is null":               {`[{"Name":null,"Entity":3}]`, []semantics.TermID{2}},
+		"an entity that is text":            {`[{"Name":"value","Entity":"3"}]`, []semantics.TermID{2}},
+		"an entity that is null":            {`[{"Name":"value","Entity":null}]`, []semantics.TermID{2}},
+		"an entity that is none":            {`[{"Name":"value","Entity":0}]`, []semantics.TermID{2}},
+		"an entity the graph does not have": {`[{"Name":"value","Entity":9}]`, []semantics.TermID{2}},
+		"text after the list":               {`[{"Name":"value","Entity":3}] trailing`, []semantics.TermID{2}},
+		"a second list":                     {`[{"Name":"value","Entity":3}][]`, []semantics.TermID{2}},
+		"null":                              {`null`, nil},
+		"no data":                           {``, nil},
+		"an object":                         {`{"Name":"value","Entity":3}`, []semantics.TermID{2}},
+		"a field that is no object":         {`["value"]`, []semantics.TermID{2}},
+		"more fields than types":            {`[{"Name":"value","Entity":3},{"Name":"other","Entity":3}]`, []semantics.TermID{2}},
+		"more types than fields":            {`[{"Name":"value","Entity":3}]`, []semantics.TermID{2, 2}},
+	} {
+		if read, ok := fields(c.data, c.operands...); ok || read != nil {
+			t.Errorf("%s: read as %+v", name, read)
+		}
 	}
 }

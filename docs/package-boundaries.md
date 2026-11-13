@@ -175,6 +175,9 @@ resolver.
 
 Finding 6 on 11 November 2026. `semantics/rust/go`, `semantics/typescript/go`
 and the new `semantics/horos/go` export `ResolutionContract()` and
+`AnalysisContract()`. Since 13 November 2026 Rust's analysis contract is
+`AnalysisContractFor(settings)`, which takes the settings of an environment
+([#278](https://github.com/Bitspark/bittype/issues/278)), and Rust has no
 `AnalysisContract()`. TypeScript also exports `AnalysisContractFor(settings)`,
 and horos exports `AnalysisContractWithResolutionConfiguration(settings)`.
 `semantics/horos/go` owns the horos roles, relations and profiles, the limits

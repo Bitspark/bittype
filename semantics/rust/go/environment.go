@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"unicode"
+	"slices"
+	"strings"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
@@ -15,9 +16,11 @@ import (
 // the profile and is not a field. The sysroot is a path given to the resolver
 // and has no identity here.
 //
-// Each field admits the one value below that this profile covers. Another
-// value is refused with ErrUnsupported, and none is accepted and ignored.
-// Later coverage admits more values of the same fields.
+// Each field has a vocabulary, which for an edition, a crate kind and a crate
+// name is the pinned compiler's. A text outside it is invalid input. Of the
+// vocabulary this profile covers one value per field, and another value is
+// refused with ErrUnsupported. No value is accepted and ignored. Later
+// coverage admits more values of the same fields.
 type Environment struct {
 	// Edition is the Rust edition of the crate.
 	Edition string
@@ -38,8 +41,8 @@ type Crate struct {
 }
 
 // Dependency is one crate that the captured crate may name. Name is the name
-// the captured crate uses for it. No profile admits a dependency yet, so the
-// rest of its description is not fixed.
+// the captured crate uses for it and is judged as a crate name. No profile
+// admits a dependency yet, so the rest of its description is not fixed.
 type Dependency struct {
 	Name string
 }
@@ -51,13 +54,41 @@ const (
 	KindLibrary    = "lib"
 )
 
+// The vocabulary of an edition and of a crate kind: the texts that the pinned
+// compiler, rustc 1.90.0, takes. One of them that this profile does not cover
+// is unsupported, and any other text is invalid.
+//
+// Editions: compiler/rustc_span/src/edition.rs:114-126 names five. This
+// compiler refuses the fifth, "future", as unstable
+// (compiler/rustc_session/src/config.rs:2127-2137).
+//
+// Crate kinds: compiler/rustc_session/src/config.rs:2953-2980 names eight.
+// This compiler refuses the eighth, "sdylib", as unstable
+// (compiler/rustc_interface/src/passes.rs:271-272).
+var (
+	compilerEditions   = []string{"2015", "2018", "2021", Edition2024}
+	compilerCrateKinds = []string{KindLibrary, "rlib", "staticlib", "dylib", "cdylib", "bin", "proc-macro"}
+)
+
+// sysrootCrates are the crates that the pinned sysroot loads for a captured
+// library crate: the standard library and what it depends on. The graph names
+// an entity by its crate and its path, so a captured crate of one of these
+// names would share the names of that crate's entities. The list is what the
+// compiler reports as loaded (tcx.crates) for this profile's target. It does
+// not depend on the captured source.
+var sysrootCrates = []string{
+	"std", "core", "alloc",
+	"addr2line", "adler2", "cfg_if", "compiler_builtins", "gimli", "hashbrown", "libc", "memchr", "miniz_oxide", "object", "panic_unwind", "rustc_demangle", "rustc_std_workspace_alloc", "rustc_std_workspace_core", "std_detect", "unwind",
+}
+
 const environmentKey = "environment-1"
 
 // ConfigurationFor is the configuration of resolution and analysis under the
-// environment. Equal environments give identical settings. A value that is no
-// Rust value at all is refused with semantic.ErrInvalidRequest, and a value
-// outside this profile with ErrUnsupported. Validity is judged first, over
-// every field, so an environment with both kinds of value is invalid.
+// environment. Equal environments give identical settings. A text outside a
+// field's vocabulary is refused with semantic.ErrInvalidRequest, and a value
+// of the vocabulary that this profile does not cover with ErrUnsupported.
+// Validity is judged first, over every field and every dependency, so an
+// environment with both kinds of value is invalid.
 func ConfigurationFor(environment Environment) ([]semantic.Setting, error) {
 	if err := environment.check(); err != nil {
 		return nil, err
@@ -115,37 +146,58 @@ func (e Environment) settings() []semantic.Setting {
 }
 
 func (e Environment) check() error {
-	fields := []struct{ name, value, supported string }{
+	// Validity, over every field.
+	switch {
+	case !slices.Contains(compilerEditions, e.Edition):
+		return fmt.Errorf("%w: %q is no edition of rustc %s", semantic.ErrInvalidRequest, e.Edition, CompilerVersion)
+	case !targetText(e.Target):
+		return fmt.Errorf("%w: %q is no well-formed target", semantic.ErrInvalidRequest, e.Target)
+	case !slices.Contains(compilerCrateKinds, e.Crate.Kind):
+		return fmt.Errorf("%w: %q is no crate type of rustc %s", semantic.ErrInvalidRequest, e.Crate.Kind, CompilerVersion)
+	case !crateName(e.Crate.Name):
+		return fmt.Errorf("%w: %q is no Rust crate name", semantic.ErrInvalidRequest, e.Crate.Name)
+	}
+	for _, dependency := range e.Dependencies {
+		if !crateName(dependency.Name) {
+			return fmt.Errorf("%w: the dependency name %q is no Rust crate name", semantic.ErrInvalidRequest, dependency.Name)
+		}
+	}
+	// Coverage.
+	for _, field := range []struct{ name, value, supported string }{
 		{"edition", e.Edition, Edition2024},
 		{"target", e.Target, TargetLinuxX64},
 		{"crate kind", e.Crate.Kind, KindLibrary},
-	}
-	for _, field := range fields {
-		if field.value == "" {
-			return fmt.Errorf("%w: the Rust environment states no %s", semantic.ErrInvalidRequest, field.name)
-		}
-	}
-	if e.Crate.Name == "" {
-		return fmt.Errorf("%w: the Rust environment states no crate name", semantic.ErrInvalidRequest)
-	}
-	// The compiler takes letters, digits and underscores as a crate name.
-	for _, r := range e.Crate.Name {
-		if r != '_' && !unicode.IsLetter(r) && !unicode.IsDigit(r) {
-			return fmt.Errorf("%w: %q is no Rust crate name", semantic.ErrInvalidRequest, e.Crate.Name)
-		}
-	}
-	for _, field := range fields {
+	} {
 		if field.value != field.supported {
 			return fmt.Errorf("%w: %s %q, this profile covers %q", ErrUnsupported, field.name, field.value, field.supported)
 		}
 	}
-	if !identifier(e.Crate.Name) || keywords[e.Crate.Name] {
+	switch {
+	case !identifier(e.Crate.Name) || keywords[e.Crate.Name]:
 		return fmt.Errorf("%w: crate name %q, this profile covers an ASCII identifier that is no keyword", ErrUnsupported, e.Crate.Name)
-	}
-	if len(e.Dependencies) != 0 {
+	case slices.Contains(sysrootCrates, e.Crate.Name):
+		return fmt.Errorf("%w: crate name %q is the name of a crate of the sysroot", ErrUnsupported, e.Crate.Name)
+	case len(e.Dependencies) != 0:
 		return fmt.Errorf("%w: %d dependency crates, this profile covers the sysroot only", ErrUnsupported, len(e.Dependencies))
 	}
 	return nil
+}
+
+// targetText reports a well-formed target: a text of ASCII letters, digits,
+// underscores, hyphens and dots that is not empty and does not end in ".json".
+// The names of the compiler's own targets are written in that alphabet. The
+// compiler takes any text as the name of a target, and a text that ends in
+// ".json" as the path of a file (compiler/rustc_session/src/config.rs:2348-2359
+// at 1.90.0), which an environment never names. This package holds no list of
+// targets, so a well-formed text that names no target is unsupported like one
+// that names another target.
+func targetText(target string) bool {
+	for _, r := range target {
+		if r != '_' && r != '-' && r != '.' && (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') && (r < '0' || r > '9') {
+			return false
+		}
+	}
+	return target != "" && !strings.HasSuffix(target, ".json")
 }
 
 // identifier reports an ASCII identifier other than a lone underscore: a name
