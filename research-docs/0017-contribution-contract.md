@@ -2,7 +2,8 @@
 
 **ID:** 0017
 **Date:** 12 November 2026
-**Status:** draft
+**Status:** reviewed
+**Reviewed:** https://github.com/Bitspark/bittype/issues/196#issuecomment-6839823652
 **Owner:** claude-contract-chain-issues
 **Issue:** https://github.com/Bitspark/bittype/issues/196 (item 6), with #195, #197 and #207
 **Code baseline:** bittype, code baseline 2daea52 (2daea52e18e20369401500ddeeb19efae581b306); documents at 7e9dc34
