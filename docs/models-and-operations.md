@@ -631,3 +631,241 @@ shapes, tests of the readers against the schemas, and generated names for
 the two bridges that are not written in Go. AC-05 asks that the mechanism be
 general, "without requiring a new case-specific check for each
 implementation change", and one generator from one description is that.
+
+## 7. The layout
+
+**Decided (M6, rows R21 and R22).**
+
+| Point | Decision | Source |
+| --- | --- | --- |
+| The roots | Two: `model` and `ops`. No third root | The direction; row R8 |
+| Below `model` | The sort of model first, then the language | M6. The owner's sketch is `model/{syntax,semantics,...}/go/...`. The standing rule is "Do not create a language-first packages tree" (`LAYOUT.md:134`, `AGENTS.md:236-237`). The advice's tree puts the language first and its own section 4.3 says the opposite: "organized around the kinds of models being declared, with language identity as a further dimension" |
+| Below `ops` | The stage matrix as it is: `<stage>/<dimension>/<scope>/<component>/go` below the root | M6; row R22. The owner's sketch is `ops/{transform,...}/go/...` |
+| Modules | One. "One public root Go module contains independently owned packages" (`LAYOUT.md:6`) | M6. Its cost: the module graph cannot carry rule 1. The import test and Go's rule for `internal` carry it ([section 9](#9-enforcement)) |
+| `internal/` | It goes under `ops`. It stays at the module root until no future model package imports a helper | M6; row R21 |
+| Integration and tools | Under `ops`: `ops/integration`, `ops/tools`, and `ops/verification` | Row R21. With the helpers at `ops/internal`, Go lets only code below `ops/` import them. `integration/go` imports `internal/horosfiles` and `internal/tree`, and the tools import `internal/grammar`, `internal/horosmodel` and `internal/lex` |
+| The trailing `go` | It stays: "The final `go` directory denotes implementation language, not target" (`LAYOUT.md:94`) | Row R21 |
+
+**`internal/` and Go's own rule.** Go lets a package below a directory named
+`internal` be imported only from the tree rooted at that directory's parent.
+With the helpers at `ops/internal`, the compiler itself refuses a model
+package that imports one. Five packages that hold, or were read as holding,
+a model-side part import a helper today: `trees/representation/go` imports
+`internal/tree`, `semantics/rust/go` and `transform/syntax/rust/symbol/go`
+import `internal/rust`, and `semantics/typescript/go` and
+`transform/syntax/typescript/symbol/go` import `internal/typescript`. In each
+the importing code is on the operations side by the table below: packing and
+unpacking, the validation of a compiler run's inputs
+(`semantics/rust/go/environment.go:156`, `:160`;
+`semantics/typescript/go/environment.go:37`) and the admission of a symbol
+(`transform/syntax/rust/symbol/go/symbol.go:56`, `:58`, `:73`;
+`transform/syntax/typescript/symbol/go/symbol.go:24`). So every caller of a
+lexical evaluator ends on the operations side, and no helper is needed on
+both sides (row R7h). The model root gets no `internal` directory of its
+own: a package below `model/internal` could not be imported from `ops/`.
+
+**What is no package.** Derived here: `docs/`, `research-docs/`, `testdata/`,
+`go.mod` and the files at the repository root describe or serve both roots
+and stay where they are.
+
+### Names below the roots
+
+**PROPOSAL P1: the shape of a path below `model`.**
+
+- *Proposed:* two shapes, as `semantics/go` and `semantics/<language>/go`
+  have them today. `model/<sort>/go` is the agnostic part of a sort: the
+  types in which every language's declaration of that sort is written.
+  `model/<sort>/<scope>/go` is one scope's declaration of that sort, where a
+  scope is one language or an ordered pair. Where one scope declares several
+  independent things of one sort, each is `model/<sort>/<scope>/<name>/go`,
+  the path form that #222 decided for several contributions
+  (`LAYOUT.md:100-104`). The two tree carriers keep their own directory,
+  `model/trees/ast/go` and `model/trees/cst/go`. This is M6 read literally:
+  sort, then language, and a sort's agnostic part beside its languages.
+- *Alternative A:* one shape with an explicit scope,
+  `model/<sort>/<scope>/<part>/go`, where the scope is a language, a pair or
+  `shared`, as the scope of an operations path is ("A scope identifies one
+  language, an ordered pair or shared machinery", `LAYOUT.md:98`). The trees
+  would be `model/syntax/shared/ast/go`, the graph records
+  `model/semantics/shared/go`. One function reads a role from every path,
+  and no directory holds a package beside language directories. It costs the
+  name `shared` in every agnostic path, and it puts a model directory named
+  `shared` next to the advice's `model/shared`, which collected whatever is
+  hard to classify.
+- *Alternative B:* the proposed shapes, with the grammar table and the word
+  lists as parts of the syntax sort, `model/syntax/<language>/grammar/go` and
+  `model/syntax/<language>/lexical/go`. It keeps one directory for all that
+  says what can be written in a language, which is how M3 counts the models.
+  It costs a home for the agnostic table type that is neither
+  `model/syntax/go` nor a language's.
+
+**PROPOSAL P2: the names of the sorts.** A name that the repository has is
+kept. Each new name is a word that the pages already use for the thing.
+
+| Sort | Directory | Holds | The word comes from |
+| --- | --- | --- | --- |
+| Language identity | `model/language` | `ID` and `Provider` | `contracts/language/go` today |
+| Trees | `model/trees` | The generic abstract and concrete tree | `trees/` today |
+| Syntax | `model/syntax` | A language's node kinds, roles, attributes and its syntax profile | `syntax/` today |
+| Grammar | `model/grammar` | The table type, and each language's table of what a node kind may hold | `internal/grammar` today |
+| Lexical | `model/lexical` | A language's word lists and character tables, and the names of its lexical predicates | "private lexical helpers" (`LAYOUT.md:73`) |
+| Semantics | `model/semantics` | The plain records of the graph, and a language's keys, profiles and payload shapes | `semantics/` today |
+| Files | `model/files` | The plain records of a file set | `files/` today |
+| Source | `model/source` | The plain records of a Source: unit, group, relation | `source/` today |
+| Intent | `model/intent` | The form-table type, and each language's form table | "native intent" (`docs/generation.md:77`). The alternatives are `forms`, after "intended native forms" (`LAYOUT.md:467`), and keeping `model`, which would give `model/model` |
+| Symbols | `model/symbols` | A language's plain symbol record and its categories | `symbol` today. The alternative is the singular |
+| Families | `model/families` | The profile identities and the family vocabularies of a source language | "family" (`docs/representation-families.md`). On the migration's branch |
+| Contributions | `model/contributions` | The identity types of a contribution, and each pair's contribution vocabularies | "contribution" (`docs/contribution-contract.md`). On the migration's branch |
+
+**PROPOSAL P5: the paths of the operations halves.** A package or a half
+that this page does not name otherwise keeps its path below its root. That
+is all that happens to a whole operations package (row R22). Four halves
+need a name of their own.
+
+| Half | Path | Why there | Alternative, and its cost |
+| --- | --- | --- | --- |
+| The contract identities, evidence requirements and settings of a language's analysis | `ops/semantics/<language>/go` | It is what remains at today's path once the names have their model package | `ops/analyze/files/<language>/contracts/go`. It costs a path under one stage for identities of two, resolution and analysis |
+| The typed readers of a language's analysed graph | `ops/analyze/files/<language>/reader/go` | They open "an admitted analysis receipt" (`semantics/golang/go/model.go:41`), so they belong to the analyze stage of the Files dimension, beside the provider and the query service | Joining the query service, `analyze/files/<language>/queries/go`. A query service is a contribution, and a package that is no composition imports one only under an exception that names its symbols. Rust has none |
+| The typed constructors of a language's intent, with its issuer | `ops/transform/syntax/<language>/intent/go` | It is today's `transform/syntax/<language>/model/go` without the table and the checks. The component is renamed, because a directory `model` below `ops` would say the opposite of the roots ([AC-10](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-10) names a wrongly named responsibility with a misplaced one) | Keeping `model` as the component. It costs that confusion. Putting the constructors into the target: a mapping may not import a target (`AGENTS.md:190`) |
+| The admission and the issuing of a language's symbols | `ops/transform/syntax/<language>/symbol/go` | It is today's path below the root | None is proposed |
+
+### Every place named
+
+The advice's tree leaves six places without a name (row R21). The
+migration's branch adds four more that this page has to place (row R23).
+
+| What | Path | Side | Standing | Slice |
+| --- | --- | --- | --- | --- |
+| The Source records `Unit`, `GroupID`, `Group` and `Relation` (`source/go/source.go:20-37`) | `model/source/go` | Model | Row R7d places them. The name is P2 | S6 |
+| Language identity, `ID` and `Provider` (`contracts/language/go/language.go:11-25`) | `model/language/go` | Model | Row R3 places it. The name is P2 | S6 |
+| The intent carrier | `ops/contracts/generation/go`, where it is | Operations | P3 | None |
+| The form-table type | `model/intent/go` | Model | M4 places it. The name is P2 | S2 |
+| The grammar-table type (`internal/grammar/rules.go:15-33`) | `model/grammar/go` | Model | Row R7c places it. The name is P2 | S3 |
+| Lexical tables | `model/lexical/<language>/go` | Model | Row R7h places them. The name is P2 | S4 |
+| The operations halves of split vocabulary packages | The four paths of P5 | Operations | P5 | S2, S5 |
+| The identity types of a contribution (`ContributionIdentity`, `Meaning`, `ContributionReference`, `SchemaReference`, `EvidenceKind`; on the migration's branch `contracts/generation/go/contribution.go:22-46`, `:138`) | `model/contributions/go` | Model | Rows R7e and R23 place them. The name is P2 | S7 |
+| A pair's contribution vocabulary (on the branch `transform/syntax/<source>-to-<target>/vocabulary/<name>/go`, 24 packages) | `model/contributions/<source>-to-<target>/<name>/go` | Model | Row R7g places it. The name is P2 | S7 |
+| A family of one language (on the branch `transform/syntax/horos/family/<name>/go`, 6 packages), and the two profile identities of `transform/syntax/horos/mapping/go` | `model/families/<language>/<name>/go`, and `model/families/<language>/go` for the profile identities | Model | Row R23 asks for the place. The name is P2 | S7 |
+| The shared part of the payload codec role (on the branch `transform/syntax/horos/payload/go`), and each codec | Operations. The path below `ops` is the migration's to name: "that part does not live under a kernel path (decision O41 on #196); the migration names its place" (`LAYOUT.md:476`) | Operations | Row R7g; decision O41 | S7, S8 |
+
+The counts on the branch come from
+`git ls-tree -r --name-only origin/feat/contribution-contract-196 -- transform | grep "/vocabulary/.*/go/vocabulary.go" | wc -l`
+(24) and from the package list of the branch (six `family` packages), read
+at `af1dcde`.
+
+### Every package of `main`
+
+The command for the production packages, at the repository root:
+
+```sh
+git ls-tree -r --name-only origin/main | grep '\.go$' | grep -v '_test\.go$' | grep -Ev '(^|/)testdata/' | xargs -n1 dirname | sort -u
+```
+
+It gives 129 at `0daee73`. "Whole" means that the package takes the prefix
+of its root and nothing else changes. The paths in the column "After" use
+the proposed names (P1, P2, P5). The side of each part is decided by the row
+named, and where no row is named it is derived here from the test.
+
+**Carriers (6).**
+
+| Today | After | Source |
+| --- | --- | --- |
+| `trees/ast/go` | `model/trees/ast/go`, whole | Row R7d |
+| `trees/cst/go` | `model/trees/cst/go`, whole | Row R7d |
+| `trees/representation/go` | `ops/trees/representation/go`, whole. No part of it is plain data that has a meaning outside its operation | Rows R7d and R8; [section 2](#2-the-test) |
+| `files/go` | **Splits.** The records `ID`, `Path`, `File`, `Files`, `SyntaxLink`, `Context` to `model/files/go`. The limits, `ValidPath`, `Capture`, `Cover`, `CheckFiles`, the errors, and the admitted type that slice S6 adds, to `ops/files/go` | Row R7d; gap 4 |
+| `semantics/go` | **Splits.** The records and `Data` (`model.go:20-125`) to `model/semantics/go`. The limits, the sealed `Semantics[L]`, `New`, the accessors and the queries to `ops/semantics/go` | Row R7d |
+| `source/go` | **Splits.** `Unit`, `GroupID`, `Group`, `Relation` to `model/source/go`. `Publication`, `Source`, `Policy`, `Publisher`, `Envelope` and the rest to `ops/source/go` | Row R7d. The accepted page declares the Source as "private sealed storage" with two receipts (`docs/source.md:373-380`) |
+
+**Vocabularies (16).**
+
+| Today | After | Source |
+| --- | --- | --- |
+| `syntax/{cpp,golang,horos,rust,typescript}/go` | `model/syntax/<language>/go`, whole, once language identity is at `model/language/go` | Rows R3 and R7d |
+| `semantics/horos/go` | **Splits.** The profiles, the keys, the descriptor prefix, the term encoding, the limits setting key and the prelude pin to `model/semantics/horos/go`. `ResolutionContract`, `AnalysisContract`, `AnalysisContractWithResolutionConfiguration` (`vocabulary.go:75-91`) and the reader `DescriptorConstructor` (`:55`) to `ops/semantics/horos/go` | Row R2 |
+| `semantics/{golang,rust,typescript}/go` | **Splits in three.** The profiles, the key functions, the payload shapes and the plain records of a compiler run's inputs to `model/semantics/<language>/go`. The contracts, the evidence requirement, the requirements, the configuration and the encoding of inputs into settings to `ops/semantics/<language>/go`. `Model`, `Open` and the typed readers to `ops/analyze/files/<language>/reader/go` | Rows R2 and R7b |
+| `transform/syntax/{cpp,golang,rust,typescript}/model/go` | **Splits.** The form names, the primitive names and the form table to `model/intent/<language>/go`. The issuer and the typed constructors to `ops/transform/syntax/<language>/intent/go`. The checks become the one checker in `ops/transform/syntax/shared/target/go`. The coverage answers go to `ops/transform/syntax/<language>/target/go`. Go's record-body condition goes to the declaration contribution | M4; [section 5](#5-intent) |
+| `transform/syntax/{golang,rust,typescript}/symbol/go` | **Splits.** The plain record of a symbol, its categories and the names it declares to `model/symbols/<language>/go`. The refusing constructors, the issuer, `ExternalUse` and `ReadExternal` to `ops/transform/syntax/<language>/symbol/go` | Row R7a; M8, slice S5 |
+
+**Contracts (13).**
+
+| Today | After | Source |
+| --- | --- | --- |
+| `contracts/language/go` | `model/language/go`, whole | Row R3 |
+| `contracts/{analysis,check,format,parse,pipeline,print,resolution,semantic,text,transform,verification}/go` | `ops/contracts/<name>/go`, whole | Rows R7e and R8 |
+| `contracts/generation/go` | `ops/contracts/generation/go`. On `main` it is whole under P3. On the migration's branch the identity types of a contribution leave it for `model/contributions/go` | Rows R7e and R23; P3 |
+
+**Kernel (7).** All whole, to `ops/<same path>` (row R7f): `engine/go`,
+`transform/syntax/shared/generation/go`, `transform/syntax/shared/target/go`,
+`check/syntax/shared/ast/go`, `check/syntax/shared/cst/go`,
+`print/syntax/shared/provider/go`, `print/files/shared/provider/go`. The
+kernel package `transform/syntax/shared/target/go` receives the one form
+checker in slice S2.
+
+**Stage providers and query services (28).**
+
+| Today | After | Source |
+| --- | --- | --- |
+| `check/syntax/{cpp,golang,rust,typescript}/provider/go` | **Splits.** The grammar table to `model/grammar/<language>/go`. The call of the interpreter, the rules in code and the provider stay, at `ops/<same path>` | Row R7c |
+| `check/syntax/horos/provider/go` | `ops/<same path>`, whole. Its table is in `internal/declsyntax` | Row R22 |
+| `parse/syntax/{cpp,golang,horos,rust,typescript}/provider/go`, `parse/files/horos/provider/go` | `ops/<same path>`, whole | Row R22 |
+| `format/syntax/{cpp,golang,horos,rust,typescript}/provider/go`, `format/files/{horos,typescript}/provider/go` | `ops/<same path>`, whole | Row R22 |
+| `resolve/files/{golang,horos,rust,typescript}/provider/go` | `ops/<same path>`, whole | Row R22 |
+| `analyze/files/{golang,horos,rust,typescript}/provider/go`, `analyze/files/{golang,typescript}/queries/go` | `ops/<same path>`, whole | Row R22 |
+
+**Generation by language and by pair (30).**
+
+| Today | After | Source |
+| --- | --- | --- |
+| `transform/syntax/{cpp,golang,rust,typescript}/target/go` | `ops/<same path>`, whole. Each receives its coverage answers and the call of the one checker | M4 |
+| `transform/syntax/horos/source/go` | `ops/<same path>`, whole | Row R22 |
+| `transform/syntax/horos/mapping/{declarations,naming,pattern}/go` | `ops/<same path>`, whole | Row R22 |
+| `transform/syntax/horos/mapping/go` | **Splits.** The two profile identities (`mapping.go:28`, `:34`) to `model/families/horos/go`. The function type `Library[T]` stays on the operations side, where [bittype/ACX-010](architecture-cases/0010-agnostic-mapping-adapter.md) moves it to the agnostic layer | Row R7g |
+| `transform/syntax/horos-to-{cpp,rust,typescript}/mapping/{boolean,declarations,list,record,text}/go` (15) | `ops/<same path>`, whole | Row R22 |
+| `transform/syntax/horos-to-golang/mapping/{boolean,declarations,list,optional,record,text}/go` (6) | `ops/<same path>`, whole | Row R22 |
+
+**Private helpers (16).**
+
+| Today | After | Source |
+| --- | --- | --- |
+| `internal/{concrete,golangsem,horosfiles,horosmodel,lex,parseutil,rustsem,tree,typescriptimports,typescriptsem}` | `ops/internal/<name>`, whole | Row R21 |
+| `internal/grammar` | **Splits.** The table types `Attribute`, `Role`, `Rule`, `Rules` (`rules.go:15-33`) to `model/grammar/go`. The interpreter `Check` (`:80`), the entry constructors and the predicates stay, at `ops/internal/grammar` | Row R7c |
+| `internal/{cpp,horos,rust,typescript}` | **Splits.** The word lists and the character tables to `model/lexical/<language>/go`. The evaluators and the literal decoders stay, at `ops/internal/<language>` | Row R7h |
+| `internal/declsyntax` | **Splits.** The horos grammar table (`check.go:67`) to `model/grammar/horos/go`. `Check` and the rules in code stay, at `ops/internal/declsyntax` | Row R7c |
+
+**Verification (7).** All whole, to `ops/<same path>` (row R22):
+`verification/files/horos-to-go/go`,
+`verification/files/horos-to-go/mappings/{list,optional,record,scalar}/go`,
+`verification/files/source/horos/go`, `verification/logos/go`.
+
+**Tools (6).** All whole, to `ops/<same path>` (row R21):
+`tools/horos-module/go`,
+`tools/provider-matrix/{go,capability/go,extract/grammar/go,observation/go,report/go}`.
+
+**Packages that hold only tests (3),** outside the 129: `integration/go`,
+`verification/integration/go` and
+`tools/provider-matrix/extract/structfixture/go` go to `ops/<same path>`
+(row R21).
+
+**The sum.** By this table 8 packages of `main` are wholly model, 25 split
+and 96 are wholly operations. M7 gives 11, 27 and 91, from the placement
+table of verification report 2. The difference is in five places, each read
+again at the source:
+
+- `files/go` and `semantics/go` are counted there as wholly model. Row R7d
+  splits them.
+- `semantics/horos/go` is counted there as wholly model. It imports three
+  contract packages and declares two contracts (`vocabulary.go:75-91`), so
+  row R2 splits it like the three others.
+- `trees/representation/go` is counted there as a split. Every type of it is
+  sealed or the result of one of its operations.
+- `contracts/semantic/go`, `contracts/resolution/go` and
+  `contracts/analysis/go` are counted there as splits. Rows R2 and R7e keep
+  them whole on the operations side, and the identities typed by them leave
+  the vocabularies instead.
+- `contracts/generation/go` is counted there as a split. On `main` it is
+  whole under P3. It splits on the migration's branch, and on `main` only
+  if alternative A of P3 is taken.
+
+None of the five changes a decision. Every one of the 129 still gets a new
+import path, and no move is a prefix for all of them (M7, row R31).
