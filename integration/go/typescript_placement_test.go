@@ -21,6 +21,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/print/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
+	"github.com/Bitspark/bittype/files/go"
 	tsfiles "github.com/Bitspark/bittype/format/files/typescript/provider/go"
 	printFiles "github.com/Bitspark/bittype/print/files/shared/provider/go"
 	resolve "github.com/Bitspark/bittype/resolve/files/typescript/provider/go"
@@ -141,23 +142,64 @@ func generatedCellPage(t *testing.T) g.Output {
 	return out
 }
 
-// Place a complete generated result in one module for native compiler tests.
-func placedTS(t *testing.T, output g.Output, packages ...n.PackageTypes) ts.AST {
+// tsDeclarations names the handles of a generated TypeScript output by the names
+// of the declarations at their sites. The output has one tree.
+func tsDeclarations(t *testing.T, output g.Output) map[string]g.DeclarationHandle {
 	t.Helper()
-	tree := outputTree[ts.Language](t, output)
-	placement := tsfiles.Placement{File: "types", Path: "types.ts"}
-	for _, child := range tree.Nodes[tree.Root-1].Children {
-		placement.Declarations = append(placement.Declarations, ast.NodeRef{Tree: tree.ID, Node: child.Node})
-	}
-	setting, err := (tsfiles.Organization{Entry: placement.File, Units: []tsfiles.Placement{placement}}).Setting()
+	entry, err := output.Snapshot().EntryTree()
 	if err != nil {
 		t.Fatal(err)
 	}
+	tree, err := representation.Unpack[ts.Language](output.Snapshot().Language(), entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	handles := map[string]g.DeclarationHandle{}
+	for _, record := range output.Inventory() {
+		if record.Site.Tree != tree.ID {
+			t.Fatal("a declaration outside the entry tree", record.Site)
+		}
+		name := nodeAttribute(tree.Nodes[record.Site.Node-1], ts.AttributeName)
+		if _, twice := handles[name]; twice || name == "" {
+			t.Fatal("the declarations of the output are not told apart by their names", name)
+		}
+		handles[name] = record.Handle
+	}
+	return handles
+}
+
+// tsPlaced builds a placement from the paths of its files and the file of each
+// declaration, which is named as tsDeclarations names it.
+func tsPlaced(t *testing.T, handles map[string]g.DeclarationHandle, paths map[files.ID]files.Path, declarations map[string]files.ID) tsfiles.GeneratedPlacement {
+	t.Helper()
+	placement := tsfiles.GeneratedPlacement{Files: paths, Definitions: map[g.DeclarationHandle]files.ID{}}
+	for name, file := range declarations {
+		handle, exists := handles[name]
+		if !exists {
+			t.Fatal("no declaration", name)
+		}
+		placement.Definitions[handle] = file
+	}
+	return placement
+}
+
+// tsOneFile places every declaration of an output in one file.
+func tsOneFile(output g.Output, file files.ID, path files.Path) tsfiles.GeneratedPlacement {
+	placement := tsfiles.GeneratedPlacement{Files: map[files.ID]files.Path{file: path}, Definitions: map[g.DeclarationHandle]files.ID{}}
+	for _, record := range output.Inventory() {
+		placement.Definitions[record.Handle] = file
+	}
+	return placement
+}
+
+// Place a complete generated result in one module for native compiler tests.
+func placedTS(t *testing.T, output g.Output, packages ...n.PackageTypes) ts.AST {
+	t.Helper()
 	formatter, err := tsfiles.NewGenerated(placementStages(t, packages...))
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := formatter.Format(context.Background(), format.GeneratedFilesInput{Output: output, Configuration: []semantic.Setting{setting}})
+	result, err := formatter.Format(context.Background(), format.GeneratedFilesInput{Output: output, Placement: tsOneFile(output, "types", "types.ts").Issue()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,26 +251,15 @@ func TestTypeScriptTypeImportPlacement(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sites := map[string]ast.NodeRef{}
-	for _, child := range tree.Nodes[tree.Root-1].Children {
-		if child.Role == ts.RoleDeclaration {
-			sites[nodeAttribute(tree.Nodes[child.Node-1], ts.AttributeName)] = ast.NodeRef{Tree: tree.ID, Node: child.Node}
-		}
-	}
-	page := tsfiles.Placement{File: "pages", Path: "generated/pages/page.ts", Declarations: []ast.NodeRef{sites["Page"], sites["Cells"], sites["Cell"]}}
-	person := tsfiles.Placement{File: "model", Path: "generated/model/person.ts", Declarations: []ast.NodeRef{sites["Person"]}}
+	handles := tsDeclarations(t, output)
+	const pagesPath, personPath = "generated/pages/page.ts", "generated/model/person.ts"
 	for _, split := range []bool{true, false} {
-		org := tsfiles.Organization{Entry: page.File, Units: []tsfiles.Placement{page}}
+		placement := tsPlaced(t, handles, map[files.ID]files.Path{"pages": pagesPath}, map[string]files.ID{"Page": "pages", "Cells": "pages", "Cell": "pages", "Person": "pages"})
 		if split {
-			org.Units = append(org.Units, person)
-		} else {
-			org.Units[0].Declarations = append(org.Units[0].Declarations, sites["Person"])
+			placement.Files["model"] = personPath
+			placement.Definitions[handles["Person"]] = "model"
 		}
-		setting, err := org.Setting()
-		if err != nil {
-			t.Fatal(err)
-		}
-		input.Configuration = []semantic.Setting{setting}
+		input.Placement = placement.Issue()
 		boxed, err := kernel.FormatGeneratedFiles(ctx, input)
 		if err != nil {
 			t.Fatalf("split=%v: %v", split, err)
@@ -244,22 +275,24 @@ func TestTypeScriptTypeImportPlacement(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(emitted.Entries) != len(org.Units) {
+		if len(emitted.Entries) != len(placement.Files) {
 			t.Fatal(emitted)
 		}
-		unit := out.Units()[0]
-		pages := emitted.Entries[0]
-		if pages.Path != page.Path || !strings.Contains(pages.Text, `from "@bitspark/cell"`) || !strings.Contains(pages.Text, "Page<Cell_1<Person>>") {
+		// The files come in the order of their identities, so pages is the last.
+		units := out.Units()
+		unit := units[len(units)-1]
+		pages := emitted.Entries[len(emitted.Entries)-1]
+		if unit.File != "pages" || pages.Path != pagesPath || !strings.Contains(pages.Text, `from "@bitspark/cell"`) || !strings.Contains(pages.Text, "Page<Cell_1<Person>>") {
 			t.Fatal(pages)
 		}
 		checkImportedUse(t, unit.Syntax.Abstract, "Cell_1", "@bitspark/cell", "Cell")
 		if split {
-			if emitted.Entries[1].Path != person.Path || !strings.Contains(emitted.Entries[1].Text, "interface Person") || strings.Contains(pages.Text, "interface Person") || !strings.Contains(pages.Text, `from "../model/person.js"`) {
+			if emitted.Entries[0].Path != personPath || !strings.Contains(emitted.Entries[0].Text, "interface Person") || strings.Contains(pages.Text, "interface Person") || !strings.Contains(pages.Text, `from "../model/person.js"`) {
 				t.Fatal(emitted)
 			}
 			checkImportedUse(t, unit.Syntax.Abstract, "Person", "../model/person.js", "Person")
 			rels := out.Relations()
-			if len(rels) != 1 || rels[0].From != page.File || rels[0].To != person.File || rels[0].At == nil || rels[0].At.Tree != unit.Syntax.Abstract.ID || unit.Syntax.Abstract.Nodes[rels[0].At.Node-1].Kind != ts.KindImport {
+			if len(rels) != 1 || rels[0].From != "pages" || rels[0].To != "model" || rels[0].At == nil || rels[0].At.Tree != unit.Syntax.Abstract.ID || unit.Syntax.Abstract.Nodes[rels[0].At.Node-1].Kind != ts.KindImport {
 				t.Fatal(rels)
 			}
 		} else {
@@ -298,6 +331,14 @@ func TestTypeScriptTypeImportPlacement(t *testing.T) {
 		if err != nil || !reflect.DeepEqual(reprinted, emitted) {
 			t.Fatal("placement did not round-trip", err)
 		}
+		// Neither placement names an entry. The entry of each fresh snapshot is
+		// the file of least identity: model when the placement has it.
+		for _, formatted := range []source.Source[ts.Language]{out, again} {
+			least := formatted.Units()[0].Syntax.Abstract
+			if formatted.Entry() != (ast.NodeRef{Tree: least.ID, Node: least.Root}) {
+				t.Fatal("the snapshot entry is not the file of least identity", split, formatted.Entry())
+			}
+		}
 		stale := format.FilesInput[ts.Language]{Abstract: out.SemanticsView(), Snapshot: output.Snapshot(), Evidence: out.Evidence()}
 		if bad, err := formatter.Format(ctx, stale); err == nil || len(bad.Units()) != 0 {
 			t.Fatal("stale receipt accepted")
@@ -312,11 +353,19 @@ func TestTypeScriptTypeImportPlacement(t *testing.T) {
 	if bad, err := unavailable.Format(ctx, input); err == nil || bad.Valid() {
 		t.Fatal("local Cell captured an unavailable export")
 	}
-	for _, units := range [][]tsfiles.Placement{{page}, {page, person, person}, {{File: page.File, Path: page.Path, Declarations: []ast.NodeRef{{Tree: "foreign", Node: 1}}}}} {
-		setting, _ := (tsfiles.Organization{Entry: page.File, Units: units}).Setting()
-		input.Configuration = []semantic.Setting{setting}
+	other := generatedCellPage(t)
+	incomplete := tsOneFile(output, "pages", pagesPath)
+	delete(incomplete.Definitions, handles["Person"])
+	undeclared := tsOneFile(output, "pages", pagesPath)
+	undeclared.Definitions[handles["Person"]] = "model"
+	for name, placement := range map[string]tsfiles.GeneratedPlacement{
+		"a declaration without a file":  incomplete,
+		"a file that is not declared":   undeclared,
+		"the handles of another output": tsOneFile(other, "pages", pagesPath),
+	} {
+		input.Placement = placement.Issue()
 		if bad, err := generatedFormatter.Format(ctx, input); err == nil || len(bad.Units()) != 0 {
-			t.Fatal("invalid placement accepted")
+			t.Fatal("invalid placement accepted:", name)
 		}
 	}
 }
@@ -367,11 +416,8 @@ func TestGeneratedFilesPreservePublicationIntent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	setting, err := (tsfiles.Organization{Entry: "visible", Units: []tsfiles.Placement{{File: "visible", Path: "visible.ts", Declarations: []ast.NodeRef{sites["Visible"]}}, {File: "hidden", Path: "hidden.ts", Declarations: []ast.NodeRef{sites["Hidden"]}}}}).Setting()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if bad, err := formatter.Format(ctx, format.GeneratedFilesInput{Output: output, Configuration: []semantic.Setting{setting}}); err == nil || bad.Valid() {
+	separate := tsPlaced(t, tsDeclarations(t, output), map[files.ID]files.Path{"visible": "visible.ts", "hidden": "hidden.ts"}, map[string]files.ID{"Visible": "visible", "Hidden": "hidden"})
+	if bad, err := formatter.Format(ctx, format.GeneratedFilesInput{Output: output, Placement: separate.Issue()}); err == nil || bad.Valid() {
 		t.Fatal("private dependency exported to satisfy placement")
 	}
 }
@@ -467,7 +513,7 @@ func TestTypeScriptPlacementPreservesModuleScope(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	organization := tsfiles.Organization{Entry: "public"}
+	organization := tsfiles.Organization{}
 	for _, child := range u.Syntax.Abstract.Nodes[u.Syntax.Abstract.Root-1].Children {
 		site := ast.NodeRef{Tree: u.Syntax.Abstract.ID, Node: child.Node}
 		placement := tsfiles.Placement{File: "public", Path: "public.ts", Declarations: []ast.NodeRef{site}}

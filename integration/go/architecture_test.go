@@ -173,7 +173,7 @@ var foundationRules = map[string][]string{
 	"contracts/text/go":         {"trees/ast/go"},
 	"contracts/check/go":        {"contracts/language/go", "trees/ast/go", "trees/representation/go"},
 	"contracts/parse/go":        {"contracts/language/go", "contracts/semantic/go", "files/go", "source/go", "trees/ast/go", "trees/cst/go", "trees/representation/go"},
-	"contracts/format/go":       {"contracts/generation/go", "contracts/language/go", "contracts/semantic/go", "semantics/go", "source/go", "trees/ast/go", "trees/cst/go", "trees/representation/go"},
+	"contracts/format/go":       {"contracts/generation/go", "contracts/language/go", "contracts/semantic/go", "files/go", "semantics/go", "source/go", "trees/ast/go", "trees/cst/go", "trees/representation/go"},
 	"contracts/print/go":        {"contracts/language/go", "files/go", "source/go", "trees/cst/go", "trees/representation/go"},
 	"contracts/transform/go":    {"contracts/language/go", "contracts/semantic/go", "internal/tree", "trees/ast/go", "trees/representation/go"},
 	"contracts/semantic/go":     {"contracts/check/go", "contracts/language/go", "files/go", "internal/tree", "semantics/go", "trees/ast/go", "trees/representation/go"},
