@@ -25,6 +25,18 @@ moves that merged on 11 November 2026, and one the first commit of #246.
 Neither read the second commit of #246, #247, #248, #250, #254 or #255. The
 reasoning sections are unchanged since the proposal.
 
+**Owner clarification, 13 November 2026.** The completed moves above leave a
+separate placement defect in the remaining Horos-specific forwarding adapter.
+The owner requires language-agnostic mechanisms to live in the agnostic layer,
+including the first implementation. An open public SPI and successful external
+composition establish only part of the boundary. A helper whose contract and
+guarantees are language-independent requires one agnostic implementation,
+instantiated by its consumers. Fixed language types and a small body cannot
+justify separate language copies.
+[AC-11](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-11)
+states the rule. [bittype/ACX-010](architecture-cases/0010-agnostic-mapping-adapter.md)
+records the confirmed adapter instance and its pending implementation correction.
+
 The owner asked on 11 November 2026 to check for packages "that contain multiple
 implementations / functionalities that either already are separate and neither
 conceptually nor practically depend on each other, or which still depend on
