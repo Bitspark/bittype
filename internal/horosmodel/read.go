@@ -155,7 +155,7 @@ func (r reader[L]) value(id ast.NodeID) (core.Value, error) {
 		if len(values) < 2 {
 			return nil, r.bad(id, "arrow requires inputs and result")
 		}
-		tag := "arrow"
+		tag := s.ArrowLabel
 		if s.Kind(n.Kind) == s.KindArrowSort {
 			tag = "sort-arrow"
 		}

@@ -20,7 +20,7 @@ import (
 // binding ID "record/typescript/1". The kernel resolves each field's mapping.
 func Library() rules.Library[s.Language] {
 	return func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
-		pattern, err := patterns.Head(from, "record", "closed")
+		pattern, err := patterns.Head(from, "record", h.RecordClosed)
 		if err != nil {
 			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
 		}

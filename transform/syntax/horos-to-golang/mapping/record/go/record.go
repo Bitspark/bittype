@@ -33,7 +33,7 @@ func Library(optional g.HelperKey) rules.Library[s.Language] {
 		if !optional.Valid() {
 			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, g.ErrInvalid
 		}
-		pattern, err := patterns.Head(from, "record", "closed")
+		pattern, err := patterns.Head(from, "record", h.RecordClosed)
 		if err != nil {
 			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
 		}
