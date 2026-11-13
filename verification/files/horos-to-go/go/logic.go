@@ -1,6 +1,9 @@
 package verification
 
-import "github.com/Bitspark/logos-contract/contract/go/typed"
+import (
+	n "github.com/Bitspark/bittype/semantics/golang/go"
+	"github.com/Bitspark/logos-contract/contract/go/typed"
+)
 
 // Local syntax construction uses lexical closures solely to calculate de Bruijn
 // indices. Logos owns all substitution, conversion, inference and checking.
@@ -77,7 +80,7 @@ func domains() []typed.Declaration {
 const (
 	ModelBasis  = "horos-go/captured-model-1"
 	SourceBasis = "horos/declarations-4/procedure"
-	NativeBasis = "go1.25/captured-types-1"
+	NativeBasis = n.Profile
 	NamedLaw    = "horos-go/named-representation-1"
 )
 

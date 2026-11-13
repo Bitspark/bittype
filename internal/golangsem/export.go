@@ -155,9 +155,34 @@ func (e *exporter) object(o types.Object) semantics.EntityID {
 		entity.Declarations = []ast.NodeRef{site}
 	}
 	e.data.Entities = append(e.data.Entities, entity)
-	body := e.typ(o.Type())
-	e.data.Entities[id-1].Body = body
+	declared := e.typ(o.Type())
+	// The type of a type name and of a field is a fact of the entity. The
+	// facts about the type hang on that term.
+	e.data.Facts = append(e.data.Facts, semantics.Fact{Subject: semantics.Subject{Entity: id}, Relation: n.DeclaredTypeRelation(), Term: declared})
+	// No body is set here, see body.
 	return id
+}
+
+// body sets the body of the entity of a captured declaration: the term of its
+// definition, the type that its written right-hand side denotes. go/types
+// exports no reader of a defined type's right-hand side, so it is the type of
+// the declaration's type expression. A field has a name and a type and no
+// definition. A type parameter, a predeclared type and a supplied declaration
+// have no captured definition. None of them has a body.
+//
+// export calls it in a pass of its own, after every captured declaration has
+// its entity. Setting the body while the entity is created would export the
+// right-hand side inside the declaration's own frame, one frame for each link
+// of a chain such as type C1 C2; type C2 C3, and reach the depth limit where
+// the declarations themselves do not.
+func (e *exporter) body(o types.Object) {
+	definition := e.declared[o]
+	if definition == nil {
+		return
+	}
+	if body := e.typ(definition); e.err == nil {
+		e.data.Entities[e.objects[o]-1].Body = body
+	}
 }
 func (e *exporter) parameters(owner semantics.EntityID, params *types.TypeParamList) {
 	for i := 0; i < params.Len(); i++ {
@@ -338,6 +363,12 @@ func export(ctx context.Context, program *checkedProgram, info *types.Info, orig
 	sort.Slice(definitions, func(i, j int) bool { return siteLess(origins[definitions[i]], origins[definitions[j]]) })
 	for _, id := range definitions {
 		e.object(info.Defs[id])
+		if e.err != nil {
+			return nil, e.located(origins[id])
+		}
+	}
+	for _, id := range definitions {
+		e.body(info.Defs[id])
 		if e.err != nil {
 			return nil, e.located(origins[id])
 		}

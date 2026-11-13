@@ -24,3 +24,12 @@ func TestPublishedNamesOfThePredeclaredEntityAndTheNameBinding(t *testing.T) {
 		}
 	}
 }
+
+// The relation from the entity of a type name to its own type is a name of
+// the published graph: the bridge writes it and Lookup, LookupIn, Parameters
+// and DeclaredType read it. An entity's body is not that type.
+func TestPublishedNameOfTheDeclaredTypeRelation(t *testing.T) {
+	if got := DeclaredTypeRelation(); got != (semantics.Key{Owner: "go", Name: "declared-type"}) {
+		t.Errorf("DeclaredTypeRelation is %v, want go/declared-type", got)
+	}
+}

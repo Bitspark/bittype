@@ -10,8 +10,18 @@ import (
 	"github.com/Bitspark/bittype/semantics/go"
 )
 
-const ResolutionProfile = "go1.25/captured-types-1/resolution-1"
-const AnalysisProfile = "go1.25/captured-types-1/analysis-1"
+// The profile has its second version since 13 November 2026 (bittype#310). A
+// published member changed: the body of an entity is the term of its
+// declaration's written definition, and the type of a type name is the
+// declared-type fact of its entity. Until then the body was that type. A
+// receipt of captured-types-1 is no receipt of this profile.
+const ResolutionProfile = Profile + "/resolution-1"
+const AnalysisProfile = Profile + "/analysis-1"
+
+// Profile is the name of the profile without its operation. The two profile
+// strings are built from it, and a dependent that names the profile as a
+// whole, such as the verification's native basis, reads it here.
+const Profile = "go1.25/captured-types-2"
 const LanguageVersion = "go1.25"
 const PackagePath = "captured"
 
@@ -46,6 +56,16 @@ func BuiltinKind() semantics.Key { return Key("builtin") }
 // name: the binding's site is the node of the use, and its target is the
 // entity that the compiler resolved the identifier to.
 func NameRole() semantics.Key { return Key("name") }
+
+// DeclaredTypeRelation is the relation of the fact from the entity of a type
+// name or of a field to the term of its type: a defined type, an alias, a
+// type parameter and a predeclared type, captured, supplied or of the
+// universe scope, and a field of a struct. Every such entity carries exactly
+// one. The term is the one that the facts about the type hang on. It is not
+// the entity's body: the body of a captured declaration is the term of its
+// written definition, and an entity without a captured definition, a field
+// among them, has no body.
+func DeclaredTypeRelation() semantics.Key { return Key("declared-type") }
 
 // Relations of the facts about a native type.
 func IdenticalRelation() semantics.Key   { return Key("identical") }

@@ -203,6 +203,34 @@ It never reads entity kinds, names, operators, payloads, locator meanings or
 facts. [Contract](../contracts/generation/go/source.go) ·
 [Walk and handles](../contracts/generation/go/occurrence.go)
 
+**What the walk requires of a source's graph.** The analysis of a source
+publishes a graph in which:
+
+- the body of a declaration's entity is the term of the declaration's
+  definition, and the parts of the definition are operands of that term;
+- a use of a declaration inside a definition, also of the declaration itself,
+  is a Reference to its entity, and a use of a generic declaration is an
+  Application with a direct Reference callee and complete arguments;
+- a use of a parameter is a Reference to the parameter's entity, which the
+  declaring entity lists in `Parameters`;
+- the type of a declared name, where a language has one apart from the
+  definition, is a fact and never the body. That holds for a field or
+  property too: it has a type and no definition, so no body;
+- a declaration whose definition the graph does not hold has no body. The
+  kernel refuses to open it.
+
+The kernel starts at the body and reads no fact, so a definition that an
+analysis relates to its declaration by a fact is invisible to it. A source
+names no starting term: that would be a step of a traversal
+([GEN-01](generation-gaps.md#gen-01), criterion 1). The kernel cannot check
+that a body is the definition. That is the analysis's statement, like every
+fact it publishes. The horos, Go and TypeScript analyses publish such graphs.
+The Rust analysis does not meet the first point for a struct and an enum yet,
+and is corrected next under [#310](https://github.com/Bitspark/bittype/issues/310).
+[Go](native-semantics.md#go-bodies-and-declared-types) ·
+[TypeScript](native-semantics.md#typescript-bodies-and-declared-types) ·
+[bittype/ACX-013](architecture-cases/0013-definition-behind-a-fact.md)
+
 ```go
 type PlanningInput[F, T, R any] struct {
     From      representation.Language

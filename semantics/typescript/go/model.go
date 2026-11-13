@@ -1,6 +1,7 @@
 package typescript
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
@@ -38,6 +39,26 @@ type PropertyInfo struct {
 	Optional bool
 	Readonly bool
 	Entity   semantics.EntityID
+}
+
+// ExtensionInfo is the json-1 data of an extension term: the number of base
+// type terms. They are the term's first operands, in written order. Exactly
+// one more operand follows them: the object term of the members that the
+// interface declares itself. The data is exactly the bytes that json.Marshal
+// gives for this type: one object with the one member Bases.
+type ExtensionInfo struct {
+	Bases int
+}
+
+// Extension is the written definition of an interface with base types.
+type Extension struct {
+	// Bases are the base type terms as written, in written order: a Reference
+	// to the base's entity, or an Application for a base with type arguments.
+	Bases []semantics.TermID
+	// Members are the members that the interface declares itself. Inherited
+	// members are reached through the bases, or all together through
+	// Type.Properties of the declared type.
+	Members []Property
 }
 
 // Open admits the exact analysis receipt without running a compiler.
@@ -102,7 +123,10 @@ func (m Model) Lookup(tree ast.TreeID, name string) (Declaration, error) {
 	return Declaration{}, ErrForeign
 }
 func (m Model) Type(id semantics.TermID) (Type, error) {
-	if !m.Valid() || len(m.Graph().Facts(semantics.Subject{Term: id}, NativeTypeRelation())) != 1 {
+	if !m.Valid() {
+		return Type{}, ErrForeign
+	}
+	if _, ok := m.state.graph.OnlyFact(semantics.Subject{Term: id}, NativeTypeRelation()); !ok {
 		return Type{}, ErrForeign
 	}
 	return Type{m.state, id}, nil
@@ -121,11 +145,11 @@ func (d Declaration) fact(relation semantics.Key) Type {
 	if !d.Valid() {
 		return Type{}
 	}
-	ids := d.owner.graph.Facts(semantics.Subject{Entity: d.id}, relation)
-	if len(ids) != 1 {
+	id, ok := d.owner.graph.OnlyFact(semantics.Subject{Entity: d.id}, relation)
+	if !ok {
 		return Type{}
 	}
-	return Type{d.owner, ids[0]}
+	return Type{d.owner, id}
 }
 func (d Declaration) Type() Type       { return d.fact(DeclaredTypeRelation()) }
 func (d Declaration) Constraint() Type { return d.fact(ConstraintRelation()) }
@@ -155,11 +179,8 @@ func (t Type) fact(relation semantics.Key) semantics.TermID {
 	if !t.Valid() {
 		return 0
 	}
-	ids := t.owner.graph.Facts(semantics.Subject{Term: t.id}, relation)
-	if len(ids) != 1 {
-		return 0
-	}
-	return ids[0]
+	id, _ := t.owner.graph.OnlyFact(semantics.Subject{Term: t.id}, relation)
+	return id
 }
 func (t Type) String() string {
 	if !t.Valid() {
@@ -172,7 +193,12 @@ func (t Type) Properties() ([]Property, bool) {
 	if !t.Valid() {
 		return nil, false
 	}
-	term, _ := t.owner.graph.Term(t.fact(PropertiesRelation()))
+	return t.owner.object(t.fact(PropertiesRelation()))
+}
+
+// object reads an object term: its members with their value types.
+func (m *model) object(id semantics.TermID) ([]Property, bool) {
+	term, _ := m.graph.Term(id)
 	if term.Operator != ObjectOperator() {
 		return nil, false
 	}
@@ -182,8 +208,66 @@ func (t Type) Properties() ([]Property, bool) {
 	}
 	out := make([]Property, len(fields))
 	for i, f := range fields {
-		e, _ := t.owner.graph.Entity(f.Entity)
-		out[i] = Property{Name: f.Name, Type: Type{t.owner, term.Operands[i].Term}, Optional: f.Optional, Readonly: f.Readonly, Sites: e.Declarations}
+		e, _ := m.graph.Entity(f.Entity)
+		out[i] = Property{Name: f.Name, Type: Type{m, term.Operands[i].Term}, Optional: f.Optional, Readonly: f.Readonly, Sites: e.Declarations}
 	}
 	return out, true
+}
+
+// Extension reads an extension term, the body of the entity of an interface
+// that has an extends clause. It reads the published form exactly and has no
+// answer for a term in another form: another operator or encoding, data that
+// is not the bytes of an ExtensionInfo (another spelling of the member, a
+// further or a repeated member, white space), fewer than one base, a number
+// of operands other than the bases and one more, a base that is neither a
+// Reference nor an Application, or a last operand that is no object term.
+// The body of an interface without an extends clause is an object term and
+// no extension.
+func (m Model) Extension(id semantics.TermID) (Extension, bool) {
+	if !m.Valid() {
+		return Extension{}, false
+	}
+	term, _ := m.state.graph.Term(id)
+	if term.Operator != ExtensionOperator() || term.Encoding != JSONEncoding() {
+		return Extension{}, false
+	}
+	var info ExtensionInfo
+	if json.Unmarshal(term.Data, &info) != nil || info.Bases < 1 || len(term.Operands) != info.Bases+1 {
+		return Extension{}, false
+	}
+	// Decoding accepts other spellings of the same value. The published form
+	// is the one that encoding gives.
+	if canonical, err := json.Marshal(info); err != nil || !bytes.Equal(canonical, term.Data) {
+		return Extension{}, false
+	}
+	members, ok := m.state.object(term.Operands[info.Bases].Term)
+	if !ok {
+		return Extension{}, false
+	}
+	out := Extension{Members: members}
+	for _, operand := range term.Operands[:info.Bases] {
+		// A base is a use of a type: its reference, or its application.
+		if base, _ := m.state.graph.Term(operand.Term); base.Kind != semantics.Reference && base.Kind != semantics.Application {
+			return Extension{}, false
+		}
+		out.Bases = append(out.Bases, operand.Term)
+	}
+	return out, true
+}
+
+// DeclaredType reads the type of a captured alias, interface, type parameter
+// or property from the declared-type fact of its entity. It fails for an
+// entity that does not carry exactly one such fact, as a module, a supplied
+// package type and its type parameters do not. For an alias, an interface and
+// a type parameter it is the type that Declaration.Type returns. An entity's
+// body is not read: it is the declaration's written definition.
+func (m Model) DeclaredType(id semantics.EntityID) (Type, error) {
+	if !m.Valid() {
+		return Type{}, ErrForeign
+	}
+	term, ok := m.state.graph.OnlyFact(semantics.Subject{Entity: id}, DeclaredTypeRelation())
+	if !ok {
+		return Type{}, ErrForeign
+	}
+	return m.Type(term)
 }

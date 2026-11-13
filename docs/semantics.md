@@ -92,6 +92,11 @@ Its name is display metadata. Same-spelled declarations can have different IDs;
 one entity can have several declaration sites; an intrinsic can have none.
 `Kind` distinguishes provider-owned categories such as aliases and defined types.
 `Owner` and `Body` are optional links, not a universal namespace or type-of rule.
+In a graph that a generation source publishes, the body of a declaration's
+entity is the term of its definition, whose parts are operands of that term,
+and an entity that has no definition, or whose definition the graph does not
+hold, has no body
+([the requirement on a source's graph](generation-spi.md#semantic-traversal-and-source-interpretation)).
 
 IDs are one-based arena positions local to one model. Zero is valid only for
 optional links; equal numeric IDs in different models establish nothing. Current
@@ -158,6 +163,10 @@ and a use that has not been analyzed are three different cases.
 `Data.Facts` stores multivalued provider-owned relations on entities or terms.
 `Facts(subject, relation)` retrieves all recorded terms; no unique meaning,
 application evaluation or structural-kind rule is imposed by the kernel.
+`OnlyFact(subject, relation)` returns the term when exactly one is recorded
+and has no answer otherwise. It serves a reader whose vocabulary records a
+relation once per subject, so that vocabularies do not each count the result
+of `Facts`, and it gives the relation no meaning.
 
 Provider keys are owned vocabulary, not executable discovery or registration.
 Consumers can inspect the graph generically and interpret particular keys only

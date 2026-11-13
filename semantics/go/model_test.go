@@ -122,6 +122,19 @@ func TestSemanticModelQueriesPreserveIdentity(t *testing.T) {
 	if got := model.Facts(semantics.Subject{Entity: 3}, vocabulary("intrinsic")); !reflect.DeepEqual(got, []semantics.TermID{3}) {
 		t.Fatalf("source-less subject needs no invented syntax: %v", got)
 	}
+	// OnlyFact answers for exactly one fact, and not for two or for none.
+	if got, ok := model.OnlyFact(semantics.Subject{Term: 4}, vocabulary("result")); !ok || got != 3 {
+		t.Fatalf("the one fact: %v %v", got, ok)
+	}
+	if got, ok := model.OnlyFact(semantics.Subject{Entity: 1}, vocabulary("representation")); ok || got != 0 {
+		t.Fatalf("two facts gave an answer: %v %v", got, ok)
+	}
+	if got, ok := model.OnlyFact(semantics.Subject{Entity: 1}, vocabulary("unknown")); ok || got != 0 {
+		t.Fatalf("no fact gave an answer: %v %v", got, ok)
+	}
+	if got, ok := (semantics.Semantics[struct{}]{}).OnlyFact(semantics.Subject{Term: 4}, vocabulary("result")); ok || got != 0 {
+		t.Fatalf("an invalid model gave an answer: %v %v", got, ok)
+	}
 	if got := model.Facts(semantics.Subject{Entity: 1}, vocabulary("unknown")); len(got) != 0 {
 		t.Fatal("unrecorded relation acquired a fact")
 	}

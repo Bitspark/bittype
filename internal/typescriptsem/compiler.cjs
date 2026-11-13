@@ -6,6 +6,9 @@ const path = require("node:path");
 /** @type {typeof import("typescript")} */
 const ts = require(process.argv[1]);
 const key = name => ({ Owner: "typescript", Name: name });
+// The name of the helper profile, which the messages below state. The Go
+// vocabulary publishes it as HelperProfile and sets it as the helper setting.
+const profile = "captured-types-2";
 const site = (unit, node) => ({ Tree: unit.Tree, Node: node.ID });
 const attr = (node, name) => (node.Attributes || []).find(a => a.Name === name)?.Text || "";
 const children = (node, role) => (node.Children || []).filter(c => c.Role === role).map(c => c.Node);
@@ -23,8 +26,8 @@ function main(request) {
   const supported = new Set(["source-file", "type-alias", "interface", "type-parameter", "type-reference", "type-application", "keyword-type", "literal-type", "array-type", "tuple-type", "tuple-element", "object-type", "union-type", "intersection-type", "property", "type-operator"]);
   if (request.NamedImports) { supported.add("import"); supported.add("import-binding"); }
   for (const unit of request.Units) for (const node of unit.Nodes) {
-    if (!supported.has(node.Kind) || node.Kind === "type-operator" && attr(node, "operator") !== "readonly" || node.Kind === "keyword-type" && attr(node, "name") === "this") unsupported(`Syntax kind ${node.Kind} is outside captured-types-1`, site(unit, node));
-    if (children(node, "default").length) unsupported("Generic defaults are outside captured-types-1", site(unit, node));
+    if (!supported.has(node.Kind) || node.Kind === "type-operator" && attr(node, "operator") !== "readonly" || node.Kind === "keyword-type" && attr(node, "name") === "this") unsupported(`Syntax kind ${node.Kind} is outside ${profile}`, site(unit, node));
+    if (children(node, "default").length) unsupported(`Generic defaults are outside ${profile}`, site(unit, node));
     if (children(node, "type-parameter").length > 16) unsupported("At most 16 generic parameters are supported", site(unit, node));
   }
   const options = { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.ESNext, strict: true, exactOptionalPropertyTypes: true, noUncheckedIndexedAccess: true, noEmit: true, types: [], typeRoots: [], lib: ["lib.es2020.d.ts"], skipLibCheck: false };
@@ -143,6 +146,11 @@ function main(request) {
   const graph = { Entities: [], Terms: [], Bindings: [], Expressions: [], Dependencies: [], Facts: [] };
   const entityBySymbol = new Map(); const symbolByEntity = new Map(); const referenceByEntity = new Map();
   const typeIDs = new Map(); const typesByID = new Map(); const declaredOwners = new Map(); const fileOwners = new Map();
+  // structureOf: the term that the structure fact of a named native type
+  // relates. writtenAt: at a syntax node of a type expression, the term of the
+  // compiler's type there and, for a reference or an application, the term
+  // of the expression as it is written.
+  const structureOf = new Map(); const writtenAt = new Map();
   let depth = 0;
   const count = () => {
     if (graph.Entities.length + graph.Terms.length + graph.Facts.length + graph.Bindings.length + graph.Expressions.length > 32768) throw new Failure("incomplete", "TypeScript semantic record limit exceeded");
@@ -175,7 +183,7 @@ function main(request) {
     count();
     const declarations = symbol.getDeclarations() || [];
     const declared = declarations.filter(d => captured(d));
-    if (declared.length > 1 && declared.some(d => ts.isInterfaceDeclaration(d))) unsupported("Interface declaration merging is outside captured-types-1", captured(declared[0]));
+    if (declared.length > 1 && declared.some(d => ts.isInterfaceDeclaration(d))) unsupported(`Interface declaration merging is outside ${profile}`, captured(declared[0]));
     const first = declared[0] || declarations[0];
     let kind = "builtin";
     if (declared.length) kind = ts.isTypeAliasDeclaration(first) ? "alias" : ts.isInterfaceDeclaration(first) ? "interface" : ts.isTypeParameterDeclaration(first) ? "parameter" : "property";
@@ -216,14 +224,17 @@ function main(request) {
   // array constructors from the standard library and explicitly supplied package types.
   for (const unit of request.Units) for (const node of unit.Nodes) if (node.Kind === "type-reference") {
     const symbol = resolvedSymbol(symbolFor(nativeByNode.get(unit.Tree + ":" + node.ID)));
-    if (!ownSymbol(symbol) && !packageSymbol(symbol) && !checker.isArrayType(checker.getDeclaredTypeOfSymbol(symbol))) unsupported("External type references other than array constructors are outside captured-types-1", site(unit, node));
+    if (!ownSymbol(symbol) && !packageSymbol(symbol) && !checker.isArrayType(checker.getDeclaredTypeOfSymbol(symbol))) unsupported(`External type references other than array constructors are outside ${profile}`, site(unit, node));
   }
-  function properties(type) {
-    if (checker.getSignaturesOfType(type, ts.SignatureKind.Call).length || checker.getSignaturesOfType(type, ts.SignatureKind.Construct).length || checker.getIndexInfosOfType(type).length) unsupported("Callable and indexed object types are outside captured-types-1");
+  // The object of a type's members. With own, only the members whose
+  // declaration own admits: the members that one interface declares itself.
+  function properties(type, own = undefined) {
+    if (checker.getSignaturesOfType(type, ts.SignatureKind.Call).length || checker.getSignaturesOfType(type, ts.SignatureKind.Construct).length || checker.getIndexInfosOfType(type).length) unsupported(`Callable and indexed object types are outside ${profile}`);
     const metadata = [], operands = [];
     for (const property of checker.getPropertiesOfType(type)) {
       const declaration = property.valueDeclaration || property.declarations?.[0];
-      if (!declaration || !captured(declaration)) unsupported("External object members are outside captured-types-1");
+      if (!declaration || !captured(declaration)) unsupported(`External object members are outside ${profile}`);
+      if (own && !own(declaration)) continue;
       metadata.push({ Name: property.getName(), Optional: !!(property.flags & ts.SymbolFlags.Optional), Readonly: ts.canHaveModifiers(declaration) && !!ts.getModifiers(declaration)?.some(m => m.kind === ts.SyntaxKind.ReadonlyKeyword), Entity: entity(property) });
       operands.push(nativeType(checker.getTypeOfSymbolAtLocation(property, declaration)));
     }
@@ -248,8 +259,10 @@ function main(request) {
     else if (f & (ts.TypeFlags.StringLiteral | ts.TypeFlags.NumberLiteral | ts.TypeFlags.BooleanLiteral | ts.TypeFlags.BigIntLiteral)) value = expression("literal", checker.typeToString(type));
     else if (f & ts.TypeFlags.TypeParameter) value = { Kind: 1, Target: entity(type.symbol) };
     else {
-      // References break recursive type graphs; definition structure is a fact,
-      // not a containment edge back into the named type.
+      // A named type is a Reference to its entity, which breaks recursive
+      // type graphs. Its structure is the value of the structure fact and no
+      // containment edge back into the named type. The structure is also the
+      // body of the entity that declares the name, see the body pass below.
       if (owner) {
         const original = checker.getDeclaredTypeOfSymbol(owner);
         if (original !== type) {
@@ -268,8 +281,8 @@ function main(request) {
         else if (f & ts.TypeFlags.Union) structure = term(expression("union", null, type.types.map(nativeType)));
         else if (f & ts.TypeFlags.Intersection) structure = term(expression("intersection", null, type.types.map(nativeType)));
         else if (f & ts.TypeFlags.Object) { structure = properties(type); fact({ Term: id }, "properties", structure); }
-        else unsupported(`Native type is outside captured-types-1: ${checker.typeToString(type)}`);
-        if (value) fact({ Term: id }, "structure", structure);
+        else unsupported(`Native type is outside ${profile}: ${checker.typeToString(type)}`);
+        if (value) { fact({ Term: id }, "structure", structure); structureOf.set(id, structure); }
         else value = graph.Terms[structure - 1];
       }
     }
@@ -293,6 +306,7 @@ function main(request) {
     // per-occurrence type associations belong to the occurrence, not that ref.
     graph.Expressions.push({ At: { Site: site(unit, node), Role: key("type-expression"), Ordinal: 0 }, Term: symbolic });
     graph.Expressions.push({ At: { Site: site(unit, node), Role: key("native-type"), Ordinal: 0 }, Term: type });
+    writtenAt.set(unit.Tree + ":" + node.ID, { written: symbolic !== type ? symbolic : undefined, type });
     return symbolic;
   }
   const expressions = new Set(["type-reference", "type-application", "keyword-type", "literal-type", "array-type", "tuple-type", "object-type", "union-type", "intersection-type", "type-operator"]);
@@ -311,10 +325,47 @@ function main(request) {
     if (expressions.has(node.Kind)) expressionType(unit, node);
     if (["type-alias", "interface", "type-parameter"].includes(node.Kind)) {
       const symbol = symbolFor(native), id = entity(symbol), type = nativeType(checker.getDeclaredTypeOfSymbol(symbol));
+      // The type of the name is this fact. It is not the entity's body.
       fact({ Entity: id }, "declared-type", type);
       if (node.Kind === "type-parameter" && native.constraint) fact({ Entity: id }, "constraint", nativeType(checker.getTypeFromTypeNode(native.constraint)));
-      graph.Entities[id - 1].Body = type;
     }
+  }
+  // The body of a declaration's entity is the term of its written definition.
+  // An alias: the term of its right-hand side, see definition. An interface without an extends
+  // clause: the object of its members, which are all its own. An interface
+  // with an extends clause: an extension, whose operands are the base type
+  // terms as written, in written order, and then the object of the members
+  // that the interface declares itself. Its data states the number of bases.
+  // semantics/typescript/go publishes the operator and the data's member as
+  // ExtensionOperator and ExtensionInfo. A type parameter and a property have
+  // no definition and no body.
+  // The term of the right-hand side of the alias with the entity id. A
+  // reference or an application is the term as written. Every other form is
+  // the compiler's type of the expression. Where the graph names that type by
+  // the alias itself, the definition is the structure that the name stands
+  // for. Where the compiler reduced the expression to another named type, as
+  // it reduces A & unknown, A | never and A & {} to A, the definition is a
+  // use of that type: its Reference, or its Application for an instantiation,
+  // whether the type is captured or supplied. The structure of that other
+  // type is not shared as a body, so that a walk reaches its declaration.
+  function definition(rhs, id) {
+    if (!rhs) return undefined;
+    if (rhs.written) return rhs.written;
+    const named = graph.Terms[rhs.type - 1];
+    return named.Kind === 1 && named.Target === id ? structureOf.get(rhs.type) ?? rhs.type : rhs.type;
+  }
+  for (const unit of request.Units) for (const node of unit.Nodes) {
+    if (node.Kind !== "type-alias" && node.Kind !== "interface") continue;
+    const native = nativeByNode.get(unit.Tree + ":" + node.ID), symbol = symbolFor(native), id = entity(symbol);
+    let body;
+    if (node.Kind === "type-alias") body = definition(writtenAt.get(unit.Tree + ":" + children(node, "type")[0]), id);
+    else {
+      const declared = checker.getDeclaredTypeOfSymbol(symbol), bases = children(node, "base").map(base => writtenAt.get(unit.Tree + ":" + base)?.written);
+      if (bases.some(base => !base)) unsupported(`An interface base without a type expression is outside ${profile}`, site(unit, node));
+      if (!bases.length) body = structureOf.get(nativeType(declared));
+      else body = term(expression("extension", { Bases: bases.length }, [...bases, properties(declared, declaration => declaration.parent === native)]));
+    }
+    if (body) graph.Entities[id - 1].Body = body;
   }
   // Record the actual public declarations of each captured module.
   for (const unit of request.Units) {
@@ -328,11 +379,13 @@ function main(request) {
       }
     }
   }
-  // Property entities share the compiler's declared non-missing value type.
-  // Presence and readonly flags remain separate object metadata. These are not
-  // flow-sensitive read types or writable acceptance judgments.
+  // The type of a property is the declared-type fact of its entity: the
+  // compiler's declared non-missing value type. A property has a name and a
+  // type and no definition, so its entity has no body. Presence and readonly
+  // flags remain separate object metadata. These are not flow-sensitive read
+  // types or writable acceptance judgments.
   for (const [id, symbol] of symbolByEntity) if (graph.Entities[id - 1].Kind.Name === "property") {
-    const d = symbol.valueDeclaration || symbol.declarations[0]; graph.Entities[id - 1].Body = nativeType(checker.getTypeOfSymbolAtLocation(symbol, d));
+    const d = symbol.valueDeclaration || symbol.declarations[0]; fact({ Entity: id }, "declared-type", nativeType(checker.getTypeOfSymbolAtLocation(symbol, d)));
   }
   count();
   const result = { Version: 1, Status: "ok", Facts: graph, Diagnostics: [], Assignable: undefined };
