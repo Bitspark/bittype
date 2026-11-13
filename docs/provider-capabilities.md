@@ -885,7 +885,7 @@ No structural definition attached. Operation source and authored scope remain th
 
 Contract: github.com/Bitspark/bittype/contracts/analysis/go.Provider&#91;github.com/Bitspark/bittype/syntax/rust/go.Language&#93;.
 
-Public operation: [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L49). Receiver: github.com/Bitspark/bittype/analyze/files/rust/provider/go.Provider.
+Public operation: [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L55). Receiver: github.com/Bitspark/bittype/analyze/files/rust/provider/go.Provider.
 
 Language marker: github.com/Bitspark/bittype/syntax/rust/go.Language.
 
@@ -893,11 +893,11 @@ Construction alternatives: no provider collaborators.
 
 Static call relationships (no evidence transfer):
 
-- [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L49) → [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L15) ([call](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L50)); receiver ; type arguments .
+- [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L55) → [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L16) ([call](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L56)); receiver ; type arguments .
 
 Traversal boundary: not a single-return static call.
 
-### Declared target [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L15)
+### Declared target [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L16)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
@@ -905,13 +905,13 @@ Related declaration; its cases and observations do not qualify the public wrappe
 
 Authored scope: [docs/native-semantics.md#first-rust-profile](https://github.com/Bitspark/bittype/blob/main/docs/native-semantics.md#first-rust-profile); profile: unspecified (authored profile absent).
 
-### Declared target [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L49)
+### Declared target [github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze](https://github.com/Bitspark/bittype/blob/main/analyze/files/rust/provider/go/analyze.go#L55)
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
 | semantic-conformance | independent-provider-registration | resolution-graph-preserved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
-| rust-semantic-subset | native-types-and-generics | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestRustSemanticNativeTypes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L202) (external) |
-| rust-semantic-subset | bounds-and-profile-outcomes | qualified-reports-without-partial-model | unspecified (authored profile absent) | [TestRustSemanticBoundsAndOutcomes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L264) (external) |
+| rust-semantic-subset | native-types-and-generics | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestRustSemanticNativeTypes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L257) (external) |
+| rust-semantic-subset | bounds-and-profile-outcomes | qualified-reports-without-partial-model | unspecified (authored profile absent) | [TestRustSemanticBoundsAndOutcomes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L319) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
@@ -976,8 +976,8 @@ Authored scope: [docs/native-semantics.md#first-rust-profile](https://github.com
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
 | semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
-| rust-semantic-subset | native-types-and-generics | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestRustSemanticNativeTypes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L202) (external) |
-| rust-semantic-subset | bounds-and-profile-outcomes | qualified-reports-without-partial-model | unspecified (authored profile absent) | [TestRustSemanticBoundsAndOutcomes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L264) (external) |
+| rust-semantic-subset | native-types-and-generics | native-identity-and-substitution-preserved | unspecified (authored profile absent) | [TestRustSemanticNativeTypes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L257) (external) |
+| rust-semantic-subset | bounds-and-profile-outcomes | qualified-reports-without-partial-model | unspecified (authored profile absent) | [TestRustSemanticBoundsAndOutcomes](https://github.com/Bitspark/bittype/blob/main/integration/go/rust_semantics_test.go#L319) (external) |
 
 No structural definition attached. Operation source and authored scope remain the boundary; no grammar is inferred from AST kinds, switches or tests.
 
