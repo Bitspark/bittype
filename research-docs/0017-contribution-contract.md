@@ -516,3 +516,319 @@ first slice: in Go, `Value` is ignored when `Present` is false, so `≈`
 identifies two absent values with different `Value`; in TypeScript, an absent
 property and a present `undefined` are different native states. Neither fact
 is visible in the native type.
+
+### 2.3 Representation families: the contract, the instance and the plan
+
+Source: bittype `docs/representation-families.md`. Its first line: "Accepted
+design, 9 November 2026. Not implemented." It was decided by research 0015, a
+second consultation by the same research owner, and "details the selected
+representation plan and the paired contributions of binding generation for
+concrete value families". Where the two pages differ, representation
+families is the later amendment. Standing of everything quoted from the page
+in this subsection: **accepted design** (representation families, 9 November
+2026). Quotations of the expert's advice are background and have no standing.
+
+**Delivered complete:**
+
+> A family is delivered with its native type, its plan entries, its value conversion and its qualification together. It is never a types-only mapping that a later binding step reopens. The conversion constrains which native types are admissible at all: a TypeScript `number` cannot hold every horos integer.
+>
+> **The promise.** Adding a family through the published identity, dependency, invocation, plan-graph and target-extension contracts changes only that family and the consumers that compose it. Existing representation identities keep their meaning.
+
+The page names these five contracts and defines none of them further. In our
+reading, identity is the subject of question 2, dependency is the demand of
+question 1, plan-graph is the envelope, target-extension is the facets of
+question 3, and invocation is how a backend calls a factory.
+
+**The representation contract.** "A family contributes, per target, one
+contract with seven parts:"
+
+| Part | What it defines |
+| --- | --- |
+| Applicability | The source identities and forms it accepts, its generic assumptions, its targets, its explicit refusals |
+| Native representation | Native type, dependencies, construction, access, discrimination, admissible native states |
+| Value meaning | Promised canonical domain, domain predicates, native equivalence, any permitted normalization |
+| Selected-use payload | A family-owned, versioned schema for the decisions recorded at each use |
+| Conversion implementation | Run-time factory reference, child adapter slots, runtime compatibility, conversion laws; optionally a lowering facet (below) |
+| Operational requirements | Budget use, mutation and ownership, recursion support, sharing behaviour, failures |
+| Qualification | Separate evidence for type generation and binding support, tied to the representation and implementation versions |
+
+This is what a contribution must supply. The seven elements of section 2.2
+list what a library publishes; the two lists describe the same thing from two
+sides. Note "its explicit refusals" under applicability, and "per target" as
+this page's word on granularity.
+
+**One instance, two projections.** The sentence the shape we would build
+rests on:
+
+> The planner selects one immutable representation instance per use. The native type and the plan entry are both projections of that instance. No later pass reconstructs a decision from the source, so a native declaration and its conversion cannot disagree.
+
+The advice behind it:
+
+> That prevents a subtle failure mode: generating a native declaration, then independently reconstructing conversion decisions from the source. Two passes can read the same declaration and still disagree about a nullable pointer, a union wrapper, or a generic specialization.
+>
+> “Defined once” should mean that representation decisions have one authoritative origin. It need not mean that a Go planner and a TypeScript runtime somehow share one executable implementation. Their agreement still needs a shared contract and verification.
+
+**Factories and the lowering facet:**
+
+> By default a plan entry names the family's run-time factory and gives it the family's payload as arguments. A family may also supply a target-owned **lowering facet** that turns its recorded decisions into typed target expressions or helpers, such as generated accessors or constructors for Go. The binding backend owns imports, names, placement and assembly. It never switches over families, and source-code strings never stand in for typed target expressions. A shared interpreter is a valid factory implementation only if its handlers are registered contributions executing selected decisions. Generated source is never modified as an extension mechanism.
+
+The advice behind it says why a factory with plain data cannot be the only
+path: "A TypeScript runtime can access a field from its name. A Go family may
+instead need generated accessors, constructors, typed closures, or helper
+declarations."
+
+**The plan**, verbatim:
+
+| Shared envelope | Family-owned payload |
+| --- | --- |
+| Version axes; target and its configuration | Integer representation and admitted range |
+| Checked source references and source semantic identity | Record field layout and presence behaviour |
+| Root products and source-use identities | Union dispatch and construction |
+| Scoped binders and actual-argument environments | Map representation and key requirements |
+| Selected contribution and profile identities | Refinements and domain-predicate references |
+| Typed dependency slots and recursive references | Family-specific construction and access |
+| Native symbols, imports, factory references, runtime requirements | Other representation decisions |
+| Diagnostic provenance | Family-specific diagnostic detail |
+
+Followed by five properties:
+
+> - **A graph.** Generic parameters and recursive adapter references are explicit links in the envelope. Nothing the orchestration must resolve hides inside a payload.
+> - **Payload schemas are horos types.** A payload is an ontos value. Its family declares the payload type in horos; bittype generates the Go and TypeScript types, and horos conformance validates a payload. No separate schema language is introduced.
+> - **Five version axes:** the envelope protocol; the family payload schema; the representation's semantic identity; generated-code/runtime compatibility; source semantics. An unknown required schema, semantic version or runtime requirement fails explicitly. Only metadata designated nonsemantic may be ignored.
+> - **Generic requirements from the first version.** Each generic use carries its scoped binder identities, native type arguments, adapter arguments and requirements (below).
+> - **Unstable until six vertical cases pass.** The envelope keeps an explicitly unstable version until the completeness test backend passes:
+>   1. recursive `ContentValue` with a shared DAG, a cycle and an expanded-size failure;
+>   2. `Page<Outcome>` with optional nullable fields and an exact discriminator;
+>   3. the exact external generic `Cell<T>`;
+>   4. a Go case with typed construction and a generic adapter argument;
+>   5. a generic map whose key requirement is rejected;
+>   6. an independently registered family that needs no kernel or backend change.
+
+(`ContentValue` is a recursive type of the Content service and `Outcome` a
+union with a constant tag field.) Four remarks for a reader outside the
+project.
+
+- "Record field layout and presence behaviour" stands in the payload column
+  as one item. It is the second text behind option D1 of section 6.2.
+- "Selected contribution and profile identities" requires an identity of a
+  contribution that survives serialization. The page does not say what it is.
+- "Typed dependency slots" requires every link between two entries to be
+  visible to the kernel. A family that asks for another's answer must do it
+  in a way that produces a link.
+- Vertical case 4 is the lowering facet's test. Representation families
+  assigns it to no slice. The six cases were set for the envelope; the
+  contribution contract has no such list.
+
+**Generic requirements.** "A native type parameter does not carry the
+adapter, equality, discriminator or layout evidence needed to bind values of
+that type". For `Page<T>`: "`T`'s selected adapter travels with its native
+type". For a nullable `T`: "The null representation cannot collide with a
+valid `T`", which is a requirement that one family places on whatever another
+family selected for its operand.
+
+**Absence and null**, the family behind question 1:
+
+> An optional nullable field has three states. Go uses `Optional[Nullable[T]]` with defined treatment of unused payload fields; a pointer form needs proof that its `nil` cannot collide with a valid value (`**big.Int`). TypeScript uses `field?: T | null`, and the adapter separates an absent own property from a present `undefined` at run time.
+
+The page also keys a conversion's memo "by the selected representation
+instance plus input identity"; section 2.5 quotes the service library's
+version of that sentence, on which question 2 rests.
+
+### 2.4 The work items, the order and the first slice
+
+Four open issues of the bittype repository carry the work. Their texts are
+ours. Where they restate an accepted design they add nothing. Where they go
+beyond it, standing: **our derivation**.
+
+**Issue #196, item 6** (added 11 November 2026) is the contract change.
+Verbatim, with one stale file path corrected in brackets. In it "a binding"
+is a use rule and "the mappings" are the registered units:
+
+> **The existing mapping contract changes once, here.** [...] A binding's `Expand` returns only a native `Expression[T]` (`contracts/generation/go/description.go:26-31`), and a declaration recipe returns only a `DeclarationDescription[T]` (`:61-66`). A decision such as "this field is optional" is made inside the callback and recorded nowhere ([today `transform/syntax/horos-to-golang/mapping/record/go/record.go:70-72`]). Item 1 of #195 requires the native expression and the plan entry to be projections of one selected instance. So what a contribution returns has to change, and the mappings of all four targets implement that contract. The change is made in this slice for every existing mapping, including Rust and C++, so that later families add contributions and change no existing contract. Derive the new result from the domain (AC-09). This item prescribes no signature.
+
+"Recorded nowhere" is imprecise; section 3.7 gives the exact state. Its
+verification: "After this slice, a fixture family is added by registering one
+contribution. The diff of that test touches no file under
+`contracts/generation/go` and no existing mapping."
+
+The same day this seat added a delivery note to the page of section 2.3, in a
+pull request that states it changes "No code, no contract and no accepted
+design text": "Two existing parts change once, ahead of the families: [...]
+and what an existing mapping returns (item 6 of #196). After them a family
+adds a contribution and changes no existing contract." So "changes once" has
+the standing of our derivation from AC-10, wherever it stands.
+
+**Issue #195** is the plan. Its items restate section 2.3 and add: "A payload
+that fails its type is refused before any backend runs" and "A test backend
+in this repository, in Go, implements each supported representation from the
+plan, the source semantics and the selected contributions alone. A plan that
+omits a decision fails the test." It keeps vertical case 4 for itself.
+
+**Issue #207** is the six families (items 1, 5 and 9 of eleven):
+
+> 1. **Contract.** Each family is one representation contract with all seven parts, contributed through the public interface of #196. The kernel, the planner and the completeness test backend gain no case for a family.
+> 5. **Existing output unchanged.** The native declarations generated for today's pagination fixtures stay byte-identical in all four targets. Existing binding identities keep their meaning. The profile's own identity is settled first, in #216.
+> 9. **Optional fields.** The TypeScript adapter separates an absent own property from a present `undefined` at run time. Go keeps `BittypeOptional[T]` and ignores `Value` when absent [21].
+
+("Binding identities" are the rule IDs such as `list/golang/1` of section
+3.4. "[21]" is a row of research 0015's result table, which asserts of
+today's Go type that it "already ignores `Value` when absent"; no code states
+it.) Its verification: "`Page<Person>` goes from horos source to native
+types, a plan and a round trip in the Go completeness test backend, with no
+rule guessed by the backend." and "A seeded mutant that builds a plan entry
+in a separate pass from the native expression turns the completeness test
+red".
+
+**Why this order** (the steps of section 1.4; standing: our derivation). The
+contract change comes first because the optional move needs a request whose
+answer has the new contract's shape; a request built on today's contract
+would return native intent and change again. Everything in step 3 is then
+additive. Until step 2, the coupling of section 2.1 stays an open, recorded
+violation.
+
+**What speaks against this order.** Step 1 makes the contract final while
+nothing reads its new half. With types-only behaviour and unchanged output,
+the decision record, the request and the facets have no consumer until step
+3, and no reader in another process or repository until the service library
+writes its first factory. A contract can pass step 1 and be wrong in every
+part that the first slice exists to add. The prototype that our reading of
+"once" allows (Question section; 6.6) is the obvious remedy, and it changes
+the order: one target end to end first, the other three after.
+
+**A caution about our own reading.** On 12 November 2026 we first recorded
+what was left of item 6 as "details inside a settled design" (#196, 19:38Z),
+then found by reading the accepted pages against the first slice that several
+shapes are given nowhere (#196, 22:40Z). Earlier that day two design
+questions in this line of work had been answered from the code, wrongly. This
+document may make the opposite error and read more into the pages than they
+say.
+
+### 2.5 The other side of the interface: the service library's binding contracts
+
+Source: bitspark-service `docs/design/binding-contracts.md` at commit
+`c36722db901ef7a259242e168c4c35d6f777fbf4`. Its status line: "accepted by
+libraries/service on 11 November 2026. Nothing here is implemented yet". It
+was written and accepted by the owner seat of that repository. Its laws on
+capability lifetime (group L) are under revision in bitspark-service#47;
+bittype has confirmed the group on the call context (K) and not group L.
+Standing: **accepted design** (binding contracts, 11 November 2026), with L1
+marked unconfirmed.
+
+**What a backend pins.** The service library's issue for its TypeScript
+backend (bitspark-service#40): "It reads one pinned serialized plan version.
+It refuses an unknown envelope version, payload schema, semantic version and
+run-time requirement, each shown by its own test", and "It never selects or
+re-derives a representation, never switches over families [...] and contains
+no Function, Stream, Service or Cell name." Its structural run-time package
+(bitspark-service#38, decision of 11 November 2026): "The package makes no
+representation decision: every choice arrives as the family's plan payload.
+Its CI runs bittype's conformance vectors for each family it implements". So
+the TypeScript factory for bittype's list family is code in another
+repository, found from a plan entry by an identity and held to the same
+meaning by shared test vectors. No compiler connects the two.
+
+**Conversion state and the memo key.** Every factory receives the call
+context, which holds the memo:
+
+> **The memo key** is the selected representation instance (its descriptor and its generic environment) plus the input's identity. An object-only key is unsound when one object appears under two representations.
+
+Law K3, a table row in the source: "One object under two representations
+converts once per representation." Law L1, unconfirmed, uses the same unit
+for exporting a capability (making it callable by the receiver): "one export
+per message, per selected representation instance, per native value".
+
+**The root facet of `Service` reads the plan.** A field of the record `Ops`
+is a nested record of operations (a namespace) or one operation (a leaf): it
+"is either a namespace, which is a field the plan selects as the structural
+record family, or a leaf whose selected contribution supplies an operation
+facet". So one contribution's facet is given what the plan selected for
+another use and must recognise "the structural record family" by it: a second
+reader of a contribution's identity besides the backend.
+
+**"Instance" in two senses.** Our pull request #260 brings bittype's two
+design pages into agreement with these contracts; it is open. Its second
+reading (12 November 2026, 18:50Z; line numbers are those of its branch)
+found:
+
+> `docs/representation-families.md:44-45` says "one immutable representation instance per use", and `:259` keys the memo by "the selected representation instance". The page now uses "instance" in two senses.
+>
+> Suggested: "Two uses that select the same contribution and profile for the same descriptor and generic environment have the same run-time identity. The memo key is that identity plus the input's identity (K3)." Say that this identity is coarser than the per-use instance.
+
+Issue #195 gained the matching criterion the same day (08:11Z): "Two uses
+with the same selected representation, descriptor and environment share one
+memo key." So `People = Page<Person>` used in two fields is two uses and, at
+run time, one memo identity. Section 6.4 gives each of these identities a
+label.
+
+### 2.6 Names are spelled at generation; places are decided after it
+
+Three statements of different standing bear on what a plan can record about
+a generated native declaration.
+
+**(a) Generation decides no place.** Standing: **accepted design** (bittype
+`docs/source.md`, "Design decision, 7 November 2026"). bittype has a stage
+after generation, called **Files**. The decision divides the work: the
+selected mapping and the target builder "Build declaration bodies and type
+expressions. Bind each named use to its intended target declaration, lexical
+parameter, or selected external public symbol." The consumer must "Supply one
+placement for the declarations being emitted: output files and the native
+scopes they belong to." The target's Files formatter (the Files stage's
+implementation for one target) must "Choose the local spelling, qualification
+or alias, and construct the necessary import, export or other module syntax."
+One generated set serves every placement: "Both placements use the same
+generated declarations, bindings and publication intent." TypeScript has a
+Files stage today; Go's and Rust's are being built.
+
+**(b) Identity, naming intent and realized spelling are three things, and
+each language's Files stage realizes the spelling.** Standing: a
+recommendation of research 0016 (a consultation on the Files stage) that this
+seat accepted as research owner on 12 November 2026; its design page
+`docs/naming.md` is on the main branch since 13 November 2026, written and
+decided by this same seat and read twice by an independent reader. Nothing of
+it is implemented. From the page:
+
+| | What it is |
+| --- | --- |
+| **Declaration identity** | "Which declaration this is, within one sealed output. It alone is authoritative for references. It is never a spelling" |
+| **Naming intent** | "What generation records about a name: the chosen name, the module's identity, the policy's identity and the spelling the policy produced" |
+| **Realized spelling** | "The identifier that a language's Files stage publishes. In the first slices it is the spelled intent, once that language's rule has checked it" |
+
+A "sealed output" is the immutable result of one generation run. The
+"policy" is a naming policy that the consumer's composition selects: with or
+without a qualifier that says which module a name comes from. (That
+"qualification" of a name is unrelated to the "Qualification" of section 2.3,
+which is evidence.) Who spells, in the page's words: "The mapping applies it
+at generation", and "The unplaced tree's name is that spelling, and the
+builder's comparator and every Files stage read it there." Each language then
+checks the spelling or refuses it and "renames nothing": "in the first slices
+a target refuses a spelling it cannot publish. An escape rule is a later,
+explicit rule that turns one refusal into a success." And "A name does not
+change between placements."
+
+**(c) What an intent records, and how a consumer learns a place.** Standing:
+**our derivation**, as decisions of this seat on issue #274 (12 November
+2026, 22:34Z and 23:05Z). "An intent contains the mapping's chosen name and
+its qualification, kept apart." "A consumer learns the realized name and the
+placed site from a reader on the formatter's result, keyed by the output's
+handles." A declaration **handle** is an identity that a sealed output is to
+issue for each declaration it contains (issue #272, not implemented): "A
+handle issued by one `Output` is refused when it is resolved against another
+`Output`. That includes a second run of the same plan."
+
+**What follows for the plan.** In the first slices the spelled name of a
+generated declaration exists at generation and does not depend on placement,
+so a plan entry can hold it. A later rule under which a language realizes a
+different spelling would be an addition. What a plan entry cannot hold is the
+place: the file, package or module, and so the import path that a backend's
+glue must write. A member's name, such as a record field's, stays with the
+declaration and is fixed at generation.
+
+Section 2.2 lists among what the plan carries "native symbols, distinguishing
+run-time imports from type-only imports", the envelope of section 2.3 lists
+"Native symbols, imports, factory references, runtime requirements", and a
+backend works "from the plan, the source semantics and the selected
+contributions alone". For an import of a generated declaration these
+sentences and (a) do not fit as written. The naming page states the tension
+and leaves it to this consultation, with one constraint of its own: "Which
+identity a plan entry records is not defined here: an output-issued handle
+cannot be the key of a serialized plan." Section 6.5 gives the alternatives.
