@@ -5,7 +5,6 @@ import (
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/horos/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
@@ -131,15 +130,6 @@ func (r reader) Element(v g.UseView[h.Language]) (g.Use[h.Language], error) {
 	}
 	return u, nil
 }
-func (r reader) Unsupported(u g.Use[h.Language], message string) error {
-	id, ok := u.In(r.s.captured)
-	if !ok {
-		return g.ErrScope
-	}
-	site := r.s.sites[id]
-	return &text.Diagnostic{Code: text.Unsupported, Message: message, Node: &site}
-}
-
 func atom(v core.Value) string {
 	a, ok := v.(core.Atom)
 	if !ok {

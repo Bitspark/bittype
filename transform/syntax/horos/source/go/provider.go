@@ -27,8 +27,6 @@ type Reader interface {
 	Fields(g.UseView[h.Language]) ([]Field, error)
 	// Element is a collection descriptor's element operand.
 	Element(g.UseView[h.Language]) (g.Use[h.Language], error)
-	// Unsupported is a diagnostic at an occurrence's horos syntax site.
-	Unsupported(g.Use[h.Language], string) error
 }
 
 type Provider struct{}

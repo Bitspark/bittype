@@ -64,7 +64,9 @@ func TestHorosReaderRefusesForeignHandles(t *testing.T) {
 					doctored.Operands[i].Use = kept
 				}
 				_, foreign := reader.Fields(doctored)
-				refusals = append(refusals, foreign, reader.Unsupported(kept, "kept from an earlier run"))
+				// The doctored view's operands are the use kept from the
+				// earlier run, so this one refusal covers a foreign handle.
+				refusals = append(refusals, foreign)
 			}
 			return name(ctx, step)
 		}

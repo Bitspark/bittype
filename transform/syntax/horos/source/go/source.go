@@ -2,6 +2,7 @@ package source
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
@@ -146,11 +147,11 @@ func (s *interpretation) JudgeDeclaration(ctx context.Context, d g.Declaration[h
 		return g.Judgment{Verdict: g.Unsupported}, nil
 	}
 	site := s.sites[e.Body]
-	if j := s.proper(s.results[id], site); j.Verdict != g.Admitted {
+	if j := s.proper(s.results[id], &site); j.Verdict != g.Admitted {
 		return j, nil
 	}
 	for _, p := range e.Parameters {
-		if j := s.proper(s.sorts[semantics.Subject{Entity: p.Entity}], site); j.Verdict != g.Admitted {
+		if j := s.proper(s.sorts[semantics.Subject{Entity: p.Entity}], &site); j.Verdict != g.Admitted {
 			return j, nil
 		}
 	}
@@ -169,25 +170,31 @@ func (s *interpretation) JudgeUse(ctx context.Context, u g.Use[h.Language]) (g.J
 	if !ok {
 		return g.Judgment{}, g.ErrScope
 	}
-	return s.proper(s.sorts[semantics.Subject{Term: term}], s.sites[term]), nil
+	// The judgment states what is wrong. The kernel reports it at the site
+	// of the occurrence.
+	return s.proper(s.sorts[semantics.Subject{Term: term}], nil), nil
 }
 
 // proper: a missing sort fact is uncovered, not malformed; an arrow sort is a
 // known result that this integration cannot represent.
-func (s *interpretation) proper(sort semantics.TermID, site ast.NodeRef) g.Judgment {
+//
+// site is the site that this source states for the judgment, or nil where the
+// kernel locates it. A use is located by the kernel. A declaration is judged
+// by the sort of its result and reported at the site of its body, which is
+// this source's choice and not the declaring site that the kernel would take.
+func (s *interpretation) proper(sort semantics.TermID, site *ast.NodeRef) g.Judgment {
 	if sort == 0 || int(sort) > len(s.data.Terms) {
 		// Not an unsupported form: the evidence simply does not cover it.
-		return g.Judgment{Verdict: g.Undetermined, Diagnostic: &g.SiteError{Err: semantic.ErrEvidenceUnavailable, Site: site, Message: "no established sort"}}
+		if site == nil {
+			return g.Judgment{Verdict: g.Undetermined, Diagnostic: errors.New("no established sort")}
+		}
+		return g.Judgment{Verdict: g.Undetermined, Diagnostic: &g.SiteError{Err: semantic.ErrEvidenceUnavailable, Site: *site, Message: "no established sort"}}
 	}
 	t := s.data.Terms[sort-1]
 	if t.Kind == semantics.ProviderExpression && t.Operator == n.ProperSort() {
 		return g.Judgment{Verdict: g.Admitted}
 	}
-	return g.Judgment{Verdict: g.Unsupported, Diagnostic: s.diagnostic(site, "constructor-valued types require an explicit representation")}
-}
-
-func (s *interpretation) diagnostic(site ast.NodeRef, message string) error {
-	return &text.Diagnostic{Code: text.Unsupported, Message: message, Node: &site}
+	return g.Judgment{Verdict: g.Unsupported, Diagnostic: &text.Diagnostic{Code: text.Unsupported, Message: "constructor-valued types require an explicit representation", Node: site}}
 }
 
 func (s *interpretation) descriptor(u g.Use[h.Language]) (Descriptor, bool, error) {
