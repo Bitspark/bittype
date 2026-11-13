@@ -102,7 +102,10 @@ func (m Model) Lookup(tree ast.TreeID, name string) (Declaration, error) {
 	return Declaration{}, ErrForeign
 }
 func (m Model) Type(id semantics.TermID) (Type, error) {
-	if !m.Valid() || len(m.Graph().Facts(semantics.Subject{Term: id}, NativeTypeRelation())) != 1 {
+	if !m.Valid() {
+		return Type{}, ErrForeign
+	}
+	if _, ok := m.state.graph.OnlyFact(semantics.Subject{Term: id}, NativeTypeRelation()); !ok {
 		return Type{}, ErrForeign
 	}
 	return Type{m.state, id}, nil
@@ -121,11 +124,11 @@ func (d Declaration) fact(relation semantics.Key) Type {
 	if !d.Valid() {
 		return Type{}
 	}
-	ids := d.owner.graph.Facts(semantics.Subject{Entity: d.id}, relation)
-	if len(ids) != 1 {
+	id, ok := d.owner.graph.OnlyFact(semantics.Subject{Entity: d.id}, relation)
+	if !ok {
 		return Type{}
 	}
-	return Type{d.owner, ids[0]}
+	return Type{d.owner, id}
 }
 func (d Declaration) Type() Type       { return d.fact(DeclaredTypeRelation()) }
 func (d Declaration) Constraint() Type { return d.fact(ConstraintRelation()) }
@@ -155,11 +158,8 @@ func (t Type) fact(relation semantics.Key) semantics.TermID {
 	if !t.Valid() {
 		return 0
 	}
-	ids := t.owner.graph.Facts(semantics.Subject{Term: t.id}, relation)
-	if len(ids) != 1 {
-		return 0
-	}
-	return ids[0]
+	id, _ := t.owner.graph.OnlyFact(semantics.Subject{Term: t.id}, relation)
+	return id
 }
 func (t Type) String() string {
 	if !t.Valid() {

@@ -102,8 +102,10 @@ rejection. No budget is raised implicitly.
 
 The graph contains package/type/alias/parameter/field entities, resolved name
 bindings, expression terms and generic applications. Go-owned facts retain
-underlying types, alias targets, constraints, instantiated fields and native type
-identity. Aliases remain distinguishable from definitions even when Go considers
+the declared type of each type name, underlying types, alias targets,
+constraints, instantiated fields and native type identity. The body of an
+entity is the term of its declaration's written definition, see
+[bodies and declared types](#go-bodies-and-declared-types). Aliases remain distinguishable from definitions even when Go considers
 their types identical. IDs belong to that exact model, never to a spelling.
 
 The vocabulary owner is `go`. The published representation is:
@@ -113,6 +115,7 @@ The vocabulary owner is `go`. The published representation is:
 | `package`, `defined`, `alias`, `parameter`, `field`, `builtin` entities | Package and declaration identities; parameters carry their declaration owner and ordinary `type` sort |
 | `Reference` / `Application` terms | Bound named types/parameters and effective generic arguments; the shared `DirectParameterBindings` reader applies |
 | `name` bindings / `type-expression` occurrences | Resolved identifier targets and native type terms at current AST nodes |
+| `declared-type` fact | On the entity of every type name, exactly one: the term of the name's own type. The facts about the type hang on that term. See [bodies and declared types](#go-bodies-and-declared-types) |
 | `underlying`, `alias-target`, `constraint` facts | Go's checked relationships, including substituted underlying types of applications |
 | `identical` fact | A model-local representative established by `types.Identical`, not identity inferred from spelling or serialized shape |
 | `package-name` fact | On every `package` entity, captured and supplied: the name that its package clauses declare, `types.Package.Name()`. The entity's own name is the package's path, which does not determine the declared name |
@@ -147,6 +150,70 @@ types of the universe scope and `any` is an alias, so their entities have the
 kinds `defined` and `alias`, without an owner and without a site. A reader
 tells one of them from a declaration by "no owner and no site", and no marker
 says it.
+
+### Go bodies and declared types
+
+**13 November 2026** ([#310](https://github.com/Bitspark/bittype/issues/310),
+[decision O45](https://github.com/Bitspark/bittype/issues/196#issuecomment-6854327944),
+[bittype/ACX-013](architecture-cases/0013-definition-behind-a-fact.md)).
+The body of an entity is the term of its declaration's written definition. It
+is not the type of the declared name. Until this change it was: the body of
+`type Person struct{...}` was a Reference to `Person` itself, and the struct
+was reachable through the `underlying` fact only.
+
+| Entity | Body |
+| --- | --- |
+| Captured defined type whose right-hand side is a type literal or a predeclared type: `type T struct{...}`, `type T []U`, `type T float64` | The term of that type: a `struct`, `slice` or `basic` expression. The field and element types are its operands |
+| Captured defined type whose right-hand side names a type: `type Temp Celsius` | A Reference to the entity of `Celsius`. The underlying type, `float64`, is not the definition. It stays the `underlying` fact of the declared type |
+| Captured alias: `type A = B` | The term of `B`, which is also the term of the `alias-target` fact |
+| Captured generic declaration: `type Page[T any] struct{ Items []T }` | The term of its right-hand side. A use of `T` in it is a Reference to the entity of the parameter, which the entity of `Page` lists in `Parameters` |
+| Captured declaration whose right-hand side instantiates a generic type: `type People = Page[Person]` | An Application whose callee is a Reference to `Page`. The shared `DirectParameterBindings` reader pairs its arguments with the parameters of `Page` |
+| Type parameter (`parameter`) | None. A type parameter "acts as a placeholder for an (as of yet) unknown type in the declaration" ([Go specification](https://go.dev/ref/spec#Type_parameter_declarations)) and has no definition. Its constraint is the `constraint` fact of its declared type |
+| Supplied declaration | None. Its definition is supplied structure, which [stays outside the projection](#import-environment) |
+| Predeclared type: `string` and the other `builtin` entities, `error`, `comparable`, `any` | None. No captured source declares it |
+| Package (`package`) | None |
+| Field (`field`) | The term of the field's type, as before this change. This is an [open point](architecture-cases/0013-definition-behind-a-fact.md#open-points) |
+
+- **The definition is what is written.** It is the type of the type expression
+  of the declaration's syntax, which `go/types` records for that expression.
+  `go/types` exports no reader of a defined type's right-hand side, so the
+  bridge keeps the expression of every captured declaration.
+- **A recursive declaration.** In `type Tree struct { Children []Tree }` the
+  operand of the slice is a Reference to the entity of `Tree`. A Reference is
+  no containment, so term containment stays a DAG.
+- **One term for all occurrences of a type.** The graph shares one term among
+  every occurrence of a type. The body of `Temp` is the same term as the
+  declared type of `Celsius`, and the body of `T` in `type T string` is the
+  one `basic` term of `string`.
+- **A declaration without a body is not walked.** The generation kernel opens
+  a declaration at its body and refuses one that has none.
+
+**The type of a name is the `declared-type` fact of its entity.** Every entity
+of a type name carries exactly one: the kinds `defined`, `alias`, `parameter`
+and `builtin`, captured, supplied and predeclared. A package and a field carry
+none. Its term is the one that the facts about the type hang on, as before:
+`underlying`, `alias-target`, `constraint`, `display` and `identical`. For a
+declaration that term is a Reference to the entity. The vocabulary publishes
+the relation as `DeclaredTypeRelation()`, and the bridge writes it from there.
+`Model.DeclaredType(entity)` reads the fact and fails with `ErrForeign` for an
+entity without exactly one. `Lookup`, `LookupIn` and `Type.Parameters` read
+it. No reader of `semantics/golang/go` reads a body as the type of a name.
+
+**The profile has its second version since 13 November 2026:**
+`go1.25/captured-types-2/resolution-1` and `go1.25/captured-types-2/analysis-1`,
+where the strings said `captured-types-1`. A published member changed, the
+body of an entity, and a reader written for the earlier vocabulary reads the
+type of a name there. By the line drawn on
+[#278](https://github.com/Bitspark/bittype/issues/278), which the
+[Rust vocabulary](#rust-vocabulary) quotes, an added fact keeps a profile and
+a changed member needs a new version. A receipt of the earlier version is
+refused by its profile: analysis takes no such resolution receipt,
+`golang.Open` opens no such analysis receipt, and the two providers serve no
+request under the earlier strings.
+[A test](../integration/go/earlier_profile_test.go) shows the three refusals
+without a compiler. The settings did not change. The verification's native
+basis names this profile and is `go1.25/captured-types-2`
+([verification](verification.md)).
 
 ### Import environment
 
@@ -340,9 +407,9 @@ The graph gains:
 **Supplied structure stays outside the graph's projection.** The graph projects
 captured code; supplied packages take part by identity. A supplied declaration
 contributes its entity, the entities of its type parameters with their names,
-its reference and application terms and its `display` and `identical` facts,
-never its structure: no fields, no `underlying`, `alias-target` or `constraint`
-facts. Native identity is still go/types identity: an `identical` fact relates a
+its reference and application terms and its `declared-type`, `display` and
+`identical` facts, never its structure: no body, no fields, no `underlying`,
+`alias-target` or `constraint` facts. Native identity is still go/types identity: an `identical` fact relates a
 supplied alias to its target when that target is in the graph, which `string`
 and `bool` always are.
 This also holds when a captured declaration is built directly on supplied
@@ -374,7 +441,8 @@ refused as unsupported.
 **Lookups.** `Model.Lookup(name)` considers captured packages only, and refuses a
 name that more than one of them declares. `Model.LookupIn(importPath, name)`
 reads a package-qualified declaration. A supplied declaration is present only
-where captured code uses it.
+where captured code uses it. Both return the type that the declaration's
+`declared-type` fact names.
 
 **Package name and identity.** `Model.PackageName(importPath)` reads the
 `package-name` fact of a captured or supplied package. `Type.Package()` reads
@@ -465,7 +533,8 @@ installation or IO. Resolution invokes that compiler and requires version
 **5.9.3**. The caller supplies `typescript.Configuration()` in both operations;
 the configuration fixes ES2020, ESNext modules, strict checking,
 `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`, `lib.es2020.d.ts`, no
-ambient packages, and the `captured-types-1` helper profile. The baseline host
+ambient packages, and the `captured-types-2` helper profile
+(`typescript.HelperProfile`). The baseline host
 reads only supplied source units and that compiler package's standard libraries.
 Compiler files are trusted, explicitly provisioned dependencies.
 The child process receives no `NODE_OPTIONS`, `NODE_PATH` or credential environment.
@@ -546,6 +615,61 @@ declaration identities but can denote the same compiler type. `Type.Same` means
 the same native type handle in the same admitted receipt, not mutual assignability.
 The shared `DirectParameterBindings` reader works on source application terms;
 the corresponding native type can retain an alias or normalize to another form.
+
+### TypeScript bodies and declared types
+
+**13 November 2026** ([#310](https://github.com/Bitspark/bittype/issues/310),
+[decision O45](https://github.com/Bitspark/bittype/issues/196#issuecomment-6854327944),
+[bittype/ACX-013](architecture-cases/0013-definition-behind-a-fact.md)).
+The body of an entity is the term of its declaration's written definition. It
+is not the declared type of the name. Until this change it was: the body of
+`interface Person {...}` was a Reference to `Person` itself, and the object
+was reachable through the `properties` and `structure` facts only.
+
+| Entity | Body |
+| --- | --- |
+| Captured alias whose right-hand side is a type reference: `type Alias = Text` | A Reference to the entity that the name resolves to. The compiler's type of `Alias`, `string`, is not the definition. It stays the `declared-type` fact |
+| Captured alias whose right-hand side is a generic type reference: `type People = Page<Person>` | An Application whose callee is a Reference to `Page`, with complete effective arguments. It is the term of the `type-expression` occurrence at the right-hand side |
+| Captured alias of another form: an object, union, intersection, array, tuple, literal or keyword type, or a `readonly` array or tuple | The structural expression: `object`, `union`, `intersection`, `array`, `tuple`, `literal` or `primitive`. Its parts are its operands. Where the compiler names such a type, as it names the type of `{ on: boolean }` in `type Flag = { on: boolean }` by `Flag`, the body is the term that the `structure` fact of the named type relates, and never the Reference |
+| Captured interface without an `extends` clause | The `object` expression of its members. The `properties` and `structure` facts of the declared type relate the same term |
+| Captured interface with an `extends` clause | None yet. Its definition is its own members together with its base types, and how the base types are operands of the body is an [open point](architecture-cases/0013-definition-behind-a-fact.md#open-points). The generation kernel refuses the declaration as one without a body. Its declared type and all its members, inherited ones too, are published as before |
+| Type parameter (`parameter`) | None. Type parameters "serve as placeholders for actual types" (archived TypeScript specification, 3.10 and 7.1) |
+| Supplied package type and library type (`package-type`, `builtin`) | None, as before |
+| Property (`property`) | The declared non-missing value type, as before this change. This is an [open point](architecture-cases/0013-definition-behind-a-fact.md#open-points) |
+
+- **Own members, not inherited ones.** "An interface has the members specified
+  in the *ObjectType* of its declaration and furthermore inherits all base type
+  members" (archived TypeScript specification, 7.1). The definition is what the
+  declaration states. An inherited member is stated by the base's declaration.
+  Interface declaration merging is outside the profile, so an interface entity
+  has one declaration.
+- **What the `properties` fact adds.** It relates a type to the object of all
+  its members with substituted value types. For the declared type of an
+  interface without a base that is the body's term. It adds the inherited
+  members of an interface with bases, the substituted members of an
+  application (`items: Person[]` for `Page<Person>`), and the members of the
+  named type for an alias whose body is a Reference (`type T = P`).
+- **A recursive declaration.** In `type Tree = { children: Tree[] }` the
+  operand of the array is a Reference to the entity of `Tree`, which is no
+  containment.
+- **Nothing else moved.** `declared-type` and `constraint` were entity facts
+  before. `properties`, `structure`, `native-type` and `display` hang on the
+  term of the declared type, which `Declaration.Type()` reads from the fact. No
+  reader of `semantics/typescript/go` reads a body.
+- **Two more syntax names.** To find a definition the helper reads the child
+  roles `type` of an alias and `base` of an interface by spelling.
+  [A test](../integration/go/definition_body_kinds_test.go) turns on both.
+
+**The profile has its second version since 13 November 2026:**
+`typescript-5.9.3/captured-types-2/resolution-1` and
+`typescript-5.9.3/captured-types-2/analysis-1`, where the strings said
+`captured-types-1`, for the reason the [Go profile](#go-bodies-and-declared-types)
+gives. The `helper` setting changed with it to `captured-types-2`, so the
+configuration of the earlier helper is no configuration of this profile: the
+providers and `typescript.EvidenceFor` refuse it as invalid input. The helper
+is embedded in the bridge, so no helper of another revision can answer, and it
+states no profile in its response.
+[A test](../integration/go/earlier_profile_test.go) shows the refusals.
 
 `typescript.Open(analyzed)` admits a complete analysis receipt and reads its
 immutable graph without invoking the compiler. `queries.NewQueries(model,
@@ -868,6 +992,27 @@ types. Recursive local types use entity/fact links, not cyclic term containment.
 Aliases keep their declaration identities while their native type can normalize
 to another declaration. Source path bindings still identify the alias. This slice
 does not export a semantic occurrence for every nested source type expression.
+
+**Entity bodies: read on 13 November 2026, not corrected.** The Go and the
+TypeScript analysis publish a declaration's definition as its entity's body
+since [#310](https://github.com/Bitspark/bittype/issues/310). The Rust helper
+was read against the same two requirements and not run:
+
+- **The type of a name is an entity fact.** Met: `declared-type`, and no
+  reader of `semantics/rust/go` reads a body.
+- **The body is the definition.** Not met for a struct and an enum. The helper
+  sets the body to the declared type, which for a struct or enum is a
+  Reference to the entity itself, or an Application of the entity to its own
+  parameters. The definition is the value of the `fields` and `variants`
+  facts. For an alias the body is the type that the right-hand side denotes
+  after the compiler's normalization, so an alias of an alias has the
+  normalized type and not a Reference to the alias it names. A field's body is
+  its type.
+
+This is an open violation, recorded in
+[bittype/ACX-013](architecture-cases/0013-definition-behind-a-fact.md#rust).
+Its trigger is the next change of the Rust helper or the first generation pair
+whose source is Rust, whichever comes first.
 
 ### Rust helper profile
 

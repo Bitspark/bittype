@@ -608,7 +608,7 @@ have distinct authority.
 
 Logical dependencies are explicit integration contracts:
 `horos-go/captured-model-1` for the interpreted domains and symbols,
-`horos/declarations-4/procedure`, `go1.25/captured-types-1`, and the selected
+`horos/declarations-4/procedure`, `go1.25/captured-types-2`, and the selected
 scalar, list/slice, optional/presence, record-field and named-representation laws.
 Each selected rule declares its own dependency. Receivers explicitly supply their
 permitted names. Source and native procedure correspondence and mapping laws
