@@ -2468,3 +2468,94 @@ each file and fails when the committed file differs.
 So the project already declares one kind of model in horos and generates Go
 from it: the decision record of a mapping. It uses horos types for that, not
 kinds, and it describes a value, not a tree.
+
+## 4. Data and control flow: one record from horos to Go
+
+Standing: implemented today for steps 1 to 8, read from the code and
+followed by hand, not run. Steps 9 to 11 are planned for Go and are
+described from the accepted specification of destinations
+(`docs/destinations.md`) and from what the Go bridge writes today. For
+TypeScript the same three steps are implemented (section 3.5).
+
+The input is the module of section 1.1:
+
+```horos
+module example.people;
+type Person = { name: text; };
+```
+
+A consumer's composition has registered the horos source reader, the Go
+target, and the Go mappings for text, records and declarations.
+
+| Step | What happens | Who does it (role, place) | Vocabulary touched |
+| --- | --- | --- | --- |
+| 1 | The text is parsed into a concrete tree that owns an abstract tree | The horos parser (contribution, `parse/syntax/horos`) | **Writes the horos syntax vocabulary**: nodes of the kinds `program`, `module`, `type-definition`, `descriptor` |
+| 2 | The tree is admitted: the horos table, then the horos rules in code | The horos checker (contribution, `check/syntax/horos`, with a private helper) | Reads the horos syntax vocabulary and the horos grammar table |
+| 3 | Names are resolved and the declarations are analysed. The result is a semantic graph and two receipts | The horos resolver and analyzer (contributions, `resolve/files/horos`, `analyze/files/horos`), over a private adapter to the horos library | **Writes the horos semantic vocabulary**: an entity of the kind `type-definition`, a provider expression with the operator `descriptor/record`, facts with the relations `sort` and `canonical-identity` |
+| 4 | The planner walks the graph from the requested declaration `Person`. For each declaration and each use of a type it asks the source reader what it is | The planner (kernel, inside `contracts/generation/go`) and the horos source reader (contribution, `transform/syntax/horos/source`) | Reads the generic graph. The source reader reads the horos semantic vocabulary, and a few names of the horos syntax vocabulary for record payloads |
+| 5 | For each use one mapping is selected and states intent. The declaration mapping gives the name `Person` and the form `defined`, because the body is a record. The record mapping reads one field, asks the planner for the representation of its type, and returns a record form. The text mapping answers that request with a constant | Three mappings (contributions, `transform/syntax/horos-to-golang/mapping/{declarations,record,text}`) and the planner | **Writes Go's model**: the forms `defined`, `record`, `field` and `primitive`, and the primitive name `string`, through the model's constructors |
+| 6 | The planner has every expression and every declaration checked as it composes them | The Go target (contribution, `transform/syntax/golang/target`), which forwards to the two checks in Go's model | Reads Go's model |
+| 7 | The target builds one tree from the closed program. It switches over the form names. `primitive` becomes a `named-type` node with the name `string`, and the use records its destination | The Go target and the shared tree builder (kernel, `transform/syntax/shared/target`) | Reads Go's model. **Writes Go's syntax vocabulary**: `file`, `type-declaration`, `struct-type`, `field`, `named-type`. **Writes Go's symbol**: the predeclared symbol `string` |
+| 8 | The tree is admitted and the output is sealed with its inventory and its external uses | The Go checker (contribution, `check/syntax/golang`), called by the planner's sealing code | Reads Go's syntax vocabulary and Go's grammar table |
+| 9 | The declarations are placed into files of a package under the consumer's placement. Planned for Go | A Go Files stage (contribution; under the present path form `format/files/golang`) | Reads Go's syntax vocabulary. Reads Go's symbol package to learn the destination of each external use |
+| 10 | The placed files are analysed by the Go type checker. Planned as part of step 9 | The Go resolver and analyzer over the Go bridge (private part, `internal/golangsem`) | **Writes Go's semantic vocabulary**: an entity `Person` of the kind `defined`, a fact `underlying` whose term has the operator `struct`, a field type whose term has the operator `basic`, and a binding with the role `name` from the node of the use `string` to an entity of the kind `builtin` |
+| 11 | Each name use is compared with its destination: the entity that the compiler bound against the entity that the symbol identifies. Planned for Go | The Go Files stage | Reads Go's semantic vocabulary (the binding, the kind `builtin`) and Go's symbol (the category `predeclared`) |
+
+The intent after step 5, written with the model's constructors:
+
+```go
+// [doc] the declaration: Name "Person", Form "defined", and as its body
+model.Record(
+	model.Field("Name", false, model.Primitive(model.PrimitiveString)),
+)
+```
+
+The tree after step 7, as node kinds with their attributes and roles:
+
+```text
+file (package = <the target's configured package name>)
+  declaration: type-declaration (name = Person)
+    type: struct-type
+      field: field (name = Name)
+        type: named-type (name = string)     + external use: symbol predeclared "string"
+```
+
+The graph that the bridge would publish in step 10, in the words of the
+semantic vocabulary. This is an illustration written by hand from the
+bridge's code of section 3.3:
+
+```text
+entity  kind go/defined   name "Person"   owner: the package entity   site: the type-declaration node
+  fact  go/underlying -> term  operator go/struct
+                               data  [{"Name":"Name","Tag":"","Embedded":false,"Entity":<field entity>}]
+                               operand 0 -> term operator go/basic (the string kind)
+entity  kind go/builtin   name "string"   no owner, no site
+binding at the named-type node, role go/name -> the builtin entity
+```
+
+**Where each of Go's vocabularies is written and read.**
+
+| Go vocabulary | Written in step | By which stage | Read in step | By which stage |
+| --- | --- | --- | --- | --- |
+| Model (`transform/syntax/golang/model/go`) | 5 | transform (mappings) | 6, 7 | transform (target) |
+| Syntax (`syntax/golang/go`) | 7 | transform (target) | 8, 9, 10 | check; format; resolve and analyze |
+| Symbol (`transform/syntax/golang/symbol/go`) | 7 | transform (target) | 9, 11 | format in the Files dimension (planned) |
+| Semantic (`semantics/golang/go`) | 10 | resolve and analyze (bridge) | 11 | format in the Files dimension (planned) |
+
+Four observations, as facts.
+
+- The same Go type, a struct with one string field, is stated three times
+  along the way, each time in other words: as forms (`defined`, `record`,
+  `field`, `primitive`), as nodes (`type-declaration`, `struct-type`,
+  `field`, `named-type`) and as analysed facts (`defined`, `struct`, `basic`,
+  `builtin`).
+- The model is written and read inside one stage. The symbol is written in
+  one stage and read in another. The syntax vocabulary and the semantic
+  vocabulary are used by several stages.
+- The source side has no model. Generation reads horos through its analysed
+  vocabulary. A source is always an analysed program. A target does not exist
+  yet when it is described. No page states this asymmetry as a decision.
+- Step 11 is the one place where intent and analysed meaning of one language
+  are compared. The comparison is of identities (a symbol against an
+  entity), not of type structure. No production code today compares an
+  intended `record` form with an analysed `struct` term.
