@@ -458,7 +458,7 @@ back." This keeps three accepted sentences:
   an exact use mapping never silently becomes a structural publication today."
   (`docs/binding-generation.md:99`)
 - "An exact binding takes precedence, and its failure never falls back to
-  that policy." (`docs/generation-spi.md:124-125`)
+  that policy." (`docs/generation-spi.md:126-127`)
 - The advice (section 1.5): "Applicability and refusal are not a mechanism
   for trying contributions in registration order."
 
@@ -532,7 +532,7 @@ position is about the standard record representation of every target.
 | The answer on bitspark-service#38 | What follows |
 | --- | --- |
 | The slot is admitted | D3 stands. Each target's record contribution asks, each target has an optional contribution, and the move is step 5 of the [order](#the-order-of-work) |
-| The slot is refused | Row 11: "presence becomes the record's own layout (D1), finding 7 is withdrawn, and the Go optional package folds into the record contribution". The rest of this section is then withdrawn, and the role leaves the [kinds of domain](#what-a-contribution-is) |
+| The slot is refused | Row 11: "presence becomes the record's own layout (D1), finding 7 is withdrawn, and the Go optional package folds into the record contribution". Whether the request of row 12 then stays in the contract is [open](#open-inside-this-design), point 10 |
 | No answer yet | The prototype builds D3. Row 11: "put to that library's owner on bitspark-service#38 and built in the prototype" |
 
 **The subject of the request (row 12).** A record contribution that delegates
@@ -599,7 +599,7 @@ following is edited now. Each waits for the answer.
 | --- | --- | --- |
 | "A family reaches other families only through its adapter slots." | The [decision of 11 November 2026](https://github.com/Bitspark/bitspark-service/issues/38#issuecomment-6803983510) on bitspark-service#38 | The service library, `codex-platform-status` |
 | "Run-time factory reference and typed argument-adapter slots, converting the value inside a message" | `docs/binding-generation.md:94` | Research 0014 |
-| "Record field layout and presence behaviour" | `docs/representation-families.md:73` | Research 0015, held by this chain |
+| "Record field layout and presence behaviour" | `docs/representation-families.md:73` | Research 0015. This chain holds its delivery |
 | Finding 7 | `docs/package-boundaries.md:156` | bittype. It gets a dated note now, which says that it is conditional ([Amendments](#amendments-to-accepted-pages)) |
 
 ## Identities
@@ -1035,7 +1035,7 @@ coordination out; application-specific specialization in and refused until
 | --- | --- | --- | --- |
 | A further family | In. Derived here | Every family of the delivery table of representation families (`docs/representation-families.md:339-349`) enters as contributions. The accepted promise: "Adding a family through the published identity, dependency, invocation, plan-graph and target-extension contracts changes only that family and the consumers that compose it." (`:22-24`) | A family that is not built is unsupported |
 | Further products and facets | In | A further backend for a target, and a further kind of facet, enter through the [facet contract](#what-the-kernel-carries-without-reading-it) with no edit of the kernel | A request for a product whose facet a contribution lacks fails as "missing facet" |
-| A contextual representation at a field position | In, and conditional. Derived here | The request of [row 12](#optional-fields) and a contribution without a value adapter of its own. Row 33 states it without a condition. Under the other answer to row 11 nothing asks at a field position | Under D1 the request is not built |
+| A contextual representation at a field position | In | The request of [row 12](#optional-fields), and a contribution without a value adapter of its own ([row 14](#optional-fields)). Row 33 states the item without a condition, and row 11 is conditional. What that means under a refusal is [open](#open-inside-this-design), point 10 | A fragment that the target's member vocabulary does not admit |
 | Cross-field layout coordination | Out | A layout that several fields share needs the record policy replaced ([row 14](#optional-fields)) | A contribution that would need it replaces the record contribution |
 | Application-specific specialization | In, and refused until [#166](https://github.com/Bitspark/bittype/issues/166) | The contract can name an application, its selection and the resulting native representation ([row 21](#identities)) | Every specialization, as unsupported, with the application named |
 | Authoring routes | One | A Go contribution package ([row 37](#inputs-that-are-not-bittypes-alone)). A declarative sidecar is not promised | Nothing is refused. No other route exists |
@@ -1234,3 +1234,566 @@ apart.
 on that issue. The validation cell of row 2 in the table of research 0015
 still has the old text. This change does not edit that table
 ([the notes not yet made](#what-is-delegated-and-what-is-not-specified-here)).
+
+## Amendments to accepted pages
+
+Each amendment is a dated clarification beside the sentence it concerns. The
+sentence itself is not changed, so it stays readable as it was accepted. All
+of them are made in the change that adds this page.
+
+| Page and sentence | What the clarification says | Why | Row | Who owns the page |
+| --- | --- | --- | --- | --- |
+| [Binding generation](binding-generation.md#order-of-work-and-qualification): "The unit of implementation is library × target." (`:265`) | The sentence names ownership and distribution. The unit that a consumer selects is one contribution, and a library may publish several | Read as the unit of selection, the sentence would make every rule of a library one indivisible choice | 1 | Research 0014, held by `claude-bittype-gaps` |
+| [Binding generation](binding-generation.md#the-selected-representation-plan): "The backend can implement each selected representation from the plan, the source semantics and the selected contributions alone, without guessing a rule." (`:72`), and "consumes three inputs" (`:23`) | For a generated native declaration the three inputs are not sufficient. Its name and place exist only after a Files stage has placed it. A plan entry refers to it by an identity the planner issues, and a backend reads the realization from the placed result, which is a fourth input | The [naming design](naming.md#reconciliation-with-accepted-documents) stated the tension and left it to research 0017 | 23 | Research 0014, held by `claude-bittype-gaps` |
+| [Representation families](representation-families.md#the-representation-contract): "so a native declaration and its conversion cannot disagree." (`:46-47`) | "Cannot disagree" means that no sanctioned second decision point exists. It does not mean that a projector or a factory cannot be wrong | Read as a claim about every implementation, the sentence contradicts AC-05 | 6 | Research 0015. This chain holds its delivery |
+| The same paragraph: "one immutable representation instance per use" (`:44-45`), and "The memo is keyed by the selected representation instance" (`:262`) | "Instance" has two senses. In the first sentence it is the selection at one use, a use entry. In the second it is the applied representation that several uses share | Read with one sense, every use would have its own memo key | 18 | Research 0015 |
+| [Representation families](representation-families.md#the-plan): "The envelope keeps an explicitly unstable version" (`:95-96`) | What is unstable is the version: the layout and the encoding. The meanings that the plan shares with the contribution contract are fixed with that contract | The partition "contract final, envelope unstable" is withdrawn | 30 | Research 0015 |
+| [Representation families](representation-families.md#delivery): "After them a family adds a contribution and changes no existing contract." (`:328`), and "generics" among the delivered families (`:341`) | "Changes once" is a commitment for the written extension domain. "Generics" names a division of responsibility and no family with a contribution of its own | Rows 33 and 2 | 33, 2 | Research 0015 |
+| [Package boundaries](package-boundaries.md#findings-on-main-at-3bf45c3), finding 7 (`:156`) | The finding is bittype's derivation and is conditional on the answer of the service library. If the slot is refused, the finding is withdrawn | Row 11 | 11 | bittype, case bittype/ACX-009 |
+
+**The edit of binding generation is two insertions.** Pull request
+[#260](https://github.com/Bitspark/bittype/pull/260) of `claude-bittype-gaps`
+edits the same page and is open. This change adds one paragraph after each of
+the two sentences and touches no line that #260 changes. In representation
+families it adds three clarifications, none in a passage that #260 changes.
+
+**Pointers, not amendments.** Five pages gain a pointer to this page and
+change no statement of their own: the [SPI](generation-spi.md) and the
+[registration page](kernel-composition.md) say that the mapping contract is
+going to change, [semantic generation](semantic-generation.md) and the limit
+of [bittype/ACX-009](architecture-cases/0009-package-boundaries.md) say that
+the optional move is conditional, and `LAYOUT.md` names the new package role
+without a path.
+
+**Sentences that are not amended now.** Each needs its owner or an answer
+first. They are listed where they arise:
+
+| Sentence | Why not now | Where |
+| --- | --- | --- |
+| "the rules for absence, presence, null and native `undefined`" in the plan's list (`docs/binding-generation.md:58`) | A reading, not a decision | [Open](#open-inside-this-design), point 1 |
+| "native symbols, distinguishing run-time imports from type-only imports" (`docs/binding-generation.md:56`), and "Native symbols, imports, factory references, runtime requirements" (`docs/representation-families.md:78`) | Row 23 names one sentence only | [Open](#open-inside-this-design), point 7 |
+| The three sentences that a field-level slot would change | They wait for the answer on bitspark-service#38 | [Optional fields](#optional-fields) |
+| The memo sentence of the binding contracts | It is the service library's | [What is delegated](#what-is-delegated-and-what-is-not-specified-here) |
+
+## Deferred, with triggers
+
+Nine rows are deferred. A trigger is a state of a repository that anyone can
+check.
+
+| Row | What is deferred | The trigger that ends the deferral | Tracked |
+| --- | --- | --- | --- |
+| 9a | Recursive representation references | "#164 is claimed and vertical case 1 is being built." Until then recursion is refused: `grep -n "recursive native declaration" contracts/generation/go/planning.go` finds the refusal | [#164](https://github.com/Bitspark/bittype/issues/164) |
+| 15a | A composition lock that binds a publisher's name to its manifest | "a second publisher registers a contribution (bitspark-service#39 item 2 starts)" | bitspark-service#39 |
+| 17a | A root facet of `Service` that recognizes a family's contract | "bitspark-service#39 starts its root facet. No root facet exists in either repository" | bitspark-service#39 |
+| 24a | A reader of the realization for Go and Rust | "slice 1 of #161 or #159 delivers a generated-Files formatter (`ls format/files/golang format/files/rust`)" | [#161](https://github.com/Bitspark/bittype/issues/161), [#159](https://github.com/Bitspark/bittype/issues/159) |
+| 26a | A transport descriptor for a facet | "the first facet crosses a process boundary in the prototype of row 31" | #196 |
+| 31a | TypeScript end to end through the service library's own factory | "`packages/structural-adapters` exists on bitspark-service `main`, or its owner records on bitspark-service#38 that a prototype precedes integers" | bitspark-service#38 |
+| 31b | Vertical cases 1 and 2 in real form | "#164, #210 and #211 deliver their families" | [#164](https://github.com/Bitspark/bittype/issues/164), [#210](https://github.com/Bitspark/bittype/issues/210), [#211](https://github.com/Bitspark/bittype/issues/211) |
+| 34a | A reader protocol for source semantics | "the design of bitspark-service#40 item 3 starts" | bitspark-service#40 |
+| 37a | A contribution that is authored in the service library's repository | "bitspark-service#39 item 2 starts" | bitspark-service#39 |
+
+Three remarks, derived here.
+
+- **Row 26a ends inside the prototype.** The stand-in reader of TypeScript
+  reads a serialized plan in another process. The facet that names a factory
+  crosses the boundary there, so the transport descriptor is designed in the
+  prototype and recorded on this page.
+- **Row 31a is why a stand-in stands in.** What it proves and what it does
+  not is under [The order of work](#the-order-of-work).
+- **A deferral is no narrowing.** Each deferred part is in the
+  [extension domain](#the-extension-domain) or belongs to another owner. None
+  is removed from what the accepted pages promise.
+
+## Open inside this design
+
+Ten points on which two rows, or a row and an accepted page, do not fit
+without a reading. This page does not choose the reading. Each point gives
+the two texts, the options, and what the rest of the page assumes meanwhile.
+The research owner decides each, and the decision is recorded here.
+
+**1. An invariant carried by reference, and the plan's list (row 5 and binding
+generation).** "For each use and generic instance, the plan carries" a list
+that includes "the rules for absence, presence, null and native `undefined`"
+(`docs/binding-generation.md:52`, `:58`). Row 5: "An invariant of a semantic
+revision is carried by reference to that revision".
+
+- (a) The plan carries a rule also when it names it through the selected
+  contribution and its semantic revision. The page of research 0014 gets a
+  dated clarification from its owner.
+- (b) Every such rule is a field of a payload, also where it never varies.
+
+Meanwhile the page follows row 5 and edits nothing.
+
+**2. The name of the second outcome (row 8 and representation families).** Row
+8: "The accepted outcome names are used (proved, refuted, unknown,
+exhausted)". The accepted page: "`proved`, `overlap`, `unknown` and
+`exhausted`" (`docs/representation-families.md:200`).
+
+- (a) Refuted is the general name. `overlap` is what one analysis, the
+  disjointness of union branches, calls its refuted outcome.
+- (b) The four accepted names are used as they are, `overlap` included.
+- (c) The parenthesis of row 8 is corrected.
+
+Meanwhile the page uses the names of row 8.
+
+**3. A choice that leaves a rule before it decides (rows 3 and 5, and row
+13).** Row 13: "the member's name comes with the request". A request is made
+in step 1, and the record is frozen after step 3 (row 3). A member's name is
+a per-selection choice of the record contribution (row 5).
+
+- (a) What a rule states in step 1 is part of its decision and is frozen with
+  it. The kernel carries the arguments of a request and does not read them.
+- (b) The answer leaves the name out, and the record contribution adds it in
+  its own decision.
+- (c) A member's name is fixed from the source view and the naming policy
+  before any rule runs, and is no choice of a rule.
+
+The point is void if [row 11](#optional-fields) falls to D1.
+
+**4. One semantic string for all targets, and an invariant of one target
+(rows 5 and 17).** Row 5 lets an invariant be carried by the semantic
+revision. Row 17: "a family's semantic identity is the same string in every
+target's contribution reference". The advice's own example of an invariant
+belongs to one target: an optional representation that "always ignores its
+unused value when absent" (section 1.2). If that changes for Go alone, no
+text says which string changes.
+
+- (a) The semantic revision has two parts: the family's contract, shared by
+  all targets, and the revision of one target's representation.
+- (b) It is one string. A change that concerns one target is a new
+  contribution with a new local key.
+- (c) An invariant of one target is a field of the payload after all.
+
+Connected and also undecided: whether the local key of a contribution
+contains its target.
+
+**5. A dependency that only one product needs (rows 3 and 20, and two
+accepted sentences).** Row 3: the planner resolves the named dependencies
+before the rule decides. Row 20: "An argument that the native convention
+omits is still represented for conversion". Accepted: "Only demanded native
+actuals need mappings." (`docs/generation-spi.md:162`), and "A native mapping
+without an adapter facet still supports types"
+(`docs/binding-generation.md:99`). If every named dependency is planned, a
+request for types can fail for something that only conversion needs.
+
+- (a) A rule names each dependency with the product that needs it, a request
+  names its products, and the planner resolves what the requested products
+  need.
+- (b) Every named dependency is planned. This contradicts the second
+  accepted sentence.
+- (c) A dependency that cannot be planned yields a refused answer, and only
+  the product that uses the answer fails.
+
+[Guarantee 1](#what-the-kernel-carries-without-reading-it) needs a request
+that names its products under every option.
+
+**6. What the prototype shows of recursion (rows 31b and 9a).** Row 31b:
+vertical cases 1 and 2 "are exercised at the kernel's level through the
+independent fixture source". Row 9a defers recursive references and says that
+recursion "is refused today".
+
+- (a) The prototype shows the two refusals of [row 9](#evidence) with their
+  different reasons, and nothing else of case 1.
+- (b) The prototype lifts the refusal for the fixture source, to show that a
+  reference is reserved before its body is filled. The record says that no
+  family stands behind it.
+
+Under (a), "recursive references" in the left column of
+[what is final](#what-is-final-and-what-is-provisional) is decided and not
+demonstrated.
+
+**7. "Native symbols" in the plan (row 23 and two accepted sentences).** The
+plan carries "native symbols, distinguishing run-time imports from type-only
+imports" (`docs/binding-generation.md:56`), and the envelope lists "Native
+symbols, imports, factory references, runtime requirements"
+(`docs/representation-families.md:78`). Row 23 annotates one other sentence.
+The naming design: "With names realized by Files, a plan entry cannot hold a
+realized name or an import path." (`docs/naming.md:721-722`).
+
+- (a) A native symbol in the plan is a reference: the logical symbol identity
+  of a generated declaration, or the external symbol of an external one, each
+  with whether its use is needed at run time. An import is derived by the
+  backend from the realization. Both sentences get a dated clarification from
+  their owners.
+- (b) The plan and the manifest travel as one input, and the two sentences
+  are read of that input. The advice (section 2.5) allows the packaging.
+
+Meanwhile the page states only what row 23 states.
+
+**8. Where the Go facets that the gate executes are declared (rows 26, 29 and
+40).** Row 26 puts a facet "on a contribution". Row 29: "The prototype's Go
+value vocabulary and its facets stay in the test tree". Row 40 asks for
+executed Go lowering on the prototype branch and then on `main`. A production
+mapping imports "Never another mapping and never a native target"
+(`LAYOUT.md:160`), and nothing of the test tree.
+
+- (a) The gate runs Go conversion and lowering on contributions of the test
+  tree, which state identities of their own. The production Go contributions
+  carry no binding facet until a Go runtime library exists. The record says
+  that the six production families were not what was lowered.
+- (b) A production contribution declares its facet as a reference, and the
+  test composition supplies the implementation that the reference names.
+- (c) A contribution of the test tree wraps a production rule and adds the
+  facets.
+
+**9. How a decision becomes an ontos value (row 28, the charter and the
+mapping role).** Row 28 puts encoding into a package role of its own. A
+payload "is an ontos value", and "bittype generates the Go and TypeScript
+types" (`docs/representation-families.md:84-86`). A mapping package may not
+import ontos (`LAYOUT.md:160`). To turn a value of a generated Go type into
+an ontos value is the Go conversion of the payload's own families, and the
+charter excludes "application-value validators, serialization" from bittype
+(`CHARTER.md:119`).
+
+- (a) Each contribution encodes its payload by hand with the constructors of
+  ontos. Every mapping package then gets an allowance to import ontos.
+- (b) An encoder is generated and committed with the
+  [bootstrap artifact](#payload-bootstrapping).
+- (c) A rule builds its decision through a builder that the payload codec
+  supplies, and never holds a value of the generated type. The generated
+  types serve the readers.
+
+This decides what a rule returns. It is settled in the prototype, before the
+gate, and not with `LAYOUT.md` alone.
+
+**10. The final contract and the answer on optional fields (rows 11, 12, 31
+and 33).** Row 31 puts the migration before the optional move, and the
+delivery note of the table puts that move "by the answer of row 11". The test
+of row 11 is "Red until then". Row 33 puts "a contextual representation at a
+field position in" the extension domain without a condition. The request of
+row 12 is what the final contract holds for that item.
+
+- (a) The migration waits for the answer. Under a refusal the request of row
+  12 is not built, and the item leaves the extension domain.
+- (b) The request is part of the contract under either answer and is shown by
+  a fixture. The answer decides only whether the standard record
+  contributions use it. Under a refusal no TypeScript conversion exists for
+  such a contribution, so the item is in for types only.
+- (c) The migration goes ahead with the delegated form. A refusal later
+  removes it by a second change, justified under AC-08.
+
+Meanwhile the page marks [Optional fields](#optional-fields) as conditional
+and states the item of the domain as row 33 does.
+
+## What is delegated, and what is not specified here
+
+**Delegated**, each with the one who decides:
+
+| What | To | Row |
+| --- | --- | --- |
+| Whether a field-level conversion slot is admitted, and its slot kind | The owner of the service library, on bitspark-service#38 | 11, 13 |
+| Which behaviour the vectors pin for a present `undefined` | Asked of the service library. Decided by bittype's structural profile after the answer | 35 |
+| Whether a prototype of one family may precede integers in the service library | The owner of the service library, on bitspark-service#38 | 31a |
+| The form of the memo token, the states of a memo entry, and the cost charged at a memo hit | The service library, on bitspark-service#40 | 22, 36 |
+| The wording of the memo sentence of the binding contracts | The service library | 18 |
+| The shapes of the entries, the serialized form of the plan, and who writes the manifest in which form | [#195](https://github.com/Bitspark/bittype/issues/195) | 18, 23 |
+| The planner's declaration identity as a field of the inventory record | [#272](https://github.com/Bitspark/bittype/issues/272), delivered with #195 after pull request #281 | 23 |
+| The reader on the result of the TypeScript formatter | [#273](https://github.com/Bitspark/bittype/issues/273) | 24 |
+| Recursive references | [#164](https://github.com/Bitspark/bittype/issues/164) | 9a |
+| Explicit specialization | [#166](https://github.com/Bitspark/bittype/issues/166) | 21 |
+| The report of binding support | [#197](https://github.com/Bitspark/bittype/issues/197) | The delivery note of the table |
+| Value-level Go in production | "the future Go runtime library" (`docs/binding-generation.md:46`) | 29 |
+
+**The notes not yet made.** Two things that a row says are done or asked, and
+that this change found undone, and one text that does not carry the gate yet:
+
+- **Row 18** asks for a clarification of the binding contracts' memo sentence
+  "by request". The comment of 13 November 2026 on bitspark-service#38 tells
+  that owner about the memo token (row 22). Neither it nor a comment on
+  bitspark-service#40 names the two senses of "instance".
+- **Row 39** says that row 2 of research 0015 is reworded. The validation
+  cell of that row has the old text. This change does not edit the table of
+  another research record.
+- **The gate on #196.** Row 40 makes the seven lines the merge gate of item 6
+  of #196. The grade on that issue names the gate. The text of the issue
+  itself does not carry the seven lines.
+
+**Not specified here:**
+
+- **Any Go type or signature of the contract.** The sketches on this page
+  decide none. The prototype writes them.
+- **The form of a refusal in Go:** values, or one type with a class. The
+  value of the refusal of an evidence cycle and of a recursive reference.
+  Whether a missing contribution and an ambiguous one are one value or two.
+  What an unexpected error of a rule is: the advice calls it an
+  implementation failure, and row 10 lists no such class.
+- **How a request names its products**, and whether a rule names a dependency
+  with the product that needs it ([open](#open-inside-this-design), point 5).
+- **How the planner finds that two uses share a node.** Row 18 fixes the
+  outcome for two uses of `Page<Person>`. Row 19 fixes what identity is over.
+  The procedure belongs to #195.
+- **The form of a publisher's name and of a local key**, and whether the key
+  contains the target ([open](#open-inside-this-design), point 4).
+- **The path and the import allowances of the payload codec.** `LAYOUT.md`
+  gets both with the prototype.
+- **The set of reference categories**, and who issues a reference to a
+  member.
+- **The key under which a contribution asks for a shared helper.** Row 25
+  says that it makes a request. Whose key that request uses is not said.
+- **Whether a member fragment may hold more than one member.** The target's
+  member vocabulary decides, and what it does not admit is refused.
+- **The law of a field-state protocol.** The laws of binding generation are
+  written "For a type T and representation profile p"
+  (`docs/binding-generation.md:121`). An optional field is no type.
+- **The kinds of evidence.** Each belongs to its vocabulary. This page fixes
+  the outcomes and the rule for a binder.
+- **Composition across several profiles.** The advice (section 5.6) names it
+  as needing an explicit contract. No row decides it.
+- **Which contribution is the materially different one of the gate.** The
+  advice (section 4.2) names three candidates. One of them, an optional
+  fragment of another shape, exists only under D3.
+- **How the authoring route meets an application command line**
+  ([#172](https://github.com/Bitspark/bittype/issues/172)). Not examined
+  here.
+
+## Where each row is stated
+
+"Line" is the line of the [gate](#the-gate) whose tests validate the row.
+A dash means that the row has no test of its own before the gate is met.
+
+| Row | Verdict | Stated under | Line |
+| --- | --- | --- | --- |
+| 1 | Holds | [What a contribution is](#what-a-contribution-is), [Amendments](#amendments-to-accepted-pages) | 7 |
+| 2 | Holds | [What a contribution is](#what-a-contribution-is), [Amendments](#amendments-to-accepted-pages) | 1 |
+| 3 | Adapted | [The protocol](#what-a-rule-does-the-protocol) | 2 |
+| 4 | Holds | [The protocol](#what-a-rule-does-the-protocol) | 1 |
+| 5 | Holds | [The protocol](#what-a-rule-does-the-protocol), [Open](#open-inside-this-design) 1 | 1 |
+| 6 | Holds | [The protocol](#what-a-rule-does-the-protocol), [Amendments](#amendments-to-accepted-pages) | 1 |
+| 7 | Adapted | [Evidence](#evidence) | 2 |
+| 8 | Adapted | [Evidence](#evidence), [Open](#open-inside-this-design) 2 | 2 |
+| 9 | Adapted | [Evidence](#evidence) | 2 |
+| 9a | Deferred | [Deferred](#deferred-with-triggers), [Open](#open-inside-this-design) 6 | - |
+| 10 | Adapted | [Refusals](#refusals) | 2 |
+| 11 | Adapted | [Optional fields](#optional-fields), [Amendments](#amendments-to-accepted-pages), [Open](#open-inside-this-design) 10 | Its own condition, beside the seven lines |
+| 12 | Adapted | [Optional fields](#optional-fields) | 2 |
+| 13 | Adapted | [Optional fields](#optional-fields), [Open](#open-inside-this-design) 3 | 4 |
+| 14 | Holds | [Optional fields](#optional-fields), [The extension domain](#the-extension-domain) | 2 |
+| 15 | Adapted | [Identities](#identities) | 2 |
+| 15a | Deferred | [Deferred](#deferred-with-triggers) | - |
+| 16 | Holds | [Identities](#identities) | 3 |
+| 17 | Adapted | [Identities](#identities), [Open](#open-inside-this-design) 4 | 3 |
+| 17a | Deferred | [Deferred](#deferred-with-triggers) | - |
+| 18 | Holds | [Identities](#identities), [Amendments](#amendments-to-accepted-pages) | 2 |
+| 19 | Holds | [Identities](#identities) | 2 |
+| 20 | Holds | [Identities](#identities), [Open](#open-inside-this-design) 5 | 2 |
+| 21 | Holds | [Identities](#identities), [The extension domain](#the-extension-domain) | 2 |
+| 22 | Adapted | [Identities](#identities) | 3 |
+| 23 | Adapted | [Identities](#identities), [Amendments](#amendments-to-accepted-pages), [Open](#open-inside-this-design) 7 | 6 |
+| 24 | Adapted | [Identities](#identities) | 6 |
+| 24a | Deferred | [Deferred](#deferred-with-triggers) | - |
+| 25 | Holds | [Identities](#identities) | 2, 5 |
+| 26 | Adapted | [What the kernel carries](#what-the-kernel-carries-without-reading-it), [Open](#open-inside-this-design) 8 | 2 |
+| 26a | Deferred | [Deferred](#deferred-with-triggers) | - |
+| 27 | Adapted | [What the kernel carries](#what-the-kernel-carries-without-reading-it) | 2, 3 |
+| 28 | Adapted | [What the kernel carries](#what-the-kernel-carries-without-reading-it), [Open](#open-inside-this-design) 9 | 1, 3 |
+| 29 | Adapted | [What lowering must be able to refer to](#what-lowering-must-be-able-to-refer-to) | 5 |
+| 30 | Holds | [What is final and what is provisional](#what-is-final-and-what-is-provisional), [Amendments](#amendments-to-accepted-pages) | 7 |
+| 31 | Adapted | [The order of work](#the-order-of-work) | All |
+| 31a | Deferred | [Deferred](#deferred-with-triggers), [The order of work](#the-order-of-work) | - |
+| 31b | Deferred | [Deferred](#deferred-with-triggers), [The order of work](#the-order-of-work), [Open](#open-inside-this-design) 6 | - |
+| 32 | Holds | [The order of work](#the-order-of-work) | 2, 6 |
+| 33 | Holds | [The extension domain](#the-extension-domain), [Amendments](#amendments-to-accepted-pages), [Open](#open-inside-this-design) 10 | 7 |
+| 34 | Adapted | [Inputs](#inputs-that-are-not-bittypes-alone) | 4 |
+| 34a | Deferred | [Deferred](#deferred-with-triggers) | - |
+| 35 | Holds | [Inputs](#inputs-that-are-not-bittypes-alone) | 4 |
+| 36 | Stale | [Inputs](#inputs-that-are-not-bittypes-alone) | - |
+| 37 | Adapted | [Inputs](#inputs-that-are-not-bittypes-alone), [The extension domain](#the-extension-domain) | 7 |
+| 37a | Deferred | [Deferred](#deferred-with-triggers) | - |
+| 38 | Holds | [Payload bootstrapping](#payload-bootstrapping) | 3 |
+| 39 | Holds | [What a test must show](#what-a-test-must-show) | 1 |
+| 40 | Adapted | [The gate](#the-gate) | All |
+
+18 rows hold, 21 are adapted, nine are deferred and one is stale.
+
+## The code today
+
+At `ec96b92`. Nothing in this section is the design, and no fact here is a
+reason for a choice above. Paths without a directory are in
+`contracts/generation/go`.
+
+| Fact | Where |
+| --- | --- |
+| A registered unit is a profile and three lists: use rules, declaration recipes and helper recipes | `description.go:72-77` |
+| A use rule is a pattern with an optional capture, and a fixed output or an expand callback. A declaration recipe has an expand callback | `description.go:21-31`, `:61-66` |
+| The expand callback can take the source reader | `description.go:113-120`; `transform/syntax/horos-to-golang/mapping/record/go/record.go:40-41` |
+| A rule's callback runs before its children are planned. `Mapped` records a placeholder, and the planner represents the child when it meets the placeholder afterwards | `planning.go:548`, `:560`, `:580-585`; `description.go:133-171` |
+| A rule returns native intent, and nothing else of its decision is kept. The program holds declarations, and a step is five strings for inspection | `planning.go:14-22`, `:33-36`, `:564` |
+| The declaration recipe takes the record form when the source body is a record. Each target's model requires that the selected body of that form is its record form | `transform/syntax/horos/mapping/declarations/go/declarations.go:52-55`; `transform/syntax/golang/model/go/model.go:105-109` |
+| A rule declines by returning an error, which the planner passes on unclassified | `planning.go:378-380`, `:553-555` |
+| The record rule's refusal is a text diagnostic. By reading, it matches none of the seven values | `record.go:50` of the Go record mapping; `transform/syntax/horos/source/go/read.go:126-133` |
+| A recursive declaration is refused | `planning.go:322-325` |
+| An exact mapping without a recipe does not fall back to the structural policy | `planning.go:333-337` |
+| A rule's names: a string that is unique in its description, and a counter of the registry. The planner joins them, and only a step keeps the result | `record.go:40` (`record/golang/1`); `transform/syntax/shared/generation/go/registry.go:19-22`, `:126-127`, `:242`; `planning.go:143` |
+| A replacement reaches use rules only | `registry.go:251-262` |
+| A request names one profile and no product. The registry plans with every unit that states that profile | `registry.go:31-38`, `:185` |
+| One native declaration is planned for each source declaration. Its identity is issued at reservation | `planning.go:322`, `:309-317` |
+| A use of a declaration is selected by the callee alone | `planning.go:450-453`, `:465` |
+| An application keeps its native arguments only. An actual that the native convention omits is admitted and not represented | `planning.go:515`, `:503-507` |
+| One generic convention holds native parameters, bindings indexed by source parameter and arguments indexed by native parameter | `description.go:38-45` |
+| The optional representation is chosen inside each record rule: Go through a helper key, Rust and C++ by an external type, TypeScript by the flag of the field | `record.go:70-72` (Go), and `record.go:53-54` of the Rust and C++ mappings, `record.go:55` of the TypeScript mapping |
+| Go's optional helper is its own contribution. The consumer creates its key, which is an allocation | `transform/syntax/horos-to-golang/mapping/optional/go/optional.go:21-26`; `expression.go:41-46` |
+| The `field` form of the Go model carries a name and the optional flag as strings | `transform/syntax/golang/model/go/model.go:43-45` |
+| The source reader returns a field's name, its flag, its use and a site | `transform/syntax/horos/source/go/read.go:25-30` |
+| A sealed output holds a snapshot, the exposed sites and the external uses. It lists no declaration | `output.go:52-56` |
+| The contract package imports six packages of bittype and neither horos nor ontos | `integration/go/architecture_test.go:182` |
+| There are 21 mapping packages: five each for TypeScript, Rust and C++, six for Go | The directories `transform/syntax/horos-to-<native>/mapping/<name>/go` |
+| TypeScript is checked with `exactOptionalPropertyTypes` | `internal/typescriptsem/compiler.cjs:30` |
+| Generated Files formatters exist for horos and TypeScript | The directories under `format/files` |
+
+**Not on `main`.** Pull request
+[#281](https://github.com/Bitspark/bittype/pull/281) is open. Read on its
+branch at `ca77f65`, it adds owner-issued values, a handle for each
+declaration of a sealed output, and an inventory record with a handle, a
+site, a role, a provenance and values. The record has no identity of the
+planner.
+
+**What does not exist.** No Go file of the repository defines a plan entry, a
+payload schema, a facet, a payload codec, evidence about a selected
+representation, or a completeness test backend. The service library has no
+package `structural-adapters`. Its owner decided that it is created with
+integers
+([decision of 11 November 2026](https://github.com/Bitspark/bitspark-service/issues/38#issuecomment-6803983510)).
+
+## The order of work
+
+**The steps (row 31, as the grade lists them).**
+
+| Step | What | Where it lands |
+| --- | --- | --- |
+| 1 | This page | `main` |
+| 2 | A prototype | "on a branch that is thrown away" (row 31). It does not merge |
+| 3 | A materially different contribution, with the shared packages fixed | The prototype branch |
+| 4 | The contract in its final form and the migration of the 21 mapping packages, in one change | `main`, when the [gate](#the-gate) is met |
+| 5 | The optional move | `main`, by the answer to [row 11](#optional-fields) |
+| 6 | The additive work of [#207](https://github.com/Bitspark/bittype/issues/207) | `main` |
+
+**Why not the advised order.** The advice (section 4.2) asks for TypeScript
+end to end through the service library's own factory before the migration.
+The table's introduction says why that cannot be done: "The package it wants
+the proof to run through, `@bitspark/structural-adapters`, does not exist. Its
+owner decided on bitspark-service#38 that it is created with integers, which
+the plan puts after the migration." The same facts bound the risk: "no other
+repository builds on the contract before integers."
+
+**What the prototype contains (rows 31 and 32).**
+
+- The rule in its staged form, one round ([the protocol](#what-a-rule-does-the-protocol)).
+- The frozen decision record, the plan and the serialized form of the plan.
+- Two consumers of the evidence path. Row 3: "the declaration recipe's need to
+  know that a selected body is a record, and by a fixture family".
+- Go handlers and executed Go lowering, in the test tree.
+- A TypeScript reader as a stand-in, in the test tree, with the snapshot of
+  [row 34](#inputs-that-are-not-bittypes-alone).
+- The optional field in the delegated form ([row 11](#optional-fields)).
+- Fixtures for vertical cases 3 to 6.
+- The four cases of row 32: "repeated uses share a node, equal native types
+  with different adapters stay apart, an erased native argument is kept for
+  conversion, one plan under two TypeScript placements".
+
+**The six vertical cases in the prototype.** The cases are those of the plan
+(`docs/representation-families.md:97-102`). Row 31 puts fixtures for cases 3
+to 6 into the prototype, and row 31b the first two "at the kernel's level".
+The form of each fixture below is derived here, from verification report 3.
+
+| Case | Its form in the prototype | What that form does not show |
+| --- | --- | --- |
+| 1. Recursive `ContentValue` | At the kernel's level, with a mock family that the record names as a mock ([open](#open-inside-this-design), point 6) | The recursion family, the memo, the budgets |
+| 2. `Page<Outcome>` with optional nullable fields | At the kernel's level, with a mock family. The optional field of `Page<Person>` runs through the field-state protocol | Null against absence, and discriminators |
+| 3. The exact external generic `Cell<T>` | An exact generic with an omitted or an additional native parameter and a value facet | Capabilities, and what `Cell` does with its slot |
+| 4. Go typed construction with a generic adapter argument | `Page[Person]` itself, lowered and executed | Lowering of families that do not exist |
+| 5. A generic map whose key requirement is rejected | A fixture generic that requires evidence about its argument, accepted for one operand and refused for another | The map family and the meaning of its keys |
+| 6. An independent family without a shared change | The contribution of step 3 | Authorship by another owner |
+
+The six cases in real form stay what the accepted design makes them: the
+condition for a stable version of the envelope
+(`docs/representation-families.md:95-96`). The prototype does not discharge
+that condition.
+
+**What a stand-in proves (row 31).** Row 31: "the serialized plan is
+sufficient for a second reader in another process, not for the service
+library's factory."
+
+| A TypeScript reader written by bittype, run from a Go test, shows | It does not show |
+| --- | --- |
+| No identity in the plan is a pointer of the planning process | That the service library's factory can be written against the plan: its adapter interface with budgets, its call context and its memo |
+| Every link, version axis and refusal survives serialization | Independent authorship. One seat wrote both sides |
+| The plan, the payloads, the realization and the descriptors suffice for a reader in another language | Anything about their package rules or their CI |
+
+The proof through the service library's own factory is deferred (row 31a).
+
+**A materially different contribution (step 3).** The rules say what counts:
+"implement a materially different contribution using its public contracts in
+a separately owned package or fixture. Keep the shared mechanism fixed."
+(platform `docs/concepts/architectural-correctness.md:487-489`). And what does
+not: "A renamed copy of the original example, a private test-only constructor
+or a fixture that activates a preinstalled special case does not establish
+that." (`:496-497`). The advice (section 4.2): "A second unconditional scalar
+is weak P2 evidence."
+
+## The gate
+
+Row 40: "Adopted as the merge gate of the migration, each line in the form
+bittype can show: a frozen decision survives native projection, dependency
+composition, serialization, a second reader in another process, executed Go
+lowering, and realization for TypeScript, with every shared package named and
+fixed while a materially different contribution is added".
+
+The migration of step 4 does not merge while one line is red. The gate is
+shown first on the prototype branch and then on `main` (row 31). Each line
+below is a predicate. Its tests come from the Validation cells of the table,
+marked by their row, and from the verification reports, marked V1, V2 or V3.
+Every test in the table is red today, for the reason given.
+
+| Line | The predicate | Tests | Red today because |
+| --- | --- | --- | --- |
+| 1. Native projection | The native type is computed from the frozen record, by a projector that cannot read the source | A projector that tries to read the source does not compile or fails the contract test (row 4). Mutating the value a rule returned changes neither the native type nor the serialized plan (row 28). A fixture whose decision the source does not determine is green on the planner and red on a mutant that derives the entry from the source (row 39, V1) | The one callback takes the reader. No record exists |
+| 2. Dependency composition | A rule decides with typed answers about what was selected, and every reference is checked | A fixture family whose decision depends on evidence about its operand plans and generates (row 3). `Page<text>` and the written-out record generate the same native type, and a rule that reads one application fails (row 7). An evidence cycle and a recursive reference are refused with different reasons (row 9, V1). Every refusal of the 21 mapping packages matches exactly one value (row 10). A request at a field position with the operand of another record fails (row 12, V2). One local key under two publishers registers, and one publisher with one key twice fails (row 15). Two uses of `Page<Person>` are two use entries on one node (row 18). Equal native types with different adapters stay apart (rows 19 and 32). An omitted native parameter still yields an adapter argument (row 20). A specialization is refused as unsupported with the application named (row 21). Two contributions that spell a helper alike get two symbols (row 25, V2). A fragment that the target's member vocabulary does not admit is refused with a class (row 14, V2). Guarantees 1 to 6 (row 27) | A rule runs before its children. No evidence, no owner of an identity and no use entry exist |
+| 3. Serialization | The plan, read from its serialized form in a fresh process, is the plan that was written | The completeness test runs from the serialized plan in a process that never held the planner's objects (V3). Each version axis is exercised alone (row 16). The regeneration test of the payload types, and a payload outside its schema is refused before a backend runs (row 38, V3) | No plan is serialized. No plan carries the axes |
+| 4. A second reader in another process | A reader in another language converts from the plan and the snapshot alone | The TypeScript stand-in round-trips `Page<Person>` and refuses a payload schema version it does not know (V3). Given the plan without the snapshot it fails explicitly, and a snapshot with another pin is a linking error (row 34, V3). Each state of an optional field has its own vector, in Go and in the stand-in (rows 13 and 35) | No reader and no conversion exist |
+| 5. Executed Go lowering | Go code that is lowered from the plan compiles and runs | Construction of `Page[Person]`, access to a member, an owned helper and a generic adapter argument compile and run (advice, section 3.4). A lowering that takes a member by a string the naming policy changed fails to compile, and with a member reference it compiles (row 29, V3) | A member is a string. No lowering exists |
+| 6. Realization for TypeScript | A reader takes every native name and place from the realization | A plan read with the manifest of another output fails as a linking error, not as an incomplete plan (row 23). One plan under two TypeScript placements resolves each logical symbol to another module path and the same declaration (row 32, V2). No native name reaches emitted glue except through the reader, and a formatter mutant that realizes another spelling is followed (row 24, V2) | The inventory record has no planned identity, and the formatter's result has no reader |
+| 7. The shared packages fixed | A materially different contribution is added, and no shared package changes | The contribution registers, and `Page<Person>` regenerates with it. The diff of that test touches no shared package (row 40, V3). A Go module outside the repository authors and registers a contribution with public packages only (row 37, V3). One fixture for each item that is in the [extension domain](#the-extension-domain), and one recorded refusal for each that is out (row 33, V3) | A replacement reaches use rules only. No request can ask at a field position |
+
+**Two checks that are green today and stay green.** The fixtures of today's
+generics pass on the new contract with no contribution for generics (row 2,
+V1). The native declarations of today's pagination fixtures do not change in
+any of the four targets (#207, item 5).
+
+**One condition beside the seven lines.** The test of
+[row 11](#optional-fields): "The answer on bitspark-service#38 is recorded
+here with the form that was built. Red until then". Whether the migration
+waits for it is [open](#open-inside-this-design), point 10.
+
+**The shared packages of line 7.** Row 40 asks that they be "named and
+fixed". Derived here, from the list of generation packages in `LAYOUT.md`:
+
+- the contract package, `contracts/generation/go`;
+- the registry, `transform/syntax/shared/generation/go`;
+- the shared native construction, `transform/syntax/shared/target/go`;
+- the source reader and the common mapping parts of the source,
+  `transform/syntax/horos/source/go` and `transform/syntax/horos/mapping`;
+- the native model and target of each language;
+- every existing mapping package;
+- the payload codec;
+- the completeness test backend.
+
+**What the gate depends on.** Derived here. Line 6 needs the reader of #273
+and the inventory of pull request #281 with the planner's identity. Line 4
+has its last state, a present `null`, only with #211. The contribution of
+line 7 depends on the answer to row 11. Where the Go facets of line 5 are
+declared is [open](#open-inside-this-design), point 8.
+
+**What the gate does not establish.** It does not establish the service
+library's factory (row 31a), realization for Go and Rust (row 24a), recursion
+(row 9a), or vertical cases 1 and 2 in real form (row 31b). Each is recorded
+as not demonstrated, with its trigger, under
+[Deferred](#deferred-with-triggers).
+
+**After the gate.** Derived here, from verification report 3: the
+contribution of line 7, pinned at the commit of the migration, still builds
+at the head of each later family. It is red when a later family changes a
+type of the contract (row 30).
+
+**When the gate is met** this page's first line changes: the design is final,
+with the date and the commit of the migration. Until then each change that
+the prototype makes to the design is recorded on this page with its date.

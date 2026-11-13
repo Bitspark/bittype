@@ -1,5 +1,22 @@
 # Changelog
 
+## The contribution contract: a design with its gate, from research 0017 — 13 November 2026
+
+[The contribution contract](docs/contribution-contract.md) is the design of a contribution to the generation kernel: what it is, what its rule may ask and must return, what identifies it, and what the kernel carries for it unread. It is step 1 of the order that [research 0017](research-docs/0017-contribution-contract.md) decided for [#196](https://github.com/Bitspark/bittype/issues/196), item 6. The research owner decided it, and the page says so. It is not implemented, and it becomes final only when its gate is met. This entry adds and changes documents only. The mapping contract is unchanged.
+
+- **Every row has its place.** The page states each of the 49 rows of the research table with its source, quotes the accepted sentence a row rests on with file and line, and marks what it derives itself. A table names the section and the gate line of each row.
+- **The protocol.** A rule gets one round: it names its dependencies and the evidence it needs, the planner resolves them, the rule decides with typed answers, the planner freezes the record, and a registered projector that reads no source computes the native intent. There is no general loop.
+- **Evidence** is bounded by the coherence that a profile requires of a generic declaration and its applications. An operand bound to a binder is answered from the binder's requirements, never from one application.
+- **Refusals** refine the seven values and four verdicts of the generation contract and replace none. A refusal of a selected exact mapping never falls back.
+- **Identities.** One list names each identity of the design with its issuer, whether it leaves the process, and what it must not be confused with.
+- **Optional fields are conditional.** The section states the position of bittype and what happens under each answer of the service library on bitspark-service#38.
+- **The gate.** Seven lines, each a predicate with the tests that are red today. The migration of the 21 mapping packages does not merge while one is red.
+- **Open inside the design.** Ten points on which two rows, or a row and an accepted page, do not fit without a reading. The page gives the options and chooses none. Among them: how a rule's decision becomes an ontos value while a mapping package may not import ontos, where the Go facets that the gate executes are declared, and whether the migration waits for the answer on optional fields.
+- **Dated clarifications of accepted pages,** each beside its sentence, which stays as it was. [Binding generation](docs/binding-generation.md): "library × target" names ownership and distribution, and a backend has a fourth input, the placed result. [Representation families](docs/representation-families.md): what "cannot disagree" claims, the two senses of "instance", what is unstable in the envelope, what "change once" commits to, and that generics are no family with a contribution of its own. Finding 7 of [package boundaries](docs/package-boundaries.md) and the limit in [bittype/ACX-009](docs/architecture-cases/0009-package-boundaries.md) say that the optional move is conditional.
+- **Pointers.** The [SPI](docs/generation-spi.md) and the [registration page](docs/kernel-composition.md) say that the mapping contract is going to change and where the design is. [Semantic generation](docs/semantic-generation.md), `LAYOUT.md` and the [documentation map](docs/README.md) link the page.
+
+Not done: no code and no prototype. `LAYOUT.md` names no path for the new payload codec role, which it gets with the prototype. Three notes that the page lists as not yet made: the request for the wording of the binding contracts' memo sentence, the reworded validation of row 2 of research 0015, and the seven lines in the text of #196.
+
 ## Research 0017: the contribution contract, evaluated and in delivery — 13 November 2026
 
 [Research 0017](research-docs/0017-contribution-contract.md) asks what the mapping contract must become when a rule also has to yield what a binding backend needs: what a rule returns, how one contribution asks for the answer of another, what the kernel carries without reading it, and what identifies a contribution and a plan. It came from a reading of the accepted designs for the first slice (#207, #195, #196, #197) that left three points open. Four readers reviewed it, and it was answered through the consult service. This entry adds documents only.

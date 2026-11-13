@@ -466,6 +466,8 @@ Consumers register source, target and mapping libraries, then request source roo
 
 The [naming design](docs/naming.md) is accepted and not implemented. Today the `naming` and `declarations` packages above spell every target's names. Under the design generation records a naming intent, and each language owns its realization: its reserved words, in Go the case of a name, and in its Files stage the collisions of a placed scope. The design names one new package, a Go-owned one for Go's check of a spelled name, which [#274](https://github.com/Bitspark/bittype/issues/274) adds. No path in this layout has changed.
 
+The [contribution contract](docs/contribution-contract.md) is a design of 13 November 2026 from research 0017 and is not implemented. It changes what the mapping packages above register and return, in one migration behind a gate ([#196](https://github.com/Bitspark/bittype/issues/196), item 6). It names one new package role, a payload codec that encodes, validates and freezes a rule's decision. That role lies outside `contracts/generation/go`, which imports neither horos nor ontos, and outside the horos source reader. Its path and its import allowances are not decided: this layout gets them with the prototype. No path in this layout has changed.
+
 The [Syntax and Files design](docs/source.md) is implemented with
 `Syntax : CST : AST` and `Files : Source : Semantics`. Both dimension names are
 explicit in implementation paths. Horos composes the full Files text pipeline.

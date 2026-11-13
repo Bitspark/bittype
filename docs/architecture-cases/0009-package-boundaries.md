@@ -543,7 +543,9 @@ that are not committed.
 - The helper key that Go's Record receives is an interim form. Record still
   decides how an optional field is represented in Go, Rust and C++. That is
   [#196](https://github.com/Bitspark/bittype/issues/196), item 6, and is not
-  part of this case.
+  part of this case. Noted on 13 November 2026: research 0017 (row 11) makes
+  that move conditional on an answer of the service library, and it follows
+  the gate of [the contribution contract](../contribution-contract.md#optional-fields).
 - A green run still shows only that the listed edges are absent
   ([AC-07](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-07)).
 

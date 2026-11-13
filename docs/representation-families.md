@@ -46,6 +46,20 @@ representation instance per use. The native type and the plan entry are both
 projections of that instance. No later pass reconstructs a decision from the
 source, so a native declaration and its conversion cannot disagree.
 
+**Clarified on 13 November 2026
+([research 0017](../research-docs/0017-contribution-contract.md), rows 6 and
+18).** Two words of this paragraph are read as
+[the contribution contract](contribution-contract.md#what-a-rule-does-the-protocol)
+states. "Cannot disagree" means that no sanctioned second decision point
+exists: no interface lets a later pass select again or rebuild a decision. It
+does not mean that a projector or a factory cannot be wrong, which
+qualification tests. "Instance" has two senses on this page. Here it is the
+selection at one use, which the plan records as a use entry. Under
+[Conversion state](#conversion-state-sharing-and-budgets) the "selected
+representation instance" that keys the memo is the applied representation
+that several uses share, and not the record of one use
+([identities](contribution-contract.md#identities)).
+
 **Factories, and a lowering facet where needed.** By default a plan entry names
 the family's run-time factory and gives it the family's payload as arguments. A
 family may also supply a target-owned **lowering facet** that turns its recorded
@@ -100,6 +114,15 @@ or map means.
   4. a Go case with typed construction and a generic adapter argument;
   5. a generic map whose key requirement is rejected;
   6. an independently registered family that needs no kernel or backend change.
+- **Clarified on 13 November 2026
+  ([research 0017](../research-docs/0017-contribution-contract.md), row 30).**
+  What stays unstable until then is the envelope's version: its layout and its
+  encoding. The meanings that the plan shares with the contribution contract
+  are fixed with that contract: the identities, the categories and scope of a
+  request, the generic conventions and requirements, the meaning of a refusal,
+  what a facet is attached to, and the relation between a native symbol and
+  its realization
+  ([what is final and what is provisional](contribution-contract.md#what-is-final-and-what-is-provisional)).
 
 ## Domains
 
@@ -328,6 +351,8 @@ The order of work, the first slice and the owner of each vertical case are in [#
 **Changes before the additive work (11 November 2026).** Two existing parts change once, ahead of the families: the structural profile's identity and the closed profile gate ([#216](https://github.com/Bitspark/bittype/issues/216), [bittype/ACX-008](architecture-cases/0008-structural-profile-gate.md)), and what an existing mapping returns (item 6 of [#196](https://github.com/Bitspark/bittype/issues/196)). After them a family adds a contribution and changes no existing contract. A third change moves code and changes no contract: one package per mapping ([#222](https://github.com/Bitspark/bittype/issues/222), [bittype/ACX-009](architecture-cases/0009-package-boundaries.md), [package boundaries](package-boundaries.md)). The four pair packages are split on `main` since 11 November 2026: each mapping is `transform/syntax/horos-to-<native>/mapping/<name>/go` and exports `Library`. The common package `transform/syntax/horos/mapping/go` was divided the same day; its adapter stays at that path. Item 6 of #196 is unchanged.
 
 The first of the two is done on 12 November 2026 (#216). The structural profile's identity is `structural-representation/1`, and the declared, unimplemented enforcement profile is `structural-enforcement/1`. A mapping states its profile in its own description, and its constructor takes none. No shared code lists, writes or refuses a profile, and a request selects the libraries that state the profile it names. No mapping states the enforcement profile. A bounded profile gets its own name beside these, as a contribution that states it, and needs no change to the common package. It can use the parts that state no profile: the function type, the common patterns, the naming function and the common declaration recipe. It reuses no builtin mapping, because each builtin mapping states the structural profile.
+
+**Clarified on 13 November 2026 ([research 0017](../research-docs/0017-contribution-contract.md), rows 2 and 33).** "Change once" is a bounded commitment: one migration to the demonstrated extension contract for the agreed extension domain, before independently owned consumers rely on it. [The contribution contract](contribution-contract.md#the-extension-domain) writes that domain down, and it gives the order in which item 6 of #196 is delivered: a design, a prototype, and then the migration behind a gate. In the table below, "generics" among the delivered families names a division of responsibility between the kernel, the contribution that supplies a declaration and the selected representation contribution. It is no family with a contribution of its own ([what a contribution is](contribution-contract.md#what-a-contribution-is)).
 
 | Work | Owner | Tracking |
 | --- | --- | --- |

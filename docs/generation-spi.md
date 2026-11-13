@@ -11,6 +11,13 @@ prescribing their former interfaces. The architectural correction is recorded in
 [bittype/ACX-005](architecture-cases/0005-generation-interface-design.md).
 [Kernel registration](kernel-composition.md) supplies the complete calling example.
 
+**The mapping contract on this page is going to change.** The
+[contribution contract](contribution-contract.md) is the design of
+13 November 2026 for what a mapping registers and returns. It is not
+implemented, and it becomes final only when its gate is met. Until the
+migration of [#196](https://github.com/Bitspark/bittype/issues/196), item 6,
+merges, this page describes the contract as it is.
+
 ## Mapping descriptions
 
 These are implemented signatures in package generation. F and T identify

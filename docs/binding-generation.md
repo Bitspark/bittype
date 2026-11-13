@@ -71,6 +71,8 @@ The serialized plan carries an explicit format version, which bittype owns. A ba
 
 **Completeness test.** The backend can implement each selected representation from the plan, the source semantics and the selected contributions alone, without guessing a rule. If it must decide how Go optional values work, or how a custom union is represented, the plan is incomplete.
 
+**Clarified on 13 November 2026 ([research 0017](../research-docs/0017-contribution-contract.md), row 23).** For a generated native declaration the three inputs named here and under [The decision](#the-decision) are not sufficient. Its name and its place exist only after a language's Files stage has placed it. A plan entry refers to such a declaration by an identity that the planner issues, and a backend reads the realized name and place from the placed result. That result is a fourth input. The sentence above stands for every representation rule. See [the contribution contract](contribution-contract.md#identities).
+
 **What the backend emits:**
 
 - static imports and factory calls;
@@ -263,6 +265,8 @@ A `put`/`get` slice is not qualification of the whole.
 | Go bindings | Only the Go backend and the Go implementations each semantic owner supplies |
 
 The unit of implementation is library × target.
+
+**Clarified on 13 November 2026 ([research 0017](../research-docs/0017-contribution-contract.md), row 1).** This sentence names ownership and distribution: a library owns and distributes what it publishes for a target. The unit that a consumer selects is one contribution, and a library may publish several. See [the contribution contract](contribution-contract.md#what-a-contribution-is).
 
 ## Delivery
 
