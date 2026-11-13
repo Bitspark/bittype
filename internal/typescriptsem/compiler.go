@@ -14,6 +14,7 @@ import (
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
+	"github.com/Bitspark/bittype/internal/processoutput"
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/typescript/go"
 	s "github.com/Bitspark/bittype/syntax/typescript/go"
@@ -40,29 +41,6 @@ const (
 	statusIncomplete  = "incomplete"
 )
 
-// boundedBuffer collects what the helper process writes to one of its streams,
-// up to a bound. Write is its only method. os/exec copies a stream with
-// io.Copy, which calls the writer's ReadFrom when it has one, so a writer that
-// embeds bytes.Buffer is filled past the bound without a call of Write. The
-// first write that would pass the bound cancels the process, and every later
-// write is refused too.
-type boundedBuffer struct {
-	data      []byte
-	remaining int
-	cancel    context.CancelFunc
-	exceeded  bool
-}
-
-func (b *boundedBuffer) Write(data []byte) (int, error) {
-	if b.exceeded || len(data) > b.remaining {
-		b.exceeded = true
-		b.cancel()
-		return 0, semantic.ErrLimit
-	}
-	b.remaining -= len(data)
-	b.data = append(b.data, data...)
-	return len(data), nil
-}
 func Check(ctx context.Context, nodePath, modulePath string, trees []s.AST, source *files.Context, query *Query, settings []semantic.Setting) (Output, error) {
 	if ctx == nil || (n.Compiler{NodePath: nodePath, TypeScriptPath: modulePath}).Validate() != nil {
 		return Output{}, semantic.ErrInvalidRequest
@@ -90,8 +68,9 @@ func Check(ctx context.Context, nodePath, modulePath string, trees []s.AST, sour
 	}
 	run, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	stdout := boundedBuffer{remaining: 16 << 20, cancel: cancel}
-	stderr := boundedBuffer{remaining: 16 << 10, cancel: cancel}
+	// One bound per stream. What a passed bound means is this bridge's.
+	outputBound, errorBound := processoutput.NewBound(16<<20, cancel), processoutput.NewBound(16<<10, cancel)
+	stdout, stderr := outputBound.Writer(), errorBound.Writer()
 	command := exec.CommandContext(run, nodePath, "--input-type=commonjs", "--eval", helper, modulePath)
 	// No NODE_OPTIONS, NODE_PATH, package-manager credentials or ambient hooks.
 	command.Env = []string{}
@@ -101,11 +80,14 @@ func Check(ctx context.Context, nodePath, modulePath string, trees []s.AST, sour
 		}
 	}
 	command.Stdin = bytes.NewReader(encoded)
-	command.Stdout = &stdout
-	command.Stderr = &stderr
+	command.Stdout = stdout
+	command.Stderr = stderr
 	command.WaitDelay = time.Second
 	err = command.Run()
-	if stdout.exceeded || stderr.exceeded {
+	// Both bounds are asked before either stream is read: the bound of one
+	// stream cancels the process, and that can cut the other stream, whose own
+	// bound then still holds.
+	if outputBound.Exceeded() || errorBound.Exceeded() {
 		return Output{}, semantic.ErrLimit
 	}
 	if ctx.Err() != nil {
@@ -115,10 +97,10 @@ func Check(ctx context.Context, nodePath, modulePath string, trees []s.AST, sour
 		return Output{Status: statusIncomplete, Diagnostics: []semantic.Diagnostic{{Code: n.Key("limit"), Subject: n.Coverage(), Message: "TypeScript compiler exceeded the provider deadline"}}}, nil
 	}
 	if err != nil {
-		return Output{}, fmt.Errorf("%w: %v: %s", n.ErrCompiler, err, stderr.data)
+		return Output{}, fmt.Errorf("%w: %v: %s", n.ErrCompiler, err, stderr.Bytes())
 	}
 	var out Output
-	decoder := json.NewDecoder(bytes.NewReader(stdout.data))
+	decoder := json.NewDecoder(bytes.NewReader(stdout.Bytes()))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&out); err != nil {
 		return Output{}, fmt.Errorf("%w: malformed response: %v", n.ErrCompiler, err)
