@@ -2,7 +2,7 @@
 
 **Status.** Identified on 13 November 2026 at main
 `058140171592882239d759663e0f7387a171c021`. Correction in progress: slice S3a
-is delivered on `main` with pull request [#PRNUMBER](https://github.com/Bitspark/bittype/pull/PRNUMBER), and
+is delivered on `main` with pull request [#318](https://github.com/Bitspark/bittype/pull/318), and
 the rest is pending. The
 correction is designed in [models and operations](../models-and-operations.md)
 and delivered by its slices S1 to S8. For the four intended-forms packages
@@ -261,7 +261,7 @@ The classification of each package is the design page's
 table, made by reading. Each slice updates this case with what it delivered,
 its qualification and its limits.
 
-### Slice S3a, delivered with pull request [#PRNUMBER](https://github.com/Bitspark/bittype/pull/PRNUMBER)
+### Slice S3a, delivered with pull request [#318](https://github.com/Bitspark/bittype/pull/318)
 
 **What is corrected.**
 
