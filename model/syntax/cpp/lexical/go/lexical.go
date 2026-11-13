@@ -1,5 +1,6 @@
 // Package lexical is the lexical part of the C++ syntax model: the names of
-// the predicates over C++ spelling. It knows no node kind, role or attribute.
+// the predicates over C++ spelling, and its word lists. It knows no node kind,
+// role or attribute.
 //
 // Each name is a function without input that returns one fixed name. The
 // comment says what the predicate is meant to admit; its evaluator states it.

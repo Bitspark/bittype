@@ -1,6 +1,6 @@
 // Package lexical is the lexical part of the TypeScript syntax model: the
-// names of the predicates over TypeScript spelling. It knows no node kind, role
-// or attribute.
+// names of the predicates over TypeScript spelling, its word lists and the
+// patterns of a number. It knows no node kind, role or attribute.
 //
 // Each name is a function without input that returns one fixed name. The
 // comment says what the predicate is meant to admit; its evaluator states it.

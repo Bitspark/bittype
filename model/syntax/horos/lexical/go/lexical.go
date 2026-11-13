@@ -1,5 +1,6 @@
 // Package lexical is the lexical part of the horos syntax model: the names of
-// the predicates over horos spelling. It knows no node kind, role or attribute.
+// the predicates over horos spelling, its reserved words and the bound on an
+// integer. It knows no node kind, role or attribute.
 //
 // Each name is a function without input that returns one fixed name. The
 // comment says what the predicate is meant to admit; its evaluator states it.
