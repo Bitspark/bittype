@@ -83,6 +83,7 @@ func (f Files) Capture(l Limits) (Files, error) {
 	}
 	return f.Clone(), nil
 }
+
 // Cover admits a placement of items into files. table names each file by its
 // identity and gives its relative path. assignment gives each item its file.
 // items are the items that the placement has to place. Cover refuses in this
