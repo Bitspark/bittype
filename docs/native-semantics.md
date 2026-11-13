@@ -622,11 +622,16 @@ that `ConfigurationFor` returns for no environment. No refusal is both.
 Validity is judged before coverage, over every field and every dependency, so
 an environment with an invalid and an unsupported value is invalid.
 
-**The vocabularies are the pinned compiler's,** read in the source of rustc
-1.90.0 and put to that compiler by `TestRustEnvironmentEqualsCompiler`, which
-compares its answers with `ConfigurationFor`. The Rust vocabulary declares each
-once, beside the supported values, in `semantics/rust/go/environment.go` and
-`cratename.go`.
+**The vocabularies of an edition, a crate kind and a crate name are the pinned
+compiler's,** read in the source of rustc 1.90.0 and put to that compiler by
+`TestRustEnvironmentEqualsCompiler`, which compares its answers with
+`ConfigurationFor`. The Rust vocabulary declares each once, beside the
+supported values, in `semantics/rust/go/environment.go` and `cratename.go`.
+The `compiler` setting and the profile strings identify this vocabulary: the
+editions, the crate kinds, the characters of a crate name and the keywords are
+those of rustc 1.90.0. A new compiler pin is a new vocabulary, under its own
+setting and profile strings, and the table of characters is regenerated for
+it as the comment in `cratename.go` says.
 
 - **An edition.** `compiler/rustc_span/src/edition.rs:114-126` names five. The
   stable compiler refuses the fifth, `future`
@@ -636,7 +641,7 @@ once, beside the supported values, in `semantics/rust/go/environment.go` and
   eight. The stable compiler refuses the eighth, `sdylib`
   (`compiler/rustc_interface/src/passes.rs:271-272`). The compiler's option
   also takes a list such as `lib,rlib`. A list is no crate kind, and the field
-  states one.
+  states one. A crate of several kinds needs a new field or key.
 - **A crate name.** `compiler/rustc_session/src/output.rs:57-79`: the name is
   not empty, and each character satisfies `c.is_alphanumeric() || c == '_'`,
   with `char::is_alphanumeric` of `library/core/src/char/methods.rs:922-924`
@@ -646,16 +651,21 @@ once, beside the supported values, in `semantics/rust/go/environment.go` and
   the pinned compiler printed it, and the test builds that program again and
   compares every code point. Go's `unicode` package is not used, because its
   tables follow the Go release.
-- **A crate of the sysroot.** A captured crate may not have the name of a crate
-  that the sysroot loads for it: `std`, `core`, `alloc` and the sixteen crates
-  that the standard library depends on. The graph names an entity by its crate
-  and its path, so with the crate name `core` two entities are named `core`
-  and a lookup of the crate root is refused as ambiguous. The list is what the
-  compiler reports as loaded for this profile's target. The test reads the
-  same list from the compiler's dependency file and checks it against every
-  crate of the sysroot's library directory, in both directions. A crate that
-  the sysroot holds and does not load, such as `test` and `proc_macro`, and a
-  name that only starts like one, such as `corelib`, are admitted.
+- **A crate of the sysroot.** A captured crate may not be named `std`, `core`
+  or `alloc`, compared exactly. The reason is two entities of one name in a
+  graph: the graph names an entity by its crate and its path, a captured
+  source reaches the standard library's entities in these three crates, and
+  with the crate name `core` two entities are named `core` and a lookup of the
+  crate root is refused as ambiguous. The sysroot loads sixteen further crates
+  for the standard library, among them `libc`, `hashbrown`, `memchr` and
+  `object`, and a captured crate may have any of their names. The evidence,
+  from the independent review of 13 November 2026: under each of the nineteen
+  names one source was analyzed, and only these three give two entities of
+  one name; over 83 sources no graph held an entity of another crate of the
+  sysroot. Its limit: that no path exposes an entity of a private dependency
+  of the standard library is surveyed and not proven. The test asserts the
+  three as unsupported, admits every other crate of the sysroot's library
+  directory, and finds the crate root under each of the sixteen names.
 - **A target** is the one field where invalid and unsupported cannot be told
   apart by what a compiler has. The compiler takes any text as the name of a
   target, and a text that ends in `.json` as the path of a file
@@ -873,9 +883,12 @@ effective term is one object with the members `Audience`, `Path` and
 and nothing after the object. The data of a `fields` term is a list with one
 object for each field, each with exactly the members `Name` and `Entity`. A
 repeated member, a member in another case, an unknown member and data after
-the value are another form, and the reader fails. The helper spells these
-member names itself, and the tests that run it read every one of them through
-these readers.
+the value are another form, and the reader fails. `Type.Fields()` fails with
+`rust.ErrMissingFact` like the two visibility readers, also for a field whose
+entity the graph does not have and for a fact that is present twice. It
+answers "no fields", without an error, only for a type that has no `fields`
+fact. The helper spells these member names itself, and the tests that run it
+read every one of them through these readers.
 
 **An interface that names a more private type** is the Rust-owned rule of row
 24. `pub struct Public { pub field: Hidden } struct Hidden {}` is legal Rust,
@@ -922,6 +935,8 @@ holds the compiler's errors for a source that the compiler rejects.
 - **A limit.** The compiler reports a bound on a more private trait,
   `pub struct Boxed<T: Hidden>`, with another lint, `private_bounds`. The
   helper does not force it and publishes no fact for it.
+- **A limit.** The fields reader does not require a field's entity to be of
+  the field kind, because the vocabulary publishes no name for that kind.
 - **A limit.** The helper does not report which facts it writes. The helper
   profile is a setting that the Go side states alone, so a helper binary of
   an earlier change is caught today only because the request gained a member

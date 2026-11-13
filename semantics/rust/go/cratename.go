@@ -22,13 +22,25 @@ func crateName(name string) bool {
 	return name != ""
 }
 
-// crateNameCharacters are the 144435 characters of that rule, as 840 ranges of code
-// points in ascending order. The table is the compiler's, printed by a
-// program that the pinned compiler built, and not Go's unicode package, whose
-// tables follow the Go release: letters, numbers and Other_Alphabetic of Go
-// 1.27.3 are 4672 characters more than these.
-// TestRustEnvironmentEqualsCompiler in integration/go builds that program
-// again and compares every code point.
+// crateNameCharacters are the 144435 characters of that rule, as 840 ranges of
+// code points in ascending order.
+//
+// The table is generated and is not edited by hand. It is the compiler's own,
+// printed by a program that the pinned compiler built, and not Go's unicode
+// package, whose tables follow the Go release: letters, numbers and
+// Other_Alphabetic of Go 1.27.3 are 4672 characters more than these.
+//
+// To regenerate it, as a new compiler pin requires: the program is the
+// constant rsCrateNameCharacters of integration/go/rust_semantics_test.go.
+// Save it as characters.rs and run, with the pinned toolchain,
+//
+//	rustc +1.90.0 -O -o characters characters.rs
+//	./characters | sed -E 's/^(.+)\.\.(.+)$/{0x\1, 0x\2},/' | paste -d ' ' - - - - - - | sed 's/^/\t/'
+//
+// The output replaces the lines between the braces below, and gofmt and the
+// two numbers above finish it. TestRustEnvironmentEqualsCompiler builds the
+// same program and compares every code point with this table, where the
+// compiler is provisioned.
 var crateNameCharacters = [...][2]rune{
 	{0x30, 0x39}, {0x41, 0x5A}, {0x5F, 0x5F}, {0x61, 0x7A}, {0xAA, 0xAA}, {0xB2, 0xB3},
 	{0xB5, 0xB5}, {0xB9, 0xBA}, {0xBC, 0xBE}, {0xC0, 0xD6}, {0xD8, 0xF6}, {0xF8, 0x2C1},

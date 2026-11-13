@@ -70,16 +70,14 @@ var (
 	compilerCrateKinds = []string{KindLibrary, "rlib", "staticlib", "dylib", "cdylib", "bin", "proc-macro"}
 )
 
-// sysrootCrates are the crates that the pinned sysroot loads for a captured
-// library crate: the standard library and what it depends on. The graph names
-// an entity by its crate and its path, so a captured crate of one of these
-// names would share the names of that crate's entities. The list is what the
-// compiler reports as loaded (tcx.crates) for this profile's target. It does
-// not depend on the captured source.
-var sysrootCrates = []string{
-	"std", "core", "alloc",
-	"addr2line", "adler2", "cfg_if", "compiler_builtins", "gimli", "hashbrown", "libc", "memchr", "miniz_oxide", "object", "panic_unwind", "rustc_demangle", "rustc_std_workspace_alloc", "rustc_std_workspace_core", "std_detect", "unwind",
-}
+// sysrootCrates are the crates of the sysroot whose entities a graph holds: a
+// captured source names the standard library through std and core, and the
+// library's own types live in std, core and alloc. The graph names an entity
+// by its crate and its path, so a captured crate of one of these names would
+// put two entities of one name into its graph. The names are compared exactly.
+// The sysroot loads sixteen further crates for the standard library. No graph
+// was seen to hold an entity of one of them, and their names are admitted.
+var sysrootCrates = []string{"std", "core", "alloc"}
 
 const environmentKey = "environment-1"
 

@@ -173,58 +173,78 @@ func TestPrivateInterfaceReader(t *testing.T) {
 }
 
 // The fields term describes each field by exactly its name and its entity.
+// A type without the fact has no fields, which is no error. A fact that is
+// present twice or in another form fails, as the visibility readers do.
 func TestFieldsReader(t *testing.T) {
-	fields := func(data string, operands ...semantics.TermID) ([]Field, bool) {
+	// fields reads the type of a graph whose fields facts carry the given terms.
+	fields := func(terms ...semantics.Term) ([]Field, bool, error) {
 		t.Helper()
-		graph, err := semantics.New[s.Language](semantics.Data{
+		data := semantics.Data{
 			Entities: []semantics.Entity{
 				{Kind: ModuleKind(), Name: "pages"},
 				{Kind: Key("struct"), Name: "pages::A", Owner: rootEntity},
 				{Kind: Key("field"), Name: "pages::A::value", Owner: itemEntity},
 			},
-			Terms: []semantics.Term{reference(itemEntity), reference(rootEntity), expression(FieldsOperator(), data, operands...)},
-			Facts: []semantics.Fact{{Subject: semantics.Subject{Term: 1}, Relation: FieldsRelation(), Term: 3}},
-		}, semantics.DefaultLimits(), nil)
+			Terms: []semantics.Term{reference(itemEntity), reference(rootEntity)},
+		}
+		for _, term := range terms {
+			data.Terms = append(data.Terms, term)
+			data.Facts = append(data.Facts, semantics.Fact{Subject: semantics.Subject{Term: 1}, Relation: FieldsRelation(), Term: semantics.TermID(len(data.Terms))})
+		}
+		graph, err := semantics.New[s.Language](data, semantics.DefaultLimits(), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 		return Type{&model{graph: graph}, 1}.Fields()
 	}
-	read, ok := fields(`[{"Name":"value","Entity":3}]`, 2)
-	if !ok || len(read) != 1 || read[0].Name != "value" || read[0].Declaration.ID() != otherEntity || read[0].Type.ID() != 2 {
-		t.Fatal(read, ok)
+	one := func(data string, operands ...semantics.TermID) semantics.Term {
+		return expression(FieldsOperator(), data, operands...)
 	}
-	if read, ok := fields(` [ { "Entity" : 3 , "Name" : "value" } ] `, 2); !ok || len(read) != 1 || read[0].Name != "value" || read[0].Declaration.ID() != otherEntity {
-		t.Fatal("another order and spacing", read, ok)
+	read, has, err := fields(one(`[{"Name":"value","Entity":3}]`, 2))
+	if err != nil || !has || len(read) != 1 || read[0].Name != "value" || read[0].Declaration.ID() != otherEntity || read[0].Type.ID() != 2 {
+		t.Fatal(read, has, err)
 	}
-	if read, ok := fields(`[]`); !ok || len(read) != 0 {
-		t.Fatal("no field", read, ok)
+	if read, has, err := fields(one(` [ { "Entity" : 3 , "Name" : "value" } ] `, 2)); err != nil || !has || len(read) != 1 || read[0].Name != "value" || read[0].Declaration.ID() != otherEntity {
+		t.Fatal("another order and spacing", read, has, err)
 	}
-	for name, c := range map[string]struct {
-		data     string
-		operands []semantics.TermID
-	}{
-		"the member of the earlier profile": {`[{"Name":"value","Public":true,"Entity":3}]`, []semantics.TermID{2}},
-		"members in lower case":             {`[{"name":"value","entity":3}]`, []semantics.TermID{2}},
-		"a repeated member":                 {`[{"Name":"other","Name":"value","Entity":3}]`, []semantics.TermID{2}},
-		"no entity":                         {`[{"Name":"value"}]`, []semantics.TermID{2}},
-		"no name":                           {`[{"Entity":3}]`, []semantics.TermID{2}},
-		"a name that is null":               {`[{"Name":null,"Entity":3}]`, []semantics.TermID{2}},
-		"an entity that is text":            {`[{"Name":"value","Entity":"3"}]`, []semantics.TermID{2}},
-		"an entity that is null":            {`[{"Name":"value","Entity":null}]`, []semantics.TermID{2}},
-		"an entity that is none":            {`[{"Name":"value","Entity":0}]`, []semantics.TermID{2}},
-		"an entity the graph does not have": {`[{"Name":"value","Entity":9}]`, []semantics.TermID{2}},
-		"text after the list":               {`[{"Name":"value","Entity":3}] trailing`, []semantics.TermID{2}},
-		"a second list":                     {`[{"Name":"value","Entity":3}][]`, []semantics.TermID{2}},
-		"null":                              {`null`, nil},
-		"no data":                           {``, nil},
-		"an object":                         {`{"Name":"value","Entity":3}`, []semantics.TermID{2}},
-		"a field that is no object":         {`["value"]`, []semantics.TermID{2}},
-		"more fields than types":            {`[{"Name":"value","Entity":3},{"Name":"other","Entity":3}]`, []semantics.TermID{2}},
-		"more types than fields":            {`[{"Name":"value","Entity":3}]`, []semantics.TermID{2, 2}},
+	// A record without a field has the fact, with an empty list.
+	if read, has, err := fields(one(`[]`)); err != nil || !has || len(read) != 0 {
+		t.Fatal("a record without a field", read, has, err)
+	}
+	// A type without the fact has no fields. That is an answer and no error.
+	if read, has, err := fields(); err != nil || has || read != nil {
+		t.Fatal("a type without the fact", read, has, err)
+	}
+	if read, has, err := (Type{}).Fields(); err != nil || has || read != nil {
+		t.Fatal("the zero type", read, has, err)
+	}
+	// A malformed fact is an error and never reads as "no fields".
+	for name, terms := range map[string][]semantics.Term{
+		"the member of the earlier profile":      {one(`[{"Name":"value","Public":true,"Entity":3}]`, 2)},
+		"members in lower case":                  {one(`[{"name":"value","entity":3}]`, 2)},
+		"a repeated member":                      {one(`[{"Name":"other","Name":"value","Entity":3}]`, 2)},
+		"no entity":                              {one(`[{"Name":"value"}]`, 2)},
+		"no name":                                {one(`[{"Entity":3}]`, 2)},
+		"a name that is null":                    {one(`[{"Name":null,"Entity":3}]`, 2)},
+		"an entity that is text":                 {one(`[{"Name":"value","Entity":"3"}]`, 2)},
+		"an entity that is null":                 {one(`[{"Name":"value","Entity":null}]`, 2)},
+		"an entity that is none":                 {one(`[{"Name":"value","Entity":0}]`, 2)},
+		"an entity the graph does not have":      {one(`[{"Name":"value","Entity":9}]`, 2)},
+		"text after the list":                    {one(`[{"Name":"value","Entity":3}] trailing`, 2)},
+		"a second list":                          {one(`[{"Name":"value","Entity":3}][]`, 2)},
+		"null":                                   {one(`null`)},
+		"no data":                                {one(``)},
+		"an object":                              {one(`{"Name":"value","Entity":3}`, 2)},
+		"a field that is no object":              {one(`["value"]`, 2)},
+		"more fields than types":                 {one(`[{"Name":"value","Entity":3},{"Name":"other","Entity":3}]`, 2)},
+		"more types than fields":                 {one(`[{"Name":"value","Entity":3}]`, 2, 2)},
+		"another operator":                       {expression(PublicOperator(), `[{"Name":"value","Entity":3}]`, 2)},
+		"a reference":                            {reference(otherEntity)},
+		"two facts":                              {one(`[{"Name":"value","Entity":3}]`, 2), one(`[{"Name":"value","Entity":3}]`, 2)},
+		"a well-formed fact and a malformed one": {one(`[{"Name":"value","Entity":3}]`, 2), one(`null`)},
 	} {
-		if read, ok := fields(c.data, c.operands...); ok || read != nil {
-			t.Errorf("%s: read as %+v", name, read)
+		if read, has, err := fields(terms...); !errors.Is(err, ErrMissingFact) || has || read != nil {
+			t.Errorf("%s: read as %+v, %v, %v", name, read, has, err)
 		}
 	}
 }

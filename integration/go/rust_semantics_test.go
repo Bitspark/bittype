@@ -228,9 +228,9 @@ func qualifyRust(t *testing.T) {
 		t.Fatal("binder ownership")
 	}
 	people := rsType(t, m, "People")
-	fields, ok := people.Fields()
-	if !ok || len(fields) != 2 || fields[0].Name != "items" {
-		t.Fatal(fields)
+	fields, ok, err := people.Fields()
+	if err != nil || !ok || len(fields) != 2 || fields[0].Name != "items" {
+		t.Fatal(fields, err)
 	}
 	if visibility, err := fields[0].Declaration.Visibility(); err != nil || !visibility.Public {
 		t.Fatal(visibility, err)
@@ -275,7 +275,7 @@ pub type Item = models::Item;`)
 	if !page.Parameters()[0].Default().Same(rsType(t, m, "Person")) {
 		t.Fatal("generic default")
 	}
-	fields, _ := rsType(t, m, "Nested").Fields()
+	fields, _, _ := rsType(t, m, "Nested").Fields()
 	arguments := fields[0].Type.Term().Arguments
 	if len(arguments) == 0 || arguments[0] != rsType(t, m, "People").ID() {
 		t.Fatal("nested substitution", arguments)
@@ -284,8 +284,8 @@ pub type Item = models::Item;`)
 	if page.Parameters()[0].ID() == other.Parameters()[0].ID() {
 		t.Fatal("collapsed generic owners")
 	}
-	pf, _ := page.Type().Fields()
-	bf, _ := other.Type().Fields()
+	pf, _, _ := page.Type().Fields()
+	bf, _, _ := other.Type().Fields()
 	args := pf[0].Type.Term().Arguments
 	if len(args) == 0 || args[0] == bf[0].Type.ID() {
 		t.Fatal("same-spelled parameters collapsed")
@@ -304,7 +304,7 @@ func TestRustSemanticNamespaceAndCoordinates(t *testing.T) {
 		t.Fatal("ambiguous native namespaces selected by spelling", err)
 	}
 	box := rsDecl(t, m, "0", "Boxed")
-	fields, _ := box.Type().Fields()
+	fields, _, _ := box.Type().Fields()
 	if len(fields) != 1 || fields[0].Type.Term().Target != box.Parameters()[0].ID() {
 		t.Fatal("namespace or CRLF/UTF-8 source association", fields)
 	}
@@ -465,8 +465,8 @@ pub type People = Page<Person>;`)
 	}
 	if len(m.Graph().Facts(semantics.Subject{Term: people.ID()}, n.FieldsRelation())) != 1 {
 		t.Error("fields relation: a struct type has no fields fact")
-	} else if fields, ok := people.Fields(); !ok || len(fields) != 1 {
-		t.Error("fields operator: the fields fact carries no fields term", fields)
+	} else if fields, ok, err := people.Fields(); err != nil || !ok || len(fields) != 1 {
+		t.Error("fields operator: the fields fact carries no fields term", fields, err)
 	}
 	if len(page.Parameters()) != 1 || !page.Parameters()[0].Default().Valid() {
 		t.Error("default relation: a defaulted parameter has no default")
@@ -520,7 +520,7 @@ pub type People = Page<Person>;`)
 	if stated.Path != n.PathDefinition {
 		t.Error("path: the effective fact states another path", stated.Path)
 	}
-	fields, _ := public.Type().Fields()
+	fields, _, _ := public.Type().Fields()
 	if len(fields) != 1 || len(graph.Facts(semantics.Subject{Entity: fields[0].Declaration.ID()}, n.PrivateInterfaceRelation())) != 1 {
 		t.Error("private-interface relation: a field with a more private type has no observation")
 	}
@@ -656,7 +656,7 @@ mod inner {pub(crate) enum Hidden {One} pub trait Local {} pub type Byte = u8;}`
 		}
 	}
 	// A sysroot declaration is outside the capture and carries no fact.
-	fields, _ := rsType(t, m, "Person").Fields()
+	fields, _, _ := rsType(t, m, "Person").Fields()
 	text, err := m.Declaration(fields[0].Type.Term().Target)
 	if err != nil {
 		t.Fatal(err)
@@ -670,9 +670,9 @@ mod inner {pub(crate) enum Hidden {One} pub trait Local {} pub type Byte = u8;}`
 // pub(crate) from private.
 func TestRustSemanticFieldVisibility(t *testing.T) {
 	m := rsModel(t, `mod m { pub struct S { pub(crate) shared: u8, own: u8, pub open: u8 } } pub enum Choice { Named { value: u8 } } enum Private { Named { value: u8 } }`)
-	fields, ok := rsType(t, m, "m::S").Fields()
-	if !ok || len(fields) != 3 {
-		t.Fatal(fields)
+	fields, ok, err := rsType(t, m, "m::S").Fields()
+	if err != nil || !ok || len(fields) != 3 {
+		t.Fatal(fields, err)
 	}
 	shared, err := fields[0].Declaration.Visibility()
 	if err != nil {
@@ -794,9 +794,9 @@ func TestRustSemanticMissingVisibilityFactFails(t *testing.T) {
 	}
 
 	m = rsWithoutFact(t, snapshot, resolved, "A::value", n.DeclaredVisibilityRelation())
-	fields, ok := rsType(t, m, "A").Fields()
-	if !ok || len(fields) != 1 {
-		t.Fatal(fields)
+	fields, ok, err := rsType(t, m, "A").Fields()
+	if err != nil || !ok || len(fields) != 1 {
+		t.Fatal(fields, err)
 	}
 	if v, err := fields[0].Declaration.Visibility(); !errors.Is(err, n.ErrMissingFact) || v != (n.Visibility{}) {
 		t.Error("a field without its declared fact was read", v, err)
@@ -818,9 +818,9 @@ func TestRustSemanticPrivateInterface(t *testing.T) {
 		if err != nil {
 			t.Fatal(err, result.Diagnostics())
 		}
-		fields, ok := rsType(t, m, "Public").Fields()
-		if !ok || len(fields) != 1 {
-			t.Fatal(fields)
+		fields, ok, err := rsType(t, m, "Public").Fields()
+		if err != nil || !ok || len(fields) != 1 {
+			t.Fatal(fields, err)
 		}
 		observed, err := fields[0].Declaration.PrivateInterface()
 		if err != nil {
@@ -895,9 +895,9 @@ func TestRustSemanticPrivateInterface(t *testing.T) {
 	}
 	text.WriteString(" }")
 	m = rsModel(t, text.String())
-	fields, ok := rsType(t, m, "Wide").Fields()
-	if !ok || len(fields) != many {
-		t.Fatal("the wide record", len(fields), ok)
+	fields, ok, err := rsType(t, m, "Wide").Fields()
+	if err != nil || !ok || len(fields) != many {
+		t.Fatal("the wide record", len(fields), ok, err)
 	}
 	for _, field := range fields {
 		if observed, err := field.Declaration.PrivateInterface(); err != nil || len(observed) != 1 {
@@ -1193,35 +1193,10 @@ func TestRustEnvironmentEqualsCompiler(t *testing.T) {
 		}
 	}
 
-	// A captured crate named like a crate that the sysroot loads for it is
-	// unsupported, and one named like another crate of the sysroot is
-	// admitted. The compiler lists the crates it loaded in its dependency file.
-	library := filepath.Join(rsCompiler(t).SysrootPath, "lib", "rustlib", n.TargetLinuxX64, "lib")
+	// A captured crate named std, core or alloc is unsupported, and one named
+	// like any other crate of the sysroot is admitted.
 	crate := regexp.MustCompile(`^lib([A-Za-z0-9_]+)-[0-9a-f]+\.(rlib|rmeta)$`)
-	dependencies := t.TempDir()
-	empty := filepath.Join(dependencies, "pages.rs")
-	if err := os.WriteFile(empty, nil, 0600); err != nil {
-		t.Fatal(err)
-	}
-	command := exec.Command(filepath.Join(rsCompiler(t).SysrootPath, "bin", "rustc"), "-Z", "binary-dep-depinfo", "--emit", "dep-info,metadata", "--edition", "2024", "--crate-type", "lib", "--crate-name", "pages", "--target", n.TargetLinuxX64, "--out-dir", dependencies, empty)
-	command.Env = append(os.Environ(), "RUSTC_BOOTSTRAP=1")
-	if output, err := command.CombinedOutput(); err != nil {
-		t.Fatal(err, string(output))
-	}
-	listed, err := os.ReadFile(filepath.Join(dependencies, "pages.d"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	loaded := map[string]bool{}
-	for _, word := range strings.Fields(string(listed)) {
-		if match := crate.FindStringSubmatch(filepath.Base(strings.TrimSuffix(word, ":"))); match != nil && filepath.Dir(strings.TrimSuffix(word, ":")) == library {
-			loaded[match[1]] = true
-		}
-	}
-	if !loaded["std"] || !loaded["core"] || !loaded["alloc"] || len(loaded) < 3 {
-		t.Fatal("the crates the compiler loaded", loaded)
-	}
-	entries, err := os.ReadDir(library)
+	entries, err := os.ReadDir(filepath.Join(rsCompiler(t).SysrootPath, "lib", "rustlib", n.TargetLinuxX64, "lib"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1231,18 +1206,34 @@ func TestRustEnvironmentEqualsCompiler(t *testing.T) {
 			present[match[1]] = true
 		}
 	}
-	if len(present) <= len(loaded) {
-		t.Fatal("the crates of the sysroot", len(present), len(loaded))
+	if !present["std"] || !present["core"] || !present["alloc"] || !present["libc"] || len(present) < 19 {
+		t.Fatal("the crates of the sysroot", len(present))
 	}
 	for name := range present {
 		environment := rsEnvironment()
 		environment.Crate.Name = name
 		_, err := n.ConfigurationFor(environment)
-		if loaded[name] && !errors.Is(err, n.ErrUnsupported) {
-			t.Errorf("crate name %s, which the sysroot loads: %v, want unsupported", name, err)
+		if refused := name == "std" || name == "core" || name == "alloc"; refused != errors.Is(err, n.ErrUnsupported) || !refused && err != nil {
+			t.Errorf("crate name %s of the sysroot: %v", name, err)
 		}
-		if !loaded[name] && err != nil {
-			t.Errorf("crate name %s, which the sysroot does not load: %v", name, err)
+	}
+	// The reason for the three: the graph names an entity by its crate and its
+	// path. Under the name of another crate that the sysroot loads, the crate
+	// root is the one entity of its name and a lookup finds it.
+	for _, name := range []string{"addr2line", "adler2", "cfg_if", "compiler_builtins", "gimli", "hashbrown", "libc", "memchr", "miniz_oxide", "object", "panic_unwind", "rustc_demangle", "rustc_std_workspace_alloc", "rustc_std_workspace_core", "std_detect", "unwind"} {
+		environment := rsEnvironment()
+		environment.Crate.Name = name
+		snapshot, _, _ := rsCapture(t, `pub struct A { pub o: Option<u8>, pub s: String, pub m: ::std::collections::HashMap<u8, u8> }`)
+		_, result := rsResultsFor(t, snapshot, rsSettingsFor(t, environment))
+		m, err := n.Open(result)
+		if err != nil {
+			t.Fatal(name, err, result.Diagnostics())
+		}
+		if root, err := m.Lookup(name); err != nil || root.Entity().Kind != n.ModuleKind() {
+			t.Errorf("the crate root of a crate named %s: %v", name, err)
+		}
+		if _, err := m.Lookup(name + "::A"); err != nil {
+			t.Errorf("a declaration of a crate named %s: %v", name, err)
 		}
 	}
 }

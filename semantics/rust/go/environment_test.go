@@ -156,10 +156,9 @@ func TestEnvironmentRefusals(t *testing.T) {
 			want   error
 		}{name(word), n.ErrUnsupported}
 	}
-	// Every crate that the pinned sysroot loads for a captured crate is refused.
-	for _, crate := range []string{
-		"std", "core", "alloc", "addr2line", "adler2", "cfg_if", "compiler_builtins", "gimli", "hashbrown", "libc", "memchr", "miniz_oxide", "object", "panic_unwind", "rustc_demangle", "rustc_std_workspace_alloc", "rustc_std_workspace_core", "std_detect", "unwind",
-	} {
+	// A crate named std, core or alloc is refused: the graph would hold two
+	// entities of one name.
+	for _, crate := range []string{"std", "core", "alloc"} {
 		cases["the sysroot crate "+crate+" as crate name"] = struct {
 			change change
 			want   error
@@ -176,9 +175,11 @@ func TestEnvironmentRefusals(t *testing.T) {
 			t.Errorf("%s: both unsupported and invalid: %v", name, err)
 		}
 	}
-	// Admitted: an ASCII identifier, also one that starts like a sysroot
-	// crate or is a weak keyword, and a sysroot crate that is not loaded.
-	for _, name := range []string{"pages", "Pages", "_pages", "__", "pages_2", "corelib", "stdx", "core_", "alloc2", "test", "proc_macro", "union", "macro_rules", "raw", "safe", "auto", "default"} {
+	// Admitted: an ASCII identifier, also one that starts like std, core or
+	// alloc, is one of them in another case, is a weak keyword, or is the
+	// name of another crate of the sysroot.
+	for _, name := range []string{"pages", "Pages", "_pages", "__", "pages_2", "corelib", "stdx", "core_", "alloc2", "Std", "CORE", "Alloc", "union", "macro_rules", "raw", "safe", "auto", "default",
+		"test", "proc_macro", "addr2line", "adler2", "cfg_if", "compiler_builtins", "gimli", "hashbrown", "libc", "memchr", "miniz_oxide", "object", "panic_unwind", "rustc_demangle", "rustc_std_workspace_alloc", "rustc_std_workspace_core", "std_detect", "unwind"} {
 		environment := supported()
 		environment.Crate.Name = name
 		if _, err := n.ConfigurationFor(environment); err != nil {

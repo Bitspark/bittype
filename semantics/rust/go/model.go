@@ -313,36 +313,42 @@ func (t Type) String() string {
 	term, _ := t.owner.graph.Term(t.fact(DisplayRelation()))
 	return string(term.Data)
 }
-func (t Type) Fields() ([]Field, bool) {
+
+// Fields reads the fields of a struct type, in their order. A type without a
+// fields fact has none: the second result is false, and that is no error. A
+// fact that is present twice or in another form fails with ErrMissingFact, as
+// the visibility readers do, and so does a field whose entity the graph does
+// not have. The form is a list with one object for each operand, and each
+// object has exactly the members Name and Entity.
+func (t Type) Fields() ([]Field, bool, error) {
 	if !t.Valid() {
-		return nil, false
+		return nil, false, nil
 	}
-	term, _ := t.owner.graph.Term(t.fact(FieldsRelation()))
-	if term.Operator != FieldsOperator() {
-		return nil, false
+	terms := t.owner.graph.Facts(semantics.Subject{Term: t.id}, FieldsRelation())
+	if len(terms) == 0 {
+		return nil, false, nil
 	}
-	// The form is a list with one object for each operand, and each object
-	// has exactly the members Name and Entity.
+	term, _ := t.owner.graph.Term(terms[0])
 	var listed []json.RawMessage
-	if json.Unmarshal(term.Data, &listed) != nil || listed == nil || len(listed) != len(term.Operands) {
-		return nil, false
+	if len(terms) != 1 || term.Operator != FieldsOperator() || json.Unmarshal(term.Data, &listed) != nil || listed == nil || len(listed) != len(term.Operands) {
+		return nil, false, ErrMissingFact
 	}
 	out := make([]Field, len(listed))
 	for i, field := range listed {
 		values, formed := members(field, "Name", "Entity")
 		if !formed {
-			return nil, false
+			return nil, false, ErrMissingFact
 		}
 		var name *string
 		var entity *semantics.EntityID
 		if json.Unmarshal(values[0], &name) != nil || json.Unmarshal(values[1], &entity) != nil || name == nil || entity == nil {
-			return nil, false
+			return nil, false, ErrMissingFact
 		}
 		e, found := t.owner.graph.Entity(*entity)
 		if !found {
-			return nil, false
+			return nil, false, ErrMissingFact
 		}
 		out[i] = Field{Name: *name, Type: Type{t.owner, term.Operands[i].Term}, Declaration: Declaration{t.owner, *entity}, Sites: e.Declarations}
 	}
-	return out, true
+	return out, true, nil
 }

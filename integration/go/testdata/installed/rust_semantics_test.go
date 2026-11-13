@@ -83,9 +83,9 @@ func TestInstalledRustSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fields, ok := pages.Type().Fields()
-	if !ok || len(fields) != 1 || !strings.Contains(fields[0].Type.String(), "Page<u8>") {
-		t.Fatal(fields)
+	fields, ok, err := pages.Type().Fields()
+	if err != nil || !ok || len(fields) != 1 || !strings.Contains(fields[0].Type.String(), "Page<u8>") {
+		t.Fatal(fields, err)
 	}
 	if visibility, err := fields[0].Declaration.Visibility(); err != nil || !visibility.Public {
 		t.Fatal(visibility, err)
