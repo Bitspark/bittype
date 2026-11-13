@@ -22,6 +22,16 @@ Not done:
 - The category of a failed publication guard is unchanged, as #271 says. One line serves both readings of a file: a placement whose fresh output contains a script is refused by the guard as unsupported coverage.
 - The categories of generation are #273.
 
+## Research 0017: the contribution contract, evaluated and in delivery — 13 November 2026
+
+[Research 0017](research-docs/0017-contribution-contract.md) asks what the mapping contract must become when a rule also has to yield what a binding backend needs: what a rule returns, how one contribution asks for the answer of another, what the kernel carries without reading it, and what identifies a contribution and a plan. It came from a reading of the accepted designs for the first slice (#207, #195, #196, #197) that left three points open. Four readers reviewed it, and it was answered through the consult service. This entry adds documents only.
+
+- **Evaluated.** The advice was split into 40 recommendations, each checked against the code at `7e9dc34` and the state of the service library. 18 rows hold as written, 21 are accepted with a named adjustment, nine are deferred with a trigger and one is stale. None is rejected. The table is the section "Applied" of the document.
+- **What it decides.** A rule gets one round of requests before it decides, and a registered projector that reads no source computes the native type from the frozen decision. Evidence about an operand is bounded by the coherence of generic declarations. The identity of a contribution is its publisher and a local key, with a semantic revision. A plan has use entries and representation nodes, and open generics are primary. A facet is a typed, validated value on a contribution. A backend gets the placed result as a fourth input.
+- **What it withdraws.** That the contract could be final while nothing reads its new half. The node key and the identity form the document leaned to. "Member" as a sufficient answer for an optional field.
+- **Optional fields.** The position of bittype is that the standard record representation delegates presence through a published protocol. That needs a field-level conversion slot in the service library, so it is asked on bitspark-service#38 and built in the prototype first.
+- **The order.** The design page, a prototype on a branch that is thrown away, a materially different contribution, then the contract in its final form and the migration of the 21 mapping packages on `main` in one change. "Changes once" means one migration to the demonstrated extension contract for the agreed extension domain, before independently owned consumers rely on it.
+
 ## The naming design: generation records an intent, each language realizes the spelling — 13 November 2026
 
 [Naming](docs/naming.md) is the accepted design for who decides a native name and its visibility. It comes from rows 11, 13 and 14 of [research 0016](research-docs/0016-native-files-placement.md) and from the comments of its owner on [#274](https://github.com/Bitspark/bittype/issues/274): the six decisions of 12 November 2026, the [seven of 13 November 2026](https://github.com/Bitspark/bittype/issues/274#issuecomment-6838436844) on the points that the first version of the page left open, the [eight after an independent reading](https://github.com/Bitspark/bittype/issues/274#issuecomment-6839006959) of the page, and [one correction](https://github.com/Bitspark/bittype/issues/274#issuecomment-6839289646) after its second reading. It answers [#268](https://github.com/Bitspark/bittype/issues/268). This entry adds and changes documents only. No target has changed a name, and the page says so at its head.
@@ -424,7 +434,6 @@ Changes since the previously recorded module-encoding entry:
   current-carrier context table. Repair section links and clarify historical
   consultation authority. Move the maintained matrix identity case into Bittype.
 
-
 ## Horos module encoding — 5 November 2026
 
 - Add the general `horos-module` command: one Horos source module to canonical
@@ -448,7 +457,6 @@ Changes since the previously recorded module-encoding entry:
   qualify one Page, DataPage aliases, data/mixed specialization and open forwarding.
 - Update the provider matrix and ownership/model guides. No generators or runtime
   bindings are introduced; the agnostic kernel and native language stages are unchanged.
-
 
 ## Unreleased
 
