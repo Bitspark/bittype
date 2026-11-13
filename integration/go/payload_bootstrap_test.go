@@ -11,10 +11,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
@@ -144,7 +141,8 @@ func familyMeanings() map[string]g.Meaning {
 // freezes, decodes to an equal value of the same Go type and freezes to the
 // same bytes a second time.
 // Does not show: that the committed Go type is what bittype generates from
-// the schema. TestPayloadTypesRegenerate shows that. It does not show a field
+// the schema. TestPayloadArtifactsOfEveryPairRegenerate shows that, for every
+// vocabulary package that the repository holds, found by path. It does not show a field
 // that the existing families cannot type: no payload of the delivered
 // contributions has one.
 func TestPayloadBootstrapArtifacts(t *testing.T) {
@@ -189,33 +187,6 @@ func TestPayloadBootstrapArtifacts(t *testing.T) {
 				if err != nil || !bytes.Equal(again, frozen) {
 					t.Errorf("%#v does not freeze to the same bytes a second time", value)
 				}
-			}
-		})
-	}
-}
-
-// Row 38: "the committed generated types with a regeneration test".
-//
-// Shows, for each of the 24 vocabulary packages: the committed file
-// payload_types.go is, byte for byte, what bittype generates from the schema
-// source with its own structural Go contributions, through the public library
-// of the payload-schema tool.
-// Does not show: TypeScript types of a payload. None is generated: no reader
-// of this repository reads a payload through a TypeScript type.
-func TestPayloadTypesRegenerate(t *testing.T) {
-	for _, c := range payloadCases() {
-		t.Run(c.native+"/"+c.name, func(t *testing.T) {
-			types, err := artifact.Types(context.Background(), c.source, c.name)
-			if err != nil {
-				t.Fatal(err)
-			}
-			path := filepath.Join("..", "..", "transform", "syntax", "horos-to-"+c.native, "vocabulary", c.name, "go", artifact.TypesFile)
-			committed, err := os.ReadFile(path)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if types != strings.ReplaceAll(string(committed), "\r\n", "\n") {
-				t.Errorf("the committed types differ from what the schema generates:\n%s\ncommitted:\n%s", types, committed)
 			}
 		})
 	}
