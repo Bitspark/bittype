@@ -2,6 +2,8 @@ package rust
 
 import (
 	"fmt"
+	g "github.com/Bitspark/bittype/internal/grammar"
+	"github.com/Bitspark/bittype/model/syntax/rust/lexical/go"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -83,10 +85,9 @@ func UnquoteABI(s string) (string, error) {
 	}
 	return out.String(), nil
 }
-func ABI(s string) bool {
-	switch s {
-	case "Rust", "C", "C-unwind", "system", "system-unwind", "cdecl", "stdcall", "fastcall", "vectorcall", "thiscall", "aapcs", "win64", "sysv64", "efiapi":
-		return true
-	}
-	return false
-}
+
+// abi evaluates the names of the calling conventions that the lexical part
+// declares.
+var abi = g.Words(lexical.ABIs())
+
+func ABI(s string) bool { return abi(s) }

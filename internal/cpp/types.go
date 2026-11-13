@@ -1,14 +1,16 @@
 package cpp
 
-import "strings"
+import (
+	g "github.com/Bitspark/bittype/internal/grammar"
+	"github.com/Bitspark/bittype/model/syntax/cpp/lexical/go"
+	"strings"
+)
 
-func BuiltinWord(s string) bool {
-	switch s {
-	case "void", "bool", "char", "wchar_t", "char8_t", "char16_t", "char32_t", "signed", "unsigned", "short", "int", "long", "float", "double":
-		return true
-	}
-	return false
-}
+// builtinWord evaluates the words of a builtin type that the lexical part
+// declares.
+var builtinWord = g.Words(lexical.BuiltinWords())
+
+func BuiltinWord(s string) bool { return builtinWord(s) }
 func Builtin(s string) bool {
 	words := strings.Fields(s)
 	if len(words) == 0 || strings.Join(words, " ") != s {

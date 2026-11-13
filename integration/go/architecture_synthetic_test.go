@@ -297,7 +297,7 @@ var languageLayout = map[string][]string{
 	"syntax/<l>/go":               {"contracts/language/go", "trees/ast/go", "trees/cst/go"},
 	"model/syntax/<l>/lexical/go": {"model/syntax/go"},
 	"semantics/<l>/go":            {"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/<l>", "semantics/go", "syntax/<l>/go", "trees/ast/go", "trees/representation/go"},
-	"internal/<l>":                {"internal/grammar"},
+	"internal/<l>":                {"internal/grammar", "model/syntax/<l>/lexical/go"},
 	"internal/<l>sem":             {"contracts/parse/go", "contracts/semantic/go", "files/go", "parse/syntax/<l>/provider/go", "semantics/go", "semantics/<l>/go", "syntax/<l>/go", "trees/ast/go"},
 
 	"check/syntax/<l>/provider/go": {
@@ -792,8 +792,8 @@ func TestArchitectureLanguageHelperRoles(t *testing.T) {
 // The lexical part of a language's syntax model declares the names of its
 // spelling predicates. It imports the agnostic syntax model and nothing else:
 // no operation, and no syntax vocabulary, so spelling does not know structure.
-// A checker binds the names; the syntax vocabulary and the lexical helper do
-// not import the part yet.
+// A checker binds the names, and the lexical helper evaluates the lists. The
+// syntax vocabulary does not import the part yet.
 func TestArchitectureLexicalPartRole(t *testing.T) {
 	expectBreaks(t,
 		prohibited("model/syntax/x/lexical/go", "syntax/x/go", noStructure),
@@ -808,7 +808,10 @@ func TestArchitectureLexicalPartRole(t *testing.T) {
 
 		prohibited("check/syntax/x/provider/go", "model/syntax/y/lexical/go", languageY),
 		notAllowed("syntax/x/go", "model/syntax/x/lexical/go"),
-		notAllowed("internal/x", "model/syntax/x/lexical/go"),
+		prohibited("internal/x", "model/syntax/y/lexical/go", languageY),
+		notAllowed("internal/x", "model/syntax/go"),
+		notAllowed("semantics/x/go", "model/syntax/x/lexical/go"),
+		notAllowed("transform/syntax/x/target/go", "model/syntax/x/lexical/go"),
 		notAllowed("parse/syntax/x/provider/go", "model/syntax/x/lexical/go"),
 	)
 

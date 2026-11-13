@@ -181,7 +181,7 @@ func packageRole(relative string) (roleRule, bool) {
 		), true
 	case isLexicalPart(relative):
 		// The lexical part of one language's syntax model: the names of its
-		// spelling predicates. It knows spelling, not structure: it imports the
+		// spelling predicates and its word lists. It knows spelling, not structure: it imports the
 		// agnostic syntax model for the type of a name and no syntax vocabulary,
 		// its own included.
 		rule := role("model/syntax/<language>/lexical/go", roleVocabulary, []string{"language", s[2]}, "model/syntax/go")
@@ -269,8 +269,10 @@ func helperRole(name string) (roleRule, bool) {
 		return roleRule{}, false
 	}
 	// The lexical helper of one language. It knows spelling, not structure: no
-	// carrier, no stage contract, no provider.
-	rule := role("internal/<language>", rolePrivatePart, []string{"language", name}, "internal/grammar")
+	// carrier, no stage contract, no provider. It evaluates the word lists of
+	// its language's lexical part, which holds no node kind, and imports no
+	// syntax vocabulary.
+	rule := role("internal/<language>", rolePrivatePart, []string{"language", name}, "internal/grammar", "model/syntax/<language>/lexical/go")
 	rule.needs = "syntax/" + name + "/go"
 	rule.forbidden = func(dependency string) string {
 		if strings.HasPrefix(dependency, "contracts/") || isStageProvider(dependency) {

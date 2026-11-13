@@ -52,6 +52,17 @@ func Identifier(s string) bool {
 	return true
 }
 
+// Words returns the evaluator of a word list: it reports whether a text is
+// one of the words. A lexical helper builds one for each list that its
+// language's lexical part declares.
+func Words(words []string) func(string) bool {
+	set := make(map[string]bool, len(words))
+	for _, word := range words {
+		set[word] = true
+	}
+	return func(s string) bool { return set[s] }
+}
+
 // evaluator returns the function bound to a name, or nil.
 func evaluator(name syntax.Predicate, evaluators Evaluators) func(string) bool {
 	if name.Owner == syntax.Owner {

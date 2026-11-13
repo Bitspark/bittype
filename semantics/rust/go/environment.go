@@ -172,7 +172,7 @@ func (e Environment) check() error {
 		}
 	}
 	switch {
-	case !identifier(e.Crate.Name) || keywords[e.Crate.Name]:
+	case !identifier(e.Crate.Name) || native.Reserved(e.Crate.Name):
 		return fmt.Errorf("%w: crate name %q, this profile covers an ASCII identifier that is no keyword", ErrUnsupported, e.Crate.Name)
 	case slices.Contains(sysrootCrates, e.Crate.Name):
 		return fmt.Errorf("%w: crate name %q is the name of a crate of the sysroot", ErrUnsupported, e.Crate.Name)
@@ -209,16 +209,3 @@ func identifier(name string) bool {
 	}
 	return name != "_"
 }
-
-// The strict and the reserved keywords of edition 2024. None can start a path
-// that names a crate.
-var keywords = func() map[string]bool {
-	out := map[string]bool{}
-	for _, word := range []string{
-		"as", "async", "await", "break", "const", "continue", "crate", "dyn", "else", "enum", "extern", "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return", "self", "Self", "static", "struct", "super", "trait", "true", "type", "unsafe", "use", "where", "while",
-		"abstract", "become", "box", "do", "final", "gen", "macro", "override", "priv", "try", "typeof", "unsized", "virtual", "yield",
-	} {
-		out[word] = true
-	}
-	return out
-}()

@@ -3,6 +3,8 @@ package horos
 
 import (
 	"fmt"
+	g "github.com/Bitspark/bittype/internal/grammar"
+	"github.com/Bitspark/bittype/model/syntax/horos/lexical/go"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -20,13 +22,10 @@ func Identifier(s string) bool {
 	return true
 }
 
-func Reserved(s string) bool {
-	switch s {
-	case "module", "import", "from", "pin", "type", "kind", "self", "top", "bottom", "node", "nu", "in", "at", "epsilon", "item", "concat", "alternative", "star", "open", "any", "atom", "text", "int", "bool", "tuple", "compound", "list", "seq", "set", "map", "union", "and", "not", "wire", "exact", "rec", "ref", "true", "false", "null", "hex":
-		return true
-	}
-	return false
-}
+// reserved evaluates the reserved words that the lexical part declares.
+var reserved = g.Words(lexical.Reserved())
+
+func Reserved(s string) bool { return reserved(s) }
 
 func Name(s string) string {
 	if Reserved(s) {
@@ -86,8 +85,9 @@ func Quote(s string) string {
 	return out.String()
 }
 
-// Bounded decimal spelling, independent of machine word size.
-const MaxIntegerDigits = 4096
+// MaxIntegerDigits is the bound on the digits of an integer that the lexical
+// part declares. The formatter sizes its work by it before it spells a number.
+const MaxIntegerDigits = lexical.MaxIntegerDigits
 
 func Integer(s string) bool {
 	if strings.HasPrefix(s, "-") {

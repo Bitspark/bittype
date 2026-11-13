@@ -3,6 +3,7 @@ package typescript
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Bitspark/bittype/model/syntax/typescript/lexical/go"
 	"regexp"
 	"strconv"
 	"strings"
@@ -10,8 +11,9 @@ import (
 	"unicode/utf8"
 )
 
-var number = regexp.MustCompile("^-?(?:(?:0[xX][0-9a-fA-F](?:_?[0-9a-fA-F])*|0[bB][01](?:_?[01])*|0[oO][0-7](?:_?[0-7])*)|(?:(?:0|[1-9](?:_?[0-9])*)(?:\\.(?:[0-9](?:_?[0-9])*)?)?|\\.[0-9](?:_?[0-9])*)(?:[eE][+-]?[0-9](?:_?[0-9])*)?)$")
-var bigint = regexp.MustCompile("^-?(?:0|[1-9](?:_?[0-9])*|0[xX][0-9a-fA-F](?:_?[0-9a-fA-F])*|0[bB][01](?:_?[01])*|0[oO][0-7](?:_?[0-7])*)n$")
+// number and bigint evaluate the two patterns that the lexical part declares.
+var number = regexp.MustCompile(lexical.NumberPattern)
+var bigint = regexp.MustCompile(lexical.BigintPattern)
 
 func Number(s string) bool  { return number.MatchString(s) }
 func Bigint(s string) bool  { return bigint.MatchString(s) }
