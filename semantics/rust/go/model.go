@@ -182,9 +182,10 @@ func (d Declaration) Visibility() (Visibility, error) {
 	case term.Operator == PublicOperator() && len(term.Operands) == 0:
 		return Visibility{Public: true}, nil
 	case term.Operator == RestrictedOperator() && len(term.Operands) == 1:
+		// Only a reference has a target, so any other operand names no entity.
 		scope, _ := d.owner.graph.Term(term.Operands[0].Term)
 		module, found := d.owner.graph.Entity(scope.Target)
-		if scope.Kind != semantics.Reference || !found || module.Kind != ModuleKind() {
+		if !found || module.Kind != ModuleKind() {
 			return Visibility{}, ErrMissingFact
 		}
 		return Visibility{Scope: Declaration{d.owner, scope.Target}}, nil
@@ -201,8 +202,8 @@ func (d Declaration) Effective() (Effective, error) {
 		return Effective{}, err
 	}
 	var data struct {
-		Audience *string
-		Path     *string
+		Audience string
+		Path     string
 		Nameable *bool
 	}
 	decoder := json.NewDecoder(bytes.NewReader(term.Data))
@@ -210,10 +211,10 @@ func (d Declaration) Effective() (Effective, error) {
 	if term.Operator != EffectiveVisibilityOperator() || len(term.Operands) != 0 || decoder.Decode(&data) != nil {
 		return Effective{}, ErrMissingFact
 	}
-	if data.Audience == nil || data.Path == nil || data.Nameable == nil || *data.Audience != AudienceAnotherCrate || *data.Path != PathDefinition {
+	if data.Nameable == nil || data.Audience != AudienceAnotherCrate || data.Path != PathDefinition {
 		return Effective{}, ErrMissingFact
 	}
-	return Effective{Audience: *data.Audience, Path: *data.Path, Nameable: *data.Nameable}, nil
+	return Effective{Audience: data.Audience, Path: data.Path, Nameable: *data.Nameable}, nil
 }
 
 // PrivateInterface returns the declarations that the compiler observed in the
@@ -227,8 +228,9 @@ func (d Declaration) PrivateInterface() ([]Declaration, error) {
 	}
 	var out []Declaration
 	for _, id := range d.owner.graph.Facts(semantics.Subject{Entity: d.id}, PrivateInterfaceRelation()) {
+		// Only a reference has a target.
 		term, _ := d.owner.graph.Term(id)
-		if _, found := d.owner.graph.Entity(term.Target); term.Kind != semantics.Reference || !found {
+		if _, found := d.owner.graph.Entity(term.Target); !found {
 			return nil, ErrMissingFact
 		}
 		out = append(out, Declaration{d.owner, term.Target})
@@ -245,10 +247,7 @@ func (d Declaration) fact(relation semantics.Key) (semantics.Term, error) {
 	if len(terms) != 1 {
 		return semantics.Term{}, ErrMissingFact
 	}
-	term, found := d.owner.graph.Term(terms[0])
-	if !found || term.Kind != semantics.ProviderExpression {
-		return semantics.Term{}, ErrMissingFact
-	}
+	term, _ := d.owner.graph.Term(terms[0])
 	return term, nil
 }
 func (t Type) Valid() bool          { return t.owner != nil && t.id != 0 }

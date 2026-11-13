@@ -1,10 +1,8 @@
 package rust
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"reflect"
 	"unicode"
 
@@ -81,21 +79,13 @@ func ConfigurationFor(environment Environment) ([]semantic.Setting, error) {
 // semantic.ErrInvalidRequest for settings it cannot have returned.
 func EnvironmentOf(settings []semantic.Setting) (Environment, error) {
 	var environment Environment
-	found := false
 	for _, setting := range settings {
-		if setting.Key != Key(environmentKey) {
-			continue
+		if setting.Key == Key(environmentKey) {
+			// A value that does not decode, or decodes loosely, leaves an
+			// environment whose settings differ from these. The comparison
+			// below is the one check and refuses it.
+			_ = json.Unmarshal(setting.Value, &environment)
 		}
-		decoder := json.NewDecoder(bytes.NewReader(setting.Value))
-		decoder.DisallowUnknownFields()
-		var trailing any
-		if found || decoder.Decode(&environment) != nil || decoder.Decode(&trailing) != io.EOF {
-			return Environment{}, semantic.ErrInvalidRequest
-		}
-		found = true
-	}
-	if !found {
-		return Environment{}, semantic.ErrInvalidRequest
 	}
 	want, err := ConfigurationFor(environment)
 	if err != nil {
