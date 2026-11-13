@@ -82,11 +82,11 @@ func (m Model) Type(id semantics.TermID) (Type, error) {
 	return Type{m.state, id}, nil
 }
 
-// DeclaredType reads the type of a type name from the declared-type fact of
-// its entity: a defined type, an alias, a type parameter or a predeclared
-// type. It fails for an entity that does not carry exactly one such fact, as a
-// package and a field do not. An entity's body is not read: it is the
-// declaration's written definition.
+// DeclaredType reads the type of a type name or of a field from the
+// declared-type fact of its entity: a defined type, an alias, a type
+// parameter, a predeclared type or a field. It fails for an entity that does
+// not carry exactly one such fact, as a package does not. An entity's body is
+// not read: it is the declaration's written definition.
 func (m Model) DeclaredType(id semantics.EntityID) (Type, error) {
 	if !m.Valid() {
 		return Type{}, ErrForeign

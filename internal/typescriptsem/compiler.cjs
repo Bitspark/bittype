@@ -221,12 +221,15 @@ function main(request) {
     const symbol = resolvedSymbol(symbolFor(nativeByNode.get(unit.Tree + ":" + node.ID)));
     if (!ownSymbol(symbol) && !packageSymbol(symbol) && !checker.isArrayType(checker.getDeclaredTypeOfSymbol(symbol))) unsupported("External type references other than array constructors are outside captured-types-2", site(unit, node));
   }
-  function properties(type) {
+  // The object of a type's members. With own, only the members whose
+  // declaration own admits: the members that one interface declares itself.
+  function properties(type, own = undefined) {
     if (checker.getSignaturesOfType(type, ts.SignatureKind.Call).length || checker.getSignaturesOfType(type, ts.SignatureKind.Construct).length || checker.getIndexInfosOfType(type).length) unsupported("Callable and indexed object types are outside captured-types-2");
     const metadata = [], operands = [];
     for (const property of checker.getPropertiesOfType(type)) {
       const declaration = property.valueDeclaration || property.declarations?.[0];
       if (!declaration || !captured(declaration)) unsupported("External object members are outside captured-types-2");
+      if (own && !own(declaration)) continue;
       metadata.push({ Name: property.getName(), Optional: !!(property.flags & ts.SymbolFlags.Optional), Readonly: ts.canHaveModifiers(declaration) && !!ts.getModifiers(declaration)?.some(m => m.kind === ts.SyntaxKind.ReadonlyKeyword), Entity: entity(property) });
       operands.push(nativeType(checker.getTypeOfSymbolAtLocation(property, declaration)));
     }
@@ -325,15 +328,23 @@ function main(request) {
   // The body of a declaration's entity is the term of its written definition.
   // An alias: the term of its right-hand side. An interface without an extends
   // clause: the object of its members, which are all its own. An interface
-  // with an extends clause has no body here: how its base types are operands
-  // of the definition is not decided (bittype#310). A type parameter has no
-  // definition and no body.
+  // with an extends clause: an extension, whose operands are the base type
+  // terms as written, in written order, and then the object of the members
+  // that the interface declares itself. Its data states the number of bases.
+  // semantics/typescript/go publishes the operator and the data's member as
+  // ExtensionOperator and ExtensionInfo. A type parameter and a property have
+  // no definition and no body.
   for (const unit of request.Units) for (const node of unit.Nodes) {
     if (node.Kind !== "type-alias" && node.Kind !== "interface") continue;
-    const id = entity(symbolFor(nativeByNode.get(unit.Tree + ":" + node.ID)));
+    const native = nativeByNode.get(unit.Tree + ":" + node.ID), symbol = symbolFor(native), id = entity(symbol);
     let body;
     if (node.Kind === "type-alias") body = writtenAt.get(unit.Tree + ":" + children(node, "type")[0]);
-    else if (!children(node, "base").length) body = structureOf.get(nativeType(checker.getDeclaredTypeOfSymbol(symbolFor(nativeByNode.get(unit.Tree + ":" + node.ID)))));
+    else {
+      const declared = checker.getDeclaredTypeOfSymbol(symbol), bases = children(node, "base").map(base => writtenAt.get(unit.Tree + ":" + base));
+      if (bases.some(base => !base)) unsupported("An interface base without a type expression is outside captured-types-2", site(unit, node));
+      if (!bases.length) body = structureOf.get(nativeType(declared));
+      else body = term(expression("extension", { Bases: bases.length }, [...bases, properties(declared, declaration => declaration.parent === native)]));
+    }
     if (body) graph.Entities[id - 1].Body = body;
   }
   // Record the actual public declarations of each captured module.
@@ -348,11 +359,13 @@ function main(request) {
       }
     }
   }
-  // Property entities share the compiler's declared non-missing value type.
-  // Presence and readonly flags remain separate object metadata. These are not
-  // flow-sensitive read types or writable acceptance judgments.
+  // The type of a property is the declared-type fact of its entity: the
+  // compiler's declared non-missing value type. A property has a name and a
+  // type and no definition, so its entity has no body. Presence and readonly
+  // flags remain separate object metadata. These are not flow-sensitive read
+  // types or writable acceptance judgments.
   for (const [id, symbol] of symbolByEntity) if (graph.Entities[id - 1].Kind.Name === "property") {
-    const d = symbol.valueDeclaration || symbol.declarations[0]; graph.Entities[id - 1].Body = nativeType(checker.getTypeOfSymbolAtLocation(symbol, d));
+    const d = symbol.valueDeclaration || symbol.declarations[0]; fact({ Entity: id }, "declared-type", nativeType(checker.getTypeOfSymbolAtLocation(symbol, d)));
   }
   count();
   const result = { Version: 1, Status: "ok", Facts: graph, Diagnostics: [], Assignable: undefined };

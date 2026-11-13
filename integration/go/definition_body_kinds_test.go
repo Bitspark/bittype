@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"encoding/json"
 	"errors"
 	"go/types"
 	"testing"
@@ -94,6 +95,21 @@ func TestGoBodyOfEachDeclarationKind(t *testing.T) {
 	if p := declared(box.Parameters[0].Entity); !p.Unconstrained() || len(declared(boxID).Parameters()) != 1 || declared(boxID).Parameters()[0].ID() != p.ID() || bodyTerm(t, graph, box).Operands[0].Term != p.ID() {
 		t.Fatal("Box's parameter: the fact does not lead to its type and constraint")
 	}
+	// A field has no body. Its type is the declared-type fact of its entity,
+	// and the same term is the field's operand of the struct term.
+	var fields []golang.FieldInfo
+	if err := json.Unmarshal(bodyTerm(t, graph, box).Data, &fields); err != nil || len(fields) != 1 {
+		t.Fatal("Box: field metadata", err, fields)
+	}
+	if field, _ := graph.Entity(fields[0].Entity); field.Kind != golang.Key("field") || field.Name != "Value" || field.Body != 0 {
+		t.Fatalf("Box's field has a body: %+v", field)
+	}
+	if declared(fields[0].Entity).ID() != bodyTerm(t, graph, box).Operands[0].Term {
+		t.Fatal("Box's field: the fact does not name the type that the struct's operand names")
+	}
+	if read, ok := declared(boxID).Fields(); !ok || len(read) != 1 || read[0].Type.ID() != declared(fields[0].Entity).ID() {
+		t.Fatal("Box's field: Fields does not read the same type")
+	}
 	// A use of a generic declaration as a right-hand side: an application.
 	if body := bodyTerm(t, graph, boxed); body.Kind != semantics.Application {
 		t.Fatalf("Boxed: body %+v", body)
@@ -106,12 +122,18 @@ func TestGoBodyOfEachDeclarationKind(t *testing.T) {
 	if predeclared.Body != 0 || !declared(stringID).IsBasic(types.String) {
 		t.Fatalf("string: %+v", predeclared)
 	}
-	// Every entity of a type name carries exactly one declared-type fact, a
-	// package and a field carry none, and Lookup reads the fact.
+	// Every entity of a type name and of a field carries exactly one
+	// declared-type fact, a package carries none, and Lookup reads the fact.
+	// Only a captured declaration or alias has a body.
+	kinds := map[semantics.Key]int{}
 	for i, e := range graph.Data().Entities {
 		id := semantics.EntityID(i + 1)
+		kinds[e.Kind]++
+		if declaration := (e.Kind == golang.DefinedKind() || e.Kind == golang.AliasKind()) && len(e.Declarations) > 0; declaration != (e.Body != 0) {
+			t.Fatalf("%s of kind %v: body %d", e.Name, e.Kind, e.Body)
+		}
 		facts := graph.Facts(semantics.Subject{Entity: id}, golang.DeclaredTypeRelation())
-		named := e.Kind == golang.DefinedKind() || e.Kind == golang.AliasKind() || e.Kind == golang.ParameterKind() || e.Kind == golang.BuiltinKind()
+		named := e.Kind == golang.DefinedKind() || e.Kind == golang.AliasKind() || e.Kind == golang.ParameterKind() || e.Kind == golang.BuiltinKind() || e.Kind == golang.Key("field")
 		if named != (len(facts) == 1) || !named && len(facts) != 0 {
 			t.Fatalf("%s of kind %v carries %d declared-type facts", e.Name, e.Kind, len(facts))
 		}
@@ -123,6 +145,11 @@ func TestGoBodyOfEachDeclarationKind(t *testing.T) {
 				t.Fatalf("Lookup(%s) does not read the declared-type fact: %v", e.Name, err)
 			}
 		}
+	}
+	// The loop met a field, also the field of the instantiated struct, and a
+	// package.
+	if kinds[golang.Key("field")] < 2 || kinds[golang.PackageKind()] != 1 {
+		t.Fatal("the graph lacks a kind that the loop judges", kinds)
 	}
 }
 
@@ -166,6 +193,7 @@ export type Flag = { on: boolean };
 export interface Person { name: string }
 export interface Derived extends Person { active: boolean }
 export interface Box<T extends Person> { value: T }
+export interface Staff extends Person, Box<Person> {}
 export type Boxed = Box<Person>;
 export type Choice = "a" | "b";
 export type Items = Person[];`)
@@ -178,7 +206,7 @@ export type Items = Person[];`)
 	// to find a definition: the right-hand side of an alias and the base of an
 	// interface. syntax/typescript/go declares them. With another spelling of
 	// the first no alias below has a body, and with another spelling of the
-	// second Derived has one.
+	// second the body of Derived and of Staff is the object of all members.
 	roles := map[string]int{}
 	for _, node := range trees[0].Nodes {
 		for _, child := range node.Children {
@@ -187,7 +215,7 @@ export type Items = Person[];`)
 			}
 		}
 	}
-	if roles[typescriptsyntax.RoleType] != 6 || roles[typescriptsyntax.RoleBase] != 1 {
+	if roles[typescriptsyntax.RoleType] != 6 || roles[typescriptsyntax.RoleBase] != 3 {
 		t.Fatal("the capture lacks a right-hand side or a base", roles)
 	}
 	graph := m.Graph()
@@ -202,6 +230,7 @@ export type Items = Person[];`)
 	text, alias, flag := tsDecl(t, m, "0", "Text"), tsDecl(t, m, "0", "Alias"), tsDecl(t, m, "0", "Flag")
 	person, derived, box := tsDecl(t, m, "0", "Person"), tsDecl(t, m, "0", "Derived"), tsDecl(t, m, "0", "Box")
 	boxed, choice, items := tsDecl(t, m, "0", "Boxed"), tsDecl(t, m, "0", "Choice"), tsDecl(t, m, "0", "Items")
+	staff := tsDecl(t, m, "0", "Staff")
 
 	// An alias of a keyword type: the body is the primitive's term.
 	if body := bodyTerm(t, graph, text.Entity()); body.Operator != typescript.Key("primitive") || text.Entity().Body != text.Type().ID() {
@@ -225,14 +254,62 @@ export type Items = Person[];`)
 	if body := bodyTerm(t, graph, person.Entity()); body.Operator != typescript.ObjectOperator() || len(body.Operands) != 1 || person.Entity().Body != properties(person) {
 		t.Fatalf("Person: body %+v", body)
 	}
-	// An interface with an extends clause has no body until bittype#310
-	// decides how its base types are operands of the definition. Its type and
-	// all its members, inherited ones too, are reached as before.
-	if derived.Entity().Body != 0 {
-		t.Fatalf("Derived has a body: %+v", bodyTerm(t, graph, derived.Entity()))
+	if _, ok := m.Extension(person.Entity().Body); ok {
+		t.Fatal("Person: an interface without a base was read as an extension")
 	}
-	if members, ok := derived.Type().Properties(); !ok || len(members) != 2 {
-		t.Fatalf("Derived: members %+v", members)
+	// A property has no body. Its type is the declared-type fact of its
+	// entity, and the same term is the property's operand of the object term.
+	var members []typescript.PropertyInfo
+	if err := json.Unmarshal(bodyTerm(t, graph, person.Entity()).Data, &members); err != nil || len(members) != 1 {
+		t.Fatal("Person: member metadata", err, members)
+	}
+	if property, _ := graph.Entity(members[0].Entity); property.Kind != typescript.Key("property") || property.Name != "name" || property.Body != 0 {
+		t.Fatalf("Person's property has a body: %+v", property)
+	}
+	if declared, ok := graph.OnlyFact(semantics.Subject{Entity: members[0].Entity}, typescript.DeclaredTypeRelation()); !ok || declared != bodyTerm(t, graph, person.Entity()).Operands[0].Term {
+		t.Fatal("Person's property: the fact does not name the type that the object's operand names")
+	}
+	if read, ok := person.Type().Properties(); !ok || len(read) != 1 || read[0].Type.ID() != bodyTerm(t, graph, person.Entity()).Operands[0].Term {
+		t.Fatal("Person's property: Properties does not read the same type")
+	}
+	// An interface with an extends clause: an extension. Its operands are the
+	// base type terms as written and then the object of its own members. Its
+	// data states the number of bases. The declared type still has all
+	// members, inherited ones too.
+	body := bodyTerm(t, graph, derived.Entity())
+	var info typescript.ExtensionInfo
+	if body.Operator != typescript.ExtensionOperator() || json.Unmarshal(body.Data, &info) != nil || info.Bases != 1 || len(body.Operands) != 2 {
+		t.Fatalf("Derived: body %+v", body)
+	}
+	extension, ok := m.Extension(derived.Entity().Body)
+	if !ok || len(extension.Bases) != 1 || extension.Bases[0] != body.Operands[0].Term || len(extension.Members) != 1 || extension.Members[0].Name != "active" || extension.Members[0].Type.String() != "boolean" {
+		t.Fatalf("Derived: extension %+v %v", extension, ok)
+	}
+	if base, _ := graph.Term(extension.Bases[0]); base.Kind != semantics.Reference || base.Target != person.ID() {
+		t.Fatalf("Derived: the base is no reference to Person: %+v", base)
+	}
+	if own, _ := graph.Term(body.Operands[1].Term); own.Operator != typescript.ObjectOperator() || len(own.Operands) != 1 || body.Operands[1].Term == properties(derived) {
+		t.Fatalf("Derived: the last operand is not the object of its own members: %+v", own)
+	}
+	if all, ok := derived.Type().Properties(); !ok || len(all) != 2 {
+		t.Fatalf("Derived: members %+v", all)
+	}
+	// Two bases, the second with type arguments, and no member of its own:
+	// the bases in written order, an application as elsewhere, and an object
+	// without operands.
+	body = bodyTerm(t, graph, staff.Entity())
+	extension, ok = m.Extension(staff.Entity().Body)
+	if !ok || body.Operator != typescript.ExtensionOperator() || len(body.Operands) != 3 || len(extension.Bases) != 2 || len(extension.Members) != 0 {
+		t.Fatalf("Staff: extension %+v %v", extension, ok)
+	}
+	if first, _ := graph.Term(extension.Bases[0]); first.Kind != semantics.Reference || first.Target != person.ID() {
+		t.Fatalf("Staff: the first base is no reference to Person: %+v", first)
+	}
+	if bindings, ok := graph.DirectParameterBindings(extension.Bases[1]); !ok || len(bindings) != 1 || bindings[0].Parameter != box.Parameters()[0].ID() || bindings[0].Argument != person.Type().ID() {
+		t.Fatalf("Staff: the second base is no application of Box to Person: %+v %v", bindings, ok)
+	}
+	if all, ok := staff.Type().Properties(); !ok || len(all) != 2 {
+		t.Fatalf("Staff: members %+v", all)
 	}
 	// A generic declaration: the body is its object, and its parameter has no
 	// body. The parameter's type and constraint are entity facts.
@@ -258,9 +335,26 @@ export type Items = Person[];`)
 		t.Fatalf("Items: body %+v", body)
 	}
 	// No declaration's body is a reference to the declaration itself.
-	for _, d := range []typescript.Declaration{text, alias, flag, person, box, boxed, choice, items} {
+	for _, d := range []typescript.Declaration{text, alias, flag, person, derived, box, staff, boxed, choice, items} {
 		if body := bodyTerm(t, graph, d.Entity()); body.Kind == semantics.Reference && body.Target == d.ID() {
 			t.Fatalf("%s: the body is a reference to the declaration itself", d.Entity().Name)
 		}
+	}
+	// Only an alias and an interface have a body. An alias, an interface, a
+	// type parameter and a property carry exactly one declared-type fact, and
+	// no other entity carries one.
+	kinds := map[semantics.Key]int{}
+	for i, e := range graph.Data().Entities {
+		kinds[e.Kind]++
+		if declaration := e.Kind == typescript.AliasKind() || e.Kind == typescript.InterfaceKind(); declaration != (e.Body != 0) {
+			t.Fatalf("%s of kind %v: body %d", e.Name, e.Kind, e.Body)
+		}
+		typed := e.Kind == typescript.AliasKind() || e.Kind == typescript.InterfaceKind() || e.Kind == typescript.ParameterKind() || e.Kind == typescript.Key("property")
+		if facts := graph.Facts(semantics.Subject{Entity: semantics.EntityID(i + 1)}, typescript.DeclaredTypeRelation()); typed != (len(facts) == 1) || !typed && len(facts) != 0 {
+			t.Fatalf("%s of kind %v carries %d declared-type facts", e.Name, e.Kind, len(facts))
+		}
+	}
+	if kinds[typescript.Key("property")] < 4 || kinds[typescript.ModuleKind()] != 1 || kinds[typescript.ParameterKind()] != 1 {
+		t.Fatal("the graph lacks a kind that the loop judges", kinds)
 	}
 }

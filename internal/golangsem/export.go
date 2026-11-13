@@ -156,19 +156,15 @@ func (e *exporter) object(o types.Object) semantics.EntityID {
 	}
 	e.data.Entities = append(e.data.Entities, entity)
 	declared := e.typ(o.Type())
-	if _, named := o.(*types.TypeName); !named {
-		// A field. Its entity keeps the term of the field's type as its body.
-		e.data.Entities[id-1].Body = declared
-		return id
-	}
-	// The type of the name is a fact of the entity. The facts about the type
-	// hang on that term.
+	// The type of a type name and of a field is a fact of the entity. The
+	// facts about the type hang on that term.
 	e.data.Facts = append(e.data.Facts, semantics.Fact{Subject: semantics.Subject{Entity: id}, Relation: n.DeclaredTypeRelation(), Term: declared})
 	// The body is the definition: the type that the written right-hand side
 	// of a captured declaration denotes. go/types exports no reader of a
 	// defined type's right-hand side, so it is the type of the declaration's
-	// type expression. A type parameter, a predeclared type and a supplied
-	// declaration have no captured definition and no body.
+	// type expression. A field has a name and a type and no definition. A
+	// type parameter, a predeclared type and a supplied declaration have no
+	// captured definition. None of them has a body.
 	if definition := e.declared[o]; definition != nil {
 		body := e.typ(definition)
 		e.data.Entities[id-1].Body = body

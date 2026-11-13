@@ -246,7 +246,7 @@ func TestGoDeclarationBodyIsItsDefinition(t *testing.T) {
 }
 
 func TestTypeScriptDeclarationBodyIsItsDefinition(t *testing.T) {
-	snapshot, _, _ := tsCapture(t, "export interface Address { city: string }\nexport interface Person { name: string; active: boolean; home: Address }\nexport type Tree = { value: string; children: Tree[] };\nexport interface Page<T> { items: T[]; next: string }\nexport type People = Page<Person>;\n")
+	snapshot, _, _ := tsCapture(t, "export interface Address { city: string }\nexport interface Person { name: string; active: boolean; home: Address }\nexport type Tree = { value: string; children: Tree[] };\nexport interface Page<T> { items: T[]; next: string }\nexport type People = Page<Person>;\nexport interface Employee extends Person, Page<Person> { desk: Address; role: string }\n")
 	_, result := tsResults(t, snapshot)
 	envelope, ok := result.Semantics()
 	if !ok {
@@ -259,5 +259,30 @@ func TestTypeScriptDeclarationBodyIsItsDefinition(t *testing.T) {
 	checkDefinitionBodies(t, graph, definitionBodyCase{
 		address: declarationNamed(t, graph, "Address"), person: declarationNamed(t, graph, "Person"), tree: declarationNamed(t, graph, "Tree"),
 		page: declarationNamed(t, graph, "Page"), people: declarationNamed(t, graph, "People"),
+	})
+	// An interface with base types: the walk reaches each base declaration,
+	// the actual of a base with type arguments, and each member that the
+	// interface declares itself. It does not reach an inherited member here:
+	// that one is reached by opening the base.
+	t.Run("interface with base types", func(t *testing.T) {
+		person, address, page := declarationNamed(t, graph, "Person"), declarationNamed(t, graph, "Address"), declarationNamed(t, graph, "Page")
+		employee, err := readStructurally(graph, declarationNamed(t, graph, "Employee"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !employee.Body.Expression || len(employee.Body.Operands) != 3 {
+			t.Fatalf("Employee: the walk does not reach two bases and the own members: %+v", employee.Body)
+		}
+		if first := employee.Body.Operands[0]; first.Callee != person || first.Expression || len(first.Actuals) != 0 {
+			t.Fatalf("Employee: the first base is no reference to the declaration Person: %+v", first)
+		}
+		formals, _ := graph.Entity(page)
+		if second := employee.Body.Operands[1]; second.Callee != page || len(second.Actuals) != 1 || second.Actuals[0].Binder != formals.Parameters[0].Entity || second.Actuals[0].Use.Callee != person {
+			t.Fatalf("Employee: the second base is no application of Page to Person: %+v", second)
+		}
+		own := employee.Body.Operands[2]
+		if !own.Expression || len(own.Operands) != 2 || own.Operands[0].Callee != address || !own.Operands[1].Expression || len(own.Operands[1].Operands) != 0 {
+			t.Fatalf("Employee: the walk does not reach its two own members: %+v", own)
+		}
 	})
 }

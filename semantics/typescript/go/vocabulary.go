@@ -45,6 +45,10 @@ func InterfaceKind() semantics.Key   { return Key("interface") }
 func ParameterKind() semantics.Key   { return Key("parameter") }
 
 // Relations of facts: about a module, a declaration and a native type.
+// DeclaredTypeRelation relates the entity of an alias, an interface, a type
+// parameter and a property to the term of its type. It is not the entity's
+// body: the body of an alias and of an interface is the term of its written
+// definition, and a type parameter and a property have none.
 func NamedExportRelation() semantics.Key  { return Key("named-export") }
 func DeclaredTypeRelation() semantics.Key { return Key("declared-type") }
 func ConstraintRelation() semantics.Key   { return Key("constraint") }
@@ -52,8 +56,16 @@ func NativeTypeRelation() semantics.Key   { return Key("native-type") }
 func DisplayRelation() semantics.Key      { return Key("display") }
 func PropertiesRelation() semantics.Key   { return Key("properties") }
 
-// The operator of the term that a properties fact carries.
+// The operator of the term that a properties fact carries. It is also the
+// operator of the body of an interface without an extends clause and of the
+// last operand of an extension.
 func ObjectOperator() semantics.Key { return Key("object") }
+
+// ExtensionOperator is the operator of the body of an interface that has an
+// extends clause. The term's data is an ExtensionInfo. Its operands are the
+// base type terms as written, in written order, and then one object term of
+// the members that the interface declares itself. Model.Extension reads it.
+func ExtensionOperator() semantics.Key { return Key("extension") }
 
 // Roles of binding occurrences: a type reference and an import binding.
 func NameRole() semantics.Key   { return Key("name") }

@@ -40,6 +40,25 @@ type PropertyInfo struct {
 	Entity   semantics.EntityID
 }
 
+// ExtensionInfo is the json-1 data of an extension term: the number of base
+// type terms. They are the term's first operands, in written order. Exactly
+// one more operand follows them: the object term of the members that the
+// interface declares itself.
+type ExtensionInfo struct {
+	Bases int
+}
+
+// Extension is the written definition of an interface with base types.
+type Extension struct {
+	// Bases are the base type terms as written, in written order: a Reference
+	// to the base's entity, or an Application for a base with type arguments.
+	Bases []semantics.TermID
+	// Members are the members that the interface declares itself. Inherited
+	// members are reached through the bases, or all together through
+	// Type.Properties of the declared type.
+	Members []Property
+}
+
 // Open admits the exact analysis receipt without running a compiler.
 func Open(result semantic.Result) (Model, error) {
 	requirement, err := EvidenceFor(result.Configuration())
@@ -172,7 +191,12 @@ func (t Type) Properties() ([]Property, bool) {
 	if !t.Valid() {
 		return nil, false
 	}
-	term, _ := t.owner.graph.Term(t.fact(PropertiesRelation()))
+	return t.owner.object(t.fact(PropertiesRelation()))
+}
+
+// object reads an object term: its members with their value types.
+func (m *model) object(id semantics.TermID) ([]Property, bool) {
+	term, _ := m.graph.Term(id)
 	if term.Operator != ObjectOperator() {
 		return nil, false
 	}
@@ -182,8 +206,37 @@ func (t Type) Properties() ([]Property, bool) {
 	}
 	out := make([]Property, len(fields))
 	for i, f := range fields {
-		e, _ := t.owner.graph.Entity(f.Entity)
-		out[i] = Property{Name: f.Name, Type: Type{t.owner, term.Operands[i].Term}, Optional: f.Optional, Readonly: f.Readonly, Sites: e.Declarations}
+		e, _ := m.graph.Entity(f.Entity)
+		out[i] = Property{Name: f.Name, Type: Type{m, term.Operands[i].Term}, Optional: f.Optional, Readonly: f.Readonly, Sites: e.Declarations}
+	}
+	return out, true
+}
+
+// Extension reads an extension term, the body of the entity of an interface
+// that has an extends clause. It has no answer for a term in another form:
+// another operator, data that is no ExtensionInfo, fewer than one base, a
+// number of operands other than the bases and one more, or a last operand
+// that is no object term. The body of an interface without an extends clause
+// is an object term and no extension.
+func (m Model) Extension(id semantics.TermID) (Extension, bool) {
+	if !m.Valid() {
+		return Extension{}, false
+	}
+	term, _ := m.state.graph.Term(id)
+	if term.Operator != ExtensionOperator() {
+		return Extension{}, false
+	}
+	var info ExtensionInfo
+	if json.Unmarshal(term.Data, &info) != nil || info.Bases < 1 || len(term.Operands) != info.Bases+1 {
+		return Extension{}, false
+	}
+	members, ok := m.state.object(term.Operands[info.Bases].Term)
+	if !ok {
+		return Extension{}, false
+	}
+	out := Extension{Members: members}
+	for _, operand := range term.Operands[:info.Bases] {
+		out.Bases = append(out.Bases, operand.Term)
 	}
 	return out, true
 }
