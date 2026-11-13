@@ -181,6 +181,13 @@ func (v DeclarationView[F]) Clone() DeclarationView[F] {
 	return v
 }
 
+// declared returns the declaring sites of an entity, as the captured graph
+// records them.
+func (w *walk[F]) declared(entity semantics.EntityID) []ast.NodeRef {
+	e, _ := w.graph.Entity(entity)
+	return slices.Clone(e.Declarations)
+}
+
 // declaration returns the kernel's view of a declaration entity.
 func (w *walk[F]) declaration(d Declaration[F]) (DeclarationView[F], error) {
 	e, ok := w.graph.Entity(d.entity)
