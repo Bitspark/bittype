@@ -2067,3 +2067,404 @@ func external(data []string) (symbol.Symbol, error) {
 standard library. So for the external form Rust has the split that Go lacks:
 the model says what the form is, and the target says what is covered.
 Section 6.5 builds on this.
+
+### 3.5 A symbol package, and the Files stage that reads one
+
+A **symbol** is what a name use in generated output refers to when the
+referent is outside the generated declarations: a predeclared type, an item
+of a standard library, an export of a package. The generation contract
+supplies the issuer (`contracts/generation/go/output.go:17-43`):
+
+```go
+// SymbolIssuer is a target library's authority to issue and interpret immutable
+// external destinations. Its key is opaque to the generation and Files kernels.
+type SymbolIssuer struct{ owner *identity }
+type ExternalSymbol struct {
+	owner    *identity
+	language representation.Language
+	key      string
+}
+
+func NewSymbolIssuer() SymbolIssuer { return SymbolIssuer{fresh()} }
+func (i SymbolIssuer) Issue(language representation.Language, key string) (ExternalSymbol, error)
+func (i SymbolIssuer) Read(language representation.Language, s ExternalSymbol) (string, bool)
+
+type ExternalUse struct {
+	At     semantics.Occurrence
+	Symbol ExternalSymbol
+}
+```
+
+`representation.Language` is the descriptor of a language from the envelope
+package: its identifier, display name, profile string and marker type.
+
+Go's symbol package (`transform/syntax/golang/symbol/go/symbol.go:1-81`,
+comments abridged):
+
+```go
+// Package symbol owns the Go external destinations shared by generation and Files.
+package symbol
+
+// Symbol is a destination outside the declarations of a generated output. It
+// states its category: a predeclared type is never a package symbol with an
+// empty package. The zero Symbol is no destination. Symbols are comparable.
+type Symbol struct{ category, name string }
+
+// The one category of today. A type of another package is a further category
+// and needs that package's semantics.
+const predeclared = "predeclared"
+
+// Predeclared identifies the type that name denotes in Go's universe scope.
+// ... Only a basic type is issued today. error, comparable
+// and any are refused with generation.ErrUnsupported: the Go bridge exports
+// them with the kinds of a declaration, without a marker that tells them from
+// one, so their destination cannot be established yet.
+func Predeclared(name string) (Symbol, error) {
+	object, ok := types.Universe.Lookup(name).(*types.TypeName)
+	if !ok {
+		return Symbol{}, g.ErrInvalid
+	}
+	if _, basic := object.Type().(*types.Basic); !basic {
+		return Symbol{}, g.ErrUnsupported
+	}
+	return Symbol{predeclared, name}, nil
+}
+
+func (y Symbol) Predeclared() (string, bool) { return y.name, y.category == predeclared }
+
+var issuer = g.NewSymbolIssuer()
+
+// role is the role of an external use on its node: the role that a reference
+// to a declaration of the output has on such a node.
+var role = semantics.Key{Owner: string(s.Language{}.ID()), Name: s.RoleTarget}
+
+// ExternalUse records symbol as the destination of the name use at site.
+func ExternalUse(language representation.Language, site ast.NodeRef, symbol Symbol) (g.ExternalUse, error) {
+	if representation.CheckMarker[s.Language](language) != nil || language.ID() != (s.Language{}).ID() {
+		return g.ExternalUse{}, g.ErrScope
+	}
+	name, ok := symbol.Predeclared()
+	if !ok {
+		return g.ExternalUse{}, g.ErrInvalid
+	}
+	issued, err := issuer.Issue(language, predeclared+"\x00"+name)
+	if err != nil {
+		return g.ExternalUse{}, err
+	}
+	return g.ExternalUse{At: semantics.Occurrence{Site: site, Role: role}, Symbol: issued}, nil
+}
+
+// ReadExternal returns the destination that an external use of this package
+// records. It refuses a use of another issuer, of another language or at
+// another role with generation.ErrScope.
+func ReadExternal(language representation.Language, use g.ExternalUse) (Symbol, error) {
+	key, ok := issuer.Read(language, use.Symbol)
+	if !ok || use.At.Role != role || use.At.Ordinal != 0 {
+		return Symbol{}, g.ErrScope
+	}
+	return Predeclared(strings.TrimPrefix(key, predeclared+"\x00"))
+}
+```
+
+The package states which names are symbols by asking the Go standard library
+(`types.Universe`). It holds no table. Its second refusal is a coverage
+answer that depends on what the Go bridge can tell apart.
+
+**Where a Files stage uses a symbol package.** Only TypeScript has a Files
+stage for generated output. It reads each external use of the sealed output
+back through TypeScript's symbol package
+(`format/files/typescript/provider/go/generated.go:163-180`; `tssymbol` is
+the TypeScript symbol package, whose symbol type is
+`Type{Module, Name string}`; `p.bindings` maps the node of a name use to
+what the use is meant to reach):
+
+```go
+for _, use := range output.ExternalUses() {
+	site := use.At.Site
+	ext, err := tssymbol.ReadExternal(snap.Language(), use)
+	if err != nil {
+		// A use that the TypeScript issuer cannot read is invalid input. The
+		// generation value stays joined to the Files category.
+		return nil, fmt.Errorf("%w: external use at %v: %w", source.ErrInvalid, site, err)
+	}
+	node := p.trees[site.Tree].Nodes[site.Node-1]
+	if node.Kind != s.KindTypeReference || len(node.References) != 0 || imports.Attr(node, s.AttributeName) != ext.Name {
+		return nil, fmt.Errorf("%w: external destination at %v", source.ErrInvalid, site)
+	}
+	if ext.Module == "" {
+		p.bindings[site] = symbol{builtin: ext.Name}
+	} else {
+		p.bindings[site] = symbol{external: imports.Export{Module: ext.Module, Name: ext.Name}}
+	}
+}
+```
+
+After it has placed the declarations and had the placed program analysed,
+the same stage reads the analysed graph in the words of the semantic
+vocabulary and builds the same kind of value from what the compiler bound
+(`format/files/typescript/provider/go/placement.go:196-222`; `n` is
+TypeScript's semantic vocabulary):
+
+```go
+for _, b := range data.Bindings {
+	...
+	if b.At.Role != n.NameRole() && b.At.Role != n.ImportRole() {
+		continue
+	}
+	entity := data.Entities[b.Target-1]
+	var dest symbol
+	switch {
+	case len(entity.Declarations) == 1:
+		dest.site = entity.Declarations[0]
+	case entity.Kind == n.PackageTypeKind() && entity.Owner != 0:
+		owner := data.Entities[entity.Owner-1]
+		if owner.Kind != n.PackageKind() {
+			return source.ErrInvalid
+		}
+		dest.external = imports.Export{Module: owner.Name, Name: entity.Name}
+	case entity.Kind == n.BuiltinKind():
+		dest.builtin = entity.Name
+	default:
+		return fmt.Errorf("%w: ambiguous native binding %s", source.ErrInvalid, entity.Name)
+	}
+	...
+	p.bindings[b.At.Site] = dest
+}
+```
+
+So this one package is where an intended vocabulary and an analysed
+vocabulary of the same language meet today. The intended destination comes
+as a symbol (`Type{Module, Name}`). The established binding comes as an
+entity with a kind (`package-type`, `builtin`) and an owner. The Files stage
+translates both into a private type of its own and compares. The accepted
+specification of destinations requires that comparison to be one of
+identities: "A check that a use reaches its destination therefore compares
+entities and not types" (`docs/destinations.md`). The same page decides that
+nothing compares the role under which a symbol is recorded with a role of
+the bridge, and the boundaries page decides that a symbol package does not
+import the semantic vocabulary.
+
+### 3.6 Go's three vocabularies side by side
+
+The table lists the type-level notions of Go and what each of three
+vocabularies calls them. The facts are verified against the code. The last
+column is our derivation.
+
+| Notion | Syntax node kind (`syntax/golang/go`, as the target writes it) | Analysed (`semantics/golang/go`, as the bridge writes it) | Intended form (`model`) | Our reading of the difference |
+| --- | --- | --- | --- | --- |
+| Predeclared basic type (`string`, `bool`) | `named-type` with the attribute `name`; the destination is recorded as a symbol `predeclared` | Entity kind `builtin`, named by the identifier, without owner and site; term operator `basic` with the compiler's basic kind as data | `primitive` with one datum, `string` or `bool` | Four words for one notion. Intent names the type it means. Evidence names the entity the compiler found, which a declaration named `string` can capture |
+| Slice | `slice-type` with one `element` child | Term operator `slice` with one operand | `slice` with one argument | None in the notion. The same word three times |
+| Struct with fields | `struct-type` with `field` children; also `embedded-field` | Term operator `struct` with JSON field records (name, tag, embedded, entity) and one operand per field; entity kind `field` | `record` whose arguments are `field` forms; a field has the data name and optional flag | Three words. `record` is the word the four models share. The optional flag exists only in intent, and the Go target does not read it. Tag and embedding exist only in syntax and evidence: nothing generates them |
+| Defined type declaration | `type-declaration` | Entity kind `defined`; fact relation `underlying` | Declaration form `defined`; the body must be a record | The same word. The restriction to a record body is a limit of today's generation |
+| Alias declaration | `type-alias` | Entity kind `alias`; fact relation `alias-target` | Declaration form `alias` | None |
+| Type of another package | `qualified-type` and `import`; the target writes neither | Entity kind `package` with a `package-name` fact; a `defined` or `alias` entity owned by it | `external` with the data module and name; refused as unsupported | Intent has a name and no meaning yet |
+| Type parameter | `type-parameter` with a constraint child | Entity kind `parameter`; fact relations `constraint` and `empty` | No form. The kernel's own expression kind and `NativeParameter` | The binder's identity is the kernel's on the intent side. The constraint exists only in syntax and evidence |
+| Use of a declaration, generic application | `named-type` with a `target` reference; `type-application` | The graph's own reference and application terms, and a binding with the role `name` | No form. The kernel's own expression kind | Owned by the shared carriers on both sides |
+| Package | The attribute `package` on `file` | Entity kind `package` | Not in the model. A setting of the target | |
+| Only in evidence | | Fact relations `identical` and `display`; operators `interface`, `union`, `signature`, `tuple`, `boolean` | | Type identity exists only for a checked program. The other operators are Go notions that nothing generates |
+| Only in syntax | `pointer-type`, `array-type`, `map-type`, `channel-type`, `function-type`, `method`, `embedded-type`, `type-union`, `type-approximation` | (some as unpublished operators, above) | | Notions that syntax can spell and nothing analyses by name or generates |
+
+Summary, as facts: of the seven forms of Go's model, five name a notion that
+analysis also names, three of them under another word
+(`primitive`, `record`, `external`), and the two declaration forms under the
+same word (`alias`, `defined`). Every form has a node kind that expresses
+the same notion.
+
+Two structural differences are visible, and both are our reading. First, an
+intended form is a tree of values with placeholders, without identity, site
+or spelling. A node has a site in one tree. An analysed type is a term in a
+graph with entities that have identity. Second, intent refers to a
+destination before any program exists, and evidence refers to the entity
+that a compiler bound in one placed program.
+
+### 3.7 How a role is computed from a path
+
+The architecture test derives a package's import rule from its path
+(`integration/go/architecture_roles_test.go:157-183`, `:336-346`; `role`
+builds a rule from a shape, a kind, the language read from the path, and the
+permitted import patterns, in which `<language>` is replaced):
+
+```go
+// packageRole derives a package's rule from its layout path. The language, the
+// stage and the pair come from the path, so a new package of a known shape has
+// its rule without an edit here.
+func packageRole(relative string) (roleRule, bool) {
+	s := strings.Split(relative, "/")
+	switch {
+	case len(s) == 2 && s[0] == "internal":
+		return helperRole(s[1])
+	case s[len(s)-1] != "go":
+		return roleRule{}, false
+	case len(s) == 3 && s[0] == "syntax" && isLanguageName(s[1]):
+		// The syntax kinds and identity of one language.
+		return role("syntax/<language>/go", roleVocabulary, []string{"language", s[1]},
+			"contracts/language/go", "trees/ast/go", "trees/cst/go",
+		), true
+	case len(s) == 3 && s[0] == "semantics" && isLanguageName(s[1]):
+		// The semantic names and contract identities of one language. It may use
+		// its language's lexical helper, never internal/<language>sem, which
+		// runs the compiler behind the names.
+		rule := role("semantics/<language>/go", roleVocabulary, []string{"language", s[1]},
+			"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "semantics/go",
+			"syntax/<language>/go", "trees/ast/go", "trees/representation/go", "internal/<language>",
+		)
+		rule.forbidden = func(dependency string) string {
+			if isSemanticHelper(dependency) {
+				return "a vocabulary never imports a semantic helper"
+			}
+			return ""
+		}
+		return rule, true
+	case len(s) == 5 && s[3] == "provider" && isLanguageName(s[2]):
+		return stageProviderRole(s[0], s[1], s[2])
+	...
+	case s[0] == "transform":
+		return transformRole(relative)
+	...
+	}
+	return roleRule{}, false
+}
+
+// [doc] inside transformRole, for transform/syntax/<language>/<component>/go:
+	switch strings.Join(component, "/") {
+	case "model":
+		// The intended native forms. No tree is allocated here and no source
+		// language is read.
+		return role("transform/syntax/<language>/model/go", roleVocabulary, language, "contracts/generation/go", "syntax/<language>/go"), true
+	case "symbol":
+		// The public type symbols that generation and Files formatting of one
+		// language agree on.
+		return role("transform/syntax/<language>/symbol/go", roleVocabulary, language,
+			"contracts/generation/go", "internal/<language>", "semantics/go", "syntax/<language>/go", "trees/ast/go", "trees/representation/go",
+		), true
+```
+
+The three vocabulary roles side by side, as the test states them:
+
+| Role by path | May import |
+| --- | --- |
+| `syntax/<language>/go` | `contracts/language/go`, `trees/ast/go`, `trees/cst/go` |
+| `semantics/<language>/go` | `contracts/analysis/go`, `contracts/resolution/go`, `contracts/semantic/go`, `semantics/go`, `syntax/<language>/go`, `trees/ast/go`, `trees/representation/go`, `internal/<language>`. Never a bridge |
+| `transform/syntax/<language>/model/go` | `contracts/generation/go`, `syntax/<language>/go` |
+| `transform/syntax/<language>/symbol/go` | `contracts/generation/go`, `internal/<language>`, `semantics/go`, `syntax/<language>/go`, `trees/ast/go`, `trees/representation/go` |
+
+Three facts. Every vocabulary role lists at least one contract package. No
+vocabulary of a language may import another vocabulary of that language
+except the syntax vocabulary. And the role of a Files stage does not list
+the generation contract or a symbol package: TypeScript's Files stage has
+both through an entry in the table of role extensions.
+
+### 3.8 The node patterns of horos kinds
+
+horos has a second level above types. "A type describes values. A kind
+describes types or type constructors." (`docs/kinds.md`). A kind is written
+in a notation for the shape of a tree. bittype parses, checks and analyses
+this notation as part of horos. The page `docs/horos-syntax.md` gives it:
+
+```text
+kind Text = node("scalar", {"selector": "utf8-text"}, epsilon);
+kind List<K> = node("list-of", {}, item(K));
+kind ClosedRecord<K> = node("record", {"mode": "closed"}, star(item(K)));
+kind Pair<A, B> = node("tuple", {}, concat(item(A), item(B)));
+```
+
+```text
+Q = epsilon
+  | item(K)
+  | concat(Q, Q, ...)
+  | alternative(Q, Q, ...)
+  | star(Q)
+```
+
+A `node` pattern names a constructor, constrains its metadata through
+selectors, and gives a pattern `Q` for its children. The page says: "A node
+pattern matches the entire ordered list of observed type children." Kinds
+also have union `|`, intersection `&`, parameters, and recursion with
+greatest fixed points:
+
+```text
+kind Tree = nu {
+    X = h.Scalar | h.List<X> | h.Record<X>;
+} in X;
+```
+
+**What the notation describes today.** It describes horos type descriptors
+and nothing else. "Kinds classify **checked structural type descriptions**."
+(`docs/kinds.md`). The first argument of `node` is one of a closed set of 22
+descriptor constructors of horos. The set is a literal list in the horos
+admission table (`internal/declsyntax/check.go:91`): any, atom, atom-exact,
+atom-len, atom-in, text-len, key-grammar, text-non-blank, lowercase-uuid,
+scalar, exact, wire, seq, list-of, set-of, not, map-of, tuple, compound,
+union, and, record. Selectors exist for two of them: `selector` on `scalar`
+and `mode` on `record`. The page puts outside this revision: "Public kind
+negation, arbitrary predicate callbacks and subtree-equality constraints".
+It also says that "a uniform field-kind query does not introduce row
+variables or predicates over labels".
+
+**Compared with the admission table of section 3.2** (our derivation, from
+reading the two notations side by side):
+
+| | Admission table (`Rules`) | horos node pattern |
+| --- | --- | --- |
+| Node identity | Any node kind of the language | One of 22 descriptor constructors of horos |
+| Attributes | Named, required or optional, each with a predicate function | Selectors with string values, for two constructors |
+| Children | Named roles in a fixed order, each with a count range and a flat list of kinds | An unnamed ordered sequence with concatenation, alternative and repetition |
+| Recursion | By naming kinds in the lists | Explicit fixed points |
+| Parameters | None | Kind parameters |
+| References | A flag: one role, `target` | None |
+| Interpreter | One Go function of 67 lines | The horos library, which owns the meaning of kinds. An earlier consultation of this project (0005) recorded the choice to "implement proper-kind inclusion using finite cuts of positive greatest-fixed-point hedge automata" |
+
+No code and no page on the main branch applies a horos kind to a syntax
+tree. No language's tree is described in this notation, and that includes
+the tree of horos itself: its own shape is a Go table and 11 rules in code,
+like the others.
+
+### 3.9 The one generator, and the absence of other generated code
+
+On the main branch no Go file is generated. No file holds a `go:generate`
+directive or a "Code generated" header. One table is produced by a manual
+procedure: the character ranges that may form a Rust crate name, 840 ranges
+printed by a program built with the pinned Rust compiler and pasted into
+`internal/rust/cratename.go`. A test compares the table with the compiler
+where the compiler is available.
+Three documentation pages are generated from the source by a tool.
+
+On the migration's branch one generator exists, `tools/payload-schema`. Its
+input is a horos module that declares the type of a mapping's decision
+record. An example, complete
+(`transform/syntax/horos-to-golang/vocabulary/declarations/go/payload.horos`
+at the branch head c1e5069):
+
+```horos
+module bittype.payload.horos_to_golang_declarations;
+
+type Payload = { name: text; nominal: bool; parameters: list<text>; };
+```
+
+From it the tool makes three files beside it: the canonical binary module
+`payload.ontos`, a Go file with the module's pin, and a Go file with the
+type (`payload_types.go`, complete):
+
+```go
+// Code generated by bittype from payload.horos. DO NOT EDIT.
+
+package declarations
+
+type Payload struct {
+	Name       string
+	Nominal    bool
+	Parameters []string
+}
+```
+
+The Go type is produced by bittype's own pipeline. The comment on the
+function that makes it says: "the schema source goes through the horos
+frontend and through generation with bittype's own structural Go
+contributions". A schema may use what those contributions cover: text,
+booleans, lists, closed records with required and optional fields, and
+named declarations. The branch holds 24 such schemas. A test regenerates
+each file and fails when the committed file differs.
+
+So the project already declares one kind of model in horos and generates Go
+from it: the decision record of a mapping. It uses horos types for that, not
+kinds, and it describes a value, not a tree.
