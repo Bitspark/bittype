@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -39,9 +38,10 @@ const unregisteredProfile = "integration-test/unregistered/1"
 
 // builtinPair is one builtin horos-to-native pair with its target language
 // hidden. name is the pair's directory, transform/syntax/horos-to-<name>.
-// compose registers the source, the target and the pair's builtin libraries in
-// a fresh registry for the given modules. Every builtin library states the
-// structural representation profile itself, so compose takes no profile.
+// compose registers the source, the target and the pair's builtin
+// contributions in a fresh registry for the given modules. Every builtin
+// contribution states the structural representation profile itself, so compose
+// takes no profile.
 type builtinPair struct {
 	name    string
 	check   func(t *testing.T)
@@ -69,21 +69,42 @@ func (q *profileComposition) generate(profile string) (g.Output, error) {
 	return q.registry.Generate(context.Background(), q.under(profile), q.checker)
 }
 
-// refuses reports whether a request under the profile fails with
-// ErrUnsupported and yields neither a plan nor an output.
+// missingProfile reports whether err is the kernel's refusal of a profile that
+// no registered contribution states: a missing contribution for that profile,
+// and no other refusal value. In particular it is not unsupported.
+func missingProfile(err error, profile string) error {
+	var refusal *g.Refusal
+	if !errors.Is(err, g.ErrMissingContribution) || !errors.As(err, &refusal) {
+		return errors.Join(errors.New("the request did not fail as a missing contribution"), err)
+	}
+	if refusal.Class != g.RefusalMissingContribution || refusal.Owner != g.KernelOwner || refusal.Profile != profile || !strings.HasPrefix(refusal.Reason, g.ReasonNoProfile) {
+		return errors.Join(errors.New("the refusal does not name the kernel and the profile that nobody states"), err)
+	}
+	for _, other := range []error{g.ErrUnsupported, g.ErrAmbiguous, g.ErrRefusedByDesign, g.ErrMissingFacet, g.ErrLimit, g.ErrScope, g.ErrInvalid} {
+		if errors.Is(err, other) {
+			return errors.Join(errors.New("the refusal also matches "+other.Error()), err)
+		}
+	}
+	return nil
+}
+
+// refuses reports whether a request under the profile fails as a missing
+// contribution and yields neither a plan nor an output.
 func (q *profileComposition) refuses(profile string) error {
-	if p, err := q.plan(profile); !errors.Is(err, g.ErrUnsupported) || p.Valid() {
+	p, err := q.plan(profile)
+	if err = missingProfile(err, profile); err != nil || p.Valid() {
 		return errors.Join(errors.New("the request planned or failed with another error"), err)
 	}
-	if out, err := q.generate(profile); !errors.Is(err, g.ErrUnsupported) || out.Snapshot().Valid() {
+	out, err := q.generate(profile)
+	if err = missingProfile(err, profile); err != nil || out.Snapshot().Valid() {
 		return errors.Join(errors.New("the request generated or failed with another error"), err)
 	}
 	return nil
 }
 
-// composeProfiles registers the libraries for the root module modules[0]. The
+// composeProfiles registers the bundles for the root module modules[0]. The
 // other modules are the ones it imports.
-func composeProfiles[L any](t *testing.T, modules []core.Value, p nativeProvider[L], target g.Target[L], libraries ...g.MappingLibrary[h.Language, L, source.Reader]) *profileComposition {
+func composeProfiles[L any](t *testing.T, modules []core.Value, p nativeProvider[L], target g.Target[L], bundles ...genfixture.Bundle[L]) *profileComposition {
 	t.Helper()
 	_, _, input := generationInput(t, modules[0], modules[1:]...)
 	checker := nativeChecker(t, p)
@@ -92,8 +113,38 @@ func composeProfiles[L any](t *testing.T, modules []core.Value, p nativeProvider
 		return formatted(t, p, outputTree[L](t, out))
 	}}
 	var err error
-	if q.request, err = genfixture.Request(q.registry, input, checker.Language(), "generated-profile", target, libraries...); err != nil {
+	if q.request, err = genfixture.Compose(q.registry, input, checker.Language(), "generated-profile", target, bundles...); err != nil {
 		t.Fatal(err)
+	}
+	return q
+}
+
+// withReadonlyFamily registers the read-only fixture family in the registry of
+// a TypeScript composition: its contributions, and the codecs of the payload
+// schemas that they state.
+func withReadonlyFamily(t *testing.T, q *profileComposition) *profileComposition {
+	t.Helper()
+	from, to := q.request.Input.Source.Language(), q.checker.Language()
+	family, err := readonlyprofile.Family(from)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The assignment compiles only while the fixture gives its contributions
+	// as the type that the builtin mapping packages return and not as a type
+	// of its own.
+	var contributions []g.Contribution[h.Language, ts.Language, source.Reader] = family.Contributions
+	for _, contribution := range contributions {
+		if contribution.Profile != readonlyprofile.Profile {
+			t.Fatalf("%s states the profile %q", contribution.Reference, contribution.Profile)
+		}
+		if err := c.RegisterContribution(q.registry, from, to, contribution); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, codec := range family.Codecs {
+		if err := q.registry.RegisterCodec(codec); err != nil {
+			t.Fatal(err)
+		}
 	}
 	return q
 }
@@ -116,12 +167,12 @@ func directoryNames(t *testing.T, path ...string) []string {
 	return names
 }
 
-func newBuiltinPair[L any](name string, p nativeProvider[L], target g.Target[L], libraries func() []g.MappingLibrary[h.Language, L, source.Reader], constructors func() map[string]any) builtinPair {
+func newBuiltinPair[L any](name string, p nativeProvider[L], target g.Target[L], set func() []genfixture.Bundle[L], bundles func() map[string]genfixture.Bundle[L]) builtinPair {
 	return builtinPair{
 		name: name,
 		compose: func(t *testing.T, modules ...core.Value) *profileComposition {
 			t.Helper()
-			return composeProfiles(t, modules, p, target, libraries()...)
+			return composeProfiles(t, modules, p, target, set()...)
 		},
 		check: func(t *testing.T) {
 			from, err := representation.NewLanguage[h.Language](h.Language{}, h.Profile)
@@ -129,60 +180,42 @@ func newBuiltinPair[L any](name string, p nativeProvider[L], target g.Target[L],
 				t.Fatal(err)
 			}
 			to := nativeChecker(t, p).Language()
-			// The constructors named in libraries_<pair>_test.go are those of
-			// exactly the mapping packages that the pair has, by directory name.
-			var named []string
-			for name := range constructors() {
-				named = append(named, name)
+			// The contributions named in bundles_<pair>_test.go are those of
+			// exactly the mapping packages that the pair has, by directory
+			// name, and each has a vocabulary package and a codec package of
+			// the same name. Each states the structural profile and this
+			// target, and its codec is of the schema that it states.
+			var contributions []string
+			for name := range bundles() {
+				contributions = append(contributions, name)
 			}
-			slices.Sort(named)
-			if packages := directoryNames(t, "transform", "syntax", "horos-to-"+name, "mapping"); len(packages) == 0 || !slices.Equal(named, packages) {
-				t.Fatalf("the pair has the mapping packages %v, and the test names the constructors of %v", packages, named)
+			slices.Sort(contributions)
+			for _, part := range []string{"mapping", "vocabulary", "codec"} {
+				if packages := directoryNames(t, "transform", "syntax", "horos-to-"+name, part); len(packages) == 0 || !slices.Equal(contributions, packages) {
+					t.Fatalf("the pair has the %s packages %v, and the test names the contributions %v", part, packages, contributions)
+				}
 			}
-			if len(libraries()) != len(named) {
-				t.Errorf("%d libraries are registered by the tests, and the pair has %d mapping packages", len(libraries()), len(named))
+			// The set that the tests register is the whole table.
+			if len(set()) != len(contributions) {
+				t.Errorf("%d contributions are registered by the tests, and the pair has %d mapping packages", len(set()), len(contributions))
 			}
-			// The evidence: build each library through its exported
-			// constructor, describe it, and compare the profile it states.
-			key := reflect.ValueOf(g.NewHelperKey("integration-test/helper"))
-			for _, name := range named {
-				constructor := reflect.ValueOf(constructors()[name])
-				signature := constructor.Type()
-				if signature.Kind() != reflect.Func || signature.NumOut() != 1 {
-					t.Errorf("%s: Library is no constructor of one library", name)
-					continue
-				}
-				// This test can build a helper key and nothing else. A
-				// constructor with any other parameter, also a variadic one,
-				// fails here until someone has looked at what it lets its
-				// caller choose.
-				var arguments []reflect.Value
-				for i := 0; i < signature.NumIn(); i++ {
-					if signature.IsVariadic() || signature.In(i) != key.Type() {
-						t.Errorf("%s: Library takes a %s. Decide what its caller can choose with it before this test builds one", name, signature.In(i))
-						arguments = nil
-						break
-					}
-					arguments = append(arguments, key)
-				}
-				if len(arguments) != signature.NumIn() {
-					continue
-				}
-				library, ok := constructor.Call(arguments)[0].Interface().(g.MappingLibrary[h.Language, L, source.Reader])
-				if !ok {
-					t.Errorf("%s: Library returns no mapping library of this pair", name)
-					continue
-				}
-				description, err := library.Describe(from, to)
+			for _, name := range contributions {
+				bundle := bundles()[name]
+				contribution, err := bundle.Contribution(from)
 				if err != nil {
 					t.Errorf("%s: %v", name, err)
 					continue
 				}
-				if description.Profile != rules.RepresentationProfile {
-					t.Errorf("%s states the profile %q", name, description.Profile)
+				codec, err := bundle.Codec()
+				if err != nil {
+					t.Errorf("%s: %v", name, err)
+					continue
 				}
-				if len(description.Bindings)+len(description.Declarations)+len(description.Helpers) == 0 {
-					t.Errorf("%s describes nothing", name)
+				if contribution.Profile != rules.RepresentationProfile || contribution.Target != string(to.ID()) || !contribution.Reference.Valid() || contribution.Rule.Decide == nil {
+					t.Errorf("%s states the profile %q, the target %q and the reference %v", name, contribution.Profile, contribution.Target, contribution.Reference)
+				}
+				if codec.Schema() != contribution.Schema {
+					t.Errorf("%s states the schema %v and its codec is of %v", name, contribution.Schema, codec.Schema())
 				}
 			}
 		},
@@ -191,28 +224,29 @@ func newBuiltinPair[L any](name string, p nativeProvider[L], target g.Target[L],
 
 func builtinPairs() []builtinPair {
 	return []builtinPair{
-		newBuiltinPair[ts.Language]("typescript", typescriptText(), tgtarget.Provider{}, typescriptLibraries, typescriptConstructors),
-		newBuiltinPair[gs.Language]("golang", golangText(), ggtarget.Provider{Package: "pagination"}, golangLibraries, golangConstructors),
-		newBuiltinPair[rs.Language]("rust", rustText(), rgtarget.Provider{}, rustLibraries, rustConstructors),
-		newBuiltinPair[cs.Language]("cpp", cppText(), cgtarget.Provider{Namespace: "pagination"}, cppLibraries, cppConstructors),
+		newBuiltinPair[ts.Language]("typescript", typescriptText(), tgtarget.Provider{}, typescriptBundles, typescriptBundleTable),
+		newBuiltinPair[gs.Language]("golang", golangText(), ggtarget.Provider{Package: "pagination"}, golangBundles, golangBundleTable),
+		newBuiltinPair[rs.Language]("rust", rustText(), rgtarget.Provider{}, rustBundles, rustBundleTable),
+		newBuiltinPair[cs.Language]("cpp", cppText(), cgtarget.Provider{Namespace: "pagination"}, cppBundles, cppBundleTable),
 	}
 }
 
 // TestBuiltinMappingsStateTheStructuralProfile: a profile is a promise about
 // the native type, so the builtin mapping that makes the promise states it.
 //
-// The evidence is the comparison: every library that the exported constructor
-// Library of a builtin mapping package returns describes itself under the
-// structural representation profile. The pairs and the packages are read from
-// the directories under transform/syntax, so a new pair or a new mapping
-// package fails this test until it is named here.
+// The evidence is the comparison: every contribution that the exported
+// constructor Contribution of a builtin mapping package returns states the
+// structural representation profile and the target of its pair, and the codec
+// beside it is of the schema that it states. The pairs and the packages are
+// read from the directories under transform/syntax, so a new pair or a new
+// mapping package fails this test until it is named here.
 //
-// Two things around the comparison are tripwires and no proof. The test fails
-// for a constructor parameter that is not a helper key, because it cannot
-// build one. And the calls in the libraries_*_test.go files stop compiling
-// when a constructor gains a required parameter. Neither sees a second
-// exported constructor in an existing mapping package, a package variable or
-// a setter. Those are for a reader of the package to see.
+// One thing around the comparison is a tripwire and no proof. A bundle holds
+// a constructor that takes the source language and nothing else, so the
+// tables in the bundles_*_test.go files stop compiling when a constructor
+// gains a parameter. That does not see a second exported constructor in an
+// existing mapping package, a package variable or a setter. Those are for a
+// reader of the package to see.
 func TestBuiltinMappingsStateTheStructuralProfile(t *testing.T) {
 	var directories, pairs []string
 	for _, name := range directoryNames(t, "transform", "syntax") {
@@ -233,10 +267,10 @@ func TestBuiltinMappingsStateTheStructuralProfile(t *testing.T) {
 }
 
 // TestEnforcementProfileIsRefused: the enforcement profile is declared and not
-// implemented (GEN-02). No builtin mapping states it, so the registry finds no
-// mapping for a request that names it. The request fails with ErrUnsupported
-// and yields no plan and no output, from the same registry that generates
-// under the structural profile.
+// implemented (GEN-02). No builtin contribution states it, so the registry has
+// nothing to select for a request that names it. The request fails as a
+// missing contribution and yields no plan and no output, from the same
+// registry that generates under the structural profile.
 func TestEnforcementProfileIsRefused(t *testing.T) {
 	for _, pair := range builtinPairs() {
 		t.Run(pair.name, func(t *testing.T) {
@@ -253,7 +287,8 @@ func TestEnforcementProfileIsRefused(t *testing.T) {
 }
 
 // TestUnregisteredProfileIsRefused: a request for a profile under which nothing
-// is registered fails with ErrUnsupported, whatever else the registry holds.
+// is registered fails as a missing contribution, whatever else the registry
+// holds.
 func TestUnregisteredProfileIsRefused(t *testing.T) {
 	empty := composeProfiles[ts.Language](t, []core.Value{paginationModule()}, typescriptText(), tgtarget.Provider{})
 	for _, profile := range []string{unregisteredProfile, rules.RepresentationProfile, rules.EnforcementProfile, readonlyprofile.Profile} {
@@ -292,24 +327,21 @@ func listsModules(t *testing.T) []core.Value {
 	return []core.Value{root, shared}
 }
 
-// TestRequestSelectsTheContributionsOfItsProfile: a second profile enters as a
-// contribution of its own. The read-only fixture library lives in its own
+// TestRequestSelectsTheContributionsOfItsProfile: a second profile enters as
+// contributions of its own. The read-only fixture family lives in its own
 // package, states its own profile and maps a list to another native form than
-// the builtin family. It is a mapping.Library function value, as the builtin
-// mappings are, and it uses the common declaration recipe. One registry holds
-// both families. Each request receives the contributions that state its
-// profile and nothing of the other family. The horos mapping package and the
-// registry know nothing of the fixture.
+// the builtin family. Its contributions are values of the contribution type,
+// as the builtin ones are, and its declaration contribution uses the common
+// declaration policy. One registry holds both families. Each request receives
+// the contributions that state its profile and nothing of the other family.
+// The horos mapping package and the registry know nothing of the fixture.
 func TestRequestSelectsTheContributionsOfItsProfile(t *testing.T) {
 	if readonlyprofile.Profile == rules.RepresentationProfile || readonlyprofile.Profile == rules.EnforcementProfile {
 		t.Fatal("the fixture contribution states a profile of the builtin family:", readonlyprofile.Profile)
 	}
-	// The assignment compiles only while the fixture is given as the function
-	// type of the horos mapping package and not as a type of its own.
-	var fixture rules.Library[ts.Language] = readonlyprofile.Library()
 	both := func(t *testing.T, modules ...core.Value) *profileComposition {
 		t.Helper()
-		return composeProfiles(t, modules, typescriptText(), tgtarget.Provider{}, append(typescriptLibraries(), fixture)...)
+		return withReadonlyFamily(t, composeProfiles(t, modules, typescriptText(), tgtarget.Provider{}, typescriptBundles()...))
 	}
 	bindings := func(t *testing.T, q *profileComposition, profile string) map[string]bool {
 		t.Helper()
@@ -317,13 +349,11 @@ func TestRequestSelectsTheContributionsOfItsProfile(t *testing.T) {
 		if err != nil {
 			t.Fatal(profile, err)
 		}
-		// A step names its binding as "<library>/<binding ID>". The library
-		// part is the registry's own name for a registration.
+		// A step names its binding as the reference of the contribution that
+		// was selected for it.
 		selected := map[string]bool{}
 		for _, step := range plan.Steps() {
-			if _, id, found := strings.Cut(step.Binding, "/"); found {
-				selected[id] = true
-			}
+			selected[step.Binding] = true
 		}
 		return selected
 	}
@@ -352,11 +382,16 @@ func TestRequestSelectsTheContributionsOfItsProfile(t *testing.T) {
 		if strings.Contains(structural, "ReadonlyArray") || strings.Contains(readonly, "[]") {
 			t.Errorf("a request received the other family's list:\n%s\n%s", structural, readonly)
 		}
-		// The inspectable plan names the selected bindings.
-		if selected := bindings(t, q, rules.RepresentationProfile); !selected["list/typescript/1"] || selected[readonlyprofile.ListBinding] {
+		// The inspectable plan names the selected contributions.
+		builtinList, err := typescriptBundleTable()["list"].Contribution(q.request.Input.Source.Language())
+		if err != nil {
+			t.Fatal(err)
+		}
+		structuralList, readonlyList := builtinList.Reference.String(), readonlyprofile.ListReference.String()
+		if selected := bindings(t, q, rules.RepresentationProfile); !selected[structuralList] || selected[readonlyList] {
 			t.Error("the structural plan selected", selected)
 		}
-		if selected := bindings(t, q, readonlyprofile.Profile); !selected[readonlyprofile.ListBinding] || selected["list/typescript/1"] {
+		if selected := bindings(t, q, readonlyprofile.Profile); !selected[readonlyList] || selected[structuralList] {
 			t.Error("the read-only plan selected", selected)
 		}
 		if err := q.refuses(rules.EnforcementProfile); err != nil {
@@ -365,9 +400,9 @@ func TestRequestSelectsTheContributionsOfItsProfile(t *testing.T) {
 	})
 
 	t.Run("a family is not completed from another profile", func(t *testing.T) {
-		// The fixture family maps no record. The builtin record library sits
-		// in the same registry and states another profile, so it does not
-		// answer.
+		// The fixture family maps no record. The builtin record contribution
+		// sits in the same registry and states another profile, so it does
+		// not answer: the record's domain has no contribution.
 		q := both(t, paginationModule())
 		if text := generate(t, q, rules.RepresentationProfile); !strings.Contains(text, "interface Page<T>") {
 			t.Fatal("the structural request lost its records:\n" + text)
@@ -377,10 +412,14 @@ func TestRequestSelectsTheContributionsOfItsProfile(t *testing.T) {
 		if !errors.As(err, &diagnostic) || diagnostic.Code != text.Unsupported || out.Snapshot().Valid() {
 			t.Fatal("the read-only request was completed by the structural family:", err)
 		}
+		var refusal *g.Refusal
+		if !errors.Is(err, g.ErrMissingContribution) || !errors.As(err, &refusal) || refusal.Owner != g.KernelOwner || refusal.Profile != readonlyprofile.Profile {
+			t.Fatal("the read-only request did not fail as a missing contribution of its own profile:", err)
+		}
 	})
 
 	t.Run("the fixture alone", func(t *testing.T) {
-		q := composeProfiles(t, listsModules(t), typescriptText(), tgtarget.Provider{}, fixture)
+		q := withReadonlyFamily(t, composeProfiles[ts.Language](t, listsModules(t), typescriptText(), tgtarget.Provider{}))
 		if text := generate(t, q, readonlyprofile.Profile); !strings.Contains(text, "Table = ReadonlyArray<M") {
 			t.Fatal(text)
 		}
@@ -392,33 +431,37 @@ func TestRequestSelectsTheContributionsOfItsProfile(t *testing.T) {
 	})
 }
 
-// republished is a contribution of its own author: it takes another library's
-// description and states a profile of its own choice.
-type republished struct {
-	library g.MappingLibrary[h.Language, ts.Language, source.Reader]
-	profile string
-}
+// republishedPublisher is the publisher of the contributions that
+// TestRegistryDoesNotJudgeAStatedProfile republishes.
+const republishedPublisher = "example.test/TestRegistryDoesNotJudgeAStatedProfile"
 
-func (p republished) Describe(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
-	description, err := p.library.Describe(from, to)
-	description.Profile = p.profile
-	return description, err
+// republished is a bundle of its own author: it takes a builtin contribution,
+// publishes it under an identity of its own and states a profile of its own
+// choice. The codec is the builtin one, for the schema that the contribution
+// keeps.
+func republished(bundle genfixture.Bundle[ts.Language], profile string) genfixture.Bundle[ts.Language] {
+	return genfixture.Bundle[ts.Language]{Codec: bundle.Codec, Contribution: func(from representation.Language) (g.Contribution[h.Language, ts.Language, source.Reader], error) {
+		contribution, err := bundle.Contribution(from)
+		contribution.Reference.Identity.Publisher = republishedPublisher
+		contribution.Profile = profile
+		return contribution, err
+	}}
 }
 
 // TestRegistryDoesNotJudgeAStatedProfile records where the refusal of the
 // enforcement profile ends. The registry selects by the profile that a
 // contribution states and does not judge whether the contribution keeps that
-// promise. A contribution that republishes the builtin, constraint-erasing
-// descriptions under the enforcement identity is selected by a request for it
-// and yields representation output. Its author states that profile and
+// promise. Contributions that republish the builtin, constraint-erasing
+// rules under the enforcement identity are selected by a request for it
+// and yield representation output. Their author states that profile and
 // answers for it. bittype states it nowhere, and no constructor of a builtin
 // mapping takes it (bittype/ACX-008, limits).
 func TestRegistryDoesNotJudgeAStatedProfile(t *testing.T) {
-	var libraries []g.MappingLibrary[h.Language, ts.Language, source.Reader]
-	for _, library := range typescriptLibraries() {
-		libraries = append(libraries, republished{library: library, profile: rules.EnforcementProfile})
+	var bundles []genfixture.Bundle[ts.Language]
+	for _, bundle := range typescriptBundles() {
+		bundles = append(bundles, republished(bundle, rules.EnforcementProfile))
 	}
-	q := composeProfiles(t, []core.Value{paginationModule()}, typescriptText(), tgtarget.Provider{}, libraries...)
+	q := composeProfiles(t, []core.Value{paginationModule()}, typescriptText(), tgtarget.Provider{}, bundles...)
 	out, err := q.generate(rules.EnforcementProfile)
 	if err != nil {
 		t.Fatal("the registry refused a stated profile:", err)
@@ -426,17 +469,26 @@ func TestRegistryDoesNotJudgeAStatedProfile(t *testing.T) {
 	if text := q.text(t, out); !strings.Contains(text, "interface Page<T>") {
 		t.Fatal(text)
 	}
-	// The builtin libraries themselves were not registered, so nothing states
-	// the structural profile in this registry.
+	// The plan names the republished contributions and none of bittype's.
+	plan, err := q.plan(rules.EnforcementProfile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, step := range plan.Steps() {
+		if !strings.HasPrefix(step.Binding, republishedPublisher+"/") {
+			t.Errorf("a step names the contribution %s", step.Binding)
+		}
+	}
+	// The builtin contributions themselves were not registered, so nothing
+	// states the structural profile in this registry.
 	if err := q.refuses(rules.RepresentationProfile); err != nil {
 		t.Fatal(err)
 	}
 }
 
-// TestRegistrationNeedsAStatedProfile: a library that states no profile, and a
-// library without a description function, cannot be registered. Both fail
-// with ErrInvalid: the generation contract refuses a description without a
-// profile, and the function type refuses a nil function.
+// TestRegistrationNeedsAStatedProfile: a contribution that states no profile,
+// and a contribution that states nothing at all, cannot be registered. Both
+// fail with ErrInvalid.
 func TestRegistrationNeedsAStatedProfile(t *testing.T) {
 	from, err := representation.NewLanguage[h.Language](h.Language{}, h.Profile)
 	if err != nil {
@@ -444,15 +496,19 @@ func TestRegistrationNeedsAStatedProfile(t *testing.T) {
 	}
 	to := nativeChecker(t, typescriptText()).Language()
 	var registry c.Registry
-	unstated := rules.Library[ts.Language](func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
-		description, err := typescriptLibraries()[0].Describe(from, to)
-		description.Profile = ""
-		return description, err
-	})
-	if _, err := c.RegisterMapping(&registry, from, to, unstated); !errors.Is(err, g.ErrInvalid) {
-		t.Error("a library that states no profile:", err)
+	unstated, err := typescriptBundles()[0].Contribution(from)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if _, err := c.RegisterMapping(&registry, from, to, rules.Library[ts.Language](nil)); !errors.Is(err, g.ErrInvalid) {
-		t.Error("a library without a description function:", err)
+	if err := c.RegisterContribution(&registry, from, to, unstated); err != nil {
+		t.Fatal("the contribution with its profile:", err)
+	}
+	unstated.Reference.Identity.Key += "/unstated"
+	unstated.Profile = ""
+	if err := c.RegisterContribution(&registry, from, to, unstated); !errors.Is(err, g.ErrInvalid) {
+		t.Error("a contribution that states no profile:", err)
+	}
+	if err := c.RegisterContribution(&registry, from, to, g.Contribution[h.Language, ts.Language, source.Reader]{}); !errors.Is(err, g.ErrInvalid) {
+		t.Error("a contribution that states nothing:", err)
 	}
 }

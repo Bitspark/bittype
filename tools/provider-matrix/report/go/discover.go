@@ -445,7 +445,7 @@ func (p *program) discover() (*matrix, error) {
 			return nil, err
 		}
 	}
-	if err := p.mappingLibraries(m); err != nil {
+	if err := p.contributions(m); err != nil {
 		return nil, err
 	}
 	if err := p.transformers(m); err != nil {
@@ -457,14 +457,19 @@ func (p *program) discover() (*matrix, error) {
 	return m, nil
 }
 
-// mappingLibraries reports concrete implementations of the declaration contract.
-// Factory result types can instantiate a generic library. A returned interface,
-// an unbound parameter, or a supplied library alone does not establish a route.
-func (p *program) mappingLibraries(m *matrix) error {
+// contributions reports the selectable contributions of the generation
+// contract. A contribution is a value, not a method set: an exported function
+// of an implementation package whose result is an instantiation of the
+// contract's Contribution type with two discovered language markers
+// establishes one entry from its source language to its target language. A
+// function with another result, an unbound type parameter or a marker that is
+// no discovered language establishes none. An entry is a selectable
+// description, not a preconfigured route.
+func (p *program) contributions(m *matrix) error {
 	if p.packages[p.module+"/contracts/generation/go"] == nil {
 		return nil
 	}
-	contract, err := p.named("contracts/generation/go", "MappingLibrary")
+	contract, err := p.named("contracts/generation/go", "Contribution")
 	if err != nil {
 		return err
 	}
@@ -477,64 +482,43 @@ func (p *program) mappingLibraries(m *matrix) error {
 		return nil
 	}
 	seen := map[string]bool{}
-	add := func(candidate types.Type) {
-		base := candidate
-		if ptr, ok := base.(*types.Pointer); ok {
-			base = ptr.Elem()
+	paths := make([]string, 0, len(p.packages))
+	for path := range p.packages {
+		if p.implementation(path) {
+			paths = append(paths, path)
 		}
-		named, ok := base.(*types.Named)
-		if !ok {
-			return
-		}
-		if _, ok := named.Underlying().(*types.Interface); ok {
-			return
-		}
-		candidate = types.NewPointer(named)
-		bound := match(contract, candidate)
-		if bound == nil {
-			return
-		}
-		from, to := marker(bound.TypeArgs().At(0)), marker(bound.TypeArgs().At(1))
-		if from == nil || to == nil {
-			return
-		}
-		public := method(candidate, "Describe")
-		entry, chain, stop := p.entryChain(public)
-		op := &operation{kind: "mapping library", public: public, entry: entry, chain: chain, stop: stop, contract: bound, receiver: public.Type().(*types.Signature).Recv().Type(), from: from, to: to}
-		op.id = operationID(op.kind, public, bound, op.receiver, *from, *to)
-		if seen[op.id] {
-			return
-		}
-		seen[op.id] = true
-		if m.edges[from.id] == nil {
-			m.edges[from.id] = map[string][]location{}
-		}
-		m.edges[from.id][to.id] = append(m.edges[from.id][to.id], location{op})
 	}
-	for path, pkg := range p.packages {
-		if !p.implementation(path) {
-			continue
-		}
-		for _, name := range pkg.types.Scope().Names() {
-			obj := pkg.types.Scope().Lookup(name)
-			if !obj.Exported() {
+	slices.Sort(paths)
+	for _, path := range paths {
+		scope := p.packages[path].types.Scope()
+		for _, name := range scope.Names() {
+			fn, ok := scope.Lookup(name).(*types.Func)
+			if !ok || !fn.Exported() {
 				continue
 			}
-			switch obj := obj.(type) {
-			case *types.TypeName:
-				if obj.IsAlias() {
-					continue
-				}
-				named, ok := obj.Type().(*types.Named)
-				if ok && named.TypeParams().Len() == 0 {
-					add(named)
-				}
-			case *types.Func:
-				signature := obj.Type().(*types.Signature)
-				for i := 0; i < signature.Results().Len(); i++ {
-					add(signature.Results().At(i).Type())
-				}
+			signature := fn.Type().(*types.Signature)
+			if signature.Recv() != nil || signature.TypeParams().Len() != 0 || signature.Results().Len() == 0 {
+				continue
 			}
+			bound, ok := types.Unalias(signature.Results().At(0).Type()).(*types.Named)
+			if !ok || bound.Origin() != contract || bound.TypeArgs().Len() != 3 {
+				continue
+			}
+			from, to := marker(bound.TypeArgs().At(0)), marker(bound.TypeArgs().At(1))
+			if from == nil || to == nil {
+				continue
+			}
+			entry, chain, stop := p.entryChain(fn)
+			op := &operation{kind: "contribution", public: fn, entry: entry, chain: chain, stop: stop, contract: bound, from: from, to: to}
+			op.id = operationID(op.kind, fn, bound, nil, *from, *to)
+			if seen[op.id] {
+				continue
+			}
+			seen[op.id] = true
+			if m.edges[from.id] == nil {
+				m.edges[from.id] = map[string][]location{}
+			}
+			m.edges[from.id][to.id] = append(m.edges[from.id][to.id], location{op})
 		}
 	}
 	return nil

@@ -133,9 +133,12 @@ func (h DeclarationHandle) Valid() bool { return h.output != nil && h.index != 0
 // source declarations it represents: none for a helper, and possibly those of
 // several source declarations. Values are the statements of the declaration's
 // owner, which only their issuers can read. A record says what the output
-// owns. It does not say that its site is one entity of a native compiler.
+// owns. It does not say that its site is one entity of the target's compiler.
 type OwnedDeclaration struct {
-	Handle     DeclarationHandle
+	Handle DeclarationHandle
+	// Symbol is the planner's declaration identity, the logical symbol
+	// identity of the plan (bittype#196, row 23).
+	Symbol     string
 	Site       ast.NodeRef
 	Role       DeclarationRole
 	Provenance []ast.NodeRef
@@ -197,11 +200,12 @@ func (o Output) Resolve(h DeclarationHandle) (OwnedDeclaration, error) {
 }
 
 // planned is what a plan states about one of its declarations, without the
-// native type of the program.
+// target type parameter of the program.
 type planned struct {
 	role       DeclarationRole
 	provenance []ast.NodeRef
 	values     []IssuedValue
+	symbol     string
 }
 
 // seal checks an assembly against the plan it was built from. declarations and
@@ -247,7 +251,7 @@ func seal[T any](ctx context.Context, checker check.Checker, assembly Assembly, 
 		}
 		sites[site] = true
 		d := declarations[i]
-		inventory[i] = OwnedDeclaration{Site: site, Role: d.role, Provenance: slices.Clone(d.provenance), Values: slices.Clone(d.values)}
+		inventory[i] = OwnedDeclaration{Symbol: d.symbol, Site: site, Role: d.role, Provenance: slices.Clone(d.provenance), Values: slices.Clone(d.values)}
 	}
 	// No listed site contains another. This needs no knowledge of the language:
 	// whatever a declaration is, it is not inside another declaration of the

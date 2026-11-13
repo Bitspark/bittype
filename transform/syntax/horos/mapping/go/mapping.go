@@ -1,26 +1,18 @@
-// Package mapping holds the identities of the two generation profiles that the
-// horos mapping side declares, and the function type through which a horos
-// mapping library is given as its description function.
+// Package mapping holds the identities that the horos mapping side declares:
+// the two generation profiles.
+// It holds identities only and imports nothing.
 //
-// A profile is a promise about the native type, so the mapping library that
-// makes the promise states it. Each builtin structural mapping writes
+// A profile is a promise about the native type, so the contribution that
+// makes the promise states it. Each builtin structural contribution writes
 // RepresentationProfile into its own description, and its constructor takes no
 // profile. Nothing here writes a profile, compares one or refuses one. The
-// generation registry selects the libraries registered under the profile that
-// a request names. A contribution of another profile states its own identity
-// in its own package, and nothing here changes.
+// generation registry selects the contributions registered under the profile
+// that a request names. A contribution of another profile states its own
+// identity in its own package, and nothing here changes.
 //
-// The source patterns, the declaration recipe and the naming function that a
-// contribution builds its rules from live in the sibling packages pattern,
-// declarations and naming.
+// The policies and the naming function that a contribution builds its rule
+// from live in the sibling packages declarations, record, list and naming.
 package mapping
-
-import (
-	g "github.com/Bitspark/bittype/contracts/generation/go"
-	h "github.com/Bitspark/bittype/syntax/horos/go"
-	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
-	"github.com/Bitspark/bittype/trees/representation/go"
-)
 
 // RepresentationProfile is the structural representation profile. It promises
 // native types that represent every value of the horos type. It enforces no
@@ -28,22 +20,7 @@ import (
 const RepresentationProfile = "structural-representation/1"
 
 // EnforcementProfile promises the same representation and native enforcement
-// of kind constraints. It is declared and not implemented: no mapping library
-// in this module states it, so the registry finds no mapping for a request
-// that names it and fails with generation.ErrUnsupported.
+// of kind constraints. It is declared and not implemented: no contribution in
+// this module states it, so the registry finds no contribution for a request
+// that names it and refuses the request as a missing contribution.
 const EnforcementProfile = "structural-enforcement/1"
-
-// Library is a horos mapping library given as its description function. The
-// function is the whole library: it states the profile, the bindings, the
-// declaration recipes and the helpers. The type adds one thing, the method
-// that makes the function a generation.MappingLibrary.
-type Library[T any] func(from, to representation.Language) (g.MappingDescription[h.Language, T, source.Reader], error)
-
-// Describe returns what the function returns, unchanged. A nil function fails
-// with generation.ErrInvalid.
-func (p Library[T]) Describe(from, to representation.Language) (g.MappingDescription[h.Language, T, source.Reader], error) {
-	if p == nil {
-		return g.MappingDescription[h.Language, T, source.Reader]{}, g.ErrInvalid
-	}
-	return p(from, to)
-}

@@ -216,16 +216,16 @@ func outputTree[L any](t *testing.T, out g.Output) ast.AST[L] {
 type requestBuilder func(*c.Registry, transform.Input, representation.Language) (c.Request, error)
 
 func tsRequest(reg *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-	return genfixture.Request(reg, input, to, "generated-ts", tgtarget.Provider{}, typescriptLibraries()...)
+	return genfixture.Compose(reg, input, to, "generated-ts", tgtarget.Provider{}, typescriptBundles()...)
 }
 func goRequest(reg *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-	return genfixture.Request(reg, input, to, "generated-go", ggtarget.Provider{Package: "pagination"}, golangLibraries()...)
+	return genfixture.Compose(reg, input, to, "generated-go", ggtarget.Provider{Package: "pagination"}, golangBundles()...)
 }
 func rustRequest(reg *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-	return genfixture.Request(reg, input, to, "generated-rust", rgtarget.Provider{}, rustLibraries()...)
+	return genfixture.Compose(reg, input, to, "generated-rust", rgtarget.Provider{}, rustBundles()...)
 }
 func cppRequest(reg *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-	return genfixture.Request(reg, input, to, "generated-cpp", cgtarget.Provider{Namespace: "pagination"}, cppLibraries()...)
+	return genfixture.Compose(reg, input, to, "generated-cpp", cgtarget.Provider{Namespace: "pagination"}, cppBundles()...)
 }
 
 func nativeChecker[L any](t *testing.T, p nativeProvider[L]) check.Checker {

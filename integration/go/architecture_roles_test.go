@@ -70,7 +70,7 @@ func role(shape, kind string, languages []string, patterns ...string) roleRule {
 }
 
 // isLanguageName reports whether a scope segment names one language. "shared"
-// is kernel machinery and "<source>-to-<native>" is an ordered pair.
+// is kernel machinery and "<source>-to-<target>" is an ordered pair.
 func isLanguageName(name string) bool {
 	return name != "" && name != "shared" && !strings.Contains(name, "-to-")
 }
@@ -118,7 +118,9 @@ func transformPath(relative string) (scope string, component []string, ok bool) 
 	return s[2], s[3 : len(s)-1], true
 }
 
-// mappingPair reads transform/syntax/<source>-to-<native>/mapping/<name>/go.
+// mappingPair reads transform/syntax/<source>-to-<target>/mapping/<name>/go.
+// The two names are the roles of the pair. Which pairs exist follows from
+// what the module holds: the test reads no language's name.
 func mappingPair(relative string) (source, native string, ok bool) {
 	scope, component, ok := transformPath(relative)
 	if !ok || len(component) != 2 || component[0] != "mapping" {
@@ -131,6 +133,101 @@ func mappingPair(relative string) (source, native string, ok bool) {
 func isMappingContribution(relative string) bool {
 	_, _, ok := mappingPair(relative)
 	return ok
+}
+
+// The contribution contract gives an ordered pair two package roles beside the
+// mapping (docs/contribution-contract.md, O25, row 28):
+//
+//	transform/syntax/<source>-to-<target>/vocabulary/<name>/go  the vocabulary of a contribution
+//	transform/syntax/<source>-to-<target>/codec/<name>/go       the payload codec of its schema
+//
+// pairPart reads such a path: the pair, the part and the contribution's name.
+func pairPart(relative string) (source, native, part, name string, ok bool) {
+	scope, component, ok := transformPath(relative)
+	if !ok || len(component) != 2 {
+		return "", "", "", "", false
+	}
+	source, native, ok = strings.Cut(scope, "-to-")
+	return source, native, component[0], component[1], ok && isLanguageName(source) && isLanguageName(native)
+}
+
+// isPairPart reports whether a path is the given part of some contribution.
+func isPairPart(relative, part string) bool {
+	_, _, p, _, ok := pairPart(relative)
+	return ok && p == part
+}
+
+// ownVocabulary is the vocabulary package of the contribution that a mapping
+// or a codec belongs to: same pair, same name.
+func ownVocabulary(relative string) string {
+	source, native, _, name, _ := pairPart(relative)
+	return "transform/syntax/" + source + "-to-" + native + "/vocabulary/" + name + "/go"
+}
+
+// familyVocabulary reads transform/syntax/<source>/family/<name>/go: the
+// vocabulary of a family, without a target (O27).
+func familyVocabulary(relative string) (source, name string, ok bool) {
+	scope, component, ok := transformPath(relative)
+	if !ok || !isLanguageName(scope) || len(component) != 2 || component[0] != "family" {
+		return "", "", false
+	}
+	return scope, component[1], true
+}
+
+// payloadShared is the shared part of the payload codec role. It has a hand
+// entry: a payload schema is a horos type whatever the source language of a
+// generation is, so there is one such package.
+const payloadShared = "transform/syntax/horos/payload/go"
+
+// bundleRole classifies the vocabulary and the codec of a contribution.
+// Neither imports the mapping, and the codec imports no vocabulary but its
+// own: "Only a composition imports a contribution" (AGENTS.md), and O25.
+func bundleRole(relative string) (roleRule, bool) {
+	source, native, part, name, ok := pairPart(relative)
+	if !ok {
+		return roleRule{}, false
+	}
+	languages := []string{"source", source, "target", native}
+	var rule roleRule
+	switch part {
+	case "vocabulary":
+		// The reference of one contribution and the plain Go type of its
+		// payload schema. It imports the contract for the identity types, the
+		// vocabulary of its family for the meaning (O27) and the name of its
+		// publisher, which names no language. It imports nothing of horos or
+		// ontos.
+		rule = role("transform/syntax/<source>-to-<target>/vocabulary/<name>/go", roleVocabulary, languages,
+			"contracts/generation/go", "transform/syntax/shared/publisher/go",
+		)
+		family := "transform/syntax/" + source + "/family/" + name + "/go"
+		rule.admits = func(dependency string) bool { return dependency == family }
+	case "codec":
+		// The codec of one payload schema: two functions between the Go type
+		// and an ontos value. It imports the ontos value packages (O37) and
+		// reaches horos only through the shared part of the codec role.
+		rule = role("transform/syntax/<source>-to-<target>/codec/<name>/go", roleContribution, languages,
+			"contracts/generation/go", payloadShared,
+		)
+		rule.external = []string{"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"}
+		rule.admits = func(dependency string) bool { return dependency == ownVocabulary(relative) }
+	default:
+		return roleRule{}, false
+	}
+	rule.forbidden = func(dependency string) string {
+		if dependency == relative || dependency == ownVocabulary(relative) && part != "vocabulary" {
+			return ""
+		}
+		for _, other := range []string{"mapping", "vocabulary", "codec"} {
+			if isPairPart(dependency, other) {
+				return "a " + part + " package imports no mapping, no codec and no vocabulary but its own"
+			}
+		}
+		if _, family, ok := familyVocabulary(dependency); ok && (part != "vocabulary" || family != name) {
+			return "only the vocabulary of a contribution imports the vocabulary of its family"
+		}
+		return ""
+	}
+	return rule, true
 }
 
 // commonMappingSource reads transform/syntax/<source>/mapping/go and
@@ -309,11 +406,15 @@ func transformRole(relative string) (roleRule, bool) {
 		// build on the common mapping parts of its source language, which are
 		// not contributions. It never imports another mapping, and never the
 		// target that constructs trees from the forms it describes.
-		rule := role("transform/syntax/<source>-to-<native>/mapping/<name>/go", roleContribution, []string{"source", source, "native", native},
-			"contracts/generation/go", "syntax/<source>/go", "syntax/<native>/go",
-			"transform/syntax/<source>/source/go", "transform/syntax/<native>/model/go", "trees/representation/go",
+		rule := role("transform/syntax/<source>-to-<target>/mapping/<name>/go", roleContribution, []string{"source", source, "target", native},
+			"contracts/generation/go", "syntax/<source>/go", "syntax/<target>/go", "transform/syntax/shared/contribution/go",
+			"transform/syntax/<source>/source/go", "transform/syntax/<target>/model/go", "trees/representation/go",
 		)
 		rule.admits = func(dependency string) bool {
+			// A mapping package gains one import, of its own vocabulary (O25).
+			if dependency == ownVocabulary(relative) {
+				return true
+			}
 			common, ok := commonMappingSource(dependency)
 			return ok && common == source
 		}
@@ -324,9 +425,25 @@ func transformRole(relative string) (roleRule, bool) {
 			if isTransformComponent(dependency, "target") {
 				return "a mapping contribution never imports a native tree constructor"
 			}
+			// A mapping imports nothing of its bundle but its own vocabulary,
+			// and it imports neither horos nor ontos: the codec does (O25, O37).
+			if dependency != ownVocabulary(relative) && (isPairPart(dependency, "vocabulary") || isPairPart(dependency, "codec")) {
+				return "a mapping contribution imports no codec and no vocabulary but its own"
+			}
+			if _, _, ok := familyVocabulary(dependency); ok || dependency == payloadShared {
+				return "a mapping contribution reaches its family's meaning through its own vocabulary and no payload codec"
+			}
 			return ""
 		}
 		return rule, true
+	}
+	if rule, ok := bundleRole(relative); ok {
+		return rule, true
+	}
+	if source, _, ok := familyVocabulary(relative); ok {
+		// The vocabulary of a family, without a target: the one home of the
+		// family's meaning identity and its revision (O27).
+		return role("transform/syntax/<language>/family/<name>/go", roleVocabulary, []string{"language", source}, "contracts/generation/go"), true
 	}
 	scope, component, ok := transformPath(relative)
 	if !ok || !isLanguageName(scope) {
@@ -366,13 +483,19 @@ func transformRole(relative string) (roleRule, bool) {
 		}
 		return rule, true
 	}
+	if len(component) == 1 && component[0] == "mapping" {
+		// The identities of one source language's mapping side: its profiles.
+		// It imports nothing.
+		return role("transform/syntax/<language>/mapping/go", roleVocabulary, language), true
+	}
 	if _, ok := commonMappingSource(relative); ok {
 		// What the mapping contributions of one source language share. A part
-		// knows the source language only (its scope refuses every native
-		// package) and imports no other part. The one part that builds on two
-		// others says so in roleExtensions.
-		return role("transform/syntax/<language>/mapping/go and mapping/<part>/go", roleCommonPart, language,
-			"contracts/generation/go", "syntax/<language>/go", "transform/syntax/<language>/source/go", "trees/representation/go",
+		// knows the source language only (its scope refuses every package of a
+		// target language) and imports no other part. The one part that builds
+		// on another says so in roleExtensions.
+		return role("transform/syntax/<language>/mapping/<part>/go", roleCommonPart, language,
+			"contracts/generation/go", "syntax/<language>/go", "transform/syntax/<language>/source/go",
+			"transform/syntax/shared/contribution/go",
 		), true
 	}
 	return roleRule{}, false

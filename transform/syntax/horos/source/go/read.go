@@ -5,7 +5,6 @@ import (
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
-	"github.com/Bitspark/bittype/contracts/text/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/horos/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
@@ -27,6 +26,10 @@ type Field struct {
 	Optional bool
 	Use      g.Use[h.Language]
 	Origin   ast.NodeRef
+	// Role is the role selector of an optional field, issued for the record's
+	// use and this field's operand use (bittype#196, row 12). It is
+	// not valid for a required field.
+	Role g.Role[h.Language]
 }
 type Declaration struct {
 	Name      string
@@ -107,7 +110,11 @@ func (r reader) Fields(v g.UseView[h.Language]) ([]Field, error) {
 		if !ok {
 			return nil, g.ErrScope
 		}
-		fields = append(fields, Field{Name: name, Optional: atom(f.At(2)) == h.FieldOptional, Use: u, Origin: r.s.sites[term]})
+		field := Field{Name: name, Optional: atom(f.At(2)) == h.FieldOptional, Use: u, Origin: r.s.sites[term]}
+		if field.Optional {
+			field.Role = r.s.roles.Issue(OptionalFieldRole, v.Use, u)
+		}
+		fields = append(fields, field)
 	}
 	return fields, nil
 }
@@ -123,15 +130,6 @@ func (r reader) Element(v g.UseView[h.Language]) (g.Use[h.Language], error) {
 	}
 	return u, nil
 }
-func (r reader) Unsupported(u g.Use[h.Language], message string) error {
-	id, ok := u.In(r.s.captured)
-	if !ok {
-		return g.ErrScope
-	}
-	site := r.s.sites[id]
-	return &text.Diagnostic{Code: text.Unsupported, Message: message, Node: &site}
-}
-
 func atom(v core.Value) string {
 	a, ok := v.(core.Atom)
 	if !ok {

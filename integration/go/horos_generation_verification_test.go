@@ -207,7 +207,7 @@ func TestGeneratedPageUsesActualTransformerOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	var registry c.Registry
-	request, err := genfixture.Request(&registry, transform.Input{Source: s.Snapshot(), Evidence: []semantic.Result{evidence}}, to, "generated", target.Provider{Package: "example"}, golangLibraries()...)
+	request, err := genfixture.Compose(&registry, transform.Input{Source: s.Snapshot(), Evidence: []semantic.Result{evidence}}, to, "generated", target.Provider{Package: "example"}, golangBundles()...)
 	if err != nil {
 		t.Fatal(err)
 	}

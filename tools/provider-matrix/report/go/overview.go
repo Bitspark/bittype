@@ -95,7 +95,7 @@ func (p *program) renderOverview(ctx context.Context, m *matrix, a *annotations,
 		}
 		fmt.Fprintf(&b, "[%s](#language-%s)", escape(view.language.name), stableKey(view.language.id))
 	}
-	b.WriteString("\n\n## Direct transformer matrix\n\nRows are source languages; columns are target languages. Each populated cell links to a concrete transformer factory or a selectable mapping library. Mapping entries identify the required source and native APIs. Consumers supply compatible registrations, evidence and roots. Empty cells are marked `/`.\n\n")
+	b.WriteString("\n\n## Direct transformer matrix\n\nRows are source languages; columns are target languages. Each populated cell links to a concrete transformer factory or to the selectable contributions of that pair. A contribution entry identifies the required source API and the target's model. Consumers supply compatible registrations, evidence and roots. Empty cells are marked `/`.\n\n")
 	transformers, err := p.renderTransformers(m, sourceURL, detailsLink, "")
 	if err != nil {
 		return "", err

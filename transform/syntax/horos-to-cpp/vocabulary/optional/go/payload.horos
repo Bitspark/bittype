@@ -1,0 +1,3 @@
+module bittype.payload.horos_to_cpp_optional;
+
+type Payload = { };

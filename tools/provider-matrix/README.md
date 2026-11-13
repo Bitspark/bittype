@@ -66,11 +66,12 @@ are still read to discover the interfaces being implemented.
   flow. A factory without transformer inputs or recoverable typed endpoints
   stops generation rather than silently omitting an edge.
 
-Concrete mapping-library implementations are discovered from their actual
-MappingLibrary method sets and typed endpoints. An exported factory's concrete
-result can instantiate a generic library; multiple factories returning the same
-instantiated implementation identify one contribution. An interface-valued
-factory result does not establish an implementation. These entries are selectable
+Selectable contributions of the generation contract are discovered from the
+exported functions of implementation packages whose result is an instantiation
+of the contract's Contribution type with two discovered language markers. Each
+such function identifies one contribution from its source language to its
+target language. A function with an unbound type parameter or with a marker
+that is no discovered language establishes none. These entries are selectable
 descriptions, not preconfigured routes or a claim that a particular request works.
 
 ## Dimension metadata

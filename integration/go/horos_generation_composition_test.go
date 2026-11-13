@@ -6,21 +6,17 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
+	f "github.com/Bitspark/bittype/integration/go/testdata/generationfixture"
 	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
 	n "github.com/Bitspark/bittype/semantics/typescript/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
-	tsboolean "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/boolean/go"
-	tsdeclarations "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/declarations/go"
-	tslist "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/list/go"
-	tsrecord "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/record/go"
-	tstext "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/text/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
-	patterns "github.com/Bitspark/bittype/transform/syntax/horos/mapping/pattern/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	model "github.com/Bitspark/bittype/transform/syntax/typescript/model/go"
@@ -32,27 +28,33 @@ import (
 )
 
 // TestHorosReaderRefusesForeignHandles: the horos reader resolves every handle
-// against its own capture, including the operands of a view that a library
-// assembles itself and a handle kept from an earlier run.
+// against its own capture, including the operands of a view that a rule
+// assembles itself and a handle kept from an earlier run. The reader is the
+// one that a rule receives in its step. The record contribution here is the
+// builtin one with a first step that probes the reader before it names the
+// builtin's requests.
 func TestHorosReaderRefusesForeignHandles(t *testing.T) {
 	_, _, input := generationInput(t, paginationModule())
 	var kept g.Use[h.Language]
 	var refusals []error
 	run := 0
-	record := tsContribution(func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
-		pattern, err := patterns.Head(from, "record", "closed")
-		return g.MappingDescription[h.Language, ts.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, source.Reader]{{ID: "record/foreign", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, ts.Language, source.Reader]) (g.Expression[ts.Language], error) {
-			view, err := r.Use()
+	record := typescriptBundleTable()["record"]
+	builtin := record.Contribution
+	record.Contribution = func(from representation.Language) (tsContribution, error) {
+		contribution, err := builtin(from)
+		if err != nil {
+			return contribution, err
+		}
+		name := contribution.Rule.Name
+		contribution.Rule.Name = func(ctx context.Context, step horosNameStep) ([]horosRequest, error) {
+			reader, err := step.Reader()
 			if err != nil {
-				return g.Expression[ts.Language]{}, err
+				return nil, err
 			}
-			s, err := r.Reader()
-			if err != nil {
-				return g.Expression[ts.Language]{}, err
-			}
-			fields, err := s.Fields(view)
+			view := step.Subject.Use
+			fields, err := reader.Fields(view)
 			if err != nil || len(fields) == 0 {
-				return g.Expression[ts.Language]{}, errors.Join(errors.New("own fields"), err)
+				return nil, errors.Join(errors.New("own fields"), err)
 			}
 			if run == 1 {
 				kept = fields[0].Use
@@ -61,25 +63,21 @@ func TestHorosReaderRefusesForeignHandles(t *testing.T) {
 				for i := range doctored.Operands {
 					doctored.Operands[i].Use = kept
 				}
-				_, foreign := s.Fields(doctored)
-				refusals = append(refusals, foreign, s.Unsupported(kept, "kept from an earlier run"))
+				_, foreign := reader.Fields(doctored)
+				// The doctored view's operands are the use kept from the
+				// earlier run, so this one refusal covers a foreign handle.
+				refusals = append(refusals, foreign)
 			}
-			var members []g.Expression[ts.Language]
-			for _, field := range fields {
-				ty, err := r.Mapped(field.Use)
-				if err != nil {
-					return g.Expression[ts.Language]{}, err
-				}
-				members = append(members, model.Field(field.Name, field.Optional, ty))
-			}
-			return model.Record(members...), nil
-		}}}}, err
-	})
+			return name(ctx, step)
+		}
+		return contribution, nil
+	}
 	plan := func() error {
 		run++
 		var registry c.Registry
 		to := nativeChecker(t, typescriptText()).Language()
-		q, err := genfixture.Request(&registry, input, to, "foreign-reader", target.Provider{}, tstext.Library(), tsboolean.Library(), record, tslist.Library(), tsdeclarations.Library())
+		table := typescriptBundleTable()
+		q, err := genfixture.Compose(&registry, input, to, "foreign-reader", target.Provider{}, table["text"], table["boolean"], record, table["list"], table["declarations"], table["optional"])
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -99,31 +97,106 @@ func TestHorosReaderRefusesForeignHandles(t *testing.T) {
 	}
 }
 
-// Independent libraries advertise data at registration. Expansion is planning only.
-type tsContribution func(representation.Language, representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error)
+// A test writes a contribution for TypeScript as the builtin mapping packages
+// export theirs: a constructor that takes the source language. Each such
+// contribution records nothing, so it states the schema of the empty payload.
+type tsContribution = g.Contribution[h.Language, ts.Language, source.Reader]
+type tsConstructor func(from representation.Language) (tsContribution, error)
+type horosRule = g.Rule[h.Language, source.Reader]
+type horosNameStep = g.NameStep[h.Language, source.Reader]
+type horosDecideStep = g.DecideStep[h.Language, source.Reader]
+type horosRequest = g.Request[h.Language]
+type tsProjection = g.Projection[ts.Language]
+type tsProjected = g.Projected[ts.Language]
 
-func (p tsContribution) Describe(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
-	d, err := p(from, to)
-	d.Profile = rules.RepresentationProfile
-	return d, err
+// tsTarget is the target that a contribution written for TypeScript states.
+var tsTarget = string(ts.Language{}.ID())
+
+// testReference is the reference of a contribution that a test writes. The
+// publisher names the test or the fixture, and key is local to it.
+func testReference(publisher, key string) g.ContributionReference {
+	return g.ContributionReference{
+		Identity:       g.ContributionIdentity{Publisher: "example.test/" + publisher, Key: key},
+		Meaning:        g.Meaning{Identity: "example.test/" + publisher + "/" + key, Revision: "1"},
+		Representation: "1",
+	}
 }
-func selectedTS(p tsContribution, replacementID string) requestBuilder {
+
+// decideNothing is the second step of a rule that records nothing.
+func decideNothing(context.Context, horosDecideStep) (g.Decision, error) {
+	return g.Decision{Payload: f.Empty{}}, nil
+}
+
+// nameElement is the first step of a rule for a horos list: it names the
+// element, which the source reads from the kernel's view.
+func nameElement(_ context.Context, step horosNameStep) ([]horosRequest, error) {
+	reader, err := step.Reader()
+	if err != nil {
+		return nil, err
+	}
+	element, err := reader.Element(step.Subject.Use)
+	if err != nil {
+		return nil, err
+	}
+	return []horosRequest{g.Reference(element)}, nil
+}
+
+// emptyPayloadCodec is the codec of the empty payload schema, made once:
+// lowering a schema source is not free, and a codec holds no state of a plan.
+var emptyPayloadCodec = sync.OnceValues(f.EmptyCodec)
+
+// registerEmpty registers a contribution that states the schema of the empty
+// payload, and the codec of that schema. A registry holds one codec for each
+// schema and answers ErrAmbiguous to a second one, so that answer means that
+// an earlier contribution of the same registry brought the codec.
+func registerEmpty[T any](registry *c.Registry, from, to representation.Language, contribution g.Contribution[h.Language, T, source.Reader]) error {
+	if contribution.Schema != f.EmptySchema {
+		return g.ErrInvalid
+	}
+	if err := c.RegisterContribution(registry, from, to, contribution); err != nil {
+		return err
+	}
+	codec, err := emptyPayloadCodec()
+	if err != nil {
+		return err
+	}
+	if err := registry.RegisterCodec(codec); err != nil && !errors.Is(err, g.ErrAmbiguous) {
+		return err
+	}
+	return nil
+}
+
+// registerTS builds and registers a contribution that a test wrote for
+// TypeScript, and returns its reference.
+func registerTS(registry *c.Registry, from, to representation.Language, p tsConstructor) (g.ContributionReference, error) {
+	contribution, err := p(from)
+	if err != nil {
+		return g.ContributionReference{}, err
+	}
+	return contribution.Reference, registerEmpty(registry, from, to, contribution)
+}
+
+// selectedTS composes the builtin horos-to-typescript set with one
+// contribution of the test. With a replacing key the consumer states the
+// explicit composition: the contribution of that local key answers the list
+// domain and the builtin list contribution is not selected. The key is the
+// local key of p. Without one, p stands beside the builtin set.
+func selectedTS(p tsConstructor, replacingKey string) requestBuilder {
 	return func(registry *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-		request, err := genfixture.Request(registry, input, to, "selected-ts", target.Provider{}, tstext.Library(), tsboolean.Library(), tsrecord.Library(), tsdeclarations.Library())
+		request, err := genfixture.Compose(registry, input, to, "selected-ts", target.Provider{}, typescriptBundles()...)
 		if err != nil {
 			return c.Request{}, err
 		}
-		selected, err := c.RegisterMapping(registry, input.Source.Language(), to, p)
+		selected, err := registerTS(registry, input.Source.Language(), to, p)
 		if err != nil {
 			return c.Request{}, err
 		}
-		base, err := c.RegisterMapping(registry, input.Source.Language(), to, tslist.Library())
-		if err != nil {
-			return c.Request{}, err
-		}
-		if replacementID != "" {
-			key, _ := source.Builtin(input.Source.Language(), "list-of", "")
-			err = registry.Replace(c.Replacement{Selector: key, Expected: c.BindingRef{Provider: base, ID: "list/typescript/1"}, With: c.BindingRef{Provider: selected, ID: replacementID}})
+		if replacingKey != "" {
+			list, err := typescriptBundleTable()["list"].Contribution(input.Source.Language())
+			if err != nil {
+				return c.Request{}, err
+			}
+			err = registry.ReplaceContribution(list.Reference.Identity, g.ContributionIdentity{Publisher: selected.Identity.Publisher, Key: replacingKey})
 			if err != nil {
 				return c.Request{}, err
 			}
@@ -131,11 +204,21 @@ func selectedTS(p tsContribution, replacementID string) requestBuilder {
 		return request, nil
 	}
 }
-func listContribution(id, module, name string) tsContribution {
-	return func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
-		slot := g.TypeSlot("E")
-		pattern, err := patterns.Element(from, slot)
-		return g.MappingDescription[h.Language, ts.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, source.Reader]{{ID: id, Input: pattern, Output: model.External(module, name, g.Mapped[ts.Language](slot))}}}, err
+
+// listContribution is a consumer's contribution for the horos list: the list
+// becomes the type name of module, applied to what was selected for the
+// element. key is its local key.
+func listContribution(key, module, name string) tsConstructor {
+	return func(from representation.Language) (tsContribution, error) {
+		selector, err := source.Builtin(from, "list-of", "")
+		return tsContribution{
+			Reference: testReference("consumer", key), Target: tsTarget, Profile: rules.RepresentationProfile,
+			Domain: g.ForForm(selector), Schema: f.EmptySchema,
+			Rule: horosRule{Name: nameElement, Decide: decideNothing},
+			Project: func(_ context.Context, p tsProjection) (tsProjected, error) {
+				return tsProjected{Type: model.External(module, name, p.Dependency(0).Type)}, nil
+			},
+		}, err
 	}
 }
 func TestListOverrideComposesThroughGenericPage(t *testing.T) {
@@ -148,20 +231,51 @@ func TestListOverrideComposesThroughGenericPage(t *testing.T) {
 	checkGenerationLinks(t, tree)
 	compileTSComposition(t, output, "const page: NestedPage = {items: [{items: [{name: 'Ada', active: true}]}]};\nvoid page;\n")
 }
+
+// TestSelectedMappingFailureNeverFallsBack: the consumer selects its own
+// contribution for the list in place of the builtin one, and that contribution
+// fails, once in its rule and once in its projector. The generation fails with
+// that failure and yields no output. The replaced builtin contribution does
+// not answer in its place, and the failing step runs once. An error that is no
+// refusal reaches the caller as a rule failure of the selected contribution
+// with the error as its cause, and it matches no refusal value.
 func TestSelectedMappingFailureNeverFallsBack(t *testing.T) {
 	_, _, input := generationInput(t, paginationModule())
 	sentinel := errors.New("selected mapping failed")
-	called := 0
-	provider := tsContribution(func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
-		pattern, err := patterns.Head(from, "list-of", "")
-		return g.MappingDescription[h.Language, ts.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, source.Reader]{{ID: "consumer/failure/1", Input: pattern, Expand: func(context.Context, g.Expansion[h.Language, ts.Language, source.Reader]) (g.Expression[ts.Language], error) {
+	const key = "consumer/failure/1"
+	for _, step := range []string{"rule", "projector"} {
+		called := 0
+		fail := func() error {
 			called++
-			return g.Expression[ts.Language]{}, sentinel
-		}}}}, err
-	})
-	out, err := runGeneration(t, input, nativeChecker(t, typescriptText()), selectedTS(provider, "consumer/failure/1"))
-	if !errors.Is(err, sentinel) || out.Snapshot().Valid() || called != 1 {
-		t.Fatal(err, called)
+			return sentinel
+		}
+		provider := tsConstructor(func(from representation.Language) (tsContribution, error) {
+			selector, err := source.Builtin(from, "list-of", "")
+			contribution := tsContribution{
+				Reference: testReference("consumer", key), Target: tsTarget, Profile: rules.RepresentationProfile,
+				Domain: g.ForForm(selector), Schema: f.EmptySchema,
+				Rule: horosRule{Decide: decideNothing},
+				Project: func(context.Context, tsProjection) (tsProjected, error) {
+					return tsProjected{}, fail()
+				},
+			}
+			if step == "rule" {
+				contribution.Rule.Decide = func(context.Context, horosDecideStep) (g.Decision, error) {
+					return g.Decision{}, fail()
+				}
+			}
+			return contribution, err
+		})
+		out, err := runGeneration(t, input, nativeChecker(t, typescriptText()), selectedTS(provider, key))
+		var failure *g.RuleFailure
+		if !errors.As(err, &failure) || failure.Err != sentinel || failure.Contribution != testReference("consumer", key) || out.Snapshot().Valid() || called != 1 {
+			t.Fatal(step, err, called)
+		}
+		for _, refusal := range []error{g.ErrUnsupported, g.ErrRefusedByDesign, g.ErrRequirementUnsatisfied, g.ErrRequirementUnresolved, g.ErrMissingFacet, g.ErrAmbiguous, g.ErrMissingContribution, g.ErrLimit} {
+			if errors.Is(err, refusal) {
+				t.Errorf("%s: the failure also matches the refusal value %v", step, refusal)
+			}
+		}
 	}
 }
 func TestGeneratedNamedImportsTrackOnlyEmittedFragments(t *testing.T) {
@@ -199,26 +313,44 @@ func TestLibraryOwnedCellAvoidsBodyExpansion(t *testing.T) {
 	checkImportedUse(t, tree, "Cell", "@bitspark/cell", "Cell")
 	compileTSComposition(t, output, "const cells: Cells = {items:[{value:'text'}]};\nvoid cells;\n")
 }
-func cellMapping(from representation.Language, pin string, calls *int) tsContribution {
-	return func(_, to representation.Language) (g.MappingDescription[h.Language, ts.Language, source.Reader], error) {
-		key, err := source.Named(from, pin, "Cell")
+
+// cellMapping is the exact contribution of the library that declares Cell: it
+// answers for the uses of that one declaration, so Cell's body is never
+// opened. calls counts how often its rule names its request, once for each use.
+func cellMapping(from representation.Language, pin string, calls *int) tsConstructor {
+	return cellContribution("cells/typescript/1", from, pin, calls)
+}
+
+// cellContribution is cellMapping under the local key key.
+func cellContribution(key string, from representation.Language, pin string, calls *int) tsConstructor {
+	return func(representation.Language) (tsContribution, error) {
+		selector, err := source.Named(from, pin, "Cell")
 		if err != nil {
-			return g.MappingDescription[h.Language, ts.Language, source.Reader]{}, err
+			return tsContribution{}, err
 		}
-		slot := g.TypeSlot("V")
-		pattern := g.Pattern[h.Language, source.Reader]{Selector: key, Slots: []g.Slot{slot}, Capture: func(ctx context.Context, src source.Reader, use g.UseView[h.Language]) ([]g.Capture[h.Language], error) {
-			(*calls)++
-			// Select the actual for Cell's own binder T, never a position.
-			for _, a := range use.Actuals {
-				if p, err := src.Parameter(a.Binder); err != nil {
+		return tsContribution{
+			Reference: testReference("cells", key), Target: tsTarget, Profile: rules.RepresentationProfile,
+			Domain: g.ForExact(selector), Schema: f.EmptySchema,
+			Rule: horosRule{Decide: decideNothing, Name: func(_ context.Context, step horosNameStep) ([]horosRequest, error) {
+				reader, err := step.Reader()
+				if err != nil {
 					return nil, err
-				} else if p.Name == "T" {
-					return []g.Capture[h.Language]{{Slot: slot, Use: a.Use}}, nil
 				}
-			}
-			return nil, g.ErrScope
-		}}
-		return g.MappingDescription[h.Language, ts.Language, source.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, source.Reader]{{ID: "cells/typescript/1", Input: pattern, Output: model.External("@bitspark/cell", "Cell", g.Mapped[ts.Language](slot))}}}, nil
+				(*calls)++
+				// Select the actual for Cell's own binder T, never a position.
+				for _, a := range step.Subject.Use.Actuals {
+					if p, err := reader.Parameter(a.Binder); err != nil {
+						return nil, err
+					} else if p.Name == "T" {
+						return []horosRequest{g.Reference(a.Use)}, nil
+					}
+				}
+				return nil, g.ErrScope
+			}},
+			Project: func(_ context.Context, p tsProjection) (tsProjected, error) {
+				return tsProjected{Type: model.External("@bitspark/cell", "Cell", p.Dependency(0).Type)}, nil
+			},
+		}, nil
 	}
 }
 func compileTSComposition(t *testing.T, source, consumer string) {

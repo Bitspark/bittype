@@ -92,8 +92,11 @@ const (
 )
 
 // Judgment is a source-owned conclusion. Diagnostic optionally explains a
-// non-admitted verdict at a source site. The kernel never interprets it, and a
-// diagnostic cannot add an error class: only the verdict classifies.
+// non-admitted verdict: it states what is wrong. It need not state where. The
+// kernel reports a judgment at the site of the occurrence or declaration that
+// it judges, unless the diagnostic is itself a SiteError. The kernel never
+// interprets a diagnostic, and a diagnostic cannot add an error class: only
+// the verdict classifies.
 type Judgment struct {
 	Verdict    Verdict
 	Diagnostic error
@@ -133,6 +136,13 @@ type Interpretation[F any] interface {
 type Source[F, R any] struct {
 	Interpretation Interpretation[F]
 	Reader         R
+	// Roles is the issuer of the role selectors that the reader hands to
+	// rules (bittype#196, row 12). A source without field roles
+	// leaves it zero.
+	Roles RoleIssuer[F]
+	// Semantics names the source interpretation that the checked references
+	// use: the fifth version axis (row 16). The plan records it.
+	Semantics string
 }
 
 // bittype:dimension Syntax

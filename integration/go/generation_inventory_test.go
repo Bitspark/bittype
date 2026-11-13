@@ -342,7 +342,7 @@ type overwriting struct {
 	parameters *int
 }
 
-func (p overwriting) CheckDeclaration(ctx context.Context, d g.NativeDeclaration[gs.Language]) error {
+func (p overwriting) CheckDeclaration(ctx context.Context, d g.TargetDeclaration[gs.Language]) error {
 	err := p.Provider.CheckDeclaration(ctx, d)
 	for i := range d.Values {
 		d.Values[i] = p.forged
@@ -411,7 +411,7 @@ func TestGenerationTargetCannotOverwriteWhatThePlanStates(t *testing.T) {
 		values, parameters := 0, 0
 		e, _, input = generationInput(t, paginationModule())
 		out := generatedOutput(t, e, input, golangText(), func(reg *compose.Registry, input transform.Input, to representation.Language) (compose.Request, error) {
-			return genfixture.Request(reg, input, to, "generated-go", overwriting{gotarget.Provider{Package: "pagination"}, g.IssuedValue{}, &values, &parameters}, golangLibraries()...)
+			return genfixture.Compose(reg, input, to, "generated-go", overwriting{gotarget.Provider{Package: "pagination"}, g.IssuedValue{}, &values, &parameters}, golangBundles()...)
 		})
 		if parameters == 0 {
 			t.Fatal("the target did not reach a parameter")

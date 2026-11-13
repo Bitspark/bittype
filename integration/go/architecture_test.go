@@ -189,10 +189,16 @@ var foundationRules = map[string][]string{
 	},
 	"transform/syntax/shared/generation/go": {"contracts/check/go", "contracts/generation/go", "contracts/semantic/go", "contracts/text/go", "contracts/transform/go", "trees/ast/go", "trees/representation/go"},
 	"transform/syntax/shared/target/go":     {"contracts/generation/go", "trees/ast/go", "trees/representation/go"},
-	"check/syntax/shared/ast/go":            {"contracts/text/go", "trees/ast/go"},
-	"check/syntax/shared/cst/go":            {"check/syntax/shared/ast/go", "contracts/text/go", "trees/cst/go"},
-	"print/syntax/shared/provider/go":       {"check/syntax/shared/cst/go", "contracts/language/go", "contracts/print/go", "trees/cst/go", "trees/representation/go"},
-	"print/files/shared/provider/go":        {"contracts/language/go", "contracts/print/go", "files/go", "source/go", "trees/cst/go", "trees/representation/go"},
+	// What the contributions of any pair are built from: mechanisms over the
+	// contract that read no source and know no language (O46, AC-11).
+	"transform/syntax/shared/contribution/go": {"contracts/generation/go"},
+	// The name of bittype as the publisher of its own contributions. It names
+	// no language and imports nothing (O46 AG-6).
+	"transform/syntax/shared/publisher/go": {},
+	"check/syntax/shared/ast/go":           {"contracts/text/go", "trees/ast/go"},
+	"check/syntax/shared/cst/go":           {"check/syntax/shared/ast/go", "contracts/text/go", "trees/cst/go"},
+	"print/syntax/shared/provider/go":      {"check/syntax/shared/cst/go", "contracts/language/go", "contracts/print/go", "trees/cst/go", "trees/representation/go"},
+	"print/files/shared/provider/go":       {"contracts/language/go", "contracts/print/go", "files/go", "source/go", "trees/cst/go", "trees/representation/go"},
 	// Private helpers of no single language. A shared helper cannot conceal a
 	// language: it is bound by the same rule as the rest of the table.
 	"internal/tree":      {"trees/ast/go"},
@@ -239,6 +245,32 @@ var oneOfAKindRules = map[string][]string{
 	"tools/provider-matrix/observation/go": {},
 	// A command over the horos parser and private module lowering.
 	"tools/horos-module/go": {"contracts/parse/go", "internal/horosmodel", "internal/lex", "parse/syntax/horos/provider/go", "trees/ast/go"},
+	// The shared part of the payload codec role (docs/contribution-contract.md,
+	// row 28, O37, O41). It is no kernel package: it validates and encodes
+	// through horos and ontos, which the contract package and the registry may
+	// not import. Only a codec imports it, by its role, and the artifact tool.
+	// It has no entry in languageOwners: horos is the schema language of every
+	// payload, whatever the source language of a generation is, so the codec
+	// of any pair imports it.
+	payloadShared: {"contracts/generation/go"},
+	// The public route from a schema source to the pinned artifact of a
+	// payload schema (O39): a command and the library behind it.
+	"tools/payload-schema/go": {"tools/payload-schema/artifact/go"},
+	// The library is a composition: for the Go types of a schema it runs the
+	// horos frontend and generation with bittype's structural Go contributions
+	// and their codecs.
+	"tools/payload-schema/artifact/go": {
+		"analyze/files/horos/provider/go", "check/syntax/golang/provider/go", "check/syntax/horos/provider/go", "contracts/analysis/go",
+		"contracts/check/go", "contracts/generation/go", "contracts/parse/go", "contracts/resolution/go",
+		"contracts/semantic/go", "contracts/transform/go", "engine/go", "format/syntax/golang/provider/go",
+		"internal/horosmodel", "parse/syntax/horos/provider/go", "print/syntax/shared/provider/go", "resolve/files/horos/provider/go",
+		"semantics/horos/go", "syntax/golang/go", "syntax/horos/go", "transform/syntax/golang/target/go",
+		"transform/syntax/horos-to-golang/codec/boolean/go", "transform/syntax/horos-to-golang/codec/declarations/go", "transform/syntax/horos-to-golang/codec/list/go", "transform/syntax/horos-to-golang/codec/optional/go",
+		"transform/syntax/horos-to-golang/codec/record/go", "transform/syntax/horos-to-golang/codec/text/go", "transform/syntax/horos-to-golang/mapping/boolean/go", "transform/syntax/horos-to-golang/mapping/declarations/go",
+		"transform/syntax/horos-to-golang/mapping/list/go", "transform/syntax/horos-to-golang/mapping/optional/go", "transform/syntax/horos-to-golang/mapping/record/go", "transform/syntax/horos-to-golang/mapping/text/go",
+		"transform/syntax/horos/mapping/go", payloadShared, "transform/syntax/horos/source/go", "transform/syntax/shared/generation/go",
+		"trees/ast/go", "trees/representation/go",
+	},
 }
 
 // languageOwners names the one language that a package with a hand entry
@@ -380,8 +412,12 @@ var modelDependencies = []string{
 }
 
 var modelExternalImports = map[string][]string{
-	"verification/logos/go":              {"github.com/Bitspark/logos-contract/contract/go/typed"},
-	"tools/horos-module/go":              {"github.com/bitspark/ontos/codec/go"},
+	"verification/logos/go":            {"github.com/Bitspark/logos-contract/contract/go/typed"},
+	"tools/horos-module/go":            {"github.com/bitspark/ontos/codec/go"},
+	"tools/payload-schema/artifact/go": {"github.com/bitspark/ontos/codec/go"},
+	// A payload schema is a horos type and a frozen payload an ontos value,
+	// whatever the source language of a generation is.
+	payloadShared:                        {"github.com/Bitspark/horos/core/go", "github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 	"transform/syntax/horos/source/go":   {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 	"parse/syntax/horos/provider/go":     {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"format/syntax/horos/provider/go":    {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},

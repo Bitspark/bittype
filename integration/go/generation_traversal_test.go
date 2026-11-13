@@ -145,7 +145,7 @@ func TestKernelStructuralLimits(t *testing.T) {
 func TestKernelCapturesAreChildrenOfThisRun(t *testing.T) {
 	fixture := independent(t)
 	notChild := func(err error) bool {
-		return errors.Is(err, g.ErrScope) && strings.Contains(err.Error(), "a capture must be a child")
+		return errors.Is(err, g.ErrScope) && strings.Contains(err.Error(), "a request must name a child")
 	}
 	if err := independentFails(t, fixture, f.StrayCapture, "Page"); !notChild(err) {
 		t.Fatal("non-child capture:", err)
@@ -154,7 +154,7 @@ func TestKernelCapturesAreChildrenOfThisRun(t *testing.T) {
 		t.Fatal("pattern capture of the occurrence itself:", err)
 	}
 	// A declaration recipe may map only its own body.
-	if err := independentFails(t, fixture, f.RecipeStray, "Page", "Outer"); !errors.Is(err, g.ErrScope) || !strings.Contains(err.Error(), "may map only its body") {
+	if err := independentFails(t, fixture, f.RecipeStray, "Page", "Outer"); !errors.Is(err, g.ErrScope) || !strings.Contains(err.Error(), "may request only its body") {
 		t.Fatal("recipe mapped a non-body use:", err)
 	}
 	// The first plan keeps a handle; a second plan over the same capture is a

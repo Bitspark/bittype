@@ -36,16 +36,16 @@ const (
 func Form(name string) g.Form[s.Language]      { return forms.Form(name) }
 func Name(f g.Form[s.Language]) (string, bool) { return forms.Read(f) }
 func Primitive(name string) g.Expression[s.Language] {
-	return g.Native(Form(FormPrimitive), []string{name})
+	return g.Apply(Form(FormPrimitive), []string{name})
 }
 func Collection(element g.Expression[s.Language]) g.Expression[s.Language] {
-	return g.Native(Form(FormSequence), nil, element)
+	return g.Apply(Form(FormSequence), nil, element)
 }
 func Field(name string, optional bool, ty g.Expression[s.Language]) g.Expression[s.Language] {
-	return g.Native(Form(FormField), []string{name, strconv.FormatBool(optional)}, ty)
+	return g.Apply(Form(FormField), []string{name, strconv.FormatBool(optional)}, ty)
 }
 func Record(fields ...g.Expression[s.Language]) g.Expression[s.Language] {
-	return g.Native(Form(FormRecord), nil, fields...)
+	return g.Apply(Form(FormRecord), nil, fields...)
 }
 
 // Std is the name of the crate std of the standard library, as an external
@@ -60,7 +60,7 @@ const Std = "std"
 // whose crate is a dependency that a destination can name. That is Std today,
 // and the target refuses every other crate.
 func External(crate string, path []string, args ...g.Expression[s.Language]) g.Expression[s.Language] {
-	return g.Native(Form(FormExternal), append([]string{crate}, path...), args...)
+	return g.Apply(Form(FormExternal), append([]string{crate}, path...), args...)
 }
 func CheckExpression(ctx context.Context, e g.Expression[s.Language]) error {
 	if err := ctx.Err(); err != nil {
@@ -106,7 +106,7 @@ func CheckExpression(ctx context.Context, e g.Expression[s.Language]) error {
 	}
 	return nil
 }
-func CheckDeclaration(ctx context.Context, d g.NativeDeclaration[s.Language]) error {
+func CheckDeclaration(ctx context.Context, d g.TargetDeclaration[s.Language]) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -125,3 +125,9 @@ func CheckDeclaration(ctx context.Context, d g.NativeDeclaration[s.Language]) er
 	}
 	return nil
 }
+
+// EvidenceRecordForm is the evidence kind "the selected native type is this
+// model's record form". It belongs to this vocabulary, because the fact
+// concerns the native side of this target (row 7). The declaration
+// contribution asks for it about a declaration's body (bittype#196, row 3).
+var EvidenceRecordForm = g.EvidenceKind{Identity: "bittype/rust/record-form", Version: "1"}

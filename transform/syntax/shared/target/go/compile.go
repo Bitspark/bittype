@@ -25,11 +25,10 @@ import (
 //
 // Limit: two declarations with equal names and equal provenance are ordered by
 // their planned identity, which follows the order of the requested roots. Two
-// native declarations of one source declaration are such a pair, and so are
+// target declarations of one source declaration are such a pair, and so are
 // two helpers of one name. The order of such a pair is therefore not the same
 // for every order of the roots. A target that states one flat scope refuses
-// the pair in its program rule. A target that states none, as TypeScript since
-// #273, builds it.
+// the pair in its program rule. A target that states none builds it.
 func compareDeclarations[T any](a, b g.PlannedDeclaration[T]) int {
 	return cmp.Or(
 		cmp.Compare(a.Description.Name, b.Description.Name),
@@ -119,7 +118,7 @@ func Compile[T any](ctx context.Context, in g.BuildInput[T], store *Store[T], lo
 				return Fragment[T]{}, err
 			}
 			return lower.Reference(Symbol[T]{store, id, -1, declarations[id-1].Description.Name}, args, e.Origin())
-		case g.NativeExpression:
+		case g.FormExpression:
 			return lower.Expression(e, args)
 		default:
 			return Fragment[T]{}, g.ErrScope

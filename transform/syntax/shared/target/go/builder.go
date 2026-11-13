@@ -1,4 +1,4 @@
-// Package target realizes a closed native program using supplied grammar rules.
+// Package target realizes a closed target program using supplied grammar rules.
 package target
 
 import (
@@ -136,12 +136,12 @@ func Node[T any](kind ast.Kind[T], attrs []ast.Attribute, origin ast.NodeRef) as
 	return n
 }
 
-// Lowering owns native form meaning and grammar only. The compiler below owns
+// Lowering owns the meaning of the target's forms and their grammar only. The compiler below owns
 // dependency scheduling, scope, relocation, limits and publication association.
 type Lowering[T any] interface {
 	Parameter(string, ast.NodeRef) (Fragment[T], error)
 	Reference(Symbol[T], []Fragment[T], ast.NodeRef) (Fragment[T], error)
 	Expression(g.Expression[T], []Fragment[T]) (Fragment[T], error)
-	Declaration(g.NativeDeclaration[T], []Fragment[T], Fragment[T]) (Fragment[T], error)
+	Declaration(g.TargetDeclaration[T], []Fragment[T], Fragment[T]) (Fragment[T], error)
 	Finish([]Fragment[T]) (Fragment[T], error)
 }

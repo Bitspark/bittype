@@ -1,0 +1,3 @@
+module bittype.payload.horos_to_rust_list;
+
+type Payload = { };

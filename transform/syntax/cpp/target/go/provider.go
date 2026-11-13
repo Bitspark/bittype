@@ -24,7 +24,7 @@ type Backend struct {
 func (p Provider) CheckExpression(ctx context.Context, e g.Expression[s.Language]) error {
 	return model.CheckExpression(ctx, e)
 }
-func (p Provider) CheckDeclaration(ctx context.Context, d g.NativeDeclaration[s.Language]) error {
+func (p Provider) CheckDeclaration(ctx context.Context, d g.TargetDeclaration[s.Language]) error {
 	return model.CheckDeclaration(ctx, d)
 }
 func (p Provider) Build(ctx context.Context, in g.BuildInput[s.Language]) (g.Assembly, error) {
@@ -110,7 +110,7 @@ func (b *Backend) Path(names []string, args []m.Fragment[s.Language], origin ast
 	}
 	return b.Node(m.Node(s.KindNamedType, attrs, origin), segments...)
 }
-func (b *Backend) Declaration(d g.NativeDeclaration[s.Language], params []m.Fragment[s.Language], body m.Fragment[s.Language]) (m.Fragment[s.Language], error) {
+func (b *Backend) Declaration(d g.TargetDeclaration[s.Language], params []m.Fragment[s.Language], body m.Fragment[s.Language]) (m.Fragment[s.Language], error) {
 	name, origin := d.Name, d.Origin
 	form, _ := model.Name(d.Form)
 	record := form != model.FormAlias
@@ -200,4 +200,12 @@ func (b *Backend) Expression(e g.Expression[s.Language], args []m.Fragment[s.Lan
 
 func (p Provider) CheckProgram(ctx context.Context, program g.Program[s.Language]) error {
 	return m.CheckSingleScope(ctx, program)
+}
+
+// CheckMember states the member vocabulary of the target (bittype#196, row
+// 13): generation.MemberVocabulary. A member of a record is one field form
+// that this target admits. The rule is the shared one, selected here with
+// this target's member form and its own expression rule.
+func (p Provider) CheckMember(ctx context.Context, e g.Expression[s.Language]) error {
+	return m.CheckMemberForm(ctx, e, model.Form(model.FormField), p.CheckExpression)
 }

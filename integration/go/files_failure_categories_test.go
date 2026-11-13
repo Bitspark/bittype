@@ -33,11 +33,6 @@ import (
 	"github.com/Bitspark/bittype/source/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
-	tsboolean "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/boolean/go"
-	tsdeclarations "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/declarations/go"
-	tslist "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/list/go"
-	tsrecord "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/record/go"
-	tstext "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/text/go"
 	compose "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	tstarget "github.com/Bitspark/bittype/transform/syntax/typescript/target/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
@@ -109,11 +104,11 @@ func tamperedCellPage(t *testing.T, change func(g.BuildInput[ts.Language], *g.As
 	e, from, input := generationInput(t, root, library)
 	calls := 0
 	return generatedOutput(t, e, input, typescriptText(), func(registry *compose.Registry, input transform.Input, to representation.Language) (compose.Request, error) {
-		request, err := genfixture.Request(registry, input, to, "tampered-ts", tamperedTarget{change: change}, tstext.Library(), tsboolean.Library(), tsrecord.Library(), tsdeclarations.Library(), tslist.Library())
+		request, err := genfixture.Compose(registry, input, to, "tampered-ts", tamperedTarget{change: change}, typescriptBundles()...)
 		if err != nil {
 			return compose.Request{}, err
 		}
-		if _, err = compose.RegisterMapping(registry, input.Source.Language(), to, cellMapping(from, pin.String(), &calls)); err != nil {
+		if _, err = registerTS(registry, input.Source.Language(), to, cellMapping(from, pin.String(), &calls)); err != nil {
 			return compose.Request{}, err
 		}
 		if only == "" {

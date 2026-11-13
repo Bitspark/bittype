@@ -242,7 +242,7 @@ type NativeParameter struct {
 
 The planner supplies these records and native construction consumes them.
 There is no parameter-bound or constraint field.
-[Native declaration contract](../contracts/generation/go/native.go)
+[Native declaration contract](../contracts/generation/go/declaration.go)
 
 The implemented generic convention can add, omit or reorder native arguments:
 

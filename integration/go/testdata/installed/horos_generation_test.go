@@ -23,9 +23,16 @@ import (
 	"github.com/Bitspark/bittype/semantics/horos/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
+	tsbooleancodec "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/codec/boolean/go"
+	tsdeclarationscodec "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/codec/declarations/go"
+	tslistcodec "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/codec/list/go"
+	tsoptionalcodec "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/codec/optional/go"
+	tsrecordcodec "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/codec/record/go"
+	tstextcodec "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/codec/text/go"
 	tsboolean "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/boolean/go"
 	tsdeclarations "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/declarations/go"
 	tslist "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/list/go"
+	tsoptional "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/optional/go"
 	tsrecord "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/record/go"
 	tstext "github.com/Bitspark/bittype/transform/syntax/horos-to-typescript/mapping/text/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
@@ -107,14 +114,32 @@ func TestInstalledSemanticGeneration(t *testing.T) {
 	if err = c.RegisterTarget(registry, to, target.Provider{}); err != nil {
 		t.Fatal(err)
 	}
-	for _, library := range []g.MappingLibrary[h.Language, ts.Language, reader.Reader]{
-		tstext.Library(),
-		tsboolean.Library(),
-		tslist.Library(),
-		tsrecord.Library(),
-		tsdeclarations.Library(),
+	// The consumer's composition: each builtin contribution with the codec of
+	// its payload schema. The record contribution delegates the optional
+	// field to the optional contribution through the planner.
+	for _, bundle := range []struct {
+		contribution func(representation.Language) (g.Contribution[h.Language, ts.Language, reader.Reader], error)
+		codec        func() (g.PayloadCodec, error)
+	}{
+		{tstext.Contribution, tstextcodec.Codec},
+		{tsboolean.Contribution, tsbooleancodec.Codec},
+		{tslist.Contribution, tslistcodec.Codec},
+		{tsrecord.Contribution, tsrecordcodec.Codec},
+		{tsdeclarations.Contribution, tsdeclarationscodec.Codec},
+		{tsoptional.Contribution, tsoptionalcodec.Codec},
 	} {
-		if _, err := c.RegisterMapping(registry, from, to, library); err != nil {
+		contribution, err := bundle.contribution(from)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := c.RegisterContribution(registry, from, to, contribution); err != nil {
+			t.Fatal(err)
+		}
+		codec, err := bundle.codec()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := registry.RegisterCodec(codec); err != nil {
 			t.Fatal(err)
 		}
 	}

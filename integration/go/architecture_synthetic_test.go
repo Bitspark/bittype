@@ -288,7 +288,7 @@ var syntheticFoundations = []string{
 	"contracts/analysis/go", "contracts/check/go", "contracts/format/go", "contracts/generation/go", "contracts/language/go",
 	"contracts/parse/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go", "contracts/text/go",
 	"contracts/transform/go", "files/go", "internal/concrete", "internal/grammar", "internal/lex", "internal/parseutil",
-	"internal/tree", "semantics/go", "source/go", "transform/syntax/shared/target/go", "trees/ast/go", "trees/representation/go",
+	"internal/tree", "semantics/go", "source/go", "transform/syntax/shared/contribution/go", "transform/syntax/shared/publisher/go", "transform/syntax/shared/target/go", "trees/ast/go", "trees/representation/go",
 }
 
 // languageLayout is every package shape of one language, each importing all
@@ -326,14 +326,14 @@ var languageLayout = map[string][]string{
 	},
 	"transform/syntax/<l>/target/go": {"contracts/generation/go", "internal/<l>", "syntax/<l>/go", "transform/syntax/<l>/model/go", "transform/syntax/shared/target/go", "trees/ast/go"},
 
-	"transform/syntax/<l>/mapping/go":         {"contracts/generation/go", "syntax/<l>/go", "transform/syntax/<l>/source/go", "trees/representation/go"},
-	"transform/syntax/<l>/mapping/pattern/go": {"contracts/generation/go", "syntax/<l>/go", "transform/syntax/<l>/source/go", "trees/representation/go"},
-	"transform/syntax/<l>/mapping/naming/go":  {"contracts/generation/go", "syntax/<l>/go", "transform/syntax/<l>/source/go", "trees/representation/go"},
+	"transform/syntax/<l>/mapping/go":         {},
+	"transform/syntax/<l>/mapping/pattern/go": {"contracts/generation/go", "syntax/<l>/go", "transform/syntax/<l>/source/go", "transform/syntax/shared/contribution/go"},
+	"transform/syntax/<l>/mapping/naming/go":  {"contracts/generation/go", "syntax/<l>/go", "transform/syntax/<l>/source/go"},
 }
 
 // pairImports is what one mapping contribution of <s>-to-<n> may import.
 var pairImports = []string{
-	"contracts/generation/go", "syntax/<n>/go", "syntax/<s>/go", "transform/syntax/<n>/model/go",
+	"contracts/generation/go", "syntax/<n>/go", "syntax/<s>/go", "transform/syntax/<n>/model/go", "transform/syntax/shared/contribution/go",
 	"transform/syntax/<s>/mapping/declarations/go", "transform/syntax/<s>/mapping/go", "transform/syntax/<s>/mapping/naming/go",
 	"transform/syntax/<s>/mapping/pattern/go", "transform/syntax/<s>/source/go", "trees/representation/go",
 }
@@ -383,15 +383,26 @@ func (s *syntheticSet) language(name string) {
 
 	adapter, naming := "transform/syntax/"+name+"/mapping/go", "transform/syntax/"+name+"/mapping/naming/go"
 	declarations := "transform/syntax/" + name + "/mapping/declarations/go"
-	s.add(declarations, append(replaced(languageLayout["transform/syntax/<l>/mapping/go"], replacer), adapter, naming)...)
+	s.add(declarations, append(replaced(languageLayout["transform/syntax/<l>/mapping/naming/go"], replacer), adapter, naming)...)
 	s.spec.Extensions[declarations] = []string{adapter, naming}
 }
 
-// pair declares two mapping contributions of one ordered pair.
+// The external models that the codec role brings with it.
+var codecModels = []string{"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"}
+
+// pair declares two mapping contributions of one ordered pair, each with the
+// vocabulary of its family, its own vocabulary and its codec.
 func (s *syntheticSet) pair(source, native string) {
 	replacer := strings.NewReplacer("<s>", source, "<n>", native)
+	base := "transform/syntax/" + source + "-to-" + native
 	for _, name := range []string{"text", "record"} {
-		s.add("transform/syntax/"+source+"-to-"+native+"/mapping/"+name+"/go", replaced(pairImports, replacer)...)
+		family := "transform/syntax/" + source + "/family/" + name + "/go"
+		vocabulary := base + "/vocabulary/" + name + "/go"
+		s.add(family, "contracts/generation/go")
+		s.add(vocabulary, "contracts/generation/go", "transform/syntax/shared/publisher/go", family)
+		s.add(base+"/codec/"+name+"/go", "contracts/generation/go", payloadShared, vocabulary)
+		s.importsExternal(base+"/codec/"+name+"/go", codecModels...)
+		s.add(base+"/mapping/"+name+"/go", append(replaced(pairImports, replacer), vocabulary)...)
 	}
 }
 
@@ -406,6 +417,8 @@ func layoutSet() *syntheticSet {
 	s.foundation("engine/go", "contracts/check/go", "contracts/parse/go", "trees/representation/go")
 	s.language("x")
 	s.language("y")
+	s.listed(payloadShared, "contracts/generation/go")
+	s.spec.ExternalModels = append(s.spec.ExternalModels, codecModels...)
 	s.pair("x", "y")
 	s.pair("y", "x")
 	return s
@@ -420,6 +433,11 @@ const (
 	noOtherMapping       = "a mapping contribution never imports another mapping contribution"
 	noTreeConstructor    = "a mapping contribution never imports a native tree constructor"
 	queryWithoutResolver = "a query service does not import its resolver"
+	mappingOwnVocabulary = "a mapping contribution imports no codec and no vocabulary but its own"
+	mappingNoMeaning     = "a mapping contribution reaches its family's meaning through its own vocabulary and no payload codec"
+	vocabularyAlone      = "a vocabulary package imports no mapping, no codec and no vocabulary but its own"
+	codecAlone           = "a codec package imports no mapping, no codec and no vocabulary but its own"
+	familyByVocabulary   = "only the vocabulary of a contribution imports the vocabulary of its family"
 	languageY            = "it belongs to another language, y"
 )
 
@@ -480,14 +498,14 @@ func TestArchitectureAcceptsConformingLayout(t *testing.T) {
 // language() adds for every language.
 func TestArchitectureNewPackagesOfKnownShapesNeedNoEntry(t *testing.T) {
 	s := layoutSet()
-	foundations, extensions := len(s.spec.Foundations), len(s.spec.Extensions)
+	rules, foundations, extensions := len(s.spec.Rules), len(s.spec.Foundations), len(s.spec.Extensions)
 	s.language("z")
 	s.pair("x", "z")
 	s.add("transform/syntax/x/mapping/defaults/go", "contracts/generation/go", "syntax/x/go")
 	s.add("transform/syntax/x-to-y/mapping/optional/go",
 		"contracts/generation/go", "transform/syntax/x/mapping/defaults/go", "transform/syntax/x/mapping/pattern/go", "transform/syntax/y/model/go")
 	s.expect(t)
-	if len(s.spec.Rules) != 0 || len(s.spec.Owners) != 0 || len(s.spec.Foundations) != foundations || len(s.spec.Extensions) != extensions+1 {
+	if len(s.spec.Rules) != rules || len(s.spec.Owners) != 0 || len(s.spec.Foundations) != foundations || len(s.spec.Extensions) != extensions+1 {
 		t.Errorf("tables grew: %d hand entries, %d owners, %d foundations, %d extensions", len(s.spec.Rules), len(s.spec.Owners), len(s.spec.Foundations), len(s.spec.Extensions))
 	}
 
@@ -564,6 +582,61 @@ func TestArchitectureVocabularyRoles(t *testing.T) {
 		prohibited("transform/syntax/x/symbol/go", "syntax/y/go", languageY),
 		notAllowed("transform/syntax/x/symbol/go", "transform/syntax/x/model/go"),
 	)
+}
+
+// The roles of the contribution contract (docs/contribution-contract.md, O25,
+// O27, O37): the vocabulary of a family, the vocabulary of a contribution and
+// its payload codec. No contribution imports a contribution, a mapping
+// imports of its bundle only its own vocabulary, and only a codec reaches the
+// shared part of the codec role.
+func TestArchitectureContributionBundleRoles(t *testing.T) {
+	const (
+		family     = "transform/syntax/x/family/text/go"
+		vocabulary = "transform/syntax/x-to-y/vocabulary/text/go"
+		codec      = "transform/syntax/x-to-y/codec/text/go"
+		mapping    = "transform/syntax/x-to-y/mapping/text/go"
+	)
+	expectBreaks(t,
+		// A mapping imports no codec, no other vocabulary, no family vocabulary
+		// and not the shared part of the codec role.
+		prohibited(mapping, codec, mappingOwnVocabulary),
+		prohibited(mapping, "transform/syntax/x-to-y/vocabulary/record/go", mappingOwnVocabulary),
+		prohibited(mapping, family, mappingNoMeaning),
+		prohibited(mapping, payloadShared, mappingNoMeaning),
+
+		// A vocabulary of a contribution imports its own family and nothing
+		// else of a bundle. It is a vocabulary: it never imports a contribution.
+		prohibited(vocabulary, mapping, vocabularyAlone),
+		prohibited(vocabulary, codec, vocabularyAlone),
+		prohibited(vocabulary, "transform/syntax/x-to-y/vocabulary/record/go", vocabularyAlone),
+		prohibited(vocabulary, "transform/syntax/x/family/record/go", familyByVocabulary),
+		notAllowed(vocabulary, payloadShared),
+		notAllowed(vocabulary, "transform/syntax/y/model/go"),
+		prohibited(vocabulary, "transform/syntax/x/source/go", noContribution),
+
+		// A codec imports its own vocabulary and the shared part, and neither
+		// the mapping, nor another codec, nor a family vocabulary.
+		prohibited(codec, mapping, codecAlone),
+		prohibited(codec, "transform/syntax/x-to-y/codec/record/go", codecAlone),
+		prohibited(codec, "transform/syntax/x-to-y/vocabulary/record/go", codecAlone),
+		prohibited(codec, family, familyByVocabulary),
+		notAllowed(codec, "transform/syntax/x/source/go"),
+		notAllowed(codec, "transform/syntax/y/model/go"),
+
+		// The vocabulary of a family imports the contract and nothing else.
+		prohibited(family, mapping, noContribution),
+		notAllowed(family, "transform/syntax/x/mapping/go"),
+		notAllowed(family, "syntax/x/go"),
+
+		// No kernel package and no native target reaches the codec role.
+		prohibited("engine/go", payloadShared, onlyFoundations),
+		notAllowed("transform/syntax/y/target/go", payloadShared),
+	)
+
+	// A codec imports the ontos value packages by its role, and never horos.
+	layoutSet().importsExternal(codec, "github.com/Bitspark/horos/core/go").expect(t, codec+" must not import github.com/Bitspark/horos/core/go")
+	layoutSet().importsExternal(mapping, codecModels[0]).expect(t, mapping+" must not import "+codecModels[0])
+	layoutSet().importsExternal(vocabulary, codecModels[0]).expect(t, vocabulary+" must not import "+codecModels[0])
 }
 
 // Rule 3 for the Syntax stages. Each stage has its own list; parser and

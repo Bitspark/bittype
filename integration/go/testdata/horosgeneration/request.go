@@ -7,6 +7,7 @@ import (
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
+	"github.com/Bitspark/bittype/integration/go/testdata/composition"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	mapping "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
@@ -54,29 +55,21 @@ func Roots(input transform.Input) ([]ast.NodeRef, error) {
 
 var configuredSources sync.Map
 
-// Request registers the source once per registry, the target and the given
-// mapping libraries. The request it returns names the entry module's type
-// definitions as roots and the structural representation profile, whose
-// identity comes from its owner, the horos mapping package.
-func Request[T any](registry *c.Registry, input transform.Input, to representation.Language, output ast.TreeID, target g.Target[T], mappings ...g.MappingLibrary[h.Language, T, source.Reader]) (c.Request, error) {
-	zero := c.Request{}
-	from := input.Source.Language()
-	if _, loaded := configuredSources.LoadOrStore(registry, true); !loaded {
-		if err := c.RegisterSource[h.Language, source.Reader](registry, from, source.Provider{}); err != nil {
-			return zero, err
-		}
-	}
-	if err := c.RegisterTarget(registry, to, target); err != nil {
-		return zero, err
-	}
-	for _, p := range mappings {
-		if _, err := c.RegisterMapping(registry, from, to, p); err != nil {
-			return zero, err
-		}
-	}
+// Bundle is a bundle of a pair whose source is horos: the contribution and
+// the codec of its payload schema.
+type Bundle[T any] = composition.Bundle[h.Language, T, source.Reader]
+
+// Compose registers the source once per registry, the target and the given
+// bundles. The request it returns names the entry module's type definitions as
+// roots and the structural representation profile. Each bundle's codec is
+// registered once: a registry holds one codec for each schema reference.
+func Compose[T any](registry *c.Registry, input transform.Input, to representation.Language, output ast.TreeID, target g.Target[T], bundles ...Bundle[T]) (c.Request, error) {
 	roots, err := Roots(input)
 	if err != nil {
-		return zero, err
+		return c.Request{}, err
 	}
-	return c.Request{Input: input, To: to, Output: output, Roots: roots, Profile: mapping.RepresentationProfile, Limits: g.DefaultLimits()}, nil
+	_, loaded := configuredSources.LoadOrStore(registry, true)
+	return composition.Compose(registry, input, to, composition.Pair[h.Language, T, source.Reader]{
+		Source: source.Provider{}, RegisterSource: !loaded, Target: target, Roots: roots, Profile: mapping.RepresentationProfile, Output: output,
+	}, bundles...)
 }

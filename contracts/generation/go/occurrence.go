@@ -1,6 +1,7 @@
 package generation
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 
@@ -281,6 +282,28 @@ func (w *walk[F]) unsupported(term semantics.TermID, entity semantics.EntityID, 
 // graph records exactly one, else the declaring site of the entity (for an
 // occurrence, the declaration it occurs in). A term recorded at several sites is
 // shared, and the graph does not say which of them this occurrence is.
+// judged turns a source judgment into the kernel's failure meaning and
+// locates it. A source states what is wrong with what it judges. Where that
+// is, the kernel knows: the site of the occurrence, or of the declaration it
+// occurs in where the graph records the term at several sites, or the
+// declaring site of a judged declaration. A judgment whose diagnostic already
+// is a failure at a site is left as the source stated it.
+func (w *walk[F]) judged(j Judgment, term semantics.TermID, entity semantics.EntityID) error {
+	err := verdict(j)
+	if err == nil {
+		return nil
+	}
+	var stated *SiteError
+	if errors.As(err, &stated) {
+		return err
+	}
+	message := "the source does not admit this"
+	if j.Diagnostic != nil {
+		message = j.Diagnostic.Error()
+	}
+	return w.located(err, term, entity, message)
+}
+
 func (w *walk[F]) located(kind error, term semantics.TermID, entity semantics.EntityID, message string) error {
 	site, ok := w.termSites[term]
 	ok = ok && !w.shared[term]
