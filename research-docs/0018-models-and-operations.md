@@ -143,6 +143,18 @@ that branch before it merges. Two Files formatters, for Go and for Rust, are
 the next steps of two other work items. All of it is written for today's
 paths.
 
+**Which sections serve which question.**
+
+| Question | Sections |
+| --- | --- |
+| 1. The line between model and operation | 6.1 and 6.2; the carriers in 2.3 and the contract packages in 2.5; code in 4.2 and 4.4 |
+| 2. What one language's model is | Section 3; 6.3 |
+| 3. Declared models | Section 4; 6.4 |
+| 4. Carrying the split out | 2.4, 2.6 and 2.7; 6.5 and 6.6 |
+| 5. What we are not seeing | The whole document |
+
+A reader short of time can skip section 4 and return to it from section 6.
+
 ### Four questions, as a working frame
 
 The research owner separated the messages into four questions. The
@@ -3385,66 +3397,62 @@ Work in flight that is written for the present paths: section 2.7.
 
 ## 7. Questions for the expert
 
-The owner's direction is fixed: the repository splits at its root into
-models and operations, a model contains no operation and imports none, and
-operations work on the model. We do not ask whether to split. Owner rules
-are fixed. Accepted designs are fixed unless you see a contradiction, and
-section 5.3 names eight that we see. Everything else is open: what the code
-does today, every reading marked as ours, and the options of section 6, to
-which the labels P2 and P3, U1 to U3 and D1 to D3 refer. P1 is the first
-step that every way contains. Please name an option, or state another, and
-then the reason. Patterns from comparable systems are welcome where they
-change the answer, including what failed.
+The split and its two rules are not asked. What we want back is a test that
+we can apply to a package ourselves, verdicts on named cases, patterns from
+comparable systems with what failed, and an order of work. We do not want a
+review of the code shown.
 
-1. **The line between model and operation.** The owner's direction is a root split: a model contains no operation and imports none, and operations work on the model. What principle decides what is a model and what is an operation? In particular: where does a model's own well-formedness end and an operation begin, for a constructor that refuses a malformed value, a typed reader over a graph, and the check that a tree or a form is well formed; do the generic carriers belong to the model; do the value types that today sit with each operation's contract (the generic carrier of intent, evidence and receipt types, diagnostics, limits) belong to the model or to the operation, and what then is left of a contract; where do the things that describe a relation between two languages belong (a mapping's vocabulary, a family's meaning); and how would you treat a language's lexical rules, which both sides need?
+Owner rules and the owner's direction are fixed. Accepted designs are fixed
+unless you see a contradiction, and section 5.3 names five that we see.
+Everything else is open: what the code does today, every reading marked as
+ours, every decision of the research owner, and the options of section 6,
+to which the labels P1 to P4, U1 to U3 and D0 to D3 refer. Please name an
+option, or state another, and then the reason.
 
-   *What it rests on.* The direction is fixed point D. Section 6.1 gives
-   what its two rules reach in the code as it is: the twelve packages and
-   ten contracts that hold both, and the 33 imports. It then gives the three
-   kinds of code that our test leaves unassigned, each with an example. The
-   carriers are in 2.3 and 4.1, the contract packages with their two kinds
-   of content in 2.5, and the per-pair vocabularies and family meanings of
-   the migration in 2.7. Section 6.2 gives two ways to carry the direction
-   out (P2, P3) and the first step they share (P1). Fixed point 4 (AC-11)
-   and fixed point 19 (the definition of a vocabulary) are the rules nearest
-   to this question.
+1. **The line between model and operation.** The direction says three things: a model contains no operation, a model imports no operation, and operations work on the model. The owner then asked whether what we could not assign is the correctness of a model, or its consistency. How would you draw the line as a test that can be applied to one piece of code and that makes "the model is independent of the operation" checkable, and what does each of the three statements then require and forbid? Is the difference between consistency (a value agrees with its own model, decidable from the value and the model's declaration alone) and correctness (agreement with something outside the value, which needs evidence) the right axis, and would you keep, merge or replace our four levels? A model that contains no operation cannot guarantee its invariants by construction: should "checked" then be a separate, evidenced state for every sort of model, as it is for syntax trees today, and what carries that evidence? Please apply your test to the cases (a) to (i) of section 6.2, with one verdict and one reason each. Where your test gives neither answer, is that a third sort of thing beside model and operation, and how would you define it? If declaring a model as data (question 3) is itself the test, please say so.
 
-2. **Intent and analysed meaning.** Our languages have three vocabularies for their type-level notions: syntax node kinds, the kinds analysis reports, and the forms generation intends. How do systems you know relate what a tool intends to construct to what analysis of the constructed program finds, and what would you take as the test for when the two should share one vocabulary of forms that differs only in standing, and when they must stay apart?
+   *What it rests on.* The direction is fixed point DIR. Section 6.1 gives
+   our test, what each rule reaches by it, and our derivation from the
+   owner's messages 9 and 10: consistency, correctness and the four levels.
+   Section 6.2 lists the cases (a) to (i) with pointers to their code, and
+   four ways to place packages (P1 to P4). The carriers are in section 2.3,
+   the contract packages in 2.5, the shared mechanisms in 1.2 and 2.2. Fixed
+   points 4, 13, 14 and 19 are the nearest rules and accepted sentences.
 
-   *What it rests on.* Section 3.3 lays Go's three vocabularies side by
-   side, and section 3.2 shows where each is written and read. The fixed
-   points on intent are 8 to 14, and those against a shared model of types
-   are 15 to 18; our reading of what they do not decide follows fixed point
-   18. Section 6.3 gives three options (U1, U2, U3) and, for each, the
-   differences that the platform's unification test (fixed point 6) would
-   require to be represented.
+2. **What one language's model is, for every operation and on both sides of a transformation.** The owner asked whether the forms that generation states are a syntax model or a transform model, and whether transformation is not just one of many operations working on a language's model. If any language can be the source or the target of a transformation, what would you have one language present to all the operations on it: how do its abstract syntax, what analysis reports about a program, and what a transformation intends to construct relate, and are the intended forms a model of the language or the working data of one operation? How do systems you know arrange this, and what failed? What test tells you when two of these should share their names and differ only in status, intended or established, and when they stay apart with a stated relation? Please apply it to Go's rows in the side-by-side table.
 
-3. **Declared models.** Which parts of a language's model should be declared as data and which legitimately remain code, and in what kind of description? What is the smallest declared core that would let the vocabulary, the admission of a tree, the shapes of semantic facts and the shapes of intended forms come from one description, and what keeps such a description honest against the hand-written parsers, formatters and compiler bridges that must agree with it?
+   *What it rests on.* Section 3: the four vocabulary packages of Go (3.1),
+   one record traced through them (3.2), the three sets of names beside each
+   other (3.3), and the other readers of what analysis reports (3.4). Section
+   3.5 is the case where it broke: the first pair with Go as a source could
+   not walk Go's analysed graph. A decision of the research owner on that
+   case stands, and you may object to it. Section 6.3 says who would use
+   shared names and gives three options (U1 to U3). The fixed points on
+   intent are 8 to 12, and those on a shared model of types 15 to 18.
 
-   *What it rests on.* What is data and what is code today is in sections
-   4.1 to 4.4 and is summarized in 6.4: the admission table and the rules
-   beside it (4.2), a fact's shape in a writer and a reader (4.3), a form's
-   shape in a constructor and a check (4.4). The node patterns of horos
-   kinds are in 4.6 and the one existing generator in 4.7. Section 6.4
-   gives three candidate carriers (D1, D2, D3).
+3. **Declared models.** The owner asks why a language's model needs code at all, given one generic tree for every language. How far can a language's model be data, an instance of a generic description that shared code interprets, so that describing a language adds no code? What cannot be stated that way, and is that remainder still model? Would you have one description per language or one per sort of model (tree shapes, fact shapes, form shapes), and what is the smallest declared core worth building first? What gives a declared model its identity and version, and what keeps it honest against hand-written parsers, formatters and compiler bridges, two of which are not written in Go?
 
-4. **The order of work.** Given that a contract migration is in flight, that two further language pairs and two Files formatters are about to be written against the present places, and that our rule is "a misplaced responsibility moves first, as its own change", how would you order grouping, placement, unification and declaration so that each later step only adds and nothing moves twice? What must be decided before the first move, and how should the two rules of the direction be enforced so that they express the decision instead of replacing it?
+   *What it rests on.* Section 4 is what this question is for: names (4.1),
+   a grammar table with the rules it cannot state and a lexical rule (4.2),
+   a fact written and read (4.3), a form built and checked (4.4), the node
+   patterns of horos kinds (4.6) and the one generator (4.7). Section 6.4
+   says what is data and what is code today and gives four options (D0 to
+   D3) with one worked row.
 
-   *What it rests on.* The work in flight is in section 2.7. The rule is
-   AC-10, whose exact words are in 2.1 and fixed point 2. The grouping step
-   that we have already decided is in 6.5. How a role is computed from a
-   path today is in 2.6 and 4.8, and what a dependency check can and cannot
-   establish is fixed point 3. The two rules of the direction are in fixed
-   point D and section 6.1. What a move would touch is in 6.6; under
-   fixed point 1 it bears on the order and not on the choice.
+4. **Carrying the split out.** Below the two roots, what would you organize the model root by (sort of model, language, pair of languages), and what stays of the stage-by-language matrix below the operations root? A migration of the mapping contract is in flight, and two further language pairs and two Files formatters are about to be written against the present places; our rule is that a misplaced responsibility moves first, as its own change, and that later steps only add. In what order would you take the decisions and the moves so that nothing moves twice, what must be decided before the first move, and would you land the work in flight in the present places first or write it against the new ones? Which part of the line can a check on import paths carry, and what must remain a judgment made in review, given our rule that such a check enforces a boundary that reasoning has decided and does not replace it?
 
-5. **What we are not seeing.** What does a split into models and operations fail to capture in a system like this, and what would you ask us that we have not asked ourselves?
+   *What it rests on.* The path pattern is in section 2.4, the package roles
+   and the architecture test in 2.6, and the work in flight with its gate
+   and the tempo of this project in 2.7. Section 6.2 says what is open below
+   the roots, 6.5 gives the one step we intend to take first, and 6.6 says
+   what a move would touch. The rules are fixed points 2 and 3, and the
+   layout's fixed points are 20 to 25.
 
-   *What it rests on.* The whole document. Three places where we already
-   see that the two words do not divide the code cleanly are the three
-   unassigned kinds of code (6.1), the ten packages that our test does not
-   decide (6.1), and the handles that only an operation's admission code may
-   create and that a model must name (6.1 and 6.2).
+5. **What we are not seeing.** Which of the distinctions this document draws would you not draw, and which would you draw that it does not? What would you want to know, or have us measure or try, before the first move? And what would you ask in our place?
+
+   *What it rests on.* The whole document, including its frame: the four
+   working questions, our test of section 6.1, the four levels and the
+   options.
 
 ## 8. Glossary
 
