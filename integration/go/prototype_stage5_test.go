@@ -113,13 +113,26 @@ var configuredReference = g.ContributionIdentity{Publisher: "example.org/fixture
 // lowerModes are further facets that a lowering process registers, by mode.
 // A test file that brings a contribution of its own adds its mode here, so
 // that it changes no other file.
-var lowerModes = map[string]func(*testing.T) []g.Facet{}
+var lowerModes = map[string]func(*testing.T) ([]g.Facet, []g.PayloadCodec){}
+
+// lowerCodecs are the codecs a lowering process registers, by mode. A reader
+// reads a payload only through the codec of its schema, so it needs the codec
+// of every selected contribution.
+func lowerCodecs(t *testing.T, mode string) []g.PayloadCodec {
+	codecs := goCodecs(t)
+	if more, ok := lowerModes[mode]; ok {
+		_, added := more(t)
+		codecs = append(codecs, added...)
+	}
+	return codecs
+}
 
 // lowerFacets are the facets a lowering process registers, by mode.
 func lowerFacets(t *testing.T, mode string) []g.Facet {
 	facets := goFacets(t)
 	if more, ok := lowerModes[mode]; ok {
-		return append(facets, more(t)...)
+		added, _ := more(t)
+		return append(facets, added...)
 	}
 	lower := gorecordfacets.Lower
 	if mode == "configured-stringly" {
@@ -151,7 +164,7 @@ func TestPrototypeHelperLower(t *testing.T) {
 		t.Fatal(err)
 	}
 	snapshot, _ := os.ReadFile(filepath.Join(dir, "snapshot.json"))
-	lowered, err := backend.Lower(backend.Input{Plan: plan, Snapshot: snapshot, Facets: lowerFacets(t, os.Getenv("BITTYPE_PROTOTYPE_LOWER_MODE")), Codecs: goCodecs(t), Semantics: []string{source.Semantics}})
+	lowered, err := backend.Lower(backend.Input{Plan: plan, Snapshot: snapshot, Facets: lowerFacets(t, os.Getenv("BITTYPE_PROTOTYPE_LOWER_MODE")), Codecs: lowerCodecs(t, os.Getenv("BITTYPE_PROTOTYPE_LOWER_MODE")), Semantics: []string{source.Semantics}})
 	if err != nil {
 		if werr := os.WriteFile(filepath.Join(dir, "lower.err"), []byte(err.Error()), 0o644); werr != nil {
 			t.Fatal(werr)
