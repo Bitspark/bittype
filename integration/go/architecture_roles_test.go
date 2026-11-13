@@ -496,6 +496,7 @@ func transformRole(relative string) (roleRule, bool) {
 		// on another says so in roleExtensions.
 		return role("transform/syntax/<language>/mapping/<part>/go", roleCommonPart, language,
 			"contracts/generation/go", "syntax/<language>/go", "transform/syntax/<language>/source/go",
+			"transform/syntax/shared/contribution/go",
 		), true
 	}
 	return roleRule{}, false

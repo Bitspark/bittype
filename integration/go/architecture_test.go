@@ -189,10 +189,13 @@ var foundationRules = map[string][]string{
 	},
 	"transform/syntax/shared/generation/go": {"contracts/check/go", "contracts/generation/go", "contracts/semantic/go", "contracts/text/go", "contracts/transform/go", "trees/ast/go", "trees/representation/go"},
 	"transform/syntax/shared/target/go":     {"contracts/generation/go", "trees/ast/go", "trees/representation/go"},
-	"check/syntax/shared/ast/go":            {"contracts/text/go", "trees/ast/go"},
-	"check/syntax/shared/cst/go":            {"check/syntax/shared/ast/go", "contracts/text/go", "trees/cst/go"},
-	"print/syntax/shared/provider/go":       {"check/syntax/shared/cst/go", "contracts/language/go", "contracts/print/go", "trees/cst/go", "trees/representation/go"},
-	"print/files/shared/provider/go":        {"contracts/language/go", "contracts/print/go", "files/go", "source/go", "trees/cst/go", "trees/representation/go"},
+	// What the contributions of any pair are built from: mechanisms over the
+	// contract that read no source and know no language (O46, AC-11).
+	"transform/syntax/shared/contribution/go": {"contracts/generation/go"},
+	"check/syntax/shared/ast/go":              {"contracts/text/go", "trees/ast/go"},
+	"check/syntax/shared/cst/go":              {"check/syntax/shared/ast/go", "contracts/text/go", "trees/cst/go"},
+	"print/syntax/shared/provider/go":         {"check/syntax/shared/cst/go", "contracts/language/go", "contracts/print/go", "trees/cst/go", "trees/representation/go"},
+	"print/files/shared/provider/go":          {"contracts/language/go", "contracts/print/go", "files/go", "source/go", "trees/cst/go", "trees/representation/go"},
 	// Private helpers of no single language. A shared helper cannot conceal a
 	// language: it is bound by the same rule as the rest of the table.
 	"internal/tree":      {"trees/ast/go"},

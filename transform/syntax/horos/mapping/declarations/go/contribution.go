@@ -18,6 +18,7 @@ import (
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	naming "github.com/Bitspark/bittype/transform/syntax/horos/mapping/naming/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
+	contribution "github.com/Bitspark/bittype/transform/syntax/shared/contribution/go"
 )
 
 // Decision is what the policy decides for one declaration. Each target's
@@ -78,21 +79,16 @@ func Decide(step g.DecideStep[h.Language, source.Reader], recordForm g.EvidenceK
 }
 
 // Describe is the projector's part: the native declaration from the recorded
-// decision and the native type of the body. It reads no source. The native
-// declaration has bare generic parameters: it carries no kind constraint.
+// decision and the native type of the body. The policy's part of it is the
+// choice of the form: the record form for a nominal declaration, the alias
+// form for every other. The description itself, with the source's generic
+// convention, is the shared mechanism of contributions. It reads no source.
+// The native declaration has bare generic parameters: it carries no kind
+// constraint.
 func Describe[T any](p g.Projection[T], d Decision, record, alias g.Form[T]) (g.DeclarationDescription[T], error) {
-	if len(d.Parameters) != p.Binders() || p.Dependencies() != 1 {
-		return g.DeclarationDescription[T]{}, g.ErrScope
-	}
 	form := alias
 	if d.Nominal {
 		form = record
 	}
-	desc := g.DeclarationDescription[T]{Name: d.Name, Form: form, Origin: p.Origin(), Body: p.Dependency(0).Type}
-	for i, name := range d.Parameters {
-		desc.Generic.Parameters = append(desc.Generic.Parameters, g.ParameterDescription{Name: name, Origin: p.BinderOrigin(i), RequiredUse: true})
-		desc.Generic.Bindings = append(desc.Generic.Bindings, g.Parameter[T](i))
-		desc.Generic.Arguments = append(desc.Generic.Arguments, g.Argument[T](i))
-	}
-	return desc, nil
+	return contribution.Declaration(p, d.Name, d.Parameters, form)
 }

@@ -288,7 +288,7 @@ var syntheticFoundations = []string{
 	"contracts/analysis/go", "contracts/check/go", "contracts/format/go", "contracts/generation/go", "contracts/language/go",
 	"contracts/parse/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go", "contracts/text/go",
 	"contracts/transform/go", "files/go", "internal/concrete", "internal/grammar", "internal/lex", "internal/parseutil",
-	"internal/tree", "semantics/go", "source/go", "transform/syntax/shared/target/go", "trees/ast/go", "trees/representation/go",
+	"internal/tree", "semantics/go", "source/go", "transform/syntax/shared/contribution/go", "transform/syntax/shared/target/go", "trees/ast/go", "trees/representation/go",
 }
 
 // languageLayout is every package shape of one language, each importing all
@@ -327,7 +327,7 @@ var languageLayout = map[string][]string{
 	"transform/syntax/<l>/target/go": {"contracts/generation/go", "internal/<l>", "syntax/<l>/go", "transform/syntax/<l>/model/go", "transform/syntax/shared/target/go", "trees/ast/go"},
 
 	"transform/syntax/<l>/mapping/go":         {},
-	"transform/syntax/<l>/mapping/pattern/go": {"contracts/generation/go", "syntax/<l>/go", "transform/syntax/<l>/source/go"},
+	"transform/syntax/<l>/mapping/pattern/go": {"contracts/generation/go", "syntax/<l>/go", "transform/syntax/<l>/source/go", "transform/syntax/shared/contribution/go"},
 	"transform/syntax/<l>/mapping/naming/go":  {"contracts/generation/go", "syntax/<l>/go", "transform/syntax/<l>/source/go"},
 }
 
