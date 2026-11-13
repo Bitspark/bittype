@@ -32,6 +32,7 @@ import (
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/rust/go"
 	s "github.com/Bitspark/bittype/syntax/rust/go"
+	rustsymbol "github.com/Bitspark/bittype/transform/syntax/rust/symbol/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
@@ -319,7 +320,8 @@ func TestRustSemanticNamespaceAndCoordinates(t *testing.T) {
 // The probe of row 26 of research 0016. The helper binds every segment of an
 // absolute path into the standard library. It names each entity by the crate
 // and the path of its definition, which is not the path that was written, and
-// such an entity has no declaration site. A primitive type has no binding.
+// such an entity has no declaration site. A primitive type binds to the entity
+// of the primitive type, which no source declares either.
 // docs/destinations.md states what this means for a recorded destination.
 func TestRustSemanticAbsoluteStandardLibraryPaths(t *testing.T) {
 	snapshot, trees, _ := rsCapture(t, `pub struct Person { pub name: ::std::string::String, pub tags: ::std::vec::Vec<::std::string::String>, pub nick: ::std::option::Option<::std::string::String>, pub ok: bool }`)
@@ -339,14 +341,14 @@ func TestRustSemanticAbsoluteStandardLibraryPaths(t *testing.T) {
 	sites := map[ast.NodeID]bool{}
 	for _, b := range data.Bindings {
 		node := tree.Nodes[b.At.Site.Node-1]
-		if b.At.Site.Tree != tree.ID || node.Kind != s.KindPathSegment || b.At.Role != n.Key(s.RoleTarget) || sites[b.At.Site.Node] {
+		if b.At.Site.Tree != tree.ID || node.Kind != s.KindPathSegment && node.Kind != s.KindPrimitiveType || b.At.Role != n.Key(s.RoleTarget) || sites[b.At.Site.Node] {
 			t.Errorf("unexpected binding at %v (%s) with the role %v", b.At.Site, node.Kind, b.At.Role)
 			continue
 		}
 		sites[b.At.Site.Node] = true
 		target := data.Entities[b.Target-1]
 		if len(target.Declarations) != 0 {
-			t.Errorf("the entity %s of the standard library has a declaration site", target.Name)
+			t.Errorf("the entity %s, which the captured source does not declare, has a declaration site", target.Name)
 		}
 		written, to := nodeAttribute(node, s.AttributeName), entity{target.Kind.Name, target.Name}
 		if previous, seen := bound[written]; seen && previous != to {
@@ -359,13 +361,14 @@ func TestRustSemanticAbsoluteStandardLibraryPaths(t *testing.T) {
 		"string": {"module", "alloc::string"}, "String": {"struct", "alloc::string::String"},
 		"vec": {"module", "alloc::vec"}, "Vec": {"struct", "alloc::vec::Vec"},
 		"option": {"module", "core::option"}, "Option": {"enum", "core::option::Option"},
+		"bool": {"primitive", "bool"},
 	}
 	if !reflect.DeepEqual(bound, want) {
-		t.Errorf("the segments bind to %v, want %v", bound, want)
+		t.Errorf("the segments and the primitive type bind to %v, want %v", bound, want)
 	}
-	// Five paths of three segments each.
-	if len(data.Bindings) != 15 {
-		t.Errorf("%d bindings, want 15", len(data.Bindings))
+	// Five paths of three segments each, and the primitive type.
+	if len(data.Bindings) != 16 {
+		t.Errorf("%d bindings, want 16", len(data.Bindings))
 	}
 	primitives := 0
 	for i, node := range tree.Nodes {
@@ -377,13 +380,273 @@ func TestRustSemanticAbsoluteStandardLibraryPaths(t *testing.T) {
 			}
 		case s.KindPrimitiveType:
 			primitives++
-			if sites[id] {
-				t.Errorf("the primitive type at node %d has a binding", id)
+			if !sites[id] {
+				t.Errorf("the primitive type at node %d has no binding", id)
 			}
 		}
 	}
 	if primitives != 1 {
 		t.Errorf("%d primitive types, want the one bool", primitives)
+	}
+}
+
+// The tests below are the remaining part of #276: the helper binds a use of a
+// primitive type, so that evidence can establish the destination that
+// generated Rust output records at bool. They need the compiler helper.
+
+// rsPrimitiveEntity says whether an entity of a Rust graph is the primitive
+// type that a symbol names: an entity of the primitive kind with the symbol's
+// name, without an owner and without a declaration site. This is the rule of
+// docs/destinations.md for a use that reaches the destination.
+func rsPrimitiveEntity(symbol rustsymbol.Symbol, entity semantics.Entity) bool {
+	name, ok := symbol.Primitive()
+	return ok && entity.Kind == n.PrimitiveKind() && entity.Name == name && entity.Owner == 0 && len(entity.Declarations) == 0
+}
+
+// rsPrimitiveUses returns the primitive type nodes of a tree that spell name,
+// in the order of the source, or every such node for the empty name.
+func rsPrimitiveUses(tree s.AST, name string) []ast.NodeRef {
+	var uses []ast.NodeRef
+	for i, node := range tree.Nodes {
+		if node.Kind == s.KindPrimitiveType && (name == "" || nodeAttribute(node, s.AttributeName) == name) {
+			uses = append(uses, ast.NodeRef{Tree: tree.ID, Node: ast.NodeID(i + 1)})
+		}
+	}
+	return uses
+}
+
+// rsBound returns the entity that the one target binding at a site names.
+func rsBound(t *testing.T, data semantics.Data, at ast.NodeRef) (semantics.EntityID, semantics.Entity) {
+	t.Helper()
+	var found semantics.EntityID
+	for _, b := range data.Bindings {
+		if b.At.Site == at && b.At.Role == n.Key(s.RoleTarget) {
+			if found != 0 {
+				t.Fatalf("two target bindings at %v", at)
+			}
+			found = b.Target
+		}
+	}
+	if found == 0 {
+		t.Fatalf("no target binding at %v", at)
+	}
+	return found, data.Entities[found-1]
+}
+
+// rsOpen resolves and analyzes texts under an environment and opens the model.
+func rsOpen(t *testing.T, environment n.Environment, texts ...string) (n.Model, []s.AST) {
+	t.Helper()
+	snapshot, trees, _ := rsCapture(t, texts...)
+	_, result := rsResultsFor(t, snapshot, rsSettingsFor(t, environment))
+	for _, obligation := range []semantics.Key{n.Coverage(), n.Bindings(), n.Validity()} {
+		if report, ok := result.Report(obligation); !ok || report.Status != semantic.Complete || report.Verdict != semantic.Holds {
+			t.Fatalf("%s does not hold: %+v; %+v", obligation.Name, report, result.Diagnostics())
+		}
+	}
+	m, err := n.Open(result)
+	if err != nil {
+		t.Fatalf("model: %v; diagnostics: %+v", err, result.Diagnostics())
+	}
+	return m, trees
+}
+
+// Every primitive type node has one target binding. Where nothing captures the
+// name it names the entity of the primitive type: of the primitive kind, named
+// as the language names the type, without an owner, a site, parameters or a
+// visibility. One entity stands for every use of a type, and bool's is the
+// one that the Rust symbol Bool names.
+func TestRustSemanticPrimitiveTypeBindings(t *testing.T) {
+	m, trees := rsOpen(t, rsEnvironment(), `pub struct All { pub a: bool, pub b: char, pub c: &'static str, pub d: f32, pub e: f64, pub f: i8, pub g: i16, pub h: i32, pub i: i64, pub j: i128, pub k: isize, pub l: u8, pub m: u16, pub n: u32, pub o: u64, pub p: u128, pub q: usize }
+pub struct Again { pub flag: bool, pub nested: Vec<Option<bool>>, pub pair: (u8, bool), pub bytes: [u8; 4], pub pointer: *const u16 }
+pub type Alias = bool;
+pub struct Defaulted<T = bool> { pub value: T }
+pub type Spelled = ::std::primitive::bool;`)
+	tree, data := trees[0], m.Graph().Data()
+	entities := map[string]semantics.EntityID{}
+	uses := rsPrimitiveUses(tree, "")
+	for _, use := range uses {
+		name := nodeAttribute(tree.Nodes[use.Node-1], s.AttributeName)
+		id, entity := rsBound(t, data, use)
+		if entity.Kind != n.PrimitiveKind() || entity.Name != name || entity.Owner != 0 || len(entity.Declarations) != 0 || len(entity.Parameters) != 0 || entity.Body != 0 {
+			t.Errorf("the primitive type %s at node %d binds to %+v", name, use.Node, entity)
+		}
+		if previous, seen := entities[name]; seen && previous != id {
+			t.Errorf("two entities for the primitive type %s: %d and %d", name, previous, id)
+		}
+		entities[name] = id
+	}
+	// The seventeen primitive types that the Rust syntax admits, and bool six
+	// times, u8 three times and u16 twice.
+	if len(entities) != 17 || len(uses) != 25 {
+		t.Errorf("%d primitive types at %d nodes, want 17 at 25: %v", len(entities), len(uses), entities)
+	}
+	primitives := 0
+	for _, entity := range data.Entities {
+		if entity.Kind == n.PrimitiveKind() {
+			primitives++
+		}
+	}
+	if primitives != len(entities) {
+		t.Errorf("%d entities of the primitive kind for %d primitive types", primitives, len(entities))
+	}
+	// bool is the destination that the Rust symbol package issues.
+	boolean := data.Entities[entities["bool"]-1]
+	if !rsPrimitiveEntity(rustsymbol.Bool(), boolean) {
+		t.Errorf("the entity %+v is not the primitive type of the symbol Bool", boolean)
+	}
+	if rsPrimitiveEntity(rustsymbol.Bool(), data.Entities[entities["u8"]-1]) || rsPrimitiveEntity(rustsymbol.StdString(), boolean) {
+		t.Error("another primitive type or another symbol reads as the destination Bool")
+	}
+	// A path that the compiler resolves to a primitive type binds its last
+	// segment to the same entity.
+	spelled := 0
+	for i, node := range tree.Nodes {
+		if node.Kind == s.KindPathSegment && nodeAttribute(node, s.AttributeName) == "bool" {
+			spelled++
+			if id, _ := rsBound(t, data, ast.NodeRef{Tree: tree.ID, Node: ast.NodeID(i + 1)}); id != entities["bool"] {
+				t.Errorf("the segment bool of ::std::primitive::bool binds to the entity %d, want %d", id, entities["bool"])
+			}
+		}
+	}
+	if spelled != 1 {
+		t.Errorf("%d path segments named bool, want 1", spelled)
+	}
+	// The readers. A primitive type has no visibility, no declared type and no
+	// compiler path: Lookup never selects it.
+	d, err := m.Declaration(entities["bool"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.Visibility(); !errors.Is(err, n.ErrMissingFact) {
+		t.Error("a primitive type has a declared visibility", err)
+	}
+	if _, err := d.Effective(); !errors.Is(err, n.ErrMissingFact) {
+		t.Error("a primitive type has an effective visibility", err)
+	}
+	if observed, err := d.PrivateInterface(); err != nil || len(observed) != 0 {
+		t.Error("a primitive type has a private interface", observed, err)
+	}
+	if d.Type().Valid() || len(d.Parameters()) != 0 || len(d.Predicates()) != 0 || d.Default().Valid() {
+		t.Error("a primitive type has a declared type, parameters, predicates or a default")
+	}
+	for name := range entities {
+		if found, err := m.Lookup(name); !errors.Is(err, n.ErrForeign) {
+			t.Errorf("Lookup(%q) selected %+v, %v", name, found.Entity(), err)
+		}
+	}
+	// The types of the fields are what they were: a primitive type term, which
+	// is no reference to the entity.
+	fields, ok, err := rsType(t, m, "Again").Fields()
+	if err != nil || !ok || len(fields) != 5 || fields[0].Type.String() != "bool" || fields[0].Type.Term().Target != 0 {
+		t.Error("the type of a bool field", fields, err)
+	}
+}
+
+// A declaration or a generic parameter named bool captures a use, and the
+// binding at the primitive type node shows it: it names the declaration, an
+// entity of another kind with a site, and not the primitive type. Without
+// this binding the capture is invisible, because the node spells bool either
+// way.
+func TestRustSemanticPrimitiveTypeCapture(t *testing.T) {
+	crate := rsEnvironment().Crate.Name
+	for _, c := range []struct {
+		name, text string
+		// The kind and the name of the entity at each use of bool, in the
+		// order of the source. The empty kind is the primitive type.
+		want [][2]string
+	}{
+		{"no declaration of that name", `pub struct S { pub ok: bool }`, [][2]string{{"", ""}}},
+		{"a struct", `pub struct bool {} pub struct S { pub ok: bool }`, [][2]string{{"struct", crate + "::bool"}}},
+		{"an alias", `pub type bool = u8; pub struct S { pub ok: bool }`, [][2]string{{"alias", crate + "::bool"}}},
+		{"an enum", `pub enum bool { No, Yes } pub struct S { pub ok: bool }`, [][2]string{{"enum", crate + "::bool"}}},
+		{"a generic parameter", `pub struct S<bool> { pub ok: bool }`, [][2]string{{"parameter", crate + "::S::bool"}}},
+		{"a generic parameter of an alias", `pub type A<bool> = Vec<bool>;`, [][2]string{{"parameter", crate + "::A::bool"}}},
+		{"a struct in one module of two", `pub mod m { pub struct bool {} pub struct S { pub ok: bool } } pub struct T { pub ok: bool }`, [][2]string{{"struct", crate + "::m::bool"}, {"", ""}}},
+		{"a parameter of one struct of two", `pub struct S<bool> { pub ok: bool } pub struct T { pub ok: bool }`, [][2]string{{"parameter", crate + "::S::bool"}, {"", ""}}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			m, trees := rsOpen(t, rsEnvironment(), c.text)
+			tree, data := trees[0], m.Graph().Data()
+			uses := rsPrimitiveUses(tree, "bool")
+			if len(uses) != len(c.want) {
+				t.Fatalf("%d uses of bool, want %d", len(uses), len(c.want))
+			}
+			for i, use := range uses {
+				_, entity := rsBound(t, data, use)
+				reaches := rsPrimitiveEntity(rustsymbol.Bool(), entity)
+				if c.want[i][0] == "" {
+					if !reaches {
+						t.Errorf("use %d of bool binds to %+v, want the primitive type", i, entity)
+					}
+					continue
+				}
+				if reaches || entity.Kind != n.Key(c.want[i][0]) || entity.Name != c.want[i][1] {
+					t.Errorf("use %d of bool binds to %+v, want the %s %s", i, entity, c.want[i][0], c.want[i][1])
+				}
+				// The capturing declaration is one of the captured source.
+				if len(entity.Declarations) != 1 || entity.Declarations[0].Tree != tree.ID {
+					t.Errorf("the capturing %s has the sites %v", entity.Kind.Name, entity.Declarations)
+				}
+			}
+		})
+	}
+}
+
+// The Rust pagination output records the destination Bool at its one bool.
+// The text of that output, analyzed by the pinned compiler, binds that bool to
+// the entity of the primitive type that the recorded symbol names. Nothing in
+// bittype compares the two yet: Rust Files will. This shows that the evidence
+// for the recorded destination exists.
+func TestRustGeneratedBoolBindsToItsRecordedDestination(t *testing.T) {
+	e, _, input := generationInput(t, paginationModule())
+	out := generatedOutput(t, e, input, rustText(), rustRequest)
+	generated := outputTree[s.Language](t, out)
+	uses := externalUsesBySite(t, out)
+	// What generation recorded at each primitive type node.
+	var recorded []rustsymbol.Symbol
+	for _, at := range rsPrimitiveUses(generated, "") {
+		use, ok := uses[at]
+		if !ok {
+			t.Fatalf("the primitive type at node %d records no destination", at.Node)
+		}
+		symbol, err := rustsymbol.ReadExternal(out.Snapshot().Language(), use)
+		if err != nil {
+			t.Fatal(err)
+		}
+		recorded = append(recorded, symbol)
+	}
+	if len(recorded) != 1 || recorded[0] != rustsymbol.Bool() {
+		t.Fatalf("the output records %v at its primitive types, want the one Bool", recorded)
+	}
+	// What the compiler establishes for the text of the same output.
+	m, trees := rsOpen(t, rsEnvironment(), formatted(t, rustText(), generated))
+	found := rsPrimitiveUses(trees[0], "bool")
+	if len(found) != 1 || len(rsPrimitiveUses(trees[0], "")) != 1 {
+		t.Fatalf("the text of the output has %d uses of bool, want 1", len(found))
+	}
+	if _, entity := rsBound(t, m.Graph().Data(), found[0]); !rsPrimitiveEntity(recorded[0], entity) {
+		t.Fatalf("the bool of the generated output binds to %+v, which is not the recorded destination", entity)
+	}
+}
+
+// A crate may be named like a primitive type. Its root module and the
+// primitive type are two entities of one name, and Lookup selects the root:
+// it selects compiler paths, and a primitive type has none.
+func TestRustSemanticPrimitiveTypeAndCrateOfItsName(t *testing.T) {
+	environment := rsEnvironment()
+	environment.Crate.Name = "bool"
+	m, trees := rsOpen(t, environment, `pub struct S { pub ok: bool }`)
+	data := m.Graph().Data()
+	id, entity := rsBound(t, data, rsPrimitiveUses(trees[0], "bool")[0])
+	if !rsPrimitiveEntity(rustsymbol.Bool(), entity) {
+		t.Fatalf("the use of bool binds to %+v", entity)
+	}
+	root, err := m.Lookup("bool")
+	if err != nil || root.Entity().Kind != n.ModuleKind() || root.ID() == id {
+		t.Fatalf("Lookup of the crate root: %+v, %v", root.Entity(), err)
+	}
+	if item, err := m.Lookup("bool::S"); err != nil || item.Entity().Owner != root.ID() {
+		t.Errorf("Lookup of an item of the crate: %+v, %v", item.Entity(), err)
 	}
 }
 func TestRustSemanticBoundsAndOutcomes(t *testing.T) {
@@ -520,6 +783,18 @@ func TestRustSemanticConcurrent(t *testing.T) {
 // model.go, one failure per name. No other test opens a native type by id,
 // which reads the native-type relation.
 func TestRustHelperNamesMatchVocabulary(t *testing.T) {
+	// The helper profile. The helper states its profile in every response and
+	// the bridge takes only the one that the vocabulary publishes, so a
+	// resolution that the helper answers shows that the two sides spell it
+	// alike. Nothing below can be read without it.
+	profiled, _, _ := rsCapture(t, `pub struct Person {}`)
+	resolver, err := resolve.New(profiled.Language(), rsCompiler(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := resolver.Resolve(context.Background(), profiled, semantic.Options{Configuration: rsSettings(t)}); err != nil {
+		t.Fatalf("helper profile: the helper does not state the profile %s that the vocabulary publishes: %v", n.HelperProfile, err)
+	}
 	m := rsModel(t, `pub struct Person {pub name: String}
 pub struct Page<T=Person> {pub items: Vec<T>}
 pub type People = Page<Person>;`)
@@ -600,6 +875,12 @@ pub type People = Page<Person>;`)
 	listed, _ := graph.Term(graph.Facts(semantics.Subject{Term: public.Type().ID()}, n.FieldsRelation())[0])
 	if err := json.Unmarshal(listed.Data, &members); err != nil || len(members) != 1 || len(members[0]) != 2 || members[0]["Name"] == nil || members[0]["Entity"] == nil {
 		t.Error("fields operator: a field is described by other members than its name and its entity", string(listed.Data), err)
+	}
+	// The primitive kind, read from the raw graph: the source has one name
+	// use, and it is a primitive type.
+	primitive := rsModel(t, `pub type Flag = bool;`).Graph().Data()
+	if len(primitive.Bindings) != 1 || primitive.Entities[primitive.Bindings[0].Target-1].Kind != n.PrimitiveKind() {
+		t.Error("primitive kind: a use of a primitive type does not bind to an entity of the primitive kind", primitive.Bindings)
 	}
 }
 

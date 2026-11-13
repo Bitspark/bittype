@@ -36,7 +36,11 @@ func Contribution(from representation.Language) (g.Contribution[h.Language, s.La
 		Domain: g.ForForm(selector), Schema: vocabulary.Schema,
 		Rule: g.Rule[h.Language, source.Reader]{
 			Name: func(_ context.Context, step name) ([]g.Request[h.Language], error) {
-				element, err := step.Reader.Element(step.Subject.Use)
+				reader, err := step.Reader()
+				if err != nil {
+					return nil, err
+				}
+				element, err := reader.Element(step.Subject.Use)
 				if err != nil {
 					return nil, err
 				}

@@ -172,6 +172,63 @@ func TestPrivateInterfaceReader(t *testing.T) {
 	}
 }
 
+// A primitive type is an entity of its own kind that no crate defines. Lookup
+// selects compiler paths and never selects it, also when a crate or an item
+// has its name. It is reached by its id, which a binding carries, and it has
+// no visibility: a reader that is asked for one fails.
+func TestPrimitiveTypeEntity(t *testing.T) {
+	if PrimitiveKind() != Key("primitive") {
+		t.Fatal(PrimitiveKind())
+	}
+	const root, item, boolean, byte8 semantics.EntityID = 1, 2, 3, 4
+	graph, err := semantics.New[s.Language](semantics.Data{Entities: []semantics.Entity{
+		{Kind: ModuleKind(), Name: "bool"},
+		{Kind: Key("struct"), Name: "bool::u8", Owner: root},
+		{Kind: PrimitiveKind(), Name: "bool"},
+		{Kind: PrimitiveKind(), Name: "u8"},
+	}}, semantics.DefaultLimits(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := Model{&model{graph: graph}}
+	// The crate is named bool, and that path selects its root.
+	if d, err := m.Lookup("bool"); err != nil || d.ID() != root {
+		t.Error("the root of a crate named like a primitive type", d.ID(), err)
+	}
+	if d, err := m.Lookup("bool::u8"); err != nil || d.ID() != item {
+		t.Error("an item named like a primitive type", d.ID(), err)
+	}
+	// u8 is the path of no declaration: the primitive type is not selected.
+	if d, err := m.Lookup("u8"); !errors.Is(err, ErrForeign) || d.Valid() {
+		t.Error("a primitive type was selected by its name", d.ID(), err)
+	}
+	d, err := m.Declaration(boolean)
+	if err != nil || d.Entity().Kind != PrimitiveKind() || d.Entity().Name != "bool" {
+		t.Fatal("a primitive type by its id", d.Entity(), err)
+	}
+	if v, err := d.Visibility(); !errors.Is(err, ErrMissingFact) || v != (Visibility{}) {
+		t.Error("a primitive type has a declared visibility", v, err)
+	}
+	if e, err := d.Effective(); !errors.Is(err, ErrMissingFact) || e != (Effective{}) {
+		t.Error("a primitive type has an effective visibility", e, err)
+	}
+	if other, err := m.Declaration(byte8); err != nil || other.ID() == d.ID() {
+		t.Error("two primitive types", err)
+	}
+	// Two declarations of one path stay ambiguous, as before.
+	twice, err := semantics.New[s.Language](semantics.Data{Entities: []semantics.Entity{
+		{Kind: ModuleKind(), Name: "pages"},
+		{Kind: Key("field"), Name: "pages::A::T", Owner: root},
+		{Kind: Key("parameter"), Name: "pages::A::T", Owner: root},
+	}}, semantics.DefaultLimits(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := (Model{&model{graph: twice}}).Lookup("pages::A::T"); !errors.Is(err, ErrForeign) {
+		t.Error("an ambiguous path was selected", err)
+	}
+}
+
 // The fields term describes each field by exactly its name and its entity.
 // A type without the fact has no fields, which is no error. A fact that is
 // present twice or in another form fails, as the visibility readers do.

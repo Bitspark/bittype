@@ -47,8 +47,12 @@ func TestHorosReaderRefusesForeignHandles(t *testing.T) {
 		}
 		name := contribution.Rule.Name
 		contribution.Rule.Name = func(ctx context.Context, step horosNameStep) ([]horosRequest, error) {
+			reader, err := step.Reader()
+			if err != nil {
+				return nil, err
+			}
 			view := step.Subject.Use
-			fields, err := step.Reader.Fields(view)
+			fields, err := reader.Fields(view)
 			if err != nil || len(fields) == 0 {
 				return nil, errors.Join(errors.New("own fields"), err)
 			}
@@ -59,8 +63,8 @@ func TestHorosReaderRefusesForeignHandles(t *testing.T) {
 				for i := range doctored.Operands {
 					doctored.Operands[i].Use = kept
 				}
-				_, foreign := step.Reader.Fields(doctored)
-				refusals = append(refusals, foreign, step.Reader.Unsupported(kept, "kept from an earlier run"))
+				_, foreign := reader.Fields(doctored)
+				refusals = append(refusals, foreign, reader.Unsupported(kept, "kept from an earlier run"))
 			}
 			return name(ctx, step)
 		}
@@ -124,7 +128,11 @@ func decideNothing(context.Context, horosDecideStep) (g.Decision, error) {
 // nameElement is the first step of a rule for a horos list: it names the
 // element, which the source reads from the kernel's view.
 func nameElement(_ context.Context, step horosNameStep) ([]horosRequest, error) {
-	element, err := step.Reader.Element(step.Subject.Use)
+	reader, err := step.Reader()
+	if err != nil {
+		return nil, err
+	}
+	element, err := reader.Element(step.Subject.Use)
 	if err != nil {
 		return nil, err
 	}
@@ -322,10 +330,14 @@ func cellContribution(key string, from representation.Language, pin string, call
 			Reference: testReference("cells", key), Target: tsTarget, Profile: rules.RepresentationProfile,
 			Domain: g.ForExact(selector), Schema: f.EmptySchema,
 			Rule: horosRule{Decide: decideNothing, Name: func(_ context.Context, step horosNameStep) ([]horosRequest, error) {
+				reader, err := step.Reader()
+				if err != nil {
+					return nil, err
+				}
 				(*calls)++
 				// Select the actual for Cell's own binder T, never a position.
 				for _, a := range step.Subject.Use.Actuals {
-					if p, err := step.Reader.Parameter(a.Binder); err != nil {
+					if p, err := reader.Parameter(a.Binder); err != nil {
 						return nil, err
 					} else if p.Name == "T" {
 						return []horosRequest{g.Reference(a.Use)}, nil

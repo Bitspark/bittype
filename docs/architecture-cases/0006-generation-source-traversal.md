@@ -1,15 +1,75 @@
 # bittype/ACX-006 — Common semantic traversal delegated to source integrations
 
-**Status: corrected and independently verified, 9 November 2026.** [#191](https://github.com/Bitspark/bittype/pull/191) delivered the
+**Status: traversal corrected and independently verified, 9 November 2026;
+residual common metadata access identified on 13 November 2026, correction pending.** [#191](https://github.com/Bitspark/bittype/pull/191) delivered the
 kernel-owned traversal, but independent verification by `codex-hydrated-type-design` (board claim `bittype-source-traversal-20261108`, record 000003) rejected it: the public planning
 boundary still let a source interpret other evidence, and planning ignored a
 selector's language. [#192](https://github.com/Bitspark/bittype/pull/192) corrects both, and a diagnostic-site defect. Independent verification
 accepted that correction at `6132170` (record 000005). The generation kernel owns traversal of
-the shared semantic graph. Source integrations contribute only interpretation
-and judgments. [GEN-01](../generation-gaps.md#gen-01) records the delivered
+the shared semantic graph. Source integrations supply interpretation and
+judgments, with the reader's residual metadata responsibility identified below.
+[GEN-01](../generation-gaps.md#gen-01) records the delivered
 division, its completion criteria and its supported scope.
 [Research 0013](../../research-docs/0013-generation-source-traversal.md) derived
 the replacement interface.
+
+## Residual common metadata access, 13 November 2026
+
+The traversal correction remains verified for its recorded scope. A further
+ownership review at `a28febc44830d49ec3c2f22cd70c7ded9d0e5028` found common
+metadata access still mediated by a language-specific reader. This is a
+remaining responsibility split, not a claim that traversal moved back.
+
+The following are excerpts of the implemented Horos reader contract:
+
+```go
+type Reader interface {
+    Declaration(g.Declaration[h.Language]) (Declaration, error)
+    Parameter(g.Binder[h.Language]) (Parameter, error)
+    // Descriptor, Fields, Element and Unsupported omitted.
+}
+type Parameter struct {
+    Name   string
+    Origin ast.NodeRef
+}
+```
+
+Horos implements this reader; the selected declaration recipe calls it while
+the kernel expands a declaration. The current
+[`Parameter` implementation](https://github.com/Bitspark/bittype/blob/a28febc44830d49ec3c2f22cd70c7ded9d0e5028/transform/syntax/horos/source/go/read.go#L64)
+checks the binder against the capture, reads its entity, requires one declaration
+site, and returns its name and that site. Name and declaration sites are already
+fields of the [agnostic entity model](../../semantics/go/model.go).
+The [independent source fixture](https://github.com/Bitspark/bittype/blob/a28febc44830d49ec3c2f22cd70c7ded9d0e5028/integration/go/testdata/generationfixture/fixture.go#L118)
+supplies its own `Name` and `ParameterName` readers for the same common lookup.
+The kernel's [declaration view](../../contracts/generation/go/occurrence.go)
+carries the declaration, formals and body, but exposes no corresponding
+metadata access to mappings.
+
+The misplaced responsibility is retrieving the recorded name and sites through
+an authenticated generation handle. It needs the shared graph and capture
+identity; it needs no Horos constructor or meaning. Under
+[AC-11](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-11)
+and [AC-02](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-02),
+that mechanism belongs in the agnostic generation layer. Without the correction,
+each source must supply another wrapper for mappings to obtain the same facts.
+
+**Required split.** Supply common metadata access once, preserving exact capture
+and handle scope. Preserve the plurality of declaration sites: Horos's
+single-site requirement is its own rule, not a universal graph invariant.
+Horos continues to interpret module pins, root-module membership, descriptor
+payloads, sorts and admission facts. A mapping continues to choose a native
+naming intent; reading the source's recorded name chooses no native spelling.
+The mixed `Declaration` result therefore needs a responsibility split, not a
+generic copy of its Horos module fields. Do not expose an unrestricted graph to
+mapping callbacks to bypass the scoped contract.
+
+**Qualification.** This is source inspection, with the fixture demonstrating a
+second metadata wrapper. No replacement API or implementation was added and no
+new execution test was run. A correction must exercise both sources through
+the same metadata contract, reject foreign captures, and keep language-owned
+site requirements separate. [GEN-01](../generation-gaps.md#gen-01) retains the
+delivered traversal result and links this pending remainder.
 
 ## Actual ownership failure
 

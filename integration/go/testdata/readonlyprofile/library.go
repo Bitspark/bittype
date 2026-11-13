@@ -212,7 +212,11 @@ func Family(from representation.Language) (Composition, error) {
 		{
 			Reference: ListReference, Target: target, Profile: Profile, Domain: g.ForForm(list), Schema: emptySchema,
 			Rule: rule{Decide: nothing, Name: func(_ context.Context, step nameStep) ([]g.Request[h.Language], error) {
-				element, err := step.Reader.Element(step.Subject.Use)
+				reader, err := step.Reader()
+				if err != nil {
+					return nil, err
+				}
+				element, err := reader.Element(step.Subject.Use)
 				if err != nil {
 					return nil, err
 				}

@@ -101,13 +101,17 @@ func (m Model) Declaration(id semantics.EntityID) (Declaration, error) {
 // Lookup selects an unambiguous compiler path, for example pages::models::Person
 // for a crate that the environment names pages.
 // IDs remain authoritative; paths can coincide across native namespaces.
+//
+// A primitive type has no compiler path, and Lookup never selects its entity:
+// a crate may be named bool, and that name selects its root. The entity of a
+// primitive type is reached through the binding at a use of the type.
 func (m Model) Lookup(path string) (Declaration, error) {
 	if !m.Valid() {
 		return Declaration{}, ErrForeign
 	}
 	var found semantics.EntityID
 	for i, e := range m.Graph().Data().Entities {
-		if e.Name == path {
+		if e.Name == path && e.Kind != PrimitiveKind() {
 			if found != 0 {
 				return Declaration{}, ErrForeign
 			}

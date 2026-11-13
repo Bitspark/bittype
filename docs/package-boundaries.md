@@ -25,6 +25,46 @@ moves that merged on 11 November 2026, and one the first commit of #246.
 Neither read the second commit of #246, #247, #248, #250, #254 or #255. The
 reasoning sections are unchanged since the proposal.
 
+**Owner clarification, 13 November 2026.** The completed moves above leave a
+separate placement defect in the remaining Horos-specific forwarding adapter.
+The owner requires language-agnostic mechanisms to live in the agnostic layer,
+including the first implementation. An open public SPI and successful external
+composition establish only part of the boundary. A helper whose contract and
+guarantees are language-independent requires one agnostic implementation,
+instantiated by its consumers. Fixed language types and a small body cannot
+justify separate language copies.
+[AC-11](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-11)
+states the rule. [bittype/ACX-010](architecture-cases/0010-agnostic-mapping-adapter.md)
+records the confirmed adapter instance and its pending implementation correction.
+
+**Follow-up ownership audit, 13 November 2026, main `a28febc`.** Further source
+inspection found three distinct remainders:
+
+- [ACX-006](architecture-cases/0006-generation-source-traversal.md#residual-common-metadata-access-13-november-2026):
+  common names and declaration sites are read through source-specific generation
+  readers. The earlier traversal correction remains verified.
+- [ACX-011](architecture-cases/0011-files-semantic-orchestration.md):
+  Horos and TypeScript each implement the common Files semantic-stage sequence.
+  Their module organization, import rules and meaning checks remain language-owned.
+- [ACX-012](architecture-cases/0012-verification-role-language-pair.md):
+  the shared test recognizes verification-law roles only under horos-to-go.
+  The role mechanism must be separated from pair-specific dependency policy.
+
+All three corrections are pending. The source-side native spelling function is
+another existing mixed responsibility: its Rust `Self` escape and native
+identifier restrictions are covered by [ACX-004](architecture-cases/0004-generation-file-syntax.md)
+and the accepted [naming design](naming.md). That design keeps the mapping's
+naming intent and style with the mapping and native validity/access with the
+target language; this audit does not move every naming choice into the kernel.
+
+Horos being the first production generation source, and Horos/Go being the
+implemented verification pair, are coverage facts. Horos descriptors, module
+pins, kind judgments and prelude semantics remain Horos-owned. The audit found
+no Horos dispatch in the inspected shared engine, generation contracts or
+planner; that observation does not prove every operation inside a concrete
+integration is properly placed. The general verification orchestration beyond
+the role classifier has not received a complete ownership audit here.
+
 The owner asked on 11 November 2026 to check for packages "that contain multiple
 implementations / functionalities that either already are separate and neither
 conceptually nor practically depend on each other, or which still depend on

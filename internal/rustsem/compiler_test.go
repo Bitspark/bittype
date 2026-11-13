@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
@@ -39,7 +40,10 @@ func TestCompilerFailureAndProtocol(t *testing.T) {
 	trees, source := compilerFixture(t)
 	ctx := context.Background()
 	sysroot := t.TempDir()
-	for _, response := range []string{`{}`, `{"Version":1,"Compiler":"rustc 0.0.0 (x)","Status":"ok","Facts":{}}`, `{"Version":1,"Compiler":"rustc 1.90.0 (x)","Status":"ok"}`, `{"Version":1,"Compiler":"rustc 1.90.0 (x)","Status":"unsupported","Facts":{}}`, `{"Version":1,"Compiler":"rustc 1.90.0 (x)","Status":"ok","Facts":{},"unexpected":true}`} {
+	// Every response states the helper profile, so that each is refused for
+	// what it shows and not for a missing profile.
+	profile := `"Profile":"` + n.HelperProfile + `",`
+	for _, response := range []string{`{}`, `{"Version":1,` + profile + `"Compiler":"rustc 0.0.0 (x)","Status":"ok","Facts":{}}`, `{"Version":1,` + profile + `"Compiler":"rustc 1.90.0 (x)","Status":"ok"}`, `{"Version":1,` + profile + `"Compiler":"rustc 1.90.0 (x)","Status":"unsupported","Facts":{}}`, `{"Version":1,` + profile + `"Compiler":"rustc 1.90.0 (x)","Status":"ok","Facts":{},"unexpected":true}`} {
 		path := filepath.Join(t.TempDir(), "helper")
 		if err := os.WriteFile(path, []byte("#!/bin/sh\ncat >/dev/null\nprintf '%s' '"+response+"'\n"), 0700); err != nil {
 			t.Fatal(err)
@@ -56,12 +60,168 @@ func TestCompilerFailureAndProtocol(t *testing.T) {
 	}
 	t.Setenv("BITTYPE_SHOULD_NOT_LEAK", "secret-placeholder")
 	path := filepath.Join(t.TempDir(), "helper")
-	script := "#!/bin/sh\ncat >/dev/null\ntest -z \"$BITTYPE_SHOULD_NOT_LEAK\" || exit 1\nprintf '%s' '{\"Version\":1,\"Compiler\":\"rustc 1.90.0 (x)\",\"Status\":\"incomplete\"}'\n"
+	script := "#!/bin/sh\ncat >/dev/null\ntest -z \"$BITTYPE_SHOULD_NOT_LEAK\" || exit 1\nprintf '%s' '{\"Version\":1," + profile + "\"Compiler\":\"rustc 1.90.0 (x)\",\"Status\":\"incomplete\"}'\n"
 	if err := os.WriteFile(path, []byte(script), 0700); err != nil {
 		t.Fatal(err)
 	}
 	if out, err := Check(ctx, path, sysroot, environment, trees, source); err != nil || out.Status != "incomplete" {
 		t.Fatal(out, err)
+	}
+}
+
+// The bridge takes a response only under the helper profile that the
+// vocabulary publishes, whatever the response says else. A helper binary of
+// another change of the facts states another profile, and one of before this
+// rule states none. Each is a helper the bridge cannot use, and the refusal is
+// the one for a helper that was built with another compiler. It comes before
+// the status is read: a stale helper's compiler errors are no rejected
+// validity, and its mismatch is no invalid request. The same response under
+// the published profile is taken as its status says.
+func TestBridgeRefusesAnotherHelperProfile(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("qualified helper execution platform is Linux")
+	}
+	trees, source := compilerFixture(t)
+	// The helper process writes one compiler error to its error stream, which
+	// the bridge reads for the status compiler-errors only, and the response.
+	const compilerError = `{"level":"error","message":"rejected","spans":[{"file_name":"<captured.rs>","byte_start":0,"byte_end":3,"is_primary":true}]}`
+	respond := func(member, rest string) (Output, error) {
+		path := filepath.Join(t.TempDir(), "helper")
+		script := "#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' '" + compilerError + "' >&2\nprintf '%s' '{\"Version\":1," + member + "\"Compiler\":\"rustc " + n.CompilerVersion + " (x)\"," + rest + "}'\n"
+		if err := os.WriteFile(path, []byte(script), 0700); err != nil {
+			t.Fatal(err)
+		}
+		return Check(context.Background(), path, t.TempDir(), environment, trees, source)
+	}
+	// A failure of the helper that is not the refusal of its profile.
+	failed := func(_ Output, err error) bool {
+		return errors.Is(err, n.ErrCompiler) && !strings.Contains(err.Error(), "states the profile")
+	}
+	// Every status that Check tells apart, and what Check returns for it
+	// under the published profile.
+	statuses := []struct {
+		name, rest string
+		taken      func(Output, error) bool
+	}{
+		{"a graph", `"Status":"ok","Facts":{}`, func(out Output, err error) bool { return err == nil && out.Status == StatusOK && out.Facts != nil }},
+		{"compiler errors", `"Status":"compiler-errors"`, func(out Output, err error) bool {
+			return err == nil && out.Status == StatusInvalid && len(out.Diagnostics) == 1
+		}},
+		{"unsupported", `"Status":"unsupported"`, func(out Output, err error) bool { return err == nil && out.Status == StatusUnsupported }},
+		{"incomplete", `"Status":"incomplete"`, func(out Output, err error) bool { return err == nil && out.Status == statusIncomplete }},
+		{"mismatch", `"Status":"mismatch"`, func(_ Output, err error) bool { return errors.Is(err, semantic.ErrInvalidRequest) }},
+		{"environment", `"Status":"environment"`, failed},
+		{"a status the bridge does not know", `"Status":"other"`, failed},
+	}
+	refused := []struct{ name, member, stated string }{
+		{"no profile, as the helper before this rule", ``, `""`},
+		{"the profile before the primitive type bindings", `"Profile":"captured-types-2",`, `"captured-types-2"`},
+		{"a later profile", `"Profile":"captured-types-4",`, `"captured-types-4"`},
+		{"an empty profile", `"Profile":"",`, `""`},
+		{"the profile with a space after it", `"Profile":"` + n.HelperProfile + ` ",`, `"` + n.HelperProfile + ` "`},
+		// The value is compared exactly.
+		{"the profile in upper case", `"Profile":"` + strings.ToUpper(n.HelperProfile) + `",`, `"` + strings.ToUpper(n.HelperProfile) + `"`},
+	}
+	for _, status := range statuses {
+		out, err := respond(`"Profile":"`+n.HelperProfile+`",`, status.rest)
+		if !status.taken(out, err) || err == nil && out.Profile != n.HelperProfile {
+			t.Errorf("%s under the published profile: status %q, profile %q, %d diagnostics and the error %v", status.name, out.Status, out.Profile, len(out.Diagnostics), err)
+		}
+		for _, c := range refused {
+			out, err := respond(c.member, status.rest)
+			if !errors.Is(err, n.ErrCompiler) || errors.Is(err, semantic.ErrInvalidRequest) || errors.Is(err, n.ErrUnsupported) || !reflect.DeepEqual(out, Output{}) {
+				t.Errorf("%s, %s: status %q and the error %v, want the refusal of a helper", status.name, c.name, out.Status, err)
+				continue
+			}
+			// The refusal names what the helper stated and what the bridge reads.
+			if !strings.Contains(err.Error(), "states the profile "+c.stated) || !strings.Contains(err.Error(), `"`+n.HelperProfile+`"`) {
+				t.Errorf("%s, %s: the refusal does not name the two profiles: %v", status.name, c.name, err)
+			}
+		}
+	}
+}
+
+// The helper states the published profile in every response: with a graph,
+// for a source that the compiler rejects, and for a request it does not
+// cover. This reads what the helper writes, before the bridge judges it, so
+// the name is pinned from the helper's side too.
+func TestHelperStatesItsProfile(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("qualified helper execution platform is Linux")
+	}
+	for _, c := range []struct {
+		name, status string
+		units        []Unit
+	}{
+		{"a source with a graph", "ok", helperUnits(t, "pub type Flag = bool;")},
+		{"a source that the compiler rejects", "compiler-errors", helperUnits(t, "pub type Missing = Unknown;")},
+		{"a request without a unit", "unsupported", []Unit{}},
+	} {
+		response := helperResponse(t, c.units)
+		if string(response["Status"]) != `"`+c.status+`"` {
+			t.Errorf("%s: the status %s, want %s", c.name, response["Status"], c.status)
+		}
+		if string(response["Profile"]) != `"`+n.HelperProfile+`"` {
+			t.Errorf("%s: the helper states the profile %s, and the vocabulary publishes %q", c.name, response["Profile"], n.HelperProfile)
+		}
+	}
+}
+
+// helperUnits is the one unit that the bridge sends the helper for a text.
+func helperUnits(t *testing.T, text string) []Unit {
+	t.Helper()
+	parsed, err := parser.Parse(context.Background(), parse.Input{Text: text, SourceID: "test", TreeID: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := &files.Context{Files: files.Files{Entries: []files.File{{ID: "test", Path: "test.rs", Text: text}}}, Links: []files.SyntaxLink{{File: "test", Tree: "test", Source: "test"}}}
+	units, err := prepare(context.Background(), []s.AST{parsed.ASTView()}, source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return units
+}
+
+// helperResponse runs the helper on units as the bridge does and returns the
+// members of its response as it wrote them.
+func helperResponse(t *testing.T, units []Unit) map[string]json.RawMessage {
+	t.Helper()
+	encoded, err := json.Marshal(input{Version: 1, Environment: environment, Units: units})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	command := exec.Command(os.Getenv("BITTYPE_RUST_HELPER"), os.Getenv("BITTYPE_RUST_SYSROOT"))
+	command.Env = []string{}
+	command.Stdin = bytes.NewReader(encoded)
+	command.Stdout, command.Stderr = &stdout, &stderr
+	if err := command.Run(); err != nil {
+		t.Fatal(err, stderr.String())
+	}
+	var response map[string]json.RawMessage
+	if err := json.Unmarshal(stdout.Bytes(), &response); err != nil {
+		t.Fatal(err, stdout.String())
+	}
+	return response
+}
+
+// The helper binds every primitive type node or publishes no graph. The parser
+// gives the helper no primitive type node that the compiler does not resolve,
+// so this sends one through the private protocol: a node of that kind over
+// the text of a keyword. A graph with such a node and no binding at it would
+// hold a use whose capture nobody can see.
+func TestHelperRefusesUnboundPrimitiveType(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("qualified helper execution platform is Linux")
+	}
+	units := helperUnits(t, "pub type Flag = bool;")
+	if response := helperResponse(t, units); string(response["Status"]) != `"ok"` {
+		t.Fatal("the unit as the bridge sends it", string(response["Status"]), string(response["Diagnostics"]))
+	}
+	units[0].Nodes = append(units[0].Nodes, Node{ID: units[0].Nodes[len(units[0].Nodes)-1].ID + 1, Kind: s.KindPrimitiveType, Start: 0, End: len("pub")})
+	response := helperResponse(t, units)
+	if string(response["Status"]) != `"unsupported"` || string(response["Facts"]) != "null" || !strings.Contains(string(response["Diagnostics"]), "unmapped primitive type") {
+		t.Errorf("a primitive type node without a binding: status %s, facts %.80s, diagnostics %s", response["Status"], response["Facts"], response["Diagnostics"])
 	}
 }
 

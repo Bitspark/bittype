@@ -46,6 +46,16 @@ such a move only when its destination needs a huge effort, and record the
 deferral with its reason and trigger as an open violation.
 [AC-10](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-10).
 
+**Owner clarification, 13 November 2026.** A language-agnostic mechanism belongs
+in the agnostic layer from its first implementation. A fixed source type or
+reader, one current language and a small forwarding body cannot justify a
+language-specific copy. Implement the invariant mechanism once and supply each
+language's types and meanings through the shared contract. Review placement
+independently of whether public registration accepts other languages.
+[AC-11](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-11)
+and [bittype/ACX-010](docs/architecture-cases/0010-agnostic-mapping-adapter.md)
+record the requirement and the pending mapping-adapter correction.
+
 **Owner request, 11 November 2026:** check for packages whose parts "neither
 conceptually nor practically depend on each other", and for parts that call one
 another directly "instead of invoking the kernel", and enforce the result

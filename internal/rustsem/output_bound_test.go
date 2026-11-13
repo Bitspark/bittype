@@ -76,7 +76,7 @@ func runOutputChild(path string) {
 // semantic.ErrLimit and no output, whether the process then exits or stays.
 func TestHelperOutputBound(t *testing.T) {
 	const outputBound, errorBound = 16 << 20, 256 << 10
-	response := `{"Version":1,"Compiler":"rustc ` + n.CompilerVersion + ` (test)","Status":"incomplete"}`
+	response := `{"Version":1,"Profile":"` + n.HelperProfile + `","Compiler":"rustc ` + n.CompilerVersion + ` (test)","Status":"incomplete"}`
 	self, err := os.Executable()
 	if err != nil {
 		t.Fatal(err)

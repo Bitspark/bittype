@@ -56,7 +56,11 @@ func nameFields(_ context.Context, step name) ([]g.Request[h.Language], error) {
 	if !use.Body {
 		return nil, g.Refuse(g.RefusalUnsupported, vocabulary.Reference.Identity.Publisher, rules.ReasonNestedRecord)
 	}
-	fields, err := step.Reader.Fields(use)
+	reader, err := step.Reader()
+	if err != nil {
+		return nil, err
+	}
+	fields, err := reader.Fields(use)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +82,11 @@ func nameFields(_ context.Context, step name) ([]g.Request[h.Language], error) {
 // decideMembers is step 3: the names of the members that the record lays out
 // itself, in order. The name of a delegated field is in its request.
 func decideMembers(_ context.Context, step decide) (g.Decision, error) {
-	fields, err := step.Reader.Fields(step.Subject.Use)
+	reader, err := step.Reader()
+	if err != nil {
+		return g.Decision{}, err
+	}
+	fields, err := reader.Fields(step.Subject.Use)
 	if err != nil {
 		return g.Decision{}, err
 	}
