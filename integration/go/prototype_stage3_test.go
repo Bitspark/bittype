@@ -143,7 +143,7 @@ func TestPrototypeStage3OneMeaningTwoRepresentationRevisions(t *testing.T) {
 // application named, while another application of the same declaration
 // plans. Each refusal of a rule of the moved packages matches exactly one
 // value, and an unexpected error of a rule matches none.
-// Does not show: the refusals of the ten mapping packages that are not moved.
+// Does not show: the refusals of the eleven mapping packages that are not moved.
 // On the mapping contract a rule's refusal is a text diagnostic, and it
 // matches none of the values.
 func TestPrototypeStage3RefusalValues(t *testing.T) {
