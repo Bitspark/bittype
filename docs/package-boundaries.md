@@ -288,6 +288,13 @@ package other than its writer reads it by name.
   keys only in `internal/golangsem/export.go`, where they are written. The
   integrator of the plan checked this on `main` at `abfc948`, and the change
   that wrote this record repeated both searches on the head of #250.
+  Since 13 November 2026, with pull request
+  [#286](https://github.com/Bitspark/bittype/pull/286), this no longer holds
+  for the Go model's `utf8`: the readers of the `package-name` fact in
+  `semantics/golang/go/model.go` compare a term's encoding with it. So the Go
+  vocabulary publishes it as `TextEncoding()`, and the bridge writes it from
+  there at both places. The Go model's `json-1`, and both keys of the
+  TypeScript and Rust models, are as this record says.
 
 What [#251](https://github.com/Bitspark/bittype/issues/251) examined. This
 section first listed two groups of names as not examined: the horos syntax
