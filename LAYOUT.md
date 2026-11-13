@@ -195,7 +195,7 @@ below gives the roles of `main` as they are.
 | --- | --- | --- |
 | Foundation | `trees/*/go`, `files/go`, `source/go`, `semantics/go`, `contracts/*/go` | Each package has its own entry in the table `foundationRules` and imports exactly what the entry lists. It never imports a package outside that table. The AST imports nothing. The CST, `files/go`, `semantics/go` and `contracts/text/go` import only the AST. `trees/representation/go` and `contracts/semantic/go` do not import `source/go` |
 | Kernel | `engine/go`, `transform/syntax/shared/*/go`, `check/syntax/shared/*/go`, `print/*/shared/provider/go` | The same table and the same rule. So no foundation or kernel package imports a vocabulary, a contribution or a language's private part |
-| Shared private helper | `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil`, `internal/concrete`, `internal/processoutput`, `internal/processoutput/processoutputtest` | The same table and the same rule. A helper of no single language cannot conceal a language. `internal/processoutput` imports no package of the module, and no role lists it: each importer names it in its own entry or extension. `internal/processoutput/processoutputtest` imports no package of the module either. Only test files import it, and the check reads no test file, so no importer has an allowance for it |
+| Shared private helper | `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil`, `internal/concrete`, `internal/processoutput` | The same table and the same rule. A helper of no single language cannot conceal a language. `internal/processoutput` imports no package of the module, and no role lists it: each importer names it in its own entry or extension |
 | Vocabulary | `syntax/<language>/go`, `semantics/<language>/go`, `transform/syntax/<native>/model/go`, `transform/syntax/<native>/symbol/go` | Foundations and its own language's vocabulary. `semantics/<language>/go` and `symbol` may also import their language's lexical helper. Never a contribution. `semantics/<language>/go` never imports `internal/<language>sem`. TypeScript, Go and Rust have a `symbol` package today |
 | Contribution: stage provider | `<stage>/<dimension>/<language>/provider/go` for `check/syntax`, `parse/syntax`, `format/syntax`, `resolve/files`, `analyze/files`, `parse/files` and `format/files` | Each of the seven has its own list: foundations, shared private helpers and what belongs to its own language. A checker gets no concrete tree, a formatter no lexer, and no Syntax stage a semantic contract. A parser and a formatter import their own checker under an exception, and neither list names the other. A resolver may import its language's semantic helper. A Files parser or formatter reaches its collaborators through their contracts |
 | Contribution: query service | `analyze/files/<language>/queries/go` | The shared semantic contract, the representation, and its own syntax, vocabulary and semantic helper. Never its resolver. Go and TypeScript have this package today. A package that is not a composition imports a query service only under an exception that names the symbols it uses |
@@ -232,12 +232,18 @@ explicit entry per package, and a new package of either group is an edit:
   `verification/files/horos-to-go/go`, the logos adapter
   `verification/logos/go`, the reporting-tool packages
   `tools/provider-matrix/go`, `report/go`, `capability/go` and
-  `observation/go`, and the command `tools/horos-module/go`. The report host
+  `observation/go`, the command `tools/horos-module/go`, and the fixture of
+  the tests that bound a process's output,
+  `internal/processoutput/processoutputtest`. The report host
   never imports a concrete extractor. Its entry lists
   `internal/processoutput`, with which it collects what its Go commands
   write. The verification pair lists the Go query
   service and never the Go analysis provider. It imports the query service
-  under an exception that names `Admission`.
+  under an exception that names `Admission`. The fixture imports no package
+  of the module, and only test files import it. The check reads no test
+  file, so no importer has an allowance for it. It is not in the foundation
+  table, which holds the helpers that production packages use, so no
+  foundation or kernel package can import it, whatever its entry lists.
 
 **Role extensions.** Languages differ. The table `roleExtensions` names, per
 package, the imports that one language needs and its role does not give.
@@ -308,11 +314,13 @@ in some cases, never exits by itself.
 `internal/processoutput/processoutputtest` holds that child and the harness
 that tells a call that cancelled its process from one that did not. Each
 package keeps what is its own: how its test binary knows that it is the
-child, what the output stream starts with, and the call under test. A test
+child, what the output stream starts with, whether the child reads its input
+stream, and the call under test. A test
 that bounds a process's output uses this package and writes no child of its
 own. The source and the package-level tests of an implementation stay with
 it, as this page says above. This package is the part of those tests that
-no single package owns.
+no single package owns. It is used by tests only, so it is one of a kind
+and not a shared private helper of the foundation table.
 
 ## Enforced consistency
 

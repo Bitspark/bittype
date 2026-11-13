@@ -6,7 +6,8 @@ copy is left. The fixture of the tests, which this correction had first
 written a third and a fourth time, has one owner too. The [limits](#limits)
 say what the correction does not establish. An independent review read the
 first form at `c8c3509`, and its findings are corrected in the
-[second form](#independent-review).
+[second form](#independent-review). The reviewer read the second form at
+`9ff77f3`, and its verdict is to merge.
 **Scope:** The collection of a child process's output stream and error stream
 against a bound, on `main` at `3998db5fe4f76942ba1c99870a6be8cc160e316f`:
 `boundedBuffer` in
@@ -173,8 +174,11 @@ test.
 [`internal/processoutput/processoutputtest`](../../internal/processoutput/processoutputtest/processoutputtest.go)
 now holds the child, its description file and the harness, and the four test
 files use it. It imports no package of the module and has its entry in
-`foundationRules`. Only test files import it, and the architecture test
-reads no test file, so no importer has an allowance. The two bridge test
+`oneOfAKindRules`. Only test files import it, and the architecture test
+reads no test file, so no importer has an allowance. It is not in the
+foundation table, which holds the helpers that production packages use: a
+package of that table imports nothing outside it, so no foundation or kernel
+package can import the fixture, whatever its entry lists. The two bridge test
 files of #298 are edited for it: their cases, bounds and assertions are
 unchanged, and their own copy of the child and of the harness is gone.
 
@@ -222,7 +226,15 @@ second form does:
    A failure there would report the caller's own limit, which this case
    leaves out.
 
-The reviewer did not read the second form.
+The reviewer read the second form at `9ff77f3` on the same day. Its
+verdict is to merge: all seven findings are corrected, and the fixture is
+one mechanism. Its own stress runs gave no failure in 800 runs of the second
+form and 2 in 400 runs of the writer's earlier test file. It asked for five small
+changes, which the last commits of the pull request make: the fixture's
+entry is one of a kind and not a foundation, the comment of `Bytes` says
+what a caller with one bound per stream must do, the concurrent test fails
+when no read fell between the writes, and two wordings. The reviewer did
+not read those commits.
 
 ### Qualification
 
@@ -240,6 +252,8 @@ The reviewer did not read the second form.
   set, run it against a real child process with one bound per stream and
   with one shared bound, let its cancel function ask the bound, and write to
   it from eight goroutines while a ninth reads the bound and the writers.
+  That last test counts the reads that fell between the writes and fails
+  when there is none.
 - **The bridges.** `TestHelperOutputBound` passes in both packages with its
   cases and assertions unchanged. `TestBoundedBufferOnlyWrites` named the
   fields of a bridge's own type and went with that type; the tests of the
@@ -249,7 +263,10 @@ The reviewer did not read the second form.
   extension or its entry is unused.
 - **Mutants.** 65 single changes: 21 of the writer, 2 of the fixture, 12 of
   each bridge's use of the writer, 8 of the loader's use of it and 10 of the
-  entries in the architecture test. 64 fail a test. The one that does not
+  entries in the architecture test. 64 fail a test. With the fixture's
+  entry in `oneOfAKindRules`, a production import of the fixture from the
+  foundation package `internal/processoutput` fails with and without an
+  edit of that package's entry. The one that does not fail a test
   removes the lock from `Exceeded` and `Bytes`: without the race detector
   no test can fail for it, because a test that orders its read after the
   writes reads the right value without the lock, and a test that does not
