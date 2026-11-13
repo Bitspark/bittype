@@ -184,9 +184,11 @@ The owner of a meaning holds its issuer. A declaration recipe states values in
 `NativeDeclaration.Values`. The planner checks that each value was issued and
 charges its content to the output budget. It then carries the value to the
 record of that declaration. Only the issuer reads the content back, and one
-issuer is one meaning. A record without values is valid: no builtin mapping
-states one until the naming design of
-[#274](https://github.com/Bitspark/bittype/issues/274) lands.
+issuer is one meaning. A record without values is valid, and no builtin mapping
+states one yet. The [naming design](naming.md#three-things-that-were-one) says
+what an intent records and that the mapping states it. This is the carrier
+from the mapping to the record, and
+[#274](https://github.com/Bitspark/bittype/issues/274) delivers the intent.
 
 **Why this is in the shared contract.** Platform's rule
 [AC-08](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-08)
