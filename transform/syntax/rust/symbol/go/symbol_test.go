@@ -69,10 +69,20 @@ func TestItemNamesADependencyAndAPath(t *testing.T) {
 		t.Error("a shorter path is the same destination", err)
 	}
 	// A raw identifier is a spelling of a name. It gives no second symbol
-	// for one item, and the underscore names no item.
-	for _, path := range [][]string{nil, {""}, {"option", ""}, {"option::Option"}, {"option", "fn"}, {"std", "crate"}, {"a b"}, {"r#string", "String"}, {"string", "r#String"}, {"r#option", "Option"}, {"_"}, {"option", "_"}} {
+	// for one item, and the underscore names no item. self, Self, super and
+	// crate have no raw form, so no item has such a name. A malformed segment
+	// decides before a keyword does.
+	for _, path := range [][]string{nil, {""}, {"option", ""}, {"option::Option"}, {"std", "crate"}, {"a b"}, {"r#string", "String"}, {"string", "r#String"}, {"r#option", "Option"}, {"r#fn"}, {"_"}, {"option", "_"},
+		{"self"}, {"Self"}, {"option", "super"}, {"crate", "Option"}, {"fn", ""}, {"fn", "r#type"}, {"type", "self"}} {
 		if _, err := symbol.Item(std, path...); !errors.Is(err, g.ErrInvalid) {
 			t.Errorf("%q: %v, want invalid", path, err)
+		}
+	}
+	// A keyword that the language lets be written raw is a name, r#fn being
+	// its spelling. This profile covers no such name.
+	for _, path := range [][]string{{"fn"}, {"option", "fn"}, {"type", "Option"}, {"gen"}, {"match", "fn"}} {
+		if _, err := symbol.Item(std, path...); !errors.Is(err, g.ErrUnsupported) {
+			t.Errorf("%q: %v, want unsupported", path, err)
 		}
 	}
 	if _, err := symbol.Item(symbol.Crate{}, "option", "Option"); !errors.Is(err, g.ErrInvalid) {

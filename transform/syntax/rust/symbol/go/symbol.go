@@ -2,6 +2,7 @@
 package symbol
 
 import (
+	"errors"
 	"strings"
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
@@ -34,13 +35,30 @@ func Std() Crate { return Crate{"std"} }
 // the crate's root module.
 func (c Crate) Name() string { return c.name }
 
-// named says whether a text is a name that a segment of an item's path may
-// hold: a Rust identifier that is no keyword, written plainly. A raw
-// identifier (r#name) is one spelling of a name and not the name, so it gives
-// no second symbol for one item, and Rust Files chooses a raw spelling where
-// the language needs one. The underscore names no item.
-func named(text string) bool {
-	return native.Identifier(text) && !strings.HasPrefix(text, "r#") && text != "_"
+// segment judges one segment of an item's path. A key holds a name and never
+// a spelling.
+//
+// A raw identifier as written text (r#name) is one spelling of a name and not
+// the name, so it is invalid and gives no second symbol for one item. The
+// underscore names no item and is invalid.
+//
+// A keyword that the language lets be written raw, such as fn, is a name:
+// r#fn is its spelling, and Rust Files chooses a raw spelling where the
+// language needs one. This profile covers no such name, so it is unsupported
+// and a later slice can admit it. Which keywords have a raw form is the
+// lexical helper's rule, the language's: every keyword but self, Self, super
+// and crate. Those four name no item and are invalid, as is every text that
+// is no identifier.
+func segment(text string) error {
+	switch {
+	case strings.HasPrefix(text, "r#"), text == "_":
+		return g.ErrInvalid
+	case native.Identifier(text):
+		return nil
+	case native.Identifier("r#" + text):
+		return g.ErrUnsupported
+	}
+	return g.ErrInvalid
 }
 
 // Dependency returns the dependency whose crate has the given name. The name
@@ -84,17 +102,26 @@ const separator = "::"
 // definition that the export leads to: the item string::String of Std is
 // another destination than the definition in the crate alloc.
 //
-// A crate that is no dependency, an empty path and a segment that is no name
-// are refused with generation.ErrInvalid. A segment is a name and never a
-// spelling: a raw identifier and the underscore are refused.
+// A crate that is no dependency, an empty path and a segment that names no
+// item are refused with generation.ErrInvalid: a raw identifier, the
+// underscore, self, Self, super, crate, and a text that is no identifier. A
+// path whose segments are names and that holds a keyword with a raw form is
+// refused with generation.ErrUnsupported. Validity is judged over every
+// segment before coverage.
 func Item(crate Crate, path ...string) (Symbol, error) {
 	if crate != Std() || len(path) == 0 {
 		return Symbol{}, g.ErrInvalid
 	}
-	for _, segment := range path {
-		if !named(segment) {
-			return Symbol{}, g.ErrInvalid
+	var uncovered error
+	for _, text := range path {
+		if err := segment(text); errors.Is(err, g.ErrInvalid) {
+			return Symbol{}, err
+		} else if err != nil {
+			uncovered = err
 		}
+	}
+	if uncovered != nil {
+		return Symbol{}, uncovered
 	}
 	return Symbol{item, crate, strings.Join(path, separator)}, nil
 }

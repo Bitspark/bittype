@@ -101,7 +101,7 @@ may not alter which occurrences they are.
 | --- | --- | --- |
 | TypeScript | Every `type-reference` node | `keyword-type` (`string`, `boolean`): a keyword. The TypeScript target writes no `qualified-type` |
 | Go | Every `named-type` node. `string` and `bool` are names of the universe scope, and a declaration or a type parameter can capture them | The Go target writes no `qualified-type`. A type of another package is slice 2 of #161 |
-| Rust | The last `path-segment` of every `path-type`, and every `primitive-type` node. `bool` is no keyword, and a declaration or a generic parameter of that name captures it | The segments before the last. They qualify the use and are part of how one use is spelled. The Rust target writes no `lifetime-reference` and no `qualified-path-type` |
+| Rust | The last `path-segment` of every `path-type`, and every `primitive-type` node. `bool` is no keyword, and a declaration or a generic parameter of that name captures it | The segments before the last of an absolute path. They qualify the use and are part of how one use is spelled. In a relative path the first segment is a name looked up in scope, so every segment of it is a name use. The Rust target writes no `lifetime-reference` and no `qualified-path-type` |
 | C++ | None is recorded. Row 36 of research 0016 excludes legacy C++ output until [#160](https://github.com/Bitspark/bittype/issues/160) | |
 
 **Rust paths.** A path that refers to a declaration or a parameter of the
@@ -196,6 +196,10 @@ A key holds a name and never a spelling. A raw identifier, `r#string`, is one
 way to write the name `string`, so `Item` refuses it in a segment as invalid,
 and one item has one symbol. The underscore names no item and is refused in a
 segment too. Rust Files chooses a raw spelling where the language needs one.
+The language needs one for a keyword, so a keyword that it lets be written
+raw, such as `fn`, is a name: as a segment it is unsupported, because this
+profile covers no such name and a later slice can. `self`, `Self`, `super`
+and `crate` have no raw form and name no item, so they are invalid.
 
 **The name of a crate is judged by the compiler's one rule.** `Dependency`
 asks `CrateName` of the lexical helper `internal/rust`: a text that is not
@@ -261,8 +265,8 @@ TypeScript does, and is asserted by a test per target over sealed outputs".
   [`destinations_test.go`](../integration/go/destinations_test.go). It
   classifies every node by its kind. Which kinds can carry a reference it asks
   of the language's syntax checker, whose grammar marks them: TypeScript
-  `type-reference`, Go `named-type` and `qualified-type`, Rust `path-segment`
-  and `lifetime-reference`. Rust's `primitive-type` uses a name and gets no
+  `type-reference` and `qualified-type`, Go `named-type` and `qualified-type`,
+  Rust `path-segment` and `lifetime-reference`. Rust's `primitive-type` uses a name and gets no
   reference from the grammar, so the test lists it. The kinds that use no name
   are listed per language. A node of a kind that is in no list and that the
   grammar gives no reference fails the test, so a new kind is classified
@@ -270,9 +274,12 @@ TypeScript does, and is asserted by a test per target over sealed outputs".
 - **Which outputs it reads.** The pagination output of each of the three
   targets, and for TypeScript also the output with a type of a package beside
   a declaration of the same name and one whose lists are the global type
-  `ReadonlyArray`. They hold every kind that the three native models can build
-  today. The claim is shown for those kinds and those outputs, and not for
-  every tree that a later model could build.
+  `ReadonlyArray`. They hold every kind that the builtin mappings produce.
+  The claim is shown for those kinds and those outputs. A native model can
+  build more: the TypeScript model builds an `object-type` for an inline
+  record, which a mapping that is not builtin can ask for. No output of the
+  test holds one and no list names it, so an output with one fails the test
+  until the kind is classified. The check fails safe.
 
 ## What generation records, and what it does not decide
 

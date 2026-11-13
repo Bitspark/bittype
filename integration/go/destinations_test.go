@@ -309,9 +309,10 @@ func checkDestinations[L any](t *testing.T, out g.Output, check destinationCheck
 	return references, external
 }
 
-// TypeScript: the grammar gives type-reference a reference. A keyword type is
-// a keyword and no name. A qualified-type is in no list: the TypeScript target
-// writes none, and an output with one fails.
+// TypeScript: the grammar gives type-reference and qualified-type a reference.
+// A keyword type is a keyword and no name. The TypeScript target writes no
+// qualified-type. An output with one that carries a destination passes, and
+// one without a destination fails.
 func typescriptDestinations() destinationCheck[ts.Language] {
 	return destinationCheck[ts.Language]{
 		check:     checktypescript.Provider{}.Check,
@@ -341,7 +342,10 @@ func golangDestinations() destinationCheck[gs.Language] {
 
 // Rust: the grammar gives path-segment and lifetime-reference a reference. A
 // primitive type uses a name and gets none from the grammar. The last segment
-// of a path names the item, and the segments before it qualify that use.
+// of a path names the item. The segments before it qualify that use only in
+// an absolute path, whose first segment is resolved outside the output. In a
+// relative path the first segment is a name looked up in scope, so every
+// segment of it is a name use.
 func rustDestinations() destinationCheck[rs.Language] {
 	return destinationCheck[rs.Language]{
 		check:     checkrust.Provider{}.Check,
@@ -350,6 +354,9 @@ func rustDestinations() destinationCheck[rs.Language] {
 		plain:     []rs.Kind{rs.KindFile, rs.KindStruct, rs.KindTypeAlias, rs.KindTypeParameter, rs.KindField, rs.KindPathType},
 		qualifies: func(tree rs.AST, parent []ast.NodeID, id ast.NodeID) bool {
 			if tree.Nodes[id-1].Kind != rs.KindPathSegment || parent[id] == 0 || tree.Nodes[parent[id]-1].Kind != rs.KindPathType {
+				return false
+			}
+			if nodeAttribute(tree.Nodes[parent[id]-1], rs.AttributeAbsolute) != "true" {
 				return false
 			}
 			_, last := rustPathNames(tree, tree.Nodes[parent[id]-1])
@@ -366,8 +373,10 @@ func rustDestinations() destinationCheck[rs.Language] {
 // exactly one of a reference and an external use. The outputs are the
 // pagination output of each target, and for TypeScript also one with a type of
 // a package beside a declaration of the same name and one with a global type.
-// They hold every kind that the three native models can build today, and the
-// claim is shown for those kinds.
+// They hold every kind that the builtin mappings produce, and the claim is
+// shown for those kinds. A model can build more: the TypeScript model builds
+// an object-type for an inline record. No output here holds one and no list
+// names it, so an output with one fails until the kind is classified.
 func TestEveryNameUseOfASealedOutputCarriesOneDestination(t *testing.T) {
 	t.Run("typescript", func(t *testing.T) {
 		e, _, input := generationInput(t, paginationModule())
@@ -592,7 +601,10 @@ func TestExternalFormsNameADependencyThatADestinationCanName(t *testing.T) {
 		"no crate":                        {rustmodel.External("", []string{"Option"}), g.ErrInvalid, g.ErrInvalid},
 		"the crate joined with the path":  {rustmodel.External("std::option", []string{"Option"}), nil, g.ErrInvalid},
 		"a path joined in one segment":    {rustmodel.External(rustmodel.Std, []string{"option::Option"}), nil, g.ErrInvalid},
-		"a keyword as a segment":          {rustmodel.External(rustmodel.Std, []string{"option", "fn"}), nil, g.ErrInvalid},
+		"a keyword as a segment":          {rustmodel.External(rustmodel.Std, []string{"option", "fn"}), nil, g.ErrUnsupported},
+		"a keyword as the one segment":    {rustmodel.External(rustmodel.Std, []string{"fn"}), nil, g.ErrUnsupported},
+		"self as a segment":               {rustmodel.External(rustmodel.Std, []string{"self"}), nil, g.ErrInvalid},
+		"Self as a segment":               {rustmodel.External(rustmodel.Std, []string{"option", "Self"}), nil, g.ErrInvalid},
 		"a raw identifier as a segment":   {rustmodel.External(rustmodel.Std, []string{"r#option", "Option"}), nil, g.ErrInvalid},
 		"an underscore as a segment":      {rustmodel.External(rustmodel.Std, []string{"_"}), nil, g.ErrInvalid},
 		"a raw identifier as the crate":   {rustmodel.External("r#std", []string{"option", "Option"}), nil, g.ErrInvalid},
