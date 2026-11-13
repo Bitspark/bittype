@@ -713,6 +713,11 @@ func TestGoSuppliedPackageInsideTheModuleAndOutsideTheOutputRoot(t *testing.T) {
 			t.Errorf("stated bytes with the supplied package %s under the output root %s: MatchesConfiguration is %v", tc.path, tc.outputRoot, tc.want != "admitted")
 		}
 	}
+	// Only the elements below the module root are judged: the module path's own
+	// elements are not.
+	if _, err := n.ImportConfiguration(n.ImportEnvironment{Module: "example.org/_app", OutputRoot: "generated", Packages: []n.Package{supplied("example.org/_app/model")}}); err != nil {
+		t.Error("a supplied package of a module whose own path has an underscore element:", err)
+	}
 }
 
 // Each declaration reads its own package from the graph's ownership, and that

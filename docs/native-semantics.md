@@ -127,6 +127,12 @@ authoring method/function syntax remains unsupported. `display` facts are UTF-8
 diagnostic text, never semantic identity. Typed readers return copies or immutable
 handles; callers cannot mutate a published graph through them.
 
+The `package-name` fact was added on 13 November 2026 under the unchanged
+profile identity: the profile strings and the base configuration are what they
+were, and every graph, the base profile's too, carries the fact from then on.
+A reader that needs the fact fails with an error on a graph that lacks it. The
+import environment's setting has the new key `imports-2`.
+
 ### Import environment
 
 `golang.ImportConfiguration(golang.ImportEnvironment{Module, OutputRoot, Packages})`
@@ -154,7 +160,9 @@ follows Go's own module layout:
   where the captured packages are. A package of the module outside the output
   root is hand-written code of the consumer's own module and may be supplied:
   `example.org/app/model` beside the output root `generated`. With the output
-  root `.` every path under the module is refused.
+  root `.` every path under the module is refused. A supplied package of the
+  module is below the module root, so its path there follows the rule for
+  unsupported directories below: `example.org/app/testdata/x` is refused.
 - **No discovery.** Import paths need a first element containing a dot, Go's
   module-path rule. That also keeps supplied packages from naming standard
   library paths, which this profile does not provide. Nothing is read from a
@@ -179,7 +187,11 @@ rule here is narrower than Go's in two places, a leading dot and a plus sign,
 and wider in none. One function of `semantics/golang/go` holds it.
 `ValidImportPath`, which judges module, supplied and captured paths, does not
 apply the device names and the tilde form yet
-([#287](https://github.com/Bitspark/bittype/issues/287)).
+([#287](https://github.com/Bitspark/bittype/issues/287)). Two roots are
+admitted that no file system or module can hold, because Go's rule for an
+element does not refuse them either: an element longer than 255 bytes, and
+`go.mod` as the first element, where the module's own file of that name
+stands.
 
 **A root's validity depends on the length of the module path.** The bound of
 512 bytes on an import path holds the module path, the output root and a
@@ -193,20 +205,37 @@ that file.
 `vendor`, and a name that starts with `_` or `.`. The go tool leaves
 `testdata` and a leading underscore or dot out of the `./...` pattern and still
 builds such a package when it is imported explicitly. It refuses an import
-through a `vendor` directory. The profile covers none of them. Wherever such
-a directory enters, the answer is `golang.ErrUnsupported`:
+through a `vendor` directory. The profile covers none of them. The rule
+applies to every directory below the module root, and one enters at three
+places. At each the answer is unsupported:
 
 - in the path of a captured file, the bridge reports unsupported coverage at
-  the file, as it did before the rule had one owner;
+  the file, as it did before the rule had one owner, and `CapturedImportPath`
+  gives no identity for the file. The derivation judges the file's
+  directories and not its own name;
 - as an element of the output root, `ImportConfiguration` returns an error
   that wraps `ErrUnsupported` and writes no setting. The bridge reads the
   Files path, so without this refusal the output root `vendor` would put every
-  captured file at a vendor path unnoticed;
-- `CapturedImportPath` gives no identity for a file in such a directory or
-  under such a root.
+  captured file at a vendor path unnoticed. `CapturedImportPath` gives no
+  identity under such a root;
+- as an element below the module root in the path of a supplied package of
+  the module, `ImportConfiguration` answers the same way:
+  `example.org/app/testdata/x`, `example.org/app/_x`, `example.org/app/vendor/x`
+  and `example.org/app/.x` under the module `example.org/app`. The module path
+  is compared without case, as for the output root.
 
-In an output root the directory rule is judged before the element rule, as it
-is for a captured file, so `.generated` is unsupported and not invalid.
+A supplied path outside the module is not below the module root, and the
+directory rule does not judge it. There the earlier rule holds unchanged: a
+`vendor` element is `ErrInvalidRequest`, and `example.org/lib/testdata/x` and
+`example.org/lib/_x` are admitted.
+
+An output root is judged in three steps, in this order: a path that is not
+clean is invalid, then a directory of the rule is unsupported, then an element
+that is no import-path element is invalid. So `./vendor` and `vendor/` are
+invalid, and `.generated`, `a b/vendor` and `C:/vendor` are unsupported
+although the last two are no path that Go accepts. The path of a supplied
+package of the module below the module root is judged in the same order,
+before the rule for the output root.
 
 **The setting's bytes.** The key is `imports-2`. The value is the UTF-8 JSON
 object with the members `Module`, `OutputRoot` and `Packages` in this order.
@@ -229,13 +258,18 @@ members in another order, a root in a `vendor` directory and a root that is a
 device name. A setting is what `ImportConfiguration` writes. It writes none
 for a root it refuses, so a hand-written one that states such a root is
 refused as an altered setting, whatever the reason for the root's refusal.
+The same holds for a supplied path that it refuses:
+`TestGoSuppliedPackageInsideTheModuleAndOutsideTheOutputRoot` states each of
+its refused paths in hand-written bytes and requires `ErrInvalidRequest` from
+the same readers.
 
 **The go tool's layout rules apply to captured files:**
 
 - test files (`_test.go`) and files starting with `_` or `.` are not part of a
   package, and are unsupported;
 - a file in a directory that `UnsupportedDirectory` names is unsupported, and
-  a supplied import path may not contain a `vendor` element;
+  a supplied import path may not contain a `vendor` element, below the
+  module root by that rule and elsewhere by its own;
 - an import of a path with an `internal` element is allowed only from within the
   tree rooted at its parent;
 - a package named `main` cannot be imported;
@@ -267,8 +301,9 @@ depends on capture order:
 | --- | --- |
 | An environment without an output root; an output root that is not `.` and has an empty, `.` or `..` element, an element that is no import-path element, or with the module path more than 512 bytes; a supplied path at or below the output root | `ErrInvalidRequest` from `ImportConfiguration`; no setting |
 | An output root with a `testdata` or `vendor` element, or one that starts with `_` or `.` | An error that wraps `ErrUnsupported` from `ImportConfiguration`; no setting |
-| A setting that `ImportConfiguration` did not write: the key `imports-1`, altered bytes, or a root that it refuses for either reason | `ErrInvalidRequest`; no judgment of the captured code |
-| A supplied package that fails to parse or type-check, imports outside the supplied packages, breaks the `internal` rule, imports a `main` package or forms an import cycle; supplied paths or file names that differ only in case, a supplied test or ignored file, or a supplied path with a `vendor` element; a missing Files layout, or a captured file that is not a `.go` path | `ErrInvalidRequest`; no judgment of the captured code |
+| A supplied package of the module whose path below the module root has a `testdata` or `vendor` element, or one that starts with `_` or `.` | An error that wraps `ErrUnsupported` from `ImportConfiguration`; no setting |
+| A setting that `ImportConfiguration` did not write: the key `imports-1`, altered bytes, or a root or a supplied path that it refuses for either reason | `ErrInvalidRequest`; no judgment of the captured code |
+| A supplied package that fails to parse or type-check, imports outside the supplied packages, breaks the `internal` rule, imports a `main` package or forms an import cycle; supplied paths or file names that differ only in case, a supplied test or ignored file, or a supplied path with a `vendor` element that is not below the module root; a missing Files layout, or a captured file that is not a `.go` path | `ErrInvalidRequest`; no judgment of the captured code |
 | An import outside the environment, a dot or blank import, a test or ignored file, a file in a `testdata` or `vendor` directory or in one that starts with `_` or `.`, a package directory that is not a valid import path or is too long under the output root | Unsupported coverage at the import or file |
 | A captured type error, an unused import, an unexported cross-package use, an import cycle through a captured package (including a self-import), an `internal` violation, an import of a `main` package, inconsistent package clauses, captured import paths or file names that differ only in case | Rejected validity, with a diagnostic at the captured node |
 
