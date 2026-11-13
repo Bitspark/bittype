@@ -110,7 +110,8 @@ see the third copy.
 ## Correction and qualification status
 
 Corrected by the change for
-[#299](https://github.com/Bitspark/bittype/issues/299).
+[#299](https://github.com/Bitspark/bittype/issues/299), pull request
+[#313](https://github.com/Bitspark/bittype/pull/313).
 
 ### The change
 
