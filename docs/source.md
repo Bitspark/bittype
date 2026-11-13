@@ -169,7 +169,9 @@ fixed it. Each refusal is invalid input or an exceeded limit, with its
 decided here, before a language refuses what it does not cover. The placement
 of existing TypeScript source follows the same order with its own first two
 steps: the number of files, then a file identity or a declaration that its
-lists name twice, then steps 3 to 5 through `files.Cover`.
+lists name twice, then steps 3 to 5 through `files.Cover`. A declaration that
+the program does not have is refused there, as an assigned item that is not
+part of the placed set.
 
 **The step calls the admission while it runs.** Row 1 of research 0016 says
 that the contract "receives the admitted view from one language-supplied step
@@ -177,7 +179,7 @@ and runs the common checks itself". The step hands its view to `Admit` and
 returns the `AdmittedPlacement` that `Admit` produced, and the formatter
 refuses anything else. So a language decides its own rules on an admitted
 placement, and its refusal of coverage can follow the common validity checks.
-This reading has two limits, and Go and Rust are written against both:
+This reading has three limits, and Go and Rust are written against them:
 
 - *The order inside a step is the step's duty.* The shared side cannot see
   what a step refuses before it calls `Admit`. A step that refuses coverage
@@ -187,6 +189,12 @@ This reading has two limits, and Go and Rust are written against both:
   step derives, and it does not read the consumer's placement. A step that has
   another view admitted than its placement states is not caught by the shared
   side. The language's guard answers for that, under the rule for guards.
+- *The error a step returns is the step's word.* When the admission has
+  refused, the request fails with that refusal, and a step that passes it on
+  gets it back as it is. A step that wraps the refusal in an error of another
+  category returns a refusal that matches two categories. The shared side
+  does not take a step's error apart, so one category per refusal is the
+  step's duty too.
 
 Both tables of the view are keyed. A language whose own placement type can
 state a file twice or a declaration in two files refuses that before it
@@ -529,7 +537,9 @@ found. An unsupported refusal says nothing about the rest of the input: the
 same input may hold a defect that no slice admits. The order in which a
 formatter runs its checks is no part of the contract.
 
-One order is guaranteed: validity is decided before coverage. A placement that
+Two orders are guaranteed: the order of the common admission, stated with
+[the generated-Files contract](#the-generated-files-contract), and that validity
+is decided before coverage. A placement that
 has a defect of both kinds is invalid input, whichever file has which.
 
 - **A generated placement.** The [common admission](#the-generated-files-contract)
