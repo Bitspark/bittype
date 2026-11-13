@@ -77,7 +77,7 @@ func (c *converter) importSpec(id ast.NodeID) (*goast.ImportSpec, error) {
 // environmentState is the validated environment: every tree's file path and
 // every supplied package, checked before any captured code is judged.
 type environmentState struct {
-	module   string
+	layout   n.ImportEnvironment // its module path and output root place every captured file
 	paths    map[ast.TreeID]string
 	supplied map[string]*types.Package
 	order    []*types.Package // sorted by import path
@@ -94,7 +94,7 @@ func prepareEnvironment(ctx context.Context, fset *token.FileSet, environment n.
 	for _, entry := range captured.Files.Entries {
 		filePaths[entry.ID] = entry.Path
 	}
-	state := &environmentState{module: environment.Module, paths: map[ast.TreeID]string{}, supplied: map[string]*types.Package{}}
+	state := &environmentState{layout: environment, paths: map[ast.TreeID]string{}, supplied: map[string]*types.Package{}}
 	for _, link := range captured.Links {
 		state.paths[link.Tree] = string(filePaths[link.File])
 	}
@@ -174,7 +174,7 @@ func checkLayout(env *environmentState, inputs []s.AST) error {
 		if ignoredByGo(filePath) {
 			return &Failure{Err: fmt.Errorf("%w: %s is a test, ignored or vendored file", n.ErrUnsupported, filePath), At: root}
 		}
-		if !n.ValidImportPath(n.CapturedImportPath(env.module, filePath)) {
+		if _, ok := n.CapturedImportPath(env.layout, filePath); !ok {
 			return &Failure{Err: fmt.Errorf("%w: package directory of %s", n.ErrUnsupported, filePath), At: root}
 		}
 	}
@@ -190,7 +190,8 @@ func checkCaptured(ctx context.Context, fset *token.FileSet, env *environmentSta
 	for i, tree := range inputs {
 		filePath := env.paths[tree.ID]
 		root := ast.NodeRef{Tree: tree.ID, Node: tree.Root}
-		importPath := n.CapturedImportPath(env.module, filePath)
+		// checkLayout established that every captured file has a derived path.
+		importPath, _ := n.CapturedImportPath(env.layout, filePath)
 		g := groups[importPath]
 		if g == nil {
 			g = &packageGroup{name: goFiles[i].Name.Name}

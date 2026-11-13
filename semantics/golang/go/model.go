@@ -115,6 +115,46 @@ func (m Model) lookup(importPath, name string) (Type, error) {
 	}
 	return m.Type(found[0])
 }
+
+// DeclaringPackage is the package of a package-level declaration. Path is the
+// package's identity: its import path, or PackagePath in the base profile.
+// Name is the name that its package clauses declare, which the path does not
+// determine.
+type DeclaringPackage struct {
+	Path string
+	Name string
+}
+
+// PackageName reads the declared name of the package at importPath, captured
+// or supplied, from its package-name fact. It fails when the graph has not
+// exactly one package at that path, or not exactly one such fact for it. The
+// path is never read in place of the name.
+func (m Model) PackageName(importPath string) (string, error) {
+	if !m.Valid() || importPath == "" {
+		return "", ErrForeign
+	}
+	var found []semantics.EntityID
+	for i, e := range m.state.graph.Data().Entities {
+		if e.Kind == PackageKind() && e.Name == importPath {
+			found = append(found, semantics.EntityID(i+1))
+		}
+	}
+	if len(found) != 1 {
+		return "", ErrForeign
+	}
+	return m.state.packageName(found[0])
+}
+func (m *model) packageName(id semantics.EntityID) (string, error) {
+	facts := m.graph.Facts(semantics.Subject{Entity: id}, PackageNameRelation())
+	if len(facts) != 1 {
+		return "", ErrForeign
+	}
+	name, _ := m.graph.Term(facts[0])
+	if name.Kind != semantics.ProviderExpression || len(name.Data) == 0 {
+		return "", ErrForeign
+	}
+	return string(name.Data), nil
+}
 func (m Model) Basic(kind types.BasicKind) (Type, error) {
 	if !m.Valid() || (kind != types.String && kind != types.Bool) {
 		return Type{}, ErrUnsupported
@@ -174,6 +214,27 @@ func (t Type) Site() ast.NodeRef {
 		return e.Declarations[0]
 	}
 	return ast.NodeRef{}
+}
+
+// Package reads the package that declares a package-level type: the owner of
+// its declaration in the graph, and that owner's package-name fact. An instance
+// of a generic type has the package of its generic declaration. It fails for
+// what no package owns, such as a predeclared type, a type parameter and an
+// unnamed type, and when the owner carries no name fact.
+func (t Type) Package() (DeclaringPackage, error) {
+	if !t.IsNamed() && !t.IsAlias() {
+		return DeclaringPackage{}, ErrForeign
+	}
+	declaration := t.entity()
+	owner, ok := t.owner.graph.Entity(declaration.Owner)
+	if !ok || owner.Kind != PackageKind() {
+		return DeclaringPackage{}, ErrForeign
+	}
+	name, err := t.owner.packageName(declaration.Owner)
+	if err != nil {
+		return DeclaringPackage{}, err
+	}
+	return DeclaringPackage{Path: owner.Name, Name: name}, nil
 }
 func (t Type) Parameters() []Type {
 	if !t.IsNamed() && !t.IsAlias() {

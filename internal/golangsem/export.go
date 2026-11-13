@@ -117,6 +117,14 @@ func (e *exporter) expression(operator semantics.Key, data any, operands ...sema
 func (e *exporter) fact(id semantics.TermID, relation semantics.Key, value semantics.TermID) {
 	e.data.Facts = append(e.data.Facts, semantics.Fact{Subject: semantics.Subject{Term: id}, Relation: relation, Term: value})
 }
+
+// packageName publishes the name that the package clauses of pkg declare as a
+// fact on its entity. The entity's name is the import path, which does not
+// determine the declared name.
+func (e *exporter) packageName(pkg *types.Package) {
+	name := e.term(semantics.Term{Kind: semantics.ProviderExpression, Operator: n.Key("package-name"), Encoding: n.Key("utf8"), Data: []byte(pkg.Name())})
+	e.data.Facts = append(e.data.Facts, semantics.Fact{Subject: semantics.Subject{Entity: e.packages[pkg]}, Relation: n.PackageNameRelation(), Term: name})
+}
 func (e *exporter) object(o types.Object) semantics.EntityID {
 	if id := e.objects[o]; id != 0 {
 		return id
@@ -307,10 +315,12 @@ func export(ctx context.Context, program *checkedProgram, info *types.Info, orig
 	for _, captured := range program.captured {
 		e.data.Entities = append(e.data.Entities, semantics.Entity{Kind: n.PackageKind(), Name: captured.pkg.Path(), Declarations: slices.Clone(captured.roots)})
 		e.packages[captured.pkg] = semantics.EntityID(len(e.data.Entities))
+		e.packageName(captured.pkg)
 	}
 	for _, pkg := range program.supplied {
 		e.data.Entities = append(e.data.Entities, semantics.Entity{Kind: n.PackageKind(), Name: pkg.Path()})
 		e.packages[pkg] = semantics.EntityID(len(e.data.Entities))
+		e.packageName(pkg)
 	}
 	byPath := map[string]semantics.EntityID{}
 	for pkg, id := range e.packages {

@@ -41,6 +41,10 @@ func AliasTargetRelation() semantics.Key { return Key("alias-target") }
 func EmptyRelation() semantics.Key       { return Key("empty") }
 func DisplayRelation() semantics.Key     { return Key("display") }
 
+// Relation of the fact about a package entity: the name that its package
+// clauses declare. The entity's own name is the import path.
+func PackageNameRelation() semantics.Key { return Key("package-name") }
+
 // Operators of the terms of a basic, a slice and a struct type.
 func BasicOperator() semantics.Key  { return Key("basic") }
 func SliceOperator() semantics.Key  { return Key("slice") }

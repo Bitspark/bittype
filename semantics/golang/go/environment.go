@@ -3,7 +3,6 @@ package golang
 import (
 	"bytes"
 	"encoding/json"
-	"path"
 	"reflect"
 	"slices"
 	"sort"
@@ -14,14 +13,27 @@ import (
 )
 
 // Import environments bound the imported-packages extension of the first Go
-// profile. A captured file's package import path is the module path joined with
-// the file's directory. Every other imported package is supplied here as Go
+// profile. Module is the module path and nothing else. OutputRoot states where
+// the output root sits in that module; the output root is the directory that
+// the paths of captured files are relative to. A captured file's package import
+// path is the module path, the output root and the file's directory, joined:
+// CapturedImportPath. Every other imported package is supplied here as Go
 // source; nothing is discovered from a module cache, GOPATH or the standard
 // library. Package text participates in receipt identity and is never an output.
 type ImportEnvironment struct {
-	Module   string
-	Packages []Package
+	Module string
+	// OutputRoot is the directory of the output root relative to the module
+	// root: slash-separated import-path elements such as "generated" or
+	// "internal/gen", or ModuleRoot. It must be stated. The empty string is
+	// refused and no output root is assumed.
+	OutputRoot string
+	Packages   []Package
 }
+
+// ModuleRoot is the OutputRoot of an environment whose output root is the
+// module root. It is a value a caller writes, so it cannot be confused with a
+// field that was left empty.
+const ModuleRoot = "."
 
 // Package is the supplied source of one dependency package.
 type Package struct {
@@ -35,11 +47,14 @@ type PackageFile struct {
 	Text string
 }
 
-const importsKey = "imports-1"
+// importsKey names the setting of an environment that states its output root.
+// Environments under the earlier key "imports-1" stated none; a setting under
+// that key is refused and never read with an assumed output root.
+const importsKey = "imports-2"
 
-// ImportConfiguration admits imports of captured packages under module and of
-// the explicitly supplied packages. The result is normalized, so equal
-// environments produce identical settings.
+// ImportConfiguration admits imports of captured packages under the output
+// root and of the explicitly supplied packages. The result is normalized, so
+// equal environments produce identical settings.
 func ImportConfiguration(environment ImportEnvironment) ([]semantic.Setting, error) {
 	normalized, err := normalizeEnvironment(environment)
 	if err != nil {
@@ -99,29 +114,78 @@ func EvidenceFor(settings []semantic.Setting) (semantic.EvidenceRequirement, err
 	return contract.Clone(), nil
 }
 
-// CapturedImportPath is the import path of a captured file at filePath under module.
-func CapturedImportPath(module, filePath string) string {
-	dir := path.Dir(filePath)
-	if dir == "." {
-		return module
+// CapturedImportPath derives the identity of the package that a captured file
+// belongs to: the import path of the environment's output root, joined with the
+// file's directory. filePath is the file's path relative to the output root, as
+// its Files entry states it. The compiler bridge groups captured files into
+// packages by this function, so a caller with the same environment derives the
+// identity the bridge used.
+//
+// It reports false, and no path, when the environment does not state a valid
+// module path and output root, when filePath names no file, or when the result
+// is not a valid import path. Only Module and OutputRoot are read.
+func CapturedImportPath(environment ImportEnvironment, filePath string) (string, bool) {
+	importPath, ok := outputRootImportPath(environment.Module, environment.OutputRoot)
+	if !ok {
+		return "", false
 	}
-	return module + "/" + dir
+	// A Files path has no empty, "." or ".." element, so its directory is the
+	// text before the last slash. Nothing is cleaned: an element that is not an
+	// import-path element is refused below.
+	slash := strings.LastIndex(filePath, "/")
+	if slash >= 0 {
+		importPath += "/" + filePath[:slash]
+	}
+	if filePath[slash+1:] == "" || !ValidImportPath(importPath) {
+		return "", false
+	}
+	return importPath, true
+}
+
+// outputRootImportPath is the import path of the output root: the module path
+// for ModuleRoot, and otherwise the module path joined with the stated
+// directory. Every other spelling is refused, so one directory has one
+// spelling: the empty string, an absolute path, a backslash, a trailing slash
+// and a "." or ".." element all fail as elements of an import path. A
+// directory that the go tool keeps out of a package tree is refused as it is
+// for a captured file: testdata, vendor and a leading underscore. A leading dot
+// is no import-path element.
+func outputRootImportPath(module, outputRoot string) (string, bool) {
+	if !ValidImportPath(module) {
+		return "", false
+	}
+	if outputRoot == ModuleRoot {
+		return module, true
+	}
+	root := module + "/" + outputRoot
+	if !ValidImportPath(root) {
+		return "", false
+	}
+	for _, element := range strings.Split(outputRoot, "/") {
+		if element == "testdata" || element == "vendor" || strings.HasPrefix(element, "_") {
+			return "", false
+		}
+	}
+	return root, true
 }
 
 func normalizeEnvironment(e ImportEnvironment) (ImportEnvironment, error) {
-	if !ValidImportPath(e.Module) {
+	root, ok := outputRootImportPath(e.Module, e.OutputRoot)
+	if !ok {
 		return ImportEnvironment{}, semantic.ErrInvalidRequest
 	}
 	if len(e.Packages) > 64 {
 		return ImportEnvironment{}, semantic.ErrLimit
 	}
-	out := ImportEnvironment{Module: e.Module, Packages: make([]Package, 0, len(e.Packages))}
-	size := len(e.Module)
+	out := ImportEnvironment{Module: e.Module, OutputRoot: e.OutputRoot, Packages: make([]Package, 0, len(e.Packages))}
+	size := len(e.Module) + len(e.OutputRoot)
 	for _, p := range e.Packages {
-		lower, module := strings.ToLower(p.ImportPath), strings.ToLower(e.Module)
-		if !ValidImportPath(p.ImportPath) || lower == module || strings.HasPrefix(lower, module+"/") || slices.Contains(strings.Split(p.ImportPath, "/"), "vendor") {
-			// A supplied package must not claim the captured module's paths, and a
-			// vendor element would make Go resolve its path differently.
+		lower, captured := strings.ToLower(p.ImportPath), strings.ToLower(root)
+		if !ValidImportPath(p.ImportPath) || lower == captured || strings.HasPrefix(lower, captured+"/") || slices.Contains(strings.Split(p.ImportPath, "/"), "vendor") {
+			// A supplied package must not claim a path at or below the output
+			// root, where the captured packages are. A package of the module
+			// outside the output root is hand-written code and may be supplied.
+			// A vendor element would make Go resolve its path differently.
 			return ImportEnvironment{}, semantic.ErrInvalidRequest
 		}
 		if len(p.Files) == 0 || len(p.Files) > 16 {
