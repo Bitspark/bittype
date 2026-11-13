@@ -1249,6 +1249,103 @@ planned. It has readers today, and one more is coming:
   and is read through its semantic vocabulary, while Go as a target is
   written through its intended forms.
 
+### 3.5 Where one analysed vocabulary could not be read as a source
+
+Standing: the first paragraph is implemented today. The second is a finding
+on a branch that is not merged. The third is a decision of the research
+owner. It stands, and you may object to it.
+
+**What the kernel walks, and what three analyses publish.** The generation
+kernel walks a source's semantic graph from the body of an entity through
+the operands of terms. It reads no fact
+(`contracts/generation/go/occurrence.go:202`):
+
+```go
+body = &occurrence[F]{walk: w, term: e.Body, declaration: d.entity}
+```
+
+The horos analysis publishes a declaration's definition as the body of its
+entity. The Go analysis publishes, as the body of a named type, a reference
+to the entity itself, and the definition as the value of a fact that Go owns
+(`internal/golangsem/export.go:158-159`, `:207`, `:286`):
+
+```go
+body := e.typ(o.Type())
+e.data.Entities[id-1].Body = body
+...
+term = semantics.Term{Kind: semantics.Reference, Target: obj}
+...
+e.fact(id, n.UnderlyingRelation(), e.typ(t.Underlying()))
+```
+
+The TypeScript analysis does the same and says why
+(`internal/typescriptsem/compiler.cjs:251-252`, `:316`). There the
+definition is the value of the facts `properties` and `structure`:
+
+```javascript
+// References break recursive type graphs; definition structure is a fact,
+// not a containment edge back into the named type.
+...
+graph.Entities[id - 1].Body = type;
+```
+
+Three lines of a dump of the Go graph for a struct type `Person`, made by
+the lane named below: the entity, the term that is its body, and the fact.
+The term of kind 1 is a reference, and its target is the entity itself:
+
+```text
+entity 7 kind=go/defined name="Person" owner=1 body=10 decls=[{0 12}] params=[]
+term 10 kind=1 target=7 callee=0 args=[] op=/ data="" operands=null
+fact subject(e0,t10) go/underlying -> t11
+```
+
+The typed readers of the two semantic vocabulary packages read the body in
+that sense. Go's readers take `e.Body` as the type of the declared name in
+two places (`semantics/golang/go/model.go:111`, `:253`), and TypeScript's
+reader reaches the declared type through a fact with the relation
+`declared-type` (`semantics/typescript/go/model.go:130`).
+
+**What happened.** One working session built the two further pairs of
+section 2.7 on the migration's branch. The first pair with Go as a source
+was refused with an evidence cycle before any field of a struct became a
+use of a type: the body of a declaration led back to the declaration. The analysed vocabulary of Go
+and of TypeScript was built to be compared against, by verification and by
+a Files formatter. It could not be walked as a source.
+
+**The decision** (decision of the research owner, 13 November 2026). The
+kernel stays as it is. The Go and the TypeScript analysis change: the body
+of a declaration's entity becomes the term of its definition, and the link
+from a declared name to its own type becomes a fact on the entity. The
+decision rests on two accepted sentences. Of the kernel's walk: "No source
+supplies a traversal" (`docs/generation-gaps.md`). Of the graph: "`Owner`
+and `Body` are optional links, not a universal namespace or type-of rule."
+(`docs/semantics.md`). Two alternatives were not taken. In the first, a
+source names the term at which the kernel starts a declaration's body. In
+the second, each such language gets a second analysis that publishes a
+graph in the shape the kernel walks.
+
+**Smaller facts from the same work,** each a place where one model of a
+language for every operation is under strain. They are the lane's notes,
+and its report is not finished.
+
+- The definition is not the checked type. For Go's `type Temp Celsius` the
+  written definition is a reference to `Celsius`, and the value of
+  `underlying` is `float64`. In TypeScript an alias of an
+  interface resolves to the interface's written-out properties.
+- The Go graph shares one term among all occurrences of a type. The horos
+  graph has a term per occurrence. A reader that needs the site of one use
+  cannot get it from a shared term.
+- A family (section 2.7) has an accepted meaning only for horos as the
+  source: a set of canonical horos values. For a source that is not horos
+  no page defines it.
+- The contract's two declaration forms, alias and nominal, are the
+  vocabulary of a native target. horos has one declaration form.
+- For horos as a target, an intended-forms package had to be declared
+  beside horos's syntax vocabulary and its semantic vocabulary. The typed
+  readers of TypeScript's semantic vocabulary package start from a
+  declaration or a type and give no handle for a term that the kernel hands
+  over, so the source reader decodes the term itself.
+
 ## 4. Relevant code, as evidence
 
 Standing of this section: implemented today. It is evidence of the present
