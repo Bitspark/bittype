@@ -915,6 +915,38 @@ func TestFilesFailureCategories(t *testing.T) {
 		out := namesOutput(t, "module collision; type Box<T> = { T: T; };")
 		return tsFormat(generated, out, format.FilesLimits{}, tsOneFile(out, "types", "types.ts").Issue())
 	})
+	// The reader refuses a member named like a type parameter while it reads the
+	// graph, which is before the two refusals of relocation. This row pins what
+	// is found first, as the row of a script does: the member, and not the use
+	// of an unexposed declaration of another file. The category describes the
+	// defect that was found.
+	add("a member named like a type parameter of its declaration and a use of an unexposed declaration of another file", typescriptExisting, source.ErrUnsupported, func(t *testing.T) (bool, error) {
+		member := tsUnit("member", "export interface Box<T> { T: T }")
+		return tsExisting(&tsfiles.Organization{Units: []tsfiles.Placement{
+			{File: "member", Path: "member.ts", Declarations: []ast.NodeRef{tsSite(member, "Box")}},
+			{File: "public", Path: "public.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Visible")}},
+			{File: "private", Path: "private.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Hidden")}},
+		}}, member, hidden)(t)
+	})
+	// The capture of a global type is a refusal of coverage too, and it is
+	// reported after everything invalid, wherever its file stands among the
+	// files: before the file with the use of an unexposed declaration, or after.
+	for _, order := range []string{"first", "last"} {
+		add("a global type captured in the "+order+" file and a use of an unexposed declaration of another file", typescriptExisting, source.ErrInvalid, func(t *testing.T) (bool, error) {
+			declared := tsUnit("a", "export type Array = string;")
+			using := tsUnit("user", "export interface Box { items: Array<string> }")
+			capture := tsfiles.Placement{File: "both", Path: "both.ts", Declarations: []ast.NodeRef{tsSite(declared, "Array"), tsSite(using, "Box")}}
+			apart := []tsfiles.Placement{
+				{File: "public", Path: "public.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Visible")}},
+				{File: "private", Path: "private.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Hidden")}},
+			}
+			units := append([]tsfiles.Placement{capture}, apart...)
+			if order == "last" {
+				units = append(apart, capture)
+			}
+			return tsExisting(&tsfiles.Organization{Units: units}, declared, using, hidden)(t)
+		})
+	}
 	// The capture is found in the same pass as the refusals of relocation and is
 	// reported after them: a placement that also separates an unexposed
 	// declaration from its user is invalid input.

@@ -590,10 +590,14 @@ has a defect of both kinds is invalid input, whichever file has which.
 The two refusals of relocation, for two declarations of one name in one file
 and for an unexposed declaration in another file than its user, are decided in
 a pass of their own, before a tree is constructed and before a refusal of
-coverage. One order is not reached. The relocation refusals need the bindings
-of the program, and a script is refused while the graph is read. A script
-whose placement separates an unexposed declaration from its user, or puts two
-declarations of one name into one file, is therefore reported as a script.
+coverage. One order is not reached, for two inputs. The relocation refusals
+need the bindings of the program, and the reader of the graph refuses two
+things while it reads them: a script, and a use whose target the compiler
+declares at several captured sites, which a member named like a type
+parameter of its interface is. A script, or a file with such a member, whose
+placement also separates an unexposed declaration from its user, or puts two
+declarations of one name into one file, is therefore reported as unsupported
+coverage. A row pins each of the two.
 An import form outside the profile and a capture without files are refused
 earlier still, while the declarations are read and before the placement is
 judged. The horos placement has no coverage refusal, so it needs no such
@@ -694,8 +698,9 @@ Four rows need their reason.
   parameter in scope and also by a declaration of its file, and gets the same
   answer. Where the parameter and the use are in one declaration no placement
   helps, and a later slice that renames can still admit the output. No builtin
-  mapping writes a global type, so only a consumer's contribution reaches
-  this.
+  mapping writes a global type, so for generated declarations only a
+  consumer's contribution reaches this. A placement of existing source reaches
+  it without one.
 
 One [table test](../integration/go/files_failure_categories_test.go) feeds each
 of these to the formatter that can receive it. The TypeScript bridge refuses a

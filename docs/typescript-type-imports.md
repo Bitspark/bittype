@@ -85,7 +85,7 @@ Generation states no rule about names across declarations for TypeScript. It bui
 | A use of a global type inside a declaration that has a type parameter of that name | Unsupported coverage. No placement helps: the parameter and the use are in one declaration |
 | A member that is named like a type parameter of its interface | Unsupported coverage. The compiler keeps both in one symbol, and this profile does not tell them apart |
 
-No builtin mapping writes a global type, so only a consumer's contribution, such as a list that maps to the global `Array`, reaches the two rows about a global type.
+No builtin mapping writes a global type, so for generated declarations only a consumer's contribution, such as a list that maps to the global `Array`, reaches the two rows about a global type. Existing source reaches the first of them without one. A type parameter of another declaration of the file does not capture.
 
 **An alias renames nothing.** An alias is the local spelling of a use of an import, in the importing file. The declaration keeps its name in its own file, and no type parameter is respelled. [The naming design](naming.md#who-owns-what) makes the distinction: how a use reaches its declaration is the Files stage's, and the name of a declaration is the mapping's.
 
@@ -112,6 +112,6 @@ export interface Page {
 }
 ```
 
-Both texts are pinned by [tests](../integration/go/typescript_names_test.go), with eight more: an import beside a type parameter that no use is written with, three imports of one export name (`T_1`, `T_2`, `T_3`), an import beside a use of the global `Array`, the two orders of an export that is literally named `T_1`, a use outside the declaration with the parameter, the capture by a parameter of an alias, a parameter named like its own declaration, and a declaration named like a global type in another file. The compiler's binding of each use is compared with the destination that generation recorded, as for every relocated use.
+Both texts are pinned by [tests](../integration/go/typescript_names_test.go), with nine more: an import beside a type parameter that no use is written with, three imports of one export name (`T_1`, `T_2`, `T_3`), an import beside a use of the global `Array`, the two orders of an export that is literally named `T_1`, a use outside the declaration with the parameter, the capture by a parameter of an alias, a parameter named like its own declaration, a declaration named like a global type in another file, and a use of a global type beside a parameter of that name of another declaration. The compiler's binding of each use is compared with the destination that generation recorded, as for every relocated use.
 
 The Files stage coverage test registers this formatter alongside the Horos parser and formatter. [Bittype architectural case ACX-003](architecture-cases/0003-files-stage-coverage.md)

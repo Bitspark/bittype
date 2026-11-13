@@ -596,3 +596,29 @@ func TestTypeScriptGlobalTypeCapturedByANameOfItsFile(t *testing.T) {
 	}
 	onlyCategory(t, "a type parameter named like a global type that its declaration uses", err, source.ErrUnsupported)
 }
+
+// A use of a global type is captured by a type parameter of the declaration
+// that holds the use, and not by a parameter of another declaration of the
+// file. Holder has a parameter Array, and Box applies the global Array. In one
+// file nothing is captured: the placement is published, for existing source
+// and for generated declarations.
+func TestTypeScriptGlobalTypeIsNotCapturedByAParameterOfAnotherDeclaration(t *testing.T) {
+	published, err := namesExisting(t, map[string]string{
+		"a": "export interface Holder<Array> { v: Array } export interface Box { items: Array<string> }",
+	}, nil)
+	if err != nil {
+		t.Fatal("existing source: a parameter of another declaration was read as capturing: ", err)
+	}
+	if published["a"] != "export interface Holder<Array> {\n  v: Array;\n}\n\nexport interface Box {\n  items: Array<string>;\n}\n" {
+		t.Fatalf("the file a: %q", published["a"])
+	}
+	arrays := selectedTS(listContribution("names/array/1", "", "Array"), "names/array/1")
+	output := namesOutputWith(t, "module collision; type holder<array> = { v: array; }; type box = list<text>;", arrays)
+	out, texts, err := namesFormat(t, output, tsOneFile(output, "types", "types.ts"))
+	if err != nil || !out.Valid() {
+		t.Fatal("generated declarations: a parameter of another declaration was read as capturing: ", err)
+	}
+	if texts["types"] != "export type Box = Array<string>;\n\nexport interface Holder<Array> {\n  v: Array;\n}\n" {
+		t.Fatalf("the file types: %q", texts["types"])
+	}
+}
