@@ -544,6 +544,13 @@ func TestGateEveryRefusalMatchesExactlyOneValue(t *testing.T) {
 	gateDriveHoros(t, &driven)
 	gateDriveLimits(t, &driven)
 	ran := map[string]int{}
+	bounds := 0
+	for _, d := range driven {
+		if d.bare {
+			bounds++
+		}
+	}
+	t.Logf("the test drives %d cases: %d refusals and %d bounds of a request", len(driven), len(driven)-bounds, bounds)
 	for _, d := range driven {
 		ran[d.id]++
 		if d.err == nil || d.planned {
