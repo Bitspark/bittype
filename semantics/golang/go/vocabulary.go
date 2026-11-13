@@ -33,6 +33,20 @@ func DefinedKind() semantics.Key   { return Key("defined") }
 func AliasKind() semantics.Key     { return Key("alias") }
 func ParameterKind() semantics.Key { return Key("parameter") }
 
+// BuiltinKind is the kind of the entity of a predeclared basic type, such as
+// string and bool. The entity's name is the identifier of the universe scope.
+// It has no owner and no declaration site.
+//
+// Limit: the kind covers the basic types. error and comparable are named types
+// of the universe scope and any is an alias, so their entities have
+// DefinedKind and AliasKind, without an owner and without a site.
+func BuiltinKind() semantics.Key { return Key("builtin") }
+
+// NameRole is the role of the binding of an identifier that is used as a
+// name: the binding's site is the node of the use, and its target is the
+// entity that the compiler resolved the identifier to.
+func NameRole() semantics.Key { return Key("name") }
+
 // Relations of the facts about a native type.
 func IdenticalRelation() semantics.Key   { return Key("identical") }
 func UnderlyingRelation() semantics.Key  { return Key("underlying") }

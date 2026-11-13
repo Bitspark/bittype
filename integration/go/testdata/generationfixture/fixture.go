@@ -566,8 +566,8 @@ func (d dropping) Finish(declarations []construct.Fragment[s.Language]) (constru
 // lowering. It returns what the constructor returns.
 type droppingTarget struct{ target.Provider }
 
-func (droppingTarget) Build(ctx context.Context, in g.BuildInput[s.Language]) (g.Assembly, error) {
-	b := &target.Backend{Store: construct.New[s.Language](ctx, in.Limits)}
+func (d droppingTarget) Build(ctx context.Context, in g.BuildInput[s.Language]) (g.Assembly, error) {
+	b := d.Provider.Backend(ctx, in)
 	return construct.Compile(ctx, in, b.Store, dropping{b})
 }
 

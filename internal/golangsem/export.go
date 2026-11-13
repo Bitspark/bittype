@@ -135,7 +135,7 @@ func (e *exporter) object(o types.Object) semantics.EntityID {
 	kind := n.Key("field")
 	owner := semantics.EntityID(0)
 	if _, ok := o.(*types.TypeName); ok {
-		kind = n.Key("builtin")
+		kind = n.BuiltinKind()
 		switch o.Type().(type) {
 		case *types.Named:
 			kind = n.DefinedKind()
@@ -355,7 +355,7 @@ func export(ctx context.Context, program *checkedProgram, info *types.Info, orig
 	}
 	sort.Slice(uses, func(i, j int) bool { return siteLess(origins[uses[i]], origins[uses[j]]) })
 	for _, id := range uses {
-		e.data.Bindings = append(e.data.Bindings, semantics.Binding{At: semantics.Occurrence{Site: origins[id], Role: n.Key("name")}, Target: e.object(info.Uses[id])})
+		e.data.Bindings = append(e.data.Bindings, semantics.Binding{At: semantics.Occurrence{Site: origins[id], Role: n.NameRole()}, Target: e.object(info.Uses[id])})
 		if e.err != nil {
 			return nil, e.located(origins[id])
 		}

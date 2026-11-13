@@ -282,6 +282,12 @@ var roleExtensions = map[string][]string{
 	"format/files/typescript/provider/go": {"contracts/generation/go", "files/go", "internal/typescriptimports", "transform/syntax/typescript/symbol/go"},
 	// The TypeScript target publishes those symbols with its output.
 	"transform/syntax/typescript/target/go": {"transform/syntax/typescript/symbol/go", "trees/representation/go"},
+	// The Go target publishes the symbol of each predeclared type it uses with
+	// its output.
+	"transform/syntax/golang/target/go": {"transform/syntax/golang/symbol/go", "trees/representation/go"},
+	// The Rust target publishes the symbol of each item of the standard
+	// library and of each primitive type it uses with its output.
+	"transform/syntax/rust/target/go": {"transform/syntax/rust/symbol/go", "trees/representation/go"},
 	// Of the common horos mapping parts, only the declaration recipe builds on
 	// another: on naming. It states no profile and imports no profile identity.
 	// Patterns and naming import no part.

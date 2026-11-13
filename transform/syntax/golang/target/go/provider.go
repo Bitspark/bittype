@@ -8,14 +8,17 @@ import (
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	s "github.com/Bitspark/bittype/syntax/golang/go"
 	model "github.com/Bitspark/bittype/transform/syntax/golang/model/go"
+	"github.com/Bitspark/bittype/transform/syntax/golang/symbol/go"
 	m "github.com/Bitspark/bittype/transform/syntax/shared/target/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 type Provider struct{ Package string }
 type Backend struct {
 	*m.Store[s.Language]
-	config Provider
+	config   Provider
+	language representation.Language
 }
 
 func (p Provider) CheckExpression(ctx context.Context, e g.Expression[s.Language]) error {
@@ -28,8 +31,16 @@ func (p Provider) Build(ctx context.Context, in g.BuildInput[s.Language]) (g.Ass
 	if p.Package == "" || token.Lookup(p.Package).IsKeyword() {
 		return g.Assembly{}, g.ErrInvalid
 	}
-	b := &Backend{Store: m.New[s.Language](ctx, in.Limits), config: p}
+	b := p.Backend(ctx, in)
 	return m.Compile(ctx, in, b.Store, b)
+}
+
+// Backend returns the lowering of one build: the forms of the Go model over a
+// fresh store, with the configuration of p and the language of the build. A
+// use of a predeclared type records a symbol of that language, so a lowering
+// that is constructed in another way cannot write one.
+func (p Provider) Backend(ctx context.Context, in g.BuildInput[s.Language]) *Backend {
+	return &Backend{Store: m.New[s.Language](ctx, in.Limits), config: p, language: in.Language}
 }
 func (b *Backend) Parameter(name string, origin ast.NodeRef) (m.Fragment[s.Language], error) {
 	constraint, err := b.Node(m.Node(s.KindInterfaceType, nil, origin))
@@ -63,6 +74,25 @@ func edges(role string, fragments []m.Fragment[s.Language]) []m.Child[s.Language
 	}
 	return out
 }
+
+// predeclared writes a use of a type of the universe scope. The identifier is
+// a name that a declaration or a type parameter can capture, so the use
+// records its destination: the predeclared symbol.
+func (b *Backend) predeclared(name string, origin ast.NodeRef) (m.Fragment[s.Language], error) {
+	destination, err := symbol.Predeclared(name)
+	if err != nil {
+		return m.Fragment[s.Language]{}, err
+	}
+	node, err := b.Node(m.Node(s.KindNamedType, m.Attributes("name", name), origin))
+	if err != nil {
+		return node, err
+	}
+	use, err := symbol.ExternalUse(b.language, ast.NodeRef{}, destination)
+	if err != nil {
+		return node, err
+	}
+	return b.External(node, use)
+}
 func (b *Backend) Declaration(d g.NativeDeclaration[s.Language], params []m.Fragment[s.Language], body m.Fragment[s.Language]) (m.Fragment[s.Language], error) {
 	name, origin := d.Name, d.Origin
 	form, _ := model.Name(d.Form)
@@ -86,7 +116,7 @@ func (b *Backend) Expression(e g.Expression[s.Language], args []m.Fragment[s.Lan
 	data, origin := e.Data(), e.Origin()
 	switch name {
 	case model.FormPrimitive:
-		return b.Node(m.Node(s.KindNamedType, m.Attributes("name", data[0]), origin))
+		return b.predeclared(data[0], origin)
 	case model.FormSlice:
 		return b.Node(m.Node(s.KindSliceType, nil, origin), m.Child[s.Language]{Role: s.RoleElement, Fragment: args[0]})
 	case model.FormField:
