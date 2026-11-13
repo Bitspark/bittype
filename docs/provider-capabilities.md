@@ -873,7 +873,7 @@ Authored scope: [docs/parsing-formatting.md#carriers-and-ownership](https://gith
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| horos-modules-and-generics | pagination-and-imported-library | canonical-identity-preserved | unspecified (authored profile absent) | [TestCanonicalPaginationAndImportedLibraryRoundTrip](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format_test.go#L59) (external) |
+| horos-modules-and-generics | pagination-and-imported-library | canonical-identity-preserved | unspecified (authored profile absent) | [TestCanonicalPaginationAndImportedLibraryRoundTrip](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format_test.go#L61) (external) |
 | independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L28) (external) |
 | horos-text-vocabulary | declared-constructor-fixtures | canonical-round-trip-preserved | unspecified (authored profile absent) | [TestCompleteSourceVocabulary](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L85) (external) |
 
@@ -943,13 +943,13 @@ Authored scope: [docs/horos-syntax.md#pipeline-and-limits](https://github.com/Bi
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| ast-admission | unspellable-and-nil-ast | rejection-without-output | unspecified (authored profile absent) | [TestFormatterRejectsUnspellableASTWithoutPartialOutput](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format_test.go#L167) (external) |
+| ast-admission | unspellable-and-nil-ast | rejection-without-output | unspecified (authored profile absent) | [TestFormatterRejectsUnspellableASTWithoutPartialOutput](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format_test.go#L169) (external) |
 
 ### Declared target [github.com/Bitspark/bittype/format/syntax/horos/provider/go#Provider.Format](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format.go#L467)
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| horos-modules-and-generics | pagination-and-imported-library | canonical-identity-preserved | unspecified (authored profile absent) | [TestCanonicalPaginationAndImportedLibraryRoundTrip](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format_test.go#L59) (external) |
+| horos-modules-and-generics | pagination-and-imported-library | canonical-identity-preserved | unspecified (authored profile absent) | [TestCanonicalPaginationAndImportedLibraryRoundTrip](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format_test.go#L61) (external) |
 | independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L28) (external) |
 | horos-text-vocabulary | declared-constructor-fixtures | canonical-round-trip-preserved | unspecified (authored profile absent) | [TestCompleteSourceVocabulary](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L85) (external) |
 
@@ -1064,7 +1064,7 @@ No structural definition attached. Operation source and authored scope remain th
 
 Contract: github.com/Bitspark/bittype/contracts/resolution/go.Provider&#91;github.com/Bitspark/bittype/syntax/horos/go.Language&#93;.
 
-Public operation: [github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L32). Receiver: github.com/Bitspark/bittype/resolve/files/horos/provider/go.Provider.
+Public operation: [github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L31). Receiver: github.com/Bitspark/bittype/resolve/files/horos/provider/go.Provider.
 
 Language marker: github.com/Bitspark/bittype/syntax/horos/go.Language.
 
@@ -1072,18 +1072,18 @@ Construction alternatives: no provider collaborators.
 
 Static call relationships (no evidence transfer):
 
-- [github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L32) → [github.com/Bitspark/bittype/resolve/files/horos/provider/go#ResolveReferences](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L25) ([call](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L33)); receiver ; type arguments .
+- [github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L31) → [github.com/Bitspark/bittype/resolve/files/horos/provider/go#ResolveReferences](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L24) ([call](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L32)); receiver ; type arguments .
 
 Traversal boundary: callee is dynamic or outside implementation source.
 
-### Declared target [github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L32)
+### Declared target [github.com/Bitspark/bittype/resolve/files/horos/provider/go#Provider.Resolve](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L31)
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
 | semantic-conformance | independent-provider-registration | captured-graph-resolved | unspecified (authored profile absent) | [TestSemanticProviders](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_test.go#L51) (external) |
 | independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L28) (external) |
 
-### Declared target [github.com/Bitspark/bittype/resolve/files/horos/provider/go#ResolveReferences](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L25)
+### Declared target [github.com/Bitspark/bittype/resolve/files/horos/provider/go#ResolveReferences](https://github.com/Bitspark/bittype/blob/main/resolve/files/horos/provider/go/resolver.go#L24)
 
 Related declaration; its cases and observations do not qualify the public wrapper.
 
@@ -3348,7 +3348,7 @@ Authored scope: [docs/horos-syntax.md#pipeline-and-limits](https://github.com/Bi
 
 | Feature | Case | Authored expectation | Authored profile | Test declaration |
 | --- | --- | --- | --- | --- |
-| horos-modules-and-generics | pagination-and-imported-library | canonical-identity-preserved | unspecified (authored profile absent) | [TestCanonicalPaginationAndImportedLibraryRoundTrip](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format_test.go#L59) (external) |
+| horos-modules-and-generics | pagination-and-imported-library | canonical-identity-preserved | unspecified (authored profile absent) | [TestCanonicalPaginationAndImportedLibraryRoundTrip](https://github.com/Bitspark/bittype/blob/main/format/syntax/horos/provider/go/format_test.go#L61) (external) |
 | independent-engine-stages | pagination-source | independently-composable | unspecified (authored profile absent) | [TestHorosSourceThroughIndependentEngineStages](https://github.com/Bitspark/bittype/blob/main/integration/go/horos_text_test.go#L28) (external) |
 | horos-text-vocabulary | declared-constructor-fixtures | canonical-round-trip-preserved | unspecified (authored profile absent) | [TestCompleteSourceVocabulary](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L85) (external) |
 | syntax-semantics-boundary | semantically-invalid-syntax-fixtures | syntax-accepted | unspecified (authored profile absent) | [TestSyntaxDoesNotResolveOrCheckContracts](https://github.com/Bitspark/bittype/blob/main/parse/syntax/horos/provider/go/parse_test.go#L176) (external) |
