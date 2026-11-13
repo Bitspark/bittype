@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"slices"
 	"sort"
+	"strings"
 	"testing"
 
 	analyze "github.com/Bitspark/bittype/analyze/files/golang/provider/go"
@@ -424,7 +425,10 @@ func goPackageNames(model n.Model) map[string][]string {
 //
 // bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve feature=go-imported-packages case=package-name-fact expects=name-published-separately-from-path
 func TestGoPackageNameIsAFactSeparateFromThePath(t *testing.T) {
-	settings := goImportSettingsAt(t, "generated", cellPackage)
+	// No captured file imports the second supplied package, and its declared
+	// name is not the last element of its path.
+	spare := n.Package{ImportPath: "example.org/spare", Files: []n.PackageFile{{Name: "s.go", Text: "package unused\n\ntype S string\n"}}}
+	settings := goImportSettingsAt(t, "generated", cellPackage, spare)
 	source := func(name string) map[string]string {
 		return map[string]string{"pages/types.go": "package " + name + "\n\nimport \"example.org/cell\"\n\ntype Page struct {\n\tTitle string\n}\n\ntype Cells = cell.Cell[Page]\n"}
 	}
@@ -437,7 +441,7 @@ func TestGoPackageNameIsAFactSeparateFromThePath(t *testing.T) {
 	// Every package entity, captured and supplied, carries exactly one name fact.
 	const captured, supplied = "example.org/app/generated/pages", "example.org/cell"
 	for name, model := range map[string]n.Model{"pages": pages, "people": people} {
-		if got := goPackageNames(model); !reflect.DeepEqual(got, map[string][]string{captured: {name}, supplied: {"cell"}}) {
+		if got := goPackageNames(model); !reflect.DeepEqual(got, map[string][]string{captured: {name}, supplied: {"cell"}, spare.ImportPath: {"unused"}}) {
 			t.Fatal("package-name facts", name, got)
 		}
 		// The reader returns the fact, which is not the last element of the path.
@@ -446,6 +450,9 @@ func TestGoPackageNameIsAFactSeparateFromThePath(t *testing.T) {
 		}
 		if got, err := model.PackageName(supplied); err != nil || got != "cell" {
 			t.Fatal("supplied package name", got, err)
+		}
+		if got, err := model.PackageName(spare.ImportPath); err != nil || got != "unused" {
+			t.Fatal("name of a supplied package that nothing imports", got, err)
 		}
 		for _, missing := range []string{"example.org/missing", "", name} {
 			if _, err := model.PackageName(missing); !errors.Is(err, n.ErrForeign) {
@@ -705,17 +712,35 @@ func TestGoImportEnvironmentMustStateTheOutputRoot(t *testing.T) {
 			t.Fatal("decoded environment", environment, enabled, err)
 		}
 	}
+	// The bytes of a setting with a supplied package: every member name is part of it.
+	supplied := goImportSettingsAt(t, "generated", n.Package{ImportPath: "example.org/cell", Files: []n.PackageFile{{Name: "cell.go", Text: "package cell\n"}}})
+	if got := string(supplied[len(supplied)-1].Value); got != `{"Module":"example.org/app","OutputRoot":"generated","Packages":[{"ImportPath":"example.org/cell","Files":[{"Name":"cell.go","Text":"package cell\n"}]}]}` {
+		t.Fatal("import setting with a supplied package", got)
+	}
 	// The module root is stated as ".", which is not the absent value.
 	if n.ModuleRoot != "." {
 		t.Fatal("the stated module root changed", n.ModuleRoot)
 	}
-	admitted := map[string]bool{}
-	for _, outputRoot := range []string{n.ModuleRoot, "generated", "Generated", "internal/gen", "a/b/c", "gen-1.x", "v2"} {
-		settings := goImportSettingsAt(t, outputRoot)
-		admitted[string(settings[len(settings)-1].Value)] = true
+	// Admitted roots. Each resolves, and its captured package is below it. The
+	// names beside a refused one stay admitted: an underscore inside a name,
+	// another case of testdata and vendor, a tilde that no digits follow, a
+	// device name that is only part of the text before the first dot.
+	admitted := []string{n.ModuleRoot, "generated", "Generated", "internal/gen", "a/b/c", "gen-1.x", "v2", "a_b", "gen_", "Vendor", "Testdata", "vendors", "gen~x", "gen~", "gen~1x", "x.gen~1", "console", "con1", "x.con", "com0", "com10", "null"}
+	settings := map[string]bool{}
+	for _, outputRoot := range admitted {
+		model, _ := goImportModel(t, map[string]string{"pages/types.go": "package pages\n\ntype Page string\n"}, goImportSettingsAt(t, outputRoot))
+		want := goImportModule + "/" + outputRoot + "/pages"
+		if outputRoot == n.ModuleRoot {
+			want = goImportModule + "/pages"
+		}
+		if got := goPackageNames(model); !reflect.DeepEqual(got, map[string][]string{want: {"pages"}}) {
+			t.Fatal("captured package under the admitted output root", outputRoot, got)
+		}
+		last := goImportSettingsAt(t, outputRoot)
+		settings[string(last[len(last)-1].Value)] = true
 	}
-	if len(admitted) != 7 {
-		t.Fatal("two output roots gave one setting", admitted)
+	if len(settings) != len(admitted) {
+		t.Fatal("two output roots gave one setting", settings)
 	}
 	for name, outputRoot := range map[string]string{
 		"absent":               "",
@@ -732,17 +757,32 @@ func TestGoImportEnvironmentMustStateTheOutputRoot(t *testing.T) {
 		"empty element":        "generated//pages",
 		"backslash":            "generated\\pages",
 		"space":                " generated",
-		"hidden directory":     ".generated",
+		"plus":                 "a+b",
 		"trailing dot":         "generated.",
-		"underscore directory": "_generated",
-		"underscore inside":    "a/_generated",
-		"testdata":             "testdata",
-		"testdata inside":      "a/testdata/b",
-		"vendor":               "vendor",
-		"vendor inside":        "a/vendor",
+		// A "." or ".." element makes the path unclean, whatever stands beside it.
+		"current before vendor": "./vendor",
+		"parent after vendor":   "vendor/..",
+		"absolute vendor":       "/vendor",
+		"vendor, slash":         "vendor/",
+		// Go's rule for an import path element: a tilde and digits at the end of
+		// the text before the first dot, and the Windows device names in any case.
+		"tilde and digit":      "gen~1",
+		"only tilde and digit": "~1",
+		"tilde and digits":     "a/gen~12/b",
+		"tilde before the dot": "gen~1.x",
+		"device con":           "con",
+		"device nul":           "nul",
+		"device aux":           "aux",
+		"device prn":           "prn",
+		"device com1":          "com1",
+		"device lpt9":          "lpt9",
+		"device, upper case":   "a/CON/b",
+		"device before a dot":  "con.x",
+		// The bound of 512 bytes is on the module path and the root together.
+		"too long": strings.Repeat("g", 512-len(goImportModule)),
 	} {
-		if _, err := n.ImportConfiguration(n.ImportEnvironment{Module: goImportModule, OutputRoot: outputRoot}); !errors.Is(err, semantic.ErrInvalidRequest) {
-			t.Fatal("an output root was accepted:", name, err)
+		if settings, err := n.ImportConfiguration(n.ImportEnvironment{Module: goImportModule, OutputRoot: outputRoot}); settings != nil || !errors.Is(err, semantic.ErrInvalidRequest) || errors.Is(err, n.ErrUnsupported) {
+			t.Error("an output root was not refused as invalid:", name, err)
 		}
 	}
 	// A setting under the old key, and one whose bytes state no clean output
@@ -763,6 +803,9 @@ func TestGoImportEnvironmentMustStateTheOutputRoot(t *testing.T) {
 		"current key, empty root":      {Key: n.Key("imports-2"), Value: []byte(`{"Module":"example.org/app","OutputRoot":"","Packages":[]}`)},
 		"current key, unclean root":    {Key: n.Key("imports-2"), Value: []byte(`{"Module":"example.org/app","OutputRoot":"generated/","Packages":[]}`)},
 		"current key, root after list": {Key: n.Key("imports-2"), Value: []byte(`{"Module":"example.org/app","Packages":[],"OutputRoot":"generated"}`)},
+		// No setting states a root that ImportConfiguration refuses, so these bytes are no setting.
+		"current key, unsupported root": {Key: n.Key("imports-2"), Value: []byte(`{"Module":"example.org/app","OutputRoot":"vendor","Packages":[]}`)},
+		"current key, device root":      {Key: n.Key("imports-2"), Value: []byte(`{"Module":"example.org/app","OutputRoot":"con","Packages":[]}`)},
 	} {
 		altered := append(slices.Clone(n.Configuration()), last)
 		if _, _, err := n.Imports(altered); !errors.Is(err, semantic.ErrInvalidRequest) {
@@ -777,5 +820,97 @@ func TestGoImportEnvironmentMustStateTheOutputRoot(t *testing.T) {
 		if _, err := resolver.Resolve(context.Background(), snapshot, semantic.Options{Configuration: altered}); !errors.Is(err, semantic.ErrInvalidRequest) {
 			t.Fatal(name, "accepted by the resolver:", err)
 		}
+	}
+}
+
+// A directory that the profile does not cover has one answer wherever it
+// enters: in the path of a captured file, and in the output root.
+//
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve feature=go-imported-packages case=unsupported-directory-at-both-entrances expects=unsupported-in-file-path-and-output-root
+func TestGoUnsupportedDirectoryHasOneAnswerWhereverItEnters(t *testing.T) {
+	const source = "package p\n\ntype T string\n"
+	generated := n.ImportEnvironment{Module: goImportModule, OutputRoot: "generated"}
+	for _, directory := range []string{"testdata", "vendor", "_gen", ".gen", "a/testdata", "a/vendor/b", "a/_gen", "a/.gen/b", "_", "..."} {
+		// In the path of a captured file the bridge reports unsupported coverage
+		// at the file, with the error it gave before the rule had one owner.
+		file := directory + "/types.go"
+		for _, outputRoot := range []string{n.ModuleRoot, "generated"} {
+			snapshot, trees := goPackageCapture(t, map[string]string{file: source}, true)
+			_, result, err := goImportResults(t, snapshot, goImportSettingsAt(t, outputRoot))
+			if err != nil {
+				t.Fatal(file, err)
+			}
+			coverage, _ := result.Report(n.Coverage())
+			validity, _ := result.Report(n.Validity())
+			ds := result.Diagnostics()
+			if coverage.Status != semantic.Unsupported || validity.Verdict != semantic.Undetermined || result.HasSemantics() || len(ds) == 0 || ds[0].At == nil || *ds[0].At != (ast.NodeRef{Tree: trees[file].ID, Node: trees[file].Root}) || !strings.HasSuffix(ds[0].Message, ": "+file+" is a test, ignored or vendored file") {
+				t.Fatal("a captured file in the directory", file, outputRoot, coverage, validity, ds)
+			}
+		}
+		// As the output root it is refused with the same category, and no setting is written.
+		settings, err := n.ImportConfiguration(n.ImportEnvironment{Module: goImportModule, OutputRoot: directory})
+		if settings != nil || !errors.Is(err, n.ErrUnsupported) || errors.Is(err, semantic.ErrInvalidRequest) {
+			t.Error("the directory as an output root:", directory, err)
+		}
+		// The derivation gives no identity for a file in the directory or under such a root.
+		if got, ok := n.CapturedImportPath(generated, file); ok || got != "" {
+			t.Error("an identity was derived for a file in the directory:", file, got)
+		}
+		if got, ok := n.CapturedImportPath(n.ImportEnvironment{Module: goImportModule, OutputRoot: directory}, "types.go"); ok || got != "" {
+			t.Error("an identity was derived under the directory as the output root:", directory, got)
+		}
+	}
+	// The invalid element beside it does not change the answer: the directory
+	// is judged first at both entrances.
+	if _, err := n.ImportConfiguration(n.ImportEnvironment{Module: goImportModule, OutputRoot: "a b/vendor"}); !errors.Is(err, n.ErrUnsupported) || errors.Is(err, semantic.ErrInvalidRequest) {
+		t.Error("an output root with a vendor element and an invalid one:", err)
+	}
+	// A name that only resembles one is covered at both entrances.
+	for _, directory := range []string{"Vendor", "TestData", "testdata2", "vendors", "a_b", "x.testdata", "gen_"} {
+		captured, _ := goImportModel(t, map[string]string{directory + "/types.go": source}, goImportSettingsAt(t, "generated"))
+		if got := goPackageNames(captured); !reflect.DeepEqual(got, map[string][]string{goImportModule + "/generated/" + directory: {"p"}}) {
+			t.Fatal("a captured file in a covered directory", directory, got)
+		}
+		root, _ := goImportModel(t, map[string]string{"types.go": source}, goImportSettingsAt(t, directory))
+		if got := goPackageNames(root); !reflect.DeepEqual(got, map[string][]string{goImportModule + "/" + directory: {"p"}}) {
+			t.Fatal("a covered directory as the output root", directory, got)
+		}
+	}
+}
+
+// The bound on an import path is on the module path, the output root and the
+// directory together, so a long output root leaves no room below it.
+//
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve feature=go-imported-packages case=long-output-root expects=directory-below-unsupported
+func TestGoLongOutputRootLeavesNoRoomBelowIt(t *testing.T) {
+	// The longest root: the module path, a slash and the root are 512 bytes.
+	longest := strings.Repeat("g", 512-len(goImportModule)-1)
+	environment := n.ImportEnvironment{Module: goImportModule, OutputRoot: longest}
+	settings, err := n.ImportConfiguration(environment)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := n.CapturedImportPath(environment, "types.go"); !ok || got != goImportModule+"/"+longest || len(got) != 512 {
+		t.Fatal("identity of a file at the longest root", len(got), ok)
+	}
+	if got, ok := n.CapturedImportPath(environment, "p/types.go"); ok || got != "" {
+		t.Fatal("an identity longer than the bound was derived", len(got))
+	}
+	// A file at the root resolves into the root's package.
+	model, _ := goImportModel(t, map[string]string{"types.go": "package long\n\ntype T string\n"}, settings)
+	if got := goPackageNames(model); !reflect.DeepEqual(got, map[string][]string{goImportModule + "/" + longest: {"long"}}) {
+		t.Fatal("package at the longest root", len(got))
+	}
+	// A file one directory below is unsupported at the file, and is not grouped
+	// into any package.
+	snapshot, trees := goPackageCapture(t, map[string]string{"p/types.go": "package p\n\ntype T string\n"}, true)
+	_, result, err := goImportResults(t, snapshot, settings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	coverage, _ := result.Report(n.Coverage())
+	ds := result.Diagnostics()
+	if coverage.Status != semantic.Unsupported || result.HasSemantics() || len(ds) == 0 || ds[0].At == nil || ds[0].At.Tree != trees["p/types.go"].ID || !strings.HasSuffix(ds[0].Message, ": package directory of p/types.go") {
+		t.Fatal("a file below the longest root", coverage, ds)
 	}
 }

@@ -3,6 +3,8 @@ package golang
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"reflect"
 	"slices"
 	"sort"
@@ -25,7 +27,9 @@ type ImportEnvironment struct {
 	// OutputRoot is the directory of the output root relative to the module
 	// root: slash-separated import-path elements such as "generated" or
 	// "internal/gen", or ModuleRoot. It must be stated. The empty string is
-	// refused and no output root is assumed.
+	// refused and no output root is assumed. ImportConfiguration refuses a
+	// root in a directory that UnsupportedDirectory names with ErrUnsupported,
+	// and every other refused root with semantic.ErrInvalidRequest.
 	OutputRoot string
 	Packages   []Package
 }
@@ -54,7 +58,10 @@ const importsKey = "imports-2"
 
 // ImportConfiguration admits imports of captured packages under the output
 // root and of the explicitly supplied packages. The result is normalized, so
-// equal environments produce identical settings.
+// equal environments produce identical settings. An output root in a directory
+// that UnsupportedDirectory names is refused with ErrUnsupported, every other
+// invalid environment with semantic.ErrInvalidRequest, and one that is too
+// large with semantic.ErrLimit.
 func ImportConfiguration(environment ImportEnvironment) ([]semantic.Setting, error) {
 	normalized, err := normalizeEnvironment(environment)
 	if err != nil {
@@ -95,6 +102,11 @@ func Imports(settings []semantic.Setting) (environment ImportEnvironment, enable
 		return ImportEnvironment{}, false, semantic.ErrInvalidRequest
 	}
 	want, err := ImportConfiguration(environment)
+	if errors.Is(err, ErrUnsupported) {
+		// ImportConfiguration writes no setting for an output root it does not
+		// support, so these bytes are no setting.
+		return ImportEnvironment{}, false, semantic.ErrInvalidRequest
+	}
 	if err != nil {
 		return ImportEnvironment{}, false, err
 	}
@@ -117,16 +129,19 @@ func EvidenceFor(settings []semantic.Setting) (semantic.EvidenceRequirement, err
 // CapturedImportPath derives the identity of the package that a captured file
 // belongs to: the import path of the environment's output root, joined with the
 // file's directory. filePath is the file's path relative to the output root, as
-// its Files entry states it. The compiler bridge groups captured files into
-// packages by this function, so a caller with the same environment derives the
-// identity the bridge used.
+// its Files entry states it. The compiler bridge derives each captured file's
+// package once, by this function, and groups the files by the result.
 //
 // It reports false, and no path, when the environment does not state a valid
-// module path and output root, when filePath names no file, or when the result
-// is not a valid import path. Only Module and OutputRoot are read.
+// module path and output root, when filePath names no file, when a directory
+// of the file is one that UnsupportedDirectory names, or when the result is not
+// a valid import path. The 512 bytes of that bound hold the module path, the
+// output root and the directory together. The file's own name is not judged:
+// the bridge refuses test files and ignored file names itself. Only Module and
+// OutputRoot are read.
 func CapturedImportPath(environment ImportEnvironment, filePath string) (string, bool) {
-	importPath, ok := outputRootImportPath(environment.Module, environment.OutputRoot)
-	if !ok {
+	importPath, err := outputRootImportPath(environment.Module, environment.OutputRoot)
+	if err != nil {
 		return "", false
 	}
 	// A Files path has no empty, "." or ".." element, so its directory is the
@@ -134,7 +149,11 @@ func CapturedImportPath(environment ImportEnvironment, filePath string) (string,
 	// import-path element is refused below.
 	slash := strings.LastIndex(filePath, "/")
 	if slash >= 0 {
-		importPath += "/" + filePath[:slash]
+		directory := filePath[:slash]
+		if slices.ContainsFunc(strings.Split(directory, "/"), UnsupportedDirectory) {
+			return "", false
+		}
+		importPath += "/" + directory
 	}
 	if filePath[slash+1:] == "" || !ValidImportPath(importPath) {
 		return "", false
@@ -142,37 +161,99 @@ func CapturedImportPath(environment ImportEnvironment, filePath string) (string,
 	return importPath, true
 }
 
-// outputRootImportPath is the import path of the output root: the module path
-// for ModuleRoot, and otherwise the module path joined with the stated
-// directory. Every other spelling is refused, so one directory has one
-// spelling: the empty string, an absolute path, a backslash, a trailing slash
-// and a "." or ".." element all fail as elements of an import path. A
-// directory that the go tool keeps out of a package tree is refused as it is
-// for a captured file: testdata, vendor and a leading underscore. A leading dot
-// is no import-path element.
-func outputRootImportPath(module, outputRoot string) (string, bool) {
-	if !ValidImportPath(module) {
-		return "", false
+// UnsupportedDirectory reports whether this profile leaves a directory of this
+// name outside the packages it covers: testdata, vendor, and a name that starts
+// with "_" or ".". The go tool leaves testdata and a leading underscore or dot
+// out of the "./..." pattern and still builds such a package when it is
+// imported explicitly, and it refuses an import through a vendor directory.
+//
+// This is the one declaration of the rule. It applies to every directory below
+// the module root, wherever the directory enters: an element of the output
+// root is refused by ImportConfiguration, the directory of a captured file
+// gives no identity in CapturedImportPath, and the compiler bridge reports such
+// a file as unsupported coverage. All three give the answer ErrUnsupported.
+func UnsupportedDirectory(element string) bool {
+	return element == "testdata" || element == "vendor" || strings.HasPrefix(element, "_") || strings.HasPrefix(element, ".")
+}
+
+// windowsDeviceNames are the reserved file names that Go's rule for a path
+// element refuses: badWindowsNames in golang.org/x/mod/module, module.go:503-528
+// of the pinned go1.27.0 toolchain (x/mod v0.36.1-0.20260813213634-8569e2639ca1).
+var windowsDeviceNames = []string{
+	"CON", "PRN", "AUX", "NUL",
+	"COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+	"LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+}
+
+// importPathElement is the rule for one element of an import path. It is Go's
+// rule, as checkElem states it for an import path in golang.org/x/mod/module
+// (module.go:417-482 of the pinned go1.27.0 toolchain): not empty, not ending
+// in a dot, ASCII letters, digits and "-._~", and, for the text before the
+// first dot, no Windows device name in any case and no tilde followed only by
+// digits to its end. It is narrower than Go in two places and wider in none: a
+// leading dot and a plus sign are refused.
+//
+// The elements of an output root follow it. ValidImportPath does not yet: it
+// admits the device names and the tilde form for module, supplied and captured
+// paths, which is Bitspark/bittype#287.
+func importPathElement(element string) bool {
+	if element == "" || strings.HasPrefix(element, ".") || strings.HasSuffix(element, ".") {
+		return false
 	}
-	if outputRoot == ModuleRoot {
-		return module, true
-	}
-	root := module + "/" + outputRoot
-	if !ValidImportPath(root) {
-		return "", false
-	}
-	for _, element := range strings.Split(outputRoot, "/") {
-		if element == "testdata" || element == "vendor" || strings.HasPrefix(element, "_") {
-			return "", false
+	for _, r := range element {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("-._~", r)) {
+			return false
 		}
 	}
-	return root, true
+	short, _, _ := strings.Cut(element, ".")
+	if slices.ContainsFunc(windowsDeviceNames, func(device string) bool { return strings.EqualFold(device, short) }) {
+		return false
+	}
+	if tilde := strings.LastIndexByte(short, '~'); tilde >= 0 && tilde < len(short)-1 && strings.Trim(short[tilde+1:], "0123456789") == "" {
+		return false
+	}
+	return true
+}
+
+// outputRootImportPath is the import path of the output root: the module path
+// for ModuleRoot, and otherwise the module path joined with the stated
+// directory. One directory has one spelling. A path with an empty, "." or ".."
+// element is not clean and is an invalid request: the empty string, an
+// absolute path and a trailing slash among them. A clean path is then judged
+// as the directory of a captured file is: an element that UnsupportedDirectory
+// names gives ErrUnsupported, and after that an element that is no import-path
+// element is an invalid request.
+func outputRootImportPath(module, outputRoot string) (string, error) {
+	if !ValidImportPath(module) {
+		return "", semantic.ErrInvalidRequest
+	}
+	if outputRoot == ModuleRoot {
+		return module, nil
+	}
+	elements := strings.Split(outputRoot, "/")
+	if slices.Contains(elements, "") || slices.Contains(elements, ".") || slices.Contains(elements, "..") {
+		return "", semantic.ErrInvalidRequest
+	}
+	if slices.ContainsFunc(elements, UnsupportedDirectory) {
+		return "", fmt.Errorf("%w: the output root %q has a testdata or vendor directory, or one that starts with an underscore or a dot", ErrUnsupported, outputRoot)
+	}
+	if slices.ContainsFunc(elements, func(element string) bool { return !importPathElement(element) }) {
+		return "", semantic.ErrInvalidRequest
+	}
+	// Every element is an import-path element, so only the bound on the length
+	// of the whole path can still refuse. A root's validity therefore depends on
+	// the length of the module path.
+	root := module + "/" + outputRoot
+	if !ValidImportPath(root) {
+		return "", semantic.ErrInvalidRequest
+	}
+	return root, nil
 }
 
 func normalizeEnvironment(e ImportEnvironment) (ImportEnvironment, error) {
-	root, ok := outputRootImportPath(e.Module, e.OutputRoot)
-	if !ok {
-		return ImportEnvironment{}, semantic.ErrInvalidRequest
+	root, err := outputRootImportPath(e.Module, e.OutputRoot)
+	if err != nil {
+		return ImportEnvironment{}, err
 	}
 	if len(e.Packages) > 64 {
 		return ImportEnvironment{}, semantic.ErrLimit

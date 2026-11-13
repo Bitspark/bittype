@@ -42,8 +42,14 @@ func EmptyRelation() semantics.Key       { return Key("empty") }
 func DisplayRelation() semantics.Key     { return Key("display") }
 
 // Relation of the fact about a package entity: the name that its package
-// clauses declare. The entity's own name is the import path.
+// clauses declare. The entity's own name is the import path. The fact's term
+// is a provider expression with PackageNameOperator and TextEncoding and no
+// operand, whose data is the name. The name readers refuse another form.
 func PackageNameRelation() semantics.Key { return Key("package-name") }
+func PackageNameOperator() semantics.Key { return Key("package-name") }
+
+// TextEncoding is the encoding of a term whose data is UTF-8 text.
+func TextEncoding() semantics.Key { return Key("utf8") }
 
 // Operators of the terms of a basic, a slice and a struct type.
 func BasicOperator() semantics.Key  { return Key("basic") }

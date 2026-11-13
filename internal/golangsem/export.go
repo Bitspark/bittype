@@ -122,7 +122,7 @@ func (e *exporter) fact(id semantics.TermID, relation semantics.Key, value seman
 // fact on its entity. The entity's name is the import path, which does not
 // determine the declared name.
 func (e *exporter) packageName(pkg *types.Package) {
-	name := e.term(semantics.Term{Kind: semantics.ProviderExpression, Operator: n.Key("package-name"), Encoding: n.Key("utf8"), Data: []byte(pkg.Name())})
+	name := e.term(semantics.Term{Kind: semantics.ProviderExpression, Operator: n.PackageNameOperator(), Encoding: n.TextEncoding(), Data: []byte(pkg.Name())})
 	e.data.Facts = append(e.data.Facts, semantics.Fact{Subject: semantics.Subject{Entity: e.packages[pkg]}, Relation: n.PackageNameRelation(), Term: name})
 }
 func (e *exporter) object(o types.Object) semantics.EntityID {
@@ -285,7 +285,7 @@ func (e *exporter) typ(t types.Type) semantics.TermID {
 	if !e.suppliedStructure(t) {
 		e.fact(id, n.UnderlyingRelation(), e.typ(t.Underlying()))
 	}
-	e.fact(id, n.DisplayRelation(), e.term(semantics.Term{Kind: semantics.ProviderExpression, Operator: n.Key("display"), Encoding: n.Key("utf8"), Data: []byte(types.TypeString(t, nil))}))
+	e.fact(id, n.DisplayRelation(), e.term(semantics.Term{Kind: semantics.ProviderExpression, Operator: n.Key("display"), Encoding: n.TextEncoding(), Data: []byte(types.TypeString(t, nil))}))
 	return id
 }
 func methodNames(t *types.Interface) []string {

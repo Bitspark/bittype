@@ -3,6 +3,7 @@ package golang
 import (
 	"encoding/json"
 	"go/types"
+	"unicode/utf8"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/semantics/go"
@@ -127,7 +128,8 @@ type DeclaringPackage struct {
 
 // PackageName reads the declared name of the package at importPath, captured
 // or supplied, from its package-name fact. It fails when the graph has not
-// exactly one package at that path, or not exactly one such fact for it. The
+// exactly one package at that path, or not exactly one such fact for it, or
+// when the fact's term is not in the form PackageNameRelation describes. The
 // path is never read in place of the name.
 func (m Model) PackageName(importPath string) (string, error) {
 	if !m.Valid() {
@@ -149,10 +151,12 @@ func (m *model) packageName(id semantics.EntityID) (string, error) {
 	if len(facts) != 1 {
 		return "", ErrForeign
 	}
-	// Only a provider expression carries data, so a fact that points at
-	// another term has no name either.
+	// A term in another form is no name: another operator, which covers a
+	// term that is no provider expression, another encoding, an operand, no
+	// text or text that is not UTF-8. Go's rule for a package name is not
+	// applied to the text.
 	name, _ := m.graph.Term(facts[0])
-	if len(name.Data) == 0 {
+	if name.Operator != PackageNameOperator() || name.Encoding != TextEncoding() || len(name.Operands) != 0 || len(name.Data) == 0 || !utf8.Valid(name.Data) {
 		return "", ErrForeign
 	}
 	return string(name.Data), nil
