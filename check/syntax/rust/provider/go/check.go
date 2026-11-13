@@ -19,40 +19,42 @@ var typeBounds = []s.Kind{s.KindPathType, s.KindLifetimeReference, s.KindRelaxed
 var generics = []s.Kind{s.KindTypeParameter, s.KindLifetimeParameter}
 var items = []s.Kind{s.KindModule, s.KindUse, s.KindTypeAlias, s.KindStruct, s.KindTupleStruct, s.KindEnum, s.KindTrait, s.KindTraitImpl}
 var visibility = []string{"private", "public", "crate"}
+
+// abis are the names of the calling conventions.
+var abis = []string{"Rust", "C", "C-unwind", "system", "system-unwind", "cdecl", "stdcall", "fastcall", "vectorcall", "thiscall", "aapcs", "win64", "sysv64", "efiapi"}
 var primitive = []string{"bool", "char", "str", "f32", "f64", "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize"}
 
 // evaluators binds the names of Rust's own predicates that the table uses.
 var evaluators = g.Evaluators{
-	lexical.Identifier():        native.Identifier,
-	lexical.Declaration():       native.Declaration,
-	lexical.LifetimeParameter(): native.LifetimeParameter,
-	lexical.LifetimeReference(): native.LifetimeReference,
-	lexical.PathSegment():       native.PathSegment,
-	lexical.ABI():               native.ABI,
+	lexical.Identifier():             native.Identifier,
+	lexical.IdentifierOrUnderscore(): native.IdentifierOrUnderscore,
+	lexical.LifetimeParameter():      native.LifetimeParameter,
+	lexical.Lifetime():               native.Lifetime,
+	lexical.PathSegment():            native.PathSegment,
 }
 
 var rules = syntax.Rules[s.Language]{
 	s.KindFile:                  {Roles: []syntax.Role[s.Language]{{Name: s.RoleItem, Max: -1, Kinds: items}}},
-	s.KindModule:                {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Declaration()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleItem, Max: -1, Kinds: items}}},
-	s.KindUse:                   {Attributes: map[string]syntax.Attribute{s.AttributeAlias: {Predicate: lexical.Identifier()}}, Roles: []syntax.Role[s.Language]{{Name: s.RolePath, Min: 1, Max: 1, Kinds: []s.Kind{s.KindPathType}}}},
-	s.KindTypeAlias:             {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Declaration()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
-	s.KindStruct:                {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Declaration()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleField, Max: -1, Kinds: []s.Kind{s.KindField}}}},
-	s.KindTupleStruct:           {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Declaration()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleField, Max: -1, Kinds: []s.Kind{s.KindTupleField}}}},
-	s.KindEnum:                  {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Declaration()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleVariant, Max: -1, Kinds: []s.Kind{s.KindUnitVariant, s.KindTupleVariant, s.KindRecordVariant}}}},
-	s.KindUnitVariant:           {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Declaration()}}},
-	s.KindTupleVariant:          {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Declaration()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleField, Max: -1, Kinds: []s.Kind{s.KindTupleField}}}},
-	s.KindRecordVariant:         {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Declaration()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleField, Max: -1, Kinds: []s.Kind{s.KindField}}}},
-	s.KindField:                 {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Declaration()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
+	s.KindModule:                {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleItem, Max: -1, Kinds: items}}},
+	s.KindUse:                   {Attributes: map[string]syntax.Attribute{s.AttributeAlias: {Predicate: lexical.IdentifierOrUnderscore()}}, Roles: []syntax.Role[s.Language]{{Name: s.RolePath, Min: 1, Max: 1, Kinds: []s.Kind{s.KindPathType}}}},
+	s.KindTypeAlias:             {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
+	s.KindStruct:                {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleField, Max: -1, Kinds: []s.Kind{s.KindField}}}},
+	s.KindTupleStruct:           {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleField, Max: -1, Kinds: []s.Kind{s.KindTupleField}}}},
+	s.KindEnum:                  {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleVariant, Max: -1, Kinds: []s.Kind{s.KindUnitVariant, s.KindTupleVariant, s.KindRecordVariant}}}},
+	s.KindUnitVariant:           {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}}},
+	s.KindTupleVariant:          {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleField, Max: -1, Kinds: []s.Kind{s.KindTupleField}}}},
+	s.KindRecordVariant:         {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleField, Max: -1, Kinds: []s.Kind{s.KindField}}}},
+	s.KindField:                 {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
 	s.KindTupleField:            {Attributes: map[string]syntax.Attribute{s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
-	s.KindTrait:                 {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Declaration()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleBound, Max: -1, Kinds: bounds}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleMember, Max: -1, Kinds: []s.Kind{s.KindMethodSignature, s.KindAssociatedType}}}},
+	s.KindTrait:                 {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleBound, Max: -1, Kinds: bounds}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleMember, Max: -1, Kinds: []s.Kind{s.KindMethodSignature, s.KindAssociatedType}}}},
 	s.KindTraitImpl:             {Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleTrait, Min: 1, Max: 1, Kinds: []s.Kind{s.KindPathType}}, {Name: s.RoleSubject, Min: 1, Max: 1, Kinds: types}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleMember, Max: -1, Kinds: []s.Kind{s.KindTypeAlias}}}},
-	s.KindAssociatedType:        {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Declaration()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleBound, Max: -1, Kinds: typeBounds}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}}},
-	s.KindMethodSignature:       {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Declaration()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleReceiver, Max: 1, Kinds: []s.Kind{s.KindReceiver}}, {Name: s.RoleParameter, Max: -1, Kinds: []s.Kind{s.KindParameter}}, {Name: s.RoleResult, Max: 1, Kinds: types}}},
+	s.KindAssociatedType:        {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleBound, Max: -1, Kinds: typeBounds}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}}},
+	s.KindMethodSignature:       {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleReceiver, Max: 1, Kinds: []s.Kind{s.KindReceiver}}, {Name: s.RoleParameter, Max: -1, Kinds: []s.Kind{s.KindParameter}}, {Name: s.RoleResult, Max: 1, Kinds: types}}},
 	s.KindReceiver:              {Attributes: map[string]syntax.Attribute{s.AttributeReceiverForm: {Required: true, OneOf: []string{"value", "shared", "mutable"}}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleLifetime, Max: 1, Kinds: []s.Kind{s.KindLifetimeReference}}}},
-	s.KindParameter:             {Attributes: map[string]syntax.Attribute{s.AttributeName: {Predicate: lexical.Identifier()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
-	s.KindTypeParameter:         {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Declaration()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleBound, Max: -1, Kinds: typeBounds}, {Name: s.RoleDefault, Max: 1, Kinds: types}}},
+	s.KindParameter:             {Attributes: map[string]syntax.Attribute{s.AttributeName: {Predicate: lexical.IdentifierOrUnderscore()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
+	s.KindTypeParameter:         {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleBound, Max: -1, Kinds: typeBounds}, {Name: s.RoleDefault, Max: 1, Kinds: types}}},
 	s.KindLifetimeParameter:     {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.LifetimeParameter()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleBound, Max: -1, Kinds: []s.Kind{s.KindLifetimeReference}}}},
-	s.KindLifetimeReference:     {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.LifetimeReference()}}, Reference: true},
+	s.KindLifetimeReference:     {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Lifetime()}}, Reference: true},
 	s.KindWherePredicate:        {Roles: []syntax.Role[s.Language]{{Name: s.RoleSubject, Min: 1, Max: 1, Kinds: append(types, s.KindLifetimeReference)}, {Name: s.RoleBound, Min: 1, Max: -1, Kinds: typeBounds}}},
 	s.KindRelaxedBound:          {Roles: []syntax.Role[s.Language]{{Name: s.RolePath, Min: 1, Max: 1, Kinds: []s.Kind{s.KindPathType}}}},
 	s.KindPathType:              {Attributes: map[string]syntax.Attribute{s.AttributeAbsolute: {Predicate: syntax.Bool()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleSegment, Min: 1, Max: -1, Kinds: []s.Kind{s.KindPathSegment}}}},
@@ -66,7 +68,7 @@ var rules = syntax.Rules[s.Language]{
 	s.KindArrayType:             {Attributes: map[string]syntax.Attribute{s.AttributeLength: {Required: true, Predicate: syntax.Decimal()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Min: 1, Max: 1, Kinds: types}}},
 	s.KindTupleType:             {Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Max: -1, Kinds: types}}},
 	s.KindNeverType:             {},
-	s.KindFunctionType:          {Attributes: map[string]syntax.Attribute{s.AttributeUnsafe: {Predicate: syntax.Bool()}, s.AttributeABI: {Predicate: lexical.ABI()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleParameter, Max: -1, Kinds: []s.Kind{s.KindParameter}}, {Name: s.RoleResult, Max: 1, Kinds: types}}},
+	s.KindFunctionType:          {Attributes: map[string]syntax.Attribute{s.AttributeUnsafe: {Predicate: syntax.Bool()}, s.AttributeABI: {OneOf: abis}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleParameter, Max: -1, Kinds: []s.Kind{s.KindParameter}}, {Name: s.RoleResult, Max: 1, Kinds: types}}},
 	s.KindTraitObjectType:       {Roles: []syntax.Role[s.Language]{{Name: s.RoleBound, Min: 1, Max: -1, Kinds: bounds}}},
 }
 
@@ -149,7 +151,7 @@ func Check(view ast.View[s.Language]) error {
 				}
 			}
 		case s.KindAssociatedTypeBinding:
-			if !native.Declaration(v.Attr(v.Child(id, s.RolePath), s.AttributeName)) {
+			if !native.Identifier(v.Attr(v.Child(id, s.RolePath), s.AttributeName)) {
 				return bad("associated-type binding requires an unqualified associated name")
 			}
 		case s.KindUse:

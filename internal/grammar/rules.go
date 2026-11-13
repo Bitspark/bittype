@@ -61,9 +61,13 @@ func evaluator(name syntax.Predicate, evaluators Evaluators) func(string) bool {
 }
 
 // bound reports whether every predicate that the table names has an
-// evaluator, and whether the caller left the shared names alone. A table that
-// fails here was not applied to any tree, so the failure is unsupported and
-// never an invalid tree. Of several names the least is reported.
+// evaluator, whether the caller left the shared names alone, and whether no
+// entry holds a set that is present and empty. A table that fails here was
+// not applied to any tree, so the failure is unsupported and never an invalid
+// tree. The report is determined: of several names the least by owner and
+// then by name, and of several empty sets the entry whose text, node kind and
+// attribute joined by a period, is least. A rebound shared name is reported before an unbound name, and an
+// unbound name before an empty set.
 func bound[L any](rules syntax.Rules[L], evaluators Evaluators) error {
 	var rebound, missing *syntax.Predicate
 	least := func(found **syntax.Predicate, name syntax.Predicate) {
@@ -79,20 +83,31 @@ func bound[L any](rules syntax.Rules[L], evaluators Evaluators) error {
 	if rebound != nil {
 		return &text.Diagnostic{Code: text.Unsupported, Message: "grammar evaluators bind the shared predicate " + rebound.Owner + "/" + rebound.Name}
 	}
-	for _, rule := range rules {
-		for _, attribute := range rule.Attributes {
+	empty := ""
+	for kind, rule := range rules {
+		for name, attribute := range rule.Attributes {
 			if attribute.Predicate != (syntax.Predicate{}) && evaluator(attribute.Predicate, evaluators) == nil {
 				least(&missing, attribute.Predicate)
+			}
+			if attribute.OneOf != nil && len(attribute.OneOf) == 0 {
+				if entry := string(kind) + "." + name; empty == "" || entry < empty {
+					empty = entry
+				}
 			}
 		}
 	}
 	if missing != nil {
 		return &text.Diagnostic{Code: text.Unsupported, Message: "grammar predicate " + missing.Owner + "/" + missing.Name + " has no evaluator"}
 	}
+	if empty != "" {
+		return &text.Diagnostic{Code: text.Unsupported, Message: "grammar attribute " + empty + " holds an empty set"}
+	}
 	return nil
 }
 
-// accepts reports whether a text satisfies an attribute's declaration.
+// accepts reports whether a text satisfies an attribute's declaration. The
+// first pass has refused a set that is present and empty, so a set without an
+// element is absent here.
 func accepts(attribute syntax.Attribute, evaluators Evaluators, value string) bool {
 	if attribute.Predicate != (syntax.Predicate{}) && !evaluator(attribute.Predicate, evaluators)(value) {
 		return false

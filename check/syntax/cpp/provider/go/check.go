@@ -22,9 +22,9 @@ func headerName(v string) bool { return g.Nonempty(v) && !strings.ContainsAny(v,
 
 // evaluators binds the names of C++'s own predicates that the table uses.
 var evaluators = g.Evaluators{
-	lexical.Identifier(): native.Identifier,
-	lexical.Builtin():    native.Builtin,
-	lexical.HeaderName(): headerName,
+	lexical.Identifier():      native.Identifier,
+	lexical.FundamentalType(): native.FundamentalType,
+	lexical.HeaderName():      headerName,
 }
 
 var rules = syntax.Rules[s.Language]{
@@ -43,7 +43,7 @@ var rules = syntax.Rules[s.Language]{
 	s.KindTypeParameter:       {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeParameterKey: {OneOf: []string{"typename", "class"}}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleDefault, Max: 1, Kinds: types}}},
 	s.KindNamedType:           {Attributes: map[string]syntax.Attribute{s.AttributeGlobal: {Predicate: syntax.Bool()}, s.AttributeTypename: {Predicate: syntax.Bool()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleSegment, Min: 1, Max: -1, Kinds: []s.Kind{s.KindNameSegment}}}},
 	s.KindNameSegment:         {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeTemplate: {Predicate: syntax.Bool()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleArgument, Max: -1, Kinds: types}}, Reference: true},
-	s.KindBuiltinType:         {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Builtin()}}},
+	s.KindBuiltinType:         {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.FundamentalType()}}},
 	s.KindPointerType:         {Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Min: 1, Max: 1, Kinds: types}}},
 	s.KindLValueReferenceType: {Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Min: 1, Max: 1, Kinds: types}}},
 	s.KindRValueReferenceType: {Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Min: 1, Max: 1, Kinds: types}}},

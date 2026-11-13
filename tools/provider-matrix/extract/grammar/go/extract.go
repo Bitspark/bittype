@@ -727,17 +727,17 @@ func (e *evaluator) attribute(name string, x *expression, depth int) c.Attribute
 }
 
 // values interprets the two constraints of an attribute entry. A set gives
-// its texts, and an empty set restricts nothing, as in the table type. Of the
+// its texts. An absent set, written as no field or as nil, restricts nothing.
+// A set that is present and empty admits no text, as in the table type: the
+// interpreter refuses a table that holds one. Of the
 // predicates only the shared name Bool is interpreted, by its resolved symbol:
 // it admits "true" and "false". Any other name is reported as present and its
 // behavior is not interpreted. With a set and a predicate both hold.
 func (e *evaluator) values(x *expression, predicate, oneOf *expression, depth int) c.Field[c.ValueSet] {
 	set := known(x.at, c.ValueSet{Unrestricted: true})
-	if oneOf != nil {
+	if oneOf != nil && !e.absent(oneOf, depth) {
 		texts := e.strings(oneOf, depth)
-		if texts.State != c.Known || len(texts.Value) > 0 {
-			set = c.Field[c.ValueSet]{State: texts.State, Value: c.ValueSet{Values: unique(texts.Value)}, At: oneOf.at, Reason: texts.Reason}
-		}
+		set = c.Field[c.ValueSet]{State: texts.State, Value: c.ValueSet{Values: unique(texts.Value)}, At: oneOf.at, Reason: texts.Reason}
 	}
 	if predicate == nil {
 		return set
@@ -759,6 +759,23 @@ func (e *evaluator) values(x *expression, predicate, oneOf *expression, depth in
 	}
 	e.uncertain = true
 	return c.Field[c.ValueSet]{State: c.Opaque, At: predicate.at, Reason: "Predicate present; behavior not interpreted"}
+}
+
+// absent reports whether the expression of a set is nil, also through a name
+// that stands for nil.
+func (e *evaluator) absent(x *expression, depth int) bool {
+	done := e.guard(x, "absent", depth)
+	if done == nil {
+		return false
+	}
+	defer done()
+	if e.isNil(x) {
+		return true
+	}
+	if next := e.follow(x); next != nil {
+		return e.absent(next, depth+1)
+	}
+	return false
 }
 
 const (

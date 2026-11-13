@@ -2,6 +2,7 @@ package grammar_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/constant"
@@ -12,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Bitspark/bittype/contracts/text/go"
 	g "github.com/Bitspark/bittype/internal/grammar"
 	"github.com/Bitspark/bittype/model/syntax/go"
 	c "github.com/Bitspark/bittype/tools/provider-matrix/capability/go"
@@ -308,10 +310,18 @@ func TestInterpretationMatchesTheInterpreter(t *testing.T) {
 		}
 	}
 	// The interpreter judges one attribute of a tree of one node.
-	accepts := func(name, sample string) bool {
+	check := func(name, sample string) error {
 		rules := syntax.Rules[language]{"x": {Attributes: map[string]syntax.Attribute{name: maintained.Attributes[name]}}}
 		tree := carrier.AST[language]{ID: "sample", Root: 1, Nodes: []carrier.Node[language]{{Kind: "x", Attributes: []carrier.Attribute{{Name: name, Text: sample}}}}}
-		return g.Check(tree, "x", rules, nil) == nil
+		return g.Check(tree, "x", rules, nil)
+	}
+	accepts := func(name, sample string) bool { return check(name, sample) == nil }
+	// A set that is present and empty admits no text. The extractor reports no
+	// accepted value, and the interpreter refuses the table that holds the set,
+	// as unsupported and for every text.
+	var refusal *text.Diagnostic
+	if err := check("empty", "a"); !errors.As(err, &refusal) || refusal.Code != text.Unsupported {
+		t.Fatalf("the interpreter does not refuse a table with an empty set as unsupported: %v", err)
 	}
 	for _, model := range feature.Attributes.Value {
 		actual, ok := maintained.Attributes[model.Name]
@@ -448,20 +458,26 @@ var rules=g.Rules{"node":{Attributes:map[string]g.Attribute{"own":{Predicate:Boo
 	}
 }
 
-func TestEmptySetIsUnrestrictedAndUnknownKeyIsPartial(t *testing.T) {
+func TestEmptySetAdmitsNothingAndUnknownKeyIsPartial(t *testing.T) {
 	result := inventory(t, `
 func key()string{return "dynamic"}
 var none = []string{}
-var rules=g.Rules{"known":{Attributes:map[string]g.Attribute{"none":{OneOf:none},"all":{}}},key():{}}
+var absent []string = nil
+var rules=g.Rules{"known":{Attributes:map[string]g.Attribute{"none":{OneOf:none},"literal":{OneOf:[]string{}},"all":{},"nil":{OneOf:nil},"named":{OneOf:absent}}},key():{}}
 `)
 	if result.Extent != c.PartlyDecoded || len(result.Limitations) != 1 || len(result.Features) != 1 {
 		t.Fatalf("unknown key: %#v", result)
 	}
-	// The table type says of a set: if not empty, the text is one of these.
+	// The table type says of a set: absent, which is nil, it restricts nothing;
+	// present and empty it admits no text.
 	for _, attribute := range result.Features[0].Attributes.Value {
-		if attribute.Values.State != c.Known || !attribute.Values.Value.Unrestricted || len(attribute.Values.Value.Values) != 0 {
+		unrestricted := attribute.Name == "all" || attribute.Name == "nil" || attribute.Name == "named"
+		if attribute.Values.State != c.Known || attribute.Values.Value.Unrestricted != unrestricted || len(attribute.Values.Value.Values) != 0 {
 			t.Fatalf("%s: %#v", attribute.Name, attribute)
 		}
+	}
+	if len(result.Features[0].Attributes.Value) != 5 {
+		t.Fatalf("attributes: %#v", result.Features[0].Attributes)
 	}
 }
 

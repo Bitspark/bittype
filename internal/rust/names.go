@@ -12,18 +12,22 @@ func init() {
 		reserved[word] = true
 	}
 }
-func Identifier(v string) bool {
+
+// IdentifierOrUnderscore reports an identifier or a lone underscore.
+func IdentifierOrUnderscore(v string) bool {
 	if strings.HasPrefix(v, "r#") {
 		name := v[2:]
 		return g.Identifier(name) && name != "_" && name != "self" && name != "Self" && name != "super" && name != "crate"
 	}
 	return g.Identifier(v) && !reserved[v]
 }
-func Declaration(v string) bool       { return v != "_" && Identifier(v) }
+
+// Identifier reports a Rust identifier. A lone underscore is none.
+func Identifier(v string) bool        { return v != "_" && IdentifierOrUnderscore(v) }
 func LifetimeParameter(v string) bool { return v != "_" && g.Identifier(v) && !reserved[v] }
-func LifetimeReference(v string) bool {
+func Lifetime(v string) bool {
 	return v == "static" || v == "_" || LifetimeParameter(v)
 }
 func PathSegment(v string) bool {
-	return v == "self" || v == "Self" || v == "super" || v == "crate" || Identifier(v)
+	return v == "self" || v == "Self" || v == "super" || v == "crate" || IdentifierOrUnderscore(v)
 }

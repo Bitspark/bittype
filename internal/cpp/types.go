@@ -9,7 +9,9 @@ func BuiltinWord(s string) bool {
 	}
 	return false
 }
-func Builtin(s string) bool {
+
+// FundamentalType reports the spelling of a fundamental type.
+func FundamentalType(s string) bool {
 	words := strings.Fields(s)
 	if len(words) == 0 || strings.Join(words, " ") != s {
 		return false

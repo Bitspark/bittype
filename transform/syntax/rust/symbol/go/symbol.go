@@ -53,9 +53,9 @@ func segment(text string) error {
 	switch {
 	case strings.HasPrefix(text, "r#"), text == "_":
 		return g.ErrInvalid
-	case native.Identifier(text):
+	case native.IdentifierOrUnderscore(text):
 		return nil
-	case native.Identifier("r#" + text):
+	case native.IdentifierOrUnderscore("r#" + text):
 		return g.ErrUnsupported
 	}
 	return g.ErrInvalid

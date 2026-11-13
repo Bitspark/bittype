@@ -430,7 +430,7 @@ func (p *parser) arguments() []ast.Child {
 	var args []ast.Child
 	for p.Err == nil && !p.EOF() && p.Peek() != ">" {
 		start := p.Token().Start
-		bindingName := p.Token().Class == "identifier" && native.Declaration(p.Peek())
+		bindingName := p.Token().Class == "identifier" && native.Identifier(p.Peek())
 		var arg ast.NodeID
 		if p.Token().Class == "lifetime" {
 			arg = p.lifetime()
