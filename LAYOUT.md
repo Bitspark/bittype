@@ -36,7 +36,7 @@ contracts/
   analysis/go/            analysis capability and explicit resolution input
   verification/go/        agnostic joint capture/receipt/site association
 semantics/go/             typed immutable Semantics and provider-owned facts
-semantics/horos/go/       horos vocabulary: roles, relations, entity kinds, term operators and encoding, tag prefixes, profiles, limits setting, prelude pin, contract identities
+semantics/horos/go/       horos vocabulary: roles, relations, entity kinds, term operators and encoding, profiles, limits setting, prelude pin, contract identities
 semantics/golang/go/      Go vocabulary, contract identities and immutable native type readers
 internal/golangsem/       private direct Go compiler bridge and fact export
 semantics/typescript/go/  TypeScript vocabulary, graph names, contract identities, compiler configuration and immutable native type readers
@@ -271,7 +271,10 @@ a writer and a separate reader each spelled moved into `semantics/horos/go`
 with pull requests [#247](https://github.com/Bitspark/bittype/pull/247) and
 [#248](https://github.com/Bitspark/bittype/pull/248), and the tag
 prefixes of canonical horos values with
-[#250](https://github.com/Bitspark/bittype/pull/250). The horos syntax node
+[#250](https://github.com/Bitspark/bittype/pull/250). The prefixes moved on
+to `syntax/horos/go` with
+[#285](https://github.com/Bitspark/bittype/pull/285), with the labels, the
+field tag and the record words that the horos tree carries. The horos syntax node
 kinds have one declaration since
 [#254](https://github.com/Bitspark/bittype/pull/254), and
 `semantics/typescript/go` publishes the TypeScript graph names that Go reads
