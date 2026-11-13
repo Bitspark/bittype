@@ -239,6 +239,18 @@ var oneOfAKindRules = map[string][]string{
 	"tools/provider-matrix/observation/go": {},
 	// A command over the horos parser and private module lowering.
 	"tools/horos-module/go": {"contracts/parse/go", "internal/horosmodel", "internal/lex", "parse/syntax/horos/provider/go", "trees/ast/go"},
+	// The shared part of the payload codec role (docs/contribution-contract.md,
+	// row 28, O37, O41). It is no kernel package: it validates and encodes
+	// through horos and ontos, which the contract package and the registry may
+	// not import. Only a codec imports it, by its role, and the artifact tool.
+	// It has no entry in languageOwners: horos is the schema language of every
+	// payload, whatever the source language of a generation is, so the codec
+	// of any pair imports it.
+	payloadShared: {"contracts/generation/go"},
+	// The public route from a schema source to the pinned artifact of a
+	// payload schema (O39): a command and the library behind it.
+	"tools/payload-schema/go":          {"tools/payload-schema/artifact/go"},
+	"tools/payload-schema/artifact/go": {"contracts/parse/go", "internal/horosmodel", "parse/syntax/horos/provider/go", payloadShared},
 }
 
 // languageOwners names the one language that a package with a hand entry
@@ -380,8 +392,12 @@ var modelDependencies = []string{
 }
 
 var modelExternalImports = map[string][]string{
-	"verification/logos/go":              {"github.com/Bitspark/logos-contract/contract/go/typed"},
-	"tools/horos-module/go":              {"github.com/bitspark/ontos/codec/go"},
+	"verification/logos/go":            {"github.com/Bitspark/logos-contract/contract/go/typed"},
+	"tools/horos-module/go":            {"github.com/bitspark/ontos/codec/go"},
+	"tools/payload-schema/artifact/go": {"github.com/bitspark/ontos/codec/go"},
+	// A payload schema is a horos type and a frozen payload an ontos value,
+	// whatever the source language of a generation is.
+	payloadShared:                        {"github.com/Bitspark/horos/core/go", "github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/codec/go"},
 	"transform/syntax/horos/source/go":   {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 	"parse/syntax/horos/provider/go":     {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"format/syntax/horos/provider/go":    {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},

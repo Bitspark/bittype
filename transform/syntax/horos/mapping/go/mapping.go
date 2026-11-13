@@ -33,6 +33,16 @@ const RepresentationProfile = "structural-representation/1"
 // that names it and fails with generation.ErrUnsupported.
 const EnforcementProfile = "structural-enforcement/1"
 
+// Publisher names the publisher of the contributions of the structural
+// profiles: the library that publishes them, which is bittype (row 15). The
+// representation owner of the structural families is "bittype's structural
+// profile" (docs/representation-families.md), so the package that declares
+// that profile declares its publisher. The vocabulary package of each
+// contribution states it in the contribution's identity. The name
+// authenticates nothing: until a composition lock binds it (row 15a),
+// registration in one process is the binding.
+const Publisher = "github.com/Bitspark/bittype"
+
 // Library is a horos mapping library given as its description function. The
 // function is the whole library: it states the profile, the bindings, the
 // declaration recipes and the helpers. The type adds one thing, the method

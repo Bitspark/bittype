@@ -1,0 +1,3 @@
+module bittype.payload.horos_to_cpp_declarations;
+
+type Payload = { name: text; nominal: bool; parameters: list<text>; };

@@ -1,0 +1,3 @@
+module bittype.payload.horos_to_typescript_list;
+
+type Payload = { };
