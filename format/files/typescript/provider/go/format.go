@@ -101,7 +101,8 @@ func (p Stages) establish(ctx context.Context, units []source.Unit[s.Language], 
 	}
 	snap, err := semantic.Capture(ctx, p.Checker, captured)
 	if err != nil {
-		return zero, err
+		// The capture answers with a files value or a semantic limit.
+		return zero, source.WithCategory(err)
 	}
 	options := semantic.Options{Limits: limits, Configuration: p.Configuration}
 	resolved, err := p.Resolver.Resolve(ctx, snap, options)

@@ -1,5 +1,8 @@
-// Package typescriptimports owns the named type-import vocabulary shared by
-// TypeScript AST generation and Files formatting.
+// Package typescriptimports owns what the TypeScript Files formatter needs to
+// write named type imports: the paths that its profile admits as source files
+// and those that it excludes, the relative specifier between two of them, and
+// the construction of the import nodes. The TypeScript Files provider is its
+// one importer.
 package typescriptimports
 
 import (
@@ -21,6 +24,21 @@ var ErrLimit = errors.New("TypeScript import limit exceeded")
 
 func SourcePath(p files.Path) bool {
 	return files.ValidPath(p) && strings.HasSuffix(string(p), ".ts") && !strings.HasSuffix(string(p), ".d.ts") && !strings.ContainsAny(string(p), "?#%")
+}
+
+// ExcludedPath reports a valid path that TypeScript itself reads as a source
+// file and that SourcePath excludes: a declaration file, another TypeScript
+// extension, or a URL delimiter in a path with such an extension.
+func ExcludedPath(p files.Path) bool {
+	if !files.ValidPath(p) || SourcePath(p) {
+		return false
+	}
+	for _, extension := range []string{".ts", ".mts", ".cts", ".tsx"} {
+		if strings.HasSuffix(string(p), extension) {
+			return true
+		}
+	}
+	return false
 }
 func Relative(from, to files.Path) (string, error) {
 	if !SourcePath(from) || !SourcePath(to) || from == to {

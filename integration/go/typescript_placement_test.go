@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"context"
+	"errors"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/engine/go"
@@ -486,8 +487,14 @@ func TestTypeScriptPlacementPreservesModuleScope(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if out, err := formatter.Format(ctx, in); err == nil || len(out.Units()) != 0 {
+	out, err := formatter.Format(ctx, in)
+	if err == nil || len(out.Units()) != 0 {
 		t.Fatal("script presented as an ESM module")
+	}
+	// A script is well formed and outside this profile, so the refusal is
+	// unsupported coverage and no invalid input.
+	if !errors.Is(err, source.ErrUnsupported) || errors.Is(err, source.ErrInvalid) {
+		t.Fatal("a script is unsupported coverage", err)
 	}
 }
 
