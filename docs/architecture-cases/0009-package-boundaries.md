@@ -53,7 +53,9 @@ An independent mapping library can still enter the kernel without editing any
 of these packages. Two neighbouring faults are recorded elsewhere: the closed
 profile gate is [bittype/ACX-008](0008-structural-profile-gate.md), and the
 optional-field decision inside Record is the contract change of
-[#196](https://github.com/Bitspark/bittype/issues/196), item 6.
+[#196](https://github.com/Bitspark/bittype/issues/196), item 6. Noted on
+13 November 2026: whether the second is a fault is conditional since research
+0017 (row 11), as the [limit](#limits) on the helper key says.
 
 ## Intended boundary
 

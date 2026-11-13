@@ -551,7 +551,9 @@ listed again under
 
 - **A decision made inline.** Record building `std::optional` imports nothing
   forbidden. That needs the contract change of #196 and a reviewer who asks the
-  question above.
+  question above. Noted on 13 November 2026: whether Record may decide it
+  inline is conditional since research 0017, row 11
+  ([finding 7](#findings-on-main-at-3bf45c3)).
 - **Whether a package holds one contribution.** That is a judgment. The scan
   lists candidates, and it over-reports: a setting key that a provider reads
   through a helper shows as a separate group.
