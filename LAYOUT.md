@@ -21,8 +21,9 @@ implemented.** The hierarchy and the role table below describe `main` as it
 is, and no path in this layout has changed. The
 [order of work](docs/models-and-operations.md#10-the-order-of-work) says which
 slice moves what. That page gives the names below the two roots (decisions
-M10, M11, M14, M19 and M28 on #305). Two paths of M14 wait for a decision
-(M27, M29).
+M10, M11, M14, M19, M28 and M30 on #305). Below `ops` a unit that several
+stages use stands at the path of the sort and scope it works on, and no
+longer under one stage (M30, of 13 November 2026).
 [bittype/ACX-015](docs/architecture-cases/0015-models-hold-operations.md)
 records the violation that stays open until the slices are done.
 
