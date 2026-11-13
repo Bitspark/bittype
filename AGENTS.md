@@ -69,10 +69,11 @@ operation is judged in review and by no check. The split is **not
 implemented**: the paths in this file and in the layout are those of `main`,
 and the page's
 [order of work](docs/models-and-operations.md#10-the-order-of-work) says which
-slice changes what. Three sentences below describe `main` until their slice:
+slice changes what. Four sentences below describe `main` until their slice:
 "Identities live in vocabulary packages", "Native semantic forms belong under
-transform/syntax/<native>/model/go", and "Follow the stage-first
-hierarchy in LAYOUT.md". The page
+transform/syntax/<native>/model/go", "Follow the stage-first
+hierarchy in LAYOUT.md", and "Native stages own their grammar and
+spelling". The page
 [lists](docs/models-and-operations.md#the-sentences-that-change) what each
 says afterwards.
 [bittype/ACX-015](docs/architecture-cases/0015-models-hold-operations.md)

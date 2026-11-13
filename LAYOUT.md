@@ -20,8 +20,8 @@ the stage-by-language matrix and the path pattern above stay. **Not
 implemented.** The hierarchy and the role table below describe `main` as it
 is, and no path in this layout has changed. The
 [order of work](docs/models-and-operations.md#10-the-order-of-work) says which
-slice moves what. The names below the two roots are proposals of that page
-and are not decided.
+slice moves what. That page gives the names below the two roots (decisions
+M10, M11 and M14 on #305).
 [bittype/ACX-015](docs/architecture-cases/0015-models-hold-operations.md)
 records the violation that stays open until the slices are done.
 
@@ -183,7 +183,8 @@ operations halves of the carriers on the other. The role Vocabulary exists
 under both roots: names and declared tables under `model`, and identities
 that are values of a contract package's type under `ops`. A language's typed
 readers, typed constructors and symbol admission get a role of their own,
-which that page proposes to call public part. A pair's contribution
+which that page calls public part. A lexical helper imports its own
+language's syntax vocabulary, which holds the word lists. A pair's contribution
 vocabulary names two languages, as a mapping does. Not implemented: the table
 below gives the roles of `main` as they are.
 

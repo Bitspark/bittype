@@ -149,9 +149,10 @@ The design page gives it in full. In short:
    model side. One checker and one constructor in the agnostic layer read
    it. The target keeps lowering and coverage. Go's record-body condition
    goes to the contribution that supplies the declaration (slice S2).
-3. The grammar tables and their type go to the model side, with predicates
-   named by identity (slice S3). The word lists leave the lexical helpers
-   (slice S4).
+3. The grammar tables go to the model side, each into its language's
+   syntax vocabulary, with predicates named by identity. Their type goes to
+   the agnostic syntax model (slice S3). The word lists leave the lexical
+   helpers for the same syntax vocabularies (slice S4).
 4. The typed readers and the contract identities leave the semantic
    vocabularies, and the symbol packages split (slice S5).
 5. The plain records of the carriers part from admission, and language
@@ -197,9 +198,9 @@ migration's branch and are not deferred.
 ## Correction and qualification status
 
 This change documents the violation and the designed correction. No code
-has changed. The design page holds nine proposals that are not decided,
-among them the names below the two roots, so the paths it gives are
-proposed paths. The classification of each package is the design page's
+has changed. The names below the two roots are decided (M10, M11 and M14
+on #305). The form-table type is a sketch that slice S2 makes final (M13).
+The classification of each package is the design page's
 table, made by reading. Each slice updates this case with what it delivered,
 its qualification and its limits.
 
