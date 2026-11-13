@@ -66,8 +66,10 @@ whether something is true, interprets it or produces something from it is an
 operation. A model package holds plain data, names and declared tables, and
 no function that evaluates them. Whether a package of the model root holds an
 operation is judged in review and by no check. The split is **not
-implemented**: the paths in this file and in the layout are those of `main`,
-and the page's
+implemented, except slices S3a and S4**, which created the agnostic syntax
+model `model/syntax/go` and each language's lexical part
+`model/syntax/<language>/lexical/go` with its predicate names and word lists: the paths in this file and in the layout
+are those of `main`, and the page's
 [order of work](docs/models-and-operations.md#10-the-order-of-work) says which
 slice changes what. Four sentences below describe `main` until their slice:
 "Identities live in vocabulary packages", "Native semantic forms belong under

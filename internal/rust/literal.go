@@ -83,10 +83,3 @@ func UnquoteABI(s string) (string, error) {
 	}
 	return out.String(), nil
 }
-func ABI(s string) bool {
-	switch s {
-	case "Rust", "C", "C-unwind", "system", "system-unwind", "cdecl", "stdcall", "fastcall", "vectorcall", "thiscall", "aapcs", "win64", "sysv64", "efiapi":
-		return true
-	}
-	return false
-}

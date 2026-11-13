@@ -515,9 +515,9 @@ A package's role follows from its path, which the [layout](../LAYOUT.md) fixes.
 
 | Role | Paths |
 | --- | --- |
-| Foundation | `trees/*/go`, `files/go`, `source/go`, `semantics/go`, `contracts/*/go` |
+| Foundation | `trees/*/go`, `files/go`, `source/go`, `semantics/go`, `model/syntax/go`, `contracts/*/go` |
 | Kernel | `engine/go`, `transform/syntax/shared/*/go`, `check/syntax/shared/*/go`, `print/*/shared/provider/go` |
-| Vocabulary | `syntax/<language>/go`, `semantics/<language>/go`, `transform/syntax/<native>/model/go`, `transform/syntax/<native>/symbol/go` |
+| Vocabulary | `syntax/<language>/go`, `model/syntax/<language>/lexical/go`, `semantics/<language>/go`, `transform/syntax/<native>/model/go`, `transform/syntax/<native>/symbol/go` |
 | Contribution | `<stage>/<dimension>/<language>/provider/go`, `analyze/files/<language>/queries/go`, `transform/syntax/<language>/{source,target}/go`, each mapping, each verification law and each capability extractor |
 | Common mapping part | `transform/syntax/<source>/mapping/go` and `transform/syntax/<source>/mapping/<part>/go` |
 | Private part | `internal/<language>` and `internal/<language>sem`, bound to their language by name. The other packages under `internal/` have explicit entries: six helpers of no single language in the foundation table, four that the table `languageOwners` binds to one language, and one that only tests use. The sixth helper is `internal/processoutput`, and the one for tests is the fixture `internal/processoutput/processoutputtest`, an entry of `oneOfAKindRules`, both since 13 November 2026 |
@@ -570,12 +570,12 @@ at `71bfec9`, before the Go move, are in
 Every production package of the module is classified in one of three ways. A
 package with none of them fails as unclassified.
 
-- **By its role.** `packageRole` derives the rule from the path. 86 of the 131
+- **By its role.** `packageRole` derives the rule from the path. 91 of the 137
   production packages are classified this way. The
   [layout](../LAYOUT.md#dependency-direction) lists the roles and what each
   may import.
 - **By its entry in `foundationRules`.** The entry is the exact list of the
-  package's module imports. 32 packages have one.
+  package's module imports. 33 packages have one.
 - **By a hand entry.** The entry is again the exact list. 13 packages have
   one, and all are in `oneOfAKindRules`. `TestProductionArchitecture` holds no
   entry of its own since #246. A hand entry takes precedence over a role.
@@ -584,7 +584,7 @@ The tables:
 
 | Table | Entries | Holds |
 | --- | --- | --- |
-| `foundationRules` | 32 | The carriers, the contracts, the engine, the shared transform, check and print packages, and the six private helpers of no single language: `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil`, `internal/concrete` and `internal/processoutput` |
+| `foundationRules` | 33 | The carriers, the agnostic syntax model `model/syntax/go`, the contracts, the engine, the shared transform, check and print packages, and the six private helpers of no single language: `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil`, `internal/concrete` and `internal/processoutput` |
 | `oneOfAKindRules` | 13 | Packages of which there is only one: `internal/declsyntax`, `internal/horosmodel`, `internal/horosfiles`, `internal/typescriptimports`, `verification/files/source/horos/go`, `verification/files/horos-to-go/go`, `verification/logos/go`, the four packages `tools/provider-matrix/go`, `report/go`, `capability/go` and `observation/go`, `tools/horos-module/go`, and the fixture of the tests that bound a process's output, `internal/processoutput/processoutputtest` |
 | `roleExtensions` | 14 | Per package, the imports that one language needs and its role does not give: the six horos stage providers, the TypeScript Syntax formatter, Files formatter and target, the Go target, the Rust target, the horos declaration recipe, and the Rust and TypeScript semantic helpers. An extension must be used, must not repeat the role and lifts no prohibition |
 | `languageOwners` | 5 | The language of a package whose path gives no role: `internal/declsyntax`, `internal/horosmodel`, `internal/horosfiles` and `verification/files/source/horos/go` belong to horos, and `internal/typescriptimports` to TypeScript |
@@ -621,7 +621,15 @@ has 14, where this page said 10 and `main` held 12: the Go target and the
 Rust target had gained one each without an edit here, and the two bridges
 gain one each with this change. The other rows are as they were. The module
 has 131 production packages: 86 by their role, 14 of them with a role
-extension, 32 in the foundation and kernel table and 13 by a hand entry. The
+extension, 32 in the foundation and kernel table and 13 by a hand entry.
+Slice S3a of [models and operations](models-and-operations.md) made the
+counts again in the same way, on the head of pull request [#318](https://github.com/Bitspark/bittype/pull/318):
+the module has 137 production packages, 91 by their role, 33 in the
+foundation and kernel table and 13 by a hand entry. Its six new packages
+are the agnostic syntax model `model/syntax/go`, which has an entry in
+`foundationRules`, and the lexical part of each of five languages, which
+has a role. Slice S4 changed no count: it created no package and no entry,
+and widened the role of a lexical helper by its language's lexical part. The
 introduction of this section and the [layout](../LAYOUT.md#enforced-consistency)
 still give the counts of `c8d0344` and `f821eb3` where they name those
 commits.
@@ -631,7 +639,7 @@ How the test realises each of the six rules:
 | Rule | Realised as |
 | --- | --- |
 | 1 | A package in `foundationRules` imports exactly what its entry lists. It never imports a package outside that table, also when its entry lists one. So it imports no vocabulary, no contribution and no private part of a language |
-| 2 | The four vocabulary shapes have role lists of foundations and their own language's vocabulary. `semantics/<language>/go` and `transform/syntax/<native>/symbol/go` may also import their language's lexical helper. A vocabulary never imports a contribution, and `semantics/<language>/go` never imports a semantic helper. Both prohibitions hold under a hand entry and under an extension as well |
+| 2 | The four vocabulary shapes have role lists of foundations and their own language's vocabulary. A fifth shape, the lexical part of a language's syntax model (`model/syntax/<language>/lexical/go`), lists `model/syntax/go` only and is refused every syntax vocabulary, its own included, also under an extension. It holds the names of the language's spelling predicates and its word lists. The lexical helper of the language, a private part, lists the shared grammar helper and that lexical part. `semantics/<language>/go` and `transform/syntax/<native>/symbol/go` may also import their language's lexical helper. A vocabulary never imports a contribution, and `semantics/<language>/go` never imports a semantic helper. Both prohibitions hold under a hand entry and under an extension as well |
 | 3 | Each contribution shape has its own role list. A package that names a language imports no package of another language. A mapping names two. A role grants `internal/<language>` and `internal/<language>sem` only where the imported package is that language's helper by its own role. The role lists name a contribution in three places. A parser and a formatter import their own checker, and a semantic helper its own parser, each under rule 5. A mapping and a common mapping part import the source reader of their source language |
 | 4 | Enforced for stage provider packages and for query service packages, the two kinds that `selectedKind` names: an import of either by a package that is not a composition fails without an entry in the exception table. For the other contributions the role lists decide. No role lists a native target, a mapping, a law, a query service or an extractor. One explicit entry lists a query service: `verification/files/horos-to-go/go` names `analyze/files/golang/queries/go`, and its exception names `Admission` only. A role does list the source reader, as named under rule 3, and its importer may use any of its symbols. The check has no general statement that only a composition imports a contribution |
 | 5 | The exception table. An entry names importer, provider, symbols and reason. A use of another symbol fails. An unused entry fails, and so does an unused symbol. An entry that is listed twice, names no symbol, gives no reason, names a package that is neither a stage provider nor a query service, or names a composition as importer fails |
@@ -769,7 +777,7 @@ and the exception rule as #246 left them. All files are under
   resolve the import names per file, then collect the selectors on them. Use is
   syntactic and nothing is type-checked. The standard library is enough, and
   `go.mod` gained no requirement.
-- `architecture_synthetic_test.go` holds 37 tests that feed the check
+- `architecture_synthetic_test.go` holds 38 tests that feed the check
   hand-built package sets. Each failing set breaks one rule and must produce
   that rule's message and no other. One test adds a third language, a pair
   into it, one more mapping and one more common mapping part to a conforming

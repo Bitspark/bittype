@@ -10,21 +10,12 @@ import (
 	structure "github.com/Bitspark/bittype/check/syntax/shared/ast/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	g "github.com/Bitspark/bittype/internal/grammar"
+	spelling "github.com/Bitspark/bittype/internal/horos"
+	"github.com/Bitspark/bittype/model/syntax/go"
+	predicate "github.com/Bitspark/bittype/model/syntax/horos/lexical/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
-
-func identifier(value string) bool {
-	if value == "" {
-		return false
-	}
-	for i, c := range []byte(value) {
-		if c != '_' && !(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z') && !(i > 0 && c >= '0' && c <= '9') {
-			return false
-		}
-	}
-	return true
-}
 
 func moduleName(value string) bool {
 	first := true
@@ -59,45 +50,54 @@ func hexadecimal(value string) bool {
 
 func pin(value string) bool { return len(value) == 64 && hexadecimal(value) }
 
+// evaluators binds the names of the horos predicates that the table uses. The
+// identifier rule is the lexical helper's, so it has one evaluator.
+var evaluators = g.Evaluators{
+	predicate.Identifier():  spelling.Identifier,
+	predicate.ModuleName():  moduleName,
+	predicate.Hexadecimal(): hexadecimal,
+	predicate.Pin():         pin,
+}
+
 var expressions = []h.Kind{h.KindDescriptor, h.KindParameter, h.KindReference, h.KindApplication}
 var fragments = []h.Kind{h.KindDescriptor, h.KindParameter, h.KindReference, h.KindApplication, h.KindAtom, h.KindTuple}
 var sorts = []h.Kind{h.KindProperSort, h.KindArrowSort}
 var kinds = []h.Kind{h.KindTop, h.KindBottom, h.KindKindParameterReference, h.KindKindReference, h.KindKindApplication, h.KindUnion, h.KindIntersection, h.KindArrow, h.KindNodePattern, h.KindRecursiveKind, h.KindRecursiveVariable}
 var sequences = []h.Kind{h.KindSequenceEpsilon, h.KindSequenceItem, h.KindSequenceConcat, h.KindSequenceAlternative, h.KindSequenceStar}
-var rules = g.Rules[h.Language]{
-	h.KindProgram:                {Roles: []g.Role[h.Language]{g.Many(RoleModule, 1, h.KindModule)}},
-	h.KindModule:                 {Attributes: g.Attributes(AttributeName, g.Attr(true, moduleName), AttributePin, g.Attr(true, pin)), Roles: []g.Role[h.Language]{g.Many(RoleImport, 0, h.KindImport), g.Many(RoleDeclaration, 0, h.KindTypeDefinition, h.KindKindDefinition)}},
-	h.KindImport:                 {Attributes: g.Attributes(AttributeAlias, g.Attr(true, identifier), AttributeName, g.Attr(true, moduleName), AttributePin, g.Attr(true, pin))},
-	h.KindTypeDefinition:         {Attributes: g.Attributes(AttributeName, g.Attr(true, identifier)), Roles: []g.Role[h.Language]{g.Many(RoleParameter, 0, h.KindTypeParameter), g.One(RoleResult, kinds...), g.One(RoleBody, expressions...)}},
-	h.KindKindDefinition:         {Attributes: g.Attributes(AttributeName, g.Attr(true, identifier)), Roles: []g.Role[h.Language]{g.Many(RoleParameter, 0, h.KindKindParameter), g.One(RoleResult, sorts...), g.One(RoleBody, kinds...)}},
-	h.KindTypeParameter:          {Attributes: g.Attributes(AttributeName, g.Attr(true, identifier), AttributeIndex, g.Attr(true, g.Decimal)), Roles: []g.Role[h.Language]{g.One(RoleContract, kinds...)}},
-	h.KindKindParameter:          {Attributes: g.Attributes(AttributeName, g.Attr(true, identifier), AttributeIndex, g.Attr(true, g.Decimal)), Roles: []g.Role[h.Language]{g.One(RoleSort, sorts...)}},
-	h.KindParameter:              {Attributes: g.Attributes(AttributeIndex, g.Attr(true, g.Decimal))},
-	h.KindReference:              {Attributes: g.Attributes(AttributeScope, g.Attr(true, g.Set(h.ScopeLocal, h.ScopeImported)), AttributeName, g.Attr(true, identifier), AttributeAlias, g.Attr(false, identifier))},
-	h.KindApplication:            {Roles: []g.Role[h.Language]{g.One(RoleCallee, expressions...), g.Many(RoleArgument, 1, expressions...)}},
-	h.KindDescriptor:             {Attributes: g.Attributes(AttributeConstructor, g.Attr(true, g.Nonempty)), Roles: []g.Role[h.Language]{g.Many(RoleOperand, 0, fragments...)}},
-	h.KindAtom:                   {Attributes: g.Attributes(AttributeHex, g.Attr(true, hexadecimal))},
-	h.KindTuple:                  {Roles: []g.Role[h.Language]{g.Many(RoleElement, 0, fragments...)}},
+var rules = syntax.Rules[h.Language]{
+	h.KindProgram:                {Roles: []syntax.Role[h.Language]{{Name: RoleModule, Min: 1, Max: -1, Kinds: []h.Kind{h.KindModule}}}},
+	h.KindModule:                 {Attributes: map[string]syntax.Attribute{AttributeName: {Required: true, Predicate: predicate.ModuleName()}, AttributePin: {Required: true, Predicate: predicate.Pin()}}, Roles: []syntax.Role[h.Language]{{Name: RoleImport, Max: -1, Kinds: []h.Kind{h.KindImport}}, {Name: RoleDeclaration, Max: -1, Kinds: []h.Kind{h.KindTypeDefinition, h.KindKindDefinition}}}},
+	h.KindImport:                 {Attributes: map[string]syntax.Attribute{AttributeAlias: {Required: true, Predicate: predicate.Identifier()}, AttributeName: {Required: true, Predicate: predicate.ModuleName()}, AttributePin: {Required: true, Predicate: predicate.Pin()}}},
+	h.KindTypeDefinition:         {Attributes: map[string]syntax.Attribute{AttributeName: {Required: true, Predicate: predicate.Identifier()}}, Roles: []syntax.Role[h.Language]{{Name: RoleParameter, Max: -1, Kinds: []h.Kind{h.KindTypeParameter}}, {Name: RoleResult, Min: 1, Max: 1, Kinds: kinds}, {Name: RoleBody, Min: 1, Max: 1, Kinds: expressions}}},
+	h.KindKindDefinition:         {Attributes: map[string]syntax.Attribute{AttributeName: {Required: true, Predicate: predicate.Identifier()}}, Roles: []syntax.Role[h.Language]{{Name: RoleParameter, Max: -1, Kinds: []h.Kind{h.KindKindParameter}}, {Name: RoleResult, Min: 1, Max: 1, Kinds: sorts}, {Name: RoleBody, Min: 1, Max: 1, Kinds: kinds}}},
+	h.KindTypeParameter:          {Attributes: map[string]syntax.Attribute{AttributeName: {Required: true, Predicate: predicate.Identifier()}, AttributeIndex: {Required: true, Predicate: syntax.Decimal()}}, Roles: []syntax.Role[h.Language]{{Name: RoleContract, Min: 1, Max: 1, Kinds: kinds}}},
+	h.KindKindParameter:          {Attributes: map[string]syntax.Attribute{AttributeName: {Required: true, Predicate: predicate.Identifier()}, AttributeIndex: {Required: true, Predicate: syntax.Decimal()}}, Roles: []syntax.Role[h.Language]{{Name: RoleSort, Min: 1, Max: 1, Kinds: sorts}}},
+	h.KindParameter:              {Attributes: map[string]syntax.Attribute{AttributeIndex: {Required: true, Predicate: syntax.Decimal()}}},
+	h.KindReference:              {Attributes: map[string]syntax.Attribute{AttributeScope: {Required: true, OneOf: []string{h.ScopeLocal, h.ScopeImported}}, AttributeName: {Required: true, Predicate: predicate.Identifier()}, AttributeAlias: {Predicate: predicate.Identifier()}}},
+	h.KindApplication:            {Roles: []syntax.Role[h.Language]{{Name: RoleCallee, Min: 1, Max: 1, Kinds: expressions}, {Name: RoleArgument, Min: 1, Max: -1, Kinds: expressions}}},
+	h.KindDescriptor:             {Attributes: map[string]syntax.Attribute{AttributeConstructor: {Required: true, Predicate: syntax.Nonempty()}}, Roles: []syntax.Role[h.Language]{{Name: RoleOperand, Max: -1, Kinds: fragments}}},
+	h.KindAtom:                   {Attributes: map[string]syntax.Attribute{AttributeHex: {Required: true, Predicate: predicate.Hexadecimal()}}},
+	h.KindTuple:                  {Roles: []syntax.Role[h.Language]{{Name: RoleElement, Max: -1, Kinds: fragments}}},
 	h.KindProperSort:             {},
-	h.KindArrowSort:              {Roles: []g.Role[h.Language]{g.Many(RoleInput, 1, sorts...), g.One(RoleResult, sorts...)}},
-	h.KindTop:                    {Roles: []g.Role[h.Language]{g.One(RoleSort, sorts...)}},
-	h.KindBottom:                 {Roles: []g.Role[h.Language]{g.One(RoleSort, sorts...)}},
-	h.KindKindParameterReference: {Attributes: g.Attributes(AttributeIndex, g.Attr(true, g.Decimal))},
-	h.KindKindReference:          {Attributes: g.Attributes(AttributeScope, g.Attr(true, g.Set(h.ScopeLocal, h.ScopeImported)), AttributeName, g.Attr(true, identifier), AttributeAlias, g.Attr(false, identifier))},
-	h.KindKindApplication:        {Roles: []g.Role[h.Language]{g.One(RoleCallee, h.KindKindReference), g.Many(RoleArgument, 1, kinds...)}},
-	h.KindUnion:                  {Roles: []g.Role[h.Language]{g.One(RoleSort, sorts...), g.Many(RoleOperand, 2, kinds...)}},
-	h.KindIntersection:           {Roles: []g.Role[h.Language]{g.One(RoleSort, sorts...), g.Many(RoleOperand, 2, kinds...)}},
-	h.KindArrow:                  {Roles: []g.Role[h.Language]{g.Many(RoleInput, 1, kinds...), g.One(RoleResult, kinds...)}},
-	h.KindNodePattern:            {Attributes: g.Attributes(AttributeConstructor, g.Attr(true, g.Set("any", "atom", "atom-exact", "atom-len", "atom-in", "text-len", "key-grammar", "text-non-blank", "lowercase-uuid", "scalar", "exact", "wire", "seq", "list-of", "set-of", "not", "map-of", "tuple", "compound", "union", "and", "record"))), Roles: []g.Role[h.Language]{g.Many(RoleSelector, 0, h.KindSelector), g.One(RolePattern, sequences...)}},
-	h.KindSelector:               {Attributes: g.Attributes(AttributeName, g.Attr(true, g.Set("selector", "mode")), AttributeValue, g.Attr(true, g.Set("int", "utf8-text", "bool", "open", "closed")))},
-	h.KindRecursiveKind:          {Attributes: g.Attributes(AttributeIndex, g.Attr(true, g.Decimal)), Roles: []g.Role[h.Language]{g.Many(RoleEquation, 1, h.KindEquation)}},
-	h.KindEquation:               {Attributes: g.Attributes(AttributeName, g.Attr(false, identifier), AttributeIndex, g.Attr(true, g.Decimal)), Roles: []g.Role[h.Language]{g.One(RoleBody, kinds...)}},
-	h.KindRecursiveVariable:      {Attributes: g.Attributes(AttributeDepth, g.Attr(true, g.Decimal), AttributeIndex, g.Attr(true, g.Decimal))},
+	h.KindArrowSort:              {Roles: []syntax.Role[h.Language]{{Name: RoleInput, Min: 1, Max: -1, Kinds: sorts}, {Name: RoleResult, Min: 1, Max: 1, Kinds: sorts}}},
+	h.KindTop:                    {Roles: []syntax.Role[h.Language]{{Name: RoleSort, Min: 1, Max: 1, Kinds: sorts}}},
+	h.KindBottom:                 {Roles: []syntax.Role[h.Language]{{Name: RoleSort, Min: 1, Max: 1, Kinds: sorts}}},
+	h.KindKindParameterReference: {Attributes: map[string]syntax.Attribute{AttributeIndex: {Required: true, Predicate: syntax.Decimal()}}},
+	h.KindKindReference:          {Attributes: map[string]syntax.Attribute{AttributeScope: {Required: true, OneOf: []string{h.ScopeLocal, h.ScopeImported}}, AttributeName: {Required: true, Predicate: predicate.Identifier()}, AttributeAlias: {Predicate: predicate.Identifier()}}},
+	h.KindKindApplication:        {Roles: []syntax.Role[h.Language]{{Name: RoleCallee, Min: 1, Max: 1, Kinds: []h.Kind{h.KindKindReference}}, {Name: RoleArgument, Min: 1, Max: -1, Kinds: kinds}}},
+	h.KindUnion:                  {Roles: []syntax.Role[h.Language]{{Name: RoleSort, Min: 1, Max: 1, Kinds: sorts}, {Name: RoleOperand, Min: 2, Max: -1, Kinds: kinds}}},
+	h.KindIntersection:           {Roles: []syntax.Role[h.Language]{{Name: RoleSort, Min: 1, Max: 1, Kinds: sorts}, {Name: RoleOperand, Min: 2, Max: -1, Kinds: kinds}}},
+	h.KindArrow:                  {Roles: []syntax.Role[h.Language]{{Name: RoleInput, Min: 1, Max: -1, Kinds: kinds}, {Name: RoleResult, Min: 1, Max: 1, Kinds: kinds}}},
+	h.KindNodePattern:            {Attributes: map[string]syntax.Attribute{AttributeConstructor: {Required: true, OneOf: []string{"any", "atom", "atom-exact", "atom-len", "atom-in", "text-len", "key-grammar", "text-non-blank", "lowercase-uuid", "scalar", "exact", "wire", "seq", "list-of", "set-of", "not", "map-of", "tuple", "compound", "union", "and", "record"}}}, Roles: []syntax.Role[h.Language]{{Name: RoleSelector, Max: -1, Kinds: []h.Kind{h.KindSelector}}, {Name: RolePattern, Min: 1, Max: 1, Kinds: sequences}}},
+	h.KindSelector:               {Attributes: map[string]syntax.Attribute{AttributeName: {Required: true, OneOf: []string{"selector", "mode"}}, AttributeValue: {Required: true, OneOf: []string{"int", "utf8-text", "bool", "open", "closed"}}}},
+	h.KindRecursiveKind:          {Attributes: map[string]syntax.Attribute{AttributeIndex: {Required: true, Predicate: syntax.Decimal()}}, Roles: []syntax.Role[h.Language]{{Name: RoleEquation, Min: 1, Max: -1, Kinds: []h.Kind{h.KindEquation}}}},
+	h.KindEquation:               {Attributes: map[string]syntax.Attribute{AttributeName: {Predicate: predicate.Identifier()}, AttributeIndex: {Required: true, Predicate: syntax.Decimal()}}, Roles: []syntax.Role[h.Language]{{Name: RoleBody, Min: 1, Max: 1, Kinds: kinds}}},
+	h.KindRecursiveVariable:      {Attributes: map[string]syntax.Attribute{AttributeDepth: {Required: true, Predicate: syntax.Decimal()}, AttributeIndex: {Required: true, Predicate: syntax.Decimal()}}},
 	h.KindSequenceEpsilon:        {},
-	h.KindSequenceItem:           {Roles: []g.Role[h.Language]{g.One(RoleElement, kinds...)}},
-	h.KindSequenceConcat:         {Roles: []g.Role[h.Language]{g.Many(RoleElement, 2, sequences...)}},
-	h.KindSequenceAlternative:    {Roles: []g.Role[h.Language]{g.Many(RoleElement, 2, sequences...)}},
-	h.KindSequenceStar:           {Roles: []g.Role[h.Language]{g.One(RoleElement, sequences...)}},
+	h.KindSequenceItem:           {Roles: []syntax.Role[h.Language]{{Name: RoleElement, Min: 1, Max: 1, Kinds: kinds}}},
+	h.KindSequenceConcat:         {Roles: []syntax.Role[h.Language]{{Name: RoleElement, Min: 2, Max: -1, Kinds: sequences}}},
+	h.KindSequenceAlternative:    {Roles: []syntax.Role[h.Language]{{Name: RoleElement, Min: 2, Max: -1, Kinds: sequences}}},
+	h.KindSequenceStar:           {Roles: []syntax.Role[h.Language]{{Name: RoleElement, Min: 1, Max: 1, Kinds: sequences}}},
 }
 
 func attribute(node h.Node, name string) string {
@@ -131,7 +131,7 @@ func Check(view ast.View[h.Language]) error {
 	for i := range shape.Nodes {
 		shape.Nodes[i].References = nil
 	}
-	if err := g.Check(shape, h.KindProgram, rules); err != nil {
+	if err := g.Check(shape, h.KindProgram, rules, evaluators); err != nil {
 		return err
 	}
 	rootTarget := ast.NodeID(0)

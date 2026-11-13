@@ -1,22 +1,27 @@
 package cpp
 
-import "strings"
+import (
+	g "github.com/Bitspark/bittype/internal/grammar"
+	"github.com/Bitspark/bittype/model/syntax/cpp/lexical/go"
+	"strings"
+)
 
-func BuiltinWord(s string) bool {
-	switch s {
-	case "void", "bool", "char", "wchar_t", "char8_t", "char16_t", "char32_t", "signed", "unsigned", "short", "int", "long", "float", "double":
-		return true
-	}
-	return false
-}
-func Builtin(s string) bool {
+// fundamentalTypeWord evaluates the words of a fundamental type that the
+// lexical part declares.
+var fundamentalTypeWord = g.Words(lexical.FundamentalTypeWords())
+
+// FundamentalTypeWord reports one word of the spelling of a fundamental type.
+func FundamentalTypeWord(s string) bool { return fundamentalTypeWord(s) }
+
+// FundamentalType reports the spelling of a fundamental type.
+func FundamentalType(s string) bool {
 	words := strings.Fields(s)
 	if len(words) == 0 || strings.Join(words, " ") != s {
 		return false
 	}
 	counts := map[string]int{}
 	for _, w := range words {
-		if !BuiltinWord(w) {
+		if !FundamentalTypeWord(w) {
 			return false
 		}
 		counts[w]++

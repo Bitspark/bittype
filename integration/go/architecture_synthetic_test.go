@@ -288,18 +288,22 @@ var syntheticFoundations = []string{
 	"contracts/analysis/go", "contracts/check/go", "contracts/format/go", "contracts/generation/go", "contracts/language/go",
 	"contracts/parse/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go", "contracts/text/go",
 	"contracts/transform/go", "files/go", "internal/concrete", "internal/grammar", "internal/lex", "internal/parseutil",
-	"internal/tree", "semantics/go", "source/go", "transform/syntax/shared/target/go", "trees/ast/go", "trees/representation/go",
+	"internal/tree", "model/syntax/go", "semantics/go", "source/go", "transform/syntax/shared/target/go", "trees/ast/go", "trees/representation/go",
 }
 
 // languageLayout is every package shape of one language, each importing all
 // that its role permits. "<l>" stands for the language.
 var languageLayout = map[string][]string{
-	"syntax/<l>/go":    {"contracts/language/go", "trees/ast/go", "trees/cst/go"},
-	"semantics/<l>/go": {"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/<l>", "semantics/go", "syntax/<l>/go", "trees/ast/go", "trees/representation/go"},
-	"internal/<l>":     {"internal/grammar"},
-	"internal/<l>sem":  {"contracts/parse/go", "contracts/semantic/go", "files/go", "parse/syntax/<l>/provider/go", "semantics/go", "semantics/<l>/go", "syntax/<l>/go", "trees/ast/go"},
+	"syntax/<l>/go":               {"contracts/language/go", "trees/ast/go", "trees/cst/go"},
+	"model/syntax/<l>/lexical/go": {"model/syntax/go"},
+	"semantics/<l>/go":            {"contracts/analysis/go", "contracts/resolution/go", "contracts/semantic/go", "internal/<l>", "semantics/go", "syntax/<l>/go", "trees/ast/go", "trees/representation/go"},
+	"internal/<l>":                {"internal/grammar", "model/syntax/<l>/lexical/go"},
+	"internal/<l>sem":             {"contracts/parse/go", "contracts/semantic/go", "files/go", "parse/syntax/<l>/provider/go", "semantics/go", "semantics/<l>/go", "syntax/<l>/go", "trees/ast/go"},
 
-	"check/syntax/<l>/provider/go": {"contracts/check/go", "contracts/text/go", "internal/<l>", "internal/grammar", "internal/tree", "syntax/<l>/go", "trees/ast/go"},
+	"check/syntax/<l>/provider/go": {
+		"contracts/check/go", "contracts/text/go", "internal/<l>", "internal/grammar", "internal/tree",
+		"model/syntax/<l>/lexical/go", "model/syntax/go", "syntax/<l>/go", "trees/ast/go",
+	},
 	"parse/syntax/<l>/provider/go": {
 		"check/syntax/<l>/provider/go", "contracts/parse/go", "contracts/text/go", "internal/<l>", "internal/concrete", "internal/lex",
 		"internal/parseutil", "internal/tree", "syntax/<l>/go", "trees/ast/go", "trees/cst/go",
@@ -416,6 +420,7 @@ const (
 	noContribution       = "a vocabulary never imports a contribution"
 	noSemanticHelper     = "a vocabulary never imports a semantic helper"
 	noStage              = "a lexical helper depends on no stage"
+	noStructure          = "a lexical part imports no syntax vocabulary"
 	noSourceOrMapping    = "a native target reads no source and calls no mapping"
 	noOtherMapping       = "a mapping contribution never imports another mapping contribution"
 	noTreeConstructor    = "a mapping contribution never imports a native tree constructor"
@@ -516,6 +521,12 @@ func TestArchitectureFoundationTable(t *testing.T) {
 		notAllowed("trees/ast/go", "trees/cst/go"),
 		notAllowed("contracts/text/go", "contracts/parse/go"),
 		notAllowed("engine/go", "internal/lex"),
+		// An agnostic model package is in the table with the model packages it
+		// imports. An operation is not among them, also one of the table.
+		notAllowed("model/syntax/go", "contracts/text/go"),
+		notAllowed("model/syntax/go", "internal/grammar"),
+		prohibited("model/syntax/go", "syntax/x/go", onlyFoundations),
+		prohibited("model/syntax/go", "model/syntax/x/lexical/go", onlyFoundations),
 	)
 
 	s := layoutSet().imports("engine/go", "syntax/x/go")
@@ -778,6 +789,47 @@ func TestArchitectureLanguageHelperRoles(t *testing.T) {
 	s.expect(t)
 }
 
+// The lexical part of a language's syntax model declares the names of its
+// spelling predicates. It imports the agnostic syntax model and nothing else:
+// no operation, and no syntax vocabulary, so spelling does not know structure.
+// A checker binds the names, and the lexical helper evaluates the lists. The
+// syntax vocabulary does not import the part yet.
+func TestArchitectureLexicalPartRole(t *testing.T) {
+	expectBreaks(t,
+		prohibited("model/syntax/x/lexical/go", "syntax/x/go", noStructure),
+		prohibited("model/syntax/x/lexical/go", "syntax/y/go", noStructure),
+		prohibited("model/syntax/x/lexical/go", "model/syntax/y/lexical/go", languageY),
+		prohibited("model/syntax/x/lexical/go", "internal/y", languageY),
+		notAllowed("model/syntax/x/lexical/go", "internal/x"),
+		notAllowed("model/syntax/x/lexical/go", "internal/grammar"),
+		notAllowed("model/syntax/x/lexical/go", "contracts/text/go"),
+		notAllowed("model/syntax/x/lexical/go", "trees/ast/go"),
+		prohibited("model/syntax/x/lexical/go", "check/syntax/x/provider/go", noContribution),
+
+		prohibited("check/syntax/x/provider/go", "model/syntax/y/lexical/go", languageY),
+		notAllowed("syntax/x/go", "model/syntax/x/lexical/go"),
+		prohibited("internal/x", "model/syntax/y/lexical/go", languageY),
+		notAllowed("internal/x", "model/syntax/go"),
+		notAllowed("semantics/x/go", "model/syntax/x/lexical/go"),
+		notAllowed("transform/syntax/x/target/go", "model/syntax/x/lexical/go"),
+		notAllowed("parse/syntax/x/provider/go", "model/syntax/x/lexical/go"),
+	)
+
+	// An extension widens an allow-list and lifts no prohibition.
+	s := layoutSet().imports("model/syntax/x/lexical/go", "syntax/x/go")
+	s.spec.Extensions["model/syntax/x/lexical/go"] = []string{"syntax/x/go"}
+	s.expect(t, refused("model/syntax/x/lexical/go", "syntax/x/go", noStructure))
+
+	// A path under model that is no known shape has no role.
+	s = layoutSet()
+	s.add("model/syntax/x/grammar/go", "model/syntax/go")
+	s.add("model/other/go")
+	s.expect(t,
+		"unclassified production package: model/other/go",
+		"unclassified production package: model/syntax/x/grammar/go",
+	)
+}
+
 // drop removes one import from a declared package.
 func (s *syntheticSet) drop(path, dependency string) *syntheticSet {
 	p := s.packages[syntheticModule+"/"+path]
@@ -855,7 +907,10 @@ func TestArchitectureUnusedRoleAllowance(t *testing.T) {
 
 	// A package with a hand entry is checked by its entry and does not count.
 	s = layoutSet().drop("check/syntax/x/provider/go", "internal/x")
-	s.spec.Rules["check/syntax/y/provider/go"] = []string{"contracts/check/go", "contracts/text/go", "internal/y", "internal/grammar", "internal/tree", "syntax/y/go", "trees/ast/go"}
+	s.spec.Rules["check/syntax/y/provider/go"] = []string{
+		"contracts/check/go", "contracts/text/go", "internal/y", "internal/grammar", "internal/tree",
+		"model/syntax/y/lexical/go", "model/syntax/go", "syntax/y/go", "trees/ast/go",
+	}
 	s.expect(t, "unused role allowance: no package of check/syntax/<language>/provider/go imports internal/<language>")
 
 	// A shape that no package has is not said to be unused.
