@@ -43,9 +43,7 @@ func Predeclared(name string) (Symbol, error) {
 
 // Predeclared returns the identifier of the universe scope, and false for a
 // symbol of another category.
-func (y Symbol) Predeclared() (string, bool) {
-	return y.name, y.category == predeclared && y.name != ""
-}
+func (y Symbol) Predeclared() (string, bool) { return y.name, y.category == predeclared }
 
 var issuer = g.NewSymbolIssuer()
 
@@ -78,9 +76,6 @@ func ReadExternal(language representation.Language, use g.ExternalUse) (Symbol, 
 	if !ok || use.At.Role != role || use.At.Ordinal != 0 {
 		return Symbol{}, g.ErrScope
 	}
-	category, name, ok := strings.Cut(key, "\x00")
-	if !ok || category != predeclared {
-		return Symbol{}, g.ErrInvalid
-	}
-	return Predeclared(name)
+	// Every key of this issuer has the one category of today.
+	return Predeclared(strings.TrimPrefix(key, predeclared+"\x00"))
 }

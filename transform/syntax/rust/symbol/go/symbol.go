@@ -113,22 +113,12 @@ func ExternalUse(language representation.Language, site ast.NodeRef, symbol Symb
 	if representation.CheckMarker[s.Language](language) != nil || language.ID() != (s.Language{}).ID() {
 		return g.ExternalUse{}, g.ErrScope
 	}
-	var key string
-	switch symbol.category {
-	case item:
-		if _, err := Item(symbol.crate, strings.Split(symbol.name, separator)...); err != nil {
-			return g.ExternalUse{}, err
-		}
-		key = item + "\x00" + symbol.crate.name + "\x00" + symbol.name
-	case primitive:
-		if symbol != Bool() {
-			return g.ExternalUse{}, g.ErrInvalid
-		}
-		key = primitive + "\x00" + symbol.name
-	default:
+	// A symbol of a category was made by a constructor of this package. Only
+	// the zero symbol has none.
+	if symbol.category == "" {
 		return g.ExternalUse{}, g.ErrInvalid
 	}
-	issued, err := issuer.Issue(language, key)
+	issued, err := issuer.Issue(language, symbol.category+"\x00"+symbol.crate.name+"\x00"+symbol.name)
 	if err != nil {
 		return g.ExternalUse{}, err
 	}
@@ -143,16 +133,11 @@ func ReadExternal(language representation.Language, use g.ExternalUse) (Symbol, 
 	if !ok || use.At.Role != role || use.At.Ordinal != 0 {
 		return Symbol{}, g.ErrScope
 	}
-	parts := strings.Split(key, "\x00")
-	switch {
-	case len(parts) == 3 && parts[0] == item:
-		crate, err := Dependency(parts[1])
-		if err != nil {
-			return Symbol{}, g.ErrInvalid
-		}
-		return Item(crate, strings.Split(parts[2], separator)...)
-	case len(parts) == 2 && parts[0] == primitive && parts[1] == Bool().name:
+	// Every key of this issuer is a category, a crate and a name.
+	category, rest, _ := strings.Cut(key, "\x00")
+	crate, name, _ := strings.Cut(rest, "\x00")
+	if category == primitive {
 		return Bool(), nil
 	}
-	return Symbol{}, g.ErrInvalid
+	return Item(Crate{crate}, strings.Split(name, separator)...)
 }

@@ -88,7 +88,7 @@ func TestExternalDestinationUsesIssuerLanguageAndRole(t *testing.T) {
 		t.Fatal("another profile", err)
 	}
 	moved := use
-	moved.At.Role = semantics.Key{Owner: "go", Name: "name"}
+	moved.At.Role = semantics.Key{Owner: "another", Name: "role"}
 	if _, err := symbol.ReadExternal(native, moved); !errors.Is(err, g.ErrScope) {
 		t.Fatal("another role", err)
 	}
