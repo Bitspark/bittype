@@ -92,8 +92,11 @@ const (
 )
 
 // Judgment is a source-owned conclusion. Diagnostic optionally explains a
-// non-admitted verdict at a source site. The kernel never interprets it, and a
-// diagnostic cannot add an error class: only the verdict classifies.
+// non-admitted verdict: it states what is wrong. It need not state where. The
+// kernel reports a judgment at the site of the occurrence or declaration that
+// it judges, unless the diagnostic is itself a SiteError. The kernel never
+// interprets a diagnostic, and a diagnostic cannot add an error class: only
+// the verdict classifies.
 type Judgment struct {
 	Verdict    Verdict
 	Diagnostic error

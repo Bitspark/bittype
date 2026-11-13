@@ -1031,7 +1031,7 @@ func (p *planner[F, T, R]) declare(d Declaration[F], depth int) (*declState[F, T
 	}
 	j, err := p.source.JudgeDeclaration(p.ctx, d)
 	if err == nil {
-		err = verdict(j)
+		err = p.walk.judged(j, 0, d.entity)
 	}
 	if err == nil {
 		err = p.admit(view.Body.o, depth+1)

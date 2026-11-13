@@ -11,6 +11,13 @@ import (
 func diagnostic(input transform.Input, err error) error {
 	var diagnostic *text.Diagnostic
 	if errors.As(err, &diagnostic) {
+		// A source diagnostic that states what is wrong and not where is
+		// reported at the site at which the kernel located the failure.
+		var located *g.SiteError
+		if diagnostic.Node == nil && diagnostic.Span == nil && errors.As(err, &located) && located.Site.Tree != "" {
+			site := located.Site
+			return fmt.Errorf("%w: %w", &text.Diagnostic{Code: diagnostic.Code, Message: diagnostic.Message, Node: &site}, err)
+		}
 		return err
 	}
 	// A refusal of a contribution or of the planner is reported at the site of

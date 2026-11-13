@@ -102,6 +102,14 @@ func gateProgram() *graph {
 	p.body("Pair", p.expression("pair-body", p.ref(p.parameter("Pair", 0)), p.ref(p.parameter("Pair", 1))))
 	p.declare("Words")
 	p.body("Words", p.apply("Pair", p.ref(p.names["Word"]), p.ref(p.names["Person"])))
+	// One refuted term that two bodies share. The source judges it and states
+	// no site: the kernel reports each occurrence at its own declaration.
+	p.declare("FaultA")
+	p.declare("FaultB")
+	fault := p.expression("person-body")
+	p.refute(fault, false)
+	p.body("FaultA", fault)
+	p.body("FaultB", fault)
 	// A form of a family that no composition of the gate builds (row 33).
 	p.declare("Unbuilt")
 	p.body("Unbuilt", p.expression("unbuilt-family"))

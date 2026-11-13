@@ -157,7 +157,7 @@ func (p *traversal[F, T, R]) admit(o *occurrence[F], depth int) error {
 	if err == nil {
 		var j Judgment
 		if j, err = p.source.JudgeUse(p.ctx, Use[F]{o}); err == nil {
-			err = verdict(j)
+			err = p.walk.judged(j, o.term, o.declaration)
 		}
 	}
 	for _, a := range view.Actuals {
