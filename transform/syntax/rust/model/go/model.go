@@ -3,6 +3,7 @@ package model
 
 import (
 	"context"
+	"slices"
 	"strconv"
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
@@ -46,8 +47,20 @@ func Field(name string, optional bool, ty g.Expression[s.Language]) g.Expression
 func Record(fields ...g.Expression[s.Language]) g.Expression[s.Language] {
 	return g.Native(Form(FormRecord), nil, fields...)
 }
-func External(module, name string, args ...g.Expression[s.Language]) g.Expression[s.Language] {
-	return g.Native(Form(FormExternal), []string{module, name}, args...)
+
+// Std is the name of the crate std of the standard library, as an external
+// form states it. It is declared here once: a mapping passes it, and the Rust
+// target maps it to the dependency of that crate.
+const Std = "std"
+
+// External is the public item at path below the root of the crate that is
+// named crate, applied to args. The crate is separate from the path: the form
+// carries the crate's name first and then the segments of the path. This
+// model checks the shape of the form only. The Rust target admits a form
+// whose crate is a dependency that a destination can name. That is Std today,
+// and the target refuses every other crate.
+func External(crate string, path []string, args ...g.Expression[s.Language]) g.Expression[s.Language] {
+	return g.Native(Form(FormExternal), append([]string{crate}, path...), args...)
 }
 func CheckExpression(ctx context.Context, e g.Expression[s.Language]) error {
 	if err := ctx.Err(); err != nil {
@@ -85,7 +98,7 @@ func CheckExpression(ctx context.Context, e g.Expression[s.Language]) error {
 			seen[v[0]] = true
 		}
 	case FormExternal:
-		if len(d) != 2 || d[1] == "" {
+		if len(d) < 2 || slices.Contains(d, "") {
 			return g.ErrInvalid
 		}
 	default:

@@ -51,7 +51,7 @@ func Library() rules.Library[s.Language] {
 					return g.Expression[s.Language]{}, err
 				}
 				if f.Optional {
-					ty = model.External("std::option", "Option", ty)
+					ty = model.External(model.Std, []string{"option", "Option"}, ty)
 				}
 				members = append(members, g.At(model.Field(f.Name, f.Optional, ty), f.Origin))
 			}

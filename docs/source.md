@@ -58,6 +58,27 @@ statement nor the file inside that package. The generator needs no destination
 path for any of the three names. A spelling alone is insufficient: two distinct
 types named `Person` must not become interchangeable when placement changes.
 
+**13 November 2026.** [Destinations](destinations.md) is the specification of
+that binding: which nodes of each language are name uses, how a sealed output
+records the destination of each, and what counts as the same destination. A
+destination is a declaration's identity and never structural equality. An
+external symbol names the selected public export and not the canonical type
+underneath it. Provenance may be many to many. TypeScript, Go and Rust output
+record a destination for every name use. Legacy C++ output records none
+(row 36 of [research 0016](../research-docs/0016-native-files-placement.md)).
+
+**The rule for every generated-Files formatter.** A generated-Files formatter
+refuses a name use without a destination. It does not look the name up, and it
+does not accept the binding that the compiler happens to find. The shared seal
+cannot enforce this, because it does not know which nodes of a language use a
+name, so each language's formatter does, and a
+[test per target](../integration/go/destinations_test.go) asserts it over sealed
+outputs. The TypeScript formatter implements the rule. Go Files and Rust Files
+implement it with their first slice
+([#161](https://github.com/Bitspark/bittype/issues/161),
+[#159](https://github.com/Bitspark/bittype/issues/159)). The
+[failure categories](#failure-categories) give the refusal its category.
+
 | TypeScript placement for the same generated declarations | What Files puts in the module containing `Cells` |
 | --- | --- |
 | `Page` and `Cells` in `pages/page.ts`; `Person` in `model/person.ts` | A type import of `Person` from `../model/person.js` and a type import of `Cell` from `@bitspark/cell`. |
@@ -492,6 +513,16 @@ The category of a refusal is part of the Files contract. A later change may turn
 an unsupported refusal into success. It may not turn an invalid refusal into
 success, it may not move a refusal from one category to another, and it may not
 accept and ignore what a formatter refuses as malformed today.
+
+A name use without a destination is invalid input, for every generated-Files
+formatter: a sealed output with such a use is malformed, and no later slice
+admits it. So is an external use that the language's issuer cannot read, and
+one whose node is no name use or does not name the symbol. An external
+destination that the formatter's evidence cannot establish is unsupported
+coverage, because a later slice can admit it: Rust's `bool`, as long as the
+Rust helper publishes no binding for a primitive type. [Destinations](destinations.md#who-enforces-completeness)
+states the rule. The table below has its row for TypeScript, the one formatter
+that exists.
 
 An input can have several defects. The category describes the defect that was
 found. An unsupported refusal says nothing about the rest of the input: the

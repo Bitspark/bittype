@@ -133,6 +133,21 @@ were, and every graph, the base profile's too, carries the fact from then on.
 A reader that needs the fact fails with an error on a graph that lacks it. The
 import environment's setting has the new key `imports-2`.
 
+**13 November 2026.** The vocabulary publishes the kind `builtin` as
+`BuiltinKind()` and the role `name` as `NameRole()`, and the bridge writes both
+from there. No graph changes. An entity of the kind `builtin` is a predeclared
+basic type, such as `string` and `bool`: its name is the identifier of the
+universe scope, and it has no owner and no declaration site. A generated use of
+such a type records the predeclared symbol as its
+[destination](destinations.md#go), and that entity is what the destination is
+compared with. A declaration or a type parameter of the same name is another
+entity, of the kind `defined`, `alias` or `parameter`, with a declaration site.
+Limit: `builtin` covers the basic types. `error` and `comparable` are named
+types of the universe scope and `any` is an alias, so their entities have the
+kinds `defined` and `alias`, without an owner and without a site. A reader
+tells one of them from a declaration by "no owner and no site", and no marker
+says it.
+
 ### Import environment
 
 `golang.ImportConfiguration(golang.ImportEnvironment{Module, OutputRoot, Packages})`
@@ -625,13 +640,16 @@ an environment with an invalid and an unsupported value is invalid.
 **The vocabularies of an edition, a crate kind and a crate name are the pinned
 compiler's,** read in the source of rustc 1.90.0 and put to that compiler by
 `TestRustEnvironmentEqualsCompiler`, which compares its answers with
-`ConfigurationFor`. The Rust vocabulary declares each once, beside the
-supported values, in `semantics/rust/go/environment.go` and `cratename.go`.
+`ConfigurationFor`. Each is declared once. The editions, the crate kinds and
+the supported values are in `semantics/rust/go/environment.go`. The rule for a
+crate name and its table of characters are in `internal/rust/cratename.go`,
+the lexical helper, because the Rust symbol package judges the crate of a
+destination by the same rule and may not import the semantic vocabulary.
 The `compiler` setting and the profile strings identify this vocabulary: the
 editions, the crate kinds, the characters of a crate name and the keywords are
 those of rustc 1.90.0. A new compiler pin is a new vocabulary, under its own
 setting and profile strings, and the table of characters is regenerated for
-it as the comment in `cratename.go` says.
+it as the comment in `internal/rust/cratename.go` says.
 
 - **An edition.** `compiler/rustc_span/src/edition.rs:114-126` names five. The
   stable compiler refuses the fifth, `future`
@@ -746,6 +764,19 @@ syntax parser excludes attributes, macros and executable bodies. No source is
 printed from ASTs to obtain a compiler input; generated text needs a new explicit
 capture. The helper distinguishes compiler-injected standard prelude declarations
 from authored declarations.
+
+**13 November 2026.** A path into the sysroot is bound segment by segment, also
+when it is absolute. For `::std::string::String` the helper binds `std` to the
+root module of the crate `std`, `string` to the module `alloc::string` and
+`String` to the struct `alloc::string::String`. It names an entity by the crate
+and the path of its definition, which is not the path that was written:
+`::std::option::Option` binds to `core::option::Option`. An entity of the
+sysroot has no declaration site. A primitive type such as `bool` is no path
+segment and has no binding, so a declaration of that name that captures a use
+is not visible in the graph.
+[A test](../integration/go/rust_semantics_test.go) pins this, and
+[Destinations](destinations.md#rust) states what it means for a recorded
+destination.
 
 <!-- bittype:overview scope=first-rust-profile part=features -->
 The supported semantic fragment is one captured source file with inline modules,
