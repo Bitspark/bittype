@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
@@ -62,7 +63,8 @@ func declarations(t s.AST) ([]ast.NodeRef, error) {
 		case s.RoleImport:
 			for _, b := range t.Nodes[child.Node-1].Children {
 				if t.Nodes[b.Node-1].Kind != s.KindImportBinding {
-					return nil, fmt.Errorf("only named type imports are supported")
+					// Another import form is TypeScript that this profile does not cover.
+					return nil, fmt.Errorf("%w: only named type imports are supported", source.ErrUnsupported)
 				}
 			}
 		default:
@@ -74,7 +76,8 @@ func declarations(t s.AST) ([]ast.NodeRef, error) {
 func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantics.Semantics[s.Language]) (*program, error) {
 	fileContext := snapshot.Files()
 	if fileContext == nil {
-		return nil, fmt.Errorf("%w: TypeScript placement requires captured files", source.ErrInvalid)
+		// A capture without files is well formed, and this profile reads none.
+		return nil, fmt.Errorf("%w: TypeScript placement requires captured files", source.ErrUnsupported)
 	}
 	p := &program{public: map[ast.NodeRef]bool{}, trees: map[ast.TreeID]s.AST{}, tops: map[ast.NodeRef]bool{}, bindings: map[ast.NodeRef]symbol{}}
 	byFile := map[files.ID]ast.TreeID{}
@@ -114,7 +117,8 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 	}
 	for _, tree := range p.trees {
 		if !modules[ref(tree.ID, tree.Root)] {
-			return nil, fmt.Errorf("%w: placement requires TypeScript modules with file-local scope", source.ErrInvalid)
+			// A script is TypeScript that this profile does not cover.
+			return nil, fmt.Errorf("%w: placement requires TypeScript modules with file-local scope", source.ErrUnsupported)
 		}
 	}
 	for _, fact := range data.Facts {
@@ -175,7 +179,7 @@ func (p *program) organization(settings []semantic.Setting, limits source.Limits
 		// A setting contains one strict object, including the explicit entry.
 		decoder := json.NewDecoder(bytes.NewReader(settings[0].Value))
 		decoder.DisallowUnknownFields()
-		if !json.Valid(settings[0].Value) || decoder.Decode(&o) != nil {
+		if !json.Valid(settings[0].Value) || decoder.Decode(&o) != nil || repeatedMember(settings[0].Value) {
 			return Organization{}, source.ErrInvalid
 		}
 	}
@@ -185,9 +189,23 @@ func (p *program) organization(settings []semantic.Setting, limits source.Limits
 	inventory := files.Files{}
 	assigned := map[ast.NodeRef]bool{}
 	entry := false
+	// Validity is decided before coverage. A path that TypeScript reads and this
+	// profile excludes is well formed, and so is a file without a declaration:
+	// both are outside this profile. The first of them is kept until every file,
+	// the completeness of the placement and the inventory are found valid, so a
+	// placement that no profile admits is never reported as outside coverage.
+	var uncovered error
 	for _, u := range o.Units {
-		if !imports.SourcePath(u.Path) || len(u.Declarations) == 0 {
+		switch {
+		case imports.SourcePath(u.Path):
+		case !imports.ExcludedPath(u.Path):
+			// A path that is no TypeScript path is invalid input.
 			return Organization{}, source.ErrInvalid
+		case uncovered == nil:
+			uncovered = fmt.Errorf("%w: path %q", source.ErrUnsupported, u.Path)
+		}
+		if len(u.Declarations) == 0 && uncovered == nil {
+			uncovered = fmt.Errorf("%w: file %q has no declaration", source.ErrUnsupported, u.File)
 		}
 		inventory.Entries = append(inventory.Entries, files.File{ID: u.File, Path: u.Path})
 		if u.File == o.Entry {
@@ -204,7 +222,47 @@ func (p *program) organization(settings []semantic.Setting, limits source.Limits
 		return Organization{}, fmt.Errorf("%w: incomplete placement or missing entry", source.ErrInvalid)
 	}
 	if _, err := inventory.Capture(limits.Files); err != nil {
-		return Organization{}, err
+		return Organization{}, source.WithCategory(err)
+	}
+	if uncovered != nil {
+		return Organization{}, uncovered
 	}
 	return o, nil
+}
+
+// repeatedMember reports a JSON object that names one member twice. The decoder
+// keeps the last value, so the first would be accepted and ignored. Names are
+// compared as the decoder matches them, without regard to case. The caller has
+// decoded the value into its type, which bounds the nesting.
+func repeatedMember(data []byte) bool {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	repeated := false
+	var value func()
+	value = func() {
+		token, err := decoder.Token()
+		if err != nil {
+			return
+		}
+		switch token {
+		case json.Delim('{'):
+			var names []string
+			for decoder.More() {
+				key, _ := decoder.Token()
+				name, _ := key.(string)
+				for _, seen := range names {
+					repeated = repeated || strings.EqualFold(seen, name)
+				}
+				names = append(names, name)
+				value()
+			}
+			decoder.Token()
+		case json.Delim('['):
+			for decoder.More() {
+				value()
+			}
+			decoder.Token()
+		}
+	}
+	value()
+	return repeated
 }

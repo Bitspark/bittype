@@ -99,7 +99,9 @@ func generatedProgram(ctx context.Context, output g.Output) (*program, error) {
 		site := use.At.Site
 		ext, err := tssymbol.ReadExternal(snap.Language(), use)
 		if err != nil {
-			return nil, err
+			// A use that the TypeScript issuer cannot read is invalid input. The
+			// generation value stays joined to the Files category.
+			return nil, fmt.Errorf("%w: external use at %v: %w", source.ErrInvalid, site, err)
 		}
 		node := p.trees[site.Tree].Nodes[site.Node-1]
 		if node.Kind != s.KindTypeReference || len(node.References) != 0 || imports.Attr(node, s.AttributeName) != ext.Name {

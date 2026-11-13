@@ -31,3 +31,16 @@ func TestRelativeImportUsesBothFilePlacements(t *testing.T) {
 		t.Fatal("self import admitted")
 	}
 }
+
+func TestExcludedPathIsATypeScriptPathOutsideTheProfile(t *testing.T) {
+	for _, p := range []files.Path{"person.d.ts", "person.mts", "person.cts", "person.tsx", "person.d.mts", "per#son.ts", "per%son.ts", "q?/person.ts"} {
+		if SourcePath(p) || !ExcludedPath(p) {
+			t.Fatalf("%s is a TypeScript path that the profile excludes", p)
+		}
+	}
+	for _, p := range []files.Path{"person.ts", "person.txt", "PERSON.TS", "per#son.txt", "person", "../person.mts", "", "ts"} {
+		if ExcludedPath(p) {
+			t.Fatalf("%s is admitted or no TypeScript path", p)
+		}
+	}
+}

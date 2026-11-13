@@ -41,6 +41,7 @@ semantics/golang/go/      Go vocabulary, contract identities and immutable nativ
 internal/golangsem/       private direct Go compiler bridge and fact export
 semantics/typescript/go/  TypeScript vocabulary, graph names, contract identities, compiler configuration and immutable native type readers
 internal/typescriptsem/   private captured-source compiler helper and fact export
+internal/typescriptimports/ private to TypeScript Files formatting: the source paths its profile admits and excludes, relative import specifiers and import node construction
 semantics/rust/go/        Rust vocabulary, contract identities and immutable native type readers
 internal/rustsem/         private captured-source compiler bridge
   helper/                private pinned rustc_driver executable (Rust/Cargo)
@@ -182,8 +183,8 @@ explicit entry per package, and a new package of either group is an edit:
   `contracts/<name>/go` is unclassified until it has an entry.
 - **Packages of which there is only one, `oneOfAKindRules`.** These are the
   private horos parts `internal/declsyntax`, `internal/horosmodel` and
-  `internal/horosfiles`, the TypeScript import reader
-  `internal/typescriptimports`, the projection
+  `internal/horosfiles`, the path and import helper of TypeScript Files
+  formatting `internal/typescriptimports`, the projection
   `verification/files/source/horos/go`, the horos-to-go verification pair
   `verification/files/horos-to-go/go`, the logos adapter
   `verification/logos/go`, the reporting-tool packages

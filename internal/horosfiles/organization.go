@@ -3,6 +3,7 @@ package horosfiles
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
 	"github.com/Bitspark/bittype/internal/tree"
@@ -13,6 +14,7 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 	"io"
 	"sort"
+	"strings"
 )
 
 // Placement is an explicit same-language organization decision. Modules are
@@ -62,17 +64,22 @@ func Materialize(snapshot semantic.Snapshot, settings []semantic.Setting, limits
 	}
 	var placements []Placement
 	if len(settings) > 0 {
+		// A refusal of the setting is invalid input in the Files category. The
+		// value returned before stays joined to it.
 		if len(settings) != 1 || settings[0].Key != OrganizationSetting() {
-			return fail(semantic.ErrInvalidRequest)
+			return fail(fmt.Errorf("%w: %w", source.ErrInvalid, semantic.ErrInvalidRequest))
 		}
 		decoder := json.NewDecoder(bytes.NewReader(settings[0].Value))
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(&placements); err != nil {
-			return fail(err)
+			return fail(fmt.Errorf("%w: %w", source.ErrInvalid, err))
 		}
 		var extra any
 		if err := decoder.Decode(&extra); err != io.EOF {
-			return fail(semantic.ErrInvalidRequest)
+			return fail(fmt.Errorf("%w: %w", source.ErrInvalid, semantic.ErrInvalidRequest))
+		}
+		if repeatedMember(settings[0].Value) {
+			return fail(fmt.Errorf("%w: a member of the organization is named twice", source.ErrInvalid))
 		}
 	} else if context := snapshot.Files(); context != nil {
 		byTree := map[ast.TreeID]files.File{}
@@ -105,7 +112,7 @@ func Materialize(snapshot semantic.Snapshot, settings []semantic.Setting, limits
 		inventory.Entries = append(inventory.Entries, files.File{ID: placement.ID, Path: placement.Path})
 	}
 	if _, err := inventory.Capture(limits.Files); err != nil {
-		return fail(err)
+		return fail(source.WithCategory(err))
 	}
 	seen := map[string]bool{}
 	var output []ast.AST[s.Language]
@@ -171,6 +178,43 @@ func Materialize(snapshot semantic.Snapshot, settings []semantic.Setting, limits
 		return fail(source.ErrInvalid)
 	}
 	return placements, output, entry, nil
+}
+
+// repeatedMember reports a JSON object that names one member twice. The decoder
+// keeps the last value, so the first would be accepted and ignored. Names are
+// compared as the decoder matches them, without regard to case. The caller has
+// decoded the value into its type, which bounds the nesting.
+func repeatedMember(data []byte) bool {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	repeated := false
+	var value func()
+	value = func() {
+		token, err := decoder.Token()
+		if err != nil {
+			return
+		}
+		switch token {
+		case json.Delim('{'):
+			var names []string
+			for decoder.More() {
+				key, _ := decoder.Token()
+				name, _ := key.(string)
+				for _, seen := range names {
+					repeated = repeated || strings.EqualFold(seen, name)
+				}
+				names = append(names, name)
+				value()
+			}
+			decoder.Token()
+		case json.Delim('['):
+			for decoder.More() {
+				value()
+			}
+			decoder.Token()
+		}
+	}
+	value()
+	return repeated
 }
 
 func ProgramIdentity(snapshot semantic.Snapshot) (string, []string, error) {
