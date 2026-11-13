@@ -28,9 +28,10 @@ type Bound struct {
 
 // NewBound returns a bound of the given number of bytes. A bound below zero
 // refuses every write. cancel ends the process whose streams the bound's
-// writers collect. It is called once, by the first refused write, and it is
-// required: a bound that cannot end its process does not stop the process
-// from writing.
+// writers collect. It is called once, by the first refused write, after the
+// bound reports itself passed and outside the bound's lock, so it may call
+// Exceeded. It is required: a bound that cannot end its process does not stop
+// the process from writing.
 func NewBound(bytes int, cancel func()) *Bound {
 	if cancel == nil {
 		panic("processoutput: a bound needs the function that cancels its process")
@@ -78,22 +79,29 @@ func (w *Writer) Write(data []byte) (int, error) {
 	first := !b.exceeded
 	b.exceeded = true
 	b.mu.Unlock()
-	// Outside the lock: the function belongs to the caller. The zero Bound
-	// has none and refuses all the same.
+	// Outside the lock: the function belongs to the caller and may ask the
+	// bound, which reports itself passed by now. The zero Bound has no
+	// function and refuses all the same.
 	if first && b.cancel != nil {
 		b.cancel()
 	}
 	return 0, ErrBound
 }
 
-// Bytes returns what the writer has collected: the stream up to the last
-// write that was not refused. The slice is the writer's own. A caller reads
-// it after its process has ended and does not change it.
+// Bytes returns the stream that the writer has collected, or nothing once
+// its bound is passed. From the first refused write on, no writer of the
+// bound takes another byte, so what each of them holds may be a stream with
+// its end cut off, and a cut stream must not read as a whole one. The slice
+// is the writer's own. A caller reads it after its process has ended and does
+// not change it.
 func (w *Writer) Bytes() []byte {
 	if w.bound == nil {
 		return nil
 	}
 	w.bound.mu.Lock()
 	defer w.bound.mu.Unlock()
+	if w.bound.exceeded {
+		return nil
+	}
 	return w.data
 }

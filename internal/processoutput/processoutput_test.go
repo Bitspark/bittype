@@ -3,66 +3,30 @@ package processoutput
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
-	"io"
-	"net"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"reflect"
 	"slices"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"testing"
 	"time"
+
+	"github.com/Bitspark/bittype/internal/processoutput/processoutputtest"
 )
 
 // The child process of the tests below is this test binary. A test starts it
-// with one argument, a file of this name, and a process that is started so is
-// the child and runs no test.
-const outputChildFile = "bittype-process-output-child.json"
-
-// outputChild is what the child does. It writes Stdout bytes to its output
-// stream and Stderr bytes to its error stream and exits with status 0. With
-// Hold it connects to that address first and does not exit by itself: it ends
-// when its parent kills it or when the test closes the connection.
-type outputChild struct {
-	Stdout int
-	Stderr int
-	Hold   string
-}
-
+// with one argument, a description file of the shared fixture, and a process
+// that is started so is the child and runs no test.
 func TestMain(m *testing.M) {
-	if len(os.Args) == 2 && filepath.Base(os.Args[1]) == outputChildFile {
-		runOutputChild(os.Args[1])
+	if len(os.Args) == 2 && filepath.Base(os.Args[1]) == processoutputtest.File {
+		var child processoutputtest.Child
+		processoutputtest.Described(os.Args[1], &child)
+		child.Run()
 	}
 	os.Exit(m.Run())
-}
-
-func runOutputChild(path string) {
-	var child outputChild
-	data, err := os.ReadFile(path)
-	if err != nil || json.Unmarshal(data, &child) != nil {
-		os.Exit(2)
-	}
-	var hold net.Conn
-	if child.Hold != "" {
-		// A stream that the parent has closed must not end the child either.
-		signal.Ignore(syscall.SIGPIPE)
-		if hold, err = net.Dial("tcp", child.Hold); err != nil {
-			os.Exit(2)
-		}
-	}
-	os.Stdout.Write(bytes.Repeat([]byte{'o'}, child.Stdout))
-	os.Stderr.Write(bytes.Repeat([]byte{'e'}, child.Stderr))
-	if hold != nil {
-		io.Copy(io.Discard, hold)
-		os.Exit(3)
-	}
-	os.Exit(0)
 }
 
 // counted returns a cancel function and the number of its calls.
@@ -95,7 +59,8 @@ func TestOnlyWriteTakesBytes(t *testing.T) {
 
 // A write that reaches the bound is taken whole. A write that would pass it
 // is refused whole, cancels once and leaves the bound passed: a later write
-// is refused too, also one that would have fitted.
+// is refused too, also one that would have fitted. A writer of a passed
+// bound returns no bytes, because its stream may be cut.
 func TestBoundRefusesAndCancelsOnce(t *testing.T) {
 	cancel, calls := counted()
 	bound := NewBound(5, cancel)
@@ -109,17 +74,21 @@ func TestBoundRefusesAndCancelsOnce(t *testing.T) {
 	if count, err := w.Write(nil); count != 0 || err != nil || bound.Exceeded() {
 		t.Fatal("an empty write at the bound", count, err)
 	}
+	if got := string(w.Bytes()); got != "abcde" {
+		t.Fatalf("at its bound the writer holds %q", got)
+	}
 	if count, err := w.Write([]byte("f")); count != 0 || !errors.Is(err, ErrBound) || !bound.Exceeded() || calls.Load() != 1 {
 		t.Fatal("a write past the bound", count, err, bound.Exceeded(), calls.Load())
 	}
 	if count, err := w.Write(nil); count != 0 || !errors.Is(err, ErrBound) || calls.Load() != 1 {
 		t.Fatal("a write after the bound was passed", count, err, calls.Load())
 	}
-	if got := string(w.Bytes()); got != "abcde" {
-		t.Fatalf("the writer holds %q", got)
+	if got := w.Bytes(); got != nil {
+		t.Fatalf("past its bound the writer returns %q", got)
 	}
 
-	// Nothing of a refused write is kept, and room that is left stays unused.
+	// A write that fits in part is refused whole, and room that is left stays
+	// unused.
 	cancel, calls = counted()
 	bound = NewBound(3, cancel)
 	w = bound.Writer()
@@ -132,8 +101,8 @@ func TestBoundRefusesAndCancelsOnce(t *testing.T) {
 	if count, err := w.Write([]byte("c")); count != 0 || !errors.Is(err, ErrBound) || calls.Load() != 1 {
 		t.Fatal("a write that would have fitted, after a refused one", count, err, calls.Load())
 	}
-	if got := string(w.Bytes()); got != "ab" {
-		t.Fatalf("the writer holds %q", got)
+	if got := w.Bytes(); got != nil {
+		t.Fatalf("past its bound the writer returns %q", got)
 	}
 
 	// A bound below zero refuses every write.
@@ -144,8 +113,9 @@ func TestBoundRefusesAndCancelsOnce(t *testing.T) {
 	}
 }
 
-// Writers of one bound share it, and a passed bound refuses all of them.
-// Writers of two bounds do not touch each other.
+// Writers of one bound share it, and a passed bound refuses all of them and
+// returns the bytes of none: no writer of it takes another byte, so each may
+// hold a cut stream. Writers of two bounds do not touch each other.
 func TestWritersShareTheirBound(t *testing.T) {
 	cancel, calls := counted()
 	shared, other := NewBound(5, cancel), NewBound(5, cancel)
@@ -159,6 +129,9 @@ func TestWritersShareTheirBound(t *testing.T) {
 	if _, err := apart.Write([]byte("12345")); err != nil || other.Exceeded() {
 		t.Fatal("a writer of another bound", err)
 	}
+	if string(first.Bytes()) != "123" || string(second.Bytes()) != "45" {
+		t.Fatalf("at their bound the writers hold %q and %q", first.Bytes(), second.Bytes())
+	}
 	if _, err := second.Write([]byte("6")); !errors.Is(err, ErrBound) || !shared.Exceeded() || other.Exceeded() || calls.Load() != 1 {
 		t.Fatal("the second writer passes the shared bound", err, calls.Load())
 	}
@@ -168,8 +141,8 @@ func TestWritersShareTheirBound(t *testing.T) {
 	if _, err := apart.Write(nil); err != nil {
 		t.Fatal("a writer of another bound after the shared one was passed", err)
 	}
-	if string(first.Bytes()) != "123" || string(second.Bytes()) != "45" || string(apart.Bytes()) != "12345" {
-		t.Fatalf("the writers hold %q, %q and %q", first.Bytes(), second.Bytes(), apart.Bytes())
+	if first.Bytes() != nil || second.Bytes() != nil || string(apart.Bytes()) != "12345" {
+		t.Fatalf("past the shared bound the writers return %q, %q and %q", first.Bytes(), second.Bytes(), apart.Bytes())
 	}
 }
 
@@ -196,65 +169,142 @@ func TestNoWriterWithoutABound(t *testing.T) {
 	}
 }
 
+// The cancel function belongs to the caller, so the bound calls it outside
+// its own lock and after it reports itself passed. A cancel function that
+// asks the bound and writes to it shows both: called inside the lock, it
+// never returns, and this test fails when its wait passes.
+func TestCancelMayAskTheBound(t *testing.T) {
+	type seen struct {
+		exceeded bool
+		bytes    []byte
+		err      error
+	}
+	asked := make(chan seen, 1)
+	var bound *Bound
+	var w *Writer
+	bound = NewBound(2, func() {
+		_, err := bound.Writer().Write(nil)
+		asked <- seen{bound.Exceeded(), w.Bytes(), err}
+	})
+	w = bound.Writer()
+	if _, err := w.Write([]byte("ab")); err != nil {
+		t.Fatal(err)
+	}
+	written := make(chan error, 1)
+	go func() {
+		_, err := w.Write([]byte("c"))
+		written <- err
+	}()
+	select {
+	case err := <-written:
+		if !errors.Is(err, ErrBound) {
+			t.Fatal("a write past the bound", err)
+		}
+	case <-time.After(processoutputtest.Wait):
+		t.Fatalf("a write past the bound had not returned after %v: its cancel function asked the bound and was called inside the bound's lock", processoutputtest.Wait)
+	}
+	// Write returned after cancel, so what cancel saw is there.
+	select {
+	case s := <-asked:
+		if !s.exceeded || s.bytes != nil || !errors.Is(s.err, ErrBound) {
+			t.Errorf("in its cancel function the bound reported passed: %v, returned the bytes %q, and answered a write with %v", s.exceeded, s.bytes, s.err)
+		}
+	default:
+		t.Fatal("the write past the bound did not call the cancel function")
+	}
+}
+
 // os/exec copies the output stream and the error stream of a process in two
-// goroutines. Writers that share a bound never hold more than the bound
+// goroutines. Writers that share a bound never take more than the bound
 // together, each holds only its own stream, and the bound cancels once.
+// While they write, another goroutine reads the bound and the writers, as a
+// caller may: under the race detector an unguarded read fails here.
 func TestConcurrentWritersKeepTheBound(t *testing.T) {
-	const writers, each, limit = 8, 4096, 8*4096 - 1000
-	cancel, calls := counted()
-	bound := NewBound(limit, cancel)
-	collected := make([]*Writer, writers)
-	start := make(chan struct{})
-	var done sync.WaitGroup
-	for i := range collected {
-		collected[i] = bound.Writer()
-		done.Add(1)
+	const writers, each = 8, 4096
+	// write releases the writers at once on one bound and returns the writers
+	// and how many bytes Write took in all.
+	write := func(bound *Bound) ([]*Writer, int) {
+		collected := make([]*Writer, writers)
+		for i := range collected {
+			collected[i] = bound.Writer()
+		}
+		start := make(chan struct{})
+		var taken atomic.Int64
+		var done sync.WaitGroup
+		for i := range collected {
+			done.Add(1)
+			go func() {
+				defer done.Done()
+				<-start
+				for range each {
+					count, _ := collected[i].Write([]byte{byte('a' + i)})
+					taken.Add(int64(count))
+				}
+			}()
+		}
+		stop := make(chan struct{})
+		var reader sync.WaitGroup
+		reader.Add(1)
 		go func() {
-			defer done.Done()
+			defer reader.Done()
 			<-start
-			for range each {
-				collected[i].Write([]byte{byte('a' + i)})
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+					bound.Exceeded()
+					for _, w := range collected {
+						w.Bytes()
+					}
+				}
 			}
 		}()
+		close(start)
+		done.Wait()
+		close(stop)
+		reader.Wait()
+		return collected, int(taken.Load())
 	}
-	close(start)
-	done.Wait()
-	total := 0
+
+	// Exactly the bound: every write is taken, and each writer holds its own.
+	cancel, calls := counted()
+	bound := NewBound(writers*each, cancel)
+	collected, taken := write(bound)
+	if taken != writers*each || bound.Exceeded() || calls.Load() != 0 {
+		t.Errorf("at the bound the writers took %d bytes of %d, and the bound cancelled %d times", taken, writers*each, calls.Load())
+	}
 	for i, w := range collected {
-		data := w.Bytes()
-		total += len(data)
-		if len(bytes.Trim(data, string(rune('a'+i)))) != 0 {
-			t.Errorf("writer %d holds bytes of another stream", i)
+		if data := w.Bytes(); len(data) != each || len(bytes.Trim(data, string(rune('a'+i)))) != 0 {
+			t.Errorf("writer %d holds %d bytes, or bytes of another stream", i, len(data))
 		}
 	}
-	if total != limit || !bound.Exceeded() || calls.Load() != 1 {
-		t.Errorf("the writers hold %d bytes of a bound of %d, and the bound cancelled %d times", total, limit, calls.Load())
+
+	// More than the bound: the writers take exactly the bound and no more.
+	const limit = writers*each - 1000
+	cancel, calls = counted()
+	bound = NewBound(limit, cancel)
+	collected, taken = write(bound)
+	if taken != limit || !bound.Exceeded() || calls.Load() != 1 {
+		t.Errorf("past the bound the writers took %d bytes of a bound of %d, and the bound cancelled %d times", taken, limit, calls.Load())
+	}
+	for i, w := range collected {
+		if w.Bytes() != nil {
+			t.Errorf("writer %d returns bytes past the bound", i)
+		}
 	}
 }
 
 // The writers receive the streams of a real process through os/exec, the way
 // every caller uses them. Streams of exactly their bound are read whole. One
-// byte more is a passed bound and a cancelled process, whether the process
-// then exits or stays. One bound per stream bounds each stream by itself, and
-// one bound for both streams bounds their sum.
+// byte more is a passed bound, a cancelled process and no bytes, whether the
+// process then exits or stays. One bound per stream bounds each stream by
+// itself, and one bound for both streams bounds their sum.
 func TestProcessStreamsKeepTheirBound(t *testing.T) {
 	const outputBound, errorBound = 256 << 10, 64 << 10
 	self, err := os.Executable()
 	if err != nil {
 		t.Fatal(err)
-	}
-	// describe writes what the child does to the file that names the child.
-	describe := func(t *testing.T, child outputChild) string {
-		t.Helper()
-		data, err := json.Marshal(child)
-		if err != nil {
-			t.Fatal(err)
-		}
-		path := filepath.Join(t.TempDir(), outputChildFile)
-		if err := os.WriteFile(path, data, 0600); err != nil {
-			t.Fatal(err)
-		}
-		return path
 	}
 	type result struct {
 		err            error
@@ -277,7 +327,11 @@ func TestProcessStreamsKeepTheirBound(t *testing.T) {
 		stdout, stderr := r.output.Writer(), r.errors.Writer()
 		command := exec.CommandContext(ctx, self, path)
 		command.Stdout, command.Stderr = stdout, stderr
-		command.WaitDelay = time.Second
+		// This call is the test's own, and so is its wait for the copies of the
+		// streams after the process has ended: it only keeps a copy that does
+		// not end from holding the test. A caller's shorter wait is the
+		// caller's limit and is not what this test is about.
+		command.WaitDelay = processoutputtest.Wait
 		r.err = command.Run()
 		r.stdout, r.stderr, r.cancelled = stdout.Bytes(), stderr.Bytes(), ctx.Err() != nil
 		return r
@@ -297,14 +351,14 @@ func TestProcessStreamsKeepTheirBound(t *testing.T) {
 		{"both streams one byte over their shared bound, with a longer output stream", outputBound + 1001, errorBound - 1000, true, "output"},
 		{"both streams one byte over their shared bound, with a longer error stream", outputBound - 1000, errorBound + 1001, true, "error"},
 	} {
-		child := outputChild{Stdout: c.stdout, Stderr: c.stderr}
+		child := processoutputtest.Child{Stdout: c.stdout, Stderr: c.stderr}
 		if c.over == "" {
 			t.Run(c.name, func(t *testing.T) {
-				r := collect(describe(t, child), c.shared)
+				r := collect(processoutputtest.Describe(t, child), c.shared)
 				if r.err != nil || r.output.Exceeded() || r.errors.Exceeded() || r.cancelled || len(r.stdout) != c.stdout || len(r.stderr) != c.stderr {
 					t.Errorf("the process ended with %v, and the writers hold %d and %d bytes", r.err, len(r.stdout), len(r.stderr))
 				}
-				if len(bytes.Trim(r.stdout, "o")) != 0 || len(bytes.Trim(r.stderr, "e")) != 0 {
+				if len(bytes.Trim(r.stdout, string(rune(processoutputtest.OutputFill)))) != 0 || len(bytes.Trim(r.stderr, string(rune(processoutputtest.ErrorFill)))) != 0 {
 					t.Error("a writer holds bytes of the other stream")
 				}
 			})
@@ -313,64 +367,31 @@ func TestProcessStreamsKeepTheirBound(t *testing.T) {
 		passed := func(t *testing.T, r result) {
 			t.Helper()
 			// With one bound per stream, only the bound of the longer stream is
-			// passed, and what counts against it is that stream alone.
-			over, other, held, limit := r.output, r.errors, len(r.stdout), outputBound
+			// passed. The other stream keeps its own bound: the cancellation may
+			// have cut it, and it never holds more.
+			over, other, cut, rest, limit := r.output, r.errors, r.stdout, r.stderr, errorBound
 			if c.over == "error" {
-				over, other, held, limit = r.errors, r.output, len(r.stderr), errorBound
+				over, other, cut, rest, limit = r.errors, r.output, r.stderr, r.stdout, outputBound
 			}
-			if c.shared {
-				held, limit = len(r.stdout)+len(r.stderr), outputBound+errorBound
+			if !over.Exceeded() || !r.cancelled || cut != nil {
+				t.Errorf("bound passed: %v, cancelled: %v, and the writer of the passed bound returns %d bytes", over.Exceeded(), r.cancelled, len(cut))
 			}
-			if !over.Exceeded() || !c.shared && other.Exceeded() || !r.cancelled || held > limit {
-				t.Errorf("bound passed: %v, the other bound passed: %v, cancelled: %v, and %d bytes are held of a bound of %d", over.Exceeded(), other.Exceeded(), r.cancelled, held, limit)
+			if c.shared && rest != nil {
+				t.Errorf("the other writer of the passed bound returns %d bytes", len(rest))
+			}
+			if !c.shared && (other.Exceeded() || len(rest) > limit) {
+				t.Errorf("the other bound passed: %v, and its writer holds %d bytes of a bound of %d", other.Exceeded(), len(rest), limit)
 			}
 		}
 		t.Run(c.name+", and the process exits", func(t *testing.T) {
-			passed(t, collect(describe(t, child), c.shared))
+			passed(t, collect(processoutputtest.Describe(t, child), c.shared))
 		})
 		t.Run(c.name+", and the process stays", func(t *testing.T) {
-			// Nothing but the bound's cancel function ends this process. A call
-			// that has not returned after this time was not cancelled.
-			const wait = 15 * time.Second
-			listener, err := net.Listen("tcp", "127.0.0.1:0")
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer listener.Close()
-			child.Hold = listener.Addr().String()
-			path := describe(t, child)
-			connected := make(chan net.Conn, 1)
-			go func() {
-				connection, _ := listener.Accept()
-				connected <- connection
-			}()
-			returned := make(chan result, 1)
-			go func() { returned <- collect(path, c.shared) }()
-			var connection net.Conn
-			select {
-			case connection = <-connected:
-			case r := <-returned:
-				t.Fatal("the process ended before it had connected", r.err)
-			}
-			if connection == nil {
-				t.Fatal("the process did not connect")
-			}
-			defer connection.Close()
-			var r result
-			select {
-			case r = <-returned:
-			case <-time.After(wait):
-				t.Errorf("the process had not ended %v after it started: it was not cancelled at the bound", wait)
-				connection.Close()
-				r = <-returned
-			}
-			passed(t, r)
-			// The child never closes this connection and never exits by itself,
-			// so the end of the connection is the end of the process.
-			connection.SetReadDeadline(time.Now().Add(wait))
-			if _, err := io.Copy(io.Discard, connection); errors.Is(err, os.ErrDeadlineExceeded) {
-				t.Error("the process outlived the call that started it")
-			}
+			// Nothing but the bound's cancel function ends this process.
+			hold := processoutputtest.Listen(t)
+			child.Hold = hold.Address()
+			path := processoutputtest.Describe(t, child)
+			passed(t, processoutputtest.AwaitCancelled(t, hold, func() result { return collect(path, c.shared) }))
 		})
 	}
 }

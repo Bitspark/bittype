@@ -205,6 +205,10 @@ var foundationRules = map[string][]string{
 	// importers are the two compiler bridges that start a helper process, each
 	// under a role extension, and the reporting tool's host under its own entry.
 	"internal/processoutput": {},
+	// The child process and the harness of the tests that bound what a child
+	// process writes. Only test files import it, and the check reads none, so
+	// it has this entry and no importer has an allowance for it.
+	"internal/processoutput/processoutputtest": {},
 }
 
 // oneOfAKindRules holds the packages whose path gives no role because there is
