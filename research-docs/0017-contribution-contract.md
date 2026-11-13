@@ -1139,9 +1139,10 @@ Look for who decides in each row:
 
 The horos source integration reads a record as a list of fields, each with a
 name, the flag `Optional` and one child use, the field's type
-(`transform/syntax/horos/source/go/read.go:25-30`). Only the field's type is a use that the kernel walks and selects for. The
-flag is content of the record form. No selector exists for an optional field,
-so nothing can be registered for it today.
+(`transform/syntax/horos/source/go/read.go:25-30`). Only the field's type is
+a use that the kernel walks and selects for. The flag is content of the
+record form. No selector exists for an optional field, so nothing can be
+registered for it today.
 
 **Go.** The record rule is a use rule with the ID `record/golang/1` for the
 builtin form `record` with discriminator `closed`. Its constructor takes a
@@ -1242,10 +1243,10 @@ type GenerationPlan struct {
 ```
 
 A third, `Program[T]`, is the closed list of native declarations; only the
-target builder receives it. `GenerationPlan` is a closure over it plus the `Step`
-list, which exists for inspection in tests. `Output` is the sealed result of
-running the closure: the checked syntax trees, the sites of the declarations
-the request exposed, and the external uses of 3.8.
+target builder receives it. `GenerationPlan` is a closure over it plus the
+`Step` list, which exists for inspection in tests. `Output` is the sealed
+result of running the closure: the checked syntax trees, the sites of the
+declarations the request exposed, and the external uses of 3.8.
 
 After applying a use rule the planner resolves the result: it replaces every
 slot with the result of planning the use bound to it, and every helper
@@ -1455,7 +1456,7 @@ R2  decide(use) returns one value and its requests:
     project(record, filled) returns, without reading the source:
       record(field record.fields[0].native of filled[s1], filled[s2])              (filled[s2] is a member here)
 
-Entries for Page<Person>, with open nodes (6.4):
+Entries for Page<Person>, with open nodes (O1 in 6.4):
   e1  record     payload = the record above       links: s1 -> e2, s2 -> e3
   e2  list       payload = {}                     link:  E -> binder T of Page
   e3  optional   payload = {valueIgnoredWhenAbsent: true}   link: operand -> e4; owns the declaration BittypeOptional
@@ -1514,8 +1515,9 @@ and for a library's exact mapping.
 - *Presence is another contribution's meaning.* Representation families
   counts optional fields among the families, each of which is "delivered
   with its native type, its plan entries, its value conversion and its
-  qualification together", and the owner's rule asks for a demand wherever a caller "needs whatever the
-  consumer registered for a meaning". On this reading the record rule's
+  qualification together", and the owner's rule asks for a demand wherever a
+  caller "needs whatever the consumer registered for a meaning". On this
+  reading the record rule's
   inline decision is the coupling of section 2.1. This is our finding, and we
   may be wrong about it.
 
@@ -1581,7 +1583,7 @@ accessor or a constructor.
 | --- | --- | --- | --- |
 | F1. A closed list | One field per facet kind: native, value adapter, root, operation, lowering | Every reader sees every facet's type, and the kernel can check each | A new binding product needs a kernel edit. That violates AC-03 if binding products are inside "the agreed extension domain", which no document says. The kernel would name `operation`, a concept of the service library |
 | **F2. An open set, keyed by the reading product** | The kernel knows the native facet and carries the decision record. Every other facet is carried under a kind that the product reading it issues, as a native model issues its forms. The kernel checks presence and never reads a facet's content | A new product adds a kind and edits nothing shared. The failure "missing facet" stays the kernel's | The kernel carries values it cannot check. Our candidate guarantees, which keep this from being "arbitrary payloads": each kind has an issuer that validates its facets, and a facet refers to slots only through kernel-issued references |
-| F3. No facets in the contribution | The contribution is the native facet and the decision record. Everything else is registered separately, with the product that reads it, under the contribution's identity | The smallest kernel contract. It is how the TypeScript factory already relates to bittype's family (2.5), and how verification laws are registered (3.8) | "Selected together" (fixed point 6) becomes a lookup by identity, and a second owner could attach a facet to someone else's family |
+| F3. No facets in the contribution | The contribution is the native facet and the decision record. Everything else is registered separately, with the product that reads it, under the contribution's identity | The smallest kernel contract, and one mechanism on both sides of the process boundary | "Selected together" (fixed point 6) becomes a lookup by identity, and a second owner could attach a facet to someone else's family |
 
 The Go conversion of the first slice is a second choice. Under the order of
 section 1.4 the contract is final at step 1, before any conversion exists; so
@@ -1617,7 +1619,7 @@ before the contract is fixed, and vertical case 4 built later.
 
 Five identities are in play. We use these labels from here on.
 
-| Label | What it identifies | What the fixed points say |
+| Label | What it identifies | What the fixed points say (numbers of section 5) |
 | --- | --- | --- |
 | **Contribution identity** | Which contribution was selected. A backend in another process finds the factory by it, and the root facet of `Service` recognises a family by it | The envelope has "Selected contribution and profile identities"; duplicates are rejected (6, 11). No form is given |
 | **Use entry** | One use and what was selected for it | "one immutable representation instance per use" (9); the envelope has "source-use identities" |
@@ -1669,7 +1671,7 @@ page rules out the sealed output's handle as "the key of a serialized plan".
 | Option | What a plan entry holds | What it guarantees, and to whom | Weakness |
 | --- | --- | --- | --- |
 | S1. The plan is produced after placement | Spelled names and import paths | The accepted sentences hold as written: one artifact, three inputs | The plan depends on a placement, and one generated set serves several. The planner cannot issue it alone |
-| **S2. The plan carries an identity and the spelled name; the backend joins it with the placement result** | A native declaration identity that the planner issues, and the spelled name. The backend reads the place from the Files formatter's result | The plan is independent of placement, and the planner stays its only issuer. It is how external symbols work today (3.8) | The placed result becomes a fourth input of a backend, which amends an accepted sentence. A plan of one run can be joined with the placement result of another. The planner's identity and the output's handle need a correspondence that nothing defines |
+| **S2. The plan carries an identity and the spelled name; the backend joins it with the placement result** | A native declaration identity that the planner issues, and the spelled name. The backend reads the place from the Files formatter's result | The plan is independent of placement, and the planner stays its only issuer | The placed result becomes a fourth input of a backend, which amends an accepted sentence. A plan of one run can be joined with the placement result of another. The planner's identity and the output's handle need a correspondence that nothing defines |
 | S3. The plan carries naming intents; the backend derives the rest | Chosen name, module identity and policy | Three inputs, and no dependence on Files | The backend applies a published policy a second time, and cannot derive a place at all without the placement |
 | S4. Files seals plan and realization into one artifact per placement | The Files stage takes the plan and emits, per placement, a copy with names and places filled in | A backend keeps three inputs and cannot mismatch plan and placement | The Files stage of each target must read and rewrite the plan, so the plan's envelope becomes an interface of four more components |
 
