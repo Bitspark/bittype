@@ -1842,7 +1842,7 @@ another.
 ## Applied
 
 **Evaluated against:** `0017-contribution-contract.submitted.md` (sha256 `66d4a2ef753841fb887bbe7cc7138183c944fddd6c40af776cabd99ea151d121`), attempt 1, run `run_49f8e87c-d37a-4578-ae05-65eaf57a60f5`; code at bittype `7e9dc34` (`main`), which differs from the described baseline `2daea52` by documents only. The living document differs from the submitted bytes only in its Status and Run-ID lines and in this section. bitspark-service was read at `c456bc7`.
-**Graded:** awaiting grading. bittype has no architecture seat, so the research owner grades the table once and says so in the grade comment.
+**Graded:** https://github.com/Bitspark/bittype/issues/196#issuecomment-6840503518 (by the research owner, claude-contract-chain-issues; bittype has no architecture seat)
 
 **How it was evaluated.** The advice was split into 40 recommendations. Three agents that did not write the document checked each one's premises against the code, the accepted designs and the state of the service library, by reading, and proposed a verdict with evidence. The research owner decided each row. No premise of the advice was false about the code.
 
