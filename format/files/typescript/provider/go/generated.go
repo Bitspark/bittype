@@ -13,6 +13,7 @@ import (
 	tssymbol "github.com/Bitspark/bittype/transform/syntax/typescript/symbol/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
+	"maps"
 )
 
 type GeneratedProvider struct {
@@ -105,19 +106,17 @@ func placeGenerated(ctx context.Context, output g.Output, admitted f.AdmittedPla
 		units[i] = Placement{File: file.ID, Path: file.Path}
 		position[file.ID] = i
 	}
-	definitions := admitted.Definitions()
 	// The declarations that the output owns are the top-level declarations of
 	// its trees, each once. Anything else is a defect of the output.
-	if len(definitions) != len(p.tops) {
-		return nil, fmt.Errorf("%w: the output owns %d declarations and its trees hold %d", source.ErrInvalid, len(definitions), len(p.tops))
-	}
-	for _, definition := range definitions {
+	owned := map[ast.NodeRef]bool{}
+	for _, definition := range admitted.Definitions() {
 		site := definition.Declaration.Site
-		if !p.tops[site] {
-			return nil, fmt.Errorf("%w: the owned declaration at %v is no top-level declaration", source.ErrInvalid, site)
-		}
+		owned[site] = true
 		unit := &units[position[definition.File]]
 		unit.Declarations = append(unit.Declarations, site)
+	}
+	if !maps.Equal(owned, p.tops) {
+		return nil, fmt.Errorf("%w: the output owns %d declarations, and they are not the %d top-level declarations of its trees", source.ErrInvalid, len(owned), len(p.tops))
 	}
 	return placeProgram(ctx, p, units, limits)
 }
