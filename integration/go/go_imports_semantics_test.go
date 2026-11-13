@@ -683,47 +683,6 @@ func TestGoDeclarationPackageIsReadFromOwnership(t *testing.T) {
 	}
 }
 
-// The first Go Files slice admits a file name only when it can carry no build
-// constraint, and an ordinary package only.
-func TestGoFilesAdmitOnlyNamesWithoutBuildConstraints(t *testing.T) {
-	judged := func(err error) string {
-		unsupported, invalid := errors.Is(err, n.ErrUnsupported), errors.Is(err, semantic.ErrInvalidRequest)
-		switch {
-		case err == nil:
-			return "admitted"
-		case unsupported && !invalid:
-			return "unsupported"
-		case invalid && !unsupported:
-			return "invalid"
-		}
-		return "uncategorized: " + err.Error()
-	}
-	for want, paths := range map[string][]string{
-		// "linux.go" has no underscore, so Go reads no constraint from it either.
-		// A directory is not judged: the rule reads the base name.
-		"admitted":    {"pages/types.go", "types.go", "pages/Types.go", "a/b/types.gen.go", "pages/linux.go", "my_pages/types.go", ".hidden/types.go"},
-		"unsupported": {"pages/types_linux.go", "pages/types_amd64.go", "pages/types_test.go", "pages/_types.go", "pages/.types.go", "pages/types_gen.go", "types_linux_amd64.go", "pages/_.go", "pages/.go", "_test.go"},
-		"invalid":     {"pages/types.txt", "pages/types", "pages/types_linux.txt", "pages/types.GO", "pages/types.go/", "pages/", "", "pages\\.types.go", "pages/ty\x00pes.go"},
-	} {
-		for _, path := range paths {
-			if got := judged(n.AdmitFileName(path)); got != want {
-				t.Errorf("file name %q: %s, want %s", path, got, want)
-			}
-		}
-	}
-	for want, names := range map[string][]string{
-		"admitted":    {"pages", "people", "Pages", "p1", "a_b", "test", "tests", "mainline", "testing_"},
-		"unsupported": {"main", "pages_test", "main_test", "_test"},
-		"invalid":     {"", "_", "1pages", "my-pages", "a.b", "pages people", "type", "package"},
-	} {
-		for _, name := range names {
-			if got := judged(n.AdmitPackageName(name)); got != want {
-				t.Errorf("package name %q: %s, want %s", name, got, want)
-			}
-		}
-	}
-}
-
 // The environment must state where the output root sits. Nothing is defaulted,
 // and a setting written before the statement existed is refused.
 //

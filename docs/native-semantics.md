@@ -31,7 +31,7 @@ The package layout is:
 
 | Package | Responsibility |
 | --- | --- |
-| `semantics/golang/go` | Go-owned vocabulary, contract identities, environment identity, immutable typed graph readers and the names the first Go Files slice admits |
+| `semantics/golang/go` | Go-owned vocabulary, contract identities, environment identity and immutable typed graph readers |
 | `internal/golangsem` | Direct AST bridge, bounded compiler invocation and fact export |
 | `resolve/files/golang/provider/go` | Configured resolution, coverage and native validity reports |
 | `analyze/files/golang/provider/go` | Receipt-consuming analysis |
@@ -197,29 +197,6 @@ source files only, never test or ignored files.
 
 Build constraints, including GOOS and GOARCH file-name suffixes, are not
 interpreted: every captured file belongs to its directory's package.
-
-**What the first Go Files slice admits by name.** A build selects a Go file by
-its name, and the profile above does not look: it analyzes `types_linux.go` as
-part of its package, and a build for another system drops that file. A Go
-Files stage that chooses file names must therefore not write such a name. Two
-functions of `semantics/golang/go` state what the first slice admits:
-
-- `golang.AdmitFileName(filePath)` refuses a base name with an underscore, or
-  one that starts with a dot. That refuses every GOOS and GOARCH suffix, every
-  test file and every file the go tool ignores, and more: `types_gen.go` is
-  refused although Go builds it. The rule needs no list of systems that
-  changes between toolchains. The directory is not judged.
-- `golang.AdmitPackageName(name)` admits ordinary packages. It refuses a
-  command, which is package `main`, and a test package, whose name ends in
-  `_test`.
-
-Both return `nil` for an admitted name. A name that Go accepts and the slice
-does not cover gives an error that wraps `golang.ErrUnsupported`, which a Files
-stage reports as unsupported coverage. What is no Go file path or no package
-name gives one that wraps `semantic.ErrInvalidRequest`. A later slice may admit
-a refused name and may not give an admitted name another meaning. The
-functions do not change the semantic profile: the bridge refuses what it
-refused before, and a file with a system suffix stays analyzable.
 
 **Classification.** The checks run in a fixed order, so no result or diagnostic
 depends on capture order:
