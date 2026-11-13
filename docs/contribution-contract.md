@@ -12,10 +12,12 @@ contract of today does not change with this page.
 [The code today](#the-code-today) describes the present behaviour, and nothing
 else on this page is implemented.
 
-The page rests on two accepted pages and amends neither in substance:
-[binding generation](binding-generation.md) (accepted direction of 9 November
-2026, research 0014) and [representation families](representation-families.md)
-(accepted design of 9 November 2026, research 0015). Where the table of
+The page rests on two pages and amends neither in substance:
+[binding generation](binding-generation.md) (direction of 9 November 2026,
+research 0014) and [representation families](representation-families.md)
+(design of 9 November 2026, research 0015). Both were accepted by the owner
+of research 0014 and 0015, and "accepted page" below means one of them or
+another page of this repository that states its own standing. Where the table of
 research 0017 clarifies a sentence of theirs, the clarification is dated and
 listed under [Amendments to accepted pages](#amendments-to-accepted-pages).
 
@@ -123,10 +125,10 @@ substitution, and "generics" is no family with a contribution of its own. Row
 
 This agrees with the planner page: "The kernel owns capture identity,
 substitution and scope." (`docs/generation-planner.md:284`). It changes two
-texts that list generics beside the families. Item 1 of
-[#207](https://github.com/Bitspark/bittype/issues/207) is reworded by the
+texts that list generics beside the families. For item 1 of
+[#207](https://github.com/Bitspark/bittype/issues/207) the
 [comment of 13 November 2026](https://github.com/Bitspark/bittype/issues/207#issuecomment-6840545162)
-on that issue. The delivery row of representation families that names
+on that issue states the new reading. The delivery row of representation families that names
 "generics" among the delivered families
 (`docs/representation-families.md:341`) gets a dated clarification.
 
@@ -423,7 +425,7 @@ missing contribution, limit, with an owner-qualified reason and the subject."
 The first four meanings follow the advice (section 1.5). Which outcome of
 [evidence](#evidence) leads to the third and which to the fourth is derived
 here. "Missing facet" stays
-recognizable because the accepted design requires it: "Unsupported use,
+recognizable because representation families requires it: "Unsupported use,
 missing facet, incompatible plan or runtime, invalid native value, structural
 mismatch, domain violation, declared coverage restriction, cycle and
 exhaustion stay distinct." (`docs/representation-families.md:303-305`). A
@@ -568,7 +570,7 @@ kernel keeps minting every use".
   request is [open](#open-inside-this-design), point 3.
 - **The conversion half.** Only a record can omit a field, in every target.
   So no target converts an optional field from its retrieved value alone. For
-  TypeScript the accepted design already says it: "the adapter separates an
+  TypeScript representation families already says it: "the adapter separates an
   absent own property from a present `undefined` at run time"
   (`docs/representation-families.md:167-168`). The advice (section 1.6) lists
   what the protocol must be able to do: test presence, obtain a present value,
@@ -639,7 +641,7 @@ contribution reference = (contribution identity, semantic revision)
   The contribution identity says what was selected. It is what duplicates and
   version checks compare.
 
-**The five axes stay apart (row 16).** The accepted design: "**Five version
+**The five axes stay apart (row 16).** Representation families: "**Five version
 axes:** the envelope protocol; the family payload schema; the
 representation's semantic identity; generated-code/runtime compatibility;
 source semantics." (`docs/representation-families.md:88-90`). Row 16: "The
@@ -924,7 +926,7 @@ prove that a claimed equality relation is correct, that the projector uses the
 intended field, or that the TypeScript factory obeys the conversion laws.
 Qualification must test those claims."
 
-**Freeze before either projection (row 28).** The accepted design fixes what
+**Freeze before either projection (row 28).** Representation families fixes what
 a payload is: "A payload is an ontos value. Its family declares the payload
 type in horos; bittype generates the Go and TypeScript types, and horos
 conformance validates a payload." (`docs/representation-families.md:84-86`).
@@ -1196,7 +1198,7 @@ encode unsuitable payload semantics."
 - **Two kinds of later change.** The advice (section 5.5): "Adding a semantic
   integer field later is normally a family schema/version change. Discovering
   that a payload has been hiding an orchestration reference is a contract
-  defect." The second is ruled out by the accepted design: "Nothing the
+  defect." The second is ruled out by representation families: "Nothing the
   orchestration must resolve hides inside a payload."
   (`docs/representation-families.md:82-83`).
 - **Its tests.** The regeneration test fails when the committed types differ
@@ -1229,9 +1231,9 @@ detect an incorrect implementation. AC-07 keeps the two kinds of evidence
 apart.
 
 **The texts that change.** Row 39: "#207's verification and row 2 of research
-0015 are reworded". The verification of #207 is reworded by the
+0015 are reworded". For #207 the
 [comment of 13 November 2026](https://github.com/Bitspark/bittype/issues/207#issuecomment-6840545162)
-on that issue. The validation cell of row 2 in the table of research 0015
+on that issue states the new verification. The validation cell of row 2 in the table of research 0015
 still has the old text. This change does not edit that table
 ([the notes not yet made](#what-is-delegated-and-what-is-not-specified-here)).
 
@@ -1662,7 +1664,7 @@ integers
 | --- | --- | --- |
 | 1 | This page | `main` |
 | 2 | A prototype | "on a branch that is thrown away" (row 31). It does not merge |
-| 3 | A materially different contribution, with the shared packages fixed | The prototype branch |
+| 3 | A materially different contribution, with the shared packages fixed | Shown on the prototype branch, and again on `main` with step 4 |
 | 4 | The contract in its final form and the migration of the 21 mapping packages, in one change | `main`, when the [gate](#the-gate) is met |
 | 5 | The optional move | `main`, by the answer to [row 11](#optional-fields) |
 | 6 | The additive work of [#207](https://github.com/Bitspark/bittype/issues/207) | `main` |
@@ -1704,14 +1706,15 @@ The form of each fixture below is derived here, from verification report 3.
 | 5. A generic map whose key requirement is rejected | A fixture generic that requires evidence about its argument, accepted for one operand and refused for another | The map family and the meaning of its keys |
 | 6. An independent family without a shared change | The contribution of step 3 | Authorship by another owner |
 
-The six cases in real form stay what the accepted design makes them: the
+The six cases in real form stay what representation families makes them: the
 condition for a stable version of the envelope
 (`docs/representation-families.md:95-96`). The prototype does not discharge
 that condition.
 
 **What a stand-in proves (row 31).** Row 31: "the serialized plan is
 sufficient for a second reader in another process, not for the service
-library's factory."
+library's factory." The table details that sentence. It is derived here,
+from verification report 3.
 
 | A TypeScript reader written by bittype, run from a Go test, shows | It does not show |
 | --- | --- |
