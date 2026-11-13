@@ -1430,7 +1430,8 @@ func rsRustc(t *testing.T, arguments ...string) (bool, string) {
 	return err == nil, string(output)
 }
 
-// The generator of the crate-name table of internal/rust/cratename.go: it
+// The generator of the crate-name table of the Rust lexical part,
+// model/syntax/rust/lexical/go/cratename.go: it
 // prints, as ranges, every code point that the compiler's rule for a
 // character of a crate name takes.
 const rsCrateNameCharacters = `fn main() {

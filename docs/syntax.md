@@ -230,6 +230,39 @@ tooling.
 Source vocabulary: [nodes.go](../syntax/golang/go/nodes.go).
 Native reference: [Go types](https://go.dev/ref/spec#Types).
 
+**What the model declares of Go's spelling, and who decides it.** The
+[lexical part](../model/syntax/golang/lexical/go/lexical.go) of the Go
+syntax model declares two predicate names, `go/identifier` and
+`go/import-name`, and no word list. Go's keywords are not written in this
+repository: the evaluator asks `go/token` of the Go toolchain that builds
+bittype whether a word is a keyword. So the model names the rule and does
+not state it. The relation between the declaration and the checker is this:
+the declared name alone admits every text, the checker admits of them what
+the building toolchain's `go/token` takes as an identifier that is no
+keyword, and two builds of one bittype revision with different Go releases
+can differ where those releases differ. No profile records the release.
+That point is open and is decided with the profiles of the native syntax
+vocabularies ([models and operations](models-and-operations.md#11-decisions-and-deferrals)).
+
+**The same kind of relation holds for the letters and digits of an
+identifier in four languages.** The identifier rules of C++, Go, Rust and
+TypeScript share one shape test, `Identifier` of the shared grammar helper:
+a text of letters, digits and underscores that does not start with a digit.
+What a letter and a digit are is decided by `unicode.IsLetter` and
+`unicode.IsDigit` of the Go toolchain that builds bittype, whose tables
+follow the Unicode version of that Go release. No lexical part declares
+those character classes, so here too the model names the rule
+(`cpp/identifier`, `go/identifier`, `rust/identifier`,
+`typescript/identifier` and the names built on them) and the building
+toolchain decides its extent. The reserved words of C++, Rust and
+TypeScript are different: each is a list that its lexical part declares,
+and the evaluator reads it. horos is outside this relation. Its identifier
+is ASCII letters, digits and underscores, stated by its evaluator without
+a table of the toolchain, and its reserved words are a declared list. The
+one character table of Rust that must not follow the Go release, the
+characters of a crate name, is declared as data for that reason
+([cratename.go](../model/syntax/rust/lexical/go/cratename.go)).
+
 | Kind | Attributes | Children |
 | --- | --- | --- |
 | File | `package`: package identifier | `import*`; `declaration*` TypeDeclaration/TypeAlias |

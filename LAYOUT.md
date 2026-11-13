@@ -17,9 +17,10 @@ ops either. ops work on the model". The design
 [models and operations](docs/models-and-operations.md) carries it out: models
 under `model`, by sort and then by language, and operations under `ops`, where
 the stage-by-language matrix and the path pattern above stay. **Not
-implemented, except slice S3a:** the agnostic syntax model `model/syntax/go`
-and the lexical part of each language, `model/syntax/<language>/lexical/go`,
-exist at their final paths. The hierarchy and the role table below describe
+implemented, except slices S3a and S4:** the agnostic syntax model
+`model/syntax/go` and the lexical part of each language,
+`model/syntax/<language>/lexical/go`, exist at their final paths, and the
+lexical part holds its language's word lists. The hierarchy and the role table below describe
 `main` as it is, and no other path in this layout has changed. The
 [order of work](docs/models-and-operations.md#10-the-order-of-work) says which
 slice moves what. That page gives the names below the two roots (decisions
@@ -65,7 +66,7 @@ internal/rustsem/         private captured-source compiler bridge
 engine/go/                explicit registration, planning and execution
 syntax/<language>/go/                          vocabulary and identity
 model/syntax/go/                               agnostic syntax model: the grammar-table type and the shared predicate names
-model/syntax/<language>/lexical/go/            lexical part of a language's syntax model: the names of its spelling predicates
+model/syntax/<language>/lexical/go/            lexical part of a language's syntax model: the names of its spelling predicates, its word lists, character tables and literal patterns
 parse/syntax/<language>/provider/go/           text to CST
 check/syntax/<language>/provider/go/           native syntax admission: the grammar table, its evaluators and the rules in code
 format/syntax/<language>/provider/go/          AST to CST
@@ -89,7 +90,7 @@ transform/syntax/typescript/symbol/go/        public type symbols for generation
 transform/syntax/golang/symbol/go/            predeclared type symbols for generation and Files
 transform/syntax/rust/symbol/go/              standard-library item and primitive type symbols for generation and Files
 transform/syntax/horos-to-<native>/mapping/<name>/go/ one selectable mapping library per package
-internal/<language>/                           private lexical helpers
+internal/<language>/                           private lexical helpers: the evaluators of the lexical part's lists, and the literal decoders
 integration/go/          independent consumers and cross-package qualification
 verification/            concrete static verification; public Logos contract
   files/source/horos/go/  explicit authoritative queries bound to captured Horos
@@ -191,8 +192,8 @@ readers, typed constructors and symbol admission get a role of their own,
 which that page calls public part. A lexical helper imports its own
 language's lexical part, which holds the word lists and no node kind. A pair's contribution
 vocabulary names two languages, as a mapping does. Not implemented, except
-what slice S3a delivers: `model/syntax/go` is in the foundation table, and
-the lexical part of a language has its role. The table below gives the
+what slices S3a and S4 deliver: `model/syntax/go` is in the foundation table,
+the lexical part of a language has its role, and a lexical helper imports it. The table below gives the
 roles of `main` as they are.
 
 | Role | Paths | Imports |
@@ -209,7 +210,7 @@ roles of `main` as they are.
 | Contribution: verification law | `verification/files/horos-to-go/mappings/<name>/go` | `verification/files/horos-to-go/go`, `semantics/golang/go`, `semantics/go` and the external models `github.com/Bitspark/horos/core/go/declarations` and `github.com/bitspark/ontos/core/go`. Never another law |
 | Contribution: capability extractor | `tools/provider-matrix/extract/<format>/go` | `tools/provider-matrix/capability/go` only |
 | Common mapping part | `transform/syntax/<source>/mapping/go` and `transform/syntax/<source>/mapping/<part>/go` | The generation contract, the representation, and the syntax and source reader of its source language. The list names no other part, and the one-language rule below refuses every native package |
-| Private part | `internal/<language>`, `internal/<language>sem` | A lexical helper imports `internal/grammar` only, and never a contract or a stage provider. A semantic helper imports foundations and its own syntax and vocabulary, and may reparse with its own parser under an exception. Both have their role only when `syntax/<language>/go` exists |
+| Private part | `internal/<language>`, `internal/<language>sem` | A lexical helper imports `internal/grammar` and its own language's lexical part only, and never a contract, a stage provider or a syntax vocabulary. The lexical part holds word lists and predicate names and no node kind, so the helper still knows spelling and not structure. A semantic helper imports foundations and its own syntax and vocabulary, and may reparse with its own parser under an exception. Both have their role only when `syntax/<language>/go` exists |
 | Composition | `integration/go`, `verification/integration/go`, `tools/**` | Chooses and registers contributions. The two test compositions are not classified. A package under `tools/` needs no exception to import a stage provider or a query service. It is still classified, by an explicit entry or as an extractor |
 
 **One language.** A package that names a language imports no package of

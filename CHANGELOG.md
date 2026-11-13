@@ -1,5 +1,16 @@
 # Changelog
 
+## Each language's lexical part: word lists and predicate names apart from their evaluators — 13 November 2026
+
+Slice S4 of [models and operations](docs/models-and-operations.md#10-the-order-of-work), part of [#305](https://github.com/Bitspark/bittype/issues/305), as decision [M31](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860518608) cuts it. The words and character tables of a language's spelling are data in its lexical part, and the lexical helpers evaluate them. **No check, parse, format or print outcome changes.**
+
+- **The lists are declared.** `model/syntax/<language>/lexical/go` holds, for C++, 92 reserved words and the 14 words of a builtin type; for horos, 41 reserved words and the bound of 4096 digits of an integer; for Rust, 52 reserved words, the 14 names of calling conventions and the 840 ranges of the characters of a crate name; for TypeScript, 46 reserved words, 11 predefined type words and the two patterns of a number. Each list was generated from the helper's source and is equal to it word for word. A list is published by a function without input that returns a fresh value, so no importer can change it for another.
+- **The evaluators read them.** `internal/cpp`, `internal/horos`, `internal/rust` and `internal/typescript` hold no list any more. "Is this text one of the words" has one implementation, `Words` of the shared grammar helper. The role of a lexical helper names the shared grammar helper and its own language's lexical part, and still no syntax vocabulary: the helper knows spelling and not structure.
+- **Rust's keywords stand once.** The copy in `semantics/rust/go/environment.go` is deleted. The environment asks the lexical helper whether a crate name is a keyword.
+- **Go has no list, and the page says who decides.** [The page of the syntax](docs/syntax.md#go) states that Go's keywords are those of `go/token` of the toolchain that builds bittype, so the model names the rule and does not state it. It states the same kind of relation for the letters and digits of an identifier in C++, Go, Rust and TypeScript, which `unicode.IsLetter` and `unicode.IsDigit` of the building toolchain decide. No evaluator changes.
+- **Tests.** Each of the four lexical helpers has its first test: it asks of every declared word what the evaluator says, and states expected answers that are not read from a list.
+- **Documents.** The design page marks the slice delivered. [bittype/ACX-015](docs/architecture-cases/0015-models-hold-operations.md) records what this slice corrects and what stays open. `LAYOUT.md`, [package boundaries](docs/package-boundaries.md) and [native semantics](docs/native-semantics.md#rust-vocabulary) describe the code as it is.
+
 ## The agnostic syntax model: the grammar-table type and predicate names — 13 November 2026
 
 Slice S3a of [models and operations](docs/models-and-operations.md#10-the-order-of-work), part of [#305](https://github.com/Bitspark/bittype/issues/305), with the first steps that decision [M31](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860518608) settled. The type in which a language declares its grammar table is plain data on the model side, and a table names its predicates. **No check, parse, format or print outcome changes.**

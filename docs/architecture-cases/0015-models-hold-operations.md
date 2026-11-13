@@ -2,7 +2,8 @@
 
 **Status.** Identified on 13 November 2026 at main
 `058140171592882239d759663e0f7387a171c021`. Correction in progress: slice S3a
-is delivered on `main` with pull request [#318](https://github.com/Bitspark/bittype/pull/318), and
+is delivered on `main` with pull request [#318](https://github.com/Bitspark/bittype/pull/318), slice S4
+with pull request [#PRNUMBER](https://github.com/Bitspark/bittype/pull/PRNUMBER), and
 the rest is pending. The
 correction is designed in [models and operations](../models-and-operations.md)
 and delivered by its slices S1 to S8. For the four intended-forms packages
@@ -171,7 +172,7 @@ The design page gives it in full. In short:
    data, with predicates named by identity, and each language gets a
    lexical part below its syntax model, which imports no node kinds and
    holds the names of its predicates (slice S3a, delivered). The word lists
-   leave the lexical helpers for the lexical parts (slice S4). The grammar
+   leave the lexical helpers for the lexical parts (slice S4, delivered). The grammar
    tables go to the model side, each into its language's syntax vocabulary
    (slice S3b). Decision [M31](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860518608)
    cut the three slices so.
@@ -314,6 +315,62 @@ reachable from another package. That a package under `model` holds no
 operation is judged in review and by no check. The import rule for
 everything under `model` is slice S8's: until then each model package has
 its own exact list.
+
+### Slice S4, delivered with pull request [#PRNUMBER](https://github.com/Bitspark/bittype/pull/PRNUMBER)
+
+**What is corrected.**
+
+- The four lexical helpers hold no list any more. The lexical part of each
+  language declares them as data:
+
+  | Language | Declared in `model/syntax/<language>/lexical/go` | Where it stood |
+  | --- | --- | --- |
+  | C++ | 92 reserved words, the 14 words of a builtin type | `internal/cpp/names.go`, `internal/cpp/types.go` |
+  | horos | 41 reserved words, the bound of 4096 digits of an integer | `internal/horos/spelling.go` |
+  | Rust | 52 reserved words, the 14 names of calling conventions, the 840 ranges of the characters of a crate name | `internal/rust/names.go`, `literal.go`, `cratename.go` |
+  | TypeScript | 46 reserved words, the 11 predefined type words, the two patterns of a number as strings | `internal/typescript/names.go`, `literal.go` |
+  | Go | Nothing: two names and no list | |
+
+- Each evaluator in a lexical helper reads its list from the lexical part.
+  The question "is this text one of the words" has one implementation,
+  `Words` of the shared grammar helper
+  ([AC-11](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-11)).
+- Rust's keyword list stood a second time in `semantics/rust/go`. That
+  copy is deleted, and its evaluator asks the lexical helper.
+- A list is published by a function without input that returns a fresh
+  value, so no importer can change it for another. The bound and the two
+  patterns are constants.
+- [The page of the syntax](../syntax.md#go) states the relation that
+  [AC-05](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-05)
+  asks for where the building toolchain decides: Go's keywords, and the
+  letters and digits of an identifier in C++, Go, Rust and TypeScript.
+
+**What stays open after it.** The five grammar tables are still variables
+of an operation, and two word sets still stand in a checker and again in
+a parser (slice S3b). No page states yet that a declared table is an upper
+bound of what its checker admits (slice S3b). Everything else of this case
+is unchanged.
+
+**Qualification.** Every list was generated from the helper's source and
+read back: equal word for word and in order, and the deleted Rust copy was
+equal to the kept list as a set. Every evaluator of the four helpers gave
+the same answer before and after on the probe texts, the crate-name rule
+on every code point (144435 admitted), and the Rust environment the same
+refusal for every probe text as a crate name. The five grammar tables,
+the outcome of every test by name and the generated and formatted outputs
+are unchanged. A changed entry of a list turns a test red for each of the
+four languages. The pull request holds the runs.
+
+**Limits.** A word that an evaluator compares inline is not declared: the
+five words that a raw Rust identifier may not be, the path keywords of a
+Rust path segment, the escape letters of a horos string, the words of a
+C++ builtin type that stand alone. The design page counts such a rule as
+one that exists only as its evaluator. The tests of the helpers state
+expected answers for selected words of each list and ask of every declared
+word what its evaluator says. Only Rust's keywords are compared in full
+with a second, independent list, that of the test of its environment. The
+table of crate-name characters is compared with the pinned compiler only
+where that compiler is provisioned.
 
 ## Assessment lesson
 
