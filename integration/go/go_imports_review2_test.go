@@ -116,7 +116,7 @@ func TestGoImportsGuardLongChainsOverSuppliedStructure(t *testing.T) {
 func TestGoImportLargestEnvironmentEndToEnd(t *testing.T) {
 	environment := func(size int) n.ImportEnvironment {
 		text := "package big\n\n// " + strings.Repeat("<", size) + "\n"
-		return n.ImportEnvironment{Module: goImportModule, Packages: []n.Package{{ImportPath: "example.org/big", Files: []n.PackageFile{{Name: "big.go", Text: text}}}}}
+		return n.ImportEnvironment{Module: goImportModule, OutputRoot: n.ModuleRoot, Packages: []n.Package{{ImportPath: "example.org/big", Files: []n.PackageFile{{Name: "big.go", Text: text}}}}}
 	}
 	lo, hi := 0, 1<<20
 	for lo < hi {
@@ -245,7 +245,7 @@ func TestGoImportsCollisionsAndSites(t *testing.T) {
 		"supplied ignored file":             {{ImportPath: "example.org/x", Files: []n.PackageFile{{Name: "_x.go", Text: "package x\n"}}}},
 		"supplied under the module, folded": {{ImportPath: "Example.org/App/x", Files: []n.PackageFile{{Name: "x.go", Text: "package x\n"}}}},
 	} {
-		if _, err := n.ImportConfiguration(n.ImportEnvironment{Module: goImportModule, Packages: packages}); !errors.Is(err, semantic.ErrInvalidRequest) {
+		if _, err := n.ImportConfiguration(n.ImportEnvironment{Module: goImportModule, OutputRoot: n.ModuleRoot, Packages: packages}); !errors.Is(err, semantic.ErrInvalidRequest) {
 			t.Fatal(name, err)
 		}
 	}
@@ -342,7 +342,7 @@ func TestGoImportsCheckOrderAndVendor(t *testing.T) {
 		t.Fatal("a vendored captured file was accepted", coverage)
 	}
 	vendored := n.Package{ImportPath: "example.org/lib/vendor/v", Files: []n.PackageFile{{Name: "v.go", Text: "package v\n"}}}
-	if _, err := n.ImportConfiguration(n.ImportEnvironment{Module: goImportModule, Packages: []n.Package{vendored}}); !errors.Is(err, semantic.ErrInvalidRequest) {
+	if _, err := n.ImportConfiguration(n.ImportEnvironment{Module: goImportModule, OutputRoot: n.ModuleRoot, Packages: []n.Package{vendored}}); !errors.Is(err, semantic.ErrInvalidRequest) {
 		t.Fatal("a vendored supplied path was accepted", err)
 	}
 }
