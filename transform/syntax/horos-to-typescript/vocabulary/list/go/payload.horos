@@ -1,0 +1,3 @@
+module bittype.payload.list_contribution;
+
+type Payload = { };

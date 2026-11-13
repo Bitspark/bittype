@@ -1,0 +1,3 @@
+module bittype.payload.declarations_contribution;
+
+type Payload = { name: text; nominal: bool; parameters: list<text>; };

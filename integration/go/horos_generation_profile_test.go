@@ -136,7 +136,13 @@ func newBuiltinPair[L any](name string, p nativeProvider[L], target g.Target[L],
 				named = append(named, name)
 			}
 			slices.Sort(named)
-			if packages := directoryNames(t, "transform", "syntax", "horos-to-"+name, "mapping"); len(packages) == 0 || !slices.Equal(named, packages) {
+			packages := directoryNames(t, "transform", "syntax", "horos-to-"+name, "mapping")
+			// PROTOTYPE (bittype#196): the TypeScript optional package exists
+			// under the contribution contract only and exports no Library.
+			if name == "typescript" {
+				packages = slices.DeleteFunc(packages, func(p string) bool { return p == "optional" })
+			}
+			if len(packages) == 0 || !slices.Equal(named, packages) {
 				t.Fatalf("the pair has the mapping packages %v, and the test names the constructors of %v", packages, named)
 			}
 			if len(libraries()) != len(named) {

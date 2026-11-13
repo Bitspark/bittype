@@ -168,11 +168,11 @@ func fivePlanned(t *testing.T, assembly Assembly) ([]planned, []uint32, Assembly
 		return out
 	}
 	declarations := []planned{
-		{RequestedDeclaration, source(11), intent("first")},
-		{HelperDeclaration, nil, intent("")},
-		{DependencyDeclaration, source(13, 14), nil},
-		{RequestedDeclaration, source(15), intent("fourth")},
-		{RequestedDeclaration, source(16), intent("fifth\x00\xff")},
+		{RequestedDeclaration, source(11), intent("first"), ""},
+		{HelperDeclaration, nil, intent(""), ""},
+		{DependencyDeclaration, source(13, 14), nil, ""},
+		{RequestedDeclaration, source(15), intent("fourth"), ""},
+		{RequestedDeclaration, source(16), intent("fifth\x00\xff"), ""},
 	}
 	sites := assembly.Declarations
 	realized := []int{2, 0, 4, 1, 3}

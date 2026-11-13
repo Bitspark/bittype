@@ -208,7 +208,7 @@ func Plan[F, T, R any](ctx context.Context, in PlanningInput[F, T, R]) (Generati
 	// What the plan states about its declarations, for the inventory of every run.
 	owned := make([]planned, len(program.declarations))
 	for i, d := range program.declarations {
-		owned[i] = planned{d.Role, d.Provenance, d.Description.Values}
+		owned[i] = planned{role: d.Role, provenance: d.Provenance, values: d.Description.Values}
 	}
 	return GenerationPlan{steps: slices.Clone(p.steps), run: func(ctx context.Context) (Output, error) {
 		built, err := exec.Target.Build(ctx, BuildInput[T]{program, exec.Language, exec.Output, exec.Limits})

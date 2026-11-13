@@ -38,7 +38,18 @@ func (Provider) Open(ctx context.Context, c g.Captured[h.Language]) (g.Source[h.
 	if err != nil {
 		return g.Source[h.Language, Reader]{}, err
 	}
-	return g.Source[h.Language, Reader]{Interpretation: s, Reader: reader{s}}, nil
+	return g.Source[h.Language, Reader]{Interpretation: s, Reader: reader{s}, Roles: s.roles, Semantics: Semantics}, nil
 }
+
+// PROTOTYPE (bittype#196).
+//
+// Semantics names the source interpretation that this integration reads: the
+// source-semantics version axis that a plan records (row 16).
+const Semantics = "horos/declarations-4"
+
+// OptionalFieldRole is the key of the role selector that this integration
+// issues for an optional field of a record (row 12). A contribution whose
+// domain is that role names this key.
+const OptionalFieldRole = "horos/optional-record-field"
 
 var _ g.SourceProvider[h.Language, Reader] = Provider{}

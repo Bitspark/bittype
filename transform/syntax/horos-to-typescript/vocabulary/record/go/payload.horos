@@ -1,0 +1,3 @@
+module bittype.payload.record_contribution;
+
+type Payload = { members: list<text>; };

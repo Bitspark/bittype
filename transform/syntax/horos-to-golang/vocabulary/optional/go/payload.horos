@@ -1,0 +1,3 @@
+module bittype.payload.optional_contribution;
+
+type Payload = { };

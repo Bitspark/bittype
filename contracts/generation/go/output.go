@@ -135,7 +135,11 @@ func (h DeclarationHandle) Valid() bool { return h.output != nil && h.index != 0
 // owner, which only their issuers can read. A record says what the output
 // owns. It does not say that its site is one entity of a native compiler.
 type OwnedDeclaration struct {
-	Handle     DeclarationHandle
+	Handle DeclarationHandle
+	// Symbol is the planner's declaration identity, the logical symbol
+	// identity of the plan (prototype, bittype#196, row 23). It is empty for a
+	// plan of the mapping contract.
+	Symbol     string
 	Site       ast.NodeRef
 	Role       DeclarationRole
 	Provenance []ast.NodeRef
@@ -202,6 +206,7 @@ type planned struct {
 	role       DeclarationRole
 	provenance []ast.NodeRef
 	values     []IssuedValue
+	symbol     string
 }
 
 // seal checks an assembly against the plan it was built from. declarations and
@@ -247,7 +252,7 @@ func seal[T any](ctx context.Context, checker check.Checker, assembly Assembly, 
 		}
 		sites[site] = true
 		d := declarations[i]
-		inventory[i] = OwnedDeclaration{Site: site, Role: d.role, Provenance: slices.Clone(d.provenance), Values: slices.Clone(d.values)}
+		inventory[i] = OwnedDeclaration{Symbol: d.symbol, Site: site, Role: d.role, Provenance: slices.Clone(d.provenance), Values: slices.Clone(d.values)}
 	}
 	// No listed site contains another. This needs no knowledge of the language:
 	// whatever a declaration is, it is not inside another declaration of the

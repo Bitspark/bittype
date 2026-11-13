@@ -27,6 +27,10 @@ type Field struct {
 	Optional bool
 	Use      g.Use[h.Language]
 	Origin   ast.NodeRef
+	// Role is the role selector of an optional field, issued for the record's
+	// use and this field's operand use (prototype, bittype#196, row 12). It is
+	// not valid for a required field.
+	Role g.Role[h.Language]
 }
 type Declaration struct {
 	Name      string
@@ -107,7 +111,11 @@ func (r reader) Fields(v g.UseView[h.Language]) ([]Field, error) {
 		if !ok {
 			return nil, g.ErrScope
 		}
-		fields = append(fields, Field{Name: name, Optional: atom(f.At(2)) == "opt", Use: u, Origin: r.s.sites[term]})
+		field := Field{Name: name, Optional: atom(f.At(2)) == "opt", Use: u, Origin: r.s.sites[term]}
+		if field.Optional {
+			field.Role = r.s.roles.Issue(OptionalFieldRole, v.Use, u)
+		}
+		fields = append(fields, field)
 	}
 	return fields, nil
 }

@@ -189,10 +189,16 @@ var foundationRules = map[string][]string{
 	},
 	"transform/syntax/shared/generation/go": {"contracts/check/go", "contracts/generation/go", "contracts/semantic/go", "contracts/text/go", "contracts/transform/go", "trees/ast/go", "trees/representation/go"},
 	"transform/syntax/shared/target/go":     {"contracts/generation/go", "trees/ast/go", "trees/representation/go"},
-	"check/syntax/shared/ast/go":            {"contracts/text/go", "trees/ast/go"},
-	"check/syntax/shared/cst/go":            {"check/syntax/shared/ast/go", "contracts/text/go", "trees/cst/go"},
-	"print/syntax/shared/provider/go":       {"check/syntax/shared/cst/go", "contracts/language/go", "contracts/print/go", "trees/cst/go", "trees/representation/go"},
-	"print/files/shared/provider/go":        {"contracts/language/go", "contracts/print/go", "files/go", "source/go", "trees/cst/go", "trees/representation/go"},
+	// PROTOTYPE (bittype#196). The shared part of the payload codec role (row
+	// 28, O18): it validates and encodes through horos and ontos, which the
+	// contract package may not import. The publisher name of bittype's own
+	// contributions (row 15).
+	"transform/syntax/shared/payload/go":   {"contracts/generation/go"},
+	"transform/syntax/shared/publisher/go": {},
+	"check/syntax/shared/ast/go":           {"contracts/text/go", "trees/ast/go"},
+	"check/syntax/shared/cst/go":           {"check/syntax/shared/ast/go", "contracts/text/go", "trees/cst/go"},
+	"print/syntax/shared/provider/go":      {"check/syntax/shared/cst/go", "contracts/language/go", "contracts/print/go", "trees/cst/go", "trees/representation/go"},
+	"print/files/shared/provider/go":       {"contracts/language/go", "contracts/print/go", "files/go", "source/go", "trees/cst/go", "trees/representation/go"},
 	// Private helpers of no single language. A shared helper cannot conceal a
 	// language: it is bound by the same rule as the rest of the table.
 	"internal/tree":      {"trees/ast/go"},
@@ -384,6 +390,9 @@ var modelExternalImports = map[string][]string{
 	"semantics/horos/go":                 {"github.com/Bitspark/horos/core/go/declarations"},
 	"verification/files/source/horos/go": {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"verification/files/horos-to-go/go":  {"github.com/Bitspark/horos/core/go/declarations", "github.com/Bitspark/logos-contract/contract/go/typed"},
+	// PROTOTYPE (bittype#196): a payload schema is a horos type and a frozen
+	// payload an ontos value, whatever the source language of a generation is.
+	"transform/syntax/shared/payload/go": {"github.com/Bitspark/horos/core/go", "github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 }
 
 func TestFilesDimensionStageCoverage(t *testing.T) {

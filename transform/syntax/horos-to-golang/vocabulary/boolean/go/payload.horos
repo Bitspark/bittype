@@ -1,0 +1,3 @@
+module bittype.payload.boolean_contribution;
+
+type Payload = { };

@@ -133,6 +133,79 @@ func isMappingContribution(relative string) bool {
 	return ok
 }
 
+// PROTOTYPE (bittype#196). The contribution contract adds three package roles
+// to an ordered pair, beside the mapping (O16, O25, row 28):
+//
+//	transform/syntax/<source>-to-<native>/vocabulary/<name>/go  the vocabulary of a family for a target
+//	transform/syntax/<source>-to-<native>/codec/<name>/go       the payload codec of its schema
+//	transform/syntax/<source>-to-<native>/facet/<name>/go       a facet package of the contribution
+//
+// pairPart reads such a path: the pair, the part and the contribution's name.
+func pairPart(relative string) (source, native, part, name string, ok bool) {
+	scope, component, ok := transformPath(relative)
+	if !ok || len(component) != 2 {
+		return "", "", "", "", false
+	}
+	source, native, ok = strings.Cut(scope, "-to-")
+	return source, native, component[0], component[1], ok && isLanguageName(source) && isLanguageName(native)
+}
+
+// isPairPart reports whether a path is the given part of some contribution.
+func isPairPart(relative, part string) bool {
+	_, _, p, _, ok := pairPart(relative)
+	return ok && p == part
+}
+
+// ownVocabulary is the vocabulary package of the contribution that a mapping,
+// a codec or a facet package belongs to: same pair, same name.
+func ownVocabulary(relative string) string {
+	source, native, _, name, _ := pairPart(relative)
+	return "transform/syntax/" + source + "-to-" + native + "/vocabulary/" + name + "/go"
+}
+
+// bundleRole classifies the vocabulary, the codec and the facet packages of a
+// contribution. None of the three imports the mapping, and none imports
+// another of them, except that codec and facet import their own vocabulary:
+// "Only a composition imports a contribution" (AGENTS.md), and O25.
+func bundleRole(relative string) (roleRule, bool) {
+	source, native, part, _, ok := pairPart(relative)
+	if !ok {
+		return roleRule{}, false
+	}
+	languages := []string{"source", source, "native", native}
+	var rule roleRule
+	switch part {
+	case "vocabulary":
+		// The identity of one contribution and the generated plain Go type of
+		// its payload schema. It imports the contract for the identity types
+		// and the name of its publisher, and nothing of horos or ontos.
+		rule = role("transform/syntax/<source>-to-<native>/vocabulary/<name>/go", roleVocabulary, languages,
+			"contracts/generation/go", "transform/syntax/shared/publisher/go",
+		)
+	case "codec":
+		// The codec of one payload schema: it maps the generated type to an
+		// ontos value through the shared part of the codec role.
+		rule = role("transform/syntax/<source>-to-<native>/codec/<name>/go", roleContribution, languages,
+			"contracts/generation/go", "transform/syntax/shared/payload/go",
+		)
+		rule.admits = func(dependency string) bool { return dependency == ownVocabulary(relative) }
+	default:
+		return roleRule{}, false
+	}
+	rule.forbidden = func(dependency string) string {
+		if dependency == relative || dependency == ownVocabulary(relative) && part != "vocabulary" {
+			return ""
+		}
+		for _, other := range []string{"mapping", "vocabulary", "codec", "facet"} {
+			if isPairPart(dependency, other) {
+				return "a " + part + " package imports no mapping, no codec, no facet package and no vocabulary but its own"
+			}
+		}
+		return ""
+	}
+	return rule, true
+}
+
 // commonMappingSource reads transform/syntax/<source>/mapping/go and
 // transform/syntax/<source>/mapping/<part>/go.
 func commonMappingSource(relative string) (source string, ok bool) {
@@ -314,6 +387,11 @@ func transformRole(relative string) (roleRule, bool) {
 			"transform/syntax/<source>/source/go", "transform/syntax/<native>/model/go", "trees/representation/go",
 		)
 		rule.admits = func(dependency string) bool {
+			// PROTOTYPE (bittype#196, O25): a mapping package gains one
+			// import, of its own vocabulary.
+			if dependency == ownVocabulary(relative) {
+				return true
+			}
 			common, ok := commonMappingSource(dependency)
 			return ok && common == source
 		}
@@ -321,11 +399,19 @@ func transformRole(relative string) (roleRule, bool) {
 			if dependency != relative && isMappingContribution(dependency) {
 				return "a mapping contribution never imports another mapping contribution"
 			}
+			// PROTOTYPE (bittype#196, O8, O25): a production mapping imports
+			// nothing of its bundle but its own vocabulary.
+			if dependency != ownVocabulary(relative) && (isPairPart(dependency, "vocabulary") || isPairPart(dependency, "codec") || isPairPart(dependency, "facet")) {
+				return "a mapping contribution imports no codec, no facet package and no vocabulary but its own"
+			}
 			if isTransformComponent(dependency, "target") {
 				return "a mapping contribution never imports a native tree constructor"
 			}
 			return ""
 		}
+		return rule, true
+	}
+	if rule, ok := bundleRole(relative); ok {
 		return rule, true
 	}
 	scope, component, ok := transformPath(relative)

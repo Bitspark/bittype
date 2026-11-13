@@ -60,6 +60,9 @@ type Registry struct {
 	targets      map[string]targetEntry
 	mappings     []mappingEntry
 	replacements []Replacement
+	// contributions is the registration state of the contribution contract
+	// (prototype, bittype#196). The two contracts do not meet in one plan.
+	contributions contributions
 }
 
 func RegisterSource[F, R any](r *Registry, lang representation.Language, p g.SourceProvider[F, R]) error {
