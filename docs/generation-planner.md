@@ -209,8 +209,11 @@ of the external symbols. Reflection reads the content. A value is not bound to
 one declaration or one output: the same value compares equal wherever it is
 carried, and whoever holds a value can state it again in another description.
 The issuer says who gave a value its meaning, and it does not say who put the
-value where it is found. Formatting a value prints whether it was issued and
-never its content, so a logged record or description does not disclose it.
+value where it is found. Formatting a value, or a record or a description that holds one in an
+exported field, prints whether it was issued and never its content. That is a
+limit too: the `fmt` package calls a value's formatter only where it may read
+the value as an interface, so formatting an `Output`, a `Program` or any other
+struct that holds a value under an unexported field prints the content.
 
 A record without values is valid, and no builtin mapping
 states one yet. The [naming design](naming.md#three-things-that-were-one) says

@@ -72,7 +72,10 @@ func (v IssuedValue) String() string {
 }
 
 // Format writes String for every verb, so that formatting a value, or a record
-// or a description that holds one, does not print the content.
+// or a description that holds one in an exported field, does not print the
+// content. fmt calls it only where it may read the value as an interface: an
+// Output, a Program or any struct that holds a value under an unexported field
+// still prints the content.
 func (v IssuedValue) Format(state fmt.State, _ rune) { io.WriteString(state, v.String()) }
 
 func NewValueIssuer() ValueIssuer { return ValueIssuer{fresh()} }
