@@ -405,8 +405,12 @@ table above does not give it:
   of the fresh output exceeds it. The shared parse contract returns
   `files.ErrInvalid` and `files.ErrLimit` without a category.
 - **The semantic stages.** A fresh output whose resolution, analysis or graph
-  exceeds a limit returns `semantic.ErrLimit` or `semantics.ErrLimit`. Only the
-  capture of the fresh output is joined.
+  exceeds a limit returns the stage's own value, `semantic.ErrLimit` or
+  `semantics.ErrLimit`, without a category. Only the capture of the fresh
+  output is joined. That is pinned for the TypeScript resolver's graph limit
+  and for the horos resolver's configuration limit. It is not established for
+  a fresh horos graph over the graph limit: in the one attempt made on 13
+  November 2026 that came back as missing evidence, and no row holds it.
 - **The publisher.** It joins the `files` value of its inventory check. It
   passes on the values of the evidence admission, of the semantic and graph
   limits, of the representation and of the Syntax printer as they are.
