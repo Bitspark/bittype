@@ -1,0 +1,3 @@
+module bittype.payload.golang_to_typescript_declarations;
+
+type Payload = { name: text; };

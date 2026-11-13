@@ -1,0 +1,3 @@
+module bittype.payload.golang_to_typescript_stringtype;
+
+type Payload = { };

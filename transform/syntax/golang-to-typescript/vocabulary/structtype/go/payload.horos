@@ -1,0 +1,3 @@
+module bittype.payload.golang_to_typescript_structtype;
+
+type Payload = { members: list<text>; };
