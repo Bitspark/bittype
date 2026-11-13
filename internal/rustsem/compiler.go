@@ -59,7 +59,7 @@ func (b *boundedBuffer) Write(data []byte) (int, error) {
 func ValidCompiler(helper, sysroot string) bool {
 	return filepath.IsAbs(helper) && filepath.IsAbs(sysroot)
 }
-func Check(ctx context.Context, helper, sysroot string, trees []s.AST, source *files.Context) (Output, error) {
+func Check(ctx context.Context, helper, sysroot string, environment Environment, trees []s.AST, source *files.Context) (Output, error) {
 	if ctx == nil || !ValidCompiler(helper, sysroot) {
 		return Output{}, semantic.ErrInvalidRequest
 	}
@@ -76,7 +76,7 @@ func Check(ctx context.Context, helper, sysroot string, trees []s.AST, source *f
 	if units == nil {
 		return Output{Status: "missing-context", Diagnostics: []semantic.Diagnostic{diagnostic("missing-context", "Rust checking requires captured source and AST correspondence")}}, nil
 	}
-	encoded, err := json.Marshal(input{Version: 1, Units: units})
+	encoded, err := json.Marshal(input{Version: 2, Environment: environment, Units: units})
 	if err != nil {
 		return Output{}, err
 	}

@@ -34,13 +34,19 @@ type Provider struct {
 
 // bittype:scope docs/native-semantics.md#first-rust-profile
 func (p Provider) Resolve(ctx context.Context, request semantic.Request[s.Language]) (semantic.Result, error) {
-	if ctx == nil || request.Contract().Profile != n.ResolutionProfile || !n.MatchesConfiguration(request.Configuration()) {
+	if ctx == nil || request.Contract().Profile != n.ResolutionProfile {
 		return semantic.Result{}, semantic.ErrInvalidRequest
+	}
+	// The request states its environment. Settings that no supported
+	// environment gives are refused here, before the compiler runs.
+	environment, err := n.EnvironmentOf(request.Configuration())
+	if err != nil {
+		return semantic.Result{}, err
 	}
 	if err := p.Compiler.Validate(); err != nil {
 		return semantic.Result{}, err
 	}
-	out, err := rustsem.Check(ctx, p.Compiler.HelperPath, p.Compiler.SysrootPath, request.Inputs(), request.Files())
+	out, err := rustsem.Check(ctx, p.Compiler.HelperPath, p.Compiler.SysrootPath, rustsem.Environment{Edition: environment.Edition, Target: environment.Target, CrateName: environment.Crate.Name, CrateKind: environment.Crate.Kind}, request.Inputs(), request.Files())
 	if err != nil {
 		return semantic.Result{}, err
 	}

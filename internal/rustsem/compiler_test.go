@@ -25,6 +25,9 @@ func compilerFixture(t *testing.T) ([]s.AST, *files.Context) {
 	}
 	return []s.AST{parsed.ASTView()}, &files.Context{Files: files.Files{Entries: []files.File{{ID: "test", Path: "test.rs", Text: text}}}, Links: []files.SyntaxLink{{File: "test", Tree: "test", Source: "test"}}}
 }
+
+var environment = Environment{Edition: n.Edition2024, Target: n.TargetLinuxX64, CrateName: "pages", CrateKind: n.KindLibrary}
+
 func TestCompilerFailureAndProtocol(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("qualified helper execution platform is Linux")
@@ -37,14 +40,14 @@ func TestCompilerFailureAndProtocol(t *testing.T) {
 		if err := os.WriteFile(path, []byte("#!/bin/sh\ncat >/dev/null\nprintf '%s' '"+response+"'\n"), 0700); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Check(ctx, path, sysroot, trees, source); !errors.Is(err, n.ErrCompiler) {
+		if _, err := Check(ctx, path, sysroot, environment, trees, source); !errors.Is(err, n.ErrCompiler) {
 			t.Fatal(response, err)
 		}
 	}
-	if _, err := Check(ctx, filepath.Join(t.TempDir(), "missing"), sysroot, trees, source); !errors.Is(err, n.ErrCompiler) {
+	if _, err := Check(ctx, filepath.Join(t.TempDir(), "missing"), sysroot, environment, trees, source); !errors.Is(err, n.ErrCompiler) {
 		t.Fatal(err)
 	}
-	if _, err := Check(ctx, os.Getenv("BITTYPE_RUST_HELPER"), sysroot, trees, source); !errors.Is(err, n.ErrCompiler) {
+	if _, err := Check(ctx, os.Getenv("BITTYPE_RUST_HELPER"), sysroot, environment, trees, source); !errors.Is(err, n.ErrCompiler) {
 		t.Fatal("wrong sysroot", err)
 	}
 	t.Setenv("BITTYPE_SHOULD_NOT_LEAK", "secret-placeholder")
@@ -53,7 +56,7 @@ func TestCompilerFailureAndProtocol(t *testing.T) {
 	if err := os.WriteFile(path, []byte(script), 0700); err != nil {
 		t.Fatal(err)
 	}
-	if out, err := Check(ctx, path, sysroot, trees, source); err != nil || out.Status != "incomplete" {
+	if out, err := Check(ctx, path, sysroot, environment, trees, source); err != nil || out.Status != "incomplete" {
 		t.Fatal(out, err)
 	}
 }

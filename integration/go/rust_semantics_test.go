@@ -7,16 +7,19 @@ import (
 	parserust "github.com/Bitspark/bittype/parse/syntax/rust/provider/go"
 
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
+	"github.com/Bitspark/bittype/contracts/resolution/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/engine/go"
 	"github.com/Bitspark/bittype/files/go"
@@ -36,6 +39,33 @@ func rsCompiler(t *testing.T) resolve.Compiler {
 		t.Fatal("Provision the pinned Rust compiler and set BITTYPE_RUST_HELPER and BITTYPE_RUST_SYSROOT:", err)
 	}
 	return c
+}
+
+// rsEnvironment is the environment of these tests. Its crate name is not the
+// name of any profile, so a path that starts with it shows that the compiler
+// analyzed under the stated name.
+func rsEnvironment() n.Environment {
+	return n.Environment{Edition: n.Edition2024, Target: n.TargetLinuxX64, Crate: n.Crate{Name: "pages", Kind: n.KindLibrary}}
+}
+func rsSettingsFor(t *testing.T, environment n.Environment) []semantic.Setting {
+	t.Helper()
+	settings, err := n.ConfigurationFor(environment)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return settings
+}
+func rsSettings(t *testing.T) []semantic.Setting {
+	t.Helper()
+	return rsSettingsFor(t, rsEnvironment())
+}
+func rsContract(t *testing.T, settings []semantic.Setting) analysis.Contract {
+	t.Helper()
+	contract, err := n.AnalysisContractFor(settings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return contract
 }
 func rsCapture(t *testing.T, texts ...string) (semantic.Snapshot, []s.AST, *files.Context) {
 	t.Helper()
@@ -79,23 +109,31 @@ func rsCaptureTrees(t *testing.T, trees []s.AST, source *files.Context) semantic
 }
 func rsResults(t *testing.T, snapshot semantic.Snapshot) (semantic.Result, semantic.Result) {
 	t.Helper()
+	return rsResultsFor(t, snapshot, rsSettings(t))
+}
+func rsResultsFor(t *testing.T, snapshot semantic.Snapshot, settings []semantic.Setting) (semantic.Result, semantic.Result) {
+	t.Helper()
 	resolver, err := resolve.New(snapshot.Language(), rsCompiler(t))
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolved, err := resolver.Resolve(context.Background(), snapshot, semantic.Options{Configuration: n.Configuration()})
+	resolved, err := resolver.Resolve(context.Background(), snapshot, semantic.Options{Configuration: settings})
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyzerust.Provider{})
+	return resolved, rsAnalyze(t, snapshot, resolved, settings)
+}
+func rsAnalyze(t *testing.T, snapshot semantic.Snapshot, resolved semantic.Result, settings []semantic.Setting) semantic.Result {
+	t.Helper()
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), rsContract(t, settings), analyzerust.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := analyzer.Analyze(context.Background(), analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}})
+	result, err := analyzer.Analyze(context.Background(), analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: settings}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	return resolved, result
+	return result
 }
 func rsModel(t *testing.T, texts ...string) n.Model {
 	t.Helper()
@@ -109,9 +147,19 @@ func rsModel(t *testing.T, texts ...string) n.Model {
 }
 func rsDecl(t *testing.T, m n.Model, tree ast.TreeID, name string) n.Declaration {
 	t.Helper()
-	d, err := m.Lookup("captured::" + name)
+	d, err := m.Lookup(rsEnvironment().Crate.Name + "::" + name)
 	if err != nil {
 		t.Fatal(name, err)
+	}
+	return d
+}
+
+// rsRoot is the crate root, the module that pub(crate) restricts to.
+func rsRoot(t *testing.T, m n.Model) n.Declaration {
+	t.Helper()
+	d, err := m.Lookup(rsEnvironment().Crate.Name)
+	if err != nil {
+		t.Fatal(err)
 	}
 	return d
 }
@@ -137,15 +185,15 @@ func qualifyRust(t *testing.T) {
 	if err = e.RegisterResolver(resolver); err != nil {
 		t.Fatal(err)
 	}
-	resolved, err := e.Resolve(ctx, snapshot, semantic.Options{Configuration: n.Configuration()})
+	resolved, err := e.Resolve(ctx, snapshot, semantic.Options{Configuration: rsSettings(t)})
 	if err != nil {
 		t.Fatal(err)
 	}
-	input := analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}}
+	input := analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: rsSettings(t)}}
 	if _, err = e.Analyze(ctx, input); !errors.Is(err, engine.ErrMissingCapability) {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyzerust.Provider{})
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), rsContract(t, rsSettings(t)), analyzerust.Provider{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,8 +225,11 @@ func qualifyRust(t *testing.T) {
 	}
 	people := rsType(t, m, "People")
 	fields, ok := people.Fields()
-	if !ok || len(fields) != 2 || fields[0].Name != "items" || !fields[0].Public {
+	if !ok || len(fields) != 2 || fields[0].Name != "items" {
 		t.Fatal(fields)
+	}
+	if visibility, err := fields[0].Declaration.Visibility(); err != nil || !visibility.Public {
+		t.Fatal(visibility, err)
 	}
 	if !strings.Contains(fields[0].Type.String(), "Person") {
 		t.Fatal("missing field substitution", fields[0].Type.String())
@@ -192,7 +243,7 @@ func qualifyRust(t *testing.T) {
 	if reflect.DeepEqual(data, m.Graph().Data()) {
 		t.Fatal("mutable graph")
 	}
-	if _, err = analyzer.Analyze(ctx, analysis.Input{Snapshot: snapshot, Options: semantic.Options{Configuration: n.Configuration()}}); err == nil {
+	if _, err = analyzer.Analyze(ctx, analysis.Input{Snapshot: snapshot, Options: semantic.Options{Configuration: rsSettings(t)}}); err == nil {
 		t.Fatal("hidden resolver")
 	}
 }
@@ -245,7 +296,7 @@ pub type Item = models::Item;`)
 
 func TestRustSemanticNamespaceAndCoordinates(t *testing.T) {
 	m := rsModel(t, "// café\r\npub struct Boxed<T> {pub T: T}\r\npub type Small = Boxed<u8>;\r\n")
-	if _, err := m.Lookup("captured::Boxed::T"); !errors.Is(err, n.ErrForeign) {
+	if _, err := m.Lookup(rsEnvironment().Crate.Name + "::Boxed::T"); !errors.Is(err, n.ErrForeign) {
 		t.Fatal("ambiguous native namespaces selected by spelling", err)
 	}
 	box := rsDecl(t, m, "0", "Boxed")
@@ -313,9 +364,9 @@ func TestRustSemanticCaptureAndReceipts(t *testing.T) {
 	snapshot, trees, source := rsCapture(t, "pub struct A {} pub struct B {} pub type Alias = A;")
 	resolved, _ := rsResults(t, snapshot)
 	resolver, _ := resolve.New(snapshot.Language(), rsCompiler(t))
-	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyzerust.Provider{})
+	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), rsContract(t, rsSettings(t)), analyzerust.Provider{})
 	other := rsCaptureTrees(t, trees, source)
-	if _, err := analyzer.Analyze(ctx, analysis.Input{Snapshot: other, Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}}); err == nil {
+	if _, err := analyzer.Analyze(ctx, analysis.Input{Snapshot: other, Resolution: &resolved, Options: semantic.Options{Configuration: rsSettings(t)}}); err == nil {
 		t.Fatal("foreign receipt")
 	}
 	for i := range trees[0].Nodes {
@@ -324,7 +375,7 @@ func TestRustSemanticCaptureAndReceipts(t *testing.T) {
 		}
 	}
 	forged := rsCaptureTrees(t, trees, source)
-	if _, err := resolver.Resolve(ctx, forged, semantic.Options{Configuration: n.Configuration()}); !errors.Is(err, semantic.ErrInvalidRequest) {
+	if _, err := resolver.Resolve(ctx, forged, semantic.Options{Configuration: rsSettings(t)}); !errors.Is(err, semantic.ErrInvalidRequest) {
 		t.Fatal("forged source admitted", err)
 	}
 	_, trees, source = rsCapture(t, "pub struct A {} pub struct B {} pub type Alias = A;")
@@ -344,7 +395,7 @@ func TestRustSemanticCaptureAndReceipts(t *testing.T) {
 		}
 	}
 	forged = rsCaptureTrees(t, trees, source)
-	if _, err := resolver.Resolve(ctx, forged, semantic.Options{Configuration: n.Configuration()}); !errors.Is(err, semantic.ErrInvalidRequest) {
+	if _, err := resolver.Resolve(ctx, forged, semantic.Options{Configuration: rsSettings(t)}); !errors.Is(err, semantic.ErrInvalidRequest) {
 		t.Fatal("false reference admitted", err)
 	}
 	if _, err := resolver.Resolve(ctx, snapshot, semantic.Options{}); !errors.Is(err, semantic.ErrInvalidRequest) {
@@ -352,7 +403,7 @@ func TestRustSemanticCaptureAndReceipts(t *testing.T) {
 	}
 	cancelled, cancel := context.WithCancel(ctx)
 	cancel()
-	if _, err := resolver.Resolve(cancelled, snapshot, semantic.Options{Configuration: n.Configuration()}); !errors.Is(err, context.Canceled) {
+	if _, err := resolver.Resolve(cancelled, snapshot, semantic.Options{Configuration: rsSettings(t)}); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
 }
@@ -360,8 +411,9 @@ func TestRustSemanticCaptureAndReceipts(t *testing.T) {
 func TestRustSemanticConcurrent(t *testing.T) {
 	snapshot, _, _ := rsCapture(t, "pub struct Page<T> {pub item:T} pub type Bytes = Page<u8>;")
 	resolver, _ := resolve.New(snapshot.Language(), rsCompiler(t))
-	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), n.AnalysisContract(), analyzerust.Provider{})
-	resolved, err := resolver.Resolve(context.Background(), snapshot, semantic.Options{Configuration: n.Configuration()})
+	settings := rsSettings(t)
+	analyzer, _ := analysis.NewAnalyzer[s.Language](snapshot.Language(), rsContract(t, settings), analyzerust.Provider{})
+	resolved, err := resolver.Resolve(context.Background(), snapshot, semantic.Options{Configuration: settings})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -371,7 +423,7 @@ func TestRustSemanticConcurrent(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < 20; j++ {
-				result, err := analyzer.Analyze(context.Background(), analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}})
+				result, err := analyzer.Analyze(context.Background(), analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: settings}})
 				if err != nil {
 					t.Error(err)
 					return
@@ -418,5 +470,450 @@ pub type People = Page<Person>;`)
 	bounded := rsModel(t, `pub trait Marker {} pub struct Person {} impl Marker for Person {} pub struct Boxed<T: Marker> {pub value: T} pub type Good = Boxed<Person>;`)
 	if len(rsDecl(t, bounded, "0", "Boxed").Predicates()) == 0 {
 		t.Error("predicate relation: a bounded declaration has no predicate")
+	}
+	// The visibility names. Each is read from the raw graph, so that a name
+	// the vocabulary spells differently from the helper fails by itself.
+	visible := rsModel(t, `pub struct Public { pub field: Hidden } struct Hidden {}`)
+	graph := visible.Graph()
+	fact := func(d n.Declaration, relation semantics.Key) semantics.Term {
+		terms := graph.Facts(semantics.Subject{Entity: d.ID()}, relation)
+		if len(terms) != 1 {
+			return semantics.Term{}
+		}
+		term, _ := graph.Term(terms[0])
+		return term
+	}
+	public, hidden := rsDecl(t, visible, "0", "Public"), rsDecl(t, visible, "0", "Hidden")
+	if len(graph.Facts(semantics.Subject{Entity: public.ID()}, n.DeclaredVisibilityRelation())) != 1 {
+		t.Error("declared-visibility relation: an item has no declared visibility")
+	}
+	if fact(public, n.Key("declared-visibility")).Operator != n.PublicOperator() {
+		t.Error("public operator: a public item's declared visibility has another operator")
+	}
+	restricted := fact(hidden, n.Key("declared-visibility"))
+	if restricted.Operator != n.RestrictedOperator() {
+		t.Error("restricted operator: a private item's declared visibility has another operator")
+	}
+	if len(restricted.Operands) != 1 {
+		t.Error("restricted operator: no scope operand")
+	} else if scope, _ := graph.Term(restricted.Operands[0].Term); rsRoot(t, visible).Entity().Kind != n.ModuleKind() || scope.Target != rsRoot(t, visible).ID() {
+		t.Error("module kind: the scope of a private root item is not the crate root module")
+	}
+	if len(graph.Facts(semantics.Subject{Entity: public.ID()}, n.EffectiveVisibilityRelation())) != 1 {
+		t.Error("effective-visibility relation: an item has no effective visibility")
+	}
+	effective := fact(public, n.Key("effective-visibility"))
+	if effective.Operator != n.EffectiveVisibilityOperator() {
+		t.Error("effective-visibility operator: the effective fact has another operator")
+	}
+	var stated struct{ Audience, Path string }
+	if err := json.Unmarshal(effective.Data, &stated); err != nil {
+		t.Error(err)
+	}
+	if stated.Audience != n.AudienceAnotherCrate {
+		t.Error("audience: the effective fact states another audience", stated.Audience)
+	}
+	if stated.Path != n.PathDefinition {
+		t.Error("path: the effective fact states another path", stated.Path)
+	}
+	fields, _ := public.Type().Fields()
+	if len(fields) != 1 || len(graph.Facts(semantics.Subject{Entity: fields[0].Declaration.ID()}, n.PrivateInterfaceRelation())) != 1 {
+		t.Error("private-interface relation: a field with a more private type has no observation")
+	}
+}
+
+// The tests below are the Verify section of #278. They need the compiler
+// helper and run where it is provisioned.
+
+type rsVisibilityCase struct {
+	name     string
+	public   bool
+	scope    string
+	nameable bool
+}
+
+// Declared and effective visibility are two facts. D is declared public and
+// another crate cannot name it, because its module is private.
+func TestRustSemanticItemVisibility(t *testing.T) {
+	m := rsModel(t, `pub struct A {} struct B {} pub(crate) struct C {} mod m { pub struct D {} } pub mod n { pub struct E {} struct F {} }`)
+	root := rsRoot(t, m)
+	for _, c := range []rsVisibilityCase{
+		{name: "A", public: true, nameable: true},
+		{name: "B", scope: ""},
+		{name: "C", scope: ""},
+		{name: "m", scope: ""},
+		{name: "m::D", public: true},
+		{name: "n", public: true, nameable: true},
+		{name: "n::E", public: true, nameable: true},
+		{name: "n::F", scope: "n"},
+	} {
+		d := rsDecl(t, m, "0", c.name)
+		declared, err := d.Visibility()
+		if err != nil {
+			t.Errorf("%s: declared visibility: %v", c.name, err)
+			continue
+		}
+		scope := root
+		if c.scope != "" {
+			scope = rsDecl(t, m, "0", c.scope)
+		}
+		if c.public && (!declared.Public || declared.Scope.Valid()) {
+			t.Errorf("%s: declared %+v, want public", c.name, declared)
+		}
+		if !c.public && (declared.Public || declared.Scope.ID() != scope.ID()) {
+			t.Errorf("%s: declared %+v, want restricted to %s", c.name, declared, scope.Entity().Name)
+		}
+		effective, err := d.Effective()
+		if err != nil {
+			t.Errorf("%s: effective visibility: %v", c.name, err)
+			continue
+		}
+		if effective != (n.Effective{Audience: n.AudienceAnotherCrate, Path: n.PathDefinition, Nameable: c.nameable}) {
+			t.Errorf("%s: effective %+v, want nameable %v", c.name, effective, c.nameable)
+		}
+	}
+	// The crate root is a scope and no item: nothing declares it.
+	if _, err := root.Visibility(); !errors.Is(err, n.ErrMissingFact) {
+		t.Error("the crate root has a declared visibility", err)
+	}
+}
+
+// Every captured item has both facts and every captured field the declared
+// one, whatever its kind. What Rust gives no visibility has neither.
+func TestRustSemanticVisibilityCoverage(t *testing.T) {
+	m := rsModel(t, `pub trait Marker {} pub struct Person {pub name: String, age: u8} impl Marker for Person {}
+pub struct Pair(pub u8, bool);
+pub type People<T = Person> = Vec<T>;
+pub enum Choice<T> {Empty, Value(T), Named {value: T}}
+mod inner {pub(crate) enum Hidden {One} pub trait Local {} pub type Byte = u8;}`)
+	seen := map[string]int{}
+	for i, e := range m.Graph().Data().Entities {
+		if len(e.Declarations) == 0 {
+			continue
+		}
+		d, err := m.Declaration(semantics.EntityID(i + 1))
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, declared := d.Visibility()
+		_, effective := d.Effective()
+		seen[e.Kind.Name]++
+		switch e.Kind.Name {
+		case "module", "alias", "struct", "enum", "trait":
+			if declared != nil || effective != nil {
+				t.Errorf("%s %s: declared %v, effective %v", e.Kind.Name, e.Name, declared, effective)
+			}
+		case "field":
+			if declared != nil || !errors.Is(effective, n.ErrMissingFact) {
+				t.Errorf("field %s: declared %v, effective %v", e.Name, declared, effective)
+			}
+		case "variant", "impl", "parameter":
+			if !errors.Is(declared, n.ErrMissingFact) || !errors.Is(effective, n.ErrMissingFact) {
+				t.Errorf("%s %s has a visibility fact: declared %v, effective %v", e.Kind.Name, e.Name, declared, effective)
+			}
+		default:
+			t.Errorf("unexpected captured kind %s", e.Kind.Name)
+		}
+	}
+	for _, kind := range []string{"module", "alias", "struct", "enum", "trait", "field", "variant", "impl", "parameter"} {
+		if seen[kind] == 0 {
+			t.Errorf("the source has no captured %s", kind)
+		}
+	}
+	// A sysroot declaration is outside the capture and carries no fact.
+	fields, _ := rsType(t, m, "Person").Fields()
+	text, err := m.Declaration(fields[0].Type.Term().Target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := text.Visibility(); !errors.Is(err, n.ErrMissingFact) {
+		t.Error("a sysroot declaration has a declared visibility", err)
+	}
+}
+
+// A field's fact has the form of an item's. A yes or no could not tell
+// pub(crate) from private.
+func TestRustSemanticFieldVisibility(t *testing.T) {
+	m := rsModel(t, `mod m { pub struct S { pub(crate) shared: u8, own: u8, pub open: u8 } } pub enum Choice { Named { value: u8 } } enum Private { Named { value: u8 } }`)
+	fields, ok := rsType(t, m, "m::S").Fields()
+	if !ok || len(fields) != 3 {
+		t.Fatal(fields)
+	}
+	shared, err := fields[0].Declaration.Visibility()
+	if err != nil {
+		t.Fatal(err)
+	}
+	own, err := fields[1].Declaration.Visibility()
+	if err != nil {
+		t.Fatal(err)
+	}
+	open, err := fields[2].Declaration.Visibility()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if shared.Public || shared.Scope.ID() != rsRoot(t, m).ID() {
+		t.Error("pub(crate) field is not restricted to the crate root", shared)
+	}
+	if own.Public || own.Scope.ID() != rsDecl(t, m, "0", "m").ID() {
+		t.Error("private field is not restricted to its module", own)
+	}
+	if shared.Scope.ID() == own.Scope.ID() {
+		t.Error("pub(crate) and private read alike")
+	}
+	if !open.Public || open.Scope.Valid() {
+		t.Error("pub field", open)
+	}
+	// A variant field takes no modifier. The compiler resolves it to the
+	// visibility of its enum.
+	if v, err := rsDecl(t, m, "0", "Choice::Named::value").Visibility(); err != nil || !v.Public {
+		t.Error("field of a variant of a public enum", v, err)
+	}
+	if v, err := rsDecl(t, m, "0", "Private::Named::value").Visibility(); err != nil || v.Public || v.Scope.ID() != rsRoot(t, m).ID() {
+		t.Error("field of a variant of a private enum", v, err)
+	}
+}
+
+// rsTampered publishes facts under the Rust resolution contract. It stands for
+// a bridge that omits a fact.
+type rsTampered struct {
+	s.Language
+	facts semantics.Data
+}
+
+func (p rsTampered) Resolve(_ context.Context, request semantic.Request[s.Language]) (semantic.Result, error) {
+	publication := semantic.Publication{Facts: &p.facts}
+	for _, key := range []semantics.Key{n.Coverage(), n.Bindings(), n.Validity()} {
+		publication.Reports = append(publication.Reports, semantic.Report{Obligation: key, Status: semantic.Complete, Verdict: semantic.Holds})
+	}
+	return request.Publish(publication)
+}
+
+// rsWithoutFact opens a model of the same capture whose graph lacks the one
+// fact of relation about the named declaration.
+func rsWithoutFact(t *testing.T, snapshot semantic.Snapshot, resolved semantic.Result, name string, relation semantics.Key) n.Model {
+	t.Helper()
+	envelope, _ := resolved.Semantics()
+	graph, err := representation.UnpackSemantics[s.Language](snapshot.Language(), envelope)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data := graph.Data()
+	subject := semantics.EntityID(0)
+	for i, e := range data.Entities {
+		if e.Name == rsEnvironment().Crate.Name+"::"+name {
+			subject = semantics.EntityID(i + 1)
+		}
+	}
+	kept := data.Facts[:0:0]
+	for _, fact := range data.Facts {
+		if fact.Subject.Entity != subject || fact.Relation != relation {
+			kept = append(kept, fact)
+		}
+	}
+	if subject == 0 || len(kept) != len(data.Facts)-1 {
+		t.Fatalf("%s has %d facts of %s", name, len(data.Facts)-len(kept), relation.Name)
+	}
+	data.Facts = kept
+	resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), n.ResolutionContract(), rsTampered{facts: data})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tampered, err := resolver.Resolve(context.Background(), snapshot, semantic.Options{Configuration: rsSettings(t)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := n.Open(rsAnalyze(t, snapshot, tampered, rsSettings(t)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return m
+}
+
+// A graph from which one visibility fact was removed makes its reader fail.
+// The declaration is never read as private or as not nameable.
+func TestRustSemanticMissingVisibilityFactFails(t *testing.T) {
+	snapshot, _, _ := rsCapture(t, `pub struct A { pub value: u8 } pub struct B {}`)
+	resolved, result := rsResults(t, snapshot)
+	whole, err := n.Open(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v, err := rsDecl(t, whole, "0", "A").Visibility(); err != nil || !v.Public {
+		t.Fatal("the untouched graph", v, err)
+	}
+
+	m := rsWithoutFact(t, snapshot, resolved, "A", n.DeclaredVisibilityRelation())
+	if v, err := rsDecl(t, m, "0", "A").Visibility(); !errors.Is(err, n.ErrMissingFact) || v != (n.Visibility{}) {
+		t.Error("an item without its declared fact was read", v, err)
+	}
+	if _, err := rsDecl(t, m, "0", "A").Effective(); err != nil {
+		t.Error("the effective fact of the same item", err)
+	}
+	if v, err := rsDecl(t, m, "0", "B").Visibility(); err != nil || !v.Public {
+		t.Error("another item", v, err)
+	}
+
+	m = rsWithoutFact(t, snapshot, resolved, "A", n.EffectiveVisibilityRelation())
+	if e, err := rsDecl(t, m, "0", "A").Effective(); !errors.Is(err, n.ErrMissingFact) || e != (n.Effective{}) {
+		t.Error("an item without its effective fact was read", e, err)
+	}
+
+	m = rsWithoutFact(t, snapshot, resolved, "A::value", n.DeclaredVisibilityRelation())
+	fields, ok := rsType(t, m, "A").Fields()
+	if !ok || len(fields) != 1 {
+		t.Fatal(fields)
+	}
+	if v, err := fields[0].Declaration.Visibility(); !errors.Is(err, n.ErrMissingFact) || v != (n.Visibility{}) {
+		t.Error("a field without its declared fact was read", v, err)
+	}
+}
+
+// A public record whose field has a more private type is legal Rust and stays
+// analyzed. The compiler's observation is a fact on the field, and the same
+// source with a public type has none.
+func TestRustSemanticPrivateInterface(t *testing.T) {
+	read := func(text string) (n.Model, []n.Declaration) {
+		t.Helper()
+		snapshot, _, _ := rsCapture(t, text)
+		_, result := rsResults(t, snapshot)
+		if r, _ := result.Report(n.Validity()); r.Status != semantic.Complete || r.Verdict != semantic.Holds {
+			t.Fatal("a private interface is no invalid input", r, result.Diagnostics())
+		}
+		m, err := n.Open(result)
+		if err != nil {
+			t.Fatal(err, result.Diagnostics())
+		}
+		fields, ok := rsType(t, m, "Public").Fields()
+		if !ok || len(fields) != 1 {
+			t.Fatal(fields)
+		}
+		observed, err := fields[0].Declaration.PrivateInterface()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return m, observed
+	}
+	m, observed := read(`pub struct Public { pub field: Hidden } struct Hidden {}`)
+	if len(observed) != 1 || observed[0].ID() != rsDecl(t, m, "0", "Hidden").ID() {
+		t.Error("the private interface of Public::field is not observed", observed)
+	}
+	if on, err := rsDecl(t, m, "0", "Public").PrivateInterface(); err != nil || len(on) != 0 {
+		t.Error("the observation is about the field, as the compiler reports it", on, err)
+	}
+	if _, observed := read(`pub struct Public { pub field: Hidden } pub struct Hidden {}`); len(observed) != 0 {
+		t.Error("a public type is observed as private", observed)
+	}
+	if _, observed := read(`pub struct Public { field: Hidden } struct Hidden {}`); len(observed) != 0 {
+		t.Error("a private field is observed", observed)
+	}
+
+	// The compiler reports the same for an alias, a tuple field and a variant
+	// field, and once for each more private type.
+	m = rsModel(t, `struct Hidden {} struct Other {} pub type Alias = Hidden; pub struct Tuple(pub Hidden, pub Other); pub enum Choice { Value(Hidden) } pub struct Both { pub field: (Hidden, Other) }`)
+	hidden, other := rsDecl(t, m, "0", "Hidden").ID(), rsDecl(t, m, "0", "Other").ID()
+	for name, want := range map[string][]semantics.EntityID{
+		"Alias":            {hidden},
+		"Tuple::0":         {hidden},
+		"Tuple::1":         {other},
+		"Choice::Value::0": {hidden},
+		"Both::field":      {hidden, other},
+		"Hidden":           nil,
+	} {
+		observed, err := rsDecl(t, m, "0", name).PrivateInterface()
+		if err != nil {
+			t.Fatal(name, err)
+		}
+		var got []semantics.EntityID
+		for _, d := range observed {
+			got = append(got, d.ID())
+		}
+		slices.Sort(got)
+		slices.Sort(want)
+		if !slices.Equal(got, want) {
+			t.Errorf("%s: observed %v, want %v", name, got, want)
+		}
+	}
+}
+
+// The compiler analyzes under the environment's crate name, and the receipt
+// is bound to the environment.
+func TestRustSemanticEnvironment(t *testing.T) {
+	ctx := context.Background()
+	snapshot, _, _ := rsCapture(t, `pub struct A {}`)
+	other := rsEnvironment()
+	other.Crate.Name = "other"
+	_, result := rsResultsFor(t, snapshot, rsSettingsFor(t, other))
+	m, err := n.Open(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Lookup("other::A"); err != nil {
+		t.Error("the compiler did not analyze under the stated crate name", err)
+	}
+	if _, err := m.Lookup(rsEnvironment().Crate.Name + "::A"); !errors.Is(err, n.ErrForeign) {
+		t.Error("a path of another crate name resolves", err)
+	}
+
+	// Analysis claims the environment of its resolution and no other.
+	resolved, _ := rsResults(t, snapshot)
+	for name, contract := range map[string][]semantic.Setting{"contract of the resolution": rsSettings(t), "contract of the request": rsSettingsFor(t, other)} {
+		analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), rsContract(t, contract), analyzerust.Provider{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := analyzer.Analyze(ctx, analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: rsSettingsFor(t, other)}}); err == nil {
+			t.Errorf("%s: analysis under one environment took the resolution of another", name)
+		}
+	}
+
+	// A compiler that does not exist shows that a refusal precedes the compiler.
+	absent := resolve.Compiler{HelperPath: rsCompiler(t).SysrootPath + "/no-helper", SysrootPath: rsCompiler(t).SysrootPath}
+	resolver, err := resolve.New(snapshot.Language(), absent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := resolver.Resolve(ctx, snapshot, semantic.Options{Configuration: rsSettings(t)}); !errors.Is(err, n.ErrCompiler) {
+		t.Fatal("the absent compiler was not reached", err)
+	}
+	setting := func(value string) []semantic.Setting {
+		settings := rsSettings(t)
+		for i := range settings {
+			if settings[i].Key == n.Key("environment-1") {
+				settings[i].Value = []byte(value)
+				return settings
+			}
+		}
+		t.Fatal("no environment setting")
+		return nil
+	}
+	analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), rsContract(t, rsSettings(t)), analyzerust.Provider{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, value := range map[string]string{
+		"edition 2021":   `{"Edition":"2021","Target":"x86_64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[]}`,
+		"another target": `{"Edition":"2024","Target":"aarch64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[]}`,
+		"a binary crate": `{"Edition":"2024","Target":"x86_64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"bin"},"Dependencies":[]}`,
+		"one dependency": `{"Edition":"2024","Target":"x86_64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[{"Name":"serde"}]}`,
+	} {
+		if _, err := resolver.Resolve(ctx, snapshot, semantic.Options{Configuration: setting(value)}); !errors.Is(err, n.ErrUnsupported) || errors.Is(err, semantic.ErrInvalidRequest) {
+			t.Errorf("resolution with %s: %v, want unsupported", name, err)
+		}
+		if _, err := analyzer.Analyze(ctx, analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: setting(value)}}); !errors.Is(err, n.ErrUnsupported) || errors.Is(err, semantic.ErrInvalidRequest) {
+			t.Errorf("analysis with %s: %v, want unsupported", name, err)
+		}
+	}
+	// The configuration of the earlier helper profile is no configuration of
+	// this one.
+	earlier := []semantic.Setting{
+		{Key: n.Key("compiler"), Value: []byte("1.90.0")},
+		{Key: n.Key("environment"), Value: []byte("edition=2024;target=x86_64-unknown-linux-gnu;crate=captured;lib;sysroot-only;no-codegen")},
+		{Key: n.Key("helper"), Value: []byte("captured-types-1")},
+	}
+	if _, err := resolver.Resolve(ctx, snapshot, semantic.Options{Configuration: earlier}); !errors.Is(err, semantic.ErrInvalidRequest) {
+		t.Error("resolution with the earlier configuration", err)
+	}
+	if _, err := analyzer.Analyze(ctx, analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: earlier}}); !errors.Is(err, semantic.ErrInvalidRequest) {
+		t.Error("analysis with the earlier configuration", err)
 	}
 }

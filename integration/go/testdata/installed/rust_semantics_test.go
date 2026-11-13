@@ -55,15 +55,23 @@ func TestInstalledRustSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolved, err := resolver.Resolve(ctx, snapshot, semantic.Options{Configuration: n.Configuration()})
+	settings, err := n.ConfigurationFor(n.Environment{Edition: n.Edition2024, Target: n.TargetLinuxX64, Crate: n.Crate{Name: "consumer", Kind: n.KindLibrary}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	analyzer, err := analysis.NewAnalyzer[s.Language](definition, n.AnalysisContract(), analyzerust.Provider{})
+	resolved, err := resolver.Resolve(ctx, snapshot, semantic.Options{Configuration: settings})
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := analyzer.Analyze(ctx, analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: n.Configuration()}})
+	contract, err := n.AnalysisContractFor(settings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	analyzer, err := analysis.NewAnalyzer[s.Language](definition, contract, analyzerust.Provider{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := analyzer.Analyze(ctx, analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: settings}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,12 +79,18 @@ func TestInstalledRustSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err, result.Diagnostics())
 	}
-	pages, err := m.Lookup("captured::Pages")
+	pages, err := m.Lookup("consumer::Pages")
 	if err != nil {
 		t.Fatal(err)
 	}
 	fields, ok := pages.Type().Fields()
 	if !ok || len(fields) != 1 || !strings.Contains(fields[0].Type.String(), "Page<u8>") {
 		t.Fatal(fields)
+	}
+	if visibility, err := fields[0].Declaration.Visibility(); err != nil || !visibility.Public {
+		t.Fatal(visibility, err)
+	}
+	if effective, err := pages.Effective(); err != nil || !effective.Nameable {
+		t.Fatal(effective, err)
 	}
 }
