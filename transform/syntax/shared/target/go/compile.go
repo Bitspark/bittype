@@ -26,8 +26,9 @@ import (
 // Limit: two declarations with equal names and equal provenance are ordered by
 // their planned identity, which follows the order of the requested roots. Two
 // target declarations of one source declaration are such a pair, and so are
-// two helpers of one name. Compile refuses equal names today, and no plan
-// contains such a pair.
+// two helpers of one name. The order of such a pair is therefore not the same
+// for every order of the roots. A target that states one flat scope refuses
+// the pair in its program rule. A target that states none builds it.
 func compareDeclarations[T any](a, b g.PlannedDeclaration[T]) int {
 	return cmp.Or(
 		cmp.Compare(a.Description.Name, b.Description.Name),
@@ -41,25 +42,32 @@ func compareSites(a, b ast.NodeRef) int {
 	return cmp.Or(cmp.Compare(a.Tree, b.Tree), cmp.Compare(a.Node, b.Node))
 }
 
+// Compile builds the tree of a closed program. It holds no rule about names
+// across declarations: it identifies a declaration by its planned identity and
+// a parameter by its position, and it reads a name only to write it. Two
+// declarations of one name get two sites, and a parameter may be named like a
+// declaration. A target that needs one flat scope states that in its program
+// rule, and a language whose scopes follow from a placement decides its
+// collisions in its Files stage. Compile keeps the one rule whose meaning is
+// inside a declaration: the parameters of one declaration have names, and no
+// two of them share one.
 func Compile[T any](ctx context.Context, in g.BuildInput[T], store *Store[T], lower Lowering[T]) (g.Assembly, error) {
 	fail := func(e error) (g.Assembly, error) { return g.Assembly{}, e }
 	declarations := in.Program.Declarations()
 	if ctx == nil || store == nil || len(declarations) == 0 {
 		return fail(g.ErrInvalid)
 	}
-	names := map[string]bool{}
 	anchors := map[Fragment[T]]Symbol[T]{}
 	parameters := map[uint32][]Fragment[T]{}
 	for _, d := range declarations {
-		if d.ID == 0 || int(d.ID) > len(declarations) || names[d.Description.Name] {
+		if d.ID == 0 || int(d.ID) > len(declarations) {
 			return fail(g.ErrScope)
 		}
-		names[d.Description.Name] = true
 	}
 	for _, d := range declarations {
 		seen := map[string]bool{}
 		for i, p := range d.Description.Parameters {
-			if p.Name == "" || names[p.Name] || seen[p.Name] {
+			if p.Name == "" || seen[p.Name] {
 				return fail(g.ErrScope)
 			}
 			seen[p.Name] = true

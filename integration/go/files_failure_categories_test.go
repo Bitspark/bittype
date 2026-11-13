@@ -846,6 +846,115 @@ func TestFilesFailureCategories(t *testing.T) {
 		}
 	})
 	add("two declarations of one name in one file", typescript, source.ErrInvalid, tampered(renamed))
+	// A type parameter that would capture a use of a declaration of its file.
+	// A later slice may rename the parameter where that is permitted, so the
+	// placement is unsupported coverage. Another file for the declaration is
+	// admitted today: the import gets an alias.
+	capturing := func(t *testing.T, path files.Path) (bool, error) {
+		out := namesOutput(t, capturedNames)
+		return tsFormat(generated, out, format.FilesLimits{}, tsOneFile(out, "types", path).Issue())
+	}
+	add("a type parameter that captures a declaration of its file", typescript, source.ErrUnsupported, func(t *testing.T) (bool, error) {
+		return capturing(t, "types.ts")
+	})
+	add("a type parameter that captures a declaration of its file, in a file whose path is no TypeScript path", typescript, source.ErrInvalid, func(t *testing.T) (bool, error) {
+		return capturing(t, "types.txt")
+	})
+	capturedExisting := func(path string) func(*testing.T) (bool, error) {
+		declared := tsUnit("a", "export type T = string;")
+		user := tsUnit("user", "import type { T as U } from \"./a.js\"; export interface Box<T> { own: U; item: T }")
+		return tsExisting(&tsfiles.Organization{Units: []tsfiles.Placement{
+			{File: "both", Path: files.Path(path), Declarations: []ast.NodeRef{tsSite(declared, "T"), tsSite(user, "Box")}},
+		}}, declared, user)
+	}
+	add("a type parameter that captures a declaration of its file", typescriptExisting, source.ErrUnsupported, capturedExisting("both.ts"))
+	// Two captures whose text the compiler refuses. Until 13 November 2026 the
+	// compiler's answer came first and was missing evidence (TS2315, TS2313).
+	// TypeScript Files judges a capture itself, before a tree is built.
+	capturedIn := func(declaration, user string) func(*testing.T) (bool, error) {
+		declared := tsUnit("a", declaration)
+		using := tsUnit("user", user)
+		return tsExisting(&tsfiles.Organization{Units: []tsfiles.Placement{
+			{File: "both", Path: "both.ts", Declarations: []ast.NodeRef{tsSite(declared, "T"), tsSite(using, "Box")}},
+		}}, declared, using)
+	}
+	add("a captured use that is applied to arguments", typescriptExisting, source.ErrUnsupported, capturedIn("export type T<V> = V[];", "import type { T as U } from \"./a.js\"; export interface Box<T> { own: U<T> }"))
+	add("a capture in the constraint of the parameter", typescriptExisting, source.ErrUnsupported, capturedIn("export type T = string;", "import type { T as U } from \"./a.js\"; export interface Box<T extends U> { v: T }"))
+	// A use of a global type is written by the global's name. A declaration of
+	// the file, or a type parameter of the declaration that holds the use, that
+	// has that name would capture it. No builtin mapping writes a global type:
+	// a consumer's contribution does, here a list as the global Array.
+	arrays := selectedTS(listContribution("names/array/1", "", "Array"), "names/array/1")
+	add("a declaration named Array and a use of the global Array in one file", typescript, source.ErrUnsupported, func(t *testing.T) (bool, error) {
+		out := namesOutputWith(t, "module collision; type array = text; type box = list<text>;", arrays)
+		return tsFormat(generated, out, format.FilesLimits{}, tsOneFile(out, "types", "types.ts").Issue())
+	})
+	add("a type parameter named Array in the declaration that applies the global Array, which no placement helps", typescript, source.ErrUnsupported, func(t *testing.T) (bool, error) {
+		out := namesOutputWith(t, "module collision; type box<array> = list<array>;", arrays)
+		return tsFormat(generated, out, format.FilesLimits{}, tsOneFile(out, "types", "types.ts").Issue())
+	})
+	add("a declaration named Array and a use of the global Array in one file", typescriptExisting, source.ErrUnsupported, func(t *testing.T) (bool, error) {
+		declared := tsUnit("a", "export type Array = string;")
+		using := tsUnit("user", "export interface Box { items: Array<string> }")
+		return tsExisting(&tsfiles.Organization{Units: []tsfiles.Placement{
+			{File: "both", Path: "both.ts", Declarations: []ast.NodeRef{tsSite(declared, "Array"), tsSite(using, "Box")}},
+		}}, declared, using)(t)
+	})
+	// A member that is named like a type parameter of its interface. The
+	// compiler keeps the member and the parameter in one symbol, so the use of
+	// the parameter has two declarations in the graph. That is valid TypeScript
+	// which this profile does not tell apart: unsupported coverage, and no
+	// defect of the input. Until 13 November 2026 it was refused as invalid.
+	add("a member named like a type parameter of its declaration", typescriptExisting, source.ErrUnsupported, tsExisting(nil, tsUnit("input", "export interface Box<T> { T: T }")))
+	add("a member named like a type parameter of its declaration", typescript, source.ErrUnsupported, func(t *testing.T) (bool, error) {
+		out := namesOutput(t, "module collision; type Box<T> = { T: T; };")
+		return tsFormat(generated, out, format.FilesLimits{}, tsOneFile(out, "types", "types.ts").Issue())
+	})
+	// The reader refuses a member named like a type parameter while it reads the
+	// graph, which is before the two refusals of relocation. This row pins what
+	// is found first, as the row of a script does: the member, and not the use
+	// of an unexposed declaration of another file. The category describes the
+	// defect that was found.
+	add("a member named like a type parameter of its declaration and a use of an unexposed declaration of another file", typescriptExisting, source.ErrUnsupported, func(t *testing.T) (bool, error) {
+		member := tsUnit("member", "export interface Box<T> { T: T }")
+		return tsExisting(&tsfiles.Organization{Units: []tsfiles.Placement{
+			{File: "member", Path: "member.ts", Declarations: []ast.NodeRef{tsSite(member, "Box")}},
+			{File: "public", Path: "public.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Visible")}},
+			{File: "private", Path: "private.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Hidden")}},
+		}}, member, hidden)(t)
+	})
+	// The capture of a global type is a refusal of coverage too, and it is
+	// reported after everything invalid, wherever its file stands among the
+	// files: before the file with the use of an unexposed declaration, or after.
+	for _, order := range []string{"first", "last"} {
+		add("a global type captured in the "+order+" file and a use of an unexposed declaration of another file", typescriptExisting, source.ErrInvalid, func(t *testing.T) (bool, error) {
+			declared := tsUnit("a", "export type Array = string;")
+			using := tsUnit("user", "export interface Box { items: Array<string> }")
+			capture := tsfiles.Placement{File: "both", Path: "both.ts", Declarations: []ast.NodeRef{tsSite(declared, "Array"), tsSite(using, "Box")}}
+			apart := []tsfiles.Placement{
+				{File: "public", Path: "public.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Visible")}},
+				{File: "private", Path: "private.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Hidden")}},
+			}
+			units := append([]tsfiles.Placement{capture}, apart...)
+			if order == "last" {
+				units = append(apart, capture)
+			}
+			return tsExisting(&tsfiles.Organization{Units: units}, declared, using, hidden)(t)
+		})
+	}
+	// The capture is found in the same pass as the refusals of relocation and is
+	// reported after them: a placement that also separates an unexposed
+	// declaration from its user is invalid input.
+	add("a type parameter that captures a declaration of its file and a use of an unexposed declaration of another file", typescriptExisting, source.ErrInvalid, func(t *testing.T) (bool, error) {
+		declared := tsUnit("a", "export type T = string;")
+		user := tsUnit("user", "import type { T as U } from \"./a.js\"; export interface Box<T> { own: U; item: T }")
+		return tsExisting(&tsfiles.Organization{Units: []tsfiles.Placement{
+			{File: "both", Path: "both.ts", Declarations: []ast.NodeRef{tsSite(declared, "T"), tsSite(user, "Box")}},
+			{File: "public", Path: "public.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Visible")}},
+			{File: "private", Path: "private.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Hidden")}},
+		}}, declared, user, hidden)(t)
+	})
+	add("a type parameter that captures a declaration of its file, in a file whose path is no TypeScript path", typescriptExisting, source.ErrInvalid, capturedExisting("both.txt"))
 
 	// What the sealed generated output carries.
 	add("an external use of another issuer", typescript, source.ErrInvalid, tampered(func(in g.BuildInput[ts.Language], assembly *g.Assembly) error {

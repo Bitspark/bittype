@@ -263,6 +263,16 @@ const (
 	LargeHelperValue
 	// ManyEmptyValues states LargeValueBytes naming intents without content.
 	ManyEmptyValues
+	// SameName gives the declarations Person and Page one native name, Same.
+	SameName
+	// ParameterNamedSame also names the second parameter of Page Same, like the
+	// two declarations.
+	ParameterNamedSame
+	// SameParameters gives the two parameters of Page one name.
+	SameParameters
+	// TwoHelpersOfOneName gives Person a helper of its own. It is named Cursor,
+	// like the helper of Page, and its body is another primitive.
+	TwoHelpersOfOneName
 )
 
 // LargeValueBytes is the size of the value the two Large modes state.
@@ -438,6 +448,16 @@ func (f *Fixture) PlanDropping(ctx context.Context, names ...string) (g.Generati
 		return g.GenerationPlan{}, err
 	}
 	return f.planWith(ctx, Standard, SourceVariant{}, g.DefaultLimits(), f.Input(), roots, droppingTarget{target.Provider{Package: "generated"}})
+}
+
+// PlanTargetIn generates the named declarations under a mode, with the given
+// target in place of the fixture's Go target.
+func (f *Fixture) PlanTargetIn(ctx context.Context, mode Mode, built g.Target[s.Language], names ...string) (g.GenerationPlan, error) {
+	roots, err := f.roots(names)
+	if err != nil {
+		return g.GenerationPlan{}, err
+	}
+	return f.planWith(ctx, mode, SourceVariant{}, g.DefaultLimits(), f.Input(), roots, built)
 }
 
 // PlanTarget generates the named declarations with the given target in place

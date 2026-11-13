@@ -164,8 +164,12 @@ type request = g.Request[SourceLanguage]
 type projection = g.Projection[s.Language]
 type projected = g.Projected[s.Language]
 
-// cursorHelper is the local name of the helper that the page contribution owns.
-const cursorHelper = "cursor"
+// cursorHelper is the local name of the helper that the page contribution
+// owns, and markerHelper of the one that the person contribution owns.
+const (
+	cursorHelper = "cursor"
+	markerHelper = "marker"
+)
 
 // erased reports whether the policy describes a declaration as string and
 // represents neither its parameter nor its body. Ignore omits its source
@@ -207,8 +211,21 @@ func standard(from representation.Language, mode Mode, kept *g.Use[SourceLanguag
 		{
 			Reference: Reference("person", "golang/1"), Target: GoTarget, Profile: Profile, Domain: g.ForForm(person), Schema: EmptySchema,
 			Rule: rule{Decide: empty},
-			Project: func(context.Context, projection) (projected, error) {
-				return projected{Type: model.Record(model.Field("Name", false, model.Primitive("string"))), Members: []g.Member{{Name: "Name"}}}, nil
+			// Under TwoHelpersOfOneName the person contribution owns a helper of
+			// its own. It is spelled Cursor, like the helper that the page
+			// contribution owns, and its body is another primitive. The two are
+			// two declarations: the key of an owned declaration is its owner's
+			// reference and local name, and the spelling is not the key.
+			Owned: []g.OwnedDescription[s.Language]{{Name: markerHelper, Declaration: g.TargetDeclaration[s.Language]{Name: "Cursor", Form: model.Form("alias"), Body: model.Primitive("bool"), Values: []g.IssuedValue{access}}}},
+			Project: func(_ context.Context, p projection) (projected, error) {
+				if mode != TwoHelpersOfOneName {
+					return projected{Type: model.Record(model.Field("Name", false, model.Primitive("string"))), Members: []g.Member{{Name: "Name"}}}, nil
+				}
+				marker, err := p.Owned(markerHelper)
+				if err != nil {
+					return projected{}, err
+				}
+				return projected{Type: model.Record(model.Field("Name", false, model.Primitive("string")), model.Field("Marker", false, marker)), Members: []g.Member{{Name: "Name"}, {Name: "Marker"}}}, nil
 			},
 		},
 		{
@@ -322,6 +339,9 @@ func standard(from representation.Language, mode Mode, kept *g.Use[SourceLanguag
 					return zero, err
 				}
 				d := g.DeclarationDescription[s.Language]{Name: view.Name, Form: form, Values: []g.IssuedValue{value}, Body: p.Dependency(0).Type}
+				if (mode == SameName || mode == ParameterNamedSame) && (view.Name == "Person" || view.Name == "Page") {
+					d.Name = "Same"
+				}
 				if mode == ManyEmptyValues {
 					empty, err := namingIntent.Issue("")
 					if err != nil {
@@ -339,7 +359,14 @@ func standard(from representation.Language, mode Mode, kept *g.Use[SourceLanguag
 					// for. The declaration contribution owns it: it adds the
 					// parameter, the argument of every application and the member
 					// that uses it.
-					d.Generic.Parameters = append(d.Generic.Parameters, g.ParameterDescription{Name: "Storage"})
+					storage := "Storage"
+					switch mode {
+					case ParameterNamedSame:
+						storage = "Same"
+					case SameParameters:
+						storage = "T0"
+					}
+					d.Generic.Parameters = append(d.Generic.Parameters, g.ParameterDescription{Name: storage})
 					d.Generic.Arguments = append(d.Generic.Arguments, model.Collection(g.Argument[s.Language](0)))
 					members := d.Body.Arguments()
 					if len(members) != 2 {

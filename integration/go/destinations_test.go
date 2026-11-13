@@ -394,6 +394,18 @@ func TestEveryNameUseOfASealedOutputCarriesOneDestination(t *testing.T) {
 				t.Errorf("the global type records the destination %+v: %v", symbol, err)
 			}
 		}
+		// Outputs in which a name does not say what is meant: a type parameter
+		// named like a declaration that its declaration also uses, and two
+		// declarations of one name of which one uses the other. Every use still
+		// carries one destination, and the name plays no part in it.
+		references, external = checkDestinations(t, namesOutput(t, capturedNames), typescriptDestinations())
+		if references != 2 || external != 0 {
+			t.Errorf("the output with a parameter named like a declaration has %d references and %d external uses", references, external)
+		}
+		references, external = checkDestinations(t, namesOutput(t, importedSameName), typescriptDestinations())
+		if references != 1 || external != 0 {
+			t.Errorf("the output with two declarations of one name has %d references and %d external uses", references, external)
+		}
 	})
 	t.Run("go", func(t *testing.T) {
 		e, _, input := generationInput(t, paginationModule())
