@@ -25,7 +25,7 @@ This page does not repeat them.
   [architectural correctness](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#numbered-rules),
   or a dated rule in [`AGENTS.md`](../AGENTS.md) or [`LAYOUT.md`](../LAYOUT.md).
 - **An accepted page:** a page of this repository on `main`, quoted with its
-  file and line at `0daee73`.
+  file and line at `0581401`.
 - **M1 to M9:** the nine decisions of the
   [grade](https://github.com/Bitspark/bittype/issues/305#issuecomment-6855741567).
   bittype has no architecture seat, so the research owner graded and said so
@@ -39,7 +39,7 @@ This page does not repeat them.
   them, and they then get a decision number.
   [Section 11](#11-decisions-and-deferrals) lists all nine.
 
-Code is quoted with its file and line on `main` at `0daee73`. The existing
+Code is quoted with its file and line on `main` at `0581401`. The existing
 code is given as a fact and never as a reason for a choice
 ([AC-09](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-09)).
 Counts come with the command that gives them.
@@ -281,7 +281,7 @@ form holds it.
 
 - The relation from a form to the nodes it becomes stays code, and it is the
   target's: "Target implementations are trusted interpreters of their own
-  native forms" (`docs/generation-planner.md:529-530`).
+  native forms" (`docs/generation-planner.md:535-536`).
 - "Declared" means two things and no table: the relation is written on the
   language's page, and one test for each form builds the form, checks the
   tree, has it analysed and compares what analysis reports with what the
@@ -351,7 +351,7 @@ here. M4 (rows R7i, R14, R15, R24, R26) decides what it becomes.
 | Part | What it becomes | Source |
 | --- | --- | --- |
 | The form names and the shape of each form | One declared table per language, as data, on the model side, with a declared identity | M4; row R15, parts 1 and 2; row R19 |
-| The checks of well-formedness | **One** checker in the agnostic layer, which reads a language's table. It lives in the kernel package that holds the single-scope check, `transform/syntax/shared/target/go` (`check.go:11`) | M4; row R24. [AC-11](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-11): "Per-language copies of that mechanism are forbidden." |
+| The checks of well-formedness | **One** checker in the agnostic layer, which reads a language's table. It lives in the kernel package that holds the single-scope check, `transform/syntax/shared/target/go` (`check.go:36`) | M4; row R24. [AC-11](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-11): "Per-language copies of that mechanism are forbidden." |
 | The constructors | **One** constructor in the agnostic layer. A language keeps typed constructors over it, in a package that mappings may import | M4; rows R15 and R24 |
 | Lowering and coverage | The target keeps both. It passes its language's table to the checker and adds its own coverage answers | M4; row R15, part 5. The accepted contract gives the checks to the target: "The planner invokes its checks against intended native forms and the completed program." (`docs/generation-spi.md:332-333`) |
 | The condition "a Go defined type has a record body" (`model.go:105-110`) | It leaves the package. It is neither Go's rule nor the target's. Its owner is the contribution that supplies the declaration | M4; row R14. "alias or defined declaration \| The contribution that supplies the declaration: the default declaration policy or an exact mapping" (`docs/contribution-contract.md:203`) |
@@ -786,7 +786,7 @@ The command for the production packages, at the repository root:
 git ls-tree -r --name-only origin/main | grep '\.go$' | grep -v '_test\.go$' | grep -Ev '(^|/)testdata/' | xargs -n1 dirname | sort -u
 ```
 
-It gives 129 at `0daee73`. "Whole" means that the package takes the prefix
+It gives 129 at `0581401`. "Whole" means that the package takes the prefix
 of its root and nothing else changes. The paths in the column "After" use
 the proposed names (P1, P2, P5). The side of each part is decided by the row
 named, and where no row is named it is derived here from the test.
@@ -1071,7 +1071,7 @@ break rule 1 or rule 2 wherever a mixed package lands (row R31). The order:
 
 | Slice | What it delivers | Where | Waits for | Validation, from the table "Applied" |
 | --- | --- | --- | --- | --- |
-| S0 | This page, with the clarifications in `LAYOUT.md`, `AGENTS.md`, `docs/package-boundaries.md` and `docs/generation-composition.md`, and the case bittype/ACX-014 | `main` | Nothing | "the page merged after an independent review that checks each quoted rule against its source" |
+| S0 | This page, with the clarifications in `LAYOUT.md`, `AGENTS.md`, `docs/package-boundaries.md` and `docs/generation-composition.md`, and the case bittype/ACX-015 | `main` | Nothing | "the page merged after an independent review that checks each quoted rule against its source" |
 | S1 | `CheckMember` leaves the four intended-forms packages, and the target states it | The migration's branch, pull request #308 | Nothing | "a test that fails while a check sits in a model package, red on the branch before the move" |
 | S2 | The split of the intended-forms packages ([section 5](#5-intent)) | The migration's branch, as its own pull request | S0 | "the five intended-forms packages hold no function; one checker test per table, red by mutant; outputs equal by digest" |
 | S3 | The grammar tables and their type on the model side, with predicates named by identity | `main` | S0 | "the tables are data in a model package; the checker test red by mutant of a table entry" |
@@ -1110,7 +1110,7 @@ deferral of a move, which
 [AC-10](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-10)
 permits only with a record: "Record such a deferral in the case with its
 reason and the trigger that ends it; the violation stays open."
-[bittype/ACX-014](architecture-cases/0014-models-hold-operations.md) records
+[bittype/ACX-015](architecture-cases/0015-models-hold-operations.md) records
 it, with the merge of the migration as the trigger. This order differs from
 the verifier's, who would make the split on `main` first (row R29).
 
@@ -1156,7 +1156,7 @@ from the first split on:
 as a list from old path to new, for every package and half that is still at
 an old path. It rewrites the import strings of the module
 (`git grep -o '"github.com/Bitspark/bittype/[^"]*"' origin/main -- '*.go' | wc -l`
-gives 2,121 in 365 files), the paths in the workflow files, the role
+gives 2,137 in 367 files), the paths in the workflow files, the role
 function and its tables, and the path prefixes that the documentation tool
 reads. No identity of a model or of a contribution is a package path
 ([section 6](#6-declared-models)), so the move changes none. The numbers
@@ -1210,7 +1210,7 @@ anyone can check.
 | What is deferred | Why | The trigger that ends it | Source |
 | --- | --- | --- | --- |
 | A shared identity for single notions of intent and analysed semantics, such as Go's slice | No reader exists | A non-test file imports both a language's intent vocabulary and its semantic vocabulary. The command is in [section 4](#4-one-languages-models) | Row R13a |
-| The move of the checks out of the four intended-forms packages on `main` | Every importer is a file that the migration's branch rewrites, so the move is made once, on the branch | The migration of #196 merges. The violation stays open until then, in [bittype/ACX-014](architecture-cases/0014-models-hold-operations.md) | M8; AC-10 |
+| The move of the checks out of the four intended-forms packages on `main` | Every importer is a file that the migration's branch rewrites, so the move is made once, on the branch | The migration of #196 merges. The violation stays open until then, in [bittype/ACX-015](architecture-cases/0015-models-hold-operations.md) | M8; AC-10 |
 | A relation from a form to what analysis reports, as data | No package would read it | The first package that must read such a relation without running the test of the form | Row R10 |
 | A plain record of a native intent node on the model side | Nothing outside the generation contract would read it | The first package outside the generation contract that must hold native intent without a planner | P3, alternative A, if P3 is taken as proposed |
 
