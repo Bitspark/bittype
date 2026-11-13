@@ -471,6 +471,19 @@ func TestGoPackageNameIsAFactSeparateFromThePath(t *testing.T) {
 	if term := b.Terms[fact[0]-1]; n.PackageNameRelation() != (semantics.Key{Owner: "go", Name: "package-name"}) || term.Kind != semantics.ProviderExpression || term.Operator != (semantics.Key{Owner: "go", Name: "package-name"}) || term.Encoding != (semantics.Key{Owner: "go", Name: "utf8"}) || len(term.Operands) != 0 {
 		t.Fatal("the form of the package-name fact changed", n.PackageNameRelation(), term)
 	}
+	// The display facts are text in the same encoding.
+	displays := 0
+	for _, term := range b.Terms {
+		if term.Operator == (semantics.Key{Owner: "go", Name: "display"}) {
+			displays++
+			if term.Encoding != (semantics.Key{Owner: "go", Name: "utf8"}) {
+				t.Fatal("the encoding of a display term changed", term.Encoding)
+			}
+		}
+	}
+	if displays == 0 {
+		t.Fatal("no display term")
+	}
 	b.Terms[fact[0]-1].Data = []byte("pages")
 	if !reflect.DeepEqual(a, b) {
 		t.Fatal("the graphs differ beyond the package-name fact")
@@ -844,7 +857,7 @@ func TestGoUnsupportedDirectoryHasOneAnswerWhereverItEnters(t *testing.T) {
 			validity, _ := result.Report(n.Validity())
 			ds := result.Diagnostics()
 			if coverage.Status != semantic.Unsupported || validity.Verdict != semantic.Undetermined || result.HasSemantics() || len(ds) == 0 || ds[0].At == nil || *ds[0].At != (ast.NodeRef{Tree: trees[file].ID, Node: trees[file].Root}) || !strings.HasSuffix(ds[0].Message, ": "+file+" is a test, ignored or vendored file") {
-				t.Fatal("a captured file in the directory", file, outputRoot, coverage, validity, ds)
+				t.Error("a captured file in the directory:", file, outputRoot, coverage, validity, ds)
 			}
 		}
 		// As the output root it is refused with the same category, and no setting is written.
@@ -866,14 +879,34 @@ func TestGoUnsupportedDirectoryHasOneAnswerWhereverItEnters(t *testing.T) {
 		t.Error("an output root with a vendor element and an invalid one:", err)
 	}
 	// A name that only resembles one is covered at both entrances.
-	for _, directory := range []string{"Vendor", "TestData", "testdata2", "vendors", "a_b", "x.testdata", "gen_"} {
-		captured, _ := goImportModel(t, map[string]string{directory + "/types.go": source}, goImportSettingsAt(t, "generated"))
-		if got := goPackageNames(captured); !reflect.DeepEqual(got, map[string][]string{goImportModule + "/generated/" + directory: {"p"}}) {
-			t.Fatal("a captured file in a covered directory", directory, got)
+	covered := func(file string, environment n.ImportEnvironment, want string) string {
+		settings, err := n.ImportConfiguration(environment)
+		if err != nil {
+			return "no setting: " + err.Error()
 		}
-		root, _ := goImportModel(t, map[string]string{"types.go": source}, goImportSettingsAt(t, directory))
-		if got := goPackageNames(root); !reflect.DeepEqual(got, map[string][]string{goImportModule + "/" + directory: {"p"}}) {
-			t.Fatal("a covered directory as the output root", directory, got)
+		snapshot, _ := goPackageCapture(t, map[string]string{file: source}, true)
+		_, result, err := goImportResults(t, snapshot, settings)
+		if err != nil {
+			return err.Error()
+		}
+		if coverage, _ := result.Report(n.Coverage()); coverage.Status != semantic.Complete || !result.HasSemantics() {
+			return "not covered"
+		}
+		model, err := n.Open(result)
+		if err != nil {
+			return err.Error()
+		}
+		if got := goPackageNames(model); !reflect.DeepEqual(got, map[string][]string{want: {"p"}}) {
+			return "another package"
+		}
+		return ""
+	}
+	for _, directory := range []string{"Vendor", "TestData", "testdata2", "vendors", "a_b", "x.testdata", "gen_"} {
+		if problem := covered(directory+"/types.go", generated, goImportModule+"/generated/"+directory); problem != "" {
+			t.Error("a captured file in a covered directory:", directory, problem)
+		}
+		if problem := covered("types.go", n.ImportEnvironment{Module: goImportModule, OutputRoot: directory}, goImportModule+"/"+directory); problem != "" {
+			t.Error("a covered directory as the output root:", directory, problem)
 		}
 	}
 }
