@@ -12,13 +12,17 @@ import (
 
 const CompilerVersion = "1.90.0"
 
-const ResolutionProfile = "rustc-1.90.0/captured-types-1/resolution-1"
-const AnalysisProfile = "rustc-1.90.0/captured-types-1/analysis-1"
+// The two profiles are in their second version. The first one's fields term
+// carried a member that this one's does not, so a reader of the first cannot
+// read a graph of this one.
+const ResolutionProfile = "rustc-1.90.0/captured-types-2/resolution-1"
+const AnalysisProfile = "rustc-1.90.0/captured-types-2/analysis-1"
 
 // HelperProfile names the facts that the compiler helper writes. It is a
 // setting of every configuration and changes when facts are added, so a
 // receipt of another helper is never read as one of this helper. The two
-// profile strings above are not derived from it.
+// profile strings above are not derived from it: they change on their own
+// occasion.
 const HelperProfile = "captured-types-2"
 
 var ErrForeign = errors.New("foreign or missing Rust semantic handle")

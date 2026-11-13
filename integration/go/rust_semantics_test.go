@@ -934,3 +934,74 @@ func TestRustSemanticEnvironment(t *testing.T) {
 		t.Error("analysis with the earlier configuration", err)
 	}
 }
+
+// rsReusing publishes its resolution's graph as an analysis. It stands for an
+// analyzer of another profile.
+type rsReusing struct{ s.Language }
+
+func (rsReusing) Analyze(_ context.Context, request analysis.Request[s.Language]) (semantic.Result, error) {
+	resolved, _ := request.Resolution()
+	publication := semantic.Publication{ReuseSemanticsFrom: &resolved}
+	for _, key := range []semantics.Key{n.Coverage(), n.Bindings(), n.Validity()} {
+		publication.Reports = append(publication.Reports, semantic.Report{Obligation: key, Status: semantic.Complete, Verdict: semantic.Holds})
+	}
+	return request.Publish(publication)
+}
+
+// The profile's vocabulary changed incompatibly, so the profile has a new
+// version. A receipt of the earlier version is refused by its profile alone:
+// these receipts carry the configuration of this version. The test needs no
+// compiler.
+func TestRustSemanticEarlierProfileIsRefused(t *testing.T) {
+	ctx := context.Background()
+	snapshot, _, _ := rsCapture(t, `pub struct A {}`)
+	settings := rsSettings(t)
+	const earlierResolution, earlierAnalysis = "rustc-1.90.0/captured-types-1/resolution-1", "rustc-1.90.0/captured-types-1/analysis-1"
+	resolve := func(profile string) semantic.Result {
+		t.Helper()
+		contract := n.ResolutionContract()
+		contract.Semantic.Profile = profile
+		resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), contract, rsTampered{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		resolved, err := resolver.Resolve(ctx, snapshot, semantic.Options{Configuration: settings})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return resolved
+	}
+	analyze := func(profile string, resolved semantic.Result) (semantic.Result, error) {
+		t.Helper()
+		contract := rsContract(t, settings)
+		contract.Semantic.Profile = profile
+		analyzer, err := analysis.NewAnalyzer[s.Language](snapshot.Language(), contract, rsReusing{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return analyzer.Analyze(ctx, analysis.Input{Snapshot: snapshot, Resolution: &resolved, Options: semantic.Options{Configuration: settings}})
+	}
+
+	// The same graph and configuration under this version are admitted.
+	current := resolve(n.ResolutionProfile)
+	analyzed, err := analyze(n.AnalysisProfile, current)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := n.Open(analyzed); err != nil {
+		t.Fatal("a receipt of this profile", err)
+	}
+
+	// Analysis does not take a resolution receipt of the earlier profile.
+	if _, err := analyze(n.AnalysisProfile, resolve(earlierResolution)); !errors.Is(err, semantic.ErrInvalidRequest) {
+		t.Error("a resolution receipt of the earlier profile was admitted", err)
+	}
+	// The reader does not open an analysis receipt of the earlier profile.
+	earlier, err := analyze(earlierAnalysis, current)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := n.Open(earlier); !errors.Is(err, semantic.ErrInvalidRequest) {
+		t.Error("an analysis receipt of the earlier profile was opened", err)
+	}
+}

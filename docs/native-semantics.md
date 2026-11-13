@@ -668,20 +668,8 @@ and `helper` with `captured-types-1`. Both providers refuse it as invalid
 input, and no evidence requirement exists for it, so a receipt of the earlier
 helper is not admitted as one of this helper and `rust.Open` refuses it.
 
-**The profile strings are unchanged.** They are
-`rustc-1.90.0/captured-types-1/resolution-1` and
-`rustc-1.90.0/captured-types-1/analysis-1`, as before. What changed is the
-configuration: the helper profile, which
-[#278](https://github.com/Bitspark/bittype/issues/278) decides to rename
-whenever facts are added, and the environment setting. A receipt is admitted
-by its profile and its configuration together, so the two helpers' receipts
-stay apart. This states what was done and no general rule: no accepted
-document says when a profile string changes. This change differs from the
-`package-name` fact of the Go profile in one point. It does not only add
-facts. It also removes the `Public` member from the data of the `fields`
-term, so a graph of this helper would read as "no field is public" to a
-reader of the earlier form. The configuration keeps such a reader from
-admitting it.
+The profile strings changed with the configuration, see
+[the vocabulary](#rust-vocabulary).
 
 The remote gate builds the helper with Rust 1.90.0, `rustc-dev` and
 `llvm-tools-preview`; `RUSTC_BOOTSTRAP=1` enables the private compiler API only
@@ -729,6 +717,8 @@ prelude and sysroot are part of the explicit environment, not a library-name
 switch in the kernel.
 <!-- bittype:overview:end -->
 
+### Rust vocabulary
+
 The provider-owned `rust` vocabulary is:
 
 | Graph element | Meaning |
@@ -745,6 +735,23 @@ The provider-owned `rust` vocabulary is:
 | `private-interface` fact | On a captured declaration whose interface names a declaration more private than itself, one for each such observation of the compiler: a reference to the more private declaration |
 | `primitive`, `tuple`, `slice`, `array`, `pointer`, `reference` expressions | Rust-owned `json-1` metadata and ordered type operands |
 | `public`, `restricted`, `effective-visibility` expressions | The forms of the two visibility facts |
+
+**The profile has a new version since 13 November 2026:**
+`rustc-1.90.0/captured-types-2/resolution-1` and
+`rustc-1.90.0/captured-types-2/analysis-1`, where the strings said
+`captured-types-1`. The change that added the three visibility facts also
+removed the `Public` member from the data of the `fields` term. An analysis
+profile is "A versioned contract defining obligations, domains, vocabulary and
+requirements for a model" ([analysis](analysis.md#concepts)), and "Matching
+profiles are explicit compatibility promises"
+([resolution](resolution.md#capture-once-invoke-explicitly)). A reader written
+for the earlier vocabulary cannot read a graph without that member, so the
+promise of the earlier version does not hold and the version changed. A receipt
+of the earlier version is refused twice, by its profile and by its
+configuration. Analysis meets the profile first: the shared admission of its
+resolution receipt compares the profile before the configuration. `rust.Open`
+meets the configuration first: it reads the environment from the receipt's
+settings before it admits the receipt.
 
 Generic parameters retain their actual owning declaration and slot. Rust's
 implicit trait `Self` is a distinct binder even though rustc internally reuses
