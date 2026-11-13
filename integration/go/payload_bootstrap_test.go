@@ -73,8 +73,8 @@ import (
 	optionalfamily "github.com/Bitspark/bittype/transform/syntax/horos/family/optional/go"
 	recordfamily "github.com/Bitspark/bittype/transform/syntax/horos/family/record/go"
 	textfamily "github.com/Bitspark/bittype/transform/syntax/horos/family/text/go"
-	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	"github.com/Bitspark/bittype/transform/syntax/horos/payload/go"
+	"github.com/Bitspark/bittype/transform/syntax/shared/publisher/go"
 )
 
 // payloadCase is one vocabulary package with the codec of its schema and the
@@ -289,7 +289,7 @@ func TestOneMeaningAndARepresentationRevisionPerTarget(t *testing.T) {
 			t.Errorf("the families %s and %s share the meaning %v", other, c.name, c.reference.Meaning)
 		}
 		seenMeanings[c.reference.Meaning] = c.name
-		if !c.reference.Valid() || c.reference.Identity.Publisher != rules.Publisher {
+		if !c.reference.Valid() || c.reference.Identity.Publisher != publisher.Name {
 			t.Errorf("%s/%s has the reference %v", c.native, c.name, c.reference)
 		}
 		if identities[c.reference.Identity] {

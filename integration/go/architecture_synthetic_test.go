@@ -288,7 +288,7 @@ var syntheticFoundations = []string{
 	"contracts/analysis/go", "contracts/check/go", "contracts/format/go", "contracts/generation/go", "contracts/language/go",
 	"contracts/parse/go", "contracts/print/go", "contracts/resolution/go", "contracts/semantic/go", "contracts/text/go",
 	"contracts/transform/go", "files/go", "internal/concrete", "internal/grammar", "internal/lex", "internal/parseutil",
-	"internal/tree", "semantics/go", "source/go", "transform/syntax/shared/contribution/go", "transform/syntax/shared/target/go", "trees/ast/go", "trees/representation/go",
+	"internal/tree", "semantics/go", "source/go", "transform/syntax/shared/contribution/go", "transform/syntax/shared/publisher/go", "transform/syntax/shared/target/go", "trees/ast/go", "trees/representation/go",
 }
 
 // languageLayout is every package shape of one language, each importing all
@@ -399,7 +399,7 @@ func (s *syntheticSet) pair(source, native string) {
 		family := "transform/syntax/" + source + "/family/" + name + "/go"
 		vocabulary := base + "/vocabulary/" + name + "/go"
 		s.add(family, "contracts/generation/go")
-		s.add(vocabulary, "contracts/generation/go", "transform/syntax/"+source+"/mapping/go", family)
+		s.add(vocabulary, "contracts/generation/go", "transform/syntax/shared/publisher/go", family)
 		s.add(base+"/codec/"+name+"/go", "contracts/generation/go", payloadShared, vocabulary)
 		s.importsExternal(base+"/codec/"+name+"/go", codecModels...)
 		s.add(base+"/mapping/"+name+"/go", append(replaced(pairImports, replacer), vocabulary)...)

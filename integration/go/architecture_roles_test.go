@@ -193,11 +193,11 @@ func bundleRole(relative string) (roleRule, bool) {
 	case "vocabulary":
 		// The reference of one contribution and the plain Go type of its
 		// payload schema. It imports the contract for the identity types, the
-		// vocabulary of its family for the meaning (O27) and the profile
-		// identities of its source's mapping side for the publisher. It
-		// imports nothing of horos or ontos.
+		// vocabulary of its family for the meaning (O27) and the name of its
+		// publisher, which names no language. It imports nothing of horos or
+		// ontos.
 		rule = role("transform/syntax/<source>-to-<target>/vocabulary/<name>/go", roleVocabulary, languages,
-			"contracts/generation/go", "transform/syntax/<source>/mapping/go",
+			"contracts/generation/go", "transform/syntax/shared/publisher/go",
 		)
 		family := "transform/syntax/" + source + "/family/" + name + "/go"
 		rule.admits = func(dependency string) bool { return dependency == family }
@@ -484,9 +484,8 @@ func transformRole(relative string) (roleRule, bool) {
 		return rule, true
 	}
 	if len(component) == 1 && component[0] == "mapping" {
-		// The identities of one source language's mapping side: its profiles
-		// and the publisher of their contributions. It imports nothing, so that
-		// the vocabulary of a contribution, which imports it, reaches no reader.
+		// The identities of one source language's mapping side: its profiles.
+		// It imports nothing.
 		return role("transform/syntax/<language>/mapping/go", roleVocabulary, language), true
 	}
 	if _, ok := commonMappingSource(relative); ok {

@@ -19,7 +19,7 @@ import (
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	family "github.com/Bitspark/bittype/transform/syntax/horos/family/boolean/go"
-	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
+	"github.com/Bitspark/bittype/transform/syntax/shared/publisher/go"
 )
 
 // Reference is the contribution reference: the identity, the family's meaning,
@@ -27,7 +27,7 @@ import (
 // representation revision, which fixes the invariants of this target's
 // representation.
 var Reference = g.ContributionReference{
-	Identity:       g.ContributionIdentity{Publisher: rules.Publisher, Key: "horos-to-typescript/boolean"},
+	Identity:       g.ContributionIdentity{Publisher: publisher.Name, Key: "horos-to-typescript/boolean"},
 	Meaning:        family.Meaning,
 	Representation: "typescript/1",
 }

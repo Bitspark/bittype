@@ -1,6 +1,5 @@
 // Package mapping holds the identities that the horos mapping side declares:
-// the two generation profiles and the publisher of the contributions of the
-// structural profile.
+// the two generation profiles.
 // It holds identities only and imports nothing.
 //
 // A profile is a promise about the native type, so the contribution that
@@ -25,13 +24,3 @@ const RepresentationProfile = "structural-representation/1"
 // this module states it, so the registry finds no contribution for a request
 // that names it and refuses the request as a missing contribution.
 const EnforcementProfile = "structural-enforcement/1"
-
-// Publisher names the publisher of the contributions of the structural
-// profiles: the library that publishes them, which is bittype (row 15). The
-// representation owner of the structural families is "bittype's structural
-// profile" (docs/representation-families.md), so the package that declares
-// that profile declares its publisher. The vocabulary package of each
-// contribution states it in the contribution's identity. The name
-// authenticates nothing: until a composition lock binds it (row 15a),
-// registration in one process is the binding.
-const Publisher = "github.com/Bitspark/bittype"
