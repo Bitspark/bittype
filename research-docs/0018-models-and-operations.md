@@ -841,7 +841,10 @@ graph. `text` is the diagnostics package, whose function
 node. `tree.View` is a small read helper over one tree: `Node(id)` returns a
 node, `Attr(id, name)` an attribute's text, `Has` and `Flag` test an
 attribute, and `Children(id, role)` and `Child(id, role)` return the children
-under one role.
+under one role. Inside a checker `bad(message)` is a local shorthand for
+`text.AtNode` at the current node. `representation.Language` is the
+descriptor of a language from the envelope package: its identifier, display
+name, profile string and marker type.
 
 ### 3.1 The generic tree, and Go's syntax vocabulary
 
@@ -1405,7 +1408,8 @@ type Semantics[L any] struct{ state *Data }
 func New[L any](data Data, limits Limits, contains func(ast.NodeRef) bool) (Semantics[L], error)
 ```
 
-The graph fixes three term variants and the record shapes. Everything else
+`Limits` bounds the number of records and edges, the bytes and the depth of
+a graph. The graph fixes three term variants and the record shapes. Everything else
 is a key that a provider owns: the kind of an entity, the sort of a
 parameter, the role of an occurrence, the relation of a dependency or a
 fact, the operator and the encoding of a provider expression. The
@@ -1570,8 +1574,11 @@ func Open(result semantic.Result) (Model, error) {
 }
 ```
 
-`semantic.Result` is the receipt. `semantic.Snapshot` is the captured input
-that it belongs to. `semantic.EvidenceRequirement` says which operation,
+`Model` is the handle of one opened graph. It holds the receipt and the
+unpacked graph. `semantic.Result` is the receipt: it gives its configuration,
+its snapshot and the envelope of its graph. `semantic.Snapshot` is the
+captured input that it belongs to. `EvidenceFor` returns the requirement for
+one configuration. `semantic.EvidenceRequirement` says which operation,
 profile, configuration and reports a consumer requires
 (`contracts/semantic/go/evidence.go:14-20`):
 
@@ -1607,6 +1614,13 @@ func ResolutionContract() resolution.Contract {
 	return resolution.Contract{Semantic: c, Bindings: Bindings()}
 }
 ```
+
+`Coverage`, `Bindings` and `Validity` are three more keys of the vocabulary:
+the obligations on which a Go analysis reports. `Requirements()` lists them
+with the verdict that must hold. `semantic.Contract` is
+`{Profile string; Obligations []Obligation; SemanticsRequirements []Requirement}`,
+`semantic.Obligation` is `{Key, Domain semantics.Key}`, and
+`resolution.Contract` is `{Semantic semantic.Contract; Bindings semantics.Key}`.
 
 These two snippets show why a semantic vocabulary imports three contract
 packages today: its readers take a receipt, and its identities are values of
@@ -1941,7 +1955,11 @@ type MappingDescription[F, T, R any] struct {
 
 `F` and `T` are the marker types of the source and the target language, and
 `R` is the type of the source reader. A `Selector` is an identity that the
-source language issues for one kind of use. A **profile** is a named promise
+source language issues for one kind of use. A `UseView` is the kernel's view
+of one use of a source type, and a `Capture` binds a slot to a use. An
+`Expansion` is the capability that a callback receives: it gives the reader
+and the use, and its method `Mapped` asks the kernel for the representation
+of another use. A **profile** is a named promise
 about the generated types; its identity is a string. A binding gives its
 result either as a constant `Output` or through a callback `Expand`. The
 record mapping uses the callback: it reads the fields, asks the kernel for
@@ -1956,10 +1974,14 @@ mapping calls a model's check.
 **Who reads forms.** The target of the same language. Go's target forwards
 the two checks and switches over the form names when it builds
 (`transform/syntax/golang/target/go/provider.go:24-29`, `:78-95`,
-`:111-128`). Here `m` is the shared tree builder: `b.Node` allocates one
-node with its children and returns a handle to it, a `m.Fragment`;
-`b.External` attaches an external use to a node; and `edges` pairs each
-fragment of a list with one role:
+`:111-128`). `Provider` is the registered target, with the name of the Go
+package as its one setting, and `Backend` is its state for one build. `m` is
+the shared tree builder: `m.Node(kind, attributes, origin)` makes a node
+value, `m.Attributes` builds attributes from pairs of name and text, and
+`m.Child` pairs a role with a fragment. `b.Node` allocates one node with its
+children and returns a handle to it, a `m.Fragment`. `b.External` attaches an
+external use to a node, and `edges` pairs each fragment of a list with one
+role:
 
 ```go
 func (p Provider) CheckExpression(ctx context.Context, e g.Expression[s.Language]) error {
@@ -2068,8 +2090,10 @@ func external(data []string) (symbol.Symbol, error) {
 }
 ```
 
-`symbol.Dependency` returns `ErrUnsupported` for every crate but the
-standard library. So for the external form Rust has the split that Go lacks:
+`symbol.Std()` is the dependency of the standard library, and `model.Std` is
+its name in a form. `symbol.Item` identifies an item at a path below the
+root of a crate. `symbol.Dependency` returns `ErrUnsupported` for every crate
+but the standard library. So for the external form Rust has the split that Go lacks:
 the model says what the form is, and the target says what is covered.
 Section 6.5 builds on this.
 
@@ -2099,9 +2123,6 @@ type ExternalUse struct {
 	Symbol ExternalSymbol
 }
 ```
-
-`representation.Language` is the descriptor of a language from the envelope
-package: its identifier, display name, profile string and marker type.
 
 Go's symbol package (`transform/syntax/golang/symbol/go/symbol.go:1-81`,
 comments abridged):
@@ -2181,7 +2202,10 @@ back through TypeScript's symbol package
 (`format/files/typescript/provider/go/generated.go:163-180`; `tssymbol` is
 the TypeScript symbol package, whose symbol type is
 `Type{Module, Name string}`; `p.bindings` maps the node of a name use to
-what the use is meant to reach):
+what the use is meant to reach, as a value of the stage's private type
+`symbol` with the fields `site`, `external` and `builtin`; `imports` is a
+private helper of this stage, and `imports.Export{Module, Name}` names one
+export; `source.ErrInvalid` is an error of the source carrier):
 
 ```go
 for _, use := range output.ExternalUses() {
@@ -2286,8 +2310,13 @@ that a compiler bound in one placed program.
 
 The architecture test derives a package's import rule from its path
 (`integration/go/architecture_roles_test.go:157-183`, `:336-346`; `role`
-builds a rule from a shape, a kind, the language read from the path, and the
-permitted import patterns, in which `<language>` is replaced):
+builds a rule, a `roleRule`, from a shape, a kind, the language read from
+the path, and the permitted import patterns, in which `<language>` is
+replaced; `isLanguageName` is true for a path segment that is neither
+`shared` nor an ordered pair; `isSemanticHelper` recognises a bridge by its
+path `internal/<language>sem`; `helperRole`, `stageProviderRole` and
+`transformRole` return the rules of the helper, stage provider and
+generation shapes):
 
 ```go
 // packageRole derives a package's rule from its layout path. The language, the
