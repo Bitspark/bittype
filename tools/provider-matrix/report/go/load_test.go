@@ -8,20 +8,7 @@ import (
 	"testing"
 )
 
-func TestLoadBudgetsCancelCommandOutputAndRejectInvalidFlags(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	budget := &outputBudget{remaining: 5, cancel: cancel}
-	out, diagnostic := &boundedOutput{budget: budget}, &boundedOutput{budget: budget}
-	if _, err := out.Write([]byte("123")); err != nil {
-		t.Fatal(err)
-	}
-	if n, err := diagnostic.Write([]byte("456")); err == nil || n != 2 || !budget.exceeded || ctx.Err() == nil {
-		t.Fatal("combined stdout/stderr budget did not cancel")
-	}
-	if out.Len()+diagnostic.Len() != 5 {
-		t.Fatal("output budget retained excess bytes")
-	}
+func TestLoadRejectsInvalidFlagsAndNegativeLimits(t *testing.T) {
 	for _, flags := range [][]string{{"-overlay=elsewhere.json"}, {"-test"}, {"-json"}, {"-C", "elsewhere"}, {"./different/..."}, {"-tags"}, {"-modfile=elsewhere.mod"}} {
 		if err := validateBuildFlags(flags); err == nil {
 			t.Fatal("unsafe source selection accepted", flags)

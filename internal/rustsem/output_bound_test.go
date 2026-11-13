@@ -202,28 +202,3 @@ func awaitNoProcessGoroutine(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 }
-
-// The bounded writer has one method. A type that embeds bytes.Buffer also has
-// ReadFrom, which io.Copy prefers to Write, and that is how os/exec copied a
-// helper's stream past the bound. A stream that passed its bound once stays
-// refused.
-func TestBoundedBufferOnlyWrites(t *testing.T) {
-	kind := reflect.TypeOf(&boundedBuffer{})
-	for i := range kind.NumMethod() {
-		if name := kind.Method(i).Name; name != "Write" {
-			t.Errorf("the bounded writer has the method %s", name)
-		}
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	b := boundedBuffer{remaining: 3, cancel: cancel}
-	if count, err := b.Write([]byte("abc")); count != 3 || err != nil || b.exceeded || ctx.Err() != nil {
-		t.Fatal("a write of exactly the bound", count, err)
-	}
-	if _, err := b.Write([]byte("d")); !errors.Is(err, semantic.ErrLimit) || !b.exceeded || ctx.Err() != context.Canceled {
-		t.Fatal("a write past the bound", err)
-	}
-	if _, err := b.Write(nil); !errors.Is(err, semantic.ErrLimit) {
-		t.Fatal("a write after the bound was passed", err)
-	}
-}

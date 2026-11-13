@@ -127,18 +127,19 @@ func useGoChild(t *testing.T, directory string, children map[string]goChild) {
 // them the way it receives the Go command's. Streams of exactly the budget
 // are read whole, and the loader goes on to its next step. One byte more on
 // any of the four streams makes the load fail with the budget's own message
-// and no program, whether the process then exits or stays.
+// and no program, whether the process that passes the budget then exits or
+// stays.
 func TestLoadBoundsGoCommandOutput(t *testing.T) {
 	const budget = 1 << 20
 	exceeded := fmt.Sprintf("Go command output exceeds %d bytes", budget)
-	context1 := len(goChildContext())
+	first := len(goChildContext())
 	// The four streams fill the budget together, and no stream and no command
 	// comes near it alone. So a loader that bounds each stream or each command
 	// by itself, or that leaves one stream out, accepts a case below that must
 	// be refused.
 	within := map[string]goChild{
-		"env":  {Stdout: context1 + 1000, Stderr: 300 << 10},
-		"list": {Stdout: 400 << 10, Stderr: budget - context1 - 1000 - 300<<10 - 400<<10},
+		"env":  {Stdout: first + 1000, Stderr: 300 << 10},
+		"list": {Stdout: 400 << 10, Stderr: budget - first - 1000 - 300<<10 - 400<<10},
 	}
 	command := installGoChild(t)
 	run := func() (*program, error) {
@@ -148,40 +149,45 @@ func TestLoadBoundsGoCommandOutput(t *testing.T) {
 		useGoChild(t, command, within)
 		// The child lists no package, so a loader that read every stream whole
 		// fails at its next step and says so.
-		if p, err := run(); p != nil || err == nil || !strings.Contains(err.Error(), "no main Go module") || strings.Contains(err.Error(), exceeded) {
+		if p, err := run(); p != nil || err == nil || !strings.HasPrefix(err.Error(), "no main Go module at ") {
 			t.Errorf("the loader returned the error %v", err)
 		}
 	})
+	const buildContext, packageMetadata = "load Go build context: ", "load Go package metadata: "
 	for _, c := range []struct {
-		name, subcommand string
-		stderr           bool
-		step             string
+		name string
+		// env and list are added to the streams of the case at the budget.
+		env, list goChild
+		// passes names the command whose write passes the budget, and step the
+		// step of the loader that runs it.
+		passes, step string
 	}{
-		{"the output stream of the first command", "env", false, "load Go build context: "},
-		{"the error stream of the first command", "env", true, "load Go build context: "},
-		{"the output stream of the second command", "list", false, "load Go package metadata: "},
-		{"the error stream of the second command", "list", true, "load Go package metadata: "},
+		// The first command stays within the budget, so the byte counts when
+		// the second command writes.
+		{"one byte more in the output stream of the first command", goChild{Stdout: 1}, goChild{}, "list", packageMetadata},
+		{"one byte more in the error stream of the first command", goChild{Stderr: 1}, goChild{}, "list", packageMetadata},
+		{"one byte more in the output stream of the second command", goChild{}, goChild{Stdout: 1}, "list", packageMetadata},
+		{"one byte more in the error stream of the second command", goChild{}, goChild{Stderr: 1}, "list", packageMetadata},
+		// The first command passes the budget by itself.
+		{"the output stream of the first command one byte over the budget", goChild{Stdout: budget + 1 - within["env"].Stdout - within["env"].Stderr}, goChild{}, "env", buildContext},
+		{"the error stream of the first command one byte over the budget", goChild{Stderr: budget + 1 - within["env"].Stdout - within["env"].Stderr}, goChild{}, "env", buildContext},
 	} {
-		over := map[string]goChild{"env": within["env"], "list": within["list"]}
-		child := over[c.subcommand]
-		if c.stderr {
-			child.Stderr++
-		} else {
-			child.Stdout++
+		over := map[string]goChild{
+			"env":  {Stdout: within["env"].Stdout + c.env.Stdout, Stderr: within["env"].Stderr + c.env.Stderr},
+			"list": {Stdout: within["list"].Stdout + c.list.Stdout, Stderr: within["list"].Stderr + c.list.Stderr},
 		}
-		over[c.subcommand] = child
 		refused := func(t *testing.T, p *program, err error) {
 			t.Helper()
 			if p != nil || err == nil || err.Error() != c.step+exceeded {
 				t.Errorf("the loader returned the error %v", err)
 			}
 		}
-		t.Run(c.name+" one byte over the budget, and the process exits", func(t *testing.T) {
+		t.Run(c.name+", and the process exits", func(t *testing.T) {
 			useGoChild(t, command, over)
 			p, err := run()
 			refused(t, p, err)
 		})
-		t.Run(c.name+" one byte over the budget, and the process stays", func(t *testing.T) {
+		t.Run(c.name+", and the process stays", func(t *testing.T) {
 			// The loader has no deadline of its own here. A loader that has not
 			// returned after this time did not cancel its command at the budget.
 			const wait = 15 * time.Second
@@ -191,9 +197,9 @@ func TestLoadBoundsGoCommandOutput(t *testing.T) {
 			}
 			defer listener.Close()
 			staying := map[string]goChild{"env": over["env"], "list": over["list"]}
-			child := staying[c.subcommand]
+			child := staying[c.passes]
 			child.Hold = listener.Addr().String()
-			staying[c.subcommand] = child
+			staying[c.passes] = child
 			useGoChild(t, command, staying)
 			connected := make(chan net.Conn, 1)
 			go func() {
