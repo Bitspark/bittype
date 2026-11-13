@@ -1,5 +1,12 @@
 # Changelog
 
+## The contribution contract and the naming design say that their notes are posted — 13 November 2026
+
+Both design pages listed notes to other issues as "not yet posted", to be posted when the page merged. Both have merged and every note is posted, so the pages say so and link each note. Documents only.
+
+- **[The contribution contract](docs/contribution-contract.md)** merged as `2a29674`. Posted: the reworded text of #207 with a correction about vertical case 1, the same correction of the grade on #196, the seven lines of the gate in the text of #196, and the request about the memo sentence on bitspark-service#40.
+- **[Naming](docs/naming.md)** merged as `7e9dc34`. Posted on 12 November 2026: the condition on #195 and the note on #164.
+
 ## The contribution contract: a design with its gate, from research 0017 — 13 November 2026
 
 [The contribution contract](docs/contribution-contract.md) is the design of a contribution to the generation kernel: what it is, what its rule may ask and must return, what identifies it, and what the kernel carries for it unread. It is step 1 of the order that [research 0017](research-docs/0017-contribution-contract.md) decided for [#196](https://github.com/Bitspark/bittype/issues/196), item 6. The research owner decided it, and the page says so. It is not implemented, and it becomes final only when its gate is met. This entry adds and changes documents only. The mapping contract is unchanged.

@@ -626,8 +626,8 @@ a first change establishes the final structure):
   policy lands before the plan envelope is declared stable and before the
   first release. #195 gains that condition: the envelope is not declared
   stable before slice 1 of #161 and of #159 have changed their defaults."
-  That note is not on #195 yet (see
-  [the notes not yet posted](#what-is-delegated-and-what-is-not-specified-here)).
+  That note is on #195 since 12 November 2026 (see
+  [the notes posted with the merge](#what-is-delegated-and-what-is-not-specified-here)).
   TypeScript's default changes with #273, Go's with slice 1 of #161, Rust's
   with slice 1 of #159 (E6).
 
@@ -690,8 +690,8 @@ The sentence does not say who handles a collision or how. The following
 reading is this page's, from rows 8 and 9, D1 and R13. It is not a decision of
 the owner of that family. R13: "The page marks the reconciliation with the
 lifted binder of `docs/representation-families.md` as derived, and #164
-carries the note." That note is not on #164 yet (see
-[the notes not yet posted](#what-is-delegated-and-what-is-not-specified-here)).
+carries the note." That note is on #164 since 12 November 2026 (see
+[the notes posted with the merge](#what-is-delegated-and-what-is-not-specified-here)).
 
 | Part of that sentence | Where this reading puts it |
 | --- | --- |
@@ -783,9 +783,13 @@ R14c:
 | Rust's rule for a usable public record | [#278](https://github.com/Bitspark/bittype/issues/278) and slice 1 of #159 | Row 24 |
 | C++ exposure, and the C++ default | #160 | Rows 32 and 36 |
 
-**The notes not yet posted.** R12 says that #195 gains a condition, and R13
-that #164 carries a note. Neither issue has the note yet. R14c: "The notes for
-#164 and #195 are not posted yet. I post them when this page merges."
+**The notes posted with the merge.** R12 says that #195 gains a condition, and
+R13 that #164 carries a note. R14c: "The notes for #164 and #195 are not posted
+yet. I post them when this page merges." Both were posted on 12 November 2026,
+after the merge: on
+[#195](https://github.com/Bitspark/bittype/issues/195#issuecomment-6839423544)
+and on
+[#164](https://github.com/Bitspark/bittype/issues/164#issuecomment-6839423903).
 
 **Not specified here:**
 
