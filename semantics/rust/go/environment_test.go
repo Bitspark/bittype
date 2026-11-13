@@ -48,7 +48,7 @@ func TestEnvironmentConfigurationBytes(t *testing.T) {
 	// The profile has a new version: the vocabulary lost a member that a
 	// reader of the earlier version reads. The helper profile changed once
 	// more since, for an added entity kind and binding, and the two profile
-	// strings stayed: an addition breaks no reader.
+	// strings stayed: nothing was removed.
 	if n.ResolutionProfile != "rustc-1.90.0/captured-types-2/resolution-1" || n.AnalysisProfile != "rustc-1.90.0/captured-types-2/analysis-1" {
 		t.Fatal(n.ResolutionProfile, n.AnalysisProfile)
 	}

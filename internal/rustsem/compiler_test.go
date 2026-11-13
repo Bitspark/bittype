@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
@@ -69,42 +70,73 @@ func TestCompilerFailureAndProtocol(t *testing.T) {
 }
 
 // The bridge takes a response only under the helper profile that the
-// vocabulary publishes. A helper binary of another change of the facts states
-// another profile, and one of before this rule states none. Each is a helper
-// the bridge cannot use, and the refusal is the one for a helper that was
-// built with another compiler. The same response under the published profile
-// is taken.
+// vocabulary publishes, whatever the response says else. A helper binary of
+// another change of the facts states another profile, and one of before this
+// rule states none. Each is a helper the bridge cannot use, and the refusal is
+// the one for a helper that was built with another compiler. It comes before
+// the status is read: a stale helper's compiler errors are no rejected
+// validity, and its mismatch is no invalid request. The same response under
+// the published profile is taken as its status says.
 func TestBridgeRefusesAnotherHelperProfile(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("qualified helper execution platform is Linux")
 	}
 	trees, source := compilerFixture(t)
-	respond := func(member string) (Output, error) {
+	// The helper process writes one compiler error to its error stream, which
+	// the bridge reads for the status compiler-errors only, and the response.
+	const compilerError = `{"level":"error","message":"rejected","spans":[{"file_name":"<captured.rs>","byte_start":0,"byte_end":3,"is_primary":true}]}`
+	respond := func(member, rest string) (Output, error) {
 		path := filepath.Join(t.TempDir(), "helper")
-		script := "#!/bin/sh\ncat >/dev/null\nprintf '%s' '{\"Version\":1," + member + "\"Compiler\":\"rustc " + n.CompilerVersion + " (x)\",\"Status\":\"incomplete\"}'\n"
+		script := "#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' '" + compilerError + "' >&2\nprintf '%s' '{\"Version\":1," + member + "\"Compiler\":\"rustc " + n.CompilerVersion + " (x)\"," + rest + "}'\n"
 		if err := os.WriteFile(path, []byte(script), 0700); err != nil {
 			t.Fatal(err)
 		}
 		return Check(context.Background(), path, t.TempDir(), environment, trees, source)
 	}
-	if out, err := respond(`"Profile":"` + n.HelperProfile + `",`); err != nil || out.Status != statusIncomplete || out.Profile != n.HelperProfile {
-		t.Fatal("a response under the published profile", out, err)
+	// A failure of the helper that is not the refusal of its profile.
+	failed := func(_ Output, err error) bool {
+		return errors.Is(err, n.ErrCompiler) && !strings.Contains(err.Error(), "states the profile")
 	}
-	for name, c := range map[string]struct{ member, stated string }{
-		"no profile, as the helper before this rule":     {``, `""`},
-		"the profile before the primitive type bindings": {`"Profile":"captured-types-2",`, `"captured-types-2"`},
-		"a later profile":                   {`"Profile":"captured-types-4",`, `"captured-types-4"`},
-		"an empty profile":                  {`"Profile":"",`, `""`},
-		"the profile with a space after it": {`"Profile":"` + n.HelperProfile + ` ",`, `"` + n.HelperProfile + ` "`},
-	} {
-		out, err := respond(c.member)
-		if !errors.Is(err, n.ErrCompiler) || errors.Is(err, semantic.ErrInvalidRequest) || errors.Is(err, n.ErrUnsupported) || out.Status != "" {
-			t.Errorf("%s: status %q and the error %v, want the refusal of a helper", name, out.Status, err)
-			continue
+	// Every status that Check tells apart, and what Check returns for it
+	// under the published profile.
+	statuses := []struct {
+		name, rest string
+		taken      func(Output, error) bool
+	}{
+		{"a graph", `"Status":"ok","Facts":{}`, func(out Output, err error) bool { return err == nil && out.Status == StatusOK && out.Facts != nil }},
+		{"compiler errors", `"Status":"compiler-errors"`, func(out Output, err error) bool {
+			return err == nil && out.Status == StatusInvalid && len(out.Diagnostics) == 1
+		}},
+		{"unsupported", `"Status":"unsupported"`, func(out Output, err error) bool { return err == nil && out.Status == StatusUnsupported }},
+		{"incomplete", `"Status":"incomplete"`, func(out Output, err error) bool { return err == nil && out.Status == statusIncomplete }},
+		{"mismatch", `"Status":"mismatch"`, func(_ Output, err error) bool { return errors.Is(err, semantic.ErrInvalidRequest) }},
+		{"environment", `"Status":"environment"`, failed},
+		{"a status the bridge does not know", `"Status":"other"`, failed},
+	}
+	refused := []struct{ name, member, stated string }{
+		{"no profile, as the helper before this rule", ``, `""`},
+		{"the profile before the primitive type bindings", `"Profile":"captured-types-2",`, `"captured-types-2"`},
+		{"a later profile", `"Profile":"captured-types-4",`, `"captured-types-4"`},
+		{"an empty profile", `"Profile":"",`, `""`},
+		{"the profile with a space after it", `"Profile":"` + n.HelperProfile + ` ",`, `"` + n.HelperProfile + ` "`},
+		// The value is compared exactly.
+		{"the profile in upper case", `"Profile":"` + strings.ToUpper(n.HelperProfile) + `",`, `"` + strings.ToUpper(n.HelperProfile) + `"`},
+	}
+	for _, status := range statuses {
+		out, err := respond(`"Profile":"`+n.HelperProfile+`",`, status.rest)
+		if !status.taken(out, err) || err == nil && out.Profile != n.HelperProfile {
+			t.Errorf("%s under the published profile: status %q, profile %q, %d diagnostics and the error %v", status.name, out.Status, out.Profile, len(out.Diagnostics), err)
 		}
-		// The refusal names what the helper stated and what the bridge reads.
-		if !strings.Contains(err.Error(), "states the profile "+c.stated) || !strings.Contains(err.Error(), `"`+n.HelperProfile+`"`) {
-			t.Errorf("%s: the refusal does not name the two profiles: %v", name, err)
+		for _, c := range refused {
+			out, err := respond(c.member, status.rest)
+			if !errors.Is(err, n.ErrCompiler) || errors.Is(err, semantic.ErrInvalidRequest) || errors.Is(err, n.ErrUnsupported) || !reflect.DeepEqual(out, Output{}) {
+				t.Errorf("%s, %s: status %q and the error %v, want the refusal of a helper", status.name, c.name, out.Status, err)
+				continue
+			}
+			// The refusal names what the helper stated and what the bridge reads.
+			if !strings.Contains(err.Error(), "states the profile "+c.stated) || !strings.Contains(err.Error(), `"`+n.HelperProfile+`"`) {
+				t.Errorf("%s, %s: the refusal does not name the two profiles: %v", status.name, c.name, err)
+			}
 		}
 	}
 }

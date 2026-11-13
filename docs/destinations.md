@@ -246,8 +246,9 @@ nothing captures the name, that is the entity of the primitive type: an entity
 of the kind `primitive` (`rust.PrimitiveKind()`) whose name is the name that
 the language gives the type, without an owner and without a declaration site.
 A graph holds one such entity for each primitive type that its source uses. A
-use therefore reaches the destination `Bool()` when the binding at its node
-names an entity of the kind `primitive` whose name is the symbol's, `bool`.
+use therefore reaches the destination `Bool()` when the binding at its
+`primitive-type` node names an entity of the kind `primitive` whose name is
+the symbol's, `bool`.
 The kind is compared and not the name alone: a crate may be named `bool`, and
 its root module is an entity of the kind `module` with that name.
 
@@ -272,7 +273,9 @@ the compiler resolves to the primitive type, `::std::primitive::bool`, binds
 its last segment to the same entity. As for every item, that is the canonical
 type underneath the path: by statement 2 the item `primitive::bool` of `std`
 is another destination than `Bool()`, and an `Item` symbol is established by
-its written path.
+its written path. So one type has two destinations and one entity. The kind
+of the node tells the two apart: `Bool()` is reached at a `primitive-type`
+node, and the item of `std` at the last segment of its path.
 
 Nothing compares a use with this destination yet. Rust Files does, in slice 1
 of #159.

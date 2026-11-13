@@ -23,7 +23,9 @@ const AnalysisProfile = "rustc-1.90.0/captured-types-2/analysis-1"
 // receipt of another helper is never read as one of this helper. The two
 // profile strings above are not derived from it: they change on their own
 // occasion. An added entity kind and binding changed this name and kept
-// those: a reader of the earlier graph reads this one.
+// those, because nothing was removed. Lookup changed with the addition: it
+// never selects a primitive entity. A reader of before is kept from a graph
+// with these bindings by this setting, whose new value it refuses.
 //
 // The helper states the same name in every response, and the bridge refuses a
 // response that states another one. So the name is declared here and spelled

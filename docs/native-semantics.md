@@ -847,13 +847,18 @@ resolution receipt compares the profile before the configuration. `rust.Open`
 meets the configuration first: it reads the environment from the receipt's
 settings before it admits the receipt.
 
-**The binding of primitive types kept that version.** It added an entity kind
-and bindings and removed or changed no member of the vocabulary. The line
-drawn on [#278](https://github.com/Bitspark/bittype/issues/278#issuecomment-6845046456)
-is: "An addition does not break a reader, a removal does." A reader written
-for the graph without these bindings reads the graph with them, so the
-promise of the version holds. The helper profile changed, as it does whenever
-facts are added, see [the helper profile](#rust-helper-profile).
+**The binding of primitive types kept that version,** because nothing is
+removed. The decision on
+[#276](https://github.com/Bitspark/bittype/issues/276#issuecomment-6845586560)
+is: "It adds an entity kind and a binding and removes nothing, so by the line
+drawn on #278 the Rust profile keeps its version". No member of the vocabulary
+is removed or changed. One reader changed with the addition: `Lookup` never
+selects a primitive entity. The `Lookup` of before, on a graph with these
+bindings, selects the primitive type by its name and finds the root of a crate
+named `bool` ambiguous. What keeps a reader of before from such a graph is the
+`helper` setting, whose value is new: that reader refuses settings with
+`captured-types-3` as invalid input and never opens the graph. See
+[the helper profile](#rust-helper-profile).
 
 Generic parameters retain their actual owning declaration and slot. Rust's
 implicit trait `Self` is a distinct binder even though rustc internally reuses
@@ -888,11 +893,23 @@ input, because the request is well formed and succeeds with the right helper.
 It is not unsupported coverage, because no later profile admits the request
 with that binary. Until this change a helper binary of an earlier change was
 caught only because the request had gained a member that the earlier helper
-refuses. The name is declared once for the Go side, in
-`semantics/rust/go/vocabulary.go`, and spelled once in the helper. The tests
-of the bridge package read the member as the helper writes it and run the
-bridge against responses with another profile and with none, and
+refuses. A stale helper and a failing compiler are the same error,
+`rust.ErrCompiler`, and are told apart by the message, which names the profile
+that the helper stated and the one that the bridge reads. The name is declared
+once for the Go side, in `semantics/rust/go/vocabulary.go`, and spelled once in
+the helper. The tests of the bridge package read the member as the helper
+writes it. They run the bridge against responses with another profile and with
+none, once for every status that the bridge tells apart: the profile is judged
+before the status, so the compiler errors of a stale helper are no rejected
+validity and its mismatch is no invalid request.
 `TestRustHelperNamesMatchVocabulary` fails first when the two sides differ.
+
+**A limit.** The response of the helper is decoded as it is. A member in
+another case, `profile`, is read, and of a repeated member the last value
+wins. That holds for every member of the response. The response is a private
+protocol between two parts of one revision, and the comparison exists to catch
+a binary of another revision, which states no profile at all. The value of the
+profile is compared exactly: `CAPTURED-TYPES-3` is refused.
 
 ### Rust primitive types
 
@@ -937,6 +954,17 @@ resolved the name to.
   `Effective()` fail with `rust.ErrMissingFact`, because Rust gives a
   primitive type no visibility. `Type()` is invalid, `Parameters()` is empty,
   and `PrivateInterface()` returns none.
+- **Nameable from every crate, and still no effective fact.** A primitive
+  type, like a declaration of the sysroot, is nameable from every crate by the
+  language. The visibility readers fail for both, because the effective fact
+  is defined by a definition path of the captured crate: a primitive type has
+  no path, and a declaration of the sysroot is outside the capture. For a
+  declaration of the sysroot this has held since
+  [#278](https://github.com/Bitspark/bittype/issues/278). A failing reader
+  therefore does not say "not nameable" for them. Slice 1 of
+  [#159](https://github.com/Bitspark/bittype/issues/159) decides a primitive
+  type and a declaration of the sysroot by their destination, and asks the
+  visibility readers only for declarations of the captured crate.
 
 ### Rust visibility facts
 
@@ -1046,8 +1074,11 @@ holds the compiler's errors for a source that the compiler rejects.
   carries no fact. Another crate still cannot name `D`, and the effective fact
   of `D` says so. A Rust Files stage that decides whether a public record is
   usable therefore needs both: no `private-interface` fact on the
-  declarations of the record, and the effective fact of every declaration in
-  its public representation.
+  declarations of the record, and the effective fact of every declaration of
+  the captured crate in its public representation. A primitive type and a
+  declaration of the sysroot in that representation carry no effective fact
+  and are nameable by the language, see
+  [primitive types](#rust-primitive-types).
   [The naming design](naming.md#exposure-and-its-audience) states that rule:
   an unexposed source declaration in the body of an exposed one is refused
   "because a caller in another package or crate could not construct the
