@@ -84,7 +84,8 @@ func placeProgram(ctx context.Context, program *program, units []Placement, limi
 		return nil, uncovered
 	}
 	// The entry of the fresh snapshot is the file of least identity. No
-	// placement names one, and the rule reads no order of the input.
+	// placement names one, and the rule reads no order of the input. There is a
+	// first unit: the admission refuses a placement without a file.
 	layout := &result{public: map[ast.NodeRef]bool{}, entry: units[0].File, moved: map[ast.NodeRef]ast.NodeRef{}}
 	filesByTree := map[ast.TreeID]Placement{}
 	for _, placement := range units {
