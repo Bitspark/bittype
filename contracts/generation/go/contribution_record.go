@@ -102,12 +102,12 @@ type PlanDischarge struct {
 	Reference *ContributionReference `json:"reference,omitempty"`
 }
 
-// PlanApplication links the binders of an applied declaration to the native
+// PlanApplication links the binders of an applied declaration to the target
 // arguments and to the adapter arguments of one use. The two lists are tied to
 // binders and never matched by position (row 20).
 type PlanApplication struct {
 	Declaration string          `json:"declaration"` // the node of the open declaration
-	Native      []PlanArgument  `json:"native,omitempty"`
+	Target      []PlanArgument  `json:"target,omitempty"`
 	Adapters    []PlanArgument  `json:"adapters,omitempty"`
 	Discharges  []PlanDischarge `json:"discharges,omitempty"`
 }
@@ -132,12 +132,12 @@ type PlanNode struct {
 	Symbol       string            `json:"symbol,omitempty"`
 	Binders      int               `json:"binders,omitempty"`
 	Requirements []PlanRequirement `json:"requirements,omitempty"`
-	// Transparent: the declaration contribution decided a native alias, so a
+	// Transparent: the declaration contribution decided an alias in the target, so a
 	// use of the declaration is represented as its body is (O35).
 	Transparent bool             `json:"transparent,omitempty"`
 	Binder      *PlanBinder      `json:"binder,omitempty"`
 	Application *PlanApplication `json:"application,omitempty"`
-	// Members are the spelled names of the native members, in native order.
+	// Members are the spelled names of the members of the target type, in its order.
 	Members []string `json:"members,omitempty"`
 }
 
@@ -314,7 +314,7 @@ func ParsePlan(serialized []byte) (RepresentationPlan, error) {
 			if missing(a.Declaration) {
 				return RepresentationPlan{}, fmt.Errorf("%w: application %s without its declaration", ErrIncomplete, n.ID)
 			}
-			for _, arg := range append(slices.Clone(a.Native), a.Adapters...) {
+			for _, arg := range append(slices.Clone(a.Target), a.Adapters...) {
 				if missing(arg.Node) {
 					return RepresentationPlan{}, fmt.Errorf("%w: application %s without an argument", ErrIncomplete, n.ID)
 				}
@@ -411,7 +411,7 @@ func nodeIdentity(n PlanNode) string {
 	w.flag(n.Application != nil)
 	if a := n.Application; a != nil {
 		w.text(a.Declaration)
-		for _, arguments := range [][]PlanArgument{a.Native, a.Adapters} {
+		for _, arguments := range [][]PlanArgument{a.Target, a.Adapters} {
 			w.count(len(arguments))
 			for _, argument := range arguments {
 				w.count(argument.Binder)

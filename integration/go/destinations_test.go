@@ -428,7 +428,7 @@ func stringHelper(key g.HelperKey) rules.Library[gs.Language] {
 		return g.MappingDescription[h.Language, gs.Language, hsource.Reader]{
 			Profile:  rules.RepresentationProfile,
 			Bindings: []g.BindingDescription[h.Language, gs.Language, hsource.Reader]{{ID: "fixture/string-helper/1", Input: pattern, Output: g.Helper[gs.Language](key)}},
-			Helpers: []g.HelperRecipe[gs.Language]{{Key: key, Declaration: g.NativeDeclaration[gs.Language]{
+			Helpers: []g.HelperRecipe[gs.Language]{{Key: key, Declaration: g.TargetDeclaration[gs.Language]{
 				Name: "string", Form: gomodel.Form(gomodel.FormDefined),
 				Body: gomodel.Record(gomodel.Field("Flag", false, gomodel.Primitive(gomodel.PrimitiveBool))),
 			}}},

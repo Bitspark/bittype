@@ -21,7 +21,7 @@ import (
 )
 
 // ContributionInput is one generation request under the contribution
-// contract. Products are the products the request names besides native types
+// contract. Products are the products the request names besides target types
 // (O5): with none, the request asks for types alone.
 type ContributionInput[F, T, R any] struct {
 	From          representation.Language
@@ -34,13 +34,13 @@ type ContributionInput[F, T, R any] struct {
 	Facets        []Facet
 	Products      []Product
 	// Configuration is the target configuration that affects selection, what is
-	// admissible natively or whether generated code is compatible (row 35).
+	// admissible in the target or whether generated code is compatible (row 35).
 	Configuration []Setting
 	Execution     Execution[T]
 }
 
 // MemberVocabulary is a target's statement of its member vocabulary (row 13):
-// which native expressions are members of a record. A target without it
+// which target expressions are members of a record. A target without it
 // admits no member fragment.
 type MemberVocabulary[T any] interface {
 	CheckMember(context.Context, Expression[T]) error
@@ -111,7 +111,7 @@ type cplanner[F, T, R any] struct {
 
 // PlanContributions plans one generation request: it selects a contribution
 // for every reachable subject by its domain, drives each through the five
-// steps of the protocol and closes the native program. The result is the
+// steps of the protocol and closes the target program. The result is the
 // runnable generation plan with its selected representation plan.
 func PlanContributions[F, T, R any](ctx context.Context, in ContributionInput[F, T, R]) (GenerationPlan, error) {
 	fail := func(e error) (GenerationPlan, error) { return GenerationPlan{}, e }
@@ -637,7 +637,7 @@ func (p *cplanner[F, T, R]) run(c *Contribution[F, T, R], subject Subject[F], ke
 		}
 	}
 	if out.decision.Transparent && (subject.Kind != DeclarationSubject || len(out.decision.Facts) > 0) {
-		// Only a declaration contribution decides a native alias, and the facts
+		// Only a declaration contribution decides an alias in the target, and the facts
 		// of an alias are those of its body (O35, O41): it states none itself.
 		return out, &RuleFailure{c.Reference, fmt.Errorf("%w: only a declaration states that it is transparent, and it states no fact of its own", ErrInvalid)}
 	}
@@ -704,7 +704,7 @@ func (p *cplanner[F, T, R]) represent(c *Contribution[F, T, R], subject Subject[
 		}
 	} else {
 		if projected.Type.kind == 0 || len(projected.Fragment) != 0 {
-			return zero, &RuleFailure{c.Reference, fmt.Errorf("%w: a use projects a native type", ErrInvalid)}
+			return zero, &RuleFailure{c.Reference, fmt.Errorf("%w: a use projects a target type", ErrInvalid)}
 		}
 		if err := p.check(projected.Type, depth+1); err != nil {
 			return zero, err
@@ -724,19 +724,19 @@ func (p *cplanner[F, T, R]) represent(c *Contribution[F, T, R], subject Subject[
 	return out, nil
 }
 
-// check validates native intent that a projector returned.
+// check validates target intent that a projector returned.
 func (p *cplanner[F, T, R]) check(e Expression[T], depth int) error {
 	if err := p.tick(depth); err != nil {
 		return err
 	}
 	switch e.kind {
-	case NativeExpression, DeclarationExpression:
+	case FormExpression, DeclarationExpression:
 		for _, a := range e.args {
 			if err := p.check(a, depth+1); err != nil {
 				return err
 			}
 		}
-		if e.kind == NativeExpression {
+		if e.kind == FormExpression {
 			return p.execution.Target.CheckExpression(p.ctx, e)
 		}
 		return nil
@@ -852,8 +852,8 @@ func (p *cplanner[F, T, R]) application(view UseView[F], key string, site ast.No
 		if !ok {
 			return zero, ErrScope
 		}
-		// For types alone only demanded native actuals need mappings. When
-		// bindings are asked for, an argument that the native convention omits
+		// For types alone only demanded target actuals need mappings. When
+		// bindings are asked for, an argument that the target convention omits
 		// is still represented, because its adapter is needed (row 20, O5).
 		adapters := p.bindings
 		if !needed[i] && !adapters && !required[i] && !(st.transparent && st.bodyBinder == i) {
@@ -867,7 +867,7 @@ func (p *cplanner[F, T, R]) application(view UseView[F], key string, site ast.No
 		}
 		plannedActuals[i], actuals[i] = &d, d.expr
 		if needed[i] {
-			app.Native = append(app.Native, PlanArgument{i, d.node})
+			app.Target = append(app.Target, PlanArgument{i, d.node})
 		}
 		if adapters {
 			app.Adapters = append(app.Adapters, PlanArgument{i, d.node})
@@ -920,7 +920,7 @@ func (p *cplanner[F, T, R]) application(view UseView[F], key string, site ast.No
 	return out, nil
 }
 
-// substitute replaces the binder placeholders of one declaration by the native
+// substitute replaces the binder placeholders of one declaration by the target
 // meaning that the declaration's convention gives its binders.
 func substitute[T any](e Expression[T], scope uint32, bindings []Expression[T]) Expression[T] {
 	if e.kind == BinderExpression {
@@ -1052,15 +1052,15 @@ func (p *cplanner[F, T, R]) declare(d Declaration[F], depth int) (*declState[F, 
 	if err = checkParameterUses(id, desc); err != nil {
 		return nil, err
 	}
-	if err = p.execution.Target.CheckDeclaration(p.ctx, nativeDeclaration(desc)); err != nil {
+	if err = p.execution.Target.CheckDeclaration(p.ctx, targetDeclaration(desc)); err != nil {
 		return nil, err
 	}
-	p.program.declarations[id-1].Description = nativeDeclaration(desc)
+	p.program.declarations[id-1].Description = targetDeclaration(desc)
 	st.convention = desc.Generic
 	st.facts = append(slices.Clone(run.decision.Facts), c.Facts...)
 	if run.decision.Transparent {
 		// O35, O41: the selected representation of a declaration that becomes a
-		// native alias is that of its body. The kernel forwards the body's facts
+		// alias in the target is that of its body. The kernel forwards the body's facts
 		// and reads none of them.
 		body := slices.IndexFunc(run.links, func(l PlanLink) bool { return l.Kind == "child" && l.Node != "" })
 		if body < 0 {

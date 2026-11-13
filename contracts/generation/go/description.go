@@ -36,7 +36,7 @@ type ParameterDescription struct {
 }
 
 // Convention describes both sides of a generic, including reordered, omitted
-// and additional native parameters. Bindings is indexed by source parameter;
+// and additional target parameters. Bindings is indexed by source parameter;
 // Arguments is indexed by target parameter.
 type GenericConvention[T any] struct {
 	Parameters []ParameterDescription
@@ -44,8 +44,8 @@ type GenericConvention[T any] struct {
 	Arguments  []Expression[T]
 }
 
-// DeclarationDescription is a recipe's description of one native declaration.
-// Values are what the recipe's owner states about it; see NativeDeclaration.
+// DeclarationDescription is a recipe's description of one target declaration.
+// Values are what the recipe's owner states about it; see TargetDeclaration.
 type DeclarationDescription[T any] struct {
 	Name    string
 	Form    Form[T]
@@ -75,7 +75,7 @@ type DeclarationRecipe[F, T, R any] struct {
 // access, as issued values.
 type HelperRecipe[T any] struct {
 	Key         HelperKey
-	Declaration NativeDeclaration[T]
+	Declaration TargetDeclaration[T]
 }
 
 type MappingDescription[F, T, R any] struct {

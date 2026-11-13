@@ -192,7 +192,7 @@ func (s selection) plan(ctx context.Context, q Request, src sourceEntry, target 
 
 func planContributions[F, T, R any](ctx context.Context, q Request, src sourceEntry, target targetEntry, entries []contributionEntry, codecs []g.PayloadCodec, facets []g.Facet, products []g.Product, checker check.Checker) (g.GenerationPlan, error) {
 	provider, ok := src.provider.(g.SourceProvider[F, R])
-	native, ok2 := target.provider.(g.Target[T])
+	built, ok2 := target.provider.(g.Target[T])
 	if !ok || !ok2 {
 		return g.GenerationPlan{}, g.ErrScope
 	}
@@ -208,5 +208,5 @@ func planContributions[F, T, R any](ctx context.Context, q Request, src sourceEn
 	}
 	// A plan is given the codecs of the schemas that its contributions state.
 	codecs = slices.DeleteFunc(codecs, func(c g.PayloadCodec) bool { return !needed[c.Schema()] })
-	return g.PlanContributions(ctx, g.ContributionInput[F, T, R]{From: src.language, Input: q.Input, Source: provider, Roots: slices.Clone(q.Roots), Profile: q.Profile, Contributions: selected, Codecs: codecs, Facets: facets, Products: products, Configuration: slices.Clone(q.Configuration), Execution: g.Execution[T]{Target: native, Checker: checker, Language: q.To, Output: q.Output, Limits: q.Limits}})
+	return g.PlanContributions(ctx, g.ContributionInput[F, T, R]{From: src.language, Input: q.Input, Source: provider, Roots: slices.Clone(q.Roots), Profile: q.Profile, Contributions: selected, Codecs: codecs, Facets: facets, Products: products, Configuration: slices.Clone(q.Configuration), Execution: g.Execution[T]{Target: built, Checker: checker, Language: q.To, Output: q.Output, Limits: q.Limits}})
 }

@@ -282,7 +282,7 @@ func TestPlanningExpansionScopeAndNoFallback(t *testing.T) {
 						_, _ = r.Mapped(u.Use)
 						return model.Primitive("string"), nil
 					case "foreign-native-form":
-						return g.Native(g.NewFormIssuer[ts.Language]().Form("array"), nil), nil
+						return g.Apply(g.NewFormIssuer[ts.Language]().Form("array"), nil), nil
 					case "missing-helper":
 						return g.Helper[ts.Language](g.NewHelperKey("absent")), nil
 					default:

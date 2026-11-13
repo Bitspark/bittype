@@ -133,7 +133,7 @@ func (h DeclarationHandle) Valid() bool { return h.output != nil && h.index != 0
 // source declarations it represents: none for a helper, and possibly those of
 // several source declarations. Values are the statements of the declaration's
 // owner, which only their issuers can read. A record says what the output
-// owns. It does not say that its site is one entity of a native compiler.
+// owns. It does not say that its site is one entity of the target's compiler.
 type OwnedDeclaration struct {
 	Handle DeclarationHandle
 	// Symbol is the planner's declaration identity, the logical symbol
@@ -201,7 +201,7 @@ func (o Output) Resolve(h DeclarationHandle) (OwnedDeclaration, error) {
 }
 
 // planned is what a plan states about one of its declarations, without the
-// native type of the program.
+// target type parameter of the program.
 type planned struct {
 	role       DeclarationRole
 	provenance []ast.NodeRef

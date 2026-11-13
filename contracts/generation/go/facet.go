@@ -94,7 +94,7 @@ func (f Facet) Target() string                     { return f.target }
 // kind: another issuer, another target or another contract version.
 var ErrFacet = fmt.Errorf("%w: a facet does not match the kind the product requires", ErrScope)
 
-// TypesProduct is the product every request asks for: native types. A
+// TypesProduct is the product every request asks for: target types. A
 // request names further products to ask for bindings (O5).
 const TypesProduct = "types"
 
@@ -140,9 +140,9 @@ func matchFacet(facets []Facet, kind FacetKind, contribution ContributionIdentit
 type ReferenceCategory uint8
 
 const (
-	// TypeReference: the native type of a selected dependency.
+	// TypeReference: the target type of a selected dependency.
 	TypeReference ReferenceCategory = iota + 1
-	// BinderReference: a scoped native binder.
+	// BinderReference: a scoped binder of the target.
 	BinderReference
 	// AdapterReference: an adapter argument of an application, or the adapter
 	// parameter that a binder brings into its declaration's scope.
@@ -153,7 +153,7 @@ const (
 	DeclarationReference
 	// OwnedReference: a declaration that a contribution owns.
 	OwnedReference
-	// MemberReference: a generated member, tied to the native type that contains it.
+	// MemberReference: a generated member, tied to the target type that contains it.
 	MemberReference
 )
 
@@ -183,12 +183,12 @@ func (p RepresentationPlan) reference(category ReferenceCategory, node string, i
 	return PlanReference{p.owner, category, node, index, scope}, nil
 }
 
-// TypeOf refers to the native type of a node.
+// TypeOf refers to the target type of a node.
 func (p RepresentationPlan) TypeOf(node string) (PlanReference, error) {
 	return p.reference(TypeReference, node, 0, "")
 }
 
-// MemberOf refers to the member with the given ordinal of the native type of
+// MemberOf refers to the member with the given ordinal of the target type of
 // a node. The reference is tied to that node.
 func (p RepresentationPlan) MemberOf(node string, ordinal int) (PlanReference, error) {
 	n, ok := p.Node(node)
@@ -245,9 +245,10 @@ func (p RepresentationPlan) Check(r PlanReference, want ReferenceCategory, scope
 }
 
 // Member resolves a checked member reference to the spelled name of the
-// member in the generated native type. Go and Rust have no Files stage for
-// generated declarations (row 24a), so the spelled name is what a Go reader
-// has; a TypeScript reader takes the realized name from the realization.
+// member in the generated target type. Where the target's language has no
+// Files stage for generated declarations (row 24a), the spelled name is what
+// a reader has. Where it has one, a reader takes the realized name from the
+// realization.
 func (p RepresentationPlan) Member(r PlanReference) (string, error) {
 	if err := p.Check(r, MemberReference, ""); err != nil {
 		return "", err

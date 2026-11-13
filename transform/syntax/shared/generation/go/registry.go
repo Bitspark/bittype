@@ -30,7 +30,7 @@ type Replacement struct {
 }
 
 // Request is a generation request: the roots, the target, the profile and the
-// products. Products names the products asked for besides native types (O5):
+// products. Products names the products asked for besides target types (O5):
 // with none the request asks for types alone. Configuration is the target
 // configuration that the plan records (row 35).
 type Request struct {
@@ -252,7 +252,7 @@ func plan[F, T, R any](ctx context.Context, q Request, src sourceEntry, target t
 	if !ok {
 		return fail(g.ErrScope)
 	}
-	native, ok := target.provider.(g.Target[T])
+	built, ok := target.provider.(g.Target[T])
 	if !ok {
 		return fail(g.ErrScope)
 	}
@@ -296,5 +296,5 @@ func plan[F, T, R any](ctx context.Context, q Request, src sourceEntry, target t
 		}
 		parts[expected].Description.Bindings = append(parts[expected].Description.Bindings[:oldIndex:oldIndex], parts[expected].Description.Bindings[oldIndex+1:]...)
 	}
-	return g.Plan(ctx, g.PlanningInput[F, T, R]{From: src.language, Input: q.Input, Source: provider, Roots: slices.Clone(q.Roots), Mappings: parts, Execution: g.Execution[T]{Target: native, Checker: checker, Language: q.To, Output: q.Output, Limits: q.Limits}})
+	return g.Plan(ctx, g.PlanningInput[F, T, R]{From: src.language, Input: q.Input, Source: provider, Roots: slices.Clone(q.Roots), Mappings: parts, Execution: g.Execution[T]{Target: built, Checker: checker, Language: q.To, Output: q.Output, Limits: q.Limits}})
 }

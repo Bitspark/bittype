@@ -20,8 +20,8 @@ import (
 // with generation.ErrInvalid when the library is registered.
 func Library(key g.HelperKey) rules.Library[s.Language] {
 	return func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
-		return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Helpers: []g.HelperRecipe[s.Language]{{Key: key, Declaration: g.NativeDeclaration[s.Language]{
-			Name: "BittypeOptional", Form: model.Form(model.FormDefined), Parameters: []g.NativeParameter{{Name: "T"}},
+		return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Helpers: []g.HelperRecipe[s.Language]{{Key: key, Declaration: g.TargetDeclaration[s.Language]{
+			Name: "BittypeOptional", Form: model.Form(model.FormDefined), Parameters: []g.TargetParameter{{Name: "T"}},
 			Body: model.Record(model.Field("Present", false, model.Primitive(model.PrimitiveBool)), model.Field("Value", false, g.Parameter[s.Language](0))),
 		}}}}, nil
 	}

@@ -35,19 +35,19 @@ const (
 func Form(name string) g.Form[s.Language]      { return forms.Form(name) }
 func Name(f g.Form[s.Language]) (string, bool) { return forms.Read(f) }
 func Primitive(name string) g.Expression[s.Language] {
-	return g.Native(Form(FormPrimitive), []string{name})
+	return g.Apply(Form(FormPrimitive), []string{name})
 }
 func Collection(element g.Expression[s.Language]) g.Expression[s.Language] {
-	return g.Native(Form(FormSlice), nil, element)
+	return g.Apply(Form(FormSlice), nil, element)
 }
 func Field(name string, optional bool, ty g.Expression[s.Language]) g.Expression[s.Language] {
-	return g.Native(Form(FormField), []string{name, strconv.FormatBool(optional)}, ty)
+	return g.Apply(Form(FormField), []string{name, strconv.FormatBool(optional)}, ty)
 }
 func Record(fields ...g.Expression[s.Language]) g.Expression[s.Language] {
-	return g.Native(Form(FormRecord), nil, fields...)
+	return g.Apply(Form(FormRecord), nil, fields...)
 }
 func External(module, name string, args ...g.Expression[s.Language]) g.Expression[s.Language] {
-	return g.Native(Form(FormExternal), []string{module, name}, args...)
+	return g.Apply(Form(FormExternal), []string{module, name}, args...)
 }
 func CheckExpression(ctx context.Context, e g.Expression[s.Language]) error {
 	if err := ctx.Err(); err != nil {
@@ -91,7 +91,7 @@ func CheckExpression(ctx context.Context, e g.Expression[s.Language]) error {
 	}
 	return nil
 }
-func CheckDeclaration(ctx context.Context, d g.NativeDeclaration[s.Language]) error {
+func CheckDeclaration(ctx context.Context, d g.TargetDeclaration[s.Language]) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}

@@ -242,9 +242,9 @@ type Request[F any] struct {
 }
 
 // Conversion names a child use that the rule needs for conversion only: the
-// native type does not refer to it. The planner resolves it when the request
-// asks for bindings and leaves it out for types alone (O5, row 20): "Only
-// demanded native actuals need mappings."
+// target type does not refer to it. The planner resolves it when the request
+// asks for bindings and leaves it out for types alone (O5, row 20): only the
+// actuals that the target type refers to are demanded.
 func Conversion[F any](child Use[F]) Request[F] {
 	return Request[F]{kind: childRequest, use: child, conversion: true}
 }
@@ -334,12 +334,12 @@ func (s DecideStep[F, R]) Evidence(i int, kind EvidenceKind) (outcome Outcome, c
 // its payload schema, and beside it the facts that others may ask of it.
 //
 // Transparent is the statement of a declaration contribution that it decides
-// a native alias and no defined declaration for this subject (O35, O41). The
+// an alias and no defined declaration in the target for this subject (O35, O41). The
 // selected representation of such a declaration is that of its body, so the
 // kernel forwards the facts of the body and binds an answer about a use of
 // the declaration to the body's contribution reference. It is admitted for a
-// declaration subject only. A declaration that becomes a defined native
-// declaration leaves it false and answers for itself.
+// declaration subject only. A declaration that becomes a defined declaration
+// of the target leaves it false and answers for itself.
 type Decision struct {
 	Payload     any
 	Facts       []Fact
@@ -348,7 +348,7 @@ type Decision struct {
 
 // Rule is the part of a contribution that the planner runs for one selection.
 // Name may be nil for a rule without requests. Neither function is given the
-// planner, a target type or native intent.
+// planner, a target type or target intent.
 type Rule[F, R any] struct {
 	Name   func(context.Context, NameStep[F, R]) ([]Request[F], error)
 	Decide func(context.Context, DecideStep[F, R]) (Decision, error)
@@ -360,7 +360,7 @@ type Rule[F, R any] struct {
 // PayloadCodec is the codec of one payload schema. Freeze encodes the value a
 // rule returned, validates the encoding against the schema and returns the
 // canonical bytes of the frozen value. View decodes frozen bytes into a fresh
-// typed value. The contract package imports neither horos nor ontos: the
+// typed value. The contract package imports no schema language and no value model: the
 // kernel holds the bytes as an opaque handle and never reads them.
 type PayloadCodec interface {
 	Schema() SchemaReference
@@ -374,7 +374,7 @@ var ErrPayload = fmt.Errorf("%w: payload outside its schema", ErrInvalid)
 // ---------------------------------------------------------------------------
 // The projector (row 4).
 
-// Member is one member of a projected native type, for member references. A
+// Member is one member of a projected target type, for member references. A
 // member is named, or it stands for the members of a dependency's fragment.
 type Member struct {
 	Name     string
@@ -383,9 +383,9 @@ type Member struct {
 
 func FragmentMembers(dependency int) Member { return Member{Fragment: dependency + 1} }
 
-// Projected is the native intent of a use or of a field position. A use
+// Projected is the target intent of a use or of a field position. A use
 // projects a type. A field position projects a member fragment: the member or
-// members of the native record that represent the field.
+// members of the target record that represent the field.
 type Projected[T any] struct {
 	Type     Expression[T]
 	Fragment []Expression[T]
@@ -394,7 +394,7 @@ type Projected[T any] struct {
 
 // DependencyView is the typed view of a resolved request.
 type DependencyView[T any] struct {
-	Type     Expression[T]   // a child use: the native type selected for it
+	Type     Expression[T]   // a child use: the target type selected for it
 	Fragment []Expression[T] // a field position: the member fragment
 	Stated   string
 	Origin   ast.NodeRef
@@ -456,7 +456,7 @@ type DeclarationProjector[T any] func(context.Context, Projection[T]) (Declarati
 // Name. The spelling in Declaration.Name is not the key.
 type OwnedDescription[T any] struct {
 	Name        string
-	Declaration NativeDeclaration[T]
+	Declaration TargetDeclaration[T]
 }
 
 // ---------------------------------------------------------------------------
@@ -472,7 +472,7 @@ type Contribution[F, T, R any] struct {
 	Domain  Domain
 	Schema  SchemaReference
 	Rule    Rule[F, R]
-	// Project computes the native intent of a use or a field position. Declare
+	// Project computes the target intent of a use or a field position. Declare
 	// computes it for the declaration policy domain. Exactly one is set.
 	Project Projector[T]
 	Declare DeclarationProjector[T]

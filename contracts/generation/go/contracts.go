@@ -30,13 +30,13 @@ func (l Limits) Valid() bool {
 	return l.Operations > 0 && l.Depth > 0 && l.Plans > 0 && l.References > 0 && l.Formals > 0 && l.Reservations > 0 && l.OutputNodes > 0 && l.OutputBytes > 0
 }
 
-// Target validates native intent during planning. Build receives only the closed
-// native program; it has no source reader, selectors or mapping callbacks.
-// Target implementations are trusted native semantic compilers.
+// Target validates target intent during planning. Build receives only the closed
+// target program; it has no source reader, selectors or mapping callbacks.
+// Target implementations are trusted semantic compilers of their target.
 // bittype:dimension Syntax
 type Target[T any] interface {
 	CheckExpression(context.Context, Expression[T]) error
-	CheckDeclaration(context.Context, NativeDeclaration[T]) error
+	CheckDeclaration(context.Context, TargetDeclaration[T]) error
 	CheckProgram(context.Context, Program[T]) error
 	Build(context.Context, BuildInput[T]) (Assembly, error)
 }

@@ -15,7 +15,7 @@ type fixtureLanguage struct{}
 // plannedFixture is a planned declaration with the provenance the planner
 // states and the origin its mapping states.
 func plannedFixture(id uint32, name string, origin ast.NodeID, provenance ...ast.NodeRef) g.PlannedDeclaration[fixtureLanguage] {
-	return g.PlannedDeclaration[fixtureLanguage]{ID: id, Provenance: provenance, Description: g.NativeDeclaration[fixtureLanguage]{Name: name, Origin: ast.NodeRef{Tree: "origin", Node: origin}}}
+	return g.PlannedDeclaration[fixtureLanguage]{ID: id, Provenance: provenance, Description: g.TargetDeclaration[fixtureLanguage]{Name: name, Origin: ast.NodeRef{Tree: "origin", Node: origin}}}
 }
 
 func sourceSite(tree ast.TreeID, node ast.NodeID) ast.NodeRef {

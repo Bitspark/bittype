@@ -429,7 +429,7 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 			// Shadow's recipe never represents its body; the kernel still admits it.
 			{ID: "erase-shadow", Selector: shadow, Expand: erase("Shadow")},
 		},
-		Helpers: []g.HelperRecipe[s.Language]{{Key: cursor, Declaration: g.NativeDeclaration[s.Language]{Name: "Cursor", Form: model.Form("alias"), Body: model.Primitive("string"), Values: []g.IssuedValue{access}}}},
+		Helpers: []g.HelperRecipe[s.Language]{{Key: cursor, Declaration: g.TargetDeclaration[s.Language]{Name: "Cursor", Form: model.Form("alias"), Body: model.Primitive("string"), Values: []g.IssuedValue{access}}}},
 	}, nil
 }
 

@@ -25,7 +25,7 @@ import (
 //
 // Limit: two declarations with equal names and equal provenance are ordered by
 // their planned identity, which follows the order of the requested roots. Two
-// native declarations of one source declaration are such a pair, and so are
+// target declarations of one source declaration are such a pair, and so are
 // two helpers of one name. Compile refuses equal names today, and no plan
 // contains such a pair.
 func compareDeclarations[T any](a, b g.PlannedDeclaration[T]) int {
@@ -110,7 +110,7 @@ func Compile[T any](ctx context.Context, in g.BuildInput[T], store *Store[T], lo
 				return Fragment[T]{}, err
 			}
 			return lower.Reference(Symbol[T]{store, id, -1, declarations[id-1].Description.Name}, args, e.Origin())
-		case g.NativeExpression:
+		case g.FormExpression:
 			return lower.Expression(e, args)
 		default:
 			return Fragment[T]{}, g.ErrScope

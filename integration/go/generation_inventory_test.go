@@ -342,7 +342,7 @@ type overwriting struct {
 	parameters *int
 }
 
-func (p overwriting) CheckDeclaration(ctx context.Context, d g.NativeDeclaration[gs.Language]) error {
+func (p overwriting) CheckDeclaration(ctx context.Context, d g.TargetDeclaration[gs.Language]) error {
 	err := p.Provider.CheckDeclaration(ctx, d)
 	for i := range d.Values {
 		d.Values[i] = p.forged

@@ -6,7 +6,7 @@ import (
 	"github.com/Bitspark/bittype/trees/ast/go"
 )
 
-// Form is a target-owned native semantic constructor. Only its issuer can
+// Form is a target-owned semantic constructor. Only its issuer can
 // interpret its key. This is not an AST kind or a globally registered type kind.
 type Form[T any] struct {
 	owner *identity
@@ -50,7 +50,7 @@ func (k HelperKey) Valid() bool          { return k.owner != nil && k.name != ""
 type ExpressionKind uint8
 
 const (
-	NativeExpression ExpressionKind = iota + 1
+	FormExpression ExpressionKind = iota + 1
 	CapturedExpression
 	ParameterExpression
 	ArgumentExpression
@@ -58,7 +58,7 @@ const (
 	DeclarationExpression
 	// BinderExpression is the planner's placeholder for a binder of the
 	// declaration being planned (bittype#196, O28). The planner replaces
-	// it by the native meaning that the declaration's convention gives the
+	// it by the target meaning that the declaration's convention gives the
 	// binder before a target sees the declaration.
 	BinderExpression
 )
@@ -78,8 +78,8 @@ type Expression[T any] struct {
 	declaration uint32
 }
 
-func Native[T any](form Form[T], data []string, args ...Expression[T]) Expression[T] {
-	return Expression[T]{kind: NativeExpression, form: form, data: slices.Clone(data), args: slices.Clone(args)}
+func Apply[T any](form Form[T], data []string, args ...Expression[T]) Expression[T] {
+	return Expression[T]{kind: FormExpression, form: form, data: slices.Clone(data), args: slices.Clone(args)}
 }
 func Mapped[T any](slot Slot) Expression[T] {
 	return Expression[T]{kind: CapturedExpression, slot: slot}

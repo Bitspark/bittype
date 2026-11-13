@@ -11,14 +11,14 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
-// PlannedDeclaration is one native declaration of a closed program. Role and
+// PlannedDeclaration is one target declaration of a closed program. Role and
 // Provenance are the planner's own facts. Provenance lists the declaring sites
 // of the source declarations this declaration represents. It is a list because
-// the contract does not assume that one source declaration yields one native
+// the contract does not assume that one source declaration yields one target
 // declaration. A helper represents none.
 type PlannedDeclaration[T any] struct {
 	ID          uint32
-	Description NativeDeclaration[T]
+	Description TargetDeclaration[T]
 	Role        DeclarationRole
 	Provenance  []ast.NodeRef
 }
@@ -44,7 +44,7 @@ type Step struct {
 
 // GenerationPlan is issued only after all reachable rules and dependencies have
 // been resolved. Run does not retain a source, reader or rule. The plan
-// carries the selected representation plan of the same planning: the native
+// carries the selected representation plan of the same planning: the target
 // program and every entry of that plan are projections of the same frozen
 // decision records.
 type GenerationPlan struct {
@@ -89,7 +89,7 @@ type PlanningInput[F, T, R any] struct {
 	Execution Execution[T]
 }
 
-// frame is the declaration being planned: its entity, planned ID and the native
+// frame is the declaration being planned: its entity, planned ID and the target
 // meaning of each of its real binders.
 type frame[T any] struct {
 	declaration semantics.EntityID
@@ -295,7 +295,7 @@ func (p *planner[F, T, R]) qualified(s Selector, term semantics.TermID, entity s
 // admit establishes an occurrence and its whole subtree before any mapping
 // represents it. Every occurrence in the subtree needs a structural reading in
 // its declaration's scope and an Admitted source judgment, including actuals a
-// native convention omits and operands no mapping captures. Representation stays
+// target convention omits and operands no mapping captures. Representation stays
 // demand-driven; admission is not. Each occurrence is admitted once per run.
 func (p *planner[F, T, R]) admit(o *occurrence[F], depth int) error {
 	if o.admitted {
@@ -357,7 +357,7 @@ func (p *planner[F, T, R]) declare(d Declaration[F], depth int) (uint32, error) 
 	}
 	if id := p.declarations[d.entity]; id != 0 {
 		if p.active[id] {
-			return 0, fmt.Errorf("%w: recursive native declaration", ErrUnsupported)
+			return 0, fmt.Errorf("%w: recursive target declaration", ErrUnsupported)
 		}
 		return id, nil
 	}
@@ -445,7 +445,7 @@ func (p *planner[F, T, R]) declare(d Declaration[F], depth int) (uint32, error) 
 			return 0, err
 		}
 	}
-	p.program.declarations[id-1].Description = nativeDeclaration(desc)
+	p.program.declarations[id-1].Description = targetDeclaration(desc)
 	p.conventions[id] = desc.Generic
 	desc.Body, err = p.resolve(desc.Body, state.captures, f, depth+1)
 	if err != nil {
@@ -454,10 +454,10 @@ func (p *planner[F, T, R]) declare(d Declaration[F], depth int) (uint32, error) 
 	if err = checkParameterUses(id, desc); err != nil {
 		return 0, err
 	}
-	if err = p.execution.Target.CheckDeclaration(p.ctx, nativeDeclaration(desc)); err != nil {
+	if err = p.execution.Target.CheckDeclaration(p.ctx, targetDeclaration(desc)); err != nil {
 		return 0, err
 	}
-	p.program.declarations[id-1].Description = nativeDeclaration(desc)
+	p.program.declarations[id-1].Description = targetDeclaration(desc)
 	p.active[id] = false
 	p.steps = append(p.steps, Step{Binding: choice.name, Source: key, Declaration: desc.Name, Form: desc.Form.Name(), Expression: describe(desc.Body)})
 	return id, nil
@@ -623,7 +623,7 @@ func (p *planner[F, T, R]) resolve(e Expression[T], captures map[Slot]Use[F], f 
 			return Expression[T]{}, ErrScope
 		}
 		return p.use(use, f, depth+1)
-	case NativeExpression, HelperExpression:
+	case FormExpression, HelperExpression:
 		args := make([]Expression[T], len(e.args))
 		for i, a := range e.args {
 			v, err := p.resolve(a, captures, f, depth+1)
@@ -666,7 +666,7 @@ func (p *planner[F, T, R]) template(e Expression[T], scope uint32, count int, ac
 			return Expression[T]{}, ErrScope
 		}
 		return actuals[e.index], nil
-	case NativeExpression, HelperExpression:
+	case FormExpression, HelperExpression:
 		args := make([]Expression[T], len(e.args))
 		for i, a := range e.args {
 			v, err := p.template(a, scope, count, actuals, depth+1)
@@ -697,7 +697,7 @@ func (p *planner[F, T, R]) convention(e Expression[T], count, depth int) error {
 		}
 		return nil
 	}
-	if e.kind != NativeExpression && e.kind != HelperExpression {
+	if e.kind != FormExpression && e.kind != HelperExpression {
 		return ErrScope
 	}
 	for _, a := range e.args {
@@ -763,7 +763,7 @@ func describe[T any](e Expression[T]) string {
 		return fmt.Sprintf("parameter(%d,%d)", e.declaration, e.index)
 	case DeclarationExpression:
 		return fmt.Sprintf("declaration(%d)%v", e.declaration, describeArgs(e.args))
-	case NativeExpression:
+	case FormExpression:
 		return e.form.Name() + fmt.Sprint(e.data) + fmt.Sprint(describeArgs(e.args))
 	default:
 		return "unresolved"
@@ -797,14 +797,14 @@ func checkParameterUses[T any](id uint32, d DeclarationDescription[T]) error {
 	return nil
 }
 
-// nativeDeclaration deliberately drops source binding/application templates.
-// Construction can only observe the native declaration selected by planning.
+// targetDeclaration deliberately drops source binding/application templates.
+// Construction can only observe the target declaration selected by planning.
 // Each result owns its parameters and its values, so the declaration that a
 // target checks shares no storage with the one the plan keeps.
-func nativeDeclaration[T any](d DeclarationDescription[T]) NativeDeclaration[T] {
-	out := NativeDeclaration[T]{Name: d.Name, Form: d.Form, Origin: d.Origin, Body: d.Body, Values: slices.Clone(d.Values)}
+func targetDeclaration[T any](d DeclarationDescription[T]) TargetDeclaration[T] {
+	out := TargetDeclaration[T]{Name: d.Name, Form: d.Form, Origin: d.Origin, Body: d.Body, Values: slices.Clone(d.Values)}
 	for _, p := range d.Generic.Parameters {
-		out.Parameters = append(out.Parameters, NativeParameter{Name: p.Name, Origin: p.Origin})
+		out.Parameters = append(out.Parameters, TargetParameter{Name: p.Name, Origin: p.Origin})
 	}
 	return out
 }

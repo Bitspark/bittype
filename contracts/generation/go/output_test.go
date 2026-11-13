@@ -381,7 +381,7 @@ func TestDescriptionCopiesOwnTheirValues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	native := NativeDeclaration[outputLanguage]{Values: []IssuedValue{value}}
+	native := TargetDeclaration[outputLanguage]{Values: []IssuedValue{value}}
 	described := DeclarationDescription[outputLanguage]{Values: []IssuedValue{value}}
 	nativeCopy, describedCopy := native.Clone(), described.Clone()
 	native.Values[0], described.Values[0] = IssuedValue{}, IssuedValue{}
@@ -504,7 +504,7 @@ func TestIssuedValueDoesNotPrintItsContent(t *testing.T) {
 		t.Fatal(err)
 	}
 	record := OwnedDeclaration{Values: []IssuedValue{value}}
-	native := NativeDeclaration[outputLanguage]{Values: []IssuedValue{value}}
+	native := TargetDeclaration[outputLanguage]{Values: []IssuedValue{value}}
 	described := DeclarationDescription[outputLanguage]{Values: []IssuedValue{value}}
 	for _, verb := range []string{"%v", "%+v", "%#v", "%s", "%q", "%x", "%d"} {
 		for name, subject := range map[string]any{"value": value, "pointer": &value, "values": []IssuedValue{value}, "record": record, "native declaration": native, "description": described} {

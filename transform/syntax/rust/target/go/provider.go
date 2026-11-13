@@ -47,7 +47,7 @@ func external(data []string) (symbol.Symbol, error) {
 	}
 	return symbol.Item(crate, data[1:]...)
 }
-func (p Provider) CheckDeclaration(ctx context.Context, d g.NativeDeclaration[s.Language]) error {
+func (p Provider) CheckDeclaration(ctx context.Context, d g.TargetDeclaration[s.Language]) error {
 	return model.CheckDeclaration(ctx, d)
 }
 func (p Provider) Build(ctx context.Context, in g.BuildInput[s.Language]) (g.Assembly, error) {
@@ -128,7 +128,7 @@ func (b *Backend) primitive(destination symbol.Symbol, origin ast.NodeRef) (m.Fr
 	}
 	return b.External(node, use)
 }
-func (b *Backend) Declaration(d g.NativeDeclaration[s.Language], params []m.Fragment[s.Language], body m.Fragment[s.Language]) (m.Fragment[s.Language], error) {
+func (b *Backend) Declaration(d g.TargetDeclaration[s.Language], params []m.Fragment[s.Language], body m.Fragment[s.Language]) (m.Fragment[s.Language], error) {
 	name, origin := d.Name, d.Origin
 	form, _ := model.Name(d.Form)
 	record := form != model.FormAlias

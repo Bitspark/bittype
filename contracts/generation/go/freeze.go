@@ -34,7 +34,7 @@ func FreezeDescription[F, T, R any](from representation.Language, d MappingDescr
 			return ErrLimit
 		}
 		switch e.kind {
-		case NativeExpression:
+		case FormExpression:
 			if !e.form.Valid() {
 				return ErrScope
 			}
