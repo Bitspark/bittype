@@ -13,33 +13,32 @@ import (
 	"testing"
 
 	g "github.com/Bitspark/bittype/internal/grammar"
+	"github.com/Bitspark/bittype/model/syntax/go"
 	c "github.com/Bitspark/bittype/tools/provider-matrix/capability/go"
 	extract "github.com/Bitspark/bittype/tools/provider-matrix/extract/grammar/go"
+	carrier "github.com/Bitspark/bittype/trees/ast/go"
 )
 
-const grammarPath = "github.com/Bitspark/bittype/internal/grammar"
+const grammarPath = "github.com/Bitspark/bittype/model/syntax/go"
 const fixturePath = "example.test/fixture"
 
-// These declarations provide compiler identities/signatures; they are never
-// executed. Maintained helper meaning is separately checked against g below.
-// This stand-in is keyed by strings. The extractor reads source syntax and
-// compiler facts, which a language parameter does not change; the typed
-// stand-in below mirrors the owning package and has its own test.
-const grammarSource = `package grammar
-type Attribute struct { Required bool; Accept func(string)bool }
+// These declarations provide compiler identities; they are never executed.
+// What the maintained table type means is separately checked below against
+// the interpreter. This stand-in is keyed by strings. The extractor reads
+// source syntax and compiler facts, which a language parameter does not
+// change; the typed stand-in below mirrors the owning package and has its own
+// test.
+const grammarSource = `package syntax
+type Predicate struct { Owner, Name string }
+type Attribute struct { Required bool; Predicate Predicate; OneOf []string }
 type Role struct { Name string; Min,Max int; Kinds []string }
 type Rule struct { Attributes map[string]Attribute; Roles []Role; Reference bool }
 type Rules map[string]Rule
-func Attr(bool,func(string)bool)Attribute{return Attribute{}}
-func Attributes(...any)map[string]Attribute{return nil}
-func One(string,...string)Role{return Role{}}
-func Opt(string,...string)Role{return Role{}}
-func Many(string,int,...string)Role{return Role{}}
-func Set(...string)func(string)bool{return nil}
-func Bool(string)bool{return false}
+func Bool() Predicate { return Predicate{"bittype","bool"} }
+func Nonempty() Predicate { return Predicate{"bittype","nonempty"} }
 `
 
-// language marks the maintained helpers that the tests below call. The owning
+// language marks the maintained table that the tests below build. The owning
 // table is typed by language; a fixture's table is source text and never runs.
 type language struct{}
 
@@ -57,19 +56,14 @@ const kindSource = `package ast
 type Kind[L any] string
 `
 const kindPath = "example.test/ast"
-const typedGrammarSource = `package grammar
+const typedGrammarSource = `package syntax
 import "` + kindPath + `"
-type Attribute struct { Required bool; Accept func(string)bool }
+type Predicate struct { Owner, Name string }
+type Attribute struct { Required bool; Predicate Predicate; OneOf []string }
 type Role[L any] struct { Name string; Min,Max int; Kinds []ast.Kind[L] }
 type Rule[L any] struct { Attributes map[string]Attribute; Roles []Role[L]; Reference bool }
 type Rules[L any] map[ast.Kind[L]]Rule[L]
-func Attr(bool,func(string)bool)Attribute{return Attribute{}}
-func Attributes(...any)map[string]Attribute{return nil}
-func One[L any](string,...ast.Kind[L])Role[L]{return Role[L]{}}
-func Opt[L any](string,...ast.Kind[L])Role[L]{return Role[L]{}}
-func Many[L any](string,int,...ast.Kind[L])Role[L]{return Role[L]{}}
-func Set(...string)func(string)bool{return nil}
-func Bool(string)bool{return false}
+func Bool() Predicate { return Predicate{"bittype","bool"} }
 `
 const vocabularyPath = "example.test/vocabulary"
 const vocabularySource = `package vocabulary
@@ -244,12 +238,13 @@ func TestAliasesCompositionAndLocalKnowledge(t *testing.T) {
 type Alias = g.Rules
 const atom = "atom"
 var kinds = []string{atom}
-func prefix() []g.Role { return []g.Role{g.Many("items",0,kinds...)} }
+var modes = []string{"one","two"}
+func prefix() []g.Role { return []g.Role{{Name:"items",Max:-1,Kinds:kinds}} }
 func with(base []g.Role, more ...g.Role) []g.Role { return append(base,more...) }
-func custom(string)bool{return true}
-func named()map[string]g.Attribute{return g.Attributes("mode",g.Attr(false,g.Set("one","two")),"free",g.Attr(false,nil),"custom",g.Attr(true,custom),"flag",g.Attr(false,g.Bool))}
+func custom() g.Predicate { return g.Predicate{"fixture","custom"} }
+func named()map[string]g.Attribute{return map[string]g.Attribute{"mode":{OneOf:modes},"free":{},"custom":{Required:true,Predicate:custom()},"flag":{Predicate:g.Bool()}}}
 var rules = Alias{
- "record": {Attributes:named(), Roles:with(prefix(),g.Opt("next",append([]string{},kinds...)...)),Reference:true},
+ "record": {Attributes:named(), Roles:with(prefix(),g.Role{Name:"next",Max:1,Kinds:append([]string{},kinds...)}),Reference:true},
  "empty": {},
 }`)
 	if result.Extent != c.PartlyDecoded || len(result.Features) != 2 {
@@ -260,9 +255,9 @@ var rules = Alias{
 		t.Fatalf("roles: %#v", record)
 	}
 	items := record.Roles.Value[0]
-	maintained := g.Many[language]("items", 0, "atom")
+	maintained := syntax.Role[language]{Name: "items", Max: -1, Kinds: []carrier.Kind[language]{"atom"}}
 	if items.Name != maintained.Name || items.Min.Value != maintained.Min || !items.Max.Value.Unbounded || maintained.Max >= 0 || strings.Join(items.Kinds.Value, ",") != strings.Join(names(maintained.Kinds), ",") {
-		t.Fatalf("owning helper semantics: %#v", items)
+		t.Fatalf("table type semantics: %#v", items)
 	}
 	if record.Roles.Value[1].Max.Value.Value != 1 || record.References.Value[0] != "target" {
 		t.Fatalf("optional/reference: %#v", record)
@@ -286,15 +281,21 @@ var rules = Alias{
 	}
 }
 
-func TestInterpretationMatchesMaintainedOwningHelpers(t *testing.T) {
+// The extractor reads a table from source. The interpreter applies the same
+// table as a value. Both must say the same of every role and of every
+// attribute whose constraint the extractor interprets.
+func TestInterpretationMatchesTheInterpreter(t *testing.T) {
 	result := inventory(t, `var rules=g.Rules{"x":{
- Roles:[]g.Role{g.One("one","a"),g.Opt("optional","a","b"),g.Many("many",2,"b")},
- Attributes:g.Attributes("finite",g.Attr(true,g.Set("a","b")),"empty",g.Attr(false,g.Set()),"free",g.Attr(false,nil),"override",g.Attr(true,func(string)bool{return true}),"override",g.Attr(false,g.Set("after"))),Reference:true,
+ Roles:[]g.Role{{Name:"one",Min:1,Max:1,Kinds:[]string{"a"}},{Name:"optional",Max:1,Kinds:[]string{"a","b"}},{Name:"many",Min:2,Max:-1,Kinds:[]string{"b"}},{Name:"none"}},
+ Attributes:map[string]g.Attribute{"finite":{Required:true,OneOf:[]string{"a","b"}},"empty":{OneOf:[]string{}},"free":{},"zero":{Predicate:g.Predicate{}},"flag":{Predicate:g.Bool()},"both":{Required:true,Predicate:g.Bool(),OneOf:[]string{"true","after"}}},Reference:true,
 }}`)
-	maintained := g.Rule[language]{
-		Roles:      []g.Role[language]{g.One[language]("one", "a"), g.Opt[language]("optional", "a", "b"), g.Many[language]("many", 2, "b")},
-		Attributes: g.Attributes("finite", g.Attr(true, g.Set("a", "b")), "empty", g.Attr(false, g.Set()), "free", g.Attr(false, nil), "override", g.Attr(true, func(string) bool { return true }), "override", g.Attr(false, g.Set("after"))),
-		Reference:  true,
+	maintained := syntax.Rule[language]{
+		Roles: []syntax.Role[language]{{Name: "one", Min: 1, Max: 1, Kinds: []carrier.Kind[language]{"a"}}, {Name: "optional", Max: 1, Kinds: []carrier.Kind[language]{"a", "b"}}, {Name: "many", Min: 2, Max: -1, Kinds: []carrier.Kind[language]{"b"}}, {Name: "none"}},
+		Attributes: map[string]syntax.Attribute{
+			"finite": {Required: true, OneOf: []string{"a", "b"}}, "empty": {OneOf: []string{}}, "free": {}, "zero": {Predicate: syntax.Predicate{}},
+			"flag": {Predicate: syntax.Bool()}, "both": {Required: true, Predicate: syntax.Bool(), OneOf: []string{"true", "after"}},
+		},
+		Reference: true,
 	}
 	feature := result.Features[0]
 	if result.Extent != c.Decoded || len(feature.Roles.Value) != len(maintained.Roles) || len(feature.Attributes.Value) != len(maintained.Attributes) {
@@ -303,19 +304,24 @@ func TestInterpretationMatchesMaintainedOwningHelpers(t *testing.T) {
 	for i, actual := range maintained.Roles {
 		model := feature.Roles.Value[i]
 		if model.Name != actual.Name || model.Min.Value != actual.Min || model.Max.Value.Unbounded != (actual.Max < 0) || actual.Max >= 0 && model.Max.Value.Value != actual.Max || !slices.Equal(model.Kinds.Value, names(actual.Kinds)) {
-			t.Fatalf("owning role %d disagrees: %#v versus %#v", i, model, actual)
+			t.Fatalf("role %d disagrees: %#v versus %#v", i, model, actual)
 		}
+	}
+	// The interpreter judges one attribute of a tree of one node.
+	accepts := func(name, sample string) bool {
+		rules := syntax.Rules[language]{"x": {Attributes: map[string]syntax.Attribute{name: maintained.Attributes[name]}}}
+		tree := carrier.AST[language]{ID: "sample", Root: 1, Nodes: []carrier.Node[language]{{Kind: "x", Attributes: []carrier.Attribute{{Name: name, Text: sample}}}}}
+		return g.Check(tree, "x", rules, nil) == nil
 	}
 	for _, model := range feature.Attributes.Value {
 		actual, ok := maintained.Attributes[model.Name]
 		if !ok || model.Required.Value != actual.Required || model.Values.State != c.Known {
-			t.Fatalf("owning attribute disagrees: %#v", model)
+			t.Fatalf("attribute disagrees: %#v", model)
 		}
-		for _, sample := range []string{"", "a", "b", "c", "before", "after"} {
-			accepted := actual.Accept == nil || actual.Accept(sample)
+		for _, sample := range []string{"", "a", "b", "c", "true", "false", "after"} {
 			represented := model.Values.Value.Unrestricted || slices.Contains(model.Values.Value.Values, sample)
-			if accepted != represented {
-				t.Fatalf("%s(%q): maintained=%v interpreted=%v", model.Name, sample, accepted, represented)
+			if accepted := accepts(model.Name, sample); accepted != represented {
+				t.Fatalf("%s(%q): interpreter=%v extractor=%v", model.Name, sample, accepted, represented)
 			}
 		}
 	}
@@ -331,11 +337,11 @@ func TestTableTypedByLanguageReadsVocabularyConstants(t *testing.T) {
 	source.add(t, vocabularyPath, vocabularySource)
 	source.add(t, fixturePath, "package fixture\nimport g \""+grammarPath+"\"\nimport v \""+vocabularyPath+"\"\n"+`
 var types = []v.Kind{v.KindAtom, v.KindRecord}
-func prefix() []g.Role[v.Language] { return []g.Role[v.Language]{g.Many(v.RoleField,0,v.KindField)} }
+func prefix() []g.Role[v.Language] { return []g.Role[v.Language]{{Name:v.RoleField,Max:-1,Kinds:[]v.Kind{v.KindField}}} }
 func with(base []g.Role[v.Language], more ...g.Role[v.Language]) []g.Role[v.Language] { return append(base,more...) }
 var rules = g.Rules[v.Language]{
- v.KindRecord: {Attributes:g.Attributes(v.AttributeName,g.Attr(true,nil)), Roles:with(prefix(),g.Opt(v.RoleType,append(types,v.KindField)...))},
- v.KindField: {Roles:[]g.Role[v.Language]{g.One(v.RoleType,types...)},Reference:true},
+ v.KindRecord: {Attributes:map[string]g.Attribute{v.AttributeName:{Required:true}}, Roles:with(prefix(),g.Role[v.Language]{Name:v.RoleType,Max:1,Kinds:append(types,v.KindField)})},
+ v.KindField: {Roles:[]g.Role[v.Language]{{Name:v.RoleType,Min:1,Max:1,Kinds:types}},Reference:true},
  v.KindAtom: {},
 }`)
 	result, err := (extract.Extractor{}).Extract(context.Background(), c.DefinitionRequest{Root: c.Symbol{Package: fixturePath, Name: "rules"}, Source: source})
@@ -355,13 +361,13 @@ var rules = g.Rules[v.Language]{
 	if len(record.Roles.Value) != 2 {
 		t.Fatalf("roles through structural helpers: %#v", record.Roles)
 	}
-	for i, maintained := range []g.Role[language]{g.Many[language]("field", 0, "field"), g.Opt[language]("type", "atom", "record", "field")} {
+	for i, maintained := range []syntax.Role[language]{{Name: "field", Max: -1, Kinds: []carrier.Kind[language]{"field"}}, {Name: "type", Max: 1, Kinds: []carrier.Kind[language]{"atom", "record", "field"}}} {
 		model := record.Roles.Value[i]
 		if model.Name != maintained.Name || model.Min.Value != maintained.Min || model.Max.Value.Unbounded != (maintained.Max < 0) || !slices.Equal(model.Kinds.Value, names(maintained.Kinds)) {
 			t.Fatalf("role %d through typed helpers: %#v", i, record.Roles)
 		}
 	}
-	one := g.One[language]("type", "atom", "record")
+	one := syntax.Role[language]{Name: "type", Min: 1, Max: 1, Kinds: []carrier.Kind[language]{"atom", "record"}}
 	if len(field.Roles.Value) != 1 || field.Roles.Value[0].Name != one.Name || field.Roles.Value[0].Min.Value != one.Min || field.Roles.Value[0].Max.Value.Value != one.Max || !slices.Equal(field.Roles.Value[0].Kinds.Value, names(one.Kinds)) || !slices.Equal(field.References.Value, []string{"target"}) {
 		t.Fatalf("typed kind list and reference: %#v", field)
 	}
@@ -370,18 +376,18 @@ var rules = g.Rules[v.Language]{
 	}
 }
 
-func TestKnownAttributeOverwritePreservesUnresolvedKeyUncertainty(t *testing.T) {
+func TestUnresolvedAttributeKeyLeavesTheCollectionPartial(t *testing.T) {
 	result := inventory(t, `
 func key()string{return "dynamic"}
-var rules=g.Rules{"node":{Attributes:g.Attributes("same",g.Attr(true,g.Set("before")),key(),g.Attr(true,nil),"same",g.Attr(false,g.Set("after")))}}
+var rules=g.Rules{"node":{Attributes:map[string]g.Attribute{"same":{OneOf:[]string{"after"}},key():{Required:true}}}}
 `)
 	attributes := result.Features[0].Attributes
 	if result.Extent != c.PartlyDecoded || attributes.State != c.Partial || len(attributes.Value) != 1 {
-		t.Fatalf("unknown map portion lost during overwrite: %#v", result)
+		t.Fatalf("unknown map portion lost: %#v", result)
 	}
 	value := attributes.Value[0]
 	if value.Name != "same" || value.Required.Value || !slices.Equal(value.Values.Value.Values, []string{"after"}) {
-		t.Fatalf("last known assignment did not win: %#v", value)
+		t.Fatalf("the known entry was not reported: %#v", value)
 	}
 }
 
@@ -389,7 +395,7 @@ func TestUnknownFieldsPreserveIndependentFacts(t *testing.T) {
 	result := inventory(t, `
 func dynamic()[]string{values:=[]string{};return values}
 func extra()map[string]g.Attribute{m:=map[string]g.Attribute{};return m}
-var rules=g.Rules{"node":{Attributes:extra(),Roles:[]g.Role{g.Many("part",2,dynamic()...)}}}
+var rules=g.Rules{"node":{Attributes:extra(),Roles:[]g.Role{{Name:"part",Min:2,Max:-1,Kinds:dynamic()}}}}
 `)
 	feature := result.Features[0]
 	if feature.Attributes.State != c.Unknown || feature.Roles.State != c.Known {
@@ -399,41 +405,70 @@ var rules=g.Rules{"node":{Attributes:extra(),Roles:[]g.Role{g.Many("part",2,dyna
 	if role.Min.State != c.Known || role.Min.Value != 2 || !role.Max.Value.Unbounded || role.Kinds.State == c.Known {
 		t.Fatalf("independent role fields: %#v", role)
 	}
+	// A set that cannot be decoded is not reported as unrestricted.
+	result = inventory(t, `
+func dynamic()[]string{values:=[]string{};return values}
+var rules=g.Rules{"node":{Attributes:map[string]g.Attribute{"v":{OneOf:dynamic()},"w":{Predicate:g.Bool(),OneOf:dynamic()}}}}
+`)
+	for _, attribute := range result.Features[0].Attributes.Value {
+		if attribute.Values.State == c.Known || attribute.Values.Value.Unrestricted {
+			t.Fatalf("undecoded set: %#v", attribute)
+		}
+	}
 }
 
-func TestExactHelperIdentityAndShadowedNil(t *testing.T) {
+func TestExactNameIdentity(t *testing.T) {
 	result := inventory(t, `
-func One(string,...string)g.Role{r:=g.Role{};return r}
-var nil=func(string)bool{return true}
-var rules=g.Rules{"node":{Attributes:g.Attributes("v",g.Attr(false,nil)),Roles:[]g.Role{One("fake","x")}}}
+func Bool() g.Predicate { return g.Predicate{"fixture","bool"} }
+type Predicate struct{ Owner, Name string }
+func role()g.Role{r:=g.Role{Name:"fake"};return r}
+var flag = g.Bool()
+var rules=g.Rules{"node":{Attributes:map[string]g.Attribute{"own":{Predicate:Bool()},"shared":{Predicate:flag},"other":{Predicate:g.Nonempty()},"literal":{Predicate:g.Predicate{"bittype","bool"}}},Roles:[]g.Role{role()}}}
 `)
 	f := result.Features[0]
 	if f.Roles.State != c.Partial || len(f.Roles.Value) != 0 {
-		t.Fatalf("unrelated One was mistaken for owning helper: %#v", f.Roles)
+		t.Fatalf("a role that is no literal was decoded: %#v", f.Roles)
 	}
-	if f.Attributes.Value[0].Values.State != c.Opaque || f.Attributes.Value[0].Values.Value.Unrestricted {
-		t.Fatalf("shadowed nil was treated as absent predicate: %#v", f.Attributes)
+	attributes := map[string]c.Attribute{}
+	for _, attribute := range f.Attributes.Value {
+		attributes[attribute.Name] = attribute
+	}
+	if own := attributes["own"].Values; own.State != c.Opaque || own.Value.Unrestricted || len(own.Value.Values) != 0 {
+		t.Fatalf("an unrelated Bool was mistaken for the shared name: %#v", own)
+	}
+	if shared := attributes["shared"].Values; shared.State != c.Known || !slices.Equal(shared.Value.Values, []string{"true", "false"}) {
+		t.Fatalf("the shared name through a variable: %#v", shared)
+	}
+	// Only the declared name function is interpreted. A literal that spells the
+	// same owner and name, and every other name, stays opaque.
+	for _, name := range []string{"other", "literal"} {
+		if values := attributes[name].Values; values.State != c.Opaque || values.Value.Unrestricted {
+			t.Fatalf("%s: %#v", name, values)
+		}
 	}
 }
 
-func TestFiniteEmptyIsNotUnrestrictedAndUnknownKeyIsPartial(t *testing.T) {
+func TestEmptySetIsUnrestrictedAndUnknownKeyIsPartial(t *testing.T) {
 	result := inventory(t, `
 func key()string{return "dynamic"}
-var rules=g.Rules{"known":{Attributes:g.Attributes("none",g.Attr(false,g.Set()),"all",g.Attr(false,nil))},key():{}}
+var none = []string{}
+var rules=g.Rules{"known":{Attributes:map[string]g.Attribute{"none":{OneOf:none},"all":{}}},key():{}}
 `)
 	if result.Extent != c.PartlyDecoded || len(result.Limitations) != 1 || len(result.Features) != 1 {
 		t.Fatalf("unknown key: %#v", result)
 	}
-	attrs := result.Features[0].Attributes.Value
-	if attrs[0].Values.State != c.Known || attrs[0].Values.Value.Unrestricted || len(attrs[0].Values.Value.Values) != 0 || !attrs[1].Values.Value.Unrestricted {
-		t.Fatalf("empty versus unrestricted: %#v", attrs)
+	// The table type says of a set: if not empty, the text is one of these.
+	for _, attribute := range result.Features[0].Attributes.Value {
+		if attribute.Values.State != c.Known || !attribute.Values.Value.Unrestricted || len(attribute.Values.Value.Values) != 0 {
+			t.Fatalf("%s: %#v", attribute.Name, attribute)
+		}
 	}
 }
 
 func TestRepeatedStructuralHelperHasDistinctInvocationBindings(t *testing.T) {
 	result := inventory(t, `
 func with(base []g.Role, more ...g.Role)[]g.Role{return append(base,more...)}
-var rules=g.Rules{"x":{Roles:with(with([]g.Role{},g.One("first","x")),g.Opt("second","x"))}}
+var rules=g.Rules{"x":{Roles:with(with([]g.Role{},g.Role{Name:"first",Min:1,Max:1,Kinds:[]string{"x"}}),g.Role{Name:"second",Max:1,Kinds:[]string{"x"}})}}
 `)
 	roles := result.Features[0].Roles.Value
 	if result.Extent != c.Decoded || len(roles) != 2 || roles[0].Name != "first" || roles[1].Name != "second" {
@@ -454,7 +489,7 @@ func TestDefinedTypeIsNotRulesAndLimitsAreFailures(t *testing.T) {
 	if _, err := (extract.Extractor{}).Extract(context.Background(), r); err == nil || !strings.Contains(err.Error(), "cycle") {
 		t.Fatalf("cycle: %v", err)
 	}
-	r = request(t, `var rules=g.Rules{"x":{Roles:[]g.Role{g.One("part","x")}}}`)
+	r = request(t, `var rules=g.Rules{"x":{Roles:[]g.Role{{Name:"part",Min:1,Max:1,Kinds:[]string{"x"}}}}}`)
 	r.Limits.MaxExpansions = 1
 	if _, err := (extract.Extractor{}).Extract(context.Background(), r); err == nil {
 		t.Fatal("traversal exhaustion reported as success")

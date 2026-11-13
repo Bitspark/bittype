@@ -1,4 +1,5 @@
-// Package grammar interprets the owning internal/grammar declaration format.
+// Package grammar interprets the declaration format of the agnostic syntax
+// model: a grammar table written as a composite literal of its table type.
 // It reads initializers without importing or executing inspected packages.
 package grammar
 
@@ -8,12 +9,14 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"slices"
 	"strconv"
 
 	c "github.com/Bitspark/bittype/tools/provider-matrix/capability/go"
 )
 
-const owner = "github.com/Bitspark/bittype/internal/grammar"
+// owner is the package of the table type and of the shared predicate names.
+const owner = "github.com/Bitspark/bittype/model/syntax/go"
 
 // Format identifies this interpretation, independently of each selected root.
 const Format = owner + "#Rules"
@@ -263,10 +266,6 @@ func (e *evaluator) callee(x *expression) c.Symbol {
 		}
 	}
 	return c.Symbol{}
-}
-
-func (e *evaluator) owned(x *expression, name string) bool {
-	return e.callee(x) == (c.Symbol{Package: owner, Name: name})
 }
 
 func (e *evaluator) appendCall(x *expression) bool {
@@ -625,30 +624,6 @@ func (e *evaluator) role(x *expression, depth int) (c.Role, bool) {
 		return e.role(next, depth+1)
 	}
 	role := c.Role{At: x.at, Min: known(x.at, 0), Max: known(x.at, c.UpperBound{}), Kinds: known[[]string](x.at, nil)}
-	if call, ok := x.node.(*ast.CallExpr); ok && (e.owned(x, "One") || e.owned(x, "Opt") || e.owned(x, "Many")) {
-		start := 1
-		if e.owned(x, "Many") {
-			start = 2
-		}
-		if len(call.Args) < start {
-			return c.Role{}, false
-		}
-		name, ok := e.constant(child(x, call.Args[0]), "string", depth+1)
-		if !ok || name == "" {
-			return c.Role{}, false
-		}
-		role.Name = name
-		if e.owned(x, "One") {
-			role.Min = known(x.at, 1)
-		}
-		role.Max = known(x.at, c.UpperBound{Value: 1})
-		if start == 2 {
-			role.Min = e.integer(child(x, call.Args[1]), depth+1)
-			role.Max = known(x.at, c.UpperBound{Unbounded: true})
-		}
-		role.Kinds = e.stringArgs(x, call.Args[start:], call.Ellipsis.IsValid(), depth+1)
-		return role, true
-	}
 	if fs, ok := fields(x, "Name", "Min", "Max", "Kinds"); ok {
 		name := fs["Name"]
 		if name == nil {
@@ -702,23 +677,10 @@ func (e *evaluator) attributes(x *expression, depth int) c.Field[[]c.Attribute] 
 			e.uncertain = true
 			return
 		}
-		attribute := e.attribute(name, value, depth+1)
-		// Attributes assigns into a map in argument order. Repeated known names
-		// therefore replace the earlier value; an unresolved key still leaves the
-		// collection partial because it can collide with a reported source entry.
-		for i, previous := range result.Value {
-			if previous.Name == name {
-				result.Value[i] = attribute
-				return
-			}
-		}
-		result.Value = append(result.Value, attribute)
-	}
-	if call, ok := x.node.(*ast.CallExpr); ok && e.owned(x, "Attributes") && !call.Ellipsis.IsValid() && len(call.Args)%2 == 0 {
-		for i := 0; i < len(call.Args); i += 2 {
-			add(child(x, call.Args[i]), child(x, call.Args[i+1]))
-		}
-		return result
+		// A map literal cannot repeat a constant key, so a known name stands
+		// once. An unresolved key still leaves the collection partial because
+		// it can collide with a reported source entry.
+		result.Value = append(result.Value, e.attribute(name, value, depth+1))
 	}
 	if literal, ok := x.node.(*ast.CompositeLit); ok {
 		for _, element := range literal.Elts {
@@ -748,20 +710,12 @@ func (e *evaluator) attribute(name string, x *expression, depth int) c.Attribute
 	if next := e.follow(x); next != nil {
 		return e.attribute(name, next, depth+1)
 	}
-	if call, ok := x.node.(*ast.CallExpr); ok && e.owned(x, "Attr") && len(call.Args) == 2 {
-		attribute.Required = e.boolean(child(x, call.Args[0]), depth+1)
-		attribute.Values = e.predicate(child(x, call.Args[1]), depth+1)
-		return attribute
-	}
-	if fs, ok := fields(x, "Required", "Accept"); ok {
+	if fs, ok := fields(x, "Required", "Predicate", "OneOf"); ok {
 		attribute.Required = known(x.at, false)
-		attribute.Values = known(x.at, c.ValueSet{Unrestricted: true})
 		if value := fs["Required"]; value != nil {
 			attribute.Required = e.boolean(value, depth+1)
 		}
-		if value := fs["Accept"]; value != nil {
-			attribute.Values = e.predicate(value, depth+1)
-		}
+		attribute.Values = e.values(x, fs["Predicate"], fs["OneOf"], depth+1)
 		return attribute
 	}
 	if next := e.inline(x); next != nil {
@@ -772,25 +726,65 @@ func (e *evaluator) attribute(name string, x *expression, depth int) c.Attribute
 	return attribute
 }
 
-func (e *evaluator) predicate(x *expression, depth int) c.Field[c.ValueSet] {
+// values interprets the two constraints of an attribute entry. A set gives
+// its texts, and an empty set restricts nothing, as in the table type. Of the
+// predicates only the shared name Bool is interpreted, by its resolved symbol:
+// it admits "true" and "false". Any other name is reported as present and its
+// behavior is not interpreted. With a set and a predicate both hold.
+func (e *evaluator) values(x *expression, predicate, oneOf *expression, depth int) c.Field[c.ValueSet] {
+	set := known(x.at, c.ValueSet{Unrestricted: true})
+	if oneOf != nil {
+		texts := e.strings(oneOf, depth)
+		if texts.State != c.Known || len(texts.Value) > 0 {
+			set = c.Field[c.ValueSet]{State: texts.State, Value: c.ValueSet{Values: unique(texts.Value)}, At: oneOf.at, Reason: texts.Reason}
+		}
+	}
+	if predicate == nil {
+		return set
+	}
+	switch e.predicate(predicate, depth) {
+	case noPredicate:
+		return set
+	case boolPredicate:
+		if set.State != c.Known {
+			return set
+		}
+		values := []string{}
+		for _, value := range []string{"true", "false"} {
+			if set.Value.Unrestricted || slices.Contains(set.Value.Values, value) {
+				values = append(values, value)
+			}
+		}
+		return known(predicate.at, c.ValueSet{Values: values})
+	}
+	e.uncertain = true
+	return c.Field[c.ValueSet]{State: c.Opaque, At: predicate.at, Reason: "Predicate present; behavior not interpreted"}
+}
+
+const (
+	otherPredicate = iota
+	noPredicate
+	boolPredicate
+)
+
+// predicate classifies the expression of an entry's predicate name: the zero
+// value of the name type, the shared name Bool, or any other name.
+func (e *evaluator) predicate(x *expression, depth int) int {
 	done := e.guard(x, "predicate", depth)
 	if done == nil {
-		return c.Field[c.ValueSet]{}
+		return otherPredicate
 	}
 	defer done()
-	if e.isNil(x) {
-		return known(x.at, c.ValueSet{Unrestricted: true})
-	}
 	if next := e.follow(x); next != nil {
 		return e.predicate(next, depth+1)
 	}
-	if call, ok := x.node.(*ast.CallExpr); ok && e.owned(x, "Set") {
-		values := e.stringArgs(x, call.Args, call.Ellipsis.IsValid(), depth+1)
-		return c.Field[c.ValueSet]{State: values.State, Value: c.ValueSet{Values: values.Value}, At: x.at, Reason: values.Reason}
+	if _, ok := x.node.(*ast.CallExpr); ok && e.callee(x) == (c.Symbol{Package: owner, Name: "Bool"}) {
+		return boolPredicate
 	}
-	if symbol := e.facts(x).Symbol; symbol != nil && *symbol == (c.Symbol{Package: owner, Name: "Bool"}) {
-		return known(x.at, c.ValueSet{Values: []string{"true", "false"}})
+	if literal, ok := x.node.(*ast.CompositeLit); ok && len(literal.Elts) == 0 {
+		if origin := e.facts(x).Type.Origin; origin != nil && *origin == (c.Symbol{Package: owner, Name: "Predicate"}) {
+			return noPredicate
+		}
 	}
-	e.uncertain = true
-	return c.Field[c.ValueSet]{State: c.Opaque, At: x.at, Reason: "Predicate present; behavior not interpreted"}
+	return otherPredicate
 }
