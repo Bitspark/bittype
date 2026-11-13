@@ -1,6 +1,6 @@
 # Models and operations
 
-**Design, 13 November 2026, from research 0018. The decisions M1 to M27 are the research owner's, `claude-contract-chain-issues`, all recorded on #305: M1 to M9 in the [grade](https://github.com/Bitspark/bittype/issues/305#issuecomment-6855741567), M10 to M18 on [nine choices](https://github.com/Bitspark/bittype/issues/305#issuecomment-6856947056) that the first version of this page left to that owner, [M19](https://github.com/Bitspark/bittype/issues/305#issuecomment-6857366489), which adjusts M11, and [M20 to M27](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249) on the findings of an independent review of this page. Nothing on this page is implemented: the code on `main` has the layout that [`LAYOUT.md`](../LAYOUT.md) describes.**
+**Design, 13 November 2026, from research 0018. The decisions M1 to M27 are the research owner's, `claude-contract-chain-issues`, all recorded on #305: M1 to M9 in the [grade](https://github.com/Bitspark/bittype/issues/305#issuecomment-6855741567), M10 to M18 on [nine choices](https://github.com/Bitspark/bittype/issues/305#issuecomment-6856947056) that the first version of this page left to that owner, [M19](https://github.com/Bitspark/bittype/issues/305#issuecomment-6857366489), which adjusts M11, [M20 to M27](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249) on the findings of an independent review of this page, and [M28](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842), which corrects M21. Nothing on this page is implemented: the code on `main` has the layout that [`LAYOUT.md`](../LAYOUT.md) describes.**
 
 The owner directed on 13 November 2026 that the repository splits at its root
 into models and operations. This page says how the line is drawn, where every
@@ -45,7 +45,10 @@ This page does not repeat them.
 - **M20 to M27:** the eight [decisions of the same day](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249)
   on the findings of an independent reader, who did not write this page
   and read it at `62abbd4`.
-  [Section 11](#11-decisions-and-deferrals) lists all twenty-seven.
+- **M28:** the [decision of the same day](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842)
+  on a finding of this page's check of the migration's branch. It corrects
+  the home that M21 gave the publisher name.
+  [Section 11](#11-decisions-and-deferrals) lists all twenty-eight.
 
 Code is quoted with its file and line on `main` at `0581401`. The existing
 code is given as a fact and never as a reason for a choice
@@ -846,8 +849,8 @@ their own directory, `model/trees/ast/go` and `model/trees/cst/go`.
 | Source | `model/source` | The records of a Source: unit, group, relation | `source/` today |
 | Intent | `model/intent` | The form-table type, and each language's form table | "native intent" (`docs/generation.md:77`) |
 | Symbols | `model/symbols` | A language's symbol record, where it is plain data. Only TypeScript has one (M20) | `symbol` today |
-| Families | `model/families` | The profile identities, the publisher name and the family vocabularies of a source language (M21) | "family" (`docs/representation-families.md`). On the migration's branch |
-| Contributions | `model/contributions` | The identity types of a contribution, and each pair's contribution vocabularies | "contribution" (`docs/contribution-contract.md`). On the migration's branch |
+| Families | `model/families` | The profile identities and the family vocabularies of a source language | "family" (`docs/representation-families.md`). On the migration's branch |
+| Contributions | `model/contributions` | In `model/contributions/go`: the identity types of a contribution and the publisher name (M28). Below it each pair's contribution vocabularies | "contribution" (`docs/contribution-contract.md`). On the migration's branch |
 
 - *Reason:* the derivation rule: map onto the concepts that exist before
   adding one. A grammar and a lexical rule are syntax. The owner's sketch
@@ -1016,23 +1019,33 @@ four rows are what the migration's branch adds (row R23).
 | A language's grammar table | `model/syntax/<language>/go`, with the node kinds | Model | Row R7c places it. The place is M11 and M19 | S3b |
 | Lexical tables: a language's word lists, character tables and literal patterns, and the names of its predicates | `model/syntax/<language>/lexical/go` | Model | Row R7h places them. The place is M19 | S4 |
 | The operations halves of split vocabulary packages | The four paths of M14 | Operations | M14. Two of the four are decided again (M27) | S2, S5 |
-| The identity types of a contribution (`ContributionIdentity`, `Meaning`, `ContributionReference`, `SchemaReference`, `EvidenceKind`; on the migration's branch `contracts/generation/go/contribution.go:22-46`, `:138`) | `model/contributions/go` | Model | Rows R7e and R23 place them. The name is M11 | S7 |
+| The identity types of a contribution (`ContributionIdentity`, `Meaning`, `ContributionReference`, `SchemaReference`, `EvidenceKind`; on the migration's branch `contracts/generation/go/contribution.go:22-46`, `:138`), and the publisher name `Publisher` (on the branch `transform/syntax/horos/mapping/go/mapping.go:37`) | `model/contributions/go` | Model | Rows R7e and R23 place the types. The name is M11. `Publisher` is M28 | S7 |
 | A pair's contribution vocabulary (on the branch `transform/syntax/<source>-to-<target>/vocabulary/<name>/go`, 24 packages) | `model/contributions/<source>-to-<target>/<name>/go` | Model | Row R7g places it. The name is M11 | S7 |
-| A family of one language (on the branch `transform/syntax/horos/family/<name>/go`, 6 packages), and the common mapping package, which on the branch holds identities only: the two profile identities and `Publisher` (`transform/syntax/horos/mapping/go/mapping.go:21`, `:27`, `:37` on the branch) | `model/families/<language>/<name>/go` for a family, and `model/families/<language>/go` for the profile identities and the publisher name | Model | Row R23 asks for the place. The name is M11. `Publisher` is M21 | S7 |
+| A family of one language (on the branch `transform/syntax/horos/family/<name>/go`, 6 packages), and the two profile identities of the common mapping package (`transform/syntax/horos/mapping/go/mapping.go:21`, `:27` on the branch) | `model/families/<language>/<name>/go` for a family, and `model/families/<language>/go` for the profile identities | Model | Row R23 asks for the place. The name is M11 | S7 |
 | The shared part of the payload codec role (on the branch `transform/syntax/horos/payload/go`), and each codec | Operations. The path below `ops` is the migration's to name: "that part does not live under a kernel path (decision O41 on #196); the migration names its place" (`LAYOUT.md:476`) | Operations | Row R7g; decision O41 | S7, S8 |
 
-**The publisher name (M21).** On the migration's branch all 24 contribution
-vocabularies import the common mapping package for the constant `Publisher`.
-It "moves with the two profile identities to their model-side home" (M21),
-which is `model/families/horos/go`. On the pairs' branch the name is
-declared three times, once for each source language
-(`transform/syntax/{golang,horos,typescript}/mapping/go/mapping.go` at
-`447c44c`), and decision O46 on #196 asks for "One name with one home". A
-package of horos cannot be that home for a pair whose source is Go: "A
-package that names a language imports no package of another language"
-(`LAYOUT.md:170-171`). Which agnostic package holds the one name is not
-decided here. It is decided when the pairs' branch merges the migration
-([section 11](#11-decisions-and-deferrals)).
+**The publisher name (M21, M28).** On the migration's branch all 24
+contribution vocabularies import the common mapping package for the
+constant `Publisher`, which stands there beside the two profile identities.
+M21 moved it with them. M28 corrects the home: `Publisher` lives in
+`model/contributions/go`, with the identity types of a contribution, and
+every pair's vocabulary imports it from there.
+
+- *Reason:* "The name of the publisher says who publishes a contribution. To
+  state it one needs no language." (M28.) The two profile identities are a
+  source language's and stay in `model/families/horos/go`.
+- *What it settles on the pairs' branch.* There the name is declared three
+  times, once for each source language
+  (`transform/syntax/{golang,horos,typescript}/mapping/go/mapping.go` at
+  `447c44c`), and decision O46 on #196 asks for "One name with one home". A
+  package of horos could not be that home for a pair whose source is Go: "A
+  package that names a language imports no package of another language"
+  (`LAYOUT.md:170-171`). The three declarations become one when the pairs'
+  branch merges the migration.
+- *Not taken:* `model/families/horos/go`, the home of M21. A package of its
+  own for the name: "If a second publisher's vocabularies ever live in this
+  repository, the name gets a package of its own below that sort; none does
+  today." (M28.)
 
 The counts on the branch come from
 `git ls-tree -r --name-only origin/feat/contribution-contract-196 -- transform | grep "/vocabulary/.*/go/vocabulary.go" | wc -l`
@@ -1111,7 +1124,7 @@ checker in slice S2.
 | `transform/syntax/{cpp,golang,rust,typescript}/target/go` | `ops/<same path>`, whole. Each receives its coverage answers and the call of the one checker | M4 |
 | `transform/syntax/horos/source/go` | `ops/<same path>`, whole | Row R22 |
 | `transform/syntax/horos/mapping/{declarations,naming,pattern}/go` | `ops/<same path>`, whole | Row R22 |
-| `transform/syntax/horos/mapping/go` | **Splits.** The two profile identities (`mapping.go:28`, `:34`) to `model/families/horos/go`. The function type `Library[T]` stays on the operations side, where [bittype/ACX-010](architecture-cases/0010-agnostic-mapping-adapter.md) moves it to the agnostic layer. On the migration's branch the package holds identities only, the two profiles and `Publisher`, and slice S7 moves it whole (M21) | Row R7g; M21 |
+| `transform/syntax/horos/mapping/go` | **Splits.** The two profile identities (`mapping.go:28`, `:34`) to `model/families/horos/go`. The function type `Library[T]` stays on the operations side, where [bittype/ACX-010](architecture-cases/0010-agnostic-mapping-adapter.md) moves it to the agnostic layer. On the migration's branch the package holds identities only, and slice S7 takes it apart: the two profiles go to `model/families/horos/go` and `Publisher` to `model/contributions/go` (M21, M28) | Row R7g; M21, M28 |
 | `transform/syntax/horos-to-{cpp,rust,typescript}/mapping/{boolean,declarations,list,record,text}/go` (15) | `ops/<same path>`, whole | Row R22 |
 | `transform/syntax/horos-to-golang/mapping/{boolean,declarations,list,optional,record,text}/go` (6) | `ops/<same path>`, whole | Row R22 |
 
@@ -1406,7 +1419,7 @@ The validation of a slice is quoted from the table "Applied" of research
 | --- | --- | --- | --- | --- |
 | S0 | This page, with the clarifications in `LAYOUT.md`, `AGENTS.md`, `CHARTER.md`, `docs/package-boundaries.md` and `docs/generation-composition.md`, and the case bittype/ACX-015 | `main` | Nothing | "the page merged after an independent review that checks each quoted rule against its source" |
 | S1 | `CheckMember` leaves the four intended-forms packages, and the target states it | The migration's branch, pull request #308 | Nothing | "a test that fails while a check sits in a model package, red on the branch before the move" |
-| S7 | The identity types of a contribution go to `model/contributions/go`. The 24 contribution vocabularies go to `model/contributions/<source>-to-<target>/<name>/go`, the six family vocabularies to `model/families/horos/<name>/go`, and the common mapping package, with the two profile identities and `Publisher`, to `model/families/horos/go` (M21) | The migration's branch | S0 | "no vocabulary or family package imports the generation contract; the plan digests unchanged". Widened by M21: nor the common mapping package |
+| S7 | The identity types of a contribution and the publisher name `Publisher` go to `model/contributions/go` (M28). The 24 contribution vocabularies go to `model/contributions/<source>-to-<target>/<name>/go`, the six family vocabularies to `model/families/horos/<name>/go`, and the two profile identities of the common mapping package to `model/families/horos/go`. First step: the three methods on the identity types become functions of the generation contract (M28) | The migration's branch | S0 | "no vocabulary or family package imports the generation contract; the plan digests unchanged". Widened by M21: nor the common mapping package |
 | S2 | The split of the four intended-forms packages of the migration's branch ([section 5](#5-intent)). Both halves are created at their final paths and the old package is removed (M22) | The migration's branch, as its own pull request | S0 and S7 | "the five intended-forms packages hold no function; one checker test per table, red by mutant; outputs equal by digest". By M22 the packages that hold no function are the four `model/intent/<language>/go` of this slice. The fifth, horos, is split on the pairs' branch |
 | S3a | The agnostic syntax model `model/syntax/go`: the table type, the type of a predicate name and the names of the shared predicates (M25) | `main` | S0 | The interpreter's tests pass over the moved type, and a seeded import of an operation from `model/syntax/go` fails (derived here) |
 | S4 | The lexical part of each language, `model/syntax/<language>/lexical/go`: its word lists, character tables and literal patterns, and the names of its predicates, apart from their evaluators. With it the second keyword list of Rust | `main` | S3a (M25) | "the evaluators import the tables; a test red by a changed table entry" |
@@ -1497,25 +1510,25 @@ only the branch makes model-side:
 
 | Packages on the branch | Module imports today | What they use | Imports after S7 and S2 |
 | --- | --- | --- | --- |
-| The identity types in `contracts/generation/go/contribution.go` (`:22`, `:25`, `:29`, `:46`, `:138`) | They are five structs with exported string fields | | `model/contributions/go` imports nothing of this module |
-| `transform/syntax/horos/mapping/go` | None | | `model/families/horos/go` imports nothing |
+| The identity types in `contracts/generation/go/contribution.go` (`:22`, `:25`, `:29`, `:46`, `:138`) | They are five structs with exported string fields | | `model/contributions/go` imports nothing of this module. It also holds `Publisher` (M28) |
+| `transform/syntax/horos/mapping/go` | None | | Its two profile identities are `model/families/horos/go`, which imports nothing. `Publisher` joins `model/contributions/go` (M28) |
 | The six `transform/syntax/horos/family/<name>/go` | `contracts/generation/go` | `Meaning` | `model/contributions/go` |
-| The 24 `transform/syntax/horos-to-<target>/vocabulary/<name>/go` | `contracts/generation/go`, their family package, `transform/syntax/horos/mapping/go` | `ContributionIdentity`, `ContributionReference`, `SchemaReference`; `Meaning` of the family; `Publisher` | `model/contributions/go`, `model/families/horos/<name>/go`, `model/families/horos/go` |
+| The 24 `transform/syntax/horos-to-<target>/vocabulary/<name>/go` | `contracts/generation/go`, their family package, `transform/syntax/horos/mapping/go` | `ContributionIdentity`, `ContributionReference`, `SchemaReference`; `Meaning` of the family; `Publisher` | `model/contributions/go`, for the types and for `Publisher`, and `model/families/horos/<name>/go` |
 | The four `transform/syntax/<language>/model/go` | `contracts/generation/go`, `syntax/<language>/go` | In the model half: `EvidenceKind`. The rest is used by the constructors and the checks | `model/intent/go`, `model/contributions/go` |
 
 No package that is model-side after the two slices needs a package of the
 operations side. The 34 imports of the generation contract and the 24 of
-the common mapping package all end or become imports between models. Two
-things are left for slice S7 to settle first, and neither is an import:
+the common mapping package all end or become imports between models. No
+vocabulary of a pair imports a package of one source language for the
+publisher name (M28).
 
-- `ContributionReference` has the methods `Valid` and `String`, and
-  `SchemaReference` has `Valid` (`contribution.go:37`, `:40`, `:48` on the
-  branch). `Valid` evaluates and `String` produces, so by the test of
-  [section 2](#2-the-test) they do not move with the types. Go keeps a
-  method in its type's package, so each becomes a function of the generation
-  contract. Derived here.
-- The home of the one publisher name once the pairs' branch merges
-  ([section 7](#every-place-named)).
+One thing is S7's first step, and it is no import (M28).
+`ContributionReference` has the methods `Valid` and `String`, and
+`SchemaReference` has `Valid` (`contribution.go:37`, `:40`, `:48` on the
+branch). `Valid` evaluates and `String` produces, so by the test of
+[section 2](#2-the-test) they do not move with the types: "By M1 a check
+does not move with a plain type." (M28.) Go keeps a method in its type's
+package, so each becomes a function of the generation contract.
 
 **"Each split creates its new half at its final path" (M7).** Between the
 first split and slice S8 both layouts exist. Derived here, these rules hold
@@ -1641,7 +1654,8 @@ and recorded on #305: M1 to M9 in the
 [grade](https://github.com/Bitspark/bittype/issues/305#issuecomment-6855741567),
 M10 to M18 in the [decisions on this page's nine choices](https://github.com/Bitspark/bittype/issues/305#issuecomment-6856947056),
 [M19](https://github.com/Bitspark/bittype/issues/305#issuecomment-6857366489),
-and M20 to M27 in the [decisions on the independent review](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249).
+M20 to M27 in the [decisions on the independent review](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249),
+and [M28](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842).
 
 | Decision | What it decides | Rows | Section |
 | --- | --- | --- | --- |
@@ -1665,13 +1679,14 @@ and M20 to M27 in the [decisions on the independent review](https://github.com/B
 | M18 | A grammar table names a predicate by an owner-qualified name | R7c | [6](#6-declared-models) |
 | M19 | A language's lexical tables and the names of its predicates are a part below its syntax model, `model/syntax/<language>/lexical/go`. It imports no node kinds, the syntax vocabulary may import it, and the lexical helper imports it only. It adjusts M11 | R7h | [7](#names-below-the-roots) |
 | M20 | The symbol packages of Go and Rust are wholly operations: their symbol types are sealed. Only TypeScript's has a plain record. The counts become 8, 23 and 98, and 28 packages below `model` | R7a | [7](#every-package-of-main) |
-| M21 | On the migration's branch `Publisher` moves with the two profile identities to `model/families/horos/go`, and S7's validation names the common mapping package too | R7g, R23 | [7](#every-place-named), [10](#10-the-order-of-work) |
+| M21 | On the migration's branch `Publisher` leaves the common mapping package with the two profile identities, and S7's validation names that package too. M28 corrects one point: M21 gave `Publisher` the home of the profile identities, `model/families/horos/go` | R7g, R23 | [7](#every-place-named), [10](#10-the-order-of-work) |
 | M22 | S7 precedes S2. S2 creates both halves of an intended-forms package at final paths and removes the old one. `EvidenceRecordForm` goes to `model/intent/<language>/go`. The horos package is split on the pairs' branch | R24 | [5](#5-intent), [10](#10-the-order-of-work) |
 | M23 | Making S2 on the branch is a decision about where a correction is made, and no deferral under AC-10. If pull request #308 closes unmerged, S2 is made on `main` | R29 | [10](#10-the-order-of-work) |
 | M24 | The splits on `main` are those of packages that the branch does not change. They do change importing files of the branch, which merges `main` after each split | R28 | [10](#10-the-order-of-work) |
 | M25 | S3 has an agnostic part and a part for each language, and S4 waits for the agnostic part. The graph-carrier part of S6 waits for #310. Language identity moves in S8 | R21 | [10](#10-the-order-of-work) |
 | M26 | The eleven literal keys of the Go bridge are published in S5. The record that grammar admission ran and the type for captured Files are additions of S9, each designed there first | R4, R6 | [3](#3-consistency-and-correctness), [6](#6-declared-models), [10](#10-the-order-of-work) |
 | M27 | Two paths of M14 are decided again when platform research 0004 is evaluated, and S5 creates neither before | R27 | [7](#names-below-the-roots) |
+| M28 | The publisher name lives in `model/contributions/go`, with the identity types, and every pair's vocabulary imports it from there. It corrects M21. The three methods on the identity types become functions of the generation contract, as the first step of S7 | R23 | [7](#every-place-named), [10](#10-the-order-of-work) |
 
 Two rows belong to no single decision. Row R23 places the identities of a
 contribution ([section 7](#every-place-named), slice S7). Row R25 takes one
@@ -1714,5 +1729,4 @@ list these. Each is answered here or open.
 | How a declared model relates to a rule that the building toolchain owns, such as Go's keywords and its universe scope | **Open.** The model names the rule (sentence 2). Go's lexical part holds the names of its predicates and no word list ([section 7](#names-below-the-roots)). No profile records the toolchain's release today. Decided with slice S9, which adds the profiles of the native syntax vocabularies |
 | Whether adding an intended form is an edit of a shared package in the sense of the gate's line 7 | **Open.** It belongs to the gate of [the contribution contract](contribution-contract.md#the-gate) and is decided there |
 | What a family's meaning is for a source that is not horos | **Open**, by decision O46 on #196, item 6. Slice S7 places the family packages and does not answer it |
-| Which agnostic package holds the one publisher name, which the pairs' branch declares three times | **Open.** Decided when the pairs' branch merges the migration ([section 7](#every-place-named)) |
 | Whether four lists inside the operations halves of the semantic vocabularies are declarations | **Open.** Decided at the start of slice S5 ([section 7](#names-below-the-roots)) |

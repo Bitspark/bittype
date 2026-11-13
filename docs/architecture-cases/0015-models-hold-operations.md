@@ -156,9 +156,9 @@ The design page gives it in full. In short:
 
 1. `CheckMember` leaves the four intended-forms packages on the migration's
    branch at once (slice S1).
-2. The identity types of a contribution get a model-side owner, and the
-   contribution vocabularies, the families, the profile identities and the
-   publisher name follow them (slice S7, before S2).
+2. The identity types of a contribution get a model-side owner, which also
+   holds the publisher name. The contribution vocabularies, the families and
+   the profile identities follow them (slice S7, before S2).
 3. Each intended-forms package becomes a declared table of forms on the
    model side. One checker and one constructor in the agnostic layer read
    it. The target keeps lowering and coverage. Go's record-body condition is
