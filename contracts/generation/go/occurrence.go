@@ -188,18 +188,28 @@ func (w *walk[F]) declared(entity semantics.EntityID) []ast.NodeRef {
 	return slices.Clone(e.Declarations)
 }
 
-// declaration returns the kernel's view of a declaration entity.
-func (w *walk[F]) declaration(d Declaration[F]) (DeclarationView[F], error) {
+// declaration returns the kernel's view of a declaration entity. Its body
+// starts at the term that the graph records as the entity's body, or at the
+// term that the source states as the declaration's definition (Definitions).
+// definition is zero where the source states none.
+func (w *walk[F]) declaration(d Declaration[F], definition semantics.TermID) (DeclarationView[F], error) {
 	e, ok := w.graph.Entity(d.entity)
 	if !ok {
 		return DeclarationView[F]{}, ErrScope
 	}
-	if e.Body == 0 {
+	start := e.Body
+	if definition != 0 {
+		if _, ok := w.graph.Term(definition); !ok {
+			return DeclarationView[F]{}, w.located(ErrScope, 0, d.entity, "the source states a definition that is no term of the captured graph")
+		}
+		start = definition
+	}
+	if start == 0 {
 		return DeclarationView[F]{}, w.unsupported(0, d.entity, "declaration has no body")
 	}
 	body := w.roots[d.entity]
 	if body == nil {
-		body = &occurrence[F]{walk: w, term: e.Body, declaration: d.entity}
+		body = &occurrence[F]{walk: w, term: start, declaration: d.entity}
 		w.roots[d.entity] = body
 	}
 	view := DeclarationView[F]{Declaration: d, Body: Use[F]{body}}

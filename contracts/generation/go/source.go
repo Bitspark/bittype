@@ -124,6 +124,24 @@ type Interpretation[F any] interface {
 	JudgeUse(context.Context, Use[F]) (Judgment, error)
 }
 
+// Definitions is an optional statement of an interpretation: the term at
+// which the definition of a declaration starts. An interpretation that does
+// not implement it, or that answers ok=false for a declaration, leaves the
+// kernel at the body that the graph records for the declaration's entity.
+//
+// It exists for an analysis that gives a named declaration an identity of its
+// own: the entity's body is then a reference to the entity itself, and the
+// analysis relates the definition to it by a fact. The kernel reads no fact,
+// so it cannot find that term (bittype#196, finding 1 of the two other pairs).
+// The statement names one term of the captured graph. Every structural step
+// from there on is the kernel's: the interpretation still supplies no
+// navigation. The kernel checks that the term is of the captured graph. It
+// cannot check that the term is the declaration's definition: that is the
+// source's statement, like its selectors and its judgments.
+type Definitions[F any] interface {
+	Definition(context.Context, Declaration[F]) (term semantics.TermID, ok bool, err error)
+}
+
 // Source is what a provider opens over one capture: the kernel-facing
 // interpretation and the reader that mapping libraries use to interpret source
 // payloads. R reads kernel handles; it supplies no navigation. Only Plan opens

@@ -314,6 +314,14 @@ var roleExtensions = map[string][]string{
 	// The Rust target publishes the symbol of each item of the standard
 	// library and of each primitive type it uses with its output.
 	"transform/syntax/rust/target/go": {"transform/syntax/rust/symbol/go", "trees/representation/go"},
+	// The horos target completes the tree that the shared construction
+	// returns: a horos module node carries the pin of its own canonical bytes,
+	// which the private module lowering of the horos frontend computes, and
+	// the program node refers to its root module. It also writes a field's
+	// name as the literal layout of an ontos text value, for which it has an
+	// entry in modelExternalImports (bittype#196, finding 2 of the two other
+	// pairs).
+	"transform/syntax/horos/target/go": {"internal/horosmodel", "trees/representation/go"},
 	// Of the common horos mapping parts, only the declaration recipe builds on
 	// another: on naming. It states no profile and imports no profile identity.
 	// Patterns and naming import no part.
@@ -413,6 +421,7 @@ var modelExternalImports = map[string][]string{
 	// whatever the source language of a generation is.
 	payloadShared:                        {"github.com/Bitspark/horos/core/go", "github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/codec/go"},
 	"transform/syntax/horos/source/go":   {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
+	"transform/syntax/horos/target/go":   {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"parse/syntax/horos/provider/go":     {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"format/syntax/horos/provider/go":    {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"internal/horosmodel":                {"github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
