@@ -523,3 +523,39 @@ func TestGuarantee4AnswerBelongsToItsDependency(t *testing.T) {
 		t.Errorf("the step's own answer is not read: outcome %q, error %v, planning error %v", own.outcome, own.err, err)
 	}
 }
+
+// Guarantee 4 and row 7, the table of "Evidence": the kernel checks "that an
+// answer belongs to the dependency it was asked about: the selected
+// representation and its whole contribution reference, the target, profile
+// and configuration, the generic environment".
+//
+// Shows: an answer that a rule kept from a plan under one target
+// configuration is rejected when the rule presents it in a plan of the same
+// request under another target configuration.
+// Does not show: the same for the target and for the profile.
+// Red under: no mutant. The test is skipped as PENDING: it is red against the
+// kernel as built (finding F-B3), so no mutant can show it red.
+func TestGuarantee4AnswerIsBoundToTheTargetConfiguration(t *testing.T) {
+	t.Skip("PENDING F-B3: the plan records the target configuration and binds nothing to it; an answer kept from a plan under one target configuration is read in a plan under another")
+	from, input := gateSource(t, "module example.bound;\n\ntype Names = list<text>;\n")
+	plan := func(value string, hook func(horosDecideStep)) error {
+		b := gateGolang(t, from).replace(gateNilFreeText(t, from, "golang/1", "1")).replace(gateHooked(gateEvidenceList(t, from, gateEvidenceListOptions{}), "evidence-list", hook)).withCodecs(gateDirectCodec(t), gateEmptyCodec(t))
+		_, err := gatePlanGo(t, input, b, gateRequest{configuration: []g.Setting{{Name: "example.test/gate/setting", Value: value}}})
+		return err
+	}
+	var kept []g.Answer
+	if err := plan("1", func(step horosDecideStep) { kept = step.Answers(0) }); err != nil || len(kept) != 1 {
+		t.Fatalf("the first plan kept %d answers: %v", len(kept), err)
+	}
+	var presented gatePresented
+	err := plan("2", func(step horosDecideStep) { presented.present(step, 0, kept[0]) })
+	if presented.called != 1 {
+		t.Fatalf("the rule presented %d answers", presented.called)
+	}
+	if !errors.Is(presented.err, g.ErrScope) || presented.outcome != 0 {
+		t.Errorf("an answer issued under another target configuration is read by the rule: outcome %q, error %v", presented.outcome, presented.err)
+	}
+	if !errors.Is(err, g.ErrScope) {
+		t.Errorf("an answer issued under another target configuration: the planning returns %v, want a scope error", err)
+	}
+}
