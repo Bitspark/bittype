@@ -658,8 +658,19 @@ func TestGoSuppliedPackageInsideTheModuleAndOutsideTheOutputRoot(t *testing.T) {
 		{"generated", "example.org/app/a/testdata", "unsupported"},
 		{"generated", "example.org/app/a/b/_x/c", "unsupported"},
 		{"generated", "example.org/app/...", "unsupported"},
-		// The module path is compared without case, as for the output root.
-		{"generated", "Example.org/App/testdata/x", "unsupported"},
+		// A path that is the module path, or a path below it, only when case is
+		// ignored is no path of the module, and is invalid before the directory
+		// rule could judge it.
+		{"generated", "Example.org/App/model", "invalid"},
+		{"generated", "EXAMPLE.ORG/app/model", "invalid"},
+		{"generated", "example.org/App", "invalid"},
+		{"generated", "Example.org/App/testdata/x", "invalid"},
+		{n.ModuleRoot, "example.org/APP/model", "invalid"},
+		// A path of another module that merely starts with the same letters, in
+		// either spelling, and the module path itself as written stay admitted.
+		{"generated", "example.org/application/model", "admitted"},
+		{"generated", "Example.org/Application/model", "admitted"},
+		{"generated", "example.org/app", "admitted"},
 		// The directory rule comes before the rule for the output root.
 		{"generated", "example.org/app/generated/testdata/x", "unsupported"},
 		{"generated", "example.org/app/generated/x", "invalid"},

@@ -179,7 +179,9 @@ func CapturedImportPath(environment ImportEnvironment, filePath string) (string,
 //
 // A supplied path outside the module is not below the module root, and this
 // rule does not judge it. There the earlier rule holds unchanged: a vendor
-// element is an invalid request, and nothing else of this rule applies.
+// element is an invalid request, and nothing else of this rule applies. A
+// supplied path that differs from one of the module only in case is an
+// invalid request and is not judged by this rule either.
 func UnsupportedDirectory(element string) bool {
 	return element == "testdata" || element == "vendor" || strings.HasPrefix(element, "_") || strings.HasPrefix(element, ".")
 }
@@ -201,13 +203,21 @@ func directoryBelowModuleRoot(directory string) error {
 }
 
 // belowModuleRoot returns the part of a supplied import path below the module
-// root, when the path is one of the module. The module path is compared
-// without case, as the rule for the output root compares it.
+// root, when the path is one of the module as it is written.
 func belowModuleRoot(module, importPath string) (string, bool) {
-	if len(importPath) <= len(module) || importPath[len(module)] != '/' || !strings.EqualFold(importPath[:len(module)], module) {
-		return "", false
+	return strings.CutPrefix(importPath, module+"/")
+}
+
+// caseVariantOfModule reports whether a supplied import path is the module
+// path, or a path below it, only when case is ignored. To Go such a path is
+// the path of another module, and on a file system that ignores case it
+// collides with the module's own tree.
+func caseVariantOfModule(module, importPath string) bool {
+	n := len(module)
+	if len(importPath) < n || len(importPath) > n && importPath[n] != '/' {
+		return false
 	}
-	return importPath[len(module)+1:], true
+	return importPath[:n] != module && strings.EqualFold(importPath[:n], module)
 }
 
 // windowsDeviceNames are the reserved file names that Go's rule for a path
@@ -290,6 +300,13 @@ func normalizeEnvironment(e ImportEnvironment) (ImportEnvironment, error) {
 	out := ImportEnvironment{Module: e.Module, OutputRoot: e.OutputRoot, Packages: make([]Package, 0, len(e.Packages))}
 	size := len(e.Module)
 	for _, p := range e.Packages {
+		// A path that is the module path or one below it only when case is
+		// ignored is an invalid request, whatever its elements are. It is no
+		// path of the module, so the directory rule below never judges it:
+		// the two checks see different paths, and their order decides nothing.
+		if caseVariantOfModule(e.Module, p.ImportPath) {
+			return ImportEnvironment{}, semantic.ErrInvalidRequest
+		}
 		// A supplied package of the module sits below the module root, so the
 		// directory rule judges its path there first, as it judges the output
 		// root.

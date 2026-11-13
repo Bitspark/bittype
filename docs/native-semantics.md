@@ -162,7 +162,12 @@ follows Go's own module layout:
   `example.org/app/model` beside the output root `generated`. With the output
   root `.` every path under the module is refused. A supplied package of the
   module is below the module root, so its path there follows the rule for
-  unsupported directories below: `example.org/app/testdata/x` is refused.
+  unsupported directories below: `example.org/app/testdata/x` is refused. A
+  supplied path that is the module path, or a path below it, only when case
+  is ignored is refused with `ErrInvalidRequest`, whatever its elements are:
+  `Example.org/App/model` and `example.org/App`. To Go it is the path of
+  another module, and on a file system that ignores case it collides with the
+  module's own tree.
 - **No discovery.** Import paths need a first element containing a dot, Go's
   module-path rule. That also keeps supplied packages from naming standard
   library paths, which this profile does not provide. Nothing is read from a
@@ -221,8 +226,10 @@ places. At each the answer is unsupported:
 - as an element below the module root in the path of a supplied package of
   the module, `ImportConfiguration` answers the same way:
   `example.org/app/testdata/x`, `example.org/app/_x`, `example.org/app/vendor/x`
-  and `example.org/app/.x` under the module `example.org/app`. The module path
-  is compared without case, as for the output root.
+  and `example.org/app/.x` under the module `example.org/app`. Only a path
+  that is below the module root as it is written is judged here. One that
+  differs from it in case is an invalid request before that:
+  `Example.org/App/testdata/x`.
 
 A supplied path outside the module is not below the module root, and the
 directory rule does not judge it. There the earlier rule holds unchanged: a
@@ -299,7 +306,7 @@ depends on capture order:
 
 | Case | Result |
 | --- | --- |
-| An environment without an output root; an output root that is not `.` and has an empty, `.` or `..` element, an element that is no import-path element, or with the module path more than 512 bytes; a supplied path at or below the output root | `ErrInvalidRequest` from `ImportConfiguration`; no setting |
+| An environment without an output root; an output root that is not `.` and has an empty, `.` or `..` element, an element that is no import-path element, or with the module path more than 512 bytes; a supplied path at or below the output root; a supplied path that is the module path or a path below it only when case is ignored | `ErrInvalidRequest` from `ImportConfiguration`; no setting |
 | An output root with a `testdata` or `vendor` element, or one that starts with `_` or `.` | An error that wraps `ErrUnsupported` from `ImportConfiguration`; no setting |
 | A supplied package of the module whose path below the module root has a `testdata` or `vendor` element, or one that starts with `_` or `.` | An error that wraps `ErrUnsupported` from `ImportConfiguration`; no setting |
 | A setting that `ImportConfiguration` did not write: the key `imports-1`, altered bytes, or a root or a supplied path that it refuses for either reason | `ErrInvalidRequest`; no judgment of the captured code |
