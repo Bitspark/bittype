@@ -14,6 +14,7 @@ import (
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
+	"github.com/Bitspark/bittype/internal/processoutput"
 	"github.com/Bitspark/bittype/semantics/go"
 	n "github.com/Bitspark/bittype/semantics/rust/go"
 	s "github.com/Bitspark/bittype/syntax/rust/go"
@@ -43,29 +44,6 @@ const (
 	statusIncomplete  = "incomplete"
 )
 
-// boundedBuffer collects what the helper process writes to one of its streams,
-// up to a bound. Write is its only method. os/exec copies a stream with
-// io.Copy, which calls the writer's ReadFrom when it has one, so a writer that
-// embeds bytes.Buffer is filled past the bound without a call of Write. The
-// first write that would pass the bound cancels the process, and every later
-// write is refused too.
-type boundedBuffer struct {
-	data      []byte
-	remaining int
-	cancel    context.CancelFunc
-	exceeded  bool
-}
-
-func (b *boundedBuffer) Write(data []byte) (int, error) {
-	if b.exceeded || len(data) > b.remaining {
-		b.exceeded = true
-		b.cancel()
-		return 0, semantic.ErrLimit
-	}
-	b.remaining -= len(data)
-	b.data = append(b.data, data...)
-	return len(data), nil
-}
 func ValidCompiler(helper, sysroot string) bool {
 	return filepath.IsAbs(helper) && filepath.IsAbs(sysroot)
 }
@@ -95,16 +73,20 @@ func Check(ctx context.Context, helper, sysroot string, environment Environment,
 	}
 	run, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	stdout := boundedBuffer{remaining: 16 << 20, cancel: cancel}
-	stderr := boundedBuffer{remaining: 256 << 10, cancel: cancel}
+	// One bound per stream. What a passed bound means is this bridge's.
+	outputBound, errorBound := processoutput.NewBound(16<<20, cancel), processoutput.NewBound(256<<10, cancel)
+	stdout, stderr := outputBound.Writer(), errorBound.Writer()
 	command := exec.CommandContext(run, helper, sysroot)
 	command.Env = []string{}
 	command.Stdin = bytes.NewReader(encoded)
-	command.Stdout = &stdout
-	command.Stderr = &stderr
+	command.Stdout = stdout
+	command.Stderr = stderr
 	command.WaitDelay = time.Second
 	err = command.Run()
-	if stdout.exceeded || stderr.exceeded {
+	// Both bounds are asked before either stream is read: the bound of one
+	// stream cancels the process, and that can cut the other stream, whose own
+	// bound then still holds.
+	if outputBound.Exceeded() || errorBound.Exceeded() {
 		return Output{}, semantic.ErrLimit
 	}
 	if ctx.Err() != nil {
@@ -114,10 +96,10 @@ func Check(ctx context.Context, helper, sysroot string, environment Environment,
 		return Output{Status: statusIncomplete, Diagnostics: []semantic.Diagnostic{diagnostic("limit", "Rust compiler exceeded the provider deadline")}}, nil
 	}
 	if err != nil {
-		return Output{}, fmt.Errorf("%w: %v: %s", n.ErrCompiler, err, stderr.data)
+		return Output{}, fmt.Errorf("%w: %v: %s", n.ErrCompiler, err, stderr.Bytes())
 	}
 	var out Output
-	decoder := json.NewDecoder(bytes.NewReader(stdout.data))
+	decoder := json.NewDecoder(bytes.NewReader(stdout.Bytes()))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&out); err != nil {
 		return Output{}, fmt.Errorf("%w: malformed response: %v", n.ErrCompiler, err)
@@ -147,9 +129,9 @@ func Check(ctx context.Context, helper, sysroot string, environment Environment,
 			return Output{}, n.ErrCompiler
 		}
 		out.Status = StatusInvalid
-		out.Diagnostics = compilerDiagnostics(stderr.data, units)
+		out.Diagnostics = compilerDiagnostics(stderr.Bytes(), units)
 		if len(out.Diagnostics) == 0 {
-			return Output{}, fmt.Errorf("%w: %s", n.ErrCompiler, stderr.data)
+			return Output{}, fmt.Errorf("%w: %s", n.ErrCompiler, stderr.Bytes())
 		}
 	case "mismatch":
 		return Output{}, fmt.Errorf("%w: %v", semantic.ErrInvalidRequest, out.Diagnostics)
