@@ -17,8 +17,9 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"sync"
 	"time"
+
+	"github.com/Bitspark/bittype/internal/processoutput"
 )
 
 // The Go command supplies the active build context and dependency export data.
@@ -121,33 +122,6 @@ func validateBuildFlags(flags []string) error {
 	return nil
 }
 
-type outputBudget struct {
-	mu        sync.Mutex
-	remaining int
-	exceeded  bool
-	cancel    context.CancelFunc
-}
-
-type boundedOutput struct {
-	budget *outputBudget
-	bytes.Buffer
-}
-
-func (b *boundedOutput) Write(data []byte) (int, error) {
-	b.budget.mu.Lock()
-	defer b.budget.mu.Unlock()
-	if len(data) > b.budget.remaining {
-		n, _ := b.Buffer.Write(data[:b.budget.remaining])
-		b.budget.remaining = 0
-		b.budget.exceeded = true
-		b.budget.cancel()
-		return n, fmt.Errorf("Go metadata output limit exceeded")
-	}
-	n, err := b.Buffer.Write(data)
-	b.budget.remaining -= n
-	return n, err
-}
-
 func load(ctx context.Context, root string, limits LoadLimits, buildFlags []string) (*program, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("load context is required")
@@ -166,19 +140,20 @@ func load(ctx context.Context, root string, limits LoadLimits, buildFlags []stri
 	}
 	commandCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	budget := &outputBudget{remaining: limits.MaxMetadataBytes, cancel: cancel}
+	// One bound for the output streams and the error streams of both commands.
+	budget := processoutput.NewBound(limits.MaxMetadataBytes, cancel)
 	runGo := func(args ...string) ([]byte, error) {
 		command := exec.CommandContext(commandCtx, "go", args...)
 		command.Dir = root
 		command.WaitDelay = 2 * time.Second
-		stdout, stderr := &boundedOutput{budget: budget}, &boundedOutput{budget: budget}
+		stdout, stderr := budget.Writer(), budget.Writer()
 		command.Stdout, command.Stderr = stdout, stderr
 		err := command.Run()
-		if budget.exceeded {
+		if budget.Exceeded() {
 			return nil, fmt.Errorf("Go command output exceeds %d bytes", limits.MaxMetadataBytes)
 		}
 		if err != nil {
-			return nil, fmt.Errorf("Go command: %w\n%s", errors.Join(err, ctx.Err()), stderr.String())
+			return nil, fmt.Errorf("Go command: %w\n%s", errors.Join(err, ctx.Err()), stderr.Bytes())
 		}
 		return stdout.Bytes(), nil
 	}

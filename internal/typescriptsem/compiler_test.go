@@ -53,11 +53,6 @@ func TestPrepareInvalidTextAndDeadline(t *testing.T) {
 	if _, err := prepare(context.Background(), []s.AST{parsed.ASTView()}, source); !errors.Is(err, semantic.ErrInvalidRequest) {
 		t.Fatal(err)
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	b := boundedBuffer{remaining: 3, cancel: cancel}
-	if _, err := b.Write([]byte("four")); !errors.Is(err, semantic.ErrLimit) || !b.exceeded || ctx.Err() != context.Canceled {
-		t.Fatal("unbounded compiler response")
-	}
 }
 
 // The helper writes six statuses and spells them itself. Tests of the resolver
