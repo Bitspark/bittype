@@ -143,6 +143,9 @@ function main(request) {
   const graph = { Entities: [], Terms: [], Bindings: [], Expressions: [], Dependencies: [], Facts: [] };
   const entityBySymbol = new Map(); const symbolByEntity = new Map(); const referenceByEntity = new Map();
   const typeIDs = new Map(); const typesByID = new Map(); const declaredOwners = new Map(); const fileOwners = new Map();
+  // structureOf: the term that the structure fact of a named native type
+  // relates. writtenAt: the term of the type expression at a syntax node.
+  const structureOf = new Map(); const writtenAt = new Map();
   let depth = 0;
   const count = () => {
     if (graph.Entities.length + graph.Terms.length + graph.Facts.length + graph.Bindings.length + graph.Expressions.length > 32768) throw new Failure("incomplete", "TypeScript semantic record limit exceeded");
@@ -269,7 +272,7 @@ function main(request) {
         else if (f & ts.TypeFlags.Intersection) structure = term(expression("intersection", null, type.types.map(nativeType)));
         else if (f & ts.TypeFlags.Object) { structure = properties(type); fact({ Term: id }, "properties", structure); }
         else unsupported(`Native type is outside captured-types-1: ${checker.typeToString(type)}`);
-        if (value) fact({ Term: id }, "structure", structure);
+        if (value) { fact({ Term: id }, "structure", structure); structureOf.set(id, structure); }
         else value = graph.Terms[structure - 1];
       }
     }
@@ -293,6 +296,9 @@ function main(request) {
     // per-occurrence type associations belong to the occurrence, not that ref.
     graph.Expressions.push({ At: { Site: site(unit, node), Role: key("type-expression"), Ordinal: 0 }, Term: symbolic });
     graph.Expressions.push({ At: { Site: site(unit, node), Role: key("native-type"), Ordinal: 0 }, Term: type });
+    // A reference or an application is written as such. Every other form is
+    // written as its structure, also where the compiler names the type.
+    writtenAt.set(unit.Tree + ":" + node.ID, symbolic !== type ? symbolic : structureOf.get(type) ?? type);
     return symbolic;
   }
   const expressions = new Set(["type-reference", "type-application", "keyword-type", "literal-type", "array-type", "tuple-type", "object-type", "union-type", "intersection-type", "type-operator"]);
@@ -311,10 +317,24 @@ function main(request) {
     if (expressions.has(node.Kind)) expressionType(unit, node);
     if (["type-alias", "interface", "type-parameter"].includes(node.Kind)) {
       const symbol = symbolFor(native), id = entity(symbol), type = nativeType(checker.getDeclaredTypeOfSymbol(symbol));
+      // The type of the name is this fact. It is not the entity's body.
       fact({ Entity: id }, "declared-type", type);
       if (node.Kind === "type-parameter" && native.constraint) fact({ Entity: id }, "constraint", nativeType(checker.getTypeFromTypeNode(native.constraint)));
-      graph.Entities[id - 1].Body = type;
     }
+  }
+  // The body of a declaration's entity is the term of its written definition.
+  // An alias: the term of its right-hand side. An interface without an extends
+  // clause: the object of its members, which are all its own. An interface
+  // with an extends clause has no body here: how its base types are operands
+  // of the definition is not decided (bittype#310). A type parameter has no
+  // definition and no body.
+  for (const unit of request.Units) for (const node of unit.Nodes) {
+    if (node.Kind !== "type-alias" && node.Kind !== "interface") continue;
+    const id = entity(symbolFor(nativeByNode.get(unit.Tree + ":" + node.ID)));
+    let body;
+    if (node.Kind === "type-alias") body = writtenAt.get(unit.Tree + ":" + children(node, "type")[0]);
+    else if (!children(node, "base").length) body = structureOf.get(nativeType(checker.getDeclaredTypeOfSymbol(symbolFor(nativeByNode.get(unit.Tree + ":" + node.ID)))));
+    if (body) graph.Entities[id - 1].Body = body;
   }
   // Record the actual public declarations of each captured module.
   for (const unit of request.Units) {
