@@ -498,7 +498,7 @@ A package's role follows from its path, which the [layout](../LAYOUT.md) fixes.
 | Vocabulary | `syntax/<language>/go`, `semantics/<language>/go`, `transform/syntax/<native>/model/go`, `transform/syntax/<native>/symbol/go` |
 | Contribution | `<stage>/<dimension>/<language>/provider/go`, `analyze/files/<language>/queries/go`, `transform/syntax/<language>/{source,target}/go`, each mapping, each verification law and each capability extractor |
 | Common mapping part | `transform/syntax/<source>/mapping/go` and `transform/syntax/<source>/mapping/<part>/go` |
-| Private part | `internal/<language>` and `internal/<language>sem`, bound to their language by name. The other packages under `internal/` have explicit entries: five helpers of no single language in the foundation table, and four that the table `languageOwners` binds to one language |
+| Private part | `internal/<language>` and `internal/<language>sem`, bound to their language by name. The other packages under `internal/` have explicit entries: six helpers of no single language in the foundation table, and four that the table `languageOwners` binds to one language. The sixth helper is `internal/processoutput`, since 13 November 2026 |
 | Composition | `integration/go`, `verification/integration/go`, `tools/**`. A future `cmd/**` is intended and is not yet known to the test |
 
 1. A foundation or kernel package imports no vocabulary and no contribution.
@@ -567,6 +567,20 @@ The tables:
 | `languageOwners` | 5 | The language of a package whose path gives no role: `internal/declsyntax`, `internal/horosmodel`, `internal/horosfiles` and `verification/files/source/horos/go` belong to horos, and `internal/typescriptimports` to TypeScript |
 | `providerExceptions` | 14 | Every import of a stage provider package or of a query service package outside a composition, with its symbols and reason. All fourteen are accepted and no entry names an issue. Thirteen name a stage provider: the calls of finding 9. One names a query service: `verification/files/horos-to-go/go` takes `Admission` from `analyze/files/golang/queries/go`. #246 deleted the two open entries, Go's `Contract` and `Admission` from the analysis provider |
 | `modelDependencies` and `modelExternalImports` | 8 and 10 | The external model packages that the production graph may hold, and the packages that may import each directly. Since #250 the entry of `verification/files/horos-to-go/go` names the horos declarations and the logos contract, and no ontos package |
+
+**Noted on 13 November 2026, with the change for
+[#299](https://github.com/Bitspark/bittype/issues/299).** The table
+`foundationRules` holds one more helper of no single language,
+`internal/processoutput`: the one bounded writer for a child process's
+streams, which imports no package of the module. No role lists it. The table
+`roleExtensions` names it for `internal/rustsem` and for
+`internal/typescriptsem`, and the entry of `tools/provider-matrix/report/go`
+in `oneOfAKindRules` lists it. Each of the three is checked for use by its
+own package, so a bridge or the loader that stops importing the helper fails
+the test. The counts in the table above were made at the commits this
+section names and were not made again.
+[bittype/ACX-014](architecture-cases/0014-bounded-process-writer.md) is the
+case.
 
 How the test realises each of the six rules:
 
