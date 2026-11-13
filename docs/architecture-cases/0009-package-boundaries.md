@@ -55,7 +55,9 @@ profile gate is [bittype/ACX-008](0008-structural-profile-gate.md), and the
 optional-field decision inside Record is the contract change of
 [#196](https://github.com/Bitspark/bittype/issues/196), item 6. Noted on
 13 November 2026: whether the second is a fault is conditional since research
-0017 (row 11), as the [limit](#limits) on the helper key says.
+0017 (row 11), as the [limit](#limits) on the helper key says. Noted later
+that day, after the prototype: row 11 is decided as delegation (decision O38
+on #196), so it is one, unless an objection reopens the row.
 
 ## Intended boundary
 
@@ -499,6 +501,13 @@ that are not committed.
     keys only in `internal/golangsem/export.go`, where they are written. The
     integrator of the plan checked this on `main` at `abfc948`, and the change
     that wrote this record repeated both searches on `cadf495`.
+    Since 13 November 2026, with pull request
+    [#286](https://github.com/Bitspark/bittype/pull/286), this no longer holds
+    for the Go model's `utf8`: the readers of the `package-name` fact in
+    `semantics/golang/go/model.go` compare a term's encoding with it. So the
+    Go vocabulary publishes it as `TextEncoding()`, and the bridge writes it
+    from there at both places. The Go model's `json-1`, and both keys of the
+    TypeScript and Rust models, are as this record says.
 - **What issue #251 examined.** This list first named two groups as not
   examined: the names that the native compiler helpers write, and the horos
   syntax node kinds. [#251](https://github.com/Bitspark/bittype/issues/251)
@@ -565,6 +574,11 @@ that are not committed.
   part of this case. Noted on 13 November 2026: research 0017 (row 11) makes
   that move conditional on an answer of the service library, and it follows
   the gate of [the contribution contract](../contribution-contract.md#optional-fields).
+  Noted later that day, after the prototype: no answer had come, and the
+  research owner decided row 11 on the prototype's evidence. Presence is
+  delegated, so the move stands. An objection of the service library's owner
+  with a reason, before the migration merges, reopens it (decision O38 on
+  #196).
 - A green run still shows only that the listed edges are absent
   ([AC-07](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-07)).
 

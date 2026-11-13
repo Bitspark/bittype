@@ -77,8 +77,9 @@ func (c *converter) importSpec(id ast.NodeID) (*goast.ImportSpec, error) {
 // environmentState is the validated environment: every tree's file path and
 // every supplied package, checked before any captured code is judged.
 type environmentState struct {
-	module   string
+	layout   n.ImportEnvironment // its module path and output root place every captured file
 	paths    map[ast.TreeID]string
+	packages map[ast.TreeID]string // each tree's package import path, derived once by checkLayout
 	supplied map[string]*types.Package
 	order    []*types.Package // sorted by import path
 }
@@ -94,7 +95,7 @@ func prepareEnvironment(ctx context.Context, fset *token.FileSet, environment n.
 	for _, entry := range captured.Files.Entries {
 		filePaths[entry.ID] = entry.Path
 	}
-	state := &environmentState{module: environment.Module, paths: map[ast.TreeID]string{}, supplied: map[string]*types.Package{}}
+	state := &environmentState{layout: environment, paths: map[ast.TreeID]string{}, packages: map[ast.TreeID]string{}, supplied: map[string]*types.Package{}}
 	for _, link := range captured.Links {
 		state.paths[link.Tree] = string(filePaths[link.File])
 	}
@@ -166,7 +167,9 @@ type packageGroup struct {
 
 // checkLayout refuses, from file paths alone and in file-path order, captured
 // files that are not part of a package under this profile. It runs before any
-// tree is converted, so a layout refusal never waits behind a syntax limit.
+// tree is converted, so a layout refusal never waits behind a syntax limit. It
+// derives the package of every file it accepts, and checkCaptured groups by
+// that one result.
 func checkLayout(env *environmentState, inputs []s.AST) error {
 	for _, tree := range inputs {
 		filePath := env.paths[tree.ID]
@@ -174,9 +177,11 @@ func checkLayout(env *environmentState, inputs []s.AST) error {
 		if ignoredByGo(filePath) {
 			return &Failure{Err: fmt.Errorf("%w: %s is a test, ignored or vendored file", n.ErrUnsupported, filePath), At: root}
 		}
-		if !n.ValidImportPath(n.CapturedImportPath(env.module, filePath)) {
+		importPath, ok := n.CapturedImportPath(env.layout, filePath)
+		if !ok {
 			return &Failure{Err: fmt.Errorf("%w: package directory of %s", n.ErrUnsupported, filePath), At: root}
 		}
+		env.packages[tree.ID] = importPath
 	}
 	return nil
 }
@@ -190,7 +195,7 @@ func checkCaptured(ctx context.Context, fset *token.FileSet, env *environmentSta
 	for i, tree := range inputs {
 		filePath := env.paths[tree.ID]
 		root := ast.NodeRef{Tree: tree.ID, Node: tree.Root}
-		importPath := n.CapturedImportPath(env.module, filePath)
+		importPath := env.packages[tree.ID]
 		g := groups[importPath]
 		if g == nil {
 			g = &packageGroup{name: goFiles[i].Name.Name}
@@ -298,8 +303,8 @@ func checkCaptured(ctx context.Context, fset *token.FileSet, env *environmentSta
 }
 
 // ignoredByGo reports the files outside a package under this profile: the go
-// tool's test files, files and directories starting with "_" or ".", and
-// testdata, plus vendor directories, whose import paths Go resolves differently.
+// tool's test files and files starting with "_" or ".", and the directories
+// that the vocabulary's one directory rule names.
 func ignoredByGo(filePath string) bool {
 	base := path.Base(filePath)
 	if strings.HasSuffix(base, "_test.go") || strings.HasPrefix(base, "_") || strings.HasPrefix(base, ".") {
@@ -307,7 +312,7 @@ func ignoredByGo(filePath string) bool {
 	}
 	if dir := path.Dir(filePath); dir != "." {
 		for _, element := range strings.Split(dir, "/") {
-			if element == "testdata" || element == "vendor" || strings.HasPrefix(element, "_") || strings.HasPrefix(element, ".") {
+			if n.UnsupportedDirectory(element) {
 				return true
 			}
 		}
