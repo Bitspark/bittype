@@ -1,6 +1,6 @@
 # The contribution contract
 
-**Design, 13 November 2026, from research 0017. Decided by the research owner, `claude-contract-chain-issues`, who also wrote the research question. Not implemented. It becomes final when the gate at the end of this page is met; until then the prototype may change it, and each change is recorded here.**
+**Design, 13 November 2026, from research 0017. Decided by the research owner, `claude-contract-chain-issues`, who also wrote the research question. Not implemented. It becomes final when the gate at the end of this page is met; until then the migration may change it, and each change is recorded here.**
 
 This page is the contract of a contribution to bittype's generation kernel:
 what a contribution is, what its rule may ask and must return, what
@@ -70,12 +70,20 @@ leaves the meaning of its sentence. All of them are listed under
   [decision of the same day](https://github.com/Bitspark/bittype/issues/196#issuecomment-6844971187)
   on three points that writing O27 to O39 into this page showed. It widens
   one sentence of O17.
+- **O41:** the
+  [decision of the same day](https://github.com/Bitspark/bittype/issues/196#issuecomment-6845234802)
+  after an independent reading of the change that wrote the prototype's
+  results into this page. It corrects the proposal that O39 took in one
+  point, completes O37, says which alias O35 means, and says how O36 fits the
+  envelope. The same comment corrects a count of the decisions on the
+  prototype, which this page had repeated
+  ([what the prototype showed](#what-the-prototype-showed)).
 - **The prototype's report**, by its section or by its finding, F1 to F27:
   the [report](../research-docs/0017-contribution-contract.prototype.md) of
   the prototype of step 2, written by the agent that built it. The prototype
   is the branch `prototype/contribution-contract-196` at `6080420`, and it is
   thrown away after the migration. The report is evidence and proposals, and
-  no decision. The decisions on it are O27 to O39. **Fixed by the prototype**
+  no decision. The decisions on it are O27 to O41. **Fixed by the prototype**
   on this page means: the form that the prototype built and its report
   states. Every such form is provisional until the gate. The closing
   paragraph of the decisions takes seven of them by name, and this page says
@@ -101,7 +109,7 @@ A sentence marked **derived here** follows from those sources and is stated by
 none of them. It is this page's reading and no decision. A point that two
 sources leave unsettled, or settle differently, is not resolved on this page.
 The first version listed ten such points, and an independent reading found
-more, and the prototype more again. O1 to O39 decide them
+more, and the prototype more again. O1 to O41 decide them
 ([Points decided after the first version](#points-decided-after-the-first-version)).
 File and line references are `path:line` at commit `04f9a75`, the head of
 `main` when this page was last changed. The prototype's report cites accepted
@@ -256,8 +264,7 @@ O31: "A rule may name a child that only conversion needs. It is resolved when
 bindings are asked for, left out for types alone, and recorded on the link
 either way." It is O5 in the protocol, and it keeps the accepted sentence:
 "Only demanded native actuals need mappings." (`docs/generation-spi.md:170`).
-How such a need counts on a cycle is
-[not specified here](#what-is-delegated-and-what-is-not-specified-here).
+On a cycle such a need counts as a reference (O40, [evidence](#evidence)).
 
 **The shape the prototype gave the protocol.** Fixed by the prototype
 (report, section 7). No decision names it, and no signature is decided: "A
@@ -437,18 +444,20 @@ decisions take them as it fixed them (report, section 7).
 | --- | --- |
 | An evidence kind | "EvidenceKind{Identity, Version}, a comparable value owned by a vocabulary of the target or product." A kind is a qualified identity with a version |
 | A fact | "A fact is Fact{Kind, Outcome, Content}: the outcome is proved, refuted or exhausted, and the content is the owner's string, carried unread." A stated fact has one of three outcomes. The other two outcomes of an answer are not stated by anyone: `unknown` is what the planner answers where nothing is stated, and deferred is its answer for a binder |
-| How a rule presents an answer | "An answer is a value with unexported fields that a rule reads only through the step it was issued to: DecideStep.Present(dependency, answer). It is bound by value to the asking contribution, the subject's place, the dependency, the dependency's whole reference and the generic environment. A rejected answer fails the planning of the subject even where the rule drops the error." This is the entry point of the test of [guarantee 4](#what-the-kernel-carries-without-reading-it) |
+| How a rule presents an answer | "An answer is a value with unexported fields that a rule reads only through the step it was issued to: DecideStep.Present(dependency, answer). It is bound by value to the asking contribution, the subject's place, the dependency, the dependency's whole reference and the generic environment. A rejected answer fails the planning of the subject even where the rule drops the error." This is the entry point of the test of [guarantee 4](#what-the-kernel-carries-without-reading-it). In the prototype the generic environment of an answer is the declaration under which it was issued (line 592 of `contracts/generation/go/contribution_plan.go` on the branch at `6080420`), and the test of it uses two records that are not generic |
 
 **Evidence through a declaration (O35).** The prototype's finding F23: "What
 is selected for a use of `Person` is the declaration contribution's
 application, not the record in its body." (O35) So a rule that asks about an
 operand of a named type asks the declaration contribution. O35 decides the
-case of an alias and leaves the nominal case.
+case of an alias and leaves the nominal case. "Alias" and "nominal" are here
+the two native forms that the declaration contribution chooses between, and
+no kinds of source declaration (O41).
 
 | The declaration | What O35 decides | Its reason |
 | --- | --- | --- |
-| An alias | "an alias is interchangeable with its target, so the facts of an alias's body are the facts of the alias, and the kernel forwards them. The declaration contribution states with its decision that it is transparent." | The accepted pages: "If the source language makes an alias interchangeable with its target, choosing incompatible native nominal types may violate the selected representation profile." (`docs/type-generation-plugins.md:209-211`), and "Administrative aliases and renamed binders are permitted" (`docs/type-generation-plugins.md:485-486`) |
-| A nominal declaration | "nothing is decided: it answers for itself, bittype's own states no fact, so the answer is `unknown`, which is the safe answer under coherence." | "Which facts a nominal declaration restates is target-specific and is decided with the first family that needs evidence through one, #209 (maps and sets)." |
+| An alias | "an alias is interchangeable with its target, so the facts of an alias's body are the facts of the alias, and the kernel forwards them. The declaration contribution states with its decision that it is transparent." O41 says which alias: "An alias in O35 is a declaration for which the declaration contribution decides a native alias and no defined declaration. Its selected representation is that of its body (row 7), so the facts of the body are its facts." | The accepted bound, by O41: composition must "preserve associations through aliases" (`docs/binding-generation.md:110`). O35 itself leaned on two other sentences: "If the source language makes an alias interchangeable with its target, choosing incompatible native nominal types may violate the selected representation profile." (`docs/type-generation-plugins.md:209-211`), and "Administrative aliases and renamed binders are permitted" (`docs/type-generation-plugins.md:485-486`). The first is about a source alias and a nominal native type. O41 says that it "speaks of another case", and its use here is a reading |
+| A nominal declaration | "nothing is decided: it answers for itself, bittype's own states no fact, so the answer is `unknown`, which is the safe answer under coherence." O41: "O35's second line is unchanged: a declaration that becomes a defined native declaration answers for itself." | "Which facts a nominal declaration restates is target-specific and is decided with the first family that needs evidence through one, #209 (maps and sets)." |
 
 The prototype did not build the forwarding. Its fixture policy asked about
 its body and stated the answer again (report, F23).
@@ -724,8 +733,9 @@ formatter per language and no selection".
   stage (`integration/go/architecture_test.go:182`).
 
 **What row 10 left undecided.** Fixed by the prototype (report, section 7).
-The decisions take the last line as the prototype fixed it. No decision names
-the first three.
+The decisions take the last line as the prototype fixed it. O40 takes the
+second: a recursive reference and an evidence cycle are unsupported, with the
+kernel as owner (below). No decision names the first and the third.
 
 | What | The form the prototype fixed. Provisional until the gate |
 | --- | --- |
@@ -754,6 +764,9 @@ contribution." (O40)
 > library's owner. O10 gave the decision "to the answer on
 > bitspark-service#38 or, if none had come when the prototype was complete,
 > to me on its evidence. None has come." (O38) "Me" is the research owner.
+> The question was posted on 13 November 2026 at 00:55Z, and O38 decided at
+> about 04:52Z of the same day. The research owner says of it: "Four hours is
+> a short time for another seat to answer." (the comment of O41)
 > The section states the decided form, and below it what an objection would
 > reopen: "An objection with a reason, before the migration merges, reopens
 > this." (O38)
@@ -941,13 +954,17 @@ were written without a field-level slot. Until O38 they waited for the
 decision of row 11. They are not edited with this change. O40: bittype's two
 "are annotated with the migration, in the change that builds delegation on
 `main`, and not before: until then an objection can reopen row 11. The
-service library's sentence is its owner's."
+service library's sentence is its owner's." Two more accepted places of
+bittype were written the same way, the last two rows of the table. No
+decision names them.
 
 | Sentence | Where | Owner |
 | --- | --- | --- |
 | "A family reaches other families only through its adapter slots." | The [decision of 11 November 2026](https://github.com/Bitspark/bitspark-service/issues/38#issuecomment-6803983510) on bitspark-service#38 | The service library, `codex-platform-status` |
 | "Run-time factory reference and typed argument-adapter slots, converting the value inside a message" | `docs/binding-generation.md:98` | Research 0014 |
 | "Record field layout and presence behaviour" | `docs/representation-families.md:87` | Research 0015. This chain holds its delivery |
+| "child adapter slots", among what a family's conversion implementation has | `docs/representation-families.md:40` | Research 0015. Not named by O40 |
+| "their argument slots", of the selected adapter factories in the plan | `docs/binding-generation.md:63` | Research 0014. Not named by O40 |
 
 Finding 7 (`docs/package-boundaries.md:159`) carries a dated note since this
 page merged. With this change the note says that the finding stands
@@ -1390,6 +1407,14 @@ In the prototype the value that crossed is the factory reference: a module,
 an export and a runtime. The Go lowering facets state no transport and never
 leave the process (report, section 9).
 
+**How that fits the envelope (O41).** Representation families lists "Native
+symbols, imports, factory references, runtime requirements" in the shared
+envelope (`docs/representation-families.md:92`), and under O36 the planner
+does not read them. O41: "O36 stores a facet's transport bytes with the
+selected contribution's entry in the plan. That entry is part of the
+envelope, so both hold: the envelope carries them, and the planner does not
+read them."
+
 **Selected together: a contribution, its facet packages, the bundle (O8, O11,
 O16, O32).** "A native facet and the facets a binding product needs are selected
 together." (`docs/binding-generation.md:103`). O8 said what is selected:
@@ -1484,7 +1509,7 @@ are: "These are structural, authority, scope, and association guarantees."
 | 1 | Required facets belong to the selected contribution | Remove a facet that a bindings product requires. The request for bindings fails as "missing facet", and a request for types succeeds. What is checked is the set of facets that the composition registered for the contribution (O32) | A request names no product |
 | 2 | A facet's kind, target and compatibility match | A facet from another issuer under the same display name, for another target, or of another contract version is rejected | No kind and no version exist |
 | 3 | A reference has the right plan, category and scope | A reference of another plan, a member where a type is expected, and a binder outside its scope are each rejected | A reference has no category |
-| 4 | Evidence belongs to the dependency it was asked about | An answer issued for another dependency, another generic environment or another contribution reference is rejected. The reference counts whole, both of its parts (O19). A rule presents an answer through the step it was issued to, and a rejected answer fails the planning of the subject (fixed by the prototype, [evidence](#evidence)) | No evidence path exists |
+| 4 | Evidence belongs to the dependency it was asked about | An answer issued for another dependency, another generic environment or another contribution reference is rejected. The reference counts whole, both of its parts (O19). A rule presents an answer through the step it was issued to, and a rejected answer fails the planning of the subject (fixed by the prototype, [evidence](#evidence)). The prototype's test of another generic environment uses declarations that are not generic | No evidence path exists |
 | 5 | The payload snapshot is immutable | Mutate the value a rule returned, after it returned. Neither the native output nor the stored plan changes. O20: the guarantee "has one moment since O9, after the rule returned" | No record exists |
 | 6 | The exact payload passed validation | A fixture family whose schema has a constraint that a Go type cannot express, and a rule that returns a value violating it: the value is refused before any backend runs (O20, derived here). A receipt issued for another snapshot or another schema fails the same way. A receipt is the kernel's record that one frozen value passed validation against one schema. The codec that validates is trusted (O37, below) | Nothing validates a payload |
 
@@ -1580,13 +1605,24 @@ may import neither horos nor ontos. The horos source reader is not its home.
   change the shared part for one family's value form." (O37) The prototype is
   built in the older form: its codec packages import neither library, and the
   shared part exports the value forms a codec builds (report, F26).
-- **One accepted sentence waits for the migration.** bittype's `AGENTS.md`
-  lists who consumes the model dependencies: "Only the Horos frontend
-  (including its text stages), its private model helpers, source-specific
-  transformation readers and the concrete Horos verification
-  projections/composition consume external Horos/Ontos model dependencies."
-  (`AGENTS.md:273-275`). O37: "the codec role is added there with the
-  migration." This change does not edit it.
+- **Three accepted sentences wait for the migration (O37, O41).** O37 named
+  one, in `AGENTS.md`: "the codec role is added there with the migration."
+  O41: "The same list stands in three accepted places". This change edits
+  none of them.
+
+  | Where | The sentence |
+  | --- | --- |
+  | `AGENTS.md:273-275` | "Only the Horos frontend (including its text stages), its private model helpers, source-specific transformation readers and the concrete Horos verification projections/composition consume external Horos/Ontos model dependencies." |
+  | `AGENTS.md:277-278`, the last sentence of that passage | "Preserve the narrow package import allowances; generic infrastructure and native stages must remain independent of these semantic packages." |
+  | `CHARTER.md:125-127` | "Concrete Horos model dependencies belong to the Horos frontend and its private helpers, its text/encoding tools, source-specific generation integration and Horos verification projections/composition." |
+  | `LAYOUT.md:256-258` | "narrow external-model allowances for the Horos frontend/text stages, source reader, module encoder and concrete verification integrations" |
+
+- **The shared part is no kernel package (O41).** The prototype put the
+  shared part under a kernel path, with imports of both models. O41: "That is
+  against the last sentence. So: the shared part does not live under a kernel
+  path." Where it lives, and whether it fits an entry that the three
+  sentences already have or needs them changed, "is decided in the migration
+  with the quotes, and judged by its review." (O41)
 - **For the delivered contributions it is written by hand:** 21 packages
   under six names. O9: "the
   codec is written by hand and pinned with its schema, as row 38 decides for
@@ -1594,7 +1630,8 @@ may import neither horos nor ontos. The horos source reader is not its home.
   names is decided by O12, below.
 - **The path is a postponed part of row 28.** The row says that `LAYOUT.md`
   names the home. `LAYOUT.md` names the role and no path. The prototype
-  proposes `transform/syntax/shared/payload/go` for the shared part and
+  proposes `transform/syntax/shared/payload/go` for the shared part, which
+  O41 does not take, and
   `transform/syntax/<source>-to-<native>/codec/<name>/go` for a codec
   ([the roles the prototype proposes](#the-roles-the-prototype-proposes)).
   The migration edits `LAYOUT.md`, and its review judges the proposal (O39).
@@ -1606,7 +1643,9 @@ may import neither horos nor ontos. The horos source reader is not its home.
 - **Why it is not the horos source reader.** Derived here, from verification
   report 1: a payload's schema is a horos type whatever the source language
   of the generation is. A source that is not horos plans through the same
-  kernel and needs the same codecs.
+  kernel and needs the same codecs. This bears on the question that O41
+  leaves to the migration: an entry for a source-specific integration does
+  not cover a codec.
 
 **The six names of delivered contributions that return a decision (O12,
 O21).** A contribution is for one target, so the delivered contributions are
@@ -1636,7 +1675,8 @@ at `04f9a75`.
 - **Which payloads are empty.** O12 says that a payload may be empty and that
   the record still exists. Fixed by the prototype, and the decisions take it
   as the prototype fixed it (report, section 7). Empty are text, boolean,
-  list and optional, in Go and in TypeScript. Not empty are record, with
+  list and optional, in Go and in TypeScript. The TypeScript boolean package
+  is not moved, so its payload is not built. Not empty are record, with
   `members: list<text>`, and declarations, with `name: text`,
   `nominal: bool` and `parameters: list<text>`.
 - **Six, and five only if row 11 is reopened.** O12: "If presence is not
@@ -1815,7 +1855,7 @@ refused.
   for TypeScript only, until Go and Rust have a Files stage (row 24a).
 - **Until the gate is met** nothing on this page is final. The prototype may
   change any of it, and each change is recorded here with its date. The
-  prototype's changes are the decisions O27 to O39 of 13 November 2026 and
+  prototype's changes are the decisions O27 to O41 of 13 November 2026 and
   the forms that this page marks "fixed by the prototype".
 - **After the gate** the left column is fixed, by AC-10: a first change
   "establishes the final structure: its inputs and identities have their
@@ -2090,8 +2130,8 @@ first. They are listed where they arise:
 
 | Sentence | Why not now | Where |
 | --- | --- | --- |
-| The three sentences that a field-level slot would change | Row 11 is decided (O38). No decision says when they are annotated, and an objection before the migration merges would reopen row 11 | [Optional fields](#optional-fields) |
-| "Only the Horos frontend (including its text stages), its private model helpers, source-specific transformation readers and the concrete Horos verification projections/composition consume external Horos/Ontos model dependencies." (`AGENTS.md:273-275`) | The codec role is added there with the migration (O37) | [What the kernel carries](#what-the-kernel-carries-without-reading-it) |
+| The three sentences that a field-level slot would change, and two more accepted places of bittype | Row 11 is decided (O38). O40: bittype's two "are annotated with the migration, in the change that builds delegation on `main`, and not before", and the service library's sentence is its owner's. No decision names the two further places | [Optional fields](#optional-fields) |
+| The three accepted sentences that list who consumes the horos and ontos model dependencies (`AGENTS.md:273-278`, `CHARTER.md:125-127`, `LAYOUT.md:256-258`) | The codec role meets them with the migration (O37). Whether the shared part fits an entry they have or needs them changed is decided there and judged by its review (O41) | [What the kernel carries](#what-the-kernel-carries-without-reading-it) |
 | "A single generic convention relates source binders, native parameters and complete mapped actuals." (`docs/generation.md:45-47`) | The page describes type generation as it is implemented. It changes with the migration, and this page reads the sentence as the native convention | [Identities](#identities) |
 | The memo sentence of the binding contracts | It is the service library's | [What is delegated](#what-is-delegated-and-what-is-not-specified-here) |
 
@@ -2204,6 +2244,7 @@ more than `docs/representation-families.md` allows, and the research owner
 | O38 | Row 11, with no answer of the service library | Presence is delegated (D3). An objection with a reason, before the migration merges, reopens it | [Optional fields](#optional-fields) |
 | O39 | Six points for the migration | A link carries its child's locator. One composition for each process. A public route to the bootstrap artifact. The fourth axis is a reader's test. #273 lands first. The prototype's roles are a proposal | [Inputs](#inputs-that-are-not-bittypes-alone), [The gate](#the-gate), [Identities](#identities), [What the prototype showed](#what-the-prototype-showed) |
 | O40 | Who owns an unsupported refusal; a need for conversion on a cycle; when three accepted sentences are annotated | Whoever would build the slice: a contribution, the kernel or a vocabulary. It counts as a reference. With the migration | [Refusals](#refusals), [Evidence](#evidence), [Optional fields](#optional-fields) |
+| O41 | The shared part of the codec role at a kernel path. Which alias O35 means. How O36 fits the envelope | The shared part does not live under a kernel path, and its place is the migration's to decide. An alias is a declaration for which the declaration contribution decides a native alias. The envelope carries a facet's transport bytes, and the planner does not read them | [What the kernel carries](#what-the-kernel-carries-without-reading-it), [Evidence](#evidence), [What the prototype showed](#what-the-prototype-showed) |
 
 **O23 to O26.** The same reader read the changes at `0102bfe` and reported
 13 findings, N1 to N13. In four of them an accepted page says what this page
@@ -2217,6 +2258,14 @@ shown as written." The research owner made
 [thirteen decisions](https://github.com/Bitspark/bittype/issues/196#issuecomment-6844431866)
 on it. They also take, as the prototype fixed them, seven points that this
 page had left to it.
+
+**O40 and O41.** Writing O27 to O39 into this page showed three points that
+no decision named, and O40 decides them. An independent reader then read that
+change, opened ten tests of the prototype branch and read the recorded run.
+It found a count of red lines that the decisions had from the report and
+that the run does not bear out, and two decisions that met accepted
+sentences. The research owner corrected the count and made
+[O41](https://github.com/Bitspark/bittype/issues/196#issuecomment-6845234802).
 
 **Whose composition registers a facet (O11).** O8 said "registered by the
 owner's composition", and no accepted text names an owner of a composition.
@@ -2256,7 +2305,7 @@ test composition is the consumer that registers their bundles.
 | Value-level Go in production, and with it a typed expression vocabulary for Go (O33) | "the future Go runtime library" (`docs/binding-generation.md:46`) | 29, O33 |
 | Which facts a nominal declaration restates | The first family that needs evidence through one, [#209](https://github.com/Bitspark/bittype/issues/209) | O35 |
 | The roles and paths of the new packages in `LAYOUT.md` and in the architecture test | The migration, whose review judges the prototype's proposal | 28, O39 |
-| The entry for the codec role in the list of `AGENTS.md` of who consumes the horos and ontos model dependencies | The migration | 28, O37 |
+| The entry for the codec role in the three accepted places that list who consumes the horos and ontos model dependencies, and where the shared part of the role lives | The migration, whose review judges it | 28, O37, O41 |
 
 **The notes posted with the merge.** The decisions of 13 November 2026 list
 four notes that are posted when this page merges. It merged on 13 November
@@ -2351,11 +2400,10 @@ left, and what the prototype found newly open:
   only. The report (F25): "the route needs a public way from a schema source
   to the pinned artifact. Not examined: #172."
 - **What the prototype's proposal of roles lacks.** A role for the vocabulary
-  package of a family (O27), which the prototype did not build, and the
-  import of the ontos value packages by a codec (O37)
+  package of a family (O27), which the prototype did not build, the import of
+  the ontos value packages by a codec (O37), and a place for the shared part
+  of the codec role that is no kernel path (O41)
   ([the roles the prototype proposes](#the-roles-the-prototype-proposes)).
-- **When the three accepted sentences that a field-level slot changes are
-  annotated** ([optional fields](#optional-fields)).
 - **Composition across several profiles.** The advice (section 5.6) names it
   as needing an explicit contract, and no row decides it. Accepted sentences
   decide part: "a request selects the libraries that state the profile it
@@ -2377,7 +2425,7 @@ left, and what the prototype found newly open:
 ## Where each row is stated
 
 "Line" is the line of the [gate](#the-gate) whose tests validate the row.
-O1 to O39 are the [decisions](#points-decided-after-the-first-version) that
+O1 to O41 are the [decisions](#points-decided-after-the-first-version) that
 bear on a row. A dash means that the row has no test of its own before the
 gate is met.
 
@@ -2389,11 +2437,11 @@ gate is met.
 | 4 | Holds | [The protocol](#what-a-rule-does-the-protocol) | 1 |
 | 5 | Holds | [The protocol](#what-a-rule-does-the-protocol), O1, O20, O29 | 2 |
 | 6 | Holds | [The protocol](#what-a-rule-does-the-protocol), [Amendments](#amendments-to-accepted-pages), O20 | 1 |
-| 7 | Adapted | [Evidence](#evidence), O13, O23, O29, O35 | 2 |
+| 7 | Adapted | [Evidence](#evidence), O13, O23, O29, O35, O41 | 2 |
 | 8 | Adapted | [Evidence](#evidence), O2, O20 | 2 |
-| 9 | Adapted | [Evidence](#evidence), O17, O30 | 2 |
+| 9 | Adapted | [Evidence](#evidence), O17, O30, O40 | 2 |
 | 9a | Deferred | [Deferred](#deferred-with-triggers), O6 | - |
-| 10 | Adapted | [Refusals](#refusals), O17, O26 | 2 |
+| 10 | Adapted | [Refusals](#refusals), O17, O26, O40 | 2 |
 | 11 | Adapted | [Optional fields](#optional-fields), [Amendments](#amendments-to-accepted-pages), O10, O38 | The condition beside the seven lines. Met by O38 |
 | 12 | Adapted | [Optional fields](#optional-fields), O38 | 2 |
 | 13 | Adapted | [Optional fields](#optional-fields), O3, O29, O38 | 4 |
@@ -2413,9 +2461,9 @@ gate is met.
 | 24a | Deferred | [Deferred](#deferred-with-triggers) | - |
 | 25 | Holds | [Identities](#identities), O34 | 2, 5 |
 | 26 | Adapted | [What the kernel carries](#what-the-kernel-carries-without-reading-it), O8, O11, O16, O20, O32, O36 | 2 |
-| 26a | Deferred until 13 November 2026. Decided by O36 | [What the kernel carries](#what-the-kernel-carries-without-reading-it), [Deferred](#deferred-with-triggers), O36 | 4 |
+| 26a | Deferred until 13 November 2026. Decided by O36 | [What the kernel carries](#what-the-kernel-carries-without-reading-it), [Deferred](#deferred-with-triggers), O36, O41 | 4 |
 | 27 | Adapted | [What the kernel carries](#what-the-kernel-carries-without-reading-it), O5, O19, O20, O23, O32, O37 | 2, 3 |
-| 28 | Adapted | [What the kernel carries](#what-the-kernel-carries-without-reading-it), O9, O12, O21, O25, O27, O37, O39 | 1, 3 |
+| 28 | Adapted | [What the kernel carries](#what-the-kernel-carries-without-reading-it), O9, O12, O21, O25, O27, O37, O39, O41 | 1, 3 |
 | 29 | Adapted | [What lowering must be able to refer to](#what-lowering-must-be-able-to-refer-to), O8, O33, O39 | 5 |
 | 30 | Holds | [What is final and what is provisional](#what-is-final-and-what-is-provisional), [Amendments](#amendments-to-accepted-pages), O17 | 7 |
 | 31 | Adapted | [The order of work](#the-order-of-work), O6, [What the prototype showed](#what-the-prototype-showed) | All |
@@ -2570,8 +2618,10 @@ that condition.
 **What a stand-in proves (row 31).** Row 31: "the serialized plan is
 sufficient for a second reader in another process, not for the service
 library's factory." The table details that sentence. It is derived here,
-from verification report 3. The prototype's stand-in is such a reader, and
-its report says the same of it (stage 7).
+from verification report 3. The prototype's stand-in is such a reader. Its
+report says of it that it does not show the service library's factory or
+independent authorship (stage 7). It does not say that every refusal
+survives serialization.
 
 | A TypeScript reader written by bittype, run from a Go test, shows | It does not show |
 | --- | --- |
@@ -2596,8 +2646,8 @@ Step 2 of the order is done. This section says what the prototype built, what
 its tests show, and what they do not show. Its source is the
 [prototype's report](../research-docs/0017-contribution-contract.prototype.md),
 which the agent that built the prototype wrote. The report is evidence. The
-[decisions O27 to O39](https://github.com/Bitspark/bittype/issues/196#issuecomment-6844431866)
-say what this page takes from it. By AC-07 this page claims no more than the
+[decisions O27 to O39](https://github.com/Bitspark/bittype/issues/196#issuecomment-6844431866),
+with O40 and O41 after them, say what this page takes from it. By AC-07 this page claims no more than the
 tests establish: "do not use one kind of evidence to claim another
 guarantee".
 
@@ -2609,13 +2659,28 @@ away after the migration. Its log is `PROTOTYPE.md` at its root.
 
 - All nine stages are built. The decisions say of it: "The design could be
   built."
-- 41 tests pass. The gate runs were made on the commit `4442047`, one commit
-  before the head, which changes the log and one comment.
-- A test logs green for the kernel as built and red for a kernel with one
-  property switched off. The switch is an instrument of the branch. 25 such
-  mutants each turn a test red.
-- A test without a mutant is red in one sense only: it does not build against
-  the branch point.
+- 41 tests pass: 40 tests of the prototype and the architecture test. The
+  gate runs were made on the commit `4442047`, one commit before the head,
+  which changes the log and one comment.
+- The recorded run has 25 lines that begin with RED, in 15 of the 40 tests.
+- 19 of them are under a switch of the kernel that turns one property off.
+  The switch is an instrument of the branch. There are 18 distinct switches:
+  `field-ignores-parent` runs twice.
+- Six are of another kind: the contract test run on the callback of the
+  mapping contract; a pass of the test that rebuilds an entry from the
+  source; a fixture rule that chooses for want of proof inside the generic
+  declaration only; a lowering by string that does not compile; a switch in
+  the stand-in that reads a present `undefined` as absence; and a module
+  that needs an internal package.
+- 25 of the 40 tests have no red line of any kind. Such a test is red in one
+  sense only: it does not build against the branch point.
+- **Where this differs from the report.** The report's section 2 says: "A
+  test logs GREEN for the kernel as built and RED for a kernel with one
+  property switched off". That holds for 19 of the 25 red lines. The
+  decisions on the prototype counted "25 mutants of the kernel", and the
+  research owner corrected it: "The run has 25 red lines. 19 are under a
+  switch of the kernel, 18 distinct switches." (the comment of O41) The
+  numbers here were counted again in the recorded run for this page.
 - The whole test suite passes on the head, except seven Rust tests that need
   a helper of the Rust compiler. They fail at the branch point too.
 - 24 findings, F1 to F27. None stopped a stage. "Five concern a sentence of
@@ -2641,10 +2706,10 @@ important as the second.
 | 1. The staged rule and the frozen record | The moved contributions generate the same Go text as the mapping contract for today's pagination module, and the same TypeScript text for that module without booleans. The projector's capability mentions no use, declaration, binder, selector or reader, and three attempts to read the source do not type-check. A value mutated after the rule returned changes neither the native type nor the serialized plan. With a fixture whose member names come from its configuration, an entry rebuilt from the source is detected. For eleven vocabulary packages the committed module, pin and Go type are what the schema source gives, and every listed value round-trips through its hand-written codec | Rust, C++ and TypeScript booleans. Equality of the origins inside the native tree. That a contribution cannot hand source data to its projector through state of its own package. Immutability against a codec that keeps the value. That no second pass can be written: the mutant is a pass of the test, not of the kernel. TypeScript payload types, which are not generated. A field the existing families cannot type. The bootstrap test was not shown red |
 | 2. Evidence | A rule gets a typed answer about what was selected for its operand before it decides. With a declared binder requirement, `Page<text>` and the written-out record have the same native type, the open declaration records the requirement and the application its discharge. Each of the five outcomes reaches a rule as its own answer. The declaration contribution decides nominal or alias from the answer about its body and reads no payload of the record. Two representation revisions give equal payloads and different nodes. A recursive reference and an evidence cycle are refused with two reasons. An answer for another dependency, generic environment, representation revision or meaning revision is rejected | That a fact is true. That the kernel refuses a rule that decides differently inside a generic declaration (F5, O29). A check that reaches a limit: exhausted is stated, nothing computes. Anything of recursion beyond its refusal, and the two refusals run on the independent fixture source only (F7). That a rule cannot act on what it remembers without presenting it |
 | 3. Identities and refusals | One key under two publishers registers, and one publisher with one key twice fails, also for a second target. For five families Go and TypeScript carry one meaning and two representation revisions, and a reference that lacks either part is refused. Missing and ambiguous are two values. An unbuilt family is a missing contribution. A specialization is refused as unsupported with the application named while another application plans. Five refusals of moved rules match exactly one value each. Two contributions that spell a helper alike get two symbols | That a publisher's name is its owner's. That the meaning is one identity and not two equal spellings (F2, O27). The refusals of the eleven packages that are not moved. A request for a shared helper (F10, O34) |
-| 4. The plan and its serialized form | Two uses of `Page<Person>` are two use entries with two sites on one node. Asked for bindings, an application of a declaration that omits its parameter natively has no native and one adapter argument. Asked for types alone, the omitted argument is not planned. A reader that only parsed the serialized plan derives equal keys for equal nodes and another key with another selected dependency. An unknown envelope protocol, payload schema, meaning revision, representation revision and source semantics are each refused under their own name. The inventory record carries the planner's identity. One plan links with the manifests of two TypeScript placements, and the manifest of another output is a linking error | An adapter. The memo. The fourth axis, which stage 7 shows in a reader. A reader on the formatter's result (F11) |
+| 4. The plan and its serialized form | Two uses of `Page<Person>` are two use entries with two sites on one node. Asked for bindings, an application of a declaration that omits its parameter natively has no native and one adapter argument. Asked for types alone, the omitted argument is not planned. A reader that only parsed the serialized plan derives equal keys for equal nodes and another key with another selected dependency. An unknown envelope protocol, payload schema, meaning revision, representation revision and source semantics are each refused under their own name. The inventory record carries the planner's identity. One plan links with the manifests of two TypeScript placements, and the manifest of another plan's output is a linking error | An adapter. The memo. The fourth axis, which stage 7 shows in a reader. A reader on the formatter's result (F11). A check of the manifest's run: the link compares the plan's digest and the target, and the run is carried and compared with nothing (lines 478 to 487 of `contracts/generation/go/contribution_record.go` on the branch) |
 | 5. Facets, Go handlers and executed Go lowering | A fresh process lowers Go conversion for `Page[Person]` from the serialized plan, the snapshot and the facets. The code compiles, converts five values there and back and refuses three outside the type. It has a typed construction, member access, the owned helper and a generic adapter argument. A lowering by member reference compiles and runs, and a lowering by string does not compile. Guarantees 1, 2, 3 and 6 | A typed expression vocabulary: the lowering is Go text with typed holes (F14, O33). The conversion laws |
 | 6. Optional fields by delegation | In lowered Go and in the stand-in, absent and present with a value convert there and back as themselves, and present with `null` is refused. In the stand-in a present `undefined` is refused, and that vector is red when the protocol reads it as absence. A request with the operand of another record, or with a role issued for another pair, fails. A fragment that is no member is refused, a target without a member vocabulary refuses a field position, and a fragment of two members is admitted | A `null` that a type admits. The service library's slot. Independent authorship |
-| 7. A second reader in another process | The TypeScript stand-in, run by Node, converts `Page<Person>`, a nested page and a list there and back from the plan and the snapshot alone. It refuses five axes under their own names, the runtime compatibility among them. Without the snapshot both readers fail explicitly, and a snapshot of another pin is a linking error in both. It derives the same memo keys as the Go reader | The service library's factory, its budgets, its call context and its memo. Independent authorship: one seat wrote both sides |
+| 7. A second reader in another process | The stand-in, which is JavaScript that Node runs, converts `Page<Person>`, a nested page and a list there and back from the plan and the snapshot alone. It refuses five axes under their own names, the runtime compatibility among them. Without the snapshot both readers fail explicitly, and a snapshot of another pin is a linking error in both. It derives the same memo keys as the Go reader | The service library's factory, its budgets, its call context and its memo. Independent authorship: one seat wrote both sides. A TypeScript compiler: none runs in the prototype's tests, and the generated TypeScript types are not checked against the stand-in's native values |
 | 8. The fixtures | Vertical cases 2, 3 and 5, in the forms that [the order of work](#the-order-of-work) lists. Case 4 is the lowering of stage 5, and case 6 is stage 9 | Case 1, which is not built. For case 2: anything about the family that the mock stands for |
 | 9. The gate, and line 7 in its small form | After a replacement the payloads of the 9 other selections are byte-identical, 5 frozen records that do not depend on the replaced contribution are identical, and 11 that depend on it are other nodes. With both registered the domain is ambiguous until the consumer replaces explicitly. `Page<Person>` regenerates with the new contribution and converts through its field-state protocol, with the backend unchanged. A Go module outside the repository authors and registers a contribution and a codec with public packages only, and a file that needs an internal package does not build. A contribution at a field position cannot request a sibling's operand | Another owner, or TypeScript. A generation with the module outside the repository, and how its author gets the schema artifact (F25). The commit pair of the migration on `main`. One file outside the contribution changed (F24) |
 
@@ -2660,7 +2725,7 @@ section 4.
 | 3. Serialization | Green | The bootstrap test was not shown red. For the axes the test plans each case and edits the serialized bytes only for the envelope and the source semantics, because a node's identity covers its schema reference and its contribution reference (F12) |
 | 4. A second reader in another process | Green. Red under a protocol that reads a present `undefined` as absence | Not run: present with `null` where the type admits it (#211) |
 | 5. Executed Go lowering | Green, and the lowering by string does not compile | The instrument is Go text with typed holes (F14, O33) |
-| 6. Realization for TypeScript | The test of the realization manifest is green, with a stand-in for the reader | The test of row 24 is not run: `main` has no reader on the formatter's result (#273, F11) |
+| 6. Realization for TypeScript | The test of the realization manifest is green, with a stand-in for the reader | The test of row 24 is not run: `main` has no reader on the formatter's result (#273, F11). The manifest test shows that the manifest of another plan's output is a linking error. The manifest's run is compared with nothing |
 | 7. The shared packages fixed | Green in the small form | One file outside the contribution changed (F24). Not shown: the commit pair of the migration on `main` |
 
 - **The two checks that stay green** are shown for Go and TypeScript, by the
@@ -2674,7 +2739,7 @@ section 4.
 | # | The guarantee | Red under the mutants |
 | --- | --- | --- |
 | 1 | Required facets belong to the selected contribution | No mutant. Without one facet a request for bindings is "missing facet" and a request for types succeeds |
-| 2 | Kind, target and compatibility match | `facet-ignores-issuer`, `facet-ignores-target`, `facet-ignores-version` |
+| 2 | Kind, target and compatibility match | `facet-ignores-issuer`, `facet-ignores-target`, `facet-ignores-version`. The last is exercised only with `facet-ignores-issuer` already on |
 | 3 | A reference has the right plan, category and scope | `reference-ignores-plan`, `reference-ignores-category`, `reference-ignores-scope` |
 | 4 | Evidence belongs to its dependency | `evidence-ignores-dependency`, `evidence-ignores-environment`, `evidence-ignores-representation-revision`, `evidence-ignores-meaning-revision` |
 | 5 | The payload snapshot is immutable | `projector-gets-returned-value`, `freeze-at-serialization` |
@@ -2696,10 +2761,20 @@ Gathered from the report, so that no line above is read as more than it is.
   generated.
 - **Every facet of the prototype is test code.** No facet package exists in
   production.
-- **Not every test has a mutant.** The report says "No mutant" of three: the
-  test that compares the native text of the two contracts, the test of the
-  replaced contribution, and the test of guarantee 1. A test without a mutant
-  is red only in that it does not build against the branch point.
+- **25 of the 40 tests have no red line of any kind.** They are red only in
+  that they do not build against the branch point. By the report's gate table
+  they carry rows 1, 3, 5, 9, 10, 14, 15, 16, 17, 18, 21, 22, 33, 34 and 40,
+  the bootstrap half of row 38, all of stages 7 and 8, and the lowering test
+  of line 5. Guarantee 1 has no red line either. The report says "No mutant"
+  of three tests only.
+- **One switch is never exercised alone.** The test of `facet-ignores-version`
+  runs with `facet-ignores-issuer` already on, so the comparison of a facet's
+  contract version is not shown against the kernel as built.
+- **None of the 18 switches is a mutant of the four kinds that row 39
+  names:** presence, layout, slot identity or environment, between the entry
+  and the native type. The red lines of that kind are two of the six that are
+  no switch of the kernel: the pass that rebuilds an entry from the source,
+  and the lowering by string.
 - **The origins inside the native tree were not compared.** The printed text
   is equal.
 - **Recursion** beyond its two refusals. The horos source refuses a recursive
@@ -2744,7 +2819,7 @@ their closing paragraph.
 | The transport descriptor of a facet | [What the kernel carries](#what-the-kernel-carries-without-reading-it) | O36 |
 | The roles and paths of the new packages | [Below](#the-roles-the-prototype-proposes) | O39, as a proposal |
 | The shape of a contribution, a rule and a projector | [The protocol](#what-a-rule-does-the-protocol) | No decision names it |
-| The form of a refusal, the two refusals of row 9, and an unexpected error | [Refusals](#refusals) | No decision names it. By O17 the set of values is closed once the prototype has fixed them |
+| The form of a refusal, the two refusals of row 9, and an unexpected error | [Refusals](#refusals) | O40 for the two refusals of row 9. No decision names the form of a refusal or the unexpected error. By O17 the set of values is closed once the prototype has fixed them |
 | That a request names a product by its identity | [Identities](#identities) | No decision names it |
 | The reference categories that are issued, and who issues a member reference | [What lowering must be able to refer to](#what-lowering-must-be-able-to-refer-to) | No decision names it |
 | That a member fragment may hold more than one member | [Optional fields](#optional-fields) | No decision names it |
@@ -2763,7 +2838,7 @@ report's section 10.
 | Contribution: facet package | `completeness/<source>-to-<native>/facets/<name>/go` | The generation contract, the value vocabulary of its target's product and its own contribution's vocabulary. Never a mapping, a codec or another facet package | O8, O16, O25 |
 | Vocabulary of a completeness product | `completeness/<native>/values/go` | The generation contract and the syntax of its target | Row 29: the facet kinds belong to the product |
 | Contribution: completeness backend | `completeness/<native>/backend/go` | The generation contract and its product's vocabulary | Row 31 |
-| Foundation and kernel: the shared part of the codec role | `transform/syntax/shared/payload/go` | The generation contract, and of the external models horos core, horos declarations, ontos core, data and codec | None given |
+| Foundation and kernel: the shared part of the codec role | `transform/syntax/shared/payload/go`. O41 does not take this place | The generation contract, and of the external models horos core, horos declarations, ontos core, data and codec | None given |
 | Foundation and kernel: the publisher name | `transform/syntax/shared/publisher/go` | Nothing | None given |
 
 - **A changed role.** A mapping may import its own vocabulary, and is
@@ -2772,11 +2847,20 @@ report's section 10.
   role permits an import of it, so only a composition and its own packages
   import it." (report, section 10)
 - **Not classified by the test:** the JavaScript files of the stand-in.
-- **Where two decisions go beyond the proposal.** O27 asks for a vocabulary
-  package of a family, which each target's vocabulary imports. The proposal
-  has no such role, and it forbids a vocabulary to import another. O37 lets a
-  codec import the ontos value packages, which the proposal does not allow.
-  The migration's edit has to carry both.
+- **Where three decisions go beyond the proposal.** O27 asks for a
+  vocabulary package of a family, which each target's vocabulary imports. The
+  proposal has no such role, and it forbids a vocabulary to import another.
+  O37 lets a codec import the ontos value packages, which the proposal does
+  not allow. And O41 corrects the place of the shared part of the codec role.
+  The proposal puts it at `transform/syntax/shared/payload/go`, and the
+  layout gives `transform/syntax/shared/*/go` the role Kernel
+  (`LAYOUT.md:154`). A kernel package that imports both models is against the
+  last sentence of the passage of `AGENTS.md`: "generic infrastructure and
+  native stages must remain independent of these semantic packages"
+  (`AGENTS.md:277-278`). O41: "the shared part does not live under a kernel
+  path." Where it lives is decided in the migration and judged by its review
+  ([what the kernel carries](#what-the-kernel-carries-without-reading-it)).
+  The migration's edit has to carry all three.
 
 **What else the report has for the migration.** Its section 11 tells apart
 the files that belong to the contract from the shortcuts of the branch. The
@@ -2826,7 +2910,9 @@ any of the four targets (#207, item 5).
 (O38).** "The migration does not wait without limit: its gate requires row 11
 to be decided. It is decided by the answer on bitspark-service#38, or, if
 none has come when the prototype is complete, by me on the evidence of the
-prototype, recorded here with its reasons." No answer came, and O38 decides
+prototype, recorded here with its reasons." No answer came between the
+question, at 00:55Z on 13 November 2026, and the decision, at about 04:52Z of
+the same day, and O38 decides
 row 11 as D3 on that evidence ([optional fields](#optional-fields)). The test
 of row 11 in the table names the answer: "The answer on bitspark-service#38
 is recorded here with the form that was built. Red until then". What is
@@ -2904,4 +2990,5 @@ type of the contract (row 30).
 
 **When the gate is met** this page's first line changes: the design is final,
 with the date and the commit of the migration. Until then each change that
-the prototype makes to the design is recorded on this page with its date.
+the migration makes to the design is recorded on this page with its date. The
+prototype is done, and its changes are recorded.

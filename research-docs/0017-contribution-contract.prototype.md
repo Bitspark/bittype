@@ -10,7 +10,9 @@
 > **Its standing.** Evidence and proposals. It is no decision. The decisions
 > on it are O27 to O39 in the
 > [comment of 13 November 2026](https://github.com/Bitspark/bittype/issues/196#issuecomment-6844431866)
-> on #196, and the design page
+> on #196, with [O40](https://github.com/Bitspark/bittype/issues/196#issuecomment-6844971187)
+> and [O41](https://github.com/Bitspark/bittype/issues/196#issuecomment-6845234802)
+> after them, and the design page
 > [the contribution contract](../docs/contribution-contract.md), which states
 > them and cites this report by its section and by its finding, F1 to F27.
 > Where a decision and this report differ, the decision governs.
