@@ -1022,7 +1022,17 @@ func (p *planner[F, T, R]) declare(d Declaration[F], depth int) (*declState[F, T
 	if err != nil {
 		return nil, err
 	}
-	view, err := p.walk.declaration(d)
+	var definition semantics.TermID
+	if definitions, ok := p.source.(Definitions[F]); ok {
+		term, stated, err := definitions.Definition(p.ctx, d)
+		if err != nil {
+			return nil, err
+		}
+		if stated {
+			definition = term
+		}
+	}
+	view, err := p.walk.declaration(d, definition)
 	if err != nil {
 		return nil, err
 	}
