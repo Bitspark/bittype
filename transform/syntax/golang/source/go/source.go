@@ -56,6 +56,12 @@ func open(c g.Captured[s.Language]) (*interpretation, error) {
 // entity reads the entity of a declaration the kernel reached and the package
 // that owns it. named is false for an entity that is no named type of a
 // package: a field, a predeclared type, a type parameter, a package.
+//
+// COPY (AC-11, finding AG-8 of the two other pairs): resolving a declaration
+// handle against the capture, reading its entity and its owner, the site of
+// a judgment and the unsupported judgment below are the same steps in the
+// TypeScript source reader of the same lane, with only the kinds that count
+// as "named" different. They have no agnostic implementation.
 func (i *interpretation) entity(d g.Declaration[s.Language]) (e, owner semantics.Entity, named bool, err error) {
 	id, ok := d.In(i.captured)
 	if !ok {
