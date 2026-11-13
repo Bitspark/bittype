@@ -520,9 +520,15 @@ only for one and the same planned declaration.
 Limit: two declarations of one name and one provenance are ordered by their
 planned identity, which follows the order of the requested roots. Two native
 declarations of one source declaration are such a pair, and so are two helpers
-of one name, because a helper has no provenance. The shared constructor still
-refuses two declarations of one name, so no plan reaches the comparator with
-such a pair. Removing that rule is [#273](https://github.com/Bitspark/bittype/issues/273).
+of one name, because a helper has no provenance. The order of such a pair is
+therefore not the same for every order of the roots, and with it the order of
+their sites and the order in which TypeScript Files writes them. Since
+[#273](https://github.com/Bitspark/bittype/issues/273) the shared constructor
+holds no rule about names across declarations, so the pair is reachable for
+TypeScript, whose target states no flat scope. It is not reachable for Go,
+Rust and C++ while their targets select the flat rule and refuse the pair.
+A [test](../integration/go/generation_names_test.go) builds two helpers of one
+name under two orders of the roots and pins the order.
 [Constructor](../transform/syntax/shared/target/go/compile.go)
 
 Changing mutable callback state after planning cannot change an array into a

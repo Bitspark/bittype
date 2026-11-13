@@ -83,7 +83,8 @@ func sourcePaths(units []Placement) (uncovered error, invalid error) {
 //   - a path that is no TypeScript path, two declarations of one name in one
 //     file and a use of an unexposed declaration of another file are invalid
 //     input;
-//   - a path that TypeScript reads and this profile excludes, and a file
+//   - a path that TypeScript reads and this profile excludes, a type parameter
+//     that would capture a use of a declaration of its file, and a file
 //     without a declaration, are unsupported coverage.
 //
 // A placement with a defect of both kinds is invalid input.
@@ -92,8 +93,12 @@ func placeProgram(ctx context.Context, program *program, units []Placement, limi
 	if err != nil {
 		return nil, err
 	}
-	if err := program.relocatable(ctx, units); err != nil {
+	captured, err := program.relocatable(ctx, units)
+	if err != nil {
 		return nil, err
+	}
+	if uncovered == nil {
+		uncovered = captured
 	}
 	for _, u := range units {
 		if len(u.Declarations) == 0 && uncovered == nil {
@@ -140,33 +145,58 @@ func placeProgram(ctx context.Context, program *program, units []Placement, limi
 // exports a declaration without authorization. Both are invalid input. Every
 // placed site is a top-level declaration of the program: the admission of an
 // existing placement and the reading of a generated one established that.
-func (program *program) relocatable(ctx context.Context, units []Placement) error {
+//
+// The first result is a refusal of coverage, which the caller reports after
+// everything invalid: a use of a declaration of the same file that a type
+// parameter would capture. A use is written by the name of its declaration,
+// and inside a declaration that has a type parameter of that name the compiler
+// binds the name to the parameter. A later slice may rename the parameter
+// where that is permitted, so the placement is unsupported coverage. Placing
+// the declaration in another file is admitted today: the import gets an alias.
+// The check reads every type parameter below the declaration that holds the
+// use, which is exact for the parameters of an alias and of an interface, the
+// only binders of this profile.
+//
+// A use of a global type is captured in the same way, and by a declaration of
+// its file too: it is written by the global's name, and the compiler binds
+// that name to a type parameter in scope or to a declaration of the file
+// before it reaches the global. Where the parameter and the use are in one
+// declaration no placement helps, and a later slice that renames can still
+// admit the output, so the refusal is unsupported coverage there as well.
+func (program *program) relocatable(ctx context.Context, units []Placement) (captured error, err error) {
 	type located struct {
-		site ast.NodeRef
-		unit int
+		site    ast.NodeRef
+		unit    int
+		binders map[string]bool
 	}
 	home := map[ast.NodeRef]int{}
+	declared := make([]map[string]bool, len(units))
 	var references []located
 	for i, u := range units {
 		names := map[string]bool{}
+		declared[i] = names
 		for _, site := range u.Declarations {
 			if err := ctx.Err(); err != nil {
-				return err
+				return nil, err
 			}
 			tree := program.trees[site.Tree]
 			name := imports.Attr(tree.Nodes[site.Node-1], s.AttributeName)
 			if names[name] {
-				return fmt.Errorf("%w: duplicate declaration %s in %s", source.ErrInvalid, name, u.Path)
+				return nil, fmt.Errorf("%w: duplicate declaration %s in %s", source.ErrInvalid, name, u.Path)
 			}
 			names[name] = true
+			binders := map[string]bool{}
 			// The trees are captured, so they hold no cycle.
 			for stack := []ast.NodeID{site.Node}; len(stack) > 0; {
 				id := stack[len(stack)-1]
 				stack = stack[:len(stack)-1]
 				node := tree.Nodes[id-1]
 				home[ref(site.Tree, id)] = i
+				if node.Kind == s.KindTypeParameter {
+					binders[imports.Attr(node, s.AttributeName)] = true
+				}
 				if node.Kind == s.KindTypeReference {
-					references = append(references, located{ref(site.Tree, id), i})
+					references = append(references, located{ref(site.Tree, id), i, binders})
 				}
 				for _, child := range node.Children {
 					stack = append(stack, child.Node)
@@ -177,21 +207,30 @@ func (program *program) relocatable(ctx context.Context, units []Placement) erro
 	for _, use := range references {
 		dest, bound := program.bindings[use.site]
 		if !bound {
-			return fmt.Errorf("%w: type reference lacks native binding at %v", source.ErrInvalid, use.site)
+			return nil, fmt.Errorf("%w: type reference lacks native binding at %v", source.ErrInvalid, use.site)
 		}
-		if dest.external.Module != "" || dest.builtin != "" {
+		if dest.external.Module != "" {
+			continue
+		}
+		if dest.builtin != "" {
+			if (use.binders[dest.builtin] || declared[use.unit][dest.builtin]) && captured == nil {
+				captured = fmt.Errorf("%w: a type parameter or a declaration %s in %s would capture a use of the global type %s", source.ErrUnsupported, dest.builtin, units[use.unit].Path, dest.builtin)
+			}
 			continue
 		}
 		at, placed := home[dest.site]
 		if !placed {
-			return fmt.Errorf("%w: the target of the type reference at %v is not placed", source.ErrInvalid, use.site)
+			return nil, fmt.Errorf("%w: the target of the type reference at %v is not placed", source.ErrInvalid, use.site)
 		}
+		name := imports.Attr(program.trees[dest.site.Tree].Nodes[dest.site.Node-1], s.AttributeName)
 		if at != use.unit && (!program.tops[dest.site] || !program.public[dest.site]) {
-			name := imports.Attr(program.trees[dest.site.Tree].Nodes[dest.site.Node-1], s.AttributeName)
-			return fmt.Errorf("%w: cross-unit type %s must be exported", source.ErrInvalid, name)
+			return nil, fmt.Errorf("%w: cross-unit type %s must be exported", source.ErrInvalid, name)
+		}
+		if at == use.unit && program.tops[dest.site] && use.binders[name] && captured == nil {
+			captured = fmt.Errorf("%w: a type parameter %s in %s would capture a use of the declaration %s of that file", source.ErrUnsupported, name, units[at].Path, name)
 		}
 	}
-	return nil
+	return captured, nil
 }
 
 // Copy declarations without their former imports. Retain origins and record

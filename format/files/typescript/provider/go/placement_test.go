@@ -113,6 +113,16 @@ func TestAmbiguousNativeBindingIsInvalid(t *testing.T) {
 		t.Fatal("a binding without one target was read")
 	}
 	category(t, err, source.ErrInvalid)
+	// A target that the compiler declares at two captured sites: a member that
+	// is named like a type parameter of its interface shares the parameter's
+	// symbol. The input is valid TypeScript that this profile does not tell
+	// apart, so the refusal is unsupported coverage.
+	twice := semantics.Entity{Kind: n.ParameterKind(), Name: "Twice", Declarations: []ast.NodeRef{ref(tree.ID, 2), ref(tree.ID, 3)}}
+	p, err = readProgram(ctx, snapshot, graph(twice))
+	if err == nil || p != nil {
+		t.Fatal("a binding with two declared targets was read")
+	}
+	category(t, err, source.ErrUnsupported)
 }
 
 // captureOne captures one tree, with or without the file that holds it, and
