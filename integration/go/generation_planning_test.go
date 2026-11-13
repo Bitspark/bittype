@@ -159,10 +159,14 @@ func TestGenerationPlanReversedLibraryArguments(t *testing.T) {
 			Reference: testReference("TestGenerationPlanReversedLibraryArguments", "reverse-pair"), Target: tsTarget, Profile: rules.RepresentationProfile,
 			Domain: g.ForExact(key), Schema: f.EmptySchema,
 			Rule: horosRule{Decide: decideNothing, Name: func(_ context.Context, step horosNameStep) ([]horosRequest, error) {
+				reader, err := step.Reader()
+				if err != nil {
+					return nil, err
+				}
 				// Actuals are selected by the real binder, never by position.
 				var left, right g.Use[h.Language]
 				for _, a := range step.Subject.Use.Actuals {
-					p, err := step.Reader.Parameter(a.Binder)
+					p, err := reader.Parameter(a.Binder)
 					if err != nil {
 						return nil, err
 					}
@@ -355,7 +359,11 @@ func TestPlanningProjectionScopeAndNoFallback(t *testing.T) {
 					Reference: testReference("TestPlanningProjectionScopeAndNoFallback", key), Target: tsTarget, Profile: rules.RepresentationProfile,
 					Domain: g.ForForm(selector), Schema: f.EmptySchema,
 					Rule: horosRule{Decide: decideNothing, Name: func(ctx context.Context, step horosNameStep) ([]horosRequest, error) {
-						element, err := step.Reader.Element(step.Subject.Use)
+						reader, err := step.Reader()
+						if err != nil {
+							return nil, err
+						}
+						element, err := reader.Element(step.Subject.Use)
 						if err != nil {
 							return nil, err
 						}

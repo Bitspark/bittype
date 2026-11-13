@@ -269,10 +269,35 @@ func Field[F any](operand Use[F], role Role[F], stated string) Request[F] {
 // Whose key the request uses is not specified until then.
 func SharedHelper[F any](key string) Request[F] { return Request[F]{kind: helperRequest, helper: key} }
 
+// stepState is the capability of one step of a rule. It is open only while
+// the rule's function runs: a step that a rule kept gives no reader and
+// presents no answer afterwards. What a rule does with a reader value that it
+// took while the step was open is the source's to bound: the kernel cannot
+// revoke a value of a type it does not know.
+type stepState[R any] struct {
+	reader R
+	closed bool
+}
+
+var errStepClosed = fmt.Errorf("%w: a step gives no capability after its rule has returned", ErrScope)
+
+func (s *stepState[R]) read() (R, error) {
+	if s == nil || s.closed {
+		var zero R
+		return zero, errStepClosed
+	}
+	return s.reader, nil
+}
+
+// NameStep is step 1 of the protocol: the checked subject and the source view.
 type NameStep[F, R any] struct {
 	Subject Subject[F]
-	Reader  R
+	step    *stepState[R]
 }
+
+// Reader is the reader of the source integration: the source view of the
+// subject. It fails once the step has returned.
+func (s NameStep[F, R]) Reader() (R, error) { return s.step.read() }
 
 type answerState struct {
 	issued   [][]Answer
@@ -280,15 +305,21 @@ type answerState struct {
 	failure  error
 }
 
+// DecideStep is step 3 of the protocol: the checked subject, the source view
+// and the typed answers that the planner issued.
 type DecideStep[F, R any] struct {
 	Subject Subject[F]
-	Reader  R
+	step    *stepState[R]
 	state   *answerState
 }
 
+// Reader is the reader of the source integration: the source view of the
+// subject. It fails once the step has returned.
+func (s DecideStep[F, R]) Reader() (R, error) { return s.step.read() }
+
 // Answers returns the answers issued about dependency i, in demand order.
 func (s DecideStep[F, R]) Answers(i int) []Answer {
-	if s.state == nil || i < 0 || i >= len(s.state.issued) {
+	if s.state == nil || s.step == nil || s.step.closed || i < 0 || i >= len(s.state.issued) {
 		return nil
 	}
 	return append([]Answer(nil), s.state.issued[i]...)
@@ -300,6 +331,9 @@ func (s DecideStep[F, R]) Answers(i int) []Answer {
 // reference, is rejected with ErrScope, and the planning of the subject fails
 // even if the rule drops the error.
 func (s DecideStep[F, R]) Present(i int, a Answer) (Outcome, string, error) {
+	if s.step == nil || s.step.closed {
+		return 0, "", errStepClosed
+	}
 	if s.state == nil || i < 0 || i >= len(s.state.expected) {
 		return 0, "", ErrScope
 	}

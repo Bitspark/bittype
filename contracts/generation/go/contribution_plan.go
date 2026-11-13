@@ -494,7 +494,10 @@ func (p *planner[F, T, R]) run(c *Contribution[F, T, R], subject Subject[F], key
 	var requests []Request[F]
 	var err error
 	if c.Rule.Name != nil {
-		if requests, err = c.Rule.Name(p.ctx, NameStep[F, R]{subject, p.reader}); err != nil {
+		step := &stepState[R]{reader: p.reader}
+		requests, err = c.Rule.Name(p.ctx, NameStep[F, R]{subject, step})
+		step.closed = true
+		if err != nil {
 			return out, p.failure(c, err, key, site)
 		}
 	}
@@ -625,7 +628,10 @@ func (p *planner[F, T, R]) run(c *Contribution[F, T, R], subject Subject[F], key
 		out.links, out.deps = append(out.links, link), append(out.deps, dep)
 		out.views = append(out.views, DependencyView[T]{Type: dep.expr, Fragment: slices.Clone(dep.fragment), Stated: r.stated, Origin: dep.origin})
 	}
-	if out.decision, err = c.Rule.Decide(p.ctx, DecideStep[F, R]{subject, p.reader, state}); err != nil {
+	step := &stepState[R]{reader: p.reader}
+	out.decision, err = c.Rule.Decide(p.ctx, DecideStep[F, R]{subject, step, state})
+	step.closed = true
+	if err != nil {
 		return out, p.failure(c, err, key, site)
 	}
 	if state.failure != nil {

@@ -246,12 +246,16 @@ func standard(from representation.Language, mode Mode, kept *g.Use[SourceLanguag
 			// Cell's contribution represents every Cell use itself; Cell's body is never opened.
 			Reference: Reference("cell", "golang/1"), Target: GoTarget, Profile: Profile, Domain: g.ForExact(cell), Schema: EmptySchema,
 			Rule: rule{Decide: empty, Name: func(_ context.Context, step nameStep) ([]request, error) {
+				reader, err := step.Reader()
+				if err != nil {
+					return nil, err
+				}
 				view := step.Subject.Use
 				if mode == PatternStray {
 					return []request{g.Reference(view.Use)}, nil
 				}
 				for _, a := range view.Actuals {
-					if name, err := step.Reader.ParameterName(a.Binder); err != nil {
+					if name, err := reader.ParameterName(a.Binder); err != nil {
 						return nil, err
 					} else if name == "V" {
 						return []request{g.Reference(a.Use)}, nil
@@ -267,7 +271,11 @@ func standard(from representation.Language, mode Mode, kept *g.Use[SourceLanguag
 			Reference: Reference("declarations", "golang/1"), Target: GoTarget, Profile: Profile, Domain: g.ForDeclarationPolicy(), Schema: policySchema,
 			Rule: rule{
 				Name: func(_ context.Context, step nameStep) ([]request, error) {
-					name, err := step.Reader.Name(step.Subject.Declaration.Declaration)
+					reader, err := step.Reader()
+					if err != nil {
+						return nil, err
+					}
+					name, err := reader.Name(step.Subject.Declaration.Declaration)
 					if err != nil || erased(name) {
 						return nil, err
 					}
@@ -278,7 +286,11 @@ func standard(from representation.Language, mode Mode, kept *g.Use[SourceLanguag
 					return []request{g.Reference(body)}, nil
 				},
 				Decide: func(_ context.Context, step decideStep) (g.Decision, error) {
-					name, err := step.Reader.Name(step.Subject.Declaration.Declaration)
+					reader, err := step.Reader()
+					if err != nil {
+						return g.Decision{}, err
+					}
+					name, err := reader.Name(step.Subject.Declaration.Declaration)
 					if err != nil {
 						return g.Decision{}, err
 					}

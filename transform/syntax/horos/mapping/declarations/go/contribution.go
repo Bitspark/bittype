@@ -46,7 +46,11 @@ func Requests(step g.NameStep[h.Language, source.Reader], recordForm g.EvidenceK
 // admit the same name.
 func Decide(step g.DecideStep[h.Language, source.Reader], recordForm g.EvidenceKind, owner string) (Decision, error) {
 	open := step.Subject.Declaration
-	decl, err := step.Reader.Declaration(open.Declaration)
+	reader, err := step.Reader()
+	if err != nil {
+		return Decision{}, err
+	}
+	decl, err := reader.Declaration(open.Declaration)
 	if err != nil {
 		return Decision{}, err
 	}
@@ -60,7 +64,7 @@ func Decide(step g.DecideStep[h.Language, source.Reader], recordForm g.EvidenceK
 	outcome, _, _ := step.Evidence(0, recordForm)
 	d := Decision{Name: name, Nominal: outcome == g.Proved}
 	for _, f := range open.Formals {
-		parameter, err := step.Reader.Parameter(f)
+		parameter, err := reader.Parameter(f)
 		if err != nil {
 			return Decision{}, err
 		}
