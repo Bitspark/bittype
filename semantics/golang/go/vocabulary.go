@@ -10,8 +10,13 @@ import (
 	"github.com/Bitspark/bittype/semantics/go"
 )
 
-const ResolutionProfile = "go1.25/captured-types-1/resolution-1"
-const AnalysisProfile = "go1.25/captured-types-1/analysis-1"
+// The profile has its second version since 13 November 2026 (bittype#310). A
+// published member changed: the body of an entity is the term of its
+// declaration's written definition, and the type of a type name is the
+// declared-type fact of its entity. Until then the body was that type. A
+// receipt of captured-types-1 is no receipt of this profile.
+const ResolutionProfile = "go1.25/captured-types-2/resolution-1"
+const AnalysisProfile = "go1.25/captured-types-2/analysis-1"
 const LanguageVersion = "go1.25"
 const PackagePath = "captured"
 

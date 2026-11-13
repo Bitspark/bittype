@@ -10,8 +10,19 @@ import (
 )
 
 const CompilerVersion = "5.9.3"
-const ResolutionProfile = "typescript-5.9.3/captured-types-1/resolution-1"
-const AnalysisProfile = "typescript-5.9.3/captured-types-1/analysis-1"
+
+// The profile has its second version since 13 November 2026 (bittype#310). A
+// published member changed: the body of an entity is the term of its
+// declaration's written definition. Until then it was the declared type of
+// the name, which the declared-type fact carries then and now. A receipt of
+// captured-types-1 is no receipt of this profile.
+const ResolutionProfile = "typescript-5.9.3/captured-types-2/resolution-1"
+const AnalysisProfile = "typescript-5.9.3/captured-types-2/analysis-1"
+
+// HelperProfile names what the compiler helper writes. It is the value of the
+// helper setting, so it is part of every receipt, and it changed with the
+// profile: settings with captured-types-1 are no configuration of this one.
+const HelperProfile = "captured-types-2"
 
 var ErrForeign = errors.New("foreign or missing TypeScript semantic handle")
 var ErrCompiler = errors.New("TypeScript compiler helper failed")
@@ -52,7 +63,7 @@ func Configuration() []semantic.Setting {
 	return []semantic.Setting{
 		{Key: Key("compiler"), Value: []byte(CompilerVersion)},
 		{Key: Key("environment"), Value: []byte("ES2020;ESNext;strict;exactOptionalPropertyTypes;noUncheckedIndexedAccess;lib.es2020;no-ambient-packages")},
-		{Key: Key("helper"), Value: []byte("captured-types-1")},
+		{Key: Key("helper"), Value: []byte(HelperProfile)},
 	}
 }
 func MatchesConfiguration(settings []semantic.Setting) bool {

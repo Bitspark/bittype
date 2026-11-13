@@ -505,7 +505,9 @@ func TestTypeScriptSemanticConcurrentQueries(t *testing.T) {
 // every kind the helper lists, a type application, a readonly type operator and
 // a reference. Each refused capture turns on one name the accepted one cannot
 // show. TestTypeScriptHelperNamesMatchVocabulary does the same for the graph
-// names that the helper writes.
+// names that the helper writes. The helper reads two more child roles to find
+// a declaration's definition, the type of an alias and the base of an
+// interface; TestTypeScriptBodyOfEachDeclarationKind turns on both.
 func TestTypeScriptHelperReadsVocabularyNames(t *testing.T) {
 	ctx := context.Background()
 	settings, err := n.ImportConfiguration([]n.PackageTypes{{Module: "@bitspark/cell", Declaration: "export interface Cell<T> { value: T }\n"}})

@@ -77,7 +77,7 @@ func domains() []typed.Declaration {
 const (
 	ModelBasis  = "horos-go/captured-model-1"
 	SourceBasis = "horos/declarations-4/procedure"
-	NativeBasis = "go1.25/captured-types-1"
+	NativeBasis = "go1.25/captured-types-2"
 	NamedLaw    = "horos-go/named-representation-1"
 )
 

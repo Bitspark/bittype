@@ -23,8 +23,8 @@ function main(request) {
   const supported = new Set(["source-file", "type-alias", "interface", "type-parameter", "type-reference", "type-application", "keyword-type", "literal-type", "array-type", "tuple-type", "tuple-element", "object-type", "union-type", "intersection-type", "property", "type-operator"]);
   if (request.NamedImports) { supported.add("import"); supported.add("import-binding"); }
   for (const unit of request.Units) for (const node of unit.Nodes) {
-    if (!supported.has(node.Kind) || node.Kind === "type-operator" && attr(node, "operator") !== "readonly" || node.Kind === "keyword-type" && attr(node, "name") === "this") unsupported(`Syntax kind ${node.Kind} is outside captured-types-1`, site(unit, node));
-    if (children(node, "default").length) unsupported("Generic defaults are outside captured-types-1", site(unit, node));
+    if (!supported.has(node.Kind) || node.Kind === "type-operator" && attr(node, "operator") !== "readonly" || node.Kind === "keyword-type" && attr(node, "name") === "this") unsupported(`Syntax kind ${node.Kind} is outside captured-types-2`, site(unit, node));
+    if (children(node, "default").length) unsupported("Generic defaults are outside captured-types-2", site(unit, node));
     if (children(node, "type-parameter").length > 16) unsupported("At most 16 generic parameters are supported", site(unit, node));
   }
   const options = { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.ESNext, strict: true, exactOptionalPropertyTypes: true, noUncheckedIndexedAccess: true, noEmit: true, types: [], typeRoots: [], lib: ["lib.es2020.d.ts"], skipLibCheck: false };
@@ -178,7 +178,7 @@ function main(request) {
     count();
     const declarations = symbol.getDeclarations() || [];
     const declared = declarations.filter(d => captured(d));
-    if (declared.length > 1 && declared.some(d => ts.isInterfaceDeclaration(d))) unsupported("Interface declaration merging is outside captured-types-1", captured(declared[0]));
+    if (declared.length > 1 && declared.some(d => ts.isInterfaceDeclaration(d))) unsupported("Interface declaration merging is outside captured-types-2", captured(declared[0]));
     const first = declared[0] || declarations[0];
     let kind = "builtin";
     if (declared.length) kind = ts.isTypeAliasDeclaration(first) ? "alias" : ts.isInterfaceDeclaration(first) ? "interface" : ts.isTypeParameterDeclaration(first) ? "parameter" : "property";
@@ -219,14 +219,14 @@ function main(request) {
   // array constructors from the standard library and explicitly supplied package types.
   for (const unit of request.Units) for (const node of unit.Nodes) if (node.Kind === "type-reference") {
     const symbol = resolvedSymbol(symbolFor(nativeByNode.get(unit.Tree + ":" + node.ID)));
-    if (!ownSymbol(symbol) && !packageSymbol(symbol) && !checker.isArrayType(checker.getDeclaredTypeOfSymbol(symbol))) unsupported("External type references other than array constructors are outside captured-types-1", site(unit, node));
+    if (!ownSymbol(symbol) && !packageSymbol(symbol) && !checker.isArrayType(checker.getDeclaredTypeOfSymbol(symbol))) unsupported("External type references other than array constructors are outside captured-types-2", site(unit, node));
   }
   function properties(type) {
-    if (checker.getSignaturesOfType(type, ts.SignatureKind.Call).length || checker.getSignaturesOfType(type, ts.SignatureKind.Construct).length || checker.getIndexInfosOfType(type).length) unsupported("Callable and indexed object types are outside captured-types-1");
+    if (checker.getSignaturesOfType(type, ts.SignatureKind.Call).length || checker.getSignaturesOfType(type, ts.SignatureKind.Construct).length || checker.getIndexInfosOfType(type).length) unsupported("Callable and indexed object types are outside captured-types-2");
     const metadata = [], operands = [];
     for (const property of checker.getPropertiesOfType(type)) {
       const declaration = property.valueDeclaration || property.declarations?.[0];
-      if (!declaration || !captured(declaration)) unsupported("External object members are outside captured-types-1");
+      if (!declaration || !captured(declaration)) unsupported("External object members are outside captured-types-2");
       metadata.push({ Name: property.getName(), Optional: !!(property.flags & ts.SymbolFlags.Optional), Readonly: ts.canHaveModifiers(declaration) && !!ts.getModifiers(declaration)?.some(m => m.kind === ts.SyntaxKind.ReadonlyKeyword), Entity: entity(property) });
       operands.push(nativeType(checker.getTypeOfSymbolAtLocation(property, declaration)));
     }
@@ -271,7 +271,7 @@ function main(request) {
         else if (f & ts.TypeFlags.Union) structure = term(expression("union", null, type.types.map(nativeType)));
         else if (f & ts.TypeFlags.Intersection) structure = term(expression("intersection", null, type.types.map(nativeType)));
         else if (f & ts.TypeFlags.Object) { structure = properties(type); fact({ Term: id }, "properties", structure); }
-        else unsupported(`Native type is outside captured-types-1: ${checker.typeToString(type)}`);
+        else unsupported(`Native type is outside captured-types-2: ${checker.typeToString(type)}`);
         if (value) { fact({ Term: id }, "structure", structure); structureOf.set(id, structure); }
         else value = graph.Terms[structure - 1];
       }

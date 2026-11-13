@@ -8,6 +8,7 @@ import (
 	"github.com/Bitspark/bittype/semantics/go"
 	golang "github.com/Bitspark/bittype/semantics/golang/go"
 	typescript "github.com/Bitspark/bittype/semantics/typescript/go"
+	typescriptsyntax "github.com/Bitspark/bittype/syntax/typescript/go"
 )
 
 // The tests in this file state, for each kind of declaration, what the body of
@@ -159,7 +160,7 @@ func TestGoSuppliedDeclarationHasNoBody(t *testing.T) {
 }
 
 func TestTypeScriptBodyOfEachDeclarationKind(t *testing.T) {
-	m := tsModel(t, `export type Text = string;
+	snapshot, trees, _ := tsCapture(t, `export type Text = string;
 export type Alias = Text;
 export type Flag = { on: boolean };
 export interface Person { name: string }
@@ -168,6 +169,27 @@ export interface Box<T extends Person> { value: T }
 export type Boxed = Box<Person>;
 export type Choice = "a" | "b";
 export type Items = Person[];`)
+	_, result := tsResults(t, snapshot)
+	m, err := typescript.Open(result)
+	if err != nil {
+		t.Fatal(err, result.Diagnostics())
+	}
+	// The compiler helper is JavaScript and reads two child roles by spelling
+	// to find a definition: the right-hand side of an alias and the base of an
+	// interface. syntax/typescript/go declares them. With another spelling of
+	// the first no alias below has a body, and with another spelling of the
+	// second Derived has one.
+	roles := map[string]int{}
+	for _, node := range trees[0].Nodes {
+		for _, child := range node.Children {
+			if node.Kind == typescriptsyntax.KindTypeAlias && child.Role == typescriptsyntax.RoleType || node.Kind == typescriptsyntax.KindInterface && child.Role == typescriptsyntax.RoleBase {
+				roles[child.Role]++
+			}
+		}
+	}
+	if roles[typescriptsyntax.RoleType] != 6 || roles[typescriptsyntax.RoleBase] != 1 {
+		t.Fatal("the capture lacks a right-hand side or a base", roles)
+	}
 	graph := m.Graph()
 	properties := func(d typescript.Declaration) semantics.TermID {
 		t.Helper()
