@@ -304,3 +304,40 @@ func TestTypeScriptAliasesAnImportOfADeclarationOfTheSameName(t *testing.T) {
 	}
 	checkImportedUse(t, unitTree(t, out, "record"), "Page_1", "./alias.js", "Page")
 }
+
+// A type parameter takes its name in the file also when no use is written with
+// it. The existing source imports the declaration T under another name beside
+// a record whose parameter T is unused. Formatting it again decides the alias
+// anew: the import cannot be called T.
+func TestTypeScriptAliasAvoidsATypeParameterWithoutAUse(t *testing.T) {
+	ctx := context.Background()
+	stages := placementStages(t)
+	formatter, err := tsfiles.New(stages)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := func(id, text string) source.Unit[ts.Language] {
+		parsed, err := typescriptText().Parse(ctx, parse.Input{SourceID: ast.SourceID(id), TreeID: ast.TreeID(id), Text: text})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return source.Unit[ts.Language]{File: files.ID(id), Path: files.Path(id + ".ts"), Source: ast.SourceID(id), Syntax: parsed}
+	}
+	units := []source.Unit[ts.Language]{unit("a", "export type T = string;"), unit("user", "import type { T as U } from \"./a.js\"; export interface Box<T> { own: U }")}
+	in, err := stages.Capture(ctx, units, "a", semantic.Limits{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := formatter.Format(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text, err := stages.Printer.Print(ctx, out.Units()[1].Syntax)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.Units()[1].File != "user" || text != "import type { T as T_1 } from \"./a.js\";\n\nexport interface Box<T> {\n  own: T_1;\n}\n" {
+		t.Fatalf("the file user: %q", text)
+	}
+	checkImportedUse(t, out.Units()[1].Syntax.Abstract, "T_1", "./a.js", "T")
+}
