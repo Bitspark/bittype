@@ -137,8 +137,7 @@ func (h DeclarationHandle) Valid() bool { return h.output != nil && h.index != 0
 type OwnedDeclaration struct {
 	Handle DeclarationHandle
 	// Symbol is the planner's declaration identity, the logical symbol
-	// identity of the plan (bittype#196, row 23). It is empty for a
-	// plan of the mapping contract.
+	// identity of the plan (bittype#196, row 23).
 	Symbol     string
 	Site       ast.NodeRef
 	Role       DeclarationRole

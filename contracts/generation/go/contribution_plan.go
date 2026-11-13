@@ -71,7 +71,7 @@ func (s *declState[F, T]) require(binder int, kind EvidenceKind) {
 	}
 }
 
-type cframe[F, T any] struct {
+type frame[F, T any] struct {
 	declaration semantics.EntityID
 	state       *declState[F, T]
 	binders     map[semantics.EntityID]int
@@ -91,8 +91,8 @@ type resolved[T any] struct {
 
 type symbolInfo struct{ symbol, node string }
 
-type cplanner[F, T, R any] struct {
-	*planner[F, T, R]
+type planner[F, T, R any] struct {
+	*traversal[F, T, R]
 	in       ContributionInput[F, T, R]
 	target   string
 	roles    RoleIssuer[F]
@@ -124,8 +124,8 @@ func PlanContributions[F, T, R any](ctx context.Context, in ContributionInput[F,
 	if len(in.Roots) > in.Execution.Limits.References || len(in.Contributions) > in.Execution.Limits.Plans {
 		return fail(ErrLimit)
 	}
-	base := &planner[F, T, R]{ctx: ctx, language: in.From, execution: in.Execution, bindings: map[string][]selectedBinding[F, T, R]{}, recipes: map[string][]selectedRecipe[F, T, R]{}, helpers: map[HelperKey]HelperRecipe[T]{}, declarations: map[semantics.EntityID]uint32{}, helperIDs: map[HelperKey]uint32{}, formals: map[uint32][]Binder[F]{}, conventions: map[uint32]GenericConvention[T]{}, active: map[uint32]bool{}}
-	p := &cplanner[F, T, R]{planner: base, in: in, target: string(in.Execution.Language.ID()), byDomain: map[string][]*Contribution[F, T, R]{}, codecs: map[SchemaReference]PayloadCodec{}, bindings: len(in.Products) > 0, decls: map[semantics.EntityID]*declState[F, T]{}, owned: map[string]uint32{}, symbols: map[uint32]symbolInfo{}, selected: map[ContributionReference]map[SubjectKind]bool{}, b: &planBuilder{index: map[string]int{}}}
+	base := &traversal[F, T, R]{ctx: ctx, language: in.From, execution: in.Execution, active: map[uint32]bool{}}
+	p := &planner[F, T, R]{traversal: base, in: in, target: string(in.Execution.Language.ID()), byDomain: map[string][]*Contribution[F, T, R]{}, codecs: map[SchemaReference]PayloadCodec{}, bindings: len(in.Products) > 0, decls: map[semantics.EntityID]*declState[F, T]{}, owned: map[string]uint32{}, symbols: map[uint32]symbolInfo{}, selected: map[ContributionReference]map[SubjectKind]bool{}, b: &planBuilder{index: map[string]int{}}}
 	for _, codec := range in.Codecs {
 		if representation.IsNil(codec) || !codec.Schema().Valid() {
 			return fail(ErrInvalid)
@@ -138,7 +138,7 @@ func PlanContributions[F, T, R any](ctx context.Context, in ContributionInput[F,
 	identities := map[ContributionIdentity]bool{}
 	for i := range in.Contributions {
 		c := &in.Contributions[i]
-		if err := c.validate(); err != nil {
+		if err := c.Validate(); err != nil {
 			return fail(err)
 		}
 		if c.Profile != in.Profile || c.Target != p.target {
@@ -257,7 +257,7 @@ func PlanContributions[F, T, R any](ctx context.Context, in ContributionInput[F,
 // requires belongs to the selected contribution and matches its kind. It also
 // writes the contributions that were selected into the plan, with the facets
 // that cross a process boundary.
-func (p *cplanner[F, T, R]) products() error {
+func (p *planner[F, T, R]) products() error {
 	references := make([]ContributionReference, 0, len(p.selected))
 	for r := range p.selected {
 		references = append(references, r)
@@ -299,7 +299,7 @@ func (p *cplanner[F, T, R]) products() error {
 	return nil
 }
 
-func (p *cplanner[F, T, R]) site(o *occurrence[F]) ast.NodeRef {
+func (p *planner[F, T, R]) site(o *occurrence[F]) ast.NodeRef {
 	if site, ok := p.walk.termSites[o.term]; ok && !p.walk.shared[o.term] {
 		return site
 	}
@@ -309,7 +309,7 @@ func (p *cplanner[F, T, R]) site(o *occurrence[F]) ast.NodeRef {
 	return ast.NodeRef{}
 }
 
-func (p *cplanner[F, T, R]) refusal(class RefusalClass, owner, reason, subject string, site ast.NodeRef, c *Contribution[F, T, R]) *Refusal {
+func (p *planner[F, T, R]) refusal(class RefusalClass, owner, reason, subject string, site ast.NodeRef, c *Contribution[F, T, R]) *Refusal {
 	r := &Refusal{Class: class, Owner: owner, Reason: reason, Subject: subject, Site: site, Target: p.target, Profile: p.in.Profile, Path: slices.Clone(p.path)}
 	if c != nil {
 		r.Contribution = c.Reference
@@ -319,7 +319,7 @@ func (p *cplanner[F, T, R]) refusal(class RefusalClass, owner, reason, subject s
 
 // failure classifies what a rule or a projector returned. A refusal keeps its
 // class and gains its context. Anything else is an implementation failure.
-func (p *cplanner[F, T, R]) failure(c *Contribution[F, T, R], err error, subject string, site ast.NodeRef) error {
+func (p *planner[F, T, R]) failure(c *Contribution[F, T, R], err error, subject string, site ast.NodeRef) error {
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return err
 	}
@@ -334,7 +334,7 @@ func (p *cplanner[F, T, R]) failure(c *Contribution[F, T, R], err error, subject
 // choose selects by the domain. None is "missing contribution" and more than
 // one is "ambiguous contribution": two values (O26). Registration order is
 // never a preference.
-func (p *cplanner[F, T, R]) choose(domain, subject string, site ast.NodeRef) (*Contribution[F, T, R], error) {
+func (p *planner[F, T, R]) choose(domain, subject string, site ast.NodeRef) (*Contribution[F, T, R], error) {
 	choices := p.byDomain[domain]
 	switch len(choices) {
 	case 0:
@@ -345,7 +345,7 @@ func (p *cplanner[F, T, R]) choose(domain, subject string, site ast.NodeRef) (*C
 	return nil, p.refusal(RefusalAmbiguousContribution, KernelOwner, ReasonSeveralContributions+" "+domain, subject, site, nil)
 }
 
-func (p *cplanner[F, T, R]) note(c *Contribution[F, T, R], kind SubjectKind) {
+func (p *planner[F, T, R]) note(c *Contribution[F, T, R], kind SubjectKind) {
 	if p.selected[c.Reference] == nil {
 		p.selected[c.Reference] = map[SubjectKind]bool{}
 	}
@@ -353,7 +353,7 @@ func (p *cplanner[F, T, R]) note(c *Contribution[F, T, R], kind SubjectKind) {
 }
 
 // useKey is the source identity of a use: the selector of its form or callee.
-func (p *cplanner[F, T, R]) useKey(view UseView[F]) (string, error) {
+func (p *planner[F, T, R]) useKey(view UseView[F]) (string, error) {
 	u := view.Use
 	switch view.Kind {
 	case BoundUse:
@@ -371,13 +371,13 @@ func (p *cplanner[F, T, R]) useKey(view UseView[F]) (string, error) {
 }
 
 // use plans one occurrence and records its use entry.
-func (p *cplanner[F, T, R]) use(u Use[F], f cframe[F, T], depth int) (resolved[T], error) {
+func (p *planner[F, T, R]) use(u Use[F], f frame[F, T], depth int) (resolved[T], error) {
 	var zero resolved[T]
 	if err := p.tick(depth); err != nil {
 		return zero, err
 	}
 	if !p.walk.owns(u) || u.o.declaration != f.declaration {
-		return zero, ErrScope
+		return zero, fmt.Errorf("%w: a use of another run or of another declaration", ErrScope)
 	}
 	if err := p.admit(u.o, depth); err != nil {
 		return zero, err
@@ -396,7 +396,7 @@ func (p *cplanner[F, T, R]) use(u Use[F], f cframe[F, T], depth int) (resolved[T
 	case BoundUse:
 		i, ok := f.binders[view.Bound.entity]
 		if !ok {
-			return zero, ErrScope
+			return zero, fmt.Errorf("%w: a use is bound to a binder of another declaration", ErrScope)
 		}
 		node := p.b.node(PlanNode{Kind: "binder", Binder: &PlanBinder{f.state.symbol, i}})
 		out = resolved[T]{node: node, expr: Expression[T]{kind: BinderExpression, declaration: f.state.id, index: i}, binder: i}
@@ -409,9 +409,9 @@ func (p *cplanner[F, T, R]) use(u Use[F], f cframe[F, T], depth int) (resolved[T
 			return zero, r
 		}
 		if len(p.byDomain["exact:"+key]) > 0 {
-			c, err := p.choose("exact:"+key, key, site)
-			if err != nil {
-				return zero, err
+			c, cerr := p.choose("exact:"+key, key, site)
+			if cerr != nil {
+				return zero, cerr
 			}
 			out, err = p.represent(c, Subject[F]{Kind: UseSubject, Use: view.Clone()}, key, site, f, depth)
 		} else {
@@ -435,7 +435,7 @@ func (p *cplanner[F, T, R]) use(u Use[F], f cframe[F, T], depth int) (resolved[T
 }
 
 // specialized finds a contribution whose domain is this application.
-func (p *cplanner[F, T, R]) specialized(key string, view UseView[F]) (*Contribution[F, T, R], string, error) {
+func (p *planner[F, T, R]) specialized(key string, view UseView[F]) (*Contribution[F, T, R], string, error) {
 	if len(p.specs) == 0 {
 		return nil, "", nil
 	}
@@ -489,7 +489,7 @@ func occurrencePath[F any](o *occurrence[F]) string {
 }
 
 // run drives steps 1 to 4 for one selection: name, resolve, decide, freeze.
-func (p *cplanner[F, T, R]) run(c *Contribution[F, T, R], subject Subject[F], key string, site ast.NodeRef, f cframe[F, T], depth int) (ran[T], error) {
+func (p *planner[F, T, R]) run(c *Contribution[F, T, R], subject Subject[F], key string, site ast.NodeRef, f frame[F, T], depth int) (ran[T], error) {
 	var out ran[T]
 	var requests []Request[F]
 	var err error
@@ -513,7 +513,7 @@ func (p *cplanner[F, T, R]) run(c *Contribution[F, T, R], subject Subject[F], ke
 	state := &answerState{}
 	for i, r := range requests {
 		if r.kind != helperRequest && !p.walk.owns(r.use) {
-			return out, ErrScope
+			return out, errNotChild
 		}
 		link := PlanLink{Stated: r.stated}
 		var dep resolved[T]
@@ -660,14 +660,14 @@ func (p *cplanner[F, T, R]) run(c *Contribution[F, T, R], subject Subject[F], ke
 	return out, nil
 }
 
-func (p *cplanner[F, T, R]) record(kind, key string, c *Contribution[F, T, R], run ran[T]) PlanNode {
+func (p *planner[F, T, R]) record(kind, key string, c *Contribution[F, T, R], run ran[T]) PlanNode {
 	reference, schema := c.Reference, c.Schema
 	return PlanNode{Kind: kind, Source: key, Contribution: &reference, Schema: &schema, Payload: hex.EncodeToString(run.frozen), Receipt: receipt(schema, run.frozen), Links: run.links, Facts: planFacts(run.decision.Facts)}
 }
 
 // represent plans one use or one field position with its selected
 // contribution: steps 1 to 4, then the registered projector.
-func (p *cplanner[F, T, R]) represent(c *Contribution[F, T, R], subject Subject[F], key string, site ast.NodeRef, f cframe[F, T], depth int) (resolved[T], error) {
+func (p *planner[F, T, R]) represent(c *Contribution[F, T, R], subject Subject[F], key string, site ast.NodeRef, f frame[F, T], depth int) (resolved[T], error) {
 	var zero resolved[T]
 	p.path = append(p.path, key)
 	defer func() { p.path = p.path[:len(p.path)-1] }()
@@ -675,7 +675,12 @@ func (p *cplanner[F, T, R]) represent(c *Contribution[F, T, R], subject Subject[
 	if err != nil {
 		return zero, err
 	}
-	projected, err := c.Project(p.ctx, Projection[T]{&projectionState[T]{payload: run.view, dependencies: run.views, stated: subject.Field.Stated, origin: site, owned: p.ownedOf(c, depth)}})
+	state := &projectionState[T]{payload: run.view, dependencies: run.views, stated: subject.Field.Stated, origin: site, owned: p.ownedOf(c, depth)}
+	projected, err := c.Project(p.ctx, Projection[T]{state})
+	state.closed = true
+	if state.failure != nil {
+		return zero, state.failure
+	}
 	if err != nil {
 		return zero, p.failure(c, err, key, site)
 	}
@@ -725,7 +730,7 @@ func (p *cplanner[F, T, R]) represent(c *Contribution[F, T, R], subject Subject[
 }
 
 // check validates target intent that a projector returned.
-func (p *cplanner[F, T, R]) check(e Expression[T], depth int) error {
+func (p *planner[F, T, R]) check(e Expression[T], depth int) error {
 	if err := p.tick(depth); err != nil {
 		return err
 	}
@@ -743,10 +748,46 @@ func (p *cplanner[F, T, R]) check(e Expression[T], depth int) error {
 	case BinderExpression:
 		return nil
 	}
-	return ErrScope
+	return fmt.Errorf("%w: a projector returned an expression that is no target intent", ErrScope)
 }
 
-func (p *cplanner[F, T, R]) account(e Expression[T]) error {
+// own validates the body that a declaration's projector returned. Beside what
+// check admits, the body may refer to a target parameter that the same
+// description states: the generic convention is the declaration
+// contribution's (row 2), so it may use the parameters it adds. A use's
+// projector gets no such reference.
+func (p *planner[F, T, R]) own(e Expression[T], scope uint32, parameters, depth int) (Expression[T], error) {
+	if err := p.tick(depth); err != nil {
+		return e, err
+	}
+	switch e.kind {
+	case ParameterExpression:
+		if e.index < 0 || e.index >= parameters {
+			return e, ErrScope
+		}
+		e.declaration = scope
+		return e, nil
+	case FormExpression, DeclarationExpression:
+		args := make([]Expression[T], len(e.args))
+		for i, a := range e.args {
+			v, err := p.own(a, scope, parameters, depth+1)
+			if err != nil {
+				return e, err
+			}
+			args[i] = v
+		}
+		e.args = args
+		if e.kind == FormExpression {
+			return e, p.execution.Target.CheckExpression(p.ctx, e)
+		}
+		return e, nil
+	case BinderExpression:
+		return e, nil
+	}
+	return e, ErrScope
+}
+
+func (p *planner[F, T, R]) account(e Expression[T]) error {
 	size := len(e.form.name)
 	for _, value := range e.data {
 		size += len(value)
@@ -766,12 +807,12 @@ func (p *cplanner[F, T, R]) account(e Expression[T]) error {
 // ownedOf gives a projector the declarations that its contribution owns. The
 // planner issues the symbol and shares the declaration by the owned key: the
 // contribution reference and the local name. The spelling is not the key.
-func (p *cplanner[F, T, R]) ownedOf(c *Contribution[F, T, R], depth int) func(string, []Expression[T]) (Expression[T], error) {
+func (p *planner[F, T, R]) ownedOf(c *Contribution[F, T, R], depth int) func(string, []Expression[T]) (Expression[T], error) {
 	return func(name string, args []Expression[T]) (Expression[T], error) {
 		var zero Expression[T]
 		index := slices.IndexFunc(c.Owned, func(o OwnedDescription[T]) bool { return o.Name == name })
 		if index < 0 {
-			return zero, ErrScope
+			return zero, fmt.Errorf("%w: contribution %s owns no declaration %q", ErrScope, c.Reference, name)
 		}
 		desc := c.Owned[index].Declaration.Clone()
 		key := c.Reference.String() + "/" + name
@@ -802,7 +843,7 @@ func (p *cplanner[F, T, R]) ownedOf(c *Contribution[F, T, R], depth int) func(st
 			p.steps = append(p.steps, Step{Binding: "owned/" + key, Declaration: desc.Name, Form: desc.Form.Name(), Expression: describe(desc.Body)})
 		}
 		if len(args) != len(p.program.declarations[id-1].Description.Parameters) {
-			return zero, ErrScope
+			return zero, fmt.Errorf("%w: an owned declaration is applied to another number of arguments than it has parameters", ErrScope)
 		}
 		return Expression[T]{kind: DeclarationExpression, declaration: id, args: slices.Clone(args)}, nil
 	}
@@ -828,7 +869,7 @@ func neededArguments[T any](convention GenericConvention[T]) map[int]bool {
 // application plans a use of a declaration that the declaration policy
 // represents. The open declaration is primary (row 20): it is planned once,
 // and the application links its binders to the arguments of this use.
-func (p *cplanner[F, T, R]) application(view UseView[F], key string, site ast.NodeRef, f cframe[F, T], depth int) (resolved[T], error) {
+func (p *planner[F, T, R]) application(view UseView[F], key string, site ast.NodeRef, f frame[F, T], depth int) (resolved[T], error) {
 	var zero resolved[T]
 	p.path = append(p.path, key)
 	defer func() { p.path = p.path[:len(p.path)-1] }()
@@ -837,7 +878,7 @@ func (p *cplanner[F, T, R]) application(view UseView[F], key string, site ast.No
 		return zero, err
 	}
 	if len(view.Actuals) != len(st.formals) {
-		return zero, ErrScope
+		return zero, fmt.Errorf("%w: an application has another number of actuals than its declaration has binders", ErrScope)
 	}
 	needed := neededArguments(st.convention)
 	required := map[int]bool{}
@@ -850,7 +891,7 @@ func (p *cplanner[F, T, R]) application(view UseView[F], key string, site ast.No
 	for i, binder := range st.formals {
 		a, ok := view.Actual(binder)
 		if !ok {
-			return zero, ErrScope
+			return zero, fmt.Errorf("%w: an application has no actual for a binder of its declaration", ErrScope)
 		}
 		// For types alone only demanded target actuals need mappings. When
 		// bindings are asked for, an argument that the target convention omits
@@ -940,7 +981,7 @@ func substitute[T any](e Expression[T], scope uint32, bindings []Expression[T]) 
 }
 
 // declare plans the open declaration of a source declaration, once.
-func (p *cplanner[F, T, R]) declare(d Declaration[F], depth int) (*declState[F, T], error) {
+func (p *planner[F, T, R]) declare(d Declaration[F], depth int) (*declState[F, T], error) {
 	if err := p.tick(depth); err != nil {
 		return nil, err
 	}
@@ -998,11 +1039,11 @@ func (p *cplanner[F, T, R]) declare(d Declaration[F], depth int) (*declState[F, 
 	}
 	st := &declState[F, T]{id: id, symbol: "source:" + key, formals: view.Formals, start: len(p.edges), reference: c.Reference, bodyBinder: -1}
 	p.decls[d.entity] = st
-	f := cframe[F, T]{declaration: d.entity, state: st, binders: map[semantics.EntityID]int{}}
+	f := frame[F, T]{declaration: d.entity, state: st, binders: map[semantics.EntityID]int{}}
 	var origins []ast.NodeRef
 	for i, binder := range view.Formals {
 		if _, dup := f.binders[binder.entity]; dup {
-			return nil, ErrScope
+			return nil, fmt.Errorf("%w: a declaration has one binder twice", ErrScope)
 		}
 		f.binders[binder.entity] = i
 		var origin ast.NodeRef
@@ -1017,13 +1058,18 @@ func (p *cplanner[F, T, R]) declare(d Declaration[F], depth int) (*declState[F, 
 	if err != nil {
 		return nil, err
 	}
-	desc, err := c.Declare(p.ctx, Projection[T]{&projectionState[T]{payload: run.view, dependencies: run.views, origin: site, binders: origins, owned: p.ownedOf(c, depth)}})
+	state := &projectionState[T]{payload: run.view, dependencies: run.views, origin: site, binders: origins, owned: p.ownedOf(c, depth)}
+	desc, err := c.Declare(p.ctx, Projection[T]{state})
+	state.closed = true
+	if state.failure != nil {
+		return nil, state.failure
+	}
 	if err != nil {
 		return nil, p.failure(c, err, key, site)
 	}
 	desc = desc.Clone()
 	if len(desc.Generic.Bindings) != len(view.Formals) || len(desc.Generic.Arguments) != len(desc.Generic.Parameters) {
-		return nil, ErrScope
+		return nil, fmt.Errorf("%w: a generic convention binds every source binder and gives every target parameter an argument", ErrScope)
 	}
 	if err = p.carry(desc.Values); err != nil {
 		return nil, err
@@ -1042,7 +1088,7 @@ func (p *cplanner[F, T, R]) declare(d Declaration[F], depth int) (*declState[F, 
 			return nil, err
 		}
 	}
-	if err = p.check(desc.Body, depth+1); err != nil {
+	if desc.Body, err = p.own(desc.Body, id, len(desc.Generic.Parameters), depth+1); err != nil {
 		return nil, err
 	}
 	if err = p.account(desc.Body); err != nil {

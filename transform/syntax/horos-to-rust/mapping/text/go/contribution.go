@@ -1,3 +1,6 @@
+// Package text is the builtin horos-to-rust contribution for the horos
+// scalar utf8-text (docs/contribution-contract.md). A consumer's composition
+// registers it on its own, with the codec of its payload schema.
 package text
 
 import (

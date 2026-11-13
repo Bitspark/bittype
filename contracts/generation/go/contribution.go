@@ -401,6 +401,14 @@ type DependencyView[T any] struct {
 }
 
 type projectionState[T any] struct {
+	// closed is set when the projector has returned. A projection that a
+	// projector kept gives no capability afterwards: the plan is made from
+	// what the projector returned, and nothing reaches the planner later.
+	closed bool
+	// failure is the first failure of the kernel inside a capability that the
+	// projector called. It fails the planning of the subject as the kernel's
+	// own failure, whatever the projector returns.
+	failure      error
 	payload      any
 	dependencies []DependencyView[T]
 	stated       string
@@ -442,10 +450,14 @@ func (p Projection[T]) BinderOrigin(i int) ast.NodeRef {
 // Owned refers to a declaration that the contribution owns (row 25), applied
 // to args. The planner issues its symbol by the owned key.
 func (p Projection[T]) Owned(name string, args ...Expression[T]) (Expression[T], error) {
-	if p.state.owned == nil {
-		return Expression[T]{}, ErrScope
+	if p.state.owned == nil || p.state.closed {
+		return Expression[T]{}, fmt.Errorf("%w: a projection gives no capability after its projector has returned", ErrScope)
 	}
-	return p.state.owned(name, args)
+	e, err := p.state.owned(name, args)
+	if err != nil && p.state.failure == nil {
+		p.state.failure = err
+	}
+	return e, err
 }
 
 type Projector[T any] func(context.Context, Projection[T]) (Projected[T], error)
@@ -482,7 +494,12 @@ type Contribution[F, T, R any] struct {
 	Owned []OwnedDescription[T]
 }
 
-func (c Contribution[F, T, R]) validate() error {
+// Validate reports whether the contribution is complete: its reference with
+// both parts of its third axis, its target, profile, domain and schema
+// reference, a rule that decides, the one projector that its domain needs, and
+// owned declarations with distinct names. The registry validates at
+// registration and the planner again when it plans.
+func (c Contribution[F, T, R]) Validate() error {
 	if !c.Reference.Valid() || c.Target == "" || c.Profile == "" || !c.Schema.Valid() || c.Rule.Decide == nil || c.Domain.Key() == "" {
 		return fmt.Errorf("%w: incomplete contribution %s", ErrInvalid, c.Reference)
 	}

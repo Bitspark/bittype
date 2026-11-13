@@ -1,11 +1,17 @@
+// Package declarations holds the policy by which a named horos declaration
+// becomes a native declaration: its name, the module prefix of a declaration
+// outside the root module, the choice between the record form and the alias
+// form, and its generic parameters (docs/contribution-contract.md, row 2,
+// O12). It is the part of the division of generics that a contribution owns:
+// the native parameter order, and alias or defined declaration. The horos
+// side of a mapping owns the policy, and it is the same for every target. A
+// target's declarations package supplies its two native forms, its evidence
+// kind and its payload type, and it is the contribution.
+//
+// The policy states no profile. A contribution states the profile. The policy
+// gives a native declaration bare generic parameters: it carries no kind
+// constraint into the native type.
 package declarations
-
-// The declaration policy under the contribution contract
-// (docs/contribution-contract.md, row 2, O12). It is the part of the division
-// of generics that a contribution owns: the native parameter order, and alias
-// or defined declaration. The horos side owns the policy and it is the same
-// for every target. A target's declarations package supplies its two native
-// forms, its evidence kind and its payload type, and it is the contribution.
 
 import (
 	g "github.com/Bitspark/bittype/contracts/generation/go"

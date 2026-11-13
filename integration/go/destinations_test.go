@@ -15,6 +15,7 @@ import (
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	tsfiles "github.com/Bitspark/bittype/format/files/typescript/provider/go"
+	f "github.com/Bitspark/bittype/integration/go/testdata/generationfixture"
 	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
 	"github.com/Bitspark/bittype/semantics/go"
 	gn "github.com/Bitspark/bittype/semantics/golang/go"
@@ -27,14 +28,7 @@ import (
 	gomodel "github.com/Bitspark/bittype/transform/syntax/golang/model/go"
 	gosymbol "github.com/Bitspark/bittype/transform/syntax/golang/symbol/go"
 	ggtarget "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
-	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/boolean/go"
-	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/declarations/go"
-	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/list/go"
-	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/optional/go"
-	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/record/go"
-	"github.com/Bitspark/bittype/transform/syntax/horos-to-golang/mapping/text/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
-	patterns "github.com/Bitspark/bittype/transform/syntax/horos/mapping/pattern/go"
 	hsource "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	rustmodel "github.com/Bitspark/bittype/transform/syntax/rust/model/go"
 	rustsymbol "github.com/Bitspark/bittype/transform/syntax/rust/symbol/go"
@@ -417,23 +411,27 @@ func TestEveryNameUseOfASealedOutputCarriesOneDestination(t *testing.T) {
 	})
 }
 
-// stringHelper is a fixture mapping library: it maps the horos boolean to a
-// helper declaration that is named string, a defined Go type.
-func stringHelper(key g.HelperKey) rules.Library[gs.Language] {
-	return func(from, to representation.Language) (g.MappingDescription[h.Language, gs.Language, hsource.Reader], error) {
-		pattern, err := patterns.Head(from, "scalar", "bool")
-		if err != nil {
-			return g.MappingDescription[h.Language, gs.Language, hsource.Reader]{}, err
-		}
-		return g.MappingDescription[h.Language, gs.Language, hsource.Reader]{
-			Profile:  rules.RepresentationProfile,
-			Bindings: []g.BindingDescription[h.Language, gs.Language, hsource.Reader]{{ID: "fixture/string-helper/1", Input: pattern, Output: g.Helper[gs.Language](key)}},
-			Helpers: []g.HelperRecipe[gs.Language]{{Key: key, Declaration: g.TargetDeclaration[gs.Language]{
-				Name: "string", Form: gomodel.Form(gomodel.FormDefined),
-				Body: gomodel.Record(gomodel.Field("Flag", false, gomodel.Primitive(gomodel.PrimitiveBool))),
-			}}},
-		}, nil
-	}
+// stringHelper is a fixture contribution: it answers for the horos boolean
+// with a helper declaration that is named string, a defined Go type. The
+// contribution owns the helper. Its key is the contribution's reference and
+// the local name, and no consumer creates one.
+func stringHelper(from representation.Language) (g.Contribution[h.Language, gs.Language, hsource.Reader], error) {
+	const helper = "string"
+	selector, err := hsource.Builtin(from, "scalar", "bool")
+	return g.Contribution[h.Language, gs.Language, hsource.Reader]{
+		Reference: testReference("TestGoDeclarationNamedStringCapturesAPredeclaredUse", "fixture/string-helper/1"),
+		Target:    string(gs.Language{}.ID()), Profile: rules.RepresentationProfile,
+		Domain: g.ForForm(selector), Schema: f.EmptySchema,
+		Rule: horosRule{Decide: decideNothing},
+		Owned: []g.OwnedDescription[gs.Language]{{Name: helper, Declaration: g.TargetDeclaration[gs.Language]{
+			Name: "string", Form: gomodel.Form(gomodel.FormDefined),
+			Body: gomodel.Record(gomodel.Field("Flag", false, gomodel.Primitive(gomodel.PrimitiveBool))),
+		}}},
+		Project: func(_ context.Context, p g.Projection[gs.Language]) (g.Projected[gs.Language], error) {
+			declared, err := p.Owned(helper)
+			return g.Projected[gs.Language]{Type: declared}, err
+		},
+	}, err
 }
 
 // goPredeclaredEntity says whether an entity of a Go graph is the predeclared
@@ -444,27 +442,41 @@ func goPredeclaredEntity(symbol gosymbol.Symbol, entity semantics.Entity) bool {
 	return ok && entity.Kind == gn.BuiltinKind() && entity.Name == name && entity.Owner == 0 && len(entity.Declarations) == 0
 }
 
-// A fixture mapping library supplies a Go helper named string, and a record
+// A fixture contribution supplies a Go helper named string, and a record
 // has a text field. The recorded destination at the field's type is the
 // predeclared symbol, and the compiler binds that site to the helper, an
 // entity of the kind defined. The two differ. With the builtin boolean
-// mapping, which declares no such helper, the same site binds to the
+// contribution, which owns no such helper, the same site binds to the
 // predeclared entity.
 func TestGoDeclarationNamedStringCapturesAPredeclaredUse(t *testing.T) {
 	module := genModule("example.capture", genMap(), genEntry("Person", genType(genPerson())))
-	type libraries = []g.MappingLibrary[h.Language, gs.Language, hsource.Reader]
-	optionalKey, helperKey := g.NewHelperKey("horos/optional"), g.NewHelperKey("fixture/string")
+	// Each composition is the builtin set. In the first the fixture
+	// contribution answers for the boolean in place of the builtin one.
 	for name, fixture := range map[string]struct {
-		libraries libraries
-		captured  bool
+		boolean  string
+		captured bool
 	}{
-		"a helper named string": {libraries{text.Library(), stringHelper(helperKey), list.Library(), record.Library(optionalKey), declarations.Library(), optional.Library(optionalKey)}, true},
-		"no such helper":        {libraries{text.Library(), boolean.Library(), list.Library(), record.Library(optionalKey), declarations.Library(), optional.Library(optionalKey)}, false},
+		"a helper named string": {"", true},
+		"no such helper":        {"boolean", false},
 	} {
 		t.Run(name, func(t *testing.T) {
 			e, _, input := generationInput(t, module)
 			out := generatedOutput(t, e, input, golangText(), func(reg *c.Registry, input transform.Input, to representation.Language) (c.Request, error) {
-				return genfixture.Request(reg, input, to, "generated-go", ggtarget.Provider{Package: "capture"}, fixture.libraries...)
+				var bundles []genfixture.Bundle[gs.Language]
+				for _, bundle := range []string{"text", fixture.boolean, "list", "record", "declarations", "optional"} {
+					if bundle != "" {
+						bundles = append(bundles, golangBundleTable()[bundle])
+					}
+				}
+				request, err := genfixture.Compose(reg, input, to, "generated-go", ggtarget.Provider{Package: "capture"}, bundles...)
+				if err != nil || !fixture.captured {
+					return request, err
+				}
+				helper, err := stringHelper(input.Source.Language())
+				if err != nil {
+					return c.Request{}, err
+				}
+				return request, registerEmpty(reg, input.Source.Language(), to, helper)
 			})
 			tree := outputTree[gs.Language](t, out)
 			if text := formatted(t, golangText(), tree); fixture.captured != strings.Contains(text, "type string struct") {

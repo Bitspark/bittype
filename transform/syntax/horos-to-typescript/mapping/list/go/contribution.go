@@ -1,3 +1,6 @@
+// Package list is the builtin horos-to-typescript contribution for horos
+// lists (docs/contribution-contract.md). A consumer's composition registers it
+// on its own, with the codec of its payload schema.
 package list
 
 import (

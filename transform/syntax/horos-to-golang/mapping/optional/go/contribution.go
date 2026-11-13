@@ -1,3 +1,8 @@
+// Package optional is the builtin horos-to-golang contribution for the
+// role "optional record field" (docs/contribution-contract.md, row 11, O38).
+// A consumer's composition registers it on its own, with the codec of its
+// payload schema. A record contribution delegates the presence of an optional
+// field to it through the planner. It imports no record contribution.
 package optional
 
 import (

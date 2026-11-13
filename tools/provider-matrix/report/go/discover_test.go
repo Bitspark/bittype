@@ -420,20 +420,21 @@ func TestCurrentRepositoryProviderDiscovery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// A selectable contribution has its own public method and typed endpoints.
-	// It is not evidence of a preconfigured transformer edge.
+	// A selectable contribution has its own public function and typed
+	// endpoints. It is not evidence of a preconfigured transformer edge. Each
+	// pair has six: text, boolean, list, record, optional and declarations.
 	for _, id := range []string{"typescript", "go", "rust", "cpp"} {
 		n := 0
 		for _, loc := range m.edges["horos"][id] {
-			if loc.op.kind == "mapping library" {
+			if loc.op.kind == "contribution" {
 				n++
-				if loc.op.public.Name() != "Describe" || loc.op.from.id != "horos" || loc.op.to.id != id {
+				if loc.op.public.Name() != "Contribution" || loc.op.from.id != "horos" || loc.op.to.id != id {
 					t.Fatal("wrong contribution", loc.op)
 				}
 			}
 		}
-		if n != 1 {
-			t.Fatalf("expected one selectable mapping library for horos to %s, got %d", id, n)
+		if n != 6 {
+			t.Fatalf("expected six selectable contributions for horos to %s, got %d", id, n)
 		}
 	}
 

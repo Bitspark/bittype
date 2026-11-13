@@ -1,3 +1,8 @@
+// Package declarations is the builtin horos-to-rust declaration
+// contribution: the default native declaration policy for every named horos
+// declaration without an exact mapping (docs/contribution-contract.md, row 2,
+// O12). A consumer's composition registers it on its own, with the codec of
+// its payload schema.
 package declarations
 
 import (

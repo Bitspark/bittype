@@ -483,13 +483,19 @@ func transformRole(relative string) (roleRule, bool) {
 		}
 		return rule, true
 	}
+	if len(component) == 1 && component[0] == "mapping" {
+		// The identities of one source language's mapping side: its profiles
+		// and the publisher of their contributions. It imports nothing, so that
+		// the vocabulary of a contribution, which imports it, reaches no reader.
+		return role("transform/syntax/<language>/mapping/go", roleVocabulary, language), true
+	}
 	if _, ok := commonMappingSource(relative); ok {
 		// What the mapping contributions of one source language share. A part
-		// knows the source language only (its scope refuses every native
-		// package) and imports no other part. The one part that builds on two
-		// others says so in roleExtensions.
-		return role("transform/syntax/<language>/mapping/go and mapping/<part>/go", roleCommonPart, language,
-			"contracts/generation/go", "syntax/<language>/go", "transform/syntax/<language>/source/go", "trees/representation/go",
+		// knows the source language only (its scope refuses every package of a
+		// target language) and imports no other part. The one part that builds
+		// on another says so in roleExtensions.
+		return role("transform/syntax/<language>/mapping/<part>/go", roleCommonPart, language,
+			"contracts/generation/go", "syntax/<language>/go", "transform/syntax/<language>/source/go",
 		), true
 	}
 	return roleRule{}, false

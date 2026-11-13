@@ -13,11 +13,12 @@ import (
 	"github.com/Bitspark/bittype/contracts/check/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/engine/go"
+	f "github.com/Bitspark/bittype/integration/go/testdata/generationfixture"
 	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
 	n "github.com/Bitspark/bittype/semantics/typescript/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
-	patterns "github.com/Bitspark/bittype/transform/syntax/horos/mapping/pattern/go"
+	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	src "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	model "github.com/Bitspark/bittype/transform/syntax/typescript/model/go"
@@ -53,11 +54,22 @@ func planningEngine(t *testing.T, root core.Value, deps ...core.Value) (*engine.
 		t.Fatal(err)
 	}
 	builds := &atomic.Int32{}
-	request, err := genfixture.Request(e.Generation(), input, to, "planned-output", countedTarget{builds: builds}, typescriptLibraries()...)
+	request, err := genfixture.Compose(e.Generation(), input, to, "planned-output", countedTarget{builds: builds}, typescriptBundles()...)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return e, request, builds
+}
+
+// builtinListIdentity is the identity of the builtin horos-to-typescript list
+// contribution, read from the contribution itself.
+func builtinListIdentity(t *testing.T, from representation.Language) g.ContributionIdentity {
+	t.Helper()
+	list, err := typescriptBundleTable()["list"].Contribution(from)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return list.Reference.Identity
 }
 
 func TestGenerationPlanPageCellSnapshot(t *testing.T) {
@@ -72,8 +84,9 @@ func TestGenerationPlanPageCellSnapshot(t *testing.T) {
 		genEntry("Cell", genType(genScalar("utf8-text"))),
 		genEntry("Cells", genType(genLocal("Page", genImported("cells", "Cell", genLocal("Person"))))))
 	e, q, builds := planningEngine(t, root, library)
+	from := q.Input.Source.Language()
 	calls := 0
-	_, err = c.RegisterMapping(e.Generation(), q.Input.Source.Language(), q.To, cellMapping(q.Input.Source.Language(), pin.String(), &calls))
+	cell, err := registerTS(e.Generation(), from, q.To, cellMapping(from, pin.String(), &calls))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +99,8 @@ func TestGenerationPlanPageCellSnapshot(t *testing.T) {
 	}
 	found := false
 	for _, step := range plan.Steps() {
-		if strings.Contains(step.Expression, "@bitspark/cell Cell") {
+		// A step names the contribution that was selected for it.
+		if strings.Contains(step.Expression, "@bitspark/cell Cell") && step.Binding == cell.String() {
 			found = true
 		}
 	}
@@ -112,9 +126,8 @@ func TestGenerationPlanPageCellSnapshot(t *testing.T) {
 	if !reflect.DeepEqual(outputTree[ts.Language](t, first), outputTree[ts.Language](t, second)) {
 		t.Fatal("runs changed intended AST")
 	}
-	// Adding another exact offer makes future planning ambiguous, but cannot alter this plan.
-	_, err = c.RegisterMapping(e.Generation(), q.Input.Source.Language(), q.To, cellMapping(q.Input.Source.Language(), pin.String(), new(int)))
-	if err != nil {
+	// Another exact contribution for Cell makes future planning ambiguous, but cannot alter this plan.
+	if _, err = registerTS(e.Generation(), from, q.To, cellContribution("cells/typescript/2", from, pin.String(), new(int))); err != nil {
 		t.Fatal(err)
 	}
 	if p, err := e.PlanGeneration(context.Background(), q); !errors.Is(err, g.ErrAmbiguous) || p.Valid() {
@@ -137,34 +150,38 @@ func TestGenerationPlanReversedLibraryArguments(t *testing.T) {
 	root := genModule("consumer", genMap(genEntry("pairs", imported)), genEntry("Page", genType(genPage(), "T")), genEntry("Person", genType(genPerson())),
 		genEntry("Pairs", genType(genLocal("Page", genImported("pairs", "Pair", genLocal("Person"), genScalar("bool"))))))
 	e, q, _ := planningEngine(t, root, library)
-	contribution := tsContribution(func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, src.Reader], error) {
+	contribution := tsConstructor(func(from representation.Language) (tsContribution, error) {
 		key, err := src.Named(from, pin.String(), "Pair")
 		if err != nil {
-			return g.MappingDescription[h.Language, ts.Language, src.Reader]{}, err
+			return tsContribution{}, err
 		}
-		left, right := g.TypeSlot("L"), g.TypeSlot("R")
-		pattern := g.Pattern[h.Language, src.Reader]{Selector: key, Slots: []g.Slot{left, right}, Capture: func(ctx context.Context, s src.Reader, u g.UseView[h.Language]) ([]g.Capture[h.Language], error) {
-			// Actuals are selected by the real binder, never by position.
-			var captures []g.Capture[h.Language]
-			for _, a := range u.Actuals {
-				p, err := s.Parameter(a.Binder)
-				if err != nil {
-					return nil, err
+		return tsContribution{
+			Reference: testReference("TestGenerationPlanReversedLibraryArguments", "reverse-pair"), Target: tsTarget, Profile: rules.RepresentationProfile,
+			Domain: g.ForExact(key), Schema: f.EmptySchema,
+			Rule: horosRule{Decide: decideNothing, Name: func(_ context.Context, step horosNameStep) ([]horosRequest, error) {
+				// Actuals are selected by the real binder, never by position.
+				var left, right g.Use[h.Language]
+				for _, a := range step.Subject.Use.Actuals {
+					p, err := step.Reader.Parameter(a.Binder)
+					if err != nil {
+						return nil, err
+					}
+					switch p.Name {
+					case "L":
+						left = a.Use
+					case "R":
+						right = a.Use
+					}
 				}
-				switch p.Name {
-				case "L":
-					captures = append(captures, g.Capture[h.Language]{Slot: left, Use: a.Use})
-				case "R":
-					captures = append(captures, g.Capture[h.Language]{Slot: right, Use: a.Use})
-				}
-			}
-			return captures, nil
-		}}
-		return g.MappingDescription[h.Language, ts.Language, src.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, src.Reader]{{
-			ID: "reverse-pair", Input: pattern, Output: model.External("@example/pairs", "Pair", g.Mapped[ts.Language](right), g.Mapped[ts.Language](left)),
-		}}}, nil
+				return []horosRequest{g.Reference(left), g.Reference(right)}, nil
+			}},
+			// The target type takes what was selected for R first and for L second.
+			Project: func(_ context.Context, p tsProjection) (tsProjected, error) {
+				return tsProjected{Type: model.External("@example/pairs", "Pair", p.Dependency(1).Type, p.Dependency(0).Type)}, nil
+			},
+		}, nil
 	})
-	if _, err = c.RegisterMapping(e.Generation(), q.Input.Source.Language(), q.To, contribution); err != nil {
+	if _, err = registerTS(e.Generation(), q.Input.Source.Language(), q.To, contribution); err != nil {
 		t.Fatal(err)
 	}
 	plan, err := e.PlanGeneration(context.Background(), q)
@@ -238,85 +255,168 @@ func TestGenerationPlanConcurrentRunsAndCancellation(t *testing.T) {
 		t.Fatal(builds.Load())
 	}
 }
-func TestMappingRegistrationFreezesDescriptionAndSlots(t *testing.T) {
+
+// TestContributionRegistrationFreezesItsValue: the registry keeps the
+// contribution as it was registered. What the caller does afterwards with the
+// list of owned declarations it handed over, or with a declaration in it, does
+// not reach the registered value. A contribution enters under the target it states and once under its identity.
+// A second contribution for the list domain is ambiguous at a demanded use
+// until the consumer states which of the two answers.
+func TestContributionRegistrationFreezesItsValue(t *testing.T) {
 	e, q, _ := planningEngine(t, paginationModule())
 	from := q.Input.Source.Language()
-	slot := g.TypeSlot("E")
-	pattern, err := patterns.Element(from, slot)
+	const helper = "items"
+	owned := []g.OwnedDescription[ts.Language]{{Name: helper, Declaration: g.TargetDeclaration[ts.Language]{
+		Name: "Items", Form: model.Form(model.FormAlias), Parameters: []g.TargetParameter{{Name: "T"}},
+		Body: model.Collection(g.Parameter[ts.Language](0)),
+	}}}
+	custom := func(key, target string) tsConstructor {
+		return func(from representation.Language) (tsContribution, error) {
+			selector, err := src.Builtin(from, "list-of", "")
+			return tsContribution{
+				Reference: testReference("TestContributionRegistrationFreezesItsValue", key), Target: target, Profile: rules.RepresentationProfile,
+				Domain: g.ForForm(selector), Schema: f.EmptySchema,
+				Rule:  horosRule{Name: nameElement, Decide: decideNothing},
+				Owned: owned,
+				Project: func(_ context.Context, p tsProjection) (tsProjected, error) {
+					items, err := p.Owned(helper, p.Dependency(0).Type)
+					return tsProjected{Type: items}, err
+				},
+			}, err
+		}
+	}
+	reference, err := registerTS(e.Generation(), from, q.To, custom("custom-list", tsTarget))
 	if err != nil {
 		t.Fatal(err)
 	}
-	description := g.MappingDescription[h.Language, ts.Language, src.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, src.Reader]{{ID: "custom-list", Input: pattern, Output: model.Collection(g.Mapped[ts.Language](slot))}}}
-	lib := tsContribution(func(representation.Language, representation.Language) (g.MappingDescription[h.Language, ts.Language, src.Reader], error) {
-		return description, nil
-	})
-	_, err = c.RegisterMapping(e.Generation(), from, q.To, lib)
-	if err != nil {
-		t.Fatal(err)
+	// The caller writes into the parameters of the declaration it handed over,
+	// and then its list names another helper without a declaration. The
+	// registered value keeps the declaration it was registered with: the
+	// registry copied the list and each declaration in it.
+	owned[0].Declaration.Parameters[0].Name = "Changed"
+	owned[0] = g.OwnedDescription[ts.Language]{Name: "another"}
+	// A contribution that states another target than the one it is registered
+	// for is out of scope, and an identity enters once.
+	if _, err = registerTS(e.Generation(), from, q.To, custom("foreign-target", "another-target")); !errors.Is(err, g.ErrScope) {
+		t.Fatal("a contribution for another target was registered", err)
 	}
-	// The copy now contains a foreign same-named slot; the registered value remains valid.
-	description.Bindings[0].Output = model.Collection(g.Mapped[ts.Language](g.TypeSlot("E")))
-	if _, err = c.RegisterMapping(e.Generation(), from, q.To, lib); !errors.Is(err, g.ErrScope) {
-		t.Fatal("foreign slot accepted", err)
+	if _, err = registerTS(e.Generation(), from, q.To, custom("custom-list", tsTarget)); !errors.Is(err, g.ErrInvalid) {
+		t.Fatal("one identity was registered twice", err)
 	}
 	// The two legitimate list offers are ambiguous at a demanded use.
 	if _, err = e.PlanGeneration(context.Background(), q); !errors.Is(err, g.ErrAmbiguous) {
 		t.Fatal(err)
 	}
+	// The consumer selects the registered one. It plans with the helper it
+	// was registered with.
+	if err = e.Generation().ReplaceContribution(builtinListIdentity(t, from), reference.Identity); err != nil {
+		t.Fatal(err)
+	}
+	plan, err := e.PlanGeneration(context.Background(), q)
+	if err != nil {
+		t.Fatal("the registered contribution did not keep its value:", err)
+	}
+	out, err := plan.Run(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if text := formatted(t, typescriptText(), outputTree[ts.Language](t, out)); !strings.Contains(text, "type Items<T> = T[]") || !strings.Contains(text, "items: Items<T>") {
+		t.Fatal(text)
+	}
 }
-func TestPlanningExpansionScopeAndNoFallback(t *testing.T) {
-	for _, mode := range []string{"stale", "swallowed-scope-error", "foreign-native-form", "missing-helper"} {
+
+// TestPlanningProjectionScopeAndNoFallback: the consumer selects its own
+// contribution for the list in place of the builtin one. What that
+// contribution does outside its scope fails the planning, and the replaced
+// builtin contribution never answers in its place.
+//
+//   - stale: a use that the rule kept from one planning is no child that the
+//     kernel minted in the next one. The first plan still runs.
+//   - swallowed-scope-error: the projector asks for a declaration that its
+//     contribution does not own, drops the error and returns a valid type.
+//   - foreign-native-form: the projector returns a form of another issuer.
+//   - missing-helper: the projector asks for a declaration that its
+//     contribution does not own and returns the error.
+//   - unnamed-dependency: the projector reads a dependency that its rule did
+//     not name. It receives no type, and what it builds from that is no
+//     target intent.
+//   - shared-helper: the rule names a helper by a key. No contribution owns a
+//     helper for another one yet, so the kernel refuses the request.
+func TestPlanningProjectionScopeAndNoFallback(t *testing.T) {
+	const key = "projection"
+	for _, mode := range []string{"stale", "swallowed-scope-error", "foreign-native-form", "missing-helper", "unnamed-dependency", "shared-helper"} {
 		t.Run(mode, func(t *testing.T) {
 			_, _, input := generationInput(t, paginationModule())
-			var saved g.Expansion[h.Language, ts.Language, src.Reader]
-			library := tsContribution(func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, src.Reader], error) {
-				pattern, err := patterns.Head(from, "list-of", "")
-				return g.MappingDescription[h.Language, ts.Language, src.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, src.Reader]{{ID: "expansion", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, ts.Language, src.Reader]) (g.Expression[ts.Language], error) {
-					saved = r
-					u, err := r.Use()
-					if err != nil {
-						return g.Expression[ts.Language]{}, err
-					}
-					switch mode {
-					case "swallowed-scope-error":
-						_, _ = r.Mapped(u.Use)
-						return model.Primitive("string"), nil
-					case "foreign-native-form":
-						return g.Apply(g.NewFormIssuer[ts.Language]().Form("array"), nil), nil
-					case "missing-helper":
-						return g.Helper[ts.Language](g.NewHelperKey("absent")), nil
-					default:
-						s, err := r.Reader()
+			var kept g.Use[h.Language]
+			planning := 0
+			contribution := tsConstructor(func(from representation.Language) (tsContribution, error) {
+				selector, err := src.Builtin(from, "list-of", "")
+				return tsContribution{
+					Reference: testReference("TestPlanningProjectionScopeAndNoFallback", key), Target: tsTarget, Profile: rules.RepresentationProfile,
+					Domain: g.ForForm(selector), Schema: f.EmptySchema,
+					Rule: horosRule{Decide: decideNothing, Name: func(ctx context.Context, step horosNameStep) ([]horosRequest, error) {
+						element, err := step.Reader.Element(step.Subject.Use)
 						if err != nil {
-							return g.Expression[ts.Language]{}, err
+							return nil, err
 						}
-						operand, err := s.Element(u)
-						if err != nil {
-							return g.Expression[ts.Language]{}, err
+						switch {
+						case mode == "unnamed-dependency":
+							return nil, nil
+						case mode == "shared-helper":
+							return []horosRequest{g.Reference(element), g.SharedHelper[h.Language]("absent")}, nil
+						case mode == "stale" && planning == 1:
+							kept = element
+						case mode == "stale":
+							element = kept
 						}
-						v, err := r.Mapped(operand)
-						return model.Collection(v), err
-					}
-				}}}}, err
+						return []horosRequest{g.Reference(element)}, nil
+					}},
+					Project: func(_ context.Context, p tsProjection) (tsProjected, error) {
+						switch mode {
+						case "swallowed-scope-error":
+							_, _ = p.Owned("absent")
+							return tsProjected{Type: model.Primitive("string")}, nil
+						case "foreign-native-form":
+							return tsProjected{Type: g.Apply(g.NewFormIssuer[ts.Language]().Form("array"), nil)}, nil
+						case "missing-helper":
+							helper, err := p.Owned("absent")
+							return tsProjected{Type: helper}, err
+						}
+						return tsProjected{Type: model.Collection(p.Dependency(0).Type)}, nil
+					},
+				}, err
 			})
-			var registry c.Registry
-			q, err := selectedTS(library, "expansion")(&registry, input, nativeChecker(t, typescriptText()).Language())
-			if err != nil {
-				t.Fatal(err)
-			}
-			plan, err := registry.PlanGeneration(context.Background(), q, nativeChecker(t, typescriptText()))
-			if mode == "stale" {
+			plan := func() (g.GenerationPlan, error) {
+				planning++
+				var registry c.Registry
+				q, err := selectedTS(contribution, key)(&registry, input, nativeChecker(t, typescriptText()).Language())
 				if err != nil {
 					t.Fatal(err)
 				}
-				if _, err = saved.Reader(); !errors.Is(err, g.ErrScope) {
-					t.Fatal("retained expansion is live", err)
-				}
-				if _, err = plan.Run(context.Background()); err != nil {
+				return registry.PlanGeneration(context.Background(), q, nativeChecker(t, typescriptText()))
+			}
+			first, err := plan()
+			switch mode {
+			case "stale":
+				if err != nil || !kept.Valid() {
 					t.Fatal(err)
 				}
-			} else if err == nil || plan.Valid() {
-				t.Fatal("invalid expansion produced a plan", mode, err)
+				second, err := plan()
+				if !errors.Is(err, g.ErrScope) || !strings.Contains(err.Error(), "a request must name a child") || second.Valid() {
+					t.Fatal("a use kept from an earlier planning was planned", err)
+				}
+				if _, err = first.Run(context.Background()); err != nil {
+					t.Fatal(err)
+				}
+			case "shared-helper":
+				var refusal *g.Refusal
+				if !errors.Is(err, g.ErrUnsupported) || !errors.As(err, &refusal) || refusal.Owner != g.KernelOwner || refusal.Reason != g.ReasonSharedHelper || first.Valid() {
+					t.Fatal("a request for a shared helper produced a plan", err)
+				}
+			default:
+				if !errors.Is(err, g.ErrScope) || first.Valid() {
+					t.Fatal("invalid projection produced a plan", mode, err)
+				}
 			}
 		})
 	}
@@ -325,38 +425,36 @@ func TestPlanningExpansionScopeAndNoFallback(t *testing.T) {
 // Keep the public source capability explicit in this separate consumer package.
 var _ g.SourceProvider[h.Language, src.Reader] = src.Provider{}
 
-func TestPlanFreezesExpandedNativeRepresentation(t *testing.T) {
+// TestPlanFreezesProjectedNativeRepresentation: the rule decides and the
+// projector projects while the plan is made. A run builds what was selected
+// then. It enters neither the rule nor the projector again, so what they would
+// answer later does not change the output.
+func TestPlanFreezesProjectedNativeRepresentation(t *testing.T) {
 	_, _, input := generationInput(t, paginationModule())
+	const key = "chosen"
 	readonly := false
 	calls := 0
-	library := tsContribution(func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, src.Reader], error) {
-		pattern, err := patterns.Head(from, "list-of", "")
-		return g.MappingDescription[h.Language, ts.Language, src.Reader]{Bindings: []g.BindingDescription[h.Language, ts.Language, src.Reader]{{ID: "chosen", Input: pattern, Expand: func(ctx context.Context, r g.Expansion[h.Language, ts.Language, src.Reader]) (g.Expression[ts.Language], error) {
-			calls++
-			source, err := r.Reader()
-			if err != nil {
-				return g.Expression[ts.Language]{}, err
-			}
-			use, err := r.Use()
-			if err != nil {
-				return g.Expression[ts.Language]{}, err
-			}
-			element, err := source.Element(use)
-			if err != nil {
-				return g.Expression[ts.Language]{}, err
-			}
-			value, err := r.Mapped(element)
-			if err != nil {
-				return g.Expression[ts.Language]{}, err
-			}
-			if readonly {
-				return model.External("", "ReadonlyArray", value), nil
-			}
-			return model.Collection(value), nil
-		}}}}, err
+	contribution := tsConstructor(func(from representation.Language) (tsContribution, error) {
+		selector, err := src.Builtin(from, "list-of", "")
+		return tsContribution{
+			Reference: testReference("TestPlanFreezesProjectedNativeRepresentation", key), Target: tsTarget, Profile: rules.RepresentationProfile,
+			Domain: g.ForForm(selector), Schema: f.EmptySchema,
+			Rule: horosRule{Name: nameElement, Decide: func(ctx context.Context, step horosDecideStep) (g.Decision, error) {
+				calls++
+				return decideNothing(ctx, step)
+			}},
+			Project: func(_ context.Context, p tsProjection) (tsProjected, error) {
+				calls++
+				value := p.Dependency(0).Type
+				if readonly {
+					return tsProjected{Type: model.External("", "ReadonlyArray", value)}, nil
+				}
+				return tsProjected{Type: model.Collection(value)}, nil
+			},
+		}, err
 	})
 	var registry c.Registry
-	q, err := selectedTS(library, "chosen")(&registry, input, nativeChecker(t, typescriptText()).Language())
+	q, err := selectedTS(contribution, key)(&registry, input, nativeChecker(t, typescriptText()).Language())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -371,40 +469,46 @@ func TestPlanFreezesExpandedNativeRepresentation(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := formatted(t, typescriptText(), outputTree[ts.Language](t, out))
-	if strings.Contains(text, "ReadonlyArray") || !strings.Contains(text, "items: T[]") || calls != plannedCalls {
+	if plannedCalls == 0 || strings.Contains(text, "ReadonlyArray") || !strings.Contains(text, "items: T[]") || calls != plannedCalls {
 		t.Fatal("run changed selected representation", text, calls, plannedCalls)
 	}
 }
 
 // A native projection may omit a source argument, but cannot grant admission.
 // The unmapped Wire actual is valid source and deliberately has no target rule.
+//
+// The contribution contract has one declaration policy for a profile and a
+// target, and no policy for one named declaration. So the consumer states its
+// own policy in place of the builtin one: it decides as the builtin policy
+// does, and it gives Ignore no native parameter and binds Ignore's binder to
+// string.
 func TestGenerationPlanOmittedNativeArgument(t *testing.T) {
 	root := genModule("consumer", genMap(),
 		genEntry("Ignore", genType(genScalar("utf8-text"), "T")),
 		genEntry("Ignored", genType(genLocal("Ignore", genTuple("horos/wire", genScalar("utf8-text"))))))
-	pin, err := decl.Pin(root)
+	e, q, _ := planningEngine(t, root)
+	from := q.Input.Source.Language()
+	// The builtin policy and the codec of its schema are registered already.
+	builtin, err := typescriptBundleTable()["declarations"].Contribution(from)
 	if err != nil {
 		t.Fatal(err)
 	}
-	e, q, _ := planningEngine(t, root)
-	contribution := tsContribution(func(from, to representation.Language) (g.MappingDescription[h.Language, ts.Language, src.Reader], error) {
-		key, err := src.Named(from, pin.String(), "Ignore")
-		if err != nil {
-			return g.MappingDescription[h.Language, ts.Language, src.Reader]{}, err
+	policy := builtin
+	policy.Reference = testReference("TestGenerationPlanOmittedNativeArgument", "erase-ignored-parameter")
+	policy.Declare = func(ctx context.Context, p tsProjection) (g.DeclarationDescription[ts.Language], error) {
+		description, err := builtin.Declare(ctx, p)
+		if err == nil && description.Name == "Ignore" {
+			// The description of Ignore as this test has always stated it: no
+			// target parameter, its binder bound to string, and no origin.
+			description.Generic = g.GenericConvention[ts.Language]{Bindings: []g.Expression[ts.Language]{model.Primitive("string")}}
+			description.Origin = ast.NodeRef{}
 		}
-		return g.MappingDescription[h.Language, ts.Language, src.Reader]{Declarations: []g.DeclarationRecipe[h.Language, ts.Language, src.Reader]{{
-			ID: "erase-ignored-parameter", Selector: key,
-			Expand: func(ctx context.Context, r g.DeclarationRequest[h.Language, ts.Language, src.Reader]) (g.DeclarationDescription[ts.Language], error) {
-				open, err := r.Declaration()
-				if err != nil {
-					return g.DeclarationDescription[ts.Language]{}, err
-				}
-				body, err := r.Mapped(open.Body)
-				return g.DeclarationDescription[ts.Language]{Name: "Ignore", Form: model.Form("alias"), Body: body, Generic: g.GenericConvention[ts.Language]{Bindings: []g.Expression[ts.Language]{model.Primitive("string")}}}, err
-			},
-		}}}, nil
-	})
-	if _, err = c.RegisterMapping(e.Generation(), q.Input.Source.Language(), q.To, contribution); err != nil {
+		return description, err
+	}
+	if err = c.RegisterContribution(e.Generation(), from, q.To, policy); err != nil {
+		t.Fatal(err)
+	}
+	if err = e.Generation().ReplaceContribution(builtin.Reference.Identity, policy.Reference.Identity); err != nil {
 		t.Fatal(err)
 	}
 	plan, err := e.PlanGeneration(context.Background(), q)

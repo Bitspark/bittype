@@ -326,9 +326,9 @@ var languageLayout = map[string][]string{
 	},
 	"transform/syntax/<l>/target/go": {"contracts/generation/go", "internal/<l>", "syntax/<l>/go", "transform/syntax/<l>/model/go", "transform/syntax/shared/target/go", "trees/ast/go"},
 
-	"transform/syntax/<l>/mapping/go":         {"contracts/generation/go", "syntax/<l>/go", "transform/syntax/<l>/source/go", "trees/representation/go"},
-	"transform/syntax/<l>/mapping/pattern/go": {"contracts/generation/go", "syntax/<l>/go", "transform/syntax/<l>/source/go", "trees/representation/go"},
-	"transform/syntax/<l>/mapping/naming/go":  {"contracts/generation/go", "syntax/<l>/go", "transform/syntax/<l>/source/go", "trees/representation/go"},
+	"transform/syntax/<l>/mapping/go":         {},
+	"transform/syntax/<l>/mapping/pattern/go": {"contracts/generation/go", "syntax/<l>/go", "transform/syntax/<l>/source/go"},
+	"transform/syntax/<l>/mapping/naming/go":  {"contracts/generation/go", "syntax/<l>/go", "transform/syntax/<l>/source/go"},
 }
 
 // pairImports is what one mapping contribution of <s>-to-<n> may import.
@@ -383,7 +383,7 @@ func (s *syntheticSet) language(name string) {
 
 	adapter, naming := "transform/syntax/"+name+"/mapping/go", "transform/syntax/"+name+"/mapping/naming/go"
 	declarations := "transform/syntax/" + name + "/mapping/declarations/go"
-	s.add(declarations, append(replaced(languageLayout["transform/syntax/<l>/mapping/go"], replacer), adapter, naming)...)
+	s.add(declarations, append(replaced(languageLayout["transform/syntax/<l>/mapping/naming/go"], replacer), adapter, naming)...)
 	s.spec.Extensions[declarations] = []string{adapter, naming}
 }
 

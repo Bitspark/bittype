@@ -1,4 +1,7 @@
-// Package generation defines declarative mapping and construction contracts.
+// Package generation is the generation contract: what a contribution is, what
+// its rule may ask and must return, the planner that drives it, the selected
+// representation plan, and the construction contract of a target
+// (docs/contribution-contract.md).
 package generation
 
 import (
@@ -31,7 +34,7 @@ func (l Limits) Valid() bool {
 }
 
 // Target validates target intent during planning. Build receives only the closed
-// target program; it has no source reader, selectors or mapping callbacks.
+// target program; it has no source reader, selectors, rules or projectors.
 // Target implementations are trusted semantic compilers of their target.
 // bittype:dimension Syntax
 type Target[T any] interface {

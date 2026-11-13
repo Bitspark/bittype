@@ -54,33 +54,6 @@ func Roots(input transform.Input) ([]ast.NodeRef, error) {
 
 var configuredSources sync.Map
 
-// Request registers the source once per registry, the target and the given
-// mapping libraries. The request it returns names the entry module's type
-// definitions as roots and the structural representation profile, whose
-// identity comes from its owner, the horos mapping package.
-func Request[T any](registry *c.Registry, input transform.Input, to representation.Language, output ast.TreeID, target g.Target[T], mappings ...g.MappingLibrary[h.Language, T, source.Reader]) (c.Request, error) {
-	zero := c.Request{}
-	from := input.Source.Language()
-	if _, loaded := configuredSources.LoadOrStore(registry, true); !loaded {
-		if err := c.RegisterSource[h.Language, source.Reader](registry, from, source.Provider{}); err != nil {
-			return zero, err
-		}
-	}
-	if err := c.RegisterTarget(registry, to, target); err != nil {
-		return zero, err
-	}
-	for _, p := range mappings {
-		if _, err := c.RegisterMapping(registry, from, to, p); err != nil {
-			return zero, err
-		}
-	}
-	roots, err := Roots(input)
-	if err != nil {
-		return zero, err
-	}
-	return c.Request{Input: input, To: to, Output: output, Roots: roots, Profile: mapping.RepresentationProfile, Limits: g.DefaultLimits()}, nil
-}
-
 // Bundle is what a consumer's composition registers for one contribution: the
 // contribution and the codec of its payload schema. Each is one package, and
 // only a composition imports both.
@@ -91,8 +64,8 @@ type Bundle[T any] struct {
 
 // Compose registers the source once per registry, the target and the given
 // bundles. The request it returns names the entry module's type definitions as
-// roots and the structural representation profile. A codec whose schema is
-// already registered is not registered again: two bundles may share a schema.
+// roots and the structural representation profile. Each bundle's codec is
+// registered once: a registry holds one codec for each schema reference.
 func Compose[T any](registry *c.Registry, input transform.Input, to representation.Language, output ast.TreeID, target g.Target[T], bundles ...Bundle[T]) (c.Request, error) {
 	zero := c.Request{}
 	from := input.Source.Language()

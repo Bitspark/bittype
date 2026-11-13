@@ -43,7 +43,15 @@ func RegisterContribution[F, T, R any](r *Registry, from, to representation.Lang
 	if c.Target != string(to.ID()) {
 		return fmt.Errorf("%w: contribution %s states target %q and is registered for %q", g.ErrScope, c.Reference, c.Target, to.ID())
 	}
+	if err := c.Validate(); err != nil {
+		return err
+	}
+	// The registry keeps its own copy: nothing the caller holds reaches a plan
+	// after registration.
 	c.Facts, c.Owned = slices.Clone(c.Facts), slices.Clone(c.Owned)
+	for i := range c.Owned {
+		c.Owned[i].Declaration = c.Owned[i].Declaration.Clone()
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for _, e := range r.contributions.entries {

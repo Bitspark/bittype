@@ -1,15 +1,13 @@
 // Package generationfixture is an independent, deliberately bounded source for
 // the public generation SPI. It publishes an ordinary semantic graph through its
-// own analysis and supplies only its own interpretation, reader and mapping
-// library: the kernel walks its graph exactly as it walks horos.
+// own analysis and supplies only its own interpretation, reader and
+// contributions: the kernel walks its graph exactly as it walks horos.
 package generationfixture
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
-	"strings"
 
 	checkgo "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
 	"github.com/Bitspark/bittype/contracts/analysis/go"
@@ -20,7 +18,6 @@ import (
 	"github.com/Bitspark/bittype/contracts/transform/go"
 	"github.com/Bitspark/bittype/semantics/go"
 	s "github.com/Bitspark/bittype/syntax/golang/go"
-	model "github.com/Bitspark/bittype/transform/syntax/golang/model/go"
 	target "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	construct "github.com/Bitspark/bittype/transform/syntax/shared/target/go"
@@ -243,22 +240,22 @@ func (a admission) Analyze(_ context.Context, req analysis.Request[SourceLanguag
 	return req.Publish(semantic.Publication{Reports: []semantic.Report{{Obligation: admissible, Status: semantic.Complete, Verdict: a.verdict}}})
 }
 
-// Mode selects a library variant for negative qualification.
+// Mode selects a variant of the fixture's contributions for negative qualification.
 type Mode int
 
 const (
 	Standard Mode = iota
-	// StrayCapture maps the occurrence itself instead of one of its children.
+	// StrayCapture names the occurrence itself instead of one of its children.
 	StrayCapture
-	// ForeignHandle maps a handle kept from an earlier plan.
+	// ForeignHandle names a handle kept from an earlier plan.
 	ForeignHandle
-	// PatternStray captures the Cell occurrence itself instead of its actual.
+	// PatternStray names the Cell occurrence itself instead of its actual.
 	PatternStray
-	// RecipeStray maps a kept non-body use from Outer's declaration recipe.
+	// RecipeStray names a kept non-body use from Outer's declaration rule.
 	RecipeStray
-	// UnissuedValue states a value that no issuer issued from the declaration recipe.
+	// UnissuedValue states a value that no issuer issued, from the declaration's projector.
 	UnissuedValue
-	// UnissuedHelperValue states a value that no issuer issued from the helper recipe.
+	// UnissuedHelperValue states a value that no issuer issued, on the owned helper.
 	UnissuedHelperValue
 	// LargeValue states a naming intent of LargeValueBytes bytes.
 	LargeValue
@@ -295,149 +292,6 @@ func stated(issuer g.ValueIssuer, d g.OwnedDeclaration) (string, bool) {
 		}
 	}
 	return "", false
-}
-
-// intent is the value the declaration recipe states under a mode.
-func (l library) intent(name string) (g.IssuedValue, error) {
-	switch l.mode {
-	case UnissuedValue:
-		return g.IssuedValue{}, nil
-	case LargeValue:
-		return namingIntent.Issue(strings.Repeat("n", LargeValueBytes))
-	}
-	return namingIntent.Issue(name)
-}
-
-type library struct {
-	mode Mode
-	kept *g.Use[SourceLanguage]
-}
-
-func (l library) Describe(from, to representation.Language) (g.MappingDescription[SourceLanguage, s.Language, Reader], error) {
-	cursor := g.NewHelperKey("independent/cursor")
-	person, _ := g.NewSelector(from, "expression/person-body")
-	page, _ := g.NewSelector(from, "expression/page-body")
-	cell, _ := g.NewSelector(from, "declaration/Cell")
-	ignore, _ := g.NewSelector(from, "declaration/Ignore")
-	shadow, _ := g.NewSelector(from, "declaration/Shadow")
-	v := g.TypeSlot("V")
-	content := HelperAccess
-	if l.mode == LargeHelperValue {
-		content = strings.Repeat("a", LargeValueBytes)
-	}
-	access, err := helperAccess.Issue(content)
-	if err != nil {
-		return g.MappingDescription[SourceLanguage, s.Language, Reader]{}, err
-	}
-	if l.mode == UnissuedHelperValue {
-		access = g.IssuedValue{}
-	}
-	return g.MappingDescription[SourceLanguage, s.Language, Reader]{
-		Profile: "independent/1",
-		Bindings: []g.BindingDescription[SourceLanguage, s.Language, Reader]{
-			{ID: "person", Input: g.Pattern[SourceLanguage, Reader]{Selector: person}, Output: model.Record(model.Field("Name", false, model.Primitive("string")))},
-			{ID: "page", Input: g.Pattern[SourceLanguage, Reader]{Selector: page}, Expand: func(ctx context.Context, q g.Expansion[SourceLanguage, s.Language, Reader]) (g.Expression[s.Language], error) {
-				view, err := q.Use()
-				if err != nil {
-					return g.Expression[s.Language]{}, err
-				}
-				element, ok := view.Operand(0)
-				if !ok {
-					return g.Expression[s.Language]{}, g.ErrScope
-				}
-				switch l.mode {
-				case StrayCapture:
-					element = view.Use
-				case ForeignHandle:
-					if l.kept.Valid() {
-						element = *l.kept
-					} else {
-						*l.kept = element
-					}
-				case RecipeStray:
-					*l.kept = element
-				}
-				value, err := q.Mapped(element)
-				if err != nil {
-					return g.Expression[s.Language]{}, err
-				}
-				return model.Record(model.Field("Items", false, model.Collection(value)), model.Field("Storage", false, g.Parameter[s.Language](1)), model.Field("Cursor", false, g.Helper[s.Language](cursor))), nil
-			}},
-			// Cell's library represents every Cell use natively; Cell's body is never opened.
-			{ID: "cell", Input: g.Pattern[SourceLanguage, Reader]{Selector: cell, Slots: []g.Slot{v}, Capture: func(ctx context.Context, r Reader, view g.UseView[SourceLanguage]) ([]g.Capture[SourceLanguage], error) {
-				if l.mode == PatternStray {
-					return []g.Capture[SourceLanguage]{{Slot: v, Use: view.Use}}, nil
-				}
-				for _, a := range view.Actuals {
-					if name, err := r.ParameterName(a.Binder); err != nil {
-						return nil, err
-					} else if name == "V" {
-						return []g.Capture[SourceLanguage]{{Slot: v, Use: a.Use}}, nil
-					}
-				}
-				return nil, g.ErrScope
-			}}, Output: model.Collection(g.Mapped[s.Language](v))},
-		},
-		Declarations: []g.DeclarationRecipe[SourceLanguage, s.Language, Reader]{
-			{ID: "named", Expand: func(ctx context.Context, q g.DeclarationRequest[SourceLanguage, s.Language, Reader]) (g.DeclarationDescription[s.Language], error) {
-				r, err := q.Reader()
-				if err != nil {
-					return g.DeclarationDescription[s.Language]{}, err
-				}
-				view, err := q.Declaration()
-				if err != nil {
-					return g.DeclarationDescription[s.Language]{}, err
-				}
-				name, err := r.Name(view.Declaration)
-				if err != nil {
-					return g.DeclarationDescription[s.Language]{}, err
-				}
-				form := model.Form("alias")
-				if name == "Person" || name == "Page" {
-					form = model.Form("defined")
-				}
-				value, err := l.intent(name)
-				if err != nil {
-					return g.DeclarationDescription[s.Language]{}, err
-				}
-				d := g.DeclarationDescription[s.Language]{Name: name, Form: form, Values: []g.IssuedValue{value}}
-				if l.mode == ManyEmptyValues {
-					empty, err := namingIntent.Issue("")
-					if err != nil {
-						return g.DeclarationDescription[s.Language]{}, err
-					}
-					d.Values = slices.Repeat([]g.IssuedValue{empty}, LargeValueBytes)
-				}
-				for i := range view.Formals {
-					d.Generic.Parameters = append(d.Generic.Parameters, g.ParameterDescription{Name: fmt.Sprintf("T%d", i)})
-					d.Generic.Bindings = append(d.Generic.Bindings, g.Parameter[s.Language](i))
-					d.Generic.Arguments = append(d.Generic.Arguments, g.Argument[s.Language](i))
-				}
-				if name == "Page" {
-					d.Generic.Parameters = append(d.Generic.Parameters, g.ParameterDescription{Name: "Storage"})
-					d.Generic.Arguments = append(d.Generic.Arguments, model.Collection(g.Argument[s.Language](0)))
-				}
-				body := view.Body
-				if l.mode == RecipeStray && name == "Outer" && l.kept.Valid() {
-					body = *l.kept
-				}
-				d.Body, err = q.Mapped(body)
-				return d, err
-			}},
-			// Ignore omits its source parameter natively; uses must still admit it.
-			{ID: "erase", Selector: ignore, Expand: erase("Ignore")},
-			// Shadow's recipe never represents its body; the kernel still admits it.
-			{ID: "erase-shadow", Selector: shadow, Expand: erase("Shadow")},
-		},
-		Helpers: []g.HelperRecipe[s.Language]{{Key: cursor, Declaration: g.TargetDeclaration[s.Language]{Name: "Cursor", Form: model.Form("alias"), Body: model.Primitive("string"), Values: []g.IssuedValue{access}}}},
-	}, nil
-}
-
-// erase describes a declaration as string, omitting its parameter and body.
-func erase(name string) func(context.Context, g.DeclarationRequest[SourceLanguage, s.Language, Reader]) (g.DeclarationDescription[s.Language], error) {
-	return func(ctx context.Context, q g.DeclarationRequest[SourceLanguage, s.Language, Reader]) (g.DeclarationDescription[s.Language], error) {
-		return g.DeclarationDescription[s.Language]{Name: name, Form: model.Form("alias"), Body: model.Primitive("string"), Generic: g.GenericConvention[s.Language]{Bindings: []g.Expression[s.Language]{model.Primitive("string")}}}, nil
-	}
 }
 
 // Fixture is one captured fixture program and its Go target.
@@ -629,7 +483,7 @@ func (f *Fixture) PlanDirectWithin(ctx context.Context, variant SourceVariant, l
 	if err != nil {
 		return g.GenerationPlan{}, err
 	}
-	d, err := library{kept: &f.kept}.Describe(f.captured.language, f.target)
+	composition, err := standard(f.captured.language, Standard, &f.kept)
 	if err != nil {
 		return g.GenerationPlan{}, err
 	}
@@ -637,9 +491,9 @@ func (f *Fixture) PlanDirectWithin(ctx context.Context, variant SourceVariant, l
 	if err != nil {
 		return g.GenerationPlan{}, err
 	}
-	return g.Plan(ctx, g.PlanningInput[SourceLanguage, s.Language, Reader]{
-		From: f.captured.language, Input: input, Source: sourceProvider{variant}, Roots: roots,
-		Mappings:  []g.SelectedDescription[SourceLanguage, s.Language, Reader]{{ID: "fixture", Description: d}},
+	return g.PlanContributions(ctx, g.ContributionInput[SourceLanguage, s.Language, Reader]{
+		From: f.captured.language, Input: input, Source: sourceProvider{variant}, Roots: roots, Profile: Profile,
+		Contributions: composition.Contributions, Codecs: composition.Codecs,
 		Execution: g.Execution[s.Language]{Target: target.Provider{Package: "generated"}, Checker: checker, Language: f.target, Output: "independent", Limits: limits},
 	})
 }
@@ -718,12 +572,16 @@ func (f *Fixture) planWith(ctx context.Context, mode Mode, variant SourceVariant
 	if err := c.RegisterTarget(&registry, f.target, built); err != nil {
 		return g.GenerationPlan{}, err
 	}
-	if _, err := c.RegisterMapping(&registry, from, f.target, library{mode: mode, kept: &f.kept}); err != nil {
+	composition, err := standard(from, mode, &f.kept)
+	if err != nil {
+		return g.GenerationPlan{}, err
+	}
+	if err := composition.register(&registry, from, f.target); err != nil {
 		return g.GenerationPlan{}, err
 	}
 	checker, err := check.NewChecker[s.Language](f.target, checkgo.Provider{})
 	if err != nil {
 		return g.GenerationPlan{}, err
 	}
-	return registry.PlanGeneration(ctx, c.Request{Input: input, To: f.target, Roots: roots, Output: "independent", Profile: "independent/1", Limits: limits}, checker)
+	return registry.PlanGeneration(ctx, c.Request{Input: input, To: f.target, Roots: roots, Output: "independent", Profile: Profile, Limits: limits}, checker)
 }

@@ -1,3 +1,8 @@
+// Package record is the builtin horos-to-rust contribution for closed
+// horos records (docs/contribution-contract.md). A consumer's composition
+// registers it on its own, with the codec of its payload schema. It delegates
+// the presence of an optional field to whichever contribution the composition
+// registers for that role, and imports none.
 package record
 
 import (

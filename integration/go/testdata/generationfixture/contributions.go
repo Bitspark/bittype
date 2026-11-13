@@ -117,29 +117,37 @@ func (f *Fixture) PlanContributions(ctx context.Context, composition Composition
 	if err := c.RegisterTarget(&registry, f.target, built); err != nil {
 		return g.GenerationPlan{}, err
 	}
-	for _, contribution := range composition.Contributions {
-		if err := c.RegisterContribution(&registry, from, f.target, contribution); err != nil {
-			return g.GenerationPlan{}, err
-		}
-	}
-	for _, codec := range composition.Codecs {
-		if err := registry.RegisterCodec(codec); err != nil {
-			return g.GenerationPlan{}, err
-		}
-	}
-	for _, facet := range composition.Facets {
-		if err := registry.RegisterFacet(facet); err != nil {
-			return g.GenerationPlan{}, err
-		}
-	}
-	for _, product := range composition.Products {
-		if err := registry.RegisterProduct(product); err != nil {
-			return g.GenerationPlan{}, err
-		}
+	if err := composition.register(&registry, from, f.target); err != nil {
+		return g.GenerationPlan{}, err
 	}
 	checker, err := check.NewChecker[s.Language](f.target, checkgo.Provider{})
 	if err != nil {
 		return g.GenerationPlan{}, err
 	}
 	return registry.PlanGeneration(ctx, c.Request{Input: f.Input(), To: f.target, Roots: roots, Output: "independent", Profile: Profile, Limits: g.DefaultLimits(), Products: composition.Requested}, checker)
+}
+
+// register registers what a composition holds, as a consumer does.
+func (composition Composition) register(registry *c.Registry, from, to representation.Language) error {
+	for _, contribution := range composition.Contributions {
+		if err := c.RegisterContribution(registry, from, to, contribution); err != nil {
+			return err
+		}
+	}
+	for _, codec := range composition.Codecs {
+		if err := registry.RegisterCodec(codec); err != nil {
+			return err
+		}
+	}
+	for _, facet := range composition.Facets {
+		if err := registry.RegisterFacet(facet); err != nil {
+			return err
+		}
+	}
+	for _, product := range composition.Products {
+		if err := registry.RegisterProduct(product); err != nil {
+			return err
+		}
+	}
+	return nil
 }
