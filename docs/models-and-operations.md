@@ -42,7 +42,11 @@ This page does not repeat them.
 Code is quoted with its file and line on `main` at `0581401`. The existing
 code is given as a fact and never as a reason for a choice
 ([AC-09](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-09)).
-Counts come with the command that gives them.
+Counts come with the command that gives them. The change that adds this
+page inserts dated clarifications into `LAYOUT.md`, `AGENTS.md`,
+`docs/package-boundaries.md` and `docs/generation-composition.md`. A line
+number of those four files is therefore that of `0581401`, before the
+insertions.
 
 ## 1. The direction and its standing
 
@@ -495,7 +499,7 @@ var Forms = intent.Vocabulary{
 
 | Form | The condition today | What the table states | What it does not state |
 | --- | --- | --- | --- |
-| `primitive` | One datum, no argument, and the datum is `string` or `bool` (`:63`) | One datum that is not empty, no argument | Which names the target lowers. That is coverage (change 1 above). That the name is a predeclared type of Go is a constraint that exists only as its evaluator, the universe scope of the building toolchain (`transform/syntax/golang/symbol/go/symbol.go:34`) |
+| `primitive` | One datum, no argument, and the datum is `string` or `bool` (`:63`) | One datum that is not empty, no argument. "Not empty" is the sketch's rule and is part of P4: it keeps an empty name invalid, as the condition of today does | Which names the target lowers. That is coverage (change 1 above). That the name is a predeclared type of Go is a constraint that exists only as its evaluator, the universe scope of the building toolchain (`transform/syntax/golang/symbol/go/symbol.go:34`) |
 | `slice` | No datum, one argument (`:67`) | The same | |
 | `field` | Two data, the first not empty, the second `true` or `false`, one argument (`:71`) | The same | That the name is a Go identifier. The Go checker refuses another name when the output is sealed (`check/syntax/golang/provider/go/check.go:27`). What `optional` means for Go: the target reads the name only (`transform/syntax/golang/target/go/provider.go:122-123`) |
 | `record` | No datum, every argument is a `field`, no name twice (`:75-86`) | The same | |
