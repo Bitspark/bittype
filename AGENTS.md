@@ -56,6 +56,29 @@ independently of whether public registration accepts other languages.
 and [bittype/ACX-010](docs/architecture-cases/0010-agnostic-mapping-adapter.md)
 record the requirement and the pending mapping-adapter correction.
 
+**Owner direction, 13 November 2026:** "So the root split to me would be
+between model and ops. model must not contain any ops and must not import from
+ops either. ops work on the model". Read
+[models and operations](docs/models-and-operations.md) before adding a
+package, or a function to a vocabulary or carrier package. A responsibility
+that declares what is true or admissible is model. One that determines
+whether something is true, interprets it or produces something from it is an
+operation. A model package holds plain data, names and declared tables, and
+no function that evaluates them. Whether a package of the model root holds an
+operation is judged in review and by no check. The split is **not
+implemented**: the paths in this file and in the layout are those of `main`,
+and the page's
+[order of work](docs/models-and-operations.md#10-the-order-of-work) says which
+slice changes what. Four sentences below describe `main` until their slice:
+"Identities live in vocabulary packages", "Native semantic forms belong under
+transform/syntax/<native>/model/go", "Follow the stage-first
+hierarchy in LAYOUT.md", and "Native stages own their grammar and
+spelling". The page
+[lists](docs/models-and-operations.md#the-sentences-that-change) what each
+says afterwards.
+[bittype/ACX-015](docs/architecture-cases/0015-models-hold-operations.md)
+records the open violation.
+
 **Owner request, 11 November 2026:** check for packages whose parts "neither
 conceptually nor practically depend on each other", and for parts that call one
 another directly "instead of invoking the kernel", and enforce the result
