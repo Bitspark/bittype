@@ -63,6 +63,8 @@ Distribution follows from this interface. Neither an existing generator nor the 
 - the selected adapter factories, their argument slots and their resource requirements;
 - the selected root contract, such as `Service<Ops>`, which the author declares at the root of the contract and which is selected like any other contribution.
 
+**Clarified on 13 November 2026 ([research 0017](../research-docs/0017-contribution-contract.md), rows 5 and 23, decisions O1 and O7 on [#196](https://github.com/Bitspark/bittype/issues/196#issuecomment-6841190077)).** Two items of this list are read as [the contribution contract](contribution-contract.md) states. The plan carries a rule, such as one for absence and presence, either as a recorded field, where it varies between selections, or through the contribution reference whose revision fixes it. And for a generated declaration, "native symbols" means the logical symbol identity and the spelled intent: the place and the imports come from the realization, the fourth input named under the completeness test below.
+
 The serialized plan carries an explicit format version, which bittype owns. A backend consumes a pinned version and refuses an unknown one.
 
 **Form.** These are typed references and target-owned expressions, the same principle as bittype's native intent (the [generation SPI](generation-spi.md)). They are not a universal schema and not another type algebra.
@@ -70,6 +72,8 @@ The serialized plan carries an explicit format version, which bittype owns. A ba
 **Serialization.** The plan starts as a typed build-time interface and is serialized only where a real process boundary needs it. A TypeScript backend in Node is such a boundary.
 
 **Completeness test.** The backend can implement each selected representation from the plan, the source semantics and the selected contributions alone, without guessing a rule. If it must decide how Go optional values work, or how a custom union is represented, the plan is incomplete.
+
+**Amended on 13 November 2026 ([research 0017](../research-docs/0017-contribution-contract.md), row 23, and decision O15 on [#196](https://github.com/Bitspark/bittype/issues/196#issuecomment-6841866946); decided for [#195](https://github.com/Bitspark/bittype/issues/195#issuecomment-6841872859)).** This amends the sentence above in substance. It says that a backend works from three inputs alone, and [The decision](#the-decision) says that a backend consumes three inputs. For a generated native declaration the three are not sufficient. Its name and its place exist only after a language's Files stage has placed it. A plan entry refers to such a declaration by an identity that the planner issues, and a backend reads the realized name and place from the placed result. That result is a fourth input. For every representation rule the sentence above stands as it was accepted. See [the contribution contract](contribution-contract.md#amendments-to-accepted-pages).
 
 **What the backend emits:**
 
@@ -263,6 +267,8 @@ A `put`/`get` slice is not qualification of the whole.
 | Go bindings | Only the Go backend and the Go implementations each semantic owner supplies |
 
 The unit of implementation is library × target.
+
+**Clarified on 13 November 2026 ([research 0017](../research-docs/0017-contribution-contract.md), row 1).** This sentence names ownership and distribution: a library owns and distributes what it publishes for a target. The unit that a consumer selects is one contribution, and a library may publish several. See [the contribution contract](contribution-contract.md#what-a-contribution-is).
 
 ## Delivery
 

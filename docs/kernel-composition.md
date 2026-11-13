@@ -9,6 +9,13 @@ their placement. No library supplies a complete pipeline or learns its consumers
 [Generation assembly correction](architecture-cases/0002-generation-assembly.md) ·
 [Runnable Page/Cell walkthrough](page-cell-example.md)
 
+**The mapping contract is going to change.** What a mapping library registers
+and returns is redesigned in the
+[contribution contract](contribution-contract.md), a design of 13 November
+2026 that is not implemented. This page describes registration as it is until
+the migration of [#196](https://github.com/Bitspark/bittype/issues/196),
+item 6, merges.
+
 ## Uniform layout
 
 Implementations follow stage/dimension/scope/component/go. Scope is a language,
