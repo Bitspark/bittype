@@ -807,3 +807,99 @@ argument is kept for conversion, one plan under two TypeScript placements.
 | `...Stage8Case2PageOfOutcomeWithAMockFamily` | The kernel plans a generic applied to a record whose every field is delegated, through a source that is not horos, with a mock family | Null against absence, discriminators, anything about the family the mock stands for, conversion |
 | `...Stage8Case3ExactGenericWithAnOmittedParameter` | An exact generic omits its parameter natively; asked for a product that requires a value facet, its argument is linked for conversion and its facet is found; without the facet the request is "missing facet" | Capabilities, what `Cell` does with its slot, an additional native parameter |
 | `...Stage8Case5GenericRequirementAcceptedAndRefused` | A declared binder requirement is discharged by a proved fact, refused as unsatisfied by a refuted one and as unresolved where nothing is stated; the refusal names the requirement | The map family and the meaning of its keys |
+
+## Stage 9: the gate, and line 7 in its small form
+
+**Built.** One further contribution, added after stage 8 in one commit that
+adds one file (`integration/go/prototype_stage9_test.go`, commit `12f53c9`,
+`stage9-diff-stat.txt`): `slice-presence` of the publisher
+`example.org/independent-family`. It answers the role "optional record
+field" for Go with a slice that holds no value or one, where bittype's
+optional contribution wraps the operand in an owned helper with a flag. It
+has its own payload schema and codec, its own field-state facet, and no
+owned declaration. It replaces bittype's optional contribution in the
+consumer's composition.
+
+**Every file outside the contribution's own file and the composition that
+changed for it.**
+
+| File | Why | When |
+| --- | --- | --- |
+| `integration/go/prototype_stage5_test.go` | The lowering process is a second composition: the reader's, in its own process. It registers the facet and the codec of every selected contribution, so it must know the new one. The table `lowerModes` lets a contribution's file add both | Commit `cb9c851`, made for this contribution before it was added |
+
+No shared package changed: not the contract, the registry, the shared target
+construction, the source reader, the common mapping parts, a native model or
+target, an existing mapping package, the shared part of the codec role or the
+completeness backend. Finding F24 is the row above: a consumer that selects a
+contribution edits one composition for each process that plans or reads.
+
+**Findings of this stage.**
+
+- **F24.** Above.
+- **F25. The authoring route cannot make its own bootstrap artifact with
+  public packages.** Row 37: "A Go contribution package, tested out of tree",
+  red "when the module needs a symbol that is internal or that lives in the
+  test tree". The module outside the repository registers a contribution and
+  a codec with public packages only. But it needs three things it cannot
+  make with them: the canonical module of its payload schema, the pin, and
+  the generated Go type. The prototype's test writes the first two with
+  `internal/horosmodel` (the command `tools/horos-module/go` does the same
+  for a file) and the type by hand. Nothing public generates a payload type
+  from a schema. The route needs a public way from a schema source to the
+  pinned artifact.
+- **F26. The shared part of the codec role was touched for one family.** The
+  fixture family of guarantee 6 has a payload field that is one of two atoms.
+  The shared package `transform/syntax/shared/payload/go` exports the value
+  forms a hand-written codec builds (`Text`, `Bool`, `List`, `Record`), and a
+  codec package may import neither horos nor ontos. So the family needed
+  `Atom` and `ReadAtom` added to the shared package (stage 5). That is a
+  shared file changed because of a family. The cause is the import rule the
+  prototype gave a codec package.
+- **F27. The two readers have a case for each source form.** To pair a link
+  with the source's description of that child, the Go backend
+  (`context.child`, `context.Canonical`) and the stand-in (`child`) switch
+  over the snapshot's descriptor kinds `record` and `list`. A family with
+  another source form would add a case to both. It is a shortcut of the
+  prototype's snapshot, and it would be a shared case in the migration.
+
+## The gate on this branch
+
+`gate-run-prototype.txt` is one verbose run of every test below and of
+`TestProductionArchitecture`: 41 tests pass, with 119 `GREEN` and 25 `RED`
+lines. `gate-run-all.txt` is `go test ./...`: every package passes except the
+seven Rust tests of `integration/go` that need the rustc helper, which fail
+at the branch point too. `gate-red-at-branch-point.txt`: the prototype's
+tests do not build against `2a29674`, because nothing they name exists there.
+A test without a mutant is red in that sense only.
+
+All test names begin with `TestPrototype`.
+
+| Line | Tests | State |
+| --- | --- | --- |
+| 1. Native projection | `Stage1ProjectorCannotReadTheSource` (row 4), `Stage1FrozenValueSurvivesMutation` (row 28), `Stage1DecisionTheSourceDoesNotDetermine` (rows 6, 39), `Stage1NativeDeclarationsDoNotChange` | Green; red under 2 mutants and against a pass that derives the entry from the source |
+| 2. Dependency composition | `Stage2FixtureFamilyDecidesOnEvidence` (row 3), `Stage2GenericAndWrittenOutAgree` (rows 7, 8), `Stage2RevisionIsIdentityAndNoPayload` (row 5), `Stage2CycleAndRecursionAreToldApart` (row 9), `Stage3RefusalValues` (rows 10, 21), `Stage6FieldPositionKeepsTheScopeCheck` (row 12), `Stage3PublisherAndLocalKey` (row 15), `Stage4TwoUsesOneNode` (row 18), `Stage4OmittedArgumentIsKeptForConversion` (rows 19, 20, 32), `Stage3OwnedDeclarationsAreKeyedByOwner` (row 25), `Stage6MemberFragmentOutsideTheVocabulary` (row 14), guarantees 1 to 6 below | Green, with one test not run in full: row 10 over all 21 packages. Eleven are moved; the ten unmoved packages return text diagnostics on the mapping contract |
+| 3. Serialization | `Stage5LoweredGoCompilesAndRuns` (a fresh process lowers from the serialized plan), `Stage4VersionAxesAlone` and `Stage7StandinRefusesUnknownVersions` (row 16), `Stage3OneMeaningTwoRepresentationRevisions` (row 17), `PayloadBootstrap` (row 38), `Stage5ExactPayloadPassedValidation` (row 38) | Green. The bootstrap test was not shown red: no committed type was changed to see it fail |
+| 4. A second reader | `Stage7StandinRoundTripsPageOfPerson`, `Stage7StandinRefusesUnknownVersions`, `Stage7ReadersNeedTheMatchingSnapshot` (row 34), `Stage6FourStatesOfAnOptionalField` (rows 13, 35), `Stage7StandinDerivesMemoKeys` and `Stage4MemoKeyFromTheSerializedPlan` (row 22) | Green; the vector of a present undefined is red under a protocol that reads it as absence. The state "present with null where the type admits it" is not run (#211) |
+| 5. Executed Go lowering | `Stage5LoweredGoCompilesAndRuns`, `Stage5MemberByReferenceNotByString` (row 29) | Green; the lowering by string does not compile. The vocabulary is text with typed holes (F14) |
+| 6. Realization for TypeScript | `Stage4RealizationManifest` (rows 23, 32) | Green with a stand-in for the reader on the formatter's result. **The test of row 24 is not run**: main has no such reader (#273), F11 |
+| 7. The shared packages fixed | `Stage9ReplacedContributionLeavesTheOthers` (row 1), `Stage9PageOfPersonRegeneratesAndConverts` (row 40), `Stage9OutOfTreeModule` (row 37), `Stage9ExtensionDomainRefusals` and the fixtures it lists (row 33) | Green in the small form; one file outside the contribution changed (F24). Not shown: the commit pair of the migration on `main` |
+
+**The two checks that are green today and stay green.** Shown for Go and
+TypeScript by `Stage1NativeDeclarationsDoNotChange`: no contribution for
+generics, and the same native text as the mapping contract (TypeScript
+without booleans). Rust and C++ are not moved and are trivially unchanged.
+
+**The condition beside the seven lines.** Row 11 is not decided here. The
+evidence for it is in stage 6.
+
+| Guarantee | Test | Red under |
+| --- | --- | --- |
+| 1. Required facets belong to the selected contribution | `Stage5FacetsBelongAndMatch` | No mutant: the two sides of the test are the request for bindings and the request for types |
+| 2. Kind, target and compatibility match | `Stage5FacetsBelongAndMatch` | `facet-ignores-issuer`, `facet-ignores-target`, `facet-ignores-version` |
+| 3. A reference has the right plan, category and scope | `Stage5ReferencesAreChecked` | `reference-ignores-plan`, `reference-ignores-category`, `reference-ignores-scope` |
+| 4. Evidence belongs to its dependency | `Stage2AnswersAreBoundToTheirDependency` | `evidence-ignores-dependency`, `-environment`, `-representation-revision`, `-meaning-revision` |
+| 5. The payload snapshot is immutable | `Stage1FrozenValueSurvivesMutation` | `projector-gets-returned-value`, `freeze-at-serialization` |
+| 6. The exact payload passed validation | `Stage5ExactPayloadPassedValidation` | `codec-skips-validation` |
+
+The final report is
+`C:/Development/bitspark/scratch-bittype-check/owner-1112/delivery-0017/prototype/prototype-findings.txt`.
