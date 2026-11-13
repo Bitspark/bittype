@@ -126,19 +126,50 @@ type GeneratedFilesContract[L any] struct {
 | 1 | Consumer | Builds the language's placement from the handles of `Output.Inventory()` and has the language issue it. A handle carries its output, so a placement belongs to one run. No placement bytes cross the contract. The engine carries the value and does not read it. |
 | 2 | Shared formatter | Checks the request: the language of the output, the limits, and the sealed output against the semantic limits. |
 | 3 | Language, in `Prepare` | Reads its placement back. A value of another issuer and a request without a placement are invalid input. Derives the view and calls `Admit`. |
-| 4 | Shared, `Admit` | Runs the common admission. |
+| 4 | Shared, `Admit` | Runs the common admission, once for the request. A refusal is final: every later call is refused, and the request fails with the refusal and its category, whatever the step returns. |
 | 5 | Language, in `Prepare` | Decides its own rules on the admitted placement, validity before coverage. Returns the admitted placement, the evidence requirement of this request and the guard. |
 | 6 | Shared formatter | Refuses a step that returns without the admitted placement of this request, without a guard or with a requirement that asks for no semantic graph. Calls the provider. A refused request never reaches it. |
 | 7 | Provider | Realizes the admitted placement, has the fresh files analyzed and publishes. |
 | 8 | Shared publisher and formatter | Match the receipt with the requirement of step 5, refuse a publication whose file identities and paths differ from the admitted files table, and call the language's guard. |
 
-**The common admission.** It refuses, in this order: a handle that the sealed
-output of the request did not issue; more files than the file limit or the link
-limit; an assignment to a file that the files table does not declare; a
-declaration of the output's inventory without an assignment; and a files table
-that `files.Files.Capture` refuses. Each refusal is invalid input or an exceeded
-limit, with its [category](#failure-categories). None is unsupported coverage:
-validity is decided here, before a language refuses what it does not cover.
+**The common admission.** It refuses, in this order:
+
+1. more files than the file limit or the link limit;
+2. a handle that the sealed output of the request did not issue;
+3. an assignment to a file that the files table does not declare;
+4. a declaration of the output's inventory without an assignment;
+5. a files table that `files.Files.Capture` refuses: no file, an empty
+   identity, a malformed path, a path used twice, a path that is also a
+   directory of another, or identities and paths over the byte limit.
+
+The number of files comes first, as [#271](https://github.com/Bitspark/bittype/issues/271)
+fixed it. Each refusal is invalid input or an exceeded limit, with its
+[category](#failure-categories). None is unsupported coverage: validity is
+decided here, before a language refuses what it does not cover. The placement
+of existing TypeScript source follows the same order with its own first two
+steps: the number of files, then a file identity or a declaration that its
+lists name twice, then steps 3 to 5 through `files.Cover`.
+
+**The step calls the admission while it runs.** Row 1 of research 0016 says
+that the contract "receives the admitted view from one language-supplied step
+and runs the common checks itself". The step hands its view to `Admit` and
+returns the `AdmittedPlacement` that `Admit` produced, and the formatter
+refuses anything else. So a language decides its own rules on an admitted
+placement, and its refusal of coverage can follow the common validity checks.
+This reading has two limits, and Go and Rust are written against both:
+
+- *The order inside a step is the step's duty.* The shared side cannot see
+  what a step refuses before it calls `Admit`. A step that refuses coverage
+  first reports an input as unsupported that the admission would have found
+  invalid.
+- *The view is the language's word.* The shared side admits the view that the
+  step derives, and it does not read the consumer's placement. A step that has
+  another view admitted than its placement states is not caught by the shared
+  side. The language's guard answers for that, under the rule for guards.
+
+Both tables of the view are keyed. A language whose own placement type can
+state a file twice or a declaration in two files refuses that before it
+derives the view, as TypeScript does for the lists of existing source.
 
 The admission interprets no scope. It accepts a file without a definition, which
 a Rust crate root that holds only module declarations needs, and it accepts two
@@ -156,9 +187,11 @@ it moves onto the operation.
 
 **Order.** No placement states an order. `AdmittedPlacement` hands out the
 files in the order of their identities and the declarations in the order of
-their sites in the sealed output, and a formatter realizes that order. Two
-placements with the same assignments give byte-identical files and the same
-unit order.
+their sites in the sealed output. That is the order the accessors hand out,
+and TypeScript realizes it: two TypeScript placements with the same
+assignments give byte-identical files and the same unit order. The shared side
+does not enforce an order of publication. Each language owns the order that it
+realizes, since a language may have to schedule a declaration before its use.
 
 **The entry.** No placement names an entry. `semantic.Snapshot.Entry` and
 `source.Source.Entry` are an address. The entry names no root of a native
@@ -212,9 +245,29 @@ language's layout does not produce. TypeScript publishes its step through
 [Tests with a fixture language](../integration/go/generated_files_contract_test.go) ·
 [Tests with TypeScript](../integration/go/typescript_generated_placement_test.go)
 
-**What a later change may not alter:** the shape of the TypeScript placement,
-what the preparation step returns, what the common admission checks, and the
-category of each of its refusals.
+**What a later change may not alter:**
+
+- the shape of the TypeScript placement: two keyed tables, no entry, no order;
+- the shape of the view: `GeneratedPlacementView{Files, Definitions}`, one
+  file per declaration;
+- the input has three fields. A request carries no setting, so everything a
+  language needs for one request is part of its placement type;
+- the protocol: the step calls `Admit` while it runs, once, and returns that
+  value with the evidence requirement and the guard;
+- what the common admission checks, its order, and the category of each of
+  its refusals;
+- a publication has exactly the files of the admitted table. A formatter
+  cannot publish a file that the view does not declare, so a file that a
+  language derives, such as a module file, is part of its view;
+- a defect of a step is `format.ErrInvalidFormatter` and carries no category;
+- `Limits.Source.Files.MaxLinks` bounds the number of files;
+- `Snapshot.Entry` and `Source.Entry` are an address.
+
+**Allowed later, and not built:** a field of `GeneratedFilesPrepared`, an
+accessor of `AdmittedPlacement`, and an accessor of `GeneratedFilesRequest`
+that carries to the provider what the step derived. Today the guard is a
+closure and has it, while the provider receives the placement and the admitted
+placement and derives the language's layout a second time.
 
 ## Carriers
 
@@ -449,7 +502,7 @@ One order is guaranteed: validity is decided before coverage. A placement that
 has a defect of both kinds is invalid input, whichever file has which.
 
 - **A generated placement.** The [common admission](#the-generated-files-contract)
-  runs first: the handles, the number of files against its limits, the file of
+  runs first: the number of files against its limits, the handles, the file of
   every assignment, the completeness of the placement and the inventory of the
   files. Then TypeScript decides what is valid: what the sealed output
   carries, a path that is no TypeScript path, two declarations of one name in
@@ -457,18 +510,24 @@ has a defect of both kinds is invalid input, whichever file has which.
   refuses a path that the profile excludes or a file without a declaration.
 - **A placement of existing TypeScript source.** The form of the setting is
   decided before the captured program is read: its key, its JSON, its fields
-  and its members. Then the program is read. Then the placement is judged
-  against it in the order of a generated placement, with the lists of the
-  setting turned into the two keyed tables that `files.Cover` reads.
+  and its members. Then the files and the top-level declarations of the
+  program are read, and the placement is judged against them: the number of
+  files, its items, its files, its inventory, and a path that is no TypeScript
+  path. Only then the graph is read, where a script is refused. Then the two
+  refusals of relocation, and at last a path that the profile excludes or a
+  file without a declaration.
 
 The two refusals of relocation, for two declarations of one name in one file
 and for an unexposed declaration in another file than its user, are decided in
 a pass of their own, before a tree is constructed and before a refusal of
-coverage. One order is not reached. Reading the captured program refuses what
-it cannot read, a script or an import form outside the profile, before the
-placement is judged against that program. A script whose well-formed setting
-names an unknown declaration is therefore reported as a script. The horos
-placement has no coverage refusal, so it needs no such order.
+coverage. One order is not reached. The relocation refusals need the bindings
+of the program, and a script is refused while the graph is read. A script
+whose placement separates an unexposed declaration from its user, or puts two
+declarations of one name into one file, is therefore reported as a script.
+An import form outside the profile and a capture without files are refused
+earlier still, while the declarations are read and before the placement is
+judged. The horos placement has no coverage refusal, so it needs no such
+order.
 
 A refusal that a formatter decides matches exactly one category. When the
 refusal carries the value of another package, that value is joined to the
@@ -497,7 +556,8 @@ vocabulary has, with a value outside coverage, is unsupported.
 | Refusal | TypeScript | horos |
 | --- | --- | --- |
 | Another setting key, a second setting, malformed JSON, an empty value, a value of another type, an unknown field, a second JSON value, a member named twice | invalid, for existing source. A generated placement is no setting | invalid |
-| The member `Entry` in a placement of existing source. It left the vocabulary with [#273](https://github.com/Bitspark/bittype/issues/273) and is an unknown field | invalid | does not apply |
+| A placement of existing source under the earlier key `declaration-placement-1`, whatever it holds. The vocabulary without an entry is `declaration-placement-2` since [#273](https://github.com/Bitspark/bittype/issues/273), and the earlier key is another setting key | invalid | does not apply |
+| The member `Entry` in a placement of existing source under `declaration-placement-2`. It is an unknown field | invalid | does not apply |
 | A request for generated declarations without a placement, or with a placement that another language issued | invalid | does not apply |
 | A handle that the sealed output of the request did not issue, also the handle of another run of the same plan | invalid | does not apply |
 | A file identity or a path used twice, an empty file identity, a path that is also a directory of another, a malformed path | invalid | invalid |
@@ -589,7 +649,9 @@ table above does not give it:
   for no semantic graph fails the request with `format.ErrInvalidFormatter`,
   and a malformed requirement fails it with the value of the semantic
   contract. These are defects of a language's contribution and no category of
-  the input. The refusal of a formatter without semantic evidence moved here
+  the input. A second call of `Admit`, and a call after the step returned,
+  answer `format.ErrInvalidFormatter` too. The refusal of a formatter without
+  semantic evidence moved here
   from the constructor, because the requirement belongs to one request.
 - **The publication guards.** A guard that finds the fresh output different
   from the placement returns `source.ErrInvalid`, and so does the shared

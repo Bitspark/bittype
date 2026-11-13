@@ -775,7 +775,7 @@ func TestGeneratedFilesStepReturnsTheAdmittedPlacementOfItsRequest(t *testing.T)
 // The constructor refuses a contract without a preparation step or without a
 // printer, and a provider of another language. A formatter cannot exist
 // without the step that states the guard and the evidence of each request.
-func TestNewGeneratedFilesFormatterRequiresItsContract(t *testing.T) {
+func TestGeneratedFilesFormatterRequiresItsContract(t *testing.T) {
 	c := newFixtureCase(t)
 	l := c.language
 	whole := format.GeneratedFilesContract[gs.Language]{Print: golangText().Print, Prepare: l.prepare}

@@ -353,7 +353,7 @@ func (p countedProvider) Format(context.Context, format.GeneratedFilesRequest[ts
 // The TypeScript step refuses what TypeScript asks of a placement, before the
 // provider is called: the formatter is TypeScript's own contract with a
 // provider that counts its calls.
-func TestTypeScriptStepRefusesBeforeTheProvider(t *testing.T) {
+func TestTypeScriptGeneratedStepRefusesBeforeTheProvider(t *testing.T) {
 	ctx := context.Background()
 	stages := placementStages(t, n.PackageTypes{Module: "@bitspark/cell", Declaration: cellDeclarations})
 	contract, err := stages.GeneratedContract()
