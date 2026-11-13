@@ -8,8 +8,10 @@ Corrected for Go and for TypeScript in the change of
 [#310](https://github.com/Bitspark/bittype/issues/310), with the two
 [decided points](#decided-points) below. **Pending:** [Rust](#rust) has the same
 shape and is corrected next under the same issue, in its own pull request.
-The case stays pending until then. The correction was not read by an
-independent reviewer when this was written.
+The case stays pending until then. An independent reviewer read the
+correction at `a215f2f` with the verdict "merge after named changes".
+[Decisions D4 to D7](https://github.com/Bitspark/bittype/pull/315#issuecomment-6862246686)
+record its findings, and this record includes their corrections.
 
 **Scope.** The graphs that the Go, TypeScript and Rust semantic analyses
 publish, and the readers of the three analysed vocabularies. The generation
@@ -107,7 +109,11 @@ type that its written right-hand side denotes. The bridge already kept the
 type expression of every captured declaration. A type parameter, a predeclared
 type, a supplied declaration and a field have no body. The type of a type name
 and of a field is the new entity fact `declared-type`, which
-`Model.DeclaredType`, `Lookup`, `LookupIn` and `Type.Parameters` read.
+`Model.DeclaredType`, `Lookup`, `LookupIn` and `Type.Parameters` read. The
+bodies are set in a pass of their own, after every captured declaration has
+its entity, so that a chain of declarations nests no frame for each link
+(decision D5). The first form of the correction set the body while the entity
+was created and refused a chain of 130 defined types that main analyses.
 [Go bodies and declared types](../native-semantics.md#go-bodies-and-declared-types)
 states every kind.
 
@@ -116,9 +122,14 @@ side: the Reference or Application of the source expression, or the structural
 expression. The body of an interface without an `extends` clause is the
 `object` of its members. The body of an interface with one is an `extension`,
 whose operands are the base type terms as written and then the `object` of
-its own members. A type parameter and a property have no body. `declared-type`
-was an entity fact before, and a property carries it now. The vocabulary
-gained the reader `Model.Extension`, and no existing reader changed.
+its own members. Where the compiler reduces a right-hand side to another
+named type, as `A & unknown` to `A`, the body is a use of that type and not
+its structure (decision D4): the first form of the correction shared the
+structure of `A` as the body of both, so a walk never reached `A`. A type
+parameter and a property have no body. `declared-type` was an entity fact
+before, and a property carries it now. The vocabulary gained the readers
+`Model.Extension`, which reads the published form exactly (decision D6), and
+`Model.DeclaredType`, and no existing reader changed.
 [TypeScript bodies and declared types](../native-semantics.md#typescript-bodies-and-declared-types)
 states every kind.
 
@@ -135,7 +146,13 @@ receipt of the earlier version is refused.
 and in one sentence of [the semantic model](../semantics.md#representation).
 
 **One reader for the one fact of a subject.** `semantics.Semantics[L].OnlyFact`
-is in the agnostic model. The Go and the TypeScript readers use it.
+is in the agnostic model. The Go and the TypeScript readers use it. **Open
+copies:** the Rust readers still count the result of `Facts` themselves, at
+six places of `semantics/rust/go/model.go` (lines 124, 144, 169, 281, 308 and
+337 at this change). Under
+[AC-11](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-11)
+they are copies of the same mechanism. They end with the Rust pull request
+under #310, which changes that package.
 
 ## Qualification
 
@@ -154,16 +171,28 @@ is in the agnostic model. The Go and the TypeScript readers use it.
   it carries the fact.
 - For TypeScript the walk-like reader also reaches, from an interface with
   two base types, each base declaration, the actual of the base with type
-  arguments and each member that the interface declares itself.
+  arguments and each member that the interface declares itself, and from an
+  alias whose right-hand side the compiler reduces to a named type, that
+  type's declaration. For both languages it reads two declarations that name
+  each other.
+- Further rows state a defined type over an instantiation, a generic alias,
+  a type-set interface, an own member that declares an inherited name again,
+  supplied types, and a chain of 200 defined types.
 - [One check for both languages](../../integration/go/earlier_profile_test.go)
   refuses a receipt of the earlier profile.
 - Every test that passed on main passes by the same name.
 
 Limits of this evidence:
 
-- **The kernel itself did not run** over a Go or a TypeScript graph here. The
-  reader in the test follows the walk's steps and is not the walk. The run of
-  the two pairs without `Definitions[F]` belongs to the pairs lane of #196.
+- **The repository has no test that runs the kernel over a Go or a
+  TypeScript graph.** The reader in the test is a copy of what the walk
+  reads and is not the walk. The reviewer ran the kernel's own walk over the
+  two graphs once, from a test file of its own that is not part of the
+  repository: at `a215f2f` the walk reaches the structure, and on main every
+  declaration is a use of itself. A lasting test of that kind would be a file
+  inside the generation contract that imports language providers, so none is
+  added (decision D7). The lasting proof is the run of the two pairs of #196
+  without `Definitions[F]`, which belongs to the pairs lane.
 - **The kernel cannot check that a body is the definition.** It is the
   analysis's statement. The tests check it for the forms they name.
 - **The Rust tests did not run** on the workstation of this change. The

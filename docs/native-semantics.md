@@ -168,6 +168,9 @@ was reachable through the `underlying` fact only.
 | Captured alias: `type A = B` | The term of `B`, which is also the term of the `alias-target` fact |
 | Captured generic declaration: `type Page[T any] struct{ Items []T }` | The term of its right-hand side. A use of `T` in it is a Reference to the entity of the parameter, which the entity of `Page` lists in `Parameters` |
 | Captured declaration whose right-hand side instantiates a generic type: `type People = Page[Person]` | An Application whose callee is a Reference to `Page`. The shared `DirectParameterBindings` reader pairs its arguments with the parameters of `Page` |
+| Captured defined type over an instantiation: `type Held Box[Temp]` | The same Application, as for the alias. The struct of the instance, with its substituted fields, is the underlying type and stays the `underlying` fact |
+| Captured generic alias: `type GA[T any] = []T` | The term of its right-hand side, as for a generic defined type: the `slice` whose operand is a Reference to the entity of `T` |
+| Captured interface, also one that states a type set: `type Number interface { ~int \| ~float64 }` | The `interface` expression. Its operands are its embedded type terms, here the one `union` of the two terms, each a Reference where it names a declaration |
 | Type parameter (`parameter`) | None. A type parameter "acts as a placeholder for an (as of yet) unknown type in the declaration" ([Go specification](https://go.dev/ref/spec#Type_parameter_declarations)) and has no definition. Its constraint is the `constraint` fact of its declared type |
 | Supplied declaration | None. Its definition is supplied structure, which [stays outside the projection](#import-environment) |
 | Predeclared type: `string` and the other `builtin` entities, `error`, `comparable`, `any` | None. No captured source declares it |
@@ -187,6 +190,20 @@ was reachable through the `underlying` fact only.
   one `basic` term of `string`.
 - **A declaration without a body is not walked.** The generation kernel opens
   a declaration at its body and refuses one that has none.
+- **Bodies are set in a pass of their own**
+  ([decision D5](https://github.com/Bitspark/bittype/pull/315#issuecomment-6862246686)).
+  The bridge gives every captured declaration its entity first and sets the
+  bodies afterwards. A chain `type C1 C2; type C2 C3; ...` therefore nests no
+  frame for each link, and a chain of 200 defined types, or 65 pairs
+  `type A1 struct{ F B1 }; type B1 A2`, is analysed as before this change,
+  with the same entities and terms.
+  [A test](../integration/go/definition_body_kinds_test.go) holds both.
+- **What fits in the record budget changed.** The bridge counts entities,
+  terms and facts against 32,768 records. Every type name and every field
+  carries one more fact, the `declared-type` fact. A chain of 129 defined types
+  has 524 facts where it had 394, and one struct of 2,000 string fields has
+  2,015 where it had 13. A source near the budget can therefore be incomplete
+  where it was analysed before.
 
 **The type of a name is the `declared-type` fact of its entity.** Every entity
 of a type name and of a field carries exactly one: the kinds `defined`,
@@ -522,7 +539,7 @@ syntax-admitted TypeScript ASTs + captured Files and links
 
 The package roles mirror Go. `semantics/typescript/go` publishes the contract identities
 `ResolutionContract()`, `AnalysisContract()` and `AnalysisContractFor(settings)`
-and the `Compiler` configuration type. It also publishes the seventeen graph names
+and the `Compiler` configuration type. It also publishes the eighteen graph names
 that the compiler helper writes and Go reads by name, such as `ModuleKind()`,
 `NamedExportRelation()` and `NameRole()`. The helper is JavaScript and spells them
 itself, and tests that run it keep the two sides equal. The query service is its own package,
@@ -604,7 +621,7 @@ The `typescript` vocabulary is:
 | `type-expression` occurrences | Source reference/application structure, preserving constructor identity even when aliases disappear from native types |
 | `named-export` fact on a module | A reference term for each named type the compiler exports from the captured module. Files checks requested public sites against these facts after placement. |
 | `native-type` occurrences and marker facts | Native compiler types; model-local handles, not serialized shape identity |
-| `declared-type`, `constraint` facts | On the entity of an alias, an interface, a type parameter and a property: the term of its type. On a type parameter: its explicit bound |
+| `declared-type`, `constraint` facts | On the entity of a captured alias, interface, type parameter and property: the term of its type. A supplied package type and its type parameters carry none. On a captured type parameter: its explicit bound |
 | `structure`, `properties` facts | Native structural descriptions and substituted declared property value types |
 | `primitive`, `literal`, `array`, `tuple`, `union`, `intersection`, `object` expressions | TypeScript-owned `json-1` data and ordered operands |
 | `extension` expression | The body of an interface with an `extends` clause: the base type terms and the object of its own members. See [the extension](#the-extension-of-an-interface) |
@@ -637,7 +654,8 @@ was reachable through the `properties` and `structure` facts only.
 | --- | --- |
 | Captured alias whose right-hand side is a type reference: `type Alias = Text` | A Reference to the entity that the name resolves to. The compiler's type of `Alias`, `string`, is not the definition. It stays the `declared-type` fact |
 | Captured alias whose right-hand side is a generic type reference: `type People = Page<Person>` | An Application whose callee is a Reference to `Page`, with complete effective arguments. It is the term of the `type-expression` occurrence at the right-hand side |
-| Captured alias of another form: an object, union, intersection, array, tuple, literal or keyword type, or a `readonly` array or tuple | The structural expression: `object`, `union`, `intersection`, `array`, `tuple`, `literal` or `primitive`. Its parts are its operands. Where the compiler names such a type, as it names the type of `{ on: boolean }` in `type Flag = { on: boolean }` by `Flag`, the body is the term that the `structure` fact of the named type relates, and never the Reference |
+| Captured alias of another form: an object, union, intersection, array, tuple, literal or keyword type, or a `readonly` array or tuple | The structural expression: `object`, `union`, `intersection`, `array`, `tuple`, `literal` or `primitive`. Its parts are its operands. Where the graph names such a type by the alias being declared, as it names the type of `{ on: boolean }` in `type Flag = { on: boolean }` by `Flag`, the body is the term that the `structure` fact of the named type relates, and not the Reference to the alias itself |
+| Captured alias whose right-hand side the compiler reduces to another named type: `type M = A & unknown`, `type M = A \| never`, `type M = A & {}`, `type M = Box<string> & unknown` | A use of that type: a Reference to its entity, or an Application for an instantiation, for a captured and for a supplied type alike. The structure of `A` is the body of `A` and of no other entity, so a walk from `M` reaches the declaration `A` ([decision D4](https://github.com/Bitspark/bittype/pull/315#issuecomment-6862246686)) |
 | Captured interface without an `extends` clause | The `object` expression of its members. The `properties` and `structure` facts of the declared type relate the same term |
 | Captured interface with an `extends` clause | An `extension` expression: the base type terms as written and then the `object` of the members that the interface declares itself. See [the extension](#the-extension-of-an-interface) |
 | Type parameter (`parameter`) | None. Type parameters "serve as placeholders for actual types" (archived TypeScript specification, 3.10 and 7.1) |
@@ -659,11 +677,20 @@ was reachable through the `properties` and `structure` facts only.
 - **A recursive declaration.** In `type Tree = { children: Tree[] }` the
   operand of the array is a Reference to the entity of `Tree`, which is no
   containment.
+- **Inside a body the operands are the compiler's types and not the written
+  references.** With `type Text = string` the member of `{ name: Text }` and
+  the argument of `Page<Text>` are the `primitive` term of `string`, and with
+  `type Who = I` a member of type `Who` is a Reference to `I`: an alias is
+  not kept there. A top-level reference (`type T2 = Text`), the callee of an
+  application and the bases of an extension are as written.
+  [A test](../integration/go/definition_body_kinds_test.go) holds the sentence.
 - **No other fact moved.** `declared-type` and `constraint` were entity facts
   before, and a property carries `declared-type` now. `properties`,
   `structure`, `native-type` and `display` hang on the term of the declared
-  type, which `Declaration.Type()` reads from the fact. `Type.Properties`
-  reads a property's type from the operand of the object term, as before. No
+  type, which `Declaration.Type()` reads from the fact.
+  `Model.DeclaredType(entity)` reads the same fact by entity, also for a
+  property, which `Model.Declaration` does not open. `Type.Properties` reads
+  a property's type from the operand of the object term, as before. No
   reader of `semantics/typescript/go` reads a body as a type: `Model.Extension`
   reads a term, which a consumer takes from a body as the definition.
 - **Two more syntax names.** To find a definition the helper reads the child
@@ -681,7 +708,7 @@ TypeScript specification, 7.1). The body is one provider expression:
 | Part | Form |
 | --- | --- |
 | Operator | `extension`, published as `typescript.ExtensionOperator()`. The vocabulary's operators are nouns of the type form, as `intersection` is for `&`. This one is the noun of `extends` |
-| Encoding and data | `json-1`, one object with one member: `{"Bases": n}`, the number of base types, at least 1. Published as `typescript.ExtensionInfo` |
+| Encoding and data | `json-1`, published as `typescript.JSONEncoding()`. The data is exactly the bytes `{"Bases":n}`: one object with the one member `Bases`, the number of base types, at least 1, without white space. Published as `typescript.ExtensionInfo` |
 | Operands `0` to `n-1` | The base type terms as written, in written order. A base that names a declaration is a Reference to its entity. A base with type arguments, `extends Page<Person>`, is an Application with a Reference callee and complete effective arguments, as elsewhere: the term of the `type-expression` occurrence at the base |
 | Operand `n` | Exactly one `object` expression: the members that the interface declares itself, with the metadata and value types of every `object`. It is present also when the interface declares no member, as an object without operands. A member that declares an inherited name again is the interface's own |
 
@@ -692,7 +719,19 @@ TypeScript specification, 7.1). The body is one provider expression:
 - **A reader tells bases from members by the number.** The first `Bases`
   operands are bases, and the one after them is the members object.
   `Model.Extension(term)` reads the form into the base terms and the own
-  members, and has no answer for a term in another form.
+  members.
+- **The reader is exact** ([decision D6](https://github.com/Bitspark/bittype/pull/315#issuecomment-6862246686)).
+  It has no answer for another operator or encoding, for data that is not the
+  bytes that encoding an `ExtensionInfo` gives (the member spelled `bases` or
+  `BASES`, a further or a repeated member, white space, a number in another
+  form), for fewer than one base, for a number of operands other than the
+  bases and one more, for a base that is neither a Reference nor an
+  Application, and for a last operand that is no `object`.
+- **A supplied base.** A base that is a supplied package type is a Reference
+  to the package type's entity, or an Application of it. An interface whose
+  supplied base has no member, `extends Empty`, publishes such an extension.
+  One whose supplied base has members is refused as before this change,
+  because its declared type has members that no captured declaration states.
 - **Not an `object` of all members.** That is the checked type, which the
   `properties` fact of the declared type gives, inherited members written out.
   A walk of it would never reach the base declaration.
@@ -714,8 +753,8 @@ TypeScript specification, 7.1). The body is one provider expression:
   neither. [A test](../integration/go/definition_body_kinds_test.go) reads a
   graph of the helper through `ExtensionOperator()`, `ExtensionInfo` and
   `Model.Extension`, which keeps the two sides equal, and
-  [a unit test](../semantics/typescript/go/model_test.go) reads every other
-  form.
+  [a unit test](../semantics/typescript/go/model_test.go) puts the other forms
+  to the reader.
 
 **The profile has its second version since 13 November 2026:**
 `typescript-5.9.3/captured-types-2/resolution-1` and
@@ -727,6 +766,14 @@ providers and `typescript.EvidenceFor` refuse it as invalid input. The helper
 is embedded in the bridge, so no helper of another revision can answer, and it
 states no profile in its response.
 [A test](../integration/go/earlier_profile_test.go) shows the refusals.
+
+**The name is spelled once on each side.** `typescript.HelperProfile` is
+`captured-types-2`, `typescript.Profile` is built from `CompilerVersion` and
+it, and the two profile strings are built from `Profile`. The helper is
+JavaScript and cannot import the Go vocabulary. It spells two things itself,
+once each: the helper profile, as one constant that its eight messages state,
+and the compiler version that it requires. The same test reads a refusal of
+the helper and requires it to state `HelperProfile`.
 
 `typescript.Open(analyzed)` admits a complete analysis receipt and reads its
 immutable graph without invoking the compiler. `queries.NewQueries(model,

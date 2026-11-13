@@ -195,7 +195,7 @@ as rows R1 and R2 adapt it).
 
 Derived here, from the test: a Go function that takes no input and returns one
 fixed value is the form of a declared name, because Go has no constant of a
-struct type. `SliceOperator()` (`semantics/golang/go/vocabulary.go:70`) and the
+struct type. `SliceOperator()` (`semantics/golang/go/vocabulary.go:90`) and the
 methods `ID()` and `Name()` of a language marker
 (`syntax/golang/go/nodes.go:16-20`) declare and determine nothing. They are
 model. The same holds for a method that returns the receiver or one of its
@@ -204,7 +204,7 @@ fields to satisfy a view interface (`trees/ast/go/view.go:11`,
 
 Derived here, from the same test: a function that takes an input and
 builds a name from it is construction, and construction is an operation
-(row R7a). `Key(name string)` (`semantics/golang/go/vocabulary.go:22`)
+(row R7a). `Key(name string)` (`semantics/golang/go/vocabulary.go:32`)
 builds a key of Go's owner from any name, and
 `DescriptorOperator(constructor string)`
 (`semantics/horos/go/vocabulary.go:54`) builds an operator from a
@@ -224,7 +224,7 @@ derived from M1 and the rows named.
 | A constructor that refuses nothing | `Native`, `contracts/generation/go/expression.go:76-78`; the five constructors at `model.go:37-51` | Operations | Row R7a: "Constructors that refuse nothing are construction, operations side" |
 | A constraint that exists only as its evaluator | `func(v string) bool { return v == "." \|\| identifier(v) }`, `check/syntax/golang/provider/go/check.go:19`; a raw Rust identifier is none of five words, `internal/rust/names.go:16-18` | The name on the model side, the evaluator on the operations side | Sentence 2 |
 | A value typed by a contract package that a vocabulary publishes | `ResolutionContract() resolution.Contract`, `semantics/golang/go/contracts.go:15`; `Evidence() semantic.EvidenceRequirement`, `vocabulary.go:96` | Operations, in a vocabulary of the operations side | Row R2. Contract packages are operations (row R8), and rule 1 forbids a model to import one |
-| A plain query on a sealed value | `Facts`, `semantics/go/model.go:507`; `DirectParameterBindings`, `:524` | Operations, with the sealed type | Sentence 1 places the sealed type, and Go keeps a method with its type. A predicate method on a plain record (`Key.Valid`, `:26-28`) leaves the record's package as a function of the operation that needs it |
+| A plain query on a sealed value | `Facts`, `semantics/go/model.go:507`; `DirectParameterBindings`, `:537` | Operations, with the sealed type | Sentence 1 places the sealed type, and Go keeps a method with its type. A predicate method on a plain record (`Key.Valid`, `:26-28`) leaves the record's package as a function of the operation that needs it |
 
 **The test applied to real packages.** Each row was read again at the source
 for this page. Line counts are `wc -l` over the non-test files.
@@ -312,7 +312,7 @@ designed there before they are built (M26).
    and returns an envelope that records level 1 only.
 3. **No check of fact shapes exists.** Nothing checks that a `go/struct` term
    has one operand for each entry of its payload. The reader refuses on read
-   (`semantics/golang/go/model.go:289`). Such a check is separate from graph
+   (`semantics/golang/go/model.go:311`). Such a check is separate from graph
    admission, because the kernel does not decode provider payloads: "the
    kernel does not decode them or infer semantic equality from equal bytes"
    (`docs/semantics.md:119-121`).
@@ -397,15 +397,15 @@ row R13 belong here. A type parameter is nothing of Go's to share on the
 intent side: "The kernel owns capture identity, substitution and scope."
 (`docs/generation-planner.md:435`). And Go's analysed kinds `alias` and
 `defined` are wider than the two declaration forms of the same names
-(`semantics/golang/go/vocabulary.go:40-42`).
+(`semantics/golang/go/vocabulary.go:50-52`).
 
 **The case where an analysed model could not be read as a source.** Decision
 [O45 on #196](https://github.com/Bitspark/bittype/issues/196#issuecomment-6854327944)
 (research owner, 13 November 2026) records it. The first pair with Go as its
 source was refused with "evidence cycle" before any field became a use. The
 kernel starts a declaration at its entity's body and follows operands. The Go
-and the TypeScript analysis publish as the body a reference to the entity
-itself, and the definition sits behind a fact of the language. O45: "The
+and the TypeScript analysis published as the body a reference to the entity
+itself, and the definition sat behind a fact of the language. O45: "The
 definition, which the shared graph has a place for, sits behind a
 language-owned fact. That is a misplaced responsibility in two analyses, not a
 gap in the contract." The correction is
