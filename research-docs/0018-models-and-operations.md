@@ -812,3 +812,479 @@ language's symbol package, as TypeScript's does. Under the present path form
 each would be a package under `format/files/`.
 
 These four pieces of work are why question 4 asks about order.
+
+## 3. Relevant code
+
+Standing of this section: implemented today. It is evidence of the present
+state and never a reason for or against an option. Where a table classifies
+code, the classification is our derivation, and the text says so.
+
+### 3.0 Reading guide
+
+Every snippet is taken from the main branch at the code baseline, with its
+path and line. Comments are the code's own unless a line starts with
+`// [doc]`, which marks a comment added for this document. An ellipsis `...`
+marks omitted lines.
+
+Import aliases recur. In every language's packages `s` is that language's
+syntax vocabulary. `g` is the grammar helper `internal/grammar` inside a
+checker, and the generation contract `contracts/generation/go` inside a
+model, a symbol package, a target and a mapping. The two never meet in one
+file. `ast` is the generic tree package. `semantics` is the generic semantic
+graph. `text` is the diagnostics package, whose function
+`text.AtNode(tree, id, message)` returns an error value that points at one
+node. `tree.View` is a small read helper over one tree: `Node(id)` returns a
+node, `Attr(id, name)` an attribute's text, `Has` and `Flag` test an
+attribute, and `Children(id, role)` and `Child(id, role)` return the children
+under one role.
+
+### 3.1 The generic tree, and Go's syntax vocabulary
+
+The abstract tree, complete except for comments (`trees/ast/go`, files
+`ast.go`, `node.go`, `origin.go`, `view.go`):
+
+```go
+// trees/ast/go/ast.go:13-35, node.go:6-44, origin.go:7-32, view.go:7-11
+type TreeID string
+type NodeID uint32 // [doc] a one-based index into Nodes; zero names no node
+
+type AST[L any] struct {
+	ID    TreeID
+	Root  NodeID
+	Nodes []Node[L]
+}
+
+type Kind[L any] string
+
+type Attribute struct {
+	Name string
+	Text string
+}
+type Child struct {
+	Role string
+	Node NodeID
+}
+type Reference struct {
+	Role   string
+	Target NodeRef
+}
+type Node[L any] struct {
+	Kind       Kind[L]
+	Attributes []Attribute
+	Children   []Child
+	References []Reference
+	Origin     Origin
+}
+
+type NodeRef struct {
+	Tree TreeID
+	Node NodeID
+}
+type SourceID string
+type Span struct {
+	Source SourceID
+	Start  uint64
+	End    uint64
+}
+type Origin struct {
+	Spans []Span
+	Nodes []NodeRef
+}
+
+type View[L any] interface {
+	ASTView() AST[L]
+}
+func (tree AST[L]) ASTView() AST[L] { return tree }
+```
+
+The package comment states what the carrier is and is not
+(`trees/ast/go/ast.go:3-8`):
+
+```go
+// The language parameter separates ASTs and node kinds in Go's type system.
+// A language package supplies its own named marker type, kinds and grammar;
+// this package contains no language catalogue or grammar implementation.
+//
+// These are data types, not checked trees. Structural and grammatical checks
+// live in separate packages; the carrier performs no validation or allocation.
+```
+
+And the comments on a node's parts say who owns their meaning
+(`node.go:8-10`, `:18-19`, `:25-27`): "Attribute is an uninterpreted textual
+syntax atom." "A grammar defines the name, allowed text and meaning." "The
+grammar owns Role names and cardinality; repeated roles can form a list." "A
+grammar owns Role and the allowed target."
+
+The concrete tree, complete (`trees/cst/go/cst.go:7-30`):
+
+```go
+type NodeID uint32
+type Kind[L any] string
+
+// Node is either a leaf (Text != nil, no Children) or a container (Text == nil).
+// Kind belongs to the language. Leaves include punctuation, comments and spaces.
+// Syntax addresses zero or more nodes of this CST's stored abstract view.
+type Node[L any] struct {
+	Kind     Kind[L]
+	Text     *string
+	Children []NodeID
+	Syntax   []ast.NodeID
+	Origin   ast.Origin
+}
+
+// CST owns both arenas. Stage inputs and borrowed views must not be mutated.
+type CST[L any] struct {
+	Abstract ast.AST[L]
+	Root     NodeID
+	Nodes    []Node[L]
+}
+
+func (tree CST[L]) ASTView() ast.AST[L] { return tree.Abstract }
+```
+
+A language's identity is two methods of an interface in a contract package
+(`contracts/language/go/language.go:11`, `:22-25`):
+
+```go
+type ID string
+
+type Provider interface {
+	ID() ID
+	Name() string
+}
+```
+
+Go's syntax vocabulary, with its full list of kinds
+(`syntax/golang/go/nodes.go:1-95`, abridged: the imports and some comments
+are left out, and the roles and attributes are shortened as marked):
+
+```go
+// Package golang declares the Go type-syntax vocabulary over the generic AST.
+// It contains no parser, builder, grammar checker, generator or formatter.
+// The node shapes and this vocabulary's limits are documented in docs/syntax.md.
+package golang
+
+// Language identifies this syntax family and is its distinct Go AST marker.
+type Language struct{}
+
+func (Language) ID() language.ID { return "go" }
+func (Language) Name() string    { return "Go" }
+
+var _ language.Provider = Language{}
+
+type AST = ast.AST[Language]
+type Node = ast.Node[Language]
+type Kind = ast.Kind[Language]
+
+// Node kinds for file structure, type declarations and native type expressions.
+const (
+	KindFile              Kind = "file"
+	KindImport            Kind = "import"
+	KindTypeDeclaration   Kind = "type-declaration"
+	KindTypeAlias         Kind = "type-alias"
+	KindTypeParameter     Kind = "type-parameter"
+	KindNamedType         Kind = "named-type"
+	KindQualifiedType     Kind = "qualified-type"
+	KindTypeApplication   Kind = "type-application"
+	KindStructType        Kind = "struct-type"
+	KindField             Kind = "field"
+	KindEmbeddedField     Kind = "embedded-field"
+	KindInterfaceType     Kind = "interface-type"
+	KindMethod            Kind = "method"
+	KindEmbeddedType      Kind = "embedded-type"
+	KindFunctionType      Kind = "function-type" // Native signature syntax; no library Function semantics.
+	KindParameter         Kind = "parameter"
+	KindPointerType       Kind = "pointer-type"
+	KindSliceType         Kind = "slice-type"
+	KindArrayType         Kind = "array-type"
+	KindMapType           Kind = "map-type"
+	KindChannelType       Kind = "channel-type"
+	KindTypeUnion         Kind = "type-union" // A constraint union, not a value union.
+	KindTypeApproximation Kind = "type-approximation"
+)
+
+// Containment roles. Parameters and results are separate ordered lists.
+const (
+	RoleImport        = "import"
+	RoleDeclaration   = "declaration"
+	RoleType          = "type"
+	// [doc] and RoleTypeParameter, RoleConstraint, RoleConstructor, RoleArgument,
+	// [doc] RoleField, RoleMember, RoleSignature, RoleParameter, RoleResult,
+	// [doc] RoleElement, RoleKey, RoleTerm: 15 in all
+)
+
+// Reference roles. Target links name declarations, imports or lexical binders.
+const (
+	RoleTarget = "target"
+)
+
+// Attribute names. Package qualifiers are identifiers, not dot-joined type source.
+const (
+	AttributePackage = "package"
+	AttributeName    = "name"
+	// [doc] and AttributePath, AttributeAlias, AttributeQualifier, AttributeTag,
+	// [doc] AttributeLength, AttributeDirection, AttributeVariadic: 9 in all
+)
+```
+
+A second file of the package declares the concrete kinds
+(`syntax/golang/go/concrete.go:7-12`). Every language declares the same four:
+
+```go
+const (
+	ConcreteLayout     cst.Kind[Language] = "layout"
+	ConcreteToken      cst.Kind[Language] = "token"
+	ConcreteWhitespace cst.Kind[Language] = "whitespace"
+	ConcreteComment    cst.Kind[Language] = "comment"
+)
+```
+
+What this shows, as facts:
+
+- A node kind is a typed constant. A role name and an attribute name are
+  untyped strings.
+- The package states names and nothing about shape. It does not say that a
+  `field` has a `name` attribute and one `type` child. It points to prose
+  for that.
+- The other four syntax vocabularies have the same form. They declare 33
+  (horos), 29 (TypeScript), 36 (Rust) and 23 (C++) node kinds.
+- The four native parsers and formatters do not use the role and attribute
+  constants. They write the names as string literals, and the formatters also
+  switch on node kinds as string literals, for example
+  `case "named-type":` (`format/syntax/golang/provider/go/format.go:101`).
+  Only the horos parser and formatter use the constants throughout. So the
+  vocabulary package is not the one place where these names are spelled.
+
+### 3.2 The admission table, and the rules beside it
+
+**The table type.** A private helper package declares what a grammar table
+is and holds its one interpreter (`internal/grammar/rules.go:15-40`):
+
+```go
+type Attribute struct {
+	Required bool
+	Accept   func(string) bool
+}
+type Role[L any] struct {
+	Name     string
+	Min, Max int
+	Kinds    []ast.Kind[L]
+}
+type Rule[L any] struct {
+	Attributes map[string]Attribute
+	Roles      []Role[L]
+	Reference  bool
+}
+
+// Rules is one language's admission table. Its keys and the kinds of its roles
+// are that language's node kinds, so a table of one language cannot be applied
+// to a tree of another. Role and attribute names are strings.
+type Rules[L any] map[ast.Kind[L]]Rule[L]
+
+func Attr(required bool, accept func(string) bool) Attribute { return Attribute{required, accept} }
+func One[L any](name string, kinds ...ast.Kind[L]) Role[L]   { return Role[L]{name, 1, 1, kinds} }
+func Opt[L any](name string, kinds ...ast.Kind[L]) Role[L]   { return Role[L]{name, 0, 1, kinds} }
+func Many[L any](name string, min int, kinds ...ast.Kind[L]) Role[L] {
+	return Role[L]{name, min, -1, kinds}
+}
+```
+
+The same file supplies attribute predicates (`Set(values...)`, `Bool`,
+`Nonempty`, `String`, `Decimal`, `Positive`, `Signed`, `Identifier`) and a
+helper `Attributes(name, attribute, name, attribute, ...)` that builds the
+attribute map.
+
+The interpreter is one function
+(`internal/grammar/rules.go:80`):
+
+```go
+func Check[L any](tree ast.AST[L], root ast.Kind[L], rules Rules[L]) error
+```
+
+In order it checks: the structure of the carrier, by a call into
+`check/syntax/shared/ast/go`; the kind of the root; and for every node, that
+its kind has a rule, that every attribute is declared and accepted, that
+every required attribute is present, that every child's role is declared and
+that children come in the declared order of roles, that each child's kind is
+in its role's list, that each role's count is within its bounds, and that a
+reference is present only where the rule allows one and only under the role
+`target`.
+
+So one entry can express, per node kind: a set of attributes, each required
+or optional, each with a predicate on its text; an ordered list of child
+roles, each with a count range and a flat list of allowed child kinds; and
+whether a reference may be attached.
+
+**One table in full.** Go's is a package variable of the Go checker
+(`check/syntax/golang/provider/go/check.go:13-41`). Here `g` is the grammar
+helper:
+
+```go
+func identifier(v string) bool { return g.Identifier(v) && !token.Lookup(v).IsKeyword() }
+
+var types = []s.Kind{s.KindNamedType, s.KindQualifiedType, s.KindTypeApplication, s.KindStructType, s.KindInterfaceType, s.KindFunctionType, s.KindPointerType, s.KindSliceType, s.KindArrayType, s.KindMapType, s.KindChannelType}
+var constraints = append(append([]s.Kind{}, types...), s.KindTypeUnion, s.KindTypeApproximation)
+var rules = g.Rules[s.Language]{
+	s.KindFile:              {Attributes: g.Attributes(s.AttributePackage, g.Attr(true, identifier)), Roles: []g.Role[s.Language]{g.Many(s.RoleImport, 0, s.KindImport), g.Many(s.RoleDeclaration, 0, s.KindTypeDeclaration, s.KindTypeAlias)}},
+	s.KindImport:            {Attributes: g.Attributes(s.AttributePath, g.Attr(true, g.Nonempty), s.AttributeAlias, g.Attr(false, func(v string) bool { return v == "." || identifier(v) }))},
+	s.KindTypeDeclaration:   {Attributes: g.Attributes(s.AttributeName, g.Attr(true, identifier)), Roles: []g.Role[s.Language]{g.Many(s.RoleTypeParameter, 0, s.KindTypeParameter), g.One(s.RoleType, types...)}},
+	s.KindTypeAlias:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, identifier)), Roles: []g.Role[s.Language]{g.Many(s.RoleTypeParameter, 0, s.KindTypeParameter), g.One(s.RoleType, types...)}},
+	s.KindTypeParameter:     {Attributes: g.Attributes(s.AttributeName, g.Attr(true, identifier)), Roles: []g.Role[s.Language]{g.One(s.RoleConstraint, constraints...)}},
+	s.KindNamedType:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, identifier)), Reference: true},
+	s.KindQualifiedType:     {Attributes: g.Attributes(s.AttributeName, g.Attr(true, identifier), s.AttributeQualifier, g.Attr(true, identifier)), Reference: true},
+	s.KindTypeApplication:   {Roles: []g.Role[s.Language]{g.One(s.RoleConstructor, s.KindNamedType, s.KindQualifiedType), g.Many(s.RoleArgument, 1, types...)}},
+	s.KindStructType:        {Roles: []g.Role[s.Language]{g.Many(s.RoleField, 0, s.KindField, s.KindEmbeddedField)}},
+	s.KindField:             {Attributes: g.Attributes(s.AttributeName, g.Attr(true, identifier), s.AttributeTag, g.Attr(false, g.String)), Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
+	s.KindEmbeddedField:     {Attributes: g.Attributes(s.AttributeTag, g.Attr(false, g.String)), Roles: []g.Role[s.Language]{g.One(s.RoleType, s.KindNamedType, s.KindQualifiedType, s.KindTypeApplication, s.KindPointerType)}},
+	s.KindInterfaceType:     {Roles: []g.Role[s.Language]{g.Many(s.RoleMember, 0, s.KindMethod, s.KindEmbeddedType)}},
+	s.KindMethod:            {Attributes: g.Attributes(s.AttributeName, g.Attr(true, identifier)), Roles: []g.Role[s.Language]{g.One(s.RoleSignature, s.KindFunctionType)}},
+	s.KindEmbeddedType:      {Roles: []g.Role[s.Language]{g.One(s.RoleType, constraints...)}},
+	s.KindFunctionType:      {Roles: []g.Role[s.Language]{g.Many(s.RoleParameter, 0, s.KindParameter), g.Many(s.RoleResult, 0, s.KindParameter)}},
+	s.KindParameter:         {Attributes: g.Attributes(s.AttributeName, g.Attr(false, identifier), s.AttributeVariadic, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
+	s.KindPointerType:       {Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
+	s.KindSliceType:         {Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
+	s.KindArrayType:         {Attributes: g.Attributes(s.AttributeLength, g.Attr(true, g.Decimal)), Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
+	s.KindMapType:           {Roles: []g.Role[s.Language]{g.One(s.RoleKey, types...), g.One(s.RoleElement, types...)}},
+	s.KindChannelType:       {Attributes: g.Attributes(s.AttributeDirection, g.Attr(false, g.Set("both", "send", "receive"))), Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
+	s.KindTypeUnion:         {Roles: []g.Role[s.Language]{g.Many(s.RoleTerm, 2, append(types, s.KindTypeApproximation)...)}},
+	s.KindTypeApproximation: {Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
+}
+```
+
+Facts about the tables as data:
+
+- Each language's table has one entry per node kind constant: 33, 29, 23, 36
+  and 23 entries.
+- The table is an unexported variable of a contribution, the checker. No
+  other package can read it. The parser and the formatter of the language
+  call the checker's exported function `Check` and nothing else of it.
+- The table is a Go map literal that holds function values. In Go's table
+  they are `identifier`, which asks the standard library whether a word is a
+  keyword, and an inline function for the import alias. The other languages
+  pass predicates of their private spelling packages.
+- Sets of kinds are named Go slices (`types`, `constraints`). The Rust and
+  C++ tables also build shared parts of entries with small functions.
+- A documentation tool reads the tables as data. Because the value holds
+  functions and is unexported, the tool does not import it. It parses the Go
+  source of the literal and evaluates the initializer syntactically. A
+  comment marks the table for it: `// bittype:grammar rules`.
+
+**The rules beside the table.** Each checker runs the table and then code.
+Go's code holds three rules (`check/syntax/golang/provider/go/check.go:45-83`):
+
+```go
+func Check(view ast.View[s.Language]) error {
+	t := view.ASTView()
+	if err := g.Check(t, s.KindFile, rules); err != nil {
+		return err
+	}
+	v := tree.View[s.Language]{Tree: t}
+	for i, n := range t.Nodes {
+		id := ast.NodeID(i + 1)
+		if n.Kind == s.KindFunctionType {
+			for _, role := range []string{s.RoleParameter, s.RoleResult} {
+				params := v.Children(id, role)
+				named := -1
+				for j, p := range params {
+					mode := 0
+					if v.Has(p, s.AttributeName) {
+						mode = 1
+					}
+					if named >= 0 && named != mode {
+						return text.AtNode(t, p, "cannot mix named and unnamed parameters")
+					}
+					named = mode
+					if v.Flag(p, s.AttributeVariadic) && (role != s.RoleParameter || j != len(params)-1) {
+						return text.AtNode(t, p, "variadic parameter must be final input")
+					}
+				}
+			}
+		}
+		if n.Kind == s.KindEmbeddedField {
+			e := v.Child(id, s.RoleType)
+			if v.Node(e).Kind == s.KindPointerType {
+				kind := v.Node(v.Child(e, s.RoleElement)).Kind
+				if kind != s.KindNamedType && kind != s.KindQualifiedType && kind != s.KindTypeApplication {
+					return text.AtNode(t, e, "embedded pointer requires a named type")
+				}
+			}
+		}
+	}
+	return nil
+}
+```
+
+Three rules from other checkers, each with what it expresses that the table
+type cannot:
+
+```go
+// check/syntax/typescript/provider/go/check.go:60-72
+// [doc] A condition on ancestors: an infer type is admitted only below the
+// [doc] constraint child of a conditional type, at any depth.
+var context func(ast.NodeID, bool) error
+context = func(id ast.NodeID, inConstraint bool) error {
+	n := v.Node(id)
+	if n.Kind == s.KindInferType && !inConstraint {
+		return text.AtNode(t, id, "infer is only supported within a conditional extends operand")
+	}
+	for _, child := range n.Children {
+		if err := context(child.Node, inConstraint || (n.Kind == s.KindConditionalType && child.Role == s.RoleConstraint)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+```
+
+```go
+// check/syntax/rust/provider/go/check.go:100-107
+// [doc] An order among the children of one role: the table lists allowed
+// [doc] kinds per role, and no order between them.
+seenType := false
+for _, p := range v.Children(id, s.RoleGenericParameter) {
+	if v.Node(p).Kind == s.KindTypeParameter {
+		seenType = true
+	} else if seenType {
+		return bad("lifetime parameters must precede type parameters")
+	}
+}
+```
+
+```go
+// check/syntax/cpp/provider/go/check.go:72-80
+// [doc] A condition on the parent, and a relation between two attributes of
+// [doc] one node. parents is a map from a node to its parent, built first.
+if v.Has(id, s.AttributeAccess) && n.Kind != s.KindBase {
+	parent := parents[id]
+	if parent == 0 || v.Node(parent).Kind != s.KindRecord {
+		return bad("access belongs to record members")
+	}
+}
+if v.Flag(id, s.AttributePure) && !v.Flag(id, s.AttributeVirtual) {
+	return bad("pure declaration must be virtual")
+}
+```
+
+The count of such rules per checker, with the kinds of thing they express
+(the grouping into kinds is our derivation):
+
+| Language | Table entries | Rules in code | What the rules in code express |
+| --- | --- | --- | --- |
+| Go | 23 | 3 | Consistency among siblings of one role (all parameters named or none); position within a role (variadic last); a condition two levels down (the element of an embedded pointer) |
+| TypeScript | 29 | 14 | A condition on ancestors; an attribute against another attribute, with the lexical rules of literals; an attribute against a child's kind; order and position within a role (rest and optional elements); consistency among siblings (tuple labels) |
+| Rust | 36 | 13 | A condition that depends on the parent's kind and the child's role; order within a role (lifetimes before types, arguments before bindings); what a kind of declaration inherits (visibility, defaults) |
+| C++ | 23 | 11 | A condition on the parent; an attribute against another attribute; which kinds may nest (no array of functions, no reference to a reference) |
+| horos | 33 | 11 | Which reference roles each kind may carry (the table knows one role, `target`); uniqueness of names among siblings; contiguous indices; that an index refers to a binder in scope, through a walk that carries lexical depth |
+
+The horos checker removes all references from a copy of the tree before it
+runs the table, because "The shared grammar checker supports the native
+target role. Horos has several annotation roles, checked below"
+(`internal/declsyntax/check.go:127-128`).
+
+**What no table or rule states.** The concrete syntax. Four of the five
+parsers are hand-written recursive descent over a shared scanner. The Go
+parser calls the parser of the Go standard library and converts its tree.
+Every formatter is a hand-written function per node kind. A parser calls the
+checker after it has built its tree, and a formatter calls it before it
+reads its input. That call is the only connection between the table and the
+code that produces and consumes trees.
