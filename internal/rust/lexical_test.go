@@ -52,7 +52,8 @@ func TestEvaluatorsReadTheDeclaredLists(t *testing.T) {
 	}
 	for text, want := range map[string]bool{
 		"pages": true, "_": true, "x²": true, "ⅷ": true, "a٣": true, "über": true, "0": true, "z": true, "Z": true,
-		"": false, "my-pages": false, "a b": false, "á": false, "a.b": false, "`": false, "{": false,
+		// A letter followed by a combining mark: the mark is no character of a crate name.
+		"": false, "my-pages": false, "a b": false, "a\u0301": false, "a.b": false, "`": false, "{": false,
 	} {
 		if got := native.CrateName(text); got != want {
 			t.Errorf("CrateName(%q) = %v, want %v", text, got, want)
