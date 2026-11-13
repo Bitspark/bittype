@@ -832,3 +832,696 @@ sentences and (a) do not fit as written. The naming page states the tension
 and leaves it to this consultation, with one constraint of its own: "Which
 identity a plan entry records is not defined here: an output-issued handle
 cannot be the key of a serialized plan." Section 6.5 gives the alternatives.
+
+## 3. Relevant code: the contract as it is today
+
+Everything in this section has the standing **implemented today**. It shows
+what a rule can and cannot say now. It is not a constraint on the answer.
+
+### 3.1 Reading guide
+
+| Subsection | The one thing to take from it | Feeds question |
+| --- | --- | --- |
+| 3.2 | A rule's whole result is native intent: a tree of native forms, string data and three kinds of placeholder | 1 |
+| 3.3 | A registered unit is a profile plus three lists of rules. A callback never sees what was selected for a child use | 1, 2 |
+| 3.4 | Four names exist for selection and none of them survives the process | 2 |
+| 3.5 | A rule is a constant template, a template with slots, or a callback that reads the source. The declaration recipe spells the native name | 1, 2 |
+| 3.6 | "This field is optional" is decided inside each target's record rule, in four different ways | 1 |
+| 3.7 | Per use the planner keeps resolved native intent and debug strings, and drops the selection | 2 |
+| 3.8 | Two neighbouring mechanisms already register per-family parts apart from the rule, and record a native symbol by identity | 2, 3 |
+
+In the excerpts, `F`, `T` and `R` are type parameters: marker types of the
+source and target language, and the type of the source integration's reader.
+Elisions are marked `// ...`. Aliases and abbreviations:
+
+| Name | Meaning |
+| --- | --- |
+| `g` | The kernel's contract package, `contracts/generation/go` |
+| `h`, `s` | The syntax vocabulary of horos, and of the target at hand |
+| `model`, `source` | The target's native model; the horos source integration |
+| `rules`, `patterns` | Common packages of the horos rule side: the profile names and one function type; the source patterns |
+| `m`, `b` | The shared tree-building package; the syntax tree under construction in a target builder |
+| `Desc` | Abbreviates `g.MappingDescription[h.Language, s.Language, source.Reader]` |
+| `Rule` | Abbreviates `g.BindingDescription[h.Language, s.Language, source.Reader]` |
+| `Exp`, `Expr` | Abbreviate `g.Expansion[h.Language, s.Language, source.Reader]` and `g.Expression[s.Language]` |
+
+An `ast.NodeRef` is a site in a syntax tree, used for diagnostics, and
+`g.At(e, site)` attaches one. `from` and `to` are language identities: a
+language with a syntax revision that its owner calls a "profile", unrelated
+to the representation profile. Code comments use words that our prose has
+replaced: "provider" (a registered unit, or in a file name the target
+builder), "Run" (executing the plan closure), "composer" (the kernel),
+"occurrence" (a use), "binding" (a use rule; in `Generic.Bindings` a
+parameter binding) and "capture" (binding a slot to a use).
+
+### 3.2 What a rule can say: native intent
+
+`contracts/generation/go/mapping.go:5-11`, `expression.go:9-14, 30-35, 41-44,
+50-74`:
+
+```go
+// Selector is an exact source-owned identity, qualified by language/profile/marker.
+// Its key is never interpreted by the composer. Display names and graph-local IDs
+// are not substitutes for a source integration's stable declaration identity.
+type Selector struct {
+	language representation.Language
+	key      string
+}
+// ...
+// Form is a target-owned native semantic constructor. Only its issuer can
+// interpret its key. This is not an AST kind or a globally registered type kind.
+type Form[T any] struct {
+	owner *identity
+	name  string
+}
+// ...
+// Slot identity is independent of its display name. One description declares
+// its slots, and captures supply the exact source occurrences for them.
+type Slot struct {
+	owner *identity
+	name  string
+}
+// ...
+type HelperKey struct {
+	owner *identity
+	name  string
+}
+// ...
+type ExpressionKind uint8
+
+const (
+	NativeExpression ExpressionKind = iota + 1
+	CapturedExpression
+	ParameterExpression
+	ArgumentExpression
+	HelperExpression
+	DeclarationExpression
+)
+
+// Expression is an immutable template. Parameter and Argument indices only have
+// meaning in their declaration's single generic convention. DeclarationExpression
+// is issued by the planner after it authenticates the source callee.
+type Expression[T any] struct {
+	origin      ast.NodeRef
+	kind        ExpressionKind
+	form        Form[T]
+	data        []string
+	args        []Expression[T]
+	slot        Slot
+	index       int
+	helper      HelperKey
+	declaration uint32
+}
+```
+
+`identity` is a private struct whose address is the identity. A `Slot` or a
+`HelperKey` equals only copies of the value that one call of
+`g.TypeSlot(name)` or `g.NewHelperKey(name)` returned. A `Form` carries the
+identity of its issuer, one per native model, plus a name: two forms of one
+model with one name are equal, and no other package can make one. All three
+are unforgeable and meaningless outside the process.
+
+The six kinds, in our words:
+
+- **Native**: a native form with string data and argument expressions.
+- **Captured**: a slot. The planner replaces it with the native intent it
+  plans for the use bound to that slot.
+- **Parameter** and **Argument**: a generic parameter of the native
+  declaration being described, and an actual argument at an application.
+- **Helper**: a reference, through a key, to a helper declaration that some
+  registered unit must supply.
+- **Declaration**: a reference to a planned native declaration. Only the
+  planner creates it.
+
+A native model is a form issuer, a few constructors and a check. Three lines
+of Go's (`transform/syntax/golang/model/go/model.go:12, 35, 43-45`):
+
+```go
+var forms = g.NewFormIssuer[s.Language]()
+// ...
+func Form(name string) g.Form[s.Language]      { return forms.Form(name) }
+// ...
+func Field(name string, optional bool, ty g.Expression[s.Language]) g.Expression[s.Language] {
+	return g.Native(Form(FormField), []string{name, strconv.FormatBool(optional)}, ty)
+}
+```
+
+The Go model has seven forms: `primitive`, `slice`, `field`, `record` and
+`external` for expressions, `alias` and `defined` for declarations
+(`FormField` and its like are constants holding these names). It admits two
+primitives, `string` and `bool`, and its check refuses every `external`
+expression. The other three models are parallel. So everything a rule can say
+today is a type or a type declaration, in strings and forms whose meaning
+only the issuing model defines.
+
+### 3.3 What a registered unit is
+
+`contracts/generation/go/description.go:13-52, 61-84`:
+
+```go
+type Capture[F any] struct {
+	Slot Slot
+	Use  Use[F]
+}
+
+// Pattern fixes selection and declares its captures. Capture reads the source
+// meaning of the kernel's view through the source reader R and names children
+// of that view; the kernel checks that each captured use is one of them.
+type Pattern[F, R any] struct {
+	Selector Selector
+	Slots    []Slot
+	Capture  func(context.Context, R, UseView[F]) ([]Capture[F], error)
+}
+type BindingDescription[F, T, R any] struct {
+	ID     string
+	Input  Pattern[F, R]
+	Output Expression[T]
+	Expand func(context.Context, Expansion[F, T, R]) (Expression[T], error)
+}
+type ParameterDescription struct {
+	Name        string
+	Origin      ast.NodeRef
+	RequiredUse bool
+}
+
+// Convention describes both sides of a generic, including reordered, omitted
+// and additional native parameters. Bindings is indexed by source parameter;
+// Arguments is indexed by target parameter.
+type GenericConvention[T any] struct {
+	Parameters []ParameterDescription
+	Bindings   []Expression[T]
+	Arguments  []Expression[T]
+}
+type DeclarationDescription[T any] struct {
+	Name    string
+	Form    Form[T]
+	Origin  ast.NodeRef
+	Generic GenericConvention[T]
+	Body    Expression[T]
+}
+// ...
+type DeclarationRecipe[F, T, R any] struct {
+	ID string
+	// A zero selector explicitly supplies the structural declaration policy.
+	Selector Selector
+	Expand   func(context.Context, DeclarationRequest[F, T, R]) (DeclarationDescription[T], error)
+}
+type HelperRecipe[T any] struct {
+	Key         HelperKey
+	Declaration NativeDeclaration[T]
+}
+
+type MappingDescription[F, T, R any] struct {
+	Profile      string
+	Bindings     []BindingDescription[F, T, R]
+	Declarations []DeclarationRecipe[F, T, R]
+	Helpers      []HelperRecipe[T]
+}
+
+// Describe is called at registration. The registry freezes all returned data.
+// No provider receives a target AST builder or is called during Run.
+// ...
+type MappingLibrary[F, T, R any] interface {
+	Describe(from, to representation.Language) (MappingDescription[F, T, R], error)
+}
+```
+
+`Use[F]` is the kernel's handle for one use; only the kernel creates one.
+`UseView[F]` is its structural view of that use: its kind (a reference to a
+generic parameter, a reference to or application of a declaration, or a
+builtin form), its children, and whether it is the whole body of its
+declaration. A `NativeDeclaration[T]` is a name, a declaration form, native
+parameter names and a body expression. `RequiredUse` makes planning fail if
+the native parameter is unused in the body.
+
+A use rule (`BindingDescription`) has exactly one of two results: `Output`, a
+constant template, or `Expand`, a callback. The callback receives an
+`Expansion`, which offers three operations (signatures,
+`description.go:113-136`); a declaration recipe's `DeclarationRequest` adds a
+fourth, the kernel's view of the declaration:
+
+```go
+// Reader is the source's interpretation reader, available during the callback.
+func (r Expansion[F, T, R]) Reader() (R, error)
+// Use is the kernel's view of the occurrence a binding rule maps.
+func (r Expansion[F, T, R]) Use() (UseView[F], error)
+// Mapped captures a use for the planner to represent after the callback. A
+// binding rule may capture only children of its occurrence; a declaration
+// recipe only its body.
+func (r Expansion[F, T, R]) Mapped(use Use[F]) (Expression[T], error)
+```
+
+`Mapped` returns a placeholder at once, and the planner plans the child use
+after the callback has returned. So a callback never sees what was selected
+for a child, and a child's native intent is never an input of its parent's
+rule. A rule has no declared way to decline a use: it returns an error from
+its callback (an example is in 3.6).
+
+Every registered unit today holds exactly one entry in one of the three
+lists, and writes its own profile into `Profile`. All are built as one Go
+function type, `rules.Library[T]`, whose value returns the description.
+
+### 3.4 Registration, selection and the names that exist today
+
+| Name | Who issues it | Outside the process | What it selects |
+| --- | --- | --- | --- |
+| Selector key, such as `builtin/7:list-of/0:` | The source integration | A string, meaningful anywhere | The rules filed for a use |
+| Rule ID, such as `list/golang/1` | The unit's author, as a string | A string, checked for uniqueness only within its own unit | With a registry handle, one use rule in a replacement |
+| Registry handle, `MappingRef` | The registry: its own address and a counter | Nothing | One registered unit |
+| `Slot`, `HelperKey` | Whoever calls the constructor: a unit, or the consumer's composition | Nothing | The use bound to a slot; the helper under a key |
+
+`transform/syntax/shared/generation/go/registry.go:19-30`:
+
+```go
+type MappingRef struct {
+	owner *Registry
+	id    uint64
+}
+type BindingRef struct {
+	Provider MappingRef
+	ID       string
+}
+type Replacement struct {
+	Selector       g.Selector
+	Expected, With BindingRef
+}
+```
+
+**Registration.** `RegisterMapping` calls a unit's `Describe` once, checks
+the result (a non-empty profile, rule IDs unique within the one description,
+valid selectors, declared slots, size limits) and stores it under a new
+handle. Nothing is checked across two units.
+
+**Selection by profile.** A request names exactly one profile, and the
+registry plans with every unit that states that string and has compatible
+languages. A unit that states another profile is not in the plan. So an exact
+mapping joins the structural families today by stating their profile string
+itself. With no unit the request fails as unsupported.
+
+**The planner's name for a rule.** The registry hands each unit to the planner
+under a name made from its counter (`registry.go:242`), and the planner
+prefixes each rule's ID with it:
+
+```go
+		parts = append(parts, g.SelectedDescription[F, T, R]{ID: fmt.Sprintf("library-%d", e.ref.id), Description: d})
+```
+
+So a rule is known as, for example, `library-3/list/golang/1`. The first part
+depends on the order of registration. The page that documents the generator
+says of the second (`docs/type-generation-plugins.md`): "A binding's ID is
+local to its mapping registration. It is not a semantic proof, a globally
+unique implementation revision or a configuration digest. There is no
+PluginID API."
+
+**Selection per use** (`contracts/generation/go/planning.go:465-475`). The
+planner takes the use rules filed under the use's selector key:
+
+- More than one: the error "ambiguous generation mapping", never a
+  preference.
+- Exactly one: it is applied. A use rule for a named declaration is thereby
+  an exact mapping.
+- None, for a builtin form: the error "no mapping for" the key.
+- None, for a named declaration: the use becomes a reference to the native
+  declaration that a declaration recipe produces. A recipe with a zero
+  selector is the default for every declaration.
+
+**Replacement.** A consumer resolves an ambiguity with
+`Registry.Replace(Replacement)`, naming the selector and two use rules, each
+by handle and rule ID. The registry removes the `Expected` rule before
+planning. Only use rules can be replaced. A declaration recipe cannot, and
+two units that supply a helper under one key fail as ambiguous.
+
+### 3.5 One Go family of each kind
+
+**Text: a constant template.** The whole unit is one use rule with the ID
+`utf8-text/golang/1`, a pattern for the builtin form `scalar` with
+discriminator `utf8-text`, and the constant output `model.Primitive("string")`
+(`transform/syntax/horos-to-golang/mapping/text/go/text.go`). Nothing about Go
+strings beyond the type name is stated: not that a Go string may hold invalid
+UTF-8, and not what a conversion does with one.
+
+**List: a template with one slot.**
+`transform/syntax/horos-to-golang/mapping/list/go/list.go:18-27`:
+
+```go
+func Library() rules.Library[s.Language] {
+	slot := g.TypeSlot("E")
+	return func(from, to representation.Language) (Desc, error) {
+		pattern, err := patterns.Element(from, slot)
+		if err != nil {
+			return Desc{}, err
+		}
+		return Desc{Profile: rules.RepresentationProfile, Bindings: []Rule{{ID: "list/golang/1", Input: pattern, Output: model.Collection(g.Mapped[s.Language](slot))}}}, nil
+	}
+}
+```
+
+`patterns.Element` returns the pattern for the builtin form `list-of`,
+declares the slot and supplies the `Capture` function, which asks the source
+integration's reader for the list's element use. The template says "a Go
+slice of whatever is selected for `E`": the list rule does not know what
+represents its element. Whether a nil slice and an empty slice are the same
+value is stated nowhere.
+
+**Declarations: a recipe that all four targets share.** The horos side owns
+it; a target passes in its two declaration forms.
+`transform/syntax/horos/mapping/declarations/go/declarations.go:26-73`,
+shortened where marked:
+
+```go
+func Recipe[T any](record, alias g.Form[T]) g.DeclarationRecipe[h.Language, T, source.Reader] {
+	return g.DeclarationRecipe[h.Language, T, source.Reader]{ID: "declarations", Expand: func(ctx context.Context, r g.DeclarationRequest[h.Language, T, source.Reader]) (g.DeclarationDescription[T], error) {
+		// ... src is the reader, open the kernel's view of the declaration,
+		// decl the source integration's reading of it
+		name, err := naming.Exported(decl.Name)
+		// ...
+		if !decl.Root {
+			name = "M" + decl.ModulePin[:16] + "_" + name
+		}
+		body, descriptor, err := src.Descriptor(open.Body)
+		// ...
+		form := alias
+		if descriptor && body.Constructor == "record" {
+			form = record
+		}
+		desc := g.DeclarationDescription[T]{Name: name, Form: form, Origin: decl.Origin}
+		// ... one native parameter per horos parameter, in the same order
+		desc.Body, err = r.Mapped(open.Body)
+		return desc, err
+	}}
+}
+```
+
+`src.Descriptor(u)` is the source integration's reading of a use as a builtin
+form (its constructor, discriminator and site) with a flag that says whether
+the use is one; it is not the horos descriptor of section 1.1. The recipe has
+a zero selector and states no profile; Go's `declarations` unit wraps it with
+the forms `defined` and `alias` under the structural profile. It makes three
+decisions inline that a conversion or a backend needs: the spelled native
+name (capitalised by `naming.Exported`, and prefixed for a declaration
+outside the request's entry module), whether the declaration becomes a named
+record type or an alias, and how each horos parameter corresponds to a native
+one. "Generics" as a family is this last part together with the planner's
+handling of parameters and applications.
+
+### 3.6 Where "this field is optional" is decided, in four targets
+
+Look for who decides in each row:
+
+| Target | Native form of `next?: text` | What the representation is | Who decides today |
+| --- | --- | --- | --- |
+| TypeScript | `next?: string` | A property of the field member. No type stands for it | The record rule, through a flag that the target builder renders |
+| Go | `Next BittypeOptional[string]` | A generated generic type around the field's type | The record rule decides "a wrapper type"; a helper unit, wired by a key, supplies the declaration |
+| Rust | A field of type `::std::option::Option<::std::string::String>` | An external type around the field's type | The record rule |
+| C++ | A field of type `::std::optional<::std::string>` | An external type around the field's type, plus an `#include` | The record rule and the target builder, agreeing by spelling |
+
+The horos source integration reads a record as a list of fields, each with a
+name, a flag and one child use, the field's type
+(`transform/syntax/horos/source/go/read.go:25-30`):
+
+```go
+type Field struct {
+	Name     string
+	Optional bool
+	Use      g.Use[h.Language]
+	Origin   ast.NodeRef
+}
+```
+
+Only the field's type is a use that the kernel walks and selects for. The
+flag is content of the record form. No selector exists for an optional field,
+so nothing can be registered for it today.
+
+**Go.** The record rule is a use rule with the ID `record/golang/1` for the
+builtin form `record` with discriminator `closed`. Its constructor takes a
+helper key, `Library(optional g.HelperKey)`. Its callback refuses a record
+that is not the whole body of a declaration (`src.Unsupported(use.Use, "nested
+records require a named declaration in this profile")`), reads the fields and
+runs this loop
+(`transform/syntax/horos-to-golang/mapping/record/go/record.go:61-75`):
+
+```go
+			for _, f := range fields {
+				f.Name, err = naming.Exported(f.Name)
+				if err != nil {
+					return g.Expression[s.Language]{}, err
+				}
+				ty, err := r.Mapped(f.Use)
+				if err != nil {
+					return g.Expression[s.Language]{}, err
+				}
+				if f.Optional {
+					ty = g.Helper(optional, ty)
+				}
+				members = append(members, g.At(model.Field(f.Name, f.Optional, ty), f.Origin))
+			}
+			return g.At(model.Record(members...), view.Origin), nil
+```
+
+The helper is supplied by a second unit, which is all there is of the
+"optional fields" family in Go
+(`transform/syntax/horos-to-golang/mapping/optional/go/optional.go:21-28`):
+
+```go
+func Library(key g.HelperKey) rules.Library[s.Language] {
+	return func(from, to representation.Language) (Desc, error) {
+		return Desc{Profile: rules.RepresentationProfile, Helpers: []g.HelperRecipe[s.Language]{{Key: key, Declaration: g.NativeDeclaration[s.Language]{
+			Name: "BittypeOptional", Form: model.Form(model.FormDefined), Parameters: []g.NativeParameter{{Name: "T"}},
+			Body: model.Record(model.Field("Present", false, model.Primitive(model.PrimitiveBool)), model.Field("Value", false, g.Parameter[s.Language](0))),
+		}}}}, nil
+	}
+}
+```
+
+Neither package imports the other. The consumer's composition creates the key
+and gives it to both (`integration/go/libraries_golang_test.go:26-34`):
+
+```go
+	optionalKey := g.NewHelperKey("horos/optional")
+	return []g.MappingLibrary[h.Language, s.Language, source.Reader]{
+		text.Library(),
+		boolean.Library(),
+		list.Library(),
+		record.Library(optionalKey),
+		declarations.Library(),
+		optional.Library(optionalKey),
+	}
+```
+
+**C++ and Rust.** The record rule builds the wrapping type itself: where Go's
+loop has `ty = g.Helper(optional, ty)`, C++'s has
+`ty = model.External("std", "optional", ty)` and Rust's
+`ty = model.External("std::option", "Option", ty)`. The C++ target builder
+compares the same two strings, `data[0] == "std" && data[1] == "optional"`,
+to add the `#include`. So in C++ the knowledge "an optional field is
+`std::optional`" is in two packages that agree by spelling. No unit exists
+for the optional representation alone: a consumer who wants another one
+replaces the whole record rule, and the target builder too if the new type
+needs an include.
+
+**TypeScript.** The record rule wraps nothing. The flag travels as the second
+string of the `field` form, and the TypeScript target builder turns it into
+the property's `?`. Go's, Rust's and C++'s target builders ignore that
+string.
+
+What the Go arrangement gives and does not give:
+
+- The kernel resolves the helper. A key that no registered unit supplies
+  makes planning fail at the first optional field, and an optional field is
+  never emitted unwrapped.
+- A consumer who wants another helper declaration registers another unit
+  under the same key in place of this one. Selection is by wiring.
+- The record rule still decides that an optional field is a type wrapped
+  around the field's type. A representation of another shape (a pointer, a
+  field pair, a modifier) needs an edit of the record rule.
+- The page that documents this form calls it interim
+  (`docs/semantic-generation.md`): "This form is interim: #196, item 6,
+  changes how a record asks for the optional representation."
+
+Later families raise questions that we cannot yet classify as the same or as
+different. A nullable value is a type of its own in horos, so it is a use
+with a selector, and a nullable family is selected like a list. A map's
+requirement on its key and "the null representation cannot collide with a
+valid `T`" are requirements on what was selected for an operand. A union's
+discriminator is content of the union form, like the optional flag.
+
+### 3.7 What the planner keeps per use, and what it drops
+
+The planner's output types (`contracts/generation/go/planning.go:14-22,
+33-43`):
+
+```go
+type PlannedDeclaration[T any] struct {
+	ID          uint32
+	Description NativeDeclaration[T]
+	Exposed     bool
+}
+type Program[T any] struct {
+	declarations []PlannedDeclaration[T]
+	exposed      []uint32
+}
+// ...
+type Step struct {
+	Binding, Source, Declaration, Form string
+	Expression                         string
+}
+// ...
+// GenerationPlan is issued only after all reachable rules and dependencies have
+// been resolved. Run does not retain a source, reader or mapping expansion.
+type GenerationPlan struct {
+	steps []Step
+	run   func(context.Context) (Output, error)
+}
+```
+
+`Program[T]` is the closed list of native declarations; only the target
+builder receives it. `GenerationPlan` is a closure over it plus the `Step`
+list, which exists for inspection in tests. `Output` is the sealed result of
+running the closure: the checked syntax trees, the sites of the declarations
+the request exposed, and the external uses of 3.8.
+
+Applying a use rule ends like this (`planning.go:560-565`; `expression` is
+the rule's template or its callback's result, `captures` maps the rule's
+slots to uses, `f` is the generic environment, `b.name` the prefixed rule
+name, `key` the selector key):
+
+```go
+	out, err := p.resolve(expression, captures, f, depth+1)
+	if err != nil {
+		return Expression[T]{}, err
+	}
+	p.steps = append(p.steps, Step{Binding: b.name, Source: key, Form: out.form.Name(), Expression: describe(out)})
+	return out, nil
+```
+
+`resolve` replaces every slot with the result of planning the use bound to
+it, and every helper reference with a reference to the helper's declaration.
+`describe` prints an expression as a string. A finished declaration is stored
+through `nativeDeclaration`, whose comment reads "nativeDeclaration
+deliberately drops source binding/application templates" (`planning.go:756`).
+
+So, per use:
+
+| Fact | After planning |
+| --- | --- |
+| The native intent selected for the use | Kept, embedded in the parent's expression inside `Program[T]`. Form names and data are plain strings behind exported accessors, and the planner prints them into `Step.Expression`. Only the issuing model can authenticate a form and say what it means |
+| Which rule was selected | Kept only as the string `Step.Binding`. The step list is flat: a step is linked neither to its use nor to the step of the parent use |
+| Which use it was | Dropped. `Step.Source` holds the selector key, which is the same for every list in the program |
+| Which child use filled which slot | Dropped when `resolve` returns |
+| A use of a generic parameter | No step. The planner substitutes from the environment |
+| A use of a named declaration that no use rule covers | No step for the use. One step per declaration, when it is first planned. The use becomes a reference with resolved arguments |
+| The generic convention | Dropped by `nativeDeclaration`. An application keeps only its resolved native arguments |
+| "This field is optional" | Kept twice in native intent: as the string `"true"` in the `field` form's data, and (Go, Rust, C++) as the wrapping type. Not kept as a decision: no code says that a Go `BittypeOptional` with `Present` false ignores `Value`, or that a TypeScript reader must tell an absent property from `undefined` |
+| A refusal | An error from inside the callback, declared nowhere before the use is met |
+
+### 3.8 Two neighbouring mechanisms
+
+Two implemented mechanisms outside the generation unit already do what some
+options of section 6 propose.
+
+**Verification laws.** For Go, each family has a static check, run after
+generation over the compiler's view of the generated types, that a native
+type represents its horos type. Each is an independently selectable rule in
+its own package, registered apart from the family's generation unit, with a
+key that has a separate owner part
+(`semantics.Key{Owner: "horos-go/static", Name: "optional-presence"}`) and a
+versioned name (`horos-go/optional-presence-1`). Nothing links a law to the
+rule it checks: the consumer's test composition names the helper type and its
+fields a second time (`optionalLaw(native(t, g, "BittypeOptional"),
+"Present", "Value")`) and the record's field correspondence a second time
+(`{Source: "next", Target: "Next"}`). This has the shape of option F3 in
+section 6.3 (a per-family part registered separately) and of I2 in 6.4 (an
+identity with an owner part), and it is a later pass that reads source and
+native type again.
+
+**External symbols.** `contracts/generation/go/output.go:17-21, 37-40`:
+
+```go
+type ExternalSymbol struct {
+	owner    *identity
+	language representation.Language
+	key      string
+}
+// ...
+type ExternalUse struct {
+	At     semantics.Occurrence
+	Symbol ExternalSymbol
+}
+```
+
+When a rule maps a horos declaration to a type that a library ships, such as
+`Cell` exported by the package `@bitspark/cell`, generation records the use as
+an external symbol: an issuer-owned key (for TypeScript the module and the
+export name) at a site. The sealed output carries these, and TypeScript's
+Files stage builds the import from them for each placement. This is the one
+place where generation already records a native symbol by identity for a
+later stage to realize, which is the shape of option S2 in section 6.5.
+
+## 4. One request traced through today's code
+
+The request: Go types for `People` from the module of section 1.1, with the
+six Go units of 3.6 registered. Read from the code and followed by hand; not
+run.
+
+1. The planner starts at the declaration `People`. No recipe and no use rule
+   is filed under its selector, so the default declaration recipe runs: name
+   `People`, form `alias`, a slot for the body. The body is a use of `Page`
+   applied to `Person`, so the planner plans the declaration `Page` with the
+   same recipe: name `Page`, form `defined`, one parameter `T`, a slot for
+   the body.
+2. `Page`'s body is a use of the builtin form "closed record". The record
+   rule's callback reads two fields, asks for a slot per field type, wraps the
+   second in the helper reference and returns
+   `record(field(Items, false, slot), field(Next, true, helper(key, slot)))`.
+3. The planner fills the first slot by planning the use `list<T>`: the list
+   rule's template `slice(slot E)`, whose slot is the use `T`, replaced from
+   the generic environment. It fills the second slot by planning the use
+   `text`: the constant `primitive(string)`. It resolves the helper reference
+   by planning the declaration `BittypeOptional` once.
+4. Back at `People`: `Person` is planned like `Page`, and the body of `People`
+   becomes a reference to the declaration `Page` with one argument.
+
+The result is a `Program` of four native declarations (`People`, `Page`,
+`BittypeOptional`, `Person`) and nine step strings. Eight rule applications
+were made (the default recipe three times, the record rule twice, the list
+rule once, the text rule twice) and one helper was resolved. No selection
+exists as a value afterwards, and the use `Page<Person>` leaves nothing of
+its own.
+
+## 5. Fixed points and their standing
+
+Only fixed points are listed: owner rules, accepted designs, and facts
+implemented today, which are changeable. Sections 2 and 3 hold the sentences.
+"BG" is binding generation and "RF" representation families (9 November
+2026, accepted by the owner of research 0014 and 0015); "BC" is the service
+library's binding contracts (11 November 2026, accepted by that repository's
+owner seat). Our derivations open section 6.
+
+| # | Statement | Standing | Shown in |
+| --- | --- | --- | --- |
+| 1 | AC-02, 03, 04, 05, 08, 09, 10 | Owner rule | 2.1 |
+| 2 | "Properly done", with no refactor later | Owner rule | Question |
+| 3 | A contribution is one thing a consumer registers on its own. A caller that needs whatever the consumer registered for a meaning states a demand that the shared mechanism resolves | Owner rule | 2.1 |
+| 4 | bittype selects native representations and publishes each selection in a typed plan. One backend per target, owned outside bittype, works from the plan, the source semantics and the contributions. bittype emits no run-time adapters | Accepted design (BG) | 2.2 |
+| 5 | The planner owns selection, substitutions, references and the plan. A representation implementation owns native layout, presence rules, construction and access | Accepted design (BG) | 2.2 |
+| 6 | The elements of a paired contribution. Facets a binding product needs are selected together with the native facet; a missing facet fails; no structural fallback; duplicates are rejected. "The unit of implementation is library × target" | Accepted design (BG) | 2.2 |
+| 7 | A structural profile and an exact mapping use the same public mechanism | Owner rule (AC-04) and accepted design (BG) | 2.1, 2.2 |
+| 8 | A family contributes, per target, one contract with seven parts, explicit refusals among them, and is delivered complete | Accepted design (RF) | 2.3 |
+| 9 | One immutable representation instance per use; the native type and the plan entry are projections of it; no later pass | Accepted design (RF) | 2.3 |
+| 10 | A factory by default; optionally a target-owned lowering facet with typed target expressions; the backend never switches over families; no source-code strings | Accepted design (RF) | 2.3 |
+| 11 | The plan is a shared envelope plus family-owned payloads, and a graph: nothing the orchestration must resolve hides in a payload. The envelope lists native symbols and imports | Accepted design (RF) | 2.3 |
+| 12 | A payload is an ontos value whose type its family declares in horos; bittype generates that type's Go and TypeScript types | Accepted design (RF) | 2.3 |
+| 13 | Five version axes. Generic requirements from the first version. The envelope keeps an unstable version until six vertical cases pass | Accepted design (RF) | 2.3 |
+| 14 | bittype's native vocabularies stay types-only; a backend's emitter is scoped separately. The TypeScript backend belongs to the service library, a Go backend to a future Go runtime library | Accepted design (BG) | 2.2 |
+| 15 | The kernel imports neither horos nor ontos | Accepted design (bittype's charter and repository layout, which record owner decisions of 31 October and 6 November 2026) | 1.1 |
+| 16 | Every factory receives the call context. The memo key is "the selected representation instance (its descriptor and its generic environment) plus the input's identity" (with law K3) | Accepted design (BC). Its law L1 is unconfirmed | 2.5 |
+| 17 | The completeness test backend is in bittype, in Go, and is a test. bittype publishes no conversion code | Accepted design (BG and bittype's charter) | 2.2, 2.4 |
+| 18 | A contribution states its target and supported profile | Accepted design (BG), and implemented. That a request selects by exactly one profile string is implemented only | 2.2, 3.4 |
+| 19 | Generation decides no file, package, module or import. One generated set serves every placement | Accepted design (`docs/source.md`, design decision of 7 November 2026) | 2.6 |
+| 20 | Identity, naming intent and realized spelling are three things. In the first slices the mapping spells the name at generation, and each language checks or refuses it | A recommendation of research 0016 that this seat accepted as research owner; design page on the main branch since 13 November 2026, written and decided by this same seat, read twice by an independent reader | 2.6 |
+| 21 | Nothing is released. No interface shown here has a consumer outside our repositories | Implemented today | Question |
+| 22 | Everything in section 3: a unit is a profile and three lists; a rule returns native intent and declines by an error; the planner keeps a native program and debug strings; no name of a rule survives the process; a replacement names use rules only; one helper exists, wired by a key | Implemented today | 3 |
+
+Out of scope: the design of the Files stage itself; capability lifetime and
+the laws L1 to L14; the report of binding support; the choice of native
+representation for any particular family.
