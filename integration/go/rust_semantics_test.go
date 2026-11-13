@@ -592,6 +592,43 @@ func TestRustSemanticPrimitiveTypeCapture(t *testing.T) {
 	}
 }
 
+// The Rust pagination output records the destination Bool at its one bool.
+// The text of that output, analyzed by the pinned compiler, binds that bool to
+// the entity of the primitive type that the recorded symbol names. Nothing in
+// bittype compares the two yet: Rust Files will. This shows that the evidence
+// for the recorded destination exists.
+func TestRustGeneratedBoolBindsToItsRecordedDestination(t *testing.T) {
+	e, _, input := generationInput(t, paginationModule())
+	out := generatedOutput(t, e, input, rustText(), rustRequest)
+	generated := outputTree[s.Language](t, out)
+	uses := externalUsesBySite(t, out)
+	// What generation recorded at each primitive type node.
+	var recorded []rustsymbol.Symbol
+	for _, at := range rsPrimitiveUses(generated, "") {
+		use, ok := uses[at]
+		if !ok {
+			t.Fatalf("the primitive type at node %d records no destination", at.Node)
+		}
+		symbol, err := rustsymbol.ReadExternal(out.Snapshot().Language(), use)
+		if err != nil {
+			t.Fatal(err)
+		}
+		recorded = append(recorded, symbol)
+	}
+	if len(recorded) != 1 || recorded[0] != rustsymbol.Bool() {
+		t.Fatalf("the output records %v at its primitive types, want the one Bool", recorded)
+	}
+	// What the compiler establishes for the text of the same output.
+	m, trees := rsOpen(t, rsEnvironment(), formatted(t, rustText(), generated))
+	found := rsPrimitiveUses(trees[0], "bool")
+	if len(found) != 1 || len(rsPrimitiveUses(trees[0], "")) != 1 {
+		t.Fatalf("the text of the output has %d uses of bool, want 1", len(found))
+	}
+	if _, entity := rsBound(t, m.Graph().Data(), found[0]); !rsPrimitiveEntity(recorded[0], entity) {
+		t.Fatalf("the bool of the generated output binds to %+v, which is not the recorded destination", entity)
+	}
+}
+
 // A crate may be named like a primitive type. Its root module and the
 // primitive type are two entities of one name, and Lookup selects the root:
 // it selects compiler paths, and a primitive type has none.
