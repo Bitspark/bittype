@@ -138,8 +138,8 @@ It does not walk the tree and it reads no `name` attribute.
 | Field | Meaning | Who states it |
 | --- | --- | --- |
 | `Handle` | One declaration of this one output. | The kernel, when it seals. |
-| `Site` | The declaration's node in the snapshot. | The target's construction. The kernel checks that the site lies in the snapshot and is listed once. |
-| `Role` | Requested: the request lists its source declaration as a root. Dependency: a planned declaration uses its source declaration and the request does not list it. Helper: a mapping demanded it by a helper key. | The planner. |
+| `Site` | The node that the target's lowering returned for the declaration. Where that node sits in its unit is the lowering's decision. | The target's construction. The kernel checks that the site lies in the snapshot, is listed once and is not inside another listed site. |
+| `Role` | Requested: the request lists its source declaration as a root. Dependency: a planned declaration uses its source declaration and the request does not list it. Helper: a mapping demanded it by a helper key. These are not a closed set. | The planner. |
 | `Provenance` | The declaring sites of the source declarations it represents. Empty for a helper, which represents none. | The planner, from the admitted semantic graph. |
 | `Values` | What the owner of the declaration's description states about it. | A declaration recipe or a helper recipe. |
 
@@ -148,9 +148,26 @@ It does not walk the tree and it reads no `name` attribute.
   the declarations of one file; the Files contract that uses it is
   [#273](https://github.com/Bitspark/bittype/issues/273). `Exposed` keeps the
   order of the request.
+- **Where a site sits.** A site need not be a child of the root. The C++
+  target lists its declarations one level down, as the children of a namespace.
+  A language's step that reads the inventory, the placement step of
+  [#273](https://github.com/Bitspark/bittype/issues/273) among them, must not
+  assume that the inventory equals the root's children. What the kernel
+  guarantees for every language is that no site of an inventory is inside
+  another site of it.
+- **Roles are not a closed set.** The three roles keep their meaning. A further
+  role may be added, for example for a declaration that a contribution
+  introduces and that has a source declaration, which is the lifted inner
+  binder of [#164](https://github.com/Bitspark/bittype/issues/164). A reader
+  refuses a record whose role it does not know. It does not treat it as one of
+  the roles it knows.
 - **Requested records and `Exposed`.** The records with the role requested have
   exactly the sites of `Exposed`. The kernel derives both from the plan, so a
   target cannot make them disagree.
+- **A target cannot change a record.** Role, provenance and values come from
+  the plan. The planner hands a target a copy of each declaration it asks the
+  target to check or to build, so a target that overwrites what it was handed
+  changes nothing the plan keeps.
 - **Provenance is a list.** The planner maps one source declaration to one
   native declaration today. The record does not assume it: a native declaration
   may later represent several source declarations, and one source declaration
@@ -182,9 +199,20 @@ func (i ValueIssuer) Read(IssuedValue) (string, bool)
 The owner of a meaning holds its issuer. A declaration recipe states values in
 `DeclarationDescription.Values`, and a helper recipe states them in its
 `NativeDeclaration.Values`. The planner checks that each value was issued and
-charges its content to the output budget. It then carries the value to the
-record of that declaration. Only the issuer reads the content back, and one
-issuer is one meaning. A record without values is valid, and no builtin mapping
+charges it to the output budget: the bytes of its content and one byte for the
+value itself, so that values without content are bounded too. It then carries
+the value to the record of that declaration. Only the issuer reads the content
+back through this API, and one issuer is one meaning.
+
+Limit: a value is kept from other readers by the API only, which is the model
+of the external symbols. Reflection reads the content. A value is not bound to
+one declaration or one output: the same value compares equal wherever it is
+carried, and whoever holds a value can state it again in another description.
+The issuer says who gave a value its meaning, and it does not say who put the
+value where it is found. Formatting a value prints whether it was issued and
+never its content, so a logged record or description does not disclose it.
+
+A record without values is valid, and no builtin mapping
 states one yet. The [naming design](naming.md#three-things-that-were-one) says
 what an intent records and that the mapping states it. This is the carrier
 from the mapping to the record, and
@@ -217,10 +245,11 @@ asks for the missing capability, its layer and whom it serves.
   target that fills its own `Assembly` has to list every declaration.
 
 **What a later change does not alter:** the accessor `Inventory` and that it is
-complete, the fields of a record and their meaning, the handle type and that it
-identifies one declaration of one sealed output, and the key that orders sites
-(see [execution guarantees](#execution-guarantees)). Adding a field to the
-record is additive.
+complete, the fields of a record and their meaning, the meaning of each of the
+three roles, the handle type and that it identifies one declaration of one
+sealed output, and the key that orders sites (see
+[execution guarantees](#execution-guarantees)). Adding a field to the record is
+additive, and so is a further role.
 
 The typed Files boundary remains:
 
@@ -456,22 +485,39 @@ into Output.
 
 The assembly lists the realized site of every planned declaration, in planned
 order. Sealing fails with `ErrIncomplete` when that list has another length
-than the plan, and with `ErrScope` when a site lies outside the snapshot or is
-listed twice. The kernel has no knowledge of a language's syntax. That each
-site is the declaration's own node is the guarantee of the shared constructor,
-which the four targets build through. It returns no assembly when a planned
-declaration has no node in the unit.
+than the plan, and with `ErrScope` when a site lies outside the snapshot, is
+listed twice or lies inside another listed site. The last check needs no
+knowledge of a language's syntax: whatever a declaration is, it is not inside
+another declaration of the same inventory. It refuses the root node as a
+declaration beside any other, and a node inside another listed declaration.
+
+What the shared constructor guarantees, for the four targets that build through
+it, is that each site is the node the target's lowering returned for that
+declaration, and that this node was emitted once. Where the node sits in the
+unit is the lowering's decision. The constructor returns no assembly when a
+planned declaration has no node in the unit.
+
+Limit: the kernel cannot tell which declaration a site realizes. A target that
+fills its own assembly and lists the sites of two declarations in each other's
+place is not detected, and neither is one that lists another node of the same
+unit that is outside every listed site.
 
 **The order of sites.** The shared constructor emits each declaration after the
 declarations it uses. The walk is seeded in the order of one comparator, and
 the node numbers, and so the sites, follow the walk. The comparator's key is
-the name, then the origin by tree and node, then the planned identity. Equal
-names compare equal and the rest of the key decides, so the comparator is an
-ordering and returns 0 only for one and the same planned declaration.
-Limit: two declarations of equal name and equal origin are ordered by their
-planned identity, which follows the order of the requested roots. Two helpers
-of one name are such a pair, because a helper has no origin, and so are two
-native declarations of one source declaration. The shared constructor still
+the name, then the provenance, then the planned identity. The provenance is
+the planner's own fact, the one the inventory record carries. Two provenances
+compare site by site, each site by its tree and then its node, and a list sorts
+before every list that continues it. No provenance sorts first. The origin that
+a mapping may state on its description is not part of the key, because a
+mapping may leave it out, and the order of two declarations of one name would
+then follow the order of the requested roots. Equal names compare equal and
+the rest of the key decides, so the comparator is an ordering and returns 0
+only for one and the same planned declaration.
+Limit: two declarations of one name and one provenance are ordered by their
+planned identity, which follows the order of the requested roots. Two native
+declarations of one source declaration are such a pair, and so are two helpers
+of one name, because a helper has no provenance. The shared constructor still
 refuses two declarations of one name, so no plan reaches the comparator with
 such a pair. Removing that rule is [#273](https://github.com/Bitspark/bittype/issues/273).
 [Constructor](../transform/syntax/shared/target/go/compile.go)
@@ -500,9 +546,13 @@ references return zero output. [Complete SPI and trust limits](generation-spi.md
 - The independent fixture generates three roots that need one dependency and one
   helper. Its five declarations are selected through the inventory alone, by
   role, provenance and issued value. A handle of one run is refused by a second
-  run of the same plan, and an assembly that omits, repeats or misplaces a
-  declaration is not sealed. The pagination module gives a complete inventory
-  in all four targets.
+  run of the same plan, and an assembly that omits or repeats a declaration,
+  or lists a site outside the snapshot or inside another listed site, is not
+  sealed. A target that overwrites the declarations it is asked to check
+  changes no record and no generated unit. The pagination module gives a
+  complete inventory in all four targets, and four independent records
+  requested in descending order of their names get sites that ascend with the
+  names in all four.
 
 [Plan and independent mapping tests](../integration/go/generation_planning_test.go) ·
 [Inventory and handles](../integration/go/generation_inventory_test.go) ·
