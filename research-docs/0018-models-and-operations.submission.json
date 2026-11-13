@@ -18,10 +18,14 @@
       "serverSha256": "67dca75d6c7b5e41243347e10f6e75ab3bb18a4fa0c46271ad6722dc66201d51",
       "runId": "run_36aec98c-ac83-446d-a057-f81b327ed237",
       "submittedAt": "2026-11-13T13:50:33Z",
-      "state": null,
+      "state": "completed",
       "failureCode": null,
-      "resultSha256": null,
-      "verify": null
+      "resultSha256": "c50bb6501af344041db5ae4315f1be7a1345e241c7537c8b4d7ff7bb6d0d6eb8",
+      "verify": {
+        "exit": 0,
+        "verified": true,
+        "with": "--output research-docs/0018-models-and-operations.advice.md"
+      }
     }
   ]
 }
