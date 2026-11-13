@@ -17,6 +17,7 @@ import (
 	naming "github.com/Bitspark/bittype/transform/syntax/horos/mapping/naming/go"
 	policy "github.com/Bitspark/bittype/transform/syntax/horos/mapping/record/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
+	shared "github.com/Bitspark/bittype/transform/syntax/shared/contribution/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
@@ -63,7 +64,7 @@ func Contribution(from representation.Language) (g.Contribution[h.Language, s.La
 			if !ok {
 				return g.Projected[s.Language]{}, g.ErrInvalid
 			}
-			return policy.Project(p, payload.Members, field, model.Record)
+			return shared.Members(p, payload.Members, field, model.Record)
 		},
 	}, nil
 }

@@ -407,7 +407,7 @@ func transformRole(relative string) (roleRule, bool) {
 		// not contributions. It never imports another mapping, and never the
 		// target that constructs trees from the forms it describes.
 		rule := role("transform/syntax/<source>-to-<target>/mapping/<name>/go", roleContribution, []string{"source", source, "target", native},
-			"contracts/generation/go", "syntax/<source>/go", "syntax/<target>/go",
+			"contracts/generation/go", "syntax/<source>/go", "syntax/<target>/go", "transform/syntax/shared/contribution/go",
 			"transform/syntax/<source>/source/go", "transform/syntax/<target>/model/go", "trees/representation/go",
 		)
 		rule.admits = func(dependency string) bool {

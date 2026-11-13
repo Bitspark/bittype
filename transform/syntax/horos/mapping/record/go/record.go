@@ -1,6 +1,7 @@
 // Package record holds the policy by which a closed horos record becomes a
-// record of a target: which requests its rule names, what it records in its
-// payload, and how its projector pairs the two
+// record of a target: which requests its rule names and what it records in
+// its payload. The projector that pairs the two reads no source and is the
+// shared mechanism of contributions
 // (docs/contribution-contract.md, rows 5, 11 to 13, O3, O29, O38). The horos
 // side of a mapping owns this policy, and it is the same for every target. A
 // target's record package supplies the spelling of a member, its model's
@@ -87,34 +88,4 @@ func Members(step g.DecideStep[h.Language, source.Reader], spell Spelling) ([]st
 		members = append(members, member)
 	}
 	return members, nil
-}
-
-// Project is the projector's part: the target's record from the recorded
-// member names and the views of the dependencies. A dependency with a
-// fragment is a delegated field, and its members are the fragment. Every
-// other dependency is a field that the record lays out itself, named by the
-// next recorded member. field and record are the target model's forms. It
-// reads no source.
-func Project[T any](p g.Projection[T], members []string, field func(name string, ty g.Expression[T]) g.Expression[T], record func(fields ...g.Expression[T]) g.Expression[T]) (g.Projected[T], error) {
-	var laid []g.Expression[T]
-	var table []g.Member
-	own := 0
-	for i := 0; i < p.Dependencies(); i++ {
-		d := p.Dependency(i)
-		if len(d.Fragment) > 0 {
-			laid = append(laid, d.Fragment...)
-			table = append(table, g.FragmentMembers(i))
-			continue
-		}
-		if own >= len(members) {
-			return g.Projected[T]{}, g.ErrInvalid
-		}
-		laid = append(laid, g.At(field(members[own], d.Type), d.Origin))
-		table = append(table, g.Member{Name: members[own]})
-		own++
-	}
-	if own != len(members) {
-		return g.Projected[T]{}, g.ErrInvalid
-	}
-	return g.Projected[T]{Type: g.At(record(laid...), p.Origin()), Members: table}, nil
 }

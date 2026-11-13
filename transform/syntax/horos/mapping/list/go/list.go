@@ -22,12 +22,3 @@ func Requests(step g.NameStep[h.Language, source.Reader]) ([]g.Request[h.Languag
 	}
 	return []g.Request[h.Language]{g.Reference(element)}, nil
 }
-
-// Element is the projector's part: the target type that was selected for the
-// element. It reads no source.
-func Element[T any](p g.Projection[T]) (g.Expression[T], error) {
-	if p.Dependencies() != 1 {
-		return g.Expression[T]{}, g.ErrScope
-	}
-	return p.Dependency(0).Type, nil
-}

@@ -333,7 +333,7 @@ var languageLayout = map[string][]string{
 
 // pairImports is what one mapping contribution of <s>-to-<n> may import.
 var pairImports = []string{
-	"contracts/generation/go", "syntax/<n>/go", "syntax/<s>/go", "transform/syntax/<n>/model/go",
+	"contracts/generation/go", "syntax/<n>/go", "syntax/<s>/go", "transform/syntax/<n>/model/go", "transform/syntax/shared/contribution/go",
 	"transform/syntax/<s>/mapping/declarations/go", "transform/syntax/<s>/mapping/go", "transform/syntax/<s>/mapping/naming/go",
 	"transform/syntax/<s>/mapping/pattern/go", "transform/syntax/<s>/source/go", "trees/representation/go",
 }
