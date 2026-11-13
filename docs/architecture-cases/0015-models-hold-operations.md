@@ -3,7 +3,7 @@
 **Status.** Identified on 13 November 2026 at main
 `058140171592882239d759663e0f7387a171c021`. Correction in progress: slice S3a
 is delivered on `main` with pull request [#318](https://github.com/Bitspark/bittype/pull/318), slice S4
-with pull request [#PRNUMBER](https://github.com/Bitspark/bittype/pull/PRNUMBER), and
+with pull request [#320](https://github.com/Bitspark/bittype/pull/320), and
 the rest is pending. The
 correction is designed in [models and operations](../models-and-operations.md)
 and delivered by its slices S1 to S8. For the four intended-forms packages
@@ -316,7 +316,7 @@ operation is judged in review and by no check. The import rule for
 everything under `model` is slice S8's: until then each model package has
 its own exact list.
 
-### Slice S4, delivered with pull request [#PRNUMBER](https://github.com/Bitspark/bittype/pull/PRNUMBER)
+### Slice S4, delivered with pull request [#320](https://github.com/Bitspark/bittype/pull/320)
 
 **What is corrected.**
 
