@@ -22,6 +22,14 @@
 //
 // It refuses, as unsupported: a generic definition and a reference from one
 // definition to another. Neither is needed by the pair.
+//
+// COPY (AC-11, finding AG-9 of the two other pairs): CheckExpression and
+// CheckProgram forward to the model and to the shared single-scope check, and
+// Build starts as a store and the shared compile, as in the target of every
+// language. That wiring interprets nothing of horos and has no agnostic
+// implementation: each target repeats it. What is horos's here is the
+// lowering of each form, the spelling check of a name and the completion of
+// the tree.
 package target
 
 import (
