@@ -371,10 +371,10 @@ func (f *formatter) record(id ast.NodeID, operands []ast.NodeID, level int) doc 
 		return f.Seq()
 	}
 	parts := []doc{}
-	if mode == "open" {
+	if mode == s.RecordOpen {
 		parts = append(parts, f.T("open"), f.Space())
-	} else if mode != "closed" {
-		return f.bad(id, "record mode must be open or closed")
+	} else if mode != s.RecordClosed {
+		return f.bad(id, "record mode must be "+s.RecordOpen+" or "+s.RecordClosed)
 	}
 	parts = append(parts, f.T("{"))
 	for _, field := range operands[1:] {
@@ -383,8 +383,8 @@ func (f *formatter) record(id ast.NodeID, operands []ast.NodeID, level int) doc 
 			return f.bad(field, "expected a record field tuple")
 		}
 		label, ok := f.atom(args[0])
-		if !ok || label != "horos/field" {
-			return f.bad(field, "expected horos/field label")
+		if !ok || label != s.FieldTag {
+			return f.bad(field, "expected "+s.FieldTag+" label")
 		}
 		args = args[1:]
 		name, err := data.ReadText(f.literal(args[0]))
@@ -395,15 +395,15 @@ func (f *formatter) record(id ast.NodeID, operands []ast.NodeID, level int) doc 
 		if !ok {
 			return f.Seq()
 		}
-		if presence != "req" && presence != "opt" {
-			return f.bad(field, "field presence must be req or opt")
+		if presence != s.FieldRequired && presence != s.FieldOptional {
+			return f.bad(field, "field presence must be "+s.FieldRequired+" or "+s.FieldOptional)
 		}
 		spelling := lit.Quote(name)
 		if lit.Identifier(name) {
 			spelling = lit.Name(name)
 		}
 		p := []doc{f.Group(args[0], f.T(spelling))}
-		if presence == "opt" {
+		if presence == s.FieldOptional {
 			p = append(p, f.Group(args[1], f.T("?")))
 		}
 		p = append(p, f.T(":"), f.Space(), f.typ(args[2], 0, level+1), f.T(";"))

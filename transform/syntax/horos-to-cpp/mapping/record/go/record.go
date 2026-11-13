@@ -19,7 +19,7 @@ import (
 // binding record/cpp/1. An optional field is wrapped in std::optional here.
 func Library() rules.Library[s.Language] {
 	return func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
-		pattern, err := patterns.Head(from, "record", "closed")
+		pattern, err := patterns.Head(from, "record", h.RecordClosed)
 		if err != nil {
 			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
 		}
