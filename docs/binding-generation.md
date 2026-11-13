@@ -63,6 +63,8 @@ Distribution follows from this interface. Neither an existing generator nor the 
 - the selected adapter factories, their argument slots and their resource requirements;
 - the selected root contract, such as `Service<Ops>`, which the author declares at the root of the contract and which is selected like any other contribution.
 
+**Clarified on 13 November 2026 ([research 0017](../research-docs/0017-contribution-contract.md), rows 5 and 23, decisions O1 and O7 on [#196](https://github.com/Bitspark/bittype/issues/196#issuecomment-6841190077)).** Two items of this list are read as [the contribution contract](contribution-contract.md) states. The plan carries a rule, such as one for absence and presence, either as a recorded field, where it varies between selections, or through the contribution reference whose revision fixes it. And for a generated declaration, "native symbols" means the logical symbol identity and the spelled intent: the place and the imports come from the realization, the fourth input named under the completeness test below.
+
 The serialized plan carries an explicit format version, which bittype owns. A backend consumes a pinned version and refuses an unknown one.
 
 **Form.** These are typed references and target-owned expressions, the same principle as bittype's native intent (the [generation SPI](generation-spi.md)). They are not a universal schema and not another type algebra.

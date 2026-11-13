@@ -115,6 +115,14 @@ or map means.
   5. a generic map whose key requirement is rejected;
   6. an independently registered family that needs no kernel or backend change.
 - **Clarified on 13 November 2026
+  ([research 0017](../research-docs/0017-contribution-contract.md), row 23,
+  decision O7 on [#196](https://github.com/Bitspark/bittype/issues/196#issuecomment-6841190077)).**
+  "Native symbols, imports" in the table above: for a generated declaration
+  the plan carries the logical symbol identity and the spelled intent. Its
+  place and the imports come from the realization, which a backend reads from
+  the placed result
+  ([identities](contribution-contract.md#identities)).
+- **Clarified on 13 November 2026
   ([research 0017](../research-docs/0017-contribution-contract.md), row 30).**
   What stays unstable until then is the envelope's version: its layout and its
   encoding. The meanings that the plan shares with the contribution contract
