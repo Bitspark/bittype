@@ -667,16 +667,40 @@ func TestFilesFailureCategories(t *testing.T) {
 		return nil
 	}), g.ErrScope)
 	add("an external use at a site that does not name it", typescript, source.ErrInvalid, tampered(func(_ g.BuildInput[ts.Language], assembly *g.Assembly) error {
-		assembly.ExternalUses[0].At.Site = assembly.Exposed[0]
+		assembly.ExternalUses[0].At.Site = assembly.Declarations[0]
 		return nil
 	}))
 	add("a name use without a destination", typescript, source.ErrInvalid, tampered(func(_ g.BuildInput[ts.Language], assembly *g.Assembly) error {
 		assembly.ExternalUses = nil
 		return nil
 	}))
-	add("an exposed site that is no top-level declaration", typescript, source.ErrInvalid, tampered(func(_ g.BuildInput[ts.Language], assembly *g.Assembly) error {
-		assembly.Exposed[0] = assembly.ExternalUses[0].At.Site
-		return nil
+	add("an exposed site that is no top-level declaration", typescript, source.ErrInvalid, tampered(func(in g.BuildInput[ts.Language], assembly *g.Assembly) error {
+		// The declaration that holds the external use is listed at that use, a
+		// node below it. No listed site contains another, so the output seals.
+		tree, err := representation.Unpack[ts.Language](in.Language, assembly.Syntax.Trees[0])
+		if err != nil {
+			return err
+		}
+		use := assembly.ExternalUses[0].At.Site
+		var holds func(ast.NodeID) bool
+		holds = func(id ast.NodeID) bool {
+			if id == use.Node {
+				return true
+			}
+			for _, child := range tree.Nodes[id-1].Children {
+				if holds(child.Node) {
+					return true
+				}
+			}
+			return false
+		}
+		for i, site := range assembly.Declarations {
+			if holds(site.Node) {
+				assembly.Declarations[i] = use
+				return nil
+			}
+		}
+		return errors.New("no declaration holds the external use")
 	}))
 	add("a generated declaration that is already exported", typescript, source.ErrInvalid, tampered(tamperedTree(func(tree *ts.AST) {
 		node := &tree.Nodes[tree.Nodes[tree.Root-1].Children[0].Node-1]

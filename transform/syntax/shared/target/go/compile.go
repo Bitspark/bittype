@@ -1,6 +1,7 @@
 package target
 
 import (
+	"cmp"
 	"context"
 	"slices"
 
@@ -8,6 +9,37 @@ import (
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
+
+// compareDeclarations orders the declarations that seed construction. Its key
+// is the name, then the provenance, then the planned identity. Equal names
+// compare equal and the next part of the key decides, so
+// compareDeclarations(a, b) == -compareDeclarations(b, a) for every pair. It
+// returns 0 only for one and the same planned declaration.
+//
+// The provenance is the planner's own fact: the declaring sites of the source
+// declarations a declaration represents. Two provenances compare site by site,
+// each site by its tree and then its node, and a list sorts before every list
+// that continues it. No provenance, which is what a helper has, sorts first.
+// The origin that a mapping may state on its description is not part of the
+// key, because a mapping may leave it out.
+//
+// Limit: two declarations with equal names and equal provenance are ordered by
+// their planned identity, which follows the order of the requested roots. Two
+// native declarations of one source declaration are such a pair, and so are
+// two helpers of one name. Compile refuses equal names today, and no plan
+// contains such a pair.
+func compareDeclarations[T any](a, b g.PlannedDeclaration[T]) int {
+	return cmp.Or(
+		cmp.Compare(a.Description.Name, b.Description.Name),
+		slices.CompareFunc(a.Provenance, b.Provenance, compareSites),
+		cmp.Compare(a.ID, b.ID),
+	)
+}
+
+// compareSites orders two source sites by their tree and then their node.
+func compareSites(a, b ast.NodeRef) int {
+	return cmp.Or(cmp.Compare(a.Tree, b.Tree), cmp.Compare(a.Node, b.Node))
+}
 
 func Compile[T any](ctx context.Context, in g.BuildInput[T], store *Store[T], lower Lowering[T]) (g.Assembly, error) {
 	fail := func(e error) (g.Assembly, error) { return g.Assembly{}, e }
@@ -110,12 +142,7 @@ func Compile[T any](ctx context.Context, in g.BuildInput[T], store *Store[T], lo
 		return nil
 	}
 	order := slices.Clone(declarations)
-	slices.SortFunc(order, func(a, b g.PlannedDeclaration[T]) int {
-		if a.Description.Name < b.Description.Name {
-			return -1
-		}
-		return 1
-	})
+	slices.SortFunc(order, compareDeclarations[T])
 	for _, d := range order {
 		if err := declaration(d.ID, 0); err != nil {
 			return fail(err)
@@ -197,16 +224,17 @@ func Compile[T any](ctx context.Context, in g.BuildInput[T], store *Store[T], lo
 	if err != nil {
 		return fail(err)
 	}
+	// The inventory: for every planned declaration, in planned order, the node
+	// that the lowering returned for it. That node was emitted once. Where it
+	// sits in the unit is the lowering's decision. The kernel adds what the plan
+	// knows about each declaration.
 	out := g.Assembly{Syntax: syntax, ExternalUses: external}
-	for _, id := range in.Program.Exposed() {
-		if id == 0 || int(id) > len(declarations) {
-			return fail(g.ErrScope)
-		}
-		node := symbols[Symbol[T]{store, id, -1, declarations[id-1].Description.Name}]
+	for _, d := range declarations {
+		node := symbols[Symbol[T]{store, d.ID, -1, d.Description.Name}]
 		if node == 0 {
 			return fail(g.ErrIncomplete)
 		}
-		out.Exposed = append(out.Exposed, ast.NodeRef{Tree: in.Output, Node: node})
+		out.Declarations = append(out.Declarations, ast.NodeRef{Tree: in.Output, Node: node})
 	}
 	return out, nil
 }
