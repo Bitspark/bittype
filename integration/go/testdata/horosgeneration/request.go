@@ -64,26 +64,12 @@ type Bundle[T any] = composition.Bundle[h.Language, T, source.Reader]
 // roots and the structural representation profile. Each bundle's codec is
 // registered once: a registry holds one codec for each schema reference.
 func Compose[T any](registry *c.Registry, input transform.Input, to representation.Language, output ast.TreeID, target g.Target[T], bundles ...Bundle[T]) (c.Request, error) {
-	zero := c.Request{}
-	from := input.Source.Language()
-	if _, loaded := configuredSources.LoadOrStore(registry, true); !loaded {
-		if err := c.RegisterSource[h.Language, source.Reader](registry, from, source.Provider{}); err != nil {
-			return zero, err
-		}
-	}
-	if err := c.RegisterTarget(registry, to, target); err != nil {
-		return zero, err
-	}
-	set, err := composition.Build(from, bundles...)
-	if err != nil {
-		return zero, err
-	}
-	if err := set.Register(registry, from, to); err != nil {
-		return zero, err
-	}
 	roots, err := Roots(input)
 	if err != nil {
-		return zero, err
+		return c.Request{}, err
 	}
-	return c.Request{Input: input, To: to, Output: output, Roots: roots, Profile: mapping.RepresentationProfile, Limits: g.DefaultLimits()}, nil
+	_, loaded := configuredSources.LoadOrStore(registry, true)
+	return composition.Compose(registry, input, to, composition.Pair[h.Language, T, source.Reader]{
+		Source: source.Provider{}, RegisterSource: !loaded, Target: target, Roots: roots, Profile: mapping.RepresentationProfile, Output: output,
+	}, bundles...)
 }

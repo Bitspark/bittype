@@ -7,7 +7,9 @@ package composition
 
 import (
 	g "github.com/Bitspark/bittype/contracts/generation/go"
+	"github.com/Bitspark/bittype/contracts/transform/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
+	"github.com/Bitspark/bittype/trees/ast/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
@@ -81,4 +83,41 @@ func Select[B any](table map[string]B, names ...string) []B {
 		out = append(out, table[name])
 	}
 	return out
+}
+
+// Pair is what a consumer states for one request of one pair: the source
+// integration, the target, the roots, the profile and the output tree.
+// RegisterSource is false where the registry already holds the source.
+type Pair[F, T, R any] struct {
+	Source         g.SourceProvider[F, R]
+	RegisterSource bool
+	Target         g.Target[T]
+	Roots          []ast.NodeRef
+	Profile        string
+	Output         ast.TreeID
+}
+
+// Compose registers the source, the target and the bundles of a pair, as a
+// consumer does, and returns the request for the pair's roots under its
+// profile. It is the one composition helper of the test tree: a fixture of
+// one source language is a call of it with that source's provider, roots and
+// profile.
+func Compose[F, T, R any](registry *c.Registry, input transform.Input, to representation.Language, pair Pair[F, T, R], bundles ...Bundle[F, T, R]) (c.Request, error) {
+	from := input.Source.Language()
+	if pair.RegisterSource {
+		if err := c.RegisterSource[F, R](registry, from, pair.Source); err != nil {
+			return c.Request{}, err
+		}
+	}
+	if err := c.RegisterTarget(registry, to, pair.Target); err != nil {
+		return c.Request{}, err
+	}
+	set, err := Build(from, bundles...)
+	if err != nil {
+		return c.Request{}, err
+	}
+	if err := set.Register(registry, from, to); err != nil {
+		return c.Request{}, err
+	}
+	return c.Request{Input: input, To: to, Output: pair.Output, Roots: pair.Roots, Profile: pair.Profile, Limits: g.DefaultLimits()}, nil
 }
