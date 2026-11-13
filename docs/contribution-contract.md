@@ -57,7 +57,8 @@ leaves the meaning of its sentence. All of them are listed under
 - **O23 to O26:** the four
   [decisions of the same day](https://github.com/Bitspark/bittype/issues/196#issuecomment-6842416622)
   after the same reader read the changes at `0102bfe` and reported 13
-  findings. O24 corrects O22, and O26 corrects one point of O18.
+  findings. O23 corrects words of O13, O24 corrects O22, and O26 corrects
+  one point of O18.
 - **Verification report 1, 2 or 3**, in the gate V1, V2 or V3: the reports of
   three verification agents, each on a set of the recommendations of research
   0017, checked against the code at `7e9dc34`. They lie beside the research
@@ -1187,7 +1188,7 @@ Two later decisions correct its words.
   contributions. The Go conversion and lowering that the gate executes are
   facet packages of the builtin contributions, and they are test code.
 - **Where the test tree is (O16).** O16 asks for the role of `LAYOUT.md`
-  that holds test-only packages. The layout has one role whose packages only
+  that holds test-only packages. The layout has a role whose packages only
   tests and test compositions import at `04632ae`: "Contribution:
   verification law" (`LAYOUT.md:161`). It is the nearest existing role, and
   it is no role for a facet package of a mapping contribution. The layout has
@@ -1947,9 +1948,10 @@ A note that row 39 names is made with this change: the validation cell of row
   builtin mapping states the structural profile"
   (`docs/representation-families.md:330`); composition must "reject
   duplicates, incompatible profiles, missing facets and unsupported
-  applications" (`docs/binding-generation.md:109`). Derived here: a
-  generation request names one profile, so contributions of two profiles do
-  not meet in one plan. Not said: whether a later contract lets them meet.
+  applications" (`docs/binding-generation.md:109`). "A request selects by
+  its profile." (`docs/semantic-generation.md:59`) So contributions of two
+  profiles do not meet in one plan. Not said: whether a later contract lets
+  them meet.
 - **Which contribution is the materially different one of the gate.** The
   advice (section 4.2) names three candidates. One of them, an optional
   fragment of another shape, exists only if presence is delegated.
