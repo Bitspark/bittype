@@ -21,8 +21,8 @@ import (
 	"slices"
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
-	vocabulary "github.com/Bitspark/bittype/transform/syntax/typescript-to-horos/vocabulary/objecttype/go"
 	"github.com/Bitspark/bittype/transform/syntax/horos/payload/go"
+	vocabulary "github.com/Bitspark/bittype/transform/syntax/typescript-to-horos/vocabulary/objecttype/go"
 	core "github.com/bitspark/ontos/core/go"
 	data "github.com/bitspark/ontos/data/go"
 )
