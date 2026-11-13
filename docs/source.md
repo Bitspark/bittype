@@ -478,8 +478,12 @@ value of the `files` package and a limit of the semantic contract carry:
 exceeded limit, a `files.ErrInvalid` is invalid input, and every other error is
 returned as it is. The publisher calls it for its inventory check, and each
 formatter calls it for its own inventory check and for the capture of its fresh
-output. A symbol that the TypeScript issuer cannot read keeps its `generation`
-value. The horos formatter keeps the JSON decoder's error and
+output. The generated-Files contract calls it for the check of the sealed
+output against the semantic limits and for the answer of `files.Cover`, and
+the TypeScript placement of existing source calls it for the answer of
+`files.Cover`. A symbol that the TypeScript issuer cannot read keeps its
+`generation` value, and a handle that the output did not issue keeps
+`generation.ErrScope`. The horos formatter keeps the JSON decoder's error and
 `semantic.ErrInvalidRequest` for its setting.
 
 No part of a placement is accepted and ignored. A generated placement is a

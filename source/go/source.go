@@ -89,9 +89,10 @@ var ErrUnsupported = errors.New("Files input outside supported coverage")
 // carries, so that errors.Is holds for both. A files.ErrLimit and a
 // semantic.ErrLimit are an exceeded limit, and a files.ErrInvalid is invalid
 // input. Every other error is returned as it is, and so is a refusal that has
-// a category. The publisher and every Files formatter call it where a
-// collaborator answers for the inventory of the files or for the capture of
-// the fresh output, so the pairing is written once.
+// a category. The publisher, the generated-Files contract and every Files
+// formatter call it where a collaborator answers for the inventory of the
+// files, for a captured input against the semantic limits of a request or for
+// the capture of the fresh output, so the pairing is written once.
 func WithCategory(err error) error {
 	switch {
 	case err == nil, errors.Is(err, ErrInvalid), errors.Is(err, ErrUnsupported), errors.Is(err, ErrLimit), errors.Is(err, semantic.ErrEvidenceUnavailable):
