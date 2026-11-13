@@ -3,6 +3,7 @@ package files
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"slices"
 	"strings"
@@ -81,6 +82,54 @@ func (f Files) Capture(l Limits) (Files, error) {
 		}
 	}
 	return f.Clone(), nil
+}
+// Cover admits a placement of items into files. table names each file by its
+// identity and gives its relative path. assignment gives each item its file.
+// items are the items that the placement has to place. Cover refuses in this
+// order:
+//
+//   - more files than MaxFiles or than MaxLinks, with ErrLimit. Each file of a
+//     placement is published with one syntax link, so both limits bound the
+//     number of files;
+//   - an assigned item that is none of items, and an assignment to a file that
+//     table does not declare, with ErrInvalid;
+//   - an item without an assignment, with ErrInvalid;
+//   - a table that Capture refuses, with the value of Capture.
+//
+// The two tables are keyed, so a placement cannot assign an item twice, name a
+// file twice or state an order. A file without an item is admitted. Cover knows
+// neither what an item is nor what a file means in a language. Its name says
+// that the assignment covers every item exactly once. It does not speak of what
+// an implementation supports. The result is the admitted inventory, without
+// text, in the order of the file identities.
+func Cover[I comparable](table map[ID]Path, assignment map[I]ID, items []I, l Limits) (Files, error) {
+	if !l.Valid() {
+		return Files{}, ErrInvalid
+	}
+	if len(table) > l.MaxFiles || len(table) > l.MaxLinks {
+		return Files{}, ErrLimit
+	}
+	expected := make(map[I]bool, len(items))
+	for _, item := range items {
+		expected[item] = true
+	}
+	for item, file := range assignment {
+		if !expected[item] {
+			return Files{}, fmt.Errorf("%w: an assigned item is not part of the placed set", ErrInvalid)
+		}
+		if _, declared := table[file]; !declared {
+			return Files{}, fmt.Errorf("%w: an item is assigned to the undeclared file %q", ErrInvalid, file)
+		}
+	}
+	if len(assignment) != len(expected) {
+		return Files{}, fmt.Errorf("%w: %d of %d items have no file", ErrInvalid, len(expected)-len(assignment), len(expected))
+	}
+	inventory := Files{Entries: make([]File, 0, len(table))}
+	for id, path := range table {
+		inventory.Entries = append(inventory.Entries, File{ID: id, Path: path})
+	}
+	slices.SortFunc(inventory.Entries, func(a, b File) int { return strings.Compare(string(a.ID), string(b.ID)) })
+	return inventory.Capture(l)
 }
 func (c Context) Clone() Context {
 	return Context{Files: c.Files.Clone(), Links: slices.Clone(c.Links)}
