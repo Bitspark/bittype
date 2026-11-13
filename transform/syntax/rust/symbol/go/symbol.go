@@ -34,24 +34,25 @@ func Std() Crate { return Crate{"std"} }
 // the crate's root module.
 func (c Crate) Name() string { return c.name }
 
-// named says whether a text is a name that a key may hold: a Rust identifier
-// that is no keyword, written plainly. A raw identifier (r#name) is one
-// spelling of a name and not the name, so it gives no second symbol for one
-// item, and Rust Files chooses a raw spelling where the language needs one.
-// The underscore names nothing.
+// named says whether a text is a name that a segment of an item's path may
+// hold: a Rust identifier that is no keyword, written plainly. A raw
+// identifier (r#name) is one spelling of a name and not the name, so it gives
+// no second symbol for one item, and Rust Files chooses a raw spelling where
+// the language needs one. The underscore names no item.
 func named(text string) bool {
 	return native.Identifier(text) && !strings.HasPrefix(text, "r#") && text != "_"
 }
 
-// Dependency returns the dependency whose crate has the given name. A text
-// that is no name is refused with generation.ErrInvalid, and every crate but
-// Std with generation.ErrUnsupported.
-//
-// Limit: the text is judged by the rule for a segment of a path, so a keyword
-// that the compiler takes as the name of a crate, such as fn, is refused as
-// invalid. The compiler's rule for a crate name is not on main yet.
+// Dependency returns the dependency whose crate has the given name. The name
+// is judged by the compiler's one rule for the name of a crate,
+// native.CrateName, as the Rust environment judges the name of a captured
+// crate. A text that the compiler does not take as the name of a crate is
+// refused with generation.ErrInvalid: the empty text, a raw identifier, a
+// text with a hyphen or a path separator. A name that the compiler takes and
+// that is no dependency of today is refused with generation.ErrUnsupported:
+// every crate but Std, a keyword such as fn and the underscore among them.
 func Dependency(name string) (Crate, error) {
-	if !named(name) {
+	if !native.CrateName(name) {
 		return Crate{}, g.ErrInvalid
 	}
 	if name != Std().name {

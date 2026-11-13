@@ -193,9 +193,19 @@ compiler. A crate of a library is no symbol yet. It needs that crate's
 semantics: [#170](https://github.com/Bitspark/bittype/issues/170).
 
 A key holds a name and never a spelling. A raw identifier, `r#string`, is one
-way to write the name `string`, so `Item` and `Dependency` refuse it as
-invalid, and one item has one symbol. The underscore names nothing and is
-refused too. Rust Files chooses a raw spelling where the language needs one.
+way to write the name `string`, so `Item` refuses it in a segment as invalid,
+and one item has one symbol. The underscore names no item and is refused in a
+segment too. Rust Files chooses a raw spelling where the language needs one.
+
+**The name of a crate is judged by the compiler's one rule.** `Dependency`
+asks `CrateName` of the lexical helper `internal/rust`: a text that is not
+empty and whose every character is alphanumeric or an underscore, by the
+tables of the pinned compiler. The Rust environment judges the name of a
+captured crate by the same function. A name that the compiler takes and that
+is no dependency of today is unsupported: `serde_json`, `core`, `alloc`, and
+also `fn`, `type`, `_` and `1a`, which the compiler takes as the name of a
+crate. Anything else is invalid: the empty text, `a-b`, and a raw identifier
+such as `r#type`, because `#` is no character of a crate's name.
 
 How this relates to the Rust environment: the
 [environment](native-semantics.md#rust-environment) refuses `std`, `core` and
@@ -205,12 +215,6 @@ put two entities of one name into a graph. `Std()` is about another thing: the
 crate that a use *names*. It is the one dependency a symbol may name. `core`
 and `alloc` as the dependency of a symbol are unsupported: each of their items
 is another export than the one of `std`, and no mapping selects one today.
-
-Limit: `Dependency` judges a crate's name by the rule for a segment of a path.
-So a keyword that the compiler takes as the name of a crate, such as `fn`, is
-invalid here, where the compiler's own rule would make it a crate outside
-coverage. That rule is on `main` in `semantics/rust/go`, which a symbol
-package may not import. Where the one rule lives is open.
 
 The Rust bridge names an entity by the crate and the path of its definition.
 It names the entity of `::std::string::String` as `alloc::string::String`, and

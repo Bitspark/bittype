@@ -38,14 +38,16 @@ func TestItemNamesADependencyAndAPath(t *testing.T) {
 	}
 	// Crates of a library, and the other crates of the sysroot: a later slice
 	// can admit them.
-	for _, name := range []string{"core", "alloc", "serde_json"} {
+	// The compiler takes each of these as the name of a crate: a keyword, the
+	// underscore, a digit first and a letter outside ASCII among them.
+	for _, name := range []string{"core", "alloc", "serde_json", "fn", "type", "crate", "_", "1a", "über"} {
 		if _, err := symbol.Dependency(name); !errors.Is(err, g.ErrUnsupported) {
 			t.Errorf("%s: %v, want unsupported", name, err)
 		}
 	}
-	// A key holds a name and never a spelling: a raw identifier and the
-	// underscore are no name of a crate.
-	for _, name := range []string{"", "std::option", "::std", "a-b", "crate", "fn", "r#type", "r#std", "_"} {
+	// No name of a crate for the compiler. A raw identifier is a spelling and
+	// never a name.
+	for _, name := range []string{"", "std::option", "::std", "a-b", "a b", "r#type", "r#std"} {
 		if _, err := symbol.Dependency(name); !errors.Is(err, g.ErrInvalid) {
 			t.Errorf("%q: %v, want invalid", name, err)
 		}

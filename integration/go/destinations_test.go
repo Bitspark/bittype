@@ -596,7 +596,10 @@ func TestExternalFormsNameADependencyThatADestinationCanName(t *testing.T) {
 		"a raw identifier as a segment":   {rustmodel.External(rustmodel.Std, []string{"r#option", "Option"}), nil, g.ErrInvalid},
 		"an underscore as a segment":      {rustmodel.External(rustmodel.Std, []string{"_"}), nil, g.ErrInvalid},
 		"a raw identifier as the crate":   {rustmodel.External("r#std", []string{"option", "Option"}), nil, g.ErrInvalid},
-		"an underscore as the crate":      {rustmodel.External("_", []string{"option", "Option"}), nil, g.ErrInvalid},
+		"an underscore as the crate":      {rustmodel.External("_", []string{"option", "Option"}), nil, g.ErrUnsupported},
+		"a keyword as the crate":          {rustmodel.External("fn", []string{"option", "Option"}), nil, g.ErrUnsupported},
+		"a digit first in the crate":      {rustmodel.External("1a", []string{"option", "Option"}), nil, g.ErrUnsupported},
+		"a hyphen in the crate":           {rustmodel.External("a-b", []string{"option", "Option"}), nil, g.ErrInvalid},
 		"the crate of a library":          {rustmodel.External("serde_json", []string{"Value"}), nil, g.ErrUnsupported},
 		"another crate of the sysroot":    {rustmodel.External("core", []string{"option", "Option"}), nil, g.ErrUnsupported},
 	} {
