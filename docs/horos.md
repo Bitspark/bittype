@@ -10,8 +10,9 @@ composition. The [kind design](kinds.md) supplies the semantic overview.
 ## Packages and public helpers
 
 - `syntax/horos/go` defines the language marker, AST/CST vocabulary and identity,
-  and the names of canonical Horos data that the tree carries literally: the
-  two tag prefixes, the labels and the record words.
+  and the names of canonical Horos data that a package agrees on when it writes
+  or reads the tree, or builds the value the tree mirrors: the two tag
+  prefixes, the labels and the record words.
   It depends on generic carriers and identity, not Horos's semantic implementation.
 - `check/syntax/horos/provider/go` admits syntax: node forms, roles, cardinalities and lexical
   spellings. Unresolved names and semantically invalid contracts can reach

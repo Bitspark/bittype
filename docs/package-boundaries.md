@@ -273,27 +273,41 @@ the field tag `horos/field` and the formatter compared with it. The label
 `arrow` was written by `internal/horosmodel` and again by `ArrowValue` in
 `verification/files/source/horos/go`. The words `open`, `closed`, `req` and
 `opt` of a record payload were written by the parser and read by the
-formatter, the source reader and the verification model. The parser and the
+formatter, the source reader and the verification model, and the four record
+mappings named `closed` as the discriminator of their pattern. The parser and the
 formatter could not take any of these from `semantics/horos/go`, because the
 role of a Syntax stage does not permit the semantic vocabulary. Pull request
 [#285](https://github.com/Bitspark/bittype/pull/285) therefore moved the two
 prefixes to `syntax/horos/go`, which every one of these packages may import
 and already imported. It declares with them the labels `arrow` and `record`,
 the field tag and the four words, in
-[`tags.go`](../syntax/horos/go/tags.go). The
-[horos document](horos.md#syntax-vocabulary) says why the names
-belong to the tree: descriptor operands "preserve the exact canonical value
-layout", and labels and field wrappers "retain their literal roles".
+[`tags.go`](../syntax/horos/go/tags.go). Every party writes or reads the
+horos tree, or builds the canonical value that the tree mirrors. The tree
+itself carries the field tag, the four words and the constructor `record`: the
+[horos document](horos.md#syntax-vocabulary) says that descriptor operands
+"preserve the exact canonical value layout", and that labels and field
+wrappers "retain their literal roles". The tree carries neither `horos/decl/`
+nor `arrow`. `internal/horosmodel` adds them when it lowers the tree to a
+canonical value, and `ArrowValue` builds a value outside any tree.
 `semantics/horos/go` keeps neither prefix and no alias. The move added no
 role, no import and no allowance, and every value is unchanged. The owner of
 all of these names is still the horos library
 ([Bitspark/horos#53](https://github.com/Bitspark/horos/issues/53) asks it to
 export them), and `tags.go` is a stand-in until it does. The other 28 labels
 that `internal/horosmodel/read.go` writes after the declaration prefix, such
-as `node`, `nu` and `module`, have one writer in bittype. The constructor
-name `record`, the discriminator `closed` in the four record mappings and the
-selector values in `internal/declsyntax` are not part of that move. Item 11 of
-#256 assesses them.
+as `node`, `nu` and `module`, have one writer in bittype.
+
+The correction is partial for three of the nine names. The four record
+mappings read `RecordClosed` since the same pull request. Two spellings by
+literal remain, and both are the same names as constants of `tags.go`. The
+constructor name `record` is the same name as `RecordLabel`: the parser writes
+it into the tree, `internal/horosmodel` appends it to the descriptor prefix,
+and the formatter, the admission grammar, the source reader, the declaration
+recipe, the verification model and the four record mappings compare with it.
+The selector values `open` and `closed` in `internal/declsyntax` are the same
+names as `RecordOpen` and `RecordClosed`, because the horos library derives
+the selector value from the mode atom of the record. Both belong to item 11 of
+#256, which covers the constructor names as a whole and closes this.
 
 Other names stay where they are written. These are not instances of finding
 12. A name needs a single owner when two parties must agree on it, and here

@@ -274,7 +274,8 @@ prefixes of canonical horos values with
 [#250](https://github.com/Bitspark/bittype/pull/250). The prefixes moved on
 to `syntax/horos/go` with
 [#285](https://github.com/Bitspark/bittype/pull/285), with the labels, the
-field tag and the record words that the horos tree carries. The horos syntax node
+field tag and the record words: names that the horos tree carries or is
+lowered to. The horos syntax node
 kinds have one declaration since
 [#254](https://github.com/Bitspark/bittype/pull/254), and
 `semantics/typescript/go` publishes the TypeScript graph names that Go reads

@@ -59,7 +59,7 @@ language: `analyze/files/horos/provider/go` is Go code implementing analysis for
 | [contracts/resolution/go](../contracts/resolution/go/provider.go) | Independent resolution capability and requirements |
 | [contracts/analysis/go](../contracts/analysis/go/provider.go) | Analysis capability and explicit resolution dependency |
 | [engine/go](../engine/go/analysis.go) | Explicit registration and selection of a compatible analyzer |
-| [syntax/horos/go](../syntax/horos/go/nodes.go) and [check/syntax/horos/provider/go](../check/syntax/horos/provider/go/check.go) | Horos AST vocabulary, the names of canonical Horos data that the tree carries, and syntax admission |
+| [syntax/horos/go](../syntax/horos/go/nodes.go) and [check/syntax/horos/provider/go](../check/syntax/horos/provider/go/check.go) | Horos AST vocabulary, the names of canonical Horos data that the tree carries or is lowered to, and syntax admission |
 | [resolve/files/horos/provider/go](../resolve/files/horos/provider/go/resolver.go) | Registered resolution, authoritative fact export and explicit canonical-value helpers |
 | [analyze/files/horos/provider/go](../analyze/files/horos/provider/go/analyze.go) | Consume explicit resolution evidence and reuse its immutable model |
 | [semantics/horos/go](../semantics/horos/go/vocabulary.go) | The horos semantic identities: roles, relations, the entity kinds and term operators that a writer and a reader share, the term encoding, profiles, the limits setting, the prelude pin and the resolution and analysis contracts |
