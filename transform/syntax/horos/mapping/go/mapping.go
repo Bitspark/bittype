@@ -1,6 +1,6 @@
 // Package mapping holds the identities that the horos mapping side declares:
-// the two generation profiles, the publisher of the contributions of the
-// structural profile, and the profile's reason for refusing a nested record.
+// the two generation profiles and the publisher of the contributions of the
+// structural profile.
 // It holds identities only and imports nothing.
 //
 // A profile is a promise about the native type, so the contribution that
@@ -11,8 +11,8 @@
 // that a request names. A contribution of another profile states its own
 // identity in its own package, and nothing here changes.
 //
-// The declaration policy and the naming function that a contribution builds
-// its rule from live in the sibling packages declarations and naming.
+// The policies and the naming function that a contribution builds its rule
+// from live in the sibling packages declarations, record, list and naming.
 package mapping
 
 // RepresentationProfile is the structural representation profile. It promises
@@ -35,9 +35,3 @@ const EnforcementProfile = "structural-enforcement/1"
 // authenticates nothing: until a composition lock binds it (row 15a),
 // registration in one process is the binding.
 const Publisher = "github.com/Bitspark/bittype"
-
-// ReasonNestedRecord is the structural profile's reason for refusing a record
-// that is no body of a named declaration: "Records must be named
-// declarations" (docs/semantic-generation.md). Each target's record
-// contribution refuses such a record as unsupported with this reason.
-const ReasonNestedRecord = "nested records require a named declaration in this profile"

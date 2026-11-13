@@ -23,6 +23,7 @@ import (
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
+	shared "github.com/Bitspark/bittype/integration/go/testdata/composition"
 	f "github.com/Bitspark/bittype/integration/go/testdata/generationfixture"
 	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
 	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
@@ -139,39 +140,31 @@ func (b gateBundle[T]) find(t *testing.T, key string) g.Contribution[h.Language,
 // gateBuiltin is the builtin set of one target as a bundle.
 func gateBuiltin[T any](t *testing.T, from representation.Language, table map[string]genfixture.Bundle[T], names []string) gateBundle[T] {
 	t.Helper()
-	var b gateBundle[T]
-	for _, name := range names {
-		contribution, err := table[name].Contribution(from)
-		if err != nil {
-			t.Fatal(err)
-		}
-		codec, err := table[name].Codec()
-		if err != nil {
-			t.Fatal(err)
-		}
-		b.contributions, b.codecs = append(b.contributions, contribution), append(b.codecs, codec)
+	set, err := shared.Build(from, shared.Select(table, names...)...)
+	if err != nil {
+		t.Fatal(err)
 	}
-	return b
+	return gateBundle[T]{contributions: set.Contributions, codecs: set.Codecs}
 }
 
 func gateGolang(t *testing.T, from representation.Language) gateBundle[gs.Language] {
 	t.Helper()
-	return gateBuiltin(t, from, golangBundleTable(), golangBundleNames)
+	return gateBuiltin(t, from, golangBundleTable(), builtinBundleNames)
 }
 
 func gateTypescript(t *testing.T, from representation.Language) gateBundle[ts.Language] {
 	t.Helper()
-	return gateBuiltin(t, from, typescriptBundleTable(), typescriptBundleNames)
+	return gateBuiltin(t, from, typescriptBundleTable(), builtinBundleNames)
 }
 
 func gateRust(t *testing.T, from representation.Language) gateBundle[rs.Language] {
 	t.Helper()
-	return gateBuiltin(t, from, rustBundleTable(), rustBundleNames)
+	return gateBuiltin(t, from, rustBundleTable(), builtinBundleNames)
 }
 
 func gateCpp(t *testing.T, from representation.Language) gateBundle[cs.Language] {
 	t.Helper()
-	return gateBuiltin(t, from, cppBundleTable(), cppBundleNames)
+	return gateBuiltin(t, from, cppBundleTable(), builtinBundleNames)
 }
 
 // gateSource parses horos text and analyses it into a generation input.
@@ -205,25 +198,9 @@ func gatePlan[T any](t *testing.T, input transform.Input, checker check.Checker,
 	if err := c.RegisterTarget(&registry, to, target); err != nil {
 		t.Fatal(err)
 	}
-	for _, contribution := range b.contributions {
-		if err := c.RegisterContribution(&registry, from, to, contribution); err != nil {
-			return g.GenerationPlan{}, err
-		}
-	}
-	for _, codec := range b.codecs {
-		if err := registry.RegisterCodec(codec); err != nil {
-			return g.GenerationPlan{}, err
-		}
-	}
-	for _, facet := range b.facets {
-		if err := registry.RegisterFacet(facet); err != nil {
-			return g.GenerationPlan{}, err
-		}
-	}
-	for _, product := range b.products {
-		if err := registry.RegisterProduct(product); err != nil {
-			return g.GenerationPlan{}, err
-		}
+	set := shared.Set[h.Language, T, source.Reader]{Contributions: b.contributions, Codecs: b.codecs, Facets: b.facets, Products: b.products}
+	if err := set.Register(&registry, from, to); err != nil {
+		return g.GenerationPlan{}, err
 	}
 	roots, err := genfixture.Roots(input)
 	if err != nil {

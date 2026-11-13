@@ -12,6 +12,7 @@ import (
 	model "github.com/Bitspark/bittype/transform/syntax/cpp/model/go"
 	vocabulary "github.com/Bitspark/bittype/transform/syntax/horos-to-cpp/vocabulary/list/go"
 	rules "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
+	policy "github.com/Bitspark/bittype/transform/syntax/horos/mapping/list/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
@@ -24,8 +25,9 @@ type name = g.NameStep[h.Language, source.Reader]
 var target = string(s.Language{}.ID())
 
 // Contribution returns the list contribution: a horos list becomes the
-// C++ model collection of what was selected for its element. The element is
-// a link of the frozen record. Nothing else varies, so the payload is empty.
+// C++ model collection of what was selected for its element. The horos list
+// policy names the element, which is a link of the frozen record. Nothing else
+// varies, so the payload is empty.
 func Contribution(from representation.Language) (g.Contribution[h.Language, s.Language, source.Reader], error) {
 	selector, err := source.Builtin(from, "list-of", "")
 	if err != nil {
@@ -35,26 +37,17 @@ func Contribution(from representation.Language) (g.Contribution[h.Language, s.La
 		Reference: vocabulary.Reference, Target: target, Profile: rules.RepresentationProfile,
 		Domain: g.ForForm(selector), Schema: vocabulary.Schema,
 		Rule: g.Rule[h.Language, source.Reader]{
-			Name: func(_ context.Context, step name) ([]g.Request[h.Language], error) {
-				reader, err := step.Reader()
-				if err != nil {
-					return nil, err
-				}
-				element, err := reader.Element(step.Subject.Use)
-				if err != nil {
-					return nil, err
-				}
-				return []g.Request[h.Language]{g.Reference(element)}, nil
-			},
+			Name: func(_ context.Context, step name) ([]g.Request[h.Language], error) { return policy.Requests(step) },
 			Decide: func(context.Context, decide) (g.Decision, error) {
 				return g.Decision{Payload: vocabulary.Payload{}}, nil
 			},
 		},
 		Project: func(_ context.Context, p g.Projection[s.Language]) (g.Projected[s.Language], error) {
-			if p.Dependencies() != 1 {
-				return g.Projected[s.Language]{}, g.ErrScope
+			element, err := policy.Element(p)
+			if err != nil {
+				return g.Projected[s.Language]{}, err
 			}
-			return g.Projected[s.Language]{Type: model.Collection(p.Dependency(0).Type)}, nil
+			return g.Projected[s.Language]{Type: model.Collection(element)}, nil
 		},
 	}, nil
 }

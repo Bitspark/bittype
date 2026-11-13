@@ -12,6 +12,7 @@ import (
 	checkgo "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
+	shared "github.com/Bitspark/bittype/integration/go/testdata/composition"
 	s "github.com/Bitspark/bittype/syntax/golang/go"
 	target "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
 	c "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
@@ -159,25 +160,5 @@ func (f *Fixture) PlanContributions(ctx context.Context, composition Composition
 
 // register registers what a composition holds, as a consumer does.
 func (composition Composition) register(registry *c.Registry, from, to representation.Language) error {
-	for _, contribution := range composition.Contributions {
-		if err := c.RegisterContribution(registry, from, to, contribution); err != nil {
-			return err
-		}
-	}
-	for _, codec := range composition.Codecs {
-		if err := registry.RegisterCodec(codec); err != nil {
-			return err
-		}
-	}
-	for _, facet := range composition.Facets {
-		if err := registry.RegisterFacet(facet); err != nil {
-			return err
-		}
-	}
-	for _, product := range composition.Products {
-		if err := registry.RegisterProduct(product); err != nil {
-			return err
-		}
-	}
-	return nil
+	return shared.Set[SourceLanguage, s.Language, Reader]{Contributions: composition.Contributions, Codecs: composition.Codecs, Facets: composition.Facets, Products: composition.Products}.Register(registry, from, to)
 }

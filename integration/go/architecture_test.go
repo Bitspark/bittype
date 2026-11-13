@@ -411,7 +411,7 @@ var modelExternalImports = map[string][]string{
 	"tools/payload-schema/artifact/go": {"github.com/bitspark/ontos/codec/go"},
 	// A payload schema is a horos type and a frozen payload an ontos value,
 	// whatever the source language of a generation is.
-	payloadShared:                        {"github.com/Bitspark/horos/core/go", "github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/codec/go"},
+	payloadShared:                        {"github.com/Bitspark/horos/core/go", "github.com/Bitspark/horos/core/go/declarations", "github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 	"transform/syntax/horos/source/go":   {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go", "github.com/bitspark/ontos/codec/go"},
 	"parse/syntax/horos/provider/go":     {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},
 	"format/syntax/horos/provider/go":    {"github.com/bitspark/ontos/core/go", "github.com/bitspark/ontos/data/go"},

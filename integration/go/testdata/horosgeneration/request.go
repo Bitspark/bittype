@@ -7,6 +7,7 @@ import (
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/transform/go"
+	"github.com/Bitspark/bittype/integration/go/testdata/composition"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	mapping "github.com/Bitspark/bittype/transform/syntax/horos/mapping/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
@@ -54,13 +55,9 @@ func Roots(input transform.Input) ([]ast.NodeRef, error) {
 
 var configuredSources sync.Map
 
-// Bundle is what a consumer's composition registers for one contribution: the
-// contribution and the codec of its payload schema. Each is one package, and
-// only a composition imports both.
-type Bundle[T any] struct {
-	Contribution func(from representation.Language) (g.Contribution[h.Language, T, source.Reader], error)
-	Codec        func() (g.PayloadCodec, error)
-}
+// Bundle is a bundle of a pair whose source is horos: the contribution and
+// the codec of its payload schema.
+type Bundle[T any] = composition.Bundle[h.Language, T, source.Reader]
 
 // Compose registers the source once per registry, the target and the given
 // bundles. The request it returns names the entry module's type definitions as
@@ -77,21 +74,12 @@ func Compose[T any](registry *c.Registry, input transform.Input, to representati
 	if err := c.RegisterTarget(registry, to, target); err != nil {
 		return zero, err
 	}
-	for _, bundle := range bundles {
-		contribution, err := bundle.Contribution(from)
-		if err != nil {
-			return zero, err
-		}
-		if err := c.RegisterContribution(registry, from, to, contribution); err != nil {
-			return zero, err
-		}
-		codec, err := bundle.Codec()
-		if err != nil {
-			return zero, err
-		}
-		if err := registry.RegisterCodec(codec); err != nil {
-			return zero, err
-		}
+	set, err := composition.Build(from, bundles...)
+	if err != nil {
+		return zero, err
+	}
+	if err := set.Register(registry, from, to); err != nil {
+		return zero, err
 	}
 	roots, err := Roots(input)
 	if err != nil {
