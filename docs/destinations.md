@@ -121,6 +121,13 @@ segment that names the item.
 A later change may not alter what a symbol's key identifies. Each package can
 gain a further category of symbol. That adds destinations and changes none.
 
+Each package has two functions for a use: `ExternalUse` records a symbol at a
+node, and `ReadExternal` reads it back and refuses a use of another issuer or
+of another language. A consumer calls these two and never names the role of
+the use. The Go and Rust packages take that role from their syntax vocabulary:
+it is the role `target` that a reference has on such a node, because an
+external use stands where a reference would.
+
 ### TypeScript
 
 [`transform/syntax/typescript/symbol/go`](../transform/syntax/typescript/symbol/go/symbol.go),
@@ -208,8 +215,9 @@ TypeScript does, and is asserted by a test per target over sealed outputs".
   input: a sealed output with such a use is malformed, and no later slice
   admits it. An external use that the language's issuer cannot read, or whose
   node is no name use or does not name the symbol, is invalid input too. An
-  external destination that the formatter's environment cannot establish is
-  unsupported coverage: a later slice can admit it.
+  external destination that the formatter's evidence cannot establish is
+  unsupported coverage: a later slice can admit it. Rust's `bool` is one as
+  long as the helper publishes no binding for a primitive type.
 - **A test per target** reads sealed outputs and asserts that every name use
   carries exactly one of a reference and an external use:
   [`destinations_test.go`](../integration/go/destinations_test.go).
