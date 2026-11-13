@@ -120,7 +120,7 @@ func independentComposition(t *testing.T, fixture *f.Fixture, o independentOptio
 				if err != nil || erased(name) {
 					return nil, err
 				}
-				return []indRequest{g.Evidence(step.Subject.Declaration.Body, g.Demand{Kind: model.EvidenceRecordForm})}, nil
+				return []indRequest{g.Evidence(step.Subject.Declaration.Body, g.Demand{Kind: model.EvidenceRecordForm}, g.Demand{Kind: fixtureNilFree})}, nil
 			},
 			Decide: func(_ context.Context, step indDecide) (g.Decision, error) {
 				name, err := step.Reader.Name(step.Subject.Declaration.Declaration)
@@ -135,7 +135,19 @@ func independentComposition(t *testing.T, fixture *f.Fixture, o independentOptio
 						p.Parameters = append(p.Parameters, fmt.Sprintf("T%d", i))
 					}
 				}
-				return g.Decision{Payload: p}, nil
+				// A use of a declaration is answered from what the declaration
+				// contribution states. This policy states beside its decision
+				// what was established about its body (O23).
+				var facts []g.Fact
+				if !p.Erased {
+					switch outcome, content, _ := step.Evidence(0, fixtureNilFree); outcome {
+					case g.Proved:
+						facts = append(facts, fixtureNilFree.Proved(content))
+					case g.Refuted:
+						facts = append(facts, fixtureNilFree.Refuted(content))
+					}
+				}
+				return g.Decision{Payload: p, Facts: facts}, nil
 			},
 		},
 		Declare: func(_ context.Context, p goProjection) (g.DeclarationDescription[gs.Language], error) {

@@ -749,3 +749,61 @@ of the four states are in stage 6.
 | `...Stage7StandinRefusesUnknownVersions` | An unknown envelope protocol, payload schema version, representation revision, runtime compatibility and source semantics are each refused under their own name | A reader that knows several values of an axis |
 | `...Stage7ReadersNeedTheMatchingSnapshot` | Without the snapshot the stand-in and the Go backend fail explicitly. A snapshot of another pin is a linking error in both | A reader protocol for source semantics (row 34a) |
 | `...Stage7StandinDerivesMemoKeys` | Equal keys for two uses of `Page<Person>`, another key with another selected dependency, and the same key as the Go reader derives from the same bytes | A memo (bitspark-service#40) |
+
+## Stage 8: the fixtures and the identity cases (vertical cases 2 to 6; row 32)
+
+**Built.** The fixtures of the vertical cases that were not built in earlier
+stages: case 2 with a mock family, case 3 and case 5. All three run on the
+independent fixture source, which is not horos.
+
+| Case | Its form here | Where |
+| --- | --- | --- |
+| 1. Recursive `ContentValue` | Not built (O6). Recursion is refused | Stage 2, `...Stage2CycleAndRecursionAreToldApart` |
+| 2. `Page<Outcome>` with optional nullable fields | At the kernel's level, through the independent fixture source, with a **mock** family: the contribution `mock-optional-nullable` answers a role that the fixture source issues for each field of `Outcome`. The mock's native form (a slice) means nothing | `...Stage8Case2PageOfOutcomeWithAMockFamily`. The optional field of `Page<Person>` runs through the field-state protocol in stages 6 and 7 |
+| 3. The exact external generic `Cell<T>` | An exact contribution whose native type omits `T`, which names its argument for conversion only, with a value facet of a fixture product | `...Stage8Case3ExactGenericWithAnOmittedParameter` |
+| 4. Go typed construction with a generic adapter argument | `Page[Person]`, lowered and executed | Stage 5, `...Stage5LoweredGoCompilesAndRuns` |
+| 5. A generic whose requirement is rejected | The fixture generic `Probed<T>`, accepted for `Person` where its body is proved nil-free, refused as unsatisfied where it is refuted, refused as unresolved for `Page<Person>` | `...Stage8Case5GenericRequirementAcceptedAndRefused` |
+| 6. An independent family without a shared change | The contribution of step 3 | Stage 9 |
+
+The identity cases of row 32 are the tests of stage 4: repeated uses share a
+node, equal native types with different adapters stay apart, an erased native
+argument is kept for conversion, one plan under two TypeScript placements.
+
+**What happened.**
+
+- *A use of a declaration is answered from what the declaration contribution
+  states.* For `Probed<Person>` the planner reads the facts of what was
+  selected for the actual `Person`: a use of a declaration, whose facts are
+  those of the declaration contribution. The fact about `Person`'s body does
+  not reach the application by itself. The fixture policy therefore asks
+  about its body and states the answer again beside its own decision. Built
+  so in the fixture; bittype's own declaration contribution states nothing.
+  This is finding F23.
+- *Case 3 has the omitted form only.* An additional native parameter is not
+  in a fixture of the prototype. The old fixture library has one (`Page[T0,
+  Storage]`), on the mapping contract.
+
+**Findings of this stage.**
+
+- **F23. Evidence does not pass through a named declaration by itself.** The
+  page: "Only facts of the selected representation are evidence" (row 7).
+  What is selected for a use of `Person` is the declaration contribution's
+  application, not the record in `Person`'s body. So a rule that asks about
+  an operand of type `Person` gets what the declaration contribution states.
+  A declaration contribution that wants its body's facts to be seen through
+  the name has to state them itself, kind by kind, after asking for them. It
+  cannot forward "whatever my body states": it has to name the kinds, and the
+  kinds belong to vocabularies it may not know. The page does not say whether
+  a declaration is transparent for evidence. Proposed: say that a use of a
+  declaration is answered by the declaration contribution, and decide whether
+  the kernel forwards the facts of an alias's body (an alias has no native
+  identity of its own) while a nominal declaration answers for itself.
+
+**Tests** (`integration/go/prototype_stage8_test.go`; evidence
+`stage8-run1.txt`).
+
+| Test | Shows | Does not show |
+| --- | --- | --- |
+| `...Stage8Case2PageOfOutcomeWithAMockFamily` | The kernel plans a generic applied to a record whose every field is delegated, through a source that is not horos, with a mock family | Null against absence, discriminators, anything about the family the mock stands for, conversion |
+| `...Stage8Case3ExactGenericWithAnOmittedParameter` | An exact generic omits its parameter natively; asked for a product that requires a value facet, its argument is linked for conversion and its facet is found; without the facet the request is "missing facet" | Capabilities, what `Cell` does with its slot, an additional native parameter |
+| `...Stage8Case5GenericRequirementAcceptedAndRefused` | A declared binder requirement is discharged by a proved fact, refused as unsatisfied by a refuted one and as unresolved where nothing is stated; the refusal names the requirement | The map family and the meaning of its keys |

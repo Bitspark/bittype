@@ -110,9 +110,17 @@ func stringly(ctx values.Context) (values.Code, error) {
 
 var configuredReference = g.ContributionIdentity{Publisher: "example.org/fixtures", Key: "configured-record"}
 
+// lowerModes are further facets that a lowering process registers, by mode.
+// A test file that brings a contribution of its own adds its mode here, so
+// that it changes no other file.
+var lowerModes = map[string]func(*testing.T) []g.Facet{}
+
 // lowerFacets are the facets a lowering process registers, by mode.
 func lowerFacets(t *testing.T, mode string) []g.Facet {
 	facets := goFacets(t)
+	if more, ok := lowerModes[mode]; ok {
+		return append(facets, more(t)...)
+	}
 	lower := gorecordfacets.Lower
 	if mode == "configured-stringly" {
 		lower = stringly
