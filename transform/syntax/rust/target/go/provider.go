@@ -34,11 +34,16 @@ func (p Provider) CheckExpression(ctx context.Context, e g.Expression[s.Language
 }
 
 // external returns the destination that the data of an external form names:
-// the crate first, then the path of the item.
+// the crate first, then the path of the item. The model's name of the
+// standard library is mapped to its dependency. For every other text the
+// symbol package says why no destination can name it.
 func external(data []string) (symbol.Symbol, error) {
-	crate, err := symbol.Dependency(data[0])
-	if err != nil {
-		return symbol.Symbol{}, err
+	crate := symbol.Std()
+	if data[0] != model.Std {
+		var err error
+		if crate, err = symbol.Dependency(data[0]); err != nil {
+			return symbol.Symbol{}, err
+		}
 	}
 	return symbol.Item(crate, data[1:]...)
 }

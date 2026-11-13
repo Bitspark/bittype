@@ -78,7 +78,8 @@ func TestExternalDestinationUsesIssuerLanguageAndRole(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if use.At.Site != at || !use.At.Role.Valid() || use.At.Ordinal != 0 {
+	// The role is this package's own name. It is sealed into every output.
+	if use.At.Site != at || use.At.Role != (semantics.Key{Owner: "go", Name: "target"}) || use.At.Ordinal != 0 {
 		t.Fatal("the use is not at the site", use.At)
 	}
 	if got, err := symbol.ReadExternal(native, use); err != nil || got != want {

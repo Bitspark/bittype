@@ -21,17 +21,37 @@ type Crate struct{ name string }
 // Std is the crate std of the standard library of the pinned compiler. It is
 // the one dependency of today. A crate of a library needs that crate's
 // semantics.
+//
+// The name is spelled here for what this package answers: the name that the
+// compiler gives the crate, which Name returns and Dependency resolves. The
+// Rust model declares the same name for the external form, because a mapping
+// may import the model and not this package, and this package may not import
+// the model. It is one name with two declarations, and a test keeps them
+// equal.
 func Std() Crate { return Crate{"std"} }
 
 // Name returns the crate's own name, which is the name the Rust bridge gives
 // the crate's root module.
 func (c Crate) Name() string { return c.name }
 
+// named says whether a text is a name that a key may hold: a Rust identifier
+// that is no keyword, written plainly. A raw identifier (r#name) is one
+// spelling of a name and not the name, so it gives no second symbol for one
+// item, and Rust Files chooses a raw spelling where the language needs one.
+// The underscore names nothing.
+func named(text string) bool {
+	return native.Identifier(text) && !strings.HasPrefix(text, "r#") && text != "_"
+}
+
 // Dependency returns the dependency whose crate has the given name. A text
-// that is no Rust identifier is refused with generation.ErrInvalid, and every
-// crate but Std with generation.ErrUnsupported.
+// that is no name is refused with generation.ErrInvalid, and every crate but
+// Std with generation.ErrUnsupported.
+//
+// Limit: the text is judged by the rule for a segment of a path, so a keyword
+// that the compiler takes as the name of a crate, such as fn, is refused as
+// invalid. The compiler's rule for a crate name is not on main yet.
 func Dependency(name string) (Crate, error) {
-	if !native.Identifier(name) {
+	if !named(name) {
 		return Crate{}, g.ErrInvalid
 	}
 	if name != Std().name {
@@ -63,14 +83,15 @@ const separator = "::"
 // definition that the export leads to: the item string::String of Std is
 // another destination than the definition in the crate alloc.
 //
-// A crate that is no dependency, an empty path and a segment that is no Rust
-// identifier are refused with generation.ErrInvalid.
+// A crate that is no dependency, an empty path and a segment that is no name
+// are refused with generation.ErrInvalid. A segment is a name and never a
+// spelling: a raw identifier and the underscore are refused.
 func Item(crate Crate, path ...string) (Symbol, error) {
 	if crate != Std() || len(path) == 0 {
 		return Symbol{}, g.ErrInvalid
 	}
 	for _, segment := range path {
-		if !native.Identifier(segment) {
+		if !named(segment) {
 			return Symbol{}, g.ErrInvalid
 		}
 	}
@@ -84,8 +105,13 @@ func StdString() Symbol { return Symbol{item, Std(), "string" + separator + "Str
 func StdVec() Symbol { return Symbol{item, Std(), "vec" + separator + "Vec"} }
 
 // Bool is Rust's primitive type bool. It is the one primitive type that is
-// issued today. bool is no keyword, so a declaration of that name captures a
-// use, and the destination is the primitive type itself.
+// issued today. bool is no keyword, so a declaration or a generic parameter of
+// that name captures a use, and the destination is the primitive type itself.
+//
+// Limit: no evidence can establish this destination today. The Rust helper
+// publishes bindings for path segments only, so it has none at a primitive
+// type. Until it has, a formatter cannot tell a captured use from one that
+// reaches the primitive type.
 func Bool() Symbol { return Symbol{primitive, Crate{}, "bool"} }
 
 // Item returns the dependency and the path of an item, and false for a symbol

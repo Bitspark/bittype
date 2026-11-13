@@ -48,10 +48,17 @@ func Record(fields ...g.Expression[s.Language]) g.Expression[s.Language] {
 	return g.Native(Form(FormRecord), nil, fields...)
 }
 
+// Std is the name of the crate std of the standard library, as an external
+// form states it. It is declared here once: a mapping passes it, and the Rust
+// target maps it to the dependency of that crate.
+const Std = "std"
+
 // External is the public item at path below the root of the crate that is
 // named crate, applied to args. The crate is separate from the path: the form
-// carries the crate's name first and then the segments of the path. Which
-// crates a target can refer to is the target's answer.
+// carries the crate's name first and then the segments of the path. This
+// model checks the shape of the form only. The Rust target admits a form
+// whose crate is a dependency that a destination can name. That is Std today,
+// and the target refuses every other crate.
 func External(crate string, path []string, args ...g.Expression[s.Language]) g.Expression[s.Language] {
 	return g.Native(Form(FormExternal), append([]string{crate}, path...), args...)
 }

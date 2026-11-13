@@ -38,12 +38,14 @@ func TestItemNamesADependencyAndAPath(t *testing.T) {
 	}
 	// Crates of a library, and the other crates of the sysroot: a later slice
 	// can admit them.
-	for _, name := range []string{"core", "alloc", "serde_json", "r#type"} {
+	for _, name := range []string{"core", "alloc", "serde_json"} {
 		if _, err := symbol.Dependency(name); !errors.Is(err, g.ErrUnsupported) {
 			t.Errorf("%s: %v, want unsupported", name, err)
 		}
 	}
-	for _, name := range []string{"", "std::option", "::std", "a-b", "crate", "fn"} {
+	// A key holds a name and never a spelling: a raw identifier and the
+	// underscore are no name of a crate.
+	for _, name := range []string{"", "std::option", "::std", "a-b", "crate", "fn", "r#type", "r#std", "_"} {
 		if _, err := symbol.Dependency(name); !errors.Is(err, g.ErrInvalid) {
 			t.Errorf("%q: %v, want invalid", name, err)
 		}
@@ -64,7 +66,9 @@ func TestItemNamesADependencyAndAPath(t *testing.T) {
 	if other, err := symbol.Item(std, "option"); err != nil || other == option {
 		t.Error("a shorter path is the same destination", err)
 	}
-	for _, path := range [][]string{nil, {""}, {"option", ""}, {"option::Option"}, {"option", "fn"}, {"std", "crate"}, {"a b"}} {
+	// A raw identifier is a spelling of a name. It gives no second symbol
+	// for one item, and the underscore names no item.
+	for _, path := range [][]string{nil, {""}, {"option", ""}, {"option::Option"}, {"option", "fn"}, {"std", "crate"}, {"a b"}, {"r#string", "String"}, {"string", "r#String"}, {"r#option", "Option"}, {"_"}, {"option", "_"}} {
 		if _, err := symbol.Item(std, path...); !errors.Is(err, g.ErrInvalid) {
 			t.Errorf("%q: %v, want invalid", path, err)
 		}
@@ -116,7 +120,8 @@ func TestExternalDestinationUsesIssuerLanguageAndRole(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if use.At.Site != at || !use.At.Role.Valid() || use.At.Ordinal != 0 {
+		// The role is this package's own name. It is sealed into every output.
+		if use.At.Site != at || use.At.Role != (semantics.Key{Owner: "rust", Name: "target"}) || use.At.Ordinal != 0 {
 			t.Fatal("the use is not at the site", use.At)
 		}
 		if got, err := symbol.ReadExternal(native, use); err != nil || got != want {

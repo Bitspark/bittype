@@ -3,10 +3,14 @@ package integration_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
 
+	checkgolang "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
+	checkrust "github.com/Bitspark/bittype/check/syntax/rust/provider/go"
+	checktypescript "github.com/Bitspark/bittype/check/syntax/typescript/provider/go"
 	"github.com/Bitspark/bittype/contracts/format/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
@@ -194,39 +198,100 @@ func mapsEqual(a, b map[string]int) bool {
 	return true
 }
 
-// destinationCheck is what one language states about its sealed outputs: the
-// nodes that are name uses, and the reader of its issuer.
+// destinationCheck is what this test knows of one language beyond its syntax
+// checker. The checker's grammar marks the kinds that can carry a reference,
+// and this test asks it: canCarryReference puts a reference on a node of a
+// kind and lets the checker admit or refuse the tree. A kind that the grammar
+// lets carry a reference uses a name. The two lists hold the other kinds that
+// the native models can build today. A kind that is in neither list and that
+// the grammar gives no reference fails the test, so a new kind is classified
+// before an output with it passes.
 type destinationCheck[L any] struct {
-	// uses returns the nodes of a tree that are name uses.
-	uses func(t *testing.T, tree ast.AST[L]) []ast.NodeID
+	// check is the language's syntax checker.
+	check func(ast.View[L]) error
 	// reference is the role of a reference to a declaration or a parameter.
 	reference string
+	// external lists the kinds that use a name and that the grammar gives no
+	// reference: their destination is always an external use.
+	external []ast.Kind[L]
+	// plain lists the kinds that use no name.
+	plain []ast.Kind[L]
+	// qualifies says whether a node of a name-use kind only qualifies the
+	// use of another node, and so carries nothing itself.
+	qualifies func(tree ast.AST[L], parent []ast.NodeID, id ast.NodeID) bool
 	// read fails for a use that the language's issuer did not issue.
 	read func(representation.Language, g.ExternalUse) error
 }
 
-// checkDestinations asserts that every name use of a sealed output carries
-// exactly one of a reference and an external use, that no other node carries
-// an external use, and that the language's issuer reads every use. It returns
-// the numbers of references and of external uses.
+// canCarryReference asks the checker's grammar whether a node of the kind may
+// carry a reference: it gives one node of the kind a reference and checks the
+// tree, which the checker admitted without it.
+func canCarryReference[L any](tree ast.AST[L], check destinationCheck[L], kind ast.Kind[L]) bool {
+	probe := tree
+	probe.Nodes = slices.Clone(tree.Nodes)
+	for i, node := range probe.Nodes {
+		if node.Kind != kind {
+			continue
+		}
+		if len(node.References) != 0 {
+			return true
+		}
+		node.References = []ast.Reference{{Role: check.reference, Target: ast.NodeRef{Tree: tree.ID, Node: tree.Root}}}
+		probe.Nodes[i] = node
+		return check.check(probe) == nil
+	}
+	return false
+}
+
+// checkDestinations classifies every node of a sealed output by its kind and
+// asserts: a name use carries exactly one of a reference and an external use,
+// every other node carries neither, the language's issuer reads every use,
+// and no kind is left unclassified. It returns the numbers of references and
+// of external uses.
 func checkDestinations[L any](t *testing.T, out g.Output, check destinationCheck[L]) (references, external int) {
 	t.Helper()
 	tree := outputTree[L](t, out)
+	if err := check.check(tree); err != nil {
+		t.Fatalf("the sealed tree is not admitted by its checker: %v", err)
+	}
 	uses := externalUsesBySite(t, out)
-	nameUses := map[ast.NodeID]bool{}
-	for _, id := range check.uses(t, tree) {
-		nameUses[id] = true
-		node := tree.Nodes[id-1]
+	parent := make([]ast.NodeID, len(tree.Nodes)+1)
+	for i, node := range tree.Nodes {
+		for _, child := range node.Children {
+			parent[child.Node] = ast.NodeID(i + 1)
+		}
+	}
+	linkable := map[ast.Kind[L]]bool{}
+	for _, node := range tree.Nodes {
+		if _, asked := linkable[node.Kind]; !asked {
+			linkable[node.Kind] = canCarryReference(tree, check, node.Kind)
+			if listed := slices.Contains(check.external, node.Kind) || slices.Contains(check.plain, node.Kind); listed && linkable[node.Kind] {
+				t.Errorf("the kind %s is listed as carrying no reference, and the checker lets it carry one", node.Kind)
+			}
+		}
+	}
+	seen := map[ast.NodeRef]bool{}
+	for i, node := range tree.Nodes {
+		id := ast.NodeID(i + 1)
 		at := ast.NodeRef{Tree: tree.ID, Node: id}
 		_, recorded := uses[at]
+		seen[at] = true
 		linked := len(node.References) == 1 && node.References[0].Role == check.reference
+		what := fmt.Sprintf("the %s %q at node %d", node.Kind, nodeAttribute(node, "name"), id)
+		nameUse := linkable[node.Kind] || slices.Contains(check.external, node.Kind)
 		switch {
+		case nameUse && check.qualifies != nil && check.qualifies(tree, parent, id), slices.Contains(check.plain, node.Kind):
+			if len(node.References) != 0 || recorded {
+				t.Errorf("%s uses no name and carries a destination", what)
+			}
+		case !nameUse:
+			t.Errorf("%s has a kind that this test does not classify: say whether it uses a name", what)
 		case len(node.References) > 1 || (len(node.References) == 1 && !linked):
-			t.Errorf("the %s %q at node %d carries references that are no destination: %v", node.Kind, nodeAttribute(node, "name"), id, node.References)
+			t.Errorf("%s carries references that are no destination: %v", what, node.References)
 		case linked && recorded:
-			t.Errorf("the %s %q at node %d carries a reference and an external use", node.Kind, nodeAttribute(node, "name"), id)
+			t.Errorf("%s carries a reference and an external use", what)
 		case !linked && !recorded:
-			t.Errorf("the %s %q at node %d carries no destination", node.Kind, nodeAttribute(node, "name"), id)
+			t.Errorf("%s carries no destination", what)
 		case linked:
 			references++
 		default:
@@ -234,32 +299,24 @@ func checkDestinations[L any](t *testing.T, out g.Output, check destinationCheck
 		}
 	}
 	for at, use := range uses {
-		if at.Tree != tree.ID || !nameUses[at.Node] {
-			t.Errorf("an external use is recorded at %v, which is no name use", at)
+		if !seen[at] {
+			t.Errorf("an external use is recorded at %v, which is no node of the output", at)
 		}
 		if err := check.read(out.Snapshot().Language(), use); err != nil {
 			t.Errorf("the external use at %v is not read by its language's issuer: %v", at, err)
 		}
 	}
-	for i, node := range tree.Nodes {
-		if len(node.References) != 0 && !nameUses[ast.NodeID(i+1)] {
-			t.Errorf("the %s at node %d carries a reference and is no name use", node.Kind, i+1)
-		}
-	}
 	return references, external
 }
 
+// TypeScript: the grammar gives type-reference a reference. A keyword type is
+// a keyword and no name. A qualified-type is in no list: the TypeScript target
+// writes none, and an output with one fails.
 func typescriptDestinations() destinationCheck[ts.Language] {
 	return destinationCheck[ts.Language]{
-		uses: func(t *testing.T, tree ts.AST) (out []ast.NodeID) {
-			for i, node := range tree.Nodes {
-				if node.Kind == ts.KindTypeReference {
-					out = append(out, ast.NodeID(i+1))
-				}
-			}
-			return out
-		},
+		check:     checktypescript.Provider{}.Check,
 		reference: ts.RoleTarget,
+		plain:     []ts.Kind{ts.KindSourceFile, ts.KindInterface, ts.KindTypeAlias, ts.KindTypeParameter, ts.KindTypeApplication, ts.KindKeywordType, ts.KindArrayType, ts.KindProperty},
 		read: func(language representation.Language, use g.ExternalUse) error {
 			_, err := tssymbol.ReadExternal(language, use)
 			return err
@@ -267,20 +324,14 @@ func typescriptDestinations() destinationCheck[ts.Language] {
 	}
 }
 
+// Go: the grammar gives named-type and qualified-type a reference. The Go
+// target writes no qualified-type, and an output with one fails for a use
+// without a destination.
 func golangDestinations() destinationCheck[gs.Language] {
 	return destinationCheck[gs.Language]{
-		uses: func(t *testing.T, tree gs.AST) (out []ast.NodeID) {
-			for i, node := range tree.Nodes {
-				switch node.Kind {
-				case gs.KindNamedType:
-					out = append(out, ast.NodeID(i+1))
-				case gs.KindQualifiedType:
-					t.Errorf("node %d is a qualified type, which the Go target does not write", i+1)
-				}
-			}
-			return out
-		},
+		check:     checkgolang.Provider{}.Check,
 		reference: gs.RoleTarget,
+		plain:     []gs.Kind{gs.KindFile, gs.KindTypeDeclaration, gs.KindTypeAlias, gs.KindTypeParameter, gs.KindInterfaceType, gs.KindTypeApplication, gs.KindSliceType, gs.KindStructType, gs.KindField},
 		read: func(language representation.Language, use g.ExternalUse) error {
 			_, err := gosymbol.ReadExternal(language, use)
 			return err
@@ -288,29 +339,22 @@ func golangDestinations() destinationCheck[gs.Language] {
 	}
 }
 
+// Rust: the grammar gives path-segment and lifetime-reference a reference. A
+// primitive type uses a name and gets none from the grammar. The last segment
+// of a path names the item, and the segments before it qualify that use.
 func rustDestinations() destinationCheck[rs.Language] {
 	return destinationCheck[rs.Language]{
-		uses: func(t *testing.T, tree rs.AST) (out []ast.NodeID) {
-			for i, node := range tree.Nodes {
-				switch node.Kind {
-				case rs.KindPathType:
-					// The last segment names the item. The segments before it
-					// qualify the use.
-					_, last := rustPathNames(tree, node)
-					if last == 0 {
-						t.Errorf("the path at node %d has no segment", i+1)
-						continue
-					}
-					out = append(out, last)
-				case rs.KindPrimitiveType:
-					out = append(out, ast.NodeID(i+1))
-				case rs.KindQualifiedPathType:
-					t.Errorf("node %d is a qualified path, which the Rust target does not write", i+1)
-				}
-			}
-			return out
-		},
+		check:     checkrust.Provider{}.Check,
 		reference: rs.RoleTarget,
+		external:  []rs.Kind{rs.KindPrimitiveType},
+		plain:     []rs.Kind{rs.KindFile, rs.KindStruct, rs.KindTypeAlias, rs.KindTypeParameter, rs.KindField, rs.KindPathType},
+		qualifies: func(tree rs.AST, parent []ast.NodeID, id ast.NodeID) bool {
+			if tree.Nodes[id-1].Kind != rs.KindPathSegment || parent[id] == 0 || tree.Nodes[parent[id]-1].Kind != rs.KindPathType {
+				return false
+			}
+			_, last := rustPathNames(tree, tree.Nodes[parent[id]-1])
+			return last != id
+		},
 		read: func(language representation.Language, use g.ExternalUse) error {
 			_, err := rustsymbol.ReadExternal(language, use)
 			return err
@@ -319,7 +363,11 @@ func rustDestinations() destinationCheck[rs.Language] {
 }
 
 // For TypeScript, Go and Rust, every name use of a sealed output carries
-// exactly one of a reference and an external use.
+// exactly one of a reference and an external use. The outputs are the
+// pagination output of each target, and for TypeScript also one with a type of
+// a package beside a declaration of the same name and one with a global type.
+// They hold every kind that the three native models can build today, and the
+// claim is shown for those kinds.
 func TestEveryNameUseOfASealedOutputCarriesOneDestination(t *testing.T) {
 	t.Run("typescript", func(t *testing.T) {
 		e, _, input := generationInput(t, paginationModule())
@@ -331,6 +379,18 @@ func TestEveryNameUseOfASealedOutputCarriesOneDestination(t *testing.T) {
 		references, external = checkDestinations(t, generatedCellPage(t), typescriptDestinations())
 		if references == 0 || external != 1 {
 			t.Errorf("the Cell output has %d references and %d external uses", references, external)
+		}
+		// One output whose lists are the global type ReadonlyArray.
+		e, _, input = generationInput(t, paginationModule())
+		global := generatedOutput(t, e, input, typescriptText(), selectedTS(listContribution("consumer/readonly-list/1", "", "ReadonlyArray"), "consumer/readonly-list/1"))
+		references, external = checkDestinations(t, global, typescriptDestinations())
+		if references == 0 || external != 2 {
+			t.Errorf("the output with a global type has %d references and %d external uses", references, external)
+		}
+		for _, use := range global.ExternalUses() {
+			if symbol, err := tssymbol.ReadExternal(global.Snapshot().Language(), use); err != nil || symbol != (tssymbol.Type{Name: "ReadonlyArray"}) {
+				t.Errorf("the global type records the destination %+v: %v", symbol, err)
+			}
 		}
 	})
 	t.Run("go", func(t *testing.T) {
@@ -525,14 +585,18 @@ func TestExternalFormsNameADependencyThatADestinationCanName(t *testing.T) {
 		model  error
 		target error
 	}{
-		"an item of the standard library": {rustmodel.External("std", []string{"option", "Option"}, text), nil, nil},
-		"a nested item":                   {rustmodel.External("std", []string{"collections", "BTreeMap"}, text, text), nil, nil},
-		"no path":                         {rustmodel.External("std", nil), g.ErrInvalid, g.ErrInvalid},
-		"an empty segment":                {rustmodel.External("std", []string{"option", ""}), g.ErrInvalid, g.ErrInvalid},
+		"an item of the standard library": {rustmodel.External(rustmodel.Std, []string{"option", "Option"}, text), nil, nil},
+		"a nested item":                   {rustmodel.External(rustmodel.Std, []string{"collections", "BTreeMap"}, text, text), nil, nil},
+		"no path":                         {rustmodel.External(rustmodel.Std, nil), g.ErrInvalid, g.ErrInvalid},
+		"an empty segment":                {rustmodel.External(rustmodel.Std, []string{"option", ""}), g.ErrInvalid, g.ErrInvalid},
 		"no crate":                        {rustmodel.External("", []string{"Option"}), g.ErrInvalid, g.ErrInvalid},
 		"the crate joined with the path":  {rustmodel.External("std::option", []string{"Option"}), nil, g.ErrInvalid},
-		"a path joined in one segment":    {rustmodel.External("std", []string{"option::Option"}), nil, g.ErrInvalid},
-		"a keyword as a segment":          {rustmodel.External("std", []string{"option", "fn"}), nil, g.ErrInvalid},
+		"a path joined in one segment":    {rustmodel.External(rustmodel.Std, []string{"option::Option"}), nil, g.ErrInvalid},
+		"a keyword as a segment":          {rustmodel.External(rustmodel.Std, []string{"option", "fn"}), nil, g.ErrInvalid},
+		"a raw identifier as a segment":   {rustmodel.External(rustmodel.Std, []string{"r#option", "Option"}), nil, g.ErrInvalid},
+		"an underscore as a segment":      {rustmodel.External(rustmodel.Std, []string{"_"}), nil, g.ErrInvalid},
+		"a raw identifier as the crate":   {rustmodel.External("r#std", []string{"option", "Option"}), nil, g.ErrInvalid},
+		"an underscore as the crate":      {rustmodel.External("_", []string{"option", "Option"}), nil, g.ErrInvalid},
 		"the crate of a library":          {rustmodel.External("serde_json", []string{"Value"}), nil, g.ErrUnsupported},
 		"another crate of the sysroot":    {rustmodel.External("core", []string{"option", "Option"}), nil, g.ErrUnsupported},
 	} {
@@ -544,6 +608,13 @@ func TestExternalFormsNameADependencyThatADestinationCanName(t *testing.T) {
 				t.Errorf("the target answers %v, want %v", err, c.target)
 			}
 		})
+	}
+	// The model's name of the standard library and the name of the dependency
+	// are one name with two declarations: the mapping may import the model
+	// and not the symbol package, and the symbol package may not import the
+	// model. This keeps them equal.
+	if std, err := rustsymbol.Dependency(rustmodel.Std); err != nil || std != rustsymbol.Std() || std.Name() != rustmodel.Std {
+		t.Errorf("the model names the standard library %q and the symbol package %q: %v", rustmodel.Std, rustsymbol.Std().Name(), err)
 	}
 	if err := (ggtarget.Provider{Package: "p"}).CheckExpression(ctx, gomodel.External("fmt", "Stringer")); !errors.Is(err, g.ErrUnsupported) {
 		t.Errorf("the Go external form answers %v, want unsupported", err)
