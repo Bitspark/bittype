@@ -1288,3 +1288,782 @@ Every formatter is a hand-written function per node kind. A parser calls the
 checker after it has built its tree, and a formatter calls it before it
 reads its input. That call is the only connection between the table and the
 code that produces and consumes trees.
+
+### 3.3 The semantic graph, Go's semantic vocabulary and one typed reader
+
+**The graph.** One package holds the carrier of analysed meaning for every
+language (`semantics/go/model.go:19-125`, `:146`, `:230`; comments abridged):
+
+```go
+// IDs are one-based addresses local to one Semantics[L], never persistent identities.
+type EntityID uint32
+type TermID uint32
+
+// Key names vocabulary owned by a provider. It causes no registration or lookup.
+type Key struct{ Owner, Name string }
+
+type Entity struct {
+	Kind         Key
+	Name         string
+	Owner        EntityID
+	Declarations []ast.NodeRef
+	Parameters   []Parameter
+	Body         TermID
+}
+
+// Parameter retains a real binder and its coarse provider-owned sort.
+type Parameter struct {
+	Entity EntityID
+	Sort   Key
+}
+
+type TermKind uint8
+
+const (
+	Reference TermKind = iota + 1
+	Application
+	ProviderExpression
+)
+
+// Term has exactly one variant. ...
+// Reference owns Target; Application owns Callee and Arguments. Applicability,
+// arity and saturation belong to the provider, not graph admission.
+// A provider expression's encoding defines its bytes and operand locators.
+type Term struct {
+	Kind      TermKind
+	Target    EntityID
+	Callee    TermID
+	Arguments []TermID
+	Operator  Key
+	Encoding  Key
+	Data      []byte
+	Operands  []Operand
+}
+
+type Operand struct {
+	Locator []uint32
+	Term    TermID
+}
+
+// Occurrence identifies a semantic position within a current syntax node.
+type Occurrence struct {
+	Site    ast.NodeRef
+	Role    Key
+	Ordinal uint32
+}
+
+type Binding struct {
+	At     Occurrence
+	Target EntityID
+}
+
+type Expression struct {
+	At   Occurrence
+	Term TermID
+}
+
+type Dependency struct {
+	From     EntityID
+	To       EntityID
+	Relation Key
+	At       *Occurrence
+}
+
+// Subject selects exactly one model-local entity or term.
+type Subject struct {
+	Entity EntityID
+	Term   TermID
+}
+
+// Fact associates a subject with a provider-owned fact term. A relation may have
+// several values; its meaning and cardinality belong to the provider.
+type Fact struct {
+	Subject  Subject
+	Relation Key
+	Term     TermID
+}
+
+// Data is construction storage. New bounds, validates and copies it before
+// publication.
+type Data struct {
+	Entities     []Entity
+	Terms        []Term
+	Bindings     []Binding
+	Expressions  []Expression
+	Dependencies []Dependency
+	Facts        []Fact
+}
+
+// Semantics[L] is an immutable owned graph.
+type Semantics[L any] struct{ state *Data }
+
+func New[L any](data Data, limits Limits, contains func(ast.NodeRef) bool) (Semantics[L], error)
+```
+
+The graph fixes three term variants and the record shapes. Everything else
+is a key that a provider owns: the kind of an entity, the sort of a
+parameter, the role of an occurrence, the relation of a dependency or a
+fact, the operator and the encoding of a provider expression. The
+constructor `New` checks integrity and bounds. It does not know what any key
+means, and it does not look into `Data` bytes.
+
+**Go's names.** The semantic vocabulary of Go declares its keys as one-line
+functions, because a Go struct value cannot be a constant
+(`semantics/golang/go/vocabulary.go:13-71`, abridged):
+
+```go
+const ResolutionProfile = "go1.25/captured-types-1/resolution-1"
+const AnalysisProfile = "go1.25/captured-types-1/analysis-1"
+
+// Key returns a Go-owned vocabulary key; it performs no registration.
+func Key(name string) semantics.Key { return semantics.Key{Owner: "go", Name: name} }
+
+// The graph names below are written by the compiler bridge internal/golangsem
+// and read by name in model.go.
+
+// Kinds of graph entities.
+func PackageKind() semantics.Key   { return Key("package") }
+func DefinedKind() semantics.Key   { return Key("defined") }
+func AliasKind() semantics.Key     { return Key("alias") }
+func ParameterKind() semantics.Key { return Key("parameter") }
+
+// BuiltinKind is the kind of the entity of a predeclared basic type, such as
+// string and bool. The entity's name is the identifier of the universe scope.
+// It has no owner and no declaration site.
+func BuiltinKind() semantics.Key { return Key("builtin") }
+
+// NameRole is the role of the binding of an identifier that is used as a
+// name: the binding's site is the node of the use, and its target is the
+// entity that the compiler resolved the identifier to.
+func NameRole() semantics.Key { return Key("name") }
+
+// Relations of the facts about a native type.
+func IdenticalRelation() semantics.Key   { return Key("identical") }
+func UnderlyingRelation() semantics.Key  { return Key("underlying") }
+func ConstraintRelation() semantics.Key  { return Key("constraint") }
+func AliasTargetRelation() semantics.Key { return Key("alias-target") }
+func EmptyRelation() semantics.Key       { return Key("empty") }
+func DisplayRelation() semantics.Key     { return Key("display") }
+
+// Operators of the terms of a basic, a slice and a struct type.
+func BasicOperator() semantics.Key  { return Key("basic") }
+func SliceOperator() semantics.Key  { return Key("slice") }
+func StructOperator() semantics.Key { return Key("struct") }
+```
+
+The bridge writes more names than the vocabulary publishes. It spells these
+as literals in its own code: the entity kind `field`, the parameter sort
+`type`, the operators `interface`, `boolean`, `union`, `signature`, `tuple`
+and `display`, the binding role `import`, the expression role
+`type-expression` and the encoding `json-1`
+(`internal/golangsem/export.go:111`, `:135`, `:169`, `:253-288`, `:347`,
+`:371`). The accepted rule for when a name gets a published declaration is:
+"A name needs a single owner when two parties must agree on it"
+(`docs/package-boundaries.md`). No production package other than the bridge
+reads one of these names by name.
+
+**A fact's shape exists in two pieces of code and in no declaration.** The
+bridge writes the term of a struct type
+(`internal/golangsem/export.go:233-243`; `n` is the semantic vocabulary,
+`e.typ` exports a type and returns its term, `e.expression` builds a
+provider expression whose data is the JSON encoding of its second argument):
+
+```go
+case *types.Slice:
+	term = e.expression(n.SliceOperator(), nil, e.typ(t.Elem()))
+case *types.Struct:
+	var fields []n.FieldInfo
+	var operands []semantics.TermID
+	for i := 0; i < t.NumFields(); i++ {
+		f := t.Field(i)
+		fields = append(fields, n.FieldInfo{Name: f.Name(), Tag: t.Tag(i), Embedded: f.Embedded(), Entity: e.object(f)})
+		operands = append(operands, e.typ(f.Type()))
+	}
+	term = e.expression(n.StructOperator(), fields, operands...)
+```
+
+The typed reader in the vocabulary package reads it back
+(`semantics/golang/go/model.go:20-39`, `:276-302`). `t.term()` returns the
+graph's term of a type, and `t.Underlying()` follows the fact with the
+relation `underlying`:
+
+```go
+type Type struct {
+	owner *model
+	id    semantics.TermID
+}
+type Field struct {
+	Name     string
+	Type     Type
+	Site     ast.NodeRef
+	Embedded bool
+	Tag      string
+}
+
+// FieldInfo is the Go JSON field-metadata encoding. Operands hold the field types;
+// Entity identifies the field's declaration in this same graph.
+type FieldInfo struct {
+	Name     string
+	Tag      string
+	Embedded bool
+	Entity   semantics.EntityID
+}
+
+func (t Type) SliceElement() (Type, bool) {
+	v := t.term()
+	if v.Operator != SliceOperator() || len(v.Operands) != 1 {
+		return Type{}, false
+	}
+	return Type{t.owner, v.Operands[0].Term}, true
+}
+func (t Type) Fields() ([]Field, bool) {
+	v := t.Underlying().term()
+	if v.Operator != StructOperator() {
+		return nil, false
+	}
+	var metadata []FieldInfo
+	if json.Unmarshal(v.Data, &metadata) != nil || len(metadata) != len(v.Operands) {
+		return nil, false
+	}
+	out := make([]Field, len(metadata))
+	for i, f := range metadata {
+		e, _ := t.owner.graph.Entity(f.Entity)
+		var site ast.NodeRef
+		if len(e.Declarations) > 0 {
+			site = e.Declarations[0]
+		}
+		out[i] = Field{f.Name, Type{t.owner, v.Operands[i].Term}, site, f.Embedded, f.Tag}
+	}
+	return out, true
+}
+```
+
+So "a struct term has the operator `struct`, JSON field records as data and
+one operand per field" is stated once by the writer and once by the reader.
+The operator's name is declared. Its shape is not.
+
+**What else the package holds.** A reader is opened from a **receipt**, the
+value that the semantic contract issues for one finished analysis
+(`semantics/golang/go/model.go:41-56`):
+
+```go
+// Open requires an admitted analysis receipt and never invokes a compiler.
+func Open(result semantic.Result) (Model, error) {
+	requirement, err := EvidenceFor(result.Configuration())
+	if err != nil {
+		return Model{}, err
+	}
+	if _, err := semantic.AdmitEvidence(result.Snapshot(), []semantic.EvidenceRequirement{requirement}, []semantic.Result{result}); err != nil {
+		return Model{}, err
+	}
+	envelope, _ := result.Semantics()
+	graph, err := representation.UnpackSemantics[s.Language](result.Snapshot().Language(), envelope)
+	if err != nil {
+		return Model{}, err
+	}
+	return Model{&model{result, graph}}, nil
+}
+```
+
+`semantic.Result` is the receipt. `semantic.Snapshot` is the captured input
+that it belongs to. `semantic.EvidenceRequirement` says which operation,
+profile, configuration and reports a consumer requires
+(`contracts/semantic/go/evidence.go:14-20`):
+
+```go
+type EvidenceRequirement struct {
+	Operation     semantics.Key
+	Profile       string
+	Configuration []Setting
+	Reports       []Requirement
+	Semantics     bool
+}
+```
+
+with `Setting{Key semantics.Key; Value []byte}` and
+`Requirement{Obligation semantics.Key; Verdict Verdict}` from the same
+package. `semantic.AdmitEvidence` checks that the receipt meets the
+requirement. `representation.UnpackSemantics` opens the type-erased
+envelope.
+
+The vocabulary package also builds the identity values of its contracts from
+those types (`semantics/golang/go/contracts.go:10-21`):
+
+```go
+// The contract identities are what a consumer registers the Go providers under
+// and what a dependent names to require them. They are published here, with the
+// profiles and keys they are built from, so that naming one imports no provider.
+
+func ResolutionContract() resolution.Contract {
+	c := semantic.Contract{Profile: ResolutionProfile, SemanticsRequirements: Requirements()}
+	for _, key := range []semantics.Key{Coverage(), Bindings(), Validity()} {
+		c.Obligations = append(c.Obligations, semantic.Obligation{Key: key, Domain: Key("captured-package")})
+	}
+	return resolution.Contract{Semantic: c, Bindings: Bindings()}
+}
+```
+
+These two snippets show why a semantic vocabulary imports three contract
+packages today: its readers take a receipt, and its identities are values of
+contract types. It holds 855 lines for Go, of which 99 are names, 40 contract
+identities, 400 the types of the compiler environment with their validation
+and encoding, and 316 the typed readers.
+
+### 3.4 Intent: forms, expressions, and Go's whole model
+
+**The carrier of intent** is declared inside the generation contract
+(`contracts/generation/go/expression.go:9-106`, abridged to what forms and
+native expressions need):
+
+```go
+// Form is a target-owned native semantic constructor. Only its issuer can
+// interpret its key. This is not an AST kind or a globally registered type kind.
+type Form[T any] struct {
+	owner *identity
+	name  string
+}
+type FormIssuer[T any] struct{ owner *identity }
+
+func NewFormIssuer[T any]() FormIssuer[T] { return FormIssuer[T]{fresh()} }
+func (i FormIssuer[T]) Form(name string) Form[T] {
+	if i.owner == nil || name == "" {
+		return Form[T]{}
+	}
+	return Form[T]{i.owner, name}
+}
+func (i FormIssuer[T]) Read(f Form[T]) (string, bool) {
+	return f.name, i.owner != nil && i.owner == f.owner && f.name != ""
+}
+
+type ExpressionKind uint8
+
+const (
+	NativeExpression ExpressionKind = iota + 1
+	CapturedExpression
+	ParameterExpression
+	ArgumentExpression
+	HelperExpression
+	DeclarationExpression
+)
+
+// Expression is an immutable template. Parameter and Argument indices only have
+// meaning in their declaration's single generic convention. DeclarationExpression
+// is issued by the planner after it authenticates the source callee.
+type Expression[T any] struct {
+	origin      ast.NodeRef
+	kind        ExpressionKind
+	form        Form[T]
+	data        []string
+	args        []Expression[T]
+	slot        Slot
+	index       int
+	helper      HelperKey
+	declaration uint32
+}
+
+func Native[T any](form Form[T], data []string, args ...Expression[T]) Expression[T] {
+	return Expression[T]{kind: NativeExpression, form: form, data: slices.Clone(data), args: slices.Clone(args)}
+}
+func Mapped[T any](slot Slot) Expression[T] {
+	return Expression[T]{kind: CapturedExpression, slot: slot}
+}
+func Parameter[T any](index int) Expression[T] {
+	return Expression[T]{kind: ParameterExpression, index: index}
+}
+func (e Expression[T]) Form() Form[T]              { return e.form }
+func (e Expression[T]) Data() []string             { return slices.Clone(e.data) }
+func (e Expression[T]) Arguments() []Expression[T] { return slices.Clone(e.args) }
+
+// identity is an allocation-unique owner for issuer-scoped values.
+type identity struct{ value byte }
+
+func fresh() *identity { return &identity{value: 1} }
+```
+
+`T` is the marker type of the target language. `Slot` and `HelperKey` are
+two more issued identities of the same construction: a slot stands for the
+representation of another use, and a helper key names a declaration that a
+mapping demands. Of the six expression kinds only the first holds a form.
+The other five are the kernel's own: a captured slot, a type parameter, a
+generic argument, a helper reference and a reference to a planned
+declaration. So type parameters, references and applications are not forms
+of any language. They belong to the shared contract.
+
+An intended declaration and the interface of a target
+(`contracts/generation/go/native.go:13-24`, `contracts.go:13-42`):
+
+```go
+// NativeDeclaration is target intent after source mapping and substitution.
+type NativeDeclaration[T any] struct {
+	Name       string
+	Form       Form[T]
+	Origin     ast.NodeRef
+	Parameters []NativeParameter
+	Body       Expression[T]
+	Values     []IssuedValue
+}
+type NativeParameter struct {
+	Name   string
+	Origin ast.NodeRef
+}
+
+var (
+	ErrInvalid     = errors.New("invalid generation description")
+	ErrUnsupported = errors.New("generation capability unavailable")
+	ErrScope       = errors.New("incompatible generation scope or association")
+	// [doc] and ErrLimit, ErrIncomplete, ErrAmbiguous, ErrRejected
+)
+
+// Target validates native intent during planning. Build receives only the closed
+// native program; it has no source reader, selectors or mapping callbacks.
+// Target implementations are trusted native semantic compilers.
+type Target[T any] interface {
+	CheckExpression(context.Context, Expression[T]) error
+	CheckDeclaration(context.Context, NativeDeclaration[T]) error
+	CheckProgram(context.Context, Program[T]) error
+	Build(context.Context, BuildInput[T]) (Assembly, error)
+}
+```
+
+`IssuedValue` is an opaque statement that a declaration's owner attaches and
+only its issuer can read. `Program[T]` is the closed list of planned
+declarations. `BuildInput[T]` holds the program, the language descriptor,
+the identifier of the output tree and limits. `Assembly` is the built tree
+with its declared sites. The two errors that matter below are `ErrInvalid`,
+which says a description is malformed, and `ErrUnsupported`, which says a
+capability is not available. They are two different answers: the first is
+about validity, the second about coverage.
+
+**Go's model, complete** (`transform/syntax/golang/model/go/model.go:1-112`).
+Here `g` is the generation contract. The comments marked `[doc]` classify
+each check as **WF** (well-formedness: what a form is) or **COV** (a coverage
+answer: what today's generation supports). The classification is our
+derivation.
+
+```go
+// Package model describes intended native types before AST construction.
+package model
+
+import (
+	"context"
+	"strconv"
+
+	g "github.com/Bitspark/bittype/contracts/generation/go"
+	s "github.com/Bitspark/bittype/syntax/golang/go"
+)
+
+var forms = g.NewFormIssuer[s.Language]()
+
+// The names of the forms this model issues, each declared here once. Form
+// takes one of them and Name returns one. The first five are the expression
+// forms that the constructors below build. FormAlias and FormDefined are the
+// declaration forms.
+const (
+	FormPrimitive = "primitive"
+	FormSlice     = "slice"
+	FormField     = "field"
+	FormRecord    = "record"
+	FormExternal  = "external"
+	FormAlias     = "alias"
+	FormDefined   = "defined"
+)
+
+// The names a primitive form carries, each declared here once. Primitive
+// takes one of them.
+const (
+	PrimitiveString = "string"
+	PrimitiveBool   = "bool"
+)
+
+func Form(name string) g.Form[s.Language]      { return forms.Form(name) }
+func Name(f g.Form[s.Language]) (string, bool) { return forms.Read(f) }
+func Primitive(name string) g.Expression[s.Language] {
+	return g.Native(Form(FormPrimitive), []string{name})
+}
+func Collection(element g.Expression[s.Language]) g.Expression[s.Language] {
+	return g.Native(Form(FormSlice), nil, element)
+}
+func Field(name string, optional bool, ty g.Expression[s.Language]) g.Expression[s.Language] {
+	return g.Native(Form(FormField), []string{name, strconv.FormatBool(optional)}, ty)
+}
+func Record(fields ...g.Expression[s.Language]) g.Expression[s.Language] {
+	return g.Native(Form(FormRecord), nil, fields...)
+}
+func External(module, name string, args ...g.Expression[s.Language]) g.Expression[s.Language] {
+	return g.Native(Form(FormExternal), []string{module, name}, args...)
+}
+func CheckExpression(ctx context.Context, e g.Expression[s.Language]) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	name, ok := Name(e.Form())
+	if !ok {
+		return g.ErrScope // [doc] the form was not issued by this model
+	}
+	d, a := e.Data(), e.Arguments()
+	switch name {
+	case FormPrimitive:
+		// [doc] WF: one datum, no argument.
+		// [doc] COV, returned as invalid: the datum is one of two names.
+		if len(d) != 1 || len(a) != 0 || (d[0] != PrimitiveString && d[0] != PrimitiveBool) {
+			return g.ErrInvalid
+		}
+	case FormSlice:
+		// [doc] WF: no data, one argument.
+		if len(d) != 0 || len(a) != 1 {
+			return g.ErrInvalid
+		}
+	case FormField:
+		// [doc] WF: a name, a flag, one argument.
+		if len(d) != 2 || d[0] == "" || (d[1] != "true" && d[1] != "false") || len(a) != 1 {
+			return g.ErrInvalid
+		}
+	case FormRecord:
+		// [doc] WF: no data; every argument is a field of this model; no name twice.
+		if len(d) != 0 {
+			return g.ErrInvalid
+		}
+		seen := map[string]bool{}
+		for _, f := range a {
+			n, ok := Name(f.Form())
+			v := f.Data()
+			if !ok || n != FormField || len(v) != 2 || seen[v[0]] {
+				return g.ErrInvalid
+			}
+			seen[v[0]] = true
+		}
+	case FormExternal:
+		return g.ErrUnsupported // [doc] COV: Go refuses every external type today
+	default:
+		return g.ErrUnsupported // [doc] COV: a form name this check does not know
+	}
+	return nil
+}
+func CheckDeclaration(ctx context.Context, d g.NativeDeclaration[s.Language]) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	n, ok := Name(d.Form)
+	if !ok {
+		return g.ErrScope
+	}
+	// [doc] WF: a declaration has a name and one of the two declaration forms.
+	if d.Name == "" || (n != FormAlias && n != FormDefined) {
+		return g.ErrInvalid
+	}
+	if n == FormDefined {
+		// [doc] A restriction of today's generation, returned as invalid: Go
+		// [doc] itself admits a defined type over any type.
+		body, ok := Name(d.Body.Form())
+		if !ok || body != FormRecord {
+			return g.ErrInvalid
+		}
+	}
+	return nil
+}
+```
+
+Facts about the four models:
+
+- They are near copies. Each has 112 to 127 lines. They differ in the name
+  of the collection form (`slice` in Go, `array` in TypeScript, `sequence` in
+  Rust and C++), in the name of the nominal declaration form (`defined`,
+  `interface`, `struct`, `struct`) and in the external form.
+- No package is shared between them, by a decision recorded in the change
+  log on 12 November 2026: "Each model owns its own forms, a form can be read
+  only by its issuer, and no package compares a form name of one language
+  with another's or with a literal."
+- A form's shape is stated twice in code and in no table: once in the
+  constructor that writes the data strings and arguments, and once in the
+  check that counts them. A third reader is in the target, which reads the
+  data by position (below).
+- `Form(name)` issues a form of any name. The function does not check the
+  name against the constants.
+- The Go model exports a constructor, `External`, whose result its own check
+  always refuses.
+- No model has a form for a pointer, a map, an integer, a union or an
+  optional type. The syntax vocabulary of every language has node kinds for
+  such types (section 3.1).
+
+**Who writes forms.** A mapping. The mapping for horos text into Go, complete
+except for its imports
+(`transform/syntax/horos-to-golang/mapping/text/go/text.go:16-30`). Here `h`
+is the syntax vocabulary of horos, `rules.Library` is the function type of a
+horos mapping, `patterns.Head` builds the selector of one built-in horos
+constructor, and `source.Reader` is the reading interface of the horos
+source reader:
+
+```go
+func primitive(sourceName, targetName string) rules.Library[s.Language] {
+	return func(from, to representation.Language) (g.MappingDescription[h.Language, s.Language, source.Reader], error) {
+		pattern, err := patterns.Head(from, "scalar", sourceName)
+		if err != nil {
+			return g.MappingDescription[h.Language, s.Language, source.Reader]{}, err
+		}
+		return g.MappingDescription[h.Language, s.Language, source.Reader]{Profile: rules.RepresentationProfile, Bindings: []g.BindingDescription[h.Language, s.Language, source.Reader]{{ID: sourceName + "/golang/1", Input: pattern, Output: model.Primitive(targetName)}}}, nil
+	}
+}
+
+// Library returns the text mapping. It states the structural representation
+// profile itself.
+func Library() rules.Library[s.Language] {
+	return primitive("utf8-text", model.PrimitiveString)
+}
+```
+
+The description types it fills, from the generation contract
+(`contracts/generation/go/description.go:21-31`, `:81-86`):
+
+```go
+type Pattern[F, R any] struct {
+	Selector Selector
+	Slots    []Slot
+	Capture  func(context.Context, R, UseView[F]) ([]Capture[F], error)
+}
+type BindingDescription[F, T, R any] struct {
+	ID     string
+	Input  Pattern[F, R]
+	Output Expression[T]
+	Expand func(context.Context, Expansion[F, T, R]) (Expression[T], error)
+}
+type MappingDescription[F, T, R any] struct {
+	Profile      string
+	Bindings     []BindingDescription[F, T, R]
+	Declarations []DeclarationRecipe[F, T, R]
+	Helpers      []HelperRecipe[T]
+}
+```
+
+`F` and `T` are the marker types of the source and the target language, and
+`R` is the type of the source reader. A `Selector` is an identity that the
+source language issues for one kind of use. A **profile** is a named promise
+about the generated types; its identity is a string. A binding gives its
+result either as a constant `Output` or through a callback `Expand`. The
+record mapping uses the callback: it reads the fields, asks the kernel for
+the representation of each field's type through `r.Mapped(f.Use)`, and
+returns `model.Record(model.Field(name, optional, type), ...)`. A
+`DeclarationRecipe` does the same for a named declaration, and a
+`HelperRecipe` supplies a declaration under a helper key.
+
+So a mapping imports the model for its constructors and its names. No
+mapping calls a model's check.
+
+**Who reads forms.** The target of the same language. Go's target forwards
+the two checks and switches over the form names when it builds
+(`transform/syntax/golang/target/go/provider.go:24-29`, `:78-95`,
+`:111-128`). Here `m` is the shared tree builder: `b.Node` allocates one
+node with its children and returns a handle to it, a `m.Fragment`;
+`b.External` attaches an external use to a node; and `edges` pairs each
+fragment of a list with one role:
+
+```go
+func (p Provider) CheckExpression(ctx context.Context, e g.Expression[s.Language]) error {
+	return model.CheckExpression(ctx, e)
+}
+func (p Provider) CheckDeclaration(ctx context.Context, d g.NativeDeclaration[s.Language]) error {
+	return model.CheckDeclaration(ctx, d)
+}
+
+// predeclared writes a use of a type of the universe scope. The identifier is
+// a name that a declaration or a type parameter can capture, so the use
+// records its destination: the predeclared symbol.
+func (b *Backend) predeclared(name string, origin ast.NodeRef) (m.Fragment[s.Language], error) {
+	destination, err := symbol.Predeclared(name)
+	if err != nil {
+		return m.Fragment[s.Language]{}, err
+	}
+	node, err := b.Node(m.Node(s.KindNamedType, m.Attributes("name", name), origin))
+	if err != nil {
+		return node, err
+	}
+	use, err := symbol.ExternalUse(b.language, ast.NodeRef{}, destination)
+	if err != nil {
+		return node, err
+	}
+	return b.External(node, use)
+}
+
+func (b *Backend) Expression(e g.Expression[s.Language], args []m.Fragment[s.Language]) (m.Fragment[s.Language], error) {
+	if err := model.CheckExpression(context.Background(), e); err != nil {
+		return m.Fragment[s.Language]{}, err
+	}
+	name, _ := model.Name(e.Form())
+	data, origin := e.Data(), e.Origin()
+	switch name {
+	case model.FormPrimitive:
+		return b.predeclared(data[0], origin)
+	case model.FormSlice:
+		return b.Node(m.Node(s.KindSliceType, nil, origin), m.Child[s.Language]{Role: s.RoleElement, Fragment: args[0]})
+	case model.FormField:
+		return b.Node(m.Node(s.KindField, m.Attributes("name", data[0]), origin), m.Child[s.Language]{Role: s.RoleType, Fragment: args[0]})
+	case model.FormRecord:
+		return b.Node(m.Node(s.KindStructType, nil, origin), edges(s.RoleField, args)...)
+	}
+	return m.Fragment[s.Language]{}, g.ErrUnsupported
+}
+```
+
+Three facts are visible here. The target is the one production caller of
+the model's checks, and it calls no constructor. The target is where a form
+meets a node kind: `slice` becomes `slice-type`, `record` becomes
+`struct-type`, `field` becomes `field`. And the Go target reads `data[0]` of
+a field form and ignores `data[1]`, the optional flag: Go has no optional
+field, and the record mapping wraps the type of an optional field in a
+helper type instead.
+
+**Where Rust keeps its coverage answer.** Rust's model checks only the shape
+of an external form, and says so
+(`transform/syntax/rust/model/go/model.go:56-64`, `:100-103`):
+
+```go
+// External is the public item at path below the root of the crate that is
+// named crate, applied to args. The crate is separate from the path: the form
+// carries the crate's name first and then the segments of the path. This
+// model checks the shape of the form only. The Rust target admits a form
+// whose crate is a dependency that a destination can name. That is Std today,
+// and the target refuses every other crate.
+func External(crate string, path []string, args ...g.Expression[s.Language]) g.Expression[s.Language] {
+	return g.Native(Form(FormExternal), append([]string{crate}, path...), args...)
+}
+	...
+	case FormExternal:
+		if len(d) < 2 || slices.Contains(d, "") {
+			return g.ErrInvalid
+		}
+```
+
+The coverage answer is in the Rust target
+(`transform/syntax/rust/target/go/provider.go:23-49`):
+
+```go
+// CheckExpression admits the forms of the Rust model. An external form is
+// admitted when its crate is a dependency that a destination can name.
+func (p Provider) CheckExpression(ctx context.Context, e g.Expression[s.Language]) error {
+	if err := model.CheckExpression(ctx, e); err != nil {
+		return err
+	}
+	if name, _ := model.Name(e.Form()); name == model.FormExternal {
+		_, err := external(e.Data())
+		return err
+	}
+	return nil
+}
+
+// external returns the destination that the data of an external form names:
+// the crate first, then the path of the item. ...
+func external(data []string) (symbol.Symbol, error) {
+	crate := symbol.Std()
+	if data[0] != model.Std {
+		var err error
+		if crate, err = symbol.Dependency(data[0]); err != nil {
+			return symbol.Symbol{}, err
+		}
+	}
+	return symbol.Item(crate, data[1:]...)
+}
+```
+
+`symbol.Dependency` returns `ErrUnsupported` for every crate but the
+standard library. So for the external form Rust has the split that Go lacks:
+the model says what the form is, and the target says what is covered.
+Section 6.5 builds on this.
