@@ -53,3 +53,20 @@ func CheckSingleScope[T any](ctx context.Context, p g.Program[T]) error {
 	}
 	return CheckDistinctParameters(ctx, p)
 }
+
+// CheckMemberForm is the member rule of a target whose records have members
+// of one form: a member of a record is one expression of that form which the
+// target admits. It reads the form of the expression and nothing of its
+// content, so it knows no language. Which form is a target's member form, and
+// what the target admits, are the target's: a target selects this rule in its
+// member vocabulary (generation.MemberVocabulary) with its own form and its
+// own expression rule. It refuses another expression with ErrInvalid.
+func CheckMemberForm[T any](ctx context.Context, e g.Expression[T], member g.Form[T], admit func(context.Context, g.Expression[T]) error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if !member.Valid() || admit == nil || e.Kind() != g.FormExpression || e.Form() != member {
+		return g.ErrInvalid
+	}
+	return admit(ctx, e)
+}

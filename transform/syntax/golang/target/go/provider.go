@@ -132,7 +132,9 @@ func (p Provider) CheckProgram(ctx context.Context, program g.Program[s.Language
 }
 
 // CheckMember states the member vocabulary of the target (bittype#196, row
-// 13): generation.MemberVocabulary.
+// 13): generation.MemberVocabulary. A member of a record is one field form
+// that this target admits. The rule is the shared one, selected here with
+// this target's member form and its own expression rule.
 func (p Provider) CheckMember(ctx context.Context, e g.Expression[s.Language]) error {
-	return model.CheckMember(ctx, e)
+	return m.CheckMemberForm(ctx, e, model.Form(model.FormField), p.CheckExpression)
 }
