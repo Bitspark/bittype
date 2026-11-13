@@ -301,7 +301,9 @@ func (p GeneratedFilesFormatter[L]) Validate() error {
 // when the step or the common admission refuses. A step that returns without
 // an admitted placement, without a guard or with a requirement that asks for no
 // semantic graph fails the request with ErrInvalidFormatter: that is a defect
-// of the language's contribution and no category of the input.
+// of the language's contribution and no category of the input. The publisher
+// validates the requirement, so a malformed one fails the request with the
+// value of the semantic contract, before the provider is called.
 func (p GeneratedFilesFormatter[L]) Format(ctx context.Context, input GeneratedFilesInput) (source.Source[L], error) {
 	if err := p.Validate(); err != nil {
 		return source.Source[L]{}, err
@@ -332,9 +334,6 @@ func (p GeneratedFilesFormatter[L]) Format(ctx context.Context, input GeneratedF
 	}
 	if preparation.admitted == nil || prepared.Placement.state != preparation.admitted || prepared.Check == nil || !prepared.Evidence.Semantics {
 		return source.Source[L]{}, ErrInvalidFormatter
-	}
-	if err = semantic.ValidateEvidenceRequirements([]semantic.EvidenceRequirement{prepared.Evidence}); err != nil {
-		return source.Source[L]{}, err
 	}
 	admitted := prepared.Placement
 	policy := source.Policy[L]{Evidence: prepared.Evidence.Clone(), SemanticLimits: limits.Semantic, Limits: limits.Source, Print: p.contract.Print, Check: func(ctx context.Context, output source.Publication[L]) error {
