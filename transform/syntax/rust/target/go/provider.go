@@ -3,30 +3,51 @@ package target
 
 import (
 	"context"
-	"strings"
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	s "github.com/Bitspark/bittype/syntax/rust/go"
 	model "github.com/Bitspark/bittype/transform/syntax/rust/model/go"
+	"github.com/Bitspark/bittype/transform/syntax/rust/symbol/go"
 	m "github.com/Bitspark/bittype/transform/syntax/shared/target/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 type Provider struct{}
 type Backend struct {
 	*m.Store[s.Language]
-	config Provider
+	config   Provider
+	language representation.Language
 }
 
+// CheckExpression admits the forms of the Rust model. An external form is
+// admitted when its crate is a dependency that a destination can name.
 func (p Provider) CheckExpression(ctx context.Context, e g.Expression[s.Language]) error {
-	return model.CheckExpression(ctx, e)
+	if err := model.CheckExpression(ctx, e); err != nil {
+		return err
+	}
+	if name, _ := model.Name(e.Form()); name == model.FormExternal {
+		_, err := external(e.Data())
+		return err
+	}
+	return nil
+}
+
+// external returns the destination that the data of an external form names:
+// the crate first, then the path of the item.
+func external(data []string) (symbol.Symbol, error) {
+	crate, err := symbol.Dependency(data[0])
+	if err != nil {
+		return symbol.Symbol{}, err
+	}
+	return symbol.Item(crate, data[1:]...)
 }
 func (p Provider) CheckDeclaration(ctx context.Context, d g.NativeDeclaration[s.Language]) error {
 	return model.CheckDeclaration(ctx, d)
 }
 func (p Provider) Build(ctx context.Context, in g.BuildInput[s.Language]) (g.Assembly, error) {
 
-	b := &Backend{Store: m.New[s.Language](ctx, in.Limits), config: p}
+	b := &Backend{Store: m.New[s.Language](ctx, in.Limits), config: p, language: in.Language}
 	return m.Compile(ctx, in, b.Store, b)
 }
 func (b *Backend) Parameter(name string, origin ast.NodeRef) (m.Fragment[s.Language], error) {
@@ -51,11 +72,20 @@ func edges(role string, fragments []m.Fragment[s.Language]) []m.Child[s.Language
 	return out
 }
 
-// Path is native syntax; selecting a library artifact and its meaning is the caller's responsibility.
-func (b *Backend) Path(names []string, args []m.Fragment[s.Language], origin ast.NodeRef, absolute bool) (m.Fragment[s.Language], error) {
-	if len(names) == 0 {
+// Item writes a use of an item of a dependency as an absolute path: the name
+// of the crate, then the path of the item. The last segment names the item,
+// takes the arguments and records the destination. The segments before it
+// qualify the use.
+func (b *Backend) Item(destination symbol.Symbol, args []m.Fragment[s.Language], origin ast.NodeRef) (m.Fragment[s.Language], error) {
+	crate, path, ok := destination.Item()
+	if !ok {
 		return m.Fragment[s.Language]{}, g.ErrInvalid
 	}
+	use, err := symbol.ExternalUse(b.language, ast.NodeRef{}, destination)
+	if err != nil {
+		return m.Fragment[s.Language]{}, err
+	}
+	names := append([]string{crate.Name()}, path...)
 	var segments []m.Child[s.Language]
 	for i, name := range names {
 		var children []m.Child[s.Language]
@@ -66,13 +96,32 @@ func (b *Backend) Path(names []string, args []m.Fragment[s.Language], origin ast
 		if err != nil {
 			return p, err
 		}
+		if i == len(names)-1 {
+			if p, err = b.External(p, use); err != nil {
+				return p, err
+			}
+		}
 		segments = append(segments, m.Child[s.Language]{Role: s.RoleSegment, Fragment: p})
 	}
-	var attrs []ast.Attribute
-	if absolute {
-		attrs = m.Attributes("absolute", "true")
+	return b.Node(m.Node(s.KindPathType, m.Attributes("absolute", "true"), origin), segments...)
+}
+
+// primitive writes a use of a primitive type. Its name is no keyword, so the
+// use records its destination.
+func (b *Backend) primitive(destination symbol.Symbol, origin ast.NodeRef) (m.Fragment[s.Language], error) {
+	name, ok := destination.Primitive()
+	if !ok {
+		return m.Fragment[s.Language]{}, g.ErrInvalid
 	}
-	return b.Node(m.Node(s.KindPathType, attrs, origin), segments...)
+	node, err := b.Node(m.Node(s.KindPrimitiveType, m.Attributes("name", name), origin))
+	if err != nil {
+		return node, err
+	}
+	use, err := symbol.ExternalUse(b.language, ast.NodeRef{}, destination)
+	if err != nil {
+		return node, err
+	}
+	return b.External(node, use)
 }
 func (b *Backend) Declaration(d g.NativeDeclaration[s.Language], params []m.Fragment[s.Language], body m.Fragment[s.Language]) (m.Fragment[s.Language], error) {
 	name, origin := d.Name, d.Origin
@@ -106,17 +155,21 @@ func (b *Backend) Expression(e g.Expression[s.Language], args []m.Fragment[s.Lan
 	switch name {
 	case model.FormPrimitive:
 		if data[0] == model.PrimitiveString {
-			return b.Path([]string{"std", "string", "String"}, nil, origin, true)
+			return b.Item(symbol.StdString(), nil, origin)
 		}
-		return b.Node(m.Node(s.KindPrimitiveType, m.Attributes("name", "bool"), origin))
+		return b.primitive(symbol.Bool(), origin)
 	case model.FormSequence:
-		return b.Path([]string{"std", "vec", "Vec"}, args, origin, true)
+		return b.Item(symbol.StdVec(), args, origin)
 	case model.FormField:
 		return b.Node(m.Node(s.KindField, m.Attributes("name", data[0], "visibility", "public"), origin), m.Child[s.Language]{Role: s.RoleType, Fragment: args[0]})
 	case model.FormRecord:
 		return b.Node(m.Node(s.KindStruct, nil, origin), edges(s.RoleField, args)...)
 	case model.FormExternal:
-		return b.Path(append(strings.Split(data[0], "::"), data[1]), args, origin, true)
+		destination, err := external(data)
+		if err != nil {
+			return m.Fragment[s.Language]{}, err
+		}
+		return b.Item(destination, args, origin)
 	}
 	return m.Fragment[s.Language]{}, g.ErrUnsupported
 }
