@@ -47,6 +47,15 @@ func BuiltinKind() semantics.Key { return Key("builtin") }
 // entity that the compiler resolved the identifier to.
 func NameRole() semantics.Key { return Key("name") }
 
+// DeclaredTypeRelation is the relation of the fact from the entity of a type
+// name to the term of its own type: a defined type, an alias, a type parameter
+// and a predeclared type, captured, supplied or of the universe scope. Every
+// such entity carries exactly one. The term is the one that the facts about
+// the type hang on. It is not the entity's body: the body of a captured
+// declaration is the term of its written definition, and an entity without a
+// captured definition has no body.
+func DeclaredTypeRelation() semantics.Key { return Key("declared-type") }
+
 // Relations of the facts about a native type.
 func IdenticalRelation() semantics.Key   { return Key("identical") }
 func UnderlyingRelation() semantics.Key  { return Key("underlying") }

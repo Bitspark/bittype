@@ -516,6 +516,19 @@ func (m Semantics[L]) Facts(subject Subject, relation Key) []TermID {
 	return result
 }
 
+// OnlyFact returns the term of the one fact that the subject has under the
+// relation. It has no answer when the subject has no such fact or more than
+// one. The model keeps every relation multivalued and gives none a meaning: a
+// reader whose vocabulary records a relation once per subject asks here
+// instead of counting the result of Facts itself.
+func (m Semantics[L]) OnlyFact(subject Subject, relation Key) (TermID, bool) {
+	terms := m.Facts(subject, relation)
+	if len(terms) != 1 {
+		return 0, false
+	}
+	return terms[0], true
+}
+
 // DirectParameterBindings pairs the real parameters of a direct Reference
 // callee with an equally sized argument list. Parameter-headed applications,
 // other callees and arity mismatches have no such view. This structural query

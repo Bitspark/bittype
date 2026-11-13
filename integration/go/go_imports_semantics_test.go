@@ -239,8 +239,11 @@ func TestGoImportsBindQualifiedUsesToImportedDeclarations(t *testing.T) {
 		}
 	}
 	// Supplied internals are not exported: Cell's term has no underlying fact.
-	cellBody := data.Entities[cellEntity-1].Body
-	if facts := model.Graph().Facts(semantics.Subject{Term: cellBody}, n.Key("underlying")); len(facts) != 0 {
+	cellType, err := model.DeclaredType(cellEntity)
+	if err != nil {
+		t.Fatal("supplied declaration has no declared type", err)
+	}
+	if facts := model.Graph().Facts(semantics.Subject{Term: cellType.ID()}, n.Key("underlying")); len(facts) != 0 {
 		t.Fatal("supplied structure was exported", facts)
 	}
 	// The explicit query session reconstructs the same graph from the same environment.
@@ -749,9 +752,9 @@ func TestGoDeclarationPackageIsReadFromOwnership(t *testing.T) {
 	for file, want := range map[string]string{"people/person.go": "example.org/app/generated/people", "other/person.go": "example.org/app/generated/other"} {
 		// The declaration is found by its site, not by a package path.
 		var declared []n.Type
-		for _, e := range data.Entities {
+		for i, e := range data.Entities {
 			if e.Name == "Person" && e.Kind == n.DefinedKind() && len(e.Declarations) == 1 && e.Declarations[0].Tree == trees[file].ID {
-				ty, err := model.Type(e.Body)
+				ty, err := model.DeclaredType(semantics.EntityID(i + 1))
 				if err != nil {
 					t.Fatal(err)
 				}

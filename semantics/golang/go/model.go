@@ -76,10 +76,33 @@ func (m Model) Type(id semantics.TermID) (Type, error) {
 		return Type{}, ErrForeign
 	}
 	// Only terms explicitly carrying native type identity are type handles.
-	if len(m.state.graph.Facts(semantics.Subject{Term: id}, IdenticalRelation())) != 1 {
+	if _, ok := m.state.graph.OnlyFact(semantics.Subject{Term: id}, IdenticalRelation()); !ok {
 		return Type{}, ErrForeign
 	}
 	return Type{m.state, id}, nil
+}
+
+// DeclaredType reads the type of a type name from the declared-type fact of
+// its entity: a defined type, an alias, a type parameter or a predeclared
+// type. It fails for an entity that does not carry exactly one such fact, as a
+// package and a field do not. An entity's body is not read: it is the
+// declaration's written definition.
+func (m Model) DeclaredType(id semantics.EntityID) (Type, error) {
+	if !m.Valid() {
+		return Type{}, ErrForeign
+	}
+	declared := m.state.declared(id)
+	if !declared.Valid() {
+		return Type{}, ErrForeign
+	}
+	return m.Type(declared.id)
+}
+func (m *model) declared(id semantics.EntityID) Type {
+	term, ok := m.graph.OnlyFact(semantics.Subject{Entity: id}, DeclaredTypeRelation())
+	if !ok {
+		return Type{}
+	}
+	return Type{m, term}
 }
 
 // Lookup finds a package-level type declared by captured code. It fails when
@@ -100,21 +123,21 @@ func (m Model) lookup(importPath, name string) (Type, error) {
 	if !m.Valid() {
 		return Type{}, ErrForeign
 	}
-	var found []semantics.TermID
-	for _, e := range m.state.graph.Data().Entities {
+	var found []semantics.EntityID
+	for i, e := range m.state.graph.Data().Entities {
 		if e.Name != name || (e.Kind != DefinedKind() && e.Kind != AliasKind()) {
 			continue
 		}
 		owner, _ := m.state.graph.Entity(e.Owner)
 		// Captured packages have declaration sites; supplied packages have none.
 		if owner.Kind == PackageKind() && (importPath == "" && len(owner.Declarations) > 0 || importPath != "" && owner.Name == importPath) {
-			found = append(found, e.Body)
+			found = append(found, semantics.EntityID(i+1))
 		}
 	}
 	if len(found) != 1 {
 		return Type{}, ErrForeign
 	}
-	return m.Type(found[0])
+	return m.DeclaredType(found[0])
 }
 
 // DeclaringPackage is the package of a package-level declaration. Path is the
@@ -147,15 +170,15 @@ func (m Model) PackageName(importPath string) (string, error) {
 	return m.state.packageName(found[0])
 }
 func (m *model) packageName(id semantics.EntityID) (string, error) {
-	facts := m.graph.Facts(semantics.Subject{Entity: id}, PackageNameRelation())
-	if len(facts) != 1 {
+	fact, ok := m.graph.OnlyFact(semantics.Subject{Entity: id}, PackageNameRelation())
+	if !ok {
 		return "", ErrForeign
 	}
 	// A term in another form is no name: another operator, which covers a
 	// term that is no provider expression, another encoding, an operand, no
 	// text or text that is not UTF-8. Go's rule for a package name is not
 	// applied to the text.
-	name, _ := m.graph.Term(facts[0])
+	name, _ := m.graph.Term(fact)
 	if name.Operator != PackageNameOperator() || name.Encoding != TextEncoding() || len(name.Operands) != 0 || len(name.Data) == 0 || !utf8.Valid(name.Data) {
 		return "", ErrForeign
 	}
@@ -187,11 +210,11 @@ func (t Type) fact(relation semantics.Key) Type {
 	if !t.Valid() {
 		return Type{}
 	}
-	v := t.owner.graph.Facts(semantics.Subject{Term: t.id}, relation)
-	if len(v) != 1 {
+	v, ok := t.owner.graph.OnlyFact(semantics.Subject{Term: t.id}, relation)
+	if !ok {
 		return Type{}
 	}
-	return Type{t.owner, v[0]}
+	return Type{t.owner, v}
 }
 func (t Type) entity() semantics.Entity {
 	v := t.term()
@@ -249,8 +272,7 @@ func (t Type) Parameters() []Type {
 	}
 	var out []Type
 	for _, p := range t.entity().Parameters {
-		e, _ := t.owner.graph.Entity(p.Entity)
-		out = append(out, Type{t.owner, e.Body})
+		out = append(out, t.owner.declared(p.Entity))
 	}
 	return out
 }
