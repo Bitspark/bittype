@@ -388,3 +388,91 @@ assertion of the test). The tests of row 5 and of recursion are in stage 2.
 | `...Stage3OneMeaningTwoRepresentationRevisions` | For text, list, record, declarations and optional: Go and TypeScript carry one meaning and two representation revisions; a reference that lacks either part is refused | Who owns a meaning; that the meaning is one identity and not two equal spellings (F2) |
 | `...Stage3RefusalValues` | Missing and ambiguous are two values; an unbuilt family is "missing contribution"; a specialization is refused as unsupported with the application named while another application plans; five refusals of moved rules match exactly one value each; an unexpected error matches none | The refusals of the ten unmoved packages. The gate's test of row 10 over all 21 is not run |
 | `...Stage3OwnedDeclarationsAreKeyedByOwner` | Two contributions that spell a helper alike get two symbols. Red under a kernel that shares by spelling. A shared helper request is refused | What a Files stage does with two declarations of one name; a shared helper |
+
+## Stage 4: the plan and its serialized form (rows 16, 18, 19, 20, 22, 23, 32)
+
+**Built.** The plan as values: representation nodes identified by a digest
+of their content, use entries, applications with two lists tied to binders,
+logical symbols, the selected contributions, the products, the target with
+its configuration and the source with its semantics version
+(`contracts/generation/go/contribution_record.go`). `Serialize` and
+`ParsePlan` (JSON; the encoding is provisional). `ReaderKnowledge` and
+`CheckKnown` for the version axes. The realization manifest and
+`LinkRealization`. The planner's identity as a field of the inventory record
+(`OwnedDeclaration.Symbol`).
+
+**What the page said, and what happened.**
+
+- *"One for all the uses that selected the same representation"* (row 18).
+  Built by content: a node's identity is a digest over its kind, source
+  identity, contribution reference, schema reference, frozen payload, receipt,
+  links with their answers, stated facts, symbol, binder, application,
+  requirements and member names. It holds no source site. "How the planner
+  finds that two uses share a node" is #195's; the digest is the prototype's.
+- *Open generics are primary* (row 20). `Page<T>` is one declaration node
+  with its binder count. A use of `T` inside it is a binder node with the
+  declaration's logical symbol as its scope. `Page<Person>` is an application
+  node that names the declaration node and has two lists, `native` and
+  `adapters`, each of pairs (binder index, node). They are never matched by
+  position.
+- *"A generation request states whether it asks for types alone or for types
+  and bindings"* (O5). A request names products by identity; `types` is
+  always among them. A product is registered by the composition and states,
+  per kind of subject (use, declaration, field position), the facet kinds it
+  requires. With no further product the planner plans only the arguments that
+  the native convention demands. With one it plans an adapter argument for
+  every binder.
+- *"The planner's declaration identity is the logical symbol identity"* (row
+  23). Built as a string: `source:<source identity of the declaration>` for a
+  source declaration and `owned:<contribution reference>/<local name>` for an
+  owned one. It is in the plan, on the declaration's node and on the
+  inventory record of the sealed output.
+
+**What the page left open and what was chosen.**
+
+- *How a generation request names one binding product among several.* By the
+  product's identity, a string that the composition registered a product
+  under (`Registry.RegisterProduct`, `ContributionRequest.Products`).
+- *Who writes the realization manifest and in which form.* On this branch
+  the test composition writes it (`realizationTS`), as the struct
+  `RealizationManifest`: the plan's content digest, the run, the target with
+  its configuration, the placement and one realized symbol (logical symbol,
+  name, module path) per planned declaration. #195 decides the real writer.
+
+**Findings of this stage.**
+
+- **F11. Gate line 6 cannot be shown in full: main has no reader on the
+  formatter's result.** The page: "Line 6 needs the reader of #273". #273 is
+  open, and the TypeScript formatter's map from a generated site to its
+  placed site is private (`format/files/typescript/provider/go/relocate.go`).
+  The prototype's manifest takes the module path from the placement that the
+  consumer asked for and the name from the generation output, runs the real
+  Files formatter for that placement and checks that the text it wrote has
+  each declaration in the file the manifest names. That is no reader of the
+  realization. So the tests of rows 23 and 32 are run with a stand-in for the
+  reader, and the test of row 24 ("a formatter mutant that realizes another
+  spelling is followed") is not run.
+- **F12. Tampering cannot exercise an axis alone.** A node's identity covers
+  its schema reference and its contribution reference. Changing either in the
+  serialized bytes breaks the node's identity before any axis is compared. So
+  the test of row 16 plans each case: with a schema of another version, with
+  another meaning revision, with another representation revision. Only the
+  envelope protocol and the source semantics, which are no part of a node,
+  are changed in the bytes. No change to the page; a note for the migration's
+  test.
+- **F13. The fourth axis has no place the kernel can read.** Row 16 puts
+  generated-code and runtime compatibility "in the facet that names a
+  factory, among its requirements". The kernel carries a facet unread, so
+  only the reader of that facet can refuse an unknown value. Built so in
+  stage 7; `CheckKnown` covers the other four.
+
+**Tests** (`integration/go/prototype_stage4_test.go`; evidence
+`stage4-run1.txt`).
+
+| Test | Shows | Does not show |
+| --- | --- | --- |
+| `...Stage4TwoUsesOneNode` | Two uses of `Page<Person>` are two use entries with two sites on one node; the open declaration is one node; the application links its binder to the node of `Person` | #195's procedure for sharing |
+| `...Stage4OmittedArgumentIsKeptForConversion` | Asked for bindings, `Ignore<Person>` has no native and one adapter argument, and two applications with equal native types are two nodes. Asked for types alone the omitted argument is not planned. Red under `application-drops-omitted-argument` and `node-identity-ignores-links`. The same for an exact contribution with a conversion-only request | An adapter |
+| `...Stage4MemoKeyFromTheSerializedPlan` | A reader that only parsed the serialized plan derives equal keys for two uses with equal nodes and another key with another selected dependency | The memo and its token (bitspark-service#40) |
+| `...Stage4VersionAxesAlone` | An unknown value of the envelope protocol, the payload schema, the meaning revision, the representation revision and the source semantics is each refused under its own name, and the baseline is read | The fourth axis (F13, stage 7) |
+| `...Stage4RealizationManifest` | The inventory carries the planner's identity; one plan links with the manifests of two placements and resolves each symbol to another module path and the same name; the manifest of another output is a linking error. Red under `link-ignores-plan-digest`, which then reports an incomplete plan | A reader on the formatter's result (F11); row 24 |

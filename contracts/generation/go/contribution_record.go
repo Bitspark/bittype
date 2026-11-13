@@ -402,3 +402,101 @@ func planFacts(facts []Fact) []PlanFact {
 	}
 	return out
 }
+
+// ---------------------------------------------------------------------------
+// What a reader knows (row 16, row 27): "the planner emits them and the
+// plan's reader refuses".
+
+// ReaderKnowledge is what one reader of a plan can interpret: the payload
+// schemas it has codecs or decoders for, the contribution references it has
+// an implementation for, and the source interpretations it reads. The
+// envelope protocol is checked by ParsePlan. Generated-code and runtime
+// compatibility is stated in a facet and checked by the reader of that facet.
+type ReaderKnowledge struct {
+	Schemas         []SchemaReference
+	Contributions   []ContributionReference
+	SourceSemantics []string
+}
+
+// CheckKnown refuses a plan that requires a value of a version axis that the
+// reader does not know. Each axis is refused under its own name.
+func (p RepresentationPlan) CheckKnown(k ReaderKnowledge) error {
+	if !slices.Contains(k.SourceSemantics, p.data.Source.Semantics) {
+		return fmt.Errorf("%w: source semantics %q", ErrVersion, p.data.Source.Semantics)
+	}
+	for _, c := range p.data.Contributions {
+		if !slices.Contains(k.Schemas, c.Schema) {
+			return fmt.Errorf("%w: payload schema %s version %q", ErrVersion, c.Schema.Identity, c.Schema.Version)
+		}
+		if slices.Contains(k.Contributions, c.Reference) {
+			continue
+		}
+		part := "contribution " + c.Reference.String()
+		for _, known := range k.Contributions {
+			if known.Identity != c.Reference.Identity || known.Meaning.Identity != c.Reference.Meaning.Identity {
+				continue
+			}
+			if known.Meaning.Revision != c.Reference.Meaning.Revision {
+				part = fmt.Sprintf("meaning revision %q of %s", c.Reference.Meaning.Revision, c.Reference.Meaning.Identity)
+			} else {
+				part = fmt.Sprintf("representation revision %q of %s/%s", c.Reference.Representation, c.Reference.Identity.Publisher, c.Reference.Identity.Key)
+			}
+		}
+		return fmt.Errorf("%w: representation semantics: %s", ErrVersion, part)
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// The realization manifest (row 23, O16).
+
+// RealizedSymbol is the name and the place that a language's Files stage gave
+// one planned declaration.
+type RealizedSymbol struct {
+	Symbol string `json:"symbol"` // the logical symbol identity of the plan
+	Name   string `json:"name"`
+	Module string `json:"module"`
+}
+
+// RealizationManifest relates a plan, an output and its realization. It is
+// serializable. It identifies the plan by its content digest, the generation
+// run, the target configuration and the placement, and gives the realized
+// symbol of each logical symbol. Who writes it is not specified (#195); on
+// this branch the test composition does.
+type RealizationManifest struct {
+	Plan      string           `json:"plan"`
+	Run       string           `json:"run"`
+	Target    PlanTarget       `json:"target"`
+	Placement string           `json:"placement"`
+	Symbols   []RealizedSymbol `json:"symbols"`
+}
+
+// LinkRealization gives a reader the realized symbol of each logical symbol
+// of a plan. A manifest of another plan or another target is a linking error.
+// It is not an incomplete plan: nothing is missing, two inputs do not belong
+// together.
+func LinkRealization(p RepresentationPlan, m RealizationManifest) (map[string]RealizedSymbol, error) {
+	digest, err := p.Digest()
+	if err != nil {
+		return nil, err
+	}
+	if !PrototypeMutants["link-ignores-plan-digest"] && m.Plan != digest {
+		return nil, fmt.Errorf("%w: the realization manifest is of plan %s and the plan is %s", ErrLinking, m.Plan, digest)
+	}
+	if m.Target.Language != p.data.Target.Language || !slices.Equal(m.Target.Configuration, p.data.Target.Configuration) {
+		return nil, fmt.Errorf("%w: the realization manifest is of another target or configuration", ErrLinking)
+	}
+	realized := map[string]RealizedSymbol{}
+	for _, s := range m.Symbols {
+		if _, dup := realized[s.Symbol]; dup || s.Name == "" || s.Module == "" {
+			return nil, fmt.Errorf("%w: the realization of symbol %s", ErrInvalid, s.Symbol)
+		}
+		realized[s.Symbol] = s
+	}
+	for _, s := range p.data.Symbols {
+		if _, ok := realized[s.ID]; !ok {
+			return nil, fmt.Errorf("%w: symbol %s has no realization", ErrIncomplete, s.ID)
+		}
+	}
+	return realized, nil
+}
