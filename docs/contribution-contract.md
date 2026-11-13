@@ -1655,8 +1655,8 @@ apart.
 on that issue states the new verification. The validation cell of row 2 in
 the table of [research 0015](../research-docs/0015-representation-families.md)
 is reworded with this change, dated, and keeps its former text readable. The
-text of #207 itself is not reworded yet
-([the notes not yet posted](#what-is-delegated-and-what-is-not-specified-here)).
+text of #207 itself was reworded when this page merged
+([the notes posted with the merge](#what-is-delegated-and-what-is-not-specified-here)).
 
 ## Amendments to accepted pages
 
@@ -1845,22 +1845,24 @@ test composition is the consumer that registers their bundles.
 | The report of binding support | [#197](https://github.com/Bitspark/bittype/issues/197) | The delivery note of the table |
 | Value-level Go in production | "the future Go runtime library" (`docs/binding-generation.md:46`) | 29 |
 
-**The notes not yet posted.** The decisions of 13 November 2026 list four
-notes that are posted when this page merges. None is posted yet.
+**The notes posted with the merge.** The decisions of 13 November 2026 list
+four notes that are posted when this page merges. It merged on 13 November
+2026 as `2a29674`, and all four are posted.
 
-- **On #207, and in its text.** Item 1 and the sentence on the mutant are
-  still the old ones (rows 2 and 39), and the comment of 13 November 2026 on
-  #207 still says that vertical case 1 is exercised with a mock, which O6
-  corrects.
-- **The grade comment on #196** says the same of vertical case 1 and is
-  corrected by O6.
+- **On #207, and in its text.** The text carries a dated note on item 1
+  (row 2) and the replaced sentence on the mutant (row 39), with the former
+  sentence kept. A
+  [comment](https://github.com/Bitspark/bittype/issues/207#issuecomment-6842729411)
+  corrects the earlier one: vertical case 1 is not exercised with a mock (O6).
+- **The grade comment on #196** said the same of vertical case 1. The
+  [comment of the merge](https://github.com/Bitspark/bittype/issues/196#issuecomment-6842728735)
+  corrects it.
 - **The memo sentence.** Row 18 asks for a clarification of the binding
-  contracts' memo sentence "by request". The comment of 13 November 2026 on
-  bitspark-service#38 tells that owner about the memo token (row 22). Neither
-  it nor a comment on bitspark-service#40 names the two senses of "instance".
-  The note goes to bitspark-service#40.
-- **The seven lines of the gate** in the text of #196. Row 40 makes them the
-  merge gate of item 6 of that issue.
+  contracts' memo sentence "by request". The request, with the two senses of
+  "instance", is a
+  [comment on bitspark-service#40](https://github.com/Bitspark/bitspark-service/issues/40#issuecomment-6842729795).
+- **The seven lines of the gate** are in the text of #196, under item 6. Row
+  40 makes them the merge gate of that item.
 
 A note that row 39 names is made with this change: the validation cell of row
 2 of research 0015 ([what a test must show](#what-a-test-must-show)).
