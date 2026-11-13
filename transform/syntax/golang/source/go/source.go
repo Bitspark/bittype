@@ -138,7 +138,8 @@ func (i *interpretation) Expression(_ context.Context, u g.Use[s.Language]) (g.S
 }
 
 // JudgeDeclaration admits a defined type of a captured package that has no
-// type parameter and whose underlying type is a struct type.
+// type parameter. What its underlying type may be is judged as a use, and
+// what a pair makes of it is the pair's declaration contribution's decision.
 func (i *interpretation) JudgeDeclaration(_ context.Context, d g.Declaration[s.Language]) (g.Judgment, error) {
 	e, owner, named, err := i.entity(d)
 	if err != nil {
@@ -157,14 +158,6 @@ func (i *interpretation) JudgeDeclaration(_ context.Context, d g.Declaration[s.L
 		return unsupported(site, "this Go source reader reads no type of a supplied package"), nil
 	case len(e.Parameters) != 0:
 		return unsupported(site, "this Go source reader reads no generic declaration"), nil
-	}
-	declared, err := i.model.Type(e.Body)
-	if err != nil {
-		return g.Judgment{Verdict: g.Undetermined}, nil
-	}
-	underlying, _ := i.graph.Term(declared.Underlying().ID())
-	if underlying.Operator != n.StructOperator() {
-		return unsupported(site, "this Go source reader reads a defined type whose underlying type is a struct type, and no other"), nil
 	}
 	return g.Judgment{Verdict: g.Admitted}, nil
 }

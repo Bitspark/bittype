@@ -4,9 +4,12 @@
 // It is the Go source reader of the two other pairs of bittype#196 (decision
 // O43). It reads the analysed vocabulary of Go (semantics/golang/go) through
 // the kernel's walk, and it reads a small fragment: a defined type without
-// type parameters whose underlying type is a struct type, the struct type's
-// fields, the basic types string and bool, and a use of a defined type.
-// Everything else it judges as unsupported.
+// type parameters of a captured package, a struct type and its fields, the
+// basic types string and bool, and a use of a defined type. Everything else
+// it judges as unsupported: an alias, a generic declaration, an instantiated
+// generic type, a type of a supplied package, and every other type
+// expression (numbers, slices, maps, pointers, interfaces, functions,
+// channels, arrays).
 package source
 
 import (
