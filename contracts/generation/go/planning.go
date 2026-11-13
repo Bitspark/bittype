@@ -43,14 +43,22 @@ type Step struct {
 }
 
 // GenerationPlan is issued only after all reachable rules and dependencies have
-// been resolved. Run does not retain a source, reader or mapping expansion.
+// been resolved. Run does not retain a source, reader or rule. The plan
+// carries the selected representation plan of the same planning: the native
+// program and every entry of that plan are projections of the same frozen
+// decision records.
 type GenerationPlan struct {
-	steps []Step
-	run   func(context.Context) (Output, error)
+	steps          []Step
+	run            func(context.Context) (Output, error)
+	representation RepresentationPlan
 }
 
 func (p GenerationPlan) Steps() []Step { return slices.Clone(p.steps) }
-func (p GenerationPlan) Valid() bool   { return p.run != nil }
+
+// Representation is the selected representation plan. It is not valid for a
+// plan that was not planned through the contribution contract.
+func (p GenerationPlan) Representation() RepresentationPlan { return p.representation }
+func (p GenerationPlan) Valid() bool                        { return p.run != nil }
 func (p GenerationPlan) Run(ctx context.Context) (Output, error) {
 	if p.run == nil || ctx == nil {
 		return Output{}, ErrInvalid
@@ -208,7 +216,7 @@ func Plan[F, T, R any](ctx context.Context, in PlanningInput[F, T, R]) (Generati
 	// What the plan states about its declarations, for the inventory of every run.
 	owned := make([]planned, len(program.declarations))
 	for i, d := range program.declarations {
-		owned[i] = planned{d.Role, d.Provenance, d.Description.Values}
+		owned[i] = planned{role: d.Role, provenance: d.Provenance, values: d.Description.Values}
 	}
 	return GenerationPlan{steps: slices.Clone(p.steps), run: func(ctx context.Context) (Output, error) {
 		built, err := exec.Target.Build(ctx, BuildInput[T]{program, exec.Language, exec.Output, exec.Limits})

@@ -13,6 +13,17 @@ func diagnostic(input transform.Input, err error) error {
 	if errors.As(err, &diagnostic) {
 		return err
 	}
+	// A refusal of a contribution or of the planner is reported at the site of
+	// its subject, with its owner's reason. The class stays the refusal's.
+	var refusal *g.Refusal
+	if errors.As(err, &refusal) && refusal.Site.Tree != "" {
+		code := text.Unsupported
+		if refusal.Class == g.RefusalLimit {
+			code = text.LimitExceeded
+		}
+		site := refusal.Site
+		return fmt.Errorf("%w: %w", &text.Diagnostic{Code: code, Message: refusal.Reason, Node: &site}, err)
+	}
 	// A kernel limitation located at a source site is reported there.
 	var located *g.SiteError
 	if errors.As(err, &located) && errors.Is(err, g.ErrUnsupported) {

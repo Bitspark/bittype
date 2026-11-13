@@ -130,3 +130,9 @@ func (b *Backend) Expression(e g.Expression[s.Language], args []m.Fragment[s.Lan
 func (p Provider) CheckProgram(ctx context.Context, program g.Program[s.Language]) error {
 	return m.CheckSingleScope(ctx, program)
 }
+
+// CheckMember states the member vocabulary of the target (bittype#196, row
+// 13): generation.MemberVocabulary.
+func (p Provider) CheckMember(ctx context.Context, e g.Expression[s.Language]) error {
+	return model.CheckMember(ctx, e)
+}

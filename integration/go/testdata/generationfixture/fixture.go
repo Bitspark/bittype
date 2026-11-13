@@ -109,10 +109,14 @@ func (i interpretation) JudgeUse(ctx context.Context, u g.Use[SourceLanguage]) (
 type Reader interface {
 	Name(g.Declaration[SourceLanguage]) (string, error)
 	ParameterName(g.Binder[SourceLanguage]) (string, error)
+	// Roles returns, for each operand of an expression, the role selector the
+	// source issues for it, or an invalid one (bittype#196, row 12).
+	Roles(g.UseView[SourceLanguage]) ([]g.Role[SourceLanguage], error)
 }
 type reader struct {
 	captured g.Captured[SourceLanguage]
 	graph    semantics.Semantics[SourceLanguage]
+	roles    g.RoleIssuer[SourceLanguage]
 }
 
 func (r reader) Name(d g.Declaration[SourceLanguage]) (string, error) {
@@ -194,7 +198,8 @@ func (p sourceProvider) Open(ctx context.Context, captured g.Captured[SourceLang
 		}
 		i.rejected = report.Verdict == semantic.Rejected
 	}
-	source := g.Source[SourceLanguage, Reader]{Interpretation: i, Reader: reader{captured, graph}}
+	roles := g.NewRoleIssuer[SourceLanguage]()
+	source := g.Source[SourceLanguage, Reader]{Interpretation: i, Reader: reader{captured, graph, roles}, Roles: roles, Semantics: Semantics}
 	if p.variant.reuse != nil {
 		*p.variant.reuse = source
 	}

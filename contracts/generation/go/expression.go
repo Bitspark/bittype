@@ -56,6 +56,11 @@ const (
 	ArgumentExpression
 	HelperExpression
 	DeclarationExpression
+	// BinderExpression is the planner's placeholder for a binder of the
+	// declaration being planned (bittype#196, O28). The planner replaces
+	// it by the native meaning that the declaration's convention gives the
+	// binder before a target sees the declaration.
+	BinderExpression
 )
 
 // Expression is an immutable template. Parameter and Argument indices only have

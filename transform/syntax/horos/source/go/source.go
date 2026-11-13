@@ -32,6 +32,7 @@ type interpretation struct {
 	identities map[semantics.EntityID]semantics.TermID
 	sites      map[semantics.TermID]ast.NodeRef
 	rootModule ast.NodeRef
+	roles      g.RoleIssuer[h.Language]
 }
 
 func open(ctx context.Context, c g.Captured[h.Language]) (*interpretation, error) {
@@ -46,7 +47,7 @@ func open(ctx context.Context, c g.Captured[h.Language]) (*interpretation, error
 	if request.Entry() != (ast.NodeRef{Tree: input.ID, Node: input.Root}) {
 		return nil, semantic.ErrInvalidRequest
 	}
-	s := &interpretation{captured: c, graph: c.Graph(), language: request.Snapshot().Language(), data: c.Graph().Data(), sorts: map[semantics.Subject]semantics.TermID{}, results: map[semantics.EntityID]semantics.TermID{}, identities: map[semantics.EntityID]semantics.TermID{}, sites: map[semantics.TermID]ast.NodeRef{}}
+	s := &interpretation{captured: c, graph: c.Graph(), language: request.Snapshot().Language(), data: c.Graph().Data(), sorts: map[semantics.Subject]semantics.TermID{}, results: map[semantics.EntityID]semantics.TermID{}, identities: map[semantics.EntityID]semantics.TermID{}, sites: map[semantics.TermID]ast.NodeRef{}, roles: g.NewRoleIssuer[h.Language]()}
 	for _, ref := range input.Nodes[input.Root-1].References {
 		if ref.Role == h.RoleRoot {
 			s.rootModule = ref.Target

@@ -28,13 +28,20 @@ type Replacement struct {
 	Selector       g.Selector
 	Expected, With BindingRef
 }
+
+// Request is a generation request: the roots, the target, the profile and the
+// products. Products names the products asked for besides native types (O5):
+// with none the request asks for types alone. Configuration is the target
+// configuration that the plan records (row 35).
 type Request struct {
-	Input   transform.Input
-	To      representation.Language
-	Roots   []ast.NodeRef
-	Output  ast.TreeID
-	Profile string
-	Limits  g.Limits
+	Input         transform.Input
+	To            representation.Language
+	Roots         []ast.NodeRef
+	Output        ast.TreeID
+	Profile       string
+	Limits        g.Limits
+	Products      []string
+	Configuration []g.Setting
 }
 type sourceEntry struct {
 	language representation.Language
@@ -60,6 +67,9 @@ type Registry struct {
 	targets      map[string]targetEntry
 	mappings     []mappingEntry
 	replacements []Replacement
+	// contributions is the registration state of the contribution contract
+	// (bittype#196).
+	contributions contributions
 }
 
 func RegisterSource[F, R any](r *Registry, lang representation.Language, p g.SourceProvider[F, R]) error {
@@ -187,11 +197,28 @@ func (r *Registry) PlanGeneration(ctx context.Context, q Request, checker check.
 		}
 	}
 	replacements := slices.Clone(r.replacements)
+	selected, selectionErr := r.contributions.selectFor(q)
 	r.mu.RUnlock()
 	if !sok || !tok || !src.language.Compatible(q.Input.Source.Language()) || !target.language.Compatible(q.To) {
 		return fail(g.ErrScope)
 	}
+	if selectionErr != nil {
+		return fail(diagnostic(q.Input, selectionErr))
+	}
+	if len(selected.entries) > 0 {
+		// The two contracts do not meet in one plan. The mapping contract goes
+		// with the change that moves the last mapping package.
+		if len(mappings) > 0 {
+			return fail(fmt.Errorf("%w: a request selects contributions and mapping libraries", g.ErrScope))
+		}
+		p, err := selected.plan(ctx, q, src, target, checker)
+		if err != nil {
+			return fail(diagnostic(q.Input, err))
+		}
+		return p, nil
+	}
 	if len(mappings) == 0 {
+		// Stage 4 of the migration makes this the refusal "missing contribution".
 		return fail(g.ErrUnsupported)
 	}
 	if len(mappings) > q.Limits.Plans {

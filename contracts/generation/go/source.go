@@ -133,6 +133,13 @@ type Interpretation[F any] interface {
 type Source[F, R any] struct {
 	Interpretation Interpretation[F]
 	Reader         R
+	// Roles is the issuer of the role selectors that the reader hands to
+	// rules (bittype#196, row 12). A source without field roles
+	// leaves it zero.
+	Roles RoleIssuer[F]
+	// Semantics names the source interpretation that the checked references
+	// use: the fifth version axis (row 16). The plan records it.
+	Semantics string
 }
 
 // bittype:dimension Syntax

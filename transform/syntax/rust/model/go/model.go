@@ -125,3 +125,18 @@ func CheckDeclaration(ctx context.Context, d g.NativeDeclaration[s.Language]) er
 	}
 	return nil
 }
+
+// EvidenceRecordForm is the evidence kind "the selected native type is this
+// model's record form". It belongs to this vocabulary, because the fact
+// concerns the native side of this target (row 7). The declaration
+// contribution asks for it about a declaration's body (bittype#196, row 3).
+var EvidenceRecordForm = g.EvidenceKind{Identity: "bittype/rust/record-form", Version: "1"}
+
+// CheckMember is the member vocabulary of this model (row 13): a member of a
+// record is one field form.
+func CheckMember(ctx context.Context, e g.Expression[s.Language]) error {
+	if name, ok := Name(e.Form()); !ok || name != FormField {
+		return g.ErrInvalid
+	}
+	return CheckExpression(ctx, e)
+}
