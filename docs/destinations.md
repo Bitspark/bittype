@@ -273,8 +273,10 @@ TypeScript does, and is asserted by a test per target over sealed outputs".
   before an output with it passes.
 - **Which outputs it reads.** The pagination output of each of the three
   targets, and for TypeScript also the output with a type of a package beside
-  a declaration of the same name and one whose lists are the global type
-  `ReadonlyArray`. They hold every kind that the builtin mappings produce.
+  a declaration of the same name, one whose lists are the global type
+  `ReadonlyArray`, and two in which a name does not say what is meant: a
+  record whose type parameter is named like a declaration that the record
+  also uses, and two declarations of one name of which one uses the other. They hold every kind that the builtin mappings produce.
   The claim is shown for those kinds and those outputs. A native model can
   build more: the TypeScript model builds an `object-type` for an inline
   record, which a mapping that is not builtin can ask for. No output of the

@@ -548,15 +548,17 @@ has a defect of both kinds is invalid input, whichever file has which.
   files. Then TypeScript decides what is valid: what the sealed output
   carries, a path that is no TypeScript path, two declarations of one name in
   one file and a use of an unexposed declaration of another file. Only then it
-  refuses a path that the profile excludes or a file without a declaration.
+  refuses a path that the profile excludes, a type parameter that would
+  capture a use of a declaration of its file, or a file without a declaration.
 - **A placement of existing TypeScript source.** The form of the setting is
   decided before the captured program is read: its key, its JSON, its fields
   and its members. Then the files and the top-level declarations of the
   program are read, and the placement is judged against them: the number of
   files, its items, its files, its inventory, and a path that is no TypeScript
   path. Only then the graph is read, where a script is refused. Then the two
-  refusals of relocation, and at last a path that the profile excludes or a
-  file without a declaration.
+  refusals of relocation, and at last a path that the profile excludes, a type
+  parameter that would capture a use of a declaration of its file, or a file
+  without a declaration.
 
 The two refusals of relocation, for two declarations of one name in one file
 and for an unexposed declaration in another file than its user, are decided in
@@ -607,6 +609,7 @@ vocabulary has, with a value outside coverage, is unsupported.
 | A file without an item, in a placement or among the captured files | unsupported | invalid |
 | No file, an unknown, repeated or missing item, an item in a file that the placement does not declare. | invalid | invalid |
 | Two declarations of one name in one file, a binding without a single target | invalid | does not apply |
+| A type parameter that would capture a use of a declaration of its file | unsupported | does not apply |
 | A declaration placed in another file than an unexposed declaration that it uses | invalid | does not apply |
 | A generated tree with an import or an exported declaration, an exposed site that is no top-level declaration, a name use without a destination, an external use that the TypeScript issuer cannot read or that its site does not name | invalid | does not apply |
 | An import form other than a named type import | unsupported | does not apply |
@@ -622,7 +625,7 @@ vocabulary has, with a value outside coverage, is unsupported.
 | More fresh units than the input limit, a capture of the fresh output over a semantic limit | limit | limit |
 | Another error of the capture of the fresh output, such as the refusal of its Syntax checker | no category | no category |
 
-Three rows need their reason.
+Four rows need their reason.
 
 - **A file without an item.** A TypeScript file without a declaration is well
   formed, and row 30a of [research 0016](../research-docs/0016-native-files-placement.md)
@@ -641,6 +644,24 @@ Three rows need their reason.
   authorization, so no later slice can admit that placement for the same
   output. A caller who wants it has to change the request, which makes it a
   different input.
+
+- **Names in one file.** Generation states no rule about names across
+  declarations for TypeScript: it builds two declarations of one name, and a
+  type parameter that is named like a declaration. The TypeScript Files
+  formatter decides both for each file of a placement
+  ([research 0016](../research-docs/0016-native-files-placement.md), row 8:
+  "Collisions belong to the language's placed scopes"). Two declarations of
+  one name in one file are invalid input: no slice admits that placement, and
+  two files for them are admitted. A use of a declaration is written by the
+  declaration's name, and inside a declaration with a type parameter of that
+  name the compiler binds the name to the parameter. The advice says: "Files
+  must either perform an explicitly permitted alpha-renaming or refuse that
+  placement." TypeScript refuses it, as unsupported coverage, because a later
+  slice may rename the parameter where that is permitted. Another file for the
+  declaration is admitted today: its import gets an alias
+  ([the TypeScript document](typescript-type-imports.md#names-in-a-file)). The
+  bridge's comparison of the bindings of the fresh output stays as the second
+  line.
 
 One [table test](../integration/go/files_failure_categories_test.go) feeds each
 of these to the formatter that can receive it. The TypeScript bridge refuses a
@@ -699,13 +720,6 @@ table above does not give it:
   comparison of the published files with the admitted files table. A receipt
   that does not match the requirement of its request returns
   `semantic.ErrInvalidRequest` from the publisher.
-- **A type parameter that captures a declaration placed in its file.** The
-  bridge reports the changed binding of the fresh output, and the caller
-  receives `semantic.ErrInvalidRequest`.
-  [#273](https://github.com/Bitspark/bittype/issues/273) decides that TypeScript
-  Files refuses this placement as unsupported coverage. That is part of its
-  second change, with the removal of the flat-name rule: until then generation
-  refuses the declarations that make such a placement.
 - **The horos Files parser.** A wrong entry setting returns
   `semantic.ErrInvalidRequest` and an input over the node limit returns
   `semantic.ErrLimit`.

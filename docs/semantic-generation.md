@@ -186,8 +186,12 @@ arguments are Unsupported. Unsupported cases return source-node diagnostics and
 no usable output.
 
 Declarations and proper parameters capitalize their initial ASCII letter;
-a leading underscore becomes `Type_`, and `Self` becomes `Self_`. Name collisions,
-parameter shadowing of a declaration and unsupported field spellings fail.
+a leading underscore becomes `Type_`, and `Self` becomes `Self_`. Two
+parameters of one name in one declaration and unsupported field spellings
+fail for every target. Two declarations of one name, and a parameter named
+like a declaration, fail for Go, Rust and C++, which state one flat scope.
+TypeScript generates both, and its Files stage decides them for each file of a
+placement ([names in a file](typescript-type-imports.md#names-in-a-file)).
 Go fields also capitalize their initial letter; TypeScript retains property
 names. Rust and C++ reject keyword field names. Names are not guessed from types.
 
@@ -231,11 +235,13 @@ and Rust ([#161](https://github.com/Bitspark/bittype/issues/161), [#159](https:/
   and an output with an unexposed dependency. It renames nothing.
   [Go](naming.md#go) ·
   [bittype/ACX-004](architecture-cases/0004-generation-file-syntax.md).
-- **Name collisions and parameter shadowing fail for the whole output.** Both
-  are the flat-name rule. It leaves a target when that target's Files stage
-  checks collisions in a placed scope, and a type parameter that captures a
-  use is then refused for that placement
-  ([delivery order](naming.md#delivery-order-per-target)). The sentence below
+- **Name collisions and parameter shadowing fail for the whole output of Go,
+  Rust and C++.** Both are the flat-name rule. It leaves a target when that
+  target's Files stage checks collisions in a placed scope, and a type
+  parameter that captures a use is then refused for that placement
+  ([delivery order](naming.md#delivery-order-per-target)). It left the shared
+  builder and TypeScript on 13 November 2026
+  ([#273](https://github.com/Bitspark/bittype/issues/273)). The sentence below
   that "Go reserves `BittypeOptional`" is today an effect of the same rule.
 
 The sentence above that the version stays `/1` because the generated output

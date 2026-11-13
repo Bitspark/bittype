@@ -873,6 +873,18 @@ func TestFilesFailureCategories(t *testing.T) {
 		}}, declared, user)
 	}
 	add("a type parameter that captures a declaration of its file", typescriptExisting, source.ErrUnsupported, capturedExisting("both.ts"))
+	// The capture is found in the same pass as the refusals of relocation and is
+	// reported after them: a placement that also separates an unexposed
+	// declaration from its user is invalid input.
+	add("a type parameter that captures a declaration of its file and a use of an unexposed declaration of another file", typescriptExisting, source.ErrInvalid, func(t *testing.T) (bool, error) {
+		declared := tsUnit("a", "export type T = string;")
+		user := tsUnit("user", "import type { T as U } from \"./a.js\"; export interface Box<T> { own: U; item: T }")
+		return tsExisting(&tsfiles.Organization{Units: []tsfiles.Placement{
+			{File: "both", Path: "both.ts", Declarations: []ast.NodeRef{tsSite(declared, "T"), tsSite(user, "Box")}},
+			{File: "public", Path: "public.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Visible")}},
+			{File: "private", Path: "private.ts", Declarations: []ast.NodeRef{tsSite(hidden, "Hidden")}},
+		}}, declared, user, hidden)(t)
+	})
 	add("a type parameter that captures a declaration of its file, in a file whose path is no TypeScript path", typescriptExisting, source.ErrInvalid, capturedExisting("both.txt"))
 
 	// What the sealed generated output carries.
