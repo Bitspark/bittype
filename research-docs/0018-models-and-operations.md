@@ -3371,7 +3371,7 @@ change the answer, including what failed.
    kinds are in 3.8 and the one existing generator in 3.9. Section 6.4
    gives three candidate carriers (D1, D2, D3).
 
-4. **The order of work.** Given that a contract migration is in flight, that two further language pairs and two Files formatters are about to be written against the present places, and that our rule is "a misplaced responsibility moves first, as its own change", how would you order grouping, placement, unification and declaration so that each later step only adds and nothing moves twice? What must be decided before the first move, and how should the two rules of the direction be enforced so that it expresses the decision instead of replacing it?
+4. **The order of work.** Given that a contract migration is in flight, that two further language pairs and two Files formatters are about to be written against the present places, and that our rule is "a misplaced responsibility moves first, as its own change", how would you order grouping, placement, unification and declaration so that each later step only adds and nothing moves twice? What must be decided before the first move, and how should the two rules of the direction be enforced so that they express the decision instead of replacing it?
 
    *What it rests on.* The work in flight is in section 2.8. The rule is
    AC-10, whose exact words are in 2.1 and fixed point 2. The grouping step
