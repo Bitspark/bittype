@@ -566,3 +566,249 @@ Three facts follow, and all three are implemented today.
   because every value they issue is a value of that contract.
 - The carrier of intent is not a carrier package. Forms and expressions are
   declared inside the generation contract, beside the planner.
+
+### 2.5 Roles, and the test that derives a role from a path
+
+Standing: accepted design. The page `docs/package-boundaries.md` states
+"Implemented. State of 12 November 2026." and `LAYOUT.md` holds the role
+table. What the test does is implemented today.
+
+Every production package has one **role**. A role is an import rule. The
+page defines five roles in its section "Terms":
+
+> - **Kernel.** The shared mechanisms that select and compose: the engine, the
+>   generation registry and planner, and the contracts they are written against.
+> - **Contribution.** One thing a consumer registers or selects on its own: a
+>   stage provider, a source, a target, one mapping library, one verification
+>   law.
+> - **Vocabulary.** The names two parties must agree on and nothing else: syntax
+>   kinds, semantic keys, profile and contract identities, intended native forms.
+>   A vocabulary package imports no contribution.
+> - **Composition.** Code that chooses contributions and registers them: the
+>   integration tests, the tools and a future command.
+> - **Private part.** Code that serves one owner and is never selected by a
+>   consumer, such as a lexical helper of one language.
+
+A sixth role, **foundation**, has no definition in that section. The layout
+page gives it by its members: the carriers and the contract packages. A
+stage provider is the parser, checker, formatter, resolver or analyzer of one
+language.
+
+The role table of `LAYOUT.md`, abridged to the rows this document uses:
+
+| Role | Paths | May import |
+| --- | --- | --- |
+| Foundation | `trees/*/go`, `files/go`, `source/go`, `semantics/go`, `contracts/*/go` | Exactly what its own entry in a closed table lists. Never a package outside that table |
+| Kernel | `engine/go`, `transform/syntax/shared/*/go`, `check/syntax/shared/*/go`, `print/*/shared/provider/go` | The same table and the same rule. "So no foundation or kernel package imports a vocabulary, a contribution or a language's private part" |
+| Shared private helper | `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil`, `internal/concrete` | The same table and the same rule |
+| Vocabulary | `syntax/<language>/go`, `semantics/<language>/go`, `transform/syntax/<native>/model/go`, `transform/syntax/<native>/symbol/go` | "Foundations and its own language's vocabulary." The semantic vocabulary and the symbol package may also import their language's lexical helper. "Never a contribution." |
+| Contribution: stage provider | `<stage>/<dimension>/<language>/provider/go` | Its own list per stage: foundations, shared private helpers and what belongs to its own language. "A checker gets no concrete tree, a formatter no lexer, and no Syntax stage a semantic contract." |
+| Contribution: source reader | `transform/syntax/<language>/source/go` | Foundations and its own syntax and semantic vocabulary. Only horos has one |
+| Contribution: native target | `transform/syntax/<native>/target/go` | The generation contract, the AST, the shared tree builder, and its own syntax vocabulary, model and lexical helper. No source reader and no mapping |
+| Contribution: mapping | `transform/syntax/<source>-to-<native>/mapping/<name>/go` | The generation contract, the envelope, the syntax vocabulary of both languages, the source reader of its source language, and the model of its target language. Never another mapping and never a target |
+| Private part | `internal/<language>`, `internal/<language>sem` | A lexical helper imports the grammar helper only. A bridge imports foundations and its own syntax and semantic vocabulary |
+| Composition | `integration/go`, `verification/integration/go`, `tools/**` | Chooses and registers contributions |
+
+Two sentences of the layout page bind every role:
+
+> **One language.** A package that names a language imports no package of
+> another language. A mapping names two. A package belongs to a language by its
+> path, or by the table `languageOwners` where its path gives no role. No entry
+> and no extension lifts this rule.
+
+> Directory groups are not Go packages or an assertion that all members share the
+> same dependency level. A package gets its import rule from the role that its
+> path gives.
+
+The boundaries page says the same in one line: "A package's role follows from
+its path, which the layout fixes."
+
+**The architecture test.** A Go test reads the import block of every
+production package and compares it with the package's rule. The rule comes
+from one of two places.
+
+- *From the path.* A function splits the package path into segments and
+  matches their number and position. `syntax/<language>/go` is a syntax
+  vocabulary. A path of five segments whose fourth is `provider` is a stage
+  provider. `transform/syntax/<language>/model/go` is a model. The language
+  is read from the path and substituted into the rule's import patterns. A
+  new package of a known shape has its rule without an edit to the test.
+  Section 3.8 inlines this function.
+- *From a closed table.* Foundation, kernel and shared helper packages have
+  one entry each (31 entries). Packages of which there is only one have a
+  hand entry (12 entries). A table of **role extensions** names, per package,
+  the imports that one language needs and its role does not give (12
+  entries). A table of exceptions names, per importer, the exact symbols it
+  may use from a contribution (14 entries).
+
+So a path is not only a location. It is the input from which the import rule
+is computed. Any move of a package changes its rule unless the function and
+the tables change with it. That is a fact of today's test and no constraint.
+Question 4 asks how such a rule should be enforced.
+
+### 2.6 The four vocabularies of one language, with Go as the example
+
+Standing: implemented today.
+
+| | Syntax vocabulary | Semantic vocabulary | Model | Symbol package |
+| --- | --- | --- | --- | --- |
+| Path | `syntax/golang/go` | `semantics/golang/go` | `transform/syntax/golang/model/go` | `transform/syntax/golang/symbol/go` |
+| Lines | 107 | 855 | 112 | 81 |
+| What it states | What a Go type-syntax tree is made of: 23 node kinds, 15 containment roles, 1 reference role, 9 attribute names, 4 concrete kinds | What analysis of a Go program reports: kinds of entities, relations of facts, operators of terms, roles of bindings, all as keys with the owner `go` | What generation intends to construct: 7 form names and 2 primitive names | What a name use outside the generated declarations refers to: one category, a predeclared type |
+| What else it holds | Nothing. Two one-line methods return the language's identifier and display name | Profile strings, the identity values of the resolution and analysis contracts, the types of a compiler environment with their validation and encoding, and typed readers over an analysed graph | Five constructors that build forms, and two checks of a form | The rule that admits a name as a predeclared type, and two functions that record a symbol at a node and read it back |
+| Imports of this module | The AST, the CST, `contracts/language/go` | The semantic graph, the AST, the envelope, the syntax vocabulary, and the semantic, resolution and analysis contracts | The generation contract and the syntax vocabulary | The generation contract, the semantic graph, the AST, the envelope and the syntax vocabulary |
+| Who writes its names into an artifact | The parser and the generation target (into trees) | The Go bridge (into the graph) | The mappings into Go (into intent) | The generation target (into the sealed output) |
+| Who reads them | The checker, the formatter and the bridge | The typed readers in the same package, the query service, the verification component | The generation target | Only the generation target today. The planned Go Files stage is to read them. For TypeScript, the Files stage already reads its symbol package |
+| Stages that import it | parse, check, format, resolve, analyze, transform | resolve, analyze, verification | transform only | transform only (for TypeScript also format/files) |
+
+Three things that are not vocabularies complete the picture of Go.
+
+- **The grammar table.** Which attributes and children each node kind has is
+  stated in the Go checker, a contribution (section 3.2). The syntax
+  vocabulary holds the names only.
+- **Lexical rules.** Go has no lexical helper of its own. The checker asks
+  the Go standard library whether a word is a keyword, and the symbol package
+  asks it which names the universe scope declares. TypeScript, Rust, C++ and
+  horos each have a private package of spelling rules.
+- **The bridge.** A private package of 1,241 lines runs the Go type checker
+  over captured source and writes the graph. It is the writer of every name
+  in the semantic vocabulary.
+
+The other languages have the same four, with two gaps. C++ has no semantic
+vocabulary and no symbol package, because it has no analysis. horos has no
+model and no symbol package, because it is a source of generation and never
+a target. Its counterpart on the generation side is a source reader, which
+reads horos's semantic vocabulary.
+
+### 2.7 Generation
+
+Standing: accepted design (the pages `docs/generation.md`, "Current
+architecture, 8 November 2026", and `docs/kernel-composition.md`,
+"Implemented, 8 November 2026") and implemented today.
+
+```text
+analysed source program (semantic graph + receipt)
+   |  the kernel walks the graph; the source reader interprets it
+   v
+for each use of a type: one mapping is selected and states an intended form
+   |  the kernel composes the forms, substitutes parameters, resolves references
+   v
+intent: a closed program of intended declarations      <- checked by the target
+   |  the target builds one tree per program, through the shared tree builder
+   v
+target syntax trees, sealed with their declared symbols <- checked by the language's checker
+   |  the Files stage places declarations under a consumer's placement
+   v
+placed source, analysed again by the language's bridge  <- destinations compared
+```
+
+The participants and their words:
+
+- **Source reader.** A contribution of the source language. It tells the
+  kernel which entities are declarations and gives mappings a typed reading
+  of a use, for example the fields of a record. Only horos has one.
+- **Mapping.** A contribution for one ordered pair of languages and one kind
+  of source type, for example horos records into Go. It states what the
+  target type is to be. It uses the constructors of the target's model and
+  never builds a tree. There are 21, each in its own package of 25 to 78
+  lines.
+- **Family.** One kind of source type together with its representation in a
+  target: text, booleans, lists, closed records, optional fields, named
+  declarations.
+- **Form.** A constructor of intent that one target language issues, such as
+  Go's `slice`, `record` and `field`.
+- **Intent.** A tree of forms with string data and child expressions, with
+  placeholders that the kernel fills: a slot for the representation of
+  another use, a reference to a type parameter, a reference to another
+  planned declaration. It describes types only.
+- **Target.** A contribution of the target language. It checks intent, and it
+  builds the syntax tree from it. A case record of the repository (ACX-005)
+  says: "The native target remains the trusted interpreter of its own
+  forms."
+- **Output.** The trees, sealed together with an inventory of their
+  declarations and the list of external symbols they use.
+- **Files stage.** A contribution of the target language in the Files
+  dimension. It decides files, imports, qualification and visibility under a
+  placement that the consumer supplies. It then has the placed program
+  analysed and compares each name use with the symbol or declaration it was
+  meant to reach. It exists for TypeScript. For Go and Rust it is planned.
+
+The central sentence on intent, from `docs/generation.md`:
+
+> Build receives no source reader or mapping callback. Native intent is not an
+> analyzed `Semantics[T]`: target analysis establishes facts about the actual
+> constructed/organized program.
+
+The same page lists what each component may know. Its row for the "Native
+generation model/target" reads: "Its native forms and syntax; no
+Horos/library semantics". And `docs/kernel-composition.md`: "The native model
+describes intended types; the target constructs their syntax. Analyzed native
+facts remain under semantics."
+
+The pages name the model package in five ways: "native semantic forms and
+validation", "intended native forms", "native intent vocabulary", "native
+semantic forms" and "Native form identity and validity, without AST syntax".
+None calls it a syntax model or a transform model, which are the two words of
+the owner's message 4.
+
+### 2.8 What is in flight
+
+Standing: accepted designs and decisions of the research owner, as marked.
+Nothing in this subsection is on the main branch unless it says so.
+
+**The migration of the mapping contract.** A design of 13 November 2026 (the
+page `docs/contribution-contract.md`, from the expert consultation 0017,
+decided by the research owner and final only when a stated gate is met)
+replaces what a mapping registers and returns. Today a mapping returns
+intent. Under the new contract a mapping returns one **decision record** per
+selection: a typed value that holds every decision the selection contains,
+from which the intended form is computed. The record's type is declared in
+horos, and its Go type is generated by bittype itself (section 3.10). The
+reason is a second reader: a separately owned backend must emit conversion
+code from the same decisions.
+
+The migration is being built on a branch. At its present head (c1e5069, four
+commits ahead of the code baseline and three behind) it adds, per ordered
+pair and family, two packages beside each mapping, and one more per family:
+
+| New package on the branch | What it holds |
+| --- | --- |
+| `transform/syntax/horos-to-<target>/vocabulary/<family>/go` | The identity of one contribution, and the schema and generated Go type of its decision record |
+| `transform/syntax/horos-to-<target>/codec/<family>/go` | The hand-written encoding of that record |
+| `transform/syntax/horos/family/<family>/go` | The identity of the family's meaning, the same for every target. Its package comment calls it "the vocabulary of the family" |
+
+So the branch adds vocabularies of a new kind under the stage directory
+`transform/`: names that belong to a relation between two languages and not
+to one language. The layout page says of them: "This layout has no role for a
+facet package of a mapping contribution, and none for a vocabulary package of
+one family for one target: its role "Vocabulary" is per language." The
+migration moves no model package. It rewrites every mapping, and every
+mapping calls the model's constructors.
+
+**No direction in the shared contract** (decision O42 of the research owner,
+13 November 2026, on the owner's message 1). The shared generation contract
+called the target side "native". The decision: "The shared part names two
+roles of a transformation: source and target." The rename is done on the
+branch. Which pairs of languages exist follows from what is registered.
+
+**Two further pairs** (decision O43 of the research owner, 13 November 2026,
+on the owner's message 2). Two small pairs are to run through the new
+contract before it is final, to show that no direction is assumed:
+
+- `golang-to-typescript`: a source that is not horos. It needs a Go source
+  reader over the Go analysis, which no language but horos has today.
+- `typescript-to-horos`: horos as a target. It needs a model and a target for
+  horos, which do not exist.
+
+Both are to be written against the present places. Under the present path
+form a horos model would be `transform/syntax/horos/model/go` and a Go source
+reader `transform/syntax/golang/source/go`. That reading of the path form is
+ours.
+
+**Two Files stages.** The Go and the Rust Files stage are planned as the next
+slices of two open work items. By the accepted specification of destinations
+(the page `docs/destinations.md`, 13 November 2026) each is to read its
+language's symbol package, as TypeScript's does. Under the present path form
+each would be a package under `format/files/`.
+
+These four pieces of work are why question 4 asks about order.
