@@ -24,6 +24,14 @@ delivered boundaries remain distinct from the open item GEN-02.
 The remaining Rust, C++ and Go Files ownership defects retain their own
 [ACX-004 record](architecture-cases/0004-generation-file-syntax.md).
 
+**Further ownership audit, 13 November 2026.** The verified GEN-01 traversal
+correction does not close all source-reader responsibilities. Horos's reader
+still supplies common names and declaration sites already present in the shared
+graph; the independent source fixture supplies its own equivalent lookups.
+[ACX-006's residual metadata finding](architecture-cases/0006-generation-source-traversal.md#residual-common-metadata-access-13-november-2026)
+records the pending split between agnostic metadata access and source-owned
+meaning. This is an architectural remainder, not missing language coverage.
+
 ## GEN-01
 
 **Common semantic navigation is kernel-owned. Delivered on 8 November 2026 in [#191](https://github.com/Bitspark/bittype/pull/191). Independent verification rejected that delivery; the correction in [#192](https://github.com/Bitspark/bittype/pull/192) was independently verified on 9 November 2026.**
