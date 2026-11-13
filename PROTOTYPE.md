@@ -320,3 +320,71 @@ recursion test failed for the reason of F7).
 | `...Stage2RevisionIsIdentityAndNoPayload` | Two representation revisions: equal payloads, different nodes, also for the node that depends on it | What a revision means |
 | `...Stage2CycleAndRecursionAreToldApart` | `Rec = Page<Rec>` and `Loop = probe(Loop)` are refused as unsupported with two reasons, on the independent source | Anything of recursion beyond its refusal |
 | `...Stage2AnswersAreBoundToTheirDependency` | An answer for another dependency, another environment, another representation revision or another meaning revision of the dependency is rejected. Each is red under a kernel without that one comparison | That a rule cannot act on what it remembers without presenting it |
+
+## Stage 3: identities and refusals (rows 10, 15, 17, 21, 25)
+
+**Built.** The contribution identity and reference as the page writes them,
+checked at registration. The refusal as one type with a class
+(`generation.Refusal`) and a value for each class. Selection by domain with
+"missing" and "ambiguous" as two values. The specialization domain and its
+refusal. Declarations that a contribution owns, keyed by reference and local
+name. No kernel code was added in this stage beyond one line; the stage is
+its tests.
+
+**What the page left open and what was chosen.**
+
+- *The form of a refusal in Go.* One type with a class, and one value per
+  class that `errors.Is` matches. The existing values are kept:
+  `ErrUnsupported`, `ErrAmbiguous`, `ErrLimit`. New values:
+  `ErrRefusedByDesign`, `ErrRequirementUnsatisfied`,
+  `ErrRequirementUnresolved`, `ErrMissingFacet`, `ErrMissingContribution`. A
+  refusal carries its owner and reason, the subject (source identity and
+  site), the selected contribution with target and profile, the path of
+  dependencies, the requirement and, for a specialization, the application.
+- *What an unexpected error of a rule is.* `generation.RuleFailure`: an
+  implementation failure that names the contribution. It does not unwrap, so
+  the error of a rule cannot add a class. A rule that refuses with a class of
+  the planner (missing facet, missing or ambiguous contribution, limit) is an
+  implementation failure too. A rule may use four classes: unsupported,
+  refused by design, requirement unsatisfied, requirement unresolved.
+- *The class of the member-fragment refusal.* Fixed in stage 6: unsupported.
+- *The form of a publisher's name, of a local key, of a meaning identity and
+  of a meaning revision.* Strings. The prototype uses the module path as
+  bittype's publisher name, `horos-to-<native>/<name>` as the local key,
+  `bittype.structural/<family>` as the meaning identity, `1` as its revision
+  and `<native>/1` as the representation revision. Nothing depends on the
+  forms.
+- *The classes of the moved packages' refusals.* "nested records require a
+  named declaration in this profile": refused by design (the profile's
+  representation does not promise it, and another contribution may). A name
+  that the naming rule does not support: unsupported (the naming design
+  admits the same input later).
+
+**Findings of this stage.**
+
+- **F9. A specialization's domain needs the source identities of its
+  arguments.** Row 21: "The contract can name an application". Built as
+  `ForSpecialization(declaration, actuals...)`, each a selector of the
+  source. The planner matches an application by the selector of its callee
+  and of each actual. An actual that is itself an application is matched by
+  its callee alone. That is enough for the refusal the row asks for, and it
+  is not a design of #166.
+- **F10. The shared helper request is stated and not built.** Row 25: "A
+  contribution that needs whichever shared helper the composition selects
+  makes a request". The page leaves open whose key the request uses. The
+  request kind exists (`SharedHelper(key)`) and the planner refuses it as
+  unsupported. Under the delegated form no moved contribution needs one: Go's
+  record no longer names a helper, and the optional contribution owns its
+  helper. What on `main` needs the consumer to create a key
+  (`optional.Library(key)` and `record.Library(key)`) needs none here.
+
+**Tests** (`integration/go/prototype_stage3_test.go`; evidence
+`stage3-run2.txt`, and `stage3-run1.txt` for the first run with one wrong
+assertion of the test). The tests of row 5 and of recursion are in stage 2.
+
+| Test | Shows | Does not show |
+| --- | --- | --- |
+| `...Stage3PublisherAndLocalKey` | One key under two publishers registers; one publisher with one key twice fails, also for a second target; the stated target is checked | That a publisher's name is its owner's (row 15a) |
+| `...Stage3OneMeaningTwoRepresentationRevisions` | For text, list, record, declarations and optional: Go and TypeScript carry one meaning and two representation revisions; a reference that lacks either part is refused | Who owns a meaning; that the meaning is one identity and not two equal spellings (F2) |
+| `...Stage3RefusalValues` | Missing and ambiguous are two values; an unbuilt family is "missing contribution"; a specialization is refused as unsupported with the application named while another application plans; five refusals of moved rules match exactly one value each; an unexpected error matches none | The refusals of the ten unmoved packages. The gate's test of row 10 over all 21 is not run |
+| `...Stage3OwnedDeclarationsAreKeyedByOwner` | Two contributions that spell a helper alike get two symbols. Red under a kernel that shares by spelling. A shared helper request is refused | What a Files stage does with two declarations of one name; a shared helper |

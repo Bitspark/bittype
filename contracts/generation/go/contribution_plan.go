@@ -508,7 +508,7 @@ func (p *cplanner[F, T, R]) run(c *Contribution[F, T, R], subject Subject[F], ke
 	}
 	state := &answerState{}
 	for i, r := range requests {
-		if !p.walk.owns(r.use) {
+		if r.kind != helperRequest && !p.walk.owns(r.use) {
 			return out, ErrScope
 		}
 		link := PlanLink{Stated: r.stated}
