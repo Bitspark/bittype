@@ -53,8 +53,8 @@ none of them. It is this page's reading and no decision. A point that two
 sources leave unsettled, or settle differently, is not resolved on this page.
 The first version listed ten such points, and O1 to O10 decide them
 ([Open inside this design](#open-inside-this-design)). File and line
-references are `path:line` at commit `ec96b92`, the head of `main` when this
-page was written. The line numbers of the accepted pages that this change
+references are `path:line` at commit `04632ae`, the head of `main` when this
+page was last changed. The line numbers of the pages that this change
 annotates are those of that commit.
 
 **Words used on this page.**
@@ -132,7 +132,7 @@ substitution, and "generics" is no family with a contribution of its own. Row
 | Instantiation and compatibility checks | The planner, which invokes those contracts |
 
 This agrees with the planner page: "The kernel owns capture identity,
-substitution and scope." (`docs/generation-planner.md:284`). It changes two
+substitution and scope." (`docs/generation-planner.md:435`). It changes two
 texts that list generics beside the families. For item 1 of
 [#207](https://github.com/Bitspark/bittype/issues/207) the
 [comment of 13 November 2026](https://github.com/Bitspark/bittype/issues/207#issuecomment-6840545162)
@@ -193,7 +193,7 @@ source and selects nothing".
   away from it. They cannot keep a contribution from passing what it read to
   its projector through state of its own package. A contribution stays
   trusted in that respect, as a target is today
-  (`docs/generation-spi.md:369-372`).
+  (`docs/generation-spi.md:371-374`).
 
 **What belongs in the decision record (row 5).** Row 5: "A per-selection
 choice is a field. An invariant of a semantic revision is carried by reference
@@ -415,7 +415,7 @@ contract now."
 
 ## Refusals
 
-**What exists (the generation contract at `ec96b92`).** Listed here because
+**What exists (the generation contract at `04632ae`).** Listed here because
 row 10 refines these and replaces none.
 
 | Value or verdict | Its text or meaning | Where |
@@ -483,7 +483,7 @@ back." This keeps three accepted sentences:
   an exact use mapping never silently becomes a structural publication today."
   (`docs/binding-generation.md:99`)
 - "An exact binding takes precedence, and its failure never falls back to
-  that policy." (`docs/generation-spi.md:126-127`)
+  that policy." (`docs/generation-spi.md:127-128`)
 - The advice (section 1.5): "Applicability and refusal are not a mechanism
   for trying contributions in registration order."
 
@@ -802,7 +802,7 @@ identities, native type arguments, adapter arguments and requirements"
   20: "Row 20 applies when bindings are asked for: an argument that the native
   convention omits is still represented, because its adapter is needed." For
   types alone the accepted sentence holds: "Only demanded native actuals need
-  mappings." (`docs/generation-spi.md:162`). So a request for types does not
+  mappings." (`docs/generation-spi.md:163`). So a request for types does not
   fail for want of something that only conversion needs, as binding
   generation requires: "A native mapping without an adapter facet still
   supports types" (`docs/binding-generation.md:99`).
@@ -943,7 +943,7 @@ The contract of a kind belongs to the product that reads it. The kernel knows
 no kind.
 
 **Two carriers, and the difference (row 26).** Pull request #281 for
-[#272](https://github.com/Bitspark/bittype/issues/272) adds owner-issued
+[#272](https://github.com/Bitspark/bittype/issues/272) added owner-issued
 values. Row 26: a facet "is a second carrier beside the owner-issued values of
 #281, and the difference is stated: those attach to a declaration of one
 output and never leave the process, a facet attaches to a contribution and may
@@ -1605,45 +1605,44 @@ A dash means that the row has no test of its own before the gate is met.
 
 ## The code today
 
-At `ec96b92`. Nothing in this section is the design, and no fact here is a
+At `04632ae`. Nothing in this section is the design, and no fact here is a
 reason for a choice above. Paths without a directory are in
 `contracts/generation/go`.
 
 | Fact | Where |
 | --- | --- |
-| A registered unit is a profile and three lists: use rules, declaration recipes and helper recipes | `description.go:72-77` |
-| A use rule is a pattern with an optional capture, and a fixed output or an expand callback. A declaration recipe has an expand callback | `description.go:21-31`, `:61-66` |
-| The expand callback can take the source reader | `description.go:113-120`; `transform/syntax/horos-to-golang/mapping/record/go/record.go:40-41` |
-| A rule's callback runs before its children are planned. `Mapped` records a placeholder, and the planner represents the child when it meets the placeholder afterwards | `planning.go:548`, `:560`, `:580-585`; `description.go:133-171` |
-| A rule returns native intent, and nothing else of its decision is kept. The program holds declarations, and a step is five strings for inspection | `planning.go:14-22`, `:33-36`, `:564` |
+| A registered unit is a profile and three lists: use rules, declaration recipes and helper recipes | `description.go:81-86` |
+| A use rule is a pattern with an optional capture, and a fixed output or an expand callback. A declaration recipe has an expand callback | `description.go:21-31`, `:66-71` |
+| The expand callback can take the source reader | `description.go:122-129`; `transform/syntax/horos-to-golang/mapping/record/go/record.go:40-41` |
+| A rule's callback runs before its children are planned. `Mapped` records a placeholder, and the planner represents the child when it meets the placeholder afterwards | `planning.go:580`, `:592`, `:612-617`; `description.go:142-180` |
+| A rule returns native intent, and nothing else of its decision is kept. The program holds declarations, and a step is five strings for inspection | `planning.go:19-28`, `:40-43`, `:596` |
 | The declaration recipe takes the record form when the source body is a record. Each target's model requires that the selected body of that form is its record form | `transform/syntax/horos/mapping/declarations/go/declarations.go:52-55`; `transform/syntax/golang/model/go/model.go:105-109` |
-| A rule declines by returning an error, which the planner passes on unclassified | `planning.go:378-380`, `:553-555` |
+| A rule declines by returning an error, which the planner passes on unclassified | `planning.go:407-409`, `:585-587` |
 | The record rule's refusal is a text diagnostic. By reading, it matches none of the seven values | `record.go:50` of the Go record mapping; `transform/syntax/horos/source/go/read.go:126-133` |
-| A recursive declaration is refused | `planning.go:322-325` |
-| An exact mapping without a recipe does not fall back to the structural policy | `planning.go:333-337` |
-| A rule's names: a string that is unique in its description, and a counter of the registry. The planner joins them, and only a step keeps the result | `record.go:40` (`record/golang/1`); `transform/syntax/shared/generation/go/registry.go:19-22`, `:126-127`, `:242`; `planning.go:143` |
+| A recursive declaration is refused | `planning.go:350-353` |
+| An exact mapping without a recipe does not fall back to the structural policy | `planning.go:361-365` |
+| A rule's names: a string that is unique in its description, and a counter of the registry. The planner joins them, and only a step keeps the result | `record.go:40` (`record/golang/1`); `transform/syntax/shared/generation/go/registry.go:19-22`, `:126-127`, `:242`; `planning.go:150` |
 | A replacement reaches use rules only | `registry.go:251-262` |
 | A request names one profile and no product. The registry plans with every unit that states that profile | `registry.go:31-38`, `:185` |
-| One native declaration is planned for each source declaration. Its identity is issued at reservation | `planning.go:322`, `:309-317` |
-| A use of a declaration is selected by the callee alone | `planning.go:450-453`, `:465` |
-| An application keeps its native arguments only. An actual that the native convention omits is admitted and not represented | `planning.go:515`, `:503-507` |
+| One native declaration is planned for each source declaration. Its identity is issued at reservation | `planning.go:350`, `:321-329` |
+| A use of a declaration is selected by the callee alone | `planning.go:482-485`, `:497` |
+| An application keeps its native arguments only. An actual that the native convention omits is admitted and not represented | `planning.go:547`, `:535-539` |
 | One generic convention holds native parameters, bindings indexed by source parameter and arguments indexed by native parameter | `description.go:38-45` |
 | The optional representation is chosen inside each record rule: Go through a helper key, Rust and C++ by an external type, TypeScript by the flag of the field | `record.go:70-72` (Go), and `record.go:53-54` of the Rust and C++ mappings, `record.go:55` of the TypeScript mapping |
 | Go's optional helper is its own contribution. The consumer creates its key, which is an allocation | `transform/syntax/horos-to-golang/mapping/optional/go/optional.go:21-26`; `expression.go:41-46` |
 | The `field` form of the Go model carries a name and the optional flag as strings | `transform/syntax/golang/model/go/model.go:43-45` |
 | The source reader returns a field's name, its flag, its use and a site | `transform/syntax/horos/source/go/read.go:25-30` |
-| A sealed output holds a snapshot, the exposed sites and the external uses. It lists no declaration | `output.go:52-56` |
+| A sealed output holds a snapshot, an inventory of the declarations it owns, the exposed sites and the external uses. An inventory record has a handle, a site, a role, a provenance and owner-issued values. It has no identity of the planner | `output.go:164-170`, `:137-143` |
 | The contract package imports six packages of bittype and neither horos nor ontos | `integration/go/architecture_test.go:182` |
 | There are 21 mapping packages: five each for TypeScript, Rust and C++, six for Go | The directories `transform/syntax/horos-to-<native>/mapping/<name>/go` |
 | TypeScript is checked with `exactOptionalPropertyTypes` | `internal/typescriptsem/compiler.cjs:30` |
 | Generated Files formatters exist for horos and TypeScript | The directories under `format/files` |
 
-**Not on `main`.** Pull request
-[#281](https://github.com/Bitspark/bittype/pull/281) is open. Read on its
-branch at `ca77f65`, it adds owner-issued values, a handle for each
-declaration of a sealed output, and an inventory record with a handle, a
-site, a role, a provenance and values. The record has no identity of the
-planner.
+**Merged while this page was written.** Pull request
+[#281](https://github.com/Bitspark/bittype/pull/281) merged as `04632ae` on
+13 November 2026. It added the owner-issued values, the handles and the
+inventory of the row above. The references of this page were first written
+at `ec96b92` and are moved to `04632ae`.
 
 **What does not exist.** No Go file of the repository defines a plan entry, a
 payload schema, a facet, a payload codec, evidence about a selected
