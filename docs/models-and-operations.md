@@ -1,6 +1,6 @@
 # Models and operations
 
-**Design, 13 November 2026, from research 0018. The decisions M1 to M27 are the research owner's, `claude-contract-chain-issues`, all recorded on #305: M1 to M9 in the [grade](https://github.com/Bitspark/bittype/issues/305#issuecomment-6855741567), M10 to M18 on [nine choices](https://github.com/Bitspark/bittype/issues/305#issuecomment-6856947056) that the first version of this page left to that owner, [M19](https://github.com/Bitspark/bittype/issues/305#issuecomment-6857366489), which adjusts M11, [M20 to M27](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249) on the findings of an independent review of this page, and [M28](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842), which corrects M21. Nothing on this page is implemented: the code on `main` has the layout that [`LAYOUT.md`](../LAYOUT.md) describes.**
+**Design, 13 November 2026, from research 0018. The decisions M1 to M29 are the research owner's, `claude-contract-chain-issues`, all recorded on #305: M1 to M9 in the [grade](https://github.com/Bitspark/bittype/issues/305#issuecomment-6855741567), M10 to M18 on [nine choices](https://github.com/Bitspark/bittype/issues/305#issuecomment-6856947056) that the first version of this page left to that owner, [M19](https://github.com/Bitspark/bittype/issues/305#issuecomment-6857366489), which adjusts M11, [M20 to M27](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249) on the findings of an independent review of this page, [M28](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842), which corrects M21, and [M29](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859553686) on the second round of that review. Nothing on this page is implemented on `main`: the code there has the layout that [`LAYOUT.md`](../LAYOUT.md) describes.**
 
 The owner directed on 13 November 2026 that the repository splits at its root
 into models and operations. This page says how the line is drawn, where every
@@ -48,7 +48,11 @@ This page does not repeat them.
 - **M28:** the [decision of the same day](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842)
   on a finding of this page's check of the migration's branch. It corrects
   the home that M21 gave the publisher name.
-  [Section 11](#11-decisions-and-deferrals) lists all twenty-eight.
+- **M29:** the [decision of the same day](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859553686)
+  on the second round of the independent review, at `06d2100`. It corrects
+  M28 in one count, states the standing of M27 and gives the work on the
+  pairs' branch its slice.
+  [Section 11](#11-decisions-and-deferrals) lists all twenty-nine.
 
 Code is quoted with its file and line on `main` at `0581401`. The existing
 code is given as a fact and never as a reason for a choice
@@ -94,7 +98,7 @@ ops work on the model
 | **Rule 1 (no import):** a model imports no operation | Direction. Fixed |
 | **Rule 2 (no containment):** a model contains no operation | Direction. Fixed |
 | Operations work on the model | Direction. Fixed |
-| The names below the two roots in message 7, `model/{syntax,semantics,...}/go/...` and `ops/{transform,...}/go/...` | A sketch. [Section 7](#7-the-layout) gives the order below a root (M6) and the names (M10, M11, M14, M19) |
+| The names below the two roots in message 7, `model/{syntax,semantics,...}/go/...` and `ops/{transform,...}/go/...` | A sketch. [Section 7](#7-the-layout) gives the order below a root (M6) and the names (M10, M11, M14, M19, M28). Two paths of M14 wait for a decision (M27, M29) |
 | Messages 9 and 10, "you are talking about the correctness of a model, aren't you?" and "or consistency?" | Questions of the owner. [Section 3](#3-consistency-and-correctness) answers them with M2 |
 
 The direction changes two older rules of the same owner at the root: "organize
@@ -491,13 +495,14 @@ the new answer.
 
 **M22: what slice S2 does, on the migration's branch.** The tables above
 quote `main`. On the branch (`origin/feat/contribution-contract-196`, read
-at `a400ac8`) each of the four packages differs in three points: its
+at `356c220`) each of the four packages differs in three points: its
 constructors call `g.Apply` in place of `g.Native`, `CheckDeclaration` takes
 a `g.TargetDeclaration`, and it holds one more declaration,
 `EvidenceRecordForm`, a value of the type `g.EvidenceKind`
 (`transform/syntax/golang/model/go/model.go:118` on the branch). The
 declaration and the record contribution of each pair use it. `CheckMember`
-is no longer in the package at that head.
+is no longer in the package: slice S1 is delivered on the branch, with
+commit `8c96c78`.
 
 - S2 creates both halves at their final paths and removes the old package:
   `model/intent/<language>/go` with the form names, the primitive names, the
@@ -988,17 +993,21 @@ Four halves are named here, the first and the last by the general rule.
 
 - *Reason:* the general rule makes the two halves of a split package
   findable from each other and keeps the scripted move mechanical.
-- *M27.* The paths of the typed readers and of symbol admission are decided
-  again when platform research 0004 is evaluated, the consultation on a rule
-  that places a responsibility by the knowledge it needs. The reason: each
-  is imported by several operations and placed under one. Symbol admission
-  sits under `transform` though a Files formatter imports it, and the typed
-  readers would sit under `analyze` though verification laws, Files
-  formatters and source readers import them (the independent review,
-  point 8). Slice S5 creates neither
-  path before that decision: the readers stay in the half that stays at
-  `semantics/<language>/go`, and symbol admission stays where it is. Nothing
-  moves twice.
+- *M27, with its standing by M29.* The paths of the typed readers and of
+  symbol admission are decided again when platform research 0004 is
+  evaluated, the consultation on a rule that places a responsibility by the
+  knowledge it needs. The reason: each is imported by several operations and
+  placed under one. Symbol admission sits under `transform` though a Files
+  formatter imports it, and the typed readers would sit under `analyze`
+  though verification laws, Files formatters and source readers import them
+  (the independent review, point 8). This is no deferral under AC-10, which
+  permits one only for a huge effort. It is a part of slice S5 that waits
+  for a decision: taking the typed readers out of the semantic vocabularies,
+  and the path of the admission half of the TypeScript symbol package. Until
+  then the readers stay in the half that stays at `semantics/<language>/go`,
+  and symbol admission stays where it is. Slice S8 waits for S5 complete,
+  and so for that decision, which is why nothing moves twice
+  ([section 10](#10-the-order-of-work)).
 
 ### Every place named
 
@@ -1018,7 +1027,7 @@ four rows are what the migration's branch adds (row R23).
 | The grammar-table type (`internal/grammar/rules.go:15-33`) and the shared predicate names | `model/syntax/go` | Model | Row R7c places it. The place is M11 and M18 | S3a |
 | A language's grammar table | `model/syntax/<language>/go`, with the node kinds | Model | Row R7c places it. The place is M11 and M19 | S3b |
 | Lexical tables: a language's word lists, character tables and literal patterns, and the names of its predicates | `model/syntax/<language>/lexical/go` | Model | Row R7h places them. The place is M19 | S4 |
-| The operations halves of split vocabulary packages | The four paths of M14 | Operations | M14. Two of the four are decided again (M27) | S2, S5 |
+| The operations halves of split vocabulary packages | The four paths of M14 | Operations | M14. Two of the four wait for a decision (M27, M29) | S2 for the typed constructors. The general rule for the contract identities. The waiting part of S5 for the typed readers and for symbol admission |
 | The identity types of a contribution (`ContributionIdentity`, `Meaning`, `ContributionReference`, `SchemaReference`, `EvidenceKind`; on the migration's branch `contracts/generation/go/contribution.go:22-46`, `:138`), and the publisher name `Publisher` (on the branch `transform/syntax/horos/mapping/go/mapping.go:37`) | `model/contributions/go` | Model | Rows R7e and R23 place the types. The name is M11. `Publisher` is M28 | S7 |
 | A pair's contribution vocabulary (on the branch `transform/syntax/<source>-to-<target>/vocabulary/<name>/go`, 24 packages) | `model/contributions/<source>-to-<target>/<name>/go` | Model | Row R7g places it. The name is M11 | S7 |
 | A family of one language (on the branch `transform/syntax/horos/family/<name>/go`, 6 packages), and the two profile identities of the common mapping package (`transform/syntax/horos/mapping/go/mapping.go:21`, `:27` on the branch) | `model/families/<language>/<name>/go` for a family, and `model/families/<language>/go` for the profile identities | Model | Row R23 asks for the place. The name is M11 | S7 |
@@ -1046,11 +1055,19 @@ every pair's vocabulary imports it from there.
   own for the name: "If a second publisher's vocabularies ever live in this
   repository, the name gets a package of its own below that sort; none does
   today." (M28.)
+- *A stated choice.* The kernel and the generation contract import
+  `model/contributions/go` for the identity types and never use the
+  constant `Publisher`. That is the sign "An importer that uses a slice of
+  the package" (`docs/package-boundaries.md:157-159`), which M19 weighed as
+  deciding for the lexical tables. Here M28 keeps one package until a second
+  publisher exists: the one name states who publishes the contributions
+  that the types identify, and a package for one constant is made when a
+  second value of it appears.
 
 The counts on the branch come from
 `git ls-tree -r --name-only origin/feat/contribution-contract-196 -- transform | grep "/vocabulary/.*/go/vocabulary.go" | wc -l`
 (24) and from the package list of the branch (six `family` packages), read
-at `a400ac8`.
+at `356c220`.
 
 ### Every package of `main`
 
@@ -1066,7 +1083,7 @@ of its root and nothing else changes, with one exception that its row
 names: `contracts/language/go` becomes `model/language/go`. Where a row
 sends "the records" of a package to the model side, the types were read for
 this page and every field of them is exported: they are plain data today. The paths in the column "After" use
-the names of M10, M11, M14 and M19. The side of each part is decided by the row
+the names of M10, M11, M14, M19 and M28. The side of each part is decided by the row
 named, and where no row is named it is derived here from the test.
 
 **Carriers (6).**
@@ -1086,7 +1103,7 @@ named, and where no row is named it is derived here from the test.
 | --- | --- | --- |
 | `syntax/{cpp,golang,horos,rust,typescript}/go` | `model/syntax/<language>/go`, whole. Each receives its language's grammar table (slice S3b) | Rows R3 and R7d |
 | `semantics/horos/go` | **Splits.** The profiles, the keys, the descriptor prefix, the term encoding, the limits setting key and the prelude pin to `model/semantics/horos/go`. `ResolutionContract`, `AnalysisContract`, `AnalysisContractWithResolutionConfiguration` (`vocabulary.go:75-91`), and `Key(name)`, `DescriptorOperator` and its inverse `DescriptorConstructor` (`:19`, `:54-55`), which build or read a name from an input (derived in [section 2](#2-the-test)), stay at `ops/semantics/horos/go` | Row R2 |
-| `semantics/{golang,rust,typescript}/go` | **Splits.** The profiles, the functions that each return one key, the payload shapes and the records of a compiler run's inputs (plain today) to `model/semantics/<language>/go`. The contracts, the evidence requirement, the requirements, the configuration, the encoding of inputs into settings and `Key(name)` stay at `ops/semantics/<language>/go`. `Model`, `Open` and the typed readers stay with that half until their path is decided again (M27). M14 names `ops/analyze/files/<language>/reader/go` for them | Rows R2 and R7b; M14, M27 |
+| `semantics/{golang,rust,typescript}/go` | **Splits.** The profiles, the functions that each return one key, the payload shapes and the records of a compiler run's inputs (plain today) to `model/semantics/<language>/go`. The contracts, the evidence requirement, the requirements, the configuration, the encoding of inputs into settings and `Key(name)` stay at `ops/semantics/<language>/go`. So do the methods on the input records, as functions: `settings()` and `check()` of Rust's `Environment` (`semantics/rust/go/environment.go:134`, `:147`) and `Validate()` of TypeScript's `Compiler` (`semantics/typescript/go/compiler.go:19`). `Model`, `Open` and the typed readers stay with that half until their path is decided (M27, M29). M14 names `ops/analyze/files/<language>/reader/go` for them | Rows R2 and R7b; M14, M27, M29 |
 | `transform/syntax/{cpp,golang,rust,typescript}/model/go` | **Splits.** The form names, the primitive names and the form table to `model/intent/<language>/go`. The issuer and the typed constructors to `ops/transform/syntax/<language>/intent/go`. The checks become the one checker in `ops/transform/syntax/shared/target/go`. The coverage answers go to `ops/transform/syntax/<language>/target/go`. Go's record-body condition is dropped, and no code is written for it anywhere (M17). Slice S2 makes this split on the migration's branch and removes the old package (M22) | M4, M17, M22; [section 5](#5-intent) |
 | `transform/syntax/typescript/symbol/go` | **Splits.** The record `Type{Module, Name}` (`symbol.go:15`, plain today) to `model/symbols/typescript/go`. The issuer, `ExternalUse` and `ReadExternal` stay, at `ops/transform/syntax/typescript/symbol/go`, a path that is decided again (M27) | Row R7a; M20 |
 | `transform/syntax/{golang,rust}/symbol/go` | `ops/<same path>`, whole. Go's `Symbol` has unexported fields and only the refusing `Predeclared` creates it (`transform/syntax/golang/symbol/go/symbol.go:18`, `:33-43`). Rust's `Crate` and `Symbol` are sealed the same way (`transform/syntax/rust/symbol/go/symbol.go:20`, `:72`, `:85`, `:111`). No plain record is invented for a reader that does not exist. The path is decided again (M27) | M1, sentence 1; M20 |
@@ -1310,7 +1327,7 @@ Each sentence below stays readable as it was accepted, and a dated
 clarification stands beside it. The clarifications are made in the change
 that adds this page. They state the target and say that the code is not
 there. The column "After the slices" is what each sentence says once the
-[order of work](#10-the-order-of-work) is done. It uses the names of M10, M11, M14 and M19.
+[order of work](#10-the-order-of-work) is done. It uses the names of M10, M11, M14, M19 and M28.
 
 | Place | The sentence today | After the slices | Why | Source |
 | --- | --- | --- | --- | --- |
@@ -1401,12 +1418,15 @@ R31). The order:
 
 1. This page: the test, the layout below the roots, the roles for each root.
 2. The check that the migration added to four packages that will be models
-   leaves them at once.
+   leaves them at once. Done on the migration's branch, with commit
+   `8c96c78`.
 3. On `main`, each as its own change, the splits of packages that the
    migration's branch does not change (M24).
 4. On the migration's branch, each as its own change and before the
    migration's gate is shown: first the identities of a contribution get
    their model-side owner, then the intended-forms packages are split (M22).
+   The pairs' branch does the same for what only it holds, when it merges
+   the migration (M29).
 5. The scripted move of everything that is still at an old path, before the
    migration merges. The same script runs on the branches.
 6. The gate of the migration, on the lasting boundaries, and its merge.
@@ -1418,21 +1438,37 @@ The validation of a slice is quoted from the table "Applied" of research
 | Slice | What it delivers | Where | Waits for | Validation |
 | --- | --- | --- | --- | --- |
 | S0 | This page, with the clarifications in `LAYOUT.md`, `AGENTS.md`, `CHARTER.md`, `docs/package-boundaries.md` and `docs/generation-composition.md`, and the case bittype/ACX-015 | `main` | Nothing | "the page merged after an independent review that checks each quoted rule against its source" |
-| S1 | `CheckMember` leaves the four intended-forms packages, and the target states it | The migration's branch, pull request #308 | Nothing | "a test that fails while a check sits in a model package, red on the branch before the move" |
-| S7 | The identity types of a contribution and the publisher name `Publisher` go to `model/contributions/go` (M28). The 24 contribution vocabularies go to `model/contributions/<source>-to-<target>/<name>/go`, the six family vocabularies to `model/families/horos/<name>/go`, and the two profile identities of the common mapping package to `model/families/horos/go`. First step: the three methods on the identity types become functions of the generation contract (M28) | The migration's branch | S0 | "no vocabulary or family package imports the generation contract; the plan digests unchanged". Widened by M21: nor the common mapping package |
+| S1 | `CheckMember` leaves the four intended-forms packages, and the target states it. **Delivered on the branch,** with commit `8c96c78`: one rule in the shared target package (`transform/syntax/shared/target/go/check.go:64` on the branch) and a method of each target (`transform/syntax/golang/target/go/provider.go:138`) | The migration's branch, pull request #308 | Nothing | "a test that fails while a check sits in a model package, red on the branch before the move" |
+| S7 | The identity types of a contribution and the publisher name `Publisher` go to `model/contributions/go` (M28). The 24 contribution vocabularies go to `model/contributions/<source>-to-<target>/<name>/go`, the six family vocabularies to `model/families/horos/<name>/go`, and the two profile identities of the common mapping package to `model/families/horos/go`. First step: the six methods on the identity types become functions of the generation contract (M28, M29) | The migration's branch | S0 | "no vocabulary or family package imports the generation contract; the plan digests unchanged". Widened by M21: nor the common mapping package |
 | S2 | The split of the four intended-forms packages of the migration's branch ([section 5](#5-intent)). Both halves are created at their final paths and the old package is removed (M22) | The migration's branch, as its own pull request | S0 and S7 | "the five intended-forms packages hold no function; one checker test per table, red by mutant; outputs equal by digest". By M22 the packages that hold no function are the four `model/intent/<language>/go` of this slice. The fifth, horos, is split on the pairs' branch |
 | S3a | The agnostic syntax model `model/syntax/go`: the table type, the type of a predicate name and the names of the shared predicates (M25) | `main` | S0 | The interpreter's tests pass over the moved type, and a seeded import of an operation from `model/syntax/go` fails (derived here) |
 | S4 | The lexical part of each language, `model/syntax/<language>/lexical/go`: its word lists, character tables and literal patterns, and the names of its predicates, apart from their evaluators. With it the second keyword list of Rust | `main` | S3a (M25) | "the evaluators import the tables; a test red by a changed table entry" |
 | S3b | Each language's grammar table in its syntax vocabulary, with predicates named by identity | `main` | S3a, and for each language its lexical part of S4 (M25) | "the tables are data in a model package; the checker test red by mutant of a table entry" |
 | S6 | The carriers: the records of `files/go`, `semantics/go` and `source/go` apart from admission | `main` | S0. The graph-carrier part also waits for #310, whose pull request #315 changes `semantics/go/model.go` (M25). The Source part waits for the two other parts, whose records it uses | "the import rule red by a seeded import from a model carrier into an operation" |
-| S5 | The semantic vocabularies: the names, profiles, payload shapes and input records go to `model/semantics/<language>/go`. The Go bridge writes its eleven literal keys through names that the Go vocabulary publishes (M26). TypeScript's symbol record goes to `model/symbols/typescript/go` (M20) | `main` | S0, #310, and the graph-carrier part of S6, whose `Key` the names are made of. The symbol part waits for S0 only: pull request #315 changes no file of the symbol package | "no model-side package imports a contract package; the import rule red by a seeded import" |
-| S8 | The scripted root move, with language identity to `model/language/go` (M25), the roles for each root and the import rule of the two roots | `main` and the branches | S2 to S7 | "the import rule of the two roots, red by a seeded import from model into ops; every test name passes as before the move" |
+| S5, the part that runs now | The semantic vocabularies: the names, profiles, payload shapes and input records go to `model/semantics/<language>/go`. The Go bridge writes its eleven literal keys through names that the Go vocabulary publishes (M26). TypeScript's symbol record goes to `model/symbols/typescript/go` (M20) | `main` | S0, #310, and the graph-carrier part of S6, whose `Key` the names are made of. The symbol record waits for S0 only: pull request #315 changes no file of the symbol package | "no model-side package imports a contract package; the import rule red by a seeded import". For the eleven keys, added by this page: a test over a graph that the Go bridge publishes for a corpus fails for a key that the vocabulary does not publish, and it is red by a mutant that makes the bridge write one more literal key. That test checks behaviour. It is no search of the source |
+| S5, the part that waits (M27, M29) | The typed readers leave the semantic vocabularies for their own package, and the admission half of the TypeScript symbol package gets its path. With the same decision the path of the symbol packages of Go and Rust | `main` | The part that runs now, and the decision on the two paths, which the evaluation of platform research 0004 brings | Row R7b, "The readers of `semantics/{golang,rust,typescript}/go` leave", is met only when this part is done |
+| The pairs' part of S7 and S2 (M29) | What only the pairs' branch holds: the vocabularies of the two further pairs (4 of `golang-to-typescript`, 5 of `typescript-to-horos`), the families of `golang` (4) and `typescript` (5) with their profile identities, the two further declarations of `Publisher`, which become the one of `model/contributions/go`, and the horos intended-forms package `transform/syntax/horos/model/go` | The pairs' branch, when it merges the migration | S7 and S2 on the migration's branch | The validations of S7 and of S2, for these packages |
+| S8 | The scripted root move, with language identity to `model/language/go` (M25), the roles for each root and the import rule of the two roots | `main` and the branches | S2 to S7, with S5 complete and so with the decision that its waiting part needs, and the pairs' part of S7 and S2 (M29) | "the import rule of the two roots, red by a seeded import from model into ops; every test name passes as before the move" |
 | S9 | The additions: a declared profile for each native syntax vocabulary; schemas of analysed facts with a shape check and generated names for the two bridges that are not written in Go; one test for each form; a record on an envelope that grammar admission ran; a type for captured Files. The last two are designed in S9 first (M26) | `main` | S8 | "per addition: its own red and green run" |
 
 An issue is filed for a slice when it can start (the grade).
 
+**The waits, as a graph.** An arrow reads "is done before".
+
+```text
+S0 -> S7 -> S2 -> the pairs' part of S7 and S2 -> S8
+S1 (delivered)
+S0 -> S3a -> S4 -> S3b -> S8
+      S3a ------> S3b
+S0 -> S6 files part ------------------> S6 Source part -> S8
+S0, #310 -> S6 graph-carrier part ----> S6 Source part
+S0, #310, S6 graph-carrier part -> S5 now -> S5 waiting part -> S8
+the decision on two paths (platform research 0004) -> S5 waiting part
+S8 -> S9
+```
+
 **What the migration's branch changes.** The branch
-`origin/feat/contribution-contract-196` at `a400ac8` changes production
+`origin/feat/contribution-contract-196` at `356c220` changes production
 files of 37 of the 129 packages of `main` and leaves 92 alone:
 
 ```sh
@@ -1446,11 +1482,12 @@ alias stands in for an old path (M24). For each package whose exported
 names move, the files of `main` that import it and how many of them the
 branch changes
 (`git grep -l '"github.com/Bitspark/bittype/<package>"' origin/main -- '*.go'`,
-intersected with `git diff --name-only origin/main...origin/feat/contribution-contract-196`):
+intersected with `git diff --name-only origin/main...origin/feat/contribution-contract-196`,
+at the branch's head `356c220`):
 
 | Package | Slice | Importing files | Of them changed by the branch |
 | --- | --- | --- | --- |
-| `semantics/go` | S6 | 93 | 9 |
+| `semantics/go` | S6 | 93 | 10 |
 | `semantics/horos/go` | S5 | 20 | 6 |
 | `semantics/typescript/go` | S5 | 20 | 4 |
 | `contracts/language/go` | S8 | 71 | 4 |
@@ -1502,7 +1539,7 @@ lets evidence support only the claim it establishes. So the gate is shown
 after S2 and after S8, on the boundaries that last. Line 7 is no freeze
 against a correction: it measures the diff of adding a contribution.
 
-**Rule 1 on the migration's branch after S7 and S2.** Read at `a400ac8`,
+**Rule 1 on the migration's branch after S7 and S2.** Read at `356c220`,
 from the import blocks of the non-test files. The branch changes none of
 the packages of `main` that are model or split, and their imports are the
 same on the branch, so what holds for `main` holds there. The packages that
@@ -1510,11 +1547,11 @@ only the branch makes model-side:
 
 | Packages on the branch | Module imports today | What they use | Imports after S7 and S2 |
 | --- | --- | --- | --- |
-| The identity types in `contracts/generation/go/contribution.go` (`:22`, `:25`, `:29`, `:46`, `:138`) | They are five structs with exported string fields | | `model/contributions/go` imports nothing of this module. It also holds `Publisher` (M28) |
+| The identity types in `contracts/generation/go/contribution.go` (`:22`, `:25`, `:29`, `:46`, `:138`) | They are five structs with exported string fields, and six methods | Three of the methods build a `Fact` of the generation contract | `model/contributions/go` imports nothing of this module, on one condition: all six methods have become functions of the generation contract. It also holds `Publisher` (M28) |
 | `transform/syntax/horos/mapping/go` | None | | Its two profile identities are `model/families/horos/go`, which imports nothing. `Publisher` joins `model/contributions/go` (M28) |
 | The six `transform/syntax/horos/family/<name>/go` | `contracts/generation/go` | `Meaning` | `model/contributions/go` |
 | The 24 `transform/syntax/horos-to-<target>/vocabulary/<name>/go` | `contracts/generation/go`, their family package, `transform/syntax/horos/mapping/go` | `ContributionIdentity`, `ContributionReference`, `SchemaReference`; `Meaning` of the family; `Publisher` | `model/contributions/go`, for the types and for `Publisher`, and `model/families/horos/<name>/go` |
-| The four `transform/syntax/<language>/model/go` | `contracts/generation/go`, `syntax/<language>/go` | In the model half: `EvidenceKind`. The rest is used by the constructors and the checks | `model/intent/go`, `model/contributions/go` |
+| The four `transform/syntax/<language>/model/go` | `contracts/generation/go`, `syntax/<language>/go` | In the model half: `EvidenceKind`, as the type of `EvidenceRecordForm`. The rest is used by the constructors and the checks | `model/intent/go`, `model/contributions/go`. The same condition holds for the type |
 
 No package that is model-side after the two slices needs a package of the
 operations side. The 34 imports of the generation contract and the 24 of
@@ -1522,13 +1559,32 @@ the common mapping package all end or become imports between models. No
 vocabulary of a pair imports a package of one source language for the
 publisher name (M28).
 
-One thing is S7's first step, and it is no import (M28).
-`ContributionReference` has the methods `Valid` and `String`, and
-`SchemaReference` has `Valid` (`contribution.go:37`, `:40`, `:48` on the
-branch). `Valid` evaluates and `String` produces, so by the test of
-[section 2](#2-the-test) they do not move with the types: "By M1 a check
-does not move with a plain type." (M28.) Go keeps a method in its type's
-package, so each becomes a function of the generation contract.
+**The six methods on the identity types (M28, M29).** This is S7's first
+step, and without it the table above does not hold. The identity types have
+six methods on the branch
+(`git grep -n 'func ([a-z]* \(ContributionIdentity\|Meaning\|ContributionReference\|SchemaReference\|EvidenceKind\))' origin/feat/contribution-contract-196 -- 'contracts/generation/go/*.go' ':!*_test.go' | wc -l`
+gives 6 at `356c220`):
+
+- `ContributionReference.Valid` and `.String`, and `SchemaReference.Valid`
+  (`contribution.go:37`, `:40`, `:48`). `Valid` evaluates and `String`
+  produces.
+- `EvidenceKind.Proved`, `.Refuted` and `.Exhausted` (`:163-165`). Each
+  builds a `Fact` of the generation contract. A constructor that refuses
+  nothing is construction, which the test of [section 2](#2-the-test) puts
+  on the operations side (row R7a). If these three moved with the type,
+  `model/contributions/go` would import the generation contract, which
+  imports it back.
+
+All six become functions of the generation contract: "By M1 a check does
+not move with a plain type." (M28), and M29 corrects the count from three
+to six. Go keeps a method in its type's package, so no method can stay. The
+three constructors have four call sites in production files, all of the
+form `model.EvidenceRecordForm.Proved("")`, one in the record contribution
+of each pair
+(`transform/syntax/horos-to-{cpp,golang,rust,typescript}/mapping/record/go/contribution.go`),
+and six in tests
+(`git grep -n '\.Proved(\|\.Refuted(\|\.Exhausted()' origin/feat/contribution-contract-196 -- '*.go'`).
+Each call becomes a call of the function.
 
 **"Each split creates its new half at its final path" (M7).** Between the
 first split and slice S8 both layouts exist. Derived here, these rules hold
@@ -1633,7 +1689,9 @@ derived here.
 | Where does `Key(name)` live? | On the operations side, at `ops/semantics/<language>/go`, until the bridge writes published names only ([section 2](#2-the-test)) |
 | Does the symbol split wait for #310? | No. Pull request #315 changes no file of `transform/syntax/typescript/symbol/go` |
 | May `model/semantics/horos/go` import the external horos module for `PreludePin`? | Yes. `PreludePin` (`semantics/horos/go/vocabulary.go:73`) takes no input and returns a pin that horos owns. Rule 1 speaks of the operations of this module, and the allowance for this package exists (`integration/go/architecture_test.go:390`) and moves with it |
-| Which paths does S5 create for the typed readers and for symbol admission? | None (M27) |
+| Which paths does S5 create for the typed readers and for symbol admission? | None in the part that runs now. The part that waits creates them once they are decided (M27, M29) |
+| What do the methods on the input records become? | Functions of `ops/semantics/<language>/go`, by the test: `settings()` and `check()` of Rust's `Environment` (`semantics/rust/go/environment.go:134`, `:147`) and `Validate()` of TypeScript's `Compiler` (`semantics/typescript/go/compiler.go:19`). `settings()` returns a type of a contract package, so it could stay with a model record in no case |
+| What shows that the bridge writes published keys only? | A test of behaviour over a published graph, with a mutant that adds a literal key. Not a search of the source ([the slice table](#10-the-order-of-work)) |
 | Which of the lists in the operations halves are declarations? | Open. **S5's first step** ([section 7](#names-below-the-roots)) |
 
 **S6.**
@@ -1655,7 +1713,8 @@ and recorded on #305: M1 to M9 in the
 M10 to M18 in the [decisions on this page's nine choices](https://github.com/Bitspark/bittype/issues/305#issuecomment-6856947056),
 [M19](https://github.com/Bitspark/bittype/issues/305#issuecomment-6857366489),
 M20 to M27 in the [decisions on the independent review](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249),
-and [M28](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842).
+[M28](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842)
+and [M29](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859553686).
 
 | Decision | What it decides | Rows | Section |
 | --- | --- | --- | --- |
@@ -1685,8 +1744,9 @@ and [M28](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842
 | M24 | The splits on `main` are those of packages that the branch does not change. They do change importing files of the branch, which merges `main` after each split | R28 | [10](#10-the-order-of-work) |
 | M25 | S3 has an agnostic part and a part for each language, and S4 waits for the agnostic part. The graph-carrier part of S6 waits for #310. Language identity moves in S8 | R21 | [10](#10-the-order-of-work) |
 | M26 | The eleven literal keys of the Go bridge are published in S5. The record that grammar admission ran and the type for captured Files are additions of S9, each designed there first | R4, R6 | [3](#3-consistency-and-correctness), [6](#6-declared-models), [10](#10-the-order-of-work) |
-| M27 | Two paths of M14 are decided again when platform research 0004 is evaluated, and S5 creates neither before | R27 | [7](#names-below-the-roots) |
-| M28 | The publisher name lives in `model/contributions/go`, with the identity types, and every pair's vocabulary imports it from there. It corrects M21. The three methods on the identity types become functions of the generation contract, as the first step of S7 | R23 | [7](#every-place-named), [10](#10-the-order-of-work) |
+| M27 | Two paths of M14 are decided again when platform research 0004 is evaluated, and S5 creates neither before. M29 states its standing: a part of S5 that waits for a decision, and no deferral | R27 | [7](#names-below-the-roots), [10](#10-the-order-of-work) |
+| M28 | The publisher name lives in `model/contributions/go`, with the identity types, and every pair's vocabulary imports it from there. It corrects M21. The methods on the identity types become functions of the generation contract, as the first step of S7. M29 corrects one point: M28 counted three methods, and there are six | R23 | [7](#every-place-named), [10](#10-the-order-of-work) |
+| M29 | Six methods, not three, become functions in S7's first step. The typed readers leaving and the path of symbol admission are a part of S5 that waits for a decision, and S8 waits for S5 complete. The work that only the pairs' branch holds is the pairs' part of S7 and S2, and S8 waits for it | R7b, R23, R24 | [10](#10-the-order-of-work) |
 
 Two rows belong to no single decision. Row R23 places the identities of a
 contribution ([section 7](#every-place-named), slice S7). Row R25 takes one
@@ -1703,9 +1763,15 @@ anyone can check.
 | What is deferred | Why | The trigger that ends it | Source |
 | --- | --- | --- | --- |
 | A shared identity for single notions of intent and analysed semantics, such as Go's slice | No reader exists | A non-test file imports both a language's intent vocabulary and its semantic vocabulary. The command is in [section 4](#4-one-languages-models) | Row R13a |
-| The paths of a language's typed readers and of its symbol admission | Each is imported by several operations and was placed under one. The rule that would decide it is not accepted | Platform research 0004 is evaluated. Slice S5 creates neither path before (M27) | M27 |
 | A relation from a form to what analysis reports, as data | No package would read it | The first package that must read such a relation without running the test of the form | Row R10 |
 | A plain record of a native intent node on the model side | Nothing outside the generation contract would read it | The first package outside the generation contract that must hold native intent without a planner | M12 |
+
+**No deferral: the typed readers and symbol admission.** Taking the typed
+readers out of the semantic vocabularies, and the path of symbol admission,
+are a part of slice S5 that waits for a decision, the evaluation of
+platform research 0004. No effort is claimed for the wait, so it is no
+deferral under AC-10. The case records the reason and the condition, and
+stays open for the readers until then (M27, M29).
 
 **No deferral: the intended-forms packages on `main`.** The split is made
 now, on the migration's branch, and `main` shows the misplacement until

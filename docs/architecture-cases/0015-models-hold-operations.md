@@ -127,11 +127,11 @@ does not need: it lowers a `defined` declaration over any body
 (`transform/syntax/golang/target/go/provider.go:96-106`).
 
 **The migration adds to it.** On `origin/feat/contribution-contract-196` at
-`a400ac8`, 24 contribution vocabularies and six family packages import
+`356c220`, 24 contribution vocabularies and six family packages import
 `contracts/generation/go` for their identity types, and the 24 vocabularies
 import the common mapping package for the publisher name. At `af1dcde` each
 of the four intended-forms packages also held a third check, `CheckMember`.
-At `a400ac8` it is a method of each target
+Since commit `8c96c78` of the branch it is a method of each target
 (`transform/syntax/golang/target/go/provider.go:138` on the branch).
 
 ## What worked and what it did not establish
@@ -155,9 +155,10 @@ own readers and the admission grammars of the checkers as not examined.
 The design page gives it in full. In short:
 
 1. `CheckMember` leaves the four intended-forms packages on the migration's
-   branch at once (slice S1).
+   branch at once (slice S1). Delivered there with commit `8c96c78`.
 2. The identity types of a contribution get a model-side owner, which also
-   holds the publisher name. The contribution vocabularies, the families and
+   holds the publisher name. Their six methods become functions of the
+   generation contract first. The contribution vocabularies, the families and
    the profile identities follow them (slice S7, before S2).
 3. Each intended-forms package becomes a declared table of forms on the
    model side. One checker and one constructor in the agnostic layer read
@@ -166,18 +167,23 @@ The design page gives it in full. In short:
    makes that choice already (slice S2).
 4. The grammar tables go to the model side, each into its language's
    syntax vocabulary, with predicates named by identity. Their type goes to
-   the agnostic syntax model (slice S3). The word lists leave the lexical
+   the agnostic syntax model (slices S3a and S3b). The word lists leave the lexical
    helpers for a lexical part below each language's syntax model, which
    imports no node kinds (slice S4).
 5. The names, profiles and payload shapes of the semantic vocabularies get
    model packages, the Go bridge writes its eleven keys through published
-   names, and the TypeScript symbol package splits (slice S5). The paths of
-   the typed readers and of symbol admission are decided later, and S5
-   creates neither.
+   names, and the TypeScript symbol record gets its model package (slice
+   S5, the part that runs now). Taking the typed readers out of the semantic
+   vocabularies, and the path of symbol admission, are the part of S5 that
+   waits, recorded [below](#what-waits-for-a-decision).
 6. The records of the carriers part from admission (slice S6).
-7. The scripted move under the two roots, with language identity, the roles
+7. On the pairs' branch, when it merges the migration: the vocabularies and
+   families of the two further pairs, their two declarations of the
+   publisher name and the horos intended-forms package, as the pairs' part
+   of slices S7 and S2.
+8. The scripted move under the two roots, with language identity, the roles
    for each root and the import rule of rule 1, with a test that breaks it
-   (slice S8).
+   (slice S8). It waits for all of the above.
 
 Rule 2 gets no check. Whether a package under the model root holds an
 operation is judged in review, by the owner's rule against keyword
@@ -217,11 +223,35 @@ this case stays open until then:
 migration's branch changes. They change files of the branch that import a
 moved name, and the branch merges `main` after each split.
 
+## What waits for a decision
+
+**What it concerns.** Two parts of slice S5: taking the typed readers out
+of the semantic vocabularies of Go, Rust and TypeScript, and the path of
+symbol admission.
+
+**It is no deferral.** No effort is claimed for the wait, so the deferral
+clause of AC-10 does not cover it (decisions M27 and M29 on #305).
+
+**The reason.** Each of the two is imported by several operations, and the
+design first placed each under one of them: the readers under the stage
+`analyze`, symbol admission under the stage `transform`. A rule that
+places a responsibility by the knowledge it needs would decide both
+paths, and it is not accepted yet. A package created now might have to
+move again.
+
+**The condition.** Platform research 0004, the consultation on that rule,
+is evaluated, and the research owner decides the two paths. The scripted
+move, slice S8, waits for it.
+
+**What stays open until then.** The typed readers share a package with
+the contract identities, `semantics/<language>/go`, after the names have
+left it. This case stays open for that.
+
 ## Correction and qualification status
 
 This change documents the violation and the designed correction. No code
-has changed. The names below the two roots are decided (M10, M11, M14 and
-M19 on #305). The form-table type is a sketch that slice S2 makes final (M13).
+has changed. The names below the two roots are decided (M10, M11, M14,
+M19 and M28 on #305). Two paths of M14 wait for a decision (M27, M29). The form-table type is a sketch that slice S2 makes final (M13).
 The classification of each package is the design page's
 table, made by reading. Each slice updates this case with what it delivered,
 its qualification and its limits.
