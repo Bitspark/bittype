@@ -326,9 +326,4 @@ func TestCaptureLimitsAndOffsets(t *testing.T) {
 	if units[0].Text != "// café\npub type Byte = u8;\n" {
 		t.Fatal(units[0].Text)
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	b := boundedBuffer{remaining: 3, cancel: cancel}
-	if _, err := b.Write([]byte("four")); !errors.Is(err, semantic.ErrLimit) || !b.exceeded || ctx.Err() != context.Canceled {
-		t.Fatal("unbounded output")
-	}
 }

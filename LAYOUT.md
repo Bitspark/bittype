@@ -23,8 +23,9 @@ exist at their final paths. The hierarchy and the role table below describe
 `main` as it is, and no other path in this layout has changed. The
 [order of work](docs/models-and-operations.md#10-the-order-of-work) says which
 slice moves what. That page gives the names below the two roots (decisions
-M10, M11, M14, M19 and M28 on #305). Two paths of M14 wait for a decision
-(M27, M29).
+M10, M11, M14, M19, M28 and M30 on #305). Below `ops` a unit that several
+stages use stands at the path of the sort and scope it works on, and no
+longer under one stage (M30, of 13 November 2026).
 [bittype/ACX-015](docs/architecture-cases/0015-models-hold-operations.md)
 records the violation that stays open until the slices are done.
 
@@ -90,6 +91,8 @@ transform/syntax/golang/symbol/go/            predeclared type symbols for gener
 transform/syntax/rust/symbol/go/              standard-library item and primitive type symbols for generation and Files
 transform/syntax/horos-to-<native>/mapping/<name>/go/ one selectable mapping library per package
 internal/<language>/                           private lexical helpers
+internal/processoutput/                        private to no language: the one bounded writer for a child process's streams
+  processoutputtest/                           the child process and the harness of the tests that bound a process's output
 integration/go/          independent consumers and cross-package qualification
 verification/            concrete static verification; public Logos contract
   files/source/horos/go/  explicit authoritative queries bound to captured Horos
@@ -199,7 +202,7 @@ roles of `main` as they are.
 | --- | --- | --- |
 | Foundation | `trees/*/go`, `files/go`, `source/go`, `semantics/go`, `model/syntax/go`, `contracts/*/go` | Each package has its own entry in the table `foundationRules` and imports exactly what the entry lists. It never imports a package outside that table. The AST imports nothing. The CST, `files/go`, `semantics/go`, `model/syntax/go` and `contracts/text/go` import only the AST. `model/syntax/go` is an agnostic model package: its entry lists model packages only. `trees/representation/go` and `contracts/semantic/go` do not import `source/go` |
 | Kernel | `engine/go`, `transform/syntax/shared/*/go`, `check/syntax/shared/*/go`, `print/*/shared/provider/go` | The same table and the same rule. So no foundation or kernel package imports a vocabulary, a contribution or a language's private part |
-| Shared private helper | `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil`, `internal/concrete` | The same table and the same rule. A helper of no single language cannot conceal a language. `internal/grammar` interprets a grammar table of the type of `model/syntax/go` |
+| Shared private helper | `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil`, `internal/concrete`, `internal/processoutput` | The same table and the same rule. A helper of no single language cannot conceal a language. `internal/processoutput` imports no package of the module, and no role lists it: each importer names it in its own entry or extension. `internal/grammar` interprets a grammar table of the type of `model/syntax/go` |
 | Vocabulary | `syntax/<language>/go`, `model/syntax/<language>/lexical/go`, `semantics/<language>/go`, `transform/syntax/<native>/model/go`, `transform/syntax/<native>/symbol/go` | Foundations and its own language's vocabulary. The lexical part imports `model/syntax/go` only, and never a syntax vocabulary: spelling does not know structure. `semantics/<language>/go` and `symbol` may also import their language's lexical helper. Never a contribution. `semantics/<language>/go` never imports `internal/<language>sem`. TypeScript, Go and Rust have a `symbol` package today |
 | Contribution: stage provider | `<stage>/<dimension>/<language>/provider/go` for `check/syntax`, `parse/syntax`, `format/syntax`, `resolve/files`, `analyze/files`, `parse/files` and `format/files` | Each of the seven has its own list: foundations, shared private helpers and what belongs to its own language. A checker gets no concrete tree, a formatter no lexer, and no Syntax stage a semantic contract. A checker also imports `model/syntax/go` for the type of its grammar table and its language's lexical part for the predicate names it binds. A parser and a formatter import their own checker under an exception, and neither list names the other. A resolver may import its language's semantic helper. A Files parser or formatter reaches its collaborators through their contracts |
 | Contribution: query service | `analyze/files/<language>/queries/go` | The shared semantic contract, the representation, and its own syntax, vocabulary and semantic helper. Never its resolver. Go and TypeScript have this package today. A package that is not a composition imports a query service only under an exception that names the symbols it uses |
@@ -209,7 +212,7 @@ roles of `main` as they are.
 | Contribution: verification law | `verification/files/horos-to-go/mappings/<name>/go` | `verification/files/horos-to-go/go`, `semantics/golang/go`, `semantics/go` and the external models `github.com/Bitspark/horos/core/go/declarations` and `github.com/bitspark/ontos/core/go`. Never another law |
 | Contribution: capability extractor | `tools/provider-matrix/extract/<format>/go` | `tools/provider-matrix/capability/go` only |
 | Common mapping part | `transform/syntax/<source>/mapping/go` and `transform/syntax/<source>/mapping/<part>/go` | The generation contract, the representation, and the syntax and source reader of its source language. The list names no other part, and the one-language rule below refuses every native package |
-| Private part | `internal/<language>`, `internal/<language>sem` | A lexical helper imports `internal/grammar` only, and never a contract or a stage provider. A semantic helper imports foundations and its own syntax and vocabulary, and may reparse with its own parser under an exception. Both have their role only when `syntax/<language>/go` exists |
+| Private part | `internal/<language>`, `internal/<language>sem` | A lexical helper imports `internal/grammar` only, and never a contract or a stage provider. A semantic helper imports foundations and its own syntax and vocabulary, and may reparse with its own parser under an exception. The Rust and TypeScript helpers start a compiler process and collect its streams with `internal/processoutput`, each under a role extension. Both have their role only when `syntax/<language>/go` exists |
 | Composition | `integration/go`, `verification/integration/go`, `tools/**` | Chooses and registers contributions. The two test compositions are not classified. A package under `tools/` needs no exception to import a stage provider or a query service. It is still classified, by an explicit entry or as an extractor |
 
 **One language.** A package that names a language imports no package of
@@ -236,16 +239,24 @@ explicit entry per package, and a new package of either group is an edit:
   `verification/files/horos-to-go/go`, the logos adapter
   `verification/logos/go`, the reporting-tool packages
   `tools/provider-matrix/go`, `report/go`, `capability/go` and
-  `observation/go`, and the command `tools/horos-module/go`. The report host
-  never imports a concrete extractor. The verification pair lists the Go query
+  `observation/go`, the command `tools/horos-module/go`, and the fixture of
+  the tests that bound a process's output,
+  `internal/processoutput/processoutputtest`. The report host
+  never imports a concrete extractor. Its entry lists
+  `internal/processoutput`, with which it collects what its Go commands
+  write. The verification pair lists the Go query
   service and never the Go analysis provider. It imports the query service
-  under an exception that names `Admission`.
+  under an exception that names `Admission`. The fixture imports no package
+  of the module, and only test files import it. The check reads no test
+  file, so no importer has an allowance for it. It is not in the foundation
+  table, which holds the helpers that production packages use, so no
+  foundation or kernel package can import it, whatever its entry lists.
 
 **Role extensions.** Languages differ. The table `roleExtensions` names, per
 package, the imports that one language needs and its role does not give.
-Twelve packages have one: the six horos stage providers, three TypeScript
-packages, the Go and the Rust target and the horos declaration recipe. An
-extension must be used, must not repeat
+Fourteen packages have one: the six horos stage providers, three TypeScript
+packages, the Go and Rust targets, the horos declaration recipe, and the Rust
+and TypeScript semantic helpers. An extension must be used, must not repeat
 the role and cannot lift a prohibition of the role.
 
 **No further hand entries.** `TestProductionArchitecture` holds no entry of
@@ -290,6 +301,33 @@ a native-language import, and a language helper cannot depend on another
 language. A lexical helper depends on no stage. A semantic helper may import
 its own language's parser under an exception. This keeps the rule enforceable
 through indirect imports.
+
+**One bounded writer for a child process.** `internal/processoutput` collects
+what a child process writes to its streams, up to a bound, and cancels the
+process at the bound. Its contract names no language and no tool, so it is a
+shared private helper and has one implementation
+([AC-11](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-11)).
+Three packages start a process and bound its output: the Rust and TypeScript
+compiler bridges and the loader of the reporting tool. Each states its own
+bounds and decides what a passed bound means: the bridges return
+`semantic.ErrLimit`, and the loader fails its load. A package that starts a
+process and bounds what it writes uses this package and holds no writer of
+its own. [bittype/ACX-014](docs/architecture-cases/0014-bounded-process-writer.md) records the three copies
+that this package replaced.
+
+**One fixture for its tests.** The tests of those three packages and of the
+writer start a real child process that writes stated numbers of bytes and,
+in some cases, never exits by itself.
+`internal/processoutput/processoutputtest` holds that child and the harness
+that tells a call that cancelled its process from one that did not. Each
+package keeps what is its own: how its test binary knows that it is the
+child, what the output stream starts with, whether the child reads its input
+stream, and the call under test. A test
+that bounds a process's output uses this package and writes no child of its
+own. The source and the package-level tests of an implementation stay with
+it, as this page says above. This package is the part of those tests that
+no single package owns. It is used by tests only, so it is one of a kind
+and not a shared private helper of the foundation table.
 
 ## Enforced consistency
 

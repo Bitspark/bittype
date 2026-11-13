@@ -10,6 +10,13 @@ the correction is made on the branch of the migration of
 [#196](https://github.com/Bitspark/bittype/issues/196), and `main` shows the
 misplacement until that branch merges. The reason and the two conditions are
 recorded [below](#where-the-correction-of-the-intended-forms-packages-is-made).
+Since 13 November 2026 the platform's rules page names this case as the
+example of [AC-12](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-12).
+At platform `main` `bc83d43` the example reads: the case "records two things
+this rule covers: the four native grammar tables are unexported variables
+of their checkers, and Go's compiler bridge writes keys as literals for
+which the vocabulary publishes no name of that kind." Those are the first
+two of the three things that [Rules involved](#rules-involved) lists.
 
 **Scope.** The packages of `main` that declare what exists in a language or
 in a generic carrier: the carriers, the vocabulary packages, the grammar
@@ -30,6 +37,13 @@ a responsibility that declares what is true or admissible is model, and one
 that determines whether something is true, interprets it or produces
 something from it is an operation.
 
+The direction is bittype's. The platform's rule for every project is
+[AC-12](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-12),
+"A description belongs to its subject, not to an operation that uses it",
+accepted on the platform's `main` on 13 November 2026 from platform research
+0004. It covers a part of this case and not all of it, as the next section
+says.
+
 ## Rules involved
 
 [AC-01](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-01)
@@ -39,7 +53,60 @@ direction is such a contract, and the code does not meet it.
 [AC-02](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-02)
 keeps a meaning with its owner. A language's grammar table is a declaration
 of that language. Today an operation owns it: the table is an unexported
-variable of the language's checker.
+variable of the language's checker. AC-02 alone does not reach this: the
+checker is the language's own contribution, so the meaning is with its
+semantic owner. AC-12 is the rule that makes it assessable. Its
+relationship to AC-02 reads: "This rule makes it assessable where one
+owner supplies both the description and the operation that uses it first,
+as a language's own checker that holds that language's grammar does.
+AC-02's violation does not reach that case."
+
+[AC-12](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-12)
+gives a description to a unit of its subject: "No operation owns it, and
+nothing it states refers to an operation or to an operation's request,
+result or state." Three things in this case are what it covers:
+
+- **The grammar tables are private data of their checkers.** The rule's
+  first violation is "A description that is private data of an operation".
+  A second operation cannot read a table without the checker: the
+  documentation tool reads the checker's source for it, "without importing
+  or executing inspected packages"
+  (`tools/provider-matrix/extract/grammar/go/extract.go:2`).
+- **The Go bridge writes eleven keys as literals.** Ten name nothing that
+  the vocabulary publishes. One, `display`, is published as a relation
+  only, and the bridge writes it as an operator
+  (`internal/golangsem/export.go:288`, `semantics/golang/go/vocabulary.go:56`).
+  They are names of Go's analysed facts, stated only inside the operation
+  that writes them. No production file outside the bridge spells one of
+  them today. One test of the vocabulary package spells two
+  (`semantics/golang/go/model_test.go:29`, `:85`).
+- **Descriptions stand under a stage's name.** The form names of a
+  language, and the table of its forms once slice S2 has written it, and
+  the record of a TypeScript symbol are under
+  `transform/syntax/<language>/`. "Its place and name, meaning the path or
+  published name by which dependents refer to it, state no operation,
+  because every dependent would then name that operation." The TypeScript
+  Files formatter names the stage `transform` to name a symbol. That the
+  form table is a description is decision M4, by the rule's test: what it
+  states of a language holds whichever operation runs. An intent
+  expression, which the typed constructors build, is a value of the
+  generation contract's type and is generation's (decision M33 on #305).
+
+The rule also names what this case files under AC-06 and AC-02 below: "A
+limit of one operation's coverage (AC-06) or a policy of one operation
+(AC-02) stays with that operation."
+
+Two things in this case are **not** AC-12. They are the owner's direction
+for bittype, and the rule says so: "bittype has the direction from its
+owner (13 November 2026) that a unit of descriptions holds no operation
+and imports none; that direction is not extended to other projects here."
+
+- **Containment, rule 2.** That a package of names also holds checks,
+  typed readers or admission, where the names themselves are published.
+  AC-12 leaves open whether operations share a description's unit.
+- **The import rule on units, rule 1.** That a package with a model-side
+  part imports a package of an operation. AC-12 asks only that nothing a
+  description states refers to an operation.
 
 [AC-11](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-11)
 forbids a copy of an agnostic mechanism for each language. The checks of the
@@ -102,11 +169,12 @@ a model-side part. `source/go` imports `contracts/semantic/go` for the two
 receipts of a publication (`source/go/source.go:38-44`). Three packages that
 hold model-side parts import a private lexical helper.
 
-**An operation owns a declaration** (AC-02). The four native grammar tables
+**An operation owns a declaration** (AC-02, made assessable by AC-12). The four native grammar tables
 are unexported variables of their checkers (`check.go:17` for Go), and the
 horos table is in `internal/declsyntax/check.go:67`. Go's table binds 17
 predicate function values, so it is not data today. The Go compiler bridge
-writes eleven keys as literals that the vocabulary does not publish
+writes eleven keys as literals, ten of which name nothing that the
+vocabulary publishes
 (`grep -oh 'n\.Key("[a-z0-9-]*")' internal/golangsem/*.go | sort -u | wc -l`).
 
 **One mechanism, a copy for each language** (AC-11). The four intended-forms
@@ -178,9 +246,9 @@ The design page gives it in full. In short:
 5. The names, profiles and payload shapes of the semantic vocabularies get
    model packages, the Go bridge writes its eleven keys through published
    names, and the TypeScript symbol record gets its model package (slice
-   S5, the part that runs now). Taking the typed readers out of the semantic
-   vocabularies, and the path of symbol admission, are the part of S5 that
-   waits, recorded [below](#what-waits-for-a-decision).
+   S5, the first part). The typed readers leave the semantic vocabularies,
+   and symbol admission gets its path, in the second part of S5, recorded
+   [below](#what-waited-for-a-decision).
 6. The records of the carriers part from admission (slice S6).
 7. On the pairs' branch, when it merges the migration: the vocabularies and
    families of the two further pairs, their two declarations of the
@@ -188,7 +256,8 @@ The design page gives it in full. In short:
    of slices S7 and S2.
 8. The scripted move under the two roots, with language identity, the roles
    for each root and the import rule of rule 1, with a test that breaks it
-   (slice S8). It waits for all of the above.
+   (slice S8). It waits for all of the above. Its table also moves the
+   symbol packages of Go and Rust to their path.
 
 Rule 2 gets no check. Whether a package under the model root holds an
 operation is judged in review, by the owner's rule against keyword
@@ -228,35 +297,83 @@ this case stays open until then:
 migration's branch changes. They change files of the branch that import a
 moved name, and the branch merges `main` after each split.
 
-## What waits for a decision
+## What waited for a decision
 
 **What it concerns.** Two parts of slice S5: taking the typed readers out
 of the semantic vocabularies of Go, Rust and TypeScript, and the path of
 symbol admission.
 
-**It is no deferral.** No effort is claimed for the wait, so the deferral
-clause of AC-10 does not cover it (decisions M27 and M29 on #305).
+**It was no deferral.** No effort was claimed for the wait, so the deferral
+clause of AC-10 did not cover it (decisions M27 and M29 on #305).
 
 **The reason.** Each of the two is imported by several operations, and the
 design first placed each under one of them: the readers under the stage
-`analyze`, symbol admission under the stage `transform`. A rule that
-places a responsibility by the knowledge it needs would decide both
-paths, and it is not accepted yet. A package created now might have to
-move again.
+`analyze`, symbol admission under the stage `transform`. A package created
+at such a path might have had to move again.
 
-**The condition.** Platform research 0004, the consultation on that rule,
-is evaluated, and the research owner decides the two paths. The scripted
-move, slice S8, waits for it.
+**The decision.** Platform research 0004 is evaluated, and the research
+owner decided the two paths as
+[M30](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860238626): below
+`ops`, a unit that one stage uses is in the stage matrix, and a unit that
+several stages use is at the path of the sort and scope it works on. The
+typed readers go to `ops/semantics/<language>/reader/go`, and symbol
+admission to `ops/symbols/<language>/go`. [M32](https://github.com/Bitspark/bittype/issues/305#issuecomment-6861647384)
+says how that is read: the substitution governs, and not a count of today's
+users, so the readers and the symbol packages of all three languages take
+that placement. AC-12 does not decide these
+paths: the units are operations. What decides them is the substitution
+that the rules page asks of a place.
 
-**What stays open until then.** The typed readers share a package with
-the contract identities, `semantics/<language>/go`, after the names have
-left it. This case stays open for that.
+**What stays open until the second part of S5 is done.** The typed readers
+share a package with the contract identities, `semantics/<language>/go`,
+after the names have left it. This case stays open for that. One point of
+M30 is open, as M32 states it, and is decided at the start of that part:
+which parts of the operations side of a symbol package work on symbols,
+which are generation's use of symbols, and what the first kind refuses with
+when it may not name the generation contract. With it, by M33: what the
+sealed symbol types of Go and Rust admit is still a description, and
+whether and where it is stated as data.
+
+## Did we have the rule
+
+The owner asked whether the rule existed and was violated. Three facts,
+each read from the history of the repository that holds it.
+
+1. **bittype's own definition existed and its packages already broke it.**
+   "The names two parties must agree on and nothing else" entered
+   `docs/package-boundaries.md` with commit `d23542a` on 11 November 2026.
+   On that day Go's intended-forms package had held `CheckExpression` since
+   commit `c054f80` of 8 November 2026, and Go's semantic vocabulary had
+   held `Open` and its typed readers since its first commit, `a775892` of
+   6 November 2026.
+2. **AC-06 existed when the narrowing conditions were written.** The
+   platform's rules page has AC-06, "Limited coverage does not redefine the
+   architecture", since commit `7e588ae` of 6 November 2026. The primitive
+   set and the refusal of every external type were written into Go's
+   intended-forms package with commit `c054f80`, two days later
+   (`transform/syntax/golang/model/go/model.go:42`, `:67` at that commit).
+3. **The method page held the substitution tests when the grammar tables
+   were placed.** The platform's
+   [tests for placing a contract](https://github.com/Bitspark/platform/blob/main/docs/concepts/semantic-ownership-and-generalization.md#tests-for-placing-a-contract)
+   stand since commit `5192506` of 6 October 2026, among them "Application
+   substitution": "If bitwork is replaced by an unrelated hosted
+   application, which promises must bithost still provide?". They were
+   written for layers of services. The four native grammar tables became
+   variables of their checkers with commit `09d74e8` of 31 October 2026
+   (`check/golang/go/check.go:16` at that commit).
+
+So the definition, the rule on coverage and the test existed, and none was
+applied to the place of a description inside this library. The grade of
+platform research 0004 says it in one sentence: "we had the test and most
+of the rule, and did not apply them inside a library". What did not exist
+was a rule that states the ownership of a description where the language
+supplies both the description and its first user. That is AC-12.
 
 ## Correction and qualification status
 
 The change that added this case documented the violation and the designed
 correction, and changed no code. The names below the two roots are decided (M10, M11, M14,
-M19 and M28 on #305). Two paths of M14 wait for a decision (M27, M29). The form-table type is a sketch that slice S2 makes final (M13).
+M19, M28, M30, M32 and M33 on #305). The form-table type is a sketch that slice S2 makes final (M13).
 The classification of each package is the design page's
 table, made by reading. Each slice updates this case with what it delivered,
 its qualification and its limits.
@@ -284,6 +401,26 @@ its qualification and its limits.
   every check before a tree is read, as unsupported.
 - The horos identifier rule has one evaluator, `internal/horos.Identifier`.
   The copy in `internal/declsyntax` is deleted.
+
+**What AC-12 covers of this case, after this slice.** The first of the
+three things that [Rules involved](#rules-involved) lists, "The grammar
+tables are private data of their checkers", still holds. After this slice
+each of the five tables is still an unexported variable of its checker,
+the four native checkers and `internal/declsyntax`. What changed is its
+form: it is plain data of the model's type and names its predicates. That
+meets one sentence of the rule, "State as data what a description
+declares, such as its names, shapes and tables", and not yet the purpose
+the rule gives for it, "so that a second operation reads it without
+importing, running or parsing the first": the documentation tool still
+parses the checker's source to read a table. Slice S3b ends it. It moves
+each table into its language's syntax vocabulary, a unit of the subject
+whose path names no operation, and the tool reads the source of the
+description. The type in which a table is written, the predicate names and
+the names of each language's own predicates stand in units of their
+subject since this slice: `model/syntax/go` and
+`model/syntax/<language>/lexical/go`. The second and the third thing, the
+literal keys of the Go bridge and the descriptions under a stage's name,
+are untouched.
 
 **What stays open after it.** The five tables are still unexported
 variables of the four native checkers and of `internal/declsyntax`, so an

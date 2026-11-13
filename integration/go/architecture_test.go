@@ -205,6 +205,11 @@ var foundationRules = map[string][]string{
 	"internal/lex":       {"contracts/parse/go", "contracts/text/go", "trees/ast/go"},
 	"internal/parseutil": {"check/syntax/shared/ast/go", "contracts/parse/go", "contracts/text/go", "internal/lex", "trees/ast/go"},
 	"internal/concrete":  {"check/syntax/shared/cst/go", "contracts/parse/go", "contracts/text/go", "internal/lex", "internal/tree", "trees/ast/go", "trees/cst/go"},
+	// The bounded collection of a child process's streams. It imports no
+	// package of the module: it knows no language, no contract and no tool. Its
+	// importers are the two compiler bridges that start a helper process, each
+	// under a role extension, and the reporting tool's host under its own entry.
+	"internal/processoutput": {},
 }
 
 // oneOfAKindRules holds the packages whose path gives no role because there is
@@ -237,11 +242,19 @@ var oneOfAKindRules = map[string][]string{
 	"verification/logos/go":             {"contracts/verification/go", "semantics/go"},
 	// The reporting tool: a command, its host and the two contracts the host is
 	// written against. The host never imports a concrete extractor; extractors
-	// have a role.
+	// have a role. The host collects what its Go commands write with the shared
+	// bounded writer.
 	"tools/provider-matrix/go":             {"tools/provider-matrix/extract/grammar/go", "tools/provider-matrix/observation/go", "tools/provider-matrix/report/go"},
-	"tools/provider-matrix/report/go":      {"tools/provider-matrix/capability/go", "tools/provider-matrix/observation/go"},
+	"tools/provider-matrix/report/go":      {"internal/processoutput", "tools/provider-matrix/capability/go", "tools/provider-matrix/observation/go"},
 	"tools/provider-matrix/capability/go":  {},
 	"tools/provider-matrix/observation/go": {},
+	// The child process and the harness of the tests that bound what a child
+	// process writes. It is not in the foundation table: that table holds the
+	// helpers that production packages use, and only test files import this
+	// one. The check reads no test file, so no importer has an allowance for
+	// it. No foundation or kernel package can import it either, whatever its
+	// entry lists, because it is outside their table.
+	"internal/processoutput/processoutputtest": {},
 	// A command over the horos parser and private module lowering.
 	"tools/horos-module/go": {"contracts/parse/go", "internal/horosmodel", "internal/lex", "parse/syntax/horos/provider/go", "trees/ast/go"},
 }
@@ -293,6 +306,10 @@ var roleExtensions = map[string][]string{
 	// The Rust target publishes the symbol of each item of the standard
 	// library and of each primitive type it uses with its output.
 	"transform/syntax/rust/target/go": {"transform/syntax/rust/symbol/go", "trees/representation/go"},
+	// The Rust and TypeScript bridges start a helper process and collect its
+	// streams with the shared bounded writer. The Go bridge starts none.
+	"internal/rustsem":       {"internal/processoutput"},
+	"internal/typescriptsem": {"internal/processoutput"},
 	// Of the common horos mapping parts, only the declaration recipe builds on
 	// another: on naming. It states no profile and imports no profile identity.
 	// Patterns and naming import no part.

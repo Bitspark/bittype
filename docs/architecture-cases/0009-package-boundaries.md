@@ -581,6 +581,26 @@ that are not committed.
   #196).
 - A green run still shows only that the listed edges are absent
   ([AC-07](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-07)).
+- **What the scan did not check.** Noted on 13 November 2026. The scan of
+  11 and 12 November 2026 judged a package by the imports that its role
+  allows. It never compared the definition of a vocabulary, "The names two
+  parties must agree on and nothing else"
+  ([package boundaries](../package-boundaries.md#terms)), with what the
+  vocabulary packages hold. Two groups under "Not examined" above came
+  close: the Go and Rust vocabulary packages' own readers, and the admission
+  grammars of the native checkers. Both are listed for one question only,
+  whether a name is spelled twice. Neither was asked whether a typed reader
+  belongs in a package of names, or whether a grammar table belongs to its
+  checker. The owner's direction of 13 November 2026 asked that, and
+  [bittype/ACX-015](0015-models-hold-operations.md) records the result: 23
+  of the 129 production packages hold a model-side part and an operation,
+  among them the four semantic vocabulary packages into which this case
+  moved identities. The scan and the status of this case were made by
+  `claude-contract-chain-issues`. The limit was the scan's. An import check
+  reads what a package imports and cannot see what it contains, and the scan
+  asked no more than the check could answer. The status above stands for the
+  instances it names. It does not say that a vocabulary package holds names
+  and nothing else.
 
 ### Instances that remain
 
