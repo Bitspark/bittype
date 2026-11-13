@@ -66,6 +66,10 @@ leaves the meaning of its sentence. All of them are listed under
   after the prototype was done. O27 extends O25, O32 corrects O8 and O16, O36
   ends the deferral of row 26a, O37 extends O9 and one point of O18, and O38
   decides row 11.
+- **O40:** the
+  [decision of the same day](https://github.com/Bitspark/bittype/issues/196#issuecomment-6844971187)
+  on three points that writing O27 to O39 into this page showed. It widens
+  one sentence of O17.
 - **The prototype's report**, by its section or by its finding, F1 to F27:
   the [report](../research-docs/0017-contribution-contract.prototype.md) of
   the prototype of step 2, written by the agent that built it. The prototype
@@ -591,6 +595,10 @@ contract now."
   it is a recursive reference. Without this the two refusals of row 9 cannot
   be told apart, because the declaration contribution itself demands evidence
   about its body."
+- **A need for conversion on a cycle counts as a reference (O40).** O31's
+  third need "asks the planner to represent a child for a binding product and
+  demands no answer before the rule decides. So it counts as a reference."
+  (O40)
 - **Recursive references are deferred (row 9a).** Accepted for the families
   that need them: "Recursive adapters are built through explicit plan
   references (placeholders), separately from native value indirection."
@@ -726,12 +734,18 @@ the first three.
 | An unexpected error of a rule | "An unexpected error of a rule is RuleFailure, which matches no refusal value." |
 | A member fragment that a target's member vocabulary does not admit | Unsupported, with the member vocabulary of the target as owner. The report's reason: "a later slice of that vocabulary can admit the same fragment, which is the page's criterion for unsupported." It is not refused by design, "because the contribution's domain covers the position." |
 
-**The owner of an unsupported refusal. Derived here.** O17 writes of "a case
+**The owner of an unsupported refusal (O40).** O17 writes of "a case
 that a selected contribution recognizes and does not cover". In these forms
 of the prototype the owner is not a selected contribution: the kernel for a
 recursive reference and for an evidence cycle, and a target's member
-vocabulary for a fragment. The criterion is the same in all of them: a later
-slice can admit the same input. No decision widens O17's sentence.
+vocabulary for a fragment. O40 widens O17's sentence: "The owner of the
+refusal is whoever would build that slice: a selected contribution, the
+kernel, or a vocabulary." The criterion stays: a later slice can admit the
+same input. "An evidence cycle is unsupported and not refused by design,
+because the advice names what would lift it" (O40): "a declared evaluation
+discipline" (advice, section 1.4). What O17 decided stays: "a family that is
+not built has no contribution to select, and that is a missing
+contribution." (O40)
 
 ## Optional fields
 
@@ -924,9 +938,10 @@ kernel keeps minting every use".
 
 **What the decision changes outside this page.** Three accepted sentences
 were written without a field-level slot. Until O38 they waited for the
-decision of row 11. They are not edited with this change: no decision says
-when they are annotated, and an objection before the migration merges would
-reopen row 11.
+decision of row 11. They are not edited with this change. O40: bittype's two
+"are annotated with the migration, in the change that builds delegation on
+`main`, and not before: until then an objection can reopen row 11. The
+service library's sentence is its owner's."
 
 | Sentence | Where | Owner |
 | --- | --- | --- |
@@ -2188,6 +2203,7 @@ more than `docs/representation-families.md` allows, and the research owner
 | O37 | The shared part of the codec role changed for one family's value form | A codec may import the ontos value packages and reaches horos only through the shared part. A codec is trusted as a target is. It extends O9 and one point of O18 | [What the kernel carries](#what-the-kernel-carries-without-reading-it) |
 | O38 | Row 11, with no answer of the service library | Presence is delegated (D3). An objection with a reason, before the migration merges, reopens it | [Optional fields](#optional-fields) |
 | O39 | Six points for the migration | A link carries its child's locator. One composition for each process. A public route to the bootstrap artifact. The fourth axis is a reader's test. #273 lands first. The prototype's roles are a proposal | [Inputs](#inputs-that-are-not-bittypes-alone), [The gate](#the-gate), [Identities](#identities), [What the prototype showed](#what-the-prototype-showed) |
+| O40 | Who owns an unsupported refusal; a need for conversion on a cycle; when three accepted sentences are annotated | Whoever would build the slice: a contribution, the kernel or a vocabulary. It counts as a reference. With the migration | [Refusals](#refusals), [Evidence](#evidence), [Optional fields](#optional-fields) |
 
 **O23 to O26.** The same reader read the changes at `0102bfe` and reported
 13 findings, N1 to N13. In four of them an accepted page says what this page
@@ -2300,9 +2316,6 @@ left, and what the prototype found newly open:
 - **How a declaration contribution states that it is transparent.** O35
   says that it states it with its decision. The prototype did not build it,
   and its form of a fact has no such statement.
-- **How a need for conversion counts on a cycle.** Derived here. O30 tells an
-  evidence cycle from a recursive reference by demands for evidence and
-  references. O31's third need is neither.
 - **What the prototype's refusal of a specialization leaves of #166.** In the
   prototype a specialization's domain names a declaration and its actuals,
   and "An actual that is itself an application is matched by its callee
