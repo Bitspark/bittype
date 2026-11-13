@@ -675,3 +675,77 @@ expectation of the test: the target's identity is `go`).
 | `...Stage6FourStatesOfAnOptionalField` | In lowered Go and in the stand-in: absent and present with a value convert there and back as themselves; present with null is refused; in the stand-in a present undefined is refused, and the vector is red when the protocol reads it as absence | A null that a type admits (#211); the service library's slot (row 11); independent authorship |
 | `...Stage6FieldPositionKeepsTheScopeCheck` | A request with the operand of another record, or with a role issued for another pair, fails. Red under a kernel without the check | That the source issues the role for optional fields only |
 | `...Stage6MemberFragmentOutsideTheVocabulary` | A fragment that is no member is refused as unsupported with the member vocabulary as owner; a target without a member vocabulary refuses a field position; a fragment of two members is admitted | Cross-field layout (out of the domain) |
+
+## Stage 7: a second reader in another process (gate line 4; row 26a)
+
+**Built.** The TypeScript stand-in as a reader
+(`completeness/typescript/standin/reader.mjs`), run with node from a Go test
+with three files: the serialized plan, the source snapshot and the vectors.
+Its factories (`structural.mjs`) and a decoder for the canonical bytes of a
+payload (`ontos.mjs`). The Go backend of stage 5 is a second reader of the
+same inputs in a fresh Go process.
+
+**Row 26a: a facet value crossed the process boundary.** Yes: the facet that
+names a run-time factory. The stand-in finds a factory by what the plan entry
+names (`docs/representation-families.md:49-50`), so the factory reference has
+to be in the serialized plan. The transport descriptor the prototype designed
+(`generation.FacetTransport`):
+
+- A facet kind may state a transport: a media type and an encoder that the
+  kind's owner supplies.
+- When the planner writes a selected contribution into the plan, it takes
+  each facet that a requested product requires of that contribution. If the
+  facet's kind has a transport, the planner calls the encoder and stores the
+  kind's reference (identity and contract version), the media type and the
+  encoded bytes with the contribution's entry. It reads none of it.
+- A reader finds the facet by the kind's identity, checks the kind's contract
+  version and the media type, and decodes the value itself.
+- A facet kind without a transport never leaves the process: the Go lowering
+  facets, which are Go functions, do not.
+
+The value that crossed is `{module, export, runtime}`: the factory reference
+and the runtime compatibility it requires (the fourth version axis).
+
+**What the reader needed, and where it came from.**
+
+| The reader needed | It came from |
+| --- | --- |
+| Which contribution was selected for a node, with both revisions | The plan: the node's contribution reference |
+| The factory of a contribution | The plan: the transported facet of the contribution |
+| The recorded decisions | The plan: the node's payload, canonical ontos bytes, which the stand-in decodes itself |
+| That the payload is the validated one | The plan: the receipt, which the stand-in recomputes |
+| The member's name of a delegated field | The plan: `stated` on the link (O3) |
+| Which abstract field a link of a record is | **Not the plan alone**: the link's `position` and the snapshot's description of the declaration (F17) |
+| The canonical field names | The snapshot (source meaning) |
+| The adapter of a binder | The plan: the application's adapter arguments |
+| How a receipt is computed, and how node identities are computed | **Not carried**: the stand-in has the derivation of a receipt written into it. It is part of what the envelope version means. The stand-in does not recompute node identities |
+| That the plan asked for bindings | The plan: `products`, and the adapter arguments being there |
+
+So the plan did not carry everything a reader needed in two places: the
+pairing of a link with a source child (now carried as `position`), and the
+derivation of the receipt (part of the envelope protocol, to be written down
+with #195).
+
+**Findings of this stage.**
+
+- **F21. A reader checks three things per contribution, and the plan has one
+  place for each only since this stage.** Payload schema version, both
+  revisions of the reference, and the runtime compatibility. The first two
+  are in the plan's contribution entry. The third is in the facet. A reader
+  that has no facet for a contribution cannot check the fourth axis for it;
+  it fails as "missing facet" first.
+- **F22. "Ground descriptors" for the stand-in.** As F16: the stand-in walks
+  the open declaration `Page<T>` with the adapter argument of the
+  application, and needs the description of `Page` as written, not the ground
+  descriptor of `Page<Person>`.
+
+**Tests** (`integration/go/prototype_stage7_test.go`; evidence
+`stage7-run1.txt`, `stage7-plan.json`, `stage7-snapshot.json`). The vectors
+of the four states are in stage 6.
+
+| Test | Shows | Does not show |
+| --- | --- | --- |
+| `...Stage7StandinRoundTripsPageOfPerson` | The stand-in converts `Page<Person>`, a nested page and a list there and back from the plan and the snapshot alone, and refuses two values outside the type. Every selected contribution crossed with one transported facet | The service library's factory, its budgets, call context and memo (row 31a); independent authorship |
+| `...Stage7StandinRefusesUnknownVersions` | An unknown envelope protocol, payload schema version, representation revision, runtime compatibility and source semantics are each refused under their own name | A reader that knows several values of an axis |
+| `...Stage7ReadersNeedTheMatchingSnapshot` | Without the snapshot the stand-in and the Go backend fail explicitly. A snapshot of another pin is a linking error in both | A reader protocol for source semantics (row 34a) |
+| `...Stage7StandinDerivesMemoKeys` | Equal keys for two uses of `Page<Person>`, another key with another selected dependency, and the same key as the Go reader derives from the same bytes | A memo (bitspark-service#40) |

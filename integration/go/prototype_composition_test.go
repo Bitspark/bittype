@@ -6,6 +6,8 @@ package integration_test
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"slices"
 	"testing"
 
@@ -251,4 +253,11 @@ func protoRoots(t *testing.T, input transform.Input, names []string) []ast.NodeR
 		t.Fatalf("found %d of the roots %v", len(out), names)
 	}
 	return out
+}
+
+// protoEvidence is the directory that a run writes its artifacts to, or "".
+func protoEvidence() string { return os.Getenv("BITTYPE_PROTOTYPE_EVIDENCE") }
+
+func protoWrite(directory, name string, content []byte) {
+	_ = os.WriteFile(filepath.Join(directory, name), content, 0o644)
 }
