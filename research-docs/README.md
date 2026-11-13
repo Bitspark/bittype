@@ -2,7 +2,8 @@
 
 Consultations record a question against a specific baseline, independent advice
 and a dated evaluation. Original `.submitted*` and `.advice*` files are historical
-evidence. An `applied` status records that consultation's delivery; it does not
+evidence. A `.verify-N.md` file is the report of a verification agent on a
+set of recommendations: a proposal, kept as it was written, and no decision. An `applied` status records that consultation's delivery; it does not
 make its suggested interface today's specification. The [documentation map](../docs/README.md)
 identifies the current owners. Evaluated decisions are retained without rewriting
 what the expert or submitting author said at the time.
@@ -23,7 +24,7 @@ what the expert or submitting author said at the time.
 | [0014: binding generation](0014-binding-generation.md) | [Binding generation](../docs/binding-generation.md); bittype publishes a selected representation plan and per-target backends compose paired library contributions. Accepted direction; not implemented. |
 | [0015: representation families](0015-representation-families.md) | [Representation families](../docs/representation-families.md); each family is one representation contract instantiated once per use, delivered with its plan payload, conversion and qualification. Accepted design; not implemented. |
 | [0016: native Files placement](0016-native-files-placement.md) | [Source and Files](../docs/source.md), [bittype/ACX-004](../docs/architecture-cases/0004-generation-file-syntax.md); evaluated on 12 November 2026 and in delivery: language-owned placement types with one shared admission, a typed placement bound to its output, naming intent realized by Files, fragment roots, recorded destinations. The work items are #271 to #278, #161 and #159. |
-| [0017: the contribution contract](0017-contribution-contract.md) | [Binding generation](../docs/binding-generation.md), [representation families](../docs/representation-families.md); evaluated on 13 November 2026 and in delivery: one decision record per selection with one round of requests before a rule decides, a registered projector, publisher-owned contribution identities, use entries and representation nodes, open generics, a typed facet contract, and a prototype before the migration. The work items are #196, #195, #207 and #197. |
+| [0017: the contribution contract](0017-contribution-contract.md) | [Binding generation](../docs/binding-generation.md), [representation families](../docs/representation-families.md); evaluated on 13 November 2026 and in delivery: one decision record per selection with one round of requests before a rule decides, a registered projector, publisher-owned contribution identities, use entries and representation nodes, open generics, a typed facet contract, and a prototype before the migration. The work items are #196, #195, #207 and #197. The design page is [the contribution contract](../docs/contribution-contract.md). The reports of its three verification agents are [1](0017-contribution-contract.verify-1.md), [2](0017-contribution-contract.verify-2.md) and [3](0017-contribution-contract.verify-3.md). |
 
 There is no implication of a missing current feature merely because a historical
 submission names a different API. Conversely, later working examples do not close

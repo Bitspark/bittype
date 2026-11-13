@@ -728,6 +728,13 @@ guessing a rule." (`docs/binding-generation.md:72`).
   of its question on the identities of the plan." This page amends no sentence
   of binding generation, and that page stands as written until
   [#195](https://github.com/Bitspark/bittype/issues/195) decides.
+  **Noted on 13 November 2026.** #195
+  [decided](https://github.com/Bitspark/bittype/issues/195#issuecomment-6841872859)
+  on 13 November 2026: a backend has a fourth input, the placed result. It is
+  row 23 of [research 0017](../research-docs/0017-contribution-contract.md#applied).
+  [Binding generation](binding-generation.md#the-selected-representation-plan)
+  carries the amendment, dated and headed as one
+  ([the contribution contract](contribution-contract.md#amendments-to-accepted-pages)).
 
 **[Semantic generation](semantic-generation.md#representation-and-enforcement-profiles),
 lines 47 to 49. Derived here.** "The version stays `/1`: nothing is released
