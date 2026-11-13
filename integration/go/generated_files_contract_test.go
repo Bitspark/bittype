@@ -609,8 +609,18 @@ func TestGeneratedFilesStepWithoutEvidenceGuardOrAdmissionFails(t *testing.T) {
 		t.Fatal("a second admission in one step", c.language.again)
 	}
 	late := c.placement()
-	if admitted, err := c.language.kept.Admit(format.GeneratedPlacementView{Files: late.Files, Definitions: late.Definitions}); !errors.Is(err, format.ErrInvalidFormatter) || admitted.Valid() {
+	view := format.GeneratedPlacementView{Files: late.Files, Definitions: late.Definitions}
+	if admitted, err := c.language.kept.Admit(view); !errors.Is(err, format.ErrInvalidFormatter) || admitted.Valid() {
 		t.Fatal("an admission after the step returned", err)
+	}
+	// Also when the step itself never asked for one.
+	c = newFixtureCase(t)
+	c.language.skipAdmission = true
+	if out, err := c.format(t, c.placement(), format.FilesLimits{}); err == nil || out.Valid() {
+		t.Fatal("a step without the common admission")
+	}
+	if admitted, err := c.language.kept.Admit(view); !errors.Is(err, format.ErrInvalidFormatter) || admitted.Valid() {
+		t.Fatal("an admission after a step that asked for none", err)
 	}
 	// A placement of another issuer, and no placement, are refusals of the
 	// step. They are invalid input and no failed type assertion.
