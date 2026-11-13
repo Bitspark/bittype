@@ -430,6 +430,10 @@ func TestGoPackageNameIsAFactSeparateFromThePath(t *testing.T) {
 	}
 	pages, _ := goImportModel(t, source("pages"), settings)
 	people, _ := goImportModel(t, source("people"), settings)
+	a, b := pages.Graph().Data(), people.Graph().Data()
+	if reflect.DeepEqual(a, b) {
+		t.Fatal("two package clauses gave one graph")
+	}
 	// Every package entity, captured and supplied, carries exactly one name fact.
 	const captured, supplied = "example.org/app/generated/pages", "example.org/cell"
 	for name, model := range map[string]n.Model{"pages": pages, "people": people} {
@@ -449,15 +453,16 @@ func TestGoPackageNameIsAFactSeparateFromThePath(t *testing.T) {
 			}
 		}
 	}
-	a, b := pages.Graph().Data(), people.Graph().Data()
-	if reflect.DeepEqual(a, b) {
-		t.Fatal("two package clauses gave one graph")
-	}
 	// The package clause is the only difference: with the one term of that fact
 	// made equal, the graphs are equal.
 	fact := people.Graph().Facts(semantics.Subject{Entity: 1}, n.PackageNameRelation())
 	if len(fact) != 1 || string(b.Terms[fact[0]-1].Data) != "people" {
 		t.Fatal("the captured package is not entity 1 with one name fact", fact)
+	}
+	// The published form of the fact: the relation go/package-name, and a
+	// provider expression whose data is the name in UTF-8.
+	if term := b.Terms[fact[0]-1]; n.PackageNameRelation() != (semantics.Key{Owner: "go", Name: "package-name"}) || term.Kind != semantics.ProviderExpression || term.Operator != (semantics.Key{Owner: "go", Name: "package-name"}) || term.Encoding != (semantics.Key{Owner: "go", Name: "utf8"}) || len(term.Operands) != 0 {
+		t.Fatal("the form of the package-name fact changed", n.PackageNameRelation(), term)
 	}
 	b.Terms[fact[0]-1].Data = []byte("pages")
 	if !reflect.DeepEqual(a, b) {
