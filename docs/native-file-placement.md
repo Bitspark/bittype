@@ -48,9 +48,9 @@ The implemented shared handoff is in `contracts/format/go`:
 
 ```go
 type GeneratedFilesInput struct {
-    Output        generation.Output
-    Configuration []semantic.Setting
-    Limits        FilesLimits
+    Output    generation.Output
+    Placement GeneratedPlacement // a typed value that the language issued
+    Limits    FilesLimits
 }
 type Provider[I, O any] interface {
     language.Provider
@@ -61,9 +61,11 @@ type Provider[I, O any] interface {
 A native Files implementation supplies
 `Provider[GeneratedFilesRequest[L], source.Source[L]]`; the shared formatter
 invokes it and admits publication through the configured contract. The full
-[generated formatting contract](../contracts/format/go/generated.go) requires
-evidence, printing and a check of the publication against its input. The concrete
-Go/Rust/C++ settings and checks still need specification and implementation.
+[generated formatting contract](source.md#the-generated-files-contract) takes
+a Syntax printer and one preparation step of the language. The step has the
+placement admitted by the shared contract and returns the evidence requirement
+and the guard of the request. The concrete Go/Rust/C++ placement types and
+checks still need specification and implementation.
 The following tables are proposed inputs/output, not shipped Go structs or APIs.
 
 ## Go

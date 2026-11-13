@@ -194,50 +194,48 @@ It calls `ImportConfiguration` with the supplied Cell declaration text and uses
 the same settings for native resolution and analysis. Node and the exact
 TypeScript compiler path come from the two environment variables above.
 
-The implemented Files configuration contracts are:
+The implemented placement contract is:
 
 ```go
-type Placement struct {
-    File         files.ID
-    Path         files.Path
-    Declarations []ast.NodeRef
+type GeneratedPlacement struct {
+    Files       map[files.ID]files.Path
+    Definitions map[generation.DeclarationHandle]files.ID
 }
-type Organization struct {
-    Entry files.ID
-    Units []Placement
-}
-func (o Organization) Setting() (semantic.Setting, error)
+func (p GeneratedPlacement) Issue() format.GeneratedPlacement
 func NewGenerated(stages Stages) (format.GeneratedFilesFormatter[typescript.Language], error)
 ```
 
-The application supplies Organization. The TypeScript Files implementation
+The application supplies the placement. The TypeScript Files implementation
 consumes it. Its [Stages definition](../format/files/typescript/provider/go/format.go)
 names the independently supplied collaborators; there is no combined native
 language provider or ambient package discovery. A package's public declaration
 text is a dependency input, not a second table of imports.
 
-After resolving the emitted declaration sites from output, the fixture uses:
+The fixture names the handles of `output.Inventory()` by the declarations at
+their sites and uses:
 
 ```go
-page := tsfiles.Placement{
-    File: "pages", Path: "generated/pages/page.ts",
-    Declarations: []ast.NodeRef{sites["Page"], sites["Cells"], sites["Cell"]},
+placement := tsfiles.GeneratedPlacement{
+    Files: map[files.ID]files.Path{"pages": "generated/pages/page.ts"},
+    Definitions: map[generation.DeclarationHandle]files.ID{
+        handles["Page"]: "pages", handles["Cells"]: "pages",
+        handles["Cell"]: "pages", handles["Person"]: "pages",
+    },
 }
-person := tsfiles.Placement{
-    File: "model", Path: "generated/model/person.ts",
-    Declarations: []ast.NodeRef{sites["Person"]},
-}
+// The split placement adds one file and moves one declaration.
+placement.Files["model"] = "generated/model/person.ts"
+placement.Definitions[handles["Person"]] = "model"
 ```
 
-For the split placement Organization contains page and person. For the co-located
-placement it contains page with Person added to its declaration sites. Each
-iteration passes the **same** output to the Files formatter:
+The split placement has the files pages and model. The co-located placement
+has the file pages alone, with Person among its declarations. A placement
+states no order and names no entry: the files come in the order of their
+identities, so model precedes pages. Each iteration passes the **same** output
+to the Files formatter:
 
 ```go
-setting, err := organization.Setting()
-if err != nil { return err }
 placed, err := formatter.Format(ctx, format.GeneratedFilesInput{
-    Output: output, Configuration: []semantic.Setting{setting},
+    Output: output, Placement: placement.Issue(),
 })
 if err != nil { return err }
 emitted, err := printer.Print(ctx, placed)

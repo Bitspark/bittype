@@ -180,6 +180,10 @@ func (p Publisher[L]) Accept(s Source[L]) error {
 	return nil
 }
 func (s Source[L]) Valid() bool { return s.state != nil }
+
+// Entry is the entry of the published snapshot. It is an address, as
+// semantic.Snapshot.Entry says: it names no root of a native program and limits
+// no check. The publisher and the guards answer for every unit.
 func (s Source[L]) Entry() ast.NodeRef {
 	if !s.Valid() {
 		return ast.NodeRef{}
