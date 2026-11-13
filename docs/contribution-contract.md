@@ -40,6 +40,10 @@ listed under [Amendments to accepted pages](#amendments-to-accepted-pages).
   on the points that the first version of this page left open. The research
   owner made them. O2, O4 and O6 each correct a row of the table (rows 8, 17
   and 31b), and the table carries the correction with its date.
+- **O11:** the
+  [decision of the same day](https://github.com/Bitspark/bittype/issues/196#issuecomment-6841518102)
+  that corrects the wording of O8: a facet is registered by the consumer's
+  composition.
 - **An accepted page**, quoted, with its file and line.
 - **AC-01 to AC-10:** the
   [numbered architecture rules](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#numbered-rules)
@@ -969,6 +973,12 @@ binding product needs are selected together."
 > kernel admits a facet that names a registered contribution of the same
 > publisher, registered by the owner's composition." (O8)
 
+O11 corrects the last words: the composition is the consumer's. "It is the
+consumer's composition." (O11) Binding generation gives the consumer build the
+"Selection and composition of the concrete contributions it uses"
+(`docs/binding-generation.md:41`), and "A consumer supplies its contributions
+explicitly." (`docs/binding-generation.md:111`).
+
 - **Where an implementation lives.** In any package of the bundle's owner. A
   reader may also load it in another process, for example a factory by its
   module and export.
@@ -1426,7 +1436,7 @@ and an accepted page, did not fit without a reading. It gave the options and
 chose none. The research owner decided all ten in the
 [decisions of 13 November 2026](https://github.com/Bitspark/bittype/issues/196#issuecomment-6841190077)
 on #196, cited on this page as O1 to O10. Three of them correct a row of the
-research table.
+research table. O11 followed and corrects the wording of O8.
 
 | | The point | The decision, in short | Stated under |
 | --- | --- | --- | --- |
@@ -1441,25 +1451,25 @@ research table.
 | O9 | How a decision becomes an ontos value | A rule returns a value of a generated plain Go type. The family's payload codec encodes, validates and freezes it | [What the kernel carries](#what-the-kernel-carries-without-reading-it), [Payload bootstrapping](#payload-bootstrapping) |
 | O10 | Whether the migration waits for the answer on optional fields | The round of requests is in the contract either way. The gate requires row 11 decided | [Optional fields](#optional-fields), [The extension domain](#the-extension-domain), [The gate](#the-gate) |
 
-**One point is open after these decisions.** It comes from the wording of O8
-and is not resolved here.
+**Nothing is open after these decisions.** One further point came from the
+wording of O8 and is decided as O11.
 
-**Whose composition registers a facet (O8 and binding generation).** O8: the
-kernel admits a facet that is "registered by the owner's composition".
-Binding generation gives composition to the consumer: "Selection and
-composition of the concrete contributions it uses" is the responsibility of
-the consumer build (`docs/binding-generation.md:41`), and "A consumer supplies
-its contributions explicitly." (`docs/binding-generation.md:111`). No text
-says who "the owner" of a composition is.
+**Whose composition registers a facet (O11).** O8 said "registered by the
+owner's composition", and no accepted text names an owner of a composition.
+O11: "It is the consumer's composition."
 
-- (a) It is the publisher. The publisher ships one registration for its
-  bundle, the consumer's composition calls it, and the consumer still selects.
-- (b) It is the owner of the build that makes the request, so the consumer.
-- (c) A publisher registers its facets apart from any consumer's selection.
+- A facet is registered by the composition of the build that makes the
+  request, like every contribution.
+- A publisher may ship one registration for its bundle. The consumer's
+  composition calls it, and the consumer still selects.
+- Nothing is registered apart from a consumer's composition. A publisher that
+  registered its facets on its own would be a built-in registration, which
+  the contract-owned binding decision of 29 October 2026 rules out.
+- The kernel's check stays as O8 said: a facet names a registered
+  contribution of the same publisher.
 
-Meanwhile the page quotes O8 and assumes none of the three. For the builtin
-families the question does not arise in the prototype: bittype publishes the
-bundle, and bittype's own test composition registers it.
+For the builtin families bittype is the publisher, and bittype's own test
+composition is the consumer that registers the bundle.
 
 ## What is delegated, and what is not specified here
 
