@@ -53,7 +53,9 @@ An independent mapping library can still enter the kernel without editing any
 of these packages. Two neighbouring faults are recorded elsewhere: the closed
 profile gate is [bittype/ACX-008](0008-structural-profile-gate.md), and the
 optional-field decision inside Record is the contract change of
-[#196](https://github.com/Bitspark/bittype/issues/196), item 6.
+[#196](https://github.com/Bitspark/bittype/issues/196), item 6. Noted on
+13 November 2026: whether the second is a fault is conditional since research
+0017 (row 11), as the [limit](#limits) on the helper key says.
 
 ## Intended boundary
 
@@ -186,7 +188,8 @@ requires.
 | After the first commit of #246 the verification pair could use any symbol of the Go query service. The exception rule covered stage provider packages only. The independent review of #246 found it | The exception rule covers a query service package as well as a stage provider package. An import of either outside a composition needs an entry that names its symbols. The pair's entry names `Admission` | [#246](https://github.com/Bitspark/bittype/pull/246), second commit `052a3e3` |
 | Five horos-owned keys were spelled inline by a writer and by a separate reader: `horos/module`, `horos/import`, `horos/type-definition`, `horos/sort/proper` and `horos/identity/module` | `semantics/horos/go` publishes them as `ModuleKind()`, `ImportRelation()`, `TypeDefinitionKind()`, `ProperSort()` and `ModuleIdentity()`. The writers in `internal/horosmodel` and `internal/horosfiles` and the readers in `internal/horosfiles` and `transform/syntax/horos/source/go` call these functions | [#247](https://github.com/Bitspark/bittype/pull/247) |
 | Three further horos names were spelled by a writer and by a separate reader. The change that moved the five keys found them on 12 November 2026: the descriptor operator `horos/descriptor/<constructor>`, the term encoding `ontos/codec-v1`, and the two profile names, which `internal/horosfiles` repeated as string literals | `semantics/horos/go` publishes `DescriptorOperator(constructor)` with its inverse `DescriptorConstructor(operator)`, and `TermEncoding()`. `internal/horosfiles` compares with the constants `ResolutionProfile` and `AnalysisProfile`, which were published before. No production package outside the vocabulary spells any of the three | [#248](https://github.com/Bitspark/bittype/pull/248) |
-| The ontos tag prefixes of canonical horos values, `horos/decl/` and `horos/`, were spelled in three production packages. `resolve/files/horos/provider/go` and `verification/files/source/horos/go` each configure the same `Frontend` with them and must agree, and `internal/horosmodel` spelled them again in `SourceModules`. The tuple tagged `horos/decl/arrow` was built by hand in `verification/files/source/horos/go` and again in `verification/files/horos-to-go/go`. The change that wrote this record found both on 12 November 2026 | `semantics/horos/go` publishes the constants `DeclarationTagPrefix` and `DescriptorTagPrefix`, and the three packages use them. `verification/files/source/horos/go` exports `ArrowValue(kind)`, and the pair calls it. The pair imports no ontos package directly, and its two external allowances for `ontos/core/go` and `ontos/data/go` are removed from `modelExternalImports`. The horos resolver now imports its vocabulary, which its role permits | [#250](https://github.com/Bitspark/bittype/pull/250) |
+| The ontos tag prefixes of canonical horos values, `horos/decl/` and `horos/`, were spelled in three production packages. `resolve/files/horos/provider/go` and `verification/files/source/horos/go` each configure the same `Frontend` with them and must agree, and `internal/horosmodel` spelled them again in `SourceModules`. The tuple tagged `horos/decl/arrow` was built by hand in `verification/files/source/horos/go` and again in `verification/files/horos-to-go/go`. The change that wrote this record found both on 12 November 2026 | `semantics/horos/go` publishes the constants `DeclarationTagPrefix` and `DescriptorTagPrefix`, and the three packages use them. `verification/files/source/horos/go` exports `ArrowValue(kind)`, and the pair calls it. The pair imports no ontos package directly, and its two external allowances for `ontos/core/go` and `ontos/data/go` are removed from `modelExternalImports`. The horos resolver now imports its vocabulary, which its role permits. Since 13 November 2026 the two constants are in `syntax/horos/go`: see the next row | [#250](https://github.com/Bitspark/bittype/pull/250) |
+| Names of canonical horos data were spelled by more than one production package, or were declared where two of their parties could not import them. The parser wrote the field tag `horos/field` and the record words `open`, `closed`, `req` and `opt`, and the formatter compared with all five. The source reader read `opt` and built the record tag from the prefix and `record`. The verification model read `closed` and `opt`, and the four record mappings named `closed` as the discriminator of their pattern. The label `arrow` was written by `internal/horosmodel` and by `ArrowValue`. The two prefixes were in `semantics/horos/go`, which the role of a Syntax stage does not permit. [#256](https://github.com/Bitspark/bittype/issues/256) confirmed these as its items 6, 21 and 22 on 12 and 13 November 2026 | `syntax/horos/go` declares them in `tags.go`: `DeclarationTagPrefix`, `DescriptorTagPrefix`, the labels `ArrowLabel` and `RecordLabel`, `FieldTag`, and the words `RecordOpen`, `RecordClosed`, `FieldRequired` and `FieldOptional`. The parser, the formatter, `internal/horosmodel`, the horos resolver, the source reader, the verification model and the four record mappings take them from there. Each already imported that package. `semantics/horos/go` keeps neither prefix and no alias, and the horos resolver no longer imports it. No role, import or allowance is added, and every value is unchanged. The declaration is a stand-in for an export of the horos library ([Bitspark/horos#53](https://github.com/Bitspark/horos/issues/53)). **Partial, and pending for three names.** Two spellings by literal remain. The constructor name `record` is the same name as `RecordLabel`: the parser writes it into the tree, and the formatter, the admission grammar, the source reader, the declaration recipe, the verification model and the four record mappings compare with it. The selector values `open` and `closed` in `internal/declsyntax` are the same names as `RecordOpen` and `RecordClosed`. Item 11 of #256, which covers the constructor names as a whole, closes this | [#285](https://github.com/Bitspark/bittype/pull/285) |
 | `syntax/horos/go` and `internal/declsyntax` each declared the 33 node kinds, the 9 attribute names and the 18 role names of the horos syntax, with equal names and values. Neither imported the other. The parser and the formatter used one declaration, and the checker and the private model the other. Issue #251 confirmed it on 12 November 2026 | One declaration, in `syntax/horos/go`. `internal/horosmodel` takes the names from there and no longer imports `internal/declsyntax`. `internal/declsyntax` defines its 60 constants from the vocabulary's by constant conversion, so no name is spelled there. Two entries of `oneOfAKindRules` follow: `internal/declsyntax` gains `syntax/horos/go`, and `internal/horosmodel` gains `syntax/horos/go` and loses `internal/declsyntax` | [#254](https://github.com/Bitspark/bittype/pull/254) |
 | `format/files/typescript/provider/go` read seven TypeScript graph names by spelling, and the model readers of `semantics/typescript/go` spelled nine more, two of them twice. The compiler helper `internal/typescriptsem/compiler.cjs` writes all sixteen. The scan on #251 found the outside reader on 12 November 2026 | `semantics/typescript/go` publishes the sixteen names as functions: seven entity kinds, six fact relations, one term operator and two binding roles. The Files formatter and the model readers call them. The helper is JavaScript, cannot import a Go package and is not edited. Tests that run the real helper keep the two sides equal, and `TestTypeScriptHelperNamesMatchVocabulary` is new | [#255](https://github.com/Bitspark/bittype/pull/255) |
 | The allow-list of a role was not checked for use | Every allowance is checked for use. An entry and an extension are checked per package. A role is checked per shape: each import it permits must be imported by at least one package of that role. External model allowances are checked too | [#244](https://github.com/Bitspark/bittype/pull/244) |
@@ -434,11 +437,27 @@ that are not committed.
 - **The tag prefixes have their owner outside bittype.** The horos library
   reads the canonical values, so it owns `horos/decl/` and `horos/`. horos
   0.10.2, the version that bittype pins, spells them in
-  `declarations/grammar.go` and exports neither. `semantics/horos/go` is
-  therefore bittype's one spelling and not the owner's. It can go when horos
-  exports the two prefixes. The tag names after the prefix, such as `node`,
-  `nu` and `module`, have one writer in bittype, `internal/horosmodel`, and
-  the horos library reads them.
+  `declarations/grammar.go` and exports neither. bittype's one spelling is
+  therefore a stand-in and not the owner's. `semantics/horos/go` held it from
+  #250, and `syntax/horos/go` holds it since pull request
+  [#285](https://github.com/Bitspark/bittype/pull/285) of 13 November 2026,
+  because the parser and the formatter agree on names of the same kind and
+  may not import the semantic vocabulary. It can go when horos exports the
+  names ([Bitspark/horos#53](https://github.com/Bitspark/horos/issues/53)).
+  This limit first said that the tag names after the prefix have one writer in
+  bittype. That was wrong for the field tag `horos/field`, which the parser
+  wrote and the formatter read, and for the label `arrow`, which two packages
+  wrote. Both are declared in `syntax/horos/go` now, with the label `record`
+  and the four words of a record payload. The other 28 labels after the
+  declaration prefix, such as `node`, `nu` and `module`, have one writer in
+  bittype, `internal/horosmodel`, and the horos library reads them. The
+  correction of #285 is partial. The four record mappings read `RecordClosed`.
+  The constructor name `record`, which the parser writes and which is the same
+  name as `RecordLabel`, and the selector values `open` and `closed` in
+  `internal/declsyntax`, which are the same names as `RecordOpen` and
+  `RecordClosed`, are still spelled by literal. They stay pending under item
+  11 of [#256](https://github.com/Bitspark/bittype/issues/256), which covers
+  the constructor names as a whole.
 - **Converted packages may import what their role gives.** Since #246 three
   Go packages may import more than their hand entry listed.
   `internal/golangsem` gains `contracts/parse/go` and `files/go`. The Go
@@ -543,7 +562,9 @@ that are not committed.
 - The helper key that Go's Record receives is an interim form. Record still
   decides how an optional field is represented in Go, Rust and C++. That is
   [#196](https://github.com/Bitspark/bittype/issues/196), item 6, and is not
-  part of this case.
+  part of this case. Noted on 13 November 2026: research 0017 (row 11) makes
+  that move conditional on an answer of the service library, and it follows
+  the gate of [the contribution contract](../contribution-contract.md#optional-fields).
 - A green run still shows only that the listed edges are absent
   ([AC-07](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-07)).
 
@@ -565,7 +586,13 @@ The last six left this list on 12 November 2026:
    #250. The change that wrote this record found them while it checked what
    remains, and listed them first as not examined. They were then confirmed:
    two packages configure the same frontend and must agree, and a third
-   spelled the prefixes again.
+   spelled the prefixes again. Pull request #285 moved them from
+   `semantics/horos/go` to `syntax/horos/go` on 13 November 2026, with the
+   other names of canonical horos data that
+   [#256](https://github.com/Bitspark/bittype/issues/256) confirmed. That
+   correction is partial: the constructor name `record` and the selector
+   values of a record's mode are still spelled by literal and stay pending
+   under item 11 of #256.
 5. **The horos syntax node kinds, attributes and roles**, corrected with pull
    request #254. Issue #251 confirmed them after the status "Corrected, with
    limits" was written. Two packages declared the same 60 names, and the

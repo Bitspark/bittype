@@ -159,7 +159,10 @@ registered library supplies makes planning fail with `ErrUnsupported`.
 [`TestGolangRecordRequiresItsOptionalHelper`](../integration/go/horos_generation_golang_optional_test.go)
 covers both. This form is interim:
 [#196](https://github.com/Bitspark/bittype/issues/196), item 6, changes how a
-record asks for the optional representation.
+record asks for the optional representation. Whether a record asks at all is
+conditional since 13 November 2026: see
+[optional fields](contribution-contract.md#optional-fields) in the
+contribution contract.
 
 Canonical integers remain Unsupported. The existence of native integer syntax
 does not choose an arbitrary-width representation or dependency. Open records,
