@@ -73,7 +73,12 @@ func TestEnvironmentRefusals(t *testing.T) {
 		"no crate name":                         {func(e *n.Environment) { e.Crate.Name = "" }, semantic.ErrInvalidRequest},
 		"a hyphen in the crate name":            {func(e *n.Environment) { e.Crate.Name = "my-pages" }, semantic.ErrInvalidRequest},
 		"an option as crate name":               {func(e *n.Environment) { e.Crate.Name = "--cfg" }, semantic.ErrInvalidRequest},
-		"the zero environment":                  {func(e *n.Environment) { *e = n.Environment{} }, semantic.ErrInvalidRequest},
+		// Validity is judged before coverage, over every field.
+		"edition 2021 and no target":           {func(e *n.Environment) { e.Edition, e.Target = "2021", "" }, semantic.ErrInvalidRequest},
+		"a binary crate and no crate name":     {func(e *n.Environment) { e.Crate = n.Crate{Kind: "bin"} }, semantic.ErrInvalidRequest},
+		"another target and a hyphenated name": {func(e *n.Environment) { e.Target, e.Crate.Name = "wasm32-unknown-unknown", "my-pages" }, semantic.ErrInvalidRequest},
+		"one dependency and no edition":        {func(e *n.Environment) { e.Edition, e.Dependencies = "", []n.Dependency{{Name: "serde"}} }, semantic.ErrInvalidRequest},
+		"the zero environment":                 {func(e *n.Environment) { *e = n.Environment{} }, semantic.ErrInvalidRequest},
 	} {
 		environment := supported()
 		c.change(&environment)
@@ -139,11 +144,16 @@ func TestEvidenceRequiresAnEnvironment(t *testing.T) {
 		"a second value":           {environment(whole + whole), semantic.ErrInvalidRequest},
 		"no dependency member":     {environment(`{"Edition":"2024","Target":"x86_64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"lib"}}`), semantic.ErrInvalidRequest},
 		"null":                     {environment(`null`), semantic.ErrInvalidRequest},
-		"edition 2021":             {environment(`{"Edition":"2021","Target":"x86_64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[]}`), n.ErrUnsupported},
-		"another target":           {environment(`{"Edition":"2024","Target":"wasm32-unknown-unknown","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[]}`), n.ErrUnsupported},
-		"one dependency":           {environment(`{"Edition":"2024","Target":"x86_64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[{"Name":"serde"}]}`), n.ErrUnsupported},
+		// The form is judged before any value: these state edition 2021 too.
+		"an unknown member and another edition":  {environment(`{"Edition":"2021","Target":"x86_64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[],"Features":[]}`), semantic.ErrInvalidRequest},
+		"another spelling and another edition":   {environment(`{"Edition":"2021", "Target":"x86_64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[]}`), semantic.ErrInvalidRequest},
+		"one more setting and another edition":   {append(environment(`{"Edition":"2021","Target":"x86_64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[]}`), semantic.Setting{Key: n.Key("extra"), Value: []byte("1")}), semantic.ErrInvalidRequest},
+		"the earlier helper and another edition": {[]semantic.Setting{settings[0], environment(`{"Edition":"2021","Target":"x86_64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[]}`)[1], {Key: n.Key("helper"), Value: []byte("captured-types-1")}}, semantic.ErrInvalidRequest},
+		"edition 2021":                           {environment(`{"Edition":"2021","Target":"x86_64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[]}`), n.ErrUnsupported},
+		"another target":                         {environment(`{"Edition":"2024","Target":"wasm32-unknown-unknown","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[]}`), n.ErrUnsupported},
+		"one dependency":                         {environment(`{"Edition":"2024","Target":"x86_64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[{"Name":"serde"}]}`), n.ErrUnsupported},
 	} {
-		if _, err := n.EnvironmentOf(c.settings); !errors.Is(err, c.want) {
+		if _, err := n.EnvironmentOf(c.settings); !errors.Is(err, c.want) || errors.Is(err, n.ErrUnsupported) && errors.Is(err, semantic.ErrInvalidRequest) {
 			t.Errorf("%s: environment: %v, want %v", name, err, c.want)
 		}
 		if evidence, err := n.EvidenceFor(c.settings); !errors.Is(err, c.want) || evidence.Profile != "" {

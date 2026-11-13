@@ -41,7 +41,7 @@ semantics/golang/go/      Go vocabulary, contract identities and immutable nativ
 internal/golangsem/       private direct Go compiler bridge and fact export
 semantics/typescript/go/  TypeScript vocabulary, graph names, contract identities, compiler configuration and immutable native type readers
 internal/typescriptsem/   private captured-source compiler helper and fact export
-semantics/rust/go/        Rust vocabulary, contract identities and immutable native type readers
+semantics/rust/go/        Rust vocabulary, contract identities, environment and immutable native type readers
 internal/rustsem/         private captured-source compiler bridge
   helper/                private pinned rustc_driver executable (Rust/Cargo)
 engine/go/                explicit registration, planning and execution

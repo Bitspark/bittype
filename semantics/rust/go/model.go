@@ -100,7 +100,8 @@ func (m Model) Declaration(id semantics.EntityID) (Declaration, error) {
 	return Declaration{m.state, id}, nil
 }
 
-// Lookup selects an unambiguous compiler path, for example captured::models::Person.
+// Lookup selects an unambiguous compiler path, for example pages::models::Person
+// for a crate that the environment names pages.
 // IDs remain authoritative; paths can coincide across native namespaces.
 func (m Model) Lookup(path string) (Declaration, error) {
 	if !m.Valid() {
