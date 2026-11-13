@@ -331,6 +331,16 @@ an unsupported refusal into success. It may not turn an invalid refusal into
 success, it may not move a refusal from one category to another, and it may not
 accept and ignore what a formatter refuses as malformed today.
 
+A name use without a destination is invalid input, for every generated-Files
+formatter: a sealed output with such a use is malformed, and no later slice
+admits it. So is an external use that the language's issuer cannot read, and
+one whose node is no name use or does not name the symbol. An external
+destination that the formatter's evidence cannot establish is unsupported
+coverage, because a later slice can admit it: Rust's `bool`, as long as the
+Rust helper publishes no binding for a primitive type. [Destinations](destinations.md#who-enforces-completeness)
+states the rule. The table below has its row for TypeScript, the one formatter
+that exists.
+
 An input can have several defects. The category describes the defect that was
 found. An unsupported refusal says nothing about the rest of the input: the
 same input may hold a defect that no slice admits. The order in which a
@@ -359,16 +369,6 @@ formatter calls it for its own inventory check and for the capture of its fresh
 output. A symbol that the TypeScript issuer cannot read keeps its `generation`
 value. The horos formatter keeps the JSON decoder's error and
 `semantic.ErrInvalidRequest` for its setting.
-
-A name use without a destination is invalid input, for every generated-Files
-formatter: a sealed output with such a use is malformed, and no later slice
-admits it. So is an external use that the language's issuer cannot read, and
-one whose node is no name use or does not name the symbol. An external
-destination that the formatter's evidence cannot establish is unsupported
-coverage, because a later slice can admit it: Rust's `bool`, as long as the
-Rust helper publishes no binding for a primitive type. [Destinations](destinations.md#who-enforces-completeness)
-states the rule. The table below has its row for TypeScript, the one formatter
-that exists.
 
 No part of a placement is accepted and ignored. Both formatters refuse an
 unknown field at every level, a second JSON value and a member that is named
