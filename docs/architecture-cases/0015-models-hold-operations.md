@@ -10,12 +10,11 @@ misplacement until that branch merges. The reason and the two conditions are
 recorded [below](#where-the-correction-of-the-intended-forms-packages-is-made).
 Since 13 November 2026 the platform's rules page names this case as the
 example of [AC-12](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-12).
-At platform `main` `8d1e237` the example reads: the case "records two things
+At platform `main` `bc83d43` the example reads: the case "records two things
 this rule covers: the four native grammar tables are unexported variables
-of their checkers, and Go's compiler bridge writes eleven keys as literals
-that the vocabulary does not publish." Those are the first two of the three
-things that [Rules involved](#rules-involved) lists. The count in the
-second is made exact there.
+of their checkers, and Go's compiler bridge writes keys as literals for
+which the vocabulary publishes no name of that kind." Those are the first
+two of the three things that [Rules involved](#rules-involved) lists.
 
 **Scope.** The packages of `main` that declare what exists in a language or
 in a generic carrier: the carriers, the vocabulary packages, the grammar

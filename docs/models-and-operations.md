@@ -63,7 +63,9 @@ This page does not repeat them.
   requires of the form table and of the sealed symbol types.
   [Section 11](#11-decisions-and-deferrals) lists every decision.
 
-Code is quoted with its file and line on `main` at `0581401`. The existing
+Code is quoted with its file and line on `main` at `0581401`. The package
+table of [section 7](#every-package-of-main) and the counts made from it
+were taken at `2e065cf`, which has two packages more. The existing
 code is given as a fact and never as a reason for a choice
 ([AC-09](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-09)).
 Counts come with the command that gives them. The change that adds this
@@ -1314,7 +1316,10 @@ The command for the production packages, at the repository root:
 git ls-tree -r --name-only origin/main | grep '\.go$' | grep -v '_test\.go$' | grep -Ev '(^|/)testdata/' | xargs -n1 dirname | sort -u
 ```
 
-It gives 129 at `0581401`. "Whole" means that the package is not split:
+It gives 131 at `2e065cf`, where this table and its counts were taken. It
+gave 129 at `0581401`, the commit at which the decisions M7 and M20 counted:
+pull request #313 has added `internal/processoutput` and its test support
+since. "Whole" means that the package is not split:
 every declaration of it goes to one side. A whole package takes the prefix
 of its root and nothing else changes, with three exceptions that their
 rows name: `contracts/language/go` becomes `model/language/go`, and the
@@ -1383,11 +1388,12 @@ checker in slice S2.
 | `transform/syntax/horos-to-{cpp,rust,typescript}/mapping/{boolean,declarations,list,record,text}/go` (15) | `ops/<same path>`, whole | Row R22 |
 | `transform/syntax/horos-to-golang/mapping/{boolean,declarations,list,optional,record,text}/go` (6) | `ops/<same path>`, whole | Row R22 |
 
-**Private helpers (16).**
+**Private helpers (18).**
 
 | Today | After | Source |
 | --- | --- | --- |
 | `internal/{concrete,golangsem,horosfiles,horosmodel,lex,parseutil,rustsem,tree,typescriptimports,typescriptsem}` | `ops/internal/<name>`, whole | Row R21 |
+| `internal/processoutput`, `internal/processoutput/processoutputtest` | `ops/internal/processoutput` and `ops/internal/processoutput/processoutputtest`, whole. The first is the one bounded writer for a child process's streams, a shared private helper. The second is its test support: "the child process and the harness of the tests that bound a process's output" (`LAYOUT.md`, the hierarchy, at `2e065cf`). Both are on `main` since `2e065cf` | Row R21 |
 | `internal/grammar` | **Splits.** The table types `Attribute`, `Role`, `Rule`, `Rules` (`rules.go:15-33`) to `model/syntax/go`, with the names of the shared predicates. The interpreter `Check` (`:80`), the entry constructors and the predicates stay, at `ops/internal/grammar` | Row R7c; M11, M18 |
 | `internal/{cpp,horos,rust,typescript}` | **Splits.** The word lists, the character tables and the literal patterns to `model/syntax/<language>/lexical/go`, with the names of the language's predicates. The evaluators and the literal decoders stay, at `ops/internal/<language>` | Row R7h; M19 |
 | `internal/declsyntax` | **Splits.** The horos grammar table (`check.go:67`) to `model/syntax/horos/go`. `Check` and the rules in code stay, at `ops/internal/declsyntax` | Row R7c; M11 |
@@ -1401,13 +1407,14 @@ checker in slice S2.
 `tools/horos-module/go`,
 `tools/provider-matrix/{go,capability/go,extract/grammar/go,observation/go,report/go}`.
 
-**Packages that hold only tests (3),** outside the 129: `integration/go`,
+**Packages that hold only tests (3),** outside the 131: `integration/go`,
 `verification/integration/go` and
 `tools/provider-matrix/extract/structfixture/go` go to `ops/<same path>`
 (row R21).
 
 **The sum.** By this table **8 packages of `main` are wholly model, 23 split
-and 98 are wholly operations.**
+and 100 are wholly operations,** of 131 at `2e065cf`. At `0581401`, with 129
+packages, they were 8, 23 and 98, the numbers that M20 states.
 
 | Group | Wholly model | Split | Wholly operations |
 | --- | --- | --- | --- |
@@ -1417,17 +1424,17 @@ and 98 are wholly operations.**
 | Kernel (7) | 0 | 0 | 7 |
 | Stage providers and query services (28) | 0 | 4 | 24 |
 | Generation by language and by pair (30) | 0 | 1 | 29 |
-| Private helpers (16) | 0 | 6 | 10 |
+| Private helpers (18) | 0 | 6 | 12 |
 | Verification (7) | 0 | 0 | 7 |
 | Tools (6) | 0 | 0 | 6 |
-| **129** | **8** | **23** | **98** |
+| **131** | **8** | **23** | **100** |
 
 M11 and M19 change the home of the grammar tables and the word lists and
 the side of no package. M7 first gave 11, 27 and 91, from the placement
 table of verification report 2. The
 [decisions of 13 November 2026](https://github.com/Bitspark/bittype/issues/305#issuecomment-6856947056)
 corrected that to 8, 25 and 96, and [M20](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249)
-to the numbers above. The differences from the first count, each read again
+to 8, 23 and 98, all of 129 packages. The differences from the first count, each read again
 at the source:
 
 - `files/go` and `semantics/go` were counted as wholly model. Row R7d
@@ -1447,7 +1454,7 @@ at the source:
   and by the first versions of this page. Their symbol types are sealed, so
   both are wholly operations (M20).
 
-M7's statement stands with these numbers: every one of the 129 gets a new
+M7's statement stands with these numbers: every one of the 131 gets a new
 import path, and no move is a prefix for all of them (row R31).
 
 **The packages below `model` after the slices,** for the packages of `main`.
@@ -1473,12 +1480,12 @@ new packages that the splits create. The migration's branch adds
 vocabularies, and the pairs' branch a form table for horos.
 
 **The packages below `ops` after the slices,** for the packages of `main`:
-124, on one condition. If the open point finds that nothing remains for
-`ops/symbols/typescript/go`, they are 123. Derived here from the table
-above. The 98 whole packages are there,
+126, on one condition. If the open point finds that nothing remains for
+`ops/symbols/typescript/go`, they are 125. Derived here from the table
+above. The 100 whole packages are there,
 each of the 23 split packages leaves one operations half, and the typed
 readers of Go, Rust and TypeScript are three new packages (M30). The three
-packages that hold only tests come on top. Of the 124, six stand at the
+packages that hold only tests come on top. Of the 126, six stand at the
 path of a sort and a language by M30: three reader packages and three
 symbol packages.
 
@@ -1492,17 +1499,18 @@ cut. The roles stay, and they do not all stay whole (M8, row R27).
 | --- | --- | --- |
 | Foundation | The agnostic model packages, `model/<sort>/go`, among them `model/syntax/go`, and the two tree carriers. A closed table with one entry for each. A member imports only members of this table | The contract packages `ops/contracts/*/go` and the operations halves of the carriers: `ops/trees/representation/go`, `ops/files/go`, `ops/source/go`, `ops/semantics/go`. A closed table with one entry for each. A member imports members of both foundation tables and the kernel set, as today |
 | Kernel | None | Whole (row R7f) |
-| Shared private helper | None | `ops/internal/{concrete,grammar,lex,parseutil,tree}` |
+| Shared private helper | None | `ops/internal/{concrete,grammar,lex,parseutil,processoutput,tree}` |
 | Vocabulary | `model/<sort>/<scope>/go` and `model/<sort>/<scope>/<name>/go`: the names of one language or one pair, and declared tables over them (M16). It imports the model-side foundations and the model packages of its own scope. It imports nothing under `ops` | `ops/semantics/<language>/go`: the identities of a language that are values of a contract package's type. It imports foundations and its own language's vocabulary, as today |
 | Public part (new, M15) | None | A language's typed readers, typed constructors and symbol admission, at the paths of M14 and M30 |
 | Contribution of every kind, and common mapping part | None | Whole |
 | Private part | None | `ops/internal/<language>`, `ops/internal/<language>sem`. A lexical helper imports its own language's lexical part, `model/syntax/<language>/lexical/go`, for the word lists it evaluates, and no other vocabulary (M19) |
 | Composition | None | `ops/integration/go`, `ops/verification/integration/go`, `ops/tools/**` |
 
-**The foundation table is divided (row R27).** `foundationRules` holds 31
-entries today: six carriers, thirteen contracts, seven kernel packages and
-five helpers of no single language
-(`integration/go/architecture_test.go:162-203`). Two entries name a contract
+**The foundation table is divided (row R27).** `foundationRules` held 31
+entries at `0581401`: six carriers, thirteen contracts, seven kernel packages
+and five helpers of no single language
+(`integration/go/architecture_test.go:162-203`). At `2e065cf` it holds 32,
+with `internal/processoutput` as the sixth helper. Two entries name a contract
 package from a carrier: `trees/representation/go` lists
 `contracts/language/go` (`:166`), and `source/go` lists
 `contracts/semantic/go` (`:168`). After slice S8 has moved language identity, the
@@ -1665,8 +1673,9 @@ Slice S8 changes what they read:
 
 - `packageRole` reads the root as the first segment and the roles of
   [section 8](#8-roles-per-root) below it.
-- `foundationRules` (31 entries) becomes two closed tables, one for each
-  root. `oneOfAKindRules` (12), `languageOwners` (5), `roleExtensions` (12)
+- `foundationRules` (32 entries at `2e065cf`) becomes two closed tables, one
+  for each root. `oneOfAKindRules` (13), `languageOwners` (5),
+  `roleExtensions` (14)
   and the exception table (14) keep their meaning, with the new paths.
 - `TestLanguageStageMatrix` lists `syntax` as the first of its native stages
   (`integration/go/architecture_test.go:15`). That column is under `model`
@@ -1736,22 +1745,22 @@ S8 -> S9
 ```
 
 **What the migration's branch changes.** The branch
-`origin/feat/contribution-contract-196` at `356c220` changes production
-files of 37 of the 129 packages of `main` and leaves 92 alone:
+`origin/feat/contribution-contract-196` at `9eb46ea` changes production
+files of 37 of the 131 packages of `main` and leaves 94 alone:
 
 ```sh
 git diff --name-only origin/main...origin/feat/contribution-contract-196 | grep '\.go$' | grep -v '_test\.go$' | grep -Ev '(^|/)testdata/' | xargs -n1 dirname | sort -u
 ```
 
 intersected with the package list of [section 7](#every-package-of-main).
-Slices S3 to S6 split packages among the 92. They do change files of the
+Slices S3 to S6 split packages among the 94. They do change files of the
 branch, because an importer of a name that moves changes with it, and no
 alias stands in for an old path (M24). For each package whose exported
 names move, the files of `main` that import it and how many of them the
 branch changes
 (`git grep -l '"github.com/Bitspark/bittype/<package>"' origin/main -- '*.go'`,
 intersected with `git diff --name-only origin/main...origin/feat/contribution-contract-196`,
-at the branch's head `356c220`):
+at the branch's head `9eb46ea`):
 
 | Package | Slice | Importing files | Of them changed by the branch |
 | --- | --- | --- | --- |
@@ -1916,7 +1925,7 @@ an old path. Three lines of it are no prefix: `contracts/language/go` to
 takes a part out of those two packages, the second part of S5 does that
 first. It rewrites the import strings of the module
 (`git grep -o '"github.com/Bitspark/bittype/[^"]*"' origin/main -- '*.go' | wc -l`
-gives 2,137 in 367 files), the paths in the workflow files, the role
+gives 2,144 in 370 files at `2e065cf`), the paths in the workflow files, the role
 function and its tables, and the path prefixes that the documentation tool
 reads. No identity of a model or of a contribution is a package path
 ([section 6](#6-declared-models)), so the move changes none. The numbers
@@ -2003,7 +2012,7 @@ added to this page by the change that re-cuts them, pull request #318.
 | M4 | The intended-forms packages: a declared table, one checker, one constructor | R7i, R14, R15, R24, R26 | [5](#5-intent) |
 | M5 | Declared models with the mechanisms that exist, in the order of AC-10, identified by a profile | R16 to R20 | [6](#6-declared-models) |
 | M6 | The layout: two roots, sort first below `model`, the stage matrix below `ops`, one module. "The stage matrix as it is" is read with M30 | R21, R22 | [7](#7-the-layout) |
-| M7 | No prefix move: each split creates its new half at its final path. Of 129 packages 8 are wholly model, 23 split and 98 are wholly operations. The grade first gave 11, 27 and 91; the comment that holds M10 to M18 corrects that count, and M20 corrects it again | R28, R31 | [7](#every-package-of-main), [10](#10-the-order-of-work) |
+| M7 | No prefix move: each split creates its new half at its final path. Of 129 packages 8 are wholly model, 23 split and 98 are wholly operations. At `2e065cf` `main` has 131, and the two more are wholly operations. The grade first gave 11, 27 and 91; the comment that holds M10 to M18 corrects that count, and M20 corrects it again | R28, R31 | [7](#every-package-of-main), [10](#10-the-order-of-work) |
 | M8 | The order, with the work in flight. M23 and M24 correct two of its sentences, and M22 and M25 its waits | R27, R29 | [8](#8-roles-per-root), [10](#10-the-order-of-work) |
 | M9 | Enforcement: one prefix rule by imports, rule 2 in review | R30 | [9](#9-enforcement) |
 | M10 | The shape of a path below `model`: `model/<sort>/go`, `model/<sort>/<scope>/go`, `model/<sort>/<scope>/<name>/go` | R21 | [7](#names-below-the-roots) |

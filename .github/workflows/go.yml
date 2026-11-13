@@ -141,6 +141,12 @@ jobs:
           python3 tools/provider-matrix/capture.py run --root "$GITHUB_WORKSPACE"
           --output "$RUNNER_TEMP/capability-observations/joint-race" --command-id joint-race
           -- go test -race -count=1 -json -run '^TestJointConcurrentChecks$' ./verification/integration/go
+      - name: Check bounded process output concurrency
+        if: success() || (failure() && steps.formatting.outcome == 'failure')
+        run: >-
+          python3 tools/provider-matrix/capture.py run --root "$GITHUB_WORKSPACE"
+          --output "$RUNNER_TEMP/capability-observations/process-race" --command-id process-race
+          -- go test -race -count=1 -json ./internal/processoutput ./tools/provider-matrix/report/go
       - name: Check an independently installed public consumer
         env:
           GOPROXY: https://proxy.golang.org
@@ -208,11 +214,11 @@ jobs:
         shell: bash
         run: |
           status=0
-          for command in contracts syntax-race joint-race installed-consumer native-fuzz horos-fuzz; do
+          for command in contracts syntax-race joint-race process-race installed-consumer native-fuzz horos-fuzz; do
             directory="$RUNNER_TEMP/capability-observations/$command"
             if [ ! -f "$directory/invocation.json" ]; then continue; fi
             flags=()
-            case "$command" in syntax-race|joint-race) flags=(--build-flag=-race);; esac
+            case "$command" in syntax-race|joint-race|process-race) flags=(--build-flag=-race);; esac
             # This context is captured afresh from the reporting checkout. In
             # particular it never adopts the installed consumer's harness.
             python3 tools/provider-matrix/capture.py context --root "$GITHUB_WORKSPACE" \
@@ -247,7 +253,7 @@ jobs:
       - name: Record passing revision
         shell: bash
         run: |
-          echo "PASS $EXPECTED_REVISION: Go 1.27.3 formatting, contract/dependency tests, vet, engine/joint verification race checks and native/Horos text fuzzing." >> "$GITHUB_STEP_SUMMARY"
+          echo "PASS $EXPECTED_REVISION: Go 1.27.3 formatting, contract/dependency tests, vet, engine/joint verification and bounded process output race checks and native/Horos text fuzzing." >> "$GITHUB_STEP_SUMMARY"
 
   native:
     runs-on: ubuntu-latest
