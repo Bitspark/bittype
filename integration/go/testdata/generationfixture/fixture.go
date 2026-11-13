@@ -261,6 +261,16 @@ const (
 	LargeHelperValue
 	// ManyEmptyValues states LargeValueBytes naming intents without content.
 	ManyEmptyValues
+	// SameName gives the declarations Person and Page one native name, Same.
+	SameName
+	// ParameterNamedSame also names the second parameter of Page Same, like the
+	// two declarations.
+	ParameterNamedSame
+	// SameParameters gives the two parameters of Page one name.
+	SameParameters
+	// TwoHelpersOfOneName gives Person a helper of its own. It is named Cursor,
+	// like the helper of Page, and its body is another primitive.
+	TwoHelpersOfOneName
 )
 
 // LargeValueBytes is the size of the value the two Large modes state.
@@ -310,6 +320,11 @@ type library struct {
 
 func (l library) Describe(from, to representation.Language) (g.MappingDescription[SourceLanguage, s.Language, Reader], error) {
 	cursor := g.NewHelperKey("independent/cursor")
+	marker := g.NewHelperKey("independent/marker")
+	personBody := model.Record(model.Field("Name", false, model.Primitive("string")))
+	if l.mode == TwoHelpersOfOneName {
+		personBody = model.Record(model.Field("Name", false, model.Primitive("string")), model.Field("Marker", false, g.Helper[s.Language](marker)))
+	}
 	person, _ := g.NewSelector(from, "expression/person-body")
 	page, _ := g.NewSelector(from, "expression/page-body")
 	cell, _ := g.NewSelector(from, "declaration/Cell")
@@ -330,7 +345,7 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 	return g.MappingDescription[SourceLanguage, s.Language, Reader]{
 		Profile: "independent/1",
 		Bindings: []g.BindingDescription[SourceLanguage, s.Language, Reader]{
-			{ID: "person", Input: g.Pattern[SourceLanguage, Reader]{Selector: person}, Output: model.Record(model.Field("Name", false, model.Primitive("string")))},
+			{ID: "person", Input: g.Pattern[SourceLanguage, Reader]{Selector: person}, Output: personBody},
 			{ID: "page", Input: g.Pattern[SourceLanguage, Reader]{Selector: page}, Expand: func(ctx context.Context, q g.Expansion[SourceLanguage, s.Language, Reader]) (g.Expression[s.Language], error) {
 				view, err := q.Use()
 				if err != nil {
@@ -396,6 +411,9 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 					return g.DeclarationDescription[s.Language]{}, err
 				}
 				d := g.DeclarationDescription[s.Language]{Name: name, Form: form, Values: []g.IssuedValue{value}}
+				if (l.mode == SameName || l.mode == ParameterNamedSame) && (name == "Person" || name == "Page") {
+					d.Name = "Same"
+				}
 				if l.mode == ManyEmptyValues {
 					empty, err := namingIntent.Issue("")
 					if err != nil {
@@ -409,7 +427,14 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 					d.Generic.Arguments = append(d.Generic.Arguments, g.Argument[s.Language](i))
 				}
 				if name == "Page" {
-					d.Generic.Parameters = append(d.Generic.Parameters, g.ParameterDescription{Name: "Storage"})
+					storage := "Storage"
+					switch l.mode {
+					case ParameterNamedSame:
+						storage = "Same"
+					case SameParameters:
+						storage = "T0"
+					}
+					d.Generic.Parameters = append(d.Generic.Parameters, g.ParameterDescription{Name: storage})
 					d.Generic.Arguments = append(d.Generic.Arguments, model.Collection(g.Argument[s.Language](0)))
 				}
 				body := view.Body
@@ -424,7 +449,10 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 			// Shadow's recipe never represents its body; the kernel still admits it.
 			{ID: "erase-shadow", Selector: shadow, Expand: erase("Shadow")},
 		},
-		Helpers: []g.HelperRecipe[s.Language]{{Key: cursor, Declaration: g.NativeDeclaration[s.Language]{Name: "Cursor", Form: model.Form("alias"), Body: model.Primitive("string"), Values: []g.IssuedValue{access}}}},
+		Helpers: []g.HelperRecipe[s.Language]{
+			{Key: cursor, Declaration: g.NativeDeclaration[s.Language]{Name: "Cursor", Form: model.Form("alias"), Body: model.Primitive("string"), Values: []g.IssuedValue{access}}},
+			{Key: marker, Declaration: g.NativeDeclaration[s.Language]{Name: "Cursor", Form: model.Form("alias"), Body: model.Primitive("bool"), Values: []g.IssuedValue{access}}},
+		},
 	}, nil
 }
 
@@ -579,6 +607,16 @@ func (f *Fixture) PlanDropping(ctx context.Context, names ...string) (g.Generati
 		return g.GenerationPlan{}, err
 	}
 	return f.planWith(ctx, Standard, SourceVariant{}, g.DefaultLimits(), f.Input(), roots, droppingTarget{target.Provider{Package: "generated"}})
+}
+
+// PlanTargetIn generates the named declarations under a mode, with the given
+// target in place of the fixture's Go target.
+func (f *Fixture) PlanTargetIn(ctx context.Context, mode Mode, built g.Target[s.Language], names ...string) (g.GenerationPlan, error) {
+	roots, err := f.roots(names)
+	if err != nil {
+		return g.GenerationPlan{}, err
+	}
+	return f.planWith(ctx, mode, SourceVariant{}, g.DefaultLimits(), f.Input(), roots, built)
 }
 
 // PlanTarget generates the named declarations with the given target in place

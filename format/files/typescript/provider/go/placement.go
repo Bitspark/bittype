@@ -213,7 +213,15 @@ func (p *program) readSemantics(ctx context.Context, graph semantics.Semantics[s
 			dest.external = imports.Export{Module: owner.Name, Name: entity.Name}
 		case entity.Kind == n.BuiltinKind():
 			dest.builtin = entity.Name
+		case len(entity.Declarations) > 1:
+			// The compiler keeps a member and a type parameter of one name of an
+			// interface in one symbol, so a use of the parameter has both as its
+			// declarations. The file is valid TypeScript that this profile does
+			// not tell apart, and a later slice can: unsupported coverage.
+			return fmt.Errorf("%w: the compiler declares %s at %d captured sites", source.ErrUnsupported, entity.Name, len(entity.Declarations))
 		default:
+			// A target without a captured declaration that is no package type
+			// and no builtin: the graph does not say what the name refers to.
 			return fmt.Errorf("%w: ambiguous native binding %s", source.ErrInvalid, entity.Name)
 		}
 		if _, dup := p.bindings[b.At.Site]; dup {
