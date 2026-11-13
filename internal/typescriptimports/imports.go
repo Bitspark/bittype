@@ -1,5 +1,8 @@
-// Package typescriptimports owns the named type-import vocabulary shared by
-// TypeScript AST generation and Files formatting.
+// Package typescriptimports owns what the TypeScript Files formatter needs to
+// write named type imports: the paths that its profile admits as source files
+// and those that it excludes, the relative specifier between two of them, and
+// the construction of the import nodes. The TypeScript Files provider is its
+// one importer.
 package typescriptimports
 
 import (

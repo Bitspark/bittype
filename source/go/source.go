@@ -85,6 +85,25 @@ var ErrLimit = errors.New("Source resource limit")
 // the implementation covers is unsupported.
 var ErrUnsupported = errors.New("Files input outside supported coverage")
 
+// WithCategory joins to a refusal the Files category of the value that it
+// carries, so that errors.Is holds for both. A files.ErrLimit and a
+// semantic.ErrLimit are an exceeded limit, and a files.ErrInvalid is invalid
+// input. Every other error is returned as it is, and so is a refusal that has
+// a category. The publisher and every Files formatter call it where a
+// collaborator answers for the inventory of the files or for the capture of
+// the fresh output, so the pairing is written once.
+func WithCategory(err error) error {
+	switch {
+	case err == nil, errors.Is(err, ErrInvalid), errors.Is(err, ErrUnsupported), errors.Is(err, ErrLimit), errors.Is(err, semantic.ErrEvidenceUnavailable):
+		return err
+	case errors.Is(err, files.ErrLimit), errors.Is(err, semantic.ErrLimit):
+		return fmt.Errorf("%w: %w", ErrLimit, err)
+	case errors.Is(err, files.ErrInvalid):
+		return fmt.Errorf("%w: %w", ErrInvalid, err)
+	}
+	return err
+}
+
 // Limits bound concrete storage and metadata in addition to semantic capture limits.
 type Limits struct {
 	Files                                           files.Limits
@@ -261,11 +280,7 @@ func (p Publisher[L]) Publish(input Publication[L]) (Source[L], error) {
 	}
 	limits := q.policy.Limits
 	if _, err := contextFiles.Files.Capture(limits.Files); err != nil {
-		// The inventory's own value stays joined to the Files category.
-		if errors.Is(err, files.ErrLimit) {
-			return Source[L]{}, fmt.Errorf("%w: %w", ErrLimit, err)
-		}
-		return Source[L]{}, fmt.Errorf("%w: %w", ErrInvalid, err)
+		return Source[L]{}, WithCategory(err)
 	}
 	if len(input.Units) > limits.Files.MaxFiles || len(input.Groups) > limits.MaxLinks || len(input.Relations) > limits.MaxLinks {
 		return Source[L]{}, ErrLimit

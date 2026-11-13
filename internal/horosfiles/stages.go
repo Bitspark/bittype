@@ -136,7 +136,7 @@ func (p Stages) Establish(ctx context.Context, units []source.Unit[s.Language], 
 		// A limit that the units of a Files stage exceed is a Files limit. The
 		// semantic value returned before stays joined to it.
 		if len(unit.Syntax.Abstract.Nodes) > nodes {
-			return source.Publication[s.Language]{}, fmt.Errorf("%w: %w", source.ErrLimit, semantic.ErrLimit)
+			return source.Publication[s.Language]{}, source.WithCategory(semantic.ErrLimit)
 		}
 		nodes -= len(unit.Syntax.Abstract.Nodes)
 		text, err := p.Printer.Print(ctx, unit.Syntax)
@@ -144,7 +144,7 @@ func (p Stages) Establish(ctx context.Context, units []source.Unit[s.Language], 
 			return source.Publication[s.Language]{}, err
 		}
 		if len(text) > bytes {
-			return source.Publication[s.Language]{}, fmt.Errorf("%w: %w", source.ErrLimit, semantic.ErrLimit)
+			return source.Publication[s.Language]{}, source.WithCategory(semantic.ErrLimit)
 		}
 		bytes -= len(text)
 		envelope, err := representation.Pack(p.Language, unit.Syntax)
@@ -160,8 +160,8 @@ func (p Stages) Establish(ctx context.Context, units []source.Unit[s.Language], 
 	}
 	snapshot, err := semantic.Capture(ctx, p.Checker, input)
 	if err != nil {
-		// The capture refuses the inventory of the files with a files value.
-		return source.Publication[s.Language]{}, filesCategory(err)
+		// The capture answers with a files value or a semantic limit.
+		return source.Publication[s.Language]{}, source.WithCategory(err)
 	}
 	ro := p.ResolutionOptions
 	ro.Limits = limits

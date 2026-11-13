@@ -3,7 +3,6 @@ package horosfiles
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
@@ -113,7 +112,7 @@ func Materialize(snapshot semantic.Snapshot, settings []semantic.Setting, limits
 		inventory.Entries = append(inventory.Entries, files.File{ID: placement.ID, Path: placement.Path})
 	}
 	if _, err := inventory.Capture(limits.Files); err != nil {
-		return fail(filesCategory(err))
+		return fail(source.WithCategory(err))
 	}
 	seen := map[string]bool{}
 	var output []ast.AST[s.Language]
@@ -179,18 +178,6 @@ func Materialize(snapshot semantic.Snapshot, settings []semantic.Setting, limits
 		return fail(source.ErrInvalid)
 	}
 	return placements, output, entry, nil
-}
-
-// filesCategory joins the Files category to a value of the files package, so
-// that errors.Is holds for both. It returns any other error as it is.
-func filesCategory(err error) error {
-	switch {
-	case errors.Is(err, files.ErrLimit):
-		return fmt.Errorf("%w: %w", source.ErrLimit, err)
-	case errors.Is(err, files.ErrInvalid):
-		return fmt.Errorf("%w: %w", source.ErrInvalid, err)
-	}
-	return err
 }
 
 // repeatedMember reports a JSON object that names one member twice. The decoder

@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -190,18 +189,23 @@ func (p *program) organization(settings []semantic.Setting, limits source.Limits
 	inventory := files.Files{}
 	assigned := map[ast.NodeRef]bool{}
 	entry := false
+	// Validity is decided before coverage. A path that TypeScript reads and this
+	// profile excludes is well formed, and so is a file without a declaration:
+	// both are outside this profile. The first of them is kept until every file,
+	// the completeness of the placement and the inventory are found valid, so a
+	// placement that no profile admits is never reported as outside coverage.
+	var uncovered error
 	for _, u := range o.Units {
-		// A path that is no TypeScript path is invalid input. A path that
-		// TypeScript reads and this profile excludes is well formed, and so is a
-		// file without a declaration: both are outside this profile.
-		if !imports.SourcePath(u.Path) {
-			if imports.ExcludedPath(u.Path) {
-				return Organization{}, fmt.Errorf("%w: path %q", source.ErrUnsupported, u.Path)
-			}
+		switch {
+		case imports.SourcePath(u.Path):
+		case !imports.ExcludedPath(u.Path):
+			// A path that is no TypeScript path is invalid input.
 			return Organization{}, source.ErrInvalid
+		case uncovered == nil:
+			uncovered = fmt.Errorf("%w: path %q", source.ErrUnsupported, u.Path)
 		}
-		if len(u.Declarations) == 0 {
-			return Organization{}, fmt.Errorf("%w: file %q has no declaration", source.ErrUnsupported, u.File)
+		if len(u.Declarations) == 0 && uncovered == nil {
+			uncovered = fmt.Errorf("%w: file %q has no declaration", source.ErrUnsupported, u.File)
 		}
 		inventory.Entries = append(inventory.Entries, files.File{ID: u.File, Path: u.Path})
 		if u.File == o.Entry {
@@ -218,21 +222,12 @@ func (p *program) organization(settings []semantic.Setting, limits source.Limits
 		return Organization{}, fmt.Errorf("%w: incomplete placement or missing entry", source.ErrInvalid)
 	}
 	if _, err := inventory.Capture(limits.Files); err != nil {
-		return Organization{}, filesCategory(err)
+		return Organization{}, source.WithCategory(err)
+	}
+	if uncovered != nil {
+		return Organization{}, uncovered
 	}
 	return o, nil
-}
-
-// filesCategory joins the Files category to a value of the files package, so
-// that errors.Is holds for both. It returns any other error as it is.
-func filesCategory(err error) error {
-	switch {
-	case errors.Is(err, files.ErrLimit):
-		return fmt.Errorf("%w: %w", source.ErrLimit, err)
-	case errors.Is(err, files.ErrInvalid):
-		return fmt.Errorf("%w: %w", source.ErrInvalid, err)
-	}
-	return err
 }
 
 // repeatedMember reports a JSON object that names one member twice. The decoder

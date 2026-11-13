@@ -14,8 +14,8 @@ instance in each, and pull requests
 [#255](https://github.com/Bitspark/bittype/pull/255) corrected them. Every
 confirmed finding that the order of work covers is corrected. Finding 7 is
 open and
-belongs to [#196](https://github.com/Bitspark/bittype/issues/196). Findings 9
-and 11 are candidates and are not confirmed. Finding 10 was answered in
+belongs to [#196](https://github.com/Bitspark/bittype/issues/196). Findings 9,
+11 and 13 are candidates and are not confirmed. Finding 10 was answered in
 principle on 12 November 2026 and is not corrected. The
 [findings table](#findings-on-main-at-3bf45c3) gives the state of each
 finding, and [what the test enforces now](#what-the-test-enforces-now) says
@@ -144,6 +144,9 @@ It was read in source at `1a5aa2d` on 11 November 2026, and finding 8 again at
 Findings 5, 6 and 9 were read again at `c8d0344`, the merge of #246. Finding
 12 was read at `abfc948`, the merge of #248, and on the head of #250,
 `cadf495`. Finding 12 was found on 11 November 2026, after the scan.
+Finding 13 was recorded on 13 November 2026 by the change that added
+`ExcludedPath`, pull request
+[#282](https://github.com/Bitspark/bittype/pull/282). It was not assessed.
 
 | # | Where | Kind | Assessment | State | Tracked |
 | --- | --- | --- | --- | --- | --- |
@@ -159,6 +162,7 @@ Findings 5, 6 and 9 were read again at `c8d0344`, the merge of #246. Finding
 | 10 | `Exported` appends `_` to `Self` for all four targets. `Self` is a keyword only in Rust | Coupling | Answered in principle on 12 November 2026: a reserved word is the target's, so the rule is in the wrong place | Not corrected, and the code is unchanged. Decided on #222 on 11 November 2026: the rule stays where it is and is a question for #216. #216 did not decide it. The [answer on #268](https://github.com/Bitspark/bittype/issues/268#issuecomment-6837825043) gives a reserved word to the target, because it is a fact about one language. The [naming design](naming.md#reserved-words) states it with the rest of the design: generation records a naming intent, and each language realizes the spelling. [#274](https://github.com/Bitspark/bittype/issues/274) delivers it with #268. Until then the function appends `_` to `Self` in every target | [#268](https://github.com/Bitspark/bittype/issues/268), [#274](https://github.com/Bitspark/bittype/issues/274); pending in [bittype/ACX-004](architecture-cases/0004-generation-file-syntax.md) |
 | 11 | `CheckSingleScope` states one placement's rule in the shared target construction package | Grouping candidate | Not confirmed | Not confirmed and unchanged. #222 did not decide it | With the second design point on [#161](https://github.com/Bitspark/bittype/issues/161) |
 | 12 | horos-owned keys are spelled inline where they are used: `horos/module` and `horos/import` in `internal/horosfiles`, and `horos/type-definition`, `horos/sort/proper` and `horos/identity/module` in `transform/syntax/horos/source/go` | Identity without a single owner | Identified on 11 November 2026 by the change that added `semantics/horos/go` | Corrected. [#247](https://github.com/Bitspark/bittype/pull/247) published the five keys from `semantics/horos/go` as `ModuleKind()`, `ImportRelation()`, `TypeDefinitionKind()`, `ProperSort()` and `ModuleIdentity()`. That change found three further names that a writer and a separate reader each spelled, on 12 November 2026: the descriptor operator, the term encoding and the two profile names. [#248](https://github.com/Bitspark/bittype/pull/248) gave them one owner in the same package. The documents change of #218 found one more on the same day: the two tag prefixes of canonical horos values, spelled in three packages. [#250](https://github.com/Bitspark/bittype/pull/250) moved them. No production package outside the vocabulary spells any of these names. Two further instances of the same kind lie outside the horos semantic names. [#251](https://github.com/Bitspark/bittype/issues/251) confirmed them, and they are corrected: the horos syntax node kinds, attributes and roles were declared twice ([#254](https://github.com/Bitspark/bittype/pull/254)), and sixteen TypeScript graph names were read in Go by spelling ([#255](https://github.com/Bitspark/bittype/pull/255)) | [#220](https://github.com/Bitspark/bittype/issues/220), closed; the tag prefixes under [#218](https://github.com/Bitspark/bittype/issues/218); the two further instances under [#251](https://github.com/Bitspark/bittype/issues/251) |
+| 13 | The rule for a TypeScript source path is spelled in two helpers: `SourcePath` and `ExcludedPath` in `internal/typescriptimports`, which the TypeScript Files provider imports, and the check for `.ts` and against `.d.ts` in `internal/typescriptsem/source.go:96` | Rule without a single owner, candidate | Not assessed | Not confirmed. The two spellings agree for the paths that the profile admits. Whether the rule has one owner, and which, is not decided | Recorded with [#271](https://github.com/Bitspark/bittype/issues/271); the candidate stays here |
 
 Finding 6 in detail, at `3bf45c3`. 22 imports go from a production package into
 a stage provider package. Eight use only an identity (`Contract`, `Profile`, a
@@ -681,8 +685,9 @@ State on `main` after pull request #250, 12 November 2026.
 
 No step is recorded as not done, and #219, #220, #221 and #222 are closed. The
 plan in #218 is complete with the change that wrote this record. Finding 7,
-the two candidates and finding 10 are not steps of this order: they stay with
-#196, #268 and #161 as the findings table says, and the candidate of finding 9 stays
+the candidates and finding 10 are not steps of this order: they stay with
+#196, #268 and #161 as the findings table says, the candidate of finding 13
+stays recorded here, and the candidate of finding 9 stays
 recorded here and in
 [bittype/ACX-009](architecture-cases/0009-package-boundaries.md#candidates).
 [#251](https://github.com/Bitspark/bittype/issues/251) examined the names

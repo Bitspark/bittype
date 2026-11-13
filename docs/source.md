@@ -300,25 +300,44 @@ later slice can. The same input is judged under the same vocabulary. An input
 that is malformed under the published vocabulary of a setting or a placement
 type is invalid: an unknown field, an unknown setting key, a repeated member, a
 path that is no path of the language. An input that is well formed under that
-vocabulary and outside what the implementation covers is unsupported. A
-vocabulary grows by a new version of its key or type, which is a different
-input.
+vocabulary and outside what the implementation covers is unsupported.
+Publishing a new vocabulary, under a new key or type, is the one change that
+may admit an input that is malformed today, and an input under that vocabulary
+is a different input.
 
 The category of a refusal is part of the Files contract. A later change may turn
 an unsupported refusal into success. It may not turn an invalid refusal into
 success, it may not move a refusal from one category to another, and it may not
-accept and ignore what a formatter refuses as malformed today. An input with
-several defects is refused for the first that a formatter finds, with the
-category of that defect.
+accept and ignore what a formatter refuses as malformed today.
+
+An input can have several defects. The category describes the defect that was
+found. An unsupported refusal says nothing about the rest of the input: the
+same input may hold a defect that no slice admits. The order in which a
+formatter runs its checks is no part of the contract.
+
+One order is guaranteed. Inside a TypeScript placement, validity is decided
+before coverage: the number of files against its limit, then every file's path
+and items, the completeness of the placement and the inventory of the files,
+and only then a path that the profile excludes or a file without a
+declaration. A placement that has a defect of both kinds is invalid input,
+whichever file has which. Two checks lie outside that order. The check for a
+script reads the captured files before the setting is decoded. The two
+refusals of relocation, for two declarations of one name in one file and for
+an unexposed declaration in another file than its user, run after the
+placement is admitted. The horos placement has no coverage refusal, so it
+needs no such order.
 
 A refusal that a formatter decides matches exactly one category. When the
 refusal carries the value of another package, that value is joined to the
-category and `errors.Is` holds for both. The inventory checks of both formatters,
-of the publisher and of the capture of the fresh output keep `files.ErrInvalid`
-or `files.ErrLimit`. A symbol that the TypeScript issuer cannot read keeps its
-`generation` value. The horos formatter keeps the JSON decoder's error,
-`semantic.ErrInvalidRequest` for its setting and `semantic.ErrLimit` for the
-units it establishes.
+category and `errors.Is` holds for both. One function says which category a
+value of the `files` package and a limit of the semantic contract carry:
+`source.WithCategory`. A `files.ErrLimit` and a `semantic.ErrLimit` are an
+exceeded limit, a `files.ErrInvalid` is invalid input, and every other error is
+returned as it is. The publisher calls it for its inventory check, and each
+formatter calls it for its own inventory check and for the capture of its fresh
+output. A symbol that the TypeScript issuer cannot read keeps its `generation`
+value. The horos formatter keeps the JSON decoder's error and
+`semantic.ErrInvalidRequest` for its setting.
 
 No part of a placement is accepted and ignored. Both formatters refuse an
 unknown field at every level, a second JSON value and a member that is named
@@ -329,9 +348,9 @@ has, with a value outside coverage, is unsupported.
 | --- | --- | --- |
 | Another setting key, a second setting, malformed JSON, an empty value, a value of another type, an unknown field, a second JSON value, a member named twice | invalid | invalid |
 | A file identity or a path used twice, an empty file identity, a path that is also a directory of another, a malformed path | invalid | invalid |
-| A valid path that is no TypeScript path, such as `person.txt` or `PERSON.TS` | invalid | does not apply |
+| A valid path that is no TypeScript source path, such as `person.txt` or `PERSON.TS` | invalid | does not apply |
 | A path that TypeScript reads and this profile excludes: `.d.ts`, `.mts`, `.cts`, `.tsx`, or `#`, `%` or `?` in a TypeScript path | unsupported | does not apply |
-| A file without an item | unsupported | invalid |
+| A file without an item, in a placement or among the captured files | unsupported | invalid |
 | No file, an unknown, repeated or missing item, a missing entry | invalid | invalid |
 | Two declarations of one name in one file, a binding without a single target | invalid | does not apply |
 | A declaration placed in another file than an unexposed declaration that it uses | invalid | does not apply |
@@ -344,17 +363,23 @@ has, with a value outside coverage, is unsupported.
 | Fresh files over the Files byte limit, fresh paths over the input byte limit | limit | limit |
 | Constructed imports over the node or byte limit | limit | does not apply |
 | Fresh trees over the input node limit, fresh text over the input byte limit | limit | limit |
-| More fresh units than the input limit | limit | `semantic.ErrLimit` from the capture, no category |
+| More fresh units than the input limit, a capture of the fresh output over a semantic limit | limit | limit |
+| Another error of the capture of the fresh output, such as the refusal of its Syntax checker | no category | no category |
 
 Three rows need their reason.
 
 - **A file without an item.** A TypeScript file without a declaration is well
   formed, and row 30a of [research 0016](../research-docs/0016-native-files-placement.md)
-  defers the form that would admit it. A horos file has a meaning only through
-  its modules, and no slice admits one without a module.
+  defers the form that would admit it. A module that holds only imports is such
+  a file, also in its original placement. A horos file without a module cannot
+  exist: the horos grammar refuses a text without a module declaration
+  (`parse/syntax/horos/provider/go/parse.go:77-79`).
 - **TypeScript paths.** [The TypeScript document](typescript-type-imports.md)
   states the excluded extensions and characters as limits of its profile. A path
   that TypeScript does not read as a source file is no path of the language.
+  `PERSON.TS` is one: the host that the bridge gives the compiler is
+  case-sensitive (`internal/typescriptsem/compiler.cjs:78-79`), and the compiler
+  reads no file with that extension.
 - **An unexposed declaration in another file than its user.** It was examined
   and is invalid input. Files never exports a declaration without
   authorization, so no later slice can admit that placement for the same
@@ -376,11 +401,15 @@ table above does not give it:
   `semantic.ErrInvalidRequest`. An input over a semantic limit and a setting
   over the configuration limit return `semantic.ErrLimit`. The shared parse
   contract returns `files.ErrInvalid` and `files.ErrLimit` without a category.
-- **The semantic stages.** A fresh output whose capture or graph exceeds a
-  semantic limit returns `semantic.ErrLimit` or `semantics.ErrLimit`.
+- **The semantic stages.** A fresh output whose resolution, analysis or graph
+  exceeds a limit returns `semantic.ErrLimit` or `semantics.ErrLimit`. Only the
+  capture of the fresh output is joined.
 - **The publisher.** It joins the `files` value of its inventory check. It
   passes on the values of the evidence admission, of the semantic and graph
   limits, of the representation and of the Syntax printer as they are.
+- **`Limits.Source.Files.MaxLinks`.** A formatter validates it and never
+  applies it: a value below the number of files changes nothing. This is older
+  than the categories.
 - **The constructors.** A formatter that is constructed without the environment
   it needs returns `source.ErrInvalid` for TypeScript and, for horos, also
   values of the format, semantic and representation contracts. No rule says
