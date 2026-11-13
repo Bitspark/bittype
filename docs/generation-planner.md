@@ -7,8 +7,9 @@ and checks those declarations under a placement and dependency environment.
 ## Three SPI changes
 
 1. **Carry generation intent into Files — implemented for TypeScript.**
-   A sealed generation.Output holds checked declaration ASTs, requested exposed
-   sites and external use destinations. Files receives that output, one placement
+   A sealed generation.Output holds checked declaration ASTs, an inventory of
+   the declarations it owns, requested exposed sites and external use
+   destinations. Files receives that output, one placement
    and the selected native dependencies, builds module syntax and checks its
    bindings before publishing Source.
 2. **Separate semantic mapping from target construction — implemented.**
@@ -103,6 +104,155 @@ ExternalUses binds emitted occurrences to target-owned immutable public symbols.
 TypeScript's symbol identifies a module and its named export, without choosing
 a local import name. The sealed output associates all these addresses with one
 capture; zero output represents failure. [Output contract](../contracts/generation/go/output.go)
+
+### The declaration inventory and its handles
+
+**Implemented, 13 November 2026** ([#272](https://github.com/Bitspark/bittype/issues/272),
+rows 10, 12, 19 and 5 of [research 0016](../research-docs/0016-native-files-placement.md#applied)).
+A sealed output lists every declaration it owns, and it issues one handle for
+each of them:
+
+```go
+func (o Output) Inventory() []OwnedDeclaration
+func (o Output) Resolve(DeclarationHandle) (OwnedDeclaration, error)
+
+type OwnedDeclaration struct {
+    Handle     DeclarationHandle
+    Site       ast.NodeRef
+    Role       DeclarationRole
+    Provenance []ast.NodeRef
+    Values     []IssuedValue
+}
+
+const (
+    RequestedDeclaration DeclarationRole = iota + 1
+    DependencyDeclaration
+    HelperDeclaration
+)
+```
+
+Inventory returns one record for each declaration of the snapshot and no other
+record. A consumer therefore selects a declaration by what its record states.
+It does not walk the tree and it reads no `name` attribute.
+
+| Field | Meaning | Who states it |
+| --- | --- | --- |
+| `Handle` | One declaration of this one output. | The kernel, when it seals. |
+| `Site` | The node that the target's lowering returned for the declaration. Where that node sits in its unit is the lowering's decision. | The target's construction. The kernel checks that the site lies in the snapshot, is listed once and is not inside another listed site. |
+| `Role` | Requested: the request lists its source declaration as a root. Dependency: a planned declaration uses its source declaration and the request does not list it. Helper: a mapping demanded it by a helper key. These are not a closed set. | The planner. |
+| `Provenance` | The declaring sites of the source declarations it represents. Empty for a helper, which represents none. | The planner, from the admitted semantic graph. |
+| `Values` | What the owner of the declaration's description states about it. | A declaration recipe or a helper recipe. |
+
+- **Order.** The records follow their sites: the trees in the snapshot's order,
+  the nodes of one tree ascending. Research 0016 names the site as the order of
+  the declarations of one file; the Files contract that uses it is
+  [#273](https://github.com/Bitspark/bittype/issues/273). `Exposed` keeps the
+  order of the request.
+- **Where a site sits.** A site need not be a child of the root. The C++
+  target lists its declarations one level down, as the children of a namespace.
+  A language's step that reads the inventory, the placement step of
+  [#273](https://github.com/Bitspark/bittype/issues/273) among them, must not
+  assume that the inventory equals the root's children. What the kernel
+  guarantees for every language is that no site of an inventory is inside
+  another site of it.
+- **Roles are not a closed set.** The three roles keep their meaning. A further
+  role may be added, for example for a declaration that a contribution
+  introduces and that has a source declaration, which is the lifted inner
+  binder of [#164](https://github.com/Bitspark/bittype/issues/164). A reader
+  refuses a record whose role it does not know. It does not treat it as one of
+  the roles it knows.
+- **Requested records and `Exposed`.** The records with the role requested have
+  exactly the sites of `Exposed`. The kernel derives both from the plan, so a
+  target cannot make them disagree.
+- **A target cannot change a record.** Role, provenance and values come from
+  the plan. The planner hands a target a copy of each declaration it asks the
+  target to check or to build, so a target that overwrites what it was handed
+  changes nothing the plan keeps.
+- **Provenance is a list.** The planner maps one source declaration to one
+  native declaration today. The record does not assume it: a native declaration
+  may later represent several source declarations, and one source declaration
+  may yield several native ones.
+- **A record speaks of ownership.** It says that the output owns a declaration
+  at a site. It does not say that the site is one entity of a native compiler,
+  and no bijection between sites and compiler entities is fixed.
+- **No grouping field.** A consumer groups by provenance. A grouping that a
+  later case needs enters as an issued value.
+
+**A handle carries its output**, as an external symbol carries its issuer. A
+site is a tree identity and a node number, and both repeat on every run of a
+plan. Two handles are equal only if one output issued both for one declaration.
+`Resolve` returns the record of a handle this output issued and fails with
+`ErrScope` for every other handle. That includes a handle of a second run of
+the same plan. A placement is built from handles, so it cannot be applied to an
+output it was not written for.
+
+**Issued values.** A naming intent and the access a helper requires are
+meanings of a mapping and of a target language. The kernel does not interpret
+them:
+
+```go
+func NewValueIssuer() ValueIssuer
+func (i ValueIssuer) Issue(content string) (IssuedValue, error)
+func (i ValueIssuer) Read(IssuedValue) (string, bool)
+```
+
+The owner of a meaning holds its issuer. A declaration recipe states values in
+`DeclarationDescription.Values`, and a helper recipe states them in its
+`NativeDeclaration.Values`. The planner checks that each value was issued and
+charges it to the output budget: the bytes of its content and one byte for the
+value itself, so that values without content are bounded too. It then carries
+the value to the record of that declaration. Only the issuer reads the content
+back through this API, and one issuer is one meaning.
+
+Limit: a value is kept from other readers by the API only, which is the model
+of the external symbols. Reflection reads the content. A value is not bound to
+one declaration or one output: the same value compares equal wherever it is
+carried, and whoever holds a value can state it again in another description.
+The issuer says who gave a value its meaning, and it does not say who put the
+value where it is found. Formatting a value, or a record or a description that holds one in an
+exported field, prints whether it was issued and never its content. That is a
+limit too: the `fmt` package calls a value's formatter only where it may read
+the value as an interface, so formatting an `Output`, a `Program` or any other
+struct that holds a value under an unexported field prints the content.
+
+A record without values is valid, and no builtin mapping
+states one yet. The [naming design](naming.md#three-things-that-were-one) says
+what an intent records and that the mapping states it. This is the carrier
+from the mapping to the record, and
+[#274](https://github.com/Bitspark/bittype/issues/274) delivers the intent.
+
+**Why this is in the shared contract.** Platform's rule
+[AC-08](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-08)
+asks for the missing capability, its layer and whom it serves.
+
+- **The capability.** Address every declaration an output owns without reading
+  native syntax, and bind a placement to the output it was written for. Before,
+  a consumer found an unexposed declaration by walking the tree and comparing
+  names, and a placement written for one run was accepted with the output of
+  another run.
+- **The layer.** The generation kernel issues declaration identity. The planner
+  alone knows which declarations a plan has, which of them the request named,
+  which are helpers and which source declarations they represent. The kernel
+  seals the capture that every site belongs to. No target and no Files stage
+  can state these facts, and each of them would have to state them again.
+- **The contributions it serves.** Each language's Files stage places
+  declarations through the same records and handles. A mapping or a target
+  language adds a meaning by issuing a value, and the kernel, the other targets
+  and the other mappings do not change.
+- **The boundary change.** It is not only an addition. `Assembly.Exposed` is
+  replaced by `Assembly.Declarations`: a target now returns the site of every
+  planned declaration, and the kernel derives the exposed sites from the plan.
+  `PlannedDeclaration.Exposed` is replaced by `Role`, and it gains
+  `Provenance`. `DeclarationDescription` and `NativeDeclaration` gain `Values`.
+  The four targets build through the shared constructor and did not change. A
+  target that fills its own `Assembly` has to list every declaration.
+
+**What a later change does not alter:** the accessor `Inventory` and that it is
+complete, the fields of a record and their meaning, the meaning of each of the
+three roles, the handle type and that it identifies one declaration of one
+sealed output, and the key that orders sites (see
+[execution guarantees](#execution-guarantees)). Adding a field to the record is
+additive, and so is a further role.
 
 The typed Files boundary remains:
 
@@ -203,6 +353,7 @@ below stand for sites in its target snapshot. [TypeScript AST vocabulary](syntax
 | --- | --- |
 | `out.Snapshot()` | The two interfaces and the alias shown above. The uses of `Page` and `Person` link to their declarations. The element `T` links to the parameter on `Page`. |
 | `out.Exposed()` | The declaration sites of `Page`, `Person` and `Cells`. |
+| `out.Inventory()` | Three records, one for each of these declarations, in the order of their sites. Each has the role requested, and its provenance is the horos site the request named. Had the request named only `Cells`, the records of `Page` and `Person` would have the role dependency. |
 | `out.ExternalUses()` | One entry. Its occurrence is the constructor reference of the **inner** application in `Cells`. Its symbol identifies the public export `Cell` from `@bitspark/cell`. |
 
 **Organize the output.** Run once and reuse that `out` for each placement.
@@ -332,7 +483,47 @@ type BuildInput[T any] struct {
 The kernel invokes Build with the frozen native program. The target interprets
 its own forms and uses fresh fragment/symbol storage for each run. The constructor
 has neither a source reader nor mapping expansion code. The kernel then checks
-syntax and seals exposure and external-use records into Output.
+syntax and seals the inventory, the exposed sites and the external-use records
+into Output.
+
+The assembly lists the realized site of every planned declaration, in planned
+order. Sealing fails with `ErrIncomplete` when that list has another length
+than the plan, and with `ErrScope` when a site lies outside the snapshot, is
+listed twice or lies inside another listed site. The last check needs no
+knowledge of a language's syntax: whatever a declaration is, it is not inside
+another declaration of the same inventory. It refuses the root node as a
+declaration beside any other, and a node inside another listed declaration.
+
+What the shared constructor guarantees, for the four targets that build through
+it, is that each site is the node the target's lowering returned for that
+declaration, and that this node was emitted once. Where the node sits in the
+unit is the lowering's decision. The constructor returns no assembly when a
+planned declaration has no node in the unit.
+
+Limit: the kernel cannot tell which declaration a site realizes. A target that
+fills its own assembly and lists the sites of two declarations in each other's
+place is not detected, and neither is one that lists another node of the same
+unit that is outside every listed site.
+
+**The order of sites.** The shared constructor emits each declaration after the
+declarations it uses. The walk is seeded in the order of one comparator, and
+the node numbers, and so the sites, follow the walk. The comparator's key is
+the name, then the provenance, then the planned identity. The provenance is
+the planner's own fact, the one the inventory record carries. Two provenances
+compare site by site, each site by its tree and then its node, and a list sorts
+before every list that continues it. No provenance sorts first. The origin that
+a mapping may state on its description is not part of the key, because a
+mapping may leave it out, and the order of two declarations of one name would
+then follow the order of the requested roots. Equal names compare equal and
+the rest of the key decides, so the comparator is an ordering and returns 0
+only for one and the same planned declaration.
+Limit: two declarations of one name and one provenance are ordered by their
+planned identity, which follows the order of the requested roots. Two native
+declarations of one source declaration are such a pair, and so are two helpers
+of one name, because a helper has no provenance. The shared constructor still
+refuses two declarations of one name, so no plan reaches the comparator with
+such a pair. Removing that rule is [#273](https://github.com/Bitspark/bittype/issues/273).
+[Constructor](../transform/syntax/shared/target/go/compile.go)
 
 Changing mutable callback state after planning cannot change an array into a
 ReadonlyArray at construction. Target implementations are trusted interpreters
@@ -355,8 +546,19 @@ references return zero output. [Complete SPI and trust limits](generation-spi.md
 - The existing Files fixture places one Page<Cell> output twice with a conflicting
   local Cell: moving Person removes only its relative import; the package
   Cell remains correctly bound through an alias.
+- The independent fixture generates three roots that need one dependency and one
+  helper. Its five declarations are selected through the inventory alone, by
+  role, provenance and issued value. A handle of one run is refused by a second
+  run of the same plan, and an assembly that omits or repeats a declaration,
+  or lists a site outside the snapshot or inside another listed site, is not
+  sealed. A target that overwrites the declarations it is asked to check
+  changes no record and no generated unit. The pagination module gives a
+  complete inventory in all four targets, and four independent records
+  requested in descending order of their names get sites that ascend with the
+  names in all four.
 
 [Plan and independent mapping tests](../integration/go/generation_planning_test.go) ·
+[Inventory and handles](../integration/go/generation_inventory_test.go) ·
 [Independent source](../integration/go/generation_independent_test.go) ·
 [Four-target pagination](../integration/go/horos_generation_pagination_test.go) ·
 [Files placement](../integration/go/typescript_placement_test.go) ·
