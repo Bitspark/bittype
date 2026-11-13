@@ -13,6 +13,10 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
@@ -22,6 +26,7 @@ import (
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
 	h "github.com/Bitspark/bittype/syntax/horos/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
+	godeclarationsvocabulary "github.com/Bitspark/bittype/transform/syntax/horos-to-golang/vocabulary/declarations/go"
 	gorecordvocabulary "github.com/Bitspark/bittype/transform/syntax/horos-to-golang/vocabulary/record/go"
 	naming "github.com/Bitspark/bittype/transform/syntax/horos/mapping/naming/go"
 	source "github.com/Bitspark/bittype/transform/syntax/horos/source/go"
@@ -108,6 +113,33 @@ func gateSourceReach(capability reflect.Type) []string {
 	return reach
 }
 
+// gateExportImporter imports packages from the export data of their compiled
+// form. One run of the go command lists the export file of each named package
+// and of everything it imports. The build of the test has compiled them, so
+// the run reads the build cache.
+func gateExportImporter(t *testing.T, fset *token.FileSet, packages ...string) types.Importer {
+	t.Helper()
+	command := exec.Command("go", append([]string{"list", "-export", "-deps", "-f", "{{.ImportPath}}={{.Export}}"}, packages...)...)
+	command.Dir = filepath.Join("..", "..")
+	output, err := command.Output()
+	if err != nil {
+		t.Fatalf("go list -export: %v", err)
+	}
+	exports := map[string]string{}
+	for _, line := range strings.Split(strings.ReplaceAll(string(output), "\r\n", "\n"), "\n") {
+		if path, file, ok := strings.Cut(line, "="); ok && file != "" {
+			exports[path] = file
+		}
+	}
+	return importer.ForCompiler(fset, "gc", func(path string) (io.ReadCloser, error) {
+		file, ok := exports[path]
+		if !ok {
+			return nil, fmt.Errorf("no export data of %s", path)
+		}
+		return os.Open(file)
+	})
+}
+
 // Row 4, gate line 1.
 //
 // Shows: the capability that a projector is given, Projection, has no method
@@ -122,7 +154,8 @@ func gateSourceReach(capability reflect.Type) []string {
 // projector through state of its own package. The page says so ("A limit").
 // It does not show what a value behind an interface type holds: Payload
 // returns the decoded view as any, and its type is the contribution's own.
-// Red under: L1-projection-reaches-selector.
+// Red under: L1-projection-reaches-selector,
+// L1-dependency-view-reaches-selector.
 func TestGateProjectorCannotReadTheSource(t *testing.T) {
 	for name, capability := range map[string]reflect.Type{
 		"golang":     reflect.TypeFor[g.Projection[gs.Language]](),
@@ -141,6 +174,11 @@ func TestGateProjectorCannotReadTheSource(t *testing.T) {
 			t.Errorf("the reflection does not see the source in %s", name)
 		}
 	}
+	// One importer for every probe. It reads the export data that the build of
+	// this test already made of the contract and of the Go language package,
+	// so no probe type-checks a dependency from its source.
+	fset := token.NewFileSet()
+	packages := gateExportImporter(t, fset, "github.com/Bitspark/bittype/contracts/generation/go", "github.com/Bitspark/bittype/syntax/golang/go", "context")
 	compile := func(body string) error {
 		text := `package probe
 
@@ -156,46 +194,78 @@ var _ g.Projector[s.Language] = func(ctx context.Context, p g.Projection[s.Langu
 	return g.Projected[s.Language]{}, nil
 }
 `
-		fset := token.NewFileSet()
 		file, err := parser.ParseFile(fset, "probe.go", text, parser.AllErrors)
 		if err != nil {
 			return err
 		}
-		_, err = (&types.Config{Importer: importer.ForCompiler(fset, "source", nil)}).Check("probe", fset, []*ast.File{file}, nil)
+		_, err = (&types.Config{Importer: packages}).Check("probe", fset, []*ast.File{file}, nil)
 		return err
 	}
 	if err := compile("_ = p.Payload()\n_ = p.Dependency(0).Type\n_ = p.Stated()"); err != nil {
 		t.Fatalf("a projector that reads the frozen record does not type-check: %v", err)
 	}
-	for _, attempt := range []string{"_, _ = p.Reader()", "_ = p.Use()", "_ = p.Declaration()", "_ = p.Subject", "_ = p.Selector()", "_ = p.Dependency(0).Use"} {
+	// Each attempt fails because the projection has no such method or field,
+	// and for no other reason: the probe type-checks without the attempt.
+	for _, attempt := range []string{"_, _ = p.Reader()", "_ = p.Use()", "_ = p.Declaration()", "_ = p.Subject", "_ = p.Selector()", "_ = p.Dependency(0).Use", "_ = p.Dependency(0).Selector", "_ = p.Binder(0)"} {
 		if err := compile(attempt); err == nil {
 			t.Errorf("a projector with %q type-checks", attempt)
+		} else if !strings.Contains(err.Error(), "undefined") {
+			t.Errorf("a projector with %q fails for another reason than a missing method or field: %v", attempt, err)
 		}
 	}
 }
 
-// gateRetaining wraps the Go record contribution so that it keeps the value
-// that its rule returned and mutates it when its projector starts, which is
-// after the rule returned and before the planner writes the record.
-func gateRetaining(base goContribution) goContribution {
-	var retained [][]string
-	decide, project := base.Rule.Decide, base.Project
+// gateRetained is what fixture contributions kept of the values that their
+// rules returned: the slices inside those values.
+type gateRetained struct{ values [][]string }
+
+// mutate writes into every kept slice.
+func (r *gateRetained) mutate() {
+	for _, values := range r.values {
+		for i := range values {
+			if !strings.HasPrefix(values[i], "Mutated") {
+				values[i] = "Mutated" + values[i]
+			}
+		}
+	}
+}
+
+// mutated counts the kept strings, and reports whether each was written into.
+func (r *gateRetained) mutated() (count int, all bool) {
+	all = true
+	for _, values := range r.values {
+		for _, value := range values {
+			count++
+			all = all && strings.HasPrefix(value, "Mutated")
+		}
+	}
+	return count, all
+}
+
+// gateRetaining wraps a Go contribution so that it keeps the value that its
+// rule returned and mutates it when its projector starts, which is after the
+// rule returned and before the planner writes the record. kept gives the
+// slice inside a payload of the contribution.
+func gateRetaining(base goContribution, retained *gateRetained, kept func(payload any) ([]string, bool)) goContribution {
+	decide := base.Rule.Decide
 	base.Rule.Decide = func(ctx context.Context, step horosDecideStep) (g.Decision, error) {
 		d, err := decide(ctx, step)
-		if payload, ok := d.Payload.(gorecordvocabulary.Payload); ok {
-			retained = append(retained, payload.Members)
+		if values, ok := kept(d.Payload); ok {
+			retained.values = append(retained.values, values)
 		}
 		return d, err
 	}
-	base.Project = func(ctx context.Context, p goProjection) (goProjected, error) {
-		for _, members := range retained {
-			for i := range members {
-				if !strings.HasPrefix(members[i], "Mutated") {
-					members[i] = "Mutated" + members[i]
-				}
-			}
+	if project := base.Project; project != nil {
+		base.Project = func(ctx context.Context, p goProjection) (goProjected, error) {
+			retained.mutate()
+			return project(ctx, p)
 		}
-		return project(ctx, p)
+	}
+	if declare := base.Declare; declare != nil {
+		base.Declare = func(ctx context.Context, p goProjection) (g.DeclarationDescription[gs.Language], error) {
+			retained.mutate()
+			return declare(ctx, p)
+		}
 	}
 	return base
 }
@@ -211,16 +281,18 @@ func gateFirstLineWith(text, needle string) string {
 
 // Row 28 (O9, O20), gate line 1 and guarantee 5.
 //
-// Shows: a contribution that keeps the value its rule returned and writes
-// into it after the rule returned changes neither the generated Go text nor
-// the serialized plan: both are what the same composition gives without the
-// mutation. So the projector's view and the published payload come from the
-// value that the codec froze when the rule returned.
+// Shows: two contributions, the Go record contribution and the Go declaration
+// contribution, that keep the value their rule returned and write into it
+// after the rule returned change neither the generated Go text nor the
+// serialized plan: both are what the same composition gives without the
+// mutation. The values were written into: every member name and every
+// parameter name that the rules returned now reads "Mutated". So the view of
+// a use's projector, the view of a declaration's projector and the published
+// payloads come from the value that the codec froze when the rule returned.
 // Does not show: immutability against a codec that keeps the value itself.
-// The codec is trusted to return bytes (O37), and the kernel copies them. It
-// does not show the same for a declaration's projector: the mutated value is
-// the record contribution's.
-// Red under: G5-projector-gets-returned-value, G5-record-encodes-late.
+// The codec is trusted to return bytes (O37), and the kernel copies them.
+// Red under: G5-projector-gets-returned-value (the text and the plan),
+// G5-freeze-when-recorded (the plan), L1-projector-reads-rule-state.
 func TestGuarantee5FrozenValueSurvivesMutation(t *testing.T) {
 	from, input := gateSource(t, gatePagination)
 	clean, err := gatePlanGo(t, input, gateGolang(t, from), gateRequest{})
@@ -233,10 +305,24 @@ func TestGuarantee5FrozenValueSurvivesMutation(t *testing.T) {
 		t.Fatal(err)
 	}
 	b := gateGolang(t, from)
-	record := b.find(t, "horos-to-golang/record")
-	plan, err := gatePlanGo(t, input, b.replace(gateRetaining(record)), gateRequest{})
+	members, parameters := &gateRetained{}, &gateRetained{}
+	record := gateRetaining(b.find(t, "horos-to-golang/record"), members, func(payload any) ([]string, bool) {
+		p, ok := payload.(gorecordvocabulary.Payload)
+		return p.Members, ok
+	})
+	declarations := gateRetaining(b.find(t, "horos-to-golang/declarations"), parameters, func(payload any) ([]string, bool) {
+		p, ok := payload.(godeclarationsvocabulary.Payload)
+		return p.Parameters, ok
+	})
+	plan, err := gatePlanGo(t, input, b.replace(record).replace(declarations), gateRequest{})
 	if err != nil {
 		t.Fatal(err)
+	}
+	// The control: the fixtures did write into what the rules returned.
+	for name, retained := range map[string]*gateRetained{"member": members, "parameter": parameters} {
+		if count, all := retained.mutated(); count == 0 || !all {
+			t.Fatalf("the fixture did not write into every %s name that a rule returned (%d names, all written: %v)", name, count, all)
+		}
 	}
 	if text := gateText[gs.Language](t, golangText(), plan); text != wantText {
 		t.Errorf("the native type changed with the mutation: it now holds %q", gateFirstLineWith(text, "Mutated"))
@@ -287,7 +373,10 @@ func gateConfigured(base goContribution, rename map[string]string) goContributio
 // Does not show: that no such pass can be written. The structure prevents a
 // sanctioned one (TestGateProjectorCannotReadTheSource). This test detects an
 // incorrect one.
-// Red under: L1-entry-from-source.
+// Red under: L1-projector-reads-rule-state (a projector that takes the names
+// from what its rule read of the source, where the builtin composition shows
+// no difference), L1-fixture-decision-from-source (the fixture itself, when
+// its names are those of the source).
 func TestGateDecisionTheSourceDoesNotDetermine(t *testing.T) {
 	from, input := gateSource(t, gatePagination)
 	b := gateGolang(t, from)
