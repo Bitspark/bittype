@@ -8,12 +8,13 @@
 
 ## Question
 
-**In one sentence:** in a library of language tooling, should everything that
-describes what exists in a language live apart from everything that processes
-it, under the rule that a description never depends on a process; what belongs
-on the describing side; should one language's descriptions share one
-vocabulary of type-level notions; and which parts of them can be declared as
-data instead of written as code?
+**In one sentence:** the project's owner has directed that a library of
+language tooling splits at its root into models and operations, where a
+model contains no operation and imports none and operations work on the
+model; by what principle is the line between the two drawn, should one
+language's models share one vocabulary of type-level notions, which parts of
+a model can be declared as data instead of written as code, and in what
+order is the split carried out?
 
 **bittype** is a Go library. It parses, checks, formats and prints the type
 syntax of five languages. It resolves and analyses four of them, three
@@ -30,10 +31,11 @@ and the package of external symbols. Each of the four states the type-level noti
 its own words. Section 2.6 shows the four for Go.
 
 The project's owner asked where these descriptions belong. The owner then
-proposed a layout with two roots, `model/` and `ops/`, and one rule between
-them. The owner also asked why a language's model needs code at all.
+sketched a layout with two roots, `model/` and `ops/`, and one rule between
+them, and asked why a language's model needs code at all. In an eighth
+message the owner made the split a direction and added a second rule.
 
-### The framing: the owner's seven messages
+### The framing: the owner's eight messages
 
 The owner asked the question on 13 November 2026 in another working session.
 That session relayed the messages to the research owner, the seat that writes
@@ -54,7 +56,7 @@ consultation.
 
 6. > But shouldn't we split the models from the operations? The model is independent of the operation, isn't it?
 
-7. A proposal and a second question:
+7. A layout and a second question:
 
    ```text
    why don't we organize it like this:
@@ -70,15 +72,32 @@ consultation.
 
    The block keeps the line breaks of the message as it was relayed.
 
+8. The direction:
+
+   ```text
+   So the root split to me would be between model and ops.
+   model must not contain any ops and must not import from ops either.
+   ops work on the model
+   ```
+
 Messages 1 and 2 are already decided, by the research owner, as two recorded
 decisions on the work item of the contract migration. Section 2.8 gives both.
 They are quoted because the later messages follow from them: "this model for
 target/source language" in message 3 is the model that a language would need
 on either side of a transformation.
 
-Message 7 is **the owner's proposal**. It is the direction this document
-examines. The document states it exactly as proposed. It does not argue for
-it or against it, and it does not answer its own questions.
+Messages 7 and 8 together are **the owner's direction**. The research owner
+takes the eighth message as direction and no question. It says four things:
+
+1. The root of the repository splits into models and operations.
+2. A model imports no operation. This is the rule of message 7.
+3. A model contains no operation. This rule is new with message 8.
+4. Operations work on the model.
+
+The consultation does not ask whether to split. It asks how the line between
+model and operation is drawn and how the split is carried out. Within that,
+the document does not argue for an option, and it does not answer its own
+questions.
 
 ### Four questions, as a working frame
 
@@ -87,21 +106,23 @@ is ours and is a working frame. It is no decision.
 
 | Question | What it asks | Asked of the expert |
 | --- | --- | --- |
-| Grouping | Does a model package hold two things that do not belong together: a vocabulary, and a piece of the separately registered part that builds a language's syntax trees, its generation target? | No. Decided as a first step, see below |
-| Placement | Do models live apart from operations, with the rule that a model never imports an operation? What is a model: only a language's vocabularies, or also the generic carriers and the value types that today sit with each operation's contract? | Yes, questions 1 and 4 |
+| Grouping | Does a package hold a model and an operation together? The owner's eighth message makes this general: a model contains no operation. Its first instance was narrow: does a model package hold a vocabulary, and a piece of the separately registered part that builds a language's syntax trees, its generation target? | In its general form yes, question 1. The narrow instance is decided as a first step, see below |
+| Placement | Under the direction a model imports no operation. What is a model: only a language's vocabularies, or also the generic carriers and the value types that today sit with each operation's contract? | Yes, questions 1 and 4 |
 | Unification | Do a language's intended forms and its analysed meaning share one vocabulary while keeping their different standing? | Yes, question 2 |
 | Declaration | Which parts of a language's model are data, which are code and why, and can a model be declared instead of written? | Yes, question 3 |
 
-**Why grouping is not asked.** Each model package holds form names,
+**The one grouping step that is not asked.** Each model package holds form names,
 constructors and two checks. Three answers inside those checks say what
 today's generation covers. They do not say what a form is. The one production
 caller of the checks is the generation target of the same language, and the
 Rust target already holds its own coverage answer. The organization's rule
 on package boundaries (section 2.1) says that parts which do not need each
-other are separated first, as a move. We therefore treat grouping as a step that needs no
-consultation. Section 6.5 gives the facts and the reason, so that it need not
-be answered again. It is our derivation, and if you see that it prejudges one
-of the three open questions, please say so.
+other are separated first, as a move. We therefore treat this one step as needing no
+consultation: the coverage answers leave the model packages. Section 6.5
+gives the facts and the reason, so that it need not be answered again. It is
+our derivation, and it was decided before the eighth message. The general
+rule of that message reaches much further (section 6.1), and that is asked.
+If you see that the step prejudges an open question, please say so.
 
 ### How to read the standings
 
@@ -115,7 +136,7 @@ fixed points with their standing.
 | **Accepted design** | A design page merged on the main branch, or a row of an earlier expert consultation that its research owner evaluated and recorded as holding. We name the page or the consultation | Fixed unless you see that it contradicts an owner rule, another accepted design or itself. If so, please say so |
 | **Implemented today** | What the code on the main branch does. Under the project's rule AC-09 (section 2.1) the implemented surface has no weight in a design choice. It is given as a fact and never as a reason | None |
 | **Our derivation** | A reading or a conclusion of the research owner or of the two investigations behind this document. It is in no accepted source | Open. Please challenge it |
-| **The owner's proposal** | The layout of message 7. The direction to examine | Open. It is neither a rule nor an accepted design |
+| **The owner's direction** | Messages 7 and 8. The root of the repository splits into models and operations. A model imports no operation. A model contains no operation. Operations work on the model | Fixed as a direction. Open is how the line is drawn and how the split is carried out. Whether to split is not asked |
 | **Open** | Not decided anywhere we looked | Open |
 
 Two consequences, stated once. First, the paths, package names and counts in
@@ -534,8 +555,8 @@ model packages were created inside it on 8 November 2026 by the change that
 separated the planning of intended types from the construction of trees. That
 commit has no message body. Section 5.2 says what no page decides about this.
 
-The owner who decided the stage-first layout is the one who now proposes the
-change.
+The owner who decided the stage-first layout is the one whose direction now
+changes it at the root (section 5.1).
 
 ### 2.4 The contract packages
 
@@ -654,7 +675,8 @@ from one of two places.
 So a path is not only a location. It is the input from which the import rule
 is computed. Any move of a package changes its rule unless the function and
 the tables change with it. That is a fact of today's test and no constraint.
-Question 4 asks how such a rule should be enforced.
+Question 4 asks how the two rules of the owner's direction should be
+enforced.
 
 ### 2.6 The four vocabularies of one language, with Go as the example
 
@@ -2604,9 +2626,9 @@ Four observations, as facts.
 
 ## 5. Constraints
 
-This section lists only owner rules and accepted designs. Section 5.2 then
-says what is not decided, and section 5.3 lists eight places where pages
-contradict each other or the code. No fact of the present code is a
+This section lists the owner's direction first, and then only owner rules
+and accepted designs. Section 5.2 then says what is not decided, and section
+5.3 lists eight places where pages contradict each other or the code. No fact of the present code is a
 constraint, with one exception that is a fact of the implementation language
 (fixed point 21).
 
@@ -2615,6 +2637,19 @@ constraint, with one exception that is a fact of the implementation language
 "Research N" is an earlier expert consultation of this project. A row of its
 result table has a verdict that the research owner of that consultation
 gave: HOLDS means accepted as advised.
+
+**The direction.**
+
+| # | Statement | Standing | Shown in |
+| --- | --- | --- | --- |
+| D | "So the root split to me would be between model and ops. model must not contain any ops and must not import from ops either. ops work on the model" | The owner's direction (message 8 of 13 November 2026, with the layout of message 7). The consultation does not ask whether to split | Question, 6.1 |
+
+The direction changes two older decisions of the same owner at the root.
+The layout page records them as: "organize by processing stage and enforce a
+uniform structure across languages" (31 October 2026), and the path form
+`<stage>/<dimension>/<scope>/<component>/go` (6 November 2026). Under the
+direction the matrix of stages lives below the operations root. We derive no
+more than that. What stays of those two decisions is part of what is asked.
 
 **About the answer's method.**
 
@@ -2663,7 +2698,7 @@ it.
 | 20 | "**One language.** A package that names a language imports no package of another language. A mapping names two." | Accepted design (`LAYOUT.md`) | 2.5 |
 | 21 | Go's rule for a directory named `internal`: a package below it can be imported only by code in the tree rooted at the parent of that directory. Today `internal/` is at the module root, so every package can import the helpers below it. A helper below `ops/internal/` could not be imported from `model/`, and the reverse | A fact of the implementation language. Not a design of ours | 6.2 |
 | 22 | "One public root Go module contains independently owned packages". "Do not create a language-first packages tree, additional Go modules, compatibility aliases or placeholder source directories." | Owner decision of 31 October 2026 as the layout page records it, and the layout page | 2.3 |
-| 23 | "organize by processing stage and enforce a uniform structure across languages"; `<stage>/<dimension>/<scope>/<component>/go` | Owner decisions of 31 October and 6 November 2026, as the layout page records them. The owner who made them now proposes a change to them. We therefore treat them as the thing under examination and not as a limit on the answer | 2.3 |
+| 23 | "organize by processing stage and enforce a uniform structure across languages"; `<stage>/<dimension>/<scope>/<component>/go` | Owner decisions of 31 October and 6 November 2026, as the layout page records them. The direction (D) changes them at the root: the matrix of stages then lives below the operations root. What stays of them below that root is asked and is not a limit on the answer | 2.3 |
 | 24 | "A checker gets no concrete tree, a formatter no lexer, and no Syntax stage a semantic contract." | Accepted design (`LAYOUT.md`, role table) | 2.5 |
 | 25 | The design of the contract migration lists, among the shared packages that must stay unchanged when a materially different contribution is added, "the native model and target of each language". It is final only when its gate is met | Accepted design, provisional (`docs/contribution-contract.md`, 13 November 2026) | 2.8 |
 
@@ -2709,10 +2744,12 @@ statements below are bounded by that.
    the mappings use the model.
 7. **Whether the source side is meant to have a counterpart of the model.**
    horos has a source reader and no model (section 4).
-8. **Whether the checks in a model belong to the vocabulary or to the
-   target.** The scan of package boundaries of 11 November 2026 did not
-   examine the model packages. We decided this as a first step (section
-   6.5); that decision is ours.
+8. **Where a model's own well-formedness ends and an operation begins.**
+   The direction says that a model contains no operation. No page says what
+   counts as one. The first instance was the checks in a model package: the
+   scan of package boundaries of 11 November 2026 did not examine them. We
+   decided one step for them before the direction (section 6.5); that
+   decision is ours. The general question is in section 6.1.
 9. **What a model is for a language without analysis.** C++ has no semantic
    vocabulary and no symbol package.
 10. **Whether the sameness of the four models is intended.** The change log
@@ -2762,15 +2799,16 @@ corrected whatever is decided. None is evidence for an option.
 
 ## 6. What we have considered
 
-Standing of this section: section 6.1 opens with the owner's proposal.
-Everything else is our derivation, or a fact of the code that is marked as
-such. All of it is open. No option is ruled out because the present code
-would have to change. The document does not choose among the options. The
-labels P, U and D are unique, so that an answer can cite them.
+Standing of this section: section 6.1 opens with the owner's direction,
+which is fixed. Everything else is our derivation, or a fact of the code
+that is marked as such, and is open. No option is ruled out because the
+present code would have to change. The document does not choose among the
+options. The labels P, U and D are unique, so that an answer can cite them.
 
-### 6.1 The owner's proposal, and what it means for the code as it is
+### 6.1 The owner's direction, and what its two rules reach in the code as it is
 
-**The proposal** (message 7, repeated here so that the section is complete):
+**The direction** (messages 7 and 8, repeated here so that the section is
+complete):
 
 ```text
 model/...
@@ -2782,16 +2820,25 @@ ops:
 ops/{transform,...}/go/...
 ```
 
-It names two roots and one rule. It gives two members of the first root,
+```text
+So the root split to me would be between model and ops.
+model must not contain any ops and must not import from ops either.
+ops work on the model
+```
+
+It names two roots and two rules. Rule 1: a model imports no operation. Rule
+2: a model contains no operation. It gives two members of the first root,
 `syntax` and `semantics`, and one of the second, `transform`. It leaves open
 what the ellipses hold. In particular it does not say where the generic
 carriers, the contract packages, the private helpers, the tools and the
-verification component go. The owner's reason is in message 6: "The model
-is independent of the operation, isn't it?"
+verification component go, and it does not say what counts as an operation
+inside a package that describes something. The owner's reason is in message
+6: "The model is independent of the operation, isn't it?"
 
-**A test for "model", applied to every package.** To see what the proposal
-means concretely, an investigation applied one stated test to all 129
-production packages. The test is ours, not the owner's:
+**A test for "model", applied to every package.** To see what the direction
+reaches, an investigation applied one stated test to all 129 production
+packages. It was made before the eighth message. The test is ours, not the
+owner's:
 
 - A package is a *model* if it declares what exists (carriers, vocabularies
   of names, forms, identities, value types with their well-formedness) and
@@ -2812,9 +2859,10 @@ tree from text, an encoding from an environment, a verdict on a form.
 | Undecided | 10 | 1,498 | Below |
 | Operation | 84 | 23,987 | The stage providers and query services, the shared printers, the generation kernel packages, the source reader, four targets, 21 mappings and three shared mapping parts, the verification packages, the tools, the engine, and nine private helpers (scanning, parser state, tree construction, the three bridges, the two horos adapters and the import helper of TypeScript's Files stage) |
 
-**The packages that hold both.** Twelve of the 22 are not plain models under
-the test, because each holds code whose input and output are different
-artifacts:
+**What rule 2 reaches: the packages that hold both.** Twelve of the 22 are
+not plain models under the test, because each holds code whose input and
+output are different artifacts. By the test, each of them contains an
+operation:
 
 | Package | The model part | The processing part |
 | --- | --- | --- |
@@ -2823,6 +2871,12 @@ artifacts:
 | `semantics/{golang,typescript,rust}/go` | Names, profiles, contract identities, environment types | The typed readers over a graph, and the encoding of an environment into settings and back |
 | The four models | Form names and constructors | Two checks that return a verdict on a form (section 3.4) |
 | The three symbol packages | A symbol type and its categories | Admission of a name (for Go by asking the standard library), and the encoding of a symbol into an issued key |
+
+Rule 2 also reaches the contract packages from the other side. Ten of the
+thirteen hold value types that the test counts as model-like, beside the
+protocol and admission code of one operation (section 2.4). If those value
+types are models, each of the ten is a package in which a model and an
+operation sit together.
 
 **The ten that the test does not decide, and why.**
 
@@ -2835,12 +2889,12 @@ artifacts:
 | `internal/cpp`, `internal/rust`, `internal/typescript`, `internal/horos` | Spelling rules. A predicate over strings states which strings exist, which is model-like, and it is written as code. Three of them also decode string literals, which is processing. Both sides import them: stage providers, and the semantic vocabularies and symbol packages |
 | `transform/syntax/horos/mapping/go` | Two profile identities and one function type. The layout calls it a common mapping part, not a vocabulary |
 
-**Every import that "model never imports from ops" would forbid today.**
-The 22 model packages have 33 direct imports of an operation package, a
-contract package or a helper. Four of the 22 import only models. No model
-package imports a stage provider, a query service, a target, a mapping, the
-engine or a bridge. Whether one of the 33 is forbidden depends on where its
-target is placed, and that is exactly what the proposal leaves open.
+**What rule 1 reaches: every import that it would forbid today.** The 22
+model packages have 33 direct imports of an operation package, a contract
+package or a helper. Four of the 22 import only models. No model package
+imports a stage provider, a query service, a target, a mapping, the engine
+or a bridge. Whether one of the 33 is forbidden depends on where its target
+is placed, and that is what the direction leaves open.
 
 | Kind | From | To | Symbols used | Edges |
 | --- | --- | --- | --- | --- |
@@ -2879,45 +2933,136 @@ a cycle of directories, though not of packages: `source/go` imports
 `contracts/semantic/go`, and the parse, print and format contracts import
 `source/go`.
 
-### 6.2 Placement: three options
+**What rule 2 leaves to be decided: where a model's own well-formedness
+ends and an operation begins.** The investigation's test for an operation
+was that it takes one artifact and returns another. That test leaves three
+kinds of code unassigned. Each is code that sits with a description today,
+and each can be read as part of saying what the described thing is, or as
+work done on it.
 
-Each option is stated with what it implies. None is chosen. For each we say
-what it does to the accepted sentence "A package's role follows from its
-path".
+*First, a constructor and the refusal of a malformed value.* Go's model
+builds a field form and, in another function, refuses a malformed one
+(`transform/syntax/golang/model/go/model.go:43-45`, `:70-73`; `g` is the
+generation contract):
 
-**P1. Only the two transform-side vocabularies move out, beside `syntax/`
-and `semantics/`.** The four models and the three symbol packages get
-top-level homes of their own kind. The stage-first layout otherwise stays.
+```go
+func Field(name string, optional bool, ty g.Expression[s.Language]) g.Expression[s.Language] {
+	return g.Native(Form(FormField), []string{name, strconv.FormatBool(optional)}, ty)
+}
+	...
+	case FormField:
+		if len(d) != 2 || d[0] == "" || (d[1] != "true" && d[1] != "false") || len(a) != 1 {
+			return g.ErrInvalid
+		}
+```
 
-- What it answers: the owner's messages 3 to 5 for the two vocabularies that
-  are inside a stage today. All four kinds of vocabulary are then in one
-  kind of place.
-- What it implies: seven packages move. No root rule is introduced. A model
-  still imports the generation contract. The Files stage's import of a
-  symbol package no longer reaches into another stage's directory.
-- What it leaves open: what the top-level directories are (section 5.2,
-  item 4); whether a carrier, a contract's value types or a grammar table is
-  a model; and the vocabularies that the migration adds for a pair of
-  languages.
+A fact about this pair: the constructor `Field` itself refuses nothing. It
+accepts an empty name. The refusal is in `CheckExpression`, which the
+planner reaches through the target. Other constructors do refuse. The form
+issuer returns an empty form for an empty name (section 3.4), and the
+constructor of the semantic graph validates its input before it publishes
+(section 3.3). The test counted validation at construction as
+well-formedness, and it counted `CheckExpression` as processing, because it
+returns a verdict on a form. So the same condition, that a field has a name,
+is a model's own if a constructor enforces it and an operation if a check
+does.
+
+*Second, a typed reader over a graph.* Go's semantic vocabulary reads the
+element type of a slice from the graph
+(`semantics/golang/go/model.go:276-282`):
+
+```go
+func (t Type) SliceElement() (Type, bool) {
+	v := t.term()
+	if v.Operator != SliceOperator() || len(v.Operands) != 1 {
+		return Type{}, false
+	}
+	return Type{t.owner, v.Operands[0].Term}, true
+}
+```
+
+The reader states the shape of a slice term: one operator and one operand.
+No declaration states that shape (section 3.3). It also takes one artifact,
+a term of the graph, and returns another, a typed handle. The test counted
+the readers as processing. One reader of the same file also gives a coverage
+answer: it refuses every basic kind but two as unsupported
+(`model.go:164-167`).
+
+*Third, the check that a tree or a form is well formed.* The structure check
+of the generic tree lives in a check directory
+(`check/syntax/shared/ast/go/structure.go:66-76`, `:92-94`; the check of the
+concrete tree is `Check` in `check/syntax/shared/cst/go`, and it calls this
+function first):
+
+```go
+func Structure[L any](tree ast.AST[L]) error {
+	bad := func(id ast.NodeID, message string) error { return text.AtNode(tree, id, message) }
+	if tree.ID == "" || tree.Root == 0 || int(tree.Root) > len(tree.Nodes) {
+		return bad(tree.Root, "nonempty tree ID and valid root are required")
+	}
+	if len(tree.Nodes) > MaxNodes {
+		return &text.Diagnostic{Code: text.LimitExceeded, Message: "too many AST nodes"}
+	}
+	if err := budget(tree); err != nil {
+		return err
+	}
+	...
+		if seen[e.id-1] {
+			return bad(e.id, "containment cycle or multiple parents")
+		}
+```
+
+The carrier package says of itself: "These are data types, not checked
+trees." What makes a list of nodes a tree at all is this function. The
+envelope package, a carrier, calls it. The test did not decide these two
+packages. The same holds one level up for a language. The admission table
+says what a Go tree is, and its interpreter and the rules beside it are the
+language's checker, a stage (section 3.2). And for intent: the checks of a
+model say what a form is (section 3.4).
+
+So the three kinds are: a constructor that refuses a malformed value, a
+typed reader over a graph, and the check that a tree or a form is well
+formed. Question 1 asks for the principle that assigns them.
+
+### 6.2 Carrying out the direction: what is on the model side, and how contracts divide
+
+Standing: our derivation. The direction is fixed. What follows are ways to
+carry it out. None is chosen. For each we say what it does to the accepted
+sentence "A package's role follows from its path".
+
+**P1. The smallest first step that the direction contains.** The four
+models and the three symbol packages leave the stage directory `transform/`
+and stand with the other two kinds of vocabulary. P1 is no option on its
+own. Every way of carrying out the direction contains it.
+
+- What it does: seven packages move. All four kinds of vocabulary are then
+  in one kind of place. The Files stage's import of a symbol package no
+  longer reaches into another stage's directory.
+- What it does not do: it introduces no root and satisfies neither rule. A
+  model still imports the generation contract (rule 1), and it still holds
+  its checks (rule 2).
 - The role-from-path rule: unchanged in kind. Two path shapes are replaced
   by two others.
 
-**P2. The owner's two roots, with the generic carriers and the model-like
-types of the contracts on the model side.** `model/` holds the carriers, the
-vocabularies and the value types that operations exchange. `ops/` holds the
-stages, the kernel, the protocol part of each contract, the bridges and the
-tools.
+**P2. The generic carriers and the model-like types of the contracts are on
+the model side.** `model/` holds the carriers, the vocabularies and the
+value types that operations exchange. `ops/` holds the stages, the kernel,
+what is left of each contract, the bridges and the tools.
 
-- What it answers: message 6 and message 7 in full. "model never imports
-  from ops" becomes one rule on a path prefix.
-- What it implies: every package gets a new import path. Ten contract
-  packages are split into a value part and a protocol part, and each split
-  is a grouping decision of its own. The carrier of intent leaves the
-  planner's package. The handles that only admission code may create need a
-  home that lets the operation create them and the model name them. The
-  structure checks of the generic tree are on the model side, or the
-  envelope stops checking. The lexical helpers must be importable from both
-  roots, so they cannot be below `ops/internal/` (fixed point 21).
+- What it means for rule 1: it holds as one rule on a path prefix, with no
+  exception.
+- What it means for rule 2: every package that holds both is divided (the
+  twelve of section 6.1), and ten contract packages are split into a value
+  part and a protocol part. Each split is a decision about one of the three
+  kinds of code of section 6.1. What is left of a contract is then an
+  interface and the admission code of one operation.
+- What else it implies: every package gets a new import path. The carrier
+  of intent leaves the planner's package. The handles that only admission
+  code may create need a home that lets the operation create them and the
+  model name them. The structure checks of the generic tree are on the model
+  side, or the envelope stops checking. The lexical helpers must be
+  importable from both roots, so they cannot be below `ops/internal/` (fixed
+  point 21).
 - What it leaves open: on which side a thing belongs that describes a
   relation between two languages and is used by one operation only: a
   mapping's vocabulary, a family's meaning, a profile identity. And whether
@@ -2925,34 +3070,38 @@ tools.
   of a language's model.
 - The role-from-path rule: the root gives a first cut, model or operation.
   The roles within a root (vocabulary, carrier, contribution, kernel,
-  private part) still need a path shape or a table each. So the proposal's
-  one rule is added to the roles and does not replace them.
+  private part) still need a path shape or a table each. So the two rules
+  of the direction are added to the roles and do not replace them.
 
-**P3. Two roots where the contracts stay with the operations, and a model
-may import contract value types through a third place.** The vocabularies
-and possibly the carriers form `model/`. Stages, kernel and contracts form
-`ops/`. A third place holds what both need: the identity of a language, the
-diagnostics, the carrier of intent, the receipt and evidence types, and the
-helpers that both sides import.
+**P3. The contracts stay with the operations, and the value types that both
+sides need are in a third place.** The vocabularies and possibly the carriers form
+`model/`. Stages, kernel and contracts form `ops/`. A third place holds
+what both need: the identity of a language, the diagnostics, the carrier of
+intent, the receipt and evidence types, and the helpers that both sides
+import.
 
-- What it answers: message 6, with a narrower meaning of "model": what one
-  language says about itself.
-- What it implies: the rule becomes: a model never imports an operation,
-  and both may import the third place. The third place needs a definition of
-  its own that says what may be in it. Without one it collects whatever is
-  hard to classify. The split of contract packages is the same as in P2,
-  with another destination.
+- What it means for rule 1: a model imports no operation, and both sides
+  import the third place. The direction names two roots. A third place is
+  then either a part of the model root that the rest of it may import, or a
+  third root, which the direction does not name.
+- What it means for rule 2: the word model has a narrower meaning, what one
+  language says about itself. The packages that hold both are still
+  divided. The value types leave the contract packages as in P2, with
+  another destination.
+- What else it implies: the third place needs a definition of its own that
+  says what may be in it. Without one it collects whatever is hard to
+  classify.
 - What it leaves open: whether the generic carriers are model or third
   place, and the same relation-between-languages question as P2.
-- The role-from-path rule: three roots instead of two, and roles within
+- The role-from-path rule: three places instead of two, and roles within
   them as in P2.
 
-Three things are the same under every option, as facts. The syntax
-vocabulary is used by every stage of its language, the semantic vocabulary
-by several, the model by one and the symbol package by two (section 2.6).
-The model's values are values of one operation's contract. And the migration
-in flight adds per-pair and per-family vocabularies that no option above
-places without a further decision.
+Three things are the same under P2 and P3, as facts. The syntax vocabulary
+is used by every stage of its language, the semantic vocabulary by several,
+the model by one and the symbol package by two (section 2.6). The model's
+values are values of one operation's contract. And the migration in flight
+adds per-pair and per-family vocabularies that neither way places without a
+further decision.
 
 ### 6.3 Unification: three options
 
@@ -3117,9 +3266,10 @@ documentation tool re-reads the tables.
 ### 6.5 The step already decided: grouping
 
 Standing: our derivation and a decision of the research owner, recorded on
-the work item of this consultation on 13 November 2026. It is stated so
-that it is not answered again, and so that you can say if it prejudges
-something.
+the work item of this consultation on 13 November 2026, before the owner's
+eighth message. It is stated so that it is not answered again, and so that
+you can say if it prejudges something. The direction's second rule now makes
+it one instance of a general rule (section 6.1).
 
 **The facts.** Each model holds names, five constructors and two checks
 (section 3.4). The mappings use the constructors and the names and never the
@@ -3141,10 +3291,10 @@ is a statement of the target contribution about what it builds.
 
 **The decision.** The coverage answers leave the model packages for the
 target of the same language, as a change of their own. The well-formedness
-checks stay where they are for now. Whether a vocabulary may hold them is
-part of questions 1 and 3, because the accepted definition says "names and
-nothing else" and the accepted practice says otherwise (section 5.3, item
-1).
+checks stay where they are for now. Whether a model may hold them is among
+the three unassigned kinds of code of section 6.1 and is part of question
+1. The accepted definition of a vocabulary says "names and nothing
+else", and the accepted practice says otherwise (section 5.3, item 1).
 
 **What waits.** The change is made when the migration's branch no longer
 edits those files. The migration rewrites every mapping, and every mapping
@@ -3159,8 +3309,9 @@ stated once, here, because question 4 is about order.
 
 | What | Count |
 | --- | --- |
-| Production packages that get a new import path if both roots are introduced | 129, and 3 packages that hold only tests |
-| Packages that move under P1 | 7 |
+| Production packages that get a new import path under the direction | 129, and 3 packages that hold only tests |
+| Packages that the direction's second rule reaches, because they hold both | 12 of the 22 model packages, and 10 of the 13 contract packages (section 6.1) |
+| Packages that move in the smallest first step, P1 | 7 |
 | Import strings of this module in Go files | 2,121 in 365 files: 959 in non-test files, 871 in test files, 291 in fixture files under test data. Some fixtures are written against the public import paths as an installed consumer would |
 | Places that compute a role from a path | One function with its shape helpers (section 3.7), and five tables keyed by path with 31, 12, 5, 12 and 14 entries |
 | Quoted layout paths in test files | 1,166 in 17 files, 638 of them in one file of synthetic package sets for the dependency check |
@@ -3176,23 +3327,29 @@ symbol package.
 
 ## 7. Questions for the expert
 
-Owner rules are fixed. Accepted designs are fixed unless you see a
-contradiction, and section 5.3 names eight that we see. Everything else is
-open: what the code does today, every reading marked as ours, the owner's
-proposal, and the option tables of section 6, to which the labels P1 to P3,
-U1 to U3 and D1 to D3 refer. Please name an option, or state another, and
+The owner's direction is fixed: the repository splits at its root into
+models and operations, a model contains no operation and imports none, and
+operations work on the model. We do not ask whether to split. Owner rules
+are fixed. Accepted designs are fixed unless you see a contradiction, and
+section 5.3 names eight that we see. Everything else is open: what the code
+does today, every reading marked as ours, and the options of section 6, to
+which the labels P2 and P3, U1 to U3 and D1 to D3 refer. P1 is the first
+step that every way contains. Please name an option, or state another, and
 then the reason. Patterns from comparable systems are welcome where they
 change the answer, including what failed.
 
-1. **The line between model and operation.** If a repository of language tooling is organized into models and operations with the rule that a model never depends on an operation, what principle decides what a model is? In particular: do the generic carriers belong to it; do the value types that today sit with each operation's contract (the generic carrier of intent, evidence and receipt types, diagnostics, limits) belong to it or to the operation; where do the things that describe a relation between two languages belong (a mapping's vocabulary, a family's meaning); and how would you treat the carrier's own well-formedness and a language's lexical rules, which both sides need?
+1. **The line between model and operation.** The owner's direction is a root split: a model contains no operation and imports none, and operations work on the model. What principle decides what is a model and what is an operation? In particular: where does a model's own well-formedness end and an operation begin, for a constructor that refuses a malformed value, a typed reader over a graph, and the check that a tree or a form is well formed; do the generic carriers belong to the model; do the value types that today sit with each operation's contract (the generic carrier of intent, evidence and receipt types, diagnostics, limits) belong to the model or to the operation, and what then is left of a contract; where do the things that describe a relation between two languages belong (a mapping's vocabulary, a family's meaning); and how would you treat a language's lexical rules, which both sides need?
 
-   *What it rests on.* The owner's proposal and the test we applied to it
-   are in section 6.1, with the 33 imports that the rule meets today. The
+   *What it rests on.* The direction is fixed point D. Section 6.1 gives
+   what its two rules reach in the code as it is: the twelve packages and
+   ten contracts that hold both, and the 33 imports. It then gives the three
+   kinds of code that our test leaves unassigned, each with an example. The
    carriers are in 2.2 and 3.1, the contract packages with their two kinds
    of content in 2.4, and the per-pair vocabularies and family meanings of
-   the migration in 2.8. Section 6.2 gives three placements (P1, P2, P3).
-   Fixed point 4 (AC-11) and fixed point 19 (the definition of a vocabulary)
-   are the rules nearest to this question.
+   the migration in 2.8. Section 6.2 gives two ways to carry the direction
+   out (P2, P3) and the first step they share (P1). Fixed point 4 (AC-11)
+   and fixed point 19 (the definition of a vocabulary) are the rules nearest
+   to this question.
 
 2. **Intent and analysed meaning.** Our languages have three vocabularies for their type-level notions: syntax node kinds, the kinds analysis reports, and the forms generation intends. How do systems you know relate what a tool intends to construct to what analysis of the constructed program finds, and what would you take as the test for when the two should share one vocabulary of forms that differs only in standing, and when they must stay apart?
 
@@ -3213,21 +3370,22 @@ change the answer, including what failed.
    kinds are in 3.8 and the one existing generator in 3.9. Section 6.4
    gives three candidate carriers (D1, D2, D3).
 
-4. **The order of work.** Given that a contract migration is in flight, that two further language pairs and two Files formatters are about to be written against the present places, and that our rule is "a misplaced responsibility moves first, as its own change", how would you order grouping, placement, unification and declaration so that each later step only adds and nothing moves twice? What must be decided before the first move, and how should a path rule such as "model never imports from ops" be enforced so that it expresses the decision instead of replacing it?
+4. **The order of work.** Given that a contract migration is in flight, that two further language pairs and two Files formatters are about to be written against the present places, and that our rule is "a misplaced responsibility moves first, as its own change", how would you order grouping, placement, unification and declaration so that each later step only adds and nothing moves twice? What must be decided before the first move, and how should the two rules of the direction be enforced so that it expresses the decision instead of replacing it?
 
    *What it rests on.* The work in flight is in section 2.8. The rule is
    AC-10, whose exact words are in 2.1 and fixed point 2. The grouping step
    that we have already decided is in 6.5. How a role is computed from a
    path today is in 2.5 and 3.7, and what a dependency check can and cannot
-   establish is fixed point 3. What a move would touch is in 6.6; under
+   establish is fixed point 3. The two rules of the direction are in fixed
+   point D and section 6.1. What a move would touch is in 6.6; under
    fixed point 1 it bears on the order and not on the choice.
 
 5. **What we are not seeing.** What does a split into models and operations fail to capture in a system like this, and what would you ask us that we have not asked ourselves?
 
    *What it rests on.* The whole document. Three places where we already
-   see that the two words do not divide the code cleanly are the packages
-   that hold both (6.1), the ten packages that our test does not decide
-   (6.1), and the handles that only an operation's admission code may
+   see that the two words do not divide the code cleanly are the three
+   unassigned kinds of code (6.1), the ten packages that our test does not
+   decide (6.1), and the handles that only an operation's admission code may
    create and that a model must name (6.1 and 6.2).
 
 ## 8. Glossary
@@ -3256,6 +3414,7 @@ uses another word for the same thing, the entry says so.
 | Coverage answer | A refusal that means: not supported today. Opposed to a well-formedness answer, which means: this is not a valid form |
 | Decision record | Under the contract migration, the typed value that a mapping returns for one selection, holding every decision the selection contains. The migration's pages also call it a payload |
 | Destination | What a name use in generated output is meant to refer to: a generated declaration, a type parameter or an external symbol. An identity, never a structure |
+| Direction, the owner's | Messages 7 and 8 of the framing: the repository splits at its root into models and operations; a model contains no operation and imports none; operations work on the model |
 | Dimension | One of the two rows of stages. **Syntax**: text, concrete tree, abstract tree. **Files**: file set, source, semantics |
 | Envelope | The type-erased, structurally checked snapshot of a tree or a graph, with the descriptor of its language. The code calls the package `representation` |
 | Evidence | What analysis of an actual program establishes, as opposed to intent |
@@ -3272,11 +3431,11 @@ uses another word for the same thing, the entry says so.
 | Lexical helper | A private package with one language's spelling rules: identifiers, reserved words, literals |
 | logos | A separate reasoning library of the organization, used by the optional verification component |
 | Mapping | A contribution for one ordered pair of languages and one family. It states the intended form for a use of a source type. The code also says "mapping library" |
-| Model | In the code and the accepted pages: the package of one target language's forms, `transform/syntax/<language>/model/go`. In the owner's proposal: whatever belongs under the root `model/`, which is what question 1 asks. The document says "model package" for the first sense where the two could be confused |
+| Model | In the code and the accepted pages: the package of one target language's forms, `transform/syntax/<language>/model/go`. In the owner's direction: whatever belongs under the root `model/`, which is what question 1 asks. The document says "model package" for the first sense where the two could be confused |
 | Native | The pages' word for a target language of generation and for what belongs to it. A decision of 13 November 2026 replaces it by "target" in the shared contract |
 | Node kind | The discriminator of a syntax node, a typed string constant of one language |
 | ontos | A data model with a canonical binary encoding: a value is an atom or a tuple of values |
-| Operation | In the owner's proposal: whatever processes a model. In our test of section 6.1: a package that parses, checks, formats, prints, resolves, analyzes, transforms, verifies or composes |
+| Operation | In the owner's direction: whatever works on a model; the owner writes "ops". In our test of section 6.1: a package that parses, checks, formats, prints, resolves, analyzes, transforms, verifies or composes |
 | Pin | The hash of a horos module's content, its identity |
 | Placement | What a consumer supplies to a Files stage: the files and scopes that the generated declarations go into |
 | Platform | The organization's shared documentation repository, which holds the architecture rules |
@@ -3293,7 +3452,7 @@ uses another word for the same thing, the entry says so.
 | Source reader | The contribution of a source language that interprets its analysed graph for the kernel and for mappings. Only horos has one |
 | Stage | One processing step: parse, check, format, print, resolve, analyze, transform. The first part of a stage path |
 | Stage provider | The contribution that implements one stage for one language |
-| Standing | Which of six kinds of statement something is: owner rule, accepted design, implemented today, our derivation, the owner's proposal, open (Question) |
+| Standing | Which of six kinds of statement something is: owner rule, accepted design, implemented today, our derivation, the owner's direction, open (Question) |
 | Symbol | An issued value that identifies a referent outside the generated declarations: a predeclared type, a library item, a package export |
 | Target | A language that generation produces, and the contribution that checks intent for it and builds its trees |
 | Type-level notion | Something a language's type syntax, type analysis or type generation can speak about: a slice, a struct, a field, an alias, a type parameter |
