@@ -76,7 +76,7 @@ func Check(ctx context.Context, helper, sysroot string, environment Environment,
 	if units == nil {
 		return Output{Status: "missing-context", Diagnostics: []semantic.Diagnostic{diagnostic("missing-context", "Rust checking requires captured source and AST correspondence")}}, nil
 	}
-	encoded, err := json.Marshal(input{Version: 2, Environment: environment, Units: units})
+	encoded, err := json.Marshal(input{Version: 1, Environment: environment, Units: units})
 	if err != nil {
 		return Output{}, err
 	}

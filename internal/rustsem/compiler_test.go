@@ -60,6 +60,45 @@ func TestCompilerFailureAndProtocol(t *testing.T) {
 		t.Fatal(out, err)
 	}
 }
+
+// The helper passes the environment of the request to the compiler and judges
+// no value of it. Which values a profile supports is decided in one place, the
+// Rust vocabulary, and the helper holds no second copy of them.
+func TestHelperObeysEnvironment(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("qualified helper execution platform is Linux")
+	}
+	check := func(text string, change func(*Environment)) (Output, error) {
+		parsed, err := parser.Parse(context.Background(), parse.Input{Text: text, SourceID: "test", TreeID: "test"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		source := &files.Context{Files: files.Files{Entries: []files.File{{ID: "test", Path: "test.rs", Text: text}}}, Links: []files.SyntaxLink{{File: "test", Tree: "test", Source: "test"}}}
+		stated := environment
+		change(&stated)
+		return Check(context.Background(), os.Getenv("BITTYPE_RUST_HELPER"), os.Getenv("BITTYPE_RUST_SYSROOT"), stated, []s.AST{parsed.ASTView()}, source)
+	}
+	// A path that starts with :: names the crate root in edition 2015 and
+	// another crate since edition 2018.
+	rooted := "pub struct Local {} pub type Alias = ::Local;"
+	if out, err := check(rooted, func(e *Environment) { e.Edition = "2015" }); err != nil || out.Status != StatusOK {
+		t.Error("edition 2015 was not passed on", out.Status, out.Diagnostics, err)
+	}
+	if out, err := check(rooted, func(*Environment) {}); err != nil || out.Status != StatusInvalid {
+		t.Error("edition 2024", out.Status, out.Diagnostics, err)
+	}
+	// The pinned sysroot holds the standard library of one target.
+	if _, err := check("pub type Byte = u8;", func(e *Environment) { e.Target = "aarch64-unknown-linux-gnu" }); !errors.Is(err, n.ErrCompiler) {
+		t.Error("another target was not passed on", err)
+	}
+	// A binary crate needs a main function, which a library does not.
+	if out, err := check("pub type Byte = u8;", func(e *Environment) { e.CrateKind = "bin" }); err == nil && out.Status == StatusOK {
+		t.Error("the crate kind was not passed on")
+	}
+	if out, err := check("pub type Byte = u8;", func(e *Environment) { e.CrateName = "other" }); err != nil || out.Status != StatusOK || out.Facts.Entities[0].Name != "other::Byte" {
+		t.Error("the crate name was not passed on", out, err)
+	}
+}
 func TestCaptureLimitsAndOffsets(t *testing.T) {
 	trees, source := compilerFixture(t)
 	source.Files.Entries[0].Text = "\xff"

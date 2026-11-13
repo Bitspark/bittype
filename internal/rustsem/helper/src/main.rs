@@ -875,7 +875,7 @@ fn main() {
     let mut bytes = vec![];
     io::stdin().take(2 << 20).read_to_end(&mut bytes).unwrap();
     let input: Input = serde_json::from_slice(&bytes).expect("private protocol input");
-    assert_eq!(input.version, 2);
+    assert_eq!(input.version, 1);
     let environment = input.environment;
     if input.units.len() != 1 {
         println!(

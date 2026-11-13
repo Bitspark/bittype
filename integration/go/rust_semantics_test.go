@@ -520,6 +520,13 @@ pub type People = Page<Person>;`)
 	if len(fields) != 1 || len(graph.Facts(semantics.Subject{Entity: fields[0].Declaration.ID()}, n.PrivateInterfaceRelation())) != 1 {
 		t.Error("private-interface relation: a field with a more private type has no observation")
 	}
+	// A field's visibility is the fact on its entity and nothing else: the
+	// members of the fields term are the two that model.go reads.
+	var members []map[string]json.RawMessage
+	listed, _ := graph.Term(graph.Facts(semantics.Subject{Term: public.Type().ID()}, n.FieldsRelation())[0])
+	if err := json.Unmarshal(listed.Data, &members); err != nil || len(members) != 1 || len(members[0]) != 2 || members[0]["Name"] == nil || members[0]["Entity"] == nil {
+		t.Error("fields operator: a field is described by other members than its name and its entity", string(listed.Data), err)
+	}
 }
 
 // The tests below are the Verify section of #278. They need the compiler
@@ -575,6 +582,15 @@ func TestRustSemanticItemVisibility(t *testing.T) {
 	// The crate root is a scope and no item: nothing declares it.
 	if _, err := root.Visibility(); !errors.Is(err, n.ErrMissingFact) {
 		t.Error("the crate root has a declared visibility", err)
+	}
+	// A public field hands D to other crates, which the compiler calls
+	// reachable. They still cannot name it, and that is the effective fact.
+	leaked := rsModel(t, `mod m { pub struct D {} } pub struct A { pub d: m::D }`)
+	if e, err := rsDecl(t, leaked, "0", "m::D").Effective(); err != nil || e.Nameable {
+		t.Error("a reachable declaration that cannot be named", e, err)
+	}
+	if e, err := rsDecl(t, leaked, "0", "A").Effective(); err != nil || !e.Nameable {
+		t.Error("the declaration that leaks it", e, err)
 	}
 }
 
@@ -809,7 +825,7 @@ func TestRustSemanticPrivateInterface(t *testing.T) {
 
 	// The compiler reports the same for an alias, a tuple field and a variant
 	// field, and once for each more private type.
-	m = rsModel(t, `struct Hidden {} struct Other {} pub type Alias = Hidden; pub struct Tuple(pub Hidden, pub Other); pub enum Choice { Value(Hidden) } pub struct Both { pub field: (Hidden, Other) }`)
+	m = rsModel(t, `struct Hidden {} struct Other {} pub type Alias = Hidden; pub struct Tuple(pub Hidden, pub Other); pub enum Choice { Value(Hidden) } pub struct Both { pub field: (Hidden, Other) } pub struct Twice { pub field: (Hidden, Hidden) }`)
 	hidden, other := rsDecl(t, m, "0", "Hidden").ID(), rsDecl(t, m, "0", "Other").ID()
 	for name, want := range map[string][]semantics.EntityID{
 		"Alias":            {hidden},
@@ -817,6 +833,7 @@ func TestRustSemanticPrivateInterface(t *testing.T) {
 		"Tuple::1":         {other},
 		"Choice::Value::0": {hidden},
 		"Both::field":      {hidden, other},
+		"Twice::field":     {hidden},
 		"Hidden":           nil,
 	} {
 		observed, err := rsDecl(t, m, "0", name).PrivateInterface()
