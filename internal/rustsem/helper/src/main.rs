@@ -1,6 +1,7 @@
 #![feature(rustc_private)]
 
 extern crate rustc_driver;
+extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_middle;
@@ -9,6 +10,7 @@ extern crate rustc_span;
 
 use base64::{Engine, engine::general_purpose::STANDARD};
 use rustc_driver::{Callbacks, Compilation};
+use rustc_errors::{ColorConfig, emitter::HumanReadableErrorType, json::JsonEmitter};
 use rustc_hir::{
     self as hir,
     def::{DefKind, Res},
@@ -22,16 +24,28 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
     collections::HashMap,
-    io::{self, Read},
+    io::{self, Read, Write},
     path::Path,
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 
 #[derive(Deserialize)]
 #[serde(rename_all = "PascalCase", deny_unknown_fields)]
 struct Input {
     version: u32,
+    environment: Environment,
     units: Vec<Unit>,
+}
+// The environment is stated by the request and passed to the compiler as it
+// is. Which values the profile supports is decided once, by the Go vocabulary
+// that builds the request.
+#[derive(Deserialize)]
+#[serde(rename_all = "PascalCase", deny_unknown_fields)]
+struct Environment {
+    edition: String,
+    target: String,
+    crate_name: String,
+    crate_kind: String,
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "PascalCase", deny_unknown_fields)]
@@ -113,8 +127,43 @@ impl FileLoader for ClosedFiles {
         Err(io::ErrorKind::PermissionDenied.into())
     }
 }
+
+// All warnings stay allowed except this one, which the compiler is forced to
+// report: an item whose interface names a type more private than the item.
+// The compiler computes it and offers no query for it, so the helper reads its
+// own diagnostics.
+const PRIVATE_INTERFACES: &str = "private_interfaces";
+
+// Receives the compiler's JSON diagnostics, one line per flush. A warning is
+// withheld from stderr, and the forced lint is kept for the export. Everything
+// else goes to stderr as before, where the Go bridge reads the errors.
+struct Diagnostics {
+    pending: Vec<u8>,
+    observed: Arc<Mutex<Vec<Value>>>,
+}
+impl Write for Diagnostics {
+    fn write(&mut self, data: &[u8]) -> io::Result<usize> {
+        self.pending.extend_from_slice(data);
+        Ok(data.len())
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        let line = std::mem::take(&mut self.pending);
+        if let Ok(diagnostic) = serde_json::from_slice::<Value>(&line) {
+            if diagnostic["level"] == "warning" {
+                if diagnostic["code"]["code"] == PRIVATE_INTERFACES {
+                    self.observed.lock().unwrap().push(diagnostic);
+                }
+                return Ok(());
+            }
+        }
+        let mut stderr = io::stderr();
+        stderr.write_all(&line)?;
+        stderr.flush()
+    }
+}
 struct Driver {
     unit: Unit,
+    observed: Arc<Mutex<Vec<Value>>>,
     result: Option<Value>,
 }
 impl Callbacks for Driver {
@@ -124,13 +173,30 @@ impl Callbacks for Driver {
             input: self.unit.text.clone(),
         };
         config.file_loader = Some(Box::new(ClosedFiles));
+        let observed = self.observed.clone();
+        config.psess_created = Some(Box::new(move |psess| {
+            let diagnostics = Diagnostics {
+                pending: vec![],
+                observed,
+            };
+            let emitter = JsonEmitter::new(
+                Box::new(diagnostics),
+                Some(psess.clone_source_map()),
+                rustc_driver::default_translator(),
+                false,
+                HumanReadableErrorType::Default,
+                ColorConfig::Never,
+            );
+            psess.dcx().set_emitter(Box::new(emitter));
+        }));
     }
     fn after_analysis<'tcx>(&mut self, _: &interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
         if tcx.dcx().has_errors().is_some() {
             self.result = Some(output("compiler-errors", None, vec![]));
             return Compilation::Stop;
         }
-        let result = Exporter::new(tcx, &self.unit).export();
+        let observed = self.observed.lock().unwrap().clone();
+        let result = Exporter::new(tcx, &self.unit, observed).export();
         self.result = Some(match result {
             Ok(facts) => output("ok", Some(facts), vec![]),
             Err((status, message)) => output(
@@ -211,10 +277,13 @@ struct Exporter<'tcx, 'a> {
     params: HashMap<(DefId, u32), u32>,
     types: HashMap<(Ty<'tcx>, Option<DefId>), u32>,
     sites: HashMap<DefId, u32>,
+    declared: HashMap<Option<DefId>, u32>,
+    effective: HashMap<bool, u32>,
+    observed: Vec<Value>,
     depth: usize,
 }
 impl<'tcx, 'a> Exporter<'tcx, 'a> {
-    fn new(tcx: TyCtxt<'tcx>, unit: &'a Unit) -> Self {
+    fn new(tcx: TyCtxt<'tcx>, unit: &'a Unit, observed: Vec<Value>) -> Self {
         Self {
             tcx,
             unit,
@@ -227,6 +296,9 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
             params: HashMap::new(),
             types: HashMap::new(),
             sites: HashMap::new(),
+            declared: HashMap::new(),
+            effective: HashMap::new(),
+            observed,
             depth: 0,
         }
     }
@@ -240,10 +312,13 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
             self.tcx.def_path(did).to_string_no_crate_verbose()
         )
     }
-    fn find(&self, span: Span, kind: &str) -> Option<u32> {
+    fn offsets(&self, span: Span) -> (usize, usize) {
         let lo = self.tcx.sess.source_map().lookup_byte_offset(span.lo());
         let start = lo.pos.0 as usize;
-        let end = start + (span.hi() - span.lo()).0 as usize;
+        (start, start + (span.hi() - span.lo()).0 as usize)
+    }
+    fn find(&self, span: Span, kind: &str) -> Option<u32> {
+        let (start, end) = self.offsets(span);
         self.unit
             .nodes
             .iter()
@@ -503,7 +578,7 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
                         let entity = self.entity(f.did)?;
                         let ft = self
                             .native(self.tcx.type_of(f.did).instantiate(self.tcx, args), context)?;
-                        fields.push(json!({"Name":f.name.to_string(),"Public":self.tcx.visibility(f.did).is_public(),"Entity":entity}));
+                        fields.push(json!({"Name":f.name.to_string(),"Entity":entity}));
                         field_terms.push(ft);
                     }
                     let fields = self.expression("fields", json!(fields), field_terms);
@@ -527,6 +602,97 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
         self.type_fact(id, "native-type", marker);
         let display=self.term(json!({"Kind":3,"Operator":key("display"),"Encoding":key("utf8"),"Data":STANDARD.encode(t.to_string().as_bytes())}));
         self.type_fact(id, "display", display);
+    }
+    // The declared visibility in its resolved form: public, or restricted to a
+    // module, which the compiler has already resolved from the written form.
+    fn declared(&mut self, did: DefId) -> ExportResult<u32> {
+        let scope = match self.tcx.visibility(did) {
+            ty::Visibility::Public => None,
+            ty::Visibility::Restricted(module) => Some(module),
+        };
+        if let Some(&term) = self.declared.get(&scope) {
+            return Ok(term);
+        }
+        let term = match scope {
+            None => self.expression("public", Value::Null, vec![]),
+            Some(module) => {
+                let entity = self.entity(module)?;
+                let target = self.reference(entity);
+                self.expression("restricted", Value::Null, vec![target])
+            }
+        };
+        self.declared.insert(scope, term);
+        Ok(term)
+    }
+    // Whether another crate can name the item through its definition path. The
+    // compiler's effective visibility answers it at the level that means direct
+    // access. Its other levels include what is reachable and cannot be named.
+    fn effective(&mut self, did: DefId) -> u32 {
+        let nameable = self
+            .tcx
+            .effective_visibilities(())
+            .is_directly_public(did.expect_local());
+        if let Some(&term) = self.effective.get(&nameable) {
+            return term;
+        }
+        let term = self.expression(
+            "effective-visibility",
+            json!({"Audience":"another-crate","Path":"definition","Nameable":nameable}),
+            vec![],
+        );
+        self.effective.insert(nameable, term);
+        term
+    }
+    // Publishes each forced private-interface diagnostic as a fact on the item
+    // the compiler names, with the more private declaration as its term. A
+    // diagnostic that cannot be placed fails the export: dropping it would
+    // publish an item as usable that the compiler reported.
+    fn private_interfaces(
+        &mut self,
+        definitions: &[(DefId, Span, &'static str)],
+    ) -> ExportResult<()> {
+        let spans: Vec<_> = definitions
+            .iter()
+            .map(|&(did, _, _)| (self.offsets(self.tcx.def_span(did)), did))
+            .collect();
+        let located = |span: &Value| -> ExportResult<DefId> {
+            let at = (
+                span["byte_start"].as_u64().unwrap_or(u64::MAX) as usize,
+                span["byte_end"].as_u64().unwrap_or(u64::MAX) as usize,
+            );
+            let mut found = spans.iter().filter(|(offsets, _)| *offsets == at);
+            match (found.next(), found.next()) {
+                (Some(&(_, did)), None) if span["file_name"] == "<captured.rs>" => Ok(did),
+                _ => Err(unsupported_error(
+                    "private-interface diagnostic outside the captured declarations",
+                )),
+            }
+        };
+        for diagnostic in std::mem::take(&mut self.observed) {
+            let empty = vec![];
+            let primary: Vec<_> = diagnostic["spans"]
+                .as_array()
+                .unwrap_or(&empty)
+                .iter()
+                .filter(|s| s["is_primary"] == true)
+                .collect();
+            let noted: Vec<_> = diagnostic["children"]
+                .as_array()
+                .unwrap_or(&empty)
+                .iter()
+                .flat_map(|c| c["spans"].as_array().unwrap_or(&empty).iter())
+                .collect();
+            let (&[item], &[private]) = (primary.as_slice(), noted.as_slice()) else {
+                return Err(unsupported_error(
+                    "private-interface diagnostic of an unknown shape",
+                ));
+            };
+            let item = self.entity(located(item)?)?;
+            let private = self.entity(located(private)?)?;
+            let target = self.reference(private);
+            self.entity_fact(item, "private-interface", target);
+        }
+        Ok(())
     }
     fn predicates(&mut self, did: DefId) -> ExportResult<()> {
         let entity = self.entity(did)?;
@@ -568,6 +734,25 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
         for &(did, _, _) in &cat.definitions {
             let entity = self.entity(did)?;
             let kind = self.tcx.def_kind(did);
+            if matches!(
+                kind,
+                DefKind::Mod
+                    | DefKind::Struct
+                    | DefKind::Enum
+                    | DefKind::TyAlias
+                    | DefKind::Trait
+                    | DefKind::Field
+            ) {
+                let term = self.declared(did)?;
+                self.entity_fact(entity, "declared-visibility", term);
+            }
+            if matches!(
+                kind,
+                DefKind::Mod | DefKind::Struct | DefKind::Enum | DefKind::TyAlias | DefKind::Trait
+            ) {
+                let term = self.effective(did);
+                self.entity_fact(entity, "effective-visibility", term);
+            }
             if matches!(
                 kind,
                 DefKind::Struct | DefKind::Enum | DefKind::TyAlias | DefKind::Field
@@ -624,6 +809,7 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
                 }
             }
         }
+        self.private_interfaces(&cat.definitions)?;
         let mut targets = HashMap::new();
         for (span, res) in cat.paths {
             let Some(site) = self.find(span, "path-segment") else {
@@ -690,6 +876,7 @@ fn main() {
     io::stdin().take(2 << 20).read_to_end(&mut bytes).unwrap();
     let input: Input = serde_json::from_slice(&bytes).expect("private protocol input");
     assert_eq!(input.version, 1);
+    let environment = input.environment;
     if input.units.len() != 1 {
         println!(
             "{}",
@@ -723,26 +910,32 @@ fn main() {
         );
         return;
     }
-    let mut driver = Driver { unit, result: None };
+    let mut driver = Driver {
+        unit,
+        observed: Arc::default(),
+        result: None,
+    };
     let args = [
         "bittype-rust-semantics",
         "/__bittype__/captured.rs",
         "--sysroot",
         &sysroot,
         "--crate-name",
-        "captured",
+        &environment.crate_name,
         "--crate-type",
-        "lib",
+        &environment.crate_kind,
         "--edition",
-        "2024",
+        &environment.edition,
         "--target",
-        "x86_64-unknown-linux-gnu",
+        &environment.target,
         "--emit",
         "metadata",
         "--error-format",
         "json",
         "-A",
         "warnings",
+        "--force-warn",
+        PRIVATE_INTERFACES,
     ]
     .map(String::from)
     .to_vec();

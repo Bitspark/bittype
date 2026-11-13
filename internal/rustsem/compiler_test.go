@@ -1,11 +1,15 @@
 package rustsem
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/parse/go"
@@ -25,6 +29,9 @@ func compilerFixture(t *testing.T) ([]s.AST, *files.Context) {
 	}
 	return []s.AST{parsed.ASTView()}, &files.Context{Files: files.Files{Entries: []files.File{{ID: "test", Path: "test.rs", Text: text}}}, Links: []files.SyntaxLink{{File: "test", Tree: "test", Source: "test"}}}
 }
+
+var environment = Environment{Edition: n.Edition2024, Target: n.TargetLinuxX64, CrateName: "pages", CrateKind: n.KindLibrary}
+
 func TestCompilerFailureAndProtocol(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("qualified helper execution platform is Linux")
@@ -37,14 +44,14 @@ func TestCompilerFailureAndProtocol(t *testing.T) {
 		if err := os.WriteFile(path, []byte("#!/bin/sh\ncat >/dev/null\nprintf '%s' '"+response+"'\n"), 0700); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Check(ctx, path, sysroot, trees, source); !errors.Is(err, n.ErrCompiler) {
+		if _, err := Check(ctx, path, sysroot, environment, trees, source); !errors.Is(err, n.ErrCompiler) {
 			t.Fatal(response, err)
 		}
 	}
-	if _, err := Check(ctx, filepath.Join(t.TempDir(), "missing"), sysroot, trees, source); !errors.Is(err, n.ErrCompiler) {
+	if _, err := Check(ctx, filepath.Join(t.TempDir(), "missing"), sysroot, environment, trees, source); !errors.Is(err, n.ErrCompiler) {
 		t.Fatal(err)
 	}
-	if _, err := Check(ctx, os.Getenv("BITTYPE_RUST_HELPER"), sysroot, trees, source); !errors.Is(err, n.ErrCompiler) {
+	if _, err := Check(ctx, os.Getenv("BITTYPE_RUST_HELPER"), sysroot, environment, trees, source); !errors.Is(err, n.ErrCompiler) {
 		t.Fatal("wrong sysroot", err)
 	}
 	t.Setenv("BITTYPE_SHOULD_NOT_LEAK", "secret-placeholder")
@@ -53,8 +60,91 @@ func TestCompilerFailureAndProtocol(t *testing.T) {
 	if err := os.WriteFile(path, []byte(script), 0700); err != nil {
 		t.Fatal(err)
 	}
-	if out, err := Check(ctx, path, sysroot, trees, source); err != nil || out.Status != "incomplete" {
+	if out, err := Check(ctx, path, sysroot, environment, trees, source); err != nil || out.Status != "incomplete" {
 		t.Fatal(out, err)
+	}
+}
+
+// The helper passes the environment of the request to the compiler and judges
+// no value of it. Which values a profile supports is decided in one place, the
+// Rust vocabulary, and the helper holds no second copy of them.
+func TestHelperObeysEnvironment(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("qualified helper execution platform is Linux")
+	}
+	check := func(text string, change func(*Environment)) (Output, error) {
+		parsed, err := parser.Parse(context.Background(), parse.Input{Text: text, SourceID: "test", TreeID: "test"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		source := &files.Context{Files: files.Files{Entries: []files.File{{ID: "test", Path: "test.rs", Text: text}}}, Links: []files.SyntaxLink{{File: "test", Tree: "test", Source: "test"}}}
+		stated := environment
+		change(&stated)
+		return Check(context.Background(), os.Getenv("BITTYPE_RUST_HELPER"), os.Getenv("BITTYPE_RUST_SYSROOT"), stated, []s.AST{parsed.ASTView()}, source)
+	}
+	// A path that starts with :: names the crate root in edition 2015 and
+	// another crate since edition 2018.
+	rooted := "pub struct Local {} pub type Alias = ::Local;"
+	if out, err := check(rooted, func(e *Environment) { e.Edition = "2015" }); err != nil || out.Status != StatusOK {
+		t.Error("edition 2015 was not passed on", out.Status, out.Diagnostics, err)
+	}
+	if out, err := check(rooted, func(*Environment) {}); err != nil || out.Status != StatusInvalid {
+		t.Error("edition 2024", out.Status, out.Diagnostics, err)
+	}
+	// The pinned sysroot holds the standard library of one target.
+	if _, err := check("pub type Byte = u8;", func(e *Environment) { e.Target = "aarch64-unknown-linux-gnu" }); !errors.Is(err, n.ErrCompiler) {
+		t.Error("another target was not passed on", err)
+	}
+	// A binary crate needs a main function, which a library does not.
+	if out, err := check("pub type Byte = u8;", func(e *Environment) { e.CrateKind = "bin" }); err == nil && out.Status == StatusOK {
+		t.Error("the crate kind was not passed on")
+	}
+	if out, err := check("pub type Byte = u8;", func(e *Environment) { e.CrateName = "other" }); err != nil || out.Status != StatusOK || out.Facts.Entities[0].Name != "other::Byte" {
+		t.Error("the crate name was not passed on", out, err)
+	}
+}
+
+// The helper forces one lint and withholds every warning from its error
+// stream. The stream carries nothing for a source that the compiler accepts,
+// and the compiler's errors for one that it rejects. This runs the helper as
+// the bridge does and reads the stream, which Check does not return.
+func TestHelperWithholdsWarnings(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("qualified helper execution platform is Linux")
+	}
+	run := func(text string) (string, string) {
+		t.Helper()
+		parsed, err := parser.Parse(context.Background(), parse.Input{Text: text, SourceID: "test", TreeID: "test"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		source := &files.Context{Files: files.Files{Entries: []files.File{{ID: "test", Path: "test.rs", Text: text}}}, Links: []files.SyntaxLink{{File: "test", Tree: "test", Source: "test"}}}
+		units, err := prepare(context.Background(), []s.AST{parsed.ASTView()}, source)
+		if err != nil {
+			t.Fatal(err)
+		}
+		encoded, err := json.Marshal(input{Version: 1, Environment: environment, Units: units})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var stdout, stderr bytes.Buffer
+		command := exec.Command(os.Getenv("BITTYPE_RUST_HELPER"), os.Getenv("BITTYPE_RUST_SYSROOT"))
+		command.Env = []string{}
+		command.Stdin = bytes.NewReader(encoded)
+		command.Stdout, command.Stderr = &stdout, &stderr
+		if err := command.Run(); err != nil {
+			t.Fatal(err, stderr.String())
+		}
+		return stdout.String(), stderr.String()
+	}
+	// The forced lint twice, and the compiler's count of the warnings.
+	stdout, stderr := run("pub struct Public { pub field: Hidden, pub other: Hidden } struct Hidden {}")
+	if stderr != "" || !strings.Contains(stdout, `"Status":"ok"`) || strings.Count(stdout, `"Name":"private-interface"`) != 2 {
+		t.Errorf("a source with the forced lint: the error stream holds %d bytes: %.300s\n%.300s", len(stderr), stderr, stdout)
+	}
+	stdout, stderr = run("pub type Missing = Unknown;")
+	if !strings.Contains(stderr, `"level":"error"`) || strings.Contains(stderr, `"level":"warning"`) || !strings.Contains(stdout, `"Status":"compiler-errors"`) {
+		t.Errorf("a source with a compiler error: %.300s\n%.300s", stderr, stdout)
 	}
 }
 func TestCaptureLimitsAndOffsets(t *testing.T) {

@@ -31,9 +31,19 @@ type Unit struct {
 	Text  string
 	Nodes []Node
 }
+
+// Environment is what the helper passes to the compiler: the values of a
+// supported rust.Environment. The helper obeys them and judges none.
+type Environment struct {
+	Edition   string
+	Target    string
+	CrateName string
+	CrateKind string
+}
 type input struct {
-	Version int
-	Units   []Unit
+	Version     int
+	Environment Environment
+	Units       []Unit
 }
 
 func prepare(ctx context.Context, trees []s.AST, source *files.Context) ([]Unit, error) {
