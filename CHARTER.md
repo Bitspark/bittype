@@ -83,6 +83,16 @@ accepts explicit registration without knowing concrete providers; the applicatio
 root selects providers and composes stages. The shared infrastructure does not
 know the names or semantics of particular library contracts.
 
+**Clarified on 13 November 2026 ([models and operations](docs/models-and-operations.md#the-sentences-that-change)).**
+The owner directed on that day that the repository root splits into models
+and operations. "Syntax packages depend on the AST/CST carriers and identity
+interface" names what a syntax package imports today. In the design a
+language's syntax package also holds its grammar table. It then depends on
+two more packages, both of the model root: the agnostic syntax model, in
+whose table type the grammar table is written, and the language's own
+lexical part, whose predicate names the table uses. It still depends on no
+other language, no parser or formatter and no operation. Not implemented.
+
 ## Current delivery boundary
 
 The [Horos declaration integration](docs/horos.md) implements checked canonical

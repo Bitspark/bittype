@@ -20,6 +20,11 @@ rules do not transfer ownership of these cases to the platform repository.
 | [bittype/ACX-010: An agnostic forwarding mechanism is owned by Horos](0010-agnostic-mapping-adapter.md) | Identified on 13 November 2026. The function-to-interface adapter belongs in the agnostic generation layer, with source, target and reader supplied by its users. Implementation correction pending | AC-11 |
 | [bittype/ACX-011: Common Files semantic orchestration is implemented per language](0011-files-semantic-orchestration.md) | Identified on 13 November 2026. Horos and TypeScript separately assemble the same capture/resolve/analyze/evidence sequence. Language organization and meaning checks stay with their owners. Correction pending | AC-02, AC-11 |
 | [bittype/ACX-012: Verification-law role classification fixes one language pair](0012-verification-role-language-pair.md) | Identified on 13 November 2026. The shared architecture test recognizes only the literal horos-to-go law path. Correction pending; production law composition is a separate question | AC-03, AC-11 |
+| [bittype/ACX-015: Models hold operations and import operations](0015-models-hold-operations.md) | Identified on 13 November 2026, after the owner directed that the root splits into models and operations. By the design's table 23 of 129 production packages hold a model-side part and an operation, and they make 17 imports of an operation. Correction pending, designed in [models and operations](../models-and-operations.md). For the four intended-forms packages the correction is made on the branch of the migration of #196, and `main` shows the misplacement until that branch merges, or until the split is made on `main` if its pull request closes unmerged | AC-01, AC-02, AC-06, AC-11 |
+
+The numbers 0013 and 0014 are taken by case records on two open branches,
+`fix/definition-is-body-310` and `fix/one-bounded-writer-299`, and are not on
+`main` yet.
 
 ACX-001 continues the same incident first recorded as
 [platform/ACX-001](https://github.com/Bitspark/platform/blob/main/docs/concepts/architecture-cases/0001-bittype-verification-composition.md).

@@ -103,6 +103,20 @@ order of work.
 - **Private part.** Code that serves one owner and is never selected by a
   consumer, such as a lexical helper of one language.
 
+**Clarified on 13 November 2026 ([models and operations](models-and-operations.md#8-roles-per-root)).**
+The owner directed that the repository root splits into models and
+operations, and that a model contains no operation and imports none. Under
+that direction the role vocabulary exists under both roots. A vocabulary
+under the model root holds names, and declared tables over them, and imports
+nothing of the operations root. A contract identity is a value of a contract
+package's type, and contract packages are operations, so it lives in a
+vocabulary under the operations root. The definition above says "and nothing
+else", and three of the four sorts of vocabulary package hold more today:
+checks, typed readers and admission.
+[bittype/ACX-015](architecture-cases/0015-models-hold-operations.md) records
+that. Not implemented: the terms above and the rules below describe `main` as
+it is.
+
 ## Two different faults
 
 | | Wrong grouping | Wrong coupling |
@@ -228,6 +242,14 @@ paths. It reads no file and starts no process, so a vocabulary can hold it. Rust
 configuration and no other production package uses it. On that day Go still
 published `Contract()` from `resolve/files/golang/provider/go` and from
 `analyze/files/golang/provider/go`.
+
+**Clarified on 13 November 2026 ([models and operations](models-and-operations.md#2-the-test)).**
+"It reads no file and starts no process, so a vocabulary can hold it" was the
+criterion of 11 November 2026. Under the owner's direction of 13 November
+2026 a model contains no operation, and `Validate` evaluates a constraint.
+It is an operation, and that criterion no longer admits a function to a
+vocabulary of the model root. `Validate` leaves with slice S5 of that page.
+Not implemented.
 
 Finding 6 on 12 November 2026, with pull request [#246](https://github.com/Bitspark/bittype/pull/246).
 `semantics/golang/go` exports `ResolutionContract()` and `AnalysisContract()`

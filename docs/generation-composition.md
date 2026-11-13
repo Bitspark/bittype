@@ -19,6 +19,14 @@ profile. [Registration SPI](kernel-composition.md#registration-and-request) ·
 | Target Files formatter | Placement, module syntax and checking actual bindings |
 | Verification composition | Separate judgments over captured source and target artifacts |
 
+**Clarified on 13 November 2026 ([models and operations](models-and-operations.md#5-intent)).**
+The row "Native model" gives one owner "identity and validity". That is the
+package as it is. Under the owner's direction of that day a model contains no
+operation. In the design the forms of a language and their shapes are a
+declared table on the model side, and the validity of a form against that
+table is one checker of the kernel, which every target calls with its
+language's table. Not implemented.
+
 ## Construction and selection
 
 <!-- bittype:overview scope=construction-and-selection part=features -->
