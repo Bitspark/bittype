@@ -17,16 +17,16 @@ data instead of written as code?
 
 **bittype** is a Go library. It parses, checks, formats and prints the type
 syntax of five languages. It resolves and analyses four of them, three
-through their real compilers. It generates native type declarations in TypeScript, Go, Rust and
-C++ from canonical type declarations written in a language called horos.
-Section 1 describes it.
+through their real compilers. It generates native type declarations in
+TypeScript, Go, Rust and C++ from canonical type declarations written in a
+language called horos. Section 1 describes it.
 
 Each language has four packages today that say what exists in it. We call
 such a package a **vocabulary**. Two of them, the syntax vocabulary and the
 semantic vocabulary, sit beside the processing stages. Two of them sit inside
-the directory of one processing stage, generation: the package of intended
-type forms, which the code calls the **model**, and the package of external
-symbols. Each of the four states the type-level notions of its language in
+the directory of one processing stage, generation: the package of the type
+forms that generation intends to build, which the code calls the **model**,
+and the package of external symbols. Each of the four states the type-level notions of its language in
 its own words. Section 2.6 shows the four for Go.
 
 The project's owner asked where these descriptions belong. The owner then
@@ -37,7 +37,8 @@ them. The owner also asked why a language's model needs code at all.
 
 The owner asked the question on 13 November 2026 in another working session.
 That session relayed the messages to the research owner, the seat that writes
-this document. The research owner did not hear them directly. They are quoted
+this document. A seat is one named working role of our team. The research
+owner did not hear the messages directly. They are quoted
 here verbatim and in the order they were asked. They are the framing of this
 consultation.
 
@@ -86,7 +87,7 @@ is ours and is a working frame. It is no decision.
 
 | Question | What it asks | Asked of the expert |
 | --- | --- | --- |
-| Grouping | Does a model package hold two things that do not belong together: a vocabulary, and a piece of one generation contribution? | No. Decided as a first step, see below |
+| Grouping | Does a model package hold two things that do not belong together: a vocabulary, and a piece of the separately registered part that builds a language's syntax trees, its generation target? | No. Decided as a first step, see below |
 | Placement | Do models live apart from operations, with the rule that a model never imports an operation? What is a model: only a language's vocabularies, or also the generic carriers and the value types that today sit with each operation's contract? | Yes, questions 1 and 4 |
 | Unification | Do a language's intended forms and its analysed meaning share one vocabulary while keeping their different standing? | Yes, question 2 |
 | Declaration | Which parts of a language's model are data, which are code and why, and can a model be declared instead of written? | Yes, question 3 |
@@ -95,9 +96,9 @@ is ours and is a working frame. It is no decision.
 constructors and two checks. Three answers inside those checks say what
 today's generation covers. They do not say what a form is. The one production
 caller of the checks is the generation target of the same language, and the
-Rust target already holds its own coverage answer. The platform's rule on
-package boundaries says that parts which do not need each other are separated
-first, as a move. We therefore treat grouping as a step that needs no
+Rust target already holds its own coverage answer. The organization's rule
+on package boundaries (section 2.1) says that parts which do not need each
+other are separated first, as a move. We therefore treat grouping as a step that needs no
 consultation. Section 6.5 gives the facts and the reason, so that it need not
 be answered again. It is our derivation, and if you see that it prejudges one
 of the three open questions, please say so.
@@ -119,17 +120,18 @@ fixed points with their standing.
 
 Two consequences, stated once. First, the paths, package names and counts in
 sections 2 to 4 describe the present code. None of them is a constraint on
-the answer. Second, where a design page and the code disagree, we say so, and
-neither is a constraint: section 5.3 lists eight such disagreements.
+the answer. Second, where pages contradict each other or the code, we say
+so. Section 5.3 lists eight such places, and the answer should not rest on
+either side of one.
 
 Quotations of code give the file and the line at the code baseline, which is
 bittype's main branch at commit a28febc
 (a28febc44830d49ec3c2f22cd70c7ded9d0e5028) of 13 November 2026. All code is
 Go unless marked. Quotations of documents give the file. Where a quoted
 sentence held a Markdown link, the quotation keeps the link's text and drops
-its address. Numbers come from
-two investigation notes that read the main branch on 13 November 2026, and we
-recounted the totals at the code baseline. A glossary is in section 8.
+its address. Numbers come from two investigation notes that read the main
+branch on 13 November 2026, and we recounted the totals at the code
+baseline. A glossary is in section 8.
 
 ## 1. System overview
 
@@ -402,7 +404,7 @@ quote the owner on unification.
 
 ### 2.2 The generic carriers
 
-Standing: implemented today. Section 3.1 and 3.4 inline the types.
+Standing: implemented today. Sections 3.1 and 3.3 inline the types.
 
 A **carrier** is a generic data type that holds one kind of artifact for
 every language. It knows no language. bittype has six carrier packages.
@@ -438,8 +440,8 @@ of a language must have is neither in the carrier nor in the names. It is in
 the language's checker (section 3.2).
 
 For the semantic graph a language adds names and also Go types: handles that
-read the graph in the language's own terms, such as "the fields of this
-struct type".
+read the graph in the language's own terms, for example the fields of a
+struct type.
 
 ### 2.3 Stages, the two dimensions and the path form
 
@@ -633,7 +635,7 @@ from one of two places.
   provider. `transform/syntax/<language>/model/go` is a model. The language
   is read from the path and substituted into the rule's import patterns. A
   new package of a known shape has its rule without an edit to the test.
-  Section 3.8 inlines this function.
+  Section 3.7 inlines this function.
 - *From a closed table.* Foundation, kernel and shared helper packages have
   one entry each (31 entries). Packages of which there is only one have a
   hand entry (12 entries). A table of **role extensions** names, per package,
@@ -764,7 +766,7 @@ replaces what a mapping registers and returns. Today a mapping returns
 intent. Under the new contract a mapping returns one **decision record** per
 selection: a typed value that holds every decision the selection contains,
 from which the intended form is computed. The record's type is declared in
-horos, and its Go type is generated by bittype itself (section 3.10). The
+horos, and its Go type is generated by bittype itself (section 3.9). The
 reason is a second reader: a separately owned backend must emit conversion
 code from the same decisions.
 
@@ -825,7 +827,9 @@ code, the classification is our derivation, and the text says so.
 Every snippet is taken from the main branch at the code baseline, with its
 path and line. Comments are the code's own unless a line starts with
 `// [doc]`, which marks a comment added for this document. An ellipsis `...`
-marks omitted lines.
+marks omitted lines. A function shown without a body is its signature only.
+Where a snippet is introduced as having its comments abridged, a comment may
+be shortened.
 
 Import aliases recur. In every language's packages `s` is that language's
 syntax vocabulary. `g` is the grammar helper `internal/grammar` inside a
@@ -845,7 +849,7 @@ The abstract tree, complete except for comments (`trees/ast/go`, files
 `ast.go`, `node.go`, `origin.go`, `view.go`):
 
 ```go
-// trees/ast/go/ast.go:13-35, node.go:6-44, origin.go:7-32, view.go:7-11
+// [doc] trees/ast/go/ast.go:13-35, node.go:6-44, origin.go:7-32, view.go:7-11
 type TreeID string
 type NodeID uint32 // [doc] a one-based index into Nodes; zero names no node
 
@@ -1219,7 +1223,7 @@ Three rules from other checkers, each with what it expresses that the table
 type cannot:
 
 ```go
-// check/syntax/typescript/provider/go/check.go:60-72
+// [doc] check/syntax/typescript/provider/go/check.go:60-72
 // [doc] A condition on ancestors: an infer type is admitted only below the
 // [doc] constraint child of a conditional type, at any depth.
 var context func(ast.NodeID, bool) error
@@ -1238,7 +1242,7 @@ context = func(id ast.NodeID, inConstraint bool) error {
 ```
 
 ```go
-// check/syntax/rust/provider/go/check.go:100-107
+// [doc] check/syntax/rust/provider/go/check.go:100-107
 // [doc] An order among the children of one role: the table lists allowed
 // [doc] kinds per role, and no order between them.
 seenType := false
@@ -1252,7 +1256,7 @@ for _, p := range v.Children(id, s.RoleGenericParameter) {
 ```
 
 ```go
-// check/syntax/cpp/provider/go/check.go:72-80
+// [doc] check/syntax/cpp/provider/go/check.go:72-80
 // [doc] A condition on the parent, and a relation between two attributes of
 // [doc] one node. parents is a map from a node to its parent, built first.
 if v.Has(id, s.AttributeAccess) && n.Kind != s.KindBase {
@@ -1539,9 +1543,9 @@ func (t Type) Fields() ([]Field, bool) {
 }
 ```
 
-So "a struct term has the operator `struct`, JSON field records as data and
-one operand per field" is stated once by the writer and once by the reader.
-The operator's name is declared. Its shape is not.
+So the shape of a struct term (the operator `struct`, JSON field records as
+data, one operand per field) is stated once by the writer and once by the
+reader. The operator's name is declared. Its shape is not.
 
 **What else the package holds.** A reader is opened from a **receipt**, the
 value that the semantic contract issues for one finished analysis
@@ -2034,7 +2038,7 @@ func External(crate string, path []string, args ...g.Expression[s.Language]) g.E
 ```
 
 The coverage answer is in the Rust target
-(`transform/syntax/rust/target/go/provider.go:23-49`):
+(`transform/syntax/rust/target/go/provider.go:23-49`, one comment abridged):
 
 ```go
 // CheckExpression admits the forms of the Rust model. An external form is
@@ -2682,8 +2686,8 @@ statements below are bounded by that.
 Each is between two pages, or between a page and the code. All are to be
 corrected whatever is decided. None is evidence for an option.
 
-1. **"Names and nothing else" against what three of the four kinds of
-   vocabulary hold.** The definition (fixed point 19) says "nothing else".
+1. **The definition of a vocabulary against what three of the four kinds
+   hold.** The definition (fixed point 19) says "nothing else".
    The layout page describes the model as "native semantic forms and
    validation" and the Go semantic vocabulary as "Go vocabulary, contract
    identities and immutable native type readers". The boundaries page itself
@@ -2695,13 +2699,13 @@ corrected whatever is decided. None is evidence for an option.
 3. **The target's role.** The layout page gives a target "its own syntax,
    model and lexical helper". Three of the four targets also import their
    symbol package, through a role extension.
-4. **"Its own language's vocabulary".** The pages say a vocabulary imports
+4. **What a vocabulary may import.** The pages say a vocabulary imports
    "Foundations and its own language's vocabulary". The test permits each
    kind of vocabulary only the syntax vocabulary of its language. A model
    may not import the semantic vocabulary or the symbol package, and the
    reverse.
-5. **Two stale entries under "not examined".** Pages still list the form
-   names and the readers' key literals as not examined. Both are corrected
+5. **Two stale entries.** Pages still list the form names and the readers'
+   key literals as things not yet examined. Both are corrected
    in the code.
 6. **Who supplies a model.** One page says: "Libraries supply declarations,
    native models and mapping descriptions under their own ownership." The
@@ -2750,14 +2754,15 @@ is independent of the operation, isn't it?"
 
 **A test for "model", applied to every package.** To see what the proposal
 means concretely, an investigation applied one stated test to all 129
-production packages. The test is ours, not the owner's. In our words:
+production packages. The test is ours, not the owner's:
 
-> A package is a *model* if it declares what exists (carriers, vocabularies
-> of names, forms, identities, value types with their well-formedness) and
-> performs no processing of an input into an output. It is an *operation* if
-> it parses, checks, formats, prints, resolves, analyzes, transforms,
-> verifies or composes. It is *both* if it holds a declaration and
-> processing. It is *undecided* if the test gives no answer.
+- A package is a *model* if it declares what exists (carriers, vocabularies
+  of names, forms, identities, value types with their well-formedness) and
+  performs no processing of an input into an output.
+- It is an *operation* if it parses, checks, formats, prints, resolves,
+  analyzes, transforms, verifies or composes.
+- It is *both* if it holds a declaration and processing.
+- It is *undecided* if the test gives no answer.
 
 Validation at construction time was counted as well-formedness. Anything
 that takes one artifact and returns another was counted as processing: a
@@ -2895,8 +2900,8 @@ helpers that both sides import.
 
 - What it answers: message 6, with a narrower meaning of "model": what one
   language says about itself.
-- What it implies: the rule becomes "a model never imports an operation;
-  both may import the third place". The third place needs a definition of
+- What it implies: the rule becomes: a model never imports an operation,
+  and both may import the third place. The third place needs a definition of
   its own that says what may be in it. Without one it collects whatever is
   hard to classify. The split of contract packages is the same as in P2,
   with another destination.
@@ -2944,9 +2949,10 @@ as operators and entity kinds. That one is a claim made before a program
 exists and the other is evidence about one program would be a property of
 where the name occurs. Syntax node kinds would stay separate.
 
-- What the test has to show: that a consumer who reads "a slice of X" keeps
-  the same guarantees whether the statement is intent or evidence, and that
-  every difference is represented and not erased.
+- What the test has to show: that a consumer who reads that a type is a
+  slice of some element type keeps the same guarantees whether the statement
+  is intent or evidence, and that every difference is represented and not
+  erased.
 - The differences that would have to be represented, from the code:
   1. *What a name refers to.* Intent refers to a destination: a declaration
      that is planned, or a symbol. Evidence refers to the entity that a
@@ -3210,7 +3216,7 @@ uses another word for the same thing, the entry says so.
 | Composition | Code that chooses contributions and registers them. Today tests and tools |
 | Contract | The interface between one operation's shared mechanism and its independently owned contributions. One package per operation under `contracts/`. Each also declares value types (section 2.4) |
 | Contribution | One thing a consumer registers or selects on its own: a stage provider, a source reader, a target, one mapping |
-| Coverage answer | A refusal that says "not supported today". Opposed to a well-formedness answer, which says "this is not a valid form" |
+| Coverage answer | A refusal that means: not supported today. Opposed to a well-formedness answer, which means: this is not a valid form |
 | Decision record | Under the contract migration, the typed value that a mapping returns for one selection, holding every decision the selection contains. The migration's pages also call it a payload |
 | Destination | What a name use in generated output is meant to refer to: a generated declaration, a type parameter or an external symbol. An identity, never a structure |
 | Dimension | One of the two rows of stages. **Syntax**: text, concrete tree, abstract tree. **Files**: file set, source, semantics |
