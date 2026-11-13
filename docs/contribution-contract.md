@@ -817,7 +817,10 @@ takes that part as the one that is the same in every target, and names O4's
 identity after it. So this page writes "the family's meaning", with a meaning
 identity and a meaning revision, where O4 wrote "family contract". The other
 six parts "are fixed per target by the contribution's representation
-revision" (O19).
+revision" (O19). One of the four things in "Value meaning" is the native
+equivalence, which is stated on native values, and those differ by target.
+Whether it belongs to the family's meaning or to a representation revision is
+[not specified here](#what-is-delegated-and-what-is-not-specified-here).
 
 | | The family's meaning | The representation revision |
 | --- | --- | --- |
@@ -1612,8 +1615,8 @@ list of what the plan carries (O1 and O7), one after the completeness test
 no line that #260 changes. In representation families it adds four
 clarifications, none in a passage that #260 changes.
 
-**Pointers, not amendments.** Six pages gain a pointer to this page and
-change no statement of their own: the [SPI](generation-spi.md) and the
+**Pointers, not amendments.** Seven pages gain a pointer to this page or a
+dated note, and change no statement of their own: the [SPI](generation-spi.md) and the
 [registration page](kernel-composition.md) say that the mapping contract is
 going to change, [semantic generation](semantic-generation.md),
 [package boundaries](package-boundaries.md) and
@@ -1782,6 +1785,9 @@ A note that row 39 names is made with this change: the validation cell of row
   and of a meaning revision.** O4 and O19 fix what each means. Who owns a
   family's meaning when two publishers contribute to it is not specified
   (O19). What the family's meaning of an exact mapping is, is not said.
+  Nor is it said whether the native equivalence, which
+  `docs/representation-families.md:38` lists under "Value meaning", belongs
+  to the family's meaning or to a representation revision.
 - **A binder's requirement.** In which frozen record a requirement is stated
   and in what form, how the planner finds the requirements of a binder when
   it plans an application, and with which reason an application that cannot
