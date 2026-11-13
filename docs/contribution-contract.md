@@ -1314,9 +1314,9 @@ the two texts, the options, and what the rest of the page assumes meanwhile.
 The research owner decides each, and the decision is recorded here.
 
 **1. An invariant carried by reference, and the plan's list (row 5 and binding
-generation).** "For each use and generic instance, the plan carries" a list
-that includes "the rules for absence, presence, null and native `undefined`"
-(`docs/binding-generation.md:52`, `:58`). Row 5: "An invariant of a semantic
+generation).** "For each use and generic instance, the plan carries"
+(`docs/binding-generation.md:52`) a list that includes "the rules for
+absence, presence, null and native `undefined`" (`:58`). Row 5: "An invariant of a semantic
 revision is carried by reference to that revision".
 
 - (a) The plan carries a rule also when it names it through the selected
