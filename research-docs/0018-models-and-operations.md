@@ -2559,3 +2559,161 @@ Four observations, as facts.
   are compared. The comparison is of identities (a symbol against an
   entity), not of type structure. No production code today compares an
   intended `record` form with an analysed `struct` term.
+
+## 5. Constraints
+
+This section lists only owner rules and accepted designs. Section 5.2 then
+says what is not decided, and section 5.3 lists eight places where pages
+contradict each other or the code. No fact of the present code is a
+constraint, with one exception that is a fact of the implementation language
+(fixed point 21).
+
+### 5.1 Fixed points and their standing
+
+"Research N" is an earlier expert consultation of this project. A row of its
+result table has a verdict that the research owner of that consultation
+gave: HOLDS means accepted as advised.
+
+**About the answer's method.**
+
+| # | Statement | Standing | Shown in |
+| --- | --- | --- | --- |
+| 1 | "The currently implemented surface must have **zero influence** on that choice. Implementation or migration effort has **zero weight**, including as a tiebreaker." Estimates of the existing implementation "can guide delivery sequencing only" | Owner rule (AC-09, 8 November 2026) | 1.5, 2.1 |
+| 2 | "Move a misplaced or wrongly named responsibility to its owner first, as its own change, without waiting for the complete implementation of its destination. That first change establishes the final structure". Afterwards coverage "is then added without moving, renaming or removing what exists" | Owner rule (AC-10, 11 November 2026) | 2.1 |
+| 3 | Wrong grouping is corrected before wrong coupling: "Correct the grouping first, as AC-10 orders, and the coupling becomes visible." A dependency check "enforces a boundary that reasoning has already decided" and "does not replace that reasoning" | Owner request of 11 November 2026, with the platform's reading | 2.1 |
+| 4 | "A language-agnostic mechanism belongs in the agnostic layer. Each language supplies its own types, meanings and policies through the shared contract." | Owner rule (AC-11, 13 November 2026) | 2.1 |
+| 5 | "An extension needs a concrete case that the existing contracts cannot express or uphold, together with an explanation of why composition does not resolve it." | Owner rule (7 October 2026), in the platform's words | 2.1 |
+| 6 | Unification "needs stronger evidence than overlapping fields or similar code." "Compare identity, lifetime, authority, allowed operations, guarantees and failure behavior." "Differences must be represented explicitly rather than erased." | Accepted principle of the platform | 2.1 |
+| 7 | "Semantic ownership is about who defines a meaning and how that meaning enters an operation. It is not determined by a directory, package name, generic type parameter or the word "plugin"." | Owner rule (6 November 2026), in the platform's words | 2.1 |
+
+**About intent.**
+
+| # | Statement | Standing | Shown in |
+| --- | --- | --- | --- |
+| 8 | "Native intent is not an analyzed `Semantics[T]`: target analysis establishes facts about the actual constructed/organized program." | Accepted design (`docs/generation.md`, 8 November 2026) | 2.7 |
+| 9 | "The planned native program is intent, not a fabricated semantic-analysis result. Only analysis of the realized target program establishes native semantic facts." | Accepted design (`docs/generation-planner.md`) | |
+| 10 | "Native semantic evidence belongs to the actual native capture. A generation plan or successful syntax check is not that evidence." | Accepted design (`docs/type-system-architecture.md`) | |
+| 11 | The unplaced output of generation "need not contain compiler-established facts about a hypothetical native program" | Accepted design (research 0016 on the placement of generated declarations, the expert's words; the corresponding row 19 is adopted with an adaptation) | |
+| 12 | "Native expressions contain target-owned forms, immutable scalar metadata and child expressions. The shared interpreter understands substitution and references, not the meanings of these forms. There is no AST kind, source string or arbitrary payload field in an expression." | Accepted design (`docs/generation-spi.md`) | 3.4 |
+| 13 | "The native target remains the trusted interpreter of its own forms." The four models share no package: "Each model owns its own forms, a form can be read only by its issuer, and no package compares a form name of one language with another's or with a literal." | Accepted design (case record ACX-005; change log entry of 12 November 2026) | 3.4 |
+| 14 | "bittype's native vocabularies stay types-only." | Accepted design (`docs/binding-generation.md`, research 0014 on binding generation) | |
+
+**About a shared model of types.**
+
+| # | Statement | Standing | Shown in |
+| --- | --- | --- | --- |
+| 15 | The semantic graph "has no scope graph, substitution map, universal type algebra or conditional proof system". "A provider owns lookup, semantic rules, vocabulary, coverage and the interpretation of its payloads. The kernel validates graph integrity; it cannot prove a provider's claims or make native meanings equivalent to Horos." | Accepted design (`docs/semantics.md`; research 0002 on the semantic kernel, row 1, HOLDS: "Share established facts with provider-owned vocabulary, separate entity bodies and parameter ownership") | 2.2, 3.3 |
+| 16 | The mechanism by which mappings state target types "should not become a new language-neutral type calculus". Row 21, HOLDS: "Keep the SPI experimental and avoid a richer generic semantic model." | Accepted design (research 0007 on generator plugins) | |
+| 17 | A model of a type system in the sense of terms, judgments and rules is content of logos packages: "These are requirements for language integrations and Logos semantic packages, not fields of a new shared Bittype model or implemented Go struct." Row 1, HOLDS: "Consume Logos semantic packages; no Bittype-owned type-system foundation" | Accepted design (`docs/type-system-model.md`; research 0010 on the architecture of type-system models, which was about verification) | |
+| 18 | A destination is an identity. "A destination is a declaration's identity and never structural equality". "An external symbol names the selected public export and not the canonical type underneath it". "Three statements define it. A later change may not alter them." | Accepted design (`docs/destinations.md`, specification of 13 November 2026, from research 0016) | 3.5 |
+
+Fixed points 15 to 17 each rule out one thing: a universal type algebra in
+the graph, a language-neutral calculus in generation, and a type-system
+framework owned by bittype. None of them speaks about one language's own
+vocabulary of its own types. That is our reading, and question 2 rests on
+it.
+
+**About vocabularies and the layout.**
+
+| # | Statement | Standing | Shown in |
+| --- | --- | --- | --- |
+| 19 | A vocabulary is "The names two parties must agree on and nothing else: syntax kinds, semantic keys, profile and contract identities, intended native forms. A vocabulary package imports no contribution." | Accepted design (`docs/package-boundaries.md`, state of 12 November 2026). Section 5.3 names what contradicts "nothing else" | 2.5 |
+| 20 | "**One language.** A package that names a language imports no package of another language. A mapping names two." | Accepted design (`LAYOUT.md`) | 2.5 |
+| 21 | Go's rule for a directory named `internal`: a package below it can be imported only by code in the tree rooted at the parent of that directory. Today `internal/` is at the module root, so every package can import the helpers below it. A helper below `ops/internal/` could not be imported from `model/`, and the reverse | A fact of the implementation language. Not a design of ours | 6.2 |
+| 22 | "One public root Go module contains independently owned packages". "Do not create a language-first packages tree, additional Go modules, compatibility aliases or placeholder source directories." | Owner decision of 31 October 2026 as the layout page records it, and the layout page | 2.3 |
+| 23 | "organize by processing stage and enforce a uniform structure across languages"; `<stage>/<dimension>/<scope>/<component>/go` | Owner decisions of 31 October and 6 November 2026, as the layout page records them. The owner who made them now proposes a change to them. We therefore treat them as the thing under examination and not as a limit on the answer | 2.3 |
+| 24 | "A checker gets no concrete tree, a formatter no lexer, and no Syntax stage a semantic contract." | Accepted design (`LAYOUT.md`, role table) | 2.5 |
+| 25 | The design of the contract migration lists, among the shared packages that must stay unchanged when a materially different contribution is added, "the native model and target of each language". It is final only when its gate is met | Accepted design, provisional (`docs/contribution-contract.md`, 13 November 2026) | 2.8 |
+
+Out of scope: the design of the contract migration itself, the choice of a
+native representation for any horos type, the Files stage's design, and
+verification.
+
+### 5.2 What is not decided
+
+An investigation read the layout page, the charter, the contributor
+instructions, the change log, the design pages and the result tables of the
+earlier consultations for each of these questions. It found no accepted
+sentence that answers any of them. It lists what it did not read, and the
+statements below are bounded by that.
+
+1. **Why the model is inside `transform/`.** The pages state the place and
+   the ordering rule (stage first). No sentence argues for the stage
+   directory against a place beside `syntax/` and `semantics/`. The commit
+   that created the four packages has no message body, and no consultation
+   was asked. The two dependency statements that the pages give ("Mappings
+   depend on their source's reader and target models, never AST construction
+   packages. Targets depend on their model and shared constructor, never
+   source readers or mapping libraries.") say who may import the model. They
+   do not say where it lives.
+2. **Why the symbol package is inside `transform/`,** although the layout
+   page itself describes it as "for generation and Files" and a package of
+   another stage imports it.
+3. **Whether the type-level notions of one language should have one
+   vocabulary** in which generation states intent and analysis states
+   evidence. Every decided sentence (fixed points 8 to 11) separates a
+   planned program from an analysed, placed program. None speaks about the
+   names of the notions. No consultation asked.
+4. **What the top-level directories `syntax/` and `semantics/` are.** No
+   sentence says whether they are stages, dimensions, levels or homes of
+   vocabularies. Put together from several sentences, each holds the
+   per-language vocabulary of one abstract representation, the AST and the
+   semantic graph. That description is the investigator's.
+5. **Whether a stage other than `transform` may import a model.** No role
+   lists it except the target and the mapping. No sentence forbids or
+   permits it for a Files stage, for verification or for a bridge.
+6. **Whether verification laws and generation mappings should speak about Go
+   types in one vocabulary.** Today the laws use the semantic vocabulary and
+   the mappings use the model.
+7. **Whether the source side is meant to have a counterpart of the model.**
+   horos has a source reader and no model (section 4).
+8. **Whether the checks in a model belong to the vocabulary or to the
+   target.** The scan of package boundaries of 11 November 2026 did not
+   examine the model packages. We decided this as a first step (section
+   6.5); that decision is ours.
+9. **What a model is for a language without analysis.** C++ has no semantic
+   vocabulary and no symbol package.
+10. **Whether the sameness of the four models is intended.** The change log
+    decides only that no package is shared.
+
+### 5.3 Eight contradictions that the answer must not rest on
+
+Each is between two pages, or between a page and the code. All are to be
+corrected whatever is decided. None is evidence for an option.
+
+1. **"Names and nothing else" against what three of the four kinds of
+   vocabulary hold.** The definition (fixed point 19) says "nothing else".
+   The layout page describes the model as "native semantic forms and
+   validation" and the Go semantic vocabulary as "Go vocabulary, contract
+   identities and immutable native type readers". The boundaries page itself
+   admits a method into a vocabulary with a criterion: "It reads no file and
+   starts no process, so a vocabulary can hold it." In the code only the
+   syntax vocabularies hold names and nothing else.
+2. **The number of role extensions.** Two pages say ten packages have one.
+   The table in the test has twelve.
+3. **The target's role.** The layout page gives a target "its own syntax,
+   model and lexical helper". Three of the four targets also import their
+   symbol package, through a role extension.
+4. **"Its own language's vocabulary".** The pages say a vocabulary imports
+   "Foundations and its own language's vocabulary". The test permits each
+   kind of vocabulary only the syntax vocabulary of its language. A model
+   may not import the semantic vocabulary or the symbol package, and the
+   reverse.
+5. **Two stale entries under "not examined".** Pages still list the form
+   names and the readers' key literals as not examined. Both are corrected
+   in the code.
+6. **Who supplies a model.** One page says: "Libraries supply declarations,
+   native models and mapping descriptions under their own ownership." The
+   code and two later documents treat the model as the target's closed set:
+   the issuer is private, a form of another issuer is refused, an unknown
+   form name is unsupported, and the target switches over the model's names.
+7. **The model as fixed and shared, against families that need new forms.**
+   Fixed point 25 keeps the model unchanged when a contribution is added. An
+   earlier consultation recorded that for many families "Only the models and
+   mapping libraries are missing". A family that needs a form the model
+   lacks, such as a map or an integer, must edit the model and the target of
+   that language. No page says whether that is an edit of a shared package
+   in the sense of the gate.
+8. **The optional flag of Go's field form has no reader.** The model writes
+   it and validates it. The Go target ignores it. The record mapping wraps
+   the type instead.
