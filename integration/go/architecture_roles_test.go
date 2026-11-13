@@ -272,6 +272,8 @@ func packageRole(relative string) (roleRule, bool) {
 		return rule, true
 	case s[0] == "transform":
 		return transformRole(relative)
+	case s[0] == "completeness":
+		return completenessRole(relative)
 	case isVerificationLaw(relative):
 		// One verification law of the horos-to-go pair. The pair is spelled out
 		// because it is the only one: its directory says "go" where the language
@@ -460,6 +462,55 @@ func transformRole(relative string) (roleRule, bool) {
 		return role("transform/syntax/<language>/mapping/go and mapping/<part>/go", roleCommonPart, language,
 			"contracts/generation/go", "syntax/<language>/go", "transform/syntax/<language>/source/go", "trees/representation/go",
 		), true
+	}
+	return roleRule{}, false
+}
+
+// PROTOTYPE (bittype#196). The test tree of the completeness test backend
+// (O8, O16, row 29). No other role permits an import of these packages, so
+// only a composition and the packages below import them: a production
+// mapping imports nothing of the test tree, and bittype's native vocabularies
+// stay types-only.
+//
+//	completeness/<native>/values/go                         the value vocabulary of a target's completeness product, with its facet kinds
+//	completeness/<native>/backend/go                        the completeness test backend of a target
+//	completeness/<source>-to-<native>/facets/<name>/go      a facet package of one contribution
+func completenessRole(relative string) (roleRule, bool) {
+	s := strings.Split(relative, "/")
+	switch {
+	case len(s) == 4 && s[2] == "values" && isLanguageName(s[1]):
+		return role("completeness/<native>/values/go", roleVocabulary, []string{"native", s[1]},
+			"contracts/generation/go", "syntax/<native>/go",
+		), true
+	case len(s) == 4 && s[2] == "backend" && isLanguageName(s[1]):
+		return role("completeness/<native>/backend/go", roleContribution, []string{"native", s[1]},
+			"contracts/generation/go", "completeness/<native>/values/go",
+		), true
+	case len(s) == 5 && s[2] == "facets":
+		source, native, ok := strings.Cut(s[1], "-to-")
+		if !ok || !isLanguageName(source) || !isLanguageName(native) {
+			return roleRule{}, false
+		}
+		// A facet package holds the facets of one contribution for one
+		// product. It imports its contribution's vocabulary and the product's
+		// vocabulary, and neither the mapping, nor the codec, nor another
+		// facet package (O25).
+		rule := role("completeness/<source>-to-<native>/facets/<name>/go", roleContribution, []string{"source", source, "native", native},
+			"contracts/generation/go", "completeness/<native>/values/go",
+		)
+		own := "transform/syntax/" + s[1] + "/vocabulary/" + s[3] + "/go"
+		rule.admits = func(dependency string) bool { return dependency == own }
+		rule.forbidden = func(dependency string) string {
+			d := strings.Split(dependency, "/")
+			if dependency != relative && len(d) == 5 && d[0] == "completeness" && d[2] == "facets" {
+				return "a facet package never imports another facet package"
+			}
+			if dependency != own && (isPairPart(dependency, "mapping") || isPairPart(dependency, "codec") || isPairPart(dependency, "vocabulary")) {
+				return "a facet package imports no mapping, no codec and no vocabulary but its own"
+			}
+			return ""
+		}
+		return rule, true
 	}
 	return roleRule{}, false
 }

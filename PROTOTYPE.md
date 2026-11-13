@@ -476,3 +476,106 @@ its configuration and the source with its semantics version
 | `...Stage4MemoKeyFromTheSerializedPlan` | A reader that only parsed the serialized plan derives equal keys for two uses with equal nodes and another key with another selected dependency | The memo and its token (bitspark-service#40) |
 | `...Stage4VersionAxesAlone` | An unknown value of the envelope protocol, the payload schema, the meaning revision, the representation revision and the source semantics is each refused under its own name, and the baseline is read | The fourth axis (F13, stage 7) |
 | `...Stage4RealizationManifest` | The inventory carries the planner's identity; one plan links with the manifests of two placements and resolves each symbol to another module path and the same name; the manifest of another output is a linking error. Red under `link-ignores-plan-digest`, which then reports an incomplete plan | A reader on the formatter's result (F11); row 24 |
+
+## Stage 5: facets, Go handlers and executed Go lowering (guarantees 1, 2, 3, 6; gate line 5; gate line 3, first test)
+
+**Built.** Facet kinds, facets and products in the contract
+(`contracts/generation/go/facet.go`). The test tree of the completeness
+backend, a new top-level directory `completeness/`:
+
+| Package | What it is |
+| --- | --- |
+| `completeness/golang/values/go` | The Go value vocabulary, the two facet kinds of the Go conversion product and the product |
+| `completeness/golang/backend/go` | The completeness test backend for Go: it lowers from the serialized plan, the source snapshot and the facets, and holds the runtime of the lowered program |
+| `completeness/horos-to-golang/facets/<name>/go` | One facet package for each of text, boolean, list, record, declarations, optional |
+
+The facets are Go handlers: a facet's value is a Go function that the backend
+calls in process (`values.Lowering`). No second, interpreting handler that
+converts values in process was built: the lowered code is what is executed.
+
+The source snapshot of row 34 is exported by the test composition
+(`integration/go/prototype_snapshot_test.go`).
+
+**What the page left open and what was chosen.**
+
+- *The form of a contribution's facet list.* **The list is what the
+  consumer's composition registered for the contribution, and the
+  contribution itself states nothing** (finding F15). `Registry.RegisterFacet`
+  admits a facet that names a registered contribution of the same publisher;
+  the planner checks, for each selected contribution and each product the
+  request names, that a facet of each required kind is among them.
+- *Where a facet package lives and what it imports.*
+  `completeness/<source>-to-<native>/facets/<name>/go`. It imports the
+  contract, the value vocabulary of its target's product and its own
+  contribution's vocabulary. It imports no mapping, no codec and no other
+  facet package. The roles are `completenessRole` in
+  `integration/go/architecture_roles_test.go`.
+- *The set of reference categories, and who issues a member reference.*
+  Issued by the plan: type, binder, adapter, declaration, owned helper,
+  member. Not issued: external symbol, and requirement with its evidence. A
+  member reference is issued by the plan from the node of the native type
+  that contains the member (`RepresentationPlan.MemberOf(node, ordinal)`).
+  The member's spelled name is stated by the projector beside the native type
+  (`Projected.Members`), and the planner carries it on the node.
+- *How a reader gets a typed payload.* A facet package may not import the
+  codec (O25). The backend's composition gives it the codecs, and the backend
+  decodes a node's payload with the codec of the node's schema, after it
+  checked the receipt, and hands the typed view to the facet.
+
+**Findings of this stage.**
+
+- **F14. The Go value vocabulary of the prototype is Go text with typed
+  holes.** The page (row 29) asks of the prototype's vocabulary that it
+  "compile and run generated construction, member access, an owned helper,
+  and a generic adapter argument". It does. Every type, member, owned helper
+  and adapter argument enters the lowered text through a hole that holds a
+  reference of the plan, which the backend checks with the plan and resolves.
+  The text between the holes is the facet's own Go. So the accepted sentence
+  "source-code strings never stand in for typed target expressions"
+  (`docs/representation-families.md:52-55`) is not met by this instrument. A
+  typed expression vocabulary for Go was not built. What the prototype shows
+  for row 29 is the reference categories and their checks, not a vocabulary.
+- **F15. A production mapping cannot name its facet kinds.** O8/O16: the
+  contribution's facet list is "What a contribution states about its
+  facets". O18: "every binding facet kind and the Go value vocabulary live in
+  the test tree". O8: "A production mapping imports nothing of them". And
+  `AGENTS.md`: "Identities live in vocabulary packages." So a mapping package
+  of bittype can state its facet kinds only by spelling their identities a
+  second time. Deviation: the contribution states nothing, and its facet list
+  is what the composition registered for it. Guarantee 1 then reads: "the
+  facets a product requires are registered for the selected contribution, by
+  its publisher".
+- **F16. The snapshot of ground descriptors does not serve an open
+  declaration.** Row 34: "a snapshot of ground descriptors and module pins".
+  The plan's nodes describe the open declaration `Page<T>`, which has no
+  ground descriptor. A reader needs, for the body of `Page<T>`, the canonical
+  name of each field. The prototype's snapshot therefore carries, for each
+  declaration, the source's description of its type as written (with
+  parameters and references), and each child with its position.
+- **F17. A link needs the source's label of its child.** A reader has to
+  pair a link of a record node with a field of the source's description. The
+  plan carried no such pairing. Built: a link carries `position`, the
+  provider's own locator of the operand (for horos `[k+2, 3]` for field k),
+  passed through unread by the kernel, and the snapshot gives each child the
+  same position. Without it a reader would have to pair by order, which is a
+  decision of the record contribution and not of the source.
+- **F18. Guarantee 6 rests on the codec.** The kernel finds the codec by the
+  schema reference that the contribution states and trusts it to validate. A
+  codec that does not validate is not detected by the kernel (the mutant
+  `codec-skips-validation` plans). What the kernel adds is the receipt: a
+  frozen value cannot be exchanged after validation without the receipt
+  failing.
+
+**Tests** (`integration/go/prototype_stage5_test.go`; evidence
+`stage5-run2.txt`, `stage5-lowered.go.txt`, `stage5-plan.json`,
+`stage5-snapshot.json`; `stage5-run1.txt` is the first run, in which the
+mutant of guarantee 6 was not detected because decoding validated a second
+time).
+
+| Test | Shows | Does not show |
+| --- | --- | --- |
+| `...Stage5LoweredGoCompilesAndRuns` | A fresh process lowers Go conversion for `Page[Person]` from the serialized plan, the snapshot and the facets; the code compiles, converts five values there and back and refuses three that are outside the type; it has a typed construction, member access, the owned helper and a generic adapter argument | A typed expression vocabulary (F14); the conversion laws |
+| `...Stage5MemberByReferenceNotByString` | With member names from a fixture's configuration, the lowering by member reference compiles and runs, and the lowering that spells members from the source does not compile | A naming policy of the naming design |
+| `...Stage5FacetsBelongAndMatch` | Guarantee 1: without one facet a request for bindings is "missing facet" and a request for types succeeds. Guarantee 2: another issuer under the same name, another target and another contract version are rejected, each red under its mutant. A facet of another publisher is not admitted | What a facet does |
+| `...Stage5ReferencesAreChecked` | Guarantee 3: a reference of another plan, a member where a type is expected, a binder outside its scope are rejected, each red under its mutant | External symbols; requirement references |
+| `...Stage5ExactPayloadPassedValidation` | Guarantee 6: a value that the Go type admits and the schema (`atom-exact("direct") \| atom-exact("boxed")`) does not is refused before the projector runs; red under a codec that does not validate. A receipt for another frozen value or another schema fails | That the kernel detects a codec that does not validate (F18) |

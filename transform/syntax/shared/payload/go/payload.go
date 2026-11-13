@@ -118,7 +118,8 @@ func (c codecOf[P]) Freeze(value any) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !horos.Conforms(encoded, c.schema.descriptor) {
+	// The switch is the prototype's instrument for the test of guarantee 6.
+	if !g.PrototypeMutants["codec-skips-validation"] && !horos.Conforms(encoded, c.schema.descriptor) {
 		return nil, fmt.Errorf("the value does not conform to schema %s/%s", c.schema.reference.Identity, c.schema.reference.Version)
 	}
 	return codec.Encode(encoded), nil
@@ -130,7 +131,7 @@ func (c codecOf[P]) View(frozen []byte) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !horos.Conforms(value, c.schema.descriptor) {
+	if !g.PrototypeMutants["codec-skips-validation"] && !horos.Conforms(value, c.schema.descriptor) {
 		return nil, fmt.Errorf("the frozen value does not conform to schema %s/%s", c.schema.reference.Identity, c.schema.reference.Version)
 	}
 	return c.decode(value)
@@ -145,6 +146,16 @@ func Bool(b bool) Value                 { return data.EncodeBool(b) }
 func ReadBool(v Value) (bool, error)    { return data.ReadBool(v) }
 func List(items []Value) Value          { return data.EncodeList(items) }
 func ReadList(v Value) ([]Value, error) { return data.ReadList(v) }
+
+// Atom and ReadAtom map a bare atom, for a schema that constrains one.
+func Atom(s string) Value { return core.NewAtom([]byte(s)) }
+func ReadAtom(v Value) (string, error) {
+	a, ok := v.(core.Atom)
+	if !ok {
+		return "", fmt.Errorf("the value is no atom")
+	}
+	return string(a.Bytes()), nil
+}
 
 // Field is one field of a record value.
 type Field struct {
