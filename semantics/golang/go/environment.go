@@ -58,10 +58,10 @@ const importsKey = "imports-2"
 
 // ImportConfiguration admits imports of captured packages under the output
 // root and of the explicitly supplied packages. The result is normalized, so
-// equal environments produce identical settings. An output root in a directory
-// that UnsupportedDirectory names is refused with ErrUnsupported, every other
-// invalid environment with semantic.ErrInvalidRequest, and one that is too
-// large with semantic.ErrLimit.
+// equal environments produce identical settings. An output root, or a supplied
+// package of the module, in a directory that UnsupportedDirectory names is
+// refused with ErrUnsupported, every other invalid environment with
+// semantic.ErrInvalidRequest, and one that is too large with semantic.ErrLimit.
 func ImportConfiguration(environment ImportEnvironment) ([]semantic.Setting, error) {
 	normalized, err := normalizeEnvironment(environment)
 	if err != nil {
@@ -103,7 +103,7 @@ func Imports(settings []semantic.Setting) (environment ImportEnvironment, enable
 	}
 	want, err := ImportConfiguration(environment)
 	if errors.Is(err, ErrUnsupported) {
-		// ImportConfiguration writes no setting for an output root it does not
+		// ImportConfiguration writes no setting for a directory it does not
 		// support, so these bytes are no setting.
 		return ImportEnvironment{}, false, semantic.ErrInvalidRequest
 	}
@@ -168,12 +168,46 @@ func CapturedImportPath(environment ImportEnvironment, filePath string) (string,
 // imported explicitly, and it refuses an import through a vendor directory.
 //
 // This is the one declaration of the rule. It applies to every directory below
-// the module root, wherever the directory enters: an element of the output
-// root is refused by ImportConfiguration, the directory of a captured file
-// gives no identity in CapturedImportPath, and the compiler bridge reports such
-// a file as unsupported coverage. All three give the answer ErrUnsupported.
+// the module root, at each of the three places where one enters:
+//
+//   - an element of the output root, and an element below the module root in
+//     the path of a supplied package of the module: ImportConfiguration returns
+//     an error that wraps ErrUnsupported and writes no setting, so bytes that
+//     state such a path are an invalid request for every reader of a setting;
+//   - a directory of a captured file: the compiler bridge reports unsupported
+//     coverage at the file, and CapturedImportPath derives no identity.
+//
+// A supplied path outside the module is not below the module root, and this
+// rule does not judge it. There the earlier rule holds unchanged: a vendor
+// element is an invalid request, and nothing else of this rule applies.
 func UnsupportedDirectory(element string) bool {
 	return element == "testdata" || element == "vendor" || strings.HasPrefix(element, "_") || strings.HasPrefix(element, ".")
+}
+
+// directoryBelowModuleRoot judges a directory that a caller states below the
+// module root, the output root or the path of a supplied package of the
+// module, in one order. A path with an empty, "." or ".." element is not clean
+// and is an invalid request. After that an element that UnsupportedDirectory
+// names gives ErrUnsupported.
+func directoryBelowModuleRoot(directory string) error {
+	elements := strings.Split(directory, "/")
+	if slices.Contains(elements, "") || slices.Contains(elements, ".") || slices.Contains(elements, "..") {
+		return semantic.ErrInvalidRequest
+	}
+	if slices.ContainsFunc(elements, UnsupportedDirectory) {
+		return fmt.Errorf("%w: %q has a testdata or vendor directory, or one that starts with an underscore or a dot", ErrUnsupported, directory)
+	}
+	return nil
+}
+
+// belowModuleRoot returns the part of a supplied import path below the module
+// root, when the path is one of the module. The module path is compared
+// without case, as the rule for the output root compares it.
+func belowModuleRoot(module, importPath string) (string, bool) {
+	if len(importPath) <= len(module) || importPath[len(module)] != '/' || !strings.EqualFold(importPath[:len(module)], module) {
+		return "", false
+	}
+	return importPath[len(module)+1:], true
 }
 
 // windowsDeviceNames are the reserved file names that Go's rule for a path
@@ -217,12 +251,11 @@ func importPathElement(element string) bool {
 
 // outputRootImportPath is the import path of the output root: the module path
 // for ModuleRoot, and otherwise the module path joined with the stated
-// directory. One directory has one spelling. A path with an empty, "." or ".."
-// element is not clean and is an invalid request: the empty string, an
-// absolute path and a trailing slash among them. A clean path is then judged
-// as the directory of a captured file is: an element that UnsupportedDirectory
-// names gives ErrUnsupported, and after that an element that is no import-path
-// element is an invalid request.
+// directory. One directory has one spelling. The root is judged in this order:
+// directoryBelowModuleRoot first, so a path that is not clean is an invalid
+// request, the empty string, an absolute path and a trailing slash among them,
+// and then a directory of the rule is unsupported. After that an element that
+// is no import-path element is an invalid request.
 func outputRootImportPath(module, outputRoot string) (string, error) {
 	if !ValidImportPath(module) {
 		return "", semantic.ErrInvalidRequest
@@ -230,14 +263,10 @@ func outputRootImportPath(module, outputRoot string) (string, error) {
 	if outputRoot == ModuleRoot {
 		return module, nil
 	}
-	elements := strings.Split(outputRoot, "/")
-	if slices.Contains(elements, "") || slices.Contains(elements, ".") || slices.Contains(elements, "..") {
-		return "", semantic.ErrInvalidRequest
+	if err := directoryBelowModuleRoot(outputRoot); err != nil {
+		return "", err
 	}
-	if slices.ContainsFunc(elements, UnsupportedDirectory) {
-		return "", fmt.Errorf("%w: the output root %q has a testdata or vendor directory, or one that starts with an underscore or a dot", ErrUnsupported, outputRoot)
-	}
-	if slices.ContainsFunc(elements, func(element string) bool { return !importPathElement(element) }) {
+	if slices.ContainsFunc(strings.Split(outputRoot, "/"), func(element string) bool { return !importPathElement(element) }) {
 		return "", semantic.ErrInvalidRequest
 	}
 	// Every element is an import-path element, so only the bound on the length
@@ -261,12 +290,22 @@ func normalizeEnvironment(e ImportEnvironment) (ImportEnvironment, error) {
 	out := ImportEnvironment{Module: e.Module, OutputRoot: e.OutputRoot, Packages: make([]Package, 0, len(e.Packages))}
 	size := len(e.Module)
 	for _, p := range e.Packages {
+		// A supplied package of the module sits below the module root, so the
+		// directory rule judges its path there first, as it judges the output
+		// root.
+		if below, ok := belowModuleRoot(e.Module, p.ImportPath); ok {
+			if err := directoryBelowModuleRoot(below); err != nil {
+				return ImportEnvironment{}, err
+			}
+		}
 		lower, captured := strings.ToLower(p.ImportPath), strings.ToLower(root)
 		if !ValidImportPath(p.ImportPath) || lower == captured || strings.HasPrefix(lower, captured+"/") || slices.Contains(strings.Split(p.ImportPath, "/"), "vendor") {
 			// A supplied package must not claim a path at or below the output
 			// root, where the captured packages are. A package of the module
 			// outside the output root is hand-written code and may be supplied.
-			// A vendor element would make Go resolve its path differently.
+			// A vendor element would make Go resolve its path differently: for a
+			// path outside the module this is the rule as it was, and below the
+			// module root the directory rule above has refused it already.
 			return ImportEnvironment{}, semantic.ErrInvalidRequest
 		}
 		if len(p.Files) == 0 || len(p.Files) > 16 {

@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"go/types"
 	"reflect"
@@ -546,6 +547,12 @@ func TestGoOutputRootIsRelatedToTheModuleRoot(t *testing.T) {
 		{n.ImportEnvironment{Module: goImportModule, OutputRoot: "internal/gen"}, "pages/types.go", "example.org/app/internal/gen/pages"},
 		{n.ImportEnvironment{Module: goImportModule, OutputRoot: n.ModuleRoot}, "pages/types.go", "example.org/app/pages"},
 		{n.ImportEnvironment{Module: goImportModule, OutputRoot: n.ModuleRoot}, "types.go", "example.org/app"},
+		// The file's own name is not judged: the bridge refuses these names itself.
+		{generated, "pages/_types.go", "example.org/app/generated/pages"},
+		{generated, "pages/.types.go", "example.org/app/generated/pages"},
+		{generated, "pages/types_test.go", "example.org/app/generated/pages"},
+		{generated, "pages/testdata", "example.org/app/generated/pages"},
+		{generated, "vendor", "example.org/app/generated"},
 	} {
 		if got, ok := n.CapturedImportPath(tc.environment, tc.file); !ok || got != tc.want {
 			t.Fatal("derived import path", tc.environment.OutputRoot, tc.file, got, ok)
@@ -615,6 +622,95 @@ func TestGoSuppliedPackageInsideTheModuleAndOutsideTheOutputRoot(t *testing.T) {
 		_, err := n.ImportConfiguration(n.ImportEnvironment{Module: goImportModule, OutputRoot: tc.outputRoot, Packages: []n.Package{supplied(tc.path)}})
 		if tc.admitted && err != nil || !tc.admitted && !errors.Is(err, semantic.ErrInvalidRequest) {
 			t.Fatal("supplied package", tc.outputRoot, tc.path, err)
+		}
+	}
+	// A supplied package of the module is below the module root, so the one
+	// directory rule judges the elements of its path below that root, in the
+	// order of the output root: a path that is not clean is invalid, then a
+	// directory of the rule is unsupported, then the other rules decide. A
+	// path outside the module is not judged by the rule: there a vendor element
+	// is an invalid request and testdata or an underscore is admitted.
+	snapshot, _ := goPackageCapture(t, map[string]string{"a/a.go": "package a\n\ntype A string\n"}, true)
+	resolver, err := resolution.NewResolver[s.Language](snapshot.Language(), n.ResolutionContract(), resolvegolang.Provider{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		outputRoot string
+		path       string
+		want       string
+	}{
+		{"generated", "example.org/app/testdata/x", "unsupported"},
+		{"generated", "example.org/app/_x", "unsupported"},
+		{"generated", "example.org/app/vendor/x", "unsupported"},
+		{"generated", "example.org/app/.x", "unsupported"},
+		{"generated", "example.org/app/model", "admitted"},
+		{"generated", "example.org/lib/testdata/x", "admitted"},
+		{"generated", "example.org/lib/_x", "admitted"},
+		// Outside the module the rule of main holds.
+		{"generated", "example.org/lib/vendor/x", "invalid"},
+		{"generated", "example.org/lib/.x", "invalid"},
+		{"generated", "example.org/application/testdata/x", "admitted"},
+		{"generated", "example.org/application/vendor/x", "invalid"},
+		{"generated", "example.org/ap/testdata/x", "admitted"},
+		{"generated", "a.org/_x", "admitted"},
+		// Below the module root: every element, the last one too.
+		{"generated", "example.org/app/a/testdata", "unsupported"},
+		{"generated", "example.org/app/a/b/_x/c", "unsupported"},
+		{"generated", "example.org/app/...", "unsupported"},
+		// The module path is compared without case, as for the output root.
+		{"generated", "Example.org/App/testdata/x", "unsupported"},
+		// The directory rule comes before the rule for the output root.
+		{"generated", "example.org/app/generated/testdata/x", "unsupported"},
+		{"generated", "example.org/app/generated/x", "invalid"},
+		{n.ModuleRoot, "example.org/app/vendor/x", "unsupported"},
+		{n.ModuleRoot, "example.org/app/x", "invalid"},
+		// A path that is not clean is invalid first.
+		{"generated", "example.org/app/./vendor", "invalid"},
+		{"generated", "example.org/app/vendor/..", "invalid"},
+		{"generated", "example.org/app//vendor", "invalid"},
+		{"generated", "example.org/app/vendor/", "invalid"},
+		{"generated", "example.org/app/", "invalid"},
+		// A name that only resembles one is admitted.
+		{"generated", "example.org/app/Vendor/x", "admitted"},
+		{"generated", "example.org/app/testdata2", "admitted"},
+		{"generated", "example.org/app/a_b", "admitted"},
+		{"generated", "example.org/app/x.vendor", "admitted"},
+	} {
+		environment := n.ImportEnvironment{Module: goImportModule, OutputRoot: tc.outputRoot, Packages: []n.Package{supplied(tc.path)}}
+		// At the builder: the category, and no setting for a refused path.
+		settings, err := n.ImportConfiguration(environment)
+		unsupported, invalid := errors.Is(err, n.ErrUnsupported), errors.Is(err, semantic.ErrInvalidRequest)
+		got := "uncategorized"
+		switch {
+		case err == nil && settings != nil:
+			got = "admitted"
+		case settings == nil && unsupported && !invalid:
+			got = "unsupported"
+		case settings == nil && invalid && !unsupported:
+			got = "invalid"
+		}
+		if got != tc.want {
+			t.Errorf("supplied package %s under the output root %s at the builder: %s, want %s (%v)", tc.path, tc.outputRoot, got, tc.want, err)
+		}
+		// At the readers: the bytes that state the path are a setting only when
+		// the builder writes them. Refused for either reason, they are an
+		// invalid request.
+		value, err := json.Marshal(environment)
+		if err != nil {
+			t.Fatal(err)
+		}
+		stated := append(slices.Clone(n.Configuration()), semantic.Setting{Key: n.Key("imports-2"), Value: value})
+		_, _, importsErr := n.Imports(stated)
+		_, contractErr := n.AnalysisContractFor(stated)
+		_, resolveErr := resolver.Resolve(context.Background(), snapshot, semantic.Options{Configuration: stated})
+		for reader, err := range map[string]error{"Imports": importsErr, "AnalysisContractFor": contractErr, "the resolver": resolveErr} {
+			if tc.want == "admitted" && err != nil || tc.want != "admitted" && (!errors.Is(err, semantic.ErrInvalidRequest) || errors.Is(err, n.ErrUnsupported)) {
+				t.Errorf("stated bytes with the supplied package %s under the output root %s at %s: %v, the builder's answer is %s", tc.path, tc.outputRoot, reader, err, tc.want)
+			}
+		}
+		if n.MatchesConfiguration(stated) != (tc.want == "admitted") {
+			t.Errorf("stated bytes with the supplied package %s under the output root %s: MatchesConfiguration is %v", tc.path, tc.outputRoot, tc.want != "admitted")
 		}
 	}
 }
@@ -836,10 +932,11 @@ func TestGoImportEnvironmentMustStateTheOutputRoot(t *testing.T) {
 	}
 }
 
-// A directory that the profile does not cover has one answer wherever it
-// enters: in the path of a captured file, and in the output root.
+// A directory below the module root that the profile does not cover has one
+// answer wherever it enters: in the path of a captured file, in the output
+// root, and in the path of a supplied package of the module.
 //
-// bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve feature=go-imported-packages case=unsupported-directory-at-both-entrances expects=unsupported-in-file-path-and-output-root
+// bittype:case target=github.com/Bitspark/bittype/resolve/files/golang/provider/go#Provider.Resolve feature=go-imported-packages case=unsupported-directory-at-every-entrance expects=unsupported-in-file-path-output-root-and-supplied-path
 func TestGoUnsupportedDirectoryHasOneAnswerWhereverItEnters(t *testing.T) {
 	const source = "package p\n\ntype T string\n"
 	generated := n.ImportEnvironment{Module: goImportModule, OutputRoot: "generated"}
@@ -871,6 +968,13 @@ func TestGoUnsupportedDirectoryHasOneAnswerWhereverItEnters(t *testing.T) {
 		}
 		if got, ok := n.CapturedImportPath(n.ImportEnvironment{Module: goImportModule, OutputRoot: directory}, "types.go"); ok || got != "" {
 			t.Error("an identity was derived under the directory as the output root:", directory, got)
+		}
+		// In the path of a supplied package of the module it is refused with
+		// the same category, and no setting is written.
+		hand := n.Package{ImportPath: goImportModule + "/" + directory + "/x", Files: []n.PackageFile{{Name: "x.go", Text: "package x\n"}}}
+		settings, err = n.ImportConfiguration(n.ImportEnvironment{Module: goImportModule, OutputRoot: "generated", Packages: []n.Package{hand}})
+		if settings != nil || !errors.Is(err, n.ErrUnsupported) || errors.Is(err, semantic.ErrInvalidRequest) {
+			t.Error("the directory in a supplied path of the module:", directory, err)
 		}
 	}
 	// The invalid element beside it does not change the answer: the directory
@@ -907,6 +1011,10 @@ func TestGoUnsupportedDirectoryHasOneAnswerWhereverItEnters(t *testing.T) {
 		}
 		if problem := covered("types.go", n.ImportEnvironment{Module: goImportModule, OutputRoot: directory}, goImportModule+"/"+directory); problem != "" {
 			t.Error("a covered directory as the output root:", directory, problem)
+		}
+		hand := n.Package{ImportPath: goImportModule + "/" + directory + "/x", Files: []n.PackageFile{{Name: "x.go", Text: "package x\n"}}}
+		if _, err := n.ImportConfiguration(n.ImportEnvironment{Module: goImportModule, OutputRoot: "generated", Packages: []n.Package{hand}}); err != nil {
+			t.Error("a covered directory in a supplied path of the module:", directory, err)
 		}
 	}
 }
