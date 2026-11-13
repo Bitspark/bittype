@@ -11,23 +11,34 @@ import (
 )
 
 // compareDeclarations orders the declarations that seed construction. Its key
-// is the name, then the origin by tree and node, then the planned identity.
-// Equal names compare equal and the next part of the key decides, so
+// is the name, then the provenance, then the planned identity. Equal names
+// compare equal and the next part of the key decides, so
 // compareDeclarations(a, b) == -compareDeclarations(b, a) for every pair. It
 // returns 0 only for one and the same planned declaration.
 //
-// Limit: two declarations with equal names and equal origins are ordered by
+// The provenance is the planner's own fact: the declaring sites of the source
+// declarations a declaration represents. Two provenances compare site by site,
+// each site by its tree and then its node, and a list sorts before every list
+// that continues it. No provenance, which is what a helper has, sorts first.
+// The origin that a mapping may state on its description is not part of the
+// key, because a mapping may leave it out.
+//
+// Limit: two declarations with equal names and equal provenance are ordered by
 // their planned identity, which follows the order of the requested roots. Two
-// helpers of one name are such a pair, since a helper has no origin, and so
-// are two native declarations of one source declaration. Compile refuses equal
-// names today, and no plan contains such a pair.
+// native declarations of one source declaration are such a pair, and so are
+// two helpers of one name. Compile refuses equal names today, and no plan
+// contains such a pair.
 func compareDeclarations[T any](a, b g.PlannedDeclaration[T]) int {
 	return cmp.Or(
 		cmp.Compare(a.Description.Name, b.Description.Name),
-		cmp.Compare(a.Description.Origin.Tree, b.Description.Origin.Tree),
-		cmp.Compare(a.Description.Origin.Node, b.Description.Origin.Node),
+		slices.CompareFunc(a.Provenance, b.Provenance, compareSites),
 		cmp.Compare(a.ID, b.ID),
 	)
+}
+
+// compareSites orders two source sites by their tree and then their node.
+func compareSites(a, b ast.NodeRef) int {
+	return cmp.Or(cmp.Compare(a.Tree, b.Tree), cmp.Compare(a.Node, b.Node))
 }
 
 func Compile[T any](ctx context.Context, in g.BuildInput[T], store *Store[T], lower Lowering[T]) (g.Assembly, error) {
@@ -213,8 +224,10 @@ func Compile[T any](ctx context.Context, in g.BuildInput[T], store *Store[T], lo
 	if err != nil {
 		return fail(err)
 	}
-	// The inventory: the realized site of every planned declaration, in planned
-	// order. The kernel adds what the plan knows about each of them.
+	// The inventory: for every planned declaration, in planned order, the node
+	// that the lowering returned for it. That node was emitted once. Where it
+	// sits in the unit is the lowering's decision. The kernel adds what the plan
+	// knows about each declaration.
 	out := g.Assembly{Syntax: syntax, ExternalUses: external}
 	for _, d := range declarations {
 		node := symbols[Symbol[T]{store, d.ID, -1, d.Description.Name}]

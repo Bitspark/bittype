@@ -3,6 +3,8 @@ package generation
 import (
 	"cmp"
 	"context"
+	"fmt"
+	"io"
 	"slices"
 
 	"github.com/Bitspark/bittype/contracts/check/go"
@@ -48,11 +50,30 @@ type ExternalUse struct {
 // the content. One issuer is one meaning: an owner with two kinds of statement
 // uses two issuers. The content may be empty, where the issuer alone is the
 // statement.
+//
+// Limit: a value is kept from other readers by this API only, as an external
+// symbol is. Reflection reads the content. A value is not bound to one
+// declaration or one output: the same value compares equal wherever it is
+// carried, and whoever holds a value can state it again in another
+// description. The issuer says who gave a value its meaning. It does not say
+// who put the value where it is found.
 type ValueIssuer struct{ owner *identity }
 type IssuedValue struct {
 	owner   *identity
 	content string
 }
+
+// String says whether the value was issued. It never contains the content.
+func (v IssuedValue) String() string {
+	if v.owner == nil {
+		return "unissued value"
+	}
+	return "issued value"
+}
+
+// Format writes String for every verb, so that formatting a value, or a record
+// or a description that holds one, does not print the content.
+func (v IssuedValue) Format(state fmt.State, _ rune) { io.WriteString(state, v.String()) }
 
 func NewValueIssuer() ValueIssuer { return ValueIssuer{fresh()} }
 func (i ValueIssuer) Issue(content string) (IssuedValue, error) {
@@ -72,7 +93,11 @@ func (i ValueIssuer) Read(v IssuedValue) (string, bool) {
 }
 
 // DeclarationRole says why a sealed output owns a declaration. It is a fact of
-// the plan, and no target or mapping states it.
+// the plan, and no target or mapping states it. The values below keep their
+// meaning. They are not a closed set: a further role may be added, for example
+// for a declaration that a contribution introduces and that has a source
+// declaration. A reader therefore refuses a record whose role it does not know,
+// and does not treat it as one of the roles it knows.
 type DeclarationRole uint8
 
 const (
@@ -99,8 +124,9 @@ type DeclarationHandle struct {
 func (h DeclarationHandle) Valid() bool { return h.output != nil && h.index != 0 }
 
 // OwnedDeclaration is the inventory record of one declaration that a sealed
-// output owns. Site is its declaration node in the snapshot. Role and
-// Provenance are the plan's facts. Provenance lists the declaring sites of the
+// output owns. Site is the node that the target's construction returned for
+// the declaration. Where that node sits in its unit is the target's decision:
+// it need not be a child of the root. Role and Provenance are the plan's facts. Provenance lists the declaring sites of the
 // source declarations it represents: none for a helper, and possibly those of
 // several source declarations. Values are the statements of the declaration's
 // owner, which only their issuers can read. A record says what the output
@@ -120,7 +146,10 @@ func (d OwnedDeclaration) clone() OwnedDeclaration {
 }
 
 // Assembly is a target construction record. Declarations contains the realized
-// site of every planned declaration, in the order of Program.Declarations.
+// site of every planned declaration, in the order of Program.Declarations. No
+// listed site may contain another. The kernel cannot tell which declaration a
+// site realizes: a target that lists the sites of two declarations in each
+// other's place is not detected.
 type Assembly struct {
 	Syntax       representation.ASTSet
 	Declarations []ast.NodeRef
@@ -143,8 +172,9 @@ func (o Output) ExternalUses() []ExternalUse { return slices.Clone(o.external) }
 
 // Inventory returns one record for every declaration the output owns and no
 // other record. The records are in the order of their sites: the trees in the
-// snapshot's order, and the nodes of one tree ascending. The records with the
-// role RequestedDeclaration have exactly the sites of Exposed.
+// snapshot's order, and the nodes of one tree ascending. No site contains
+// another. The records with the role RequestedDeclaration have exactly the
+// sites of Exposed.
 func (o Output) Inventory() []OwnedDeclaration {
 	out := make([]OwnedDeclaration, len(o.inventory))
 	for i, d := range o.inventory {
@@ -173,8 +203,10 @@ type planned struct {
 
 // seal checks an assembly against the plan it was built from. declarations and
 // exposed are the plan's own: one entry per planned declaration in planned
-// order, and the planned IDs of the requested roots in request order.
-func seal(ctx context.Context, checker check.Checker, assembly Assembly, declarations []planned, exposed []uint32, limits Limits) (Output, error) {
+// order, and the planned IDs of the requested roots in request order. T is the
+// target language of the plan, in which the assembly's trees are read for
+// their containment.
+func seal[T any](ctx context.Context, checker check.Checker, assembly Assembly, declarations []planned, exposed []uint32, limits Limits) (Output, error) {
 	set := assembly.Syntax
 	if len(set.Trees) == 0 || len(set.Trees) > 256 || len(assembly.Declarations) != len(declarations) {
 		return Output{}, ErrIncomplete
@@ -213,6 +245,31 @@ func seal(ctx context.Context, checker check.Checker, assembly Assembly, declara
 		sites[site] = true
 		d := declarations[i]
 		inventory[i] = OwnedDeclaration{Site: site, Role: d.role, Provenance: slices.Clone(d.provenance), Values: slices.Clone(d.values)}
+	}
+	// No listed site contains another. This needs no knowledge of the language:
+	// whatever a declaration is, it is not inside another declaration of the
+	// same inventory. The parent of each node is read from the trees as packed.
+	for _, tree := range set.Trees {
+		typed, err := representation.Unpack[T](checker.Language(), tree)
+		if err != nil {
+			return Output{}, err
+		}
+		parent := make([]ast.NodeID, len(typed.Nodes)+1)
+		for i, node := range typed.Nodes {
+			for _, child := range node.Children {
+				parent[child.Node] = ast.NodeID(i + 1)
+			}
+		}
+		for site := range sites {
+			if site.Tree != typed.ID {
+				continue
+			}
+			for above := parent[site.Node]; above != 0; above = parent[above] {
+				if sites[ast.NodeRef{Tree: site.Tree, Node: above}] {
+					return Output{}, ErrScope
+				}
+			}
+		}
 	}
 	// A requested root is exposed at the site of its own record.
 	requested := make([]ast.NodeRef, len(exposed))

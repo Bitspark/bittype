@@ -3,8 +3,10 @@ package generation
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/check/go"
@@ -22,6 +24,34 @@ func (outputLanguage) Name() string    { return "Output test" }
 type outputChecker struct{ outputLanguage }
 
 func (outputChecker) Check(ast.View[outputLanguage]) error { return nil }
+
+// sealTest seals an assembly of the test language.
+func sealTest(checker check.Checker, assembly Assembly, declarations []planned, exposed []uint32, limits Limits) (Output, error) {
+	return seal[outputLanguage](context.Background(), checker, assembly, declarations, exposed, limits)
+}
+
+// outputChecking is the test language and its checker.
+func outputChecking(t *testing.T) (representation.Language, check.Checker) {
+	t.Helper()
+	lang, err := representation.NewLanguage[outputLanguage](outputLanguage{}, "one")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checker, err := check.NewChecker[outputLanguage](lang, outputChecker{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return lang, checker
+}
+
+// outputNode is one node of a test tree with its children in order.
+func outputNode(kind string, children ...ast.NodeID) ast.Node[outputLanguage] {
+	node := ast.Node[outputLanguage]{Kind: ast.Kind[outputLanguage](kind)}
+	for _, child := range children {
+		node.Children = append(node.Children, ast.Child{Role: "child", Node: child})
+	}
+	return node
+}
 
 // outputAssembly is one unit with one requested declaration at node 2.
 func outputAssembly(t *testing.T) (check.Checker, Assembly) {
@@ -68,7 +98,7 @@ func inventoryAssembly(t *testing.T, count int) (check.Checker, Assembly) {
 func TestSealOwnsItsSitesAndRejectsIncompleteMetadata(t *testing.T) {
 	checker, assembly := outputAssembly(t)
 	declarations, exposed := onePlanned()
-	out, err := seal(context.Background(), checker, assembly, declarations, exposed, DefaultLimits())
+	out, err := sealTest(checker, assembly, declarations, exposed, DefaultLimits())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,12 +108,12 @@ func TestSealOwnsItsSitesAndRejectsIncompleteMetadata(t *testing.T) {
 	if out.Exposed()[0].Tree != "output" {
 		t.Fatal("mutable exposure metadata")
 	}
-	if bad, err := seal(context.Background(), checker, assembly, declarations, exposed, DefaultLimits()); !errors.Is(err, ErrScope) || bad.Snapshot().Valid() {
+	if bad, err := sealTest(checker, assembly, declarations, exposed, DefaultLimits()); !errors.Is(err, ErrScope) || bad.Snapshot().Valid() {
 		t.Fatal(err)
 	}
 	_, assembly = outputAssembly(t)
 	two := []planned{{role: RequestedDeclaration}, {role: RequestedDeclaration}}
-	if bad, err := seal(context.Background(), checker, assembly, two, []uint32{1, 2}, DefaultLimits()); !errors.Is(err, ErrIncomplete) || bad.Snapshot().Valid() {
+	if bad, err := sealTest(checker, assembly, two, []uint32{1, 2}, DefaultLimits()); !errors.Is(err, ErrIncomplete) || bad.Snapshot().Valid() {
 		t.Fatal(err)
 	}
 }
@@ -103,7 +133,7 @@ func TestSealRejectsForeignDuplicateAndOversizedExternalUses(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			a := base
 			a.ExternalUses = uses
-			if out, err := seal(context.Background(), checker, a, declarations, exposed, DefaultLimits()); err == nil || out.Snapshot().Valid() {
+			if out, err := sealTest(checker, a, declarations, exposed, DefaultLimits()); err == nil || out.Snapshot().Valid() {
 				t.Fatal("invalid external use accepted")
 			}
 		})
@@ -111,7 +141,7 @@ func TestSealRejectsForeignDuplicateAndOversizedExternalUses(t *testing.T) {
 	base.ExternalUses = []ExternalUse{{At: at, Symbol: symbol}}
 	limits := DefaultLimits()
 	limits.OutputBytes = 2
-	if out, err := seal(context.Background(), checker, base, declarations, exposed, limits); !errors.Is(err, ErrLimit) || out.Snapshot().Valid() {
+	if out, err := sealTest(checker, base, declarations, exposed, limits); !errors.Is(err, ErrLimit) || out.Snapshot().Valid() {
 		t.Fatal(err)
 	}
 }
@@ -156,7 +186,7 @@ func fivePlanned(t *testing.T, assembly Assembly) ([]planned, []uint32, Assembly
 func TestSealedInventoryListsEveryPlannedDeclaration(t *testing.T) {
 	checker, base := inventoryAssembly(t, 5)
 	declarations, exposed, assembly, issuer := fivePlanned(t, base)
-	out, err := seal(context.Background(), checker, assembly, declarations, exposed, DefaultLimits())
+	out, err := sealTest(checker, assembly, declarations, exposed, DefaultLimits())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -243,17 +273,18 @@ func TestSealRefusesAnIncompleteInventory(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assembly := complete
 			assembly.Declarations = c.sites(slices.Clone(complete.Declarations))
-			out, err := seal(context.Background(), checker, assembly, declarations, exposed, DefaultLimits())
+			out, err := sealTest(checker, assembly, declarations, exposed, DefaultLimits())
 			if !errors.Is(err, c.want) || out.Snapshot().Valid() || len(out.Inventory()) != 0 || len(out.Exposed()) != 0 {
 				t.Fatal("incomplete inventory sealed", err)
 			}
 		})
 	}
-	// The last node of the tree is inside the snapshot.
+	// The last node of the tree is inside the snapshot. It is the body of the
+	// declaration at node 6, whose record it replaces here.
 	assembly := complete
 	assembly.Declarations = slices.Clone(complete.Declarations)
-	assembly.Declarations[1] = ast.NodeRef{Tree: "output", Node: 11}
-	if _, err := seal(context.Background(), checker, assembly, declarations, exposed, DefaultLimits()); err != nil {
+	assembly.Declarations[2] = ast.NodeRef{Tree: "output", Node: 11}
+	if _, err := sealTest(checker, assembly, declarations, exposed, DefaultLimits()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -263,11 +294,11 @@ func TestSealRefusesAnIncompleteInventory(t *testing.T) {
 func TestHandleResolvesOnlyAgainstItsOutput(t *testing.T) {
 	checker, base := inventoryAssembly(t, 5)
 	declarations, exposed, assembly, _ := fivePlanned(t, base)
-	first, err := seal(context.Background(), checker, assembly, declarations, exposed, DefaultLimits())
+	first, err := sealTest(checker, assembly, declarations, exposed, DefaultLimits())
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := seal(context.Background(), checker, assembly, declarations, exposed, DefaultLimits())
+	second, err := sealTest(checker, assembly, declarations, exposed, DefaultLimits())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -356,5 +387,139 @@ func TestDescriptionCopiesOwnTheirValues(t *testing.T) {
 	native.Values[0], described.Values[0] = IssuedValue{}, IssuedValue{}
 	if nativeCopy.Values[0] != value || describedCopy.Values[0] != value {
 		t.Fatal("a copy shares its values with the original")
+	}
+}
+
+// The records follow the trees in the snapshot's order, then the nodes of one
+// tree. The first tree of this set has the greater identity, and its second
+// declaration has a greater node number than the declaration of the second tree.
+func TestSealedInventoryFollowsTheTreesOfTheSnapshot(t *testing.T) {
+	lang, checker := outputChecking(t)
+	first := ast.AST[outputLanguage]{ID: "z-unit", Root: 1, Nodes: []ast.Node[outputLanguage]{outputNode("unit", 2, 3), outputNode("declaration"), outputNode("declaration")}}
+	second := ast.AST[outputLanguage]{ID: "a-unit", Root: 1, Nodes: []ast.Node[outputLanguage]{outputNode("unit", 2), outputNode("declaration")}}
+	packed, err := representation.PackSet(lang, ast.Set[outputLanguage]{Entry: ast.NodeRef{Tree: first.ID, Node: 1}, Trees: []ast.AST[outputLanguage]{first, second}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Planned order: the declaration of the second tree, then the two of the
+	// first tree from the back.
+	listed := []ast.NodeRef{{Tree: "a-unit", Node: 2}, {Tree: "z-unit", Node: 3}, {Tree: "z-unit", Node: 2}}
+	declarations := []planned{{role: RequestedDeclaration}, {role: DependencyDeclaration}, {role: HelperDeclaration}}
+	out, err := sealTest(checker, Assembly{Syntax: packed, Declarations: listed}, declarations, []uint32{1}, DefaultLimits())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var order []ast.TreeID
+	for _, tree := range out.Snapshot().Inputs() {
+		info, err := tree.Inspect()
+		if err != nil {
+			t.Fatal(err)
+		}
+		order = append(order, info.ID)
+	}
+	if !slices.Equal(order, []ast.TreeID{"z-unit", "a-unit"}) {
+		t.Fatal("the snapshot has another order of trees", order)
+	}
+	inventory := out.Inventory()
+	want := []OwnedDeclaration{
+		{Site: ast.NodeRef{Tree: "z-unit", Node: 2}, Role: HelperDeclaration},
+		{Site: ast.NodeRef{Tree: "z-unit", Node: 3}, Role: DependencyDeclaration},
+		{Site: ast.NodeRef{Tree: "a-unit", Node: 2}, Role: RequestedDeclaration},
+	}
+	if len(inventory) != len(want) {
+		t.Fatal("inventory size", len(inventory))
+	}
+	for i, record := range inventory {
+		if record.Site != want[i].Site || record.Role != want[i].Role {
+			t.Fatalf("record %d is %v with role %d", i, record.Site, record.Role)
+		}
+		if resolved, err := out.Resolve(record.Handle); err != nil || resolved.Site != record.Site {
+			t.Fatal("handle does not resolve to its record", i, err)
+		}
+	}
+	if exposed := out.Exposed(); len(exposed) != 1 || exposed[0] != want[2].Site {
+		t.Fatal("exposed sites", exposed)
+	}
+}
+
+// No listed site may contain another listed site. The unit of this test holds
+// its two declarations one level down, as the C++ target does:
+//
+//	1 unit
+//	  2 namespace
+//	    3 declaration
+//	      5 body
+//	        6 leaf
+//	    4 declaration
+//	      7 body
+//	        8 leaf
+func TestSealRefusesAnInventoryWithNestedSites(t *testing.T) {
+	lang, checker := outputChecking(t)
+	tree := ast.AST[outputLanguage]{ID: "output", Root: 1, Nodes: []ast.Node[outputLanguage]{
+		outputNode("unit", 2), outputNode("namespace", 3, 4), outputNode("declaration", 5), outputNode("declaration", 7),
+		outputNode("body", 6), outputNode("leaf"), outputNode("body", 8), outputNode("leaf"),
+	}}
+	packed, err := representation.PackSet(lang, ast.Set[outputLanguage]{Entry: ast.NodeRef{Tree: tree.ID, Node: 1}, Trees: []ast.AST[outputLanguage]{tree}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	declarations := []planned{{role: RequestedDeclaration}, {role: RequestedDeclaration}}
+	for name, c := range map[string]struct {
+		sites [2]ast.NodeID
+		want  error
+	}{
+		"two declarations one level down":                {[2]ast.NodeID{3, 4}, nil},
+		"nodes of two subtrees":                          {[2]ast.NodeID{3, 7}, nil},
+		"the root and a declaration":                     {[2]ast.NodeID{1, 3}, ErrScope},
+		"a declaration and the root":                     {[2]ast.NodeID{3, 1}, ErrScope},
+		"the parent of a declaration":                    {[2]ast.NodeID{2, 4}, ErrScope},
+		"a declaration and its child":                    {[2]ast.NodeID{3, 5}, ErrScope},
+		"a child listed before its declaration":          {[2]ast.NodeID{5, 3}, ErrScope},
+		"a declaration and a node two levels inside it":  {[2]ast.NodeID{4, 8}, ErrScope},
+		"a node two levels inside, before its ancestor":  {[2]ast.NodeID{6, 3}, ErrScope},
+		"the root and a node four levels below the root": {[2]ast.NodeID{8, 1}, ErrScope},
+	} {
+		t.Run(name, func(t *testing.T) {
+			listed := []ast.NodeRef{{Tree: tree.ID, Node: c.sites[0]}, {Tree: tree.ID, Node: c.sites[1]}}
+			out, err := sealTest(checker, Assembly{Syntax: packed, Declarations: listed}, declarations, []uint32{1, 2}, DefaultLimits())
+			if c.want == nil {
+				if err != nil || len(out.Inventory()) != 2 {
+					t.Fatal("sites that do not contain each other were refused", err)
+				}
+				return
+			}
+			if !errors.Is(err, c.want) || out.Snapshot().Valid() || len(out.Inventory()) != 0 {
+				t.Fatal("a site inside another listed site was sealed", err)
+			}
+		})
+	}
+}
+
+// Formatting a value does not print its content, alone or inside a record or a
+// description.
+func TestIssuedValueDoesNotPrintItsContent(t *testing.T) {
+	const content = "intent-that-stays-with-its-owner"
+	value, err := NewValueIssuer().Issue(content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	record := OwnedDeclaration{Values: []IssuedValue{value}}
+	native := NativeDeclaration[outputLanguage]{Values: []IssuedValue{value}}
+	described := DeclarationDescription[outputLanguage]{Values: []IssuedValue{value}}
+	for _, verb := range []string{"%v", "%+v", "%#v", "%s", "%q", "%x", "%d"} {
+		for name, subject := range map[string]any{"value": value, "pointer": &value, "values": []IssuedValue{value}, "record": record, "native declaration": native, "description": described} {
+			printed := fmt.Sprintf(verb, subject)
+			if strings.Contains(printed, content) || strings.Contains(printed, fmt.Sprintf("%x", content)) {
+				t.Fatalf("%s of a %s prints the content: %s", verb, name, printed)
+			}
+		}
+	}
+	// What is printed says only whether the value was issued.
+	other, err := NewValueIssuer().Issue("another content")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, same, unissued := fmt.Sprint(value), fmt.Sprint(other), fmt.Sprint(IssuedValue{}); got == unissued || got != same {
+		t.Fatal("what a value prints depends on more than whether it was issued:", got, same, unissued)
 	}
 }

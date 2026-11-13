@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	checkgo "github.com/Bitspark/bittype/check/syntax/golang/provider/go"
@@ -258,6 +259,8 @@ const (
 	LargeValue
 	// LargeHelperValue states a helper access of LargeValueBytes bytes.
 	LargeHelperValue
+	// ManyEmptyValues states LargeValueBytes naming intents without content.
+	ManyEmptyValues
 )
 
 // LargeValueBytes is the size of the value the two Large modes state.
@@ -393,6 +396,13 @@ func (l library) Describe(from, to representation.Language) (g.MappingDescriptio
 					return g.DeclarationDescription[s.Language]{}, err
 				}
 				d := g.DeclarationDescription[s.Language]{Name: name, Form: form, Values: []g.IssuedValue{value}}
+				if l.mode == ManyEmptyValues {
+					empty, err := namingIntent.Issue("")
+					if err != nil {
+						return g.DeclarationDescription[s.Language]{}, err
+					}
+					d.Values = slices.Repeat([]g.IssuedValue{empty}, LargeValueBytes)
+				}
 				for i := range view.Formals {
 					d.Generic.Parameters = append(d.Generic.Parameters, g.ParameterDescription{Name: fmt.Sprintf("T%d", i)})
 					d.Generic.Bindings = append(d.Generic.Bindings, g.Parameter[s.Language](i))
@@ -569,6 +579,16 @@ func (f *Fixture) PlanDropping(ctx context.Context, names ...string) (g.Generati
 		return g.GenerationPlan{}, err
 	}
 	return f.planWith(ctx, Standard, SourceVariant{}, g.DefaultLimits(), f.Input(), roots, droppingTarget{target.Provider{Package: "generated"}})
+}
+
+// PlanTarget generates the named declarations with the given target in place
+// of the fixture's Go target.
+func (f *Fixture) PlanTarget(ctx context.Context, built g.Target[s.Language], names ...string) (g.GenerationPlan, error) {
+	roots, err := f.roots(names)
+	if err != nil {
+		return g.GenerationPlan{}, err
+	}
+	return f.planWith(ctx, Standard, SourceVariant{}, g.DefaultLimits(), f.Input(), roots, built)
 }
 
 // PlanSites generates the declarations at the given syntax sites.

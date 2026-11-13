@@ -12,30 +12,41 @@ import (
 
 type fixtureLanguage struct{}
 
-func plannedFixture(id uint32, name string, tree ast.TreeID, node ast.NodeID) g.PlannedDeclaration[fixtureLanguage] {
-	return g.PlannedDeclaration[fixtureLanguage]{ID: id, Description: g.NativeDeclaration[fixtureLanguage]{Name: name, Origin: ast.NodeRef{Tree: tree, Node: node}}}
+// plannedFixture is a planned declaration with the provenance the planner
+// states and the origin its mapping states.
+func plannedFixture(id uint32, name string, origin ast.NodeID, provenance ...ast.NodeRef) g.PlannedDeclaration[fixtureLanguage] {
+	return g.PlannedDeclaration[fixtureLanguage]{ID: id, Provenance: provenance, Description: g.NativeDeclaration[fixtureLanguage]{Name: name, Origin: ast.NodeRef{Tree: "origin", Node: origin}}}
+}
+
+func sourceSite(tree ast.TreeID, node ast.NodeID) ast.NodeRef {
+	return ast.NodeRef{Tree: tree, Node: node}
 }
 
 // Two planned declarations of one name are ordered, and the same way in both
 // directions.
 func TestCompareDeclarationsOrdersTwoDeclarationsOfOneName(t *testing.T) {
-	a, b := plannedFixture(1, "Page", "source", 3), plannedFixture(2, "Page", "source", 3)
+	a, b := plannedFixture(1, "Page", 3, sourceSite("source", 3)), plannedFixture(2, "Page", 3, sourceSite("source", 3))
 	if ab, ba := compareDeclarations(a, b), compareDeclarations(b, a); ab != -ba || ab == 0 {
 		t.Fatal("two declarations of one name have no order", ab, ba)
 	}
 }
 
-// The key is the name, then the origin, then the planned identity. The result
-// is 0 only for one and the same planned declaration.
+// The key is the name, then the provenance, then the planned identity. The
+// result is 0 only for one and the same planned declaration. The origins and
+// the planned identities of this list run against its order wherever an earlier
+// part of the key decides, so neither can stand in for the provenance.
 func TestCompareDeclarationsKey(t *testing.T) {
 	ordered := []g.PlannedDeclaration[fixtureLanguage]{
-		plannedFixture(9, "A", "t", 5), // the name decides before everything else
-		plannedFixture(8, "B", "", 0),  // then the origin: none, as a helper has
-		plannedFixture(7, "B", "s", 9), // its tree
-		plannedFixture(6, "B", "t", 2), // its node
-		plannedFixture(4, "B", "t", 3), // then the planned identity
-		plannedFixture(5, "B", "t", 3),
-		plannedFixture(1, "C", "a", 1),
+		plannedFixture(12, "A", 90, sourceSite("t", 5)),                    // the name decides before everything else
+		plannedFixture(11, "B", 80),                                        // then the provenance: none, as a helper has
+		plannedFixture(10, "B", 70, sourceSite("s", 9)),                    // the tree of its first site
+		plannedFixture(9, "B", 60, sourceSite("t", 2)),                     // the node of its first site
+		plannedFixture(8, "B", 50, sourceSite("t", 2), sourceSite("a", 1)), // a list after the list it continues
+		plannedFixture(7, "B", 40, sourceSite("t", 2), sourceSite("a", 4)), // the node of a later site
+		plannedFixture(6, "B", 30, sourceSite("t", 2), sourceSite("b", 1)), // the tree of a later site
+		plannedFixture(4, "B", 20, sourceSite("t", 3)),                     // then the planned identity
+		plannedFixture(5, "B", 10, sourceSite("t", 3)),
+		plannedFixture(1, "C", 5, sourceSite("a", 1)),
 	}
 	for i, a := range ordered {
 		for j, b := range ordered {
@@ -53,14 +64,15 @@ func TestCompareDeclarationsKey(t *testing.T) {
 			}
 		}
 	}
-	// What the key does not name does not order: the role and the provenance.
-	same := ordered[4]
-	same.Role, same.Provenance = g.HelperDeclaration, []ast.NodeRef{{Tree: "other", Node: 1}}
-	if compareDeclarations(ordered[4], same) != 0 {
+	// What the key does not name does not order: the role, and the origin that
+	// a mapping may state or leave out.
+	same := ordered[7]
+	same.Role, same.Description.Origin = g.HelperDeclaration, ast.NodeRef{}
+	if compareDeclarations(ordered[7], same) != 0 {
 		t.Fatal("the comparator reads more than its key")
 	}
 	// Every arrangement sorts to the one order.
-	shuffled := []g.PlannedDeclaration[fixtureLanguage]{ordered[5], ordered[2], ordered[6], ordered[0], ordered[4], ordered[3], ordered[1]}
+	shuffled := []g.PlannedDeclaration[fixtureLanguage]{ordered[5], ordered[8], ordered[2], ordered[9], ordered[6], ordered[0], ordered[4], ordered[7], ordered[3], ordered[1]}
 	slices.SortFunc(shuffled, compareDeclarations[fixtureLanguage])
 	for i := range ordered {
 		if shuffled[i].ID != ordered[i].ID {

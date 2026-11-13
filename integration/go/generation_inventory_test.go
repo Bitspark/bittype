@@ -5,21 +5,27 @@ import (
 	"errors"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 
 	g "github.com/Bitspark/bittype/contracts/generation/go"
+	"github.com/Bitspark/bittype/contracts/transform/go"
 	f "github.com/Bitspark/bittype/integration/go/testdata/generationfixture"
 	genfixture "github.com/Bitspark/bittype/integration/go/testdata/horosgeneration"
 	cs "github.com/Bitspark/bittype/syntax/cpp/go"
 	gs "github.com/Bitspark/bittype/syntax/golang/go"
+	h "github.com/Bitspark/bittype/syntax/horos/go"
 	rs "github.com/Bitspark/bittype/syntax/rust/go"
 	ts "github.com/Bitspark/bittype/syntax/typescript/go"
+	gotarget "github.com/Bitspark/bittype/transform/syntax/golang/target/go"
+	compose "github.com/Bitspark/bittype/transform/syntax/shared/generation/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
+	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
 // These qualify the declaration inventory of a sealed output and the handles it
-// issues (#272). No test in this file reads a name attribute: a declaration is
-// selected by what its inventory record states.
+// issues (#272). No test in this file reads a name attribute of the output: a
+// declaration is selected by what its inventory record states.
 
 // inventoryRoots need one dependency, Page, and one helper, Cursor.
 var inventoryRoots = []string{"Person", "Outer", "Nested"}
@@ -320,6 +326,221 @@ func TestGenerationPlanRefusesUnissuedAndOversizedValues(t *testing.T) {
 	if plan, err = fixture.PlanRootsWithin(context.Background(), f.LargeHelperValue, limits, "Page"); !errors.Is(err, g.ErrLimit) || plan.Valid() {
 		t.Fatal("a helper's value larger than the output budget was planned", err)
 	}
+	// Each value is charged one byte beyond its content. As many values
+	// without content as the budget has bytes do not fit.
+	if plan, err = fixture.PlanRootsWithin(context.Background(), f.ManyEmptyValues, limits, "Page"); !errors.Is(err, g.ErrLimit) || plan.Valid() {
+		t.Fatal("more values than the output budget has bytes were planned", err)
+	}
+}
+
+// overwriting is the Go target that, after its own check of a declaration,
+// overwrites what the planner handed it: every value and every parameter name.
+type overwriting struct {
+	gotarget.Provider
+	forged     g.IssuedValue
+	values     *int
+	parameters *int
+}
+
+func (p overwriting) CheckDeclaration(ctx context.Context, d g.NativeDeclaration[gs.Language]) error {
+	err := p.Provider.CheckDeclaration(ctx, d)
+	for i := range d.Values {
+		d.Values[i] = p.forged
+		*p.values++
+	}
+	for i := range d.Parameters {
+		d.Parameters[i].Name = "Forged"
+		*p.parameters++
+	}
+	return err
+}
+
+// What a record states comes from the plan. A target that overwrites the
+// declaration it is asked to check changes neither the sealed records nor the
+// generated unit, for a source declaration and for a helper.
+func TestGenerationTargetCannotOverwriteWhatThePlanStates(t *testing.T) {
+	foreign, err := g.NewValueIssuer().Issue("stated by the target")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixture := independent(t)
+	standard := inventoryOutput(t, fixture, inventoryRoots...)
+	wantTree := outputTree[gs.Language](t, standard)
+	want := standard.Inventory()
+	for i := range want {
+		want[i].Handle = g.DeclarationHandle{}
+	}
+	for name, forged := range map[string]g.IssuedValue{"a value nobody issued": {}, "a value of its own issuer": foreign} {
+		t.Run(name, func(t *testing.T) {
+			values, parameters := 0, 0
+			plan, err := fixture.PlanTarget(context.Background(), overwriting{gotarget.Provider{Package: "generated"}, forged, &values, &parameters}, inventoryRoots...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			out, err := plan.Run(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+			// The target overwrote the one value of each of the five
+			// declarations, and the parameters of the generic ones.
+			if values != 5 || parameters == 0 {
+				t.Fatal("the target did not reach the declarations", values, parameters)
+			}
+			got := out.Inventory()
+			for i := range got {
+				got[i].Handle = g.DeclarationHandle{}
+				intent, source := f.Intent(got[i])
+				access, helper := f.Access(got[i])
+				if len(got[i].Values) != 1 || source == helper || helper != (got[i].Role == g.HelperDeclaration) || (helper && access != f.HelperAccess) || (source && intent == "") {
+					t.Fatalf("record %d does not carry what its recipe stated: %v", i, got[i].Values)
+				}
+			}
+			if !reflect.DeepEqual(got, want) {
+				t.Fatal("the target changed the sealed records")
+			}
+			if !reflect.DeepEqual(outputTree[gs.Language](t, out), wantTree) {
+				t.Fatal("the target changed the generated unit")
+			}
+		})
+	}
+	// The Go optional helper has a parameter of its own. The planner hands a
+	// target a copy of the helper's declaration too.
+	t.Run("the parameters of a helper", func(t *testing.T) {
+		e, _, input := generationInput(t, paginationModule())
+		wantTree := outputTree[gs.Language](t, generatedOutput(t, e, input, golangText(), goRequest))
+		values, parameters := 0, 0
+		e, _, input = generationInput(t, paginationModule())
+		out := generatedOutput(t, e, input, golangText(), func(reg *compose.Registry, input transform.Input, to representation.Language) (compose.Request, error) {
+			return genfixture.Request(reg, input, to, "generated-go", overwriting{gotarget.Provider{Package: "pagination"}, g.IssuedValue{}, &values, &parameters}, golangLibraries()...)
+		})
+		if parameters == 0 {
+			t.Fatal("the target did not reach a parameter")
+		}
+		helpers := 0
+		for _, record := range out.Inventory() {
+			if record.Role == g.HelperDeclaration {
+				helpers++
+			}
+		}
+		if helpers != 1 {
+			t.Fatal("helper records", helpers)
+		}
+		if !reflect.DeepEqual(outputTree[gs.Language](t, out), wantTree) {
+			t.Fatal("the target changed the generated unit")
+		}
+	})
+}
+
+// descendant is the node reached from a node by taking, depth times, the
+// first child that itself has children, or the first child at the last step.
+func descendant[L any](t *testing.T, tree ast.AST[L], node ast.NodeID, depth int) ast.NodeID {
+	t.Helper()
+	for step := range depth {
+		children := tree.Nodes[node-1].Children
+		if len(children) == 0 {
+			t.Fatal("no node at this depth")
+		}
+		next := children[0].Node
+		if step < depth-1 {
+			for _, child := range children {
+				if len(tree.Nodes[child.Node-1].Children) != 0 {
+					next = child.Node
+					break
+				}
+			}
+		}
+		node = next
+	}
+	return node
+}
+
+// No listed site may contain another listed site. The kernel knows no
+// language's syntax, so it does not know where a declaration sits. It does know
+// that a declaration is not inside another declaration of the same inventory.
+func TestGenerationRunRefusesAnInventoryWithNestedSites(t *testing.T) {
+	fixture := independent(t)
+	tree := outputTree[gs.Language](t, inventoryOutput(t, fixture, inventoryRoots...))
+	for name, tamper := range map[string]func([]ast.NodeRef) []ast.NodeRef{
+		"the root node as a declaration":               func(s []ast.NodeRef) []ast.NodeRef { s[0].Node = tree.Root; return s },
+		"a node inside another declaration":            func(s []ast.NodeRef) []ast.NodeRef { s[0].Node = descendant(t, tree, s[1].Node, 1); return s },
+		"a node two levels inside another declaration": func(s []ast.NodeRef) []ast.NodeRef { s[4].Node = descendant(t, tree, s[1].Node, 2); return s },
+	} {
+		t.Run(name, func(t *testing.T) {
+			plan, err := fixture.PlanBuilt(context.Background(), func(a g.Assembly) g.Assembly {
+				a.Declarations = tamper(slices.Clone(a.Declarations))
+				return a
+			}, inventoryRoots...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if out, err := plan.Run(context.Background()); !errors.Is(err, g.ErrScope) || out.Snapshot().Valid() || len(out.Inventory()) != 0 {
+				t.Fatal("a site inside another listed site was sealed", err)
+			}
+		})
+	}
+}
+
+// The shared builder seeds its walk in the order of its comparator, and a
+// declaration that uses no other is emitted where the comparator puts it. Four
+// records that use nothing of each other are requested in descending order of
+// their names. In every target their sites ascend with the names.
+func TestGenerationSitesOfIndependentDeclarationsAscendByName(t *testing.T) {
+	e, _, input := generationInput(t, genModule("example.order", genMap(),
+		genEntry("Zeta", genType(genPerson())), genEntry("Alpha", genType(genPerson())),
+		genEntry("Mid", genType(genPerson())), genEntry("Beta", genType(genPerson()))))
+	// The names of the horos declarations, by their sites: the provenance of a
+	// record leads to the name its source declaration has.
+	names := map[ast.NodeRef]string{}
+	for _, envelope := range input.Source.Inputs() {
+		tree, err := representation.Unpack[h.Language](input.Source.Language(), envelope)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, node := range tree.Nodes {
+			if node.Kind == h.KindTypeDefinition {
+				names[ast.NodeRef{Tree: tree.ID, Node: ast.NodeID(i + 1)}] = nodeAttribute(node, h.AttributeName)
+			}
+		}
+	}
+	descending := func(build requestBuilder) requestBuilder {
+		return func(reg *compose.Registry, input transform.Input, to representation.Language) (compose.Request, error) {
+			request, err := build(reg, input, to)
+			slices.SortFunc(request.Roots, func(a, b ast.NodeRef) int { return strings.Compare(names[b], names[a]) })
+			return request, err
+		}
+	}
+	check := func(t *testing.T, out g.Output) {
+		t.Helper()
+		var got, requested []string
+		last := ast.NodeID(0)
+		sites := map[string]ast.NodeRef{}
+		for _, record := range out.Inventory() {
+			if record.Role != g.RequestedDeclaration || len(record.Provenance) != 1 || record.Site.Node <= last {
+				t.Fatal("unexpected record", record.Role, record.Provenance, record.Site)
+			}
+			last = record.Site.Node
+			name := names[record.Provenance[0]]
+			got = append(got, name)
+			sites[name] = record.Site
+		}
+		for _, site := range out.Exposed() {
+			for name, at := range sites {
+				if at == site {
+					requested = append(requested, name)
+				}
+			}
+		}
+		if !slices.Equal(requested, []string{"Zeta", "Mid", "Beta", "Alpha"}) {
+			t.Fatal("the request was not in descending order of the names", requested)
+		}
+		if !slices.Equal(got, []string{"Alpha", "Beta", "Mid", "Zeta"}) {
+			t.Fatal("the sites do not ascend with the names", got)
+		}
+	}
+	t.Run("typescript", func(t *testing.T) { check(t, generatedOutput(t, e, input, typescriptText(), descending(tsRequest))) })
+	t.Run("golang", func(t *testing.T) { check(t, generatedOutput(t, e, input, golangText(), descending(goRequest))) })
+	t.Run("rust", func(t *testing.T) { check(t, generatedOutput(t, e, input, rustText(), descending(rustRequest))) })
+	t.Run("cpp", func(t *testing.T) { check(t, generatedOutput(t, e, input, cppText(), descending(cppRequest))) })
 }
 
 // The shared builder lists the declarations once for all four targets. Every

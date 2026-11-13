@@ -218,7 +218,7 @@ func Plan[F, T, R any](ctx context.Context, in PlanningInput[F, T, R]) (Generati
 		if err = ctx.Err(); err != nil {
 			return Output{}, err
 		}
-		out, err := seal(ctx, exec.Checker, built, owned, program.exposed, exec.Limits)
+		out, err := seal[T](ctx, exec.Checker, built, owned, program.exposed, exec.Limits)
 		if err != nil {
 			return Output{}, err
 		}
@@ -736,7 +736,8 @@ func (p *planner[F, T, R]) helperUse(e Expression[T], depth int) (Expression[T],
 		if err != nil {
 			return Expression[T]{}, err
 		}
-		if err = p.execution.Target.CheckDeclaration(p.ctx, desc); err != nil {
+		// The target checks a copy. The plan keeps its own declaration.
+		if err = p.execution.Target.CheckDeclaration(p.ctx, desc.Clone()); err != nil {
 			return Expression[T]{}, err
 		}
 		p.program.declarations[id-1].Description = desc
@@ -790,8 +791,10 @@ func checkParameterUses[T any](id uint32, d DeclarationDescription[T]) error {
 
 // nativeDeclaration deliberately drops source binding/application templates.
 // Construction can only observe the native declaration selected by planning.
+// Each result owns its parameters and its values, so the declaration that a
+// target checks shares no storage with the one the plan keeps.
 func nativeDeclaration[T any](d DeclarationDescription[T]) NativeDeclaration[T] {
-	out := NativeDeclaration[T]{Name: d.Name, Form: d.Form, Origin: d.Origin, Body: d.Body, Values: d.Values}
+	out := NativeDeclaration[T]{Name: d.Name, Form: d.Form, Origin: d.Origin, Body: d.Body, Values: slices.Clone(d.Values)}
 	for _, p := range d.Generic.Parameters {
 		out.Parameters = append(out.Parameters, NativeParameter{Name: p.Name, Origin: p.Origin})
 	}
