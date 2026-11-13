@@ -115,6 +115,7 @@ type DeclarationDescription[T any] struct {
     Origin  ast.NodeRef
     Generic GenericConvention[T]
     Body    Expression[T]
+    Values  []IssuedValue
 }
 type HelperRecipe[T any] struct {
     Key         HelperKey
@@ -334,6 +335,7 @@ type NativeDeclaration[T any] struct {
     Origin     ast.NodeRef
     Parameters []NativeParameter
     Body       Expression[T]
+    Values     []IssuedValue
 }
 type NativeParameter struct {
     Name   string
@@ -391,8 +393,13 @@ registered libraries affects later plans. Failure, cancellation or a limit
 returns no usable output. Recursion is explicitly unsupported by the current
 native construction profiles.
 
-Output carries checked syntax, requested public sites and external destinations
-into Files. Files chooses placement and module syntax, then checks the actual
+Output carries checked syntax, the inventory of its declarations, requested
+public sites and external destinations into Files. A recipe states what it
+means about its declaration, for example a naming intent or the access a
+helper requires, as issued values in `Values`. The kernel carries them to the
+inventory record and does not read them.
+[Inventory and handles](generation-planner.md#the-declaration-inventory-and-its-handles)
+Files chooses placement and module syntax, then checks the actual
 native bindings. [Output handoff](typescript-type-imports.md) ·
 [Planning tests](../integration/go/generation_planning_test.go)
 

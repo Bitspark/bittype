@@ -43,18 +43,23 @@ type GenericConvention[T any] struct {
 	Bindings   []Expression[T]
 	Arguments  []Expression[T]
 }
+
+// DeclarationDescription is a recipe's description of one native declaration.
+// Values are what the recipe's owner states about it; see NativeDeclaration.
 type DeclarationDescription[T any] struct {
 	Name    string
 	Form    Form[T]
 	Origin  ast.NodeRef
 	Generic GenericConvention[T]
 	Body    Expression[T]
+	Values  []IssuedValue
 }
 
 func (d DeclarationDescription[T]) Clone() DeclarationDescription[T] {
 	d.Generic.Parameters = slices.Clone(d.Generic.Parameters)
 	d.Generic.Bindings = slices.Clone(d.Generic.Bindings)
 	d.Generic.Arguments = slices.Clone(d.Generic.Arguments)
+	d.Values = slices.Clone(d.Values)
 	return d
 }
 
@@ -64,6 +69,10 @@ type DeclarationRecipe[F, T, R any] struct {
 	Selector Selector
 	Expand   func(context.Context, DeclarationRequest[F, T, R]) (DeclarationDescription[T], error)
 }
+
+// HelperRecipe describes a declaration that a mapping demands by key. Its
+// declaration states what it requires of the Files stage, for example its
+// access, as issued values.
 type HelperRecipe[T any] struct {
 	Key         HelperKey
 	Declaration NativeDeclaration[T]

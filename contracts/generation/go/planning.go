@@ -11,10 +11,16 @@ import (
 	"github.com/Bitspark/bittype/trees/representation/go"
 )
 
+// PlannedDeclaration is one native declaration of a closed program. Role and
+// Provenance are the planner's own facts. Provenance lists the declaring sites
+// of the source declarations this declaration represents. It is a list because
+// the contract does not assume that one source declaration yields one native
+// declaration. A helper represents none.
 type PlannedDeclaration[T any] struct {
 	ID          uint32
 	Description NativeDeclaration[T]
-	Exposed     bool
+	Role        DeclarationRole
+	Provenance  []ast.NodeRef
 }
 type Program[T any] struct {
 	declarations []PlannedDeclaration[T]
@@ -25,6 +31,7 @@ func (p Program[T]) Declarations() []PlannedDeclaration[T] {
 	out := slices.Clone(p.declarations)
 	for i := range out {
 		out[i].Description = out[i].Description.Clone()
+		out[i].Provenance = slices.Clone(out[i].Provenance)
 	}
 	return out
 }
@@ -183,11 +190,11 @@ func Plan[F, T, R any](ctx context.Context, in PlanningInput[F, T, R]) (Generati
 		if err != nil {
 			return fail(err)
 		}
-		if p.program.declarations[id-1].Exposed {
+		if p.program.declarations[id-1].Role == RequestedDeclaration {
 			return fail(ErrScope)
 		}
 		p.program.exposed = append(p.program.exposed, id)
-		p.program.declarations[id-1].Exposed = true
+		p.program.declarations[id-1].Role = RequestedDeclaration
 	}
 	if err := in.Execution.Target.CheckProgram(ctx, p.program); err != nil {
 		return fail(err)
@@ -198,6 +205,11 @@ func Plan[F, T, R any](ctx context.Context, in PlanningInput[F, T, R]) (Generati
 	// Capture only the closed target program and stable target configuration.
 	program := p.program
 	exec := in.Execution
+	// What the plan states about its declarations, for the inventory of every run.
+	owned := make([]planned, len(program.declarations))
+	for i, d := range program.declarations {
+		owned[i] = planned{d.Role, d.Provenance, d.Description.Values}
+	}
 	return GenerationPlan{steps: slices.Clone(p.steps), run: func(ctx context.Context) (Output, error) {
 		built, err := exec.Target.Build(ctx, BuildInput[T]{program, exec.Language, exec.Output, exec.Limits})
 		if err != nil {
@@ -206,7 +218,7 @@ func Plan[F, T, R any](ctx context.Context, in PlanningInput[F, T, R]) (Generati
 		if err = ctx.Err(); err != nil {
 			return Output{}, err
 		}
-		out, err := seal(ctx, exec.Checker, built, len(program.exposed), exec.Limits)
+		out, err := seal[T](ctx, exec.Checker, built, owned, program.exposed, exec.Limits)
 		if err != nil {
 			return Output{}, err
 		}
@@ -306,14 +318,30 @@ func (p *planner[F, T, R]) admit(o *occurrence[F], depth int) error {
 	return err
 }
 
-func (p *planner[F, T, R]) reserve() (uint32, error) {
+func (p *planner[F, T, R]) reserve(role DeclarationRole, provenance []ast.NodeRef) (uint32, error) {
 	if len(p.program.declarations) >= p.execution.Limits.Reservations {
 		return 0, ErrLimit
 	}
 	id := uint32(len(p.program.declarations) + 1)
-	p.program.declarations = append(p.program.declarations, PlannedDeclaration[T]{ID: id})
+	p.program.declarations = append(p.program.declarations, PlannedDeclaration[T]{ID: id, Role: role, Provenance: provenance})
 	p.active[id] = true
 	return id, nil
+}
+
+// carry admits the values a description states about its declaration. Each
+// must come from an issuer. Its content is charged to the output budget and is
+// not read.
+func (p *planner[F, T, R]) carry(values []IssuedValue) error {
+	for _, value := range values {
+		if value.owner == nil {
+			return ErrInvalid
+		}
+		if len(value.content)+1 > p.execution.Limits.OutputBytes-p.bytes {
+			return ErrLimit
+		}
+		p.bytes += len(value.content) + 1
+	}
+	return nil
 }
 func (p *planner[F, T, R]) declare(d Declaration[F], depth int) (uint32, error) {
 	if err := p.tick(depth); err != nil {
@@ -363,7 +391,8 @@ func (p *planner[F, T, R]) declare(d Declaration[F], depth int) (uint32, error) 
 	if err != nil {
 		return 0, err
 	}
-	id, err := p.reserve()
+	// A source declaration is a dependency until the request lists it as a root.
+	id, err := p.reserve(DependencyDeclaration, p.walk.declared(d.entity))
 	if err != nil {
 		return 0, err
 	}
@@ -384,6 +413,9 @@ func (p *planner[F, T, R]) declare(d Declaration[F], depth int) (uint32, error) 
 	desc = desc.Clone()
 	if len(desc.Generic.Bindings) != len(view.Formals) || len(desc.Generic.Arguments) != len(desc.Generic.Parameters) {
 		return 0, ErrScope
+	}
+	if err = p.carry(desc.Values); err != nil {
+		return 0, err
 	}
 	if len(desc.Generic.Parameters) > p.execution.Limits.Formals {
 		return 0, ErrLimit
@@ -688,7 +720,7 @@ func (p *planner[F, T, R]) helperUse(e Expression[T], depth int) (Expression[T],
 	}
 	if id == 0 {
 		var err error
-		id, err = p.reserve()
+		id, err = p.reserve(HelperDeclaration, nil)
 		if err != nil {
 			return Expression[T]{}, err
 		}
@@ -697,11 +729,15 @@ func (p *planner[F, T, R]) helperUse(e Expression[T], depth int) (Expression[T],
 		if len(desc.Parameters) > p.execution.Limits.Formals {
 			return Expression[T]{}, ErrLimit
 		}
+		if err = p.carry(desc.Values); err != nil {
+			return Expression[T]{}, err
+		}
 		desc.Body, err = p.template(desc.Body, id, len(desc.Parameters), nil, depth+1)
 		if err != nil {
 			return Expression[T]{}, err
 		}
-		if err = p.execution.Target.CheckDeclaration(p.ctx, desc); err != nil {
+		// The target checks a copy. The plan keeps its own declaration.
+		if err = p.execution.Target.CheckDeclaration(p.ctx, desc.Clone()); err != nil {
 			return Expression[T]{}, err
 		}
 		p.program.declarations[id-1].Description = desc
@@ -755,8 +791,10 @@ func checkParameterUses[T any](id uint32, d DeclarationDescription[T]) error {
 
 // nativeDeclaration deliberately drops source binding/application templates.
 // Construction can only observe the native declaration selected by planning.
+// Each result owns its parameters and its values, so the declaration that a
+// target checks shares no storage with the one the plan keeps.
 func nativeDeclaration[T any](d DeclarationDescription[T]) NativeDeclaration[T] {
-	out := NativeDeclaration[T]{Name: d.Name, Form: d.Form, Origin: d.Origin, Body: d.Body}
+	out := NativeDeclaration[T]{Name: d.Name, Form: d.Form, Origin: d.Origin, Body: d.Body, Values: slices.Clone(d.Values)}
 	for _, p := range d.Generic.Parameters {
 		out.Parameters = append(out.Parameters, NativeParameter{Name: p.Name, Origin: p.Origin})
 	}
