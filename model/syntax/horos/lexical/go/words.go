@@ -2,7 +2,9 @@ package lexical
 
 // The lists below state rules of the language's spelling as data. Each is
 // published by a function without input that returns a fresh value, so that
-// no importer can change it for another. Their evaluators are operations.
+// no importer can change it for another. The value is never nil, also for a
+// list without a word, so a table entry that takes its set from a list holds a
+// set that is present. Their evaluators are operations.
 
 // Reserved lists the words of the language. A name that is one of them is
 // written between backquotes.

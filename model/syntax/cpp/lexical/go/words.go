@@ -2,7 +2,9 @@ package lexical
 
 // The lists below state rules of the language's spelling as data. Each is
 // published by a function without input that returns a fresh value, so that
-// no importer can change it for another. Their evaluators are operations.
+// no importer can change it for another. The value is never nil, also for a
+// list without a word, so a table entry that takes its set from a list holds a
+// set that is present. Their evaluators are operations.
 
 // Reserved lists the words that are no identifier.
 func Reserved() []string {
@@ -20,8 +22,9 @@ func Reserved() []string {
 	}
 }
 
-// BuiltinWords lists the words of which the name of a builtin type is made.
-func BuiltinWords() []string {
+// FundamentalTypeWords lists the words of which the spelling of a
+// fundamental type is made.
+func FundamentalTypeWords() []string {
 	return []string{
 		"void", "bool", "char", "wchar_t", "char8_t", "char16_t", "char32_t", "signed", "unsigned", "short", "int", "long", "float", "double",
 	}

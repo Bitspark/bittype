@@ -14,9 +14,12 @@ const owner = "cpp"
 // Identifier names a C++ identifier that is no reserved word.
 func Identifier() syntax.Predicate { return syntax.Predicate{Owner: owner, Name: "identifier"} }
 
-// Builtin names the words of a builtin type in a combination the language
-// admits, separated by single spaces, such as "unsigned long long".
-func Builtin() syntax.Predicate { return syntax.Predicate{Owner: owner, Name: "builtin"} }
+// FundamentalType names the spelling of a fundamental type: its words in a
+// combination the language admits, separated by single spaces, such as
+// "unsigned long long".
+func FundamentalType() syntax.Predicate {
+	return syntax.Predicate{Owner: owner, Name: "fundamental-type"}
+}
 
 // HeaderName names a header name without its delimiters: a text that is not
 // empty and holds no line break.

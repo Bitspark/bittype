@@ -17,9 +17,9 @@ func TestEvaluatorsReadTheDeclaredLists(t *testing.T) {
 			t.Errorf("reserved word %q: shaped like an identifier %v, admitted as one %v", word, g.Identifier(word), native.Identifier(word))
 		}
 	}
-	for _, word := range lexical.BuiltinWords() {
-		if !native.BuiltinWord(word) {
-			t.Errorf("builtin word %q is not evaluated as one", word)
+	for _, word := range lexical.FundamentalTypeWords() {
+		if !native.FundamentalTypeWord(word) {
+			t.Errorf("word %q of a fundamental type is not evaluated as one", word)
 		}
 	}
 	for text, want := range map[string]bool{
@@ -34,8 +34,8 @@ func TestEvaluatorsReadTheDeclaredLists(t *testing.T) {
 		"void": true, "double": true, "char8_t": true, "unsigned long long": true, "long double": true, "signed char": true, "wchar_t": true,
 		"string": false, "size_t": false, "long long long": false, "unsigned  int": false, "": false, "auto": false,
 	} {
-		if got := native.Builtin(text); got != want {
-			t.Errorf("Builtin(%q) = %v, want %v", text, got, want)
+		if got := native.FundamentalType(text); got != want {
+			t.Errorf("FundamentalType(%q) = %v, want %v", text, got, want)
 		}
 	}
 }

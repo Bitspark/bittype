@@ -14,6 +14,12 @@ const owner = "typescript"
 // Identifier names a TypeScript identifier that is no reserved word.
 func Identifier() syntax.Predicate { return syntax.Predicate{Owner: owner, Name: "identifier"} }
 
-// TypeName names an identifier that can name a type: one that is no predefined
-// type word.
+// TypeName names an identifier that can name a user-defined type: one that is
+// no predefined type word. It is not the TypeName of TypeScript's grammar,
+// which is a reference that may be qualified by a namespace. The grammar has
+// no term for what this name admits: the name that a type declaration binds
+// is its BindingIdentifier, and a sentence beside the grammar excludes the
+// predefined type words: "The predefined type keywords are reserved and
+// cannot be used as names of user defined types." (TypeScript language
+// specification, 3.8.1.)
 func TypeName() syntax.Predicate { return syntax.Predicate{Owner: owner, Name: "type-name"} }

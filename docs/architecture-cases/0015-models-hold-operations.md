@@ -172,8 +172,9 @@ hold model-side parts import a private lexical helper.
 
 **An operation owns a declaration** (AC-02, made assessable by AC-12). The four native grammar tables
 are unexported variables of their checkers (`check.go:17` for Go), and the
-horos table is in `internal/declsyntax/check.go:67`. Go's table binds 17
-predicate function values, so it is not data today. The Go compiler bridge
+horos table is in `internal/declsyntax/check.go:67`. At identification Go's
+table bound 17 predicate function values, so it was not data; slice S3a
+named them ([below](#correction-and-qualification-status)). The Go compiler bridge
 writes eleven keys as literals, ten of which name nothing that the
 vocabulary publishes
 (`grep -oh 'n\.Key("[a-z0-9-]*")' internal/golangsem/*.go | sort -u | wc -l`).
@@ -391,15 +392,18 @@ its qualification and its limits.
   admitted texts as data. The six shared names are declared there.
 - Each of the five languages has a lexical part,
   `model/syntax/<language>/lexical/go`, with the names of its own
-  predicates, 17 in all. It imports the agnostic syntax model and nothing
-  else.
+  predicates, 16 in all. It imports the agnostic syntax model and nothing
+  else. The names are the language's terms and no node kinds, and the
+  calling conventions of Rust are a set in their entry and no name
+  (decision M35, after the independent review of this slice).
 - The five tables are composite literals of the model's type. None binds a
   function value any more. The entry constructors of `internal/grammar`
   are deleted.
 - The interpreter `internal/grammar.Check` takes the evaluators of the
   caller's language as a map from name to function and binds the shared
   names itself. A table that names a predicate without an evaluator fails
-  every check before a tree is read, as unsupported.
+  every check before a tree is read, as unsupported. So does a table with
+  a set that is present and empty (M35).
 - The horos identifier rule has one evaluator, `internal/horos.Identifier`.
   The copy in `internal/declsyntax` is deleted.
 
@@ -436,7 +440,10 @@ slice S3b, in a limited form for horos, whose checker takes the references
 out of a tree before the interpreter sees it. Everything else of this case
 is unchanged.
 
-**Qualification.** Each of the five tables was written out, before and
+**Qualification.** The independent reader paired all 154 attribute entries
+of the five tables, old against new, and found them identical. The names
+of each lexical part are guarded by one test: pairwise distinct, and owned
+by the language's identifier. The six shared names are pinned. Each of the five tables was written out, before and
 after, as its node kinds, attributes, roles with their bounds and kinds,
 and for each attribute which of 630 probe texts it admits. The two lists
 are equal for every language. The outcome of every test by name and the
@@ -462,9 +469,9 @@ its own exact list.
 
   | Language | Declared in `model/syntax/<language>/lexical/go` | Where it stood |
   | --- | --- | --- |
-  | C++ | 92 reserved words, the 14 words of a builtin type | `internal/cpp/names.go`, `internal/cpp/types.go` |
+  | C++ | 92 reserved words, the 14 words of a fundamental type | `internal/cpp/names.go`, `internal/cpp/types.go` |
   | horos | 41 reserved words, the bound of 4096 digits of an integer | `internal/horos/spelling.go` |
-  | Rust | 52 reserved words, the 14 names of calling conventions, the 840 ranges of the characters of a crate name | `internal/rust/names.go`, `literal.go`, `cratename.go` |
+  | Rust | 52 reserved words, the 840 ranges of the characters of a crate name | `internal/rust/names.go`, `cratename.go` |
   | TypeScript | 46 reserved words, the 11 predefined type words, the two patterns of a number as strings | `internal/typescript/names.go`, `literal.go` |
   | Go | Nothing: two names and no list | |
 
@@ -516,7 +523,7 @@ four languages. The pull request holds the runs.
 **Limits.** A word that an evaluator compares inline is not declared: the
 five words that a raw Rust identifier may not be, the path keywords of a
 Rust path segment, the escape letters of a horos string, the words of a
-C++ builtin type that stand alone. The design page counts such a rule as
+C++ fundamental type that stand alone. The design page counts such a rule as
 one that exists only as its evaluator. The tests of the helpers state
 expected answers for selected words of each list and ask of every declared
 word what its evaluator says. Only Rust's keywords are compared in full

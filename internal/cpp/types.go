@@ -6,19 +6,22 @@ import (
 	"strings"
 )
 
-// builtinWord evaluates the words of a builtin type that the lexical part
-// declares.
-var builtinWord = g.Words(lexical.BuiltinWords())
+// fundamentalTypeWord evaluates the words of a fundamental type that the
+// lexical part declares.
+var fundamentalTypeWord = g.Words(lexical.FundamentalTypeWords())
 
-func BuiltinWord(s string) bool { return builtinWord(s) }
-func Builtin(s string) bool {
+// FundamentalTypeWord reports one word of the spelling of a fundamental type.
+func FundamentalTypeWord(s string) bool { return fundamentalTypeWord(s) }
+
+// FundamentalType reports the spelling of a fundamental type.
+func FundamentalType(s string) bool {
 	words := strings.Fields(s)
 	if len(words) == 0 || strings.Join(words, " ") != s {
 		return false
 	}
 	counts := map[string]int{}
 	for _, w := range words {
-		if !BuiltinWord(w) {
+		if !FundamentalTypeWord(w) {
 			return false
 		}
 		counts[w]++

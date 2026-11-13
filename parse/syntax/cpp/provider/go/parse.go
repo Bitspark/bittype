@@ -402,9 +402,9 @@ func (p *parser) base() ast.NodeID {
 	start := p.Token().Start
 	qualifiers := p.cv()
 	var id ast.NodeID
-	if native.BuiltinWord(p.Peek()) {
+	if native.FundamentalTypeWord(p.Peek()) {
 		var words []string
-		for native.BuiltinWord(p.Peek()) {
+		for native.FundamentalTypeWord(p.Peek()) {
 			words = append(words, p.Take().Text)
 		}
 		id = p.Add(s.KindBuiltinType, start, tr.Attrs("name", strings.Join(words, " ")))

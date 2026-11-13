@@ -1,6 +1,6 @@
 # Models and operations
 
-**Design, 13 November 2026, from research 0018. This page holds the decisions M1 to M33 of the research owner, `claude-contract-chain-issues`. All are recorded on #305: M1 to M9 in the [grade](https://github.com/Bitspark/bittype/issues/305#issuecomment-6855741567) of research 0018, M10 to M29 in five comments on this page and on its independent review, M30 in the [grade of platform research 0004](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860238626), [M31](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860518608) on the first steps of slices S3a, S4 and S3b, and [M32](https://github.com/Bitspark/bittype/issues/305#issuecomment-6861647384) and [M33](https://github.com/Bitspark/bittype/issues/305#issuecomment-6862111905) on two checks of this page against the platform's rule AC-12. [Section 11](#11-decisions-and-deferrals) links each. Slices S3a and S4 are delivered on `main` ([section 10](#10-the-order-of-work)). Nothing else on this page is implemented there: the code has the layout that [`LAYOUT.md`](../LAYOUT.md) describes.**
+**Design, 13 November 2026, from research 0018. This page holds the decisions M1 to M33 and M35 of the research owner, `claude-contract-chain-issues`. All are recorded on #305: M1 to M9 in the [grade](https://github.com/Bitspark/bittype/issues/305#issuecomment-6855741567) of research 0018, M10 to M29 in five comments on this page and on its independent review, M30 in the [grade of platform research 0004](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860238626), [M31](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860518608) on the first steps of slices S3a, S4 and S3b, [M32](https://github.com/Bitspark/bittype/issues/305#issuecomment-6861647384) and [M33](https://github.com/Bitspark/bittype/issues/305#issuecomment-6862111905) on two checks of this page against the platform's rule AC-12, and [M35](https://github.com/Bitspark/bittype/issues/305#issuecomment-6864410816) on the independent review of slice S3a. M34 is recorded on #305 and is not on this page. [Section 11](#11-decisions-and-deferrals) links each. Slices S3a and S4 are delivered on `main` ([section 10](#10-the-order-of-work)). Nothing else on this page is implemented there: the code has the layout that [`LAYOUT.md`](../LAYOUT.md) describes.**
 
 The owner directed on 13 November 2026 that the repository splits at its root
 into models and operations. This page says how the line is drawn, where every
@@ -65,7 +65,12 @@ This page does not repeat them.
 - **M33:** the [decision of the same day](https://github.com/Bitspark/bittype/issues/305#issuecomment-6862111905)
   on two points of an independent review of that change: what AC-12
   requires of the form table and of the sealed symbol types.
-  [Section 11](#11-decisions-and-deferrals) lists every decision.
+- **M35:** the [decision of the same day](https://github.com/Bitspark/bittype/issues/305#issuecomment-6864410816)
+  on the findings of an independent reader of slice S3a, who read pull
+  request #318 at `cbc76a8`. It corrects four predicate names before their
+  strings are final, takes one name back, makes an empty set a defect of a
+  table and asks for the tests whose absence the reader's mutants showed.
+  [Section 11](#11-decisions-and-deferrals) lists every decision on this page.
 
 Code is quoted with its file and line on `main` at `0581401`. The package
 table of [section 7](#every-package-of-main) and the counts made from it
@@ -342,7 +347,7 @@ for this page. Line counts are `wc -l` over the non-test files.
 | Go's intended-forms package, `transform/syntax/golang/model/go` (112 lines) | Seven form names (`model.go:18-26`) and two primitive names (`:30-33`). With [section 5](#5-intent): the form table | The issuer (`:12`), `Form` and `Name` (`:35-36`), five constructors (`:37-51`), `CheckExpression` (`:52-93`), `CheckDeclaration` (`:94-112`) |
 | Go's semantic vocabulary, `semantics/golang/go` (855 lines) | Two profile strings and two further names (`vocabulary.go:13-16`), 21 functions without input that each return one key (`:23-71`), the payload shape `FieldInfo` (`model.go:34`), the records of a captured program's import environment, which are plain today (`environment.go:25-56`) | `Key(name string)` (`vocabulary.go:22`), `Model`, `Type`, `Field`, `Open` and 33 reader methods (`model.go:15-316`), the encoding of inputs into settings and back (`environment.go:57-400`), `Configuration`, `MatchesConfiguration`, `Requirements` and `Evidence` (`vocabulary.go:74-99`), the three contracts (`contracts.go:15-40`) |
 | Go's syntax vocabulary, `syntax/golang/go` (107 lines) | All of it: a marker type, two methods that return a constant, node kinds, roles, attribute names, concrete kinds | Nothing |
-| Go's grammar table, in `check/syntax/golang/provider/go/check.go` | Two kind lists (`:15-16`) and the table of 23 entries (`:17-41`), once its 17 predicate function values are named by identity | `identifier` (`:13`), `Check` with two rules between nodes (`:45-83`), the provider (`:85-89`) |
+| Go's grammar table, in `check/syntax/golang/provider/go/check.go` | Two kind lists (`:15-16`) and the table of 23 entries (`:17-41`). At `0581401` it bound 17 predicate function values. Slice S3a named them by identity: the table is a composite literal of the model's type now, still in the checker | `identifier` (`:13`), `Check` with two rules between nodes (`:45-83`), the provider (`:85-89`) |
 | The tree carriers, `trees/ast/go` (130 lines) and `trees/cst/go` (30 lines) | All of it: "These are data types, not checked trees. Structural and grammatical checks live in separate packages; the carrier performs no validation or allocation." (`trees/ast/go/ast.go:7-8`) | Nothing |
 | The graph carrier, `semantics/go/model.go` (560 lines) | The records and `Data` (`:20-125`). Every field of them is exported, so they are plain today | The limits (`:127-140`), the sealed `Semantics[L]` (`:146`), `New` (`:230-405`), the accessors and queries (`:445-560`) |
 | The envelope package, `trees/representation/go` (490 lines) | Nothing | All of it. An envelope exists only through `Pack`, which runs the structure check (`ast.go:55-68`). The descriptor `Language` has unexported fields and a refusing constructor (`language.go:15-30`). `Info` (`info.go:9-15`) is the result of one operation |
@@ -351,7 +356,10 @@ for this page. Line counts are `wc -l` over the non-test files.
 
 The commands behind the counts, run at the repository root:
 `grep -o 'g\.Attr([a-z]*, [^)]*' check/syntax/golang/provider/go/check.go | wc -l`
-gives 17, `grep -c 'semantics.Key *{ *return Key(' semantics/golang/go/vocabulary.go`
+gave 17 at `0581401`, where the table was written with the entry constructors.
+Since slice S3a the same 17 entries are counted by
+`grep -o 'Predicate: \|OneOf: ' check/syntax/golang/provider/go/check.go | wc -l`:
+16 name a predicate and one holds a set. `grep -c 'semantics.Key *{ *return Key(' semantics/golang/go/vocabulary.go`
 gives 21, and `grep -c '^func (m Model) \|^func (t Type) ' semantics/golang/go/model.go`
 gives 33.
 
@@ -790,7 +798,12 @@ and under which identity.
 "Complex relationships between nodes" stay code "unless a concrete need
 justifies extending the declarative language" (advice, section 3.3; row
 R18). So the declared grammar is an upper bound of what a checker admits, as
-sentence 2 of the test says, and each language's page states it.
+sentence 2 of the test says, for the four programming languages: the
+interpreter refuses first, and the rules in code only refuse further. For
+horos that sentence would be false, because its checker takes the references
+out of a tree before the interpreter sees it. There the table bounds what is
+admitted of a tree without its references (M31). No language's page states
+its sentence yet: each is written with slice S3b.
 
 **Which mechanism declares what (row R16).** No new schema language is
 built, and the node patterns of horos kinds are not used for it. Two
@@ -868,11 +881,12 @@ the two bridges that are not written in Go. AC-05 asks that the mechanism be
 general, "without requiring a new case-specific check for each
 implementation change", and one generator from one description is that.
 
-**M18: how a grammar table names a predicate.** An entry of a grammar table
-holds a function value today (`Attribute.Accept`,
-`internal/grammar/rules.go:17`). Go's table binds 17 of them, so it is not
-data, and row R7c makes the naming of predicates by identity the
-precondition of its move.
+**M18: how a grammar table names a predicate.** At `0581401` an entry of a
+grammar table held a function value (`Attribute.Accept`,
+`internal/grammar/rules.go:17`). Go's table bound 17 of them, so it was not
+data, and row R7c made the naming of predicates by identity the
+precondition of its move. Slice S3a ended that, as the paragraph after the
+next says.
 
 An entry names its predicate by an owner-qualified name, as a semantic key
 names a fact (`semantics.Key`, `semantics/go/model.go:24`). The names that
@@ -899,6 +913,23 @@ a language's evaluators as a map from name to function
 (`internal/grammar.Evaluators`). A table that names a predicate without an
 evaluator fails every check before a tree is read, as unsupported: the tree
 was not judged, so it is not invalid.
+
+**What the review of slice S3a changed (M35).** A lexical part does not know
+node kinds (M19), so its names are the language's terms. Rust's identifier
+is `rust/identifier`, and the name that also admits a lone underscore is
+`rust/identifier-or-underscore`. `rust/lifetime` and `cpp/fundamental-type`
+replace `lifetime-reference` and `builtin`, which were a node kind and a
+function name. The calling conventions of Rust are no predicate: their
+evaluator was membership in 14 strings, so the entry holds them as a set
+and no name `rust/abi` exists. So the five languages declare 16 names of
+their own. A set has two states that mean something: absent, which
+restricts nothing, and present with members. A set that is present and
+empty would admit no text, and after slices S4 and S3b a set can come from
+a list declared elsewhere. The interpreter's first pass refuses a table
+that holds one, before a tree is read and as unsupported. Of several
+defects of a table one is reported, and always the same: a rebound shared
+name before an unbound name before an empty set, and of several names the
+least by owner and then by name.
 
 - *Reason:* a closed enumeration would be a shared edit for each new
   predicate of one language ([AC-03](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-03)).
@@ -1083,9 +1114,9 @@ What follows:
   slice S4, wherever it stands today. M31 gives the criterion for a list
   that this page does not name: a lexical table is a list that a spelling
   evaluator reads, and a set that one table entry admits is data in that
-  entry. By it slice S4 also moved the words of a C++ builtin type, the
-  calling conventions of Rust and the bound on the digits of a horos
-  integer. A word that an evaluator compares inline, such as the five
+  entry. By it slice S4 also moved the words of a C++ fundamental type and
+  the bound on the digits of a horos integer. The calling conventions of
+  Rust are a set that one entry admits, and data in that entry (M35). A word that an evaluator compares inline, such as the five
   words that a raw Rust identifier may not be, stays with its evaluator
   ([section 2](#2-the-test), the third of the five kinds of code). That includes the second keyword list
   of Rust in `semantics/rust/go/environment.go:215-224`. It is a copy: it
@@ -1724,7 +1755,8 @@ Slice S8 changes what they read:
 
 - `packageRole` reads the root as the first segment and the roles of
   [section 8](#8-roles-per-root) below it.
-- `foundationRules` (32 entries at `2e065cf`) becomes two closed tables, one
+- `foundationRules` (32 entries at `2e065cf`, and 33 since slice S3a added
+  `model/syntax/go`) becomes two closed tables, one
   for each root. `oneOfAKindRules` (13), `languageOwners` (5),
   `roleExtensions` (14)
   and the exception table (14) keep their meaning, with the new paths.
@@ -1735,8 +1767,9 @@ Slice S8 changes what they read:
   and nothing else. So an import of its language's syntax vocabulary, and
   with it of a node kind, fails. The lexical helper's allow-list names the
   lexical part and not the syntax vocabulary (M19).
-- Every added rule gets a synthetic test that breaks it, as the 37 tests of
-  `architecture_synthetic_test.go` do for the present rules.
+- Every added rule gets a synthetic test that breaks it, as the tests of
+  `architecture_synthetic_test.go` do for the present rules: 37 at
+  `0581401`, and 38 since slice S3a added the one for the lexical part.
 
 ## 10. The order of work
 
@@ -2053,8 +2086,9 @@ M20 to M27 in the [decisions on the independent review](https://github.com/Bitsp
 [M29](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859553686),
 M30 in the [grade of platform research 0004](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860238626),
 [M31](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860518608),
-[M32](https://github.com/Bitspark/bittype/issues/305#issuecomment-6861647384)
-and [M33](https://github.com/Bitspark/bittype/issues/305#issuecomment-6862111905).
+[M32](https://github.com/Bitspark/bittype/issues/305#issuecomment-6861647384),
+[M33](https://github.com/Bitspark/bittype/issues/305#issuecomment-6862111905)
+and [M35](https://github.com/Bitspark/bittype/issues/305#issuecomment-6864410816).
 
 | Decision | What it decides | Rows | Section |
 | --- | --- | --- | --- |
@@ -2091,6 +2125,7 @@ and [M33](https://github.com/Bitspark/bittype/issues/305#issuecomment-6862111905
 | M31 | The first steps of slices S3a, S4 and S3b. The final table type comes with S3a, so every predicate of the five tables is a name from S3a on, and S3a creates the lexical parts with their names. The entry constructors are deleted. A table is published by a function that returns a fresh value. The second copies of two word sets in the parsers end with S3b. The tool that reads a table keeps reading source. For horos the table bounds what is admitted of a tree without its references | R7c, R7h | [6](#6-declared-models), [7](#names-below-the-roots), [10](#10-the-order-of-work) |
 | M32 | How M30 is read: the substitution governs, and not a count of today's users, so the readers of all three languages and all three symbol packages take M30's placement, and the typed constructors stay in the stage matrix because what they build is generation's own input. The open point of M30 is a question about the whole operations side of a symbol package | R7b, R27 | [7](#names-below-the-roots), [10](#10-the-order-of-work) |
 | M33 | What AC-12 requires of two things. The form table is a description, and what generation builds from it is generation's: the typed constructors stay in generation's stage because they return values of the generation contract's type. What a sealed symbol type admits is still a description, and whether and where it is stated as data joins the open point of the second part of S5 | R7a, R15 | [1](#1-the-direction-and-its-standing), [7](#names-below-the-roots) |
+| M35 | The independent review of slice S3a. A lexical part's names are the language's terms and no node kinds: `rust/identifier` is Rust's identifier, the name that also admits a lone underscore is `rust/identifier-or-underscore`, and `rust/lifetime` and `cpp/fundamental-type` replace two names taken from node kinds. `rust/abi` is no predicate: its entry holds the 14 strings as a set. A set that is present and empty is a defect of the table, refused before a tree is read, as unsupported. The names are guarded by tests, and the interpreter and three bindings get the tests that were missing. Recorded for S3b: the checker holds its table and its bound evaluators once | R7c, R7h | [6](#6-declared-models) |
 
 Two rows belong to no single decision. Row R23 places the identities of a
 contribution ([section 7](#every-place-named), slice S7). Row R25 takes one

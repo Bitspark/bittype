@@ -18,8 +18,11 @@ type Attribute struct {
 	Required bool
 	// Predicate, if not zero, names the constraint on the attribute's text.
 	Predicate Predicate
-	// OneOf, if not empty, lists the texts the attribute may have. With a
-	// predicate, both hold.
+	// OneOf, if present, lists the texts the attribute may have. With a
+	// predicate, both hold. An absent set, which in Go is a nil slice,
+	// restricts nothing. A set that is present and empty, which in Go is a
+	// slice that is not nil and has no element, is a defect of the table: it
+	// admits no text, and an operation refuses the table that holds it.
 	OneOf []string
 }
 

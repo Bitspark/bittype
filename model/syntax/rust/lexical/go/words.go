@@ -2,7 +2,9 @@ package lexical
 
 // The lists below state rules of the language's spelling as data. Each is
 // published by a function without input that returns a fresh value, so that
-// no importer can change it for another. Their evaluators are operations.
+// no importer can change it for another. The value is never nil, also for a
+// list without a word, so a table entry that takes its set from a list holds a
+// set that is present. Their evaluators are operations.
 
 // Reserved lists the strict and the reserved keywords of edition 2024. None is
 // an identifier, and none can start a path that names a crate.
@@ -14,13 +16,5 @@ func Reserved() []string {
 		"type", "unsafe", "use", "where", "while", "async", "await", "dyn", "abstract", "become",
 		"box", "do", "final", "macro", "override", "priv", "typeof", "unsized", "virtual", "yield",
 		"try", "gen",
-	}
-}
-
-// ABIs lists the names of the calling conventions.
-func ABIs() []string {
-	return []string{
-		"Rust", "C", "C-unwind", "system", "system-unwind", "cdecl", "stdcall",
-		"fastcall", "vectorcall", "thiscall", "aapcs", "win64", "sysv64", "efiapi",
 	}
 }
