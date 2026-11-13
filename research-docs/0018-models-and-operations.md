@@ -440,6 +440,7 @@ and enforce". The platform page separates two faults:
 | --- | --- | --- |
 | What it is | Parts that do not need each other share one package or module | A contribution names another contribution that the consumer is meant to choose |
 | What is wrong | The boundary. No dependency between the parts is wrong | The dependency. The caller makes the shared mechanism's choice |
+| Consequence | An importer of one part receives all of them, and a dependency check cannot tell them apart | The mechanism's selection, scope and failure guarantees do not apply to that call. Replacing the callee means editing the caller |
 | Correction | A move | A demand that the shared mechanism resolves |
 
 "The first hides the second. A dependency check reads a unit, usually a
@@ -602,20 +603,51 @@ For the semantic graph a language adds names and also Go types: handles that
 read the graph in the language's own terms, for example the fields of a
 struct type.
 
+**Two carriers hold or call code of an operation.** The envelope package
+calls the two structure checks, which live in a check directory
+(`trees/representation/go/ast.go:63`, `cst.go:23`):
+
+```go
+	if err := check.Structure(input); err != nil {
+...
+	if err := cstcheck.Check(input); err != nil {
+```
+
+And the Source carrier admits a publication under a policy that holds two
+callbacks into operations, a printer and a language's own check
+(`source/go/source.go:121-130`, `:254`; `semantic` is the semantic contract
+package of section 2.5):
+
+```go
+// Policy is an explicit language-owned admission contract. Check establishes
+// CST/AST agreement, grouping and the operation's preservation obligations.
+// Print supplies the configured Syntax printer; neither callback is discovered.
+type Policy[L any] struct {
+	Evidence       semantic.EvidenceRequirement
+	SemanticLimits semantic.Limits
+	Limits         Limits
+	Print          func(context.Context, cst.CST[L]) (string, error)
+	Check          func(context.Context, Publication[L]) error
+}
+...
+func (p Publisher[L]) Publish(input Publication[L]) (Source[L], error)
+```
+
 ### 2.4 Stages, the two dimensions and the path form
 
 Standing: owner rules, in the wording of the pages that record them, and what
 is implemented under them.
 
-**Two dimensions.** The page `docs/source.md` records an owner decision of 4
-November 2026. It arranges the stages in two parallel rows:
+**Two dimensions.** The repository's contributor instructions attribute this
+arrangement to the owner: "The owner's 4 November Syntax and Files symmetry".
+The page `docs/source.md` describes it, in two parallel rows:
 
 ```text
 Syntax : CST    : AST
 Files  : Source : Semantics
 ```
 
-| Role | Syntax | Files |
+| Aspect | Syntax | Files |
 | --- | --- | --- |
 | External form | Text | File set |
 | Concrete representation | CST | Source |
@@ -623,6 +655,7 @@ Files  : Source : Semantics
 | Parse | Text → CST | Files → Source |
 | Format | AST → CST | Semantics → Source |
 | Print | CST → Text | Source → Files |
+| Abstract view | CST exposes AST | Source exposes Semantics |
 
 The page adds: "Files and Syntax are processing dimensions, not language
 IDs." Resolution and analysis "operate on the semantic side of the Files
@@ -720,8 +753,38 @@ Three facts follow, and all three are implemented today.
   The semantic vocabulary imports the semantic, resolution and analysis
   contracts. The model and the symbol package import the generation contract,
   because every value they issue is a value of that contract.
-- The carrier of intent is not a carrier package. Forms and expressions are
-  declared inside the generation contract, beside the planner.
+- The data types of intent are generic like a carrier, but they are no
+  carrier package. Forms and expressions are declared inside the generation
+  contract package, beside the planner.
+
+**The trusted handles, shown for the semantic contract package.** A snapshot
+and a receipt are types with private state. Only functions of the contract
+package create them, after they have validated what goes in
+(`contracts/semantic/go/operation.go:26-28`, `:93-94`,
+`request.go:91`, `:106-110`, signatures only):
+
+```go
+// Snapshot identifies one admitted input collection. Identical addresses or
+// bytes captured again are a different snapshot. Storage is private and immutable.
+type Snapshot struct{ state *snapshotState }
+
+// Capture bounds and retains immutable envelopes before any checker callback.
+func Capture(ctx context.Context, checker check.Checker, input Input) (Snapshot, error)
+
+func (r Request[L]) Publish(publication Publication) (Result, error)
+
+// Result is an immutable request-bound publication. A valid result can contain
+// diagnostics and reports without a model. Valid does not mean semantic validity.
+type Result struct{ state *resultState }
+```
+
+`Capture` runs the language's checker over the input trees and returns the
+snapshot. `Publish` is called by a resolver or an analyzer at the end of its
+work and returns the receipt, which the code names `Result`. A package that
+names a snapshot or a receipt in its own types imports this contract
+package. That the handles are trustworthy because only this code creates
+them is how the code works today. We know no accepted page that requires
+this pattern, and you may replace it.
 
 ### 2.6 Roles, and the test that derives a role from a path
 
@@ -761,7 +824,7 @@ The role table of `LAYOUT.md`, abridged to the rows this document uses:
 | Contribution: stage provider | `<stage>/<dimension>/<language>/provider/go` | Its own list per stage: foundations, shared private helpers and what belongs to its own language. "A checker gets no concrete tree, a formatter no lexer, and no Syntax stage a semantic contract." |
 | Contribution: source reader | `transform/syntax/<language>/source/go` | Foundations and its own syntax and semantic vocabulary. Only horos has one |
 | Contribution: native target | `transform/syntax/<native>/target/go` | The generation contract, the AST, the shared tree builder, and its own syntax vocabulary, model and lexical helper. No source reader and no mapping |
-| Contribution: mapping | `transform/syntax/<source>-to-<native>/mapping/<name>/go` | The generation contract, the envelope, the syntax vocabulary of both languages, the source reader of its source language, and the model of its target language. Never another mapping and never a target |
+| Contribution: mapping | `transform/syntax/<source>-to-<native>/mapping/<name>/go` | The generation contract, the envelope, the syntax vocabulary of both languages, the source reader and the common mapping parts of its source language, and the model of its target language. Never another mapping and never a target |
 | Private part | `internal/<language>`, `internal/<language>sem` | A lexical helper imports the grammar helper only. A bridge imports foundations and its own syntax and semantic vocabulary |
 | Composition | `integration/go`, `verification/integration/go`, `tools/**` | Chooses and registers contributions |
 
@@ -804,111 +867,209 @@ the tables change with it. That is a fact of today's test and no constraint.
 Question 4 asks how the two rules of the owner's direction should be
 enforced.
 
+One entry each of three of the tables, as they stand in the test
+(`integration/go/architecture_test.go:166`, `:282`,
+`architecture_exceptions_test.go:23`):
+
+```go
+	"trees/representation/go": {"check/syntax/shared/ast/go", "check/syntax/shared/cst/go", "contracts/language/go", "internal/tree", "semantics/go", "trees/ast/go", "trees/cst/go"},
+...
+	"format/files/typescript/provider/go": {"contracts/generation/go", "files/go", "internal/typescriptimports", "transform/syntax/typescript/symbol/go"},
+...
+	{Importer: "parse/syntax/golang/provider/go", Provider: "check/syntax/golang/provider/go", Symbols: []string{"Check"}, Reason: admitsOwnTree},
+```
+
+The first is the envelope package's entry in the table of foundation and
+kernel packages. The second is the role extension of TypeScript's Files
+formatter. The third lets Go's parser use one function of Go's checker. A
+package whose path gives no role and that has no entry fails the test: "A
+production package with neither a role nor an entry fails as unclassified"
+(`LAYOUT.md`). That is what a package under a new root meets first.
+
 ### 2.7 What is in flight
 
 Standing: decisions of the research owner, except where a paragraph says
-otherwise.
-Nothing in this subsection is on the main branch unless it says so.
+otherwise. Nothing in this subsection is on the main branch unless it says
+so.
+
+**The tempo.** The work is done by a small number of automated agent
+sessions that work in parallel under the owner's rules. The present layout
+is two weeks old. A move of the paths of the whole repository is a matter of
+days here, not of a quarter. No consumer imports bittype today.
 
 **The migration of the mapping contract.** A design of 13 November 2026 (the
-page `docs/contribution-contract.md`, from the expert consultation 0017,
-decided by the research owner and final only when a stated gate is met)
-replaces what a mapping registers and returns. Today a mapping returns
-intent. Under the new contract a mapping returns one **decision record** per
-selection: a typed value that holds every decision the selection contains,
-from which the intended form is computed. The record's type is declared in
-horos, and its Go type is generated by bittype itself (section 4.7). The
-reason is a second reader: a separately owned backend must emit conversion
-code from the same decisions.
+page `docs/contribution-contract.md`, from research 0017) replaces what a
+mapping registers and returns. Today a mapping returns intent. Under the new
+contract a mapping returns one **decision record** each time the kernel
+selects it for one use of a type: a typed value that holds every decision of
+that selection, from which the intended form is computed. The type of a
+decision record is declared in horos, and its Go type is generated by
+bittype itself (section 4.7). The reason is a second reader: a code
+generator in another repository must emit, from the same decisions, the
+functions that convert between a horos value and the generated type.
 
-The migration is being built on a branch. At its present head (c1e5069, four
-commits ahead of the code baseline and three behind) it adds, per ordered
-pair and family, two packages beside each mapping, and one more per family:
+The design is final only when its **gate** is met. The gate has seven lines,
+each shown by named tests. The seventh is the one that matters here: a
+materially different contribution is added, and no shared package changes.
+The branch merges when the gate is met.
+
+The migration is built on a branch. Its head is 8d10e00, nine commits ahead
+of the code baseline and none behind. This document keeps the main branch as
+its code baseline, because that is what is merged. What the branch changes
+in the code that this document inlines:
+
+- *Removed.* The mapping contract of the main branch is gone: the types
+  `MappingLibrary`, `MappingDescription`, `BindingDescription`, `Pattern`,
+  `Capture`, `DeclarationRecipe`, `HelperRecipe`, `Slot` and `HelperKey`,
+  the constructors `Mapped` and `Helper`, and the expression kinds of a slot
+  and of a helper.
+- *Renamed.* In the shared generation packages, `NativeDeclaration` is
+  `TargetDeclaration`, `NativeParameter` is `TargetParameter` and the
+  constructor `Native` is `Apply`. The expression kinds are five. The
+  snippets of section 4.4 that hold one of these names say so.
+- *Added, per pair of languages and family.* A family is one sort of source
+  type: text, booleans, lists, closed records, optional fields, named
+  declarations. The table below lists the new packages.
+- *Edited: the four intended-forms packages.* The branch moves none of them
+  and edits all four. Each gains a third check and an identity
+  (`transform/syntax/golang/model/go/model.go:114-127` on the branch; the
+  words "row 7" and "row 13" point into the design):
+
+```go
+// EvidenceRecordForm is the evidence kind "the selected native type is this
+// model's record form". It belongs to this vocabulary, because the fact
+// concerns the native side of this target (row 7). The declaration
+// contribution asks for it about a declaration's body (bittype#196, row 3).
+var EvidenceRecordForm = g.EvidenceKind{Identity: "bittype/golang/record-form", Version: "1"}
+
+// CheckMember is the member vocabulary of this model (row 13): a member of a
+// record is one field form.
+func CheckMember(ctx context.Context, e g.Expression[s.Language]) error {
+	if name, ok := Name(e.Form()); !ok || name != FormField {
+		return g.ErrInvalid
+	}
+	return CheckExpression(ctx, e)
+}
+```
 
 | New package on the branch | What it holds |
 | --- | --- |
 | `transform/syntax/horos-to-<target>/vocabulary/<family>/go` | The identity of one contribution, and the schema and generated Go type of its decision record |
-| `transform/syntax/horos-to-<target>/codec/<family>/go` | The hand-written encoding of that record |
-| `transform/syntax/horos/family/<family>/go` | The identity of the family's meaning, the same for every target. Its package comment calls it "the vocabulary of the family" |
+| `transform/syntax/horos-to-<target>/codec/<family>/go` | The hand-written encoding of that decision record |
+| `transform/syntax/horos/family/<family>/go` | The identity of the family's meaning, the same for every target |
+| `transform/syntax/horos/payload/go` | What every codec shares. The code calls a decision record a payload |
 
-So the branch adds vocabularies of a new kind under the stage directory
-`transform/`: names that belong to a relation between two languages and not
-to one language. The layout page says of them: "This layout has no role for a
-facet package of a mapping contribution, and none for a vocabulary package of
-one family for one target: its role "Vocabulary" is per language." The
-migration moves no model package. It rewrites every mapping, and every
-mapping calls the model's constructors.
+One package of the first sort and one of the third, in their essential lines
+(`transform/syntax/horos-to-golang/vocabulary/declarations/go/vocabulary.go:30-38`
+and `transform/syntax/horos/family/record/go/family.go:16-18` on the branch;
+`rules.Publisher` is the publisher's name, and `family` is the family
+package of the same contribution):
 
-**No direction in the shared contract** (decision of the research owner,
-13 November 2026, on the owner's message 1). The shared generation contract
+```go
+var Reference = g.ContributionReference{
+	Identity:       g.ContributionIdentity{Publisher: rules.Publisher, Key: "horos-to-golang/declarations"},
+	Meaning:        family.Meaning,
+	Representation: "golang/1",
+}
+...
+var Schema = g.SchemaReference{Identity: "bittype.payload/horos-to-golang/declarations", Version: "1"}
+```
+
+```go
+// Meaning is the meaning identity of the family and its revision. They are
+// the same in every target.
+var Meaning = g.Meaning{Identity: "bittype.structural/closed-record", Revision: "1"}
+```
+
+So the branch adds vocabulary packages of a new sort under the stage
+directory `transform/`: names that belong to a relation between two
+languages, or to one sort of source type for every target, and not to one
+language. The layout page says of them: "This layout has no role for a facet
+package of a mapping contribution, and none for a vocabulary package of one
+family for one target: its role "Vocabulary" is per language." (A facet
+package is one of the packages that together make one mapping contribution
+on the branch.) These are case (g) of question 1.
+
+**No direction in the shared contract** (decision of the research owner, 13
+November 2026, on the owner's message 1). The shared generation contract
 called the target side "native". The decision: "The shared part names two
 roles of a transformation: source and target." The rename is done on the
 branch. Which pairs of languages exist follows from what is registered.
 
-**Two further pairs** (decision of the research owner, 13 November 2026,
-on the owner's message 2). Two small pairs are to run through the new
-contract before it is final, to show that no direction is assumed:
+**Two further pairs** (decision of the research owner, 13 November 2026, on
+the owner's message 2). Two small pairs are to run through the new contract
+before it is final, to show that no direction is assumed. They are built on
+the migration's branch:
 
 - `golang-to-typescript`: a source that is not horos. It needs a Go source
   reader over the Go analysis, which no language but horos has today.
-- `typescript-to-horos`: horos as a target. It needs a model and a target for
-  horos, which do not exist.
+- `typescript-to-horos`: horos as a target. It needs an intended-forms
+  package and a target for horos, which do not exist on the main branch.
 
-Both are to be written against the present places. Under the present path
-form a horos model would be `transform/syntax/horos/model/go` and a Go source
-reader `transform/syntax/golang/source/go`. That reading of the path form is
-ours.
+**Two Files formatters.** The Go and the Rust Files formatter are planned as
+the next steps of two open work items. By the accepted specification of
+destinations (`docs/destinations.md`, 13 November 2026) each is to read its
+language's symbol package, as TypeScript's does.
 
-**Two Files stages.** The Go and the Rust Files stage are planned as the next
-slices of two open work items. By the accepted specification of destinations
-(the page `docs/destinations.md`, 13 November 2026) each is to read its
-language's symbol package, as TypeScript's does. Under the present path form
-each would be a package under `format/files/`.
-
-These four pieces of work are why question 4 asks about order.
+**Written for the present places** (decision of the research owner, and
+open). All four pieces of work, the migration, the two pairs, the Go Files
+formatter and the Rust Files formatter, are written for the paths of today's
+layout. Under today's path pattern a horos intended-forms package would be
+`transform/syntax/horos/model/go`, a Go source reader
+`transform/syntax/golang/source/go`, and each Files formatter a package
+under `format/files/`. Your answer may reorder this work or pause it.
+Question 4 asks.
 
 ## 3. One language's vocabularies and who uses them
 
-Each subsection states the standing of what it holds.
+Each subsection states the standing of what it holds. This section and
+section 6.3 are what question 2 rests on.
 
-### 3.1 The four vocabularies of one language, with Go as the example
+### 3.1 The four vocabulary packages of one language, with Go as the example
 
 Standing: implemented today.
 
-| | Syntax vocabulary | Semantic vocabulary | Model | Symbol package |
+| | Syntax vocabulary package | Semantic vocabulary package | Intended-forms package | Symbol package |
 | --- | --- | --- | --- | --- |
 | Path | `syntax/golang/go` | `semantics/golang/go` | `transform/syntax/golang/model/go` | `transform/syntax/golang/symbol/go` |
 | Lines | 107 | 855 | 112 | 81 |
-| What it states | What a Go type-syntax tree is made of: 23 node kinds, 15 containment roles, 1 reference role, 9 attribute names, 4 concrete kinds | What analysis of a Go program reports: kinds of entities, relations of facts, operators of terms, roles of bindings, all as keys with the owner `go` | What generation intends to construct: 7 form names and 2 primitive names | What a name use outside the generated declarations refers to: one category, a predeclared type |
-| What else it holds | Nothing. Two one-line methods return the language's identifier and display name | Profile strings, the identity values of the resolution and analysis contracts, the types of a compiler environment with their validation and encoding, and typed readers over an analysed graph | Five constructors that build forms, and two checks of a form | The rule that admits a name as a predeclared type, and two functions that record a symbol at a node and read it back |
-| Imports of this module | The AST, the CST, `contracts/language/go` | The semantic graph, the AST, the envelope, the syntax vocabulary, and the semantic, resolution and analysis contracts | The generation contract and the syntax vocabulary | The generation contract, the semantic graph, the AST, the envelope and the syntax vocabulary |
+| What it states | What a Go type-syntax tree is made of: 23 node kinds, 15 child roles, 1 reference role, 9 attribute names, 4 kinds of concrete-tree node | What analysis of a Go program reports: kinds of entities, relations of facts, operators of terms, roles of bindings, all as keys with the owner `go` | What generation intends to construct: 7 form names and 2 primitive names | What a name in a generated declaration refers to when the referent is not itself generated: one category, a predeclared type such as `string` |
+| What else it holds | Nothing. Two one-line methods return the language's identifier and display name | Profile strings, the identity values of the resolution and analysis contracts, the inputs that a compiler run is configured with, with their validation and encoding, and typed readers over an analysed graph | Five constructors that build forms, and two checks of a form | The rule that admits a name as a predeclared type, and two functions that record a symbol at a node and read it back |
+| Imports of this module | The tree packages, `contracts/language/go` | The semantic graph, the tree, the envelope, the syntax vocabulary package, and the semantic, resolution and analysis contract packages | The generation contract package and the syntax vocabulary package | The generation contract package, the semantic graph, the tree, the envelope and the syntax vocabulary package |
 | Who writes its names into an artifact | The parser and the generation target (into trees) | The Go bridge (into the graph) | The mappings into Go (into intent) | The generation target (into the sealed output) |
-| Who reads them | The checker, the formatter and the bridge | The typed readers in the same package, the query service, the verification component | The generation target | Only the generation target today. The planned Go Files stage is to read them. For TypeScript, the Files stage already reads its symbol package |
-| Stages that import it | parse, check, format, resolve, analyze, transform | resolve, analyze, verification | transform only | transform only (for TypeScript also format/files) |
+| Who reads them | The checker, the formatter and the bridge | The typed readers in the same package, a query service and the verification component (section 3.4) | The generation target | Only the generation target today. The planned Go Files formatter is to read them. For TypeScript, the Files formatter already reads its symbol package |
+| Stages that import it | parse, check, format, resolve, analyze, generation | resolve, analyze, verification | generation only | generation only (for TypeScript also format in the Files dimension) |
 
-Three things that are not vocabularies complete the picture of Go.
+Sections 3.2, 3.3 and 6.3 and question 2 speak of three sets of names:
+node kinds, what analysis reports, and intended forms. The symbol package is
+the fourth vocabulary package. It names destinations and no type-level
+notions, so it has no column of its own in section 3.3.
+
+Three things that today's roles do not count as vocabulary complete the
+picture of Go.
 
 - **The grammar table.** Which attributes and children each node kind has is
   stated in the Go checker, a contribution (section 4.2). The syntax
-  vocabulary holds the names only.
+  vocabulary package holds the names only.
 - **Lexical rules.** Go has no lexical helper of its own. The checker asks
   the Go standard library whether a word is a keyword, and the symbol package
-  asks it which names the universe scope declares. TypeScript, Rust, C++ and
-  horos each have a private package of spelling rules.
+  asks it which names Go's outermost scope, the universe scope, declares.
+  TypeScript, Rust, C++ and horos each have a private package of spelling
+  rules.
 - **The bridge.** A private package of 1,241 lines runs the Go type checker
   over captured source and writes the graph. It is the writer of every name
   in the semantic vocabulary.
 
 The other languages have the same four, with two gaps. C++ has no semantic
-vocabulary and no symbol package, because it has no analysis. horos has no
-model and no symbol package, because it is a source of generation and never
-a target. Its counterpart on the generation side is a source reader, which
-reads horos's semantic vocabulary.
+vocabulary package and no symbol package, because it has no analysis. horos
+has no intended-forms package and no symbol package, because it is a source
+of generation today and never a target. Its counterpart on the generation
+side is a source reader, which reads horos's semantic vocabulary.
 
 ### 3.2 One record traced from horos to Go
 
-Standing: implemented today for steps 1 to 8, read from the code and
-followed by hand, not run. Steps 9 to 11 are planned for Go and are
+Standing: implemented today for steps 1 to 7, read from the code and
+followed by hand, not run. Steps 8 to 10 are planned for Go and are
 described from the accepted specification of destinations
 (`docs/destinations.md`) and from what the Go bridge writes today. For
 TypeScript the same three steps are implemented (section 4.5).
@@ -921,23 +1082,69 @@ type Person = { name: text; };
 ```
 
 A consumer's composition has registered the horos source reader, the Go
-target, and the Go mappings for text, records and declarations.
+target, and the Go mappings for text, records and declarations. The record
+mapping takes a helper key, the identity under which a helper declaration
+for optional fields is demanded. The composition must create that key, also
+when no field is optional.
 
-| Step | What happens | Who does it (role, place) | Vocabulary touched |
+| Step | What happens | Who does it (role, place) | Names written and read |
 | --- | --- | --- | --- |
-| 1 | The text is parsed into a concrete tree that owns an abstract tree | The horos parser (contribution, `parse/syntax/horos`) | **Writes the horos syntax vocabulary**: nodes of the kinds `program`, `module`, `type-definition`, `descriptor` |
-| 2 | The tree is admitted: the horos table, then the horos rules in code | The horos checker (contribution, `check/syntax/horos`, with a private helper) | Reads the horos syntax vocabulary and the horos grammar table |
-| 3 | Names are resolved and the declarations are analysed. The result is a semantic graph and two receipts | The horos resolver and analyzer (contributions, `resolve/files/horos`, `analyze/files/horos`), over a private adapter to the horos library | **Writes the horos semantic vocabulary**: an entity of the kind `type-definition`, a provider expression with the operator `descriptor/record`, facts with the relations `sort` and `canonical-identity` |
-| 4 | The planner walks the graph from the requested declaration `Person`. For each declaration and each use of a type it asks the source reader what it is | The planner (kernel, inside `contracts/generation/go`) and the horos source reader (contribution, `transform/syntax/horos/source`) | Reads the generic graph. The source reader reads the horos semantic vocabulary, and a few names of the horos syntax vocabulary for record payloads |
-| 5 | For each use one mapping is selected and states intent. The declaration mapping gives the name `Person` and the form `defined`, because the body is a record. The record mapping reads one field, asks the planner for the representation of its type, and returns a record form. The text mapping answers that request with a constant | Three mappings (contributions, `transform/syntax/horos-to-golang/mapping/{declarations,record,text}`) and the planner | **Writes Go's model**: the forms `defined`, `record`, `field` and `primitive`, and the primitive name `string`, through the model's constructors |
-| 6 | The planner has every expression and every declaration checked as it composes them | The Go target (contribution, `transform/syntax/golang/target`), which forwards to the two checks in Go's model | Reads Go's model |
-| 7 | The target builds one tree from the closed program. It switches over the form names. `primitive` becomes a `named-type` node with the name `string`, and the use records its destination | The Go target and the shared tree builder (kernel, `transform/syntax/shared/target`) | Reads Go's model. **Writes Go's syntax vocabulary**: `file`, `type-declaration`, `struct-type`, `field`, `named-type`. **Writes Go's symbol**: the predeclared symbol `string` |
-| 8 | The tree is admitted and the output is sealed with its inventory and its external uses | The Go checker (contribution, `check/syntax/golang`), called by the planner's sealing code | Reads Go's syntax vocabulary and Go's grammar table |
-| 9 | The declarations are placed into files of a package under the consumer's placement. Planned for Go | A Go Files stage (contribution; under the present path form `format/files/golang`) | Reads Go's syntax vocabulary. Reads Go's symbol package to learn the destination of each external use |
-| 10 | The placed files are analysed by the Go type checker. Planned as part of step 9 | The Go resolver and analyzer over the Go bridge (private part, `internal/golangsem`) | **Writes Go's semantic vocabulary**: an entity `Person` of the kind `defined`, a fact `underlying` whose term has the operator `struct`, a field type whose term has the operator `basic`, and a binding with the role `name` from the node of the use `string` to an entity of the kind `builtin` |
-| 11 | Each name use is compared with its destination: the entity that the compiler bound against the entity that the symbol identifies. Planned for Go | The Go Files stage | Reads Go's semantic vocabulary (the binding, the kind `builtin`) and Go's symbol (the category `predeclared`) |
+| 1 | The horos text is parsed into a concrete tree that owns an abstract tree. The tree is checked: the horos grammar table, then the horos rules in code | The horos parser and checker (contributions, `parse/syntax/horos`, `check/syntax/horos`) | **Writes the horos syntax vocabulary**: nodes of the kinds `program`, `module`, `type-definition`, `descriptor`. Reads it and the horos grammar table |
+| 2 | The tree is captured: `semantic.Capture` runs the checker once more and makes a snapshot, the trusted handle of an admitted input (section 2.5). Resolution and analysis take the snapshot and no tree. The result is a semantic graph and two receipts | The semantic contract package, then the horos resolver and analyzer (contributions, `resolve/files/horos`, `analyze/files/horos`), over a private adapter to the horos library | **Writes the horos semantic vocabulary**: an entity of the kind `type-definition`, a provider expression with the operator `descriptor/record`, facts with the relations `sort` and `canonical-identity` |
+| 3 | The planner walks the graph from the requested declaration `Person`. For each declaration and each use of a type it asks the source reader what it is | The planner (kernel, inside `contracts/generation/go`) and the horos source reader (contribution, `transform/syntax/horos/source`) | Reads the generic graph. The source reader reads the horos semantic vocabulary, and a few names of the horos syntax vocabulary |
+| 4 | For each use one mapping is selected and states intent. The declaration mapping gives the name `Person` and the form `defined`, because the body is a record. The record mapping reads one field, asks the planner for the representation of its type, and returns a record form. The text mapping answers that request with a constant | Three mappings (contributions, `transform/syntax/horos-to-golang/mapping/{declarations,record,text}`) and the planner | **Writes Go's intended forms**: `defined`, `record`, `field` and `primitive`, and the primitive name `string`, through the constructors of the intended-forms package |
+| 5 | The planner has every expression and every declaration checked as it composes them, and then the closed program | The Go target (contribution, `transform/syntax/golang/target`). It forwards the first two to the two checks of the intended-forms package and the third, `CheckProgram`, to the shared tree builder | Reads Go's intended forms |
+| 6 | The target builds one tree from the closed program. It switches over the form names. `primitive` becomes a `named-type` node with the name `string`, and the use records its destination | The Go target and the shared tree builder (kernel, `transform/syntax/shared/target`) | Reads Go's intended forms. **Writes Go's syntax vocabulary**: `file`, `type-declaration`, `struct-type`, `field`, `named-type`. **Writes a Go symbol**: predeclared `string` |
+| 7 | The output is sealed. The sealing code calls `semantic.Capture` on the built tree, which runs the Go checker and makes a second snapshot, of the output. The snapshot is kept with an inventory of the declarations and the list of external uses | The planner's sealing code (kernel) and the Go checker (contribution, `check/syntax/golang`) | Reads Go's syntax vocabulary and Go's grammar table |
+| 8 | The declarations are placed into files of a package under the consumer's placement. Planned for Go | A Go Files formatter (contribution; under the present path pattern `format/files/golang`) | Reads Go's syntax vocabulary. Reads Go's symbol package to learn the destination of each external use |
+| 9 | The placed files are captured and analysed by the Go type checker. Planned as part of step 8 | The Go resolver and analyzer over the Go bridge (private part, `internal/golangsem`) | **Writes Go's semantic vocabulary**: see the graph below |
+| 10 | Each name use is compared with its destination: the entity that the compiler bound against the entity that the symbol identifies. Planned for Go | The Go Files formatter | Reads Go's semantic vocabulary (the binding, the analysed kind `builtin`) and Go's symbol package (the category `predeclared`) |
 
-The intent after step 5, written with the model's constructors:
+**Where each of Go's vocabulary packages is written and read in this
+trace.**
+
+| Go vocabulary package | Written in step | By which stage | Read in step | By which stage |
+| --- | --- | --- | --- | --- |
+| Intended forms (`transform/syntax/golang/model/go`) | 4 | generation (mappings) | 5, 6 | generation (target) |
+| Syntax (`syntax/golang/go`) | 6 | generation (target) | 7, 8, 9 | check; format; resolve and analyze |
+| Symbol (`transform/syntax/golang/symbol/go`) | 6 | generation (target) | 8, 10 | format in the Files dimension (planned) |
+| Semantic (`semantics/golang/go`) | 9 | resolve and analyze (bridge) | 10 | format in the Files dimension (planned) |
+
+Three observations. The first two are implemented today; the third is partly
+our reading.
+
+- The intended-forms package is written and read inside one stage. The
+  symbol package is written in one stage and read in another. The syntax
+  vocabulary package and the semantic vocabulary package are used by several
+  stages.
+- Step 10 is the one place in this trace where intent and analysed meaning
+  of one language are compared. The comparison is of identities (a symbol
+  against an entity), not of type structure. No production code today
+  compares an intended `record` form with an analysed `struct` term.
+- The source side has no intended-forms package. Generation reads horos
+  through its analysed vocabulary. Our reading of why: a source is an
+  analysed program, and a target program does not exist yet when it is
+  described. No page states this asymmetry as a decision.
+
+### 3.3 The same record, then the same notions, in three sets of names
+
+Standing: the names are implemented today and verified against the code.
+Three sets of names exist, one per sort of artifact: node kinds for trees,
+analysed kinds for graphs (an analysed kind is the kind of an entity or the
+operator of a term), and forms for intent. The tables lay them beside each
+other. The pairing of rows is ours, and so is the last column of the second
+table.
+
+**The record `Person`.**
+
+| | Intended (after step 4) | Syntax tree (after step 6) | Established by analysis (step 9, planned for Go) |
+| --- | --- | --- | --- |
+| The declaration | Declaration form `defined`, name `Person` | Node `type-declaration` with the attribute `name` | Entity of the analysed kind `defined`; a fact with the relation `underlying` |
+| Its body | Form `record` | Node `struct-type` | Term with the operator `struct` |
+| The field | Form `field` with the data `Name` and `false` | Node `field` with the attribute `name` | Entity of the analysed kind `field`; one JSON entry and one operand of the struct term |
+| The field's type | Form `primitive` with the datum `string` | Node `named-type` with the name `string`, and the symbol predeclared `string` | Term with the operator `basic`; a binding with the role `name` to an entity of the analysed kind `builtin` |
+
+The intent, written with the constructors of the intended-forms package:
 
 ```go
 // [doc] the declaration: Name "Person", Form "defined", and as its body
@@ -946,7 +1153,7 @@ model.Record(
 )
 ```
 
-The tree after step 7, as node kinds with their attributes and roles:
+The tree, as node kinds with their attributes and child roles:
 
 ```text
 file (package = <the target's configured package name>)
@@ -956,78 +1163,91 @@ file (package = <the target's configured package name>)
         type: named-type (name = string)     + external use: symbol predeclared "string"
 ```
 
-The graph that the bridge would publish in step 10, in the words of the
-semantic vocabulary. This is an illustration written by hand from the
-bridge's code of section 4.3:
+The graph that the bridge would publish, in the words of the semantic
+vocabulary. This is an illustration written by hand from the bridge's code
+(section 4.3). A key is written owner/name. E is an entity and T a term:
 
 ```text
-entity  kind go/defined   name "Person"   owner: the package entity   site: the type-declaration node
-  fact  go/underlying -> term  operator go/struct
-                               data  [{"Name":"Name","Tag":"","Embedded":false,"Entity":<field entity>}]
-                               operand 0 -> term operator go/basic (the string kind)
-entity  kind go/builtin   name "string"   no owner, no site
-binding at the named-type node, role go/name -> the builtin entity
+entity E1   kind go/defined   name "Person"   owner: the package entity   site: the type-declaration node
+            body -> T1
+term   T1   reference to E1
+fact        subject T1, relation go/underlying -> T2
+term   T2   operator go/struct, encoding go/json-1
+            data [{"Name":"Name","Tag":"","Embedded":false,"Entity":E2}]
+            operand 0 -> T3
+term   T3   operator go/basic, data: the compiler's kind of string
+entity E2   kind go/field     name "Name"
+entity E3   kind go/builtin   name "string"   no owner, no site
+binding     at the named-type node, role go/name -> E3
 ```
 
-**Where each of Go's vocabularies is written and read.**
+Two things in it matter later. The body of the entity `Person` is a
+reference term to the entity itself, and the definition hangs on that term
+as a fact. Every fact about a type has a term as its subject and never an
+entity. The illustration is abridged: the display fact on every term, the
+facts with the relation `identical`, the package entity with its
+`package-name` fact, the bodies of E2 and E3 and the entries for type
+expressions are left out.
 
-| Go vocabulary | Written in step | By which stage | Read in step | By which stage |
+**Go's type-level notions.**
+
+| Notion | Node kind (`syntax/golang/go`, as the target writes it) | Established by analysis (`semantics/golang/go`, as the bridge writes it) | Intended form (the intended-forms package) | Our reading of the difference |
 | --- | --- | --- | --- | --- |
-| Model (`transform/syntax/golang/model/go`) | 5 | transform (mappings) | 6, 7 | transform (target) |
-| Syntax (`syntax/golang/go`) | 7 | transform (target) | 8, 9, 10 | check; format; resolve and analyze |
-| Symbol (`transform/syntax/golang/symbol/go`) | 7 | transform (target) | 9, 11 | format in the Files dimension (planned) |
-| Semantic (`semantics/golang/go`) | 10 | resolve and analyze (bridge) | 11 | format in the Files dimension (planned) |
-
-Four observations, as facts.
-
-- The same Go type, a struct with one string field, is stated three times
-  along the way, each time in other words: as forms (`defined`, `record`,
-  `field`, `primitive`), as nodes (`type-declaration`, `struct-type`,
-  `field`, `named-type`) and as analysed facts (`defined`, `struct`, `basic`,
-  `builtin`).
-- The model is written and read inside one stage. The symbol is written in
-  one stage and read in another. The syntax vocabulary and the semantic
-  vocabulary are used by several stages.
-- The source side has no model. Generation reads horos through its analysed
-  vocabulary. A source is always an analysed program. A target does not exist
-  yet when it is described. No page states this asymmetry as a decision.
-- Step 11 is the one place where intent and analysed meaning of one language
-  are compared. The comparison is of identities (a symbol against an
-  entity), not of type structure. No production code today compares an
-  intended `record` form with an analysed `struct` term.
-
-### 3.3 Go's three vocabularies side by side
-
-The table lists the type-level notions of Go and what each of three
-vocabularies calls them. The facts are verified against the code. The last
-column is our derivation.
-
-| Notion | Syntax node kind (`syntax/golang/go`, as the target writes it) | Analysed (`semantics/golang/go`, as the bridge writes it) | Intended form (`model`) | Our reading of the difference |
-| --- | --- | --- | --- | --- |
-| Predeclared basic type (`string`, `bool`) | `named-type` with the attribute `name`; the destination is recorded as a symbol `predeclared` | Entity kind `builtin`, named by the identifier, without owner and site; term operator `basic` with the compiler's basic kind as data | `primitive` with one datum, `string` or `bool` | Four words for one notion. Intent names the type it means. Evidence names the entity the compiler found, which a declaration named `string` can capture |
-| Slice | `slice-type` with one `element` child | Term operator `slice` with one operand | `slice` with one argument | None in the notion. The same word three times |
-| Struct with fields | `struct-type` with `field` children; also `embedded-field` | Term operator `struct` with JSON field records (name, tag, embedded, entity) and one operand per field; entity kind `field` | `record` whose arguments are `field` forms; a field has the data name and optional flag | Three words. `record` is the word the four models share. The optional flag exists only in intent, and the Go target does not read it. Tag and embedding exist only in syntax and evidence: nothing generates them |
+| Predeclared basic type (`string`, `bool`) | `named-type` with the attribute `name`; the destination is recorded as a symbol `predeclared` | Entity kind `builtin`, named by the identifier, without owner and site; term operator `basic` with the compiler's basic kind as data | `primitive` with one datum, `string` or `bool` | Four words. Intent names the type it means. Analysis names the entity the compiler found, which a declaration named `string` can shadow |
+| Slice | `slice-type` with one `element` child | Term operator `slice` with one operand | `slice` with one argument | The same word three times |
+| Struct with fields | `struct-type` with `field` children; also `embedded-field` | Term operator `struct` with JSON entries (name, tag, embedded, entity) and one operand per field; entity kind `field`, an unpublished literal of the bridge | `record` whose arguments are `field` forms; a field has the data name and optional flag | Three words for the struct, one for the field. `record` is the word the four intended-forms packages share. The optional flag exists only in intent, and the Go target does not read it. Tag and embedding exist only in syntax and analysis: nothing generates them |
 | Defined type declaration | `type-declaration` | Entity kind `defined`; fact relation `underlying` | Declaration form `defined`; the body must be a record | The same word. The restriction to a record body is a limit of today's generation |
-| Alias declaration | `type-alias` | Entity kind `alias`; fact relation `alias-target` | Declaration form `alias` | None |
-| Type of another package | `qualified-type` and `import`; the target writes neither | Entity kind `package` with a `package-name` fact; a `defined` or `alias` entity owned by it | `external` with the data module and name; refused as unsupported | Intent has a name and no meaning yet |
-| Type parameter | `type-parameter` with a constraint child | Entity kind `parameter`; fact relations `constraint` and `empty` | No form. The kernel's own expression kind and `NativeParameter` | The binder's identity is the kernel's on the intent side. The constraint exists only in syntax and evidence |
-| Use of a declaration, generic application | `named-type` with a `target` reference; `type-application` | The graph's own reference and application terms, and a binding with the role `name` | No form. The kernel's own expression kind | Owned by the shared carriers on both sides |
-| Package | The attribute `package` on `file` | Entity kind `package` | Not in the model. A setting of the target | |
-| Only in evidence | | Fact relations `identical` and `display`; operators `interface`, `union`, `signature`, `tuple`, `boolean` | | Type identity exists only for a checked program. The other operators are Go notions that nothing generates |
-| Only in syntax | `pointer-type`, `array-type`, `map-type`, `channel-type`, `function-type`, `method`, `embedded-type`, `type-union`, `type-approximation` | (some as unpublished operators, above) | | Notions that syntax can spell and nothing analyses by name or generates |
+| Alias declaration | `type-alias` | Entity kind `alias`; fact relation `alias-target` | Declaration form `alias` | The same word |
+| Type of another package | `qualified-type` and `import`; the target writes neither | Entity kind `package` with a `package-name` fact (section 4.3); a `defined` or `alias` entity owned by it | `external` with the data module and name; refused as unsupported | Intent has a name and no meaning yet |
+| Type parameter | `type-parameter` with a constraint child | Entity kind `parameter`; fact relation `constraint`, whose interface term carries a fact `empty` | No form. An expression kind of the shared contract package | The binder's identity is the kernel's on the intent side. The constraint exists only in syntax and analysis |
+| Use of a declaration, generic application | `named-type` with a `target` reference; `type-application` | The graph's own reference and application terms, and a binding with the role `name` | No form. An expression kind of the shared contract package | Owned by the generic data types on both sides |
+| Package | The attribute `package` on `file` | Entity kind `package` | Not a form. A setting of the target | |
+| Only established by analysis | | Fact relations `identical` and `display`; operators `interface`, `union`, `signature`, `tuple`, `boolean` | | Type identity exists only for a checked program. The other operators are Go notions that nothing generates |
+| Only in syntax | `pointer-type`, `array-type`, `map-type`, `channel-type`, `function-type`, `method`, `embedded-type`, `type-union`, `type-approximation` | The bridge refuses pointer, array, map and channel types as unsupported | | Notions that syntax can spell and that are neither analysed nor generated |
 
-Summary, as facts: of the seven forms of Go's model, five name a notion that
-analysis also names, three of them under another word
-(`primitive`, `record`, `external`), and the two declaration forms under the
-same word (`alias`, `defined`). Every form has a node kind that expresses
-the same notion.
+Summary of the pairing, which is ours: all seven forms of Go's
+intended-forms package stand beside a notion that analysis also names. Three
+do so under another word (`primitive`, `record`, `external`) and four under
+the same word (`slice`, `field`, `alias`, `defined`). `field` is an
+unpublished literal of the bridge. Every form also stands beside a node
+kind.
 
 Two structural differences are visible, and both are our reading. First, an
 intended form is a tree of values with placeholders, without identity, site
 or spelling. A node has a site in one tree. An analysed type is a term in a
 graph with entities that have identity. Second, intent refers to a
-destination before any program exists, and evidence refers to the entity
+destination before any program exists, and analysis refers to the entity
 that a compiler bound in one placed program.
+
+**TypeScript and Rust.** The picture of three sets of names holds for both,
+checked on one notion each. TypeScript's collection: the form `array`, the
+node kind `array-type`, and the operator `array` that the TypeScript bridge
+writes as a literal in its script. Rust's nominal declaration: the
+declaration form `struct`, the node kind `struct`, and the entity kind
+`struct` that the Rust bridge writes as a literal in its Rust program. C++
+has two of the three, because it has no analysis, and horos has two, because
+it has no intended forms.
+
+### 3.4 The other readers of the analysed vocabulary
+
+Standing: implemented today, except the last item, which is work in flight.
+
+In the trace Go's semantic vocabulary is read only in steps that are
+planned. It has readers today, and one more is coming:
+
+- **A query service** (`analyze/files/golang/queries/go`, a contribution)
+  answers explicit questions about an opened graph of analysed Go.
+- **The verification component** (`verification/files/horos-to-go/go` and
+  one of its law packages) reads analysed Go types through the typed
+  readers, to check a stated property that a Go type must have to represent
+  a horos type. Generation's mappings state the same Go types as intended
+  forms. The two do not share names (section 5.2, item 4).
+- **TypeScript's Files formatter** reads TypeScript's semantic vocabulary
+  package and its symbol package and compares identities (section 4.5).
+- **A Go source reader**, to come with the pair of languages
+  golang-to-typescript (section 2.7). There Go is the source of generation
+  and is read through its semantic vocabulary, while Go as a target is
+  written through its intended forms.
 
 ## 4. Relevant code, as evidence
 
@@ -1197,11 +1417,40 @@ What this shows, as facts:
 - Every language also declares the same four kinds of concrete-tree node:
   `layout`, `token`, `whitespace`, `comment`.
 
-The four native parsers and formatters do not use the role and attribute
-constants. They write the names as string literals, and the formatters also
-switch on node kinds as string literals, for example `case "named-type":`
-(`format/syntax/golang/provider/go/format.go:101`). Only the horos parser
-and formatter use the constants throughout.
+**Hand-written code spells the names again.** A piece of Go's formatter
+(`format/syntax/golang/provider/go/format.go:100-107`; `f.Kind`, `f.Attr`
+and `f.Children` read the tree, `f.T` makes a token, and `t(role)` formats
+the child under one role):
+
+```go
+switch f.Kind(id) {
+case "named-type":
+	parts = []doc{f.T(f.Attr(id, "name"))}
+case "qualified-type":
+	parts = []doc{f.T(f.Attr(id, "qualifier")), f.T("."), f.T(f.Attr(id, "name"))}
+case "type-application":
+	var args []doc
+	for _, a := range f.Children(id, "argument") {
+	...
+```
+
+And one line of Go's parser, which converts the tree of the standard
+library's parser (`parse/syntax/golang/provider/go/parse.go:67`; `tr.Child`
+makes a child edge and `c.node` a node):
+
+```go
+imports = append(imports, tr.Child("import", c.node(s.KindImport, spec, attrs)))
+```
+
+A count over the non-test files, made for this document: the parser and the
+formatter of Go, TypeScript, Rust and C++ are eight packages, and they use
+the child role and attribute constants of their syntax vocabulary package 0
+times. They write these names as string literals. The four formatters also
+use no node kind constant and switch on literals, as above. The horos parser
+uses the role and attribute constants 65 times and the horos formatter 53
+times. The four targets write attribute names as literals too, for example
+`m.Attributes("name", name)`. So the vocabulary package is not the one place
+where these names are spelled.
 
 ### 4.2 The grammar table, the rules beside it, and a lexical rule
 
@@ -1394,6 +1643,51 @@ checker after it has built its tree, and a formatter calls it before it
 reads its input. That call is the only connection between the table and the
 code that produces and consumes trees.
 
+**A lexical rule, and a use of it from a vocabulary-side package.** A
+lexical helper is a private package with one language's spelling rules. One
+predicate of Rust's (`internal/rust/cratename.go:19-27`;
+`crateNameCharacters` is a table of 840 ranges of code points, printed by a
+program built with the pinned Rust compiler and pasted in by hand):
+
+```go
+func CrateName(name string) bool {
+	for _, r := range name {
+		at := sort.Search(len(crateNameCharacters), func(i int) bool { return crateNameCharacters[i][1] >= r })
+		if at == len(crateNameCharacters) || crateNameCharacters[at][0] > r {
+			return false
+		}
+	}
+	return name != ""
+}
+```
+
+The Rust checker and parser use this helper. So does Rust's symbol package,
+which our test of section 6.1 puts on the model side
+(`transform/syntax/rust/symbol/go/symbol.go:72-80`; `native` is the lexical
+helper, `g` the generation contract package, and `Std()` the standard
+library's crate):
+
+```go
+func Dependency(name string) (Crate, error) {
+	if !native.CrateName(name) {
+		return Crate{}, g.ErrInvalid
+	}
+	if name != Std().name {
+		return Crate{}, g.ErrUnsupported
+	}
+	return Std(), nil
+}
+```
+
+The function first applies the lexical rule and answers that a text is no
+crate name. It then gives a second answer of another sort: a valid name that
+today's generation does not support. Of the four lexical helpers only
+`internal/rust` and `internal/typescript` are imported from both sides:
+by stage providers, and by their language's semantic vocabulary package and
+symbol package. `internal/cpp` and `internal/horos` are imported by stage
+providers and a target only. Go has no lexical helper; its checker and its
+symbol package ask the Go standard library.
+
 ### 4.3 The semantic graph, Go's names for it, and one fact written and read
 
 **The graph.** One package holds the data type of analysed meaning for every
@@ -1546,6 +1840,69 @@ is: "A name needs a single owner when two parties must agree on it"
 (`docs/package-boundaries.md`). No production package other than the bridge
 reads one of these names by name.
 
+**How the bridge chooses the kind and the identity of an entity**
+(`internal/golangsem/export.go:128-153`, abridged; `o` is an object of the
+Go type checker, `types` is the standard library's package `go/types`, and
+`e.objects` remembers the entity of each object):
+
+```go
+func (e *exporter) object(o types.Object) semantics.EntityID {
+	if id := e.objects[o]; id != 0 {
+		return id
+	}
+	...
+	kind := n.Key("field")
+	owner := semantics.EntityID(0)
+	if _, ok := o.(*types.TypeName); ok {
+		kind = n.BuiltinKind()
+		switch o.Type().(type) {
+		case *types.Named:
+			kind = n.DefinedKind()
+		case *types.Alias:
+			kind = n.AliasKind()
+		case *types.TypeParam:
+			kind = n.ParameterKind()
+		}
+		if o.Parent() != nil && o.Pkg() != nil && o.Parent() == o.Pkg().Scope() {
+			owner = e.packages[o.Pkg()]
+		}
+	}
+	id := semantics.EntityID(len(e.data.Entities) + 1)
+	e.objects[o] = id
+	entity := semantics.Entity{Kind: kind, Name: o.Name(), Owner: owner}
+	...
+}
+```
+
+So the analysed kind of an entity is chosen from what the compiler's object
+is: a field, a predeclared type, a defined type, an alias or a type
+parameter. Its identity is the compiler's object, and its owner is the
+package whose scope declares it. Every fact about a type is attached to a
+term and not to an entity (`export.go:117-119`):
+
+```go
+func (e *exporter) fact(id semantics.TermID, relation semantics.Key, value semantics.TermID) {
+	e.data.Facts = append(e.data.Facts, semantics.Fact{Subject: semantics.Subject{Term: id}, Relation: relation, Term: value})
+}
+```
+
+Two of the three bridges are not written in Go, and each spells the names
+it writes in its own language. The TypeScript bridge is a script
+(`internal/typescriptsem/compiler.cjs:8`, `:161`):
+
+```javascript
+const key = name => ({ Owner: "typescript", Name: name });
+...
+    graph.Entities.push({ Kind: key("package"), Name: specifier, Owner: 1, Declarations: [], Parameters: [] });
+```
+
+The Rust bridge is a Rust program that runs inside the compiler
+(`internal/rustsem/helper/src/main.rs:232`):
+
+```rust
+            hir::ItemKind::Struct(..) => "struct",
+```
+
 **One fact, written and read.** The Go bridge writes the term of a slice
 type and of a struct type (`internal/golangsem/export.go:233-243`; `e.typ`
 exports a type and returns its term, `e.object` returns the entity of a
@@ -1645,7 +2002,15 @@ typed readers.
 package, beside the planner (`contracts/generation/go/expression.go:9-93`,
 abridged). `T` is the marker type of the target language:
 
+On the migration's branch (section 2.7) three names of the next two blocks
+are changed: the constructor `Native` is `Apply`, `NativeDeclaration` is
+`TargetDeclaration` and `NativeParameter` is `TargetParameter`. The
+expression kinds are five there: the kinds of a slot and of a helper are
+gone with the types `Slot` and `HelperKey`, and a kind for a binder is
+added. The blocks show the main branch.
+
 ```go
+// [doc] main branch; the migration's branch renames Native to Apply and has five kinds
 // Form is a target-owned native semantic constructor. Only its issuer can
 // interpret its key. This is not an AST kind or a globally registered type kind.
 type Form[T any] struct {
@@ -1715,6 +2080,7 @@ An intended declaration and the interface of a target
 (`contracts/generation/go/native.go:13-24`, `contracts.go:13-42`, abridged):
 
 ```go
+// [doc] main branch; the migration's branch says TargetDeclaration and TargetParameter
 // NativeDeclaration is target intent after source mapping and substitution.
 type NativeDeclaration[T any] struct {
 	Name       string
@@ -1904,7 +2270,7 @@ Facts about the four intended-forms packages:
   kinds for such types (section 4.1).
 - Rust keeps one coverage answer outside this package: its intended-forms
   package checks only the shape of an external form, and the Rust target
-  refuses every crate but the standard library (the function `Dependency`
+  refuses every valid crate name but that of the standard library (the function `Dependency`
   of section 4.2).
 
 **Who writes forms.** A mapping. The mapping for horos text into Go gives its
