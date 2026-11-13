@@ -199,11 +199,12 @@ func filesCategory(err error) error {
 // decoded the value into its type, which bounds the nesting.
 func repeatedMember(data []byte) bool {
 	decoder := json.NewDecoder(bytes.NewReader(data))
-	var value func() bool
-	value = func() bool {
+	repeated := false
+	var value func()
+	value = func() {
 		token, err := decoder.Token()
 		if err != nil {
-			return false
+			return
 		}
 		switch token {
 		case json.Delim('{'):
@@ -212,27 +213,21 @@ func repeatedMember(data []byte) bool {
 				key, _ := decoder.Token()
 				name, _ := key.(string)
 				for _, seen := range names {
-					if strings.EqualFold(seen, name) {
-						return true
-					}
+					repeated = repeated || strings.EqualFold(seen, name)
 				}
 				names = append(names, name)
-				if value() {
-					return true
-				}
+				value()
 			}
 			decoder.Token()
 		case json.Delim('['):
 			for decoder.More() {
-				if value() {
-					return true
-				}
+				value()
 			}
 			decoder.Token()
 		}
-		return false
 	}
-	return value()
+	value()
+	return repeated
 }
 
 func ProgramIdentity(snapshot semantic.Snapshot) (string, []string, error) {
