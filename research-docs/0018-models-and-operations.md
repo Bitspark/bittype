@@ -2717,3 +2717,196 @@ corrected whatever is decided. None is evidence for an option.
 8. **The optional flag of Go's field form has no reader.** The model writes
    it and validates it. The Go target ignores it. The record mapping wraps
    the type instead.
+
+## 6. What we have considered
+
+Standing of this section: section 6.1 opens with the owner's proposal.
+Everything else is our derivation, or a fact of the code that is marked as
+such. All of it is open. No option is ruled out because the present code
+would have to change. The document does not choose among the options. The
+labels P, U and D are unique, so that an answer can cite them.
+
+### 6.1 The owner's proposal, and what it means for the code as it is
+
+**The proposal** (message 7, repeated here so that the section is complete):
+
+```text
+model/...
+ops/...
+model never imports from ops
+model:
+model/{syntax,semantics,...}/go/...
+ops:
+ops/{transform,...}/go/...
+```
+
+It names two roots and one rule. It gives two members of the first root,
+`syntax` and `semantics`, and one of the second, `transform`. It leaves open
+what the ellipses hold. In particular it does not say where the generic
+carriers, the contract packages, the private helpers, the tools and the
+verification component go. The owner's reason is in message 6: "The model
+is independent of the operation, isn't it?"
+
+**A test for "model", applied to every package.** To see what the proposal
+means concretely, an investigation applied one stated test to all 129
+production packages. The test is ours, not the owner's. In our words:
+
+> A package is a *model* if it declares what exists (carriers, vocabularies
+> of names, forms, identities, value types with their well-formedness) and
+> performs no processing of an input into an output. It is an *operation* if
+> it parses, checks, formats, prints, resolves, analyzes, transforms,
+> verifies or composes. It is *both* if it holds a declaration and
+> processing. It is *undecided* if the test gives no answer.
+
+Validation at construction time was counted as well-formedness. Anything
+that takes one artifact and returns another was counted as processing: a
+tree from text, an encoding from an environment, a verdict on a form.
+
+| Result | Packages | Lines | Which |
+| --- | --- | --- | --- |
+| Model, or both with a model core | 22 | 5,428 | The three tree packages, `files/go`, `source/go`, `semantics/go`, five syntax vocabularies, four semantic vocabularies, four models, three symbol packages |
+| Contract packages | 13 | 5,030 | Section 2.4. By the test `language` and `text` are models, `pipeline` is protocol only, and the other ten are both |
+| Undecided | 10 | 1,498 | Below |
+| Operation | 84 | 23,987 | The stage providers and query services, the shared printers, the generation kernel packages, the source reader, four targets, 21 mappings and three shared mapping parts, the verification packages, the tools, the engine, and nine private helpers (scanning, parser state, tree construction, the three bridges, the two horos adapters and the import helper of TypeScript's Files stage) |
+
+**The packages that hold both.** Twelve of the 22 are not plain models under
+the test, because each holds code whose input and output are different
+artifacts:
+
+| Package | The model part | The processing part |
+| --- | --- | --- |
+| `trees/representation/go` | The language descriptor and the opaque envelopes | Packing and unpacking: a deep copy and a structure check, which it calls in a `check/` directory |
+| `source/go` | Units, groups, relations, the publication | A publisher of 195 lines that admits a publication under a policy with two callbacks into operations |
+| `semantics/{golang,typescript,rust}/go` | Names, profiles, contract identities, environment types | The typed readers over a graph, and the encoding of an environment into settings and back |
+| The four models | Form names and constructors | Two checks that return a verdict on a form (section 3.4) |
+| The three symbol packages | A symbol type and its categories | Admission of a name (for Go by asking the standard library), and the encoding of a symbol into an issued key |
+
+**The ten that the test does not decide, and why.**
+
+| Package | Why undecided |
+| --- | --- |
+| `check/syntax/shared/ast/go`, `check/syntax/shared/cst/go` | By their directory they are a check stage. By their content they are the well-formedness of the generic tree, which the test assigns to the model. The envelope package imports both |
+| `internal/tree` | A read helper and a deep copy over the generic tree. It declares nothing and is no stage. The envelope package imports it |
+| `internal/grammar` | It declares what an admission table is (model-like) and holds the interpreter of 67 lines (processing) |
+| `internal/declsyntax` | The horos admission table, a literal, and the horos rules in code |
+| `internal/cpp`, `internal/rust`, `internal/typescript`, `internal/horos` | Spelling rules. A predicate over strings states which strings exist, which is model-like, and it is written as code. Three of them also decode string literals, which is processing. Both sides import them: stage providers, and the semantic vocabularies and symbol packages |
+| `transform/syntax/horos/mapping/go` | Two profile identities and one function type. The layout calls it a common mapping part, not a vocabulary |
+
+**Every import that "model never imports from ops" would forbid today.**
+The 22 model packages have 33 direct imports of an operation package, a
+contract package or a helper. Four of the 22 import only models. No model
+package imports a stage provider, a query service, a target, a mapping, the
+engine or a bridge. Whether one of the 33 is forbidden depends on where its
+target is placed, and that is exactly what the proposal leaves open.
+
+| Kind | From | To | Symbols used | Edges |
+| --- | --- | --- | --- | --- |
+| A vocabulary uses a contract's value types | The five syntax vocabularies | `contracts/language/go` | `ID`, `Provider`: the two methods that state a language's identifier and name | 5 |
+| | The four semantic vocabularies | `contracts/semantic/go` | `Setting`, `EvidenceRequirement`, `Result`, `Snapshot`, `Requirement`, `Obligation`, `Contract`, the verdict `Holds`, default limits, three error values, and two functions: `AdmitEvidence`, `CaptureSettings` | 4 |
+| | The four semantic vocabularies | `contracts/resolution/go`, `contracts/analysis/go` | `Contract`, `Requirement`, `Kind`: the types of the contract identities | 8 |
+| | The four models | `contracts/generation/go` | `NewFormIssuer`, `Form`, `Expression`, `Native`, `NativeDeclaration`, and the errors `ErrInvalid`, `ErrScope`, `ErrUnsupported` | 4 |
+| | The three symbol packages | `contracts/generation/go` | `NewSymbolIssuer`, `ExternalUse`, the same errors | 3 |
+| A carrier uses a contract's value types | `source/go` | `contracts/semantic/go` | `Snapshot`, `Result`, `EvidenceRequirement`, `Limits`, and the functions `AdmitEvidence`, `ValidateEvidenceRequirements` | 1 |
+| | `trees/representation/go` | `contracts/language/go` | `ID`, `Provider` | 1 |
+| The carrier's own well-formedness lives in a check directory | `trees/representation/go` | `check/syntax/shared/ast/go`, `check/syntax/shared/cst/go` | `Structure`, `Check` | 2 |
+| | `trees/representation/go` | `internal/tree` | `Clone` | 1 |
+| Lexical rules needed on both sides | `semantics/rust/go`, the Rust symbol package | `internal/rust` | `CrateName`, `Identifier` | 2 |
+| | `semantics/typescript/go`, the TypeScript symbol package | `internal/typescript` | `PackageSpecifier`, `TypeName` | 2 |
+| | | | | **33** |
+
+What the first kind would require if a vocabulary were to import no
+contract package, as facts of the code:
+
+- For the models and symbol packages: `Form`, `FormIssuer`, `Expression`
+  with everything it embeds (slots, helper keys, the six expression kinds
+  and their constructors), `NativeDeclaration`, `NativeParameter`,
+  `IssuedValue`, the symbol issuer with `ExternalSymbol` and `ExternalUse`,
+  and three error values. That is the carrier of intent of section 3.4. It
+  is declared in the same package as the planner, and one of its kinds,
+  the reference to a planned declaration, "is issued by the planner after it
+  authenticates the source callee" (comment on `Expression`).
+- For the semantic vocabularies and `source/go`: the receipt and the
+  snapshot. Both are handles with private state. Only the contract's
+  admission code creates them, which is what makes a receipt trustworthy. In
+  Go a type with unexported fields is constructed in its own package.
+- For the syntax vocabularies: a 25-line package of two declarations.
+
+In the other direction the contract packages import the carriers. There is
+a cycle of directories, though not of packages: `source/go` imports
+`contracts/semantic/go`, and the parse, print and format contracts import
+`source/go`.
+
+### 6.2 Placement: three options
+
+Each option is stated with what it implies. None is chosen. For each we say
+what it does to the accepted sentence "A package's role follows from its
+path".
+
+**P1. Only the two transform-side vocabularies move out, beside `syntax/`
+and `semantics/`.** The four models and the three symbol packages get
+top-level homes of their own kind. The stage-first layout otherwise stays.
+
+- What it answers: the owner's messages 3 to 5 for the two vocabularies that
+  are inside a stage today. All four kinds of vocabulary are then in one
+  kind of place.
+- What it implies: seven packages move. No root rule is introduced. A model
+  still imports the generation contract. The Files stage's import of a
+  symbol package no longer reaches into another stage's directory.
+- What it leaves open: what the top-level directories are (section 5.2,
+  item 4); whether a carrier, a contract's value types or a grammar table is
+  a model; and the vocabularies that the migration adds for a pair of
+  languages.
+- The role-from-path rule: unchanged in kind. Two path shapes are replaced
+  by two others.
+
+**P2. The owner's two roots, with the generic carriers and the model-like
+types of the contracts on the model side.** `model/` holds the carriers, the
+vocabularies and the value types that operations exchange. `ops/` holds the
+stages, the kernel, the protocol part of each contract, the bridges and the
+tools.
+
+- What it answers: message 6 and message 7 in full. "model never imports
+  from ops" becomes one rule on a path prefix.
+- What it implies: every package gets a new import path. Ten contract
+  packages are split into a value part and a protocol part, and each split
+  is a grouping decision of its own. The carrier of intent leaves the
+  planner's package. The handles that only admission code may create need a
+  home that lets the operation create them and the model name them. The
+  structure checks of the generic tree are on the model side, or the
+  envelope stops checking. The lexical helpers must be importable from both
+  roots, so they cannot be below `ops/internal/` (fixed point 21).
+- What it leaves open: on which side a thing belongs that describes a
+  relation between two languages and is used by one operation only: a
+  mapping's vocabulary, a family's meaning, a profile identity. And whether
+  a grammar table, which today is a contribution's private variable, is part
+  of a language's model.
+- The role-from-path rule: the root gives a first cut, model or operation.
+  The roles within a root (vocabulary, carrier, contribution, kernel,
+  private part) still need a path shape or a table each. So the proposal's
+  one rule is added to the roles and does not replace them.
+
+**P3. Two roots where the contracts stay with the operations, and a model
+may import contract value types through a third place.** The vocabularies
+and possibly the carriers form `model/`. Stages, kernel and contracts form
+`ops/`. A third place holds what both need: the identity of a language, the
+diagnostics, the carrier of intent, the receipt and evidence types, and the
+helpers that both sides import.
+
+- What it answers: message 6, with a narrower meaning of "model": what one
+  language says about itself.
+- What it implies: the rule becomes "a model never imports an operation;
+  both may import the third place". The third place needs a definition of
+  its own that says what may be in it. Without one it collects whatever is
+  hard to classify. The split of contract packages is the same as in P2,
+  with another destination.
+- What it leaves open: whether the generic carriers are model or third
+  place, and the same relation-between-languages question as P2.
+- The role-from-path rule: three roots instead of two, and roles within
+  them as in P2.
+
+Three things are the same under every option, as facts. The syntax
+vocabulary is used by every stage of its language, the semantic vocabulary
+by several, the model by one and the symbol package by two (section 2.6).
+The model's values are values of one operation's contract. And the migration
+in flight adds per-pair and per-family vocabularies that no option above
+places without a further decision.
