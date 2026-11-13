@@ -83,6 +83,9 @@ func Check(ctx context.Context, helper, sysroot string, environment Environment,
 	command.Stderr = stderr
 	command.WaitDelay = time.Second
 	err = command.Run()
+	// Both bounds are asked before either stream is read: the bound of one
+	// stream cancels the process, and that can cut the other stream, whose own
+	// bound then still holds.
 	if outputBound.Exceeded() || errorBound.Exceeded() {
 		return Output{}, semantic.ErrLimit
 	}

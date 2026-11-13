@@ -94,6 +94,11 @@ func (w *Writer) Write(data []byte) (int, error) {
 // its end cut off, and a cut stream must not read as a whole one. The slice
 // is the writer's own. A caller reads it after its process has ended and does
 // not change it.
+//
+// With one bound per stream, a stream whose own bound was not passed can
+// still be cut, because the other bound cancelled the process, and Bytes
+// returns it. So a caller asks every bound of its process before it reads
+// any of its streams.
 func (w *Writer) Bytes() []byte {
 	if w.bound == nil {
 		return nil

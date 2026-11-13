@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"slices"
 	"sync"
 	"sync/atomic"
@@ -218,12 +219,15 @@ func TestCancelMayAskTheBound(t *testing.T) {
 // goroutines. Writers that share a bound never take more than the bound
 // together, each holds only its own stream, and the bound cancels once.
 // While they write, another goroutine reads the bound and the writers, as a
-// caller may: under the race detector an unguarded read fails here.
+// caller may: under the race detector an unguarded read fails here. That the
+// reads fell between the writes is this test's precondition, and it fails
+// when no read did.
 func TestConcurrentWritersKeepTheBound(t *testing.T) {
 	const writers, each = 8, 4096
-	// write releases the writers at once on one bound and returns the writers
-	// and how many bytes Write took in all.
-	write := func(bound *Bound) ([]*Writer, int) {
+	// write releases the writers at once on one bound, where the writers can
+	// take target bytes of it. It returns the writers, how many bytes Write
+	// took in all, and how many times the reader read while writes remained.
+	write := func(bound *Bound, target int) ([]*Writer, int, int) {
 		collected := make([]*Writer, writers)
 		for i := range collected {
 			collected[i] = bound.Writer()
@@ -239,10 +243,19 @@ func TestConcurrentWritersKeepTheBound(t *testing.T) {
 				for range each {
 					count, _ := collected[i].Write([]byte{byte('a' + i)})
 					taken.Add(int64(count))
+					// The reader gets its turn on one processor too.
+					runtime.Gosched()
 				}
 			}()
 		}
 		stop := make(chan struct{})
+		// between counts the reader's rounds that fell between the writes. The
+		// writers only append, so a round that saw some bytes and fewer than
+		// the writers can take read while writes remained. The reader asks the
+		// writers alone and shares nothing else with them: a signal between
+		// them would order its reads and the writes, and hide an unguarded
+		// read from the race detector.
+		between := 0
 		var reader sync.WaitGroup
 		reader.Add(1)
 		go func() {
@@ -254,9 +267,14 @@ func TestConcurrentWritersKeepTheBound(t *testing.T) {
 					return
 				default:
 					bound.Exceeded()
+					seen := 0
 					for _, w := range collected {
-						w.Bytes()
+						seen += len(w.Bytes())
 					}
+					if seen > 0 && seen < target {
+						between++
+					}
+					runtime.Gosched()
 				}
 			}
 		}()
@@ -264,13 +282,22 @@ func TestConcurrentWritersKeepTheBound(t *testing.T) {
 		done.Wait()
 		close(stop)
 		reader.Wait()
-		return collected, int(taken.Load())
+		return collected, int(taken.Load()), between
+	}
+	// concurrent fails the test when no read fell between the writes.
+	concurrent := func(between int) {
+		t.Helper()
+		t.Logf("the reader read %d times while writes remained", between)
+		if between == 0 {
+			t.Error("the precondition of this test was not established: the reader read nothing while the writers wrote")
+		}
 	}
 
 	// Exactly the bound: every write is taken, and each writer holds its own.
 	cancel, calls := counted()
 	bound := NewBound(writers*each, cancel)
-	collected, taken := write(bound)
+	collected, taken, between := write(bound, writers*each)
+	concurrent(between)
 	if taken != writers*each || bound.Exceeded() || calls.Load() != 0 {
 		t.Errorf("at the bound the writers took %d bytes of %d, and the bound cancelled %d times", taken, writers*each, calls.Load())
 	}
@@ -284,7 +311,8 @@ func TestConcurrentWritersKeepTheBound(t *testing.T) {
 	const limit = writers*each - 1000
 	cancel, calls = counted()
 	bound = NewBound(limit, cancel)
-	collected, taken = write(bound)
+	collected, taken, between = write(bound, limit)
+	concurrent(between)
 	if taken != limit || !bound.Exceeded() || calls.Load() != 1 {
 		t.Errorf("past the bound the writers took %d bytes of a bound of %d, and the bound cancelled %d times", taken, limit, calls.Load())
 	}

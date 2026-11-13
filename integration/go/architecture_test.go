@@ -205,10 +205,6 @@ var foundationRules = map[string][]string{
 	// importers are the two compiler bridges that start a helper process, each
 	// under a role extension, and the reporting tool's host under its own entry.
 	"internal/processoutput": {},
-	// The child process and the harness of the tests that bound what a child
-	// process writes. Only test files import it, and the check reads none, so
-	// it has this entry and no importer has an allowance for it.
-	"internal/processoutput/processoutputtest": {},
 }
 
 // oneOfAKindRules holds the packages whose path gives no role because there is
@@ -247,6 +243,13 @@ var oneOfAKindRules = map[string][]string{
 	"tools/provider-matrix/report/go":      {"internal/processoutput", "tools/provider-matrix/capability/go", "tools/provider-matrix/observation/go"},
 	"tools/provider-matrix/capability/go":  {},
 	"tools/provider-matrix/observation/go": {},
+	// The child process and the harness of the tests that bound what a child
+	// process writes. It is not in the foundation table: that table holds the
+	// helpers that production packages use, and only test files import this
+	// one. The check reads no test file, so no importer has an allowance for
+	// it. No foundation or kernel package can import it either, whatever its
+	// entry lists, because it is outside their table.
+	"internal/processoutput/processoutputtest": {},
 	// A command over the horos parser and private module lowering.
 	"tools/horos-module/go": {"contracts/parse/go", "internal/horosmodel", "internal/lex", "parse/syntax/horos/provider/go", "trees/ast/go"},
 }
