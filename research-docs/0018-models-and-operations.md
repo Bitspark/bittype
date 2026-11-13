@@ -267,7 +267,7 @@ Standing: owner rules, except where a paragraph says otherwise. They are
 written down in two pages of the organization's shared documentation
 repository, called the platform. They apply to every project. bittype follows
 them and keeps a numbered record of each violation it finds, a **case**
-(bittype's cases are named ACX-001 to ACX-010).
+(bittype's cases are named ACX-001 to ACX-010 at the code baseline).
 
 There are eleven numbered rules. The table gives each requirement in the
 rule's own title.
@@ -335,9 +335,17 @@ Its requirement: "Place a mechanism according to the knowledge its contract,
 algorithm and guarantees require. When these are independent of a language or
 domain, implement the mechanism once in the corresponding agnostic layer.
 Supply the variation through typed parameters, data or independently owned
-implementations." This rule is of the same day as this document. bittype
-has recorded one case under it, a forwarding adapter of the horos mapping
-side. No page has applied the rule to the question asked here.
+implementations." This rule is of the same day as this document. At the
+code baseline bittype has recorded one case under it, a forwarding adapter
+of the horos mapping side (ACX-010). While this document was written, one
+further commit reached the main branch. It changes no Go file. It records
+two more cases under the rule, both with their correction pending. ACX-011:
+horos and TypeScript each implement the common sequence of the semantic
+stages in the Files dimension. ACX-012: the architecture test recognises the
+role of a verification law only under one literal pair of languages, so that
+"The role mechanism must be separated from pair-specific dependency policy"
+(`docs/package-boundaries.md` after that commit). No page has applied the
+rule to the question asked here.
 
 **Grouping before coupling, and what a dependency check is** (owner request
 of 11 November 2026, with the platform's reading of it). The owner asked to
@@ -3239,7 +3247,7 @@ uses another word for the same thing, the entry says so.
 | bittype | The Go library this document is about (section 1) |
 | Bridge | The code that runs one language's real compiler over captured source and writes the result into the semantic graph. The pages also say "semantic helper" |
 | Carrier | A generic data type that holds one kind of artifact for every language and knows no language: the trees, the envelope, the semantic graph, the files and the source |
-| Case, ACX | A numbered record of one architectural violation and its correction. bittype's are ACX-001 to ACX-010 |
+| Case, ACX | A numbered record of one architectural violation and its correction. bittype's are ACX-001 to ACX-010 at the code baseline |
 | Checker | The contribution that admits a tree of one language: it runs the admission table and then rules in code |
 | Component | The fourth part of a stage path: `provider`, `queries`, `source`, `target`, `model`, `symbol` or `mapping/<name>` |
 | Composition | Code that chooses contributions and registers them. Today tests and tools |
