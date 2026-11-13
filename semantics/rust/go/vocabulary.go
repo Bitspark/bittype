@@ -12,13 +12,14 @@ import (
 
 const CompilerVersion = "1.90.0"
 
-// HelperProfile names what the compiler helper admits and which graph it
-// writes. It changes whenever the graph's vocabulary changes, and it is part
-// of both profile identities and of every configuration, so a receipt of
-// another helper profile is never read under this one.
+const ResolutionProfile = "rustc-1.90.0/captured-types-1/resolution-1"
+const AnalysisProfile = "rustc-1.90.0/captured-types-1/analysis-1"
+
+// HelperProfile names the facts that the compiler helper writes. It is a
+// setting of every configuration and changes when facts are added, so a
+// receipt of another helper is never read as one of this helper. The two
+// profile strings above are not derived from it.
 const HelperProfile = "captured-types-2"
-const ResolutionProfile = "rustc-" + CompilerVersion + "/" + HelperProfile + "/resolution-1"
-const AnalysisProfile = "rustc-" + CompilerVersion + "/" + HelperProfile + "/analysis-1"
 
 var ErrForeign = errors.New("foreign or missing Rust semantic handle")
 var ErrCompiler = errors.New("Rust compiler helper failed")

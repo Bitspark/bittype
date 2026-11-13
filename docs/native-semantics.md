@@ -665,13 +665,23 @@ passes it to the compiler and judges no value.
 `compiler`, an `environment` setting with the text
 `edition=2024;target=x86_64-unknown-linux-gnu;crate=captured;lib;sysroot-only;no-codegen`,
 and `helper` with `captured-types-1`. Both providers refuse it as invalid
-input, and no evidence requirement exists for it. The profile identities carry
-the helper profile, `rustc-1.90.0/captured-types-2/resolution-1` and
-`rustc-1.90.0/captured-types-2/analysis-1`, so a receipt of the earlier helper
-is not admitted as one of this profile. The reason is in
-[the analysis document](analysis.md#concepts): an analysis profile is "A
-versioned contract defining obligations, domains, vocabulary and requirements
-for a model", and this change alters the vocabulary.
+input, and no evidence requirement exists for it, so a receipt of the earlier
+helper is not admitted as one of this helper and `rust.Open` refuses it.
+
+**The profile strings are unchanged.** They are
+`rustc-1.90.0/captured-types-1/resolution-1` and
+`rustc-1.90.0/captured-types-1/analysis-1`, as before. What changed is the
+configuration: the helper profile, which
+[#278](https://github.com/Bitspark/bittype/issues/278) decides to rename
+whenever facts are added, and the environment setting. A receipt is admitted
+by its profile and its configuration together, so the two helpers' receipts
+stay apart. This states what was done and no general rule: no accepted
+document says when a profile string changes. This change differs from the
+`package-name` fact of the Go profile in one point. It does not only add
+facts. It also removes the `Public` member from the data of the `fields`
+term, so a graph of this helper would read as "no field is public" to a
+reader of the earlier form. The configuration keeps such a reader from
+admitting it.
 
 The remote gate builds the helper with Rust 1.90.0, `rustc-dev` and
 `llvm-tools-preview`; `RUSTC_BOOTSTRAP=1` enables the private compiler API only

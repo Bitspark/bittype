@@ -45,7 +45,8 @@ func TestEnvironmentConfigurationBytes(t *testing.T) {
 	if err != nil || reflect.DeepEqual(different, settings) {
 		t.Fatal("the crate name is not part of the configuration", different, err)
 	}
-	if n.ResolutionProfile != "rustc-1.90.0/captured-types-2/resolution-1" || n.AnalysisProfile != "rustc-1.90.0/captured-types-2/analysis-1" {
+	// The profile strings are what they were before the helper profile changed.
+	if n.ResolutionProfile != "rustc-1.90.0/captured-types-1/resolution-1" || n.AnalysisProfile != "rustc-1.90.0/captured-types-1/analysis-1" {
 		t.Fatal(n.ResolutionProfile, n.AnalysisProfile)
 	}
 }
