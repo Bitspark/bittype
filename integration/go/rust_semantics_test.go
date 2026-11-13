@@ -261,6 +261,76 @@ func TestRustSemanticNamespaceAndCoordinates(t *testing.T) {
 
 // bittype:case target=github.com/Bitspark/bittype/resolve/files/rust/provider/go#Provider.Resolve feature=rust-semantic-subset case=bounds-and-profile-outcomes expects=qualified-reports-without-partial-model
 // bittype:case target=github.com/Bitspark/bittype/analyze/files/rust/provider/go#Provider.Analyze feature=rust-semantic-subset case=bounds-and-profile-outcomes expects=qualified-reports-without-partial-model
+// The probe of row 26 of research 0016. The helper binds every segment of an
+// absolute path into the standard library. It names each entity by the crate
+// and the path of its definition, which is not the path that was written, and
+// such an entity has no declaration site. A primitive type has no binding.
+// docs/destinations.md states what this means for a recorded destination.
+func TestRustSemanticAbsoluteStandardLibraryPaths(t *testing.T) {
+	snapshot, trees, _ := rsCapture(t, `pub struct Person { pub name: ::std::string::String, pub tags: ::std::vec::Vec<::std::string::String>, pub nick: ::std::option::Option<::std::string::String>, pub ok: bool }`)
+	_, result := rsResults(t, snapshot)
+	for _, obligation := range []semantics.Key{n.Coverage(), n.Bindings(), n.Validity()} {
+		if report, ok := result.Report(obligation); !ok || report.Status != semantic.Complete || report.Verdict != semantic.Holds {
+			t.Fatalf("%s does not hold: %+v; %+v", obligation.Name, report, result.Diagnostics())
+		}
+	}
+	m, err := n.Open(result)
+	if err != nil {
+		t.Fatalf("model: %v; diagnostics: %+v", err, result.Diagnostics())
+	}
+	tree, data := trees[0], m.Graph().Data()
+	type entity struct{ kind, name string }
+	bound := map[string]entity{}
+	sites := map[ast.NodeID]bool{}
+	for _, b := range data.Bindings {
+		node := tree.Nodes[b.At.Site.Node-1]
+		if b.At.Site.Tree != tree.ID || node.Kind != s.KindPathSegment || b.At.Role != n.Key(s.RoleTarget) || sites[b.At.Site.Node] {
+			t.Errorf("unexpected binding at %v (%s) with the role %v", b.At.Site, node.Kind, b.At.Role)
+			continue
+		}
+		sites[b.At.Site.Node] = true
+		target := data.Entities[b.Target-1]
+		if len(target.Declarations) != 0 {
+			t.Errorf("the entity %s of the standard library has a declaration site", target.Name)
+		}
+		written, to := nodeAttribute(node, s.AttributeName), entity{target.Kind.Name, target.Name}
+		if previous, seen := bound[written]; seen && previous != to {
+			t.Errorf("the segment %s binds to %v and to %v", written, previous, to)
+		}
+		bound[written] = to
+	}
+	want := map[string]entity{
+		"std":    {"module", "std"},
+		"string": {"module", "alloc::string"}, "String": {"struct", "alloc::string::String"},
+		"vec": {"module", "alloc::vec"}, "Vec": {"struct", "alloc::vec::Vec"},
+		"option": {"module", "core::option"}, "Option": {"enum", "core::option::Option"},
+	}
+	if !reflect.DeepEqual(bound, want) {
+		t.Errorf("the segments bind to %v, want %v", bound, want)
+	}
+	// Five paths of three segments each.
+	if len(data.Bindings) != 15 {
+		t.Errorf("%d bindings, want 15", len(data.Bindings))
+	}
+	primitives := 0
+	for i, node := range tree.Nodes {
+		id := ast.NodeID(i + 1)
+		switch node.Kind {
+		case s.KindPathSegment:
+			if !sites[id] {
+				t.Errorf("the segment %s at node %d has no binding", nodeAttribute(node, s.AttributeName), id)
+			}
+		case s.KindPrimitiveType:
+			primitives++
+			if sites[id] {
+				t.Errorf("the primitive type at node %d has a binding", id)
+			}
+		}
+	}
+	if primitives != 1 {
+		t.Errorf("%d primitive types, want the one bool", primitives)
+	}
+}
 func TestRustSemanticBoundsAndOutcomes(t *testing.T) {
 	m := rsModel(t, `pub trait Marker {} pub struct Person {} impl Marker for Person {} pub struct Boxed<T: Marker> {pub value: T} pub type Good = Boxed<Person>;`)
 	b := rsDecl(t, m, "0", "Boxed")
