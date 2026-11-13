@@ -83,7 +83,8 @@ records the open violation.
 rule from which the split and organization follows automatically rather than
 finding these things by chance and fixing them." The rule that answers it is
 worded by platform research 0004, not by the owner. A description of a
-subject, such as a language's names, its grammar table or its declared forms,
+subject, such as a language's names, its grammar table or the table of its
+intended forms,
 stands in a unit of that subject from the first implementation. No operation
 that uses it owns it, nothing it states refers to an operation, and no
 dependent has to name a stage to name it. Each operation that needs it

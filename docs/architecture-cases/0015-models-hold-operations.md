@@ -10,6 +10,12 @@ misplacement until that branch merges. The reason and the two conditions are
 recorded [below](#where-the-correction-of-the-intended-forms-packages-is-made).
 Since 13 November 2026 the platform's rules page names this case as the
 example of [AC-12](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-12).
+At platform `main` `8d1e237` the example reads: the case "records two things
+this rule covers: the four native grammar tables are unexported variables
+of their checkers, and Go's compiler bridge writes eleven keys as literals
+that the vocabulary does not publish." Those are the first two of the three
+things that [Rules involved](#rules-involved) lists. The count in the
+second is made exact there.
 
 **Scope.** The packages of `main` that declare what exists in a language or
 in a generic carrier: the carriers, the vocabulary packages, the grammar
@@ -65,16 +71,25 @@ result or state." Three things in this case are what it covers:
   documentation tool reads the checker's source for it, "without importing
   or executing inspected packages"
   (`tools/provider-matrix/extract/grammar/go/extract.go:2`).
-- **The Go bridge writes eleven keys that the vocabulary does not
-  publish.** They are names of Go's analysed facts, stated only inside the
-  operation that writes them. A reader gets them by "its own copy where it
-  could depend on the description".
-- **Descriptions stand under a stage's name.** The intended forms of a
-  language and the record of a TypeScript symbol are under
+- **The Go bridge writes eleven keys as literals.** Ten name nothing that
+  the vocabulary publishes. One, `display`, is published as a relation
+  only, and the bridge writes it as an operator
+  (`internal/golangsem/export.go:288`, `semantics/golang/go/vocabulary.go:56`).
+  They are names of Go's analysed facts, stated only inside the operation
+  that writes them. No production file outside the bridge spells one of
+  them today. One test of the vocabulary package spells two
+  (`semantics/golang/go/model_test.go:29`, `:85`).
+- **Descriptions stand under a stage's name.** The form names of a
+  language, and the table of its forms once slice S2 has written it, and
+  the record of a TypeScript symbol are under
   `transform/syntax/<language>/`. "Its place and name, meaning the path or
   published name by which dependents refer to it, state no operation,
   because every dependent would then name that operation." The TypeScript
-  Files formatter names the stage `transform` to name a symbol.
+  Files formatter names the stage `transform` to name a symbol. That the
+  form table is a description is decision M4, by the rule's test: what it
+  states of a language holds whichever operation runs. An intent
+  expression, which the typed constructors build, is a value of the
+  generation contract's type and is generation's (decision M33 on #305).
 
 The rule also names what this case files under AC-06 and AC-02 below: "A
 limit of one operation's coverage (AC-06) or a policy of one operation
@@ -157,7 +172,8 @@ hold model-side parts import a private lexical helper.
 are unexported variables of their checkers (`check.go:17` for Go), and the
 horos table is in `internal/declsyntax/check.go:67`. Go's table binds 17
 predicate function values, so it is not data today. The Go compiler bridge
-writes eleven keys as literals that the vocabulary does not publish
+writes eleven keys as literals, ten of which name nothing that the
+vocabulary publishes
 (`grep -oh 'n\.Key("[a-z0-9-]*")' internal/golangsem/*.go | sort -u | wc -l`).
 
 **One mechanism, a copy for each language** (AC-11). The four intended-forms
@@ -310,7 +326,9 @@ after the names have left it. This case stays open for that. One point of
 M30 is open, as M32 states it, and is decided at the start of that part:
 which parts of the operations side of a symbol package work on symbols,
 which are generation's use of symbols, and what the first kind refuses with
-when it may not name the generation contract.
+when it may not name the generation contract. With it, by M33: what the
+sealed symbol types of Go and Rust admit is still a description, and
+whether and where it is stated as data.
 
 ## Did we have the rule
 
@@ -351,7 +369,7 @@ supplies both the description and its first user. That is AC-12.
 
 This change documents the violation and the designed correction. No code
 has changed. The names below the two roots are decided (M10, M11, M14,
-M19, M28, M30 and M32 on #305). The form-table type is a sketch that slice S2 makes final (M13).
+M19, M28, M30, M32 and M33 on #305). The form-table type is a sketch that slice S2 makes final (M13).
 The classification of each package is the design page's
 table, made by reading. Each slice updates this case with what it delivered,
 its qualification and its limits.
