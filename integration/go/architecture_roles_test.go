@@ -103,6 +103,19 @@ func selectedKind(relative string) (string, bool) {
 	return "", false
 }
 
+// isSyntaxVocabulary reports whether a path has the shape syntax/<language>/go.
+func isSyntaxVocabulary(relative string) bool {
+	s := strings.Split(relative, "/")
+	return len(s) == 3 && s[0] == "syntax" && s[2] == "go" && isLanguageName(s[1])
+}
+
+// isLexicalPart reports whether a path has the shape
+// model/syntax/<language>/lexical/go.
+func isLexicalPart(relative string) bool {
+	s := strings.Split(relative, "/")
+	return len(s) == 5 && s[0] == "model" && s[1] == "syntax" && s[3] == "lexical" && s[4] == "go" && isLanguageName(s[2])
+}
+
 // isSemanticHelper reports whether a path has the shape internal/<language>sem.
 func isSemanticHelper(relative string) bool {
 	s := strings.Split(relative, "/")
@@ -161,11 +174,24 @@ func packageRole(relative string) (roleRule, bool) {
 		return helperRole(s[1])
 	case s[len(s)-1] != "go":
 		return roleRule{}, false
-	case len(s) == 3 && s[0] == "syntax" && isLanguageName(s[1]):
+	case isSyntaxVocabulary(relative):
 		// The syntax kinds and identity of one language.
 		return role("syntax/<language>/go", roleVocabulary, []string{"language", s[1]},
 			"contracts/language/go", "trees/ast/go", "trees/cst/go",
 		), true
+	case isLexicalPart(relative):
+		// The lexical part of one language's syntax model: the names of its
+		// spelling predicates. It knows spelling, not structure: it imports the
+		// agnostic syntax model for the type of a name and no syntax vocabulary,
+		// its own included.
+		rule := role("model/syntax/<language>/lexical/go", roleVocabulary, []string{"language", s[2]}, "model/syntax/go")
+		rule.forbidden = func(dependency string) string {
+			if isSyntaxVocabulary(dependency) {
+				return "a lexical part imports no syntax vocabulary"
+			}
+			return ""
+		}
+		return rule, true
 	case len(s) == 3 && s[0] == "semantics" && isLanguageName(s[1]):
 		// The semantic names and contract identities of one language. It may use
 		// its language's lexical helper, never internal/<language>sem, which
@@ -258,12 +284,14 @@ func helperRole(name string) (roleRule, bool) {
 // stageProviderPatterns holds, per stage and dimension the layout has, what a
 // provider of one language may import. Each stage has its own list. A checker
 // gets no concrete tree, a formatter no lexer, and no Syntax stage a semantic
-// contract. Parser and formatter import their own checker and never each
+// contract. A checker writes its grammar table in the type of the agnostic
+// syntax model and binds the predicate names of its language's lexical part. Parser and formatter import their own checker and never each
 // other. A Files parser or formatter composes the collaborators it is given
 // through their contracts and publishes Source.
 var stageProviderPatterns = map[string][]string{
 	"check/syntax": {
-		"contracts/check/go", "contracts/text/go", "internal/grammar", "internal/tree", "internal/<language>", "syntax/<language>/go", "trees/ast/go",
+		"contracts/check/go", "contracts/text/go", "internal/grammar", "internal/tree", "internal/<language>",
+		"model/syntax/go", "model/syntax/<language>/lexical/go", "syntax/<language>/go", "trees/ast/go",
 	},
 	"parse/syntax": {
 		"contracts/parse/go", "contracts/text/go", "check/syntax/<language>/provider/go", "internal/concrete", "internal/lex",
