@@ -11,6 +11,21 @@ including the [concrete verification composition](docs/type-system-architecture.
 uses `<stage>/<dimension>/<scope>/<component>/go`, with generic factories in
 kernel/contracts and no per-pair assembly or presets. This hierarchy is implemented.
 
+**Owner direction, 13 November 2026:** "So the root split to me would be
+between model and ops. model must not contain any ops and must not import from
+ops either. ops work on the model". The design
+[models and operations](docs/models-and-operations.md) carries it out: models
+under `model`, by sort and then by language, and operations under `ops`, where
+the stage-by-language matrix and the path pattern above stay. **Not
+implemented.** The hierarchy and the role table below describe `main` as it
+is, and no path in this layout has changed. The
+[order of work](docs/models-and-operations.md#10-the-order-of-work) says which
+slice moves what. That page gives the names below the two roots (decisions
+M10, M11, M14, M19 and M28 on #305). Two paths of M14 wait for a decision
+(M27, M29).
+[bittype/ACX-015](docs/architecture-cases/0015-models-hold-operations.md)
+records the violation that stays open until the slices are done.
+
 ## Current hierarchy
 
 ```text
@@ -95,6 +110,15 @@ The final `go` directory denotes implementation language, not target:
 `syntax/rust/go` is Go code describing Rust syntax. `ast` and `cst` in the check
 stage are reserved generic-carrier components, not native language names.
 
+**Clarified on 13 November 2026 ([models and operations](docs/models-and-operations.md#5-intent)).**
+The hierarchy says of `transform/syntax/<native>/model/go`: "native semantic
+forms and validation". That describes the package as it is. Validation is an
+operation, and under the owner's direction a model contains none. In the
+design the package becomes a declared table of a language's intended forms on
+the model side, one checker in the kernel reads the table of every language,
+and the typed constructors are a package of the operations side. Not
+implemented.
+
 Implementations use the same stage, dimension, scope, component and implementation-language order. A scope identifies one language, an ordered pair or shared machinery. Go packages use their role name. Syntax vocabularies retain their language names. Applications construct independent stage adapters through their contracts. A configured resolver belongs to its language's resolve stage. See [kernel-owned composition](docs/kernel-composition.md).
 
 **Path form for several contributions, decided in
@@ -149,6 +173,21 @@ path gives. The roles are in
 the explicit tables are in
 [`architecture_test.go`](integration/go/architecture_test.go). The table below
 summarises them. The exact lists are in the test.
+
+**Clarified on 13 November 2026 ([models and operations](docs/models-and-operations.md#8-roles-per-root)).**
+The first sentence of this section holds for the directory groups below a
+root. The two roots of the owner's direction are an assertion about the
+dependency level, in one direction: no package under `model` imports a
+package under `ops`. In the design the role Foundation is divided between the
+roots: the agnostic model packages on one side, the contract packages and the
+operations halves of the carriers on the other. The role Vocabulary exists
+under both roots: names and declared tables under `model`, and identities
+that are values of a contract package's type under `ops`. A language's typed
+readers, typed constructors and symbol admission get a role of their own,
+which that page calls public part. A lexical helper imports its own
+language's lexical part, which holds the word lists and no node kind. A pair's contribution
+vocabulary names two languages, as a mapping does. Not implemented: the table
+below gives the roles of `main` as they are.
 
 | Role | Paths | Imports |
 | --- | --- | --- |
