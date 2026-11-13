@@ -71,11 +71,9 @@ func bound[L any](rules syntax.Rules[L], evaluators Evaluators) error {
 			*found = &name
 		}
 	}
-	for name, evaluate := range evaluators {
+	for name := range evaluators {
 		if name.Owner == syntax.Owner {
 			least(&rebound, name)
-		} else if evaluate == nil {
-			least(&missing, name)
 		}
 	}
 	if rebound != nil {
