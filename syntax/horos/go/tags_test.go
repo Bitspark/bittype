@@ -7,17 +7,21 @@ import (
 	"slices"
 	"testing"
 
-	horos "github.com/Bitspark/bittype/internal/horos"
+	horos "github.com/Bitspark/bittype/syntax/horos/go"
 )
 
-// This file spells every name of tags.go a second time, on purpose. The
-// parser writes each of them and the formatter reads it, both from tags.go, so
-// they follow a changed value together. A canonical value that was written
-// before holds the old one, and the horos library reads the old one. Changing
-// a value is a decision: make it here as well.
+// This file spells every name of tags.go a second time, on purpose. Their
+// writers and readers all take them from tags.go, so they follow a changed
+// value together. A canonical value that was written before holds the old one,
+// and the horos library reads the old one. Changing a value is a decision: make
+// it here as well.
 var canonicalNames = []struct {
 	name, got, want string
 }{
+	{"DeclarationTagPrefix", horos.DeclarationTagPrefix, "horos/decl/"},
+	{"DescriptorTagPrefix", horos.DescriptorTagPrefix, "horos/"},
+	{"ArrowLabel", horos.ArrowLabel, "arrow"},
+	{"RecordLabel", horos.RecordLabel, "record"},
 	{"FieldTag", horos.FieldTag, "horos/field"},
 	{"RecordOpen", horos.RecordOpen, "open"},
 	{"RecordClosed", horos.RecordClosed, "closed"},

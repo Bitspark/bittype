@@ -21,7 +21,7 @@ import (
 var ErrForeign = errors.New("foreign or missing Horos projection handle")
 
 var frontend = bridge.Frontend[s.Language]{
-	DeclarationPrefix: n.DeclarationTagPrefix, DescriptorPrefix: n.DescriptorTagPrefix,
+	DeclarationPrefix: s.DeclarationTagPrefix, DescriptorPrefix: s.DescriptorTagPrefix,
 	ResolveModel: func(root core.Value, deps []core.Value, limits decl.Limits) (bridge.Program, error) {
 		return decl.ResolveWithLimits(root, deps, limits)
 	},
@@ -204,7 +204,7 @@ func (k Kind) Arrow(module decl.Digest) (Kind, error) {
 // ArrowValue is the canonical horos kind syntax of the arrow from one
 // parameter kind to that same kind.
 func ArrowValue(kind core.Value) core.Value {
-	return core.NewTuple(core.NewAtom([]byte(n.DeclarationTagPrefix+"arrow")), data.EncodeList([]core.Value{kind}), kind)
+	return core.NewTuple(core.NewAtom([]byte(s.DeclarationTagPrefix+s.ArrowLabel)), data.EncodeList([]core.Value{kind}), kind)
 }
 func (k Kind) Model() Model                  { return Model{k.owner} }
 func (k Kind) Module() decl.Digest           { return k.module }
@@ -292,7 +292,7 @@ func (d Declaration) Fields() ([]Field, error) {
 		return nil, ErrForeign
 	}
 	mode, ok := t.At(1).(core.Atom)
-	if !ok || string(mode.Bytes()) != "closed" {
+	if !ok || string(mode.Bytes()) != s.RecordClosed {
 		return nil, errors.New("open records are outside this projection")
 	}
 	operands := e.Operands()
@@ -321,7 +321,7 @@ func (d Declaration) Fields() ([]Field, error) {
 		if ty == nil {
 			return nil, ErrForeign
 		}
-		fields = append(fields, Field{Name: name, Optional: string(flag.Bytes()) == "opt", Type: ty, Site: d.owner.decoded.OperandSite(d.BodySite(), []int{i, 3})})
+		fields = append(fields, Field{Name: name, Optional: string(flag.Bytes()) == s.FieldOptional, Type: ty, Site: d.owner.decoded.OperandSite(d.BodySite(), []int{i, 3})})
 	}
 	return fields, nil
 }

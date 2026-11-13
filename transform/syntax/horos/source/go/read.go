@@ -86,7 +86,7 @@ func (r reader) Fields(v g.UseView[h.Language]) ([]Field, error) {
 	if err != nil {
 		return nil, err
 	}
-	if p.Len() < 2 || atom(p.At(0)) != n.DescriptorTagPrefix+"record" {
+	if p.Len() < 2 || atom(p.At(0)) != h.DescriptorTagPrefix+h.RecordLabel {
 		return nil, semantic.ErrInvalidRequest
 	}
 	var fields []Field
@@ -107,7 +107,7 @@ func (r reader) Fields(v g.UseView[h.Language]) ([]Field, error) {
 		if !ok {
 			return nil, g.ErrScope
 		}
-		fields = append(fields, Field{Name: name, Optional: atom(f.At(2)) == "opt", Use: u, Origin: r.s.sites[term]})
+		fields = append(fields, Field{Name: name, Optional: atom(f.At(2)) == h.FieldOptional, Use: u, Origin: r.s.sites[term]})
 	}
 	return fields, nil
 }

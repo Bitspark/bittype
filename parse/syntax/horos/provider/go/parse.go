@@ -422,9 +422,9 @@ func (p *parser) primaryAtom() ast.NodeID {
 
 func (p *parser) record() ast.NodeID {
 	start := p.Token().Start
-	mode := lit.RecordClosed
+	mode := s.RecordClosed
 	if p.Eat("open") {
-		mode = lit.RecordOpen
+		mode = s.RecordOpen
 	}
 	modeNode := p.fragment(core.NewAtom([]byte(mode)), start)
 	p.Want("{")
@@ -438,15 +438,15 @@ func (p *parser) record() ast.NodeID {
 			name = p.name()
 		}
 		nameNode := p.fragment(data.MustEncodeText(name), begin)
-		presence := lit.FieldRequired
+		presence := s.FieldRequired
 		if p.Eat("?") {
-			presence = lit.FieldOptional
+			presence = s.FieldOptional
 		}
 		presenceNode := p.fragment(core.NewAtom([]byte(presence)), p.Token().Start)
 		p.Want(":")
 		body := p.expr()
 		p.Want(";")
-		label := p.AddSpan(s.KindAtom, begin, begin, tr.Attrs(s.AttributeHex, hex.EncodeToString([]byte(lit.FieldTag))))
+		label := p.AddSpan(s.KindAtom, begin, begin, tr.Attrs(s.AttributeHex, hex.EncodeToString([]byte(s.FieldTag))))
 		operands = append(operands, p.Add(s.KindTuple, begin, nil, tr.Children(s.RoleElement, []ast.NodeID{label, nameNode, presenceNode, body})...))
 	}
 	p.Want("}")

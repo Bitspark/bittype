@@ -27,8 +27,6 @@ var publishedStrings = []struct {
 }{
 	{"ResolutionProfile", horos.ResolutionProfile, "horos-declarations-4/resolution-1"},
 	{"AnalysisProfile", horos.AnalysisProfile, "horos-declarations-4/analysis-1"},
-	{"DeclarationTagPrefix", horos.DeclarationTagPrefix, "horos/decl/"},
-	{"DescriptorTagPrefix", horos.DescriptorTagPrefix, "horos/"},
 }
 
 var publishedKeys = []struct {

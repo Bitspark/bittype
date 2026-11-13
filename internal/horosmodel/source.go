@@ -2,7 +2,6 @@ package horosmodel
 
 import (
 	"github.com/Bitspark/bittype/contracts/text/go"
-	n "github.com/Bitspark/bittype/semantics/horos/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	decl "github.com/Bitspark/horos/core/go/declarations"
@@ -19,7 +18,7 @@ type SourceModule struct {
 // SourceModules lowers admitted syntax in source order without resolving names
 // or evaluating types and kinds. Both module output and source pins use this path.
 func SourceModules[L any](tree ast.AST[L]) ([]SourceModule, error) {
-	r := reader[L]{tree: tree, declarationPrefix: n.DeclarationTagPrefix, descriptorPrefix: n.DescriptorTagPrefix}
+	r := reader[L]{tree: tree, declarationPrefix: s.DeclarationTagPrefix, descriptorPrefix: s.DescriptorTagPrefix}
 	out := make([]SourceModule, 0, len(tree.Nodes[tree.Root-1].Children))
 	for _, child := range tree.Nodes[tree.Root-1].Children {
 		value, err := r.module(child.Node)
