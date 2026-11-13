@@ -776,7 +776,7 @@ and the exception rule as #246 left them. All files are under
   resolve the import names per file, then collect the selectors on them. Use is
   syntactic and nothing is type-checked. The standard library is enough, and
   `go.mod` gained no requirement.
-- `architecture_synthetic_test.go` holds 37 tests that feed the check
+- `architecture_synthetic_test.go` holds 38 tests that feed the check
   hand-built package sets. Each failing set breaks one rule and must produce
   that rule's message and no other. One test adds a third language, a pair
   into it, one more mapping and one more common mapping part to a conforming

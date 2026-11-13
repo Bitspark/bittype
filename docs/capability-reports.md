@@ -323,7 +323,9 @@ For each declared node kind it emits:
 
 - Ordered child roles, minimum/maximum cardinality and declared allowed kinds.
 - Attribute names, required/optional flags and explicit finite allowed values
-  when the entry's set (`OneOf`) or the shared name `Bool` supplies them.
+  when the entry's set (`OneOf`) or the shared name `Bool` supplies them. An
+  absent set restricts nothing. A set that is present and empty is reported
+  as admitting no value: the interpreter refuses a table that holds one.
 - Declared reference allowance and links to the defining source.
 - Opaque predicate links where an entry names any other predicate.
 
