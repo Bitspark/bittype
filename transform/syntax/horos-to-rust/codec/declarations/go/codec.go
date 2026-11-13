@@ -27,7 +27,7 @@ func encode(p vocabulary.Payload) (core.Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	parameters, err := payload.Texts(p.Parameters)
+	parameters, err := payload.List(p.Parameters, data.EncodeText)
 	if err != nil {
 		return nil, err
 	}
@@ -46,6 +46,6 @@ func decode(v core.Value) (vocabulary.Payload, error) {
 	if p.Nominal, err = data.ReadBool(values[1]); err != nil {
 		return p, err
 	}
-	p.Parameters, err = payload.ReadTexts(values[2])
+	p.Parameters, err = payload.ReadList(values[2], data.ReadText)
 	return p, err
 }

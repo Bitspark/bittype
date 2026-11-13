@@ -21,11 +21,11 @@ func Codec[P any](reference g.SchemaReference, module []byte, pin, typeName stri
 	return New(schema, encode, decode), nil
 }
 
-// The value forms below are the canonical horos values that the payloads of
-// the delivered contributions use: a closed record and a list of text. They
-// are here once, so that no codec repeats them. A codec whose payload needs
-// another form builds its value with the ontos value packages itself (O37),
-// and this package does not change for it.
+// The framings below are those of the schema language's own composite kinds,
+// a closed record and a list, generic in their parts (O47). They are here
+// once, so that no codec repeats them. A scalar comes from the ontos value
+// packages directly, and a value form of one family never enters this
+// package: a codec builds it with the ontos value packages itself (O37).
 
 // Record is the value of a closed record with the given field names, in the
 // order of names. A payload without fields is Record(nil).
@@ -69,11 +69,13 @@ func ReadRecord(v core.Value, names []string) ([]core.Value, error) {
 	return out, nil
 }
 
-// Texts is the value of a list of text.
-func Texts(items []string) (core.Value, error) {
+// List is the value of a list: the schema language's list kind, generic in
+// its element. The caller gives the conversion of one element, for a text
+// element the text conversion of the ontos value package.
+func List[E any](items []E, element func(E) (core.Value, error)) (core.Value, error) {
 	values := make([]core.Value, len(items))
 	for i, item := range items {
-		value, err := data.EncodeText(item)
+		value, err := element(item)
 		if err != nil {
 			return nil, err
 		}
@@ -82,15 +84,15 @@ func Texts(items []string) (core.Value, error) {
 	return data.EncodeList(values), nil
 }
 
-// ReadTexts reads a list of text.
-func ReadTexts(v core.Value) ([]string, error) {
+// ReadList reads a list with the caller's conversion of one element.
+func ReadList[E any](v core.Value, element func(core.Value) (E, error)) ([]E, error) {
 	values, err := data.ReadList(v)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]string, len(values))
+	out := make([]E, len(values))
 	for i, value := range values {
-		if out[i], err = data.ReadText(value); err != nil {
+		if out[i], err = element(value); err != nil {
 			return nil, err
 		}
 	}

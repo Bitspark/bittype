@@ -12,6 +12,7 @@ import (
 	vocabulary "github.com/Bitspark/bittype/transform/syntax/horos-to-cpp/vocabulary/record/go"
 	"github.com/Bitspark/bittype/transform/syntax/horos/payload/go"
 	core "github.com/bitspark/ontos/core/go"
+	data "github.com/bitspark/ontos/data/go"
 )
 
 // Codec returns the codec of the payload schema that the vocabulary pins.
@@ -22,7 +23,7 @@ func Codec() (g.PayloadCodec, error) {
 var fields = []string{"members"}
 
 func encode(p vocabulary.Payload) (core.Value, error) {
-	members, err := payload.Texts(p.Members)
+	members, err := payload.List(p.Members, data.EncodeText)
 	if err != nil {
 		return nil, err
 	}
@@ -34,6 +35,6 @@ func decode(v core.Value) (vocabulary.Payload, error) {
 	if err != nil {
 		return vocabulary.Payload{}, err
 	}
-	members, err := payload.ReadTexts(values[0])
+	members, err := payload.ReadList(values[0], data.ReadText)
 	return vocabulary.Payload{Members: members}, err
 }
