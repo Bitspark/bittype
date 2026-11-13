@@ -607,9 +607,11 @@ perform no IO, discovery or installation. The caller provisions that helper and
 the matching compiler sysroot explicitly. Both operations require the settings
 of one stated [environment](#rust-environment),
 `rust.ConfigurationFor(environment)`. The helper checks a library crate against
-the sysroot only and generates no code, under the `captured-types-2` helper
+the sysroot only and generates no code, under the `captured-types-3` helper
 profile. Compiler version, helper profile and environment are receipt identity;
-executable locations are configuration of the collaborator.
+executable locations are configuration of the collaborator. The helper
+[states its profile](#rust-helper-profile) in every response, and the bridge
+uses no helper that states another one.
 
 ### Rust environment
 
@@ -713,7 +715,7 @@ this order. They are part of every receipt:
 | --- | --- |
 | `compiler` | `1.90.0` |
 | `environment-1` | The environment as JSON, with every member, in the order of the fields. An empty dependency collection is `[]` |
-| `helper` | `captured-types-2` |
+| `helper` | `captured-types-3` |
 
 ```json
 {"Edition":"2024","Target":"x86_64-unknown-linux-gnu","Crate":{"Name":"pages","Kind":"lib"},"Dependencies":[]}
@@ -745,6 +747,9 @@ helper is not admitted as one of this helper and `rust.Open` refuses it.
 The profile strings changed with the configuration, see
 [the vocabulary](#rust-vocabulary).
 
+The helper profile changed once more since, see
+[the helper profile](#rust-helper-profile).
+
 The remote gate builds the helper with Rust 1.90.0, `rustc-dev` and
 `llvm-tools-preview`; `RUSTC_BOOTSTRAP=1` enables the private compiler API only
 while building that helper. The checked input gets no feature-enabling environment.
@@ -772,8 +777,9 @@ root module of the crate `std`, `string` to the module `alloc::string` and
 and the path of its definition, which is not the path that was written:
 `::std::option::Option` binds to `core::option::Option`. An entity of the
 sysroot has no declaration site. A primitive type such as `bool` is no path
-segment and has no binding, so a declaration of that name that captures a use
-is not visible in the graph.
+segment. Until the helper profile `captured-types-3` it had no binding, so a
+declaration of that name that captured a use was not visible in the graph.
+It has one now, see [primitive types](#rust-primitive-types).
 [A test](../integration/go/rust_semantics_test.go) pins this, and
 [Destinations](destinations.md#rust) states what it means for a recorded
 destination.
@@ -811,8 +817,9 @@ The provider-owned `rust` vocabulary is:
 | Graph element | Meaning |
 | --- | --- |
 | `module`, `alias`, `struct`, `enum`, `variant`, `field`, `trait`, `impl`, `parameter` entities | Native declaration identities, captured sites and owners |
+| `primitive` entities | A primitive type that the source uses, named as the language names it. No crate defines it: it has no owner, no site and no compiler path. See [primitive types](#rust-primitive-types) |
 | `Reference` / `Application` | Native types and effective arguments; shared `DirectParameterBindings` applies |
-| `target` bindings | Compiler-resolved path segments at captured nodes |
+| `target` bindings | What the compiler resolved a name to, at every captured path segment and primitive type node |
 | `declared-type` facts/occurrences | Checked type of each captured type declaration or field |
 | `native-type`, `display` facts | Native type handles and diagnostic spelling; display is never identity |
 | `fields`, `variants` facts | Ordered local ADT structure, substituted field types, field names and declaration identities. A field's visibility is the `declared-visibility` fact of its entity |
@@ -840,6 +847,14 @@ resolution receipt compares the profile before the configuration. `rust.Open`
 meets the configuration first: it reads the environment from the receipt's
 settings before it admits the receipt.
 
+**The binding of primitive types kept that version.** It added an entity kind
+and bindings and removed or changed no member of the vocabulary. The line
+drawn on [#278](https://github.com/Bitspark/bittype/issues/278#issuecomment-6845046456)
+is: "An addition does not break a reader, a removal does." A reader written
+for the graph without these bindings reads the graph with them, so the
+promise of the version holds. The helper profile changed, as it does whenever
+facts are added, see [the helper profile](#rust-helper-profile).
+
 Generic parameters retain their actual owning declaration and slot. Rust's
 implicit trait `Self` is a distinct binder even though rustc internally reuses
 the trait's `DefId`. Same-spelled `T` parameters in different declarations never
@@ -848,6 +863,80 @@ types. Recursive local types use entity/fact links, not cyclic term containment.
 Aliases keep their declaration identities while their native type can normalize
 to another declaration. Source path bindings still identify the alias. This slice
 does not export a semantic occurrence for every nested source type expression.
+
+### Rust helper profile
+
+**The helper profile is `captured-types-3` since 13 November 2026.** It names
+the facts that the helper writes, and
+[decision 4 on #278](https://github.com/Bitspark/bittype/issues/278#issuecomment-6837795209)
+is: "The helper's profile name changes when facts are added." The helper began
+to bind [primitive types](#rust-primitive-types), so the name changed from
+`captured-types-2`. Settings with `captured-types-2` are invalid input for
+both providers and for `rust.Open`, like those with `captured-types-1`, so a
+receipt of the helper without these bindings is not read as one with them.
+The two profile strings did not change with it, see
+[the vocabulary](#rust-vocabulary).
+
+**The helper states its profile.** The `helper` setting is stated by the Go
+side. Since the same change the helper states the name itself: every
+response carries the member `Profile`, also a response without a graph. The
+bridge compares it with `rust.HelperProfile` and refuses every other value,
+and a response without the member, with `rust.ErrCompiler`. That is the
+refusal for a helper that was built with another compiler: an operational
+error of the collaborator that the caller provisioned. It is not invalid
+input, because the request is well formed and succeeds with the right helper.
+It is not unsupported coverage, because no later profile admits the request
+with that binary. Until this change a helper binary of an earlier change was
+caught only because the request had gained a member that the earlier helper
+refuses. The name is declared once for the Go side, in
+`semantics/rust/go/vocabulary.go`, and spelled once in the helper. The tests
+of the bridge package read the member as the helper writes it and run the
+bridge against responses with another profile and with none, and
+`TestRustHelperNamesMatchVocabulary` fails first when the two sides differ.
+
+### Rust primitive types
+
+**13 November 2026** ([#276](https://github.com/Bitspark/bittype/issues/276),
+[decision 2](https://github.com/Bitspark/bittype/issues/276#issuecomment-6837794385)).
+A primitive type is no keyword. A struct, an enum, an alias or a generic
+parameter named `bool` captures a use of `bool`, and the node of the use
+spells `bool` either way. The helper therefore binds every `primitive-type`
+node, under the role `target` of a path segment, to what the compiler
+resolved the name to.
+
+- **The entity of a primitive type** has the kind `primitive`
+  (`rust.PrimitiveKind()`). Its name is the name that the language gives the
+  type: `bool`, `u8`, `str`. No crate defines a primitive type, so the entity
+  has no owner, no declaration site, no parameters and no compiler path. A
+  graph holds one for each primitive type that its source uses, and every use
+  of the type binds to it.
+- **A captured use** binds to the declaration or the generic parameter of
+  that name, which is an entity of another kind. In
+  `pub struct bool {} pub struct S { pub ok: bool }` the node `bool` of the
+  field binds to the struct `pages::bool`.
+- **Every primitive type, not only `bool`.** A declaration named `u8`
+  captures a use of `u8` in the same way. The Rust symbol package issues a
+  destination for `bool` only, and [Destinations](destinations.md#rust)
+  states how the binding establishes it.
+- **Every primitive type node is bound, or no graph is published.** A node
+  without a binding is unsupported coverage, as a path segment without one
+  is. The parser gives the helper no such node, and a test of the bridge
+  package sends one through the private protocol.
+- **A path that the compiler resolves to a primitive type,**
+  `::std::primitive::bool`, binds its last segment to the same entity. Such a
+  path was unsupported coverage before this change.
+- **The native type is what it was.** The type of a `bool` field is a
+  `primitive` expression that carries the name as data and refers to no
+  entity. The entity kind and the operator share a word and nothing else. A
+  changed term would be a changed member of the vocabulary and would need a
+  new version of the profile.
+- **The readers.** `Model.Declaration(id)` opens the entity by the id that a
+  binding carries. `Lookup` selects compiler paths, and a primitive type has
+  none, so `Lookup` never selects it: a crate may be named `bool`, and
+  `Lookup("bool")` is then its root module, as it was. `Visibility()` and
+  `Effective()` fail with `rust.ErrMissingFact`, because Rust gives a
+  primitive type no visibility. `Type()` is invalid, `Parameters()` is empty,
+  and `PrivateInterface()` returns none.
 
 ### Rust visibility facts
 
@@ -903,9 +992,9 @@ and refuses an audience or a path that it does not know.
 **A missing fact never means private.** Both readers fail with
 `rust.ErrMissingFact` when the graph has no such fact for the declaration,
 more than one, or one in another form. The crate root, variants, impls,
-parameters and sysroot declarations carry neither fact, because Rust gives
-none of them a visibility modifier of its own, and a reader that is asked for
-one fails. Fields carry the declared fact only.
+parameters, sysroot declarations and primitive types carry neither fact,
+because Rust gives none of them a visibility modifier of its own, and a reader
+that is asked for one fails. Fields carry the declared fact only.
 
 **The forms, exactly.** A declared term is `public` without an operand or
 `restricted` with one operand, a module, and carries no data. The data of an
@@ -968,12 +1057,6 @@ holds the compiler's errors for a source that the compiler rejects.
   helper does not force it and publishes no fact for it.
 - **A limit.** The fields reader does not require a field's entity to be of
   the field kind, because the vocabulary publishes no name for that kind.
-- **A limit.** The helper does not report which facts it writes. The helper
-  profile is a setting that the Go side states alone, so a helper binary of
-  an earlier change is caught today only because the request gained a member
-  that the earlier helper refuses. It goes with the next change of the helper,
-  the binding of `bool` in
-  [#276](https://github.com/Bitspark/bittype/issues/276).
 
 `rust.Open(analyzed)` admits the exact completed analysis receipt of a
 supported environment and reads the graph without a compiler invocation.
@@ -992,7 +1075,8 @@ rejected validity with a captured-node diagnostic. Unsupported forms report
 unsupported coverage. None publishes partial semantics. Contradictory source/AST
 captures, false references, settings of no environment and foreign receipts are
 request errors. An environment outside the profile is refused as unsupported,
-before the compiler runs. Helper/toolchain failures are operational errors. Cancellation stops the
+before the compiler runs. Helper/toolchain failures are operational errors, and a helper
+that states another profile than the vocabulary publishes is one. Cancellation stops the
 child process. The bounds are 4,096 AST nodes and 1 MiB source, 16,000 native type
 handles, 32,768 semantic records, export depth 128, a 30-second process deadline, 16 MiB response and
 256 KiB stderr. Shared capture/publication budgets apply independently.
@@ -1002,7 +1086,9 @@ nested substitution, defaults, binder ownership, recursion, module paths, marker
 traits, invalid/unsupported/incomplete outcomes, source correspondence and receipt
 isolation. They cover the declared and the effective fact of every kind of
 item, the declared fact of fields, a graph with one fact removed, the
-private-interface observation and the environment's refusals. The
+private-interface observation and the environment's refusals. They cover the
+binding of every primitive type and its capture by a declaration and by a
+generic parameter of that name. The
 [unit tests of the vocabulary](../semantics/rust/go/environment_test.go) pin the
 bytes of the settings and read every malformed form of a fact. The [installed consumer](../integration/go/testdata/installed/rust_semantics_test.go)
 uses the published Go module with an explicitly provisioned helper. Immutable

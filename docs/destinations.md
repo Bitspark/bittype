@@ -232,13 +232,50 @@ segment binds to the root module of `std`, and the compiler accepts the path.
 That is why Rust Files realizes an external use as an absolute path in its
 first slice and as nothing else.
 
-**Primitive.** `Bool()` identifies Rust's primitive type `bool`. The helper
-publishes bindings for path segments only, so a declaration or a generic
-parameter named `bool` that captures a use is invisible today. `Bool()`
-therefore records a destination that no evidence can establish yet.
-[Decision 2 on #276](https://github.com/Bitspark/bittype/issues/276#issuecomment-6837794385)
-gives the primitive node a binding from the helper. Rust Files cannot establish
-this destination before the helper publishes it.
+**Primitive.** `Bool()` identifies Rust's primitive type `bool`. It is the one
+primitive type that is issued today, because it is the one that the Rust
+target writes. No crate defines a primitive type, so it has neither a written
+path nor a path of its definition, and it is established by another rule than
+an item.
+
+Since 13 November 2026 the Rust bridge binds every `primitive-type` node,
+under the role `target`, to what the compiler resolved the name to
+([decision 2 on #276](https://github.com/Bitspark/bittype/issues/276#issuecomment-6837794385):
+"Rust `bool` gets a Rust-issued symbol and a binding from the helper"). Where
+nothing captures the name, that is the entity of the primitive type: an entity
+of the kind `primitive` (`rust.PrimitiveKind()`) whose name is the name that
+the language gives the type, without an owner and without a declaration site.
+A graph holds one such entity for each primitive type that its source uses. A
+use therefore reaches the destination `Bool()` when the binding at its node
+names an entity of the kind `primitive` whose name is the symbol's, `bool`.
+The kind is compared and not the name alone: a crate may be named `bool`, and
+its root module is an entity of the kind `module` with that name.
+
+A declaration named `bool` that is in scope captures the use, and the binding
+shows it. A struct, an enum or an alias named `bool` is an entity of the kind
+`struct`, `enum` or `alias`, named by its crate and its path, such as
+`pages::bool`, with an owner and a declaration site. A generic parameter named
+`bool` is an entity of the kind `parameter` whose owner is its declaration. A
+use that one of them captures binds to another entity than the destination,
+and the comparison of statement 1 sees it. The capture follows the scope: in
+`pub mod m { pub struct bool {} pub struct S { pub ok: bool } } pub struct T { pub ok: bool }`
+the use in `S` binds to the struct `pages::m::bool` and the use in `T` to the
+primitive type. `TestRustSemanticPrimitiveTypeCapture` in
+[the provider tests](../integration/go/rust_semantics_test.go) shows a struct,
+an alias, an enum and a generic parameter of that name.
+
+The helper binds every primitive type and not only `bool`: a declaration
+named `u8` captures a use of `u8` in the same way. A second primitive symbol
+is then an addition to the symbol package, and it changes nothing about the
+binding of `bool`. The entity is the type itself and no export. A path that
+the compiler resolves to the primitive type, `::std::primitive::bool`, binds
+its last segment to the same entity. As for every item, that is the canonical
+type underneath the path: by statement 2 the item `primitive::bool` of `std`
+is another destination than `Bool()`, and an `Item` symbol is established by
+its written path.
+
+Nothing compares a use with this destination yet. Rust Files does, in slice 1
+of #159.
 
 ## Who enforces completeness
 
@@ -257,8 +294,8 @@ TypeScript does, and is asserted by a test per target over sealed outputs".
   admits it. An external use that the language's issuer cannot read, or whose
   node is no name use or does not name the symbol, is invalid input too. An
   external destination that the formatter's evidence cannot establish is
-  unsupported coverage: a later slice can admit it. Rust's `bool` is one as
-  long as the helper publishes no binding for a primitive type.
+  unsupported coverage: a later slice can admit it. Rust's `bool` was one
+  until the helper bound primitive types, on 13 November 2026.
 - **A test per target** reads sealed outputs and asserts that every name use
   carries exactly one of a reference and an external use, and that every other
   node carries neither:
@@ -294,7 +331,9 @@ Nobody places Go or Rust output yet.
   that misses its destination, in either language.
 - C++ records no destination for `::std::string`, `::std::vector`, the
   external form, the namespace segment or the includes.
-- The Rust helper publishes no binding for a primitive type.
+- The Rust symbol package issues one primitive type, `bool`. The helper binds
+  every primitive type, so the evidence for another one exists before its
+  symbol does.
 - A recorded use counts against three limits of an output. The seal refuses
   more external uses than `Limits.References`, which on `main` did not bound
   the text, boolean, list and optional uses of a Go or Rust output. Each use
