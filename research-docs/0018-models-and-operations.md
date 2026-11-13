@@ -125,7 +125,9 @@ neither is a constraint: section 5.3 lists eight such disagreements.
 Quotations of code give the file and the line at the code baseline, which is
 bittype's main branch at commit a28febc
 (a28febc44830d49ec3c2f22cd70c7ded9d0e5028) of 13 November 2026. All code is
-Go unless marked. Quotations of documents give the file. Numbers come from
+Go unless marked. Quotations of documents give the file. Where a quoted
+sentence held a Markdown link, the quotation keeps the link's text and drops
+its address. Numbers come from
 two investigation notes that read the main branch on 13 November 2026, and we
 recounted the totals at the code baseline. A glossary is in section 8.
 
@@ -252,3 +254,315 @@ organization, and section 2.1 gives them in full.
 
 The second rule is why this document can ask its question at all. A layout
 that touches every package is a legitimate answer if it is the right one.
+
+## 2. Architectural context
+
+Each subsection states the standing of what it holds.
+
+### 2.1 Standing architecture rules (AC = architectural correctness)
+
+Standing: owner rules, except where a paragraph says otherwise. They are
+written down in two pages of the organization's shared documentation
+repository, called the platform. They apply to every project. bittype follows
+them and keeps a numbered record of each violation it finds, a **case**
+(bittype's cases are named ACX-001 to ACX-010).
+
+There are eleven numbered rules. The table gives each requirement in the
+rule's own title.
+
+| Rule | Requirement |
+| --- | --- |
+| AC-01 | Architecture is part of correctness. |
+| AC-02 | Meanings remain with their semantic owners. |
+| AC-03 | Extensions compose additively. |
+| AC-04 | Contributions use the same public mechanism. |
+| AC-05 | Composition preserves guarantees. |
+| AC-06 | Limited coverage does not redefine the architecture. |
+| AC-07 | Evidence supports only the claims it establishes. |
+| AC-08 | General contract changes require a general justification. |
+| AC-09 | Design interfaces independently of the implemented surface and the effort to change it. |
+| AC-10 | Correct a misplaced responsibility first; add missing coverage afterwards. |
+| AC-11 | Agnostic mechanisms belong in the agnostic layer. |
+
+Six passages bear on this document.
+
+**The central rule** (owner direction of 6 November 2026):
+
+> A reusable mechanism owns the invariant rules of its operation. Domain-specific
+> meanings and policies belong to independently supplied implementations. Within
+> the declared extension boundary, adding a new case must require changes only
+> to its owning implementation and the consumer's composition, not to shared
+> orchestration or existing unrelated implementations.
+
+The same page says what does not settle ownership: "Semantic ownership is
+about who defines a meaning and how that meaning enters an operation. It is
+not determined by a directory, package name, generic type parameter or the
+word "plugin"."
+
+**AC-09, no weight for what exists** (owner direction of 8 November 2026).
+Section 1.5 quotes its core. Its application clause says what the existing
+code may be used for: "First settle the intended contract. Then use the
+existing implementation to plan migration, estimate the work and decide which
+code fulfills that contract. Those estimates can guide delivery sequencing
+only."
+
+**AC-10, a misplaced responsibility moves first** (owner direction of 11
+November 2026). The owner's words:
+
+> if something is placed incorrectly, it is incorrect and must change. Something that is missing can be healed additively, i.e. there is nothing wrong requiring removal.
+
+> no compromise on architecture, but practical deferral is allowed, if the huge effort justifies it.
+
+The requirement derived from them: "Separate a correction into what is in the
+wrong place and what is only absent. Move a misplaced or wrongly named
+responsibility to its owner first, as its own change, without waiting for the
+complete implementation of its destination. That first change establishes the
+final structure: its inputs and identities have their intended shape, it
+keeps every guarantee the destination's shared mechanism requires for the
+cases it admits, and it explicitly refuses the cases it cannot yet check.
+Missing coverage is then added without moving, renaming or removing what
+exists." Its assessment asks: "After the first change, does any planned step
+have to move, rename or remove what that change delivered?" A deferral of the
+move itself "is permitted only when its destination needs a huge effort", and
+then the violation stays open and recorded.
+
+**AC-11, agnostic mechanisms** (owner clarification of 13 November 2026). "A
+language-agnostic mechanism belongs in the agnostic layer. Each language
+supplies its own types, meanings and policies through the shared contract."
+Its requirement: "Place a mechanism according to the knowledge its contract,
+algorithm and guarantees require. When these are independent of a language or
+domain, implement the mechanism once in the corresponding agnostic layer.
+Supply the variation through typed parameters, data or independently owned
+implementations." This rule is of the same day as this document. bittype
+has recorded one case under it, a forwarding adapter of the horos mapping
+side. No page has applied the rule to the question asked here.
+
+**Grouping before coupling, and what a dependency check is** (owner request
+of 11 November 2026, with the platform's reading of it). The owner asked to
+check for packages "that contain multiple implementations / functionalities
+that either already are separate and neither conceptually nor practically
+depend on each other, or which still depend on each other but shouldn't", and
+to enforce the result "through forbidden dependencies that we could check for
+and enforce". The platform page separates two faults:
+
+| | Wrong grouping | Wrong coupling |
+| --- | --- | --- |
+| What it is | Parts that do not need each other share one package or module | A contribution names another contribution that the consumer is meant to choose |
+| What is wrong | The boundary. No dependency between the parts is wrong | The dependency. The caller makes the shared mechanism's choice |
+| Correction | A move | A demand that the shared mechanism resolves |
+
+"The first hides the second. A dependency check reads a unit, usually a
+package. Whatever is inside one unit can reach everything else in it unseen.
+Correct the grouping first, as AC-10 orders, and the coupling becomes
+visible." The page then says when a forbidden-dependency check can enforce a
+decided boundary, namely "when each unit has one role", and gives the roles
+that section 2.5 shows for bittype. It ends with a limit that question 4 of
+this document rests on: "Such a check enforces a boundary that reasoning has
+already decided. It does not contradict the paragraph on lint gates above,
+and it does not replace that reasoning: it cannot see a decision made inline,
+it cannot judge whether a unit holds one contribution, and a green run shows
+only that the forbidden edges are absent."
+
+**Deriving before extending, and unification.** Both come from the platform's
+method page on semantic ownership and generalization. The page is recorded in
+an owner decision of 6 October 2026. On 7 October 2026 the owner required
+designers to derive a case from existing concepts before proposing an
+extension. The page states that requirement so: "An extension needs a
+concrete case that the existing contracts cannot express or uphold, together
+with an explanation of why composition does not resolve it. Distinguish that
+conceptual gap from missing code, an unspecified encoding or an unimplemented
+connection between existing contracts."
+
+On unification the page says:
+
+> Unification claims that apparently separate concepts share one semantic
+> contract. It therefore needs stronger evidence than overlapping fields or
+> similar code.
+>
+> Compare identity, lifetime, authority, allowed operations, guarantees and
+> failure behavior. A consumer using the proposed common contract must retain
+> the same guarantees when one valid specialization is substituted for another.
+> Differences must be represented explicitly rather than erased.
+
+Its table of findings and responses:
+
+| Finding | Appropriate response |
+| --- | --- |
+| Different names, same contract and compatible ownership | Unify terminology and the contract; plan the implementation change explicitly. |
+| Shared laws with meaningful domain variations | Define a common contract with typed specializations or composition. |
+| Similar mechanics but different contracts | Share implementation where useful while preserving the semantic distinction. |
+| Independent identities or lifetimes | Keep separate concepts and define their relationship. |
+| Overlapping roles of the same data | Model the roles or relations without forcing a single inheritance hierarchy. |
+| Evidence does not settle the equivalence | Record the competing interpretations and the case needed to decide. |
+
+We treat the derivation requirement as an owner rule. We treat the
+unification test as an accepted principle of the platform and not as the
+owner's own words: the page records the owner's request, and it does not
+quote the owner on unification.
+
+### 2.2 The generic carriers
+
+Standing: implemented today. Section 3.1 and 3.4 inline the types.
+
+A **carrier** is a generic data type that holds one kind of artifact for
+every language. It knows no language. bittype has six carrier packages.
+
+| Carrier | What it holds | Checked by |
+| --- | --- | --- |
+| **AST** (abstract syntax tree) | One tree as a flat list of nodes. A node is a kind, a list of attributes (a name and a text), a list of children (a role and a node index), a list of references (a role and the address of a node in some tree) and an origin (source spans and contributing nodes) | A structure check in another package: valid indices, no cycle, no node with two parents, bounds on size and depth |
+| **CST** (concrete syntax tree) | One concrete tree. A node is a leaf with text or a container with children. The CST owns an AST and links concrete nodes to abstract nodes | A structure check in another package |
+| **Envelope** | A type-erased, structurally checked, immutable snapshot of an AST, a CST or a semantic graph, and the descriptor of a language (its identifier, display name, a profile string and its Go marker type). The kernel carries envelopes because it names no language | The envelope calls the two structure checks when it packs a tree |
+| **Semantic graph** | The analysed meaning of one captured program: entities, terms, bindings of occurrences to entities, expressions at occurrences, dependencies and facts. A term has one of three fixed variants: a reference to an entity, an application, or a **provider expression** (an operator, an encoding, bytes and operands, all owned by the language's provider). Every other name in the graph is a key, a pair of an owner string and a name | Its own constructor: graph integrity and bounds only. "Applicability, arity and saturation belong to the provider, not graph admission" (comment on the term type) |
+| **Files** | Supplied text files with their identifiers and paths. No file system access | Its own constructor |
+| **Source** | Placed concrete files together with the semantics established for them: units, groups, relations, and the receipt of the analysis | A publisher that runs under a policy with two callbacks, one for printing and one for a language's own check |
+
+**How a language attaches to the carriers.** Three mechanisms exist.
+
+1. *A marker type as a type argument.* Each language declares one empty Go
+   struct type. The carriers are generic in it: the AST of Go is the generic
+   AST instantiated with Go's marker. The Go compiler therefore refuses to
+   pass a tree of one language where another's is expected. Node kinds are
+   string constants of a type that carries the marker. Role names and
+   attribute names are plain string constants.
+2. *Keys with an owner.* In the semantic graph a language's names are keys
+   whose owner is a string such as `go` or `rust`. Nothing registers a key.
+   The graph stores it, and the language's own code compares it.
+3. *Issued values.* In generation a language's intended forms and external
+   symbols are values created by an **issuer**, an object that the language's
+   package holds privately. Only the issuer can read a value it issued. The
+   identity is the issuer's pointer, and the content is a string.
+
+So for syntax the carrier is the whole data structure, and a language adds
+names. No language declares a struct type for a node. The shape that a tree
+of a language must have is neither in the carrier nor in the names. It is in
+the language's checker (section 3.2).
+
+For the semantic graph a language adds names and also Go types: handles that
+read the graph in the language's own terms, such as "the fields of this
+struct type".
+
+### 2.3 Stages, the two dimensions and the path form
+
+Standing: owner decisions, as the repository's pages record them, and what
+is implemented under them.
+
+**Two dimensions.** The page `docs/source.md` records an owner decision of 4
+November 2026. It arranges the stages in two parallel rows:
+
+```text
+Syntax : CST    : AST
+Files  : Source : Semantics
+```
+
+| Role | Syntax | Files |
+| --- | --- | --- |
+| External form | Text | File set |
+| Concrete representation | CST | Source |
+| Abstract representation | AST | Semantics |
+| Parse | Text → CST | Files → Source |
+| Format | AST → CST | Semantics → Source |
+| Print | CST → Text | Source → Files |
+
+The page adds: "Files and Syntax are processing dimensions, not language
+IDs." Resolution and analysis "operate on the semantic side of the Files
+dimension". We call the last stage of generation, which places generated
+declarations into files, the **Files stage** of a target language.
+
+**The stages** are parse, check, format and print in the Syntax dimension,
+parse, format and print in the Files dimension, resolve and analyze, and
+transform. The directory `transform/` holds generation. A separate directory
+holds verification.
+
+**The path form.** Two owner decisions fix where an implementation lives. No
+file that we read quotes the owner's own words of either day. The layout page `LAYOUT.md`
+records them so:
+
+> **Owner decision, 31 October 2026:** organize by processing stage and enforce a
+> uniform structure across languages. The stage-by-language matrix is deliberate:
+> the same responsibilities occupy the same paths, making omissions and drift
+> visible.
+
+> **Owner decision, 6 November 2026:** the accepted
+> kernel-owned composition and uniform layout
+> uses `<stage>/<dimension>/<scope>/<component>/go`, with generic factories in
+> kernel/contracts and no per-pair assembly or presets. This hierarchy is implemented.
+
+The same page explains the form: "Implementations use the same stage,
+dimension, scope, component and implementation-language order. A scope
+identifies one language, an ordered pair or shared machinery. Go packages use
+their role name. Syntax vocabularies retain their language names." The final
+`go` names the implementation language. The page also says: "Private helpers
+are not an alternative public API. Do not create a language-first packages
+tree, additional Go modules, compatibility aliases or placeholder source
+directories."
+
+Examples of the form at the code baseline:
+
+| Path | What it is |
+| --- | --- |
+| `parse/syntax/rust/provider/go` | The Rust parser |
+| `check/syntax/golang/provider/go` | The Go checker, which holds Go's grammar table |
+| `check/syntax/shared/ast/go` | The structure check of the generic AST |
+| `format/files/typescript/provider/go` | The TypeScript Files stage |
+| `analyze/files/golang/queries/go` | A query service over analysed Go |
+| `transform/syntax/golang/target/go` | The Go generation target |
+| `transform/syntax/golang/model/go` | Go's intended forms |
+| `transform/syntax/horos-to-golang/mapping/record/go` | The mapping rule for horos records into Go |
+
+**What is outside the form.** The carriers (`trees/*/go`, `files/go`,
+`source/go`, `semantics/go`), the contract packages (`contracts/*/go`), the
+engine, the private helpers under `internal/`, the tools, and two kinds of
+vocabulary: `syntax/<language>/go` and `semantics/<language>/go`. The two
+other kinds of vocabulary, `model` and `symbol`, are inside the stage
+directory `transform/`.
+
+The history of that difference, as an investigation of the repository's
+history found it (implemented today, and our reading of the history): the
+syntax vocabulary was listed beside the stages from the first day of the
+stage-first layout. The semantic graph came on 2 November 2026. The directory `transform/` came on 7 November 2026. The four
+model packages were created inside it on 8 November 2026 by the change that
+separated the planning of intended types from the construction of trees. That
+commit has no message body. Section 5.2 says what no page decides about this.
+
+The owner who decided the stage-first layout is the one who now proposes the
+change.
+
+### 2.4 The contract packages
+
+Standing: implemented today. The column "value types" against "protocol" is
+our derivation.
+
+A **contract** here is the interface between one operation's shared mechanism
+and its independently owned contributions. Each operation has one contract
+package. It declares the Go interface that a contribution implements. It also
+declares the values that pass through the operation: inputs, limits,
+diagnostics, receipts. And in several cases it holds the code that admits a
+request and seals a result, because only that code may create a value that
+later stages trust.
+
+| Contract package | Lines | Value types it declares | Protocol and admission code it holds |
+| --- | --- | --- | --- |
+| `contracts/language/go` | 25 | The identifier of a language and the two-method interface that returns it | None |
+| `contracts/text/go` | 45 | A diagnostic: a code, a message, a span, a node | One constructor of a diagnostic at a node |
+| `contracts/pipeline/go` | 18 | None | One function type. No production package imports it |
+| `contracts/check/go` | 72 | None | The checker interface and its type-erasing adapter |
+| `contracts/parse/go` | 258 | The parse input, the Files input and limits | The parser interfaces for Syntax and Files, and the request through which a Files parser publishes |
+| `contracts/format/go` | 658 | The Files input, the placement of generated declarations, the placed declaration | The formatter interfaces, and the admission of a placement |
+| `contracts/print/go` | 151 | None | The printer interfaces |
+| `contracts/transform/go` | 151 | The transformation input and its contract description | The transformer interface and the admission of a request |
+| `contracts/semantic/go` | 1,047 | Obligation, requirement, verdict, report, diagnostic, setting, limits, evidence requirement, and two handles: the **snapshot** (a captured, admitted input) and the **receipt** (the result of one semantic operation over a snapshot) | Capture, the operation runner, publication and the admission of evidence |
+| `contracts/resolution/go` | 93 | The resolution contract description | The resolver interface |
+| `contracts/analysis/go` | 83 | The analysis contract description | The analyzer interface |
+| `contracts/generation/go` | 2,135 | The carrier of intent (forms, expressions, declarations: about 140 lines), the issuers of symbols and values, the description types of a mapping, errors and limits. Together about 470 lines | The target and mapping interfaces, the planner, the freezing of descriptions, the sealing of an output, the walk over the source graph. About 1,650 lines |
+| `contracts/verification/go` | 294 | Participant, requirement, site, limits and the association handle | Capture and the check of sites |
+
+Three facts follow, and all three are implemented today.
+
+- No contract package imports a vocabulary of any language.
+- Every vocabulary of a language imports at least one contract package. The
+  syntax vocabulary imports `contracts/language/go` to state its identifier.
+  The semantic vocabulary imports the semantic, resolution and analysis
+  contracts. The model and the symbol package import the generation contract,
+  because every value they issue is a value of that contract.
+- The carrier of intent is not a carrier package. Forms and expressions are
+  declared inside the generation contract, beside the planner.
