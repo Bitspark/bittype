@@ -183,8 +183,8 @@ explicit entry per package, and a new package of either group is an edit:
   `contracts/<name>/go` is unclassified until it has an entry.
 - **Packages of which there is only one, `oneOfAKindRules`.** These are the
   private horos parts `internal/declsyntax`, `internal/horosmodel` and
-  `internal/horosfiles`, the TypeScript import reader
-  `internal/typescriptimports`, the projection
+  `internal/horosfiles`, the path and import helper of TypeScript Files
+  formatting `internal/typescriptimports`, the projection
   `verification/files/source/horos/go`, the horos-to-go verification pair
   `verification/files/horos-to-go/go`, the logos adapter
   `verification/logos/go`, the reporting-tool packages

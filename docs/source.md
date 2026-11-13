@@ -399,8 +399,11 @@ table above does not give it:
 - **The shared format and parse contracts.** A receipt or a graph of another
   snapshot and a setting key that is given twice return
   `semantic.ErrInvalidRequest`. An input over a semantic limit and a setting
-  over the configuration limit return `semantic.ErrLimit`. The shared parse
-  contract returns `files.ErrInvalid` and `files.ErrLimit` without a category.
+  over the configuration limit return `semantic.ErrLimit`. The shared contract
+  counts the input, so a limit of the request that the input exceeds carries no
+  category, while the same limit carries the limit category when the capture
+  of the fresh output exceeds it. The shared parse contract returns
+  `files.ErrInvalid` and `files.ErrLimit` without a category.
 - **The semantic stages.** A fresh output whose resolution, analysis or graph
   exceeds a limit returns `semantic.ErrLimit` or `semantics.ErrLimit`. Only the
   capture of the fresh output is joined.

@@ -8,7 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	analyze "github.com/Bitspark/bittype/analyze/files/horos/provider/go"
 	checkhoros "github.com/Bitspark/bittype/check/syntax/horos/provider/go"
+	"github.com/Bitspark/bittype/contracts/analysis/go"
 	"github.com/Bitspark/bittype/contracts/check/go"
 	"github.com/Bitspark/bittype/contracts/format/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
@@ -26,6 +28,7 @@ import (
 	filesparse "github.com/Bitspark/bittype/parse/files/horos/provider/go"
 	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
 	"github.com/Bitspark/bittype/semantics/go"
+	"github.com/Bitspark/bittype/semantics/horos/go"
 	n "github.com/Bitspark/bittype/semantics/typescript/go"
 	"github.com/Bitspark/bittype/source/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
@@ -913,6 +916,39 @@ func TestFilesFailureCategories(t *testing.T) {
 
 	// An error of the capture that is no value of the files package and no
 	// semantic limit gains no category: the formatter passes it on as it is.
+	// Only the capture of the fresh output is joined. A limit that the resolution
+	// of the fresh output exceeds is passed on as the resolver returns it.
+	add("the resolution of the fresh output exceeds the graph limit", typescript, nil, tsLimited(func(l *format.FilesLimits) {
+		l.Semantic.Semantics.MaxRecords = 1
+	}), semantic.ErrLimit, semantics.ErrLimit)
+	add("the resolver refuses its configuration under the configuration byte limit", horosName, nil, func(t *testing.T) (bool, error) {
+		// The request carries no setting. The resolver has one of its own, which
+		// it refuses when it resolves the fresh output under the request's limit.
+		settings := []semantic.Setting{{Key: horos.LimitsSetting(), Value: []byte("[256,100000,16777216,256]")}}
+		configured, err := analysis.NewAnalyzer[s.Language](definition, horos.AnalysisContractWithResolutionConfiguration(settings), analyze.Provider{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		options := semantic.Options{Configuration: settings}
+		configuredParser, err := filesparse.New(definition, parsehoros.Provider{}, syntaxPrinter, checker, resolver, configured, options, semantic.Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		formatter, err := filesformat.New(definition, parsehoros.Provider{}, formathoros.Provider{}, syntaxPrinter, checker, resolver, configured, options, semantic.Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		from, err := configuredParser.Parse(ctx, input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if published, err := horosFormat(formatter, from, format.FilesLimits{}); err != nil || !published {
+			t.Fatal("the input must format under the default limits", err)
+		}
+		limits := format.DefaultFilesLimits()
+		limits.Semantic.MaxConfigurationBytes = 1
+		return horosFormat(formatter, from, limits)
+	}, semantic.ErrLimit)
 	add("the capture refuses a fresh tree with an error of its checker", typescript, nil, func(t *testing.T) (bool, error) {
 		stages := placementStages(t, cell)
 		refusing, err := check.NewChecker[ts.Language](stages.Language, freshRefusal[ts.Language]{typescriptText(), "typescript/files/"})
