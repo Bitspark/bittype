@@ -515,9 +515,9 @@ A package's role follows from its path, which the [layout](../LAYOUT.md) fixes.
 
 | Role | Paths |
 | --- | --- |
-| Foundation | `trees/*/go`, `files/go`, `source/go`, `semantics/go`, `contracts/*/go` |
+| Foundation | `trees/*/go`, `files/go`, `source/go`, `semantics/go`, `model/syntax/go`, `contracts/*/go` |
 | Kernel | `engine/go`, `transform/syntax/shared/*/go`, `check/syntax/shared/*/go`, `print/*/shared/provider/go` |
-| Vocabulary | `syntax/<language>/go`, `semantics/<language>/go`, `transform/syntax/<native>/model/go`, `transform/syntax/<native>/symbol/go` |
+| Vocabulary | `syntax/<language>/go`, `model/syntax/<language>/lexical/go`, `semantics/<language>/go`, `transform/syntax/<native>/model/go`, `transform/syntax/<native>/symbol/go` |
 | Contribution | `<stage>/<dimension>/<language>/provider/go`, `analyze/files/<language>/queries/go`, `transform/syntax/<language>/{source,target}/go`, each mapping, each verification law and each capability extractor |
 | Common mapping part | `transform/syntax/<source>/mapping/go` and `transform/syntax/<source>/mapping/<part>/go` |
 | Private part | `internal/<language>` and `internal/<language>sem`, bound to their language by name. The other packages under `internal/` have explicit entries: five helpers of no single language in the foundation table, and four that the table `languageOwners` binds to one language |
@@ -569,12 +569,12 @@ at `71bfec9`, before the Go move, are in
 Every production package of the module is classified in one of three ways. A
 package with none of them fails as unclassified.
 
-- **By its role.** `packageRole` derives the rule from the path. 84 of the 127
+- **By its role.** `packageRole` derives the rule from the path. 91 of the 135
   production packages are classified this way. The
   [layout](../LAYOUT.md#dependency-direction) lists the roles and what each
   may import.
 - **By its entry in `foundationRules`.** The entry is the exact list of the
-  package's module imports. 31 packages have one.
+  package's module imports. 32 packages have one.
 - **By a hand entry.** The entry is again the exact list. 12 packages have
   one, and all are in `oneOfAKindRules`. `TestProductionArchitecture` holds no
   entry of its own since #246. A hand entry takes precedence over a role.
@@ -583,9 +583,9 @@ The tables:
 
 | Table | Entries | Holds |
 | --- | --- | --- |
-| `foundationRules` | 31 | The carriers, the contracts, the engine, the shared transform, check and print packages, and the five private helpers of no single language: `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil` and `internal/concrete` |
+| `foundationRules` | 32 | The carriers, the agnostic syntax model `model/syntax/go`, the contracts, the engine, the shared transform, check and print packages, and the five private helpers of no single language: `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil` and `internal/concrete` |
 | `oneOfAKindRules` | 12 | Packages of which there is only one: `internal/declsyntax`, `internal/horosmodel`, `internal/horosfiles`, `internal/typescriptimports`, `verification/files/source/horos/go`, `verification/files/horos-to-go/go`, `verification/logos/go`, the four packages `tools/provider-matrix/go`, `report/go`, `capability/go` and `observation/go`, and `tools/horos-module/go` |
-| `roleExtensions` | 10 | Per package, the imports that one language needs and its role does not give: six horos stage providers, three TypeScript packages and the horos declaration recipe. An extension must be used, must not repeat the role and lifts no prohibition |
+| `roleExtensions` | 12 | Per package, the imports that one language needs and its role does not give: six horos stage providers, three TypeScript packages, the Go and the Rust target and the horos declaration recipe. An extension must be used, must not repeat the role and lifts no prohibition |
 | `languageOwners` | 5 | The language of a package whose path gives no role: `internal/declsyntax`, `internal/horosmodel`, `internal/horosfiles` and `verification/files/source/horos/go` belong to horos, and `internal/typescriptimports` to TypeScript |
 | `providerExceptions` | 14 | Every import of a stage provider package or of a query service package outside a composition, with its symbols and reason. All fourteen are accepted and no entry names an issue. Thirteen name a stage provider: the calls of finding 9. One names a query service: `verification/files/horos-to-go/go` takes `Admission` from `analyze/files/golang/queries/go`. #246 deleted the two open entries, Go's `Contract` and `Admission` from the analysis provider |
 | `modelDependencies` and `modelExternalImports` | 8 and 10 | The external model packages that the production graph may hold, and the packages that may import each directly. Since #250 the entry of `verification/files/horos-to-go/go` names the horos declarations and the logos contract, and no ontos package |
@@ -595,7 +595,7 @@ How the test realises each of the six rules:
 | Rule | Realised as |
 | --- | --- |
 | 1 | A package in `foundationRules` imports exactly what its entry lists. It never imports a package outside that table, also when its entry lists one. So it imports no vocabulary, no contribution and no private part of a language |
-| 2 | The four vocabulary shapes have role lists of foundations and their own language's vocabulary. `semantics/<language>/go` and `transform/syntax/<native>/symbol/go` may also import their language's lexical helper. A vocabulary never imports a contribution, and `semantics/<language>/go` never imports a semantic helper. Both prohibitions hold under a hand entry and under an extension as well |
+| 2 | The four vocabulary shapes have role lists of foundations and their own language's vocabulary. A fifth shape, the lexical part of a language's syntax model (`model/syntax/<language>/lexical/go`), lists `model/syntax/go` only and is refused every syntax vocabulary, its own included, also under an extension. `semantics/<language>/go` and `transform/syntax/<native>/symbol/go` may also import their language's lexical helper. A vocabulary never imports a contribution, and `semantics/<language>/go` never imports a semantic helper. Both prohibitions hold under a hand entry and under an extension as well |
 | 3 | Each contribution shape has its own role list. A package that names a language imports no package of another language. A mapping names two. A role grants `internal/<language>` and `internal/<language>sem` only where the imported package is that language's helper by its own role. The role lists name a contribution in three places. A parser and a formatter import their own checker, and a semantic helper its own parser, each under rule 5. A mapping and a common mapping part import the source reader of their source language |
 | 4 | Enforced for stage provider packages and for query service packages, the two kinds that `selectedKind` names: an import of either by a package that is not a composition fails without an entry in the exception table. For the other contributions the role lists decide. No role lists a native target, a mapping, a law, a query service or an extractor. One explicit entry lists a query service: `verification/files/horos-to-go/go` names `analyze/files/golang/queries/go`, and its exception names `Admission` only. A role does list the source reader, as named under rule 3, and its importer may use any of its symbols. The check has no general statement that only a composition imports a contribution |
 | 5 | The exception table. An entry names importer, provider, symbols and reason. A use of another symbol fails. An unused entry fails, and so does an unused symbol. An entry that is listed twice, names no symbol, gives no reason, names a package that is neither a stage provider nor a query service, or names a composition as importer fails |

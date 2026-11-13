@@ -1,6 +1,6 @@
 # Models and operations
 
-**Design, 13 November 2026, from research 0018. The decisions M1 to M29 are the research owner's, `claude-contract-chain-issues`, all recorded on #305: M1 to M9 in the [grade](https://github.com/Bitspark/bittype/issues/305#issuecomment-6855741567), M10 to M18 on [nine choices](https://github.com/Bitspark/bittype/issues/305#issuecomment-6856947056) that the first version of this page left to that owner, [M19](https://github.com/Bitspark/bittype/issues/305#issuecomment-6857366489), which adjusts M11, [M20 to M27](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249) on the findings of an independent review of this page, [M28](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842), which corrects M21, and [M29](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859553686) on the second round of that review. Nothing on this page is implemented on `main`: the code there has the layout that [`LAYOUT.md`](../LAYOUT.md) describes.**
+**Design, 13 November 2026, from research 0018. The decisions M1 to M29 and M31 are the research owner's, `claude-contract-chain-issues`, all recorded on #305: M1 to M9 in the [grade](https://github.com/Bitspark/bittype/issues/305#issuecomment-6855741567), M10 to M18 on [nine choices](https://github.com/Bitspark/bittype/issues/305#issuecomment-6856947056) that the first version of this page left to that owner, [M19](https://github.com/Bitspark/bittype/issues/305#issuecomment-6857366489), which adjusts M11, [M20 to M27](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249) on the findings of an independent review of this page, [M28](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842), which corrects M21, and [M29](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859553686) on the second round of that review, and [M31](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860518608) on the first steps of slices S3a, S4 and S3b. Slice S3a is delivered on `main` ([section 10](#10-the-order-of-work)). Nothing else on this page is implemented there: the code has the layout that [`LAYOUT.md`](../LAYOUT.md) describes.**
 
 The owner directed on 13 November 2026 that the repository splits at its root
 into models and operations. This page says how the line is drawn, where every
@@ -52,7 +52,12 @@ This page does not repeat them.
   on the second round of the independent review, at `06d2100`. It corrects
   M28 in one count, states the standing of M27 and gives the work on the
   pairs' branch its slice.
-  [Section 11](#11-decisions-and-deferrals) lists all twenty-nine.
+- **M31:** the [decision of the same day](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860518608)
+  on the first steps of slices S3a, S4 and S3b, which their lane derived
+  from this page, the rules and the code before it built. It cuts the three
+  slices again and corrects two sentences of this page. M30, on the two
+  paths of M14 that waited, is recorded on #305 and is not on this page yet.
+  [Section 11](#11-decisions-and-deferrals) lists them.
 
 Code is quoted with its file and line on `main` at `0581401`. The existing
 code is given as a fact and never as a reason for a choice
@@ -778,6 +783,18 @@ Where the evaluator is the building
 toolchain, as for Go's identifier (`check.go:13`), the name is all that the
 model holds, and the language's page says so (sentence 2 of the test).
 
+**As slice S3a delivers it (M31).** A name is `Predicate{Owner, Name}` in
+`model/syntax/go`, in the shape of a semantic key and without importing it.
+An entry is `Attribute{Required, Predicate, OneOf}`. The owner of the shared
+names is `bittype`, as for the two keys of the semantic graph that no
+language owns (`contracts/analysis/go/provider.go:34`,
+`contracts/resolution/go/provider.go:27`), and a language's owner is its
+language identifier. The interpreter binds the shared names itself and takes
+a language's evaluators as a map from name to function
+(`internal/grammar.Evaluators`). A table that names a predicate without an
+evaluator fails every check before a tree is read, as unsupported: the tree
+was not judged, so it is not invalid.
+
 - *Reason:* a closed enumeration would be a shared edit for each new
   predicate of one language ([AC-03](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-03)).
 - *Not taken:* a closed enumeration of predicates in the package of the
@@ -968,16 +985,25 @@ What follows:
   `windowsDeviceNames` (`semantics/golang/go/environment.go:226`). Whether
   each is a declaration under the test of [section 2](#2-the-test) is open
   and is decided at the start of slice S5.
-- **How a table is written.** The entry constructors `Attr`, `One`, `Opt`,
-  `Many` and `Attributes` (`internal/grammar/rules.go:35-40`, `:72-78`)
-  refuse nothing and are construction, so they stay on the operations side
-  (row R7a). A table in a model package is a composite literal of the table
-  type.
+- **How a table is written.** A table is a composite literal of the table
+  type. The entry constructors `Attr`, `One`, `Opt`, `Many` and `Attributes`
+  (`internal/grammar/rules.go:35-40`, `:72-78`) refuse nothing and are
+  construction (row R7a). The first version of this page kept them on the
+  operations side. M31 corrects that: with the tables written as literals
+  they have no caller, and construction without a caller is not kept. Slice
+  S3a deletes them. A table is published by a function without input that
+  returns a fresh value, so that no importer can change it for another
+  (M31, by the derivation of [section 2](#2-the-test) that such a function
+  is a declared name). The tables get that form with slice S3b, when they
+  become reachable from other packages.
 - **One reader by path.** The grammar extractor of the documentation tool
   names the owner of the table type as the string
   `github.com/Bitspark/bittype/internal/grammar`
   (`tools/provider-matrix/extract/grammar/go/extract.go:16`). Slice S3
-  changes it with the type's package.
+  changes it with the type's package. The tool keeps reading source: that is
+  its accepted design, "A request contains only the selected definition
+  symbol, a captured source view and limits" (`docs/capability-reports.md:75-76`),
+  and importing the tables would put a list of languages into the tool (M31).
 
 **M14: the paths of the operations halves.** The general rule: a package or
 a half that this page does not name otherwise keeps its path below its
@@ -1026,7 +1052,7 @@ four rows are what the migration's branch adds (row R23).
 | The form-table type | `model/intent/go`, and each language's table in `model/intent/<language>/go` | Model | M4 places it. The name is M11 | S2 |
 | The grammar-table type (`internal/grammar/rules.go:15-33`) and the shared predicate names | `model/syntax/go` | Model | Row R7c places it. The place is M11 and M18 | S3a |
 | A language's grammar table | `model/syntax/<language>/go`, with the node kinds | Model | Row R7c places it. The place is M11 and M19 | S3b |
-| Lexical tables: a language's word lists, character tables and literal patterns, and the names of its predicates | `model/syntax/<language>/lexical/go` | Model | Row R7h places them. The place is M19 | S4 |
+| Lexical tables: a language's word lists, character tables and literal patterns, and the names of its predicates | `model/syntax/<language>/lexical/go` | Model | Row R7h places them. The place is M19 | S3a for the names, S4 for the lists (M31) |
 | The operations halves of split vocabulary packages | The four paths of M14 | Operations | M14. Two of the four wait for a decision (M27, M29) | S2 for the typed constructors. The general rule for the contract identities. The waiting part of S5 for the typed readers and for symbol admission |
 | The identity types of a contribution (`ContributionIdentity`, `Meaning`, `ContributionReference`, `SchemaReference`, `EvidenceKind`; on the migration's branch `contracts/generation/go/contribution.go:22-46`, `:138`), and the publisher name `Publisher` (on the branch `transform/syntax/horos/mapping/go/mapping.go:37`) | `model/contributions/go` | Model | Rows R7e and R23 place the types. The name is M11. `Publisher` is M28 | S7 |
 | A pair's contribution vocabulary (on the branch `transform/syntax/<source>-to-<target>/vocabulary/<name>/go`, 24 packages) | `model/contributions/<source>-to-<target>/<name>/go` | Model | Row R7g places it. The name is M11 | S7 |
@@ -1150,9 +1176,9 @@ checker in slice S2.
 | Today | After | Source |
 | --- | --- | --- |
 | `internal/{concrete,golangsem,horosfiles,horosmodel,lex,parseutil,rustsem,tree,typescriptimports,typescriptsem}` | `ops/internal/<name>`, whole | Row R21 |
-| `internal/grammar` | **Splits.** The table types `Attribute`, `Role`, `Rule`, `Rules` (`rules.go:15-33`) to `model/syntax/go`, with the names of the shared predicates. The interpreter `Check` (`:80`), the entry constructors and the predicates stay, at `ops/internal/grammar` | Row R7c; M11, M18 |
+| `internal/grammar` | **Splits.** The table types `Attribute`, `Role`, `Rule`, `Rules` (`rules.go:15-33`) to `model/syntax/go`, with the names of the shared predicates. The interpreter `Check` (`:80`) and the evaluators of the shared predicates stay, at `ops/internal/grammar`. The entry constructors are deleted (M31) | Row R7c; M11, M18, M31 |
 | `internal/{cpp,horos,rust,typescript}` | **Splits.** The word lists, the character tables and the literal patterns to `model/syntax/<language>/lexical/go`, with the names of the language's predicates. The evaluators and the literal decoders stay, at `ops/internal/<language>` | Row R7h; M19 |
-| `internal/declsyntax` | **Splits.** The horos grammar table (`check.go:67`) to `model/syntax/horos/go`. `Check` and the rules in code stay, at `ops/internal/declsyntax` | Row R7c; M11 |
+| `internal/declsyntax` | **Splits.** The horos grammar table (`check.go:67`) to `model/syntax/horos/go`. `Check` and the rules in code stay, at `ops/internal/declsyntax`. Its copy of the horos identifier rule is deleted, and it binds the name to the lexical helper's evaluator (M31) | Row R7c; M11, M31 |
 
 **Verification (7).** All whole, to `ops/<same path>` (row R22):
 `verification/files/horos-to-go/go`,
@@ -1441,9 +1467,9 @@ The validation of a slice is quoted from the table "Applied" of research
 | S1 | `CheckMember` leaves the four intended-forms packages, and the target states it. **Delivered on the branch,** with commit `8c96c78`: one rule in the shared target package (`transform/syntax/shared/target/go/check.go:64` on the branch) and a method of each target (`transform/syntax/golang/target/go/provider.go:138`) | The migration's branch, pull request #308 | Nothing | "a test that fails while a check sits in a model package, red on the branch before the move" |
 | S7 | The identity types of a contribution and the publisher name `Publisher` go to `model/contributions/go` (M28). The 24 contribution vocabularies go to `model/contributions/<source>-to-<target>/<name>/go`, the six family vocabularies to `model/families/horos/<name>/go`, and the two profile identities of the common mapping package to `model/families/horos/go`. First step: the six methods on the identity types become functions of the generation contract (M28, M29) | The migration's branch | S0 | "no vocabulary or family package imports the generation contract; the plan digests unchanged". Widened by M21: nor the common mapping package |
 | S2 | The split of the four intended-forms packages of the migration's branch ([section 5](#5-intent)). Both halves are created at their final paths and the old package is removed (M22) | The migration's branch, as its own pull request | S0 and S7 | "the five intended-forms packages hold no function; one checker test per table, red by mutant; outputs equal by digest". By M22 the packages that hold no function are the four `model/intent/<language>/go` of this slice. The fifth, horos, is split on the pairs' branch |
-| S3a | The agnostic syntax model `model/syntax/go`: the table type, the type of a predicate name and the names of the shared predicates (M25) | `main` | S0 | The interpreter's tests pass over the moved type, and a seeded import of an operation from `model/syntax/go` fails (derived here) |
-| S4 | The lexical part of each language, `model/syntax/<language>/lexical/go`: its word lists, character tables and literal patterns, and the names of its predicates, apart from their evaluators. With it the second keyword list of Rust | `main` | S3a (M25) | "the evaluators import the tables; a test red by a changed table entry" |
-| S3b | Each language's grammar table in its syntax vocabulary, with predicates named by identity | `main` | S3a, and for each language its lexical part of S4 (M25) | "the tables are data in a model package; the checker test red by mutant of a table entry" |
+| S3a | The agnostic syntax model `model/syntax/go`: the table type as plain data, the type of a predicate name and the names of the shared predicates (M25). For each language `model/syntax/<language>/lexical/go` with the names of its predicates and nothing else yet. The five tables stay where they are and are written as composite literals with names. The interpreter takes the evaluators as an argument, and each caller binds its language's names. The entry constructors lose their last caller and are deleted (M31). **Delivered on `main`** with pull request [#PRNUMBER](https://github.com/Bitspark/bittype/pull/PRNUMBER) | `main` | S0 | The interpreter's tests pass over the moved type, and a seeded import of an operation from `model/syntax/go` fails (derived here). By M31 each new import rule has a seeded import that breaks it |
+| S4 | The word lists, character tables and literal patterns join the lexical part of each language, and the evaluators read them. The second keyword list of Rust goes (M31) | `main` | S3a (M25) | "the evaluators import the tables; a test red by a changed table entry" |
+| S3b | Each language's grammar table moves, unchanged, into its syntax vocabulary, where a function without input publishes it as a fresh value. A set of words that a table entry admits and that a parser holds a second time is declared once there, and the parser reads it (M31) | `main` | S3a, and for each language its lexical part of S4 (M25) | "the tables are data in a model package; the checker test red by mutant of a table entry" |
 | S6 | The carriers: the records of `files/go`, `semantics/go` and `source/go` apart from admission | `main` | S0. The graph-carrier part also waits for #310, whose pull request #315 changes `semantics/go/model.go` (M25). The Source part waits for the two other parts, whose records it uses | "the import rule red by a seeded import from a model carrier into an operation" |
 | S5, the part that runs now | The semantic vocabularies: the names, profiles, payload shapes and input records go to `model/semantics/<language>/go`. The Go bridge writes its eleven literal keys through names that the Go vocabulary publishes (M26). TypeScript's symbol record goes to `model/symbols/typescript/go` (M20) | `main` | S0, #310, and the graph-carrier part of S6, whose `Key` the names are made of. The symbol record waits for S0 only: pull request #315 changes no file of the symbol package | "no model-side package imports a contract package; the import rule red by a seeded import". For the eleven keys, added by this page: a test over a graph that the Go bridge publishes for a corpus fails for a key that the vocabulary does not publish, and it is red by a mutant that makes the bridge write one more literal key. That test checks behaviour. It is no search of the source |
 | S5, the part that waits (M27, M29) | The typed readers leave the semantic vocabularies for their own package, and the admission half of the TypeScript symbol package gets its path. With the same decision the path of the symbol packages of Go and Rust | `main` | The part that runs now, and the decision on the two paths, which the evaluation of platform research 0004 brings | Row R7b, "The readers of `semantics/{golang,rust,typescript}/go` leave", is met only when this part is done |
@@ -1595,9 +1621,10 @@ from the first split on:
    S8. Nothing moves twice: the script of S8 moves only what is still at an
    old path.
    - A new package is created at its final path. By M19 the lexical part of
-     a language is a new package and is created at
-     `model/syntax/<language>/lexical/go` by slice S4. The table type is a
-     new package and is created at `model/syntax/go` by slice S3a.
+     a language is a new package. Slice S3a creates it at
+     `model/syntax/<language>/lexical/go` with its predicate names, and slice
+     S4 adds its lists (M31). The table type is a new package and is created
+     at `model/syntax/go` by slice S3a.
    - Only a part that joins an existing package joins it where that
      package is. That is the grammar table: by M11 it joins
      `syntax/<language>/go`, which is wholly model and takes its prefix in
@@ -1674,11 +1701,11 @@ derived here.
 
 | Question | Answer |
 | --- | --- |
-| Which slice creates `model/syntax/go`, and what is the type of a predicate name? | S3a. An owner-qualified name, "as a semantic key is" (M18). Its Go type is **S3a's first step** |
-| Do the anonymous predicates of C++ and Go get their names in S4 or in S3? | In S4, in the lexical part, with the language's other predicate names (M19). S3b replaces the function values in the table by those names and moves each anonymous function into the checker as a named evaluator |
-| For horos, which of the two identifier evaluators stays, and does `internal/declsyntax` import the lexical part? | It imports the lexical part for the names in either case, because it supplies evaluators by name. Which evaluator stays is **S4's first step**. The facts: both state one rule, `internal/horos` is the lexical helper by its role, and `internal/declsyntax` does not import it today |
+| Which slice creates `model/syntax/go`, and what is the type of a predicate name? | S3a. An owner-qualified name, "as a semantic key is" (M18). Its Go type is `Predicate{Owner, Name}` (M31) |
+| Do the anonymous predicates of C++ and Go get their names in S4 or in S3? | In S3a, in the lexical part, with the language's other predicate names (M19, M31). The first version of this page said that S3b replaces the function values in the table by those names. M31 corrects it: a table type with function values is not plain data, so it could not be the type that S3a puts on the model side, and changing its shape in S3b would change what S3a delivered (AC-10). So every predicate of the five tables is a name from S3a on, and S3a moves each anonymous function into the checker as a named evaluator |
+| For horos, which of the two identifier evaluators stays, and does `internal/declsyntax` import the lexical part? | It imports the lexical part for the names, because it supplies evaluators by name. `internal/horos.Identifier` stays: `internal/horos` is the lexical helper by its role. `internal/declsyntax` deletes its copy and imports the helper (M31). Delivered with S3a, where the name is bound for the first time |
 | Is the keyword list in `semantics/rust/go` in scope? | Yes. It is a copy of a lexical table and goes with S4 ([section 7](#names-below-the-roots)) |
-| What is the red test for Go, which has no table? | S4 creates Go's lexical part with two names and no list, so S4 has no table entry of Go to change. Go's red test is S3b's: its table names a predicate for which the checker supplies no evaluator, and the check fails |
+| What is the red test for Go, which has no table? | S3a creates Go's lexical part with two names and no list (M31), so S4 has no list of Go to change. Go's red test is S3a's: with one binding of the Go checker removed, its table names a predicate without an evaluator, and every check fails |
 | Where do `module.go` and `space.go` of `internal/typescript` go? | They stay whole at `ops/internal/typescript`. Each is a constraint that exists only as its evaluator and holds no list. A name for one of them is declared in the lexical part when a table names it. None does today |
 
 **S5.**
@@ -1713,8 +1740,9 @@ and recorded on #305: M1 to M9 in the
 M10 to M18 in the [decisions on this page's nine choices](https://github.com/Bitspark/bittype/issues/305#issuecomment-6856947056),
 [M19](https://github.com/Bitspark/bittype/issues/305#issuecomment-6857366489),
 M20 to M27 in the [decisions on the independent review](https://github.com/Bitspark/bittype/issues/305#issuecomment-6858493249),
-[M28](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842)
-and [M29](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859553686).
+[M28](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859046842),
+[M29](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859553686)
+and [M31](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860518608).
 
 | Decision | What it decides | Rows | Section |
 | --- | --- | --- | --- |
@@ -1747,6 +1775,7 @@ and [M29](https://github.com/Bitspark/bittype/issues/305#issuecomment-6859553686
 | M27 | Two paths of M14 are decided again when platform research 0004 is evaluated, and S5 creates neither before. M29 states its standing: a part of S5 that waits for a decision, and no deferral | R27 | [7](#names-below-the-roots), [10](#10-the-order-of-work) |
 | M28 | The publisher name lives in `model/contributions/go`, with the identity types, and every pair's vocabulary imports it from there. It corrects M21. The methods on the identity types become functions of the generation contract, as the first step of S7. M29 corrects one point: M28 counted three methods, and there are six | R23 | [7](#every-place-named), [10](#10-the-order-of-work) |
 | M29 | Six methods, not three, become functions in S7's first step. The typed readers leaving and the path of symbol admission are a part of S5 that waits for a decision, and S8 waits for S5 complete. The work that only the pairs' branch holds is the pairs' part of S7 and S2, and S8 waits for it | R7b, R23, R24 | [10](#10-the-order-of-work) |
+| M31 | The first steps of slices S3a, S4 and S3b. The final table type comes with S3a, so every predicate of the five tables is a name from S3a on, and S3a creates the lexical parts with their names. The entry constructors are deleted. A table is published by a function that returns a fresh value. The second copies of two word sets in the parsers end with S3b. The tool that reads a table keeps reading source. For horos the table bounds what is admitted of a tree without its references | R7c, R7h | [6](#6-declared-models), [7](#names-below-the-roots), [10](#10-the-order-of-work) |
 
 Two rows belong to no single decision. Row R23 places the identities of a
 contribution ([section 7](#every-place-named), slice S7). Row R25 takes one

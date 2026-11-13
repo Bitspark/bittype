@@ -1,7 +1,9 @@
 # bittype/ACX-015: Models hold operations and import operations
 
 **Status.** Identified on 13 November 2026 at main
-`058140171592882239d759663e0f7387a171c021`. Correction pending. The
+`058140171592882239d759663e0f7387a171c021`. Correction in progress: slice S3a
+is delivered on `main` with pull request [#PRNUMBER](https://github.com/Bitspark/bittype/pull/PRNUMBER), and
+the rest is pending. The
 correction is designed in [models and operations](../models-and-operations.md)
 and delivered by its slices S1 to S8. For the four intended-forms packages
 the correction is made on the branch of the migration of
@@ -165,11 +167,14 @@ The design page gives it in full. In short:
    it. The target keeps lowering and coverage. Go's record-body condition is
    dropped, and no code is written for it anywhere: the declaration policy
    makes that choice already (slice S2).
-4. The grammar tables go to the model side, each into its language's
-   syntax vocabulary, with predicates named by identity. Their type goes to
-   the agnostic syntax model (slices S3a and S3b). The word lists leave the lexical
-   helpers for a lexical part below each language's syntax model, which
-   imports no node kinds (slice S4).
+4. The type of a grammar table goes to the agnostic syntax model as plain
+   data, with predicates named by identity, and each language gets a
+   lexical part below its syntax model, which imports no node kinds and
+   holds the names of its predicates (slice S3a, delivered). The word lists
+   leave the lexical helpers for the lexical parts (slice S4). The grammar
+   tables go to the model side, each into its language's syntax vocabulary
+   (slice S3b). Decision [M31](https://github.com/Bitspark/bittype/issues/305#issuecomment-6860518608)
+   cut the three slices so.
 5. The names, profiles and payload shapes of the semantic vocabularies get
    model packages, the Go bridge writes its eleven keys through published
    names, and the TypeScript symbol record gets its model package (slice
@@ -249,12 +254,66 @@ left it. This case stays open for that.
 
 ## Correction and qualification status
 
-This change documents the violation and the designed correction. No code
-has changed. The names below the two roots are decided (M10, M11, M14,
+The change that added this case documented the violation and the designed
+correction, and changed no code. The names below the two roots are decided (M10, M11, M14,
 M19 and M28 on #305). Two paths of M14 wait for a decision (M27, M29). The form-table type is a sketch that slice S2 makes final (M13).
 The classification of each package is the design page's
 table, made by reading. Each slice updates this case with what it delivered,
 its qualification and its limits.
+
+### Slice S3a, delivered with pull request [#PRNUMBER](https://github.com/Bitspark/bittype/pull/PRNUMBER)
+
+**What is corrected.**
+
+- The table types `Attribute`, `Role`, `Rule` and `Rules` are no longer in
+  `internal/grammar`. They are plain data in the agnostic syntax model,
+  [`model/syntax/go`](../../model/syntax/go/syntax.go), the first package at
+  a final path under `model`. An attribute entry holds no function value: it
+  names its predicate as `Predicate{Owner, Name}` and holds a set of
+  admitted texts as data. The six shared names are declared there.
+- Each of the five languages has a lexical part,
+  `model/syntax/<language>/lexical/go`, with the names of its own
+  predicates, 17 in all. It imports the agnostic syntax model and nothing
+  else.
+- The five tables are composite literals of the model's type. None binds a
+  function value any more. The entry constructors of `internal/grammar`
+  are deleted.
+- The interpreter `internal/grammar.Check` takes the evaluators of the
+  caller's language as a map from name to function and binds the shared
+  names itself. A table that names a predicate without an evaluator fails
+  every check before a tree is read, as unsupported.
+- The horos identifier rule has one evaluator, `internal/horos.Identifier`.
+  The copy in `internal/declsyntax` is deleted.
+
+**What stays open after it.** The five tables are still unexported
+variables of the four native checkers and of `internal/declsyntax`, so an
+operation still owns the declaration it interprets (slice S3b). The word
+lists, character tables and patterns are still inside the lexical helpers,
+and Rust's keyword list still stands a second time in
+`semantics/rust/go` (slice S4). Rust's primitive type words and
+TypeScript's keyword-type words still stand in the checker and again in
+the parser (slice S3b). No page states yet that a declared table is an
+upper bound of what its checker admits; that sentence is written with
+slice S3b, in a limited form for horos, whose checker takes the references
+out of a tree before the interpreter sees it. Everything else of this case
+is unchanged.
+
+**Qualification.** Each of the five tables was written out, before and
+after, as its node kinds, attributes, roles with their bounds and kinds,
+and for each attribute which of 630 probe texts it admits. The two lists
+are equal for every language. The outcome of every test by name and the
+generated and formatted outputs of the integration tests are unchanged.
+The import test has an exact entry for `model/syntax/go` and a role for
+the lexical part with an allow-list and a prohibition on every syntax
+vocabulary, and each was seen to refuse a seeded import. The pull request
+holds the runs.
+
+**Limits.** The probe texts are a sample, and equal answers on them do not
+prove equal predicates. The tables are data now, and they are not yet
+reachable from another package. That a package under `model` holds no
+operation is judged in review and by no check. The import rule for
+everything under `model` is slice S8's: until then each model package has
+its own exact list.
 
 ## Assessment lesson
 

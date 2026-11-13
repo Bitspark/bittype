@@ -307,13 +307,14 @@ inventory. This is a legitimate report, not a reason to synthesize grammar facts
 
 ### Initial extractor: the existing grammar format
 
-The initial extractor owns the meaning of
-[`internal/grammar.Rules`](../internal/grammar/rules.go). It recognizes its exact
-Go type and helper declarations, not any map named `rules`. Within the supplied
+The initial extractor owns the meaning of the grammar-table type of the
+agnostic syntax model, [`syntax.Rules`](../model/syntax/go/syntax.go). It
+recognizes its exact Go type, not any map named `rules`. Within the supplied
 source view it may read constant expressions, identifiers, composite literals
-and bounded acyclic references to definition slices/maps. It recognizes the
-owning format's `One`, `Opt`, `Many`, `Attributes`, `Attr`, `Set` and corresponding
-literal forms by resolved symbol identity. It does not evaluate arbitrary Go.
+and bounded acyclic references to definition slices/maps. A table is a
+composite literal of that type: the extractor reads the fields of a rule, a
+role and an attribute entry, and recognizes the shared predicate name `Bool`
+by resolved symbol identity. It does not evaluate arbitrary Go.
 The inventory describes declared source definitions; it does not establish that
 mutable tables retain their initial values during execution or that every
 declared rule is reachable. The report must not strengthen that observation.
@@ -322,9 +323,9 @@ For each declared node kind it emits:
 
 - Ordered child roles, minimum/maximum cardinality and declared allowed kinds.
 - Attribute names, required/optional flags and explicit finite allowed values
-  when a `Set` or equivalent declarative form supplies them.
+  when the entry's set (`OneOf`) or the shared name `Bool` supplies them.
 - Declared reference allowance and links to the defining source.
-- Opaque predicate links where an attribute uses a custom function.
+- Opaque predicate links where an entry names any other predicate.
 
 Knowledge is recorded for each field, rather than assigning one support flag to
 the whole feature:
@@ -342,8 +343,8 @@ source location. An undecodable entry key remains an unresolved portion of the
 inventory. Its decoded/partial extent concerns the selected declaration and the
 fixed structural schema, not feature or language completeness.
 
-The owning helper syntax is interpreted only in that extractor. The reporting
-host does not know TypeScript, `mapped-type` or the names of grammar helpers.
+The table type's fields are interpreted only in that extractor. The reporting
+host does not know TypeScript, `mapped-type` or the names of those fields.
 An unsupported initializer, cyclic definition or exhausted traversal budget
 does not result in an invented empty set or a complete inventory. Report the
 specific extraction limitation; independently extracted entries, if displayed,

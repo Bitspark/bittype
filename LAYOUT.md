@@ -17,8 +17,10 @@ ops either. ops work on the model". The design
 [models and operations](docs/models-and-operations.md) carries it out: models
 under `model`, by sort and then by language, and operations under `ops`, where
 the stage-by-language matrix and the path pattern above stay. **Not
-implemented.** The hierarchy and the role table below describe `main` as it
-is, and no path in this layout has changed. The
+implemented, except slice S3a:** the agnostic syntax model `model/syntax/go`
+and the lexical part of each language, `model/syntax/<language>/lexical/go`,
+exist at their final paths. The hierarchy and the role table below describe
+`main` as it is, and no other path in this layout has changed. The
 [order of work](docs/models-and-operations.md#10-the-order-of-work) says which
 slice moves what. That page gives the names below the two roots (decisions
 M10, M11, M14, M19 and M28 on #305). Two paths of M14 wait for a decision
@@ -62,8 +64,10 @@ internal/rustsem/         private captured-source compiler bridge
   helper/                private pinned rustc_driver executable (Rust/Cargo)
 engine/go/                explicit registration, planning and execution
 syntax/<language>/go/                          vocabulary and identity
+model/syntax/go/                               agnostic syntax model: the grammar-table type and the shared predicate names
+model/syntax/<language>/lexical/go/            lexical part of a language's syntax model: the names of its spelling predicates
 parse/syntax/<language>/provider/go/           text to CST
-check/syntax/<language>/provider/go/           native syntax admission
+check/syntax/<language>/provider/go/           native syntax admission: the grammar table, its evaluators and the rules in code
 format/syntax/<language>/provider/go/          AST to CST
 parse/files/horos/provider/go/                 Files to Source
 format/files/{horos,typescript}/provider/go/   Semantics to Source
@@ -186,16 +190,18 @@ that are values of a contract package's type under `ops`. A language's typed
 readers, typed constructors and symbol admission get a role of their own,
 which that page calls public part. A lexical helper imports its own
 language's lexical part, which holds the word lists and no node kind. A pair's contribution
-vocabulary names two languages, as a mapping does. Not implemented: the table
-below gives the roles of `main` as they are.
+vocabulary names two languages, as a mapping does. Not implemented, except
+what slice S3a delivers: `model/syntax/go` is in the foundation table, and
+the lexical part of a language has its role. The table below gives the
+roles of `main` as they are.
 
 | Role | Paths | Imports |
 | --- | --- | --- |
-| Foundation | `trees/*/go`, `files/go`, `source/go`, `semantics/go`, `contracts/*/go` | Each package has its own entry in the table `foundationRules` and imports exactly what the entry lists. It never imports a package outside that table. The AST imports nothing. The CST, `files/go`, `semantics/go` and `contracts/text/go` import only the AST. `trees/representation/go` and `contracts/semantic/go` do not import `source/go` |
+| Foundation | `trees/*/go`, `files/go`, `source/go`, `semantics/go`, `model/syntax/go`, `contracts/*/go` | Each package has its own entry in the table `foundationRules` and imports exactly what the entry lists. It never imports a package outside that table. The AST imports nothing. The CST, `files/go`, `semantics/go`, `model/syntax/go` and `contracts/text/go` import only the AST. `model/syntax/go` is an agnostic model package: its entry lists model packages only. `trees/representation/go` and `contracts/semantic/go` do not import `source/go` |
 | Kernel | `engine/go`, `transform/syntax/shared/*/go`, `check/syntax/shared/*/go`, `print/*/shared/provider/go` | The same table and the same rule. So no foundation or kernel package imports a vocabulary, a contribution or a language's private part |
-| Shared private helper | `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil`, `internal/concrete` | The same table and the same rule. A helper of no single language cannot conceal a language |
-| Vocabulary | `syntax/<language>/go`, `semantics/<language>/go`, `transform/syntax/<native>/model/go`, `transform/syntax/<native>/symbol/go` | Foundations and its own language's vocabulary. `semantics/<language>/go` and `symbol` may also import their language's lexical helper. Never a contribution. `semantics/<language>/go` never imports `internal/<language>sem`. TypeScript, Go and Rust have a `symbol` package today |
-| Contribution: stage provider | `<stage>/<dimension>/<language>/provider/go` for `check/syntax`, `parse/syntax`, `format/syntax`, `resolve/files`, `analyze/files`, `parse/files` and `format/files` | Each of the seven has its own list: foundations, shared private helpers and what belongs to its own language. A checker gets no concrete tree, a formatter no lexer, and no Syntax stage a semantic contract. A parser and a formatter import their own checker under an exception, and neither list names the other. A resolver may import its language's semantic helper. A Files parser or formatter reaches its collaborators through their contracts |
+| Shared private helper | `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil`, `internal/concrete` | The same table and the same rule. A helper of no single language cannot conceal a language. `internal/grammar` interprets a grammar table of the type of `model/syntax/go` |
+| Vocabulary | `syntax/<language>/go`, `model/syntax/<language>/lexical/go`, `semantics/<language>/go`, `transform/syntax/<native>/model/go`, `transform/syntax/<native>/symbol/go` | Foundations and its own language's vocabulary. The lexical part imports `model/syntax/go` only, and never a syntax vocabulary: spelling does not know structure. `semantics/<language>/go` and `symbol` may also import their language's lexical helper. Never a contribution. `semantics/<language>/go` never imports `internal/<language>sem`. TypeScript, Go and Rust have a `symbol` package today |
+| Contribution: stage provider | `<stage>/<dimension>/<language>/provider/go` for `check/syntax`, `parse/syntax`, `format/syntax`, `resolve/files`, `analyze/files`, `parse/files` and `format/files` | Each of the seven has its own list: foundations, shared private helpers and what belongs to its own language. A checker gets no concrete tree, a formatter no lexer, and no Syntax stage a semantic contract. A checker also imports `model/syntax/go` for the type of its grammar table and its language's lexical part for the predicate names it binds. A parser and a formatter import their own checker under an exception, and neither list names the other. A resolver may import its language's semantic helper. A Files parser or formatter reaches its collaborators through their contracts |
 | Contribution: query service | `analyze/files/<language>/queries/go` | The shared semantic contract, the representation, and its own syntax, vocabulary and semantic helper. Never its resolver. Go and TypeScript have this package today. A package that is not a composition imports a query service only under an exception that names the symbols it uses |
 | Contribution: source reader | `transform/syntax/<language>/source/go` | Foundations and its own syntax and vocabulary. Only horos has one today |
 | Contribution: native target | `transform/syntax/<native>/target/go` | The generation contract, the AST, the shared target construction, and its own syntax, model and lexical helper. It reads no source and calls no mapping: a source reader, a mapping and a common mapping part are refused |
@@ -236,9 +242,10 @@ explicit entry per package, and a new package of either group is an edit:
   under an exception that names `Admission`.
 
 **Role extensions.** Languages differ. The table `roleExtensions` names, per
-package, the imports that one language needs and its role does not give. Ten
-packages have one: the six horos stage providers, three TypeScript packages
-and the horos declaration recipe. An extension must be used, must not repeat
+package, the imports that one language needs and its role does not give.
+Twelve packages have one: the six horos stage providers, three TypeScript
+packages, the Go and the Rust target and the horos declaration recipe. An
+extension must be used, must not repeat
 the role and cannot lift a prohibition of the role.
 
 **No further hand entries.** `TestProductionArchitecture` holds no entry of
