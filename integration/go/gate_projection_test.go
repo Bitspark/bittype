@@ -152,6 +152,9 @@ func gateExportImporter(t *testing.T, fset *token.FileSet, packages ...string) t
 // payload does.
 // Does not show: that a contribution cannot hand what its rule read to its
 // projector through state of its own package. The page says so ("A limit").
+// The handles of the source are a list of type names in this test: a handle
+// that the contract gains under a new name is not looked for until the list
+// has it. The control shows only that the reflection sees the names it has.
 // It does not show what a value behind an interface type holds: Payload
 // returns the decoded view as any, and its type is the contribution's own.
 // Red under: L1-projection-reaches-selector,

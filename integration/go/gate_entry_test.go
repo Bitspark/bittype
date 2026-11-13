@@ -380,6 +380,12 @@ func gateLinkPerMember(record string, field func(key, operand string) (typ strin
 func (r gateEntryReader) check(t *testing.T, plan g.RepresentationPlan, native gateNative, adapters bool) gateEntryCounts {
 	t.Helper()
 	var counts gateEntryCounts
+	// The declarations themselves: each symbol of the plan is one native
+	// declaration and the reverse. A declaration that a contribution owns is
+	// counted here and not compared below.
+	if symbols, declared := len(plan.Symbols()), len(native.records)+len(native.aliases); symbols != declared {
+		t.Errorf("the plan has %d symbols and the native text declares %d types", symbols, declared)
+	}
 	for _, symbol := range plan.Symbols() {
 		if symbol.Role == "owned" {
 			continue
@@ -591,7 +597,9 @@ func gateIndependentReader(codecs []g.PayloadCodec) gateEntryReader {
 //
 // Does not show: that the entry is right about the source. A rule that names
 // its fields in another order gives an entry and a native type that agree with
-// each other. It does not show a fragment of more than one member, and it
+// each other. A declaration that a contribution owns (the Go optional's
+// helper) is counted as one symbol and one native declaration, and its body
+// is not compared: it has no frozen record. It does not show a fragment of more than one member, and it
 // reads the native side from the printed text and not from the native tree.
 // The spellings are this test's own statement of what each contribution
 // represents, so a contribution that changes its representation changes this

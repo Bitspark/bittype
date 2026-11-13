@@ -136,6 +136,9 @@ type gateKept struct {
 	answers  []g.Answer
 	use      goProjection
 	declared goProjection
+	// usedRan and declaredRan say that the two projectors ran, so that the two
+	// kept projections are the planner's and not zero values.
+	usedRan, declaredRan bool
 	// open are the faults of a capability while its own step ran, and late what
 	// a kept capability still gave while a later step of the same selection ran.
 	open, late []string
@@ -205,10 +208,12 @@ func (k *gateKept) closed(steps, projections bool) []string {
 // readable, and they are copies. The subject of a kept step stays readable
 // too: its uses and declarations are handles, and this test does not show
 // what the planner does with a handle that a rule presents in a later run.
+// The zero value of a projection, which no planner made, is closed in the
+// same way.
 // Red under: X-name-step-stays-open, X-decide-step-stays-open,
 // X-reader-ignores-closed, X-answers-ignore-closed, X-present-ignores-closed,
 // X-projection-stays-open, X-declaration-projection-stays-open,
-// X-owned-ignores-closed.
+// X-owned-ignores-closed, X-zero-projection-is-open.
 func TestGateKeptStepAndProjectionGiveNoCapability(t *testing.T) {
 	fixture := gateFixture(t)
 	composition := indComposition(t, fixture, indOptions{})
@@ -246,7 +251,7 @@ func TestGateKeptStepAndProjectionGiveNoCapability(t *testing.T) {
 		return decide(ctx, step)
 	}
 	probe.Project = func(ctx context.Context, p goProjection) (goProjected, error) {
-		kept.use = p
+		kept.use, kept.usedRan = p, true
 		if _, err := p.Owned(gateKeptHelper); err != nil {
 			note(&kept.open, "the projection of a use gives no owned declaration while its projector runs", err)
 		}
@@ -258,7 +263,7 @@ func TestGateKeptStepAndProjectionGiveNoCapability(t *testing.T) {
 	declare := policy.Declare
 	policy.Owned = gateKeptOwned("KeptByPolicy")
 	policy.Declare = func(ctx context.Context, p goProjection) (g.DeclarationDescription[gs.Language], error) {
-		kept.declared = p
+		kept.declared, kept.declaredRan = p, true
 		if _, err := p.Owned(gateKeptHelper); err != nil {
 			note(&kept.open, "the projection of a declaration gives no owned declaration while its projector runs", err)
 		}
@@ -270,6 +275,18 @@ func TestGateKeptStepAndProjectionGiveNoCapability(t *testing.T) {
 	}
 	if kept.name.Subject.Kind != g.UseSubject || kept.decide.Subject.Kind != g.UseSubject || len(kept.answers) != 1 {
 		t.Fatalf("the fixture kept no step of the probe's rule: %+v", kept)
+	}
+	if !kept.usedRan || !kept.declaredRan {
+		t.Fatalf("a projector of the fixture did not run (of a use: %v, of a declaration: %v)", kept.usedRan, kept.declaredRan)
+	}
+	// A projection that no planner made is closed too: it gives nothing, and
+	// reading it fails nothing.
+	var none goProjection
+	if _, err := none.Owned(gateKeptHelper); !errors.Is(err, g.ErrScope) {
+		t.Errorf("the zero projection gives an owned declaration: %v", err)
+	}
+	if none.Payload() != nil || none.Dependencies() != 0 || none.Binders() != 0 || none.Stated() != "" || none.Dependency(0).Stated != "" {
+		t.Errorf("the zero projection has content")
 	}
 	for _, fault := range kept.open {
 		t.Errorf("a capability does not work during its own step: %s", fault)

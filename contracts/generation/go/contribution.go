@@ -498,39 +498,52 @@ type projectionState[T any] struct {
 // reader, no use, no declaration handle and no selector.
 type Projection[T any] struct{ state *projectionState[T] }
 
-func (p Projection[T]) Payload() any      { return p.state.payload }
-func (p Projection[T]) Dependencies() int { return len(p.state.dependencies) }
+// view is the state that the methods read. A projection that the planner did
+// not make, the zero value, is a closed projection of nothing: it has no
+// payload and no dependency, and it gives no owned declaration.
+func (p Projection[T]) view() *projectionState[T] {
+	if p.state == nil {
+		return &projectionState[T]{closed: true}
+	}
+	return p.state
+}
+
+func (p Projection[T]) Payload() any      { return p.view().payload }
+func (p Projection[T]) Dependencies() int { return len(p.view().dependencies) }
 func (p Projection[T]) Dependency(i int) DependencyView[T] {
-	if i < 0 || i >= len(p.state.dependencies) {
+	state := p.view()
+	if i < 0 || i >= len(state.dependencies) {
 		return DependencyView[T]{}
 	}
-	return p.state.dependencies[i]
+	return state.dependencies[i]
 }
 
 // Stated is what the asking rule stated in the request that selected this
 // contribution, for a field position the member's name.
-func (p Projection[T]) Stated() string      { return p.state.stated }
-func (p Projection[T]) Origin() ast.NodeRef { return p.state.origin }
+func (p Projection[T]) Stated() string      { return p.view().stated }
+func (p Projection[T]) Origin() ast.NodeRef { return p.view().origin }
 
 // Binders is the number of binders of the declaration being projected, and
 // BinderOrigin the declaring site of one of them.
-func (p Projection[T]) Binders() int { return len(p.state.binders) }
+func (p Projection[T]) Binders() int { return len(p.view().binders) }
 func (p Projection[T]) BinderOrigin(i int) ast.NodeRef {
-	if i < 0 || i >= len(p.state.binders) {
+	state := p.view()
+	if i < 0 || i >= len(state.binders) {
 		return ast.NodeRef{}
 	}
-	return p.state.binders[i]
+	return state.binders[i]
 }
 
 // Owned refers to a declaration that the contribution owns (row 25), applied
 // to args. The planner issues its symbol by the owned key.
 func (p Projection[T]) Owned(name string, args ...Expression[T]) (Expression[T], error) {
-	if p.state.owned == nil || p.state.closed {
+	state := p.view()
+	if state.owned == nil || state.closed {
 		return Expression[T]{}, fmt.Errorf("%w: a projection gives no capability after its projector has returned", ErrScope)
 	}
-	e, err := p.state.owned(name, args)
-	if err != nil && p.state.failure == nil {
-		p.state.failure = err
+	e, err := state.owned(name, args)
+	if err != nil && state.failure == nil {
+		state.failure = err
 	}
 	return e, err
 }
