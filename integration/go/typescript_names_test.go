@@ -436,9 +436,9 @@ func namesExisting(t *testing.T, texts map[string]string, placement map[string][
 	return published, nil
 }
 
-// Two imports of one export name in one file get two spellings: an alias that
-// was chosen takes its name. Here a record T uses three declarations T of
-// three other files.
+// Imports of one export name in one file get different spellings. Here a
+// record T uses three declarations T of three other files, and they become
+// T_1, T_2 and T_3 in the order of their module specifiers.
 func TestTypeScriptAliasesOfOneExportNameDiffer(t *testing.T) {
 	published, err := namesExisting(t, map[string]string{
 		"a":    "export type T = string;",
@@ -478,7 +478,9 @@ func TestTypeScriptAliasAvoidsANameThatAnotherUseIsWrittenWith(t *testing.T) {
 // literally named T_1, beside a type parameter T. With the module of T first,
 // T becomes T_1 and the export T_1 has to give way. With the module of T_1
 // first, T_1 keeps its name and T takes the next suffix. An order by export
-// name would give the first answer in both.
+// name would give the first answer in both. The first answer also shows that
+// an alias that was chosen takes its name: the export T_1 cannot be written
+// T_1 after the import of T took that spelling.
 func TestTypeScriptAliasesAreDecidedByModuleSpecifierThenExportName(t *testing.T) {
 	texts := map[string]string{
 		"a":    "export type T = string;",
