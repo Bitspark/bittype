@@ -6,74 +6,77 @@ import (
 	g "github.com/Bitspark/bittype/internal/grammar"
 	native "github.com/Bitspark/bittype/internal/rust"
 	"github.com/Bitspark/bittype/internal/tree"
+	"github.com/Bitspark/bittype/model/syntax/go"
+	"github.com/Bitspark/bittype/model/syntax/rust/lexical/go"
 	s "github.com/Bitspark/bittype/syntax/rust/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
+	"slices"
 )
-
-func identifier(v string) bool { return native.Identifier(v) }
 
 var types = []s.Kind{s.KindPathType, s.KindQualifiedPathType, s.KindPrimitiveType, s.KindReferenceType, s.KindRawPointerType, s.KindSliceType, s.KindArrayType, s.KindTupleType, s.KindNeverType, s.KindFunctionType, s.KindTraitObjectType}
 var bounds = []s.Kind{s.KindPathType, s.KindLifetimeReference}
 var typeBounds = []s.Kind{s.KindPathType, s.KindLifetimeReference, s.KindRelaxedBound}
 var generics = []s.Kind{s.KindTypeParameter, s.KindLifetimeParameter}
 var items = []s.Kind{s.KindModule, s.KindUse, s.KindTypeAlias, s.KindStruct, s.KindTupleStruct, s.KindEnum, s.KindTrait, s.KindTraitImpl}
-var visibility = g.Set("private", "public", "crate")
-var primitive = g.Set("bool", "char", "str", "f32", "f64", "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize")
+var visibility = []string{"private", "public", "crate"}
 
-func named() map[string]g.Attribute {
-	return g.Attributes(s.AttributeName, g.Attr(true, native.Declaration), s.AttributeVisibility, g.Attr(false, visibility))
-}
-func prefix() []g.Role[s.Language] {
-	return []g.Role[s.Language]{g.Many(s.RoleGenericParameter, 0, generics...), g.Many(s.RoleWhere, 0, s.KindWherePredicate)}
-}
-func with(rs []g.Role[s.Language], more ...g.Role[s.Language]) []g.Role[s.Language] {
-	return append(rs, more...)
+// abis are the names of the calling conventions.
+var abis = []string{"Rust", "C", "C-unwind", "system", "system-unwind", "cdecl", "stdcall", "fastcall", "vectorcall", "thiscall", "aapcs", "win64", "sysv64", "efiapi"}
+var primitive = []string{"bool", "char", "str", "f32", "f64", "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize"}
+
+// evaluators binds the names of Rust's own predicates that the table uses.
+var evaluators = g.Evaluators{
+	lexical.Identifier():             native.Identifier,
+	lexical.IdentifierOrUnderscore(): native.IdentifierOrUnderscore,
+	lexical.LifetimeParameter():      native.LifetimeParameter,
+	lexical.Lifetime():               native.Lifetime,
+	lexical.PathSegment():            native.PathSegment,
 }
 
-var rules = g.Rules[s.Language]{
-	s.KindFile:                  {Roles: []g.Role[s.Language]{g.Many(s.RoleItem, 0, items...)}},
-	s.KindModule:                {Attributes: named(), Roles: []g.Role[s.Language]{g.Many(s.RoleItem, 0, items...)}},
-	s.KindUse:                   {Attributes: g.Attributes(s.AttributeAlias, g.Attr(false, identifier)), Roles: []g.Role[s.Language]{g.One(s.RolePath, s.KindPathType)}},
-	s.KindTypeAlias:             {Attributes: named(), Roles: with(prefix(), g.One(s.RoleType, types...))},
-	s.KindStruct:                {Attributes: named(), Roles: with(prefix(), g.Many(s.RoleField, 0, s.KindField))},
-	s.KindTupleStruct:           {Attributes: named(), Roles: with(prefix(), g.Many(s.RoleField, 0, s.KindTupleField))},
-	s.KindEnum:                  {Attributes: named(), Roles: with(prefix(), g.Many(s.RoleVariant, 0, s.KindUnitVariant, s.KindTupleVariant, s.KindRecordVariant))},
-	s.KindUnitVariant:           {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Declaration))},
-	s.KindTupleVariant:          {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Declaration)), Roles: []g.Role[s.Language]{g.Many(s.RoleField, 0, s.KindTupleField)}},
-	s.KindRecordVariant:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Declaration)), Roles: []g.Role[s.Language]{g.Many(s.RoleField, 0, s.KindField)}},
-	s.KindField:                 {Attributes: named(), Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
-	s.KindTupleField:            {Attributes: g.Attributes(s.AttributeVisibility, g.Attr(false, visibility)), Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
-	s.KindTrait:                 {Attributes: named(), Roles: []g.Role[s.Language]{g.Many(s.RoleGenericParameter, 0, generics...), g.Many(s.RoleBound, 0, bounds...), g.Many(s.RoleWhere, 0, s.KindWherePredicate), g.Many(s.RoleMember, 0, s.KindMethodSignature, s.KindAssociatedType)}},
-	s.KindTraitImpl:             {Roles: []g.Role[s.Language]{g.Many(s.RoleGenericParameter, 0, generics...), g.One(s.RoleTrait, s.KindPathType), g.One(s.RoleSubject, types...), g.Many(s.RoleWhere, 0, s.KindWherePredicate), g.Many(s.RoleMember, 0, s.KindTypeAlias)}},
-	s.KindAssociatedType:        {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Declaration)), Roles: []g.Role[s.Language]{g.Many(s.RoleGenericParameter, 0, generics...), g.Many(s.RoleBound, 0, typeBounds...), g.Many(s.RoleWhere, 0, s.KindWherePredicate)}},
-	s.KindMethodSignature:       {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Declaration)), Roles: with(prefix(), g.Opt(s.RoleReceiver, s.KindReceiver), g.Many(s.RoleParameter, 0, s.KindParameter), g.Opt(s.RoleResult, types...))},
-	s.KindReceiver:              {Attributes: g.Attributes(s.AttributeReceiverForm, g.Attr(true, g.Set("value", "shared", "mutable"))), Roles: []g.Role[s.Language]{g.Opt(s.RoleLifetime, s.KindLifetimeReference)}},
-	s.KindParameter:             {Attributes: g.Attributes(s.AttributeName, g.Attr(false, identifier)), Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
-	s.KindTypeParameter:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Declaration)), Roles: []g.Role[s.Language]{g.Many(s.RoleBound, 0, typeBounds...), g.Opt(s.RoleDefault, types...)}},
-	s.KindLifetimeParameter:     {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.LifetimeParameter)), Roles: []g.Role[s.Language]{g.Many(s.RoleBound, 0, s.KindLifetimeReference)}},
-	s.KindLifetimeReference:     {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.LifetimeReference)), Reference: true},
-	s.KindWherePredicate:        {Roles: []g.Role[s.Language]{g.One(s.RoleSubject, append(types, s.KindLifetimeReference)...), g.Many(s.RoleBound, 1, typeBounds...)}},
-	s.KindRelaxedBound:          {Roles: []g.Role[s.Language]{g.One(s.RolePath, s.KindPathType)}},
-	s.KindPathType:              {Attributes: g.Attributes(s.AttributeAbsolute, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.Many(s.RoleSegment, 1, s.KindPathSegment)}},
-	s.KindQualifiedPathType:     {Roles: []g.Role[s.Language]{g.One(s.RoleSubject, types...), g.Opt(s.RoleTrait, s.KindPathType), g.Many(s.RoleSegment, 1, s.KindPathSegment)}},
-	s.KindPathSegment:           {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.PathSegment)), Roles: []g.Role[s.Language]{g.Many(s.RoleArgument, 0, append(types, s.KindLifetimeReference, s.KindAssociatedTypeBinding)...)}, Reference: true},
-	s.KindAssociatedTypeBinding: {Roles: []g.Role[s.Language]{g.One(s.RolePath, s.KindPathSegment), g.One(s.RoleType, types...)}},
-	s.KindPrimitiveType:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, primitive))},
-	s.KindReferenceType:         {Attributes: g.Attributes(s.AttributeMutable, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...), g.Opt(s.RoleLifetime, s.KindLifetimeReference)}},
-	s.KindRawPointerType:        {Attributes: g.Attributes(s.AttributeMutable, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
-	s.KindSliceType:             {Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
-	s.KindArrayType:             {Attributes: g.Attributes(s.AttributeLength, g.Attr(true, g.Decimal)), Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
-	s.KindTupleType:             {Roles: []g.Role[s.Language]{g.Many(s.RoleElement, 0, types...)}},
+var rules = syntax.Rules[s.Language]{
+	s.KindFile:                  {Roles: []syntax.Role[s.Language]{{Name: s.RoleItem, Max: -1, Kinds: items}}},
+	s.KindModule:                {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleItem, Max: -1, Kinds: items}}},
+	s.KindUse:                   {Attributes: map[string]syntax.Attribute{s.AttributeAlias: {Predicate: lexical.IdentifierOrUnderscore()}}, Roles: []syntax.Role[s.Language]{{Name: s.RolePath, Min: 1, Max: 1, Kinds: []s.Kind{s.KindPathType}}}},
+	s.KindTypeAlias:             {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
+	s.KindStruct:                {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleField, Max: -1, Kinds: []s.Kind{s.KindField}}}},
+	s.KindTupleStruct:           {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleField, Max: -1, Kinds: []s.Kind{s.KindTupleField}}}},
+	s.KindEnum:                  {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleVariant, Max: -1, Kinds: []s.Kind{s.KindUnitVariant, s.KindTupleVariant, s.KindRecordVariant}}}},
+	s.KindUnitVariant:           {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}}},
+	s.KindTupleVariant:          {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleField, Max: -1, Kinds: []s.Kind{s.KindTupleField}}}},
+	s.KindRecordVariant:         {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleField, Max: -1, Kinds: []s.Kind{s.KindField}}}},
+	s.KindField:                 {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
+	s.KindTupleField:            {Attributes: map[string]syntax.Attribute{s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
+	s.KindTrait:                 {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeVisibility: {OneOf: visibility}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleBound, Max: -1, Kinds: bounds}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleMember, Max: -1, Kinds: []s.Kind{s.KindMethodSignature, s.KindAssociatedType}}}},
+	s.KindTraitImpl:             {Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleTrait, Min: 1, Max: 1, Kinds: []s.Kind{s.KindPathType}}, {Name: s.RoleSubject, Min: 1, Max: 1, Kinds: types}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleMember, Max: -1, Kinds: []s.Kind{s.KindTypeAlias}}}},
+	s.KindAssociatedType:        {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleBound, Max: -1, Kinds: typeBounds}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}}},
+	s.KindMethodSignature:       {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleGenericParameter, Max: -1, Kinds: generics}, {Name: s.RoleWhere, Max: -1, Kinds: []s.Kind{s.KindWherePredicate}}, {Name: s.RoleReceiver, Max: 1, Kinds: []s.Kind{s.KindReceiver}}, {Name: s.RoleParameter, Max: -1, Kinds: []s.Kind{s.KindParameter}}, {Name: s.RoleResult, Max: 1, Kinds: types}}},
+	s.KindReceiver:              {Attributes: map[string]syntax.Attribute{s.AttributeReceiverForm: {Required: true, OneOf: []string{"value", "shared", "mutable"}}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleLifetime, Max: 1, Kinds: []s.Kind{s.KindLifetimeReference}}}},
+	s.KindParameter:             {Attributes: map[string]syntax.Attribute{s.AttributeName: {Predicate: lexical.IdentifierOrUnderscore()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
+	s.KindTypeParameter:         {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleBound, Max: -1, Kinds: typeBounds}, {Name: s.RoleDefault, Max: 1, Kinds: types}}},
+	s.KindLifetimeParameter:     {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.LifetimeParameter()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleBound, Max: -1, Kinds: []s.Kind{s.KindLifetimeReference}}}},
+	s.KindLifetimeReference:     {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Lifetime()}}, Reference: true},
+	s.KindWherePredicate:        {Roles: []syntax.Role[s.Language]{{Name: s.RoleSubject, Min: 1, Max: 1, Kinds: append(types, s.KindLifetimeReference)}, {Name: s.RoleBound, Min: 1, Max: -1, Kinds: typeBounds}}},
+	s.KindRelaxedBound:          {Roles: []syntax.Role[s.Language]{{Name: s.RolePath, Min: 1, Max: 1, Kinds: []s.Kind{s.KindPathType}}}},
+	s.KindPathType:              {Attributes: map[string]syntax.Attribute{s.AttributeAbsolute: {Predicate: syntax.Bool()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleSegment, Min: 1, Max: -1, Kinds: []s.Kind{s.KindPathSegment}}}},
+	s.KindQualifiedPathType:     {Roles: []syntax.Role[s.Language]{{Name: s.RoleSubject, Min: 1, Max: 1, Kinds: types}, {Name: s.RoleTrait, Max: 1, Kinds: []s.Kind{s.KindPathType}}, {Name: s.RoleSegment, Min: 1, Max: -1, Kinds: []s.Kind{s.KindPathSegment}}}},
+	s.KindPathSegment:           {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.PathSegment()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleArgument, Max: -1, Kinds: append(types, s.KindLifetimeReference, s.KindAssociatedTypeBinding)}}, Reference: true},
+	s.KindAssociatedTypeBinding: {Roles: []syntax.Role[s.Language]{{Name: s.RolePath, Min: 1, Max: 1, Kinds: []s.Kind{s.KindPathSegment}}, {Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
+	s.KindPrimitiveType:         {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, OneOf: primitive}}},
+	s.KindReferenceType:         {Attributes: map[string]syntax.Attribute{s.AttributeMutable: {Predicate: syntax.Bool()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Min: 1, Max: 1, Kinds: types}, {Name: s.RoleLifetime, Max: 1, Kinds: []s.Kind{s.KindLifetimeReference}}}},
+	s.KindRawPointerType:        {Attributes: map[string]syntax.Attribute{s.AttributeMutable: {Predicate: syntax.Bool()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Min: 1, Max: 1, Kinds: types}}},
+	s.KindSliceType:             {Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Min: 1, Max: 1, Kinds: types}}},
+	s.KindArrayType:             {Attributes: map[string]syntax.Attribute{s.AttributeLength: {Required: true, Predicate: syntax.Decimal()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Min: 1, Max: 1, Kinds: types}}},
+	s.KindTupleType:             {Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Max: -1, Kinds: types}}},
 	s.KindNeverType:             {},
-	s.KindFunctionType:          {Attributes: g.Attributes(s.AttributeUnsafe, g.Attr(false, g.Bool), s.AttributeABI, g.Attr(false, native.ABI)), Roles: []g.Role[s.Language]{g.Many(s.RoleParameter, 0, s.KindParameter), g.Opt(s.RoleResult, types...)}},
-	s.KindTraitObjectType:       {Roles: []g.Role[s.Language]{g.Many(s.RoleBound, 1, bounds...)}},
+	s.KindFunctionType:          {Attributes: map[string]syntax.Attribute{s.AttributeUnsafe: {Predicate: syntax.Bool()}, s.AttributeABI: {OneOf: abis}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleParameter, Max: -1, Kinds: []s.Kind{s.KindParameter}}, {Name: s.RoleResult, Max: 1, Kinds: types}}},
+	s.KindTraitObjectType:       {Roles: []syntax.Role[s.Language]{{Name: s.RoleBound, Min: 1, Max: -1, Kinds: bounds}}},
 }
 
 // bittype:grammar rules
 // bittype:scope docs/syntax.md#rust
 func Check(view ast.View[s.Language]) error {
 	t := view.ASTView()
-	if err := g.Check(t, s.KindFile, rules); err != nil {
+	if err := g.Check(t, s.KindFile, rules, evaluators); err != nil {
 		return err
 	}
 	v := tree.View[s.Language]{Tree: t}
@@ -93,7 +96,7 @@ func Check(view ast.View[s.Language]) error {
 				continue
 			}
 			segments := v.Children(child.Node, s.RoleSegment)
-			if !v.Flag(child.Node, s.AttributeAbsolute) && len(segments) == 1 && len(v.Children(segments[0], s.RoleArgument)) == 0 && primitive(v.Attr(segments[0], s.AttributeName)) {
+			if !v.Flag(child.Node, s.AttributeAbsolute) && len(segments) == 1 && len(v.Children(segments[0], s.RoleArgument)) == 0 && slices.Contains(primitive, v.Attr(segments[0], s.AttributeName)) {
 				return text.AtNode(t, child.Node, "bare primitive spelling requires primitive-type in a type expression")
 			}
 		}
@@ -148,7 +151,7 @@ func Check(view ast.View[s.Language]) error {
 				}
 			}
 		case s.KindAssociatedTypeBinding:
-			if !native.Declaration(v.Attr(v.Child(id, s.RolePath), s.AttributeName)) {
+			if !native.Identifier(v.Attr(v.Child(id, s.RolePath), s.AttributeName)) {
 				return bad("associated-type binding requires an unqualified associated name")
 			}
 		case s.KindUse:

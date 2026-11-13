@@ -143,8 +143,9 @@ func TestLanguageStageMatrix(t *testing.T) {
 }
 
 // foundationRules is the closed set of foundation and kernel packages: the
-// carriers, the contracts, the engine, the shared transform, check and print
-// machinery, and the private helpers that serve no single language. Each entry
+// carriers, the agnostic model packages, the contracts, the engine, the shared
+// transform, check and print machinery, and the private helpers that serve no
+// single language. Each entry
 // is the exact list of module imports of its package, and an unused allowance
 // fails.
 //
@@ -167,6 +168,10 @@ var foundationRules = map[string][]string{
 	"files/go":                {"trees/ast/go"},
 	"source/go":               {"contracts/semantic/go", "files/go", "semantics/go", "trees/ast/go", "trees/cst/go", "trees/representation/go"},
 	"semantics/go":            {"trees/ast/go"},
+	// Agnostic model packages, at their final path under model. Such a package
+	// imports model packages and, of the packages at old paths, only those that
+	// are wholly model. Its entry is that exact list.
+	"model/syntax/go": {"trees/ast/go"},
 	// Contracts.
 	"contracts/language/go":     {},
 	"contracts/pipeline/go":     {},
@@ -196,7 +201,7 @@ var foundationRules = map[string][]string{
 	// Private helpers of no single language. A shared helper cannot conceal a
 	// language: it is bound by the same rule as the rest of the table.
 	"internal/tree":      {"trees/ast/go"},
-	"internal/grammar":   {"check/syntax/shared/ast/go", "contracts/text/go", "trees/ast/go"},
+	"internal/grammar":   {"check/syntax/shared/ast/go", "contracts/text/go", "model/syntax/go", "trees/ast/go"},
 	"internal/lex":       {"contracts/parse/go", "contracts/text/go", "trees/ast/go"},
 	"internal/parseutil": {"check/syntax/shared/ast/go", "contracts/parse/go", "contracts/text/go", "internal/lex", "trees/ast/go"},
 	"internal/concrete":  {"check/syntax/shared/cst/go", "contracts/parse/go", "contracts/text/go", "internal/lex", "internal/tree", "trees/ast/go", "trees/cst/go"},
@@ -216,7 +221,7 @@ var oneOfAKindRules = map[string][]string{
 	// internal/<language> and internal/<language>sem, and these are neither.
 	// languageOwners binds each to horos. No role allows them, so an importer
 	// names them in roleExtensions or in its own entry here.
-	"internal/declsyntax": {"check/syntax/shared/ast/go", "contracts/text/go", "internal/grammar", "syntax/horos/go", "trees/ast/go"},
+	"internal/declsyntax": {"check/syntax/shared/ast/go", "contracts/text/go", "internal/grammar", "internal/horos", "model/syntax/go", "model/syntax/horos/lexical/go", "syntax/horos/go", "trees/ast/go"},
 	"internal/horosmodel": {"check/syntax/shared/ast/go", "contracts/semantic/go", "contracts/text/go", "semantics/go", "semantics/horos/go", "syntax/horos/go", "trees/ast/go"},
 	// A private composition of the horos Files stages through their contracts,
 	// not a substitute language registry.

@@ -160,7 +160,7 @@ explicit, and test associations never become passing results by inference.
 | --- | --- |
 | [report/go](report/go/report.go) | Public source-discovery, association, validation, rendering and write host |
 | [capability/go](capability/go/model.go) | Definition selectors, immutable source view and fixed structural inventory schema |
-| [extract/grammar/go](extract/grammar/go/extract.go) | Interpretation of the exact owning Rules type and helpers |
+| [extract/grammar/go](extract/grammar/go/extract.go) | Interpretation of a composite literal of the exact grammar-table type of `model/syntax/go` |
 | [observation/go](observation/go/types.go) | Invocation-scoped Go JSON import and exact-context test association |
 | `go/` | Command selecting the extractors and explicit optional observation inputs |
 

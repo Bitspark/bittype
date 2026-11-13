@@ -5,49 +5,31 @@ import (
 	"fmt"
 	"github.com/Bitspark/bittype/check/syntax/shared/ast/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
+	"github.com/Bitspark/bittype/model/syntax/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"regexp"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 )
 
-type Attribute struct {
-	Required bool
-	Accept   func(string) bool
-}
-type Role[L any] struct {
-	Name     string
-	Min, Max int
-	Kinds    []ast.Kind[L]
-}
-type Rule[L any] struct {
-	Attributes map[string]Attribute
-	Roles      []Role[L]
-	Reference  bool
+// Evaluators binds predicate names to the functions that evaluate them. The
+// package that calls Check supplies one entry for each predicate of its own
+// language that its table names.
+type Evaluators map[syntax.Predicate]func(string) bool
+
+// shared binds the predicates that every language's table can use. No caller
+// binds them a second time.
+var shared = Evaluators{
+	syntax.Bool():     Bool,
+	syntax.Decimal():  Decimal,
+	syntax.Nonempty(): Nonempty,
+	syntax.Positive(): Positive,
+	syntax.Signed():   Signed,
+	syntax.String():   String,
 }
 
-// Rules is one language's admission table. Its keys and the kinds of its roles
-// are that language's node kinds, so a table of one language cannot be applied
-// to a tree of another. Role and attribute names are strings.
-type Rules[L any] map[ast.Kind[L]]Rule[L]
-
-func Attr(required bool, accept func(string) bool) Attribute { return Attribute{required, accept} }
-func One[L any](name string, kinds ...ast.Kind[L]) Role[L]   { return Role[L]{name, 1, 1, kinds} }
-func Opt[L any](name string, kinds ...ast.Kind[L]) Role[L]   { return Role[L]{name, 0, 1, kinds} }
-func Many[L any](name string, min int, kinds ...ast.Kind[L]) Role[L] {
-	return Role[L]{name, min, -1, kinds}
-}
-func Set(values ...string) func(string) bool {
-	return func(s string) bool {
-		for _, v := range values {
-			if s == v {
-				return true
-			}
-		}
-		return false
-	}
-}
 func Bool(s string) bool     { return s == "true" || s == "false" }
 func Nonempty(s string) bool { return s != "" && utf8.ValidString(s) }
 func String(s string) bool   { return utf8.ValidString(s) && !strings.ContainsRune(s, 0) }
@@ -69,15 +51,78 @@ func Identifier(s string) bool {
 	}
 	return true
 }
-func Attributes(pairs ...any) map[string]Attribute {
-	m := map[string]Attribute{}
-	for i := 0; i < len(pairs); i += 2 {
-		m[pairs[i].(string)] = pairs[i+1].(Attribute)
+
+// evaluator returns the function bound to a name, or nil.
+func evaluator(name syntax.Predicate, evaluators Evaluators) func(string) bool {
+	if name.Owner == syntax.Owner {
+		return shared[name]
 	}
-	return m
+	return evaluators[name]
 }
 
-func Check[L any](tree ast.AST[L], root ast.Kind[L], rules Rules[L]) error {
+// bound reports whether every predicate that the table names has an
+// evaluator, whether the caller left the shared names alone, and whether no
+// entry holds a set that is present and empty. A table that fails here was
+// not applied to any tree, so the failure is unsupported and never an invalid
+// tree. The report is determined: of several names the least by owner and
+// then by name, and of several empty sets the entry whose text, node kind and
+// attribute joined by a period, is least. A rebound shared name is reported before an unbound name, and an
+// unbound name before an empty set.
+func bound[L any](rules syntax.Rules[L], evaluators Evaluators) error {
+	var rebound, missing *syntax.Predicate
+	least := func(found **syntax.Predicate, name syntax.Predicate) {
+		if *found == nil || name.Owner < (*found).Owner || name.Owner == (*found).Owner && name.Name < (*found).Name {
+			*found = &name
+		}
+	}
+	for name := range evaluators {
+		if name.Owner == syntax.Owner {
+			least(&rebound, name)
+		}
+	}
+	if rebound != nil {
+		return &text.Diagnostic{Code: text.Unsupported, Message: "grammar evaluators bind the shared predicate " + rebound.Owner + "/" + rebound.Name}
+	}
+	empty := ""
+	for kind, rule := range rules {
+		for name, attribute := range rule.Attributes {
+			if attribute.Predicate != (syntax.Predicate{}) && evaluator(attribute.Predicate, evaluators) == nil {
+				least(&missing, attribute.Predicate)
+			}
+			if attribute.OneOf != nil && len(attribute.OneOf) == 0 {
+				if entry := string(kind) + "." + name; empty == "" || entry < empty {
+					empty = entry
+				}
+			}
+		}
+	}
+	if missing != nil {
+		return &text.Diagnostic{Code: text.Unsupported, Message: "grammar predicate " + missing.Owner + "/" + missing.Name + " has no evaluator"}
+	}
+	if empty != "" {
+		return &text.Diagnostic{Code: text.Unsupported, Message: "grammar attribute " + empty + " holds an empty set"}
+	}
+	return nil
+}
+
+// accepts reports whether a text satisfies an attribute's declaration. The
+// first pass has refused a set that is present and empty, so a set without an
+// element is absent here.
+func accepts(attribute syntax.Attribute, evaluators Evaluators, value string) bool {
+	if attribute.Predicate != (syntax.Predicate{}) && !evaluator(attribute.Predicate, evaluators)(value) {
+		return false
+	}
+	return len(attribute.OneOf) == 0 || slices.Contains(attribute.OneOf, value)
+}
+
+// Check applies one language's grammar table to a tree. The table names its
+// predicates; evaluators binds the names of the caller's language, and the
+// shared names are bound here. A table that names a predicate without an
+// evaluator fails every check before the tree is read.
+func Check[L any](tree ast.AST[L], root ast.Kind[L], rules syntax.Rules[L], evaluators Evaluators) error {
+	if err := bound(rules, evaluators); err != nil {
+		return err
+	}
 	if err := check.Structure(tree); err != nil {
 		return err
 	}
@@ -94,7 +139,7 @@ func Check[L any](tree ast.AST[L], root ast.Kind[L], rules Rules[L]) error {
 		present := map[string]bool{}
 		for _, a := range n.Attributes {
 			spec, ok := rule.Attributes[a.Name]
-			if !ok || (spec.Accept != nil && !spec.Accept(a.Text)) {
+			if !ok || !accepts(spec, evaluators, a.Text) {
 				return bad("unknown or invalid attribute: " + a.Name)
 			}
 			present[a.Name] = true

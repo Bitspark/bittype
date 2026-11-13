@@ -6,6 +6,8 @@ import (
 	native "github.com/Bitspark/bittype/internal/cpp"
 	g "github.com/Bitspark/bittype/internal/grammar"
 	"github.com/Bitspark/bittype/internal/tree"
+	"github.com/Bitspark/bittype/model/syntax/cpp/lexical/go"
+	"github.com/Bitspark/bittype/model/syntax/go"
 	s "github.com/Bitspark/bittype/syntax/cpp/go"
 	"github.com/Bitspark/bittype/trees/ast/go"
 	"strings"
@@ -14,49 +16,48 @@ import (
 var types = []s.Kind{s.KindNamedType, s.KindBuiltinType, s.KindPointerType, s.KindLValueReferenceType, s.KindRValueReferenceType, s.KindCVQualifiedType, s.KindArrayType, s.KindFunctionType, s.KindMemberPointerType}
 var declarations = []s.Kind{s.KindNamespace, s.KindRecord, s.KindTypeAlias, s.KindEnum}
 var members = []s.Kind{s.KindField, s.KindMethod, s.KindDestructor, s.KindTypeAlias, s.KindRecord, s.KindEnum}
-var access = g.Set("public", "protected", "private")
+var access = []string{"public", "protected", "private"}
 
-func named() map[string]g.Attribute {
-	return g.Attributes(s.AttributeName, g.Attr(true, native.Identifier), s.AttributeAccess, g.Attr(false, access))
-}
-func extra(base map[string]g.Attribute, pairs ...any) map[string]g.Attribute {
-	for k, v := range g.Attributes(pairs...) {
-		base[k] = v
-	}
-	return base
+func headerName(v string) bool { return g.Nonempty(v) && !strings.ContainsAny(v, "\r\n") }
+
+// evaluators binds the names of C++'s own predicates that the table uses.
+var evaluators = g.Evaluators{
+	lexical.Identifier():      native.Identifier,
+	lexical.FundamentalType(): native.FundamentalType,
+	lexical.HeaderName():      headerName,
 }
 
-var rules = g.Rules[s.Language]{
-	s.KindTranslationUnit:     {Roles: []g.Role[s.Language]{g.Many(s.RoleInclude, 0, s.KindInclude), g.Many(s.RoleDeclaration, 0, declarations...)}},
-	s.KindInclude:             {Attributes: g.Attributes(s.AttributePath, g.Attr(true, func(v string) bool { return g.Nonempty(v) && !strings.ContainsAny(v, "\r\n") }), s.AttributeSystem, g.Attr(false, g.Bool))},
-	s.KindNamespace:           {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Identifier)), Roles: []g.Role[s.Language]{g.Many(s.RoleDeclaration, 0, declarations...)}},
-	s.KindRecord:              {Attributes: extra(named(), s.AttributeRecordKey, g.Attr(true, g.Set("struct", "class")), s.AttributeForward, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.Many(s.RoleTemplateParameter, 0, s.KindTypeParameter), g.Many(s.RoleBase, 0, s.KindBase), g.Many(s.RoleMember, 0, members...)}},
-	s.KindTypeAlias:           {Attributes: named(), Roles: []g.Role[s.Language]{g.Many(s.RoleTemplateParameter, 0, s.KindTypeParameter), g.One(s.RoleType, types...)}},
-	s.KindEnum:                {Attributes: extra(named(), s.AttributeScoped, g.Attr(false, g.Bool), s.AttributeForward, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.Opt(s.RoleUnderlying, types...), g.Many(s.RoleEnumerator, 0, s.KindEnumerator)}},
-	s.KindEnumerator:          {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Identifier), s.AttributeValue, g.Attr(false, g.Signed))},
-	s.KindBase:                {Attributes: g.Attributes(s.AttributeAccess, g.Attr(false, access), s.AttributeVirtual, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.One(s.RoleType, s.KindNamedType)}},
-	s.KindField:               {Attributes: named(), Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
-	s.KindMethod:              {Attributes: extra(named(), s.AttributeConst, g.Attr(false, g.Bool), s.AttributeVolatile, g.Attr(false, g.Bool), s.AttributeVirtual, g.Attr(false, g.Bool), s.AttributePure, g.Attr(false, g.Bool), s.AttributeNoexcept, g.Attr(false, g.Bool), s.AttributeRefQualifier, g.Attr(false, g.Set("none", "lvalue", "rvalue")), s.AttributeVariadic, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.Many(s.RoleParameter, 0, s.KindParameter), g.One(s.RoleResult, types...)}},
-	s.KindDestructor:          {Attributes: g.Attributes(s.AttributeAccess, g.Attr(false, access), s.AttributeVirtual, g.Attr(false, g.Bool), s.AttributePure, g.Attr(false, g.Bool), s.AttributeNoexcept, g.Attr(false, g.Bool))},
-	s.KindParameter:           {Attributes: g.Attributes(s.AttributeName, g.Attr(false, native.Identifier)), Roles: []g.Role[s.Language]{g.One(s.RoleType, types...)}},
-	s.KindTypeParameter:       {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Identifier), s.AttributeParameterKey, g.Attr(false, g.Set("typename", "class"))), Roles: []g.Role[s.Language]{g.Opt(s.RoleDefault, types...)}},
-	s.KindNamedType:           {Attributes: g.Attributes(s.AttributeGlobal, g.Attr(false, g.Bool), s.AttributeTypename, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.Many(s.RoleSegment, 1, s.KindNameSegment)}},
-	s.KindNameSegment:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Identifier), s.AttributeTemplate, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.Many(s.RoleArgument, 0, types...)}, Reference: true},
-	s.KindBuiltinType:         {Attributes: g.Attributes(s.AttributeName, g.Attr(true, native.Builtin))},
-	s.KindPointerType:         {Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
-	s.KindLValueReferenceType: {Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
-	s.KindRValueReferenceType: {Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
-	s.KindCVQualifiedType:     {Attributes: g.Attributes(s.AttributeConst, g.Attr(false, g.Bool), s.AttributeVolatile, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
-	s.KindArrayType:           {Attributes: g.Attributes(s.AttributeLength, g.Attr(true, g.Positive)), Roles: []g.Role[s.Language]{g.One(s.RoleElement, types...)}},
-	s.KindFunctionType:        {Attributes: g.Attributes(s.AttributeNoexcept, g.Attr(false, g.Bool), s.AttributeVariadic, g.Attr(false, g.Bool)), Roles: []g.Role[s.Language]{g.Many(s.RoleParameter, 0, s.KindParameter), g.One(s.RoleResult, types...)}},
-	s.KindMemberPointerType:   {Roles: []g.Role[s.Language]{g.One(s.RoleOwner, s.KindNamedType), g.One(s.RoleElement, types...)}},
+var rules = syntax.Rules[s.Language]{
+	s.KindTranslationUnit:     {Roles: []syntax.Role[s.Language]{{Name: s.RoleInclude, Max: -1, Kinds: []s.Kind{s.KindInclude}}, {Name: s.RoleDeclaration, Max: -1, Kinds: declarations}}},
+	s.KindInclude:             {Attributes: map[string]syntax.Attribute{s.AttributePath: {Required: true, Predicate: lexical.HeaderName()}, s.AttributeSystem: {Predicate: syntax.Bool()}}},
+	s.KindNamespace:           {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleDeclaration, Max: -1, Kinds: declarations}}},
+	s.KindRecord:              {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeAccess: {OneOf: access}, s.AttributeRecordKey: {Required: true, OneOf: []string{"struct", "class"}}, s.AttributeForward: {Predicate: syntax.Bool()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleTemplateParameter, Max: -1, Kinds: []s.Kind{s.KindTypeParameter}}, {Name: s.RoleBase, Max: -1, Kinds: []s.Kind{s.KindBase}}, {Name: s.RoleMember, Max: -1, Kinds: members}}},
+	s.KindTypeAlias:           {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeAccess: {OneOf: access}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleTemplateParameter, Max: -1, Kinds: []s.Kind{s.KindTypeParameter}}, {Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
+	s.KindEnum:                {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeAccess: {OneOf: access}, s.AttributeScoped: {Predicate: syntax.Bool()}, s.AttributeForward: {Predicate: syntax.Bool()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleUnderlying, Max: 1, Kinds: types}, {Name: s.RoleEnumerator, Max: -1, Kinds: []s.Kind{s.KindEnumerator}}}},
+	s.KindEnumerator:          {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeValue: {Predicate: syntax.Signed()}}},
+	s.KindBase:                {Attributes: map[string]syntax.Attribute{s.AttributeAccess: {OneOf: access}, s.AttributeVirtual: {Predicate: syntax.Bool()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleType, Min: 1, Max: 1, Kinds: []s.Kind{s.KindNamedType}}}},
+	s.KindField:               {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeAccess: {OneOf: access}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
+	s.KindMethod:              {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeAccess: {OneOf: access}, s.AttributeConst: {Predicate: syntax.Bool()}, s.AttributeVolatile: {Predicate: syntax.Bool()}, s.AttributeVirtual: {Predicate: syntax.Bool()}, s.AttributePure: {Predicate: syntax.Bool()}, s.AttributeNoexcept: {Predicate: syntax.Bool()}, s.AttributeRefQualifier: {OneOf: []string{"none", "lvalue", "rvalue"}}, s.AttributeVariadic: {Predicate: syntax.Bool()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleParameter, Max: -1, Kinds: []s.Kind{s.KindParameter}}, {Name: s.RoleResult, Min: 1, Max: 1, Kinds: types}}},
+	s.KindDestructor:          {Attributes: map[string]syntax.Attribute{s.AttributeAccess: {OneOf: access}, s.AttributeVirtual: {Predicate: syntax.Bool()}, s.AttributePure: {Predicate: syntax.Bool()}, s.AttributeNoexcept: {Predicate: syntax.Bool()}}},
+	s.KindParameter:           {Attributes: map[string]syntax.Attribute{s.AttributeName: {Predicate: lexical.Identifier()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleType, Min: 1, Max: 1, Kinds: types}}},
+	s.KindTypeParameter:       {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeParameterKey: {OneOf: []string{"typename", "class"}}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleDefault, Max: 1, Kinds: types}}},
+	s.KindNamedType:           {Attributes: map[string]syntax.Attribute{s.AttributeGlobal: {Predicate: syntax.Bool()}, s.AttributeTypename: {Predicate: syntax.Bool()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleSegment, Min: 1, Max: -1, Kinds: []s.Kind{s.KindNameSegment}}}},
+	s.KindNameSegment:         {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.Identifier()}, s.AttributeTemplate: {Predicate: syntax.Bool()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleArgument, Max: -1, Kinds: types}}, Reference: true},
+	s.KindBuiltinType:         {Attributes: map[string]syntax.Attribute{s.AttributeName: {Required: true, Predicate: lexical.FundamentalType()}}},
+	s.KindPointerType:         {Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Min: 1, Max: 1, Kinds: types}}},
+	s.KindLValueReferenceType: {Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Min: 1, Max: 1, Kinds: types}}},
+	s.KindRValueReferenceType: {Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Min: 1, Max: 1, Kinds: types}}},
+	s.KindCVQualifiedType:     {Attributes: map[string]syntax.Attribute{s.AttributeConst: {Predicate: syntax.Bool()}, s.AttributeVolatile: {Predicate: syntax.Bool()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Min: 1, Max: 1, Kinds: types}}},
+	s.KindArrayType:           {Attributes: map[string]syntax.Attribute{s.AttributeLength: {Required: true, Predicate: syntax.Positive()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleElement, Min: 1, Max: 1, Kinds: types}}},
+	s.KindFunctionType:        {Attributes: map[string]syntax.Attribute{s.AttributeNoexcept: {Predicate: syntax.Bool()}, s.AttributeVariadic: {Predicate: syntax.Bool()}}, Roles: []syntax.Role[s.Language]{{Name: s.RoleParameter, Max: -1, Kinds: []s.Kind{s.KindParameter}}, {Name: s.RoleResult, Min: 1, Max: 1, Kinds: types}}},
+	s.KindMemberPointerType:   {Roles: []syntax.Role[s.Language]{{Name: s.RoleOwner, Min: 1, Max: 1, Kinds: []s.Kind{s.KindNamedType}}, {Name: s.RoleElement, Min: 1, Max: 1, Kinds: types}}},
 }
 
 // bittype:grammar rules
 // bittype:scope docs/syntax.md#c
 func Check(view ast.View[s.Language]) error {
 	t := view.ASTView()
-	if err := g.Check(t, s.KindTranslationUnit, rules); err != nil {
+	if err := g.Check(t, s.KindTranslationUnit, rules, evaluators); err != nil {
 		return err
 	}
 	v := tree.View[s.Language]{Tree: t}
