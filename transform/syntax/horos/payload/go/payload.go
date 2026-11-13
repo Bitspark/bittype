@@ -100,25 +100,19 @@ type codecOf[P any] struct {
 }
 
 // New makes the codec of one schema from a contribution's two mappings
-// between its generated plain Go type P and an ontos value.
+// between its generated plain Go type P and an ontos value. What this package
+// adds is the schema language's part: validation by horos conformance and the
+// canonical bytes. The adaptation to the codec interface is the contract's
+// (generation.TypedCodec).
 func New[P any](schema Schema, encode func(P) (core.Value, error), decode func(core.Value) (P, error)) g.PayloadCodec {
-	return codecOf[P]{schema, encode, decode}
+	c := codecOf[P]{schema, encode, decode}
+	return g.TypedCodec(schema.reference, c.freeze, c.view)
 }
 
-func (c codecOf[P]) Schema() g.SchemaReference { return c.schema.reference }
-
-// Freeze encodes the value a rule returned, validates the encoding against the
+// freeze encodes the value a rule returned, validates the encoding against the
 // schema and returns the canonical bytes. The bytes are the frozen value: they
 // share nothing with what the rule holds.
-func (c codecOf[P]) Freeze(value any) ([]byte, error) {
-	typed, ok := value.(P)
-	if !ok {
-		pointer, isPointer := value.(*P)
-		if !isPointer || pointer == nil {
-			return nil, fmt.Errorf("the rule returned a %T and schema %s/%s has the type %T", value, c.schema.reference.Identity, c.schema.reference.Version, typed)
-		}
-		typed = *pointer
-	}
+func (c codecOf[P]) freeze(typed P) ([]byte, error) {
 	encoded, err := c.encode(typed)
 	if err != nil {
 		return nil, err
@@ -129,15 +123,16 @@ func (c codecOf[P]) Freeze(value any) ([]byte, error) {
 	return codec.Encode(encoded), nil
 }
 
-// View decodes frozen bytes into a fresh typed value. It validates again: the
+// view decodes frozen bytes into a fresh typed value. It validates again: the
 // bytes may come from a serialized plan.
-func (c codecOf[P]) View(frozen []byte) (any, error) {
+func (c codecOf[P]) view(frozen []byte) (P, error) {
+	var zero P
 	value, err := codec.Decode(frozen)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
 	if !horos.Conforms(value, c.schema.descriptor) {
-		return nil, fmt.Errorf("the frozen value does not conform to schema %s/%s", c.schema.reference.Identity, c.schema.reference.Version)
+		return zero, fmt.Errorf("the frozen value does not conform to schema %s/%s", c.schema.reference.Identity, c.schema.reference.Version)
 	}
 	return c.decode(value)
 }

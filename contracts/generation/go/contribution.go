@@ -402,6 +402,47 @@ type PayloadCodec interface {
 	View(frozen []byte) (any, error)
 }
 
+// TypedCodec makes a payload codec from two functions over a payload type P:
+// freeze encodes and validates a value of P and returns the canonical bytes,
+// and view decodes and validates frozen bytes into a fresh value of P. It is
+// the adaptation of typed functions to the untyped codec interface, and it
+// knows no schema language: the owner of a schema language supplies freeze
+// and view. A rule's value that is neither a P nor a pointer to one is
+// refused.
+func TypedCodec[P any](schema SchemaReference, freeze func(P) ([]byte, error), view func([]byte) (P, error)) PayloadCodec {
+	return typedCodec[P]{schema, freeze, view}
+}
+
+type typedCodec[P any] struct {
+	schema SchemaReference
+	freeze func(P) ([]byte, error)
+	view   func([]byte) (P, error)
+}
+
+func (c typedCodec[P]) Schema() SchemaReference { return c.schema }
+
+func (c typedCodec[P]) Freeze(value any) ([]byte, error) {
+	typed, ok := value.(P)
+	if !ok {
+		pointer, isPointer := value.(*P)
+		if !isPointer || pointer == nil {
+			return nil, fmt.Errorf("the rule returned a %T and schema %s/%s has the type %T", value, c.schema.Identity, c.schema.Version, typed)
+		}
+		typed = *pointer
+	}
+	if c.freeze == nil {
+		return nil, ErrInvalid
+	}
+	return c.freeze(typed)
+}
+
+func (c typedCodec[P]) View(frozen []byte) (any, error) {
+	if c.view == nil {
+		return nil, ErrInvalid
+	}
+	return c.view(frozen)
+}
+
 // ErrPayload: a rule returned a value that its payload schema does not admit.
 var ErrPayload = fmt.Errorf("%w: payload outside its schema", ErrInvalid)
 
