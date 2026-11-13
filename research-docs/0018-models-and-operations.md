@@ -2770,151 +2770,170 @@ None is evidence for an option.
 
 ## 6. What we have considered
 
-Standing of this section: section 6.1 opens with the owner's direction,
-which is fixed. Everything else is our derivation, or a fact of the code
+Standing of this section: the owner's direction is fixed (Question, fixed
+point DIR). Everything else here is our derivation, or a fact of the code
 that is marked as such, and is open. No option is ruled out because the
 present code would have to change. The document does not choose among the
-options. The labels P, U and D are unique, so that an answer can cite them.
+options. The labels are unique, so that an answer can cite them: P for
+package placement, U for unification, D for declaration.
 
-### 6.1 The owner's direction, and what its two rules reach in the code as it is
+### 6.1 What the two rules reach, by our test; consistency and correctness
 
-**The direction** (messages 7 and 8, repeated here so that the section is
-complete):
-
-```text
-model/...
-ops/...
-model never imports from ops
-model:
-model/{syntax,semantics,...}/go/...
-ops:
-ops/{transform,...}/go/...
-```
-
-```text
-So the root split to me would be between model and ops.
-model must not contain any ops and must not import from ops either.
-ops work on the model
-```
-
-It names two roots and two rules. Rule 1: a model imports no operation. Rule
-2: a model contains no operation. It gives two members of the first root,
-`syntax` and `semantics`, and one of the second, `transform`. It leaves open
-what the ellipses hold. In particular it does not say where the generic
-carriers, the contract packages, the private helpers, the tools and the
-verification component go, and it does not say what counts as an operation
-inside a package that describes something. The owner's reason is in message
-6: "The model is independent of the operation, isn't it?"
-
-**A test for "model", applied to every package.** To see what the direction
-reaches, an investigation applied one stated test to all 129 production
-packages. It was made before the eighth message. The test is ours, not the
+**A test, applied to every package.** To see what the direction reaches, the
+study of the code applied one stated test to all 129 production packages. It
+was made before the owner's eighth message. The test is ours, not the
 owner's:
 
-- A package is a *model* if it declares what exists (carriers, vocabularies
-  of names, forms, identities, value types with their well-formedness) and
-  performs no processing of an input into an output.
+- A package is on the *model* side if it declares what exists (generic data
+  types, vocabularies, forms, identities, value types with their
+  well-formedness) and performs no processing of an input into an output.
 - It is an *operation* if it parses, checks, formats, prints, resolves,
   analyzes, transforms, verifies or composes.
-- It is *both* if it holds a declaration and processing.
+- It holds *both* if it holds a declaration and processing.
 - It is *undecided* if the test gives no answer.
 
 Validation at construction time was counted as well-formedness. Anything
 that takes one artifact and returns another was counted as processing: a
 tree from text, an encoding from an environment, a verdict on a form.
+Because the test lists "composes", it files the shared mechanisms (the
+engine, the generation registry, the planner) under operation. That is a
+result of our test and is asked (case (f) of section 6.2).
+
+**Result of our test.**
 
 | Result | Packages | Lines | Which |
 | --- | --- | --- | --- |
-| Model, or both with a model core | 22 | 5,428 | The three tree packages, `files/go`, `source/go`, `semantics/go`, five syntax vocabularies, four semantic vocabularies, four models, three symbol packages |
-| Contract packages | 13 | 5,030 | Section 2.5. By the test `language` and `text` are models, `pipeline` is protocol only, and the other ten are both |
+| On the model side, or both with a model-side core | 22 | 5,428 | The three tree packages, `files/go`, `source/go`, `semantics/go`, five syntax vocabulary packages, four semantic vocabulary packages, four intended-forms packages, three symbol packages |
+| Contract packages | 13 | 5,030 | Section 2.5. By the test `language` and `text` are on the model side, `pipeline` is an interface only, and the other ten hold both |
 | Undecided | 10 | 1,498 | Below |
-| Operation | 84 | 23,987 | The stage providers and query services, the shared printers, the generation kernel packages, the source reader, four targets, 21 mappings and three shared mapping parts, the verification packages, the tools, the engine, and nine private helpers (scanning, parser state, tree construction, the three bridges, the two horos adapters and the import helper of TypeScript's Files stage) |
+| Operation | 84 | 23,987 | The stage providers and query services, the shared printers, the generation kernel packages, the source reader, four targets, 21 mappings and three shared mapping parts, the verification packages, the tools, the engine, and nine private helpers (scanning, parser state, tree construction, the three bridges, the two horos adapters and the import helper of TypeScript's Files formatter) |
 
-**What rule 2 reaches: the packages that hold both.** Twelve of the 22 are
-not plain models under the test, because each holds code whose input and
-output are different artifacts. By the test, each of them contains an
-operation:
+**What rule 2 (no containment) reaches.** Twelve of the 22 model-side
+packages hold both under the test, because each holds code whose input and
+output are different artifacts:
 
-| Package | The model part | The processing part |
+| Package | The model-side part | The processing part |
 | --- | --- | --- |
-| `trees/representation/go` | The language descriptor and the opaque envelopes | Packing and unpacking: a deep copy and a structure check, which it calls in a `check/` directory |
-| `source/go` | Units, groups, relations, the publication | A publisher of 195 lines that admits a publication under a policy with two callbacks into operations |
-| `semantics/{golang,typescript,rust}/go` | Names, profiles, contract identities, environment types | The typed readers over a graph, and the encoding of an environment into settings and back |
-| The four models | Form names and constructors | Two checks that return a verdict on a form (section 4.4) |
+| `trees/representation/go` (the envelope package) | The language descriptor and the opaque envelopes | Packing and unpacking: a deep copy and a structure check, which it calls in a `check/` directory |
+| `source/go` | Units, groups, relations, the publication | A publisher of 195 lines that admits a publication under a policy with two callbacks into operations (section 2.3) |
+| `semantics/{golang,typescript,rust}/go` | Names, profiles, contract identities, the types of a compiler run's inputs | The typed readers over a graph, and the encoding of those inputs into settings and back |
+| The four intended-forms packages | Form names and constructors | Two checks that return a verdict on a form (section 4.4). The migration's branch adds a third check to each (section 2.7) |
 | The three symbol packages | A symbol type and its categories | Admission of a name (for Go by asking the standard library), and the encoding of a symbol into an issued key |
 
 Rule 2 also reaches the contract packages from the other side. Ten of the
-thirteen hold value types that the test counts as model-like, beside the
-protocol and admission code of one operation (section 2.5). If those value
-types are models, each of the ten is a package in which a model and an
+thirteen hold value types that the test counts as model-side, beside the
+interface and the admission code of one operation (section 2.5). If those
+value types are models, each of the ten is a package in which a model and an
 operation sit together.
 
-**The ten that the test does not decide, and why.**
+**The ten packages that the test does not decide.**
 
 | Package | Why undecided |
 | --- | --- |
-| `check/syntax/shared/ast/go`, `check/syntax/shared/cst/go` | By their directory they are a check stage. By their content they are the well-formedness of the generic tree, which the test assigns to the model. The envelope package imports both |
+| `check/syntax/shared/ast/go`, `check/syntax/shared/cst/go` | By their directory they are a check stage. By their content they are the well-formedness of the generic tree, which the test puts on the model side. The envelope package imports both |
 | `internal/tree` | A read helper and a deep copy over the generic tree. It declares nothing and is no stage. The envelope package imports it |
-| `internal/grammar` | It declares what an admission table is (model-like) and holds the interpreter of 67 lines (processing) |
-| `internal/declsyntax` | The horos admission table, a literal, and the horos rules in code |
-| `internal/cpp`, `internal/rust`, `internal/typescript`, `internal/horos` | Spelling rules. A predicate over strings states which strings exist, which is model-like, and it is written as code. Three of them also decode string literals, which is processing. Both sides import them: stage providers, and the semantic vocabularies and symbol packages |
-| `transform/syntax/horos/mapping/go` | Two profile identities and one function type. The layout calls it a common mapping part, not a vocabulary |
+| `internal/grammar` | It declares what a grammar table is (model-side) and holds the interpreter of 67 lines (processing) |
+| `internal/declsyntax` | The horos grammar table, a literal, and the horos rules in code |
+| `internal/cpp`, `internal/rust`, `internal/typescript`, `internal/horos` | Spelling rules. A predicate over strings states which strings exist, which is model-side, and it is written as code. Three of them also decode string literals, which is processing. `internal/rust` and `internal/typescript` are imported from both sides (section 4.2) |
+| `transform/syntax/horos/mapping/go` | Two profile identities and one function type |
 
-**What rule 1 reaches: every import that it would forbid today.** The 22
-model packages have 33 direct imports of an operation package, a contract
-package or a helper. Four of the 22 import only models. No model package
-imports a stage provider, a query service, a target, a mapping, the engine
-or a bridge. Whether one of the 33 is forbidden depends on where its target
-is placed, and that is what the direction leaves open.
+**What rule 1 (no import) reaches.** The 22 model-side packages have 33
+direct imports of an operation package, a contract package or a helper. Four
+of the 22 import only model-side packages. None imports a stage provider, a
+query service, a target, a mapping, the engine or a bridge. Whether one of
+the 33 is forbidden depends on where the imported package is placed, and the
+direction leaves that open.
 
-| Kind | From | To | Symbols used | Edges |
+| Sort of import | Importing package | Imported package | Identifiers used | Imports |
 | --- | --- | --- | --- | --- |
-| A vocabulary uses a contract's value types | The five syntax vocabularies | `contracts/language/go` | `ID`, `Provider`: the two methods that state a language's identifier and name | 5 |
-| | The four semantic vocabularies | `contracts/semantic/go` | `Setting`, `EvidenceRequirement`, `Result`, `Snapshot`, `Requirement`, `Obligation`, `Contract`, the verdict `Holds`, default limits, three error values, and two functions: `AdmitEvidence`, `CaptureSettings` | 4 |
-| | The four semantic vocabularies | `contracts/resolution/go`, `contracts/analysis/go` | `Contract`, `Requirement`, `Kind`: the types of the contract identities | 8 |
-| | The four models | `contracts/generation/go` | `NewFormIssuer`, `Form`, `Expression`, `Native`, `NativeDeclaration`, and the errors `ErrInvalid`, `ErrScope`, `ErrUnsupported` | 4 |
+| A vocabulary package uses a contract package's value types | The five syntax vocabulary packages | `contracts/language/go` | `ID`, `Provider`: the two methods that state a language's identifier and name | 5 |
+| | The four semantic vocabulary packages | `contracts/semantic/go` | `Setting`, `EvidenceRequirement`, `Result`, `Snapshot`, `Requirement`, `Obligation`, `Contract`, the verdict values `Holds` and `Undetermined`, default limits, three error values, and two functions: `AdmitEvidence`, `CaptureSettings` | 4 |
+| | The four semantic vocabulary packages | `contracts/resolution/go`, `contracts/analysis/go` | `Contract`, `Requirement`, `Kind`: the types of the contract identities | 8 |
+| | The four intended-forms packages | `contracts/generation/go` | `NewFormIssuer`, `Form`, `Expression`, `Native`, `NativeDeclaration`, and the errors `ErrInvalid`, `ErrScope`, `ErrUnsupported` | 4 |
 | | The three symbol packages | `contracts/generation/go` | `NewSymbolIssuer`, `ExternalUse`, the same errors | 3 |
-| A carrier uses a contract's value types | `source/go` | `contracts/semantic/go` | `Snapshot`, `Result`, `EvidenceRequirement`, `Limits`, and the functions `AdmitEvidence`, `ValidateEvidenceRequirements` | 1 |
+| A carrier uses a contract package's value types | `source/go` | `contracts/semantic/go` | `Snapshot`, `Result`, `EvidenceRequirement`, `Limits`, default limits, two error values, and the functions `AdmitEvidence`, `ValidateEvidenceRequirements` | 1 |
 | | `trees/representation/go` | `contracts/language/go` | `ID`, `Provider` | 1 |
-| The carrier's own well-formedness lives in a check directory | `trees/representation/go` | `check/syntax/shared/ast/go`, `check/syntax/shared/cst/go` | `Structure`, `Check` | 2 |
+| The tree's own well-formedness lives in a check directory | `trees/representation/go` | `check/syntax/shared/ast/go`, `check/syntax/shared/cst/go` | `Structure`, `Check` | 2 |
 | | `trees/representation/go` | `internal/tree` | `Clone` | 1 |
 | Lexical rules needed on both sides | `semantics/rust/go`, the Rust symbol package | `internal/rust` | `CrateName`, `Identifier` | 2 |
 | | `semantics/typescript/go`, the TypeScript symbol package | `internal/typescript` | `PackageSpecifier`, `TypeName` | 2 |
 | | | | | **33** |
 
-What the first kind would require if a vocabulary were to import no
+What the first sort would require if a vocabulary package were to import no
 contract package, as facts of the code:
 
-- For the models and symbol packages: `Form`, `FormIssuer`, `Expression`
-  with everything it embeds (slots, helper keys, the six expression kinds
-  and their constructors), `NativeDeclaration`, `NativeParameter`,
-  `IssuedValue`, the symbol issuer with `ExternalSymbol` and `ExternalUse`,
-  and three error values. That is the carrier of intent of section 4.4. It
-  is declared in the same package as the planner, and one of its kinds,
-  the reference to a planned declaration, "is issued by the planner after it
-  authenticates the source callee" (comment on `Expression`).
-- For the semantic vocabularies and `source/go`: the receipt and the
-  snapshot. Both are handles with private state. Only the contract's
-  admission code creates them, which is what makes a receipt trustworthy. In
-  Go a type with unexported fields is constructed in its own package.
-- For the syntax vocabularies: a 25-line package of two declarations.
+- For the intended-forms and symbol packages: the data types of intent of
+  section 4.4 and the symbol issuer. They are declared in the same package
+  as the planner, and one expression kind, the reference to a planned
+  declaration, "is issued by the planner after it authenticates the source
+  callee" (comment on `Expression`).
+- For the semantic vocabulary packages and `source/go`: the receipt and the
+  snapshot. Both are handles with private state that only the contract
+  package's admission code creates (section 2.5). In Go a type with
+  unexported fields can be constructed only in its own package.
+- For the syntax vocabulary packages: a 25-line package of two declarations.
 
 In the other direction the contract packages import the carriers. There is
 a cycle of directories, though not of packages: `source/go` imports
-`contracts/semantic/go`, and the parse, print and format contracts import
-`source/go`.
+`contracts/semantic/go`, and the parse, print and format contract packages
+import `source/go`.
 
-**What rule 2 leaves to be decided: where a model's own well-formedness
-ends and an operation begins.** The investigation's test for an operation
-was that it takes one artifact and returns another. That test leaves three
-kinds of code unassigned. Each is code that sits with a description today,
-and each can be read as part of saying what the described thing is, or as
-work done on it.
+**Consistency and correctness.** Standing of the rest of this subsection:
+our derivation, except what is marked as implemented today or as an
+accepted design. Our test left one thing unassigned: code that sits with a
+description and decides whether a value is a well-formed instance of it.
+The owner answered that with two questions (messages 9 and 10): whether we
+were talking about the correctness of a model, or about its consistency. We
+made the following of them. Question 1 asks whether it is the right axis.
 
-*First, a constructor and the refusal of a malformed value.* Go's model
-builds a field form and, in another function, refuses a malformed one
+- **Consistency:** a value agrees with its own model and with itself. It can
+  be decided from the value and the model's declaration alone.
+- **Correctness:** a value agrees with something outside itself: a source, a
+  specification, a compiler's judgment. It is a relation between two things,
+  and it needs evidence.
+
+Four levels, as our hypothesis:
+
+| Level | What is asked of a value | Decided today by |
+| --- | --- | --- |
+| 1 | The structure of the generic data type: identities in range, nothing dangling | A generic check |
+| 2 | Conformance to the language's declared model: node kinds, child roles, attributes, rules between nodes. The repository calls this admission | The check stage, from a grammar table and from code |
+| 3 | Validity in the language itself: names resolve, the program type-checks | The language's own judgment, through analysis |
+| 4 | Correctness against another model: does this Go type represent that horos type | Verification |
+
+Levels 1 to 3 are consistency at increasing depth inside one language. Level
+4 crosses models. All four are decided by operations. What a model can state
+is the declaration that levels 1 and 2 are checked against. No page states
+these levels.
+
+Three facts behind it, implemented today:
+
+- The tree type is not checked by construction: "the carrier performs no
+  validation or allocation" and "No immutability or validity is enforced
+  here" (section 4.1). The evidence that a tree was checked is a value of
+  another type, the envelope: "AST is an owned, structurally checked, opaque
+  snapshot." (`trees/representation/go/ast.go:23`).
+- An accepted page has the shape of a generic check with a supplied
+  declaration (fixed point 14). The grammar interpreter of section 4.2 is
+  that shape.
+- Consistency is decided in three ways today: from a table, by a generic
+  checker (the grammar tables); by code inside a check provider (3 to 14
+  rules per language); and by a validating constructor on the model side
+  (the semantic graph's `New`, the method `Capture` of the file data type,
+  and the checks of an intended-forms package).
+
+Two accepted sentences fit the levels (fixed point 13): generation
+establishes no proof that a representation is correct, which is level 4, and
+parsing establishes neither reference resolution nor semantic validity,
+which is level 3.
+
+**Three cases, which are levels 1 and 2 decided in three different places.**
+
+*A constructor, and a separate check of the same condition* (level 2 for
+intent). Go's intended-forms package builds a field form and, in another
+function, refuses a malformed one
 (`transform/syntax/golang/model/go/model.go:43-45`, `:70-73`; `g` is the
-generation contract):
+generation contract package):
 
 ```go
 func Field(name string, optional bool, ty g.Expression[s.Language]) g.Expression[s.Language] {
@@ -2927,19 +2946,17 @@ func Field(name string, optional bool, ty g.Expression[s.Language]) g.Expression
 		}
 ```
 
-A fact about this pair: the constructor `Field` itself refuses nothing. It
-accepts an empty name. The refusal is in `CheckExpression`, which the
-planner reaches through the target. Other constructors do refuse. The form
-issuer returns an empty form for an empty name (section 4.4), and the
-constructor of the semantic graph validates its input before it publishes
-(section 4.3). The test counted validation at construction as
-well-formedness, and it counted `CheckExpression` as processing, because it
-returns a verdict on a form. So the same condition, that a field has a name,
-is a model's own if a constructor enforces it and an operation if a check
-does.
+The constructor `Field` refuses nothing. It accepts an empty name. The
+refusal is in `CheckExpression`, which the planner reaches through the
+target. Other constructors do refuse: the form issuer returns an empty form
+for an empty name, and the constructor of the semantic graph validates its
+input. Our test counted validation at construction as well-formedness and
+counted `CheckExpression` as processing. So the same condition, that a field
+has a name, is a model's own if a constructor enforces it and an operation
+if a check does.
 
-*Second, a typed reader over a graph.* Go's semantic vocabulary reads the
-element type of a slice from the graph
+*A typed reader over a graph* (it relies on level 2 for facts). Go's
+semantic vocabulary package reads the element type of a slice
 (`semantics/golang/go/model.go:276-282`):
 
 ```go
@@ -2952,18 +2969,17 @@ func (t Type) SliceElement() (Type, bool) {
 }
 ```
 
-The reader states the shape of a slice term: one operator and one operand.
-No declaration states that shape (section 4.3). It also takes one artifact,
-a term of the graph, and returns another, a typed handle. The test counted
-the readers as processing. One reader of the same file also gives a coverage
-answer: it refuses every basic kind but two as unsupported
-(`model.go:164-167`).
+The reader states the shape of a slice term, one operator and one operand.
+It also takes one artifact, a term of the graph, and returns another, a
+typed handle. Our test counted the readers as processing. One reader of the
+same file also gives a coverage answer: it refuses every basic kind but two
+as unsupported (`model.go:164-167`).
 
-*Third, the check that a tree or a form is well formed.* The structure check
-of the generic tree lives in a check directory
-(`check/syntax/shared/ast/go/structure.go:66-76`, `:92-94`; the check of the
-concrete tree is `Check` in `check/syntax/shared/cst/go`, and it calls this
-function first):
+*The check that makes a list of nodes a tree* (level 1). It lives in a check
+directory (`check/syntax/shared/ast/go/structure.go:66-76`, `:92-94`;
+`MaxNodes` is a bound, `budget` counts storage, and `text.LimitExceeded` is
+a diagnostic code). The check of the concrete tree calls this function
+first:
 
 ```go
 func Structure[L any](tree ast.AST[L]) error {
@@ -2983,185 +2999,219 @@ func Structure[L any](tree ast.AST[L]) error {
 		}
 ```
 
-The carrier package says of itself: "These are data types, not checked
-trees." What makes a list of nodes a tree at all is this function. The
-envelope package, a carrier, calls it. The test did not decide these two
-packages. The same holds one level up for a language. The admission table
+The envelope package, a carrier, calls it. Our test did not decide these two
+packages. One level up the same holds for a language: the grammar table
 says what a Go tree is, and its interpreter and the rules beside it are the
-language's checker, a stage (section 4.2). And for intent: the checks of a
-model say what a form is (section 4.4).
+language's checker, a stage (section 4.2).
 
-So the three kinds are: a constructor that refuses a malformed value, a
-typed reader over a graph, and the check that a tree or a form is well
-formed. Question 1 asks for the principle that assigns them.
+**The hard case.** A model that contains no operation cannot guarantee its
+invariants by construction. For trees the repository already separates the
+two: an unchecked data type, and a checked state that another value
+witnesses. Whether "checked" then becomes a separate, evidenced state for
+every sort of model, and what carries that evidence, is asked in question 1.
 
-### 6.2 Carrying out the direction: what is on the model side, and how contracts divide
+### 6.2 The line: nine cases, and four ways to place packages
 
-Standing: our derivation. The direction is fixed. What follows are ways to
-carry it out. None is chosen. For each we say what it does to the accepted
-sentence "A package's role follows from its path".
+**The cases of question 1.** Each is a piece of code that our test could
+not assign, or assigned in a way that is asked.
 
-**P1. The smallest first step that the direction contains.** The four
-models and the three symbol packages leave the stage directory `transform/`
-and stand with the other two kinds of vocabulary. P1 is no option on its
-own. Every way of carrying out the direction contains it.
+- **(a)** A constructor that refuses a malformed value, against a separate
+  check that returns a verdict on the same condition (section 6.1, the
+  first case; section 4.4).
+- **(b)** A typed reader over a graph (section 6.1, the second case;
+  section 4.3).
+- **(c)** The check that makes a list of nodes a tree, and a language's
+  grammar table with the rules beside it (section 6.1, the third case;
+  section 4.2).
+- **(d)** The generic data types for trees, graphs and files, two of which
+  hold or call code of an operation (section 2.3).
+- **(e)** The value types and trusted handles (snapshot, receipt) that sit
+  in each operation's contract package, and the contract package that is
+  left (section 2.5).
+- **(f)** The shared mechanisms that select and compose: the engine, the
+  registry, the planner (sections 1.2 and 2.2).
+- **(g)** What describes a relation between two languages: the identity and
+  decision-record schema of one mapping, and the identity of one family's
+  meaning (section 2.7).
+- **(h)** A language's lexical rules, which both sides need (section 4.2).
+- **(i)** The intended-forms package of a language (sections 3.1 and 4.4):
+  a model of the language, or the working data of one operation.
 
-- What it does: seven packages move. All four kinds of vocabulary are then
-  in one kind of place. The Files stage's import of a symbol package no
-  longer reaches into another stage's directory.
-- What it does not do: it introduces no root and satisfies neither rule. A
-  model still imports the generation contract (rule 1), and it still holds
-  its checks (rule 2).
-- The role-from-path rule: unchanged in kind. Two path shapes are replaced
-  by two others.
+**Four ways to place packages.** Standing: our derivation. Each is stated
+with the same five points. None is chosen. What is below a root is open:
+the names in the owner's message 7 are a sketch (Question), and fixed point
+23 is in question for the model root.
 
-**P2. The generic carriers and the model-like types of the contracts are on
-the model side.** `model/` holds the carriers, the vocabularies and the
-value types that operations exchange. `ops/` holds the stages, the kernel,
-what is left of each contract, the bridges and the tools.
+**P1. The intended-forms packages and the symbol packages stand beside the
+syntax and semantic vocabulary packages.**
 
-- What it means for rule 1: it holds as one rule on a path prefix, with no
-  exception.
-- What it means for rule 2: every package that holds both is divided (the
-  twelve of section 6.1), and ten contract packages are split into a value
-  part and a protocol part. Each split is a decision about one of the three
-  kinds of code of section 6.1. What is left of a contract is then an
-  interface and the admission code of one operation.
-- What else it implies: every package gets a new import path. The carrier
-  of intent leaves the planner's package. The handles that only admission
-  code may create need a home that lets the operation create them and the
-  model name them. The structure checks of the generic tree are on the model
-  side, or the envelope stops checking. The lexical helpers must be
-  importable from both roots, so they cannot be below `ops/internal/` (fixed
-  point 21).
-- What it leaves open: on which side a thing belongs that describes a
-  relation between two languages and is used by one operation only: a
-  mapping's vocabulary, a family's meaning, a profile identity. And whether
-  a grammar table, which today is a contribution's private variable, is part
-  of a language's model.
-- The role-from-path rule: the root gives a first cut, model or operation.
-  The roles within a root (vocabulary, carrier, contribution, kernel,
-  private part) still need a path shape or a table each. So the two rules
-  of the direction are added to the roles and do not replace them.
+- *On the model side:* the four sorts of vocabulary package of one language.
+- *Rule 1:* not met. Every vocabulary package still imports a contract
+  package.
+- *Rule 2:* not met. Twelve packages still hold both.
+- *Its risk:* it presupposes that the intended forms are a model of the
+  language. If they are the working data of generation, they stay with that
+  operation, and only the symbol packages, which two stages read, are in
+  question.
+- *It leaves open:* everything about carriers, contract packages, grammar
+  tables and the packages of a pair of languages.
 
-**P3. The contracts stay with the operations, and the value types that both
-sides need are in a third place.** The vocabularies and possibly the carriers form
-`model/`. Stages, kernel and contracts form `ops/`. A third place holds
-what both need: the identity of a language, the diagnostics, the carrier of
-intent, the receipt and evidence types, and the helpers that both sides
-import.
+**P2. The carriers and the value types of the contract packages are on the
+model side.** The operations root holds the stages, the kernel, what is left
+of each contract package, the bridges and the tools.
 
-- What it means for rule 1: a model imports no operation, and both sides
-  import the third place. The direction names two roots. A third place is
-  then either a part of the model root that the rest of it may import, or a
-  third root, which the direction does not name.
-- What it means for rule 2: the word model has a narrower meaning, what one
-  language says about itself. The packages that hold both are still
-  divided. The value types leave the contract packages as in P2, with
-  another destination.
-- What else it implies: the third place needs a definition of its own that
-  says what may be in it. Without one it collects whatever is hard to
-  classify.
-- What it leaves open: whether the generic carriers are model or third
-  place, and the same relation-between-languages question as P2.
-- The role-from-path rule: three places instead of two, and roles within
-  them as in P2.
+- *On the model side:* the carriers, the vocabulary packages, and every
+  value type that operations exchange.
+- *Rule 1:* holds as one rule on a path prefix.
+- *Rule 2:* every package that holds both is divided, and ten contract
+  packages are split. Each split is a verdict on one of the cases (a) to
+  (e). What is left of a contract package is an interface and the admission
+  code of one operation.
+- *Its risk:* the model root then holds every data type of the repository,
+  and the word stops distinguishing anything. The handles that only
+  admission code may create need a way for an operation to create a value
+  of a model-side type.
+- *It leaves open:* the cases (f), (g) and (h), and whether a grammar table
+  is part of a language's model.
 
-Three things are the same under P2 and P3, as facts. The syntax vocabulary
-is used by every stage of its language, the semantic vocabulary by several,
-the model by one and the symbol package by two (section 3.1). The model's
-values are values of one operation's contract. And the migration in flight
-adds per-pair and per-family vocabularies that neither way places without a
-further decision.
+**P3. The contract packages stay with the operations, and the value types
+that both sides need are in a third place.**
 
-### 6.3 Unification: three options
+- *On the model side:* what one language says about itself, and possibly
+  the carriers.
+- *Rule 1:* a model imports no operation, and both sides import the third
+  place. The direction names two roots. A third place is then a part of the
+  model root that the rest of it may import, or a third root.
+- *Rule 2:* the packages that hold both are divided as in P2. The value
+  types leave the contract packages for the third place.
+- *Its risk:* without a definition of its own the third place collects
+  whatever is hard to classify.
+- *It leaves open:* whether the carriers are model or third place, and the
+  cases (f), (g) and (h).
 
-The question is whether one language's type-level notions should be named
-once. Section 3.3 shows that Go names them three times. For each option we
-say what the platform's unification test (fixed point 6) would have to
-show, and which concrete differences between Go's three vocabularies would
-have to be represented.
+**P4. A contract package is kept whole, as a third sort of thing beside
+model and operation.** A contract package is then neither: it is the stated
+interface between an operation and its contributions, with the values that
+cross it.
 
-**U1. Three vocabularies stay, and their relation is written down.** Node
-kinds, analysed kinds and forms remain three sets of names with three
-owners inside one language. What is added is a stated relation between
-them.
+- *On the model side:* the carriers and the vocabulary packages.
+- *Rule 1:* a model imports no operation. Whether a model may import a
+  contract package must be decided: today every vocabulary package does.
+- *Rule 2:* the twelve packages that hold both are divided. The ten contract
+  packages are not.
+- *Its risk:* it answers the cases (e) and (f) by a third word and not by a
+  test, and the direction names two roots.
+- *It leaves open:* where contract packages live, and the cases (g) and (h).
 
-- What the test has to show: nothing, because nothing is unified. The
-  platform's table has a row for the finding "Independent identities or
-  lifetimes". Its response is: "Keep separate concepts and define their
-  relationship."
-- What would have to be defined: the relation from a form to the nodes it
-  becomes, which today is the `switch` in each target. And the relation from
-  a form to what analysis reports for the built program, which today exists
-  nowhere, except as the comparison of a symbol with an entity in
-  TypeScript's Files stage.
+**Where the hard packages go.** "Verdict" means that the place follows from
+your answer on the named case.
 
-**U2. Intended forms and analysed kinds share one vocabulary per language.
-Standing is carried by the carrier and not by the names.** Go would have
-one set of names for its type-level notions (basic type, slice, struct,
-field, defined type, alias, type of another package, type parameter). An
-expression of intent would use them as form names. The graph would use them
-as operators and entity kinds. That one is a claim made before a program
-exists and the other is evidence about one program would be a property of
-where the name occurs. Syntax node kinds would stay separate.
+| Package or part | Today | P1 | P2 | P3 | P4 |
+| --- | --- | --- | --- | --- | --- |
+| The tree data type, `trees/ast/go` | Top level, role foundation | As today | Model | Model or third place | Model |
+| The envelope package, `trees/representation/go` | Foundation. Calls two checks | As today | Model, if the structure check counts as the tree's own consistency. Else it may not call the check | As P2 | As P2 |
+| The structure check, `check/syntax/shared/ast/go` | Kernel, in a stage directory | As today | Verdict on (c) | Verdict on (c) | Verdict on (c) |
+| The receipt, in `contracts/semantic/go` | In the contract package | As today | Its type on the model side, its creation in the operation | Its type in the third place | Stays in the contract package |
+| The data types of intent and the planner, `contracts/generation/go` | One package | As today | The data types on the model side, the planner in the operations | The data types in the third place | One contract package |
+| The names and the readers of Go's semantic vocabulary package | One package | As today | Names on the model side. Readers: verdict on (b) | As P2 | As P2 |
+| The names and the checks of an intended-forms package | One package, inside `transform/` | Moves out whole | Verdict on (i), then on (a) | As P2 | As P2 |
+| A symbol package | Inside `transform/`, read by two stages | Moves out whole | Model. Its admission rule: verdict on (a) | As P2 | As P2 |
+| A lexical helper, `internal/rust` | Private, at the module root | As today | Importable from both roots (fixed point 21): verdict on (h) | Third place | Verdict on (h) |
+| Go's grammar table | A private variable of the checker | As today | Verdict on (c) | Verdict on (c) | Verdict on (c) |
+| A per-pair vocabulary package of the migration | Under `transform/`, by pair | As today | Verdict on (g) | Verdict on (g) | Verdict on (g) |
 
-- What the test has to show: that a consumer who reads that a type is a
-  slice of some element type keeps the same guarantees whether the statement
-  is intent or evidence, and that every difference is represented and not
-  erased.
-- The differences that would have to be represented, from the code:
-  1. *What a name refers to.* Intent refers to a destination: a declaration
-     that is planned, or a symbol. Evidence refers to the entity that a
-     compiler bound. Fixed point 18 makes a symbol's key and an entity two
-     identities by decision.
-  2. *Structure.* Intent is a tree of values with placeholders that the
-     kernel fills (slots, parameters, helper keys). Evidence is a graph of
-     entities and terms with identity, and with facts attached.
-  3. *Notions on one side only.* The optional flag of a field exists only
-     in intent. Tags, embedding, type identity, the underlying type and the
-     display text exist only in evidence. Interfaces, unions, signatures and
-     tuples are reported by analysis and intended by nothing.
-  4. *Restrictions that are coverage.* A defined type must have a record
-     body in intent. Analysis reports a defined type over any type.
-  5. *Authority.* A form is an issued value that only its issuer can read. A
-     key of the graph is a pair of strings that any code can spell.
-  6. *Lifetime.* Intent lives within one generation request. A graph is
-     bound to the receipt of one captured program.
-  7. *Failure.* The checks of intent answer with the generation contract's
-     errors. The readers of the graph answer with their own.
-  8. *Today's import rule.* No vocabulary of a language may import another
-     except the syntax vocabulary, and an accepted page decides that the
-     symbol package does not import the semantic vocabulary.
-- What speaks to it in the fixed points: 8 to 11 separate the planned
-  program from the analysed one. Whether that separation also requires two
-  sets of names is not said by any of them. That is our reading.
+**The two rules and the package roles.** A root gives a first cut, model or
+operation. The package roles of section 2.6 (foundation, kernel, vocabulary,
+contribution, private part) still need a path pattern or a table entry
+each. Our reading is that the two rules are added to the roles and do not
+replace them. The alternative is that the two roots replace the roles
+foundation and vocabulary, and only the roles inside the operations root
+remain.
 
-**U3. One declared model per language, from which node kinds, analysed
-kinds and forms are all derived.** A single description states, for each
-type-level notion of Go, its tree shape (node kind, roles, attributes), its
-fact shape (operator, operands, data) and its form shape (name, data,
-arguments).
+### 6.3 Unification: who would use a shared vocabulary, and three options
 
-- What the test has to show: all of U2, and in addition that the syntax
+**Who would use a shared vocabulary.** Fixed point 5 asks for a concrete
+case. Three candidates exist, and all three are facts of section 3:
+
+- *Go as a source and as a target.* In the pair golang-to-typescript Go is
+  read as a source through its semantic vocabulary. As a target Go is
+  written through its intended forms. A mapping author meets two sets of
+  names for Go's types. Section 3.5 shows what the first attempt met.
+- *Verification laws against mappings.* A law reads an analysed Go type, and
+  the mapping that produced the type stated it as intended forms (section
+  3.4).
+- *A Files formatter.* It compares what was intended with what the compiler
+  bound. Today it compares identities only (section 4.5).
+
+The source side has no intended-forms package (section 3.2), and no page
+states that asymmetry as a decision.
+
+Each option is stated with the same four points.
+
+**U1. Three sets of names stay, and their relation is written down.**
+
+- *What a user gains:* nothing new to learn, and a stated relation where
+  today there is code.
+- *What the unification test must show:* nothing, because nothing is
+  unified. The platform's table has a row for the finding "Independent
+  identities or lifetimes". Its response is: "Keep separate concepts and
+  define their relationship."
+- *What must be represented:* the relation from a form to the nodes it
+  becomes, which today is the `switch` in each target, and the relation from
+  a form to what analysis reports, which today exists nowhere.
+- *Its cost and what it leaves open:* each notion keeps two or three names,
+  and each shape stays stated in two or three places (section 6.4). A user
+  on both sides of a transformation keeps translating.
+
+**U2. Intended forms and analysed kinds share their names per language, and
+differ in status, intended or established.** Go would have one set of names
+for its type-level notions. Intent would use them as form names, and the
+graph as operators and entity kinds. Whether a name states intent or an
+established fact would be carried by the data structure it occurs in, and
+not by the name. Node kinds would stay separate.
+
+- *What a user gains:* one set of names for Go's types on both sides of a
+  transformation and in verification.
+- *What the unification test must show:* that a user who reads that a type
+  is a slice of some element type keeps the same guarantees whether the
+  statement is intended or established, and that every difference is
+  represented and not erased (fixed point 6).
+- *What must be represented:* (1) What a name refers to: intent refers to a
+  destination, and analysis to the entity that a compiler bound. Fixed point
+  18 makes those two identities. (2) Structure: intent is a tree of values
+  with placeholders, and analysis a graph of entities and terms with facts.
+  (3) Notions on one side only: the optional flag in intent; tags,
+  embedding, type identity and the underlying type in analysis. (4) What is
+  a restriction of today's coverage and no part of the notion: a defined
+  type with a record body only. (5) Lifetime: intent lives within one
+  generation request, and a graph is bound to the receipt of one captured
+  program.
+- *What it leaves open:* fixed points 8 and 9 separate the planned program
+  from the analysed one. Whether that separation also requires two sets of
+  names is said by neither. That is our reading.
+
+**U3. One description per language, from which node kinds, analysed kinds
+and forms are all derived.** A single description states, for each
+type-level notion, its tree shape, its fact shape and its form shape.
+
+- *What a user gains:* as U2, and one place that says what a language's
+  types are.
+- *What the unification test must show:* all of U2, and that the syntax
   vocabulary shares the contract.
-- The further differences that would have to be represented:
-  1. Syntax has notions that are not type-level notions: files, imports,
-     parameter lists, embedded fields, the terms of a constraint union.
-  2. A node has a site, an order among its siblings and a spelling. A form
-     and a term have none.
-  3. The relation from a form to nodes is not one to one in every language.
-     For Rust and C++ one form becomes a path of several nodes. In Go the
-     `primitive` form becomes a `named-type` node plus a recorded symbol.
-     That relation is the target's code today.
-  4. Not every language has all three: C++ has no analysis, and horos has
-     no model.
+- *What must be represented:* (1) Syntax has notions that are no type-level
+  notions: files, imports, parameter lists. (2) A node has a site, an order
+  among its siblings and a spelling. (3) The relation from a form to nodes
+  is not one to one: for Rust and C++ one form becomes a path of several
+  nodes. (4) Not every language has all three: C++ has no analysis.
+- *What it leaves open:* in which notation such a description is written
+  (section 6.4), and whether it is one description or three that refer to
+  each other.
 
-U2 and U3 are about one language. They are not the cross-language sameness
-of the four models, which share five form names. Fixed point 13 decided
-that the four models share no package.
+U2 and U3 are about one language. Whether the four near-copy intended-forms
+packages share a mechanism across languages is a separate open matter (the
+paragraph under fixed point 27).
 
-### 6.4 Declaration: what is data, what is code, and three candidate carriers
+### 6.4 Declaration: what is data, what is code, and four options
 
 The owner's second question in message 7 is: "what is currently not
 declarative about our models? like, don't we already have an ast / cst
@@ -3171,68 +3221,109 @@ question 3.
 
 **What is already data** (Go literals):
 
-- Node kinds, role names, attribute names, concrete kinds and profile
-  strings. For syntax the generic tree is the whole data structure and a
-  language's package is constants only (sections 2.3, 4.1).
-- The admission table of each language, except the predicates inside it.
-  It is an unexported variable of a contribution and holds function values.
+- Node kinds, role names, attribute names, kinds of concrete-tree node and
+  profile strings. For syntax the generic tree is the whole data structure,
+  and a language's package is constants only (section 4.1).
+- The grammar table of each language, except the predicates inside it. It
+  is an unexported variable of a contribution and holds function values.
 - Semantic names, as one-line functions that return a key.
 - Form names and primitive names.
-- Reserved-word lists, two regular expressions and one table of character
+- Reserved-word lists, four regular expressions and one table of character
   ranges.
-- The simple mappings: a pattern and a constant output expression.
+- The simple mappings: a pattern and a constant output.
 
 **What is code, and what it expresses.**
 
 | Code | What it expresses that no table of the repository states |
 | --- | --- |
-| 3 to 14 rules beside each admission table | Relations between two attributes; between an attribute and a child; between a node and its parent or ancestors; order within one role; consistency and uniqueness among siblings; reference roles other than one |
+| 3 to 14 rules beside each grammar table | Relations between two attributes; between an attribute and a child; between a node and its parent or ancestors; order within one role; consistency and uniqueness among siblings; reference roles other than one |
 | Attribute predicates | Which strings are identifiers, literals or module names of a language, including its reserved words |
 | The structure check of the generic tree | Bounds, valid indices, no cycle, one parent |
 | Parsers and formatters, entirely | Concrete spelling, precedence and layout. No table states the concrete syntax of any language |
-| The writer of facts (a bridge) and the reader (a vocabulary's typed readers) | The shape of each fact: which operator, how many operands, what the data bytes hold. The names are declared once. The shapes are stated twice, in code |
-| The types of a compiler environment | Normalisation, path rules, and the encoding into settings |
-| A model's constructors and checks | The shape of each form: how many data strings, what they mean, how many arguments. Stated twice, and read a third time by position in the target |
+| The writer of facts (a bridge) and the reader (a vocabulary package's typed readers) | The shape of each fact: which operator, how many operands, what the data bytes hold |
+| The types of a compiler run's inputs | Normalisation, path rules, and the encoding into settings |
+| The constructors and checks of an intended-forms package | The shape of each form: how many data strings, what they mean, how many arguments |
 | Coverage answers and the admission of symbols | What today's generation supports; which names a compiler's library declares |
 
-Two of the three bridges are not Go. The Rust bridge is a Rust program and
-the TypeScript bridge is a script. Each spells the names it writes in its
-own language. So a declared model would have to be consumed from three
-implementation languages, or the names in two of them stay hand-written.
+A shape is stated twice in code and, with one exception, in no declaration:
+a fact's shape by the bridge that writes it and the reader that reads it
+(the exception is the comment on one relation, section 4.3), and a form's
+shape by its constructor and its check, with a third reading by position in
+the target.
 
-**Three candidate carriers for a declared model.**
+Two of the three bridges are not written in Go (section 4.3). Each spells
+the names it writes in its own language. So a declared model would have to
+be consumed from three implementation languages, or the names in two of them
+stay hand-written.
 
-- **D1. A Go table type, extended.** The admission table becomes an
-  exported value of a language's model, with predicates named by identity
-  in place of function values. Tables of the same kind state fact shapes and
-  form shapes. It stays in Go, and a parser, a formatter, a tool and a test
-  can read it. The rules of the table above remain code unless the table
-  type grows the means to state them.
-- **D2. A horos declaration that uses the node patterns of kinds.** horos
-  already has a regular notation for tree shapes: sequences, alternatives,
-  repetition, recursion and parameters (section 4.6). Today it ranges over
-  22 fixed descriptor constructors of horos, has no child role names and no
-  attribute predicates, and no language's tree is described in it, the tree
-  of horos included. The project already generates Go from horos
-  declarations for one purpose (section 4.7), from types and not from
-  kinds. Two things bear on this candidate. The charter keeps
-  the shared parts free of the source language: "Generic carriers,
-  contracts, engine, printer and native syntax stages have no external
-  Horos/Ontos imports". And horos is one of the five languages whose tree
-  would have to be described.
-- **D3. A separate schema.** A description format of its own for tree
-  shapes, fact shapes and form shapes, from which the Go constants and
-  tables are generated. It can be fitted to exactly what sections 4.2 to
-  4.4 need. It is a new notation that the project would own, and fixed
-  point 5 asks for a concrete case that the existing notations cannot
-  express.
+**Four options,** each with the same four points.
+
+**D0. Nothing more is declared.** Shapes stay code and are held by tests.
+
+- *What is declared:* the names, and the grammar tables as they are.
+- *What reads it:* the checker, and a documentation tool through the source
+  text.
+- *What stays code:* everything in the table above.
+- *The two bridges that are not Go:* spell names by hand, as today.
+
+**D1. A Go table type, extended.** The grammar table becomes an exported
+value on the model side, with predicates named by identity in place of
+function values. Tables of the same sort state fact shapes and form shapes.
+
+- *What is declared:* tree shapes, fact shapes and form shapes, as Go
+  values.
+- *What reads it:* the generic checker, parsers, formatters, tools and
+  tests, by import.
+- *What stays code:* the rules between nodes, unless the table type grows
+  the means to state them; concrete syntax; the bridges.
+- *The two bridges that are not Go:* a generator would have to write their
+  names from the Go tables.
+
+**D2. A horos declaration that uses the node patterns of horos kinds**
+(section 4.6).
+
+- *What is declared:* tree shapes as horos kinds. The notation has
+  sequences, alternatives, repetition, recursion and parameters. Today it
+  ranges over 22 fixed descriptor constructors, has no child role names and
+  no attribute predicates, and describes no language's tree, the tree of
+  horos included.
+- *What reads it:* the horos library, and bittype's own pipeline, which
+  already generates Go from horos types for one sort of value type (section
+  4.7).
+- *What stays code:* what the notation cannot say; concrete syntax; the
+  bridges.
+- *The two bridges that are not Go:* bittype generates TypeScript and Rust
+  declarations from horos, so their names could be generated too. Fixed
+  point 26 bears on this option: the shared parts import no horos today.
+  And horos is one of the five languages whose tree would be described.
+
+**D3. A separate schema.** A description format of its own, from which the
+Go constants and tables are generated.
+
+- *What is declared:* tree shapes, fact shapes and form shapes, in a
+  notation fitted to what sections 4.2 to 4.4 need.
+- *What reads it:* a generator, at build time.
+- *What stays code:* the generator, concrete syntax, the bridges.
+- *The two bridges that are not Go:* the generator writes their names.
+  Fixed point 5 asks, for a new notation, for a concrete case that the
+  existing ones cannot express.
+
+**One worked row: Go's `field`.** What each option would hold for it. The
+cells for D1 to D3 are sketches of ours.
+
+| | The tree shape of a field | The fact shape | The form shape |
+| --- | --- | --- | --- |
+| D0, today | A constant `KindField`, and an entry in the checker's private table: the attributes `name` (required, an identifier) and `tag`, one child under the role `type` | The literal `field` in the bridge, and a JSON entry (name, tag, embedded, entity) written by the bridge and read by a reader | The constant `FormField`, a constructor that writes two data strings and one argument, and a check that counts them |
+| D1 | The same entry, exported, with the predicate named instead of held as a function | A table entry: the operator of the struct term, its data fields and one operand per field | A table entry: two data, their meaning, one argument |
+| D2 | `node("field", ..., item(K))`, once the notation can name a child role and constrain an attribute | Not expressible today: the notation describes trees and no facts | Expressible as a tree shape, if a form is taken as a tree node |
+| D3 | An entry of the schema | An entry of the schema | An entry of the schema |
 
 **What must stay honest whatever is declared.** Five parsers, five
 formatters, three bridges and four targets are hand-written and must agree
-with any description. The checks of that agreement that we know of today
-are three: a parser and a formatter call the checker; TypeScript's Files
-stage compares each destination with what the compiler bound; and a
-documentation tool re-reads the tables.
+with any description. The checks of that agreement that we know of today are
+three: a parser and a formatter call the checker; TypeScript's Files
+formatter compares each destination with what the compiler bound; and a
+documentation tool re-reads the grammar tables.
 
 ### 6.5 One step we intend to take first
 
@@ -3241,59 +3332,56 @@ consultation on 13 November 2026, before the owner's eighth message. It is
 open: please say if it is wrong or if it prejudges something. Rule 2 now
 makes it one instance of a general rule (section 6.1).
 
-**The facts.** Each model holds names, five constructors and two checks
-(section 4.4). The mappings use the constructors and the names and never the
-checks. The target uses the names and the checks and no constructor. The
-one production caller of a model's checks is the target of the same
-language. Most of the checks are well-formedness of a form. Three are
-coverage answers of today's generation: which primitives exist, Go's refusal
-of every external type, and the refusal of an unknown form name. For Go a
-fourth is the restriction of a defined type to a record body. Rust already
-keeps its coverage answer for external types in the target and the shape
-check in the model.
+**The facts.** Each intended-forms package holds names, five constructors
+and two checks (section 4.4). The mappings use the constructors and the
+names and never the checks. The target uses the names and the checks and no
+constructor. The one production caller of the checks is the target of the
+same language. Most of the conditions in the checks are well-formedness of
+a form. Three are coverage answers of today's generation: which primitives
+exist, Go's refusal of every external type, and the refusal of an unknown
+form name. For Go a fourth is the restriction of a defined type to a record
+body. Rust already keeps its coverage answer for external types in the
+target and the shape check in the package.
 
 **The reason.** The platform's rule separates wrongly grouped parts first,
 as a move (fixed points 2 and 3). The boundaries page lists the signs of
-wrong grouping. Two of them hold for a model: "An importer that uses a slice
-of the package" (both importers do) and "A policy next to a shared
-mechanism" (the coverage answers sit beside the names). A coverage answer
-is a statement of the target contribution about what it builds.
+wrong grouping. Two of them hold here: "An importer that uses a slice of the
+package" (both importers do) and "A policy next to a shared mechanism" (the
+coverage answers sit beside the names). A coverage answer is a statement of
+the target contribution about what it builds.
 
-**The decision.** The coverage answers leave the model packages for the
+**The step.** The coverage answers leave the intended-forms packages for the
 target of the same language, as a change of their own. The well-formedness
-checks stay where they are for now. Whether a model may hold them is among
-the three unassigned kinds of code of section 6.1 and is part of question
-1. The accepted definition of a vocabulary says "names and nothing
-else", and the accepted practice says otherwise (section 5.3, item 1).
+conditions stay where they are for now. Whether a model may hold them is
+case (a) of question 1. The accepted definition of a vocabulary says "and
+nothing else", and what is implemented holds more (section 5.3, item 1).
 
-**What waits.** The change is made when the migration's branch no longer
-edits those files. The migration rewrites every mapping, and every mapping
-calls the constructors.
+**What waits, and what the work in flight does meanwhile.** The step is
+taken when the migration's branch no longer edits those files. The branch
+edits all four packages and adds a third check to each (section 2.7). So
+the work in flight adds a check to the packages from which this step takes
+conditions away.
 
 ### 6.6 What a move would touch
 
 Standing: implemented today, from a count over the committed files. Under
-AC-09 (fixed point 1) these numbers have no weight in the choice between
-options. The same rule lets them "guide delivery sequencing". They are
-stated once, here, because question 4 is about order.
+fixed point 1 these numbers have no weight in the choice between options.
+The same rule lets them guide the order of delivery. They are stated once,
+here, because question 4 is about order.
 
 | What | Count |
 | --- | --- |
 | Production packages that get a new import path under the direction | 129, and 3 packages that hold only tests |
-| Packages that the direction's second rule reaches, because they hold both | 12 of the 22 model packages, and 10 of the 13 contract packages (section 6.1) |
-| Packages that move in the smallest first step, P1 | 7 |
-| Import strings of this module in Go files | 2,121 in 365 files: 959 in non-test files, 871 in test files, 291 in fixture files under test data. Some fixtures are written against the public import paths as an installed consumer would |
-| Places that compute a role from a path | One function with its shape helpers (section 4.8), and five tables keyed by path with 31, 12, 5, 12 and 14 entries |
-| Quoted layout paths in test files | 1,166 in 17 files, 638 of them in one file of synthetic package sets for the dependency check |
-| Another reader of paths | The documentation tool finds language markers under `syntax/` and contracts under `contracts/` by path prefix |
-| Mentions of a layout path in hand-written pages | About 750 in 42 design pages, 185 in the layout page, 210 in the change log. About 660 more are in dated research records, which are not edited |
+| Packages that rule 2 reaches, because they hold both under our test | 12 of the 22 model-side packages, and 10 of the 13 contract packages |
+| Packages that move under P1 | 7 |
+| Import strings of this module in Go files | 2,121 in 365 files: 959 in non-test files, 871 in test files, 291 in fixture files under test data |
+| Places that compute a package role from a path | One function with its helpers, and five tables keyed by path with 31, 12, 5, 12 and 14 entries (section 2.6; the table of 5 names the language of packages whose path does not) |
+| Quoted layout paths in test files | 1,166 in 17 files, 638 of them in one file of synthetic package sets for the architecture test |
+| Another reader of paths | The documentation tool finds language markers under `syntax/` and contract packages under `contracts/` by path prefix |
+| Mentions of a layout path in pages | About 1,150 in the design pages, the layout page and the change log. About 660 more are in dated research records, which are not edited |
 | What does not change | The module path. No version tag pins the present import paths |
 
-Work in flight that is written against the present paths (section 2.7): the
-migration's branch with 24 new vocabulary packages and as many codec
-packages under `transform/`, the two further pairs with a horos model and a
-Go source reader, and the Go and Rust Files stages that are to import a
-symbol package.
+Work in flight that is written for the present paths: section 2.7.
 
 ## 7. Questions for the expert
 
