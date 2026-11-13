@@ -890,9 +890,9 @@ the declaration that the compiler reports it at, which here is the field, with
 a reference to the more private declaration. The compiler reports it for a
 field of a struct, of a tuple struct and of a variant, and for an alias. For
 the default of a type parameter, `pub struct P<T = Hidden>`, it reports the
-item itself, and the fact is on `P`. The bridge bounds the helper's error
-stream, so the withholding is what lets a record with hundreds of such fields
-resolve, and a test resolves one.
+item itself, and the fact is on `P`. A test of the bridge package runs the
+helper and reads its error stream: it is empty for a source with the lint and
+holds the compiler's errors for a source that the compiler rejects.
 
 - **The source stays analyzed.** Coverage, bindings and validity hold, and the
   graph is published. The profile keeps analyzing hand-written Rust that has

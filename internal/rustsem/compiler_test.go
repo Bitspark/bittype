@@ -1,11 +1,15 @@
 package rustsem
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/Bitspark/bittype/contracts/parse/go"
@@ -97,6 +101,50 @@ func TestHelperObeysEnvironment(t *testing.T) {
 	}
 	if out, err := check("pub type Byte = u8;", func(e *Environment) { e.CrateName = "other" }); err != nil || out.Status != StatusOK || out.Facts.Entities[0].Name != "other::Byte" {
 		t.Error("the crate name was not passed on", out, err)
+	}
+}
+
+// The helper forces one lint and withholds every warning from its error
+// stream. The stream carries nothing for a source that the compiler accepts,
+// and the compiler's errors for one that it rejects. This runs the helper as
+// the bridge does and reads the stream, which Check does not return.
+func TestHelperWithholdsWarnings(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("qualified helper execution platform is Linux")
+	}
+	run := func(text string) (string, string) {
+		t.Helper()
+		parsed, err := parser.Parse(context.Background(), parse.Input{Text: text, SourceID: "test", TreeID: "test"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		source := &files.Context{Files: files.Files{Entries: []files.File{{ID: "test", Path: "test.rs", Text: text}}}, Links: []files.SyntaxLink{{File: "test", Tree: "test", Source: "test"}}}
+		units, err := prepare(context.Background(), []s.AST{parsed.ASTView()}, source)
+		if err != nil {
+			t.Fatal(err)
+		}
+		encoded, err := json.Marshal(input{Version: 1, Environment: environment, Units: units})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var stdout, stderr bytes.Buffer
+		command := exec.Command(os.Getenv("BITTYPE_RUST_HELPER"), os.Getenv("BITTYPE_RUST_SYSROOT"))
+		command.Env = []string{}
+		command.Stdin = bytes.NewReader(encoded)
+		command.Stdout, command.Stderr = &stdout, &stderr
+		if err := command.Run(); err != nil {
+			t.Fatal(err, stderr.String())
+		}
+		return stdout.String(), stderr.String()
+	}
+	// The forced lint twice, and the compiler's count of the warnings.
+	stdout, stderr := run("pub struct Public { pub field: Hidden, pub other: Hidden } struct Hidden {}")
+	if stderr != "" || !strings.Contains(stdout, `"Status":"ok"`) || strings.Count(stdout, `"Name":"private-interface"`) != 2 {
+		t.Errorf("a source with the forced lint: the error stream holds %d bytes: %.300s\n%.300s", len(stderr), stderr, stdout)
+	}
+	stdout, stderr = run("pub type Missing = Unknown;")
+	if !strings.Contains(stderr, `"level":"error"`) || strings.Contains(stderr, `"level":"warning"`) || !strings.Contains(stdout, `"Status":"compiler-errors"`) {
+		t.Errorf("a source with a compiler error: %.300s\n%.300s", stderr, stdout)
 	}
 }
 func TestCaptureLimitsAndOffsets(t *testing.T) {

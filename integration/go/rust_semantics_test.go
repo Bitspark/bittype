@@ -885,9 +885,8 @@ func TestRustSemanticPrivateInterface(t *testing.T) {
 		t.Error("the type of that field is nameable", effective, err)
 	}
 
-	// The helper withholds the forced warnings from its error stream, which
-	// the bridge bounds. A record with this many such fields resolves, and
-	// every field has its observation.
+	// A record with many such fields resolves, and every field has its
+	// observation.
 	const many = 600
 	var text strings.Builder
 	text.WriteString("struct Hidden {} pub struct Wide {")
