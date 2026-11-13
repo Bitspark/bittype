@@ -117,54 +117,79 @@ func TestHelperStatesItsProfile(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("qualified helper execution platform is Linux")
 	}
-	respond := func(texts ...string) map[string]json.RawMessage {
-		t.Helper()
-		units := []Unit{}
-		for _, text := range texts {
-			parsed, err := parser.Parse(context.Background(), parse.Input{Text: text, SourceID: "test", TreeID: "test"})
-			if err != nil {
-				t.Fatal(err)
-			}
-			source := &files.Context{Files: files.Files{Entries: []files.File{{ID: "test", Path: "test.rs", Text: text}}}, Links: []files.SyntaxLink{{File: "test", Tree: "test", Source: "test"}}}
-			prepared, err := prepare(context.Background(), []s.AST{parsed.ASTView()}, source)
-			if err != nil {
-				t.Fatal(err)
-			}
-			units = append(units, prepared...)
-		}
-		encoded, err := json.Marshal(input{Version: 1, Environment: environment, Units: units})
-		if err != nil {
-			t.Fatal(err)
-		}
-		var stdout, stderr bytes.Buffer
-		command := exec.Command(os.Getenv("BITTYPE_RUST_HELPER"), os.Getenv("BITTYPE_RUST_SYSROOT"))
-		command.Env = []string{}
-		command.Stdin = bytes.NewReader(encoded)
-		command.Stdout, command.Stderr = &stdout, &stderr
-		if err := command.Run(); err != nil {
-			t.Fatal(err, stderr.String())
-		}
-		var response map[string]json.RawMessage
-		if err := json.Unmarshal(stdout.Bytes(), &response); err != nil {
-			t.Fatal(err, stdout.String())
-		}
-		return response
-	}
 	for _, c := range []struct {
 		name, status string
-		texts        []string
+		units        []Unit
 	}{
-		{"a source with a graph", "ok", []string{"pub type Flag = bool;"}},
-		{"a source that the compiler rejects", "compiler-errors", []string{"pub type Missing = Unknown;"}},
-		{"a request without a unit", "unsupported", nil},
+		{"a source with a graph", "ok", helperUnits(t, "pub type Flag = bool;")},
+		{"a source that the compiler rejects", "compiler-errors", helperUnits(t, "pub type Missing = Unknown;")},
+		{"a request without a unit", "unsupported", []Unit{}},
 	} {
-		response := respond(c.texts...)
+		response := helperResponse(t, c.units)
 		if string(response["Status"]) != `"`+c.status+`"` {
 			t.Errorf("%s: the status %s, want %s", c.name, response["Status"], c.status)
 		}
 		if string(response["Profile"]) != `"`+n.HelperProfile+`"` {
 			t.Errorf("%s: the helper states the profile %s, and the vocabulary publishes %q", c.name, response["Profile"], n.HelperProfile)
 		}
+	}
+}
+
+// helperUnits is the one unit that the bridge sends the helper for a text.
+func helperUnits(t *testing.T, text string) []Unit {
+	t.Helper()
+	parsed, err := parser.Parse(context.Background(), parse.Input{Text: text, SourceID: "test", TreeID: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := &files.Context{Files: files.Files{Entries: []files.File{{ID: "test", Path: "test.rs", Text: text}}}, Links: []files.SyntaxLink{{File: "test", Tree: "test", Source: "test"}}}
+	units, err := prepare(context.Background(), []s.AST{parsed.ASTView()}, source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return units
+}
+
+// helperResponse runs the helper on units as the bridge does and returns the
+// members of its response as it wrote them.
+func helperResponse(t *testing.T, units []Unit) map[string]json.RawMessage {
+	t.Helper()
+	encoded, err := json.Marshal(input{Version: 1, Environment: environment, Units: units})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	command := exec.Command(os.Getenv("BITTYPE_RUST_HELPER"), os.Getenv("BITTYPE_RUST_SYSROOT"))
+	command.Env = []string{}
+	command.Stdin = bytes.NewReader(encoded)
+	command.Stdout, command.Stderr = &stdout, &stderr
+	if err := command.Run(); err != nil {
+		t.Fatal(err, stderr.String())
+	}
+	var response map[string]json.RawMessage
+	if err := json.Unmarshal(stdout.Bytes(), &response); err != nil {
+		t.Fatal(err, stdout.String())
+	}
+	return response
+}
+
+// The helper binds every primitive type node or publishes no graph. The parser
+// gives the helper no primitive type node that the compiler does not resolve,
+// so this sends one through the private protocol: a node of that kind over
+// the text of a keyword. A graph with such a node and no binding at it would
+// hold a use whose capture nobody can see.
+func TestHelperRefusesUnboundPrimitiveType(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("qualified helper execution platform is Linux")
+	}
+	units := helperUnits(t, "pub type Flag = bool;")
+	if response := helperResponse(t, units); string(response["Status"]) != `"ok"` {
+		t.Fatal("the unit as the bridge sends it", string(response["Status"]), string(response["Diagnostics"]))
+	}
+	units[0].Nodes = append(units[0].Nodes, Node{ID: units[0].Nodes[len(units[0].Nodes)-1].ID + 1, Kind: s.KindPrimitiveType, Start: 0, End: len("pub")})
+	response := helperResponse(t, units)
+	if string(response["Status"]) != `"unsupported"` || string(response["Facts"]) != "null" || !strings.Contains(string(response["Diagnostics"]), "unmapped primitive type") {
+		t.Errorf("a primitive type node without a binding: status %s, facts %.80s, diagnostics %s", response["Status"], response["Facts"], response["Diagnostics"])
 	}
 }
 

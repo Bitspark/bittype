@@ -340,7 +340,6 @@ impl<'tcx, 'a> Exporter<'tcx, 'a> {
                     && n.start <= start
                     && n.end >= end
                     && (kind != "path-segment" || n.start == start)
-                    && (kind != "primitive-type" || (n.start == start && n.end == end))
             })
             .min_by_key(|n| n.end - n.start)
             .map(|n| n.id)
