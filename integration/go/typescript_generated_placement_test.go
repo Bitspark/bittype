@@ -339,6 +339,163 @@ func TestTypeScriptGuardReceivesAPublicationOfAnotherProvider(t *testing.T) {
 	}
 }
 
+// countedProvider counts its calls and publishes nothing.
+type countedProvider struct {
+	ts.Language
+	calls *int
+}
+
+func (p countedProvider) Format(context.Context, format.GeneratedFilesRequest[ts.Language]) (source.Source[ts.Language], error) {
+	*p.calls++
+	return source.Source[ts.Language]{}, errReached
+}
+
+// The TypeScript step refuses what TypeScript asks of a placement, before the
+// provider is called: the formatter is TypeScript's own contract with a
+// provider that counts its calls.
+func TestTypeScriptStepRefusesBeforeTheProvider(t *testing.T) {
+	ctx := context.Background()
+	stages := placementStages(t, n.PackageTypes{Module: "@bitspark/cell", Declaration: cellDeclarations})
+	contract, err := stages.GeneratedContract()
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls := 0
+	formatter, err := format.NewGeneratedFilesFormatter(stages.Language, contract, countedProvider{calls: &calls})
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := generatedCellPage(t)
+	// A placement that TypeScript admits reaches the provider once.
+	if _, err := formatter.Format(ctx, format.GeneratedFilesInput{Output: output, Placement: tsOneFile(output, "types", "types.ts").Issue()}); !errors.Is(err, errReached) || calls != 1 {
+		t.Fatal("an admitted placement must reach the provider", err, calls)
+	}
+	empty := tsOneFile(output, "types", "types.ts")
+	empty.Files["empty"] = "empty.ts"
+	renamed := tamperedCellPage(t, tamperedTree(func(tree *ts.AST) {
+		for _, child := range tree.Nodes[tree.Root-1].Children {
+			node := &tree.Nodes[child.Node-1]
+			for i := range node.Attributes {
+				if node.Attributes[i].Name == ts.AttributeName && node.Attributes[i].Text == "Person" {
+					node.Attributes[i].Text = "Page"
+				}
+			}
+		}
+	}), "")
+	for _, refused := range []struct {
+		name      string
+		output    g.Output
+		placement tsfiles.GeneratedPlacement
+		want      error
+	}{
+		{"a file without a definition", output, empty, source.ErrUnsupported},
+		{"a path that the profile excludes", output, tsOneFile(output, "types", "types.mts"), source.ErrUnsupported},
+		{"a path that is no TypeScript path", output, tsOneFile(output, "types", "types.txt"), source.ErrInvalid},
+		{"two declarations of one name in one file", renamed, tsOneFile(renamed, "types", "types.ts"), source.ErrInvalid},
+	} {
+		calls = 0
+		out, err := formatter.Format(ctx, format.GeneratedFilesInput{Output: refused.output, Placement: refused.placement.Issue()})
+		if out.Valid() || calls != 0 {
+			t.Errorf("%s: published=%v, calls of the provider=%d", refused.name, out.Valid(), calls)
+		}
+		onlyCategory(t, refused.name, err, refused.want)
+	}
+}
+
+// republishingProvider takes the units that the TypeScript formatter published,
+// changes them, has them analyzed again and publishes the result.
+type republishingProvider struct {
+	ts.Language
+	stages tsfiles.Stages
+	from   source.Source[ts.Language]
+	entry  files.ID
+	change func([]source.Unit[ts.Language]) error
+}
+
+func (p republishingProvider) Format(ctx context.Context, request format.GeneratedFilesRequest[ts.Language]) (source.Source[ts.Language], error) {
+	units := p.from.Units()
+	if p.change != nil {
+		if err := p.change(units); err != nil {
+			return source.Source[ts.Language]{}, err
+		}
+	}
+	fresh, err := p.stages.Capture(ctx, units, p.entry, request.Input().Limits.Semantic)
+	if err != nil {
+		return source.Source[ts.Language]{}, err
+	}
+	return request.Publish(source.Publication[ts.Language]{Snapshot: fresh.Snapshot, Analysis: fresh.Evidence, Units: units, Groups: p.from.Groups(), Relations: p.from.Relations()})
+}
+
+// The TypeScript guard holds a publication to the two things that the
+// formatter decides for a placement that states neither: the entry of the
+// fresh snapshot and the order of the declarations of a file. The publications
+// here have the admitted files, the same declarations, the same imports and the
+// compiler's bindings and exports.
+func TestTypeScriptGuardComparesTheEntryAndTheOrder(t *testing.T) {
+	ctx := context.Background()
+	output := generatedCellPage(t)
+	handles := tsDeclarations(t, output)
+	stages := placementStages(t, n.PackageTypes{Module: "@bitspark/cell", Declaration: cellDeclarations})
+	genuine, err := tsfiles.NewGenerated(stages)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contract, err := stages.GeneratedContract()
+	if err != nil {
+		t.Fatal(err)
+	}
+	placement := tsPlaced(t, handles, map[files.ID]files.Path{"pages": "generated/pages/page.ts", "model": "generated/model/person.ts"}, map[string]files.ID{"Page": "pages", "Cells": "pages", "Cell": "pages", "Person": "model"})
+	from, err := genuine.Format(ctx, format.GeneratedFilesInput{Output: output, Placement: placement.Issue()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	republish := func(entry files.ID, change func([]source.Unit[ts.Language]) error) (source.Source[ts.Language], error) {
+		formatter, err := format.NewGeneratedFilesFormatter(stages.Language, contract, republishingProvider{stages: stages, from: from, entry: entry, change: change})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return formatter.Format(ctx, format.GeneratedFilesInput{Output: output, Placement: placement.Issue()})
+	}
+	// The same units under the entry that the rule chooses are accepted, so a
+	// refusal below is a refusal of the one difference.
+	if out, err := republish("model", nil); err != nil || !out.Valid() {
+		t.Fatal("the republished units under the entry of least identity", err)
+	}
+	out, err := republish("pages", nil)
+	if out.Valid() {
+		t.Error("a publication whose snapshot entry is not the file of least identity was accepted")
+	}
+	onlyCategory(t, "another snapshot entry", err, source.ErrInvalid)
+	// The last two declarations of the file pages change places. Every node
+	// keeps its identity, so only the order differs.
+	swapped := func(units []source.Unit[ts.Language]) error {
+		for i := range units {
+			if units[i].File != "pages" {
+				continue
+			}
+			tree := units[i].Syntax.Abstract
+			children := tree.Nodes[tree.Root-1].Children
+			last := len(children) - 1
+			if last < 1 || children[last].Role != ts.RoleDeclaration || children[last-1].Role != ts.RoleDeclaration {
+				return errors.New("the file pages has no two declarations at its end")
+			}
+			children[last], children[last-1] = children[last-1], children[last]
+			syntax, err := stages.Syntax.Format(ctx, tree)
+			if err != nil {
+				return err
+			}
+			units[i].Syntax = syntax
+			return nil
+		}
+		return errors.New("no file pages")
+	}
+	out, err = republish("model", swapped)
+	if out.Valid() {
+		t.Error("a publication with the declarations of a file in another order was accepted")
+	}
+	onlyCategory(t, "another order of the declarations", err, source.ErrInvalid)
+}
+
 // errReached is what reachedProvider answers.
 var errReached = errors.New("the provider was reached")
 

@@ -2,6 +2,7 @@ package format
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/language/go"
@@ -25,10 +26,6 @@ type GeneratedPlacement struct {
 	value any
 }
 type placementOwner struct{ marker byte }
-
-// Valid reports whether an issuer issued the value. The zero value is no
-// placement.
-func (p GeneratedPlacement) Valid() bool { return p.owner != nil }
 
 // GeneratedPlacementIssuer is a language's authority to issue placements of its
 // own type P and to read them back. One issuer is one placement type of one
@@ -74,7 +71,10 @@ type GeneratedFilesInput struct {
 // admission reads: each file identity with its relative path, and each
 // declaration handle with the file that holds its definition. A language
 // derives the view from its own placement type. The view states no scope, no
-// order and no entry.
+// order and no entry. Both tables are keyed, so the view cannot state a file
+// twice or a declaration in two files. A language whose own type can state
+// either refuses it before it derives the view, since deriving would drop one
+// of the two statements unseen.
 type GeneratedPlacementView struct {
 	Files       map[files.ID]files.Path
 	Definitions map[generation.DeclarationHandle]files.ID
@@ -109,8 +109,10 @@ type admittedPlacement struct {
 func (a AdmittedPlacement) Valid() bool { return a.state != nil }
 
 // Files returns the admitted files, each with its identity and path and
-// without text, in the order of their identities. This is the order of files
-// that a Files formatter realizes: no placement states one.
+// without text, in the order of their identities. No placement states an
+// order, so this is the one order that the accessor hands out. TypeScript
+// realizes it. The shared side does not enforce an order of publication: each
+// language owns the order that it realizes.
 func (a AdmittedPlacement) Files() []files.File {
 	if a.state == nil {
 		return nil
@@ -120,7 +122,8 @@ func (a AdmittedPlacement) Files() []files.File {
 
 // Definitions returns every declaration of the sealed output with its file, in
 // the order of the output's inventory, which is the order of the sites. This
-// is the order of declarations that a Files formatter realizes.
+// is the order that the accessor hands out, and TypeScript realizes it. A
+// language that has to schedule its declarations otherwise does so.
 func (a AdmittedPlacement) Definitions() []PlacedDeclaration {
 	if a.state == nil {
 		return nil
@@ -136,8 +139,15 @@ func (a AdmittedPlacement) Definitions() []PlacedDeclaration {
 
 // admitPlacement is the common admission. Its refusals are invalid input or an
 // exceeded limit, and none is unsupported coverage: validity is decided here,
-// before a language refuses what it does not cover.
+// before a language refuses what it does not cover. It refuses in this order:
+// the number of files against the file limit and the link limit, a handle that
+// the output did not issue, an assignment to an undeclared file, a declaration
+// without an assignment, and a files table that files.Files.Capture refuses.
 func admitPlacement(output generation.Output, view GeneratedPlacementView, limits source.Limits) (*admittedPlacement, error) {
+	// The limits are valid, so the count answers with files.ErrLimit only.
+	if err := limits.Files.CheckFiles(len(view.Files)); err != nil {
+		return nil, source.WithCategory(err)
+	}
 	// Whether a handle belongs to an output is the output's answer. Its value
 	// stays joined to the Files category.
 	for handle := range view.Definitions {
@@ -189,7 +199,9 @@ type GeneratedFilesPreparation struct{ state *generatedPreparation }
 type generatedPreparation struct {
 	input    GeneratedFilesInput
 	admitted *admittedPlacement
-	closed   bool
+	// refused is the refusal of the common admission. It is final.
+	refused error
+	closed  bool
 }
 
 // Input returns the request with its limits normalized.
@@ -201,15 +213,22 @@ func (p GeneratedFilesPreparation) Input() GeneratedFilesInput {
 }
 
 // Admit runs the common admission on the view that the language derived from
-// its placement. The step calls it once, before it refuses anything as outside
-// its coverage, so that validity is decided before coverage. Its refusals have
-// a Files category: invalid input or an exceeded limit.
+// its placement. Its refusals have a Files category: invalid input or an
+// exceeded limit. One request has one admission: Admit answers once, while the
+// step runs, and refuses every later call with ErrInvalidFormatter, after an
+// admission and after a refusal alike. A refusal is final. The formatter
+// fails the request with it, whatever the step returns afterwards.
+//
+// A step calls Admit before it refuses anything as outside its coverage, so
+// that validity is decided before coverage. That order is the step's duty:
+// this contract cannot see what a step refuses before it calls Admit.
 func (p GeneratedFilesPreparation) Admit(view GeneratedPlacementView) (AdmittedPlacement, error) {
-	if p.state == nil || p.state.closed || p.state.admitted != nil {
+	if p.state == nil || p.state.closed || p.state.admitted != nil || p.state.refused != nil {
 		return AdmittedPlacement{}, ErrInvalidFormatter
 	}
 	admitted, err := admitPlacement(p.state.input.Output, view, p.state.input.Limits.Source)
 	if err != nil {
+		p.state.refused = err
 		return AdmittedPlacement{}, err
 	}
 	p.state.admitted = admitted
@@ -298,7 +317,9 @@ func (p GeneratedFilesFormatter[L]) Validate() error {
 
 // Format admits the request, asks the language which evidence it requires,
 // calls the provider and guards its publication. The provider is not called
-// when the step or the common admission refuses. A step that returns without
+// when the step or the common admission refuses. A refusal of the common
+// admission fails the request with its category, also when the step does not
+// pass it on. A step that returns without
 // an admitted placement, without a guard or with a requirement that asks for no
 // semantic graph fails the request with ErrInvalidFormatter: that is a defect
 // of the language's contribution and no category of the input. The publisher
@@ -329,6 +350,14 @@ func (p GeneratedFilesFormatter[L]) Format(ctx context.Context, input GeneratedF
 	preparation := &generatedPreparation{input: input}
 	prepared, err := p.contract.Prepare(ctx, GeneratedFilesPreparation{preparation})
 	preparation.closed = true
+	if preparation.refused != nil {
+		// The refusal of the common admission is the answer of the request, with
+		// its category, unless the error of the step already carries it.
+		if err == nil || !errors.Is(err, preparation.refused) {
+			err = preparation.refused
+		}
+		return source.Source[L]{}, err
+	}
 	if err != nil {
 		return source.Source[L]{}, err
 	}

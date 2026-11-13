@@ -567,7 +567,27 @@ func TestFilesFailureCategories(t *testing.T) {
 	add("unknown field of a file", typescriptExisting, source.ErrInvalid, existingRaw(strings.Replace(valid, `{"File":`, `{"Later":1,"File":`, 1)))
 	add("unknown field of an item", typescriptExisting, source.ErrInvalid, existingRaw(strings.Replace(valid, `{"Tree":`, `{"Later":1,"Tree":`, 1)))
 	// The placement of existing source named an entry until #273. No TypeScript
-	// reader has one, so the member left the vocabulary and is an unknown field.
+	// reader has one, so the vocabulary without it is published under a new key.
+	// A setting under the earlier key is another setting, whatever it holds: with
+	// the entry that it required, without one, and with the defects that the rows
+	// "missing entry" held for it. Under the new key the member is an unknown
+	// field.
+	earlierKey := n.Key("declaration-placement-1")
+	earlier := func(value string) func(*testing.T) (bool, error) {
+		return func(*testing.T) (bool, error) {
+			return existingFormat(format.FilesLimits{}, semantic.Setting{Key: earlierKey, Value: []byte(value)})
+		}
+	}
+	withEntry := func(entry string, change func(*tsfiles.Organization)) string {
+		o := existingPlacement()
+		change(&o)
+		return `{"Entry":"` + entry + `",` + string(tsBytes(o))[1:]
+	}
+	add("the earlier setting key with its entry", typescriptExisting, source.ErrInvalid, earlier(withEntry("pages", func(*tsfiles.Organization) {})))
+	add("the earlier setting key without an entry", typescriptExisting, source.ErrInvalid, earlier(valid))
+	add("missing entry under the earlier setting key", typescriptExisting, source.ErrInvalid, earlier(withEntry("absent", func(*tsfiles.Organization) {})))
+	add("an excluded path of the first file and a missing entry under the earlier setting key", typescriptExisting, source.ErrInvalid, earlier(withEntry("absent", func(o *tsfiles.Organization) { o.Units[0].Path = "generated/elsewhere/file.mts" })))
+	add("an excluded path of the second file and a missing entry under the earlier setting key", typescriptExisting, source.ErrInvalid, earlier(withEntry("absent", func(o *tsfiles.Organization) { o.Units[1].Path = "generated/elsewhere/file.mts" })))
 	add("the entry member of the earlier vocabulary", typescriptExisting, source.ErrInvalid, existingRaw(`{"Entry":"pages",`+valid[1:]))
 	horosDecoded("unknown field", `[{"Later":1,`+horosValid[2:])
 
@@ -596,6 +616,22 @@ func TestFilesFailureCategories(t *testing.T) {
 	add("too many files", typescript, source.ErrLimit, tsLimited(func(l *format.FilesLimits) { l.Source.Files.MaxFiles = 1 }), files.ErrLimit)
 	add("too many files", typescriptExisting, source.ErrLimit, existingLimited(func(l *format.FilesLimits) { l.Source.Files.MaxFiles = 1 }))
 	add("too many files", horosName, source.ErrLimit, horosLimited(func(l *format.FilesLimits) { l.Source.Files.MaxFiles = 1 }))
+	// The number of files is counted first: before a handle is read, and before
+	// the lists of a setting are.
+	add("a handle of another output with too many files", typescript, source.ErrLimit, func(*testing.T) (bool, error) {
+		p := tsPlacement()
+		p.Definitions[otherHandles["Person"]] = "model"
+		limits := format.DefaultFilesLimits()
+		limits.Source.Files.MaxFiles = 1
+		return tsFormat(generated, output, limits, p.Issue())
+	}, files.ErrLimit)
+	add("too many files and one file identity for two files", typescriptExisting, source.ErrLimit, func(*testing.T) (bool, error) {
+		o := existingPlacement()
+		o.Units[1].File = o.Units[0].File
+		limits := format.DefaultFilesLimits()
+		limits.Source.Files.MaxFiles = 1
+		return existingFormat(limits, semantic.Setting{Key: tsfiles.OrganizationSetting(), Value: tsBytes(o)})
+	})
 	// Each file of a placement is published with one syntax link. The shared
 	// admission applies the link limit to the number of files. The horos
 	// formatter is not on that admission and does not apply the limit.
@@ -890,6 +926,12 @@ func TestFilesFailureCategories(t *testing.T) {
 		}, "Cells")
 		return tsFormat(generated, out, format.FilesLimits{}, tsOneFile(out, "types", "types.ts").Issue())
 	})
+	// The TypeScript provider is exported, and only the shared formatter builds
+	// its request. It refuses a request that carries no admitted placement.
+	add("a request that the shared formatter did not build", typescript, source.ErrInvalid, func(*testing.T) (bool, error) {
+		out, err := (tsfiles.GeneratedProvider{}).Format(ctx, format.GeneratedFilesRequest[ts.Language]{})
+		return out.Valid(), err
+	})
 	add("a generated declaration that is already exported", typescript, source.ErrInvalid, tampered(tamperedTree(func(tree *ts.AST) {
 		node := &tree.Nodes[tree.Nodes[tree.Root-1].Children[0].Node-1]
 		node.Attributes = append(node.Attributes, ast.Attribute{Name: ts.AttributeExported, Text: "true"})
@@ -1036,10 +1078,33 @@ func TestFilesFailureCategories(t *testing.T) {
 	add("an excluded path and two declarations of one name in one file", typescriptExisting, source.ErrInvalid, tsExisting(&tsfiles.Organization{Units: []tsfiles.Placement{
 		{File: "both", Path: "both.mts", Declarations: []ast.NodeRef{tsSite(first, "Same"), tsSite(second, "Same")}},
 	}}, first, second))
-	// The captured program is read before a placement is judged against it. This
-	// row pins what is found first: the script, and not the unknown declaration
-	// of its placement. The category describes the defect that was found.
-	add("a script and a placement with an unknown declaration", typescriptExisting, source.ErrUnsupported, scripted(tsfiles.OrganizationSetting(), `{"Units":[{"File":"a","Path":"a.ts","Declarations":[{"Tree":"foreign","Node":1}]}]}`))
+	// A placement is judged against the top-level declarations of the captured
+	// program before a script is refused: its items, its files and its paths need
+	// nothing that only a module has.
+	script := tsUnit("input", "type A = string; type B = A;")
+	scriptPlaced := func(units ...tsfiles.Placement) func(*testing.T) (bool, error) {
+		return func(t *testing.T) (bool, error) {
+			in, err := existingStages.Capture(ctx, []source.Unit[ts.Language]{script}, script.File, semantic.Limits{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			in.Configuration = []semantic.Setting{{Key: tsfiles.OrganizationSetting(), Value: tsBytes(tsfiles.Organization{Units: units})}}
+			out, err := plain.Format(ctx, in)
+			return out.Valid(), err
+		}
+	}
+	scriptA, scriptB := tsSite(script, "A"), tsSite(script, "B")
+	add("a script and a placement with an unknown declaration", typescriptExisting, source.ErrInvalid, scriptPlaced(tsfiles.Placement{File: "a", Path: "a.ts", Declarations: []ast.NodeRef{scriptA, scriptB, {Tree: "foreign", Node: 1}}}), files.ErrInvalid)
+	add("a script and a placement with a repeated declaration", typescriptExisting, source.ErrInvalid, scriptPlaced(tsfiles.Placement{File: "a", Path: "a.ts", Declarations: []ast.NodeRef{scriptA, scriptB, scriptA}}))
+	add("a script and a placement with a missing item", typescriptExisting, source.ErrInvalid, scriptPlaced(tsfiles.Placement{File: "a", Path: "a.ts", Declarations: []ast.NodeRef{scriptA}}), files.ErrInvalid)
+	add("a script and a path that is no TypeScript path", typescriptExisting, source.ErrInvalid, scriptPlaced(tsfiles.Placement{File: "a", Path: "a.txt", Declarations: []ast.NodeRef{scriptA, scriptB}}))
+	// What needs the bindings of the program is judged after the program is read,
+	// and a script is refused while it is read. This row pins what is found
+	// first: the script, and not the use of an unexposed declaration of another
+	// file. The category describes the defect that was found.
+	add("a script and a use of an unexposed declaration of another file", typescriptExisting, source.ErrUnsupported, scriptPlaced(
+		tsfiles.Placement{File: "a", Path: "a.ts", Declarations: []ast.NodeRef{scriptA}},
+		tsfiles.Placement{File: "b", Path: "b.ts", Declarations: []ast.NodeRef{scriptB}}))
 
 	// Well formed, and outside this profile.
 	add("a file that is a script", typescriptExisting, source.ErrUnsupported, tsExisting(nil, tsUnit("input", "type Global = string;")))

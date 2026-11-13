@@ -37,7 +37,11 @@ type Organization struct {
 	Units []Placement
 }
 
-func OrganizationSetting() semantics.Key { return n.Key("declaration-placement-1") }
+// OrganizationSetting is the key of the vocabulary without an entry. The
+// vocabulary that named one was published as declaration-placement-1. A
+// setting under that key is another setting and is refused, whatever it holds:
+// a vocabulary does not change under its key.
+func OrganizationSetting() semantics.Key { return n.Key("declaration-placement-2") }
 func (o Organization) Setting() (semantic.Setting, error) {
 	data, err := json.Marshal(o)
 	if err != nil {
@@ -106,6 +110,20 @@ func declarations(t s.AST) ([]ast.NodeRef, error) {
 	return out, nil
 }
 func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantics.Semantics[s.Language]) (*program, error) {
+	p, err := readDeclarations(snapshot)
+	if err != nil {
+		return nil, err
+	}
+	if err := p.readSemantics(ctx, graph); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+// readDeclarations reads what the captured trees say alone: the files, their
+// trees and the top-level declarations of each. A placement is judged against
+// this much, before the graph is read.
+func readDeclarations(snapshot semantic.Snapshot) (*program, error) {
 	fileContext := snapshot.Files()
 	if fileContext == nil {
 		// A capture without files is well formed, and this profile reads none.
@@ -137,6 +155,13 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 			p.tops[site] = true
 		}
 	}
+	return p, nil
+}
+
+// readSemantics reads what the graph says of the declarations: that every file
+// is a module, what each module exports and where each name is bound. A script
+// is refused here, as unsupported coverage.
+func (p *program) readSemantics(ctx context.Context, graph semantics.Semantics[s.Language]) error {
 	data := graph.Data()
 	modules := map[ast.NodeRef]bool{}
 	for _, e := range data.Entities {
@@ -147,7 +172,7 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 	for _, tree := range p.trees {
 		if !modules[ref(tree.ID, tree.Root)] {
 			// A script is TypeScript that this profile does not cover.
-			return nil, fmt.Errorf("%w: placement requires TypeScript modules with file-local scope", source.ErrUnsupported)
+			return fmt.Errorf("%w: placement requires TypeScript modules with file-local scope", source.ErrUnsupported)
 		}
 	}
 	for _, fact := range data.Facts {
@@ -155,22 +180,22 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 			continue
 		}
 		if fact.Subject.Entity == 0 {
-			return nil, source.ErrInvalid
+			return source.ErrInvalid
 		}
 		owner := data.Entities[fact.Subject.Entity-1]
 		term := data.Terms[fact.Term-1]
 		if term.Kind != semantics.Reference || owner.Kind != n.ModuleKind() || len(owner.Declarations) != 1 {
-			return nil, source.ErrInvalid
+			return source.ErrInvalid
 		}
 		declaration := data.Entities[term.Target-1]
 		if len(declaration.Declarations) != 1 || declaration.Owner != fact.Subject.Entity || !p.tops[declaration.Declarations[0]] {
-			return nil, source.ErrInvalid
+			return source.ErrInvalid
 		}
 		p.public[declaration.Declarations[0]] = true
 	}
 	for _, b := range data.Bindings {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return err
 		}
 		if b.At.Role != n.NameRole() && b.At.Role != n.ImportRole() {
 			continue
@@ -183,20 +208,20 @@ func readProgram(ctx context.Context, snapshot semantic.Snapshot, graph semantic
 		case entity.Kind == n.PackageTypeKind() && entity.Owner != 0:
 			owner := data.Entities[entity.Owner-1]
 			if owner.Kind != n.PackageKind() {
-				return nil, source.ErrInvalid
+				return source.ErrInvalid
 			}
 			dest.external = imports.Export{Module: owner.Name, Name: entity.Name}
 		case entity.Kind == n.BuiltinKind():
 			dest.builtin = entity.Name
 		default:
-			return nil, fmt.Errorf("%w: ambiguous native binding %s", source.ErrInvalid, entity.Name)
+			return fmt.Errorf("%w: ambiguous native binding %s", source.ErrInvalid, entity.Name)
 		}
 		if _, dup := p.bindings[b.At.Site]; dup {
-			return nil, source.ErrInvalid
+			return source.ErrInvalid
 		}
 		p.bindings[b.At.Site] = dest
 	}
-	return p, nil
+	return nil
 }
 
 // decodeOrganization reads the placement of existing source from the settings
@@ -227,6 +252,11 @@ func decodeOrganization(settings []semantic.Setting) (Organization, bool, error)
 // admits. A list can state what a keyed table cannot, a file identity or a
 // declaration that is named twice, and that is refused here.
 func (p *program) admit(o Organization, limits source.Limits) error {
+	// The number of files is counted before a list is read. The count answers
+	// with files.ErrLimit, or with files.ErrInvalid for an invalid limit record.
+	if err := limits.Files.CheckFiles(len(o.Units)); err != nil {
+		return source.WithCategory(err)
+	}
 	table := make(map[files.ID]files.Path, len(o.Units))
 	assignment := map[ast.NodeRef]files.ID{}
 	for _, u := range o.Units {

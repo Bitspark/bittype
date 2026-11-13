@@ -84,14 +84,28 @@ func (f Files) Capture(l Limits) (Files, error) {
 	return f.Clone(), nil
 }
 
+// CheckFiles refuses a number of files that the limits do not admit: more
+// files than MaxFiles or than MaxLinks, with ErrLimit. Each file of a placement
+// is published with one syntax link, so both limits bound the number of files.
+// An invalid limit record is ErrInvalid. Cover counts the files first. A caller
+// that reads something of a placement before it calls Cover counts them itself
+// before that, so that the number of files is the first thing decided.
+func (l Limits) CheckFiles(count int) error {
+	if !l.Valid() {
+		return ErrInvalid
+	}
+	if count > l.MaxFiles || count > l.MaxLinks {
+		return ErrLimit
+	}
+	return nil
+}
+
 // Cover admits a placement of items into files. table names each file by its
 // identity and gives its relative path. assignment gives each item its file.
 // items are the items that the placement has to place. Cover refuses in this
 // order:
 //
-//   - more files than MaxFiles or than MaxLinks, with ErrLimit. Each file of a
-//     placement is published with one syntax link, so both limits bound the
-//     number of files;
+//   - the number of files, as CheckFiles refuses it;
 //   - an assigned item that is none of items, and an assignment to a file that
 //     table does not declare, with ErrInvalid;
 //   - an item without an assignment, with ErrInvalid;
@@ -104,11 +118,8 @@ func (f Files) Capture(l Limits) (Files, error) {
 // an implementation supports. The result is the admitted inventory, without
 // text, in the order of the file identities.
 func Cover[I comparable](table map[ID]Path, assignment map[I]ID, items []I, l Limits) (Files, error) {
-	if !l.Valid() {
-		return Files{}, ErrInvalid
-	}
-	if len(table) > l.MaxFiles || len(table) > l.MaxLinks {
-		return Files{}, ErrLimit
+	if err := l.CheckFiles(len(table)); err != nil {
+		return Files{}, err
 	}
 	expected := make(map[I]bool, len(items))
 	for _, item := range items {

@@ -74,6 +74,8 @@ type fixtureLanguage struct {
 
 	// calls counts the calls of the provider.
 	calls int
+	// step replaces the preparation step. It may call prepare, the fixture's own.
+	step func(context.Context, format.GeneratedFilesPreparation) (format.GeneratedFilesPrepared[gs.Language], error)
 	// skipAdmission makes the step return without the common admission.
 	skipAdmission bool
 	// again is what a second call of Admit in one step answers.
@@ -114,7 +116,11 @@ func newFixtureLanguage(t *testing.T, output g.Output) *fixtureLanguage {
 
 func (l *fixtureLanguage) formatter(t *testing.T) format.GeneratedFilesFormatter[gs.Language] {
 	t.Helper()
-	formatter, err := format.NewGeneratedFilesFormatter(l.definition, format.GeneratedFilesContract[gs.Language]{Print: golangText().Print, Prepare: l.prepare}, l)
+	step := l.prepare
+	if l.step != nil {
+		step = l.step
+	}
+	formatter, err := format.NewGeneratedFilesFormatter(l.definition, format.GeneratedFilesContract[gs.Language]{Print: golangText().Print, Prepare: step}, l)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -417,6 +423,13 @@ func TestGeneratedFilesAdmissionRunsBeforeTheProvider(t *testing.T) {
 		{name: "the zero handle", want: source.ErrInvalid, also: g.ErrScope, change: func(p *fixturePlacement) {
 			p.Definitions[g.DeclarationHandle{}] = "b"
 		}},
+		// The number of files is counted before a handle is read.
+		{name: "a handle of another output and more files than the file limit", want: source.ErrLimit, also: files.ErrLimit, limits: func(l *format.FilesLimits) { l.Source.Files.MaxFiles = 2 }, change: func(p *fixturePlacement) {
+			p.Definitions[other.Inventory()[4].Handle] = "b"
+		}},
+		{name: "a handle of another output and more files than the link limit", want: source.ErrLimit, also: files.ErrLimit, limits: func(l *format.FilesLimits) { l.Source.Files.MaxLinks = 2 }, change: func(p *fixturePlacement) {
+			p.Definitions[other.Inventory()[4].Handle] = "b"
+		}},
 		{name: "a file set that the files contract refuses: one path for two files", want: source.ErrInvalid, also: files.ErrInvalid, change: func(p *fixturePlacement) {
 			p.Files["c"] = p.Files["a"]
 		}},
@@ -635,6 +648,157 @@ func TestGeneratedFilesStepWithoutEvidenceGuardOrAdmissionFails(t *testing.T) {
 	}
 	if _, read := c.language.issuer.Read(foreign); read {
 		t.Fatal("an issuer read the placement of another issuer")
+	}
+}
+
+// A refusal of the common admission is final. A step that has a second view
+// admitted after a refusal, and a step that swallows the refusal, do not reach
+// the provider: the request fails with the refusal and its category. A step
+// that passes the refusal on in an error of its own keeps that error.
+func TestGeneratedFilesAdmissionRefusalIsFinal(t *testing.T) {
+	c := newFixtureCase(t)
+	l := c.language
+	other := inventoryOutput(t, independent(t), inventoryRoots...)
+	stranger := other.Inventory()[0].Handle
+	accept := func(context.Context, source.Publication[gs.Language]) error { return nil }
+	errStep := errors.New("the fixture step refuses")
+	var second error
+	cases := []struct {
+		name string
+		want error
+		also []error
+		not  error
+		step func(context.Context, format.GeneratedFilesPreparation) (format.GeneratedFilesPrepared[gs.Language], error)
+	}{
+		{"the step swallows the refusal and returns a guard and a requirement", source.ErrInvalid, []error{files.ErrInvalid}, format.ErrInvalidFormatter, func(_ context.Context, p format.GeneratedFilesPreparation) (format.GeneratedFilesPrepared[gs.Language], error) {
+			// One file and no definition: every declaration lacks its file.
+			admitted, _ := p.Admit(format.GeneratedPlacementView{Files: map[files.ID]files.Path{"a": "out/a.go"}})
+			return format.GeneratedFilesPrepared[gs.Language]{Placement: admitted, Evidence: l.requirement("a"), Check: accept}, nil
+		}},
+		{"the step drops the refused handle and has the view admitted again", source.ErrInvalid, []error{g.ErrScope}, format.ErrInvalidFormatter, func(_ context.Context, p format.GeneratedFilesPreparation) (format.GeneratedFilesPrepared[gs.Language], error) {
+			placement := c.placement()
+			view := format.GeneratedPlacementView{Files: placement.Files, Definitions: placement.Definitions}
+			view.Definitions[stranger] = "a"
+			if _, err := p.Admit(view); err == nil {
+				t.Error("a handle of another output was admitted")
+			}
+			delete(view.Definitions, stranger)
+			var admitted format.AdmittedPlacement
+			admitted, second = p.Admit(view)
+			return format.GeneratedFilesPrepared[gs.Language]{Placement: admitted, Evidence: l.requirement("a"), Check: accept}, second
+		}},
+		{"the step swallows the refusal and refuses coverage of its own", source.ErrInvalid, []error{g.ErrScope}, source.ErrUnsupported, func(_ context.Context, p format.GeneratedFilesPreparation) (format.GeneratedFilesPrepared[gs.Language], error) {
+			placement := c.placement()
+			placement.Definitions[stranger] = "a"
+			if _, err := p.Admit(format.GeneratedPlacementView{Files: placement.Files, Definitions: placement.Definitions}); err == nil {
+				t.Error("a handle of another output was admitted")
+			}
+			return format.GeneratedFilesPrepared[gs.Language]{}, source.ErrUnsupported
+		}},
+		{"the step passes the refusal on in an error of its own", source.ErrInvalid, []error{g.ErrScope, errStep}, format.ErrInvalidFormatter, func(_ context.Context, p format.GeneratedFilesPreparation) (format.GeneratedFilesPrepared[gs.Language], error) {
+			placement := c.placement()
+			placement.Definitions[stranger] = "a"
+			_, err := p.Admit(format.GeneratedPlacementView{Files: placement.Files, Definitions: placement.Definitions})
+			return format.GeneratedFilesPrepared[gs.Language]{}, errors.Join(errStep, err)
+		}},
+	}
+	for _, attack := range cases {
+		l.calls, l.step = 0, attack.step
+		out, err := c.format(t, c.placement(), format.FilesLimits{})
+		if out.Valid() || l.calls != 0 {
+			t.Errorf("%s: published=%v, calls of the provider=%d, err=%v", attack.name, out.Valid(), l.calls, err)
+		}
+		onlyCategory(t, attack.name, err, attack.want)
+		for _, value := range attack.also {
+			if !errors.Is(err, value) {
+				t.Errorf("%s: the refusal does not match %q: %v", attack.name, value, err)
+			}
+		}
+		if errors.Is(err, attack.not) {
+			t.Errorf("%s: the refusal matches %q: %v", attack.name, attack.not, err)
+		}
+	}
+	if !errors.Is(second, format.ErrInvalidFormatter) {
+		t.Errorf("a second admission after a refusal answered %v", second)
+	}
+}
+
+// The formatter refuses a step whose result is not the admitted placement of
+// its own request, also when that step had a view admitted: the admitted
+// placement of an earlier request, and the one of another output and formatter.
+func TestGeneratedFilesStepReturnsTheAdmittedPlacementOfItsRequest(t *testing.T) {
+	c := newFixtureCase(t)
+	l := c.language
+	var kept format.AdmittedPlacement
+	l.step = func(ctx context.Context, p format.GeneratedFilesPreparation) (format.GeneratedFilesPrepared[gs.Language], error) {
+		prepared, err := l.prepare(ctx, p)
+		kept = prepared.Placement
+		return prepared, err
+	}
+	if out, err := c.format(t, c.placement(), format.FilesLimits{}); err != nil || !out.Valid() || !kept.Valid() {
+		t.Fatal("the earlier request must publish and leave its admitted placement", err)
+	}
+	earlier := kept
+	elsewhere := newFixtureCase(t)
+	elsewhere.language.step = func(ctx context.Context, p format.GeneratedFilesPreparation) (format.GeneratedFilesPrepared[gs.Language], error) {
+		prepared, err := elsewhere.language.prepare(ctx, p)
+		kept = prepared.Placement
+		return prepared, err
+	}
+	if out, err := elsewhere.format(t, elsewhere.placement(), format.FilesLimits{}); err != nil || !out.Valid() {
+		t.Fatal("the request of another output must publish", err)
+	}
+	foreign := kept
+	for name, placement := range map[string]format.AdmittedPlacement{
+		"the admitted placement of an earlier request":           earlier,
+		"the admitted placement of another output and formatter": foreign,
+	} {
+		for _, admits := range []bool{true, false} {
+			l.calls = 0
+			l.step = func(ctx context.Context, p format.GeneratedFilesPreparation) (format.GeneratedFilesPrepared[gs.Language], error) {
+				if !admits {
+					return format.GeneratedFilesPrepared[gs.Language]{Placement: placement, Evidence: l.requirement("a"), Check: func(context.Context, source.Publication[gs.Language]) error { return nil }}, nil
+				}
+				prepared, err := l.prepare(ctx, p)
+				prepared.Placement = placement
+				return prepared, err
+			}
+			out, err := c.format(t, c.placement(), format.FilesLimits{})
+			if !errors.Is(err, format.ErrInvalidFormatter) || out.Valid() || l.calls != 0 {
+				t.Errorf("%s, own admission=%v: err=%v published=%v calls=%d", name, admits, err, out.Valid(), l.calls)
+			}
+			onlyCategory(t, name, err, nil)
+		}
+	}
+}
+
+// The constructor refuses a contract without a preparation step or without a
+// printer, and a provider of another language. A formatter cannot exist
+// without the step that states the guard and the evidence of each request.
+func TestNewGeneratedFilesFormatterRequiresItsContract(t *testing.T) {
+	c := newFixtureCase(t)
+	l := c.language
+	whole := format.GeneratedFilesContract[gs.Language]{Print: golangText().Print, Prepare: l.prepare}
+	if _, err := format.NewGeneratedFilesFormatter(l.definition, whole, l); err != nil {
+		t.Fatal(err)
+	}
+	withoutStep, withoutPrinter := whole, whole
+	withoutStep.Prepare, withoutPrinter.Print = nil, nil
+	for name, build := range map[string]func() (format.GeneratedFilesFormatter[gs.Language], error){
+		"no preparation step": func() (format.GeneratedFilesFormatter[gs.Language], error) {
+			return format.NewGeneratedFilesFormatter(l.definition, withoutStep, l)
+		},
+		"no printer": func() (format.GeneratedFilesFormatter[gs.Language], error) {
+			return format.NewGeneratedFilesFormatter(l.definition, withoutPrinter, l)
+		},
+		"no provider": func() (format.GeneratedFilesFormatter[gs.Language], error) {
+			return format.NewGeneratedFilesFormatter[gs.Language](l.definition, whole, nil)
+		},
+	} {
+		formatter, err := build()
+		if !errors.Is(err, format.ErrInvalidFormatter) || formatter.Validate() == nil {
+			t.Errorf("%s: %v", name, err)
+		}
 	}
 }
 

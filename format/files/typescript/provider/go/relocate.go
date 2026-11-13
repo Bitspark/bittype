@@ -35,17 +35,44 @@ func materialize(ctx context.Context, input fm.FilesInput[s.Language]) (*result,
 	if err != nil {
 		return nil, err
 	}
-	program, err := readProgram(ctx, input.Snapshot, input.Abstract)
+	program, err := readDeclarations(input.Snapshot)
 	if err != nil {
 		return nil, err
 	}
 	if !stated {
 		organization = program.original
 	}
+	// The placement is judged against the top-level declarations before the
+	// graph is read: its files, its items and its paths need nothing else, so
+	// a script does not hide a placement that no slice admits.
 	if err := program.admit(organization, input.Limits.Source); err != nil {
 		return nil, err
 	}
+	if _, err := sourcePaths(organization.Units); err != nil {
+		return nil, err
+	}
+	if err := program.readSemantics(ctx, input.Abstract); err != nil {
+		return nil, err
+	}
 	return placeProgram(ctx, program, organization.Units, input.Limits.Source)
+}
+
+// sourcePaths judges the paths of a placement. A path that is no TypeScript
+// path is invalid input, and it is the error. A path that TypeScript reads and
+// this profile excludes is unsupported coverage, and the first such path is
+// the first result: the caller reports it after everything invalid.
+func sourcePaths(units []Placement) (uncovered error, invalid error) {
+	for _, u := range units {
+		switch {
+		case imports.SourcePath(u.Path):
+		case !imports.ExcludedPath(u.Path):
+			// A path that is no TypeScript path is invalid input.
+			return nil, fmt.Errorf("%w: %q is no TypeScript source path", source.ErrInvalid, u.Path)
+		case uncovered == nil:
+			uncovered = fmt.Errorf("%w: path %q", source.ErrUnsupported, u.Path)
+		}
+	}
+	return uncovered, nil
 }
 
 // placeProgram realizes a placement whose common rules are admitted: every
@@ -61,16 +88,9 @@ func materialize(ctx context.Context, input fm.FilesInput[s.Language]) (*result,
 //
 // A placement with a defect of both kinds is invalid input.
 func placeProgram(ctx context.Context, program *program, units []Placement, limits source.Limits) (*result, error) {
-	var uncovered error
-	for _, u := range units {
-		switch {
-		case imports.SourcePath(u.Path):
-		case !imports.ExcludedPath(u.Path):
-			// A path that is no TypeScript path is invalid input.
-			return nil, fmt.Errorf("%w: %q is no TypeScript source path", source.ErrInvalid, u.Path)
-		case uncovered == nil:
-			uncovered = fmt.Errorf("%w: path %q", source.ErrUnsupported, u.Path)
-		}
+	uncovered, err := sourcePaths(units)
+	if err != nil {
+		return nil, err
 	}
 	if err := program.relocatable(ctx, units); err != nil {
 		return nil, err
