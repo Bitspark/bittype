@@ -99,9 +99,9 @@ may not alter which occurrences they are.
 
 | Language | Name use | Not a name use |
 | --- | --- | --- |
-| TypeScript | Every `type-reference` node | `keyword-type` (`string`, `boolean`): a keyword |
+| TypeScript | Every `type-reference` node | `keyword-type` (`string`, `boolean`): a keyword. The TypeScript target writes no `qualified-type` |
 | Go | Every `named-type` node. `string` and `bool` are names of the universe scope, and a declaration or a type parameter can capture them | The Go target writes no `qualified-type`. A type of another package is slice 2 of #161 |
-| Rust | The last `path-segment` of every `path-type`, and every `primitive-type` node. `bool` is no keyword, and a declaration of that name captures it | The segments before the last. They qualify the use and are part of how one use is spelled |
+| Rust | The last `path-segment` of every `path-type`, and every `primitive-type` node. `bool` is no keyword, and a declaration or a generic parameter of that name captures it | The segments before the last. They qualify the use and are part of how one use is spelled. The Rust target writes no `lifetime-reference` and no `qualified-path-type` |
 | C++ | None is recorded. Row 36 of research 0016 excludes legacy C++ output until [#160](https://github.com/Bitspark/bittype/issues/160) | |
 
 **Rust paths.** A path that refers to a declaration or a parameter of the
@@ -123,10 +123,17 @@ gain a further category of symbol. That adds destinations and changes none.
 
 Each package has two functions for a use: `ExternalUse` records a symbol at a
 node, and `ReadExternal` reads it back and refuses a use of another issuer or
-of another language. A consumer calls these two and never names the role of
-the use. The Go and Rust packages take that role from their syntax vocabulary:
-it is the role `target` that a reference has on such a node, because an
-external use stands where a reference would.
+of another language.
+
+**The role of an external use, one rule for the three languages.** The role
+is the symbol package's own name. It is read back only through that package,
+and nothing compares it with a role of the compiler bridge: a formatter takes
+the site of a use from the symbol package and looks the compiler's binding up
+under the bridge's own role. The keys are `typescript/name`, `go/target` and
+`rust/target`. TypeScript's and Rust's happen to equal the role under which
+their bridge publishes a binding. Go's does not: the Go bridge publishes
+`go/name`. Nothing depends on either. Each package's test pins its key,
+because the key is sealed into every output with the site.
 
 ### TypeScript
 
@@ -166,6 +173,11 @@ package refuses to issue it as unsupported.
 A type of another package is no symbol yet. It needs that package's semantics:
 slice 2 of #161. The Go model's external form stays unsupported.
 
+Limit: `Predeclared` asks `go/types` of the toolchain that builds bittype
+which names the universe scope declares. That is not the universe of the
+pinned language version, Go 1.25. The basic types, which are all it issues,
+are the same in both.
+
 ### Rust
 
 `transform/syntax/rust/symbol/go` issues two categories today.
@@ -180,6 +192,26 @@ dependency, `Std()`: the crate `std` of the standard library of the pinned
 compiler. A crate of a library is no symbol yet. It needs that crate's
 semantics: [#170](https://github.com/Bitspark/bittype/issues/170).
 
+A key holds a name and never a spelling. A raw identifier, `r#string`, is one
+way to write the name `string`, so `Item` and `Dependency` refuse it as
+invalid, and one item has one symbol. The underscore names nothing and is
+refused too. Rust Files chooses a raw spelling where the language needs one.
+
+How this relates to the Rust environment: the
+[environment](native-semantics.md#rust-environment) refuses `std`, `core` and
+`alloc` as the name of the *captured* crate, because the graph names an entity
+by its crate and its path, and a captured crate of one of these names would
+put two entities of one name into a graph. `Std()` is about another thing: the
+crate that a use *names*. It is the one dependency a symbol may name. `core`
+and `alloc` as the dependency of a symbol are unsupported: each of their items
+is another export than the one of `std`, and no mapping selects one today.
+
+Limit: `Dependency` judges a crate's name by the rule for a segment of a path.
+So a keyword that the compiler takes as the name of a crate, such as `fn`, is
+invalid here, where the compiler's own rule would make it a crate outside
+coverage. That rule is on `main` in `semantics/rust/go`, which a symbol
+package may not import. Where the one rule lives is open.
+
 The Rust bridge names an entity by the crate and the path of its definition.
 It names the entity of `::std::string::String` as `alloc::string::String`, and
 that of `::std::option::Option` as `core::option::Option`. That name is the
@@ -193,8 +225,9 @@ That is why Rust Files realizes an external use as an absolute path in its
 first slice and as nothing else.
 
 **Primitive.** `Bool()` identifies Rust's primitive type `bool`. The helper
-publishes bindings for path segments only, so a declaration named `bool` that
-captures a use is invisible today.
+publishes bindings for path segments only, so a declaration or a generic
+parameter named `bool` that captures a use is invisible today. `Bool()`
+therefore records a destination that no evidence can establish yet.
 [Decision 2 on #276](https://github.com/Bitspark/bittype/issues/276#issuecomment-6837794385)
 gives the primitive node a binding from the helper. Rust Files cannot establish
 this destination before the helper publishes it.
@@ -219,8 +252,23 @@ TypeScript does, and is asserted by a test per target over sealed outputs".
   unsupported coverage: a later slice can admit it. Rust's `bool` is one as
   long as the helper publishes no binding for a primitive type.
 - **A test per target** reads sealed outputs and asserts that every name use
-  carries exactly one of a reference and an external use:
-  [`destinations_test.go`](../integration/go/destinations_test.go).
+  carries exactly one of a reference and an external use, and that every other
+  node carries neither:
+  [`destinations_test.go`](../integration/go/destinations_test.go). It
+  classifies every node by its kind. Which kinds can carry a reference it asks
+  of the language's syntax checker, whose grammar marks them: TypeScript
+  `type-reference`, Go `named-type` and `qualified-type`, Rust `path-segment`
+  and `lifetime-reference`. Rust's `primitive-type` uses a name and gets no
+  reference from the grammar, so the test lists it. The kinds that use no name
+  are listed per language. A node of a kind that is in no list and that the
+  grammar gives no reference fails the test, so a new kind is classified
+  before an output with it passes.
+- **Which outputs it reads.** The pagination output of each of the three
+  targets, and for TypeScript also the output with a type of a package beside
+  a declaration of the same name and one whose lists are the global type
+  `ReadonlyArray`. They hold every kind that the three native models can build
+  today. The claim is shown for those kinds and those outputs, and not for
+  every tree that a later model could build.
 
 ## What generation records, and what it does not decide
 
@@ -236,6 +284,14 @@ Nobody places Go or Rust output yet.
 - C++ records no destination for `::std::string`, `::std::vector`, the
   external form, the namespace segment or the includes.
 - The Rust helper publishes no binding for a primitive type.
+- A recorded use counts against three limits of an output. The seal refuses
+  more external uses than `Limits.References`, which on `main` did not bound
+  the text, boolean, list and optional uses of a Go or Rust output. Each use
+  takes a second record of the target's store and the bytes of its key. On the
+  pagination output the smallest limits that pass grew from 58 to 62 nodes and
+  from 1558 to 1658 bytes for Go, with 4 uses, and from 64 to 70 nodes and from
+  1743 to 1921 bytes for Rust, with 6 uses (measured by the independent review
+  of #294). TypeScript is unchanged.
 - The TypeScript symbol's encoding of a global type as an empty module is not
   changed (row 25 asks this of Go only).
 - A destination says which entity is meant. It does not say that the entity is

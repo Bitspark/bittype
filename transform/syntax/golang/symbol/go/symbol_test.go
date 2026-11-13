@@ -121,6 +121,14 @@ func TestExternalDestinationUsesIssuerLanguageAndRole(t *testing.T) {
 	if _, err := symbol.ExternalUse(another, at, want); !errors.Is(err, g.ErrScope) {
 		t.Fatal("another language", err)
 	}
+	// A language of this package's marker under another identity.
+	disguised, err := representation.NewLanguage[gs.Language](foreign{}, "native")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := symbol.ExternalUse(disguised, at, want); !errors.Is(err, g.ErrScope) {
+		t.Fatal("this marker under another identity", err)
+	}
 	if _, err := symbol.ExternalUse(representation.Language{}, at, want); !errors.Is(err, g.ErrScope) {
 		t.Fatal("no language", err)
 	}

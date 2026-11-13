@@ -187,9 +187,11 @@ on return. A run uses fresh authenticated symbols and cannot select new mappings
 Source admission, native syntax and representation meaning remain separately
 owned; no agnostic mechanism infers their semantics.
 
-TypeScript generation carries exposures and external occurrences in the checked
-generation.Output. Its [Files formatter](docs/typescript-type-imports.md) decides
-imports and exports after placement and checks fresh native bindings. Formatting
+Generation carries exposures and external occurrences in the checked
+generation.Output. TypeScript, Go and Rust output records a
+[destination](docs/destinations.md) for every name use, and C++ output records
+none. Only TypeScript has a [Files formatter](docs/typescript-type-imports.md):
+it decides imports and exports after placement and checks fresh native bindings. Formatting
 already analyzed files retains its distinct input. The
 [three SPI changes](docs/generation-planner.md#three-spi-changes) are implemented:
 the kernel walks the admitted semantic graph, and sources supply interpretation,
