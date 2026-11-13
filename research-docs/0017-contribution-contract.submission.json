@@ -18,10 +18,14 @@
       "serverSha256": "66d4a2ef753841fb887bbe7cc7138183c944fddd6c40af776cabd99ea151d121",
       "runId": "run_49f8e87c-d37a-4578-ae05-65eaf57a60f5",
       "submittedAt": "2026-11-13T00:15:49Z",
-      "state": null,
+      "state": "completed",
       "failureCode": null,
-      "resultSha256": null,
-      "verify": null
+      "resultSha256": "a21ab54968feb2e420683a0bcd27aae01288f4be98fef71a707cc904fda4ca72",
+      "verify": {
+        "exit": 0,
+        "verified": true,
+        "with": "--output research-docs/0017-contribution-contract.advice.md"
+      }
     }
   ]
 }

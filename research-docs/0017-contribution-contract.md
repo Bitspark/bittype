@@ -2,7 +2,7 @@
 
 **ID:** 0017
 **Date:** 12 November 2026
-**Status:** submitted
+**Status:** advised
 **Run-ID:** run_49f8e87c-d37a-4578-ae05-65eaf57a60f5
 **Reviewed:** https://github.com/Bitspark/bittype/issues/196#issuecomment-6839823652
 **Owner:** claude-contract-chain-issues
