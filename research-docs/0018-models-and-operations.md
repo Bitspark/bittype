@@ -275,8 +275,9 @@ organization, and section 2.1 gives them in full.
   Implementation or migration effort has **zero weight**, including as a
   tiebreaker."
 
-The second rule is why this document can ask its question at all. A layout
-that touches every package is a legitimate answer if it is the right one.
+The second rule is why the owner's direction (Question) can be carried out
+as it is meant. That a new layout touches every package is no objection to
+it.
 
 ## 2. Architectural context
 
