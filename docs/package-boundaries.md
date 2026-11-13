@@ -498,7 +498,7 @@ A package's role follows from its path, which the [layout](../LAYOUT.md) fixes.
 | Vocabulary | `syntax/<language>/go`, `semantics/<language>/go`, `transform/syntax/<native>/model/go`, `transform/syntax/<native>/symbol/go` |
 | Contribution | `<stage>/<dimension>/<language>/provider/go`, `analyze/files/<language>/queries/go`, `transform/syntax/<language>/{source,target}/go`, each mapping, each verification law and each capability extractor |
 | Common mapping part | `transform/syntax/<source>/mapping/go` and `transform/syntax/<source>/mapping/<part>/go` |
-| Private part | `internal/<language>` and `internal/<language>sem`, bound to their language by name. The other packages under `internal/` have explicit entries: six helpers of no single language in the foundation table, and four that the table `languageOwners` binds to one language. The sixth helper is `internal/processoutput`, since 13 November 2026 |
+| Private part | `internal/<language>` and `internal/<language>sem`, bound to their language by name. The other packages under `internal/` have explicit entries: seven helpers of no single language in the foundation table, and four that the table `languageOwners` binds to one language. The sixth and the seventh helper are `internal/processoutput` and the fixture of its tests, `internal/processoutput/processoutputtest`, since 13 November 2026 |
 | Composition | `integration/go`, `verification/integration/go`, `tools/**`. A future `cmd/**` is intended and is not yet known to the test |
 
 1. A foundation or kernel package imports no vocabulary and no contribution.
@@ -547,12 +547,12 @@ at `71bfec9`, before the Go move, are in
 Every production package of the module is classified in one of three ways. A
 package with none of them fails as unclassified.
 
-- **By its role.** `packageRole` derives the rule from the path. 84 of the 127
+- **By its role.** `packageRole` derives the rule from the path. 86 of the 131
   production packages are classified this way. The
   [layout](../LAYOUT.md#dependency-direction) lists the roles and what each
   may import.
 - **By its entry in `foundationRules`.** The entry is the exact list of the
-  package's module imports. 31 packages have one.
+  package's module imports. 33 packages have one.
 - **By a hand entry.** The entry is again the exact list. 12 packages have
   one, and all are in `oneOfAKindRules`. `TestProductionArchitecture` holds no
   entry of its own since #246. A hand entry takes precedence over a role.
@@ -561,9 +561,9 @@ The tables:
 
 | Table | Entries | Holds |
 | --- | --- | --- |
-| `foundationRules` | 31 | The carriers, the contracts, the engine, the shared transform, check and print packages, and the five private helpers of no single language: `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil` and `internal/concrete` |
+| `foundationRules` | 33 | The carriers, the contracts, the engine, the shared transform, check and print packages, and the seven private helpers of no single language: `internal/tree`, `internal/grammar`, `internal/lex`, `internal/parseutil`, `internal/concrete`, `internal/processoutput` and `internal/processoutput/processoutputtest` |
 | `oneOfAKindRules` | 12 | Packages of which there is only one: `internal/declsyntax`, `internal/horosmodel`, `internal/horosfiles`, `internal/typescriptimports`, `verification/files/source/horos/go`, `verification/files/horos-to-go/go`, `verification/logos/go`, the four packages `tools/provider-matrix/go`, `report/go`, `capability/go` and `observation/go`, and `tools/horos-module/go` |
-| `roleExtensions` | 10 | Per package, the imports that one language needs and its role does not give: six horos stage providers, three TypeScript packages and the horos declaration recipe. An extension must be used, must not repeat the role and lifts no prohibition |
+| `roleExtensions` | 14 | Per package, the imports that one language needs and its role does not give: the six horos stage providers, the TypeScript Syntax formatter, Files formatter and target, the Go target, the Rust target, the horos declaration recipe, and the Rust and TypeScript semantic helpers. An extension must be used, must not repeat the role and lifts no prohibition |
 | `languageOwners` | 5 | The language of a package whose path gives no role: `internal/declsyntax`, `internal/horosmodel`, `internal/horosfiles` and `verification/files/source/horos/go` belong to horos, and `internal/typescriptimports` to TypeScript |
 | `providerExceptions` | 14 | Every import of a stage provider package or of a query service package outside a composition, with its symbols and reason. All fourteen are accepted and no entry names an issue. Thirteen name a stage provider: the calls of finding 9. One names a query service: `verification/files/horos-to-go/go` takes `Admission` from `analyze/files/golang/queries/go`. #246 deleted the two open entries, Go's `Contract` and `Admission` from the analysis provider |
 | `modelDependencies` and `modelExternalImports` | 8 and 10 | The external model packages that the production graph may hold, and the packages that may import each directly. Since #250 the entry of `verification/files/horos-to-go/go` names the horos declarations and the logos contract, and no ontos package |
@@ -577,10 +577,26 @@ streams, which imports no package of the module. No role lists it. The table
 `internal/typescriptsem`, and the entry of `tools/provider-matrix/report/go`
 in `oneOfAKindRules` lists it. Each of the three is checked for use by its
 own package, so a bridge or the loader that stops importing the helper fails
-the test. The counts in the table above were made at the commits this
-section names and were not made again.
+the test. The table also holds the fixture of the tests that bound a
+process's output, `internal/processoutput/processoutputtest`, which imports
+no package of the module. Only test files import it, and the check reads no
+test file, so no importer has an allowance for it.
 [bittype/ACX-014](architecture-cases/0014-bounded-process-writer.md) is the
 case.
+
+The counts above were made again with this change, on the head of pull
+request [#313](https://github.com/Bitspark/bittype/pull/313), by counting the
+entries of each table in the test source and the production packages that
+`go list ./...` reports. Two rows of the table changed. `foundationRules`
+has 33 entries, where it had 31: the two packages named here. `roleExtensions`
+has 14, where this page said 10 and `main` held 12: the Go target and the
+Rust target had gained one each without an edit here, and the two bridges
+gain one each with this change. The other rows are as they were. The module
+has 131 production packages: 86 by their role, 14 of them with a role
+extension, 33 in the foundation and kernel table and 12 by a hand entry. The
+introduction of this section and the [layout](../LAYOUT.md#enforced-consistency)
+still give the counts of `c8d0344` and `f821eb3` where they name those
+commits.
 
 How the test realises each of the six rules:
 
