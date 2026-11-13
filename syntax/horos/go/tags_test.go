@@ -10,11 +10,17 @@ import (
 	horos "github.com/Bitspark/bittype/syntax/horos/go"
 )
 
-// This file spells every name of tags.go a second time, on purpose. Their
-// writers and readers all take them from tags.go, so they follow a changed
-// value together. A canonical value that was written before holds the old one,
-// and the horos library reads the old one. Changing a value is a decision: make
-// it here as well.
+// This file spells every name of tags.go a second time, on purpose. The
+// writers and readers that take a name from tags.go follow a changed value
+// together. A canonical value that was written before holds the old one, and
+// the horos library reads the old one. Changing a value is a decision: make it
+// here as well.
+//
+// Not every party takes its name from tags.go yet. The parser writes the
+// constructor "record" by literal, which is the same name as RecordLabel, and
+// the admission grammar spells the selector values "open" and "closed", which
+// are the same names as RecordOpen and RecordClosed. Those spellings do not
+// follow a changed value.
 var canonicalNames = []struct {
 	name, got, want string
 }{

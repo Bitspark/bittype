@@ -374,7 +374,7 @@ func (f *formatter) record(id ast.NodeID, operands []ast.NodeID, level int) doc 
 	if mode == s.RecordOpen {
 		parts = append(parts, f.T("open"), f.Space())
 	} else if mode != s.RecordClosed {
-		return f.bad(id, "record mode must be open or closed")
+		return f.bad(id, "record mode must be "+s.RecordOpen+" or "+s.RecordClosed)
 	}
 	parts = append(parts, f.T("{"))
 	for _, field := range operands[1:] {
@@ -384,7 +384,7 @@ func (f *formatter) record(id ast.NodeID, operands []ast.NodeID, level int) doc 
 		}
 		label, ok := f.atom(args[0])
 		if !ok || label != s.FieldTag {
-			return f.bad(field, "expected horos/field label")
+			return f.bad(field, "expected "+s.FieldTag+" label")
 		}
 		args = args[1:]
 		name, err := data.ReadText(f.literal(args[0]))
@@ -396,7 +396,7 @@ func (f *formatter) record(id ast.NodeID, operands []ast.NodeID, level int) doc 
 			return f.Seq()
 		}
 		if presence != s.FieldRequired && presence != s.FieldOptional {
-			return f.bad(field, "field presence must be req or opt")
+			return f.bad(field, "field presence must be "+s.FieldRequired+" or "+s.FieldOptional)
 		}
 		spelling := lit.Quote(name)
 		if lit.Identifier(name) {

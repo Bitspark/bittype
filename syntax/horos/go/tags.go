@@ -17,10 +17,18 @@ const (
 	DescriptorTagPrefix  = "horos/"
 )
 
-// Labels that follow a prefix. ArrowLabel follows DeclarationTagPrefix in the
-// tag of an arrow kind. RecordLabel follows DescriptorTagPrefix in the tag of a
-// record payload. They are labels and not whole tags because the model reader
-// appends a label to the prefix it is configured with.
+// Labels that follow a prefix.
+//
+// ArrowLabel follows DeclarationTagPrefix in the tag of an arrow kind. It is a
+// label and not a whole tag because the model reader appends it to the prefix
+// it is configured with.
+//
+// RecordLabel follows DescriptorTagPrefix in the tag of a record payload. It is
+// the constructor name of a record: the model reader takes that name from the
+// tree's constructor attribute and appends it to its prefix, and never uses
+// this constant. Its one user today is the source reader, which builds the
+// whole tag to compare with. The parser, which writes the constructor into the
+// tree, still spells it by literal.
 const (
 	ArrowLabel  = "arrow"
 	RecordLabel = "record"

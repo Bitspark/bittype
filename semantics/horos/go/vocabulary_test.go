@@ -19,8 +19,8 @@ import (
 // This file spells every published value of the vocabulary a second time, on
 // purpose. Production code takes each name from the vocabulary, so a writer
 // and its readers follow a changed value together and no other test notices.
-// A published value is held by exported graphs, receipts and canonical module
-// values. Changing one is a decision: make it here as well.
+// A published value is held by exported graphs and receipts. Changing one is a
+// decision: make it here as well.
 
 var publishedStrings = []struct {
 	name, got, want string

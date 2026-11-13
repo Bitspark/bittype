@@ -6,6 +6,7 @@ import (
 	parsehoros "github.com/Bitspark/bittype/parse/syntax/horos/provider/go"
 
 	"context"
+	"encoding/hex"
 	"errors"
 	"math/big"
 	"slices"
@@ -15,6 +16,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/parse/go"
 	"github.com/Bitspark/bittype/contracts/text/go"
 	format "github.com/Bitspark/bittype/format/syntax/horos/provider/go"
+	"github.com/Bitspark/bittype/internal/horosmodel"
 
 	resolve "github.com/Bitspark/bittype/resolve/files/horos/provider/go"
 	s "github.com/Bitspark/bittype/syntax/horos/go"
@@ -213,5 +215,58 @@ func TestFormatterBoundsLexicalExpansion(t *testing.T) {
 	var diagnostic *text.Diagnostic
 	if !errors.As(err, &diagnostic) || diagnostic.Code != text.LimitExceeded || len(out.Nodes) != 0 || len(out.Abstract.Nodes) != 0 {
 		t.Fatalf("lexical expansion must fail without partial output: %v", err)
+	}
+}
+
+// The three diagnostics of a record name canonical words. The formatter builds
+// their texts from the vocabulary. They are spelled here a second time, on
+// purpose, so that a changed text is noticed.
+func TestRecordDiagnosticsAreUnchanged(t *testing.T) {
+	p := textfixture.New(parsehoros.Provider{}, checkhoros.Provider{}, format.Provider{})
+	parsed, err := p.Parse(context.Background(), parse.Input{SourceID: "record", TreeID: "record", Text: "module small; type Named = { name: text; };"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct{ atom, message string }{
+		{"closed", "record mode must be open or closed"},
+		{"horos/field", "expected horos/field label"},
+		{"req", "field presence must be req or opt"},
+	} {
+		tree := parsed.Abstract
+		tree.Nodes = append([]s.Node(nil), tree.Nodes...)
+		replaced := 0
+		for i := range tree.Nodes {
+			tree.Nodes[i].Attributes = append([]ast.Attribute(nil), tree.Nodes[i].Attributes...)
+			for j, attribute := range tree.Nodes[i].Attributes {
+				if tree.Nodes[i].Kind == s.KindAtom && attribute.Name == s.AttributeHex && attribute.Text == hex.EncodeToString([]byte(c.atom)) {
+					tree.Nodes[i].Attributes[j].Text = hex.EncodeToString([]byte("another"))
+					replaced++
+				}
+			}
+		}
+		if replaced != 1 {
+			t.Fatalf("the source holds the atom %q %d times, want once", c.atom, replaced)
+		}
+		// The formatter checks each module pin first, so the changed tree gets
+		// the pin of its own bytes.
+		pins, err := horosmodel.SourcePins(tree)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for id, pin := range pins {
+			for j, attribute := range tree.Nodes[id-1].Attributes {
+				if attribute.Name == s.AttributePin {
+					tree.Nodes[id-1].Attributes[j].Text = pin
+				}
+			}
+		}
+		out, err := format.Format(context.Background(), tree)
+		var diagnostic *text.Diagnostic
+		if !errors.As(err, &diagnostic) || diagnostic.Code != text.InvalidAST || len(out.Nodes) != 0 {
+			t.Fatalf("a record without the atom %q must be refused without output: %v", c.atom, err)
+		}
+		if diagnostic.Message != c.message {
+			t.Errorf("diagnostic = %q, want %q", diagnostic.Message, c.message)
+		}
 	}
 }
