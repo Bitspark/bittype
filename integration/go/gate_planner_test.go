@@ -28,20 +28,24 @@ import (
 // went on with an empty dependency.
 //
 // Shows: for an exact contribution (the fixture's contribution for the
-// declaration Cell) and for a contribution of a form (the fixture's word),
-// what the selected contribution returns reaches the caller of the planner as
-// it is. A refusal in step 1, in step 3 or in the projector is that refusal:
+// declaration Cell), for a contribution of a form (the fixture's word), for a
+// contribution at a field position (the mock family that answers the role of
+// the fields of Outcome) and for the declaration policy (the fixture's policy
+// for the declaration Word), what the selected contribution returns reaches
+// the caller of the planner as it is. A refusal in step 1, in step 3 or in the projector is that refusal:
 // its class, owner and reason, with the contribution, the subject and the
 // path that the planner adds, and it matches exactly one refusal value. An
 // error that is no refusal, from step 3 or from the projector, is a rule
 // failure of that contribution with the error as its cause, and it matches no
 // refusal value. No plan results, and the step that refuses or fails runs
 // once. The same composition without the refusal plans.
-// Does not show: the same for a contribution at a field position or for the
-// declaration policy. Their results are returned by other statements of the
-// planner, which this test does not reach.
+// Does not show: a refusal of a contribution that owns a declaration, inside
+// the capability that gives the owned declaration. A specialization, which is
+// refused before its contribution runs.
 // Red under: X-exact-error-shadowed (the exact contribution),
-// X-form-error-shadowed (the form).
+// X-form-error-shadowed (the form), X-field-error-dropped (the field
+// position), X-policy-rule-error-dropped (steps 1 and 3 of the declaration
+// policy), X-policy-projector-error-dropped (its projector).
 func TestGateSelectedContributionRefusalIsNotDropped(t *testing.T) {
 	const reason = "the fixture refuses this subject"
 	sentinel := errors.New("the fixture fails")
@@ -60,6 +64,12 @@ func TestGateSelectedContributionRefusalIsNotDropped(t *testing.T) {
 		contribution.Rule.Decide = func(context.Context, indDecideStep) (g.Decision, error) { return g.Decision{}, result() }
 	}
 	inProject := func(contribution *f.Contribution, result func() error) {
+		if contribution.Declare != nil {
+			contribution.Declare = func(context.Context, goProjection) (g.DeclarationDescription[gs.Language], error) {
+				return g.DeclarationDescription[gs.Language]{}, result()
+			}
+			return
+		}
 		contribution.Project = func(context.Context, goProjection) (goProjected, error) { return goProjected{}, result() }
 	}
 	variants := []struct {
@@ -75,14 +85,18 @@ func TestGateSelectedContributionRefusalIsNotDropped(t *testing.T) {
 		{variant{"an error in the projector", "", inProject}, func() error { return sentinel }},
 	}
 	for _, selected := range []struct {
-		name, key, selector, root string
+		// subject is the source identity of the refused subject: the key of
+		// the selector of a declaration or a form, or the key of a role.
+		name, key, subject, root string
 	}{
 		{"an exact contribution", "independent-cell", "declaration/Cell", "CellOfPerson"},
 		{"a contribution of a form", "independent-word", "expression/word", "Word"},
+		{"a contribution at a field position", "mock-optional-nullable", "role/" + f.OptionalNullableRole, "Outcome"},
+		{"the declaration policy", "independent-declarations", "declaration/Word", "Word"},
 	} {
 		t.Run(selected.name, func(t *testing.T) {
 			fixture := gateFixture(t)
-			subject := indSelector(t, fixture, selected.selector).Key()
+			subject := selected.subject
 			clean := indComposition(t, fixture, indOptions{})
 			if _, err := fixture.PlanContributions(context.Background(), clean, selected.root); err != nil {
 				t.Fatalf("the composition does not plan %s without a refusal: %v", selected.root, err)
