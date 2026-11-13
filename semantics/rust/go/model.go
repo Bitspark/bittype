@@ -1,7 +1,10 @@
 package rust
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
+	"slices"
 
 	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/semantics/go"
@@ -23,21 +26,42 @@ type Type struct {
 	owner *model
 	id    semantics.TermID
 }
+
+// Field is one field of a struct type. Its visibility is the declared fact of
+// Declaration, read with Declaration.Visibility like that of an item.
 type Field struct {
-	Name   string
-	Type   Type
-	Public bool
-	Sites  []ast.NodeRef
-}
-type fieldInfo struct {
-	Name   string
-	Public bool
-	Entity semantics.EntityID
+	Name        string
+	Type        Type
+	Declaration Declaration
+	Sites       []ast.NodeRef
 }
 
-// Open admits the exact analysis receipt; it invokes no compiler.
+// Visibility is a declared visibility in the compiler's resolved form: public,
+// or restricted to the module Scope. Scope is invalid when Public holds. The
+// crate root is a module, and it is the scope of pub(crate).
+type Visibility struct {
+	Public bool
+	Scope  Declaration
+}
+
+// Effective says whether Audience can name a declaration through Path. In this
+// profile the audience is another crate and the path is the definition's, and
+// Nameable holds exactly when the declaration and every module around it are
+// declared public. It is not what the compiler calls reachable, which includes
+// types that another crate meets and cannot name.
+type Effective struct {
+	Audience string
+	Path     string
+	Nameable bool
+}
+
+// Open admits the exact analysis receipt of a supported environment; it invokes no compiler.
 func Open(result semantic.Result) (Model, error) {
-	if _, err := semantic.AdmitEvidence(result.Snapshot(), []semantic.EvidenceRequirement{Evidence()}, []semantic.Result{result}); err != nil {
+	evidence, err := EvidenceFor(result.Configuration())
+	if err != nil {
+		return Model{}, err
+	}
+	if _, err := semantic.AdmitEvidence(result.Snapshot(), []semantic.EvidenceRequirement{evidence}, []semantic.Result{result}); err != nil {
 		return Model{}, err
 	}
 	envelope, _ := result.Semantics()
@@ -74,7 +98,8 @@ func (m Model) Declaration(id semantics.EntityID) (Declaration, error) {
 	return Declaration{m.state, id}, nil
 }
 
-// Lookup selects an unambiguous compiler path, for example captured::models::Person.
+// Lookup selects an unambiguous compiler path, for example pages::models::Person
+// for a crate that the environment names pages.
 // IDs remain authoritative; paths can coincide across native namespaces.
 func (m Model) Lookup(path string) (Declaration, error) {
 	if !m.Valid() {
@@ -142,6 +167,119 @@ func (d Declaration) Default() Type {
 	}
 	return Type{d.owner, terms[0]}
 }
+
+// Visibility reads the declared visibility of a captured item or field. It
+// fails with ErrMissingFact when the graph has no such fact for the
+// declaration, more than one, or one in another form. The form is a public
+// term without an operand or a restricted term with one, a module, and
+// neither carries data. A declaration without the fact is never reported as
+// private.
+func (d Declaration) Visibility() (Visibility, error) {
+	term, err := d.fact(DeclaredVisibilityRelation())
+	if err != nil {
+		return Visibility{}, err
+	}
+	switch {
+	case string(term.Data) != "null":
+		// Data in either term is another form.
+	case term.Operator == PublicOperator() && len(term.Operands) == 0:
+		return Visibility{Public: true}, nil
+	case term.Operator == RestrictedOperator() && len(term.Operands) == 1:
+		// Only a reference has a target, so any other operand names no entity.
+		scope, _ := d.owner.graph.Term(term.Operands[0].Term)
+		module, found := d.owner.graph.Entity(scope.Target)
+		if !found || module.Kind != ModuleKind() {
+			return Visibility{}, ErrMissingFact
+		}
+		return Visibility{Scope: Declaration{d.owner, scope.Target}}, nil
+	}
+	return Visibility{}, ErrMissingFact
+}
+
+// Effective reads the effective fact of a captured item. It fails with
+// ErrMissingFact like Visibility. The form is one object with the members
+// Audience, Path and Nameable, each once and spelled so, and nothing after
+// it. An audience or a path that this reader does not know fails too.
+func (d Declaration) Effective() (Effective, error) {
+	term, err := d.fact(EffectiveVisibilityRelation())
+	if err != nil {
+		return Effective{}, err
+	}
+	values, formed := members(term.Data, "Audience", "Path", "Nameable")
+	if term.Operator != EffectiveVisibilityOperator() || len(term.Operands) != 0 || !formed {
+		return Effective{}, ErrMissingFact
+	}
+	var audience, path *string
+	var nameable *bool
+	if json.Unmarshal(values[0], &audience) != nil || json.Unmarshal(values[1], &path) != nil || json.Unmarshal(values[2], &nameable) != nil {
+		return Effective{}, ErrMissingFact
+	}
+	if audience == nil || path == nil || nameable == nil || *audience != AudienceAnotherCrate || *path != PathDefinition {
+		return Effective{}, ErrMissingFact
+	}
+	return Effective{Audience: *audience, Path: *path, Nameable: *nameable}, nil
+}
+
+// members reads data as one JSON object that has exactly the named members,
+// each once and spelled exactly, with nothing after the object. It returns
+// their values in the order of names. The standard decoder alone takes a
+// member in another case, a repeated member and a second value.
+func members(data []byte, names ...string) ([]json.RawMessage, bool) {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	if open, err := decoder.Token(); err != nil || open != json.Delim('{') {
+		return nil, false
+	}
+	values := make([]json.RawMessage, len(names))
+	for decoder.More() {
+		key, _ := decoder.Token()
+		name, _ := key.(string)
+		at := slices.Index(names, name)
+		if at < 0 || values[at] != nil || decoder.Decode(&values[at]) != nil {
+			return nil, false
+		}
+	}
+	if _, err := decoder.Token(); err != nil {
+		return nil, false
+	}
+	if _, err := decoder.Token(); err != io.EOF || slices.ContainsFunc(values, func(value json.RawMessage) bool { return value == nil }) {
+		return nil, false
+	}
+	return values, true
+}
+
+// PrivateInterface returns the declarations that the compiler observed in the
+// interface of this one although they are more private than it: for a field,
+// the type of `pub field: Hidden` beside a private `struct Hidden`. Another
+// crate cannot use such an interface. The result is empty when the compiler
+// observed none.
+func (d Declaration) PrivateInterface() ([]Declaration, error) {
+	if !d.Valid() {
+		return nil, ErrForeign
+	}
+	var out []Declaration
+	for _, id := range d.owner.graph.Facts(semantics.Subject{Entity: d.id}, PrivateInterfaceRelation()) {
+		// Only a reference has a target.
+		term, _ := d.owner.graph.Term(id)
+		if _, found := d.owner.graph.Entity(term.Target); !found {
+			return nil, ErrMissingFact
+		}
+		out = append(out, Declaration{d.owner, term.Target})
+	}
+	return out, nil
+}
+
+// fact returns the term of the one fact that a declaration must have for relation.
+func (d Declaration) fact(relation semantics.Key) (semantics.Term, error) {
+	if !d.Valid() {
+		return semantics.Term{}, ErrForeign
+	}
+	terms := d.owner.graph.Facts(semantics.Subject{Entity: d.id}, relation)
+	if len(terms) != 1 {
+		return semantics.Term{}, ErrMissingFact
+	}
+	term, _ := d.owner.graph.Term(terms[0])
+	return term, nil
+}
 func (t Type) Valid() bool          { return t.owner != nil && t.id != 0 }
 func (t Type) ID() semantics.TermID { return t.id }
 func (t Type) Model() Model         { return Model{t.owner} }
@@ -175,22 +313,42 @@ func (t Type) String() string {
 	term, _ := t.owner.graph.Term(t.fact(DisplayRelation()))
 	return string(term.Data)
 }
-func (t Type) Fields() ([]Field, bool) {
+
+// Fields reads the fields of a struct type, in their order. A type without a
+// fields fact has none: the second result is false, and that is no error. A
+// fact that is present twice or in another form fails with ErrMissingFact, as
+// the visibility readers do, and so does a field whose entity the graph does
+// not have. The form is a list with one object for each operand, and each
+// object has exactly the members Name and Entity.
+func (t Type) Fields() ([]Field, bool, error) {
 	if !t.Valid() {
-		return nil, false
+		return nil, false, nil
 	}
-	term, _ := t.owner.graph.Term(t.fact(FieldsRelation()))
-	if term.Operator != FieldsOperator() {
-		return nil, false
+	terms := t.owner.graph.Facts(semantics.Subject{Term: t.id}, FieldsRelation())
+	if len(terms) == 0 {
+		return nil, false, nil
 	}
-	var metadata []fieldInfo
-	if json.Unmarshal(term.Data, &metadata) != nil || len(metadata) != len(term.Operands) {
-		return nil, false
+	term, _ := t.owner.graph.Term(terms[0])
+	var listed []json.RawMessage
+	if len(terms) != 1 || term.Operator != FieldsOperator() || json.Unmarshal(term.Data, &listed) != nil || listed == nil || len(listed) != len(term.Operands) {
+		return nil, false, ErrMissingFact
 	}
-	out := make([]Field, len(metadata))
-	for i, f := range metadata {
-		e, _ := t.owner.graph.Entity(f.Entity)
-		out[i] = Field{Name: f.Name, Type: Type{t.owner, term.Operands[i].Term}, Public: f.Public, Sites: e.Declarations}
+	out := make([]Field, len(listed))
+	for i, field := range listed {
+		values, formed := members(field, "Name", "Entity")
+		if !formed {
+			return nil, false, ErrMissingFact
+		}
+		var name *string
+		var entity *semantics.EntityID
+		if json.Unmarshal(values[0], &name) != nil || json.Unmarshal(values[1], &entity) != nil || name == nil || entity == nil {
+			return nil, false, ErrMissingFact
+		}
+		e, found := t.owner.graph.Entity(*entity)
+		if !found {
+			return nil, false, ErrMissingFact
+		}
+		out[i] = Field{Name: *name, Type: Type{t.owner, term.Operands[i].Term}, Declaration: Declaration{t.owner, *entity}, Sites: e.Declarations}
 	}
-	return out, true
+	return out, true, nil
 }

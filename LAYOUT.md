@@ -42,7 +42,7 @@ internal/golangsem/       private direct Go compiler bridge and fact export
 semantics/typescript/go/  TypeScript vocabulary, graph names, contract identities, compiler configuration and immutable native type readers
 internal/typescriptsem/   private captured-source compiler helper and fact export
 internal/typescriptimports/ private to TypeScript Files formatting: the source paths its profile admits and excludes, relative import specifiers and import node construction
-semantics/rust/go/        Rust vocabulary, contract identities and immutable native type readers
+semantics/rust/go/        Rust vocabulary, contract identities, environment and immutable native type readers
 internal/rustsem/         private captured-source compiler bridge
   helper/                private pinned rustc_driver executable (Rust/Cargo)
 engine/go/                explicit registration, planning and execution
