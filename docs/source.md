@@ -522,7 +522,7 @@ an unsupported refusal into success. It may not turn an invalid refusal into
 success, it may not move a refusal from one category to another, and it may not
 accept and ignore what a formatter refuses as malformed today.
 
-Three inputs were corrected on 13 November 2026, with
+Four inputs were corrected on 13 November 2026, with
 [#273](https://github.com/Bitspark/bittype/issues/273), and are named here
 because each is a move between two categories. Nothing was released with the
 earlier answers.
@@ -536,6 +536,10 @@ earlier answers.
   TypeScript Files judges itself, before a tree is built, and the compiler's
   late answer was in the wrong category: it said that the analysis is not
   established, where the placement is one that a later slice may admit.
+- **A use of a global type that a name of its file captures**: a declaration
+  named `Array` beside a use of the global `Array`, or a type parameter of
+  that name in the declaration that holds the use. It was missing evidence,
+  the compiler's TS2315, and is unsupported coverage now, for the same reason.
 - **A member that is named like a type parameter of its interface**
   (`interface Box<T> { T: T }`). It was invalid input, and it is unsupported
   coverage now. The file is valid TypeScript. The compiler keeps the member
