@@ -50,6 +50,10 @@ leaves the meaning of its sentence. All of them are listed under
   [decisions of 13 November 2026](https://github.com/Bitspark/bittype/issues/196#issuecomment-6841866946)
   after an independent reader, who did not write this page, read it at
   `cab8faf` and reported 25 findings. The research owner made them.
+- **O21 and O22:** the two
+  [decisions of the same day](https://github.com/Bitspark/bittype/issues/196#issuecomment-6842186587)
+  that correct O12 and O19 from the accepted contract of a family, after
+  both were written into this page.
 - **Verification report 1, 2 or 3**, in the gate V1, V2 or V3: the reports of
   three verification agents, each on a set of the recommendations of research
   0017, checked against the code at `7e9dc34`. They lie beside the research
@@ -71,7 +75,7 @@ A sentence marked **derived here** follows from those sources and is stated by
 none of them. It is this page's reading and no decision. A point that two
 sources leave unsettled, or settle differently, is not resolved on this page.
 The first version listed ten such points, and an independent reading found
-more. O1 to O20 decide them
+more. O1 to O22 decide them
 ([Points decided after the first version](#points-decided-after-the-first-version)).
 File and line references are `path:line` at commit `04632ae`, the head of
 `main` when this page was last changed. The line numbers of the pages that
@@ -813,18 +817,20 @@ contributes, per target, one contract with seven parts"
 (`docs/representation-families.md:32`). One of the seven parts is "Value
 meaning": "Promised canonical domain, domain predicates, native equivalence,
 any permitted normalization" (`docs/representation-families.md:38`). O19
-takes that part as the one that is the same in every target, and names O4's
-identity after it. So this page writes "the family's meaning", with a meaning
-identity and a meaning revision, where O4 wrote "family contract". The other
-six parts "are fixed per target by the contribution's representation
-revision" (O19). One of the four things in "Value meaning" is the native
-equivalence, which is stated on native values, and those differ by target.
-Whether it belongs to the family's meaning or to a representation revision is
-[not specified here](#what-is-delegated-and-what-is-not-specified-here).
+took that whole part as the one that is the same in every target, and named
+O4's identity after it. So this page writes "the family's meaning", with a
+meaning identity and a meaning revision, where O4 wrote "family contract".
+
+**Which half of "Value meaning" (O22).** O22 corrects O19: "The first two
+speak of canonical values and are the same in every target: they are the
+family's meaning. The native equivalence and a permitted normalization speak
+of native values, which differ by target: the contribution's representation
+revision fixes them, with the other six parts." (O22) The first two are the
+promised canonical domain and the domain predicates.
 
 | | The family's meaning | The representation revision |
 | --- | --- | --- |
-| Which part of the family's contract of seven parts | "Value meaning" | The other six |
+| Which part of the family's contract of seven parts | Of "Value meaning": the promised canonical domain and the domain predicates (O22) | Of "Value meaning": the native equivalence and a permitted normalization. And the other six parts (O22) |
 | Whose | Not specified where two publishers contribute to one family. O19: "Who owns a family's meaning when two publishers contribute to it is not specified." | The contribution's publisher |
 | The same in every target | Yes | No. It belongs to one contribution, so to one target |
 | What it fixes | What values the family covers and what they mean | The invariants of one target's representation ([row 5](#what-a-rule-does-the-protocol)) |
@@ -1258,11 +1264,15 @@ at `04632ae`.
   D1), the optional schema folds into the record's and there are five."
 - **Under D3 every target gets an `optional` package.** Derived here, in
   [Optional fields](#optional-fields). Today only Go has one.
-- **Whether the packages of one name share one schema across the four
-  targets** is not said. O12 counts six by name, and representation families
-  gives a family one contract per target, with the payload schema among its
-  parts (`docs/representation-families.md:32`, `:39`). It is
-  [not specified here](#what-is-delegated-and-what-is-not-specified-here).
+- **A schema per target (O21).** O12's "six" counts names, and O21 corrects
+  it. One of the seven parts of a family's contract for one target is the
+  "Selected-use payload": "A family-owned, versioned schema for the decisions
+  recorded at each use" (`docs/representation-families.md:39`). O21: "The
+  contract is per target, so the schema is too." The packages of one name in
+  two targets have two schema references. "The family's owner may publish one
+  schema module for several targets where the recorded decisions are the
+  same, and then the two references are equal. The contract requires
+  neither." (O21)
 
 ## What lowering must be able to refer to
 
@@ -1684,6 +1694,10 @@ findings. Twelve needed a decision, and the research owner made
 The other findings are corrections of wording, standing and form, which this
 page takes as the reader proposed.
 
+**O21 and O22.** Writing O12 and O19 into the page showed that each said
+more than `docs/representation-families.md` allows, and the research owner
+[corrected both](https://github.com/Bitspark/bittype/issues/196#issuecomment-6842186587).
+
 | | The point | The decision, in short | Stated under |
 | --- | --- | --- | --- |
 | O1 | An invariant is carried by reference, and the plan "carries" the rules | Both hold. A rule is carried as a recorded field or through the contribution reference | [The protocol](#what-a-rule-does-the-protocol), [Amendments](#amendments-to-accepted-pages) |
@@ -1706,6 +1720,8 @@ page takes as the reader proposed.
 | O18 | What the gate leaves to guess on `main` | Fixtures for the delegated form, the shared part of the codec role, a native-only contribution out of tree, line 7 shown twice | [The gate](#the-gate) |
 | O19 | Which revision evidence binds to, and the name "family contract" | The whole contribution reference. The name is "the family's meaning" | [Identities](#identities), [Evidence](#evidence) |
 | O20 | Rows without a test, and two tests that could not fail | Tests for rows 1, 5, 17 and 22, and new tests for guarantees 5 and 6 | [The gate](#the-gate), [What the kernel carries](#what-the-kernel-carries-without-reading-it) |
+| O21 | Whether the packages of one name share one payload schema | O12 is corrected. A schema belongs to a family's contract for one target; the family's owner may publish one module for several | [What the kernel carries](#what-the-kernel-carries-without-reading-it) |
+| O22 | Whether the native equivalence is part of the family's meaning | O19 is corrected. The canonical domain and its predicates are the family's meaning; the native equivalence and a normalization belong to the representation revision | [Identities](#identities) |
 
 **Whose composition registers a facet (O11).** O8 said "registered by the
 owner's composition", and no accepted text names an owner of a composition.
@@ -1785,9 +1801,6 @@ A note that row 39 names is made with this change: the validation cell of row
   and of a meaning revision.** O4 and O19 fix what each means. Who owns a
   family's meaning when two publishers contribute to it is not specified
   (O19). What the family's meaning of an exact mapping is, is not said.
-  Nor is it said whether the native equivalence, which
-  `docs/representation-families.md:38` lists under "Value meaning", belongs
-  to the family's meaning or to a representation revision.
 - **A binder's requirement.** In which frozen record a requirement is stated
   and in what form, how the planner finds the requirements of a binder when
   it plans an application, and with which reason an application that cannot
@@ -1798,8 +1811,6 @@ A note that row 39 names is made with this change: the validation cell of row
   registered, how the kernel knows that the codec that validated is the one
   of the payload's schema, and how a contribution after the six delivered
   ones gets its codec. O9 decides the hand-written form for those six.
-- **Whether the packages of one name share one payload schema across the
-  four targets.** O12 counts six schemas by name.
 - **Where the test tree is.** `LAYOUT.md` has no role for a package that only
   a test composition imports. The prototype reports where it puts the facet
   packages of the builtin contributions (O16).
@@ -1832,7 +1843,7 @@ A note that row 39 names is made with this change: the validation cell of row
 ## Where each row is stated
 
 "Line" is the line of the [gate](#the-gate) whose tests validate the row.
-O1 to O20 are the [decisions](#points-decided-after-the-first-version) that
+O1 to O22 are the [decisions](#points-decided-after-the-first-version) that
 bear on a row. A dash means that the row has no test of its own before the
 gate is met.
 
@@ -1856,7 +1867,7 @@ gate is met.
 | 15 | Adapted | [Identities](#identities), O4, O16 | 2 |
 | 15a | Deferred | [Deferred](#deferred-with-triggers), O16 | - |
 | 16 | Holds | [Identities](#identities), O4, O19 | 3 |
-| 17 | Adapted | [Identities](#identities), O4, O19, O20 | 3 |
+| 17 | Adapted | [Identities](#identities), O4, O19, O20, O22 | 3 |
 | 17a | Deferred | [Deferred](#deferred-with-triggers) | - |
 | 18 | Holds | [Identities](#identities), [Amendments](#amendments-to-accepted-pages) | 2 |
 | 19 | Holds | [Identities](#identities) | 2 |
@@ -1870,7 +1881,7 @@ gate is met.
 | 26 | Adapted | [What the kernel carries](#what-the-kernel-carries-without-reading-it), O8, O11, O16, O20 | 2 |
 | 26a | Deferred | [Deferred](#deferred-with-triggers) | - |
 | 27 | Adapted | [What the kernel carries](#what-the-kernel-carries-without-reading-it), O5, O19, O20 | 2, 3 |
-| 28 | Adapted | [What the kernel carries](#what-the-kernel-carries-without-reading-it), O9, O12 | 1, 3 |
+| 28 | Adapted | [What the kernel carries](#what-the-kernel-carries-without-reading-it), O9, O12, O21 | 1, 3 |
 | 29 | Adapted | [What lowering must be able to refer to](#what-lowering-must-be-able-to-refer-to), O8 | 5 |
 | 30 | Holds | [What is final and what is provisional](#what-is-final-and-what-is-provisional), [Amendments](#amendments-to-accepted-pages), O17 | 7 |
 | 31 | Adapted | [The order of work](#the-order-of-work), O6 | All |
