@@ -527,8 +527,8 @@ formatter: a sealed output with such a use is malformed, and no later slice
 admits it. So is an external use that the language's issuer cannot read, and
 one whose node is no name use or does not name the symbol. An external
 destination that the formatter's evidence cannot establish is unsupported
-coverage, because a later slice can admit it: Rust's `bool`, as long as the
-Rust helper publishes no binding for a primitive type. [Destinations](destinations.md#who-enforces-completeness)
+coverage, because a later slice can admit it. Rust's `bool` was one until the
+Rust helper bound primitive types, on 13 November 2026. [Destinations](destinations.md#who-enforces-completeness)
 states the rule. The table below has its row for TypeScript, the one formatter
 that exists.
 
