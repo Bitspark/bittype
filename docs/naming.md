@@ -155,8 +155,8 @@ explicit rule that turns one refusal into a success."
 | The access that a declaration requires | The request for its roots. A contribution for every declaration it introduces | D5, R11. See [Exposure](#exposure-and-its-audience) |
 | Go's rule: the check that the spelled intent of a public declaration is exported | Go | Row 13, R8. See [Go](#go) |
 | Reserved words, and what is refused | Each target | D1, E1, E3, R13. See [Reserved words](#reserved-words) |
-| Collisions between declarations in a placed scope | The language's Files stage | Advice: "Collisions belong to the language’s placed scopes" (row 8). Not delivered: [#273](https://github.com/Bitspark/bittype/issues/273) is to deliver it for TypeScript, and slice 1 of [#161](https://github.com/Bitspark/bittype/issues/161) and of [#159](https://github.com/Bitspark/bittype/issues/159) for Go and Rust |
-| A type parameter that captures a use of a declaration in its placed scope | The language's Files stage, which refuses the placement | Advice, row 8: "Files must either perform an explicitly permitted alpha-renaming or refuse that placement." R13 takes the refusal for the first slices |
+| Collisions between declarations in a placed scope | The language's Files stage | Advice: "Collisions belong to the language’s placed scopes" (row 8). Delivered for TypeScript with [#273](https://github.com/Bitspark/bittype/issues/273) on 13 November 2026. Not delivered for Go and Rust: slice 1 of [#161](https://github.com/Bitspark/bittype/issues/161) and of [#159](https://github.com/Bitspark/bittype/issues/159) |
+| A type parameter that captures a use of a declaration in its placed scope | The language's Files stage, which refuses the placement | Advice, row 8: "Files must either perform an explicitly permitted alpha-renaming or refuse that placement." R13 takes the refusal for the first slices. TypeScript refuses it as unsupported coverage since #273 |
 | How a use reaches its declaration, and reporting the realized name | The language's Files stage | `docs/source.md:50`. Advice, row 13, quoted above |
 | What "exposed" requires, and which outputs are admitted | Each language | Row 14, E4, E5. See [Exposure](#exposure-and-its-audience) |
 
@@ -401,12 +401,13 @@ target's Files stage owns collisions."
    #273, Go in slice 1 of #161, Rust in slice 1 of #159. C++ keeps the
    qualified policy until #160.
 
-The second step waits because the flat-name rule still refuses two equal names
-in one output
-(`transform/syntax/shared/target/go/check.go:17-19`,
-`transform/syntax/shared/target/go/compile.go:22-23`). Without the prefix, and
-before a Files stage can separate scopes, an output that generates today would
-be refused. When each change must have landed is under
+The second step waits because the flat-name rule refuses two equal names in
+one output. At `9961adb` it stood in each target's program rule and again in
+the shared builder (`transform/syntax/shared/target/go/check.go:17-19`,
+`transform/syntax/shared/target/go/compile.go:22-23`). Since #273 the shared
+builder and TypeScript hold no such rule, and Go, Rust and C++ still select
+it. Without the prefix, and before a Files stage can separate scopes, an
+output that generates today would be refused. When each change must have landed is under
 [What is fixed, and when](#what-is-fixed-and-when).
 
 **Never a hash added only when a collision appears** (advice, row 11): "That
