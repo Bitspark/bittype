@@ -227,10 +227,6 @@ func decodeOrganization(settings []semantic.Setting) (Organization, bool, error)
 // admits. A list can state what a keyed table cannot, a file identity or a
 // declaration that is named twice, and that is refused here.
 func (p *program) admit(o Organization, limits source.Limits) error {
-	// The number of files is counted before a file is read.
-	if len(o.Units) > limits.Files.MaxFiles {
-		return source.ErrLimit
-	}
 	table := make(map[files.ID]files.Path, len(o.Units))
 	assignment := map[ast.NodeRef]files.ID{}
 	for _, u := range o.Units {

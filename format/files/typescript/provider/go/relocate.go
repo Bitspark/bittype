@@ -116,7 +116,9 @@ func placeProgram(ctx context.Context, program *program, units []Placement, limi
 // relocatable decides what only the declarations can decide about a placement,
 // before a tree is constructed. One file cannot hold two declarations of one
 // name. A declaration that another file uses has to be exposed: Files never
-// exports a declaration without authorization. Both are invalid input.
+// exports a declaration without authorization. Both are invalid input. Every
+// placed site is a top-level declaration of the program: the admission of an
+// existing placement and the reading of a generated one established that.
 func (program *program) relocatable(ctx context.Context, units []Placement) error {
 	type located struct {
 		site ast.NodeRef
@@ -130,10 +132,7 @@ func (program *program) relocatable(ctx context.Context, units []Placement) erro
 			if err := ctx.Err(); err != nil {
 				return err
 			}
-			tree, known := program.trees[site.Tree]
-			if !known || !program.tops[site] {
-				return fmt.Errorf("%w: %v is no declaration of the input", source.ErrInvalid, site)
-			}
+			tree := program.trees[site.Tree]
 			name := imports.Attr(tree.Nodes[site.Node-1], s.AttributeName)
 			if names[name] {
 				return fmt.Errorf("%w: duplicate declaration %s in %s", source.ErrInvalid, name, u.Path)

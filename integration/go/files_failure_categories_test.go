@@ -552,6 +552,15 @@ func TestFilesFailureCategories(t *testing.T) {
 	add("a placement that another language issued", typescript, source.ErrInvalid, func(*testing.T) (bool, error) {
 		return tsFormat(generated, output, format.FilesLimits{}, format.NewGeneratedPlacementIssuer[tsfiles.GeneratedPlacement]().Issue(tsPlacement()))
 	})
+	// The step refuses both before anything is admitted: the refusal is its own
+	// and carries no value of the common admission.
+	for i := len(cases) - 2; i < len(cases); i++ {
+		cases[i].check = func(t *testing.T, err error) {
+			if errors.Is(err, files.ErrInvalid) {
+				t.Errorf("the refusal comes from the common admission: %q", err)
+			}
+		}
+	}
 
 	// No field is accepted and ignored.
 	add("unknown field", typescriptExisting, source.ErrInvalid, existingRaw(`{"Later":1,`+valid[1:]))
@@ -853,6 +862,34 @@ func TestFilesFailureCategories(t *testing.T) {
 		}
 		return errors.New("no declaration holds the external use")
 	}))
+	add("a top-level declaration that the output does not own", typescript, source.ErrInvalid, tampered(tamperedTree(func(tree *ts.AST) {
+		// A declaration that no record of the inventory names.
+		tree.Nodes = append(tree.Nodes, ts.Node{Kind: ts.KindKeywordType, Attributes: []ast.Attribute{{Name: ts.AttributeName, Text: "string"}}})
+		body := ast.NodeID(len(tree.Nodes))
+		tree.Nodes = append(tree.Nodes, ts.Node{Kind: ts.KindTypeAlias, Attributes: []ast.Attribute{{Name: ts.AttributeName, Text: "Unowned"}}, Children: []ast.Child{{Role: ts.RoleType, Node: body}}})
+		root := &tree.Nodes[tree.Root-1]
+		root.Children = append(root.Children, ast.Child{Role: ts.RoleDeclaration, Node: ast.NodeID(len(tree.Nodes))})
+	})))
+	add("an owned declaration that is not exposed and is no top-level declaration", typescript, source.ErrInvalid, func(t *testing.T) (bool, error) {
+		// Only Cells is requested. Another declaration is listed at its first
+		// child, a node below it, and an unowned declaration keeps the count of
+		// the top-level declarations equal to the count of the inventory.
+		out := tamperedCellPage(t, func(in g.BuildInput[ts.Language], assembly *g.Assembly) error {
+			tree, err := representation.Unpack[ts.Language](in.Language, assembly.Syntax.Trees[0])
+			if err != nil {
+				return err
+			}
+			for i, site := range assembly.Declarations {
+				node := tree.Nodes[site.Node-1]
+				if nodeAttribute(node, ts.AttributeName) != "Cells" && len(node.Children) > 0 {
+					assembly.Declarations[i] = ast.NodeRef{Tree: site.Tree, Node: node.Children[0].Node}
+					return nil
+				}
+			}
+			return errors.New("no declaration with a child beside Cells")
+		}, "Cells")
+		return tsFormat(generated, out, format.FilesLimits{}, tsOneFile(out, "types", "types.ts").Issue())
+	})
 	add("a generated declaration that is already exported", typescript, source.ErrInvalid, tampered(tamperedTree(func(tree *ts.AST) {
 		node := &tree.Nodes[tree.Nodes[tree.Root-1].Children[0].Node-1]
 		node.Attributes = append(node.Attributes, ast.Attribute{Name: ts.AttributeExported, Text: "true"})

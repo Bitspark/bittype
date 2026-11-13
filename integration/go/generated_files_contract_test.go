@@ -76,6 +76,10 @@ type fixtureLanguage struct {
 	calls int
 	// skipAdmission makes the step return without the common admission.
 	skipAdmission bool
+	// again is what a second call of Admit in one step answers.
+	again error
+	// kept is the request of the last step, for a call after the step returned.
+	kept format.GeneratedFilesPreparation
 	// evidence changes the requirement that the step returns.
 	evidence func(*semantic.EvidenceRequirement)
 	// withoutGuard makes the step return no guard.
@@ -136,7 +140,9 @@ func (l *fixtureLanguage) prepare(_ context.Context, preparation format.Generate
 			return zero, err
 		}
 		prepared.Placement = admitted
+		_, l.again = preparation.Admit(format.GeneratedPlacementView{Files: placement.Files, Definitions: placement.Definitions})
 	}
+	l.kept = preparation
 	// The fixture's own rule: the root is a file of the placement.
 	if _, declared := placement.Files[placement.Root]; !declared {
 		return zero, source.ErrInvalid
@@ -591,6 +597,20 @@ func TestGeneratedFilesStepWithoutEvidenceGuardOrAdmissionFails(t *testing.T) {
 	c.language.evidence = func(r *semantic.EvidenceRequirement) { r.Profile = "" }
 	if out, err := c.format(t, c.placement(), format.FilesLimits{}); !errors.Is(err, semantic.ErrInvalidOperation) || out.Valid() || c.language.calls != 0 {
 		t.Fatal("a malformed requirement", err, c.language.calls)
+	}
+	// The step has its view admitted once, while it runs. A second call and a
+	// call after the step returned are refused, so no admitted placement exists
+	// that the shared formatter did not receive from the step of its request.
+	c = newFixtureCase(t)
+	if out, err := c.format(t, c.placement(), format.FilesLimits{}); err != nil || !out.Valid() {
+		t.Fatal(err)
+	}
+	if !errors.Is(c.language.again, format.ErrInvalidFormatter) {
+		t.Fatal("a second admission in one step", c.language.again)
+	}
+	late := c.placement()
+	if admitted, err := c.language.kept.Admit(format.GeneratedPlacementView{Files: late.Files, Definitions: late.Definitions}); !errors.Is(err, format.ErrInvalidFormatter) || admitted.Valid() {
+		t.Fatal("an admission after the step returned", err)
 	}
 	// A placement of another issuer, and no placement, are refusals of the
 	// step. They are invalid input and no failed type assertion.

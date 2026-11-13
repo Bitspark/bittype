@@ -11,6 +11,7 @@ import (
 	"github.com/Bitspark/bittype/contracts/format/go"
 	g "github.com/Bitspark/bittype/contracts/generation/go"
 	"github.com/Bitspark/bittype/contracts/print/go"
+	"github.com/Bitspark/bittype/contracts/semantic/go"
 	"github.com/Bitspark/bittype/files/go"
 	tsfiles "github.com/Bitspark/bittype/format/files/typescript/provider/go"
 	printFiles "github.com/Bitspark/bittype/print/files/shared/provider/go"
@@ -199,7 +200,13 @@ func TestTypeScriptGeneratedFilesNeedNoEntry(t *testing.T) {
 	}
 	var entries []ast.NodeRef
 	for run := 0; run < 2; run++ {
-		out, err := formatter.Format(ctx, format.GeneratedFilesInput{Output: output, Placement: threeFiles(handles, run == 0).Issue()})
+		placement := threeFiles(handles, run == 0)
+		issued := placement.Issue()
+		// The issued value owns its tables: what the consumer changes afterwards
+		// is no part of the request.
+		delete(placement.Definitions, handles["Person"])
+		placement.Files["later"] = "later.ts"
+		out, err := formatter.Format(ctx, format.GeneratedFilesInput{Output: output, Placement: issued})
 		if err != nil {
 			t.Fatal(run, err)
 		}
@@ -211,6 +218,54 @@ func TestTypeScriptGeneratedFilesNeedNoEntry(t *testing.T) {
 	}
 	if entries[0] != entries[1] {
 		t.Fatal("formatting one placement twice gave two snapshot entries", entries)
+	}
+}
+
+// A placement of existing source names no entry either. The lists of its
+// setting state an order, and the entry of the fresh snapshot does not follow
+// it: it is the file of least identity.
+func TestTypeScriptExistingPlacementNeedsNoEntry(t *testing.T) {
+	ctx := context.Background()
+	stages := placementStages(t)
+	formatter, err := tsfiles.New(stages)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := importedUnit(t, "export type Person = string; export type People = [Person, Person];")
+	in, err := stages.Capture(ctx, []source.Unit[ts.Language]{unit}, unit.File, semantic.Limits{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree := unit.Syntax.Abstract
+	site := func(name string) ast.NodeRef {
+		for _, child := range tree.Nodes[tree.Root-1].Children {
+			if nodeAttribute(tree.Nodes[child.Node-1], ts.AttributeName) == name {
+				return ast.NodeRef{Tree: tree.ID, Node: child.Node}
+			}
+		}
+		t.Fatal("no declaration", name)
+		return ast.NodeRef{}
+	}
+	// The file pages is the first of the list and not the least identity.
+	setting, err := (tsfiles.Organization{Units: []tsfiles.Placement{
+		{File: "pages", Path: "pages.ts", Declarations: []ast.NodeRef{site("People")}},
+		{File: "model", Path: "model.ts", Declarations: []ast.NodeRef{site("Person")}},
+	}}).Setting()
+	if err != nil {
+		t.Fatal(err)
+	}
+	in.Configuration = []semantic.Setting{setting}
+	out, err := formatter.Format(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	units := out.Units()
+	if len(units) != 2 || units[0].File != "pages" || units[1].File != "model" {
+		t.Fatal("the units of existing source follow the lists of the setting", len(units))
+	}
+	model := units[1].Syntax.Abstract
+	if out.Entry() != (ast.NodeRef{Tree: model.ID, Node: model.Root}) {
+		t.Fatal("the snapshot entry is not the file of least identity", out.Entry())
 	}
 }
 
