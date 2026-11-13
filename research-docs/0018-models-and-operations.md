@@ -1423,7 +1423,7 @@ its identifier, display name, profile string and marker type. `types` and
 **Ten lines of Go, for a reader who does not write it.**
 
 - `type AST[L any] struct { ... }` is a type that is generic in `L`; `any`
-  means that `L` is unconstrained. `func F[L any](...)` is a generic
+  means that `L` is unconstrained. `func F[L any]( ... )` is a generic
   function.
 - `[]T` is a sequence of `T`, `map[K]V` a map, and `*T` a pointer, whose
   empty value `nil` means absent. `kinds ...T` is a variable number of
