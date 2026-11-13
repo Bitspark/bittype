@@ -31,7 +31,7 @@ The package layout is:
 
 | Package | Responsibility |
 | --- | --- |
-| `semantics/golang/go` | Go-owned vocabulary, contract identities, environment identity and immutable typed graph readers |
+| `semantics/golang/go` | Go-owned vocabulary, contract identities, environment identity, immutable typed graph readers and the names the first Go Files slice admits |
 | `internal/golangsem` | Direct AST bridge, bounded compiler invocation and fact export |
 | `resolve/files/golang/provider/go` | Configured resolution, coverage and native validity reports |
 | `analyze/files/golang/provider/go` | Receipt-consuming analysis |
@@ -115,6 +115,7 @@ The vocabulary owner is `go`. The published representation is:
 | `name` bindings / `type-expression` occurrences | Resolved identifier targets and native type terms at current AST nodes |
 | `underlying`, `alias-target`, `constraint` facts | Go's checked relationships, including substituted underlying types of applications |
 | `identical` fact | A model-local representative established by `types.Identical`, not identity inferred from spelling or serialized shape |
+| `package-name` fact | On every `package` entity, captured and supplied: the name that its package clauses declare, `types.Package.Name()`. The entity's own name is the package's path, which does not determine the declared name |
 | `basic`, `slice`, `struct`, `interface`, `union` expressions | Native structure with ordered operands and Go-owned `json-1` metadata |
 
 Struct metadata records field names, tags, embedding flags and model-local field
@@ -128,22 +129,57 @@ handles; callers cannot mutate a published graph through them.
 
 ### Import environment
 
-`golang.ImportConfiguration(golang.ImportEnvironment{Module, Packages})` extends
-the base configuration with one normalized `imports-1` setting. It follows Go's
-own module layout:
+`golang.ImportConfiguration(golang.ImportEnvironment{Module, OutputRoot, Packages})`
+extends the base configuration with one normalized `imports-2` setting. It
+follows Go's own module layout:
 
+- **The output root.** `Module` is the module path and nothing else. The output
+  root is the directory that the paths of captured files are relative to.
+  `OutputRoot` states where it sits in the module: its directory relative to
+  the module root, such as `generated` or `internal/gen`. When the output root
+  is the module root, that is stated as `golang.ModuleRoot`, which is `.`.
 - **Captured packages.** Each captured tree must be linked to a `.go` file in the
-  request's Files context. Its package import path is the module path joined with
-  the file's directory: `pages/page.go` under `example.org/app` belongs to
-  `example.org/app/pages`. Files in one directory form one package.
+  request's Files context. Its package import path is the module path, the
+  output root and the file's directory, joined. `pages/types.go` under
+  `example.org/app` belongs to `example.org/app/generated/pages` with the
+  output root `generated`, and to `example.org/app/pages` with the output root
+  `.`. Files in one directory form one package.
+  `golang.CapturedImportPath(environment, filePath)` is this derivation, and
+  the bridge groups captured files by the same function.
 - **Supplied packages.** Every other imported package is supplied as Go source:
   an import path and up to 16 files. Supplied text participates in receipt
   identity and is never an output. A supplied package may import only other
-  supplied packages, and it may not use a path under the module.
+  supplied packages, and it may not use a path at or below the output root,
+  where the captured packages are. A package of the module outside the output
+  root is hand-written code of the consumer's own module and may be supplied:
+  `example.org/app/model` beside the output root `generated`. With the output
+  root `.` every path under the module is refused.
 - **No discovery.** Import paths need a first element containing a dot, Go's
   module-path rule. That also keeps supplied packages from naming standard
   library paths, which this profile does not provide. Nothing is read from a
   module cache, `GOPATH` or the network.
+
+**The output root must be stated.** An environment without `OutputRoot` is
+refused with `ErrInvalidRequest`, and no output root is assumed. The module
+root has the one spelling `.`, which a caller writes; an empty field is never
+read as it. Every other value is a clean relative path with forward slashes
+whose elements are import-path elements. Refused are an absolute path, a
+backslash, a trailing slash, an empty element and a `.` or `..` element, so one
+directory has one spelling and equal environments give equal settings. Refused
+too is an output root with a `testdata` or `vendor` element or an element that
+starts with `_` or `.`: the rules below keep such a directory out of a package
+tree for a captured file, and an output root inside one would put every
+captured file there.
+
+**The setting's bytes.** The key is `imports-2`. The value is the UTF-8 JSON
+object with the members `Module`, `OutputRoot` and `Packages` in this order.
+For an environment without supplied packages it is
+`{"Module":"example.org/app","OutputRoot":"generated","Packages":[]}`. The
+setting is part of every receipt under an import environment. The earlier key
+`imports-1` carried no output root. A setting under that key is refused, and
+so is a value under `imports-2` that states none: neither is read with an
+assumed output root. `TestGoImportEnvironmentMustStateTheOutputRoot` pins the
+key, the bytes and both refusals.
 
 **The go tool's layout rules apply to captured files:**
 
@@ -161,6 +197,29 @@ source files only, never test or ignored files.
 
 Build constraints, including GOOS and GOARCH file-name suffixes, are not
 interpreted: every captured file belongs to its directory's package.
+
+**What the first Go Files slice admits by name.** A build selects a Go file by
+its name, and the profile above does not look: it analyzes `types_linux.go` as
+part of its package, and a build for another system drops that file. A Go
+Files stage that chooses file names must therefore not write such a name. Two
+functions of `semantics/golang/go` state what the first slice admits:
+
+- `golang.AdmitFileName(filePath)` refuses a base name with an underscore, or
+  one that starts with a dot. That refuses every GOOS and GOARCH suffix, every
+  test file and every file the go tool ignores, and more: `types_gen.go` is
+  refused although Go builds it. The rule needs no list of systems that
+  changes between toolchains. The directory is not judged.
+- `golang.AdmitPackageName(name)` admits ordinary packages. It refuses a
+  command, which is package `main`, and a test package, whose name ends in
+  `_test`.
+
+Both return `nil` for an admitted name. A name that Go accepts and the slice
+does not cover gives an error that wraps `golang.ErrUnsupported`, which a Files
+stage reports as unsupported coverage. What is no Go file path or no package
+name gives one that wraps `semantic.ErrInvalidRequest`. A later slice may admit
+a refused name and may not give an admitted name another meaning. The
+functions do not change the semantic profile: the bridge refuses what it
+refused before, and a file with a system suffix stays analyzable.
 
 **Classification.** The checks run in a fixed order, so no result or diagnostic
 depends on capture order:
@@ -229,6 +288,25 @@ refused as unsupported.
 name that more than one of them declares. `Model.LookupIn(importPath, name)`
 reads a package-qualified declaration. A supplied declaration is present only
 where captured code uses it.
+
+**Package name and identity.** `Model.PackageName(importPath)` reads the
+`package-name` fact of a captured or supplied package. `Type.Package()` reads
+the package of a package-level declaration from the graph's ownership: its
+identity, which is its import path, and its declared name. An instance of a
+generic type has the package of its generic declaration. Both readers fail
+when the package entity does not carry exactly one name fact, and neither
+reads the path in place of the name. In the base profile the identity is the
+constant `captured`, and the name is the one the package clause declares.
+
+**The limit of package identity.** A consumer that relocates declarations can
+compare the owner of each declaration, `Type.Package().Path`, with
+`CapturedImportPath` of the file it intended. That comparison establishes that
+the declaration sits in the tree of the intended file and that the checker put
+it into that package. It cannot certify where the consumer writes the files.
+The type checker is told each package's path and does not discover a module
+layout, and the expected path and the bridge's grouping come from the one
+function. Whether the files on disk sit at `OutputRoot` inside the module is
+the consumer's statement, which nothing here checks.
 
 **One environment end to end.** Analysis refuses a configuration that differs
 from its resolution's. Use `golang.AnalysisContractFor(settings)` and

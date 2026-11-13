@@ -11,9 +11,10 @@ import (
 
 // packageGraphModel builds a model over a hand-written graph, which no bridge
 // produced: the package "example.org/p" with the declaration T, a declaration
-// without an owner, and a declaration owned by a field. names are the data of
-// the package-name facts of the package; a nil entry is a fact whose term is
-// not a provider expression.
+// without an owner, a declaration owned by a field, and two packages at the
+// one path "example.org/twice". names are the data of the package-name facts
+// of the first package; a nil entry is a fact whose term is a reference, which
+// carries no data.
 func packageGraphModel(t *testing.T, names ...[]byte) (Model, map[string]Type) {
 	t.Helper()
 	data := semantics.Data{
@@ -23,6 +24,8 @@ func packageGraphModel(t *testing.T, names ...[]byte) (Model, map[string]Type) {
 			{Kind: DefinedKind(), Name: "Orphan", Body: 2},
 			{Kind: Key("field"), Name: "f"},
 			{Kind: DefinedKind(), Name: "Inner", Owner: 4, Body: 3},
+			{Kind: PackageKind(), Name: "example.org/twice"},
+			{Kind: PackageKind(), Name: "example.org/twice"},
 		},
 		Terms: []semantics.Term{
 			{Kind: semantics.Reference, Target: 2},
@@ -41,8 +44,11 @@ func packageGraphModel(t *testing.T, names ...[]byte) (Model, map[string]Type) {
 	for _, text := range names {
 		data.Facts = append(data.Facts, semantics.Fact{Subject: semantics.Subject{Entity: 1}, Relation: PackageNameRelation(), Term: name(text)})
 	}
-	// The field carries a name fact too, so only its kind keeps it from being a package.
-	data.Facts = append(data.Facts, semantics.Fact{Subject: semantics.Subject{Entity: 4}, Relation: PackageNameRelation(), Term: name([]byte("f"))})
+	// The field and both packages at the repeated path carry a name fact too,
+	// so only the field's kind and the repetition keep them from being read.
+	for id, text := range map[semantics.EntityID]string{4: "f", 6: "twice", 7: "twice"} {
+		data.Facts = append(data.Facts, semantics.Fact{Subject: semantics.Subject{Entity: id}, Relation: PackageNameRelation(), Term: name([]byte(text))})
+	}
 	graph, err := semantics.New[s.Language](data, semantics.DefaultLimits(), func(ast.NodeRef) bool { return true })
 	if err != nil {
 		t.Fatal(err)
@@ -62,10 +68,10 @@ func TestPackageNameReadersFailWithoutTheFact(t *testing.T) {
 		t.Fatal("declaring package", pkg, err)
 	}
 	for name, facts := range map[string][][]byte{
-		"no fact":                      nil,
-		"two facts":                    {[]byte("declared"), []byte("other")},
-		"an empty name":                {{}},
-		"a term that is no expression": {nil},
+		"no fact":                     nil,
+		"two facts":                   {[]byte("declared"), []byte("other")},
+		"an empty name":               {{}},
+		"a term that carries no data": {nil},
 	} {
 		model, types := packageGraphModel(t, facts...)
 		if got, err := model.PackageName("example.org/p"); !errors.Is(err, ErrForeign) || got != "" {
@@ -81,9 +87,12 @@ func TestPackageNameReadersFailWithoutTheFact(t *testing.T) {
 			t.Fatal(name, "has a package:", got, err)
 		}
 	}
-	// An entity that is not a package is not found by its name.
-	if got, err := model.PackageName("f"); !errors.Is(err, ErrForeign) || got != "" {
-		t.Fatal("a field was read as a package:", got, err)
+	// An entity that is not a package is not found by its name, and a path
+	// that two packages have names neither.
+	for _, path := range []string{"f", "example.org/twice", "example.org/missing"} {
+		if got, err := model.PackageName(path); !errors.Is(err, ErrForeign) || got != "" {
+			t.Fatal("a package name was read for", path, got, err)
+		}
 	}
 	if _, err := (Model{}).PackageName("example.org/p"); !errors.Is(err, ErrForeign) {
 		t.Fatal("an invalid model has a package", err)

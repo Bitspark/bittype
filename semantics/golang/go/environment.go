@@ -178,7 +178,7 @@ func normalizeEnvironment(e ImportEnvironment) (ImportEnvironment, error) {
 		return ImportEnvironment{}, semantic.ErrLimit
 	}
 	out := ImportEnvironment{Module: e.Module, OutputRoot: e.OutputRoot, Packages: make([]Package, 0, len(e.Packages))}
-	size := len(e.Module) + len(e.OutputRoot)
+	size := len(e.Module)
 	for _, p := range e.Packages {
 		lower, captured := strings.ToLower(p.ImportPath), strings.ToLower(root)
 		if !ValidImportPath(p.ImportPath) || lower == captured || strings.HasPrefix(lower, captured+"/") || slices.Contains(strings.Split(p.ImportPath, "/"), "vendor") {

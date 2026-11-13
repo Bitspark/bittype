@@ -130,7 +130,7 @@ type DeclaringPackage struct {
 // exactly one package at that path, or not exactly one such fact for it. The
 // path is never read in place of the name.
 func (m Model) PackageName(importPath string) (string, error) {
-	if !m.Valid() || importPath == "" {
+	if !m.Valid() {
 		return "", ErrForeign
 	}
 	var found []semantics.EntityID
@@ -149,8 +149,10 @@ func (m *model) packageName(id semantics.EntityID) (string, error) {
 	if len(facts) != 1 {
 		return "", ErrForeign
 	}
+	// Only a provider expression carries data, so a fact that points at
+	// another term has no name either.
 	name, _ := m.graph.Term(facts[0])
-	if name.Kind != semantics.ProviderExpression || len(name.Data) == 0 {
+	if len(name.Data) == 0 {
 		return "", ErrForeign
 	}
 	return string(name.Data), nil
@@ -222,12 +224,13 @@ func (t Type) Site() ast.NodeRef {
 // what no package owns, such as a predeclared type, a type parameter and an
 // unnamed type, and when the owner carries no name fact.
 func (t Type) Package() (DeclaringPackage, error) {
-	if !t.IsNamed() && !t.IsAlias() {
+	if !t.Valid() {
 		return DeclaringPackage{}, ErrForeign
 	}
 	declaration := t.entity()
-	owner, ok := t.owner.graph.Entity(declaration.Owner)
-	if !ok || owner.Kind != PackageKind() {
+	// The zero owner is no entity, and its kind is no package.
+	owner, _ := t.owner.graph.Entity(declaration.Owner)
+	if owner.Kind != PackageKind() {
 		return DeclaringPackage{}, ErrForeign
 	}
 	name, err := t.owner.packageName(declaration.Owner)
