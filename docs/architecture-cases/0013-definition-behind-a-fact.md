@@ -5,9 +5,11 @@
 [#196](https://github.com/Bitspark/bittype/issues/196) and
 [decision O45](https://github.com/Bitspark/bittype/issues/196#issuecomment-6854327944).
 Corrected for Go and for TypeScript in the change of
-[#310](https://github.com/Bitspark/bittype/issues/310), with the
-[open points](#open-points) below. Open for [Rust](#rust), with its trigger.
-The correction was not read by an independent reviewer when this was written.
+[#310](https://github.com/Bitspark/bittype/issues/310), with the two
+[decided points](#decided-points) below. **Pending:** [Rust](#rust) has the same
+shape and is corrected next under the same issue, in its own pull request.
+The case stays pending until then. The correction was not read by an
+independent reviewer when this was written.
 
 **Scope.** The graphs that the Go, TypeScript and Rust semantic analyses
 publish, and the readers of the three analysed vocabularies. The generation
@@ -103,17 +105,20 @@ read a declaration.
 **Go.** The body of a captured type declaration or alias is the term of the
 type that its written right-hand side denotes. The bridge already kept the
 type expression of every captured declaration. A type parameter, a predeclared
-type and a supplied declaration have no body. The type of a type name is the
-new entity fact `declared-type`, which `Model.DeclaredType`, `Lookup`,
-`LookupIn` and `Type.Parameters` read.
+type, a supplied declaration and a field have no body. The type of a type name
+and of a field is the new entity fact `declared-type`, which
+`Model.DeclaredType`, `Lookup`, `LookupIn` and `Type.Parameters` read.
 [Go bodies and declared types](../native-semantics.md#go-bodies-and-declared-types)
 states every kind.
 
 **TypeScript.** The body of an alias is the term of its written right-hand
 side: the Reference or Application of the source expression, or the structural
 expression. The body of an interface without an `extends` clause is the
-`object` of its members. A type parameter has no body. `declared-type` was an
-entity fact before. No reader changed.
+`object` of its members. The body of an interface with one is an `extension`,
+whose operands are the base type terms as written and then the `object` of
+its own members. A type parameter and a property have no body. `declared-type`
+was an entity fact before, and a property carries it now. The vocabulary
+gained the reader `Model.Extension`, and no existing reader changed.
 [TypeScript bodies and declared types](../native-semantics.md#typescript-bodies-and-declared-types)
 states every kind.
 
@@ -143,8 +148,13 @@ is in the agnostic model. The Go and the TypeScript readers use it.
   application paired with that parameter. All ten subtests were red on main
   before the change.
 - [Tests of each declaration kind](../../integration/go/definition_body_kinds_test.go)
-  state the body and the declared type per kind, for both languages, and that
-  a supplied Go declaration has no body.
+  state the body and the declared type per kind, for both languages, a field
+  and a property among them, and that a supplied Go declaration has no body.
+  They state for every entity of the graph whether it has a body and whether
+  it carries the fact.
+- For TypeScript the walk-like reader also reaches, from an interface with
+  two base types, each base declaration, the actual of the base with type
+  arguments and each member that the interface declares itself.
 - [One check for both languages](../../integration/go/earlier_profile_test.go)
   refuses a receipt of the earlier profile.
 - Every test that passed on main passes by the same name.
@@ -156,29 +166,34 @@ Limits of this evidence:
   the two pairs without `Definitions[F]` belongs to the pairs lane of #196.
 - **The kernel cannot check that a body is the definition.** It is the
   analysis's statement. The tests check it for the forms they name.
-- **The Rust tests did not run** on the workstation of this change.
+- **The Rust tests did not run** on the workstation of this change. The
+  hosted check runs them. Of a body they assert one thing: the entity of a
+  primitive type has none.
 
-## Open points
+## Decided points
 
-- **A TypeScript interface with an `extends` clause has no body.** Its
-  definition is its own members together with its base types, which are
-  "specified in the *InterfaceExtendsClause*" of the declaration (archived
-  TypeScript specification, 7.1). How the base types are operands of the body
-  is not decided: a new provider expression whose operands are the base terms
-  and the own members; the `object` of all members with inherited ones written
-  out, which is not the written definition; or the `object` of the own members
-  alone, which loses the bases. Until then the kernel refuses such a
-  declaration as one without a body, and nothing false is published. The body
-  can be added without moving what exists. Trigger: the first pair that
-  generates from an interface with a base, or the decision on #310, whichever
-  comes first.
-- **A field's and a property's entity still has its type as its body.** That
-  is the type-of reading for one more entity kind in each language. The issue
-  asks for the body of a type declaration only, and no reader reads such a
-  body. If the type moves to a `declared-type` entity fact, it is a further
-  changed member of both profiles. Trigger: the decision on #310.
-- **Interface declaration merging** stays outside the TypeScript profile, so
-  the body of a merged interface is not defined.
+The first form of this correction left two points open, each with its options.
+Both were decided on 13 November 2026
+([decisions D1 and D2](https://github.com/Bitspark/bittype/issues/310#issuecomment-6857138520))
+and are implemented in the same change.
+
+- **Decided, D1: a field and a property have no body.** A field has a name
+  and a type and no definition, so a body that holds its type was the type-of
+  reading for one more entity kind. Its type is the `declared-type` fact of
+  its entity. Nothing is lost for a reader that walks: the type is an operand
+  of the struct or object term. `Body` now has one meaning in a Go and in a
+  TypeScript graph.
+- **Decided, D2: an interface with base types has an `extension` as its
+  body.** Its operands are the base type terms as written and then the
+  `object` of its own members, and its data states the number of bases.
+  [The form](../native-semantics.md#the-extension-of-an-interface). It is not
+  the `object` of all members, which is the checked type and hides the base
+  declaration from the walk, not the own members alone, which would drop the
+  inherited ones without a refusal, and not an `intersection`, which treats
+  conflicting members differently.
+- **Still outside the profile:** interface declaration merging. The helper
+  refuses two declarations of one interface as unsupported coverage and
+  publishes no graph, so the body of a merged interface is not defined.
 
 ## Rust
 
@@ -195,14 +210,19 @@ Read on 13 November 2026 in `internal/rustsem/helper/src/main.rs` and
 - The body of an alias is the type that the right-hand side denotes after the
   compiler's normalization. An alias of an alias has the normalized type, not
   a Reference to the alias it names.
-- A field's body is its type, as in the open point above.
+- A field's body is its type, which Go and TypeScript no longer publish
+  (decision D1).
 
-**Open violation.** Not corrected here, because the helper cannot be built or
-run on the workstation of this change, and a changed body is a changed member
-of the Rust profile that its tests must show. Trigger: the next change of the
-Rust helper, or the first generation pair whose source is Rust, whichever
-comes first. Until then a Rust struct or enum is, to the kernel, a use of
-itself.
+**Open violation, corrected next.** Not corrected in the change for Go and
+TypeScript. It is corrected next under
+[#310](https://github.com/Bitspark/bittype/issues/310), in its own pull
+request, with a new version of the Rust profile
+([decision D3 of 13 November 2026](https://github.com/Bitspark/bittype/issues/310#issuecomment-6857138520)):
+it is the same small correction a third time, and
+[AC-10](https://github.com/Bitspark/platform/blob/main/docs/concepts/architectural-correctness.md#ac-10)
+permits deferring a move only when its destination needs a huge effort. This
+case stays pending until that change. Until then a Rust struct or enum is, to
+the kernel, a use of itself.
 
 ## Assessment lesson
 

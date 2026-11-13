@@ -94,7 +94,8 @@ one entity can have several declaration sites; an intrinsic can have none.
 `Owner` and `Body` are optional links, not a universal namespace or type-of rule.
 In a graph that a generation source publishes, the body of a declaration's
 entity is the term of its definition, whose parts are operands of that term,
-and an entity whose definition the graph does not hold has no body
+and an entity that has no definition, or whose definition the graph does not
+hold, has no body
 ([the requirement on a source's graph](generation-spi.md#semantic-traversal-and-source-interpretation)).
 
 IDs are one-based arena positions local to one model. Zero is valid only for
